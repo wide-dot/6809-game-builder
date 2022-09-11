@@ -6,6 +6,7 @@
                 <groupId>com.wide-dot</groupId>
                 <artifactId>6809-game-builder</artifactId>
                 <version>0.0.1</version>
+                <relativePath>../../../../pom.xml</relativePath>
         </parent>
 	<artifactId>gamebuilder-to8</artifactId>
 	<version>0.0.1</version>
@@ -13,7 +14,7 @@
 	<dependencies>
                 <dependency>
                         <groupId>com.wide-dot</groupId>
-                        <artifactId>core</artifactId>
+                        <artifactId>toolbox/gamebuilder</artifactId>
                         <version>${project.version}</version>
                 </dependency>
 	</dependencies>

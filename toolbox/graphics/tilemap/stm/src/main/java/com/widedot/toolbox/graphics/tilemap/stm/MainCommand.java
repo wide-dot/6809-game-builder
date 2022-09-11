@@ -7,6 +7,7 @@ import java.io.FileWriter;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -30,10 +31,10 @@ public class MainCommand implements Runnable {
 
         static class Exclusive {
                 @Option(names = { "-d", "--dir" }, paramLabel = "Input directory", description = "Process all .stm files located in the input directory")
-                private String inputDir;
+                String inputDir;
 
                 @Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process .stm input file")
-                private String inputFile;
+                String inputFile;
         }
 
 	@Option(names = { "-ibd", "--in-byte-depth" }, paramLabel = "Input byte depth", description = "Input file byte depth for a tile id")
@@ -55,31 +56,41 @@ public class MainCommand implements Runnable {
 	{
 		log.info("Building a TO8 bootsector");
 
-                if (inputDir != null) {
-        		log.info("Process each stm file of the directory {}", inputDir);
+                if (exclusive.inputDir != null) {
+        		log.info("Process each stm file of the directory {}", exclusive.inputDir);
 
                         // process each stm file of the directory		
-                        File dir = new File(inputDir);
+                        File dir = new File(exclusive.inputDir);
                         if (!dir.exists() || !dir.isDirectory()) {
-                                throw new Exception("Input directory does not exists !");
-                        }		
-                        File[] files = dir.listFiles((d, name) -> name.endsWith(".stm"));
-                        for (File stmFile : files) {
-                                new StmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
+                        	log.error("Input directory does not exists !");
+                        } else {	
+                        	File[] files = dir.listFiles((d, name) -> name.endsWith(".stm"));
+                        	for (File stmFile : files) {
+                        		try {
+                        			stmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
+                        		} catch (Exception e) {
+                        			log.error("Error converting .stm file");
+                        		}
+                        	}
                         }
                 } else {
-                        log.info("Process {}", inputFile);
+                        log.info("Process {}", exclusive.inputFile);
 
                         // process a single stm file
-                        File stmFile = new File(inputFile);
+                        File stmFile = new File(exclusive.inputFile);
                         if(!stmFile.exists() || stmFile.isDirectory()) { 
-                                throw new Exception("Input file does not exists !");
+                        	log.error("Input file does not exists !");
+                        } else {
+                        	try {
+                        		stmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
+                        	} catch (Exception e) {
+                    			log.error("Error converting .stm file");
+                    		}
                         }
-                        new StmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
                 }
 	}
 
-	private void StmConverter(File paramFile, int inByteDepth, int outByteDepth, int fileMaxSize) throws Exception {
+	private void stmConverter(File paramFile, int inByteDepth, int outByteDepth, int fileMaxSize) throws Exception {
 
 		SimpleTileMap stm = new SimpleTileMap(paramFile, inByteDepth, outByteDepth);
 

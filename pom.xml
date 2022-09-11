@@ -68,9 +68,8 @@
 	</dependencies>
 
         <modules>
-                <module>core</module>
-                <module>gamebuilder-to8</module>
-                <module>stm2bin</module>
+                <module>./toolbox/gamebuilder</module>
+                <module>./toolbox/graphics/tilemap/stm</module>
         </modules>
 
 </project>
