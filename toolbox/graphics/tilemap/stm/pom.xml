@@ -9,7 +9,7 @@
                 <relativePath>../../../../pom.xml</relativePath>
         </parent>
 	<artifactId>stm2bin</artifactId>
-	<version>0.0.1</version>
+    <packaging>jar</packaging>	
 
 	<dependencies>
                 <dependency>
@@ -18,4 +18,22 @@
                         <version>${project.version}</version>
                 </dependency>
 	</dependencies>
+	
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <version>1.10</version>
+        <configuration>
+          <programs>
+            <program>
+              <mainClass>org.myorg.MainClass</mainClass>
+              <id>stm2bin</id>
+            </program>
+          </programs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>	
 </project>

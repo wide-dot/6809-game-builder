@@ -2,13 +2,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-        <parent>
-                <groupId>com.wide-dot</groupId>
-                <artifactId>6809-game-builder</artifactId>
-                <version>0.0.1</version>
-                <relativePath>../../pom.xml</relativePath>
-        </parent>
+    <parent>
+            <groupId>com.wide-dot</groupId>
+            <artifactId>6809-game-builder</artifactId>
+            <version>0.0.1</version>
+            <relativePath>../../pom.xml</relativePath>
+    </parent>
 	<artifactId>gamebuilder-core</artifactId>
-	<version>0.0.1</version>
-        <packaging>jar</packaging>
+    <packaging>jar</packaging>
 </project>
