@@ -18,4 +18,21 @@
                         <version>${project.version}</version>
                 </dependency>
 	</dependencies>
+	
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <programs>
+            <program>
+              <mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+              <id>gamebuilder-to8</id>
+            </program>
+          </programs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>		
 </project>

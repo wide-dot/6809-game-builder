@@ -24,11 +24,10 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
-        <version>1.10</version>
         <configuration>
           <programs>
             <program>
-              <mainClass>org.myorg.MainClass</mainClass>
+              <mainClass>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</mainClass>
               <id>stm2bin</id>
             </program>
           </programs>

@@ -67,6 +67,25 @@
                 </dependency>
 	</dependencies>
 
+   <build> 
+       <pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <programs>
+            <program>
+              <mainClass>DummyClass</mainClass>
+              <id>6809-game-builder</id>
+            </program>
+          </programs>
+        </configuration>
+      </plugin>
+    </plugins>
+       </pluginManagement>
+   </build>
+
         <modules>
                 <module>./toolbox/gamebuilder</module>
                 <module>./toolbox/graphics/tilemap/stm</module>
