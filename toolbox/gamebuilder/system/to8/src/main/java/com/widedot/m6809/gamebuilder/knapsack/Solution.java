@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.util.knapsack;
+package com.widedot.m6809.gamebuilder.knapsack;
 
 import java.util.List;
 

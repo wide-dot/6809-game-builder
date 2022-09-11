@@ -3,7 +3,7 @@ package com.widedot.m6809.gamebuilder.image;
 import com.widedot.m6809.gamebuilder.builder.FileNames;
 import com.widedot.m6809.gamebuilder.builder.Object;
 import com.widedot.m6809.gamebuilder.storage.RAMLoaderIndex;
-import com.widedot.m6809.gamebuilder.util.knapsack.ItemBin;
+import com.widedot.m6809.gamebuilder.knapsack.ItemBin;
 
 public class AnimationBin extends ItemBin{
 

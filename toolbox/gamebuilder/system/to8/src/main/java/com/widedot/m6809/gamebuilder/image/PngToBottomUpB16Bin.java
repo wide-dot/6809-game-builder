@@ -12,7 +12,7 @@ import javax.imageio.ImageIO;
 import com.widedot.m6809.gamebuilder.builder.Act;
 import com.widedot.m6809.gamebuilder.builder.Object;
 import com.widedot.m6809.gamebuilder.storage.RAMLoaderIndex;
-import com.widedot.m6809.gamebuilder.util.knapsack.ItemBin;
+import com.widedot.m6809.gamebuilder.knapsack.ItemBin;
 
 public class PngToBottomUpB16Bin extends ItemBin{
 	BufferedImage image;

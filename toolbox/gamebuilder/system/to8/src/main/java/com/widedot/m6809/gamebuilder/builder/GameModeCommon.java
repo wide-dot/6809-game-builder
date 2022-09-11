@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 
 import com.widedot.m6809.gamebuilder.util.FileUtil;
 import com.widedot.m6809.gamebuilder.util.OrderedProperties;
-import com.widedot.m6809.gamebuilder.util.knapsack.Item;
+import com.widedot.m6809.gamebuilder.knapsack.Item;
 
 public class GameModeCommon {
 

@@ -8,13 +8,13 @@
                 <version>0.0.1</version>
                 <relativePath>../../../../pom.xml</relativePath>
         </parent>
-	<artifactId>stm</artifactId>
+	<artifactId>stm2bin</artifactId>
 	<version>0.0.1</version>
 
 	<dependencies>
                 <dependency>
                         <groupId>com.wide-dot</groupId>
-                        <artifactId>gamebuilder</artifactId>
+                        <artifactId>gamebuilder-core</artifactId>
                         <version>${project.version}</version>
                 </dependency>
 	</dependencies>

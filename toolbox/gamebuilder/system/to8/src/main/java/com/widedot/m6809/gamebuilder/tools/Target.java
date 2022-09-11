@@ -1,4 +1,4 @@
-package com.widedot.to8.tools;
+package com.widedot.m6809.gamebuilder.tools;
 
 public enum Target
 {

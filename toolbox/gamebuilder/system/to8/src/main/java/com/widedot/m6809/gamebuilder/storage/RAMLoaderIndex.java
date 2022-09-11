@@ -6,7 +6,7 @@ import java.util.List;
 import com.widedot.m6809.gamebuilder.builder.GameMode;
 import com.widedot.m6809.gamebuilder.builder.GameModeCommon;
 import com.widedot.m6809.gamebuilder.builder.Object;
-import com.widedot.m6809.gamebuilder.util.knapsack.ItemBin;
+import com.widedot.m6809.gamebuilder.knapsack.ItemBin;
 
 /**
  * @author Benoît Rousseau

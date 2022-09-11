@@ -3,13 +3,8 @@ package com.widedot.m6809.gamebuilder.builder;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,8 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,12 +53,12 @@ import com.widedot.m6809.gamebuilder.storage.T2Util;
 import com.widedot.m6809.gamebuilder.util.ChecksumUtils;
 import com.widedot.m6809.gamebuilder.util.FileUtil;
 import com.widedot.m6809.gamebuilder.util.LWASMUtil;
-import com.widedot.m6809.gamebuilder.util.knapsack.Item;
-import com.widedot.m6809.gamebuilder.util.knapsack.Knapsack;
-import com.widedot.m6809.gamebuilder.util.knapsack.Solution;
-import com.widedot.6809.tools.AssemblyCompiler;
-import com.widedot.zx0.Compressor;
-import com.widedot.zx0.Optimizer;
+import com.widedot.m6809.gamebuilder.knapsack.Item;
+import com.widedot.m6809.gamebuilder.knapsack.Knapsack;
+import com.widedot.m6809.gamebuilder.knapsack.Solution;
+import com.widedot.m6809.gamebuilder.tools.AssemblyCompiler;
+import com.widedot.m6809.gamebuilder.util.zx0.Compressor;
+import com.widedot.m6809.gamebuilder.util.zx0.Optimizer;
 
 public class BuildDisk
 {

@@ -11,7 +11,7 @@ import com.widedot.m6809.gamebuilder.image.PngToBottomUpB16Bin;
 import com.widedot.m6809.gamebuilder.ram.RamImage;
 import com.widedot.m6809.gamebuilder.storage.RAMLoaderIndex;
 import com.widedot.m6809.gamebuilder.util.OrderedProperties;
-import com.widedot.m6809.gamebuilder.util.knapsack.Item;
+import com.widedot.m6809.gamebuilder.knapsack.Item;
 
 public class GameMode {
 

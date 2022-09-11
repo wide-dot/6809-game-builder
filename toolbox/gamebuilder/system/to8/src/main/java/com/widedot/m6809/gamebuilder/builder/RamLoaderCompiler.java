@@ -6,8 +6,8 @@ import java.nio.file.Paths;
 
 
 import com.widedot.m6809.gamebuilder.MainProg;
-import com.widedot.to8.tools.AssemblyCompiler;
-import com.widedot.to8.tools.Target;
+import com.widedot.m6809.gamebuilder.tools.AssemblyCompiler;
+import com.widedot.m6809.gamebuilder.tools.Target;
 
 import lombok.extern.slf4j.Slf4j;
 

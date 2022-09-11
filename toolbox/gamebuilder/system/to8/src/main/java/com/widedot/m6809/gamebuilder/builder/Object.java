@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.widedot.to8.audio.Sound;
+import com.widedot.m6809.gamebuilder.audio.Sound;
 import com.widedot.m6809.gamebuilder.image.AnimationBin;
 import com.widedot.m6809.gamebuilder.image.ImageSetBin;
 import com.widedot.m6809.gamebuilder.image.Sprite;

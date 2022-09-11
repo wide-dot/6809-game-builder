@@ -21,8 +21,8 @@ import com.widedot.m6809.gamebuilder.builder.AsmSourceCode;
 import com.widedot.m6809.gamebuilder.builder.Game;
 import com.widedot.m6809.gamebuilder.image.SpriteSheet;
 import com.widedot.m6809.gamebuilder.util.LWASMUtil;
-import com.widedot.zx0.Compressor;
-import com.widedot.zx0.Optimizer;
+import com.widedot.m6809.gamebuilder.util.zx0.Compressor;
+import com.widedot.m6809.gamebuilder.util.zx0.Optimizer;
 
 public class ZX0Encoder extends Encoder{
 
