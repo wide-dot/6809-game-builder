@@ -5,7 +5,7 @@
 	<groupId>com.wide-dot</groupId>
 	<artifactId>6809-game-builder</artifactId>
 	<version>0.0.1</version>
-        <packaging>pom</packaging>
+	<packaging>pom</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,35 +60,34 @@
 			<artifactId>picocli</artifactId>
 			<version>4.6.2</version>
 		</dependency>
-                <dependency>
-                        <groupId>org.mapeditor</groupId>
-                        <artifactId>libtiled</artifactId>
-                        <version>1.4.2</version>
-                </dependency>
+		<dependency>
+			<groupId>org.mapeditor</groupId>
+			<artifactId>libtiled</artifactId>
+			<version>1.4.2</version>
+		</dependency>
 	</dependencies>
 
-   <build> 
-       <pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <programs>
-            <program>
-              <mainClass>DummyClass</mainClass>
-              <id>6809-game-builder</id>
-            </program>
-          </programs>
-        </configuration>
-      </plugin>
-    </plugins>
-       </pluginManagement>
-   </build>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>2.1.0</version>
+				<configuration>
+					<programs>
+						<program>
+							<mainClass>DummyClass</mainClass>
+							<id>6809-game-builder</id>
+						</program>
+					</programs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
-        <modules>
-                <module>./toolbox/gamebuilder</module>
-                <module>./toolbox/graphics/tilemap/stm</module>
-        </modules>
+	<modules>
+		<module>./toolbox/gamebuilder</module>
+		<module>./toolbox/graphics/tilemap/stm</module>
+	</modules>
 
 </project>

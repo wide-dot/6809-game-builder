@@ -2,37 +2,38 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-        <parent>
-                <groupId>com.wide-dot</groupId>
-                <artifactId>6809-game-builder</artifactId>
-                <version>0.0.1</version>
-                <relativePath>../../../../pom.xml</relativePath>
-        </parent>
+	<parent>
+		<groupId>com.wide-dot</groupId>
+		<artifactId>6809-game-builder</artifactId>
+		<version>0.0.1</version>
+		<relativePath>../../../../pom.xml</relativePath>
+	</parent>
 	<artifactId>gamebuilder-to8</artifactId>
-    <packaging>jar</packaging>
+	<packaging>jar</packaging>
 
 	<dependencies>
-                <dependency>
-                        <groupId>com.wide-dot</groupId>
-                        <artifactId>gamebuilder-core</artifactId>
-                        <version>${project.version}</version>
-                </dependency>
+		<dependency>
+			<groupId>com.wide-dot</groupId>
+			<artifactId>gamebuilder-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
-	
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <programs>
-            <program>
-              <mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
-              <id>gamebuilder-to8</id>
-            </program>
-          </programs>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>		
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<configuration>
+					<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+					<programs>
+						<program>
+							<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+							<id>gamebuilder-to8</id>
+						</program>
+					</programs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
