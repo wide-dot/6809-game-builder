@@ -18,7 +18,7 @@ The wide-dot 6809 game builder is a multiplatform toolset and game engine for 68
 
 Demonstrations are available in a dedicated repository : [6809-game-demo]
 
-![sonic2][sonic2] ![dott][dott] 
+![sonic2|336x212][sonic2] ![dott|336x212][dott] 
 
 ### Main features
 
