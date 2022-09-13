@@ -72,6 +72,10 @@ Then the uber-jar is in `.\target\6809-game-builder-X.X.X-SNAPSHOT-jar-with-depe
 
 [toolbox reference guide][toolbox-reference]
 
+## Credits
+
+[third-party libraries and tools][credits]
+
 [6809-game-demo]: https://github.com/wide-dot/6809-game-demo
 [sonic2]: doc/demo.gif
 [dott]: doc/demo2.gif
@@ -82,3 +86,4 @@ Then the uber-jar is in `.\target\6809-game-builder-X.X.X-SNAPSHOT-jar-with-depe
 [tilemaps]: doc/tilemaps.md
 [audio]: doc/audio.md
 [toolbox-reference]: doc/toolbox.md
+[credits]: doc/credits.md
