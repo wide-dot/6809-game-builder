@@ -70,16 +70,10 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>appassembler-maven-plugin</artifactId>
-				<version>2.1.0</version>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.4.2</version>
 				<configuration>
-					<programs>
-						<program>
-							<mainClass>DummyClass</mainClass>
-							<id>6809-game-builder</id>
-						</program>
-					</programs>
+					<skipAssembly>true</skipAssembly>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -88,6 +82,7 @@
 	<modules>
 		<module>./toolbox/gamebuilder</module>
 		<module>./toolbox/graphics/tilemap/stm</module>
+		<module>./package</module>
 	</modules>
 
 </project>

@@ -24,16 +24,28 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<configuration>
-					<assembleDirectory>${project.parent.basedir}</assembleDirectory>
-					<programs>
-						<program>
-							<mainClass>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</mainClass>
-							<id>stm2bin</id>
-						</program>
-					</programs>
-				</configuration>
-			</plugin>
+				<version>2.1.0</version>
+				<executions>
+					<execution>
+						<id>assemble</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<repositoryName>repo</repositoryName>							
+							<programs>
+								<program>
+									<mainClass>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</mainClass>
+									<id>stm2bin</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>			
+			
 		</plugins>
 	</build>
 </project>

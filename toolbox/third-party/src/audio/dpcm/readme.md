@@ -23,5 +23,6 @@ Input file must be prepared before conversion.
 pcm2dpcm -dpcmdata "000408102030406080FCF8F0E0D0C0A0" -aos 2 input.raw output.bin
 
 Notes:
-- dpcmdata can be modified as long as it is accordingly changed in the player (@DACDecodeTbl)
 - asm players are available in 8000 or 16000 Hz, but you can make your own version by adjusting waiting times in assembly code
+- dpcmdata can be modified as long as it is accordingly changed in the player (@DACDecodeTbl)
+- you can use @DACDecodeTbl to downsample to lower bit range by dividing table values, this is actually done in player (6bit samples instead of 8bit)

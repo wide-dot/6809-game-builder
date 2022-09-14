@@ -1,0 +1,78 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.wide-dot</groupId>
+		<artifactId>6809-game-builder</artifactId>
+		<version>0.0.1</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<artifactId>gamebuilder-package</artifactId>
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.wide-dot</groupId>
+			<artifactId>gamebuilder-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.wide-dot</groupId>
+			<artifactId>stm2bin</artifactId>
+			<version>${project.version}</version>
+		</dependency>		
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<skipAssembly>false</skipAssembly>
+					<archive>
+						<manifest>
+							<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+						</manifest>
+					</archive>
+					<descriptors>
+						<descriptor>./src/main/packaging/engine-core-packaging.xml</descriptor>
+						<descriptor>./src/main/packaging/tools-packaging.xml</descriptor>
+						<descriptor>./src/main/packaging/jar-with-dependencies.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<finalName>ToolOne</finalName>
+					<executable>java</executable>
+					<arguments>
+						<argument>-jar</argument>
+						<argument>${project.build.outputDirectory}/${project.build.finalName}-jar-with-dependencies.jar</argument>
+					</arguments>
+					<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+				</configuration>
+			</plugin>		
+		</plugins>
+	</build>
+
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/wide-dot/6809-game-builder</url>
+		</repository>
+	</distributionManagement>
+
+</project>

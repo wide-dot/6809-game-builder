@@ -10,4 +10,33 @@
 	</parent>
 	<artifactId>gamebuilder-core</artifactId>
 	<packaging>jar</packaging>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>2.1.0</version>
+				<executions>
+					<execution>
+						<id>assemble</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<repositoryName>repo</repositoryName>	
+							<programs>
+								<program>
+									<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+									<id>gmb</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
