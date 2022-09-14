@@ -1,30 +1,51 @@
-    <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
-      <!-- TODO: a jarjar format would be better -->
-      <id>jar-with-dependencies</id>
-      <formats>
-        <format>jar</format>
-      </formats>
-      <includeBaseDirectory>false</includeBaseDirectory>
-      <dependencySets>
-        <dependencySet>
-          <outputDirectory>/</outputDirectory>
-          <useProjectArtifact>true</useProjectArtifact>
-          <unpack>true</unpack>
-          <scope>runtime</scope>
-        </dependencySet>
-      </dependencySets>
-      <files>
-        <file>
-            <source>${project.build.directory}/${project.build.finalName}-engine-core-packaging.zip</source>
-            <destName>engine-core.zip</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>${project.build.directory}/${project.build.finalName}-tools-packaging.zip</source>
-            <destName>tools.zip</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>     
-      </files>
-    </assembly>
+
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+	<!-- TODO: a jarjar format would be better -->
+	<id>jar-with-dependencies</id>
+	<formats>
+		<format>jar</format>
+	</formats>
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<dependencySets>
+		<dependencySet>
+			<outputDirectory>/</outputDirectory>
+			<useProjectArtifact>true</useProjectArtifact>
+			<unpack>true</unpack>
+			<scope>runtime</scope>
+		</dependencySet>
+	</dependencySets>
+	<files>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-engine-core-packaging.zip
+			</source>
+			<destName>engine-core.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-tools-core-packaging.zip
+			</source>
+			<destName>tools-core.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-tools-win-packaging.zip
+			</source>
+			<destName>tools-win.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-tools-macos-packaging.zip
+			</source>
+			<destName>tools-macos.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-tools-linux-packaging.zip
+			</source>
+			<destName>tools-linux.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+	</files>
+</assembly>
