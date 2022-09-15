@@ -1,6 +1,6 @@
 # 6809-game-builder
 ## Description
-The wide-dot 6809 game builder is a multiplatform toolset and game engine for 6809 computers.
+The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolset and game engine for 6809 computers.
 
 ### Currently supported computers
 
@@ -51,9 +51,11 @@ To produce the JAR and all its dependencies, including engine (asm) and tools (l
 $ mvn clean compile assembly:single
 ```
 
-Then the uber-jar is in `.\target\6809-game-builder-X.X.X-SNAPSHOT-jar-with-dependencies.jar`
+Then the uber-jar is in `.\package\target\gamebuilder-package-x.x.x-jar-with-dependencies.jar`
 
 ## Tutorials
+
+[unpack tools][unpack-tools]
 
 [setup a game][setup-a-game]
 
@@ -79,6 +81,7 @@ Then the uber-jar is in `.\target\6809-game-builder-X.X.X-SNAPSHOT-jar-with-depe
 [6809-game-demo]: https://github.com/wide-dot/6809-game-demo
 [sonic2]: doc/demo.gif
 [dott]: doc/demo2.gif
+[unpack-tools]: doc/unpack-tools.md
 [setup-a-game]: doc/setup-a-game.md
 [build-a-game]: doc/build-a-game.md
 [objects]: doc/objects.md
