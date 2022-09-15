@@ -3,6 +3,7 @@ package com.widedot.m6809.gamebuilder;
 import com.widedot.m6809.gamebuilder.builder.BuildDisk;
 import com.widedot.m6809.gamebuilder.builder.Game;
 import com.widedot.m6809.gamebuilder.builder.RamLoaderCompiler;
+import com.widedot.m6809.gamebuilder.unpack.enginecore.Startup;
 
 import lombok.extern.slf4j.Slf4j;
 

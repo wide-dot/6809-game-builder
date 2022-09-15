@@ -18,12 +18,6 @@
 	</dependencySets>
 	<files>
 		<file>
-			<source>${project.build.directory}/${project.build.finalName}-engine-core-packaging.zip
-			</source>
-			<destName>engine-core.zip</destName>
-			<outputDirectory>/</outputDirectory>
-		</file>
-		<file>
 			<source>${project.build.directory}/${project.build.finalName}-tools-core-packaging.zip
 			</source>
 			<destName>tools-core.zip</destName>

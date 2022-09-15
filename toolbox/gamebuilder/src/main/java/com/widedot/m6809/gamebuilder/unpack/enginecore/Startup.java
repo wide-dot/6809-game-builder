@@ -1,11 +1,10 @@
-package com.widedot.m6809.gamebuilder;
+package com.widedot.m6809.gamebuilder.unpack.enginecore;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +14,8 @@ import net.lingala.zip4j.model.LocalFileHeader;
 @Slf4j
 public class Startup
 {
-	public static final String TMP_DIR = "./";	
-	public static final Path TMP_DIR_PATH = Path.of(TMP_DIR).normalize().toAbsolutePath();
+	public static String prjDir = "./";	
+	public static Path prjDirPath = Path.of(prjDir).normalize().toAbsolutePath();
 	
 	private Startup()
 	{
@@ -29,27 +28,34 @@ public class Startup
 		IOUtils.copy(stream, System.out);		
 	}
 
-	public static void createTemporaryDirectory(boolean erase) throws IOException
+	public static boolean createProjectDirectory(String dir) throws IOException
 	{
-		if (erase)
-		{
-			log.info("Erasing existing temporary directory : {} ", TMP_DIR_PATH);
-			FileUtils.deleteDirectory(TMP_DIR_PATH.toFile());
+		prjDir = dir;
+		if (dir == null || dir.equals("")) {
+			log.info("No directory to create.");
 		}
-		Files.createDirectories(TMP_DIR_PATH);
+		prjDirPath = Path.of(prjDir).normalize().toAbsolutePath();
+		
+		if (!Files.exists(prjDirPath)) {
+			Files.createDirectories(prjDirPath);
+		} else {
+			log.info("The directory " + prjDir + " already exists.");
+			return false;
+		}
+		return true;
 	}
 
 	public static void extractResource(String resourceName, boolean executable) throws IOException
 	{
 		InputStream toolsStream = Startup.class.getResourceAsStream(resourceName);
-		log.info("Extracting {} in {}", resourceName, TMP_DIR_PATH);
+		log.info("Extracting {} in {}", resourceName, prjDirPath);
 
 		try (ZipInputStream zipInputStream = new ZipInputStream(toolsStream))
 		{
 			LocalFileHeader localFileHeader;
 			while ((localFileHeader = zipInputStream.getNextEntry()) != null)
 			{
-				Path extractedPath = Path.of(TMP_DIR, localFileHeader.getFileName());
+				Path extractedPath = Path.of(prjDir, localFileHeader.getFileName());
 				Startup.extractFile(executable, zipInputStream, localFileHeader, extractedPath);
 			}
 		}

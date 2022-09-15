@@ -32,11 +32,10 @@
 					<skipAssembly>false</skipAssembly>
 					<archive>
 						<manifest>
-							<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+							<mainClass>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</mainClass>
 						</manifest>
 					</archive>
 					<descriptors>
-						<descriptor>./src/main/packaging/engine-core-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/tools-core-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/tools-win-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/tools-macos-packaging.xml</descriptor>
@@ -64,7 +63,7 @@
 						<argument>-jar</argument>
 						<argument>${project.build.outputDirectory}/${project.build.finalName}-jar-with-dependencies.jar</argument>
 					</arguments>
-					<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+					<mainClass>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</mainClass>
 				</configuration>
 			</plugin>		
 		</plugins>

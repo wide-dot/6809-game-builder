@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder;
+package com.widedot.m6809.gamebuilder.unpack.tools;
 
 import com.widedot.m6809.gamebuilder.util.OSValidator;
 
@@ -12,6 +12,8 @@ public class MainProg
 		try {
 			
 			Startup.showSplash();
+			log.info("6809-game-builder - unpack tools");
+			
 			Startup.extractResource("/tools-core.zip", true);
 			if (OSValidator.IS_WINDOWS) {
 				Startup.extractResource("/tools-win.zip", true);

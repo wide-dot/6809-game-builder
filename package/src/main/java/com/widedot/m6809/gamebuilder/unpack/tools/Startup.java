@@ -1,18 +1,12 @@
-package com.widedot.m6809.gamebuilder;
+package com.widedot.m6809.gamebuilder.unpack.tools;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-
-import com.widedot.m6809.gamebuilder.builder.BuildDisk;
-import com.widedot.m6809.gamebuilder.builder.Game;
-import com.widedot.m6809.gamebuilder.unpack.enginecore.Startup;
 
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.io.inputstream.ZipInputStream;
@@ -21,7 +15,7 @@ import net.lingala.zip4j.model.LocalFileHeader;
 @Slf4j
 public class Startup
 {
-	public static final String TMP_DIR = "./_tmp";	
+	public static final String TMP_DIR = "./";	
 	public static final Path TMP_DIR_PATH = Path.of(TMP_DIR).normalize().toAbsolutePath();
 	
 	private Startup()
@@ -72,27 +66,6 @@ public class Startup
 			Files.copy(zipInputStream, extractedPath);
 			extractedPath.toFile().setExecutable(executable);
 		}
-	}
-
-	public static void clean() throws IOException {
-		log.info("Delete RAM data files ...");
-	
-		File file = new File (Game.generatedCodeDirName+"RAM data/"+BuildDisk.MODE_LABEL[BuildDisk.FLOPPY_DISK]+"/tmp");
-		file.getParentFile().mkdirs();
-		file = new File (Game.generatedCodeDirName+"RAM data/"+BuildDisk.MODE_LABEL[BuildDisk.MEGAROM_T2]+"/tmp");
-		file.getParentFile().mkdirs();		
-		
-		final File downloadDirectory = new File(Game.generatedCodeDirName+"RAM data/"+BuildDisk.MODE_LABEL[BuildDisk.FLOPPY_DISK]);   
-	    final File[] files = downloadDirectory.listFiles( (dir,name) -> name.matches(".*\\.raw" ));
-	    Arrays.asList(files).stream().forEach(File::delete);
-	    final File[] filesExo = downloadDirectory.listFiles( (dir,name) -> name.matches(".*\\.exo" ));
-	    Arrays.asList(filesExo).stream().forEach(File::delete);	
-	    
-		final File downloadDirectoryT2 = new File(Game.generatedCodeDirName+"RAM data/"+BuildDisk.MODE_LABEL[BuildDisk.MEGAROM_T2]);   
-	    final File[] filesT2 = downloadDirectoryT2.listFiles( (dir,name) -> name.matches(".*\\.raw" ));
-	    Arrays.asList(filesT2).stream().forEach(File::delete);
-	    final File[] filesT2Exo = downloadDirectoryT2.listFiles( (dir,name) -> name.matches(".*\\.exo" ));
-	    Arrays.asList(filesT2Exo).stream().forEach(File::delete);		    
 	}
 
 }
