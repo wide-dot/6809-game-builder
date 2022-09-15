@@ -36,7 +36,7 @@ You should now have this directory structure :
          |___ bin  (launch scripts for java tools and native tools)
          |___ repo (java binaries)
 
-Note : Native tools will unpack based on the platform name.
+Note : The native tools to unpack will be chosen based on the acutal runtime platform.
 
 ## Update your PATH
 
