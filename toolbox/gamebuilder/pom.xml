@@ -25,13 +25,13 @@
 							<skipAssembly>false</skipAssembly>
 							<archive>
 								<manifest>
-									<mainClass>com.widedot.m6809.gamebuilder.unpack.enginecore.MainProg</mainClass>
+									<mainClass>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</mainClass>
 								</manifest>
 							</archive>
 							<descriptors>
-								<descriptor>./src/main/packaging/engine-core-packaging.xml</descriptor>
+								<descriptor>./src/main/packaging/engine-packaging.xml</descriptor>
 							</descriptors>
-							<finalName>engine-core</finalName>
+							<finalName>engine</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
 						</configuration>
@@ -43,16 +43,24 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
 				<version>2.1.0</version>
-				<configuration>
-					<assembleDirectory>${project.parent.basedir}</assembleDirectory>
-					<repositoryName>repo</repositoryName>
-					<programs>
-						<program>
-							<mainClass>com.widedot.m6809.gamebuilder.unpack.enginecore.MainProg</mainClass>
-							<id>gmb</id>
-						</program>
-					</programs>
-				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<repositoryName>repo</repositoryName>
+							<programs>
+								<program>
+									<mainClass>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</mainClass>
+									<id>gmb</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

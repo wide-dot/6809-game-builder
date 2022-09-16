@@ -10,6 +10,8 @@
 
  ifndef TO8_CONSTANTS_ASM
 TO8_CONSTANTS_ASM equ 1
+        INCLUDE "./engine/constants.asm"
+        INCLUDE "./engine/system/to8/memory-map.equ"
 
 * ===========================================================================
 * Globals

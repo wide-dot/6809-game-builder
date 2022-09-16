@@ -11,7 +11,7 @@
 *
 ********************************************************************************
 
-        INCLUDE "./engine/constants.asm"
+        INCLUDE "./engine/system/to8/constants.asm"
         INCLUDE "./engine/macros.asm"          
         
         org   $6200

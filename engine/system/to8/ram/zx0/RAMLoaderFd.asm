@@ -16,7 +16,7 @@
 *
 ********************************************************************************
 
-        INCLUDE "./engine/constants.asm"
+        INCLUDE "./engine/system/to8/constants.asm"
         
         org   $4000
         opt   c,ct

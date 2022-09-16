@@ -23,6 +23,7 @@
 * Lecture des donnees de la page
 * Sauvegarde des donnees sur la sd
 ********************************************************************************
+        INCLUDE "./engine/system/to8/constants.asm"
 
         org   $6300
         lds   #$A000                        ; reinit de la pile systeme

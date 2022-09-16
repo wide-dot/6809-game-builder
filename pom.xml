@@ -81,6 +81,7 @@
 
 	<modules>
 		<module>./toolbox/gamebuilder</module>
+		<module>./toolbox/gamebuilder/system/to8</module>		
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./package</module>
 	</modules>

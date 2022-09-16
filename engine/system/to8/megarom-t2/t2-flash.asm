@@ -16,6 +16,7 @@
 * pour chaque page lecture des secteurs de 1 a 16
 * pas d'entrelacement car les donnees sont chargees depuis SDDRIVE
 ********************************************************************************
+        INCLUDE "./engine/system/to8/constants.asm"
 
         org   $6300
         lds   #$A000                   ; reinit de la pile systeme

@@ -24,15 +24,24 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<configuration>
-					<assembleDirectory>${project.parent.basedir}</assembleDirectory>
-					<programs>
-						<program>
-							<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
-							<id>gamebuilder-to8</id>
-						</program>
-					</programs>
-				</configuration>
+				<executions>
+					<execution>
+						<id>assemble</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<programs>
+								<program>
+									<mainClass>com.widedot.m6809.gamebuilder.to8.MainProg</mainClass>
+									<id>to8</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
