@@ -1,0 +1,9 @@
+mode-0 : Mode TO7/70            - 320x200x16 (2 colors for 8 horizontal points)
+mode-1 : Mode bit-map 4         - 320x200x4
+mode-s : Mode bit-map 4 special - 320x200x4
+mode-2 : Mode 80 colonnes       - 640x200x2
+mode-3 : Mode bit-map 16        - 160x200x16
+mode-4 : Mode page 1            - 320x200x1
+mode-5 : Mode page 2            - 320x200x1
+mode-6 : Mode overlay 1x        - 320x200x3 (2 layers)
+mode-7 : Mode overlay 3x        - 160x200x5 (4 layers)

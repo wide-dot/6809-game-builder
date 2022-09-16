@@ -18,38 +18,6 @@ _lds MACRO
         lds   #((\1)*256)+\2
  ENDM   
  
-_SetCartPageA MACRO
- IFDEF T2
-        jsr   SetCartPageA
- ELSE
-        sta   $E7E6                    ; selection de la page RAM en zone cartouche
- ENDC
- ENDM      
- 
-_GetCartPageA MACRO
- IFDEF T2
-        jsr   GetCartPageA
- ELSE
-        lda   $E7E6
- ENDC
- ENDM
-
-_SetCartPageB MACRO
- IFDEF T2
-        jsr   SetCartPageB
- ELSE
-        stb   $E7E6                    ; selection de la page RAM en zone cartouche
- ENDC
- ENDM      
- 
-_GetCartPageB MACRO
- IFDEF T2
-        jsr   GetCartPageB
- ELSE
-        ldb   $E7E6
- ENDC
- ENDM     
-
 _RunObjectSwap MACRO
         ; param 1 : ObjID_
         ; param 2 : Object data RAM address

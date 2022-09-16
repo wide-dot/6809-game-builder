@@ -1,5 +1,7 @@
 ; arctangent of y/x
 ; -----------------
+; Work in progress ...
+;
 ; Calculate the angle, in a 256-degree circle, between two points.
 ; The trick is to use logarithmic division to get the y/x ratio and
 ; integrate the power function into the atan table. Some branching is

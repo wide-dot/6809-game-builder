@@ -108,10 +108,10 @@
 *
 * ---------------------------------------------------------------------------
 
+        setdp dp
+
 PSG_STOPPED         equ 0
 PSG_PLAYING         equ 1
-
-PSGDataPort         equ $E7FF
 
 PSGLatch            equ $80
 PSGData             equ $40
@@ -180,18 +180,18 @@ PSGStop
         lda   PSGMusicStatus                          ; if it's already stopped, leave
         beq   PSGStop_end
         lda   #PSGLatch|PSGChannel0|PSGVolumeData|$0F ; latch channel 0, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   #PSGLatch|PSGChannel1|PSGVolumeData|$0F ; latch channel 1, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChannel2SFX
         bne   PSGStop2
         lda   #PSGLatch|PSGChannel2|PSGVolumeData|$0F ; latch channel 2, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGStop2
         lda   PSGChannel3SFX
         bne   PSGStop3
         lda   #PSGLatch|PSGChannel3|PSGVolumeData|$0F ; latch channel 3, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGStop3
         lda   #PSG_STOPPED                            ; ld a,PSG_STOPPED
         sta   PSGMusicStatus                          ; set status to PSG_STOPPED
@@ -208,29 +208,29 @@ PSGResume
         bne   PSGResume_end
         lda   PSGChan0Volume                          ; restore channel 0 volume
         ora   #PSGLatch|PSGChannel0|PSGVolumeData
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan1Volume                          ; restore channel 1 volume
         ora   #PSGLatch|PSGChannel1|PSGVolumeData
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChannel2SFX
         bne   PSGResume1
         lda   PSGChan2LowTone                         ; restore channel 2 frequency
         ora   #PSGLatch|PSGChannel2
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan2HighTone
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan2Volume                          ; restore channel 2 volume
         ora   #PSGLatch|PSGChannel2|PSGVolumeData
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGResume1
         lda   PSGChannel3SFX
         bne   PSGResume2
         lda   PSGChan3LowTone                         ; restore channel 3 frequency
         ora   #PSGLatch|PSGChannel3
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan3Volume                          ; restore channel 3 volume
         ora   #PSGLatch|PSGChannel2|PSGVolumeData
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGResume2
         lda   #PSG_PLAYING
         sta   PSGMusicStatus                          ; set status to PSG_PLAYING
@@ -269,7 +269,7 @@ PSGSetMusicVolumeAttenuation
         lda   #$0F                                    ; else, reset to 15
 PSGSetMusicVolumeAttenuation1
         ora   #PSGLatch|PSGChannel0|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
         
         lda   PSGChan1Volume
         anda  #$0F
@@ -279,7 +279,7 @@ PSGSetMusicVolumeAttenuation1
         lda   #$0F                                    ; else, reset to 15
 PSGSetMusicVolumeAttenuation2
         ora   #PSGLatch|PSGChannel1|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte        
+        sta   SN76489.D                             ; output the byte        
   
 
         lda   PSGChannel2SFX                          ; channel 2 busy with SFX?
@@ -293,7 +293,7 @@ PSGSetMusicVolumeAttenuation2
         lda   #$0F                                    ; else, reset to 15
 PSGSetMusicVolumeAttenuation3
         ora   #PSGLatch|PSGChannel2|PSGVolumeData
-        sta   PSGDataPort 
+        sta   SN76489.D 
 
 _restore_channel3
         lda   PSGChannel3SFX                          ; channel 3 busy with SFX?
@@ -307,7 +307,7 @@ _restore_channel3
         lda   #$0F                                    ; else, reset to 15
 PSGSetMusicVolumeAttenuation4
         ora   #PSGLatch|PSGChannel3|PSGVolumeData
-        sta   PSGDataPort 
+        sta   SN76489.D 
         
 PSGSetMusicVolumeAttenuation_end
         rts
@@ -318,13 +318,13 @@ PSGSetMusicVolumeAttenuation_end
 
 PSGSilenceChannels 
         lda   #PSGLatch|PSGChannel0|PSGVolumeData|$0F ; latch channel 0, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   #PSGLatch|PSGChannel1|PSGVolumeData|$0F ; latch channel 1, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   #PSGLatch|PSGChannel2|PSGVolumeData|$0F ; latch channel 2, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   #PSGLatch|PSGChannel3|PSGVolumeData|$0F ; latch channel 3, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
         rts
 
 * ************************************************************************************
@@ -343,7 +343,7 @@ PSGRestoreVolumes
         lda   #$0F                                    ; else, reset to 15
 PSGRestoreVolumes1
         ora   #PSGLatch|PSGChannel0|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
 
         lda   PSGChan1Volume
         anda  #$0F
@@ -353,7 +353,7 @@ PSGRestoreVolumes1
         lda   #$0F                                    ; else, reset to 15
 PSGRestoreVolumes2
         ora   #PSGLatch|PSGChannel1|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
   
 _chkchn2
         lda   PSGChannel2SFX                          ; channel 2 busy with SFX?
@@ -375,7 +375,7 @@ _restoreSFX2
         anda  $0F
 PSGRestoreVolumes3
         ora   #PSGLatch|PSGChannel2|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
 
 _chkchn3
         lda   PSGChannel3SFX                          ; channel 3 busy with SFX?
@@ -397,7 +397,7 @@ _restoreSFX3
         anda  #$0F
 PSGRestoreVolumes4
         ora   #PSGLatch|PSGChannel3|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
 _restoreSFX2_end
         rts
 
@@ -443,7 +443,7 @@ PSGSFXPlay3
         lda   #PSG_PLAYING
         sta   PSGChannel3SFX                          ; otherwise mark channel 3 as occupied by the SFX
         lda   #PSGLatch|PSGChannel3|PSGVolumeData|$0F ; and silence channel 3
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGSFXPlayLoop_end        
         rts
 
@@ -458,12 +458,12 @@ PSGSFXStop
         lda   PSGChannel2SFX                          ; channel 2 playing?
         beq   PSGSFXStop1
         lda   #PSGLatch|PSGChannel2|PSGVolumeData|$0F ; latch channel 2, volume=0xF (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGSFXStop1
         lda   PSGChannel3SFX                          ; channel 3 playing?
         beq   PSGSFXStop2
         lda   #PSGLatch|PSGChannel3|PSGVolumeData|$0F ; latch channel 3, volume=0xf (silent)
-        sta   PSGDataPort
+        sta   SN76489.D
 PSGSFXStop2
         lda   PSGMusicStatus                          ; check if a tune is playing
         beq   _skipRestore                            ; if it's not playing, skip restoring PSG values
@@ -472,10 +472,10 @@ PSGSFXStop2
         lda   PSGChan2LowTone
         anda  #$0F                                    ; use only low 4 bits of byte
         ora   #PSGLatch|PSGChannel2                   ; latch channel 2, low part of tone
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan2HighTone                        ; high part of tone (latched channel 2, tone)
         anda  #$3F                                    ; use only low 6 bits of byte
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan2Volume                          ; restore music' channel 2 volume
         anda  #$0F                                    ; use only low 4 bits of byte
         adda  PSGMusicVolumeAttenuation
@@ -484,14 +484,14 @@ PSGSFXStop2
         lda   #$0F                                    ; else, reset to 15
 PSGSFXStop3
         ora   #PSGLatch|PSGChannel2|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
 _skip_chn2
         lda   PSGChannel3SFX                          ; channel 3 playing?
         beq   _skip_chn3
         lda   PSGChan3LowTone
         anda  $07                                     ; use only low 3 bits of byte
         ora   #PSGLatch|PSGChannel3                   ; latch channel 3, low part of tone (no high part)
-        sta   PSGDataPort
+        sta   SN76489.D
         lda   PSGChan3Volume                          ; restore music' channel 3 volume
         anda  #$0F                                    ; use only low 4 bits of byte
         adda  PSGMusicVolumeAttenuation
@@ -500,7 +500,7 @@ _skip_chn2
         lda   #$0F                                    ; else, reset to 15
 PSGSFXStop4
         ora   #PSGLatch|PSGChannel3|PSGVolumeData
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
 
 _skip_chn3
         lda   #PSG_STOPPED                            ; ld a,PSG_STOPPED
@@ -531,7 +531,7 @@ PSGSFXGetStatus
 * ************************************************************************************
 * processes a music frame
 * destroys A,B,X
-        
+        setdp EXTPORT
 PSGFrame 
         lda   PSGMusicStatus                          ; check if we have got to play a tune
         bne   PSGFrame_continue
@@ -576,7 +576,7 @@ _continue
         beq   _send2PSG                               ; if no SFX is playing jump
         sta   PSGChannel3SFX                          ; otherwise mark channel 3 as occupied
         lda   #PSGLatch|PSGChannel3|PSGVolumeData|$0F ; and silence channel 3
-        sta   PSGDataPort
+        sta   SN76489.D
         bra   _intLoop
 
 _ifchn2
@@ -612,7 +612,7 @@ _chn2
         bra   _intLoop
         
 _send2PSG
-        stb   PSGDataPort                             ; output the byte
+        stb   SN76489.D                             ; output the byte
         bra   _intLoop            
   
 _skipFrame
@@ -666,7 +666,7 @@ _sendVolume2PSG1
         anda  #$F0                                    ; keep upper nibble
 _sendVolume2PSG2        
         ora   #0                                      ; set attenuated volume
-        sta   PSGDataPort                             ; output the byte
+        sta   SN76489.D                             ; output the byte
         jmp   _intLoop
 
 _output_NoLatch
@@ -745,7 +745,7 @@ _SFXvolumechn3
         stb   PSGSFXChan3Volume
 
 _SFXoutbyte
-        stb   PSGDataPort                             ; output the byte
+        stb   SN76489.D                             ; output the byte
         bra   _intSFXLoop
   
 _skipSFXFrame
@@ -799,6 +799,8 @@ _SFXsubstring
         ldx   PSGSFXStart
         leax  d,x                                     ; make substring current
         bra   _intSFXLoop
+
+        setdp dp
 
   * fundamental vars
 PSGMusicStatus             fcb   $00 ; are we playing a background music?

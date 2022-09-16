@@ -12,24 +12,8 @@
 CONSTANTS_ASM equ 1
 
 * ===========================================================================
-* TO8 Registers
-* ===========================================================================
-
-; Disk routine registers (ROM)
-
-dk_drive                      equ $6049
-dk_track                      equ $604A
-dk_track_lsb                  equ $604B
-dk_sector                     equ $604C
-dk_write_location             equ $604F
-
-* ===========================================================================
 * Globals
 * ===========================================================================
-
-; WARNING - BuildSprite allow to cross $A000 limit by glb_camera_x_offset/4
-; be sure to compile with enough margin here
-glb_ram_end                   equ $A000-3
 
 ; compilated sprite
 glb_register_s                equ glb_ram_end-2             ; reverved space to store S from ROM routines
@@ -61,7 +45,6 @@ glb_timer_frame               equ glb_timer-1
 glb_Page                      equ glb_timer_frame-1
 dp_engine                     equ glb_Page-40  ; engine routines tmp var space
 dp_extreg                     equ dp_engine-28 ; extra register space (user and engine common)
-dp                            equ $9F00        ; user space
 glb_system_stack              equ dp
 
 ; generic direct page extra registers
@@ -99,11 +82,6 @@ glb_a4_b equ   dp_extreg+27
 * Display Constants
 * ===========================================================================
 
-screen_width                  equ 160    ; in pixel
-screen_top                    equ 28     ; in pixel
-screen_bottom                 equ 28+199 ; in pixel
-screen_left                   equ 48     ; in pixel
-screen_right                  equ 48+159 ; in pixel
 nb_priority_levels            equ 8      ; number of priority levels (need code change if modified)
 
 * ===========================================================================
