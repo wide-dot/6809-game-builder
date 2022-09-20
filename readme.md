@@ -18,7 +18,7 @@ The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolse
 
 Demonstrations are available in a dedicated repository : [6809-game-demo]
 
-![sonic2|336x212][sonic2] ![dott|336x212][dott] 
+![sonic2][sonic2] ![dott][dott] 
 
 ### Main features
 
