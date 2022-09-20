@@ -26,3 +26,4 @@ dp                            equ $9F00 ; user space from dp to dp_extreg
 ; WARNING - BuildSprite allow to cross $A000 limit by glb_camera_x_offset/4
 ; be sure to compile with enough margin here
 glb_ram_end                   equ $A000-3
+ endc

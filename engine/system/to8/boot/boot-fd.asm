@@ -144,7 +144,7 @@ DKLecture
         lda   #$02
         sta   <DK.SEC                  ; DK.SEC $02 Secteur
         sta   <DK.OPC                  ; DK.OPC $02 Operation - lecture d'un secteur
-DKCO
+!
         jsr   DKCO                     ; DKCO Appel Moniteur - lecture d'un secteur
         inc   <DK.SEC                  ; increment du registre Moniteur DK.SEC
         lda   <DK.SEC                  ; chargement de DK.SEC
@@ -163,7 +163,7 @@ DKContinue
         ldd   <DK.BUF                  ; chargement de la zone a ecrire DK.BUF
 dk_dernier_bloc                        
         cmpd  #Build_BootLastBlock     ; test debut du dernier bloc de 256 octets a ecrire
-        bls   DKCO                     ; si DK.BUF inferieur ou egal a la limite alors DKCO
+        bls   <                        ; si DK.BUF inferieur ou egal a la limite alors DKCO
 
 BOO_WaitVBL
         tst   CF74021.SYS1             ; le faisceau n'est pas dans l'ecran
