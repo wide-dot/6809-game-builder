@@ -19,6 +19,7 @@ public class MainProg
 		
 			Config.loadGameConfiguration(args[0]);
 			
+			
 			log.info("T2 Name : {}", game.t2Name);
 			
 			Startup.clean();
