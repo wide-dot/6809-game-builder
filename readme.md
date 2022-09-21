@@ -67,7 +67,7 @@ Then the uber-jar is in `.\package\target\gamebuilder-package-x.x.x-jar-with-dep
 
 [tilemaps][tilemaps]
 
-[audio][sprites]
+[audio][audio]
 
 
 ## Toolbox
