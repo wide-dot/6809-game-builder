@@ -101,6 +101,7 @@ To be able to reference routines and data inside an asm file (not only the begin
 
 Those symbols are global, it is recommended to prefix the name with the package name for multiple package projects.
 
+[runtime-link]: build-a-game.md#runtime-linking
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md
 [package-multi-page]: package-multi-page.md
