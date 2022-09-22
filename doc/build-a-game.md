@@ -1,3 +1,5 @@
+/[readme]/build-a-game
+
 Build a game
 =
 
@@ -73,10 +75,14 @@ To be able to resolve the page id of each ressource at runtime, a link task is e
 
 The dynamic link will also update page id references to [relocatable][package-relocatable] and [absolute][package-absolute] packages.
 
+In [relocatable][package-relocatable] package, the dynamic link is also able to update address references, it does not works for other types of packages.
+
 
 [SDDRIVE]: http://dcmoto.free.fr/bricolage/sddrive/index.html
 [Megarom T.2]: https://megarom.forler.ch/fr/
-
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md
 [package-multi-page]: package-multi-page.md
+
+[readme]: ../readme.md
+[build-a-game]: build-a-game.md

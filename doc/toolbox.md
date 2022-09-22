@@ -1,3 +1,5 @@
+/[readme]/toolbox
+
 # Toolbox
 Here you will find all tools provided by the game engine :
 
@@ -9,3 +11,4 @@ Here you will find all tools provided by the game engine :
 [stm2bin]: ../toolbox/graphics/tilemap/stm/readme.md
 [pcm2dpcm]: ../toolbox/third-party/src/audio/dpcm/readme.md
 
+[readme]: ../readme.md

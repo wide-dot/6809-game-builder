@@ -1,3 +1,5 @@
+/[readme]/unpack-tools
+
 # Unpack the 6809 game builder tools
 ## Description
 This guide will show how to unpack the game builder tools.
@@ -43,7 +45,4 @@ Note : The native tools to unpack will be chosen based on the acutal runtime pla
 Add the bin directory to your PATH.
 Needless to say, this will allow running all 6809 game builder tools anywhere in your system.
 
-
-
-
-
+[readme]: ../readme.md

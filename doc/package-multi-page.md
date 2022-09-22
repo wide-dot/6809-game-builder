@@ -1,3 +1,6 @@
+
+/[readme]/[build-a-game]/package-multi-page
+
 # Package: multi-page
 
 ## Description
@@ -77,7 +80,7 @@ The parameter is used to :
 This parameter sets the package origin address inside the page. This value is an offset of the package ram address.
 
 It is used :
-- assemble the code at an absolute address
+- to assemble the code at an absolute address
 - to know where the package should be loaded at runtime
 
 The value should be expressed in hexadecimal.
@@ -86,6 +89,7 @@ The value should be expressed in hexadecimal.
 ---
 
 The cluster size allows you to load a page in smaller parts than a whole page.  
+The value should be expressed in hexadecimal.
 
 Use case with the TO8 Thomson :
 
@@ -130,12 +134,17 @@ will produce those equates:
     pge_gfx01 equ <relative page>
     adr_gfx01 equ <absolute address>
 
-The pge_ equates is involved in [runtime link][runtime-link]
+The pge_ equate is involved in [runtime link][runtime-link]
+At runtime the linker will add to the pge_ value, the one used to load the package.
+The adr_ equate is not involved in runtime link, multi-page is intended to be absolute code.
 
 Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
 
-[runtime-link]: (build-a-game.md#runtime-linking)
+[runtime-link]: build-a-game.md#runtime-linking
 [package-element]: package-element.png
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md
 [package-multi-page]: package-multi-page.md
+
+[readme]: ../readme.md
+[build-a-game]: build-a-game.md
