@@ -13,7 +13,8 @@ To be able to resolve page id of a specific resource in the package, a [runtime 
 **package.xml**
 
     <package id="0" name="main" type="absolute" compression="zx0" org="$6100">
-        <asm>src/hello-world/main.asm</asm>
+        <asm name="hello">src/hello-world/main.asm</asm>
+        <bin name="sound">src/hello-world/sound.bin</bin>
     </package>
 
 ## Runtime usage
@@ -87,21 +88,25 @@ The package contains files, declared into asm or bin tags :
 
 The path of each file must be relative to the game project base directory.  
 
-Adding an "equ" parameter to the asm or bin tag will tell the builder to automatically generate two equates, to be able to reference address and page for this resource. Those equates will be generated in a single file for all the project, this file will be overwrite at each build.
+The name parameter is mandatory for asm and bin tags. The builder will generate a symbol that references the page for each resource. For bin tags, the builder will also generate a symbol for the starting address of the bin data.
+Those symbols will be generated in a single file for all the project, this file will be overwrite at each build.
 
 ex :
 
-        <asm name="hello">src/hello-world/main.asm</asm>
+    <asm name="hello">src/hello-world/main.asm</asm>
+    <bin name="sound">src/hello-world/sound.bin</bin>
 
-will produce those equates:
+will produce those symbols:
 
     pge_hello equ 0
-    adr_hello equ <absolute address>
+    pge_sound equ 0
+    adr_sound equ <absolute address>
 
-The pge_ equate is involved in [runtime link][runtime-link]
+The pge_ symbol is involved in [runtime link][runtime-link]
 At runtime the linker will add to the pge_ value, the one used to load the package.
+The adr_ symbol is not involved in runtime link, this package is using absolute addressing so this external symbol will be resolved by lwlink at build stage.
 
-Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
+Those symbols are global, it is recommended to prefix the name with the package name for multiple package projects.
 
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md

@@ -22,9 +22,9 @@ As the package spread over multiple pages, the package can only be relocated in 
 **package.xml**
 
     <package id="1" name="pkg_gfx" type="multi-page" compression="zx0" ram="$0000-3FFF" org-offset="$0" cluster-size="$2000">
-        <asm>src/gfx/object/obj01/obj01.asm</asm>
-        <asm>src/gfx/object/obj02/obj02.asm</asm>
-        <asm>src/gfx/object/obj03/obj03.asm</asm>
+        <asm name="obj01">src/gfx/object/obj01/obj01.asm</asm>
+        <asm name="obj02">src/gfx/object/obj02/obj02.asm</asm>
+        <asm name="obj03">src/gfx/object/obj03/obj03.asm</asm>
         <bin name="gfx01">src/gfx/object/obj01/gfx01.bin</bin>
     </package>
 
@@ -44,7 +44,7 @@ This id is used when you request the loading at runtime.
 ### name
 ---
 
-The name must be unique in your project. It can be used as an equate instead of the [id](#id).
+The name must be unique in your project. It can be used as an symbol instead of the [id](#id).
 
 ### type
 ---
@@ -123,22 +123,25 @@ The package contains files, declared into asm or bin tags :
 
 The path of each file must be relative to the game project base directory.  
 
-Adding an "equ" parameter to the asm or bin tag will tell the builder to automatically generate two equates, to be able to reference address and page for this resource. Those equates will be generated in a single file for all the project, this file will be overwrite at each build.
+The name parameter is mandatory for asm and bin tags. The builder will generate a symbol that references the page for each resource. For bin tags, the builder will also generate a symbol for the starting address of the bin data.
+Those symbols will be generated in a single file for all the project, this file will be overwrite at each build.
 
 ex :
 
+    <asm name="obj01">src/gfx/object/obj01/obj01.asm</asm>
     <bin name="gfx01">src/gfx/object/obj01/gfx01.bin</bin>
 
-will produce those equates:
+will produce those symbols:
 
-    pge_gfx01 equ <relative page>
+    pge_obj01 equ <relative page in package>
+    pge_gfx01 equ <relative page in package>
     adr_gfx01 equ <absolute address>
 
-The pge_ equate is involved in [runtime link][runtime-link]
+The pge_ symbol is involved in [runtime link][runtime-link]
 At runtime the linker will add to the pge_ value, the one used to load the package.
-The adr_ equate is not involved in runtime link, multi-page is intended to be absolute code.
+The adr_ symbol is not involved in runtime link, this package is using absolute addressing so this external symbol will be resolved by lwlink at build stage.
 
-Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
+Those symbols are global, it is recommended to prefix the name with the package name for multiple package projects.
 
 [runtime-link]: build-a-game.md#runtime-linking
 [package-element]: package-element.png

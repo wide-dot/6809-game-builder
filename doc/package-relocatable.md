@@ -14,7 +14,7 @@ To be able to resolve page id and address of a specific resource in the package,
 **package.xml**
 
     <package id="0" name="pkg_data" type="relocatable" compression="zx0">
-        <asm>src/data/code.asm</asm>
+        <asm name="code">src/data/code.asm</asm>
         <bin name="data">src/data/data.bin</bin>
     </package>
 
@@ -43,7 +43,7 @@ This id is used when you request the loading at runtime.
 ### name
 ---
 
-The name must be unique in your project. It can be used as an equate instead of the [id](#id).
+The name must be unique in your project. It can be used as a symbol instead of the [id](#id).
 
 ### type
 ---
@@ -79,23 +79,27 @@ The package contains files, declared into asm or bin tags :
 
 The path of each file must be relative to the game project base directory.  
 
-Adding an "equ" parameter to the asm or bin tag will tell the builder to automatically generate two equates, to be able to reference address and page for this resource. Those equates will be generated in a single file for all the project, this file will be overwrite at each build.
+The name parameter is mandatory for asm and bin tags. The builder will generate a symbol that references the page for each resource. For bin tags, the builder will also generate a symbol for the starting address of the bin data.
+Those symbols will be generated in a single file for all the project, this file will be overwrite at each build.
 
 ex :
 
-        <bin name="data">src/data/data.bin</bin>
+    <asm name="code">src/data/code.asm</asm>
+    <bin name="data">src/data/data.bin</bin>
 
-will produce those equates:
+will produce those symbols:
 
+    pge_code equ 0
     pge_data equ 0
-    adr_data equ <relative address>
+    adr_data equ <relative address in package>
 
-The pge_ and adr_ equates are involved in [runtime link][runtime-link].  
-At runtime the linker will add to those values, the one used to load the package.
+The pge_ symbol is involved in [runtime link][runtime-link]
+At runtime the linker will add to the pge_ value, the one used to load the package.
+The adr_ symbol is not involved in runtime link, multi-page is intended to be absolute code so this external symbol will be resolved by lwlink at build stage.
 
-To be able to reference routines and data inside an asm file (not only the begining of the file), all symbols that are declared with the "export" directive will also produce pge_ and adr_ equates. The same link process will be handled at runtime. This mechanism is only applicable to the asm files in relocatable package (other packages use absolute addressing).
+To be able to reference routines and data inside an asm file (not only the begining of the file), all symbols that are declared with the "export" directive will also produce adr_ symbols. The same link process will be handled at runtime. This mechanism is only applicable to the asm files in relocatable package (other packages use absolute addressing).
 
-Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
+Those symbols are global, it is recommended to prefix the name with the package name for multiple package projects.
 
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md
