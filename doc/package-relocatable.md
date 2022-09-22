@@ -5,9 +5,18 @@
         <bin>src/data/data.bin</bin>
     </package>
 
-Loading parameters:
-- package id
-- page
-- address
+## Runtime usage
 
-page is optionnal if target address is in resident memory.
+If the relocatable package is loaded in a commutable memory :
+
+            lda   #1     ; package id
+            ldb   #4     ; page id
+            ldx   #$1000 ; address
+            jsr   LoadRelocatablePackage
+
+If the relocatable package is loaded in the non-commutable memory :
+
+            lda   #2     ; package id
+            ldx   #$8000 ; address
+            jsr   LoadRelocatablePackage_nc
+

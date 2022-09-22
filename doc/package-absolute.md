@@ -4,9 +4,15 @@
         <asm>src/hello-world/main.asm</asm>
     </package>
 
-Loading parameters:
-- package id
-- page
+## Runtime usage
+If the relocatable package is loaded in a commutable memory :
 
-page is optionnal if target address is in resident memory.
+            lda   #1     ; package id
+            ldb   #4     ; page id
+            jsr   LoadAbsolutePackage
+
+If the relocatable package is loaded in the non-commutable memory :
+
+            lda   #2     ; package id
+            jsr   LoadAbsolutePackage_nc
 

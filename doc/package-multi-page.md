@@ -1,38 +1,60 @@
 # Package: multi-page
 
+## Description
+
+A multi-page package defines a set of code and data that can be loaded together in ram in a continuous page range.  
+At build stage, .asm and .bin files will be automatically rearranged to fill ram pages with the least amount of lost space (Knapsack problem).
+
+At runtime, the package will be loaded at the desired page in ram.
+To be able to resolve page id of a specific resource in the package, a [runtime link][runtime-link] is opered after the loading stage.
+
+Here is an illustration of a "3 page" package loaded to page 5 at runtime:
+
+![package-element][package-element]
+
+As the package spread over multiple pages, the package can only be relocated in different pages, not at different addresses.
 
 ## File structure
 
 **package.xml**
 
-    <package id="1" type="multi-page" compression="zx0" ram="$0000-3FFF" start-offset="$0" cluster-size="$2000">
-        <asm>src/sample-gfx/object/obj01/obj01.asm</asm>
-        <asm>src/sample-gfx/object/obj02/obj02.asm</asm>
-        <asm>src/sample-gfx/object/obj03/obj03.asm</asm>
+    <package id="1" name="pkg_gfx" type="multi-page" compression="zx0" ram="$0000-3FFF" org-offset="$0" cluster-size="$2000">
+        <asm>src/gfx/object/obj01/obj01.asm</asm>
+        <asm>src/gfx/object/obj02/obj02.asm</asm>
+        <asm>src/gfx/object/obj03/obj03.asm</asm>
+        <bin name="gfx01">src/gfx/object/obj01/gfx01.bin</bin>
     </package>
 
+## Runtime usage
 
-Loading parameters:
-- package id
-- page
+            lda   #pkg_gfx ; package id
+            ldb   #5       ; page id
+            jsr   LoadMultiPagePackage
 
+## Parameters
+### id
+---
 
-TODO - a mettre a jour :
+The package id is manually set and must be unique in your project.
+This id is used when you request the loading at runtime.
 
-In package-elements field, the values for :
- - compression
- - cluster-size
- - location
- - org
+### name
+---
 
-are the default values for package elements. Those values can be overided in each package-element.
+The name must be unique in your project. It can be used as an equate instead of the [id](#id).
 
-The path of each file must be relative to the game project base directory.  
+### type
+---
 
-The builder will report a fatal error if the binary produced for the package exceed the size declared by the end location minus the org starting position.
+The type can be set between those three values :
+- [relocatable][package-relocatable]
+- [absolute][package-absolute]
+- [multi-page][package-multi-page]
 
 ### compression
 ---
+The package content may be compressed or not. The compression is done on a whole page, or by [cluster-size](#cluster-size) if this parameter is set.
+When no compression is set (none), data is rearranged to be loaded by stackblast copy, the fastest available copy method.
 
 value|version|description|direction
 -|-|-|-
@@ -40,10 +62,30 @@ none|1|stack blast copy (preprocessed data)|backward
 exo|2|exomizer|backward
 zx0|1|zx0|forward
 
+### ram
+---
+
+The ram parameter is a range expressed in hexadecimal with a hyphen as separator. This value is the expected running location range for the code.
+
+The parameter is used to :
+- set the destination location in the package index.  
+- give the destination page size that is used to split the package into pages.
+
+### org-offset
+---
+
+This parameter sets the package origin address inside the page. This value is an offset of the package ram address.
+
+It is used :
+- assemble the code at an absolute address
+- to know where the package should be loaded at runtime
+
+The value should be expressed in hexadecimal.
+
 ### cluster-size
 ---
 
-The cluster size allows you to load a page in several steps.  
+The cluster size allows you to load a page in smaller parts than a whole page.  
 
 Use case with the TO8 Thomson :
 
@@ -55,74 +97,45 @@ $0000-$1FFF|$C000-DFFF
 $2000-$3FFF|$A000-BFFF
 
 Builder strategy
-- the package element is builded in a 16KiB space :  
+- the package is builded in a 16KiB space :  
 
-        <location>$0000-$3FFF</location>
+        ram="$0000-3FFF"
 
-- the package element is clustered in 8KiB :
+- and clustered in 8KiB :
 
-        <cluster-size>$2000</cluster-size>
+        cluster-size="$2000"
 
-- the builder will write an index with two 8KiB entries
+- the builder will write an index with two 8KiB entries for the loader
 
 Loader strategy
 - the loader will handle address translation and invert the two 8KiB bank, based on destination provided by the index
 
-### location
----
+### asm and bin files
+----
 
-The location is the expected running location for the code.
+The package contains files, declared into asm or bin tags :
+- asm files will be assembled, linked and included as binaries into the package.
+- bin files will be included in the package.
 
-The location is used to :
-- set the destination location in the package index.  
-- give the destination page size, used to split the package into pages.
+The path of each file must be relative to the game project base directory.  
 
-The value should be expressed in hexadecimal with an hyphen between the min and max value.  
-example : $0000-$3FFF
+Adding an "equ" parameter to the asm or bin tag will tell the builder to automatically generate two equates, to be able to reference address and page for this resource. Those equates will be generated in a single file for all the project, this file will be overwrite at each build.
 
-### org
----
+ex :
 
-The org sets the origin where the package begin, somewhere in a middle of a page. It is also used to assemble the code to the right location.
-The value should be expressed in hexadecimal.
+    <bin name="gfx01">src/gfx/object/obj01/gfx01.bin</bin>
 
-## Package element definition
----
+will produce those equates:
 
-A package element is a set of assembly files that will be assembled to make a binary. This binary will be loaded in a countiguous RAM space at runtime.
+    pge_gfx01 equ <relative page>
+    adr_gfx01 equ <absolute address>
 
-![package-element][package-element]
+The pge_ equates is involved in [runtime link][runtime-link]
 
-## File structure
+Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
 
-The package element is an assembly file that includes other assembly files.  
-This file can be created manually or generated by a tool.  
-The tool will find the layout that uses the less page space.
-			
-01.asm
----------
-
-    INCLUDE "obj01/obj01.asm"
-    INCLUDE "obj01/image/img01.asm"	
-    INCLUDE "obj01/image/img02.asm"
-    INCLUDE "obj01/image/img03.asm"			
-						
-		
-dans le code on a besoin de faire référence à la page d'un objet
-on déclare dans les constantes :
-PAGE_IDX equ 0
-			
-on déclare dans l'objet buzzer :
-pge_ehz_buzzer equ PAGE_IDX
-			
-on utilise dans le code ailleurs :
-lda   #pge_ehz_buzzer			
-			
-extraire des fichiers objets du package, les addresses d'utilisation des equates de tous les asm (liste plus haut)
-construction d'un index pour chaque mention :
-package id; page offset référence, adresse référence, page offset cible dans le package courant ou dans un autre
-			
-quand on référence une adresse de routine on a une adresse + offset de page dans le package
-L'adresse est résolue par link
-
+[runtime-link]: (build-a-game.md#runtime-linking)
 [package-element]: package-element.png
+[package-relocatable]: package-relocatable.md
+[package-absolute]: package-absolute.md
+[package-multi-page]: package-multi-page.md

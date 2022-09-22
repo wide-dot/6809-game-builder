@@ -68,22 +68,11 @@ There are three types of packages:
 
 ### Runtime linking
 A [multi-page package][package-multi-page] is assembled with absolute addressing, thus the loader will always load a package at the same ram address, but it may be loaded in different ram pages.  
-To be able to resolve the page id of each ressource at runtime, a link task is executed after loading all the required packaging in ram. It makes a dynamic update of the code.
+
+To be able to resolve the page id of each ressource at runtime, a link task is executed after loading all the required packaging in ram. The linker will get the page offset of the ressource and add the page number used to load the package. All references to this variable will then be updated in memory.
 
 The dynamic link will also update page id references to [relocatable][package-relocatable] and [absolute][package-absolute] packages.
 
-#### Build stage
-To declare a page id reference that will be handled by the dynamic link, you should use this syntax :
-
-    pge_tilemapLevel1 equ LINKER_page
-
-In this example the declaration should be written in the asm code where the tilemapLevel1 resides.
-
-When the builder will assemble the code, all references to LINKER_page will be replaced by the appropriate page offset in the multi-page package.
-For the relocatable and absolute packages, the value 0 will be set (there is always one page in this case)
-
-#### Link stage
-At runtime, the linker will get this page offset and add the page number used to load the package. All references to this variable will then be updated in memory.
 
 [SDDRIVE]: http://dcmoto.free.fr/bricolage/sddrive/index.html
 [Megarom T.2]: https://megarom.forler.ch/fr/
