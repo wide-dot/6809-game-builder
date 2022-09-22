@@ -93,7 +93,7 @@ will produce those equates:
 The pge_ and adr_ equates are involved in [runtime link][runtime-link].  
 At runtime the linker will add to those values, the one used to load the package.
 
-To be able to reference routines and data inside an asm file (not only the begining of the file), all symbols that are declared with the "export" directive will also produce pge_ and adr_ equates. The same link process will be handled at runtime.
+To be able to reference routines and data inside an asm file (not only the begining of the file), all symbols that are declared with the "export" directive will also produce pge_ and adr_ equates. The same link process will be handled at runtime. This mechanism is only applicable to the asm files in relocatable package (other packages use absolute addressing).
 
 Those equates are global, it is recommended to prefix the name with the package name for multiple package projects.
 
