@@ -56,11 +56,10 @@ The type can be set between those three values :
 ### compression
 ---
 The package content may be compressed or not. The compression is done on a whole page, or by [cluster-size](#cluster-size) if this parameter is set.
-When no compression is set (none), data is rearranged to be loaded by stackblast copy, the fastest available copy method.
 
 value|version|description|direction
 -|-|-|-
-none|1|stack blast copy (preprocessed data)|backward
+none|-|uncompressed|-
 exo|2|exomizer|backward
 zx0|1|zx0|forward
 
