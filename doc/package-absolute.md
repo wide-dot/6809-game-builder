@@ -82,7 +82,7 @@ The value should be expressed in hexadecimal.
 ### asm and bin files
 ----
 
-The package contains files, declared into asm or bin tags :
+The package contains files, declared into asm, bin or fileset tags :
 - asm files will be assembled, linked and included as binaries into the package.
 - bin files will be included in the package.
 

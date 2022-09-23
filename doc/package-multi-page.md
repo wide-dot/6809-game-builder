@@ -13,7 +13,7 @@ To be able to resolve page id of a specific resource in the package, a [runtime 
 
 Here is an illustration of a "3 page" package loaded to page 5 at runtime:
 
-![package-element][package-element]
+![package-img]
 
 As the package spread over multiple pages, the package can only be relocated in different pages, not at different addresses.
 
@@ -117,7 +117,7 @@ Loader strategy
 ### asm and bin files
 ----
 
-The package contains files, declared into asm or bin tags :
+The package contains files, declared into asm, bin or fileset tags :
 - asm files will be assembled, linked and included as binaries into the package.
 - bin files will be included in the package.
 
@@ -144,7 +144,7 @@ The adr_ symbol is not involved in runtime link, this package is using absolute 
 Those symbols are global, it is recommended to prefix the name with the package name for multiple package projects.
 
 [runtime-link]: build-a-game.md#runtime-linking
-[package-element]: package-element.png
+[package-img]: package-multi-page.png
 [package-relocatable]: package-relocatable.md
 [package-absolute]: package-absolute.md
 [package-multi-page]: package-multi-page.md
