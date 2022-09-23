@@ -141,11 +141,13 @@ The builder will :
 
 ### Ram index
 When using rom and ram at same time, Dynamic link will still be usable inside ram, but can not work in rom.  
-Acessing ram from rom requires the use of a ram index stored in non-commutable memory. The ram index will use the same symbols used for dynamic link and simply add a prefix "ptr_".
+Accessing ram from rom requires the use of a ram index stored in non-commutable memory. The ram index will be updated automatically by the Dynamic link, its up to the developper to set the ram index manually with the required values.
 
-Ram index will contain only the external symbols declared in rom and defined in ram packages. (TODO check for non-commutable)
+Example of ram index :
 
-example:
+    ptr_pge_obj01 fcb pge_obj01
+
+Usage
 
     lda ptr_pge_obj01 ; use from rom (ram index)
     lda #pge_obj01    ; use from ram (dynamic link)
