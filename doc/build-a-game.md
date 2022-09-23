@@ -111,7 +111,6 @@ Megarom T.2 images are produced the same way as for floppy disk, but add rom ban
 the boot parameters can be used to point to fileset resources if desired, it will start the program from the rom instead of ram.
 
 ### Package definition
----
 
 The purpose of a package is to be able to load a group of data and code in RAM by only using an id.
 
@@ -140,9 +139,11 @@ The builder will :
 - generate ram address symbols for all bin files
 - run the assembly stage to produce object files
 
-Dynamic link can not work in rom, accessing ram from rom requires the use of a ram index stored in non-commutable memory. The ram index will use the same symbols used for dynamic link and simply add a prefix "ptr_".
+### Ram index
+When using rom and ram at same time, Dynamic link will still be usable inside ram, but can not work in rom.  
+Acessing ram from rom requires the use of a ram index stored in non-commutable memory. The ram index will use the same symbols used for dynamic link and simply add a prefix "ptr_".
 
-Dynamic link will still work in ram.
+Ram index will contain only the external symbols declared in rom and defined in ram packages. (TODO check for non-commutable)
 
 example:
 
