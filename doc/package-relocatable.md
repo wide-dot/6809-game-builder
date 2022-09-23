@@ -56,6 +56,7 @@ The type can be set between those three values :
 ### compression
 ---
 The package content may be compressed or not. The compression is done on a whole page, or by [cluster-size](#cluster-size) if this parameter is set.
+When no compression is used, data of each package is padded to a sector size.
 
 value|version|description|direction
 -|-|-|-
