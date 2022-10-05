@@ -39,14 +39,12 @@ to8, to8d, to9+|[Megarom T.2] (rom)|2 GiB|.rom (loader in .sd)
 
     <system>to8</system>
     
-    <output-file>
-        <name>hello-world</name>
-        <type>fd</type>
-    </output-file>
+    <output-file name="hello-world" type="fd"/>
+    <define symbol="debug" value="1"/>
     
-    <boot load-pkg="pkg_gfx" set-page="pge_hello" call-address="adr_hello">engine/system/to8/boot/boot-fd.asm</boot>
+    <boot package="pkg_gfx" page="pge_hello" address="adr_hello">engine/system/to8/boot/boot-fd.asm</boot>
     <loader>engine/system/to8/ram/ram-loader-fd.asm</loader>
-    
+
     <packages>
         <package>src/package/hello-world.xml</package>
         <package>src/package/obj-01.xml</package>
@@ -59,10 +57,8 @@ to8, to8d, to9+|[Megarom T.2] (rom)|2 GiB|.rom (loader in .sd)
 
     <system>to8</system>
     
-    <output-file>
-        <name>hello-world</name>
-        <type>sd</type>
-    </output-file>
+    <output-file name="hello-world" type="sd"/>
+    <define symbol="debug" value="1"/>
     
     <boot load-pkg="pkg_gfx" set-page="pge_hello" call-address="adr_hello">engine/system/to8/boot/boot-fd.asm</boot>
     <loader>engine/system/to8/ram/ram-loader-sd.asm</loader>
@@ -79,10 +75,8 @@ to8, to8d, to9+|[Megarom T.2] (rom)|2 GiB|.rom (loader in .sd)
 
     <system>to8</system>
     
-    <output-file>
-        <name>hello-world</name>
-        <type>rom</type>
-    </output-file>
+    <output-file name="hello-world" type="rom"/>
+    <define symbol="debug" value="1"/>
     
     <boot set-page="pge_obj03" call-address="adr_obj03">engine/system/to8/boot/boot-t2.asm</boot>
     <loader>engine/system/to8/ram/ram-loader-t2.asm</loader>

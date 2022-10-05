@@ -35,7 +35,7 @@
 							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
 							<programs>
 								<program>
-									<mainClass>com.widedot.m6809.gamebuilder.to8.MainProg</mainClass>
+									<mainClass>com.widedot.m6809.newgamebuilder.to8.MainProg</mainClass>
 									<id>to8</id>
 								</program>
 							</programs>
