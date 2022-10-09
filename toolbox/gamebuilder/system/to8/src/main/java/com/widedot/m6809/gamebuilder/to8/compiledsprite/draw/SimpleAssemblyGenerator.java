@@ -356,5 +356,9 @@ public class SimpleAssemblyGenerator extends Encoder{
 
 	public int getY_size() {
 		return y_size;
-	}	
+	}
+	
+	public int getEraseDataSize() {
+		return 0;
+	}
 }

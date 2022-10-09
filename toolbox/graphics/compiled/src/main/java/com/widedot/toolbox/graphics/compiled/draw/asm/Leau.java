@@ -3,7 +3,7 @@ package com.widedot.toolbox.graphics.compiled.draw.asm;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.util.Register;
+import com.widedot.m6809.gamebuilder.util.asm.Register;
 
 public class Leau extends ASMCode {
 

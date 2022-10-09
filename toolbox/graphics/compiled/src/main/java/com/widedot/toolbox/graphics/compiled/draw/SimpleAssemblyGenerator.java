@@ -1,6 +1,5 @@
 package com.widedot.toolbox.graphics.compiled.draw;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -10,28 +9,26 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.widedot.toolbox.graphics.compiled.Encoder;
-import com.widedot.m6809.gamebuilder.util.Register;
-import com.widedot.m6809.gamebuilder.util.graphics.SpriteSheet;
 
+import lombok.extern.slf4j.Slf4j;
+
+import com.widedot.m6809.gamebuilder.util.asm.Register;
+import com.widedot.m6809.gamebuilder.util.graphics.Image;
+
+@Slf4j
 public class SimpleAssemblyGenerator extends Encoder{
 
 	int maxTries=500000;
-	
-	private static final Logger logger = LogManager.getLogger("log");
 
 	boolean FORWARD = true;
 	boolean REARWARD = false;
-	public String spriteName;
+	public String name;
 	public boolean spriteCenterEven;
 	private int cyclesDFrameCode;
 	private int sizeDFrameCode;
-	private int imageNum;
 	
 	private int x_offset;
 	private int x1_offset;
@@ -50,8 +47,8 @@ public class SimpleAssemblyGenerator extends Encoder{
 	
 	// Binary
 	private byte[] content;
-	private String asmDrawFileName, lstDrawFileName, binDrawFileName;
-	private Path asmDFile, lstDFile, binDFile;
+	private String asmDrawFileName;
+	private Path asmDFile;
 	
 	public static final int _NO_ALPHA = 0;
 	public static final int _ALPHA = 1;
@@ -60,76 +57,71 @@ public class SimpleAssemblyGenerator extends Encoder{
 	
 	private static boolean alpha = false;
 	
-	public SimpleAssemblyGenerator(SpriteSheet spriteSheet, String destDir, int imageNum, int alphaOption) throws Exception {
-		this.imageNum = imageNum;
-		spriteCenterEven = (spriteSheet.center % 2) == 0;
-		spriteName = spriteSheet.getName();
-		x1_offset = spriteSheet.getSubImageX1Offset(imageNum);
-		y1_offset = spriteSheet.getSubImageY1Offset(imageNum);
-		x_size = spriteSheet.getSubImageXSize(imageNum);
-		y_size = spriteSheet.getSubImageYSize(imageNum);
+	public SimpleAssemblyGenerator(Image img, String destDir, int alphaOption) throws Exception {
+		spriteCenterEven = (img.center % 2) == 0;
+		name = img.getName()+img.getType();
+		x1_offset = img.getSubImageX1Offset();
+		y1_offset = img.getSubImageY1Offset();
+		x_size = img.getSubImageXSize();
+		y_size = img.getSubImageYSize();
 
-		logger.debug("\t\t\tPlanche:"+spriteName+" image:"+imageNum);
-		logger.debug("\t\t\tXOffset: "+getX_offset());;
-		logger.debug("\t\t\tX1Offset: "+getX1_offset());
-		logger.debug("\t\t\tY1Offset: "+getY1_offset());
-		logger.debug("\t\t\tXSize: "+getX_size());
-		logger.debug("\t\t\tYSize: "+getY_size());	
-		logger.debug("\t\t\tCenter: "+spriteSheet.getCenter());
+		log.debug("\t\t\tImage:"+name);
+		log.debug("\t\t\tXOffset: "+getX_offset());;
+		log.debug("\t\t\tX1Offset: "+getX1_offset());
+		log.debug("\t\t\tY1Offset: "+getY1_offset());
+		log.debug("\t\t\tXSize: "+getX_size());
+		log.debug("\t\t\tYSize: "+getY_size());	
+		log.debug("\t\t\tCenter: "+img.getCenter());
 		
 		switch (alphaOption) {
 		case _NO_ALPHA: alpha = false;
 		        break;
-		case _ALPHA: alpha = spriteSheet.getAlpha(imageNum);
+		case _ALPHA: alpha = img.getAlpha();
 		        break;
-		case _ODD_ALPHA: alpha = spriteSheet.getOddAlpha(imageNum);
+		case _ODD_ALPHA: alpha = img.getOddAlpha();
         		break;
-		case _EVEN_ALPHA: alpha = spriteSheet.getEvenAlpha(imageNum);
+		case _EVEN_ALPHA: alpha = img.getEvenAlpha();
         		break;
         default: alpha = false;
 		}
-		logger.debug("\t\t\tAlpha: "+alpha);
+		log.debug("\t\t\tAlpha: "+alpha);
 		
-		destDir += "/"+spriteName;
-		asmDrawFileName = destDir+"_"+imageNum+"_"+spriteSheet.variant+".asm";
+		destDir += "/"+name;
+		asmDrawFileName = destDir+".asm";
 		File file = new File (asmDrawFileName);
 		file.getParentFile().mkdirs();		
 		asmDFile = Paths.get(asmDrawFileName);
-		lstDrawFileName = destDir+"_"+imageNum+"_"+spriteSheet.variant+".lst";
-		lstDFile = Paths.get(lstDrawFileName);
-		binDrawFileName = destDir+"_"+imageNum+"_"+spriteSheet.variant+".bin";
-		binDFile = Paths.get(binDrawFileName);
 
-		//logger.debug("RAM 0 (val hex 0 à f par pixel, . Transparent):");
-		//if (logger.isDebugEnabled())
-			//logger.debug(debug80Col(spriteSheet.getSubImagePixels(imageNum, 0)));
+		//log.debug("RAM 0 (val hex 0 à f par pixel, . Transparent):");
+		//if (log.isDebugEnabled())
+			//log.debug(debug80Col(img.getSubImagePixels(, 0)));
 		
-		PatternFinder cs = new PatternFinder(spriteSheet.getSubImagePixels(imageNum, 0));
+		PatternFinder cs = new PatternFinder(img.getSubImagePixels(0));
 		cs.buildCode(REARWARD);
 		Solution solution = cs.getSolutions().get(0);
 
-		PatternCluster cluster = new PatternCluster(solution, spriteSheet.getCenter());
+		PatternCluster cluster = new PatternCluster(solution, img.getCenter());
 		cluster.cluster(REARWARD);
 
-		SolutionOptim regOpt = new SolutionOptim(solution, spriteSheet.getSubImageData(imageNum, 0), maxTries);
+		SolutionOptim regOpt = new SolutionOptim(solution, img.getSubImageData(0), maxTries);
 		regOpt.build();
 
 		spriteCode1 = regOpt.getAsmCode();
 		cyclesSpriteCode1 = regOpt.getAsmCodeCycles();
 		sizeSpriteCode1 = regOpt.getAsmCodeSize();
 
-		//logger.debug("\t\t\tRAM 1 (val hex 0  à f par pixel, . Transparent):");
-		//if (logger.isDebugEnabled())
-			//logger.debug(debug80Col(spriteSheet.getSubImagePixels(imageNum, 1)));
+		//log.debug("\t\t\tRAM 1 (val hex 0  à f par pixel, . Transparent):");
+		//if (log.isDebugEnabled())
+			//log.debug(debug80Col(img.getSubImagePixels(, 1)));
 
-		cs = new PatternFinder(spriteSheet.getSubImagePixels(imageNum, 1));
+		cs = new PatternFinder(img.getSubImagePixels(1));
 		cs.buildCode(REARWARD);
 		solution = cs.getSolutions().get(0);
 
-		cluster = new PatternCluster(solution, spriteSheet.getCenter());
+		cluster = new PatternCluster(solution, img.getCenter());
 		cluster.cluster(REARWARD);
 
-		regOpt = new SolutionOptim(solution, spriteSheet.getSubImageData(imageNum, 1), maxTries);
+		regOpt = new SolutionOptim(solution, img.getSubImageData(1), maxTries);
 		regOpt.build();
 
 		spriteCode2 = regOpt.getAsmCode();	
@@ -151,20 +143,10 @@ public class SimpleAssemblyGenerator extends Encoder{
 	public byte[] getCompiledCode() {
 		return content;
 	}
-		
-	public String getDrawBINFile() {
-		return binDrawFileName;
-	}
 	
 	public void compileCode(String org) {		
 		try
 		{
-			Pattern pt = Pattern.compile("[ \t]*ORG[ \t]*\\$[a-fA-F0-9]{4}");
-			Process p;
-			ProcessBuilder pb;
-			BufferedReader br;
-			String line;
-			
 			// Process Draw Code
 			// ****************************************************************			
 			Files.deleteIfExists(asmDFile);
@@ -176,46 +158,10 @@ public class SimpleAssemblyGenerator extends Encoder{
 			Files.write(asmDFile, spriteCode2, Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 			Files.write(asmDFile, getCodeFrameDrawEnd(), Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 
-//			// Delete binary file
-//			Files.deleteIfExists(binDFile);
-//			
-//			List<String> command = new ArrayList<>(List.of(MainProg.game.lwasm,
-//					asmDrawFileName,
-//					   "--output=" + binDrawFileName,
-//					   "--list=" + lstDrawFileName,
-//					   "--6809",
-//					   "--includedir=./",
-//					   "--raw",
-//					   Game.pragma				   
-//					   ));
-//			
-//			for (int i=0; i<Game.includeDirs.length; i++)
-//				command.add(Game.includeDirs[i]);			
-//			
-//			if (Game.define != null && Game.define.length()>0) command.add(Game.define);
-//				
-//			p = new ProcessBuilder(command).inheritIO().start();
-//			
-//			int result = p.waitFor();
-//
-//
-//			// Load binary code
-//			content = Files.readAllBytes(Paths.get(binDrawFileName));	
-//
-//			// Compte le nombre de cycles du .lst
-//			int compilerDCycles = LWASMUtil.countCycles(lstDrawFileName);
-//			int compilerDSize = content.length;			
-//			int computedDCycles = getDCycles();
 			int computedDSize = getDSize();
-//			logger.debug("\t\t\t" +lstDrawFileName + " lwasm.exe DRAW cycles: " + compilerDCycles + " computed cycles: " + computedDCycles);
-//			logger.debug("\t\t\t" +lstDrawFileName + " lwasm.exe DRAW size: " + compilerDSize + " computed size: " + computedDSize);
-//
-//			if (computedDCycles != compilerDCycles || compilerDSize != computedDSize) {
-//				throw new Exception("\t\t\t" +lstDrawFileName + " Ecart de cycles ou de taille entre la version Draw compilée par lwasm et la valeur calculée par le générateur de code.", new Exception("Prérequis."));
-//			}
 			
 			if (computedDSize > 16384) {
-				throw new Exception("\t\t\t" +lstDrawFileName + " Le code généré ("+computedDSize+" octets) dépasse la taille d'une page", new Exception("Prérequis."));
+				throw new Exception("\t\t\t" + " Le code généré ("+computedDSize+" octets) dépasse la taille d'une page", new Exception("Prérequis."));
 			}			
 		} 
 		catch (Exception e)
@@ -248,7 +194,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 		asm.add("\tORG $" + org + "");
 		asm.add("\tSETDP $FF");
 		asm.add("\tOPT C,CT");		
-		asm.add("DRAW_" + spriteName + "_" + imageNum);
+		asm.add("adr_" + name);
 		if (alphaFlag) {
 			asm.add("\n\tstb   <glb_alphaTiles"); // tile rendering use b to load ram page, only 4 cycles in direct mode, better than inc
 		}
@@ -333,5 +279,9 @@ public class SimpleAssemblyGenerator extends Encoder{
 
 	public int getY_size() {
 		return y_size;
+	}
+
+	public int getEraseDataSize() {
+		return 0;
 	}	
 }

@@ -10,6 +10,9 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.util.FileUtil;
+import com.widedot.m6809.gamebuilder.util.graphics.Image;
+import com.widedot.toolbox.graphics.compiled.backupdrawerase.AssemblyGenerator;
+import com.widedot.toolbox.graphics.compiled.draw.SimpleAssemblyGenerator;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -20,7 +23,7 @@ import picocli.CommandLine.Option;
  * 6809 compiled graphics generator
  */
 
-@Command(name = "gfxcomp", description = "6809 compiled graphics generator")
+@Command(name = "gfxcomp", description = "6809 compile / compress graphics")
 @Slf4j
 public class MainCommand implements Runnable {
 
@@ -68,8 +71,10 @@ public class MainCommand implements Runnable {
     private Integer linear;
     private Integer planar;
     private String imagesetFile;
+    private ImageSet imagesetGenerator;
     private String subsetType;
-    private String subsetMirror;	    
+    private String subsetMirror;
+    private String subsetShift;
     private String imageName;
     private String imageFile;
 	
@@ -91,17 +96,21 @@ public class MainCommand implements Runnable {
 			    planar = processing.getInteger("encoding[@planar]", null);
 			    
 			    // process images in imageset, will generate an imageset index and produce compiled images
+    			ImageSet imgSet = new ImageSet();
 			    List<HierarchicalConfiguration<ImmutableNode>> imagesetFields = processing.configurationsAt("imageset");
 		    	for(HierarchicalConfiguration<ImmutableNode> imageset : imagesetFields)
 		    	{			    
+		    		imagesetGenerator = new ImageSet();
 		    		imagesetFile = path+imageset.getString("[@file-out]");
 		    		log.debug("outputDir:"+outputDir+" linear:"+linear+" planar:"+planar);
-				    
 		    		parseImages(imageset);
-
+		    	}
+		    	if (imagesetFields.size() != 0 && imagesetFile != null) {
+	    			imgSet.generate(imagesetFile);
 		    	}
 		    	
-			    // process images outside an imageset, will produce compiled images only		    	
+			    // process images outside an imageset, will produce compiled images only	
+		    	imagesetGenerator = null;
 		    	imagesetFile = null;
 		    	parseImages(processing);
 	    	}
@@ -112,10 +121,10 @@ public class MainCommand implements Runnable {
 		}
 	}
 
-	private void parseImages(HierarchicalConfiguration<ImmutableNode> base) {
+	private void parseImages(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
 		
 		// parse all images
-	    List<HierarchicalConfiguration<ImmutableNode>> imagesFields = base.configurationsAt("images");
+	    List<HierarchicalConfiguration<ImmutableNode>> imagesFields = node.configurationsAt("images");
     	for(HierarchicalConfiguration<ImmutableNode> images : imagesFields)
     	{
     		// parse each image inside images
@@ -128,23 +137,21 @@ public class MainCommand implements Runnable {
 			    List<HierarchicalConfiguration<ImmutableNode>> subsetFields = images.configurationsAt("subset");
 		    	for(HierarchicalConfiguration<ImmutableNode> subset : subsetFields)
 		    	{		
-		    		subsetType = subset.getString("[@type]");
-		    		subsetMirror = subset.getString("[@mirror]");
-		    		
+		    		getSubsetInfo(subset);
 		    		process();
 		    	}
 	    	} 	
     	}	
     	
 		// parse each lone image (outside images)
-	    List<HierarchicalConfiguration<ImmutableNode>> loneImageFields = base.configurationsAt("image");
+	    List<HierarchicalConfiguration<ImmutableNode>> loneImageFields = node.configurationsAt("image");
     	for(HierarchicalConfiguration<ImmutableNode> image : loneImageFields)
     	{
     		parseImage(image);
     	}	       	
 	}
 	
-	private void parseImage(HierarchicalConfiguration<ImmutableNode> image) {
+	private void parseImage(HierarchicalConfiguration<ImmutableNode> image) throws Exception {
 		
 		// parse image info
 		imageName = image.getString("[@name]");
@@ -154,14 +161,63 @@ public class MainCommand implements Runnable {
 	    List<HierarchicalConfiguration<ImmutableNode>> imageSubsetFields = image.configurationsAt("subset");
     	for(HierarchicalConfiguration<ImmutableNode> imageSubset : imageSubsetFields)
     	{		
-    		subsetType = imageSubset.getString("[@type]");
-    		subsetMirror = imageSubset.getString("[@mirror]");
-    		
+    		getSubsetInfo(imageSubset);    		
     		process();
-    	}			
+    	}
 	}
 	
-	private void process() {
-		log.debug("imageset:"+imagesetFile+" subset type:"+subsetType+" mirror:"+subsetMirror+" image name:"+imageName+" file:"+imageFile);		
+	private void getSubsetInfo(HierarchicalConfiguration<ImmutableNode> node) {
+		subsetType = node.getString("[@type]");
+		subsetMirror = node.getString("[@mirror]");
+		subsetShift = node.getString("[@shift]");    	
 	}
+	
+	private void process() throws Exception {
+		log.debug("process - imageset:"+imagesetFile+" subset type:"+subsetType+" mirror:"+subsetMirror+" image name:"+imageName+" file:"+imageFile);
+		
+		switch (subsetType) {
+			case "draw-erase":	processDrawErase(); break;
+			case "draw":		processDraw(); break;
+			case "rle":			processRLE(); break;
+			case "zx0":			processZX0(); break;
+			default: 			log.error("Unrecognizes subset type: "+subsetType);
+		}
+	}
+	
+	private void processDrawErase() throws Exception {
+		Image img = new Image(imageName, getImageNameVariant(), imageFile, Image.CENTER);
+		AssemblyGenerator e = new AssemblyGenerator(img, outputDir);
+		if (imagesetGenerator != null) {
+			imagesetGenerator.registerImage(img, e);
+		}
+	}
+	
+	private void processDraw() throws Exception {
+		Image img = new Image(imageName, getImageNameVariant(), imageFile, Image.CENTER);
+		SimpleAssemblyGenerator e = new SimpleAssemblyGenerator(img, outputDir, SimpleAssemblyGenerator._NO_ALPHA);
+		if (imagesetGenerator != null) {
+			imagesetGenerator.registerImage(img, e);
+		}
+	}
+	
+	private void processRLE() throws Exception {
+		Image img = new Image(imageName, getImageNameVariant(), imageFile, Image.CENTER);
+		MapRleEncoder e = new MapRleEncoder(img, outputDir);
+		if (imagesetGenerator != null) {
+			imagesetGenerator.registerImage(img, e);
+		}
+	}
+	
+	private void processZX0() throws Exception {
+		Image img = new Image(imageName, getImageNameVariant(), imageFile, Image.CENTER);
+		ZX0Encoder e = new ZX0Encoder(img, outputDir);
+		if (imagesetGenerator != null) {
+			imagesetGenerator.registerImage(img, e);
+		}
+	}
+	
+	private String getImageNameVariant() {
+		return subsetType+"_"+subsetMirror+"_"+subsetShift;
+	}
+
 }

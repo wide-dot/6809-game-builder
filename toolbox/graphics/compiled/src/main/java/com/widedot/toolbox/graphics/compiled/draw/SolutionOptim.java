@@ -12,7 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.widedot.toolbox.graphics.compiled.draw.patterns.Pattern;
-import com.widedot.m6809.gamebuilder.util.Register;
+import com.widedot.m6809.gamebuilder.util.asm.Register;
 
 public class SolutionOptim{
 

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.util;
+package com.widedot.m6809.gamebuilder.util.asm;
 
 public class Register {
 	// Les registres sont ordonn�s dans le sens du PUL

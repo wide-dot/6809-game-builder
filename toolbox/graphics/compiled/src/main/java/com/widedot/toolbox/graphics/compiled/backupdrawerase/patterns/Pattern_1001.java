@@ -3,7 +3,7 @@ package com.widedot.toolbox.graphics.compiled.backupdrawerase.patterns;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.util.Register;
+import com.widedot.m6809.gamebuilder.util.asm.Register;
 
 public class Pattern_1001 extends PatternAlpha {
 

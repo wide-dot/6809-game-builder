@@ -1,4 +1,6 @@
-package com.widedot.toolbox.graphics.compiled;
+package com.widedot.m6809.gamebuilder.util.graphics.encoder;
+
+import java.io.IOException;
 
 public abstract class Encoder {
 
@@ -13,5 +15,9 @@ public abstract class Encoder {
 	public abstract int getX_size();
 
 	public abstract int getY_size();
+
+	public abstract String getDrawBINFile();
+
+	public abstract int getDSize() throws IOException;
 
 }
