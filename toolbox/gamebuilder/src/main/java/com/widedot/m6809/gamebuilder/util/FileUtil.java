@@ -1,5 +1,9 @@
 package com.widedot.m6809.gamebuilder.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 public class FileUtil {
@@ -41,6 +45,10 @@ public class FileUtil {
 	    return Optional.ofNullable(filename)
 	      .filter(f -> f.contains("."))
 	      .map(f -> f.substring(filename.lastIndexOf(".") + 1));
-	}		
+	}	
+	
+	public static String getParentDir(File file) throws IOException {
+		return Paths.get(file.getCanonicalPath()).toAbsolutePath().getParent().toString().replace('\\', '/')+"/";
+	}
 
 }

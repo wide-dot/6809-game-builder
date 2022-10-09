@@ -35,6 +35,16 @@
 			<version>${commons-lang.version}</version>
 		</dependency>
 		<dependency>
+		    <groupId>commons-beanutils</groupId>
+		    <artifactId>commons-beanutils</artifactId>
+		    <version>1.9.4</version>
+		</dependency>		
+		<dependency>
+    		<groupId>org.apache.commons</groupId>
+    		<artifactId>commons-configuration2</artifactId>
+    		<version>2.8.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>${lombok.version}</version>
@@ -83,6 +93,7 @@
 		<module>./toolbox/gamebuilder</module>
 		<module>./toolbox/gamebuilder/system/to8</module>		
 		<module>./toolbox/graphics/tilemap/stm</module>
+		<module>./toolbox/graphics/compiled</module>
 		<module>./package</module>
 	</modules>
 

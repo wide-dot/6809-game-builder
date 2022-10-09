@@ -54,7 +54,7 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run()
 	{
-		log.info("Building a TO8 bootsector");
+		log.info("Simple Tile Map to binary converter");
 
                 if (exclusive.inputDir != null) {
         		log.info("Process each stm file of the directory {}", exclusive.inputDir);
