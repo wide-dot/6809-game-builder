@@ -26,6 +26,9 @@ public class MainCommand implements Runnable {
 
 	@Option(names = { "-f", "--file" }, paramLabel = "configuration file", description = "list of images to process")
 	String configurationFile;
+	
+    @Option(names = { "-v", "--verbose"}, description = "Verbose mode. Helpful for troubleshooting.")
+    private boolean verbose = false;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -34,6 +37,15 @@ public class MainCommand implements Runnable {
 
 	@Override
 	public void run() {
+		
+		// verbose mode
+	    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+		if (verbose) {
+		    root.setLevel(ch.qos.logback.classic.Level.DEBUG);
+		} else {
+			root.setLevel(ch.qos.logback.classic.Level.INFO);
+		}
+		
 		log.info("6809 compiled graphics generator");
 
 		if (configurationFile != null) {
@@ -55,7 +67,7 @@ public class MainCommand implements Runnable {
     private String outputDir;
     private Integer linear;
     private Integer planar;
-    private String outputFile;
+    private String imagesetFile;
     private String subsetType;
     private String subsetMirror;	    
     private String imageName;
@@ -70,6 +82,7 @@ public class MainCommand implements Runnable {
 		{
 		    XMLConfiguration config = configs.xml(paramFile);
 
+		    // set up compiled image parameters and parse all child imageset and images
 		    List<HierarchicalConfiguration<ImmutableNode>> processingFields = config.configurationsAt("processing");
 	    	for(HierarchicalConfiguration<ImmutableNode> processing : processingFields)
 	    	{
@@ -77,50 +90,78 @@ public class MainCommand implements Runnable {
 			    linear = processing.getInteger("encoding[@linear]", null);
 			    planar = processing.getInteger("encoding[@planar]", null);
 			    
+			    // process images in imageset, will generate an imageset index and produce compiled images
 			    List<HierarchicalConfiguration<ImmutableNode>> imagesetFields = processing.configurationsAt("imageset");
 		    	for(HierarchicalConfiguration<ImmutableNode> imageset : imagesetFields)
 		    	{			    
-		    		outputFile = path+imageset.getString("[@file-out]");
-		    		System.out.println("outputDir:"+outputDir+" linear:"+linear+" planar:"+planar+" outputFile:"+outputFile);
+		    		imagesetFile = path+imageset.getString("[@file-out]");
+		    		log.debug("outputDir:"+outputDir+" linear:"+linear+" planar:"+planar);
 				    
-				    List<HierarchicalConfiguration<ImmutableNode>> imagesFields = imageset.configurationsAt("images");
-			    	for(HierarchicalConfiguration<ImmutableNode> images : imagesFields)
-			    	{
-					    List<HierarchicalConfiguration<ImmutableNode>> imageFields = images.configurationsAt("image");
-				    	for(HierarchicalConfiguration<ImmutableNode> image : imageFields)
-				    	{
-				    		imageName = image.getString("[@name]");
-				    		imageFile = image.getString("[@file]");
-				    		
-						    List<HierarchicalConfiguration<ImmutableNode>> subsetFields = images.configurationsAt("subset");
-					    	for(HierarchicalConfiguration<ImmutableNode> subset : subsetFields)
-					    	{		
-					    		subsetType = subset.getString("[@type]");
-					    		subsetMirror = subset.getString("[@mirror]");
-					    		
-					    		process();
-					    	}
-					    	
-						    List<HierarchicalConfiguration<ImmutableNode>> imageSubsetFields = image.configurationsAt("subset");
-					    	for(HierarchicalConfiguration<ImmutableNode> imageSubset : imageSubsetFields)
-					    	{		
-					    		subsetType = imageSubset.getString("[@type]");
-					    		subsetMirror = imageSubset.getString("[@mirror]");
-					    		
-					    		process();
-					    	}
-				    	}
-			    	}
+		    		parseImages(imageset);
+
 		    	}
+		    	
+			    // process images outside an imageset, will produce compiled images only		    	
+		    	imagesetFile = null;
+		    	parseImages(processing);
 	    	}
 		}
 		catch (ConfigurationException cex)
 		{
-		    // Something went wrong
+			log.error("Error reading xml configuration file.");
 		}
+	}
+
+	private void parseImages(HierarchicalConfiguration<ImmutableNode> base) {
+		
+		// parse all images
+	    List<HierarchicalConfiguration<ImmutableNode>> imagesFields = base.configurationsAt("images");
+    	for(HierarchicalConfiguration<ImmutableNode> images : imagesFields)
+    	{
+    		// parse each image inside images
+		    List<HierarchicalConfiguration<ImmutableNode>> imageFields = images.configurationsAt("image");
+	    	for(HierarchicalConfiguration<ImmutableNode> image : imageFields)
+	    	{
+	    		parseImage(image);
+	    		
+	    		// process global subset at images level
+			    List<HierarchicalConfiguration<ImmutableNode>> subsetFields = images.configurationsAt("subset");
+		    	for(HierarchicalConfiguration<ImmutableNode> subset : subsetFields)
+		    	{		
+		    		subsetType = subset.getString("[@type]");
+		    		subsetMirror = subset.getString("[@mirror]");
+		    		
+		    		process();
+		    	}
+	    	} 	
+    	}	
+    	
+		// parse each lone image (outside images)
+	    List<HierarchicalConfiguration<ImmutableNode>> loneImageFields = base.configurationsAt("image");
+    	for(HierarchicalConfiguration<ImmutableNode> image : loneImageFields)
+    	{
+    		parseImage(image);
+    	}	       	
+	}
+	
+	private void parseImage(HierarchicalConfiguration<ImmutableNode> image) {
+		
+		// parse image info
+		imageName = image.getString("[@name]");
+		imageFile = image.getString("[@file]");
+		
+		// process image specific subset		    	
+	    List<HierarchicalConfiguration<ImmutableNode>> imageSubsetFields = image.configurationsAt("subset");
+    	for(HierarchicalConfiguration<ImmutableNode> imageSubset : imageSubsetFields)
+    	{		
+    		subsetType = imageSubset.getString("[@type]");
+    		subsetMirror = imageSubset.getString("[@mirror]");
+    		
+    		process();
+    	}			
 	}
 	
 	private void process() {
-		System.out.println("subset type:"+subsetType+" mirror:"+subsetMirror+" image name:"+imageName+" file:"+imageFile);		
+		log.debug("imageset:"+imagesetFile+" subset type:"+subsetType+" mirror:"+subsetMirror+" image name:"+imageName+" file:"+imageFile);		
 	}
 }
