@@ -15,7 +15,8 @@ public class ImageSet {
 	private AsmSourceCode asm;
 	private HashMap<String,HashMap<String,Image>> images; // a map of images grouped by type and by name 
 	
-	public ImageSet() {
+	public ImageSet(Integer type) {
+		// type is unimplemented for now
 		images = new HashMap<String,HashMap<String,Image>>();
 	}
 	

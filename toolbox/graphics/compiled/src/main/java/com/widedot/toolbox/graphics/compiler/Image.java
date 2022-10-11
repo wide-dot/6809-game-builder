@@ -92,6 +92,8 @@ public class Image {
 	public String name;
 	public String variant;
 	public int type;
+	public Integer linear;
+	public Integer planar;
 	public int mirror;
 	public int shift;
 	public int position;	
@@ -120,11 +122,13 @@ public class Image {
 	
 	public Integer index;
 	
-	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) {
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, Integer encoderLinear, Integer encoderPlanar, String encoderMirror, Integer encoderShift, String encoderPosition) {
 		try {
 			image = ImageIO.read(new File(imageFile));
 			name = imageName;
 			type = typeId.get(encoderType);
+			linear = encoderLinear;
+			planar = encoderPlanar;
 			mirror = mirrorId.get(encoderMirror);
 			shift = encoderShift;
 			

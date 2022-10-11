@@ -106,10 +106,11 @@ public class MainCommand implements Runnable {
 			    getEncoderInfo(process.configurationAt("encoder"));
 			    
 			    // process images in imageset, will generate an imageset index and produce compiled images
-    			imagesetGenerator = new ImageSet();
+    			imagesetGenerator = new ImageSet(imagesetType);
 			    List<HierarchicalConfiguration<ImmutableNode>> imagesetFields = process.configurationsAt("imageset");
 		    	for(HierarchicalConfiguration<ImmutableNode> imageset : imagesetFields)
 		    	{			    
+		    		imagesetType = imageset.getInteger("[@type]", null);
 		    		imagesetFile = path+imageset.getString("[@file-out]");
 		    		parseImages(imageset);
 		    	}
@@ -187,7 +188,7 @@ public class MainCommand implements Runnable {
 	private void process() throws Exception {
 		log.debug("process - image name:"+imageName+" file:"+imageFile);
 		
-		Image img = new Image(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition);
+		Image img = new Image(imageName, imageIndex, imageFile, encoderType, encoderLinear, encoderPlanar, encoderMirror, encoderShift, encoderPosition);
 		img.encode(outputDir);
 		
 		if (imagesetGenerator != null) {
