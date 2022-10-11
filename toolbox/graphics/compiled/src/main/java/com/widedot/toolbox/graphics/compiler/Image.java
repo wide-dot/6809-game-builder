@@ -99,21 +99,21 @@ public class Image {
 	public Integer nb_cell;
 	
 	private BufferedImage image;
-	ColorModel colorModel;
+	public ColorModel colorModel;
 	private int width; // largeur totale de l'image
 	private int height; // longueur totale de l'image
 	
 	private byte[][] pixels;
 	private byte[][] data;
 	
-	int x1_offset; // position haut gauche de l'image par rapport au centre
-	int y1_offset; // position haut gauche de l'image par rapport au centre		
-	int x_size; // largeur de l'image en pixel (sans les pixels transparents)		
-	int y_size; // hauteur de l'image en pixel (sans les pixels transparents)		
+	public int x1_offset; // position haut gauche de l'image par rapport au centre
+	public int y1_offset; // position haut gauche de l'image par rapport au centre		
+	public int x_size; // largeur de l'image en pixel (sans les pixels transparents)		
+	public int y_size; // hauteur de l'image en pixel (sans les pixels transparents)		
 	
-	boolean alpha; // vrai si l'image contient au moins un pixel transparent	
-	boolean evenAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes paires
-	boolean oddAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes impaires	
+	public boolean alpha; // vrai si l'image contient au moins un pixel transparent	
+	public boolean evenAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes paires
+	public boolean oddAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes impaires	
 
 	private boolean plane0_empty; // empty flag for each memory plane
 	private boolean plane1_empty;	

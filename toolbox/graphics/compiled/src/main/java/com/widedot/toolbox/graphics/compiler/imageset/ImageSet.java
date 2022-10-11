@@ -1,4 +1,4 @@
-package com.widedot.toolbox.graphics.compiler;
+package com.widedot.toolbox.graphics.compiler.imageset;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.widedot.m6809.gamebuilder.util.asm.AsmSourceCode;
+import com.widedot.toolbox.graphics.compiler.Image;
 import com.widedot.toolbox.graphics.compiler.encoder.bdraw.AssemblyGenerator;
 
 public class ImageSet {

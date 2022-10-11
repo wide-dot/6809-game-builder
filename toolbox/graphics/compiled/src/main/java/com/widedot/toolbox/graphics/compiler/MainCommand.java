@@ -15,6 +15,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.util.FileUtil;
+import com.widedot.toolbox.graphics.compiler.imageset.ImageSet;
 
 /**
  * 6809 compiled graphics generator
