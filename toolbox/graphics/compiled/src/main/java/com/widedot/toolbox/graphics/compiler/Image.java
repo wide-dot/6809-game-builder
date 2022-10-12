@@ -12,6 +12,8 @@ import com.widedot.toolbox.graphics.compiler.encoder.bdraw.AssemblyGenerator;
 import com.widedot.toolbox.graphics.compiler.encoder.draw.SimpleAssemblyGenerator;
 import com.widedot.toolbox.graphics.compiler.encoder.rle.MapRleEncoder;
 import com.widedot.toolbox.graphics.compiler.encoder.zx0.ZX0Encoder;
+import com.widedot.toolbox.graphics.compiler.transformer.mirror.Mirror;
+import com.widedot.toolbox.graphics.compiler.transformer.shift.Shift;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,27 +41,6 @@ public class Image {
 		}
 	};
 
-	// mirror types
-	public static final String MIRROR_NONE = "none";
-	public static final String MIRROR_X    = "x";
-	public static final String MIRROR_Y    = "y";	
-	public static final String MIRROR_XY   = "xy";
-	
-	public static final int MIRROR_NONE_INT = 0;
-	public static final int MIRROR_X_INT    = 1;
-	public static final int MIRROR_Y_INT    = 2;	
-	public static final int MIRROR_XY_INT   = 3;
-	
-	public static final HashMap<String, Integer> mirrorId = new HashMap<String, Integer>() {
-		private static final long serialVersionUID = 1L;
-		{
-			put(MIRROR_NONE, MIRROR_NONE_INT);
-			put(MIRROR_X, MIRROR_X_INT);
-			put(MIRROR_Y, MIRROR_Y_INT);
-			put(MIRROR_XY, MIRROR_XY_INT);
-		}
-	};
-	
 	// center types
 	public static final String POSITION_CENTER   = "center";
 	public static final String POSITION_TOP_LEFT = "top-left";
@@ -129,7 +110,7 @@ public class Image {
 			type = typeId.get(encoderType);
 			linear = encoderLinear;
 			planar = encoderPlanar;
-			mirror = mirrorId.get(encoderMirror);
+			mirror = Mirror.getId(encoderMirror);
 			shift = encoderShift;
 			
 			variant = encoderType+"_"+encoderMirror+"_"+SHIFT_PREFIX+encoderShift;
@@ -143,7 +124,9 @@ public class Image {
 			nb_cell = null;
 
 			if (pixelSize == 8) {
-				prepareImages();
+				image = Mirror.transform(image, mirror);
+				image = Shift.transform(image, encoderShift);
+				prepareImages(); // todo transformer !
 			} else {
 				log.info("unsupported file format for " + imageFile + " ,pixel size:  " + pixelSize + " (should be 8).");
 				throw new Exception ("png file format error.");
@@ -355,8 +338,13 @@ public class Image {
 	}
 	
 	public void encode(String outputDir) throws Exception {
-		Encoder e;
 		
+	    File directory = new File(outputDir);
+	    if (! directory.exists()){
+	        directory.mkdirs();
+	    }
+		
+		Encoder e;
 		switch (type) {
 			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, SimpleAssemblyGenerator._NO_ALPHA); break;
 			case TYPE_BDRAW_INT: e = new AssemblyGenerator(this, outputDir); break;

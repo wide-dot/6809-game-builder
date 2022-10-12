@@ -1,10 +1,13 @@
 package com.widedot.m6809.gamebuilder.util.asm;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+
+import com.widedot.m6809.gamebuilder.util.FileUtil;
 
 public class AsmSourceCode
 {
@@ -12,6 +15,12 @@ public class AsmSourceCode
 	public String content = "";
 
 	public AsmSourceCode(Path path) throws Exception {
+
+	    File directory = new File(FileUtil.getParentDir(path));
+	    if (! directory.exists()){
+	        directory.mkdirs();
+	    }
+		
 		String content = "* Generated Code\n";
 		this.path = path;
 		Files.write(path, content.getBytes(StandardCharsets.ISO_8859_1));
@@ -97,10 +106,10 @@ public class AsmSourceCode
 				Files.write(path, content.getBytes(StandardCharsets.ISO_8859_1), StandardOpenOption.APPEND);
 				content = "";
 			} catch (IOException ioExceptionObj) {
-				System.out.println("Problème à l'écriture du fichier "+path.getFileName()+": " + ioExceptionObj.getMessage());
+				System.out.println("Error writing "+path.getFileName()+": " + ioExceptionObj.getMessage());
 			}
 		} else {
-			System.out.println(path.getFileName()+" introuvable.");
+			System.out.println(path.getFileName()+" not found.");
 		}   
 	}
 }

@@ -50,5 +50,9 @@ public class FileUtil {
 	public static String getParentDir(File file) throws IOException {
 		return Paths.get(file.getCanonicalPath()).toAbsolutePath().getParent().toString().replace('\\', '/')+"/";
 	}
+	
+	public static String getParentDir(Path path) throws IOException {
+		return path.toAbsolutePath().getParent().toString().replace('\\', '/')+"/";
+	}
 
 }

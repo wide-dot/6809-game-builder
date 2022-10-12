@@ -8,6 +8,7 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -16,6 +17,7 @@ import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.util.FileUtil;
 import com.widedot.toolbox.graphics.compiler.imageset.ImageSet;
+import com.widedot.toolbox.graphics.compiler.transformer.mirror.Mirror;
 
 /**
  * 6809 compiled graphics generator
@@ -54,13 +56,13 @@ public class MainCommand implements Runnable {
 
 			File paramFile = new File(configurationFile);
 			if (!paramFile.exists() || paramFile.isDirectory()) {
-				log.error("Input file does not exists !");
+				log.error("Input file "+configurationFile+" does not exists !");
 			} else {
 				try {
 					gfxcomp(paramFile);
 					log.info("Done.");
 				} catch (Exception e) {
-					log.error("Error");
+					log.error(ExceptionUtils.getStackTrace(e));
 				}
 			}
 		}
@@ -81,10 +83,14 @@ public class MainCommand implements Runnable {
     private String imageFile;
     private Integer imageIndex;
     
+    // memory attributes
+    private Integer memoryLinearBits;
+    private Integer memoryPlanarBits;
+    private Integer memoryLineBytes;
+    private Integer memoryNbPlanes;
+    
     // encoder attributes
     private String encoderType;
-    private Integer encoderLinear;
-    private Integer encoderPlanar;
     private String encoderMirror;
     private Integer encoderShift;
     private String encoderPosition;
@@ -103,7 +109,7 @@ public class MainCommand implements Runnable {
 	    	for(HierarchicalConfiguration<ImmutableNode> process : processFields)
 	    	{
 			    outputDir = path+process.getString("[@dir-out]");
-			    getEncoderInfo(process.configurationAt("encoder"));
+		    	getMemoryInfo(process.configurationAt("memory"));
 			    
 			    // process images in imageset, will generate an imageset index and produce compiled images
     			imagesetGenerator = new ImageSet(imagesetType);
@@ -127,6 +133,7 @@ public class MainCommand implements Runnable {
 		catch (ConfigurationException cex)
 		{
 			log.error("Error reading xml configuration file.");
+			log.error(ExceptionUtils.getStackTrace(cex));
 		}
 	}
 
@@ -175,20 +182,27 @@ public class MainCommand implements Runnable {
     		process();
     	}
 	}
+
+	private void getMemoryInfo(HierarchicalConfiguration<ImmutableNode> node) {
+		memoryLinearBits = node.getInteger("[@linearBits]", 4);
+		memoryPlanarBits = node.getInteger("[@planarBits]", 8);
+		memoryLineBytes = node.getInteger("[@lineBytes]", 8);
+		memoryNbPlanes = node.getInteger("[@nbPlanes]", 8);
+	}	
 	
 	private void getEncoderInfo(HierarchicalConfiguration<ImmutableNode> node) {
-	    encoderLinear = node.getInteger("[@linear]", 4);
-	    encoderPlanar = node.getInteger("[@planar]", 8);
 		encoderType = node.getString("[@name]", Image.TYPE_DRAW);
-		encoderMirror = node.getString("[@mirror]", Image.MIRROR_NONE);
+		encoderMirror = node.getString("[@mirror]", Mirror.NONE);
 		encoderShift = node.getInteger("[@shift]", 0);   
 		encoderPosition = node.getString("[@position]", Image.POSITION_CENTER);
 	}
-	
+
 	private void process() throws Exception {
 		log.debug("process - image name:"+imageName+" file:"+imageFile);
 		
-		Image img = new Image(imageName, imageIndex, imageFile, encoderType, encoderLinear, encoderPlanar, encoderMirror, encoderShift, encoderPosition);
+		// TODO créer un objet memory et le passer en paramètre
+		// TODO créer un objet générique pour les encoder et passer une liste en parametre
+		Image img = new Image(imageName, imageIndex, imageFile, encoderType, memoryLinearBits, memoryPlanarBits, encoderMirror, encoderShift, encoderPosition);
 		img.encode(outputDir);
 		
 		if (imagesetGenerator != null) {
