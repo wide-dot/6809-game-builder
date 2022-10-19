@@ -16,7 +16,7 @@ The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolse
 
 ### Demos
 
-Demonstrations are available in a dedicated repository : [6809-game-demo]
+Demonstrations are available in a dedicated repository : [6809-game-projects]
 
 ![sonic2][sonic2] ![dott][dott] 
 
@@ -78,7 +78,7 @@ Then the uber-jar is in `.\package\target\gamebuilder-package-x.x.x-jar-with-dep
 
 [third-party libraries and tools][credits]
 
-[6809-game-demo]: https://github.com/wide-dot/6809-game-demo
+[6809-game-projects]: https://github.com/wide-dot/6809-game-projects
 [sonic2]: doc/demo.gif
 [dott]: doc/demo2.gif
 [unpack-tools]: doc/unpack-tools.md
