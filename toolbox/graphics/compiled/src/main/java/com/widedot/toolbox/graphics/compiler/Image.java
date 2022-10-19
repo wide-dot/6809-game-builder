@@ -40,6 +40,8 @@ public class Image {
 			put(TYPE_ZX0, TYPE_ZX0_INT);
 		}
 	};
+	
+	public static final String[] typeLabel = new String[]{"D", "B", "R", "Z"};
 
 	// center types
 	public static final String POSITION_CENTER   = "center";
@@ -59,22 +61,9 @@ public class Image {
 		}
 	};
 	
-	// shift types
-	public static final String SHIFT_PREFIX = "shift";
-	public static final String SHIFT_0   = "shift0";
-	public static final String SHIFT_1   = "shift1";
-	public static final String SHIFT_2   = "shift2";
-	public static final String SHIFT_3   = "shift3";
-	public static final String SHIFT_4   = "shift4";
-	public static final String SHIFT_5   = "shift5";
-	public static final String SHIFT_6   = "shift6";
-	public static final String SHIFT_7   = "shift7";
-	
 	public String name;
 	public String variant;
 	public int type;
-	public Integer linear;
-	public Integer planar;
 	public int mirror;
 	public int shift;
 	public int position;	
@@ -83,37 +72,38 @@ public class Image {
 	
 	private BufferedImage image;
 	public ColorModel colorModel;
-	private int width; // largeur totale de l'image
-	private int height; // longueur totale de l'image
+	private int width;
+	private int height;
 	
 	private byte[][] pixels;
 	private byte[][] data;
 	
-	public int x1_offset; // position haut gauche de l'image par rapport au centre
-	public int y1_offset; // position haut gauche de l'image par rapport au centre		
-	public int x_size; // largeur de l'image en pixel (sans les pixels transparents)		
-	public int y_size; // hauteur de l'image en pixel (sans les pixels transparents)		
+	// image rectangular bounds, without accounting transparent pixels
+	public int x1_offset; // offset from center to the image left position (trimmed of transparent pixels)
+	public int y1_offset; // offset from center to the image top position (trimmed of transparent pixels)	
+	public int x_size;    // image width for non transparent pixels		
+	public int y_size;    // image height for non transparent pixels		
 	
-	public boolean alpha; // vrai si l'image contient au moins un pixel transparent	
-	public boolean evenAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes paires
-	public boolean oddAlpha; // vrai si l'image contient au moins un pixel transparent sur les lignes impaires	
+	// transparency flags
+	public boolean alpha;     // true if at least one pixel is transparent	
+	public boolean evenAlpha; // true if at least one pixel is transparent on even lines
+	public boolean oddAlpha;  // true if at least one pixel is transparent on odd lines	
 
-	private boolean plane0_empty; // empty flag for each memory plane
+	// plane flags (is a plane empty ?)
+	private boolean plane0_empty;
 	private boolean plane1_empty;	
 	
 	public Integer index;
 	
-	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, Integer encoderLinear, Integer encoderPlanar, String encoderMirror, Integer encoderShift, String encoderPosition) {
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) {
 		try {
 			image = ImageIO.read(new File(imageFile));
 			name = imageName;
 			type = typeId.get(encoderType);
-			linear = encoderLinear;
-			planar = encoderPlanar;
 			mirror = Mirror.getId(encoderMirror);
 			shift = encoderShift;
 			
-			variant = encoderType+"_"+encoderMirror+"_"+SHIFT_PREFIX+encoderShift;
+			variant = typeLabel[type]+Mirror.label[mirror]+encoderShift;
 			width = image.getWidth();
 			height = image.getHeight();
 			colorModel = image.getColorModel();
@@ -123,10 +113,11 @@ public class Image {
 			index = imageIndex;
 			nb_cell = null;
 
+			// process images
 			if (pixelSize == 8) {
 				image = Mirror.transform(image, mirror);
 				image = Shift.transform(image, encoderShift);
-				prepareImages(); // todo transformer !
+				prepareImages();
 			} else {
 				log.info("unsupported file format for " + imageFile + " ,pixel size:  " + pixelSize + " (should be 8).");
 				throw new Exception ("png file format error.");
@@ -137,7 +128,16 @@ public class Image {
 			System.out.println(e);
 		}
 	}
-
+	
+	// TODO - create n method as transformers
+	// pad image to memory width
+	// create n memory planes by vertical interlace or bitplanes
+	// add alpha transparency info to image, based on color index 0
+	// maintain a plane empty table
+	// set a coordinate variable based on position
+	// calcul des flags transparency, odd et even
+	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
+	
 	public void prepareImages() {
 		// sépare l'image en deux parties pour la RAM A et RAM B
 		// ajoute les pixels transparents pour constituer une image linéaire de largeur 2x80px
@@ -299,39 +299,6 @@ public class Image {
 					indexDest = 80*curLine;
 					page = 0;
 					even = !even;
-				}
-			}
-		}
-		
-		if (shift==1) {
-			byte pixelSave = 0;
-			byte dataSave = 0;
-			// Décalage de l'image de 1px à droite pour chaque ligne
-			for (int y = 0; y < height; y++) {
-				for (int x = 79; x >= 1; x -= 2) {
-					if (x == 79) {
-						// Le pixel en fin de ligne revient au début de cette ligne
-						pixelSave = pixels[1][x + (80 * y)];
-						dataSave = data[1][x + (80 * y)];
-					} else {
-						pixels[0][(x + 1) + (80 * y)] = pixels[1][x + (80 * y)];
-						data[0][(x + 1) + (80 * y)] = data[1][x + (80 * y)];
-					}
-
-					pixels[1][x + (80 * y)] = pixels[1][(x - 1) + (80 * y)];
-					data[1][x + (80 * y)] = data[1][(x - 1) + (80 * y)];
-
-					pixels[1][(x - 1) + (80 * y)] = pixels[0][x + (80 * y)];
-					data[1][(x - 1) + (80 * y)] = data[0][x + (80 * y)];
-
-					pixels[0][x + (80 * y)] = pixels[0][(x - 1) + (80 * y)];
-					data[0][x + (80 * y)] = data[0][(x - 1) + (80 * y)];
-
-					if (x == 1) {
-						// Le pixel en fin de ligne revient au début de cette ligne
-						pixels[0][0 + (80 * y)] = pixelSave;
-						data[0][0 + (80 * y)] = dataSave;
-					}
 				}
 			}
 		}

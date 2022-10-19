@@ -28,6 +28,8 @@ public class Mirror {
 		}
 	};
 	
+	public static final String[] label = new String[]{"N", "X", "Y", "XY"};
+	
 	public static Integer getId(String key) {
 		return id.get(key);
 	}

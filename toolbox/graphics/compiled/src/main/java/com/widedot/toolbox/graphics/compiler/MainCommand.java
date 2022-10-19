@@ -16,6 +16,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.util.FileUtil;
+import com.widedot.toolbox.graphics.compiler.setting.VideoMemory;
 import com.widedot.toolbox.graphics.compiler.imageset.ImageSet;
 import com.widedot.toolbox.graphics.compiler.transformer.mirror.Mirror;
 
@@ -83,18 +84,12 @@ public class MainCommand implements Runnable {
     private String imageFile;
     private Integer imageIndex;
     
-    // memory attributes
-    private Integer memoryLinearBits;
-    private Integer memoryPlanarBits;
-    private Integer memoryLineBytes;
-    private Integer memoryNbPlanes;
-    
     // encoder attributes
-    private String encoderType;
+    private String encoderName;
     private String encoderMirror;
     private Integer encoderShift;
     private String encoderPosition;
-	
+    
 	private void gfxcomp(File paramFile) throws Exception {
 	    
 	    path = FileUtil.getParentDir(paramFile);
@@ -108,7 +103,7 @@ public class MainCommand implements Runnable {
 		    List<HierarchicalConfiguration<ImmutableNode>> processFields = config.configurationsAt("process");
 	    	for(HierarchicalConfiguration<ImmutableNode> process : processFields)
 	    	{
-			    outputDir = path+process.getString("[@dir-out]");
+			    outputDir = path+process.getString("[@dirOut]");
 		    	getMemoryInfo(process.configurationAt("memory"));
 			    
 			    // process images in imageset, will generate an imageset index and produce compiled images
@@ -117,7 +112,7 @@ public class MainCommand implements Runnable {
 		    	for(HierarchicalConfiguration<ImmutableNode> imageset : imagesetFields)
 		    	{			    
 		    		imagesetType = imageset.getInteger("[@type]", null);
-		    		imagesetFile = path+imageset.getString("[@file-out]");
+		    		imagesetFile = path+imageset.getString("[@fileOut]");
 		    		parseImages(imageset);
 		    	}
 		    	if (imagesetFields.size() != 0 && imagesetFile != null) {
@@ -184,14 +179,14 @@ public class MainCommand implements Runnable {
 	}
 
 	private void getMemoryInfo(HierarchicalConfiguration<ImmutableNode> node) {
-		memoryLinearBits = node.getInteger("[@linearBits]", 4);
-		memoryPlanarBits = node.getInteger("[@planarBits]", 8);
-		memoryLineBytes = node.getInteger("[@lineBytes]", 8);
-		memoryNbPlanes = node.getInteger("[@nbPlanes]", 8);
+		VideoMemory.memoryLinearBits = node.getInteger("[@linearBits]", 4);
+		VideoMemory.memoryPlanarBits = node.getInteger("[@planarBits]", 8);
+		VideoMemory.memoryLineBytes = node.getInteger("[@lineBytes]", 40);
+		VideoMemory.memoryNbPlanes = node.getInteger("[@nbPlanes]", 2);
 	}	
 	
 	private void getEncoderInfo(HierarchicalConfiguration<ImmutableNode> node) {
-		encoderType = node.getString("[@name]", Image.TYPE_DRAW);
+		encoderName = node.getString("[@name]", Image.TYPE_DRAW);
 		encoderMirror = node.getString("[@mirror]", Mirror.NONE);
 		encoderShift = node.getInteger("[@shift]", 0);   
 		encoderPosition = node.getString("[@position]", Image.POSITION_CENTER);
@@ -199,10 +194,8 @@ public class MainCommand implements Runnable {
 
 	private void process() throws Exception {
 		log.debug("process - image name:"+imageName+" file:"+imageFile);
-		
-		// TODO créer un objet memory et le passer en paramètre
-		// TODO créer un objet générique pour les encoder et passer une liste en parametre
-		Image img = new Image(imageName, imageIndex, imageFile, encoderType, memoryLinearBits, memoryPlanarBits, encoderMirror, encoderShift, encoderPosition);
+
+		Image img = new Image(imageName, imageIndex, imageFile, encoderName, encoderMirror, encoderShift, encoderPosition);
 		img.encode(outputDir);
 		
 		if (imagesetGenerator != null) {

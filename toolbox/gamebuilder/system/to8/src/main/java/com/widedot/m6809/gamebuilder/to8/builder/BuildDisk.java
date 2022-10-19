@@ -2004,25 +2004,14 @@ public class BuildDisk
 		AssemblyCompiler.compileRAW(bootTmpFile, MEGAROM_T2);
 		byte[] bin = Files.readAllBytes(Paths.get(getBINFileName(bootTmpFile)));
 		
-		
 		// ajout du header autocalculé
-		
 		System.arraycopy(MainProg.game.t2BootData, 0, bin, 0, MainProg.game.t2BootData.length);
 		logger.info("Appending T2 Name to the image");
 		
-		//game.romT2.writeT2Header(bin);
 		MainProg.game.romT2.setData(0, 0, bin);
-		
-		
-		
-		
 		t2.write(MainProg.game.romT2);
-		
-		
-		
-		
+
 		logger.info("Write Megarom T.2 Image to output file ...");
-		
 		t2.save(MainProg.game.outputDiskName);
 		
 		logger.info("Build done !");	
