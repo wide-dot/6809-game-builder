@@ -82,6 +82,11 @@ Default value are in bold.
 
 Note : you can mix encoder definition at images level and image level.
 
+Image or images can be grouped in an imageset. An imageset is an index to image variants.
+
+**imageset**
+- fileOut : the name of asm file to generate
+
 Here a sample of a configuration file :
 
     <configuration>
