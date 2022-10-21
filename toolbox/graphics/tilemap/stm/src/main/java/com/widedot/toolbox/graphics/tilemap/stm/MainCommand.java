@@ -5,13 +5,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 
+import com.widedot.m6809.util.FileUtil;
+
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-
-import com.widedot.m6809.gamebuilder.util.FileUtil;
 
 /**
  * simple tile map to binary converter

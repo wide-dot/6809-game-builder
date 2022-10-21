@@ -91,7 +91,6 @@
 
 	<modules>
 		<module>./toolbox/gamebuilder</module>
-		<module>./toolbox/gamebuilder/system/to8</module>		
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./toolbox/graphics/compiled</module>
 		<module>./package</module>

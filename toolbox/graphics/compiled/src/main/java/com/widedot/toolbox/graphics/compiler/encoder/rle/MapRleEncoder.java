@@ -10,7 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.util.asm.AsmSourceCode;
+import com.widedot.m6809.util.asm.AsmSourceCode;
 import com.widedot.toolbox.graphics.compiler.Image;
 import com.widedot.toolbox.graphics.compiler.encoder.Encoder;
 

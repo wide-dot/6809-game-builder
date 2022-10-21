@@ -3,7 +3,7 @@ package com.widedot.toolbox.graphics.compiler.encoder.draw.pattern;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.util.asm.Register;
+import com.widedot.m6809.util.asm.Register;
 
 public class Pattern_1110 extends PatternAlpha {
 

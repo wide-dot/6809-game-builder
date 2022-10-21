@@ -12,7 +12,7 @@ import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 
-import com.widedot.m6809.gamebuilder.util.asm.Register;
+import com.widedot.m6809.util.asm.Register;
 import com.widedot.toolbox.graphics.compiler.Image;
 import com.widedot.toolbox.graphics.compiler.encoder.Encoder;
 

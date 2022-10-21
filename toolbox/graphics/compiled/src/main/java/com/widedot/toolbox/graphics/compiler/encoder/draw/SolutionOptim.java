@@ -11,7 +11,7 @@ import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.widedot.m6809.gamebuilder.util.asm.Register;
+import com.widedot.m6809.util.asm.Register;
 import com.widedot.toolbox.graphics.compiler.encoder.draw.pattern.Pattern;
 
 public class SolutionOptim{

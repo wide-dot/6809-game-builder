@@ -25,7 +25,7 @@
 							<skipAssembly>false</skipAssembly>
 							<archive>
 								<manifest>
-									<mainClass>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</mainClass>
+									<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
 								</manifest>
 							</archive>
 							<descriptors>

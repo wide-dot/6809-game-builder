@@ -15,8 +15,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import com.widedot.m6809.gamebuilder.util.FileUtil;
 import com.widedot.toolbox.graphics.compiler.setting.VideoMemory;
+import com.widedot.m6809.util.FileUtil;
 import com.widedot.toolbox.graphics.compiler.imageset.ImageSet;
 import com.widedot.toolbox.graphics.compiler.transformer.mirror.Mirror;
 

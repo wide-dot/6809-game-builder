@@ -1,6 +1,6 @@
 package com.widedot.m6809.gamebuilder.unpack.tools;
 
-import com.widedot.m6809.gamebuilder.util.OSValidator;
+import com.widedot.m6809.util.OSValidator;
 
 import lombok.extern.slf4j.Slf4j;
 

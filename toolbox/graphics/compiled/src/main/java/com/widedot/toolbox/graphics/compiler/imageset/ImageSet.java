@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.widedot.m6809.gamebuilder.util.asm.AsmSourceCode;
+import com.widedot.m6809.util.asm.AsmSourceCode;
 import com.widedot.toolbox.graphics.compiler.Image;
 import com.widedot.toolbox.graphics.compiler.encoder.bdraw.AssemblyGenerator;
 import com.widedot.toolbox.graphics.compiler.transformer.mirror.Mirror;
