@@ -5,7 +5,7 @@ The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolse
 ### Currently supported computers
 
 - Thomson TO8
-- Thomson TO9
+- Thomson TO8D
 - Thomson TO9+
 
 ### Candidates for future releases

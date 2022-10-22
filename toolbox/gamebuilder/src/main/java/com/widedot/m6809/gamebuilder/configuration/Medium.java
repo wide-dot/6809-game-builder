@@ -16,10 +16,10 @@ public class Medium {
 	public String catalog;
 	public List<Media> mediaList;
 	
-	public Medium(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
+	public Medium(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		name = node.getString("[@name]", null);
 		type = node.getString("[@type]", null);
-		catalog = node.getString("[@catalog]", null);
+		catalog = path + node.getString("[@catalog]", null);
 		
 		log.debug("name: "+name);
 		log.debug("type: "+type);
@@ -31,7 +31,7 @@ public class Medium {
 	    List<HierarchicalConfiguration<ImmutableNode>> mediaFields = node.configurationsAt("media");
     	for(HierarchicalConfiguration<ImmutableNode> media : mediaFields)
     	{
-    		mediaList.add(new Media(media));
+    		mediaList.add(new Media(media, path));
     	}	
 	}
 }

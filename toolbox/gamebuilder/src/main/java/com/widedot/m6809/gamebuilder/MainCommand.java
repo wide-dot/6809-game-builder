@@ -175,7 +175,7 @@ public class MainCommand implements Runnable {
 		String targetName = target.getString("[@name]");
 		log.info("Processing target {}", target.getString("[@name]"));
 		log.debug("name: "+targetName);
-		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedium(target), path);
+		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedium(target, path), path);
 		gameBuilder.build();
 	}
 
@@ -202,7 +202,7 @@ public class MainCommand implements Runnable {
     	return newDefines;
 	}
 	
-	private List<Medium> getMedium(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
+	private List<Medium> getMedium(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
 		List<Medium> newMedium = new ArrayList<Medium>();
 		
@@ -210,7 +210,7 @@ public class MainCommand implements Runnable {
 	    List<HierarchicalConfiguration<ImmutableNode>> mediumFields = node.configurationsAt("medium");
     	for(HierarchicalConfiguration<ImmutableNode> medium : mediumFields)
     	{
-    		newMedium.add(new Medium(medium));
+    		newMedium.add(new Medium(medium, path));
     	}	     
     	return newMedium;
 	}

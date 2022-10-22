@@ -15,8 +15,8 @@ public class Media {
 	public Boot boot;
 	public List<Package> packList;
 	
-	public Media(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		catalog = node.getString("[@catalog]", null);
+	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+		catalog = path + node.getString("[@catalog]", null);
 		log.debug("catalog: "+catalog);
 		
 		List<HierarchicalConfiguration<ImmutableNode>> bootFields = node.configurationsAt("boot");
@@ -24,7 +24,7 @@ public class Media {
 			throw new Exception("No more than one boot definition is allowed inside a media.");
 		}
 		for(HierarchicalConfiguration<ImmutableNode> boot : bootFields) {
-			this.boot = new Boot(boot);
+			this.boot = new Boot(boot, path);
 		}
 			
 		packList = new ArrayList<Package>();
