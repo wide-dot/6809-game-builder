@@ -9,6 +9,7 @@ import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.util.FileUtil;
+import com.widedot.m6809.util.math.Hex;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,10 +28,11 @@ public class Package {
 	public String name;
 	public String type;
 	public String compression;
-	public String ram;
+	public Integer ramStart;
+	public Integer ramEnd;
 	public Integer orgOffset;
 	public Integer clusterSize;
-	public Integer _org;
+	public Integer origin;
 	
 	public Package(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		filename = node.getString("", null);
@@ -60,10 +62,6 @@ public class Package {
 	    List<HierarchicalConfiguration<ImmutableNode>> pkgFields = node.configurationsAt("package");
     	for(HierarchicalConfiguration<ImmutableNode> pkg : pkgFields)
     	{	
-    		// multi-page :  name="titlescreen" type="multi-page" compression="none" ram="$0000-3FFF" org-offset="0" cluster-size="$2000"
-    		// absolute :    name="titlescreen-main" type="absolute" compression="none" org="$6100"
-    		// relocatable : name="data" type="relocatable" compression="zx0"
-    		
     		// for all all types
     		name = pkg.getString("[@name]", null);
     		if (name == null) {
@@ -77,45 +75,33 @@ public class Package {
     		
     		compression = pkg.getString("[@compression]", "none");
     		
+    		log.debug("name: " + name + " type: " + type + " compression: " + compression);
+    		
     		// MULTIPAGE only
     		if (type.equals(MULTIPAGE)) {
-	    		ram = pkg.getString("[@ram]", null);
-        		if (ram == null) {
+	    		String ramStr = pkg.getString("[@ram]", null);
+        		if (ramStr == null) {
         			throw new Exception("ram is missing for package of type "+MULTIPAGE);
         		}
+    			String[] ramRange = ramStr.split("-");
+    			if (ramRange.length != 2) {
+    				throw new Exception("ram value : <" + ramStr + "> should be expressed with two values separated by an hyphen in hexadecimal or decimal (ex:$0000-$3FFF or 0-16383)");
+    			}
+    			
+    			ramStart = Hex.parse(ramRange[0]);
+    			ramEnd = Hex.parse(ramRange[1]);
         		
 	    		String orgOffsetStr = pkg.getString("[@org-offset]", "0");
-    			if (orgOffsetStr.contains("$")) {
-    				orgOffset = Integer.parseInt(orgOffsetStr.replace("$", ""), 16);	
-    			} else {
-    				orgOffset = Integer.parseInt(orgOffsetStr);
-    			}	    		
+	    		orgOffset = Hex.parse(orgOffsetStr);
 	    		
 	    		String clusterSizeStr = pkg.getString("[@cluster-size]", null);
 	    		if (clusterSize == null) {
-	    			String[] ramRange = ram.split("-");
-	    			if (ramRange.length != 2) {
-	    				throw new Exception("ram value : <" + ram + "> should be expressed with two values separated by an hyphen in hexadecimal or decimal (ex:$0000-$3FFF or 0-16383)");
-	    			}
-	    			int[] ramRangeDec = new int[ramRange.length];
-	    			if (ramRange[0].contains("$")) {
-	    				ramRangeDec[0] = Integer.parseInt(ramRange[0].replace("$", ""), 16);	
-	    			} else {
-	    				ramRangeDec[0] = Integer.parseInt(ramRange[0]);
-	    			}
-	    			if (ramRange[1].contains("$")) {
-	    				ramRangeDec[1] = Integer.parseInt(ramRange[1].replace("$", ""), 16);	
-	    			} else {
-	    				ramRangeDec[1] = Integer.parseInt(ramRange[1]);
-	    			}
-	    			clusterSize = ramRangeDec[1]-ramRangeDec[0];
+	    			clusterSize = ramEnd-ramStart;
 	    		} else {
-	    			if (clusterSizeStr.contains("$")) {
-	    				clusterSize = Integer.parseInt(clusterSizeStr.replace("$", ""), 16);	
-	    			} else {
-	    				clusterSize = Integer.parseInt(clusterSizeStr);
-	    			}
+	    			clusterSize = Hex.parse(clusterSizeStr);
 	    		}
+	    		
+	    		log.debug("MULTIPAGE ram :" + ramStr + " (" + ramStart + "-" + ramEnd + ") org-offset: " + orgOffsetStr + " (" + orgOffset + ") cluster-size: " + clusterSizeStr + " (" + clusterSize + ")");
     		}
     		
     		// ABSOLUTE only
@@ -124,11 +110,9 @@ public class Package {
         		if (orgStr == null) {
         			throw new Exception("org is missing for package of type "+ABSOLUTE);
         		}
-    			if (orgStr.contains("$")) {
-    				_org = Integer.parseInt(orgStr.replace("$", ""), 16);	
-    			} else {
-    				_org = Integer.parseInt(orgStr);
-    			}
+   				origin = Hex.parse(orgStr);	
+   				
+   				log.debug("ABSOLUTE org: " + orgStr + " (" + origin + ")");
     		}
     		
     		fileset = new FileSet(pkg, path);
