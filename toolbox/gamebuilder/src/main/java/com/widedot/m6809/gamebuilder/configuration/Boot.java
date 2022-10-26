@@ -8,6 +8,6 @@ public class Boot {
 	public FileSet fileset;
 	
 	public Boot(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
-		new FileSet(node, path);
+		fileset = new FileSet(node, path);
 	}
 }

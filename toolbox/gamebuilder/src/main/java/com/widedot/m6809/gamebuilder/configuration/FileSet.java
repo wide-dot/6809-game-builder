@@ -85,6 +85,9 @@ public class FileSet {
     		log.debug("dir: " + dirName + " filter: " + Arrays.toString(filters));
     		
     		File dirFile = new File(dirName);
+    		if (!dirFile.exists() || !dirFile.isDirectory()) {
+    			throw new Exception("dir " + dirName + " does not exists !");
+    		}
     		IOFileFilter wildCardFilter = new WildcardFileFilter(filters, IOCase.INSENSITIVE);
 
     		String[] files = dirFile.list(wildCardFilter);
@@ -101,7 +104,7 @@ public class FileSet {
     		log.info("fileset: {}", file.getName());
 
     		if (!file.exists() || file.isDirectory()) {
-    			throw new Exception("File "+file.getName()+" does not exists !");
+    			throw new Exception("File " + file.getName() + " does not exists !");
     		}
       
     	    String currentPath = FileUtil.getParentDir(file);

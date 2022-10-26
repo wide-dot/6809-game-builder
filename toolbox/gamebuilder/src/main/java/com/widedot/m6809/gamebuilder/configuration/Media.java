@@ -36,7 +36,7 @@ public class Media {
     		List<HierarchicalConfiguration<ImmutableNode>> packFields = packs.configurationsAt("package");
     		for(HierarchicalConfiguration<ImmutableNode> pack : packFields)
     		{
-    			packList.add(new Package(pack));
+    			packList.add(new Package(pack, path));
     		}
     	}
 	}
