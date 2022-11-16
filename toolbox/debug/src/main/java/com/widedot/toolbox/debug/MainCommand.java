@@ -3,6 +3,7 @@ package com.widedot.toolbox.debug;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 /**
  * simple tile map to binary converter
@@ -16,6 +17,9 @@ import picocli.CommandLine.Command;
 @Command(name = "wddebug", description = "Debug GUI for Thomson emulators")
 @Slf4j
 public class MainCommand implements Runnable {
+
+    @Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process .stm input file")
+    String inputFile;
 	
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -26,7 +30,12 @@ public class MainCommand implements Runnable {
 	public void run()
 	{
 		log.info("Debug GUI for Thomson emulators");
-		new WDDebug();
+		
+		log.info("Load symbols <"+inputFile+">");
+		Symbols s = new Symbols(inputFile);
+		
+		log.info("Launch GUI");
+		new WDDebug(s);
 	}
 
 }
