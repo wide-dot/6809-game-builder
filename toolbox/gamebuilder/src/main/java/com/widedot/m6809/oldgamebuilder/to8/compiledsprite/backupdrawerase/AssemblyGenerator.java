@@ -20,7 +20,7 @@ import com.widedot.m6809.oldgamebuilder.to8.MainProg;
 import com.widedot.m6809.oldgamebuilder.to8.builder.Game;
 import com.widedot.m6809.oldgamebuilder.to8.image.SpriteSheet;
 import com.widedot.m6809.oldgamebuilder.to8.instructionset.Register;
-import com.widedot.m6809.util.LWASMUtil;
+import com.widedot.m6809.util.lwasm.Lwasm;
 
 public class AssemblyGenerator{
 
@@ -174,12 +174,12 @@ public class AssemblyGenerator{
 			// Utilisation du .BIN existant
 			sizeDCache = Files.readAllBytes(Paths.get(binBckDrawFileName)).length;
 			// Utilisation du .lst existant
-			cycleDCache = LWASMUtil.countCycles(lstBckDrawFileName);
+			cycleDCache = Lwasm.countCycles(lstBckDrawFileName);
 			
 			// Utilisation du .BIN existant
 			sizeECache = Files.readAllBytes(Paths.get(binEraseFileName)).length;
 			// Utilisation du .lst existant
-			cycleECache = LWASMUtil.countCycles(lstEraseFileName);		
+			cycleECache = Lwasm.countCycles(lstEraseFileName);		
 			
 			// Lecture de la taille des données de la routine erase
 			Path path = Paths.get(lstEraseFileName);
@@ -270,7 +270,7 @@ public class AssemblyGenerator{
 			content = Files.readAllBytes(Paths.get(binBckDrawFileName));	
 
 			// Compte le nombre de cycles du .lst
-			int compilerDCycles = LWASMUtil.countCycles(lstBckDrawFileName);
+			int compilerDCycles = Lwasm.countCycles(lstBckDrawFileName);
 			int compilerDSize = content.length;			
 			int computedDCycles = getDCycles();
 			int computedDSize = getDSize();
@@ -335,7 +335,7 @@ public class AssemblyGenerator{
 			content = Files.readAllBytes(Paths.get(binEraseFileName));	
 
 			// Compte le nombre de cycles du .lst
-			int compilerECycles = LWASMUtil.countCycles(lstEraseFileName);
+			int compilerECycles = Lwasm.countCycles(lstEraseFileName);
 			int compilerESize = content.length;
 			int computedECycles = getECycles();
 			int computedESize = getESize();

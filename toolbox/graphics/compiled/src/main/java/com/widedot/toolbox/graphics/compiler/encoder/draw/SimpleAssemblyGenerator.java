@@ -143,6 +143,9 @@ public class SimpleAssemblyGenerator extends Encoder{
 			Files.write(asmDFile, spriteCode2, Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 			Files.write(asmDFile, getCodeFrameDrawEnd(), Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 
+			log.debug("\t\t\tSize: "+getDSize());
+			log.debug("\t\t\tCycles: "+getDCycles());
+			
 			int computedDSize = getDSize();
 			
 			if (computedDSize > 16384) {
@@ -176,7 +179,6 @@ public class SimpleAssemblyGenerator extends Encoder{
 	public List<String> getCodeFrameDrawStart(boolean alphaFlag) {
 		List<String> asm = new ArrayList<String>();
 		asm.add("\tINCLUDE \"./engine/constants.asm\"");		
-		asm.add("\tSETDP $FF");
 		asm.add("\tOPT C,CT");		
 		asm.add("adr_" + name);
 		if (alphaFlag) {

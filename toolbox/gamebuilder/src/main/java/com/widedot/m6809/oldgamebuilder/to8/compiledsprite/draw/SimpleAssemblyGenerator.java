@@ -22,7 +22,7 @@ import com.widedot.m6809.oldgamebuilder.to8.builder.Game;
 import com.widedot.m6809.oldgamebuilder.to8.image.SpriteSheet;
 import com.widedot.m6809.oldgamebuilder.to8.image.encoder.Encoder;
 import com.widedot.m6809.oldgamebuilder.to8.instructionset.Register;
-import com.widedot.m6809.util.LWASMUtil;
+import com.widedot.m6809.util.lwasm.Lwasm;
 
 public class SimpleAssemblyGenerator extends Encoder{
 
@@ -157,7 +157,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 			// Utilisation du .BIN existant
 			sizeDCache = Files.readAllBytes(Paths.get(binDrawFileName)).length;
 			// Utilisation du .lst existant
-			cycleDCache = LWASMUtil.countCycles(lstDrawFileName);
+			cycleDCache = Lwasm.countCycles(lstDrawFileName);
 		}
 	}
 
@@ -226,7 +226,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 			content = Files.readAllBytes(Paths.get(binDrawFileName));	
 
 			// Compte le nombre de cycles du .lst
-			int compilerDCycles = LWASMUtil.countCycles(lstDrawFileName);
+			int compilerDCycles = Lwasm.countCycles(lstDrawFileName);
 			int compilerDSize = content.length;			
 			int computedDCycles = getDCycles();
 			int computedDSize = getDSize();

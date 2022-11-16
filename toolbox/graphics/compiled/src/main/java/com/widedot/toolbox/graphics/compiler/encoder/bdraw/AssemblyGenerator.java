@@ -160,6 +160,9 @@ public class AssemblyGenerator extends Encoder{
 			Files.write(asmDFile, spriteCode2, Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 			Files.write(asmDFile, getCodeFrameBckDrawEnd(), Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 
+			log.debug("\t\t\tSize: "+getDSize());
+			log.debug("\t\t\tCycles: "+getDCycles());
+			
 			int computedDSize = getDSize();
 			
 			if (computedDSize > 16384) {
@@ -179,6 +182,9 @@ public class AssemblyGenerator extends Encoder{
 			Files.write(asmEFile, spriteECode1, Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 			Files.write(asmEFile, getCodeFrameEraseEnd(), Charset.forName("UTF-8"), StandardOpenOption.APPEND);
 			Files.write(asmEFile, dataSize, Charset.forName("UTF-8"), StandardOpenOption.APPEND);
+			
+			log.debug("\t\t\tE Size: "+getESize());
+			log.debug("\t\t\tE Cycles: "+getECycles());
 			
 			int computedESize = getESize();
 
@@ -214,7 +220,6 @@ public class AssemblyGenerator extends Encoder{
 	public List<String> getCodeFrameBckDrawStart() {
 		List<String> asm = new ArrayList<String>();
 		asm.add("\tINCLUDE \"./engine/constants.asm\"");
-		asm.add("\tSETDP $FF");
 		asm.add("\tOPT C,CT");
 		asm.add("adr_" + name);
 		asm.add("\tSTS glb_register_s\n");
@@ -281,7 +286,6 @@ public class AssemblyGenerator extends Encoder{
 	public List<String> getCodeFrameEraseStart() {
 		List<String> asm = new ArrayList<String>();
 		asm.add("\tINCLUDE \"./engine/constants.asm\"");		
-		asm.add("\tSETDP $FF");
 		asm.add("\tOPT C,CT");		
 		asm.add("adr_" + name + ERASE_SUFFIXE);
 		asm.add("\tSTS glb_register_s\n");

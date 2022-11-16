@@ -93,7 +93,7 @@ public class FileSet {
     		String[] files = dirFile.list(wildCardFilter);
     		for (int i = 0; i < files.length; i++) {
     			log.debug("|_ asm: " + files[i]);
-    		    ressources.add(new Ressource(FileUtil.basename(files[i]), files[i], Ressource.id.get(type)));
+    		    ressources.add(new Ressource(FileUtil.basename(files[i]), dirName + "/" + files[i], Ressource.id.get(type)));
     		}
     	}
     	

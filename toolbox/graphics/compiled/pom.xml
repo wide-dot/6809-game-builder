@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.wide-dot</groupId>
-			<artifactId>gamebuilder-core</artifactId>
+			<artifactId>gamebuilder</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>

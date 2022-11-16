@@ -6,9 +6,9 @@
 		<groupId>com.wide-dot</groupId>
 		<artifactId>6809-game-builder</artifactId>
 		<version>0.0.1</version>
-		<relativePath>../../../../pom.xml</relativePath>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>stm2bin</artifactId>
+	<artifactId>wddebug</artifactId>
 	<packaging>jar</packaging>
 
 	<dependencies>
@@ -17,6 +17,11 @@
 			<artifactId>gamebuilder</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>io.github.spair</groupId>
+            <artifactId>imgui-java-app</artifactId>
+            <version>1.86.4</version>
+        </dependency>
 	</dependencies>
 
 	<build>
@@ -37,8 +42,8 @@
 							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>
-									<mainClass>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</mainClass>
-									<id>stm2bin</id>
+									<mainClass>com.widedot.toolbox.debug.MainCommand</mainClass>
+									<id>wddebug</id>
 								</program>
 							</programs>
 						</configuration>

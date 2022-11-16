@@ -8,7 +8,7 @@
 		<version>0.0.1</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>gamebuilder-core</artifactId>
+	<artifactId>gamebuilder</artifactId>
 	<packaging>jar</packaging>
 
 	<build>

@@ -56,7 +56,7 @@ import com.widedot.m6809.oldgamebuilder.to8.storage.T2Util;
 import com.widedot.m6809.oldgamebuilder.to8.tools.AssemblyCompiler;
 import com.widedot.m6809.util.ChecksumUtils;
 import com.widedot.m6809.util.FileUtil;
-import com.widedot.m6809.util.LWASMUtil;
+import com.widedot.m6809.util.lwasm.Lwasm;
 import com.widedot.m6809.util.zx0.Compressor;
 import com.widedot.m6809.util.zx0.Optimizer;
 
@@ -2941,7 +2941,7 @@ public class BuildDisk
 				throw new Exception ("Error "+asmFile);
 			}
 			
-			return LWASMUtil.countSize(lstFile);
+			return Lwasm.countSize(lstFile);
 
 		} catch (Exception e) {
 			e.printStackTrace();

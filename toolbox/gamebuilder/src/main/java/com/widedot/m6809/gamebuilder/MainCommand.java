@@ -20,6 +20,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import com.widedot.m6809.gamebuilder.builder.GameBuilder;
 import com.widedot.m6809.gamebuilder.configuration.Medium;
 import com.widedot.m6809.util.FileUtil;
 
@@ -177,6 +178,7 @@ public class MainCommand implements Runnable {
 		log.debug("name: "+targetName);
 		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedium(target, path), path);
 		gameBuilder.build();
+		log.info("End of processing target {}", target.getString("[@name]"));
 	}
 
 	private HashMap<String, String> getDefines(HierarchicalConfiguration<ImmutableNode> node) throws Exception {

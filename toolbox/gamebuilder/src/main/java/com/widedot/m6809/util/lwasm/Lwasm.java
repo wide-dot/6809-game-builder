@@ -1,4 +1,4 @@
-package com.widedot.m6809.util;
+package com.widedot.m6809.util.lwasm;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class LWASMUtil {
+public class Lwasm {
 
 	public static int countCycles(String lstFile) throws IOException {
 		int cycles = 0;

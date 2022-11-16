@@ -20,6 +20,7 @@ public class Ressource {
 	public String name;
 	public String file;
 	public int type;
+	public String section;
 	
 	public Ressource(String name, String file, int type) {
 		this.name = name;

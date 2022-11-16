@@ -74,7 +74,8 @@ public class ImageSet {
 			int xyb0_offset = 0;
 			int xyd0_offset = 0;
 			int xyb1_offset = 0;
-			int xyd1_offset = 0;		
+			int xyd1_offset = 0;	
+			int cml_offset = 0;			
 			
 			Image img = ((Image)imgTypes.values().toArray()[0]);
 			Integer index = img.index;
@@ -88,11 +89,13 @@ public class ImageSet {
 			
 			asm.addLabel("set_"+imgEntry.getKey());
 
+			cml_offset += imageSet_header;
+			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_1) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_1)) {
-				n_offset = imageSet_header;			
+				n_offset = cml_offset;
 			}
 	
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_0)) {
@@ -119,11 +122,13 @@ public class ImageSet {
 				n_y1 = imgTypes.get(Image.TYPE_DRAW+"_"+Mirror.NONE+"_"+Shift.SHIFT_1).y1_offset;
 			}		
 			
+			cml_offset += (nd1_offset>0?3:0) + (nb1_offset>0?7:0) + (nd0_offset>0?3:0) + (nb0_offset>0?7:0) + (n_offset>0?imageSubSet_header:0);
+			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.X+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.X+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.X+"_"+Shift.SHIFT_1) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.X+"_"+Shift.SHIFT_1)) {
-				x_offset = (nd1_offset>0?3:0) + (nb1_offset>0?7:0) + (nd0_offset>0?3:0) + (nb0_offset>0?7:0) + (n_offset>0?n_offset+imageSubSet_header:imageSet_header);			
+				x_offset = cml_offset;			
 			}		
 			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.X+"_"+Shift.SHIFT_0)) {
@@ -150,11 +155,13 @@ public class ImageSet {
 				x_y1 = imgTypes.get(Image.TYPE_DRAW+"_"+Mirror.X+"_"+Shift.SHIFT_1).y1_offset;			
 			}		
 			
+			cml_offset += (xd1_offset>0?3:0) + (xb1_offset>0?7:0) + (xd0_offset>0?3:0) + (xb0_offset>0?7:0) + (x_offset>0?imageSubSet_header:0);
+			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_1) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_1)) {
-				y_offset = (xd1_offset>0?3:0) + (xb1_offset>0?7:0) + (xd0_offset>0?3:0) + (xb0_offset>0?7:0) + (x_offset>0?x_offset+imageSubSet_header:imageSet_header);			
+				y_offset = cml_offset;			
 			}		
 			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_0)) {
@@ -181,11 +188,13 @@ public class ImageSet {
 				y_y1 = imgTypes.get(Image.TYPE_DRAW+"_"+Mirror.Y+"_"+Shift.SHIFT_1).y1_offset;
 			}
 			
+			cml_offset += (yd1_offset>0?3:0) + (yb1_offset>0?7:0) + (yd0_offset>0?3:0) + (yb0_offset>0?7:0) + (y_offset>0?imageSubSet_header:0);
+			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.XY+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.XY+"_"+Shift.SHIFT_0) ||
 				imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.XY+"_"+Shift.SHIFT_1) ||
 				imgTypes.containsKey(Image.TYPE_DRAW+"_"+Mirror.XY+"_"+Shift.SHIFT_1)) {
-				xy_offset = (yd1_offset>0?3:0) + (yb1_offset>0?7:0) + (yd0_offset>0?3:0) + (yb0_offset>0?7:0) + (y_offset>0?y_offset+imageSubSet_header:imageSet_header);			
+				xy_offset = cml_offset;			
 			}		
 			
 			if (imgTypes.containsKey(Image.TYPE_BDRAW+"_"+Mirror.XY+"_"+Shift.SHIFT_0)) {

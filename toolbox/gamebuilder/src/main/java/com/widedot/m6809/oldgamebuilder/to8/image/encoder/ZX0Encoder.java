@@ -20,7 +20,7 @@ import com.widedot.m6809.oldgamebuilder.to8.MainProg;
 import com.widedot.m6809.oldgamebuilder.to8.builder.AsmSourceCode;
 import com.widedot.m6809.oldgamebuilder.to8.builder.Game;
 import com.widedot.m6809.oldgamebuilder.to8.image.SpriteSheet;
-import com.widedot.m6809.util.LWASMUtil;
+import com.widedot.m6809.util.lwasm.Lwasm;
 import com.widedot.m6809.util.zx0.Compressor;
 import com.widedot.m6809.util.zx0.Optimizer;
 
@@ -261,7 +261,7 @@ public class ZX0Encoder extends Encoder{
 			// Load binary code
 			content = Files.readAllBytes(Paths.get(binDrawFileName));	
 			int compilerDSize = content.length;	
-			int compilerDCycles = LWASMUtil.countCycles(lstDrawFileName);
+			int compilerDCycles = Lwasm.countCycles(lstDrawFileName);
 			
 			logger.debug("\t\t\t" +lstDrawFileName + " lwasm.exe DRAW cycles: " + compilerDCycles);
 			logger.debug("\t\t\t" +lstDrawFileName + " lwasm.exe DRAW size: " + compilerDSize);
