@@ -1,16 +1,21 @@
 package com.widedot.toolbox.debug;
 
+import com.widedot.toolbox.debug.ui.*;
+
 import imgui.ImGui;
 import imgui.app.Application;
 import imgui.app.Configuration;
-import imgui.flag.ImGuiInputTextFlags;
-import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImString;
+import imgui.type.ImBoolean;
 
 public class WDDebug extends Application {
 	
 	private Symbols s;
-    private final ImString str = new ImString(5);
+	
+	// Dialog display status
+    private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW = new ImBoolean(false);
 	
     public WDDebug(Symbols symbols) {
     	s = symbols;
@@ -24,26 +29,43 @@ public class WDDebug extends Application {
 
     @Override
     public void process() {
-    	 	
+    	 	   	
+    	// Menu Bar
+        if (ImGui.beginMainMenuBar())
+        {
+            if (ImGui.beginMenu("File"))
+            {
+            	ImGui.menuItem("Load lwasm memory map", null, SHOW_IMGUI_FILE_DIALOG_WINDOW);
+            	ImGui.endMenu();
+            }
+            if (ImGui.beginMenu("Memory"))
+            {
+                ImGui.menuItem("Editor", null, SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
+                ImGui.menuItem("Watcher", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+                ImGui.endMenu();
+            }
+            if (ImGui.beginMenu("Objects"))
+            {
+                ImGui.menuItem("Main Character", null, SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
+                ImGui.endMenu();
+            }
+
+            ImGui.endMainMenuBar();
+            
+        }
+
+        // Listening to emulator process
+   		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
-    		ImGui.text("Waiting for process <"+Emulator.processName+">");
-    		Emulator.pid = OS.getProcessId(Emulator.processName);
-    		Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
+       		ImGui.text("Waiting for process <"+Emulator.processName+">");
     		return;
     	}
-    	
-    	if (Emulator.process != null) {
-    		ImGui.text("image_set:"+Emulator.getShort(s, "MainCharacter","image_set"));
-    		ImGui.text("x_pos:"+Emulator.getShort(s, "MainCharacter","x_pos"));
-    		ImGui.text("y_pos:"+Emulator.getShort(s, "MainCharacter","y_pos"));
-    		ImGui.text("x_vel:"+Emulator.getShort(s, "MainCharacter","x_vel"));
-    		ImGui.text("y_vel:"+Emulator.getShort(s, "MainCharacter","y_vel"));
-    	}
-
-        if (ImGui.begin("Search", ImGuiWindowFlags.AlwaysAutoResize)) {
-            ImGui.inputText("symbol", str, ImGuiInputTextFlags.CallbackResize);
-            ImGui.text("value: " + Emulator.getShort(s, str.get()));
-        }
-        ImGui.end();
+    	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
+        
+        // Display active dialog boxes
+        if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMapFileDialog.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
+        if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
+        if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW, s);
+        if (SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW.get()) ObjectMainCharacter.show(SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW, s);
     }
 }
