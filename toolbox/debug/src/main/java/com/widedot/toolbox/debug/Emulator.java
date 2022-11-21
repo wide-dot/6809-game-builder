@@ -2,6 +2,8 @@ package com.widedot.toolbox.debug;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
+import com.widedot.toolbox.debug.types.Data;
+import com.widedot.toolbox.debug.types.Watch;
 
 public class Emulator {
 	public static final String processName= " DCMOTO 2022.04.24 - Emulateur de tous les ordinateurs 8 bits Thomson";
@@ -15,36 +17,28 @@ public class Emulator {
 	public static final long carAddress   = plineAddress+0x40;  // car[0x20000] espace cartouche 8x16K (pour OS-9)
 	public static final long x7daAddress  = carAddress+0x20000; // x7da[0x20]   stockage de la palette de couleurs
 	
-    public static short getShort(Symbols s, String symbol) {
-    	int page = 0;
-    	Integer address = s.map.get(symbol);
-    	if (address == null) {
-    		return 0;
-    	}
+    public static Integer get(Watch w)
+    {
+ 	   	if (w.address.value == null) return null;
+    	int address = w.address.value.get() + w.offset.getValue();
+    	int page = w.page.value.get();
     	
     	if (address >= 0x6000 && address < 0xA000) {
     		page = 1;
     		address -= 0x6000;
     	}
-
-		return getShort(page, address);
-    }   
-	
-    public static short getShort(Symbols s, String symbol, String symbolOffset) {
-    	int page = 0;
-    	int address = s.map.get(symbol) + s.map.get(symbolOffset);
     	
-    	if (address >= 0x6000 && address < 0xA000) {
-    		page = 1;
-    		address -= 0x6000;
-    	}
+    	if (address >= 0x4000) return null; // TODO gerer le montage des pages dans les espaces RAM et ROM
 
-		return getShort(page, address);
-    }   
-    
-    public static short getShort(int page, int address) {
     	long processAddr = ramAddress + page*0x4000 + address;
-        Memory x_velMem = OS.readMemory(Emulator.process,processAddr,64);
-		return (short) (((x_velMem.getByte(0) & 0xff) << 8) + (x_velMem.getByte(1) & 0xff));
+        Memory x_velMem = OS.readMemory(Emulator.process, processAddr, Data.byteLen.get(w.value.type));
+        
+        Integer result = 0;
+        int nbBytes = Data.byteLen.get(w.value.type);
+        for (int i = 0; i < nbBytes; i++) {
+        	result += (x_velMem.getByte(i) & 0xff) << (8*(nbBytes-1-i)) ;
+        }
+        
+		return result;
     } 
 }

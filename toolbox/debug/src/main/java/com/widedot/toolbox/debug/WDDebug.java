@@ -9,16 +9,13 @@ import imgui.type.ImBoolean;
 
 public class WDDebug extends Application {
 	
-	private Symbols s;
-	
 	// Dialog display status
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW = new ImBoolean(false);
 	
-    public WDDebug(Symbols symbols) {
-    	s = symbols;
+    public WDDebug() {
     	launch(this);
     } 
 	
@@ -33,18 +30,18 @@ public class WDDebug extends Application {
     	// Menu Bar
         if (ImGui.beginMainMenuBar())
         {
-            if (ImGui.beginMenu("File"))
+            if (ImGui.beginMenu("Open"))
             {
-            	ImGui.menuItem("Load lwasm memory map", null, SHOW_IMGUI_FILE_DIALOG_WINDOW);
+            	ImGui.menuItem("Memory Map", null, SHOW_IMGUI_FILE_DIALOG_WINDOW);
             	ImGui.endMenu();
             }
             if (ImGui.beginMenu("Memory"))
             {
-                ImGui.menuItem("Editor", null, SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
-                ImGui.menuItem("Watcher", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+                ImGui.menuItem("Edit", null, SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
+                ImGui.menuItem("Watch", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
                 ImGui.endMenu();
             }
-            if (ImGui.beginMenu("Objects"))
+            if (ImGui.beginMenu("Object"))
             {
                 ImGui.menuItem("Main Character", null, SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
                 ImGui.endMenu();
@@ -63,9 +60,9 @@ public class WDDebug extends Application {
     	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
         
         // Display active dialog boxes
-        if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMapFileDialog.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
+        if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
-        if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW, s);
-        if (SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW.get()) ObjectMainCharacter.show(SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW, s);
+        if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+        if (SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW.get()) ObjectMainCharacter.show(SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
     }
 }
