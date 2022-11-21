@@ -104,6 +104,8 @@ public class MemoryWatch {
 
    			// if matches are > 1, or the only one match is not a full match : display the list
    			if (!exactMatch && (i > 1 || (i == 1 && !filterValues.get(0).equals(we.symbol.get())))) {
+   				ImGui.invisibleButton("##"+we+"iBtn", 82, 10);
+   	   	   	   	ImGui.sameLine();
    				ImGui.beginListBox("##"+we+"Sym");
    				for (String key : filterValues) {
    					ImBoolean is_selected = new ImBoolean(we.symbol.get() == key);

@@ -110,7 +110,7 @@ import com.widedot.toolbox.debug.Symbols;
        			if (openedDialogs.containsKey(key) && openedDialogs.get(key).get()) {
 	   				ImGui.begin(key, openedDialogs.get(key));
 	   				for (String key2 : Symbols.maps.get(key).keySet()) {
-	        			ImGui.text(key2+" "+Symbols.maps.get(key).get(key2));
+	        			ImGui.text(Symbols.maps.get(key).get(key2)+" "+key2);
 	   				}
 	            	ImGui.end();
        			}
