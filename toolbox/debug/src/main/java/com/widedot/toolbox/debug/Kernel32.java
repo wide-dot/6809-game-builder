@@ -1,5 +1,8 @@
 package com.widedot.toolbox.debug;
 import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.Tlhelp32.PROCESSENTRY32.ByReference;
+import com.sun.jna.platform.win32.WinDef.DWORD;
+import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.StdCallLibrary;
  
@@ -34,5 +37,14 @@ public interface Kernel32 extends StdCallLibrary
     Pointer OpenProcess(int desired, boolean inherit, int pid);  
      
     /* derp */  
-    int GetLastError();  
+    int GetLastError();
+
+
+	HANDLE CreateToolhelp32Snapshot(DWORD th32csSnapprocess, DWORD dword);
+
+
+	boolean Process32Next(HANDLE snapshot, ByReference processEntry);
+
+
+	void CloseHandle(HANDLE snapshot);  
 }

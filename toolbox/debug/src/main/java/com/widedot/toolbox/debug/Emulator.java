@@ -6,11 +6,11 @@ import com.widedot.toolbox.debug.types.Data;
 import com.widedot.toolbox.debug.types.Watch;
 
 public class Emulator {
-	public static final String processName= " DCMOTO 2022.04.24 - Emulateur de tous les ordinateurs 8 bits Thomson";
+	public static final String processName= "dcmoto_";
 	public static int pid = 0;
 	public static Pointer process = null;
 
-	public static final long ramAddress   = 0x00007F47C0;       // ram[0x80000] ram (maxi 512K pour TO9+)
+	public static final long ramAddress   = 0x00007F57C0;       // ram[0x80000] ram (maxi 512K pour TO9+) 7F57C0 2022.11.21 7F47C0 2021.04.24
 	public static final long portAddress  = ramAddress+0x80000; // port[0x40]   ports d'entrees/sorties
 	public static final long ddrAddress   = portAddress+0x40;   // ddr[0x40]    registres de direction des PIA 6821
 	public static final long plineAddress = ddrAddress+0x40;    // pline[0x40]  peripheral input-control lines des PIA 6821

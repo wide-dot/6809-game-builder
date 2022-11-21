@@ -54,7 +54,7 @@ public class WDDebug extends Application {
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
-       		ImGui.text("Waiting for process <"+Emulator.processName+">");
+       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>");
     		return;
     	}
     	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
@@ -64,5 +64,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
         if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
         if (SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW.get()) ObjectMainCharacter.show(SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
+        
+        ImGui.text(String.format("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui.getIO().getFramerate(), ImGui.getIO().getFramerate()));
     }
 }
