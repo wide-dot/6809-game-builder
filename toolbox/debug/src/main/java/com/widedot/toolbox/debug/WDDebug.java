@@ -13,7 +13,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
-    private static final ImBoolean SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
 	
     public WDDebug() {
     	launch(this);
@@ -41,9 +41,9 @@ public class WDDebug extends Application {
                 ImGui.menuItem("Watch", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
                 ImGui.endMenu();
             }
-            if (ImGui.beginMenu("Object"))
+            if (ImGui.beginMenu("Engine"))
             {
-                ImGui.menuItem("Main Character", null, SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
+                ImGui.menuItem("Object slots", null, SHOW_IMGUI_OJECT_SLOTS_WINDOW);
                 ImGui.endMenu();
             }
 
@@ -63,7 +63,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
         if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
-        if (SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW.get()) ObjectMainCharacter.show(SHOW_IMGUI_OJECT_MAIN_CHARACTER_WINDOW);
+        if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);
         
         ImGui.text(String.format("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui.getIO().getFramerate(), ImGui.getIO().getFramerate()));
     }

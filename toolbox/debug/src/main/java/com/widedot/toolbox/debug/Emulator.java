@@ -41,4 +41,30 @@ public class Emulator {
         
 		return result;
     } 
+    
+    public static Long getAbsoluteAddress(int page, String addrStr)
+    {
+ 	   	if (addrStr == null) return null;
+ 	   	int address = Integer.parseInt(addrStr, 16);
+    	
+    	if (address >= 0x6000 && address < 0xA000) {
+    		page = 1;
+    		address -= 0x6000;
+    	}
+    	
+    	if (address >= 0x4000) return null;
+    	
+		return ramAddress + page*0x4000 + address;
+    } 
+    
+    public static Integer get(Long address, int nbBytes)
+    {
+        Memory x_velMem = OS.readMemory(Emulator.process, address, nbBytes);
+        
+        Integer result = 0;
+        for (int i = 0; i < nbBytes; i++) {
+        	result += (x_velMem.getByte(i) & 0xff) << (8*(nbBytes-1-i)) ;
+        }
+        return result;
+    } 
 }
