@@ -102,8 +102,9 @@ public class Image {
 			type = typeId.get(encoderType);
 			mirror = Mirror.getId(encoderMirror);
 			shift = encoderShift;
+			position = positionId.get(encoderPosition);
 			
-			variant = typeLabel[type]+Mirror.label[mirror]+encoderShift;
+			variant = typeLabel[type]+Mirror.label[mirror]+shift;
 			width = image.getWidth();
 			height = image.getHeight();
 			colorModel = image.getColorModel();
@@ -116,7 +117,7 @@ public class Image {
 			// process images
 			if (pixelSize == 8) {
 				image = Mirror.transform(image, mirror);
-				image = Shift.transform(image, encoderShift);
+				image = Shift.transform(image, shift);
 				prepareImages();
 			} else {
 				log.info("unsupported file format for " + imageFile + " ,pixel size:  " + pixelSize + " (should be 8).");

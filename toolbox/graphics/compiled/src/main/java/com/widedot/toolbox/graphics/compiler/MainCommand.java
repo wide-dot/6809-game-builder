@@ -193,7 +193,7 @@ public class MainCommand implements Runnable {
 	}
 
 	private void process() throws Exception {
-		log.debug("process - image name:"+imageName+" file:"+imageFile);
+		log.debug("process - image name:"+imageName+" "+imageIndex+" file:"+imageFile+" "+encoderName+" "+encoderMirror+" "+encoderShift+" "+encoderPosition);
 
 		Image img = new Image(imageName, imageIndex, imageFile, encoderName, encoderMirror, encoderShift, encoderPosition);
 		img.encode(outputDir);

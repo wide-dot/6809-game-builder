@@ -93,6 +93,7 @@
 		<module>./toolbox/gamebuilder</module>
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./toolbox/graphics/compiled</module>
+				<module>./toolbox/audio/smid</module>
 		<module>./toolbox/debug</module>
 		<module>./package</module>
 	</modules>
