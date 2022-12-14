@@ -37,7 +37,7 @@
 							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>
-									<mainClass>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</mainClass>
+									<mainClass>com.widedot.toolbox.audio.smid.MainCommand</mainClass>
 									<id>smid</id>
 								</program>
 							</programs>

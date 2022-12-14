@@ -7,16 +7,29 @@ public class VGMInterpreter {
 	public static final int SAMPLES_PER_SECOND = 44100;
 	public static final int SAMPLES_PER_FRAME_NTSC = 735;
 	public static final int SAMPLES_PER_FRAME_PAL = 882;
+	public static final int _SN76489 = 0;
+	public static final int _YM2413 = 1;
+	public static final int _ALL = -1;
+	public static final int _YMMAIN = 9;
 
 	private VGMInputStream input;
-	public int[] arrayOfInt = new int[16384];
+	public int[] arrayOfInt = new int[0x80000];
 	public int i = 0;
 	public int loopMarkerHit = 0;
 	public int cumulatedFrames = 0;
-	public int[] drum = new int[]{0x30, 0x28, 0x21, 0x22, 0x24};
+	public int[] drum;
+	public int[] drumAtt;
+	public int chip;
+	public int channel;
+	public int currentChannel = -1;
+	public int currentDrums = 0;
 
-	public VGMInterpreter(File paramFile) throws IOException {
+	public VGMInterpreter(File paramFile, int[] drumAtt, int[] drum, int chip, int channel) throws IOException {
 		this.input = new VGMInputStream(paramFile);
+		this.drumAtt = drumAtt;
+		this.drum = drum;
+		this.chip = chip;
+		this.channel = channel;
 		while(run()) {
 		}
 	}
@@ -30,29 +43,58 @@ public class VGMInterpreter {
 			int i = this.input.read();
 
 			switch (i) {
-			case 0x4F: // Game Gear PSG stereo, write dd to port 0x06
-				this.input.read();
+			case 0x4F: // Game Gear PSG stereo
+				this.input.skip(1L);
 				continue;
 			case 0x50: // PSG (SN76489/SN76496) write value dd
-				int val = this.input.read();
-				if (val <= 127 )
-					val = val | 0b01000000;
-				fireWrite(val);
+				
+				// %1cct xxxx = Latch/Data byte for SN76489 channel c, type t (1:volume or 0:tone/noise) , data xxxx (4 bits)
+				// %01xx xxxx = Data byte for SN76489 latched channel and type, data xxxxxx (6 bits)
+				
+				if (chip==-1 || chip == _SN76489) {
+					int val = this.input.read();
+					if (val <= 127 ) {
+						val = val | 0b01000000;
+						if (currentChannel == channel || channel==_ALL)
+							fireWrite(val);
+					} else {
+						currentChannel = (val & 0b01100000) >> 5;
+						if (currentChannel == channel || channel==_ALL)
+							fireWrite(val);
+					}
+				} else {
+					this.input.skip(1L);
+				}
 				continue;
 			case 0x51: // YM2413, write value dd to register aa
-				int cmd = this.input.read();
-				int data = this.input.read();
-
-				// Overwrite drum volume
-				if (cmd==0x36)
-					data = SVGMTool.drumVol[0];
-				if (cmd==0x37)
-					data = SVGMTool.drumVol[1];
-				if (cmd==0x38)
-					data = SVGMTool.drumVol[2];
-				
-				fireWrite(cmd);
-				fireWrite(data);
+				if (chip==-1 || chip == _YM2413) {
+					
+					int cmd = this.input.read();
+					int data = this.input.read();
+					
+					if (cmd < 16) {
+						currentChannel = _YMMAIN;
+					} else {
+						currentChannel = cmd & 0xf;
+					}
+					
+					if (drumAtt != null) {
+						// Overwrite drum volume
+						if (cmd==0x36)
+							data = drumAtt[0];
+						if (cmd==0x37)
+							data = drumAtt[1];
+						if (cmd==0x38)
+							data = drumAtt[2];
+					}
+					
+					if (currentChannel == channel || channel==_ALL) {
+						fireWrite(cmd);
+						fireWrite(data);
+					}
+				} else {
+					this.input.skip(2L);
+				}
 				
 				continue;          				
 			case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x57: case 0x58: case 0x59: case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x5F:        	
@@ -99,13 +141,18 @@ public class VGMInterpreter {
 				this.input.skip(1L);
 				continue;
 			case 0x95: // DAC Stream Control Write - Start Stream (fast call)
-				fireWrite(0x0E);
-				fireWrite(0x20);
-				fireWrite(0x0E);
-				this.input.read();      // Stream id
-				int blockId = this.input.readShort(); // Block id
-				fireWrite(drum[blockId%drum.length]);
-				this.input.skip(1L);    // skip Flags
+				if (((chip==-1 || chip == _YM2413) && drum != null) && (channel == _YMMAIN || channel==_ALL)) {
+					
+					fireWrite(0x0E);
+					fireWrite(0x20);
+					fireWrite(0x0E);
+					this.input.read();      // Stream id
+					int blockId = this.input.readShort(); // Block id
+					fireWrite(drum[blockId%drum.length]);
+					this.input.skip(1L);    // skip Flags
+				} else {
+					this.input.skip(3L);
+				}
 				continue;								
 			case 0xE0:        	
 				this.input.skip(4L); // data reg

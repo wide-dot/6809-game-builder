@@ -14,6 +14,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
 	
     public WDDebug() {
     	launch(this);
@@ -44,6 +45,7 @@ public class WDDebug extends Application {
             if (ImGui.beginMenu("Engine"))
             {
                 ImGui.menuItem("Object slots", null, SHOW_IMGUI_OJECT_SLOTS_WINDOW);
+                ImGui.menuItem("Smps driver", null, SHOW_IMGUI_SMPS_WINDOW);
                 ImGui.endMenu();
             }
 
@@ -64,6 +66,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
         if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
         if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);
+        if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
         
         ImGui.text(String.format("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui.getIO().getFramerate(), ImGui.getIO().getFramerate()));
     }

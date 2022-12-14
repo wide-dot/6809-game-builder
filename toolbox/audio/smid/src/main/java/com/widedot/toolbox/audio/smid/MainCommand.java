@@ -14,7 +14,7 @@ import picocli.CommandLine.Option;
  * - convert gm to mt32 programms (option)
  */
 
-@Command(name = "smid", description = "midi to simple midi converter")
+@Command(name = "smid", description = "small midi converter")
 @Slf4j
 public class MainCommand implements Runnable {
 	
