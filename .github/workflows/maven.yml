@@ -35,6 +35,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with: 
         name: gamebuilder-package
-        path: |
-              package/target/*.zip
-              package/target/*.jar
+        path: package/target/*.zip
+              
