@@ -12,7 +12,7 @@
 			<directory>${project.parent.basedir}</directory>
 			<outputDirectory>./</outputDirectory>			
 			<includes>
-				<include>/bin/**</include>
+				<include>/toolbox/third-party/bin/**</include>
 				<include>/repo/**</include>				
 			</includes>
 		</fileSet>
