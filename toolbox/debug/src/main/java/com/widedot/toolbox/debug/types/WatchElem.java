@@ -36,20 +36,35 @@ public class WatchElem {
     		intVal = Integer.parseInt(val, 16);
     	}
     	
-		value.set(switch (type) {
-		    case Data.S8, Data.S8h -> (byte) intVal;
-		    case Data.S16, Data.S16h -> (short) intVal;
-		    case Data.U8, Data.U8h, Data.U16, Data.U16h -> intVal;
-		    default -> throw new IllegalStateException();
-		});
+    	switch(type)
+    	{
+    		case Data.S8 :
+    		case Data.S8h : intVal = (byte) intVal; break;
+    		case Data.S16 :
+    		case Data.S16h : intVal = (short) intVal; break;
+    		case Data.U8 :
+    		case Data.U8h :  
+    		case Data.U16 :
+    		case Data.U16h : break ;// intVal == intVal, so no op,
+    		default : throw new IllegalStateException(); 			
+    	}
+    	
+    	value.set(intVal);
+    	
     }
     
-    public int getValue() {	
-		return(switch (type) {
-		    case Data.S8, Data.S8h -> (byte) value.get();
-		    case Data.S16, Data.S16h -> (short) value.get();
-		    case Data.U8, Data.U8h, Data.U16, Data.U16h -> value.get();
-		    default -> throw new IllegalStateException();
-		});
+    public int getValue() {	 	
+    	switch(type)
+    	{
+    		case Data.S8 :
+    		case Data.S8h : return (byte) value.get(); 
+    		case Data.S16 :
+    		case Data.S16h : return (short) value.get();
+    		case Data.U8 :
+    		case Data.U8h :  
+    		case Data.U16 :
+    		case Data.U16h : return value.get(); 
+    		default : throw new IllegalStateException(); 			
+    	}
     }
 }
