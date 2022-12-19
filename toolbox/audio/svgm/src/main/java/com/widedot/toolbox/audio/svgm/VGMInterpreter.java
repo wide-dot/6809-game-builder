@@ -2,7 +2,15 @@ package com.widedot.toolbox.audio.svgm;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public class VGMInterpreter {
 	public static final int SAMPLES_PER_SECOND = 44100;
 	public static final int SAMPLES_PER_FRAME_NTSC = 735;
@@ -14,15 +22,19 @@ public class VGMInterpreter {
 
 	private VGMInputStream input;
 	public int[] arrayOfInt = new int[0x80000];
-	public int i = 0;
+	public int i = 0, s = 0;
 	public int loopMarkerHit = 0;
-	public int cumulatedFrames = 0;
+	public int cumulatedFrames = 0, oldCumulatedFrames = -1;
 	public int[] drum;
 	public int[] drumAtt;
 	public int chip;
 	public int channel;
 	public int currentChannel = -1;
 	public int currentDrums = 0;
+	public int[] ymreg = new int[0x39];
+	public boolean[] ymupd = new boolean[0x39];
+	public int[][] stat = new int[256][256];
+	
 
 	public VGMInterpreter(File paramFile, int[] drumAtt, int[] drum, int chip, int channel) throws IOException {
 		this.input = new VGMInputStream(paramFile);
@@ -30,14 +42,53 @@ public class VGMInterpreter {
 		this.drum = drum;
 		this.chip = chip;
 		this.channel = channel;
+		
+		for (int j = 0; j < ymupd.length; j++) {
+			ymupd[j] = false;
+		}
+		
 		while(run()) {
+		}
+		
+		// print YM2413 stats
+		if (chip==-1 || chip == _YM2413) {
+			log.debug("YM2413 STAT");
+			
+	        HashMap<String, Integer> map = new HashMap<>();
+	        LinkedHashMap<String, Integer> sortedMap = new LinkedHashMap<>();
+	        ArrayList<Integer> list = new ArrayList<>();
+	        int redundancy = 0, distinct = 0;
+	        
+			for (int k=0; k < stat.length; k++) {
+				for (int l=0; l < stat[0].length; l++) {
+					if (stat[k][l]>32) {
+						map.put(String.format("%02X%02X", k, l), stat[k][l]);
+						redundancy += stat[k][l];
+						distinct++;
+					}
+				}
+			}
+			
+	        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+	            list.add(entry.getValue());
+	        }
+	        Collections.sort(list, Collections.reverseOrder());
+	        for (int num : list) {
+	            for (Entry<String, Integer> entry : map.entrySet()) {
+	                if (entry.getValue().equals(num)) {
+	                    sortedMap.put(entry.getKey(), num);
+	                }
+	            }
+	        }
+	        log.debug(sortedMap.toString());
+	        log.debug("redundancy: "+redundancy+" distinct:"+distinct);
 		}
 	}
 
-	public boolean run() throws IOException {
+	public boolean run() throws IOException {		
 		boolean skipFrame = false;
-
 		while (!skipFrame) {
+			
 			if (this.input.isLoopPoint())
 				fireLoopPointHit(); 
 			int i = this.input.read();
@@ -89,8 +140,7 @@ public class VGMInterpreter {
 					}
 					
 					if (currentChannel == channel || channel==_ALL) {
-						fireWrite(cmd);
-						fireWrite(data);
+						fireWrite(cmd, data);
 					}
 				} else {
 					this.input.skip(2L);
@@ -174,26 +224,61 @@ public class VGMInterpreter {
 	}
 
 	public void fireLoopPointHit() {
-		loopMarkerHit = i;
+		loopMarkerHit = s;
 	}
 	
 	public void fireWrite(int paramInt) {
+		fireWriteDelay();
+		arrayOfInt[s++] = paramInt;
+		log.debug(String.format("[SN76489] %02X", arrayOfInt[s-1]));
+	}
+	
+	public void fireWrite(int cmd, int data) {
+		if (ymupd[cmd] && ymreg[cmd] == data) {
+			log.debug(String.format("[YM2413] %02X %02X >>> SKIPPED", cmd, data));
+			return;
+		}
+		fireWriteDelay();
+		arrayOfInt[s++] = cmd;
+		arrayOfInt[s++] = data;
+		ymreg[cmd] = data;
+		ymupd[cmd] = true;
+		log.debug(String.format("[YM2413] %02X %02X", cmd, data));
+		stat[cmd][data] = stat[cmd][data]+1; 
+	}
+	
+	public void fireWriteDelay() {
+		int offset = 0x39;
 		while (cumulatedFrames > 0) {
-			arrayOfInt[i++] = 0x39;
-			if (cumulatedFrames > 127) {
-				arrayOfInt[i++] = cumulatedFrames;
-				cumulatedFrames -= 127;
+			if (chip == _YM2413) {
+				if (cumulatedFrames > 198) {
+					arrayOfInt[s++] = offset+cumulatedFrames;
+					cumulatedFrames -= 198;
+				} else {
+					arrayOfInt[s++] = offset+cumulatedFrames;
+					cumulatedFrames = 0;
+				}
+				log.debug(String.format("[WAIT] %02X (%d)", arrayOfInt[s-1], arrayOfInt[s-1]-offset));
 			} else {
-				arrayOfInt[i++] = cumulatedFrames;
-				cumulatedFrames = 0;
+				arrayOfInt[s++] = 0x39;
+				if (cumulatedFrames > 127) {
+					arrayOfInt[s++] = cumulatedFrames;
+					cumulatedFrames -= 127;
+				} else {
+					arrayOfInt[s++] = cumulatedFrames;
+					cumulatedFrames = 0;
+				}
+				log.debug(String.format("[WAIT] \n%02X (%d)", arrayOfInt[s-1], arrayOfInt[s-1]));
 			}
 		}
-		arrayOfInt[i++] = paramInt;
 	}
 	
 	public void fireWriteEnd() {
-		arrayOfInt[i++] = 0x39;
-		arrayOfInt[i++] = 0x00;
+		fireWriteDelay();
+		arrayOfInt[s++] = 0x39;
+		if (!(chip == _YM2413)) {
+			arrayOfInt[s++] = 0x00;
+		}
 	}
 	
 	public int[] getArrayOfInt() {
@@ -201,6 +286,6 @@ public class VGMInterpreter {
 	}
 	
 	public int getLastIndex() {
-		return i;
+		return s;
 	}	
 }

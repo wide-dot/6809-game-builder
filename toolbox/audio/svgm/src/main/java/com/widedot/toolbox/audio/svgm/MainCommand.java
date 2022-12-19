@@ -24,15 +24,21 @@ public class MainCommand implements Runnable {
             @Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process .vgm input file")
             String inputFile;
     }
-
-    @Option(names = { "-c", "--compress" }, paramLabel = "Compress svgm stream", description = "Compress svgm stream by chips and channels\n")
-    Boolean compress = false;
+//
+//    @Option(names = { "-c", "--compress" }, paramLabel = "Compress svgm stream", description = "Compress svgm stream by chips and channels\n")
+//    Boolean compress = false;
         
 	@Option(names = { "-da", "--drumatt" }, paramLabel = "Drum attenuation remap", description = "Remap YM2413 drum attenuation to given values.\nex: 0xF2,0x62,0x44\nwhere each nibble is 0: max vol, F: silence\n0xF2 : F (unused) 2 (attenuation value for Bass drum)\n0x62 : 6 (attenuation value for Hi-hat) 2 (attenuation value for Snare drum)\n0x44 : 4 (attenuation value for Tom) 4 (attenuation value for Cymbal)\n")
     String drumAttStr = null;
 	
 	@Option(names = { "-rd", "--remapdac" }, paramLabel = "Remap DAC with YM2413 Drum", description = "Remap DAC samples with YM2413 drum.\nParameters are drum values for each dac sample id.\nex: 0x30,0x28,0x21,0x22,0x24\nWhere DAC sample Id 0 is replaced by a YM2413 drum instrument 0x30\n")
     String drumStr = null;
+	
+    @Option(names = { "-ym2413", "--ym2413"}, description = "make a stream for YM2413vgm player")
+    Boolean ym2413vgm = false;
+    
+    @Option(names = { "-sn76489", "--sn76489"}, description = "output vgm data for sn76489")
+    Boolean sn76489vgm = false;
 	
     @Option(names = { "-v", "--verbose"}, description = "Verbose mode. Helpful for troubleshooting.")
     private boolean verbose = false;
@@ -49,7 +55,15 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run()
 	{
-		log.info("Simple Tile Map to binary converter");
+		// verbose mode
+	    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+		if (verbose) {
+		    root.setLevel(ch.qos.logback.classic.Level.DEBUG);
+		} else {
+			root.setLevel(ch.qos.logback.classic.Level.INFO);
+		}
+		
+		log.info("vgm to svgm converte");
 
 		if (drumAttStr != null) {
 			String[] attValues = drumAttStr.split(",");
@@ -82,46 +96,58 @@ public class MainCommand implements Runnable {
                 	File[] files = dir.listFiles((d, name) -> name.endsWith(".stm"));
                 	for (File stmFile : files) {
                 		String fileName = stmFile.getAbsolutePath();
-            			if (fileName.endsWith(".vgm")) {
-            				outputFilename = fileName.replace(".vgm", ".svgm");
-            			} else {
-            				outputFilename = fileName + ".svgm";
-            			}  
-            			convertFile(stmFile, compress);
+           				outputFilename = fileName.replace(".vgm", "");
+            			//convertFile(stmFile, compress, ym2413vgm);
+            			convertFile(stmFile, ym2413vgm, sn76489vgm);
                 	}
                 }
         } else {
-			if (exclusive.inputFile.endsWith(".vgm")) {
-				outputFilename = exclusive.inputFile.replace(".vgm", ".svgm");
-			} else {
-				outputFilename = exclusive.inputFile + ".svgm";
-			}  
-			convertFile(new File(exclusive.inputFile), compress);
+			outputFilename = exclusive.inputFile.replace(".vgm", "");
+			//convertFile(new File(exclusive.inputFile), compress, ym2413vgm);
+			convertFile(new File(exclusive.inputFile), ym2413vgm, sn76489vgm);
         }
         log.info("Done.");
 	}
 
-	private static void convertFile(File paramFile, Boolean compress) {
+	//private static void convertFile(File paramFile, Boolean compress, Boolean ym2413vgm) {
+	private static void convertFile(File paramFile, Boolean ym2413vgm, Boolean sn76489vgm) {
 		VGMInterpreter vGMInterpreter;
 		try {
-			if (compress==false) {
+			
+			if (sn76489vgm) {
+				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._SN76489, VGMInterpreter._ALL);
+				vGMInterpreter.close();
+				exportSound(vGMInterpreter, new File(outputFilename+"-sn76489.svgm"));
+			}			
+			
+			if (ym2413vgm) {
+				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._YM2413, VGMInterpreter._ALL);
+				vGMInterpreter.close();
+				exportSound(vGMInterpreter, new File(outputFilename+"-ym2413.ymm"));
+			} else {
 				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._ALL, VGMInterpreter._ALL);
 				vGMInterpreter.close();
-				exportSound(vGMInterpreter, new File(outputFilename));
-			} else {
-				for (int i=0; i<=3; i++) {
-					vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._SN76489, i);
-					vGMInterpreter.close();
-					exportSound(vGMInterpreter, new File(outputFilename+"."+VGMInterpreter._SN76489+"_"+i));
-				}
-				
-				for (int i=0; i<=9; i++) {
-					vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._YM2413, i);
-					vGMInterpreter.close();
-					exportSound(vGMInterpreter, new File(outputFilename+"."+VGMInterpreter._YM2413+"_"+i));
-				}
-					
+				exportSound(vGMInterpreter, new File(outputFilename+".svgm"));
 			}
+			
+//			if (compress==false) {
+//				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._ALL, VGMInterpreter._ALL, ym2413vgm);
+//				vGMInterpreter.close();
+//				exportSound(vGMInterpreter, new File(outputFilename));
+//			} else {
+//				for (int i=0; i<=3; i++) {
+//					vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._SN76489, i, ym2413vgm);
+//					vGMInterpreter.close();
+//					exportSound(vGMInterpreter, new File(outputFilename+"."+VGMInterpreter._SN76489+"_"+i));
+//				}
+//				
+//				for (int i=0; i<=9; i++) {
+//					vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._YM2413, i, ym2413vgm);
+//					vGMInterpreter.close();
+//					exportSound(vGMInterpreter, new File(outputFilename+"."+VGMInterpreter._YM2413+"_"+i));
+//				}
+//					
+//			}
 		} catch (IOException iOException) {
 			iOException.printStackTrace();
 		} 
