@@ -11,6 +11,11 @@
 	<artifactId>gamebuilder-package</artifactId>
 	<packaging>jar</packaging>
 
+	<properties>
+		<main-class>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</main-class>
+		<exe-version>0.0.0.1</exe-version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.wide-dot</groupId>
@@ -32,7 +37,7 @@
 					<skipAssembly>false</skipAssembly>
 					<archive>
 						<manifest>
-							<mainClass>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</mainClass>
+							<mainClass>${main-class}</mainClass>
 						</manifest>
 					</archive>
 					<descriptors>
@@ -43,7 +48,34 @@
 						<descriptor>./src/main/packaging/jar-with-dependencies.xml</descriptor>
 					</descriptors>
 				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
+
+			<plugin>
+				<groupId>org.skife.maven</groupId>
+				<artifactId>really-executable-jar-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<configuration>
+					<flags>-Xmx1G</flags>
+					<programFile>${project.artifactId}</programFile>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>really-executable-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
