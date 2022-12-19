@@ -11,6 +11,11 @@
 	<artifactId>gamebuilder-package</artifactId>
 	<packaging>jar</packaging>
 
+	<properties>
+		<main-class>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</main-class>
+		<exe-version>0.0.0.1</exe-version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.wide-dot</groupId>
@@ -32,7 +37,7 @@
 					<skipAssembly>false</skipAssembly>
 					<archive>
 						<manifest>
-							<mainClass>com.widedot.m6809.gamebuilder.unpack.tools.MainProg</mainClass>
+							<mainClass>${main-class}</mainClass>
 						</manifest>
 					</archive>
 					<descriptors>
@@ -43,6 +48,71 @@
 						<descriptor>./src/main/packaging/jar-with-dependencies.xml</descriptor>
 					</descriptors>
 				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+            <!-- génération executable Linux et MacOSX -->
+			<plugin>
+				<groupId>org.skife.maven</groupId>
+				<artifactId>really-executable-jar-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<configuration>
+					<flags>-Xmx1G</flags>
+					<programFile>${project.artifactId}</programFile>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>really-executable-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- génération EXE Windows -->
+			<plugin>
+				<groupId>com.akathist.maven.plugins.launch4j</groupId>
+				<artifactId>launch4j-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>l4j-clui</id>
+						<phase>package</phase>
+						<goals>
+							<goal>launch4j</goal>
+						</goals>
+							<configuration>
+							<headerType>console</headerType>
+							<jar>target/${project.artifactId}-${project.version}-jar-with-dependencies.jar</jar>
+							<outfile>target/${project.artifactId}.exe</outfile>
+							<classPath>
+								<mainClass>${main-class}</mainClass>
+							</classPath>
+							<jre>
+								<path>${JAVA_HOME}</path>
+								<minVersion>11</minVersion>
+							</jre>
+							<versionInfo>
+								<fileVersion>${exe-version}</fileVersion>
+								<txtFileVersion>${exe-version}</txtFileVersion>
+								<fileDescription>${project.name}</fileDescription>
+								<copyright>C</copyright>
+								<productVersion>${exe-version}</productVersion>
+								<txtProductVersion>${exe-version}</txtProductVersion>
+								<productName>${project.name}</productName>
+								<internalName>${project.name}</internalName>
+								<originalFilename>${project.artifactId}.exe</originalFilename>
+							</versionInfo>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 			<plugin>

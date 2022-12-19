@@ -4,11 +4,6 @@
 # Log file
 *.log
 
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
 
 # Package Files #
 *.jar
@@ -31,3 +26,4 @@ hs_err_pid*
 /logs/
 /bin/
 /repo/
+/.vscode/
