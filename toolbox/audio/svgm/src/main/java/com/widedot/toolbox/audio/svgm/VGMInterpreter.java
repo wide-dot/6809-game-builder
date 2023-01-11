@@ -160,8 +160,11 @@ public class VGMInterpreter {
 				skipFrame = true;
 				continue;
 			case 0x62: // wait 735 samples (60th of a second)
-				close();
-				throw new IOException("0x62 VGM command not supported at " + Integer.toHexString(this.input.getPosition() - 3) + "\nOnly PAL wait frame is supported either 0x61 0x72 0x03 or 0x63 command");
+				//close();
+				//throw new IOException("0x62 VGM command not supported at " + Integer.toHexString(this.input.getPosition() - 3) + "\nOnly PAL wait frame is supported either 0x61 0x72 0x03 or 0x63 command");
+            	cumulatedFrames++;
+				skipFrame = true;
+				continue;
             case 0x63: // wait 882 samples (50th of a second)
             	cumulatedFrames++;
 				skipFrame = true;

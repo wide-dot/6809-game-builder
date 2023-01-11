@@ -133,3 +133,42 @@ Here a sample of a configuration file :
             </imageset>
         </process>
     </configuration>
+
+-------------------------
+
+Paramètres pour le nouveau générateur de sprites compilés :
+
+linearBits: number of bits that defines a pixel in a plane
+offsetBits: number of bits to shift
+planarBits: number of bits to process before going next plane
+LineBytes: number of bytes that defines a line in a plane
+nbPlanes: number of memory planes
+
+MODE | NAME                 | RESOLUTION | ENCODE RES. | ENCODE PARAMETERS                                 | PLATFORM
+-----|----------------------|------------|-------------|---------------------------------------------------|-------------------------------------
+0    | TO7                  | 320x200x16*| 320x200x2   | linearBits 1 planarBits 0 lineBytes 40 nbPlanes 1 | MO5 / MO6 / TO7/70 / TO8 / TO9 /TO9+
+1    | bit map 4            | 320x200x4  | 320x200x4   | linearBits 1 planarBits 1 lineBytes 40 nbPlanes 2 | MO6 / TO8 / TO9 /TO9+
+1s   | bit map 4 spécial    | 320x200x4  | 320x200x4   | linearBits 2 planarBits 8 lineBytes 40 nbPlanes 2 | MO6 ? /TO8
+2    | 80 colonnes          | 640x200x2  | 640x200x2   | linearBits 1 planarBits 8 lineBytes 40 nbPlanes 2 | MO6 / TO8 / TO9 /TO9+
+3    | bit map 16           | 160x200x16 | 160x200x16  | linearBits 4 planarBits 8 lineBytes 40 nbPlanes 2 | MO6 / TO8 / TO9 /TO9+
+4    | page 1               | 320x200x2  | 320x200x2   | linearBits 1 planarBits 0 lineBytes 40 nbPlanes 1 | MO6 / TO8 / TO9 /TO9+
+5    | page 2               | 320x200x2  | 320x200x2   | linearBits 1 planarBits 0 lineBytes 40 nbPlanes 1 | MO6 / TO8 / TO9 /TO9+
+6    | surimpression        | 320x200x3  | 320x200x2   | linearBits 1 planarBits 0 lineBytes 40 nbPlanes 1 | MO6 / TO8 / TO9 /TO9+
+7    | triple surimpression | 160x200x5  | unsupported | unsuppoted | MO6 / TO8 / TO9 /TO9+
+
+* 2 colors / 8 bits => ajouter un paramètre pour gérer la contrainte de bloc 8px de large
+
+mode 7 is not usable as layer 1 and 2 are encoded in a single byte in RAM B and layer 3 and 4 in a single byte in RAM A, so you have to use bit masking when rendering on each byte written to keep the other layer untouched.
+
+COCO3 - horizontal res. 192, 200 or 225
+---------------------------------------
+
+256x2, 512x2, 640x2
+linearBits 1 planarBits 0 lineBytes 256 nbPlanes 1
+
+256x4, 320x4, 512x4, 640x4
+linearBits 2 planarBits 0 lineBytes 256 nbPlanes 1
+
+160x16, 256x16, 320x16
+linearBits 4 planarBits 0 lineBytes 256 nbPlanes 1
+

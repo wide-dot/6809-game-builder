@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.wide-dot</groupId>
+		<artifactId>6809-game-builder</artifactId>
+		<version>0.0.1</version>
+		<relativePath>../../../pom.xml</relativePath>
+	</parent>
+	<artifactId>png2bin</artifactId>
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.wide-dot</groupId>
+			<artifactId>gamebuilder</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>2.1.0</version>
+				<executions>
+					<execution>
+						<id>assemble</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<repositoryName>repo</repositoryName>							
+							<programs>
+								<program>
+									<mainClass>com.widedot.toolbox.graphics.png.MainCommand</mainClass>
+									<id>png2bin</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>			
+		</plugins>
+	</build>
+</project>

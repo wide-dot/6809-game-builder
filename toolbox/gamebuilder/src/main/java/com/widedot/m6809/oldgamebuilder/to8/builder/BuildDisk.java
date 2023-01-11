@@ -1327,6 +1327,7 @@ public class BuildDisk
 	private static void generateDynamicContent(GameMode gm, Object obj) throws Exception {
 
 		// Generate Tileset index
+		// *******************************************************************************
 		for (Entry<String, Tileset> tileset : obj.tilesets.entrySet()) {
 			byte[] data;
 			int i;
@@ -1363,6 +1364,46 @@ public class BuildDisk
 				}
 			}
 			dynamicContentT2.set(tileset.getValue().name, "index", data);			
+		}
+		
+		// Generate Tileset buffer
+		// *******************************************************************************
+		for (Entry<String, Tileset> tileset : obj.tilesets.entrySet()) {
+			byte[] data;
+			int i;
+			
+			// FLOPPY DISK
+			if (!abortFloppyDisk) {
+				data = new byte[tileset.getValue().tiles.size()*3];
+				i = 0;
+			
+				for (TileBin tile : tileset.getValue().tiles) {
+					data[i++] = (byte)(tile.dataIndex.get(gm).fd_ram_page + 0x60);
+					data[i++] = (byte)(tile.dataIndex.get(gm).fd_ram_address >> 8);		
+					data[i++] = (byte)(tile.dataIndex.get(gm).fd_ram_address & 0xFF);
+				}
+				dynamicContentFD.set(tileset.getValue().name, "buffer", data);
+			}
+
+			// MEGAROM T2
+			data = new byte[tileset.getValue().tiles.size()*3];
+			i = 0;
+			logger.debug("TILESET: " + tileset.getValue().name);
+			if (tileset.getValue().inRAM) {
+				for (TileBin tile : tileset.getValue().tiles) {
+					data[i++] = (byte)(tile.dataIndex.get(gm).t2_ram_page + 0x60);
+					data[i++] = (byte)(tile.dataIndex.get(gm).t2_ram_address >> 8);		
+					data[i++] = (byte)(tile.dataIndex.get(gm).t2_ram_address & 0xFF);	
+					logger.debug("DATA: " + String.format("$%1$02X $%2$04X", data[i-3], tile.dataIndex.get(gm).t2_ram_address));
+				}
+			} else {
+				for (TileBin tile : tileset.getValue().tiles) {
+					data[i++] = (byte)(tile.t2_page + 0x80);
+					data[i++] = (byte)(tile.t2_address >> 8);
+					data[i++] = (byte)(tile.t2_address & 0xFF);
+				}
+			}
+			dynamicContentT2.set(tileset.getValue().name, "buffer", data);			
 		}
 
 		// Place new dynamic content here
