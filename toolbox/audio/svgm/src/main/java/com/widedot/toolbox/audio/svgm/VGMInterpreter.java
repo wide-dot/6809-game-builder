@@ -25,6 +25,7 @@ public class VGMInterpreter {
 	public int i = 0, s = 0;
 	public int loopMarkerHit = 0;
 	public int cumulatedFrames = 0, oldCumulatedFrames = -1;
+	public int cumulatedSamples = 0;
 	public int[] drum;
 	public int[] drumAtt;
 	public int chip;
@@ -87,6 +88,8 @@ public class VGMInterpreter {
 
 	public boolean run() throws IOException {		
 		boolean skipFrame = false;
+		int waitTime = 0;
+		
 		while (!skipFrame) {
 			
 			if (this.input.isLoopPoint())
@@ -149,24 +152,18 @@ public class VGMInterpreter {
 				continue;          				
 			case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x57: case 0x58: case 0x59: case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x5F:        	
 				this.input.skip(2L); // write value dd to register aa
-				continue;          								
+				continue;     
 			case 0x61: // Wait n samples, n can range from 0 to 65535
-				int waitTime = this.input.readShort();
-				if (waitTime%SAMPLES_PER_FRAME_PAL != 0) {
-					close();
-					throw new IOException("0x61 VGM command not supported at " + Integer.toHexString(this.input.getPosition() - 3) + ": " + Integer.toHexString(waitTime) + "\n");
-				}
-            	cumulatedFrames += waitTime/SAMPLES_PER_FRAME_PAL;				
-				skipFrame = true;
+				waitTime = this.input.readShort();
+				cumulatedSamples += waitTime;
+           		skipFrame = true;
 				continue;
 			case 0x62: // wait 735 samples (60th of a second)
-				//close();
-				//throw new IOException("0x62 VGM command not supported at " + Integer.toHexString(this.input.getPosition() - 3) + "\nOnly PAL wait frame is supported either 0x61 0x72 0x03 or 0x63 command");
-            	cumulatedFrames++;
+				cumulatedSamples += 735;
 				skipFrame = true;
 				continue;
             case 0x63: // wait 882 samples (50th of a second)
-            	cumulatedFrames++;
+            	cumulatedSamples += 882;
 				skipFrame = true;
 				continue;
 			case 0x66: // end of sound data
@@ -252,6 +249,10 @@ public class VGMInterpreter {
 	
 	public void fireWriteDelay() {
 		int offset = 0x39;
+		
+    	cumulatedFrames += cumulatedSamples/SAMPLES_PER_FRAME_PAL;
+    	cumulatedSamples = cumulatedSamples%SAMPLES_PER_FRAME_PAL; // saves remaining value
+		
 		while (cumulatedFrames > 0) {
 			if (chip == _YM2413) {
 				if (cumulatedFrames > 198) {
