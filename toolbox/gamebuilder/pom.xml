@@ -11,6 +11,10 @@
 	<artifactId>gamebuilder</artifactId>
 	<packaging>jar</packaging>
 
+	<properties>
+		<main-class>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</main-class>
+	</properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -45,17 +49,43 @@
 				<version>2.1.0</version>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<id>assemble-linux</id>
 						<goals>
 							<goal>assemble</goal>
 						</goals>
+						<phase>package</phase>
 						<configuration>
 							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
-							<repositoryName>repo</repositoryName>
+							<binFolder>/bin/unix</binFolder>
+							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>
-									<mainClass>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</mainClass>
-									<id>gmb</id>
+									<platforms>
+										<platform>unix</platform>
+									</platforms>
+									<mainClass>${main-class}</mainClass>
+									<id>${project.artifactId}</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+					<execution>
+						<id>assemble-win</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>							
+							<binFolder>/bin/windows</binFolder>
+							<repositoryName>repo</repositoryName>							
+							<programs>
+								<program>
+									<platforms>
+										<platform>windows</platform>
+									</platforms>
+									<mainClass>${main-class}</mainClass>
+									<id>${project.artifactId}</id>
 								</program>
 							</programs>
 						</configuration>

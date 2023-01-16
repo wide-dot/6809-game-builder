@@ -19,6 +19,10 @@
 		</dependency>
 	</dependencies>
 
+	<properties>
+		<main-class>com.widedot.toolbox.audio.svgm.MainCommand</main-class>
+	</properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -27,18 +31,43 @@
 				<version>2.1.0</version>
 				<executions>
 					<execution>
-						<id>assemble</id>
+						<id>assemble-linux</id>
 						<goals>
 							<goal>assemble</goal>
 						</goals>
 						<phase>package</phase>
 						<configuration>
 							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<binFolder>/bin/unix</binFolder>
 							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>
-									<mainClass>com.widedot.toolbox.audio.svgm.MainCommand</mainClass>
-									<id>svgm</id>
+									<platforms>
+										<platform>unix</platform>
+									</platforms>
+									<mainClass>${main-class}</mainClass>
+									<id>${project.artifactId}</id>
+								</program>
+							</programs>
+						</configuration>
+					</execution>
+					<execution>
+						<id>assemble-win</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>							
+							<binFolder>/bin/windows</binFolder>
+							<repositoryName>repo</repositoryName>							
+							<programs>
+								<program>
+									<platforms>
+										<platform>windows</platform>
+									</platforms>
+									<mainClass>${main-class}</mainClass>
+									<id>${project.artifactId}</id>
 								</program>
 							</programs>
 						</configuration>

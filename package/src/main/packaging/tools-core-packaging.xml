@@ -12,7 +12,6 @@
 			<directory>${project.parent.basedir}</directory>
 			<outputDirectory>./</outputDirectory>			
 			<includes>
-				<include>/bin/**</include>
 				<include>/repo/**</include>				
 			</includes>
 		</fileSet>

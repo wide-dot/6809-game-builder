@@ -15,5 +15,12 @@
 				<include>*/**</include>
 			</includes>
 		</fileSet>
+		<fileSet>
+			<directory>${project.parent.basedir}/bin/unix</directory>
+			<outputDirectory>/bin</outputDirectory>			
+			<includes>
+				<include>*/**</include>
+			</includes>
+		</fileSet>
 	</fileSets>
 </assembly>
