@@ -28,7 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B compile assembly:single --file pom.xml
+      run: mvn -B compile package --file pom.xml
 
 
     - name: Upload Artifacts
@@ -36,6 +36,6 @@ jobs:
       with: 
         name: gamebuilder-package
         path: | 
-              package/target/*.zip
-              package/target/*.jar
+              package/target/gamebuilder-package.exe
+              package/target/gamebuilder-package
               
