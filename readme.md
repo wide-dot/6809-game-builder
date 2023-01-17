@@ -43,9 +43,12 @@ Demonstrations are available in a dedicated repository : [6809-game-projects]
 - play midi files (EF6850 ACIA)
 
 ## Building the project an Running
+
 Download the latest release or build the project.
 
-To produce the JAR and all its dependencies, including engine (asm) and tools (lwasm, exo, etc.) :
+You need to have Java 11 (or newer) and Maven to be installed first.
+
+To produce the packager which contains all the tools and all their dependencies, including engine (asm) and tools (lwasm, exo, etc.) :
 
 ```bash
 $ mvn clean package
