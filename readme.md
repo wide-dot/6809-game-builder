@@ -42,16 +42,24 @@ Demonstrations are available in a dedicated repository : [6809-game-projects]
 - use ym2413 and sn76489 sound chips
 - play midi files (EF6850 ACIA)
 
-## Build the project
+## Building the project an Running
 Download the latest release or build the project.
 
 To produce the JAR and all its dependencies, including engine (asm) and tools (lwasm, exo, etc.) :
 
 ```bash
-$ mvn clean compile assembly:single
+$ mvn clean package
 ```
 
-Then the uber-jar is in `.\package\target\gamebuilder-package-x.x.x-jar-with-dependencies.jar`
+Then the different plateform distrubution are generated in .\package\target :
+
+- gamebuilder-package.exe (for windows, obviously)
+- gamebuilder-package (for Linux and MacOS)
+
+Copy one on this file depending on your plateform into the folder of your choice and run it : a folder `6809-game-builder-tools` will be created with all the tools.
+
+Then add the `6809-game-builder-tools/bin` directory in your PATH environment variable in order to make them launchable from everywhere.
+
 
 ## Tutorials
 
