@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import com.widedot.m6809.util.FileUtil;
+import com.widedot.toolbox.graphics.engine.VerticalScroll;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -50,6 +52,9 @@ public class MainCommand implements Runnable {
 	
 	@Option(names = { "-oms", "--out-max-size" }, paramLabel = "Output file max size", description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = Integer.MAX_VALUE;
+	
+	@Option(names = { "-vs", "--vertical-scroll" }, paramLabel = "Vertical Scroll Buffer", description = "Output data buffer for Vertical Scroll")
+	private boolean vscroll = false;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -121,7 +126,13 @@ public class MainCommand implements Runnable {
 
 		byte out[][] = convert(image, png.colorModel.getPixelSize(), png.height); // Convert source image to video memory data
 		
-		write(out, paramFile); // write output files by splitting if over memorypage size
+		ArrayList<String> files = write(out, paramFile); // write output files by splitting if over memorypage size
+		
+		if (vscroll) {
+			for (String file : files) {
+				new VerticalScroll(file);
+			}
+		}
 
 	}
 	
@@ -237,14 +248,17 @@ public class MainCommand implements Runnable {
 		return out;
 	}
 	
-	private void write(byte[][] out, File paramFile) throws Exception {
+	private ArrayList<String> write(byte[][] out, File paramFile) throws Exception {
 		// split data into multiple files that are maximum fileMaxSize long
+		ArrayList<String> files = new ArrayList<String>();
 		for (int p = 0; p < nbPlanes; p++) {
 			int readIdx = 0;
 			int writeIdx = 0;
 			int fileId = 0;
 			while (readIdx < out[p].length) {
-				FileOutputStream fis = new FileOutputStream(new File(FileUtil.removeExtension(paramFile.toString()) + "." + p + "." + fileId + ".bin"));
+				String filename = FileUtil.removeExtension(paramFile.toString()) + "." + p + "." + fileId + ".bin";
+				files.add(filename);
+				FileOutputStream fis = new FileOutputStream(new File(filename));
 				byte[] finalArray = new byte[(out[p].length-readIdx<fileMaxSize?out[p].length-readIdx:fileMaxSize)];
 				writeIdx = 0;
 				while (readIdx < out[p].length && writeIdx < fileMaxSize) {
@@ -255,5 +269,6 @@ public class MainCommand implements Runnable {
 				fileId++;
 			}
 		}
+		return files;
 	}
 }
