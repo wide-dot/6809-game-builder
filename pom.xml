@@ -107,6 +107,7 @@
 	<modules>
 		<module>./toolbox/gamebuilder</module>
 		<module>./toolbox/graphics/tilemap/stm</module>
+		<module>./toolbox/graphics/tilemap/leanscroll</module>
 		<module>./toolbox/graphics/compiled</module>
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/audio/smid</module>
