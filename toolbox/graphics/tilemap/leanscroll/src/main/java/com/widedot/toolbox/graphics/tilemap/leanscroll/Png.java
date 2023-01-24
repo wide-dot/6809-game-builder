@@ -9,6 +9,9 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Png {
 	
 	private BufferedImage image;
@@ -17,9 +20,13 @@ public class Png {
 	public int height;
 	public DataBuffer dataBuffer;
 
-	public Png(File paramFile) throws Exception {
+	public Png() {
 		
-		System.out.println("Load "+paramFile.toString()+ " file ...");
+	}
+	
+	public void read(File paramFile) throws Exception {
+		
+		log.info("Read "+paramFile.getAbsolutePath()+ " file ...");
 	
 		try {
 			image = ImageIO.read(paramFile);
@@ -29,15 +36,13 @@ public class Png {
 			dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();
 			
 			if (!(colorModel instanceof IndexColorModel)) {
-				System.out.println("Unsupported file format for " + paramFile.getName() + " : colors are not indexed.");
+				log.info("Unsupported file format for " + paramFile.getName() + " : colors are not indexed.");
 				throw new Exception ("png file format error.");
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out.println(e.toString());
+			log.info(e.toString());
 		}
-		System.out.println("done.");
 	}
-	
 }

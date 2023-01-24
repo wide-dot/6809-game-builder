@@ -6,7 +6,6 @@ import java.awt.image.IndexColorModel;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,12 +13,14 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class TileMap {
 
 	Png tilesetPng;
@@ -35,15 +36,16 @@ public class TileMap {
 	int imgWidth;
 	int imgHeight;
 	
-	public TileMap(File tileset, int tileWidth, int tileHeight, int tilesetWidth, File map, int mapWidth, int mapBitDepth, boolean bigEndian) throws Exception {
-
+	public TileMap() throws Exception {
+	}
+	
+	public void read(File tileset, int tileWidth, int tileHeight, int tilesetWidth, File map, int mapWidth, int mapBitDepth, boolean bigEndian) throws Exception {
 		readTileSet(tileset, tileWidth, tileHeight, tilesetWidth);
 		readMap(map, mapWidth, mapBitDepth, bigEndian);
 		buildImage();
 	}
 
-	public TileMap(File tileset, int tileWidth, int tileHeight, int tilesetWidth, File map) throws Exception {
-
+	public void read(File tileset, int tileWidth, int tileHeight, int tilesetWidth, File map) throws Exception {
 		readTileSet(tileset, tileWidth, tileHeight, tilesetWidth);
 		readMapCSV(map);
 		buildImage();
@@ -53,7 +55,8 @@ public class TileMap {
 		
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
-		tilesetPng = new Png(file);
+		tilesetPng = new Png();
+		tilesetPng.read(file);
 		
 		// read png and extract each tile
 		int tileSize = tileWidth*tileHeight;
@@ -137,7 +140,6 @@ public class TileMap {
     			mapHeight = mapData.length/mapWidth;
     		}
         }
-		
 		
 	}
 	

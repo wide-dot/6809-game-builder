@@ -55,6 +55,15 @@ public class MainCommand implements Runnable {
             private boolean bigEndian;
         }
     }
+    
+    @Option(names = { "-ots", "--outtileset"}, paramLabel = "Output tileset png image", description = "Processed output tileset png")
+    private String outTileset;
+    
+    @Option(names = { "-otm", "--outtilemap"}, paramLabel = "Output tilemap", description = "Processed output tilemap")
+    private String outTileMap;
+    
+	@Option(names = { "-oms", "--out-max-size" }, paramLabel = "Output file max size", description = "Output file maximum size, file will be splitted beyond this value")
+	private int fileMaxSize = Integer.MAX_VALUE;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -72,14 +81,18 @@ public class MainCommand implements Runnable {
 
 	        if (exclusive.dependent != null) {
 	        	File mapFile = new File(exclusive.dependent.map);
-	        	tm = new TileMap(tilesetFile, tileWidth, tileHeight, tilesetWidth, mapFile, exclusive.dependent.mapWidth, exclusive.dependent.mapBitDepth, exclusive.dependent.bigEndian);
+	        	tm = new TileMap();
+	        	tm.read(tilesetFile, tileWidth, tileHeight, tilesetWidth, mapFile, exclusive.dependent.mapWidth, exclusive.dependent.mapBitDepth, exclusive.dependent.bigEndian);
 	        } else {
 	        	File mapcsvFile = new File(exclusive.mapcsv);
-	        	tm = new TileMap(tilesetFile, tileWidth, tileHeight, tilesetWidth, mapcsvFile);
+	        	tm = new TileMap();
+	        	tm.read(tilesetFile, tileWidth, tileHeight, tilesetWidth, mapcsvFile);
 	        }
 			
-	        File outputfile = new File("C:/Users/bhrou/Documents/tmp/fullmap.png");
-	        ImageIO.write(tm.image, "png", outputfile);
+	        ImageMap imgMap = new ImageMap();
+	        imgMap.BuildTileMap(tm.image, 14, 14);
+	        imgMap.WriteTileSet(new File(outTileset));
+	        imgMap.WriteMap(new File(outTileMap), fileMaxSize, false);
 	        
 		} catch (Exception e) {
 			log.error("Error building input image.");
