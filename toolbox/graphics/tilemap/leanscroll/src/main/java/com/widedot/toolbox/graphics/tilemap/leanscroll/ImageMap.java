@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.stream.IntStream;
 import java.util.Arrays;
 
 import javax.imageio.ImageIO;
@@ -39,6 +41,7 @@ public class ImageMap {
 		
 		for (int t = 0; t < nbTiles; t++) {
 			
+			// build the tile at the image position			
 			int tilesetPos = (t%mapWidth)*tileWidth + (t/mapWidth)*tileSize;
 			byte[] tile = new byte[tileSize];
 			for (int y = 0; y < tileHeight; y++) {
@@ -47,6 +50,7 @@ public class ImageMap {
 				}
 			}
 			
+			// check if tile already exists in tileset
 			int index = -1;
 			for (int i = 0; i < tiles.size(); i++) {
 				if (Arrays.equals(tiles.get(i), tile)) {
@@ -54,6 +58,7 @@ public class ImageMap {
 				}
 			}
 			
+			// set the map with the tile id
 			if (index == -1) {
 				tiles.add(tile);
 				index = tiles.size()-1;
@@ -62,10 +67,19 @@ public class ImageMap {
 			mapData[t] = index;
 		}
 		
-		// convert List<byte[]> tiles to BufferedImage
-		tileset = new BufferedImage(tileWidth, tileHeight*nbTiles, BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)image.getColorModel());
-		// continue
-		
+		// convert List<byte[]> tiles to BufferedImage tileset
+		tileset = new BufferedImage(tileWidth, tileHeight*tiles.size(), BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)image.getColorModel());
+		int tileOffset=0;
+		int posInTile=0;
+		for (byte[] tile : tiles) {
+			for (int y=0; y<tileHeight; y++) {
+				for (int x=0; x<tileWidth; x++) {
+					posInTile = x+(y*tileWidth);
+					((DataBufferByte) tileset.getRaster().getDataBuffer()).setElem(posInTile+tileOffset, tile[posInTile]);
+				}
+			}
+			tileOffset += tileWidth*tileHeight;
+		}
 	}
 	
 	public void WriteTileSet(File file) throws Exception {

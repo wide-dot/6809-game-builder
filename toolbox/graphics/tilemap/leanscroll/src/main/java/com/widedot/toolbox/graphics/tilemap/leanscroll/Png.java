@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Png {
 	
-	private BufferedImage image;
+	public BufferedImage image;
 	public ColorModel colorModel;
 	public int width;
 	public int height;
