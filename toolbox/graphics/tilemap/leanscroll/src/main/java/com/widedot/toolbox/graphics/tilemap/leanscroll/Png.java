@@ -19,30 +19,27 @@ public class Png {
 	public int width;
 	public int height;
 	public DataBuffer dataBuffer;
-
-	public Png() {
-		
+	
+	public Png(BufferedImage i) throws Exception {
+		set(i);
 	}
 	
-	public void read(File paramFile) throws Exception {
+	public Png(File paramFile) throws Exception {
 		
 		log.info("Read "+paramFile.getAbsolutePath()+ " file ...");
+		set(ImageIO.read(paramFile));
+	}
 	
-		try {
-			image = ImageIO.read(paramFile);
-			width = image.getWidth();
-			height = image.getHeight();
-			colorModel = image.getColorModel();
-			dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();
-			
-			if (!(colorModel instanceof IndexColorModel)) {
-				log.info("Unsupported file format for " + paramFile.getName() + " : colors are not indexed.");
-				throw new Exception ("png file format error.");
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			log.info(e.toString());
+	public void set(BufferedImage i) throws Exception {
+		image = i;
+		width = image.getWidth();
+		height = image.getHeight();
+		colorModel = image.getColorModel();
+		dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();
+		
+		if (!(colorModel instanceof IndexColorModel)) {
+			log.info("Unsupported file format: colors are not indexed.");
+			throw new Exception ("png file format error.");
 		}
 	}
 }

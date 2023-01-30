@@ -55,8 +55,7 @@ public class TileMap {
 		
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
-		tilesetPng = new Png();
-		tilesetPng.read(file);
+		tilesetPng = new Png(file);
 		
 		// read png and extract each tile
 		int tileSize = tileWidth*tileHeight;
