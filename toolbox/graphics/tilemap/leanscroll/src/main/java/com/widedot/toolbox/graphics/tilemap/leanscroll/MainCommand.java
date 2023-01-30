@@ -47,7 +47,7 @@ public class MainCommand implements Runnable {
 		    @Option(names = { "-tileset"}, required=true, description = "Input png tileset")
 		    private String tileset;
 		
-		    @Option(names = { "-tileWidth"}, required=true, description = "Tile width in pixel")
+		    @Option(names = { "-tilewidth"}, required=true, description = "Tile width in pixel")
 		    private int tileWidth;
 		    
 		    @Option(names = { "-tileheight"}, required=true, description = "Tile Height in pixel")
@@ -83,7 +83,7 @@ public class MainCommand implements Runnable {
 		            @Option(names = { "-mapbitdepth"}, required=true, description = "Tilemap bit depth")
 		            private int mapBitDepth;
 		            
-		            @Option(names = { "-bigendian"}, required=true, description = "Tilemap encoding in Big Endian")
+		            @Option(names = { "-bigendian"}, description = "Tilemap encoding in Big Endian")
 		            private boolean bigEndian;
 		        }
 		    }
@@ -157,6 +157,9 @@ public class MainCommand implements Runnable {
         
         @Option(names = { "-leanCS"}, description = "Output Lean Full Common Shifted image")
     	private String outLeanImageCommonShift;
+        
+    	@Option(names = { "-leanCsize"}, split = ",", description = "Lean Full Common image crop: x,y,width,height")
+        private int[] crop;
     }
 
 	public static void main(String[] args) {
@@ -208,8 +211,9 @@ public class MainCommand implements Runnable {
 	        
 	        if (depLean != null) {
 	        	LeanScroll ls = new LeanScroll(new Png(tm.image), depLean.scrollSteps, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
-	        	if (depLean.outLeanImage != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImage));
-	        	if (depLean.outLeanImageCommon != null) ImageIO.write(ls.leanCommon, "png", new File(depLean.outLeanImageCommon));
+	        	if (depLean.outLeanImage != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImage));      	
+	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, ls.leanCommon.getWidth(), ls.leanCommon.getHeight()};}
+	        	if (depLean.outLeanImageCommon != null) ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommon));
 	        	tm.image = ls.lean;
 	        }
 	        
@@ -232,7 +236,8 @@ public class MainCommand implements Runnable {
 	        if (depLean != null) {
 	        	LeanScroll ls = new LeanScroll(new Png(shiftedImage), depLean.scrollSteps, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
 	        	if (depLean.outLeanImageShift != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImageShift));
-	        	if (depLean.outLeanImageCommonShift != null) ImageIO.write(ls.leanCommon, "png", new File(depLean.outLeanImageCommonShift));
+	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, ls.leanCommon.getWidth(), ls.leanCommon.getHeight()};}
+	        	if (depLean.outLeanImageCommonShift != null) ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommonShift));
 	        	shiftedImage = ls.lean;
 	        }
 	        
