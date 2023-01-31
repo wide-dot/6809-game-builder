@@ -19,7 +19,7 @@ import picocli.CommandLine.Option;
  * - generate a new map and a new tileset with less pixels
  */
 
-@Command(name = "stm2bin", description = "simple tile map to binary converter")
+@Command(name = "leanscroll", description = "")
 @Slf4j
 public class MainCommand implements Runnable {
 	
@@ -96,10 +96,10 @@ public class MainCommand implements Runnable {
 	@Option(names = { "-outmaxsize" }, description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = Integer.MAX_VALUE;
 	
-    @Option(names = { "-outtilewidth"}, required=true, description = "Output tile width in pixel")
+    @Option(names = { "-outtilewidth"}, description = "Output tile width in pixel")
     private int outtileWidth;
     
-    @Option(names = { "-outtileheight"}, required=true, description = "Output tile Height in pixel")
+    @Option(names = { "-outtileheight"}, description = "Output tile Height in pixel")
     private int outtileHeight;
     
     @ArgGroup(exclusive = false)

@@ -45,11 +45,11 @@ public class ImageMap {
 		
 		// init tile 0 to a blank tile
 		tiles.add(new byte[tileSize]);
-		
+		int tilesetPos;
 		for (int t = 0; t < nbTiles; t++) {
 			
 			// build the tile at the image position			
-			int tilesetPos = (t%mapWidth)*tileWidth + (t/mapWidth)*tileSize;
+			tilesetPos = (t%mapWidth)*tileWidth + (t/mapWidth)*tileSize*mapWidth;
 			byte[] tile = new byte[tileSize];
 			for (int y = 0; y < tileHeight; y++) {
 				for (int x = 0; x < tileWidth; x++) {
