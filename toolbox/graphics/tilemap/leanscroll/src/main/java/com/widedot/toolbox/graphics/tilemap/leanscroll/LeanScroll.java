@@ -27,8 +27,8 @@ public class LeanScroll{
 	public LeanScroll(Png png, int[] scrollSteps, int[] scrollNbSteps, boolean multiDir, Integer interlace) throws Throwable {
 
 		this.png = png;
-		width = png.width;
-		height = png.height;
+		width = png.getWidth();
+		height = png.getHeight();
 		this.scrollSteps = scrollSteps;
 		this.scrollNbSteps = scrollNbSteps;
 
@@ -36,14 +36,14 @@ public class LeanScroll{
 		if (interlace != null) {
 			for (int y = 1-interlace; y < height; y+=2) {
 				for (int x = 0; x < width; x++) {	
-					png.dataBuffer.setElem(x+y*width, 0);
+					png.getDataBuffer().setElem(x+y*width, 0);
 				}
 			}
 		}
 
 		// get working images
-		lean = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)png.colorModel);
-		leanCommon = deepCopy(png.image);
+		lean = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)png.getColorModel());
+		leanCommon = deepCopy(png.getImage());
 		
 		// check parameters
 		if (multiDir && (scrollSteps[R] == 0 || scrollSteps[L] == 0 || scrollSteps[U] == 0 || scrollSteps[D] == 0)) {
@@ -77,7 +77,7 @@ public class LeanScroll{
 		// upright scroll			
 		if (scrollSteps[UR] != 0) {
 			for (int i = scrollSteps[UR]; i <= scrollSteps[UR]*scrollNbSteps[UR]; i += scrollSteps[UR]) {							
-				if (!(x+i < width && y-i >= 0 && png.dataBuffer.getElem(x+i+(y-i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x+i < width && y-i >= 0 && png.getDataBuffer().getElem(x+i+(y-i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -87,7 +87,7 @@ public class LeanScroll{
 		// upleft scroll
 		if (scrollSteps[UL] != 0) {
 			for (int i = scrollSteps[UL]; i <= scrollSteps[UL]*scrollNbSteps[UL]; i += scrollSteps[UL]) {							
-				if (!(x-i >= 0  && y-i >= 0 && png.dataBuffer.getElem(x-i+(y-i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x-i >= 0  && y-i >= 0 && png.getDataBuffer().getElem(x-i+(y-i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -97,7 +97,7 @@ public class LeanScroll{
 		// downright scroll			
 		if (scrollSteps[DR] != 0) {
 			for (int i = scrollSteps[DR]; i <= scrollSteps[DR]*scrollNbSteps[DR]; i += scrollSteps[DR]) {							
-				if (!(x+i < width && y+i < height && png.dataBuffer.getElem(x+i+(y+i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x+i < width && y+i < height && png.getDataBuffer().getElem(x+i+(y+i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -107,7 +107,7 @@ public class LeanScroll{
 		// downleft scroll
 		if (scrollSteps[DL] != 0) {
 			for (int i = scrollSteps[DL]; i <= scrollSteps[DL]*scrollNbSteps[DL]; i += scrollSteps[DL]) {							
-				if (!(x-i >= 0  && y+i < height && png.dataBuffer.getElem(x-i+(y+i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x-i >= 0  && y+i < height && png.getDataBuffer().getElem(x-i+(y+i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -117,7 +117,7 @@ public class LeanScroll{
 		// Right scroll			
 		if (scrollSteps[R] != 0) {
 			for (int i = scrollSteps[R]; i <= scrollSteps[R]*scrollNbSteps[R]; i += scrollSteps[R]) {							
-				if (!(x+i < width && png.dataBuffer.getElem(x+i+y*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x+i < width && png.getDataBuffer().getElem(x+i+y*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -127,7 +127,7 @@ public class LeanScroll{
 		// Left scroll
 		if (scrollSteps[L] != 0) {
 			for (int i = scrollSteps[L]; i <= scrollSteps[L]*scrollNbSteps[L]; i += scrollSteps[L]) {							
-				if (!(x-i >= 0 && png.dataBuffer.getElem(x-i+y*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(x-i >= 0 && png.getDataBuffer().getElem(x-i+y*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -137,7 +137,7 @@ public class LeanScroll{
 		// Down scroll			
 		if (scrollSteps[D] != 0) {
 			for (int i = scrollSteps[D]; i <= scrollSteps[D]*scrollNbSteps[D]; i += scrollSteps[D]) {							
-				if (!(y+i < height && png.dataBuffer.getElem(x+(y+i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(y+i < height && png.getDataBuffer().getElem(x+(y+i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -147,7 +147,7 @@ public class LeanScroll{
 		// Up scroll
 		if (scrollSteps[U] != 0) {
 			for (int i = scrollSteps[U]; i <= scrollSteps[U]*scrollNbSteps[U]; i += scrollSteps[U]) {							
-				if (!(y-i >= 0 && png.dataBuffer.getElem(x+(y-i)*width) == png.dataBuffer.getElem(x+y*width))) {
+				if (!(y-i >= 0 && png.getDataBuffer().getElem(x+(y-i)*width) == png.getDataBuffer().getElem(x+y*width))) {
 					keepPixel(x,y);
 					return;
 				}
@@ -158,7 +158,7 @@ public class LeanScroll{
 		if (multiDir) {
 			for (int i = scrollSteps[R]; i <= scrollSteps[R]*scrollNbSteps[R]; i += scrollSteps[R]) {							
 				for (int j = scrollSteps[U]; j <= scrollSteps[U]*scrollNbSteps[U]; j += scrollSteps[U]) {				
-					if ((x+i < width && y-j >= 0 && png.dataBuffer.getElem(x+i+(y-j)*width) != png.dataBuffer.getElem(x+y*width))) {
+					if ((x+i < width && y-j >= 0 && png.getDataBuffer().getElem(x+i+(y-j)*width) != png.getDataBuffer().getElem(x+y*width))) {
 						keepPixel(x,y);
 						return;
 					}
@@ -167,7 +167,7 @@ public class LeanScroll{
 
 			for (int i = scrollSteps[L]; i <= scrollSteps[L]*scrollNbSteps[L]; i += scrollSteps[L]) {	
 				for (int j = scrollSteps[U]; j <= scrollSteps[U]*scrollNbSteps[U]; j += scrollSteps[U]) {
-					if ((x-i >= 0  && y-j >= 0 && png.dataBuffer.getElem(x-i+(y-j)*width) != png.dataBuffer.getElem(x+y*width))) {
+					if ((x-i >= 0  && y-j >= 0 && png.getDataBuffer().getElem(x-i+(y-j)*width) != png.getDataBuffer().getElem(x+y*width))) {
 						keepPixel(x,y);
 						return;
 					}
@@ -176,7 +176,7 @@ public class LeanScroll{
 
 			for (int i = scrollSteps[R]; i <= scrollSteps[R]*scrollNbSteps[R]; i += scrollSteps[R]) {
 				for (int j = scrollSteps[D]; j <= scrollSteps[D]*scrollNbSteps[D]; j += scrollSteps[D]) {
-					if ((x+i < width && y+j < height && png.dataBuffer.getElem(x+i+(y+j)*width) != png.dataBuffer.getElem(x+y*width))) {
+					if ((x+i < width && y+j < height && png.getDataBuffer().getElem(x+i+(y+j)*width) != png.getDataBuffer().getElem(x+y*width))) {
 						keepPixel(x,y);
 						return;
 					}
@@ -185,7 +185,7 @@ public class LeanScroll{
 
 			for (int i = scrollSteps[L]; i <= scrollSteps[L]*scrollNbSteps[L]; i += scrollSteps[L]) {		
 				for (int j = scrollSteps[D]; j <= scrollSteps[D]*scrollNbSteps[D]; j += scrollSteps[D]) {
-					if ((x-i >= 0  && y+j < height && png.dataBuffer.getElem(x-i+(y+j)*width) != png.dataBuffer.getElem(x+y*width))) {
+					if ((x-i >= 0  && y+j < height && png.getDataBuffer().getElem(x-i+(y+j)*width) != png.getDataBuffer().getElem(x+y*width))) {
 						keepPixel(x,y);
 						return;
 					}
@@ -195,7 +195,7 @@ public class LeanScroll{
 	}	
 	
 	public void keepPixel(int x, int y) {
-		lean.getRaster().getDataBuffer().setElem(x+y*width, png.dataBuffer.getElem(x+y*width));
+		lean.getRaster().getDataBuffer().setElem(x+y*width, png.getDataBuffer().getElem(x+y*width));
 		leanCommon.getRaster().getDataBuffer().setElem(x+y*width, 0);
 	}
 	

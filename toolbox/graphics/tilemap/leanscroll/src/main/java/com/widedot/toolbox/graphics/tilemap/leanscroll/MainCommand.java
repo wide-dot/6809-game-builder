@@ -179,7 +179,7 @@ public class MainCommand implements Runnable {
 		        // read input image
 	        	tm = new TileMap();
 	    		Png png = new Png(new File(exclusiveInput.inImage));
-	        	tm.image = png.image;
+	        	tm.image = png.getImage();
 	        } else {
 		        // read input tilemap
 		        File tilesetFile = new File(exclusiveInput.inMap.tileset);

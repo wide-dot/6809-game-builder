@@ -59,7 +59,7 @@ public class TileMap {
 		
 		// read png and extract each tile
 		int tileSize = tileWidth*tileHeight;
-		int nbTiles = tilesetPng.dataBuffer.getSize()/tileSize;
+		int nbTiles = tilesetPng.getDataBuffer().getSize()/tileSize;
 		tiles = new byte[nbTiles][tileSize];
 		
 		int tilesetLineWidth = tileWidth*tilesetWidth;
@@ -70,7 +70,7 @@ public class TileMap {
 			
 			for (int y = 0; y < tileHeight; y++) {
 				for (int x = 0; x < tileWidth; x++) {
-					tiles[t][x+y*tileWidth] = (byte) tilesetPng.dataBuffer.getElem(tilesetPos + x  + y*tilesetLineWidth);
+					tiles[t][x+y*tileWidth] = (byte) tilesetPng.getDataBuffer().getElem(tilesetPos + x  + y*tilesetLineWidth);
 				}
 			}
 		}
@@ -146,7 +146,7 @@ public class TileMap {
 		imgWidth = mapWidth*tileWidth;
 		imgHeight = mapHeight*tileHeight;
 		int tileSize = tileWidth*tileHeight;
-		image = new BufferedImage(imgWidth, imgHeight, BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)tilesetPng.colorModel);
+		image = new BufferedImage(imgWidth, imgHeight, BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel)tilesetPng.getColorModel());
 		
 		for (int ty = 0; ty < mapHeight; ty++) {
 			for (int tx = 0; tx < mapWidth; tx++) {
