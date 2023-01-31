@@ -9,37 +9,47 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Png {
 	
-	public BufferedImage image;
-	public ColorModel colorModel;
-	public int width;
-	public int height;
-	public DataBuffer dataBuffer;
+	@Getter
+	private BufferedImage image;
 	
-	public Png(BufferedImage i) throws Exception {
-		set(i);
+	@Getter
+	private ColorModel colorModel;
+	
+	@Getter
+	private int width;
+	
+	@Getter
+	private int height;
+	
+	@Getter
+	private DataBuffer dataBuffer;
+	
+	public Png(BufferedImage bufferedImage) throws Exception {
+		set(bufferedImage);
 	}
 	
-	public Png(File paramFile) throws Exception {
-		
+	public Png(File paramFile) throws Exception {	
 		log.info("Read "+paramFile.getAbsolutePath()+ " file ...");
 		set(ImageIO.read(paramFile));
 	}
 	
-	public void set(BufferedImage i) throws Exception {
-		image = i;
-		width = image.getWidth();
-		height = image.getHeight();
+	public void set(BufferedImage bufferedImage) {
 		colorModel = image.getColorModel();
-		dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();
 		
 		if (!(colorModel instanceof IndexColorModel)) {
 			log.info("Unsupported file format: colors are not indexed.");
-			throw new Exception ("png file format error.");
+			throw new RuntimeException ("PNG file format error.");
 		}
+		
+		this.image = bufferedImage;
+		this.width = image.getWidth();
+		this.height = image.getHeight();
+		this.dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();		
 	}
 }
