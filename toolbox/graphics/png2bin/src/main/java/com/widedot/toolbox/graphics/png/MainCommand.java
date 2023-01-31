@@ -20,7 +20,11 @@ import picocli.CommandLine.Option;
  * - convert a indexed png image to binary in various graphical modes
  */
 
-@Command(name = "png2bin", description = "png to binary converter")
+@Command(name = "png2bin",
+         description = "png to binary converter", 
+		 version="0.0.1", 
+		 sortOptions = false, 
+		 mixinStandardHelpOptions = true)
 @Slf4j
 public class MainCommand implements Runnable {
 	
