@@ -95,7 +95,7 @@ public class TileMap {
 			}
 		} else {
 			for (int i = 0; i < raw.length; i += bytes) {
-				for (int j = bytes; j > 0; j--) {
+				for (int j = bytes-1; j >= 0; j--) {
 					mapData[k] = (mapData[k] << 8) | (raw[i+j] & 0xFF);
 				}
 				k++;

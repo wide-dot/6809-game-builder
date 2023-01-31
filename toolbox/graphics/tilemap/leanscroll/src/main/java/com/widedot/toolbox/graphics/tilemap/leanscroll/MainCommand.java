@@ -95,6 +95,12 @@ public class MainCommand implements Runnable {
     
 	@Option(names = { "-outmaxsize" }, description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = Integer.MAX_VALUE;
+	
+    @Option(names = { "-outtilewidth"}, required=true, description = "Output tile width in pixel")
+    private int outtileWidth;
+    
+    @Option(names = { "-outtileheight"}, required=true, description = "Output tile Height in pixel")
+    private int outtileHeight;
     
     @ArgGroup(exclusive = false)
     DepOutTileset depOutTileset;
@@ -196,10 +202,11 @@ public class MainCommand implements Runnable {
 	        
 	        // shift image to produce tileset (shifted by 1px left)
 	        BufferedImage shiftedImage = new BufferedImage(tm.image.getWidth(), tm.image.getHeight(), tm.image.getType(), (IndexColorModel)tm.image.getColorModel());
-	        AffineTransform tx = new AffineTransform();
-	        tx.translate(-1, 0);
-	        AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-	        op.filter(tm.image, shiftedImage);
+	        for (int y=0; y < tm.image.getHeight(); y++) {
+	        	for (int x=0; x < tm.image.getWidth(); x++) {
+	        		shiftedImage.getRaster().getDataBuffer().setElem(x+y*tm.image.getWidth(), tm.image.getRaster().getDataBuffer().getElem((x+1)%tm.image.getWidth()+y*tm.image.getWidth()));
+	        	}
+	        }
 
 	        // Non Shifted Image
 	        // ****************************************************************
@@ -220,7 +227,7 @@ public class MainCommand implements Runnable {
 	        // saves tileset and map
 	        if (depOutTileset != null) {
 		        ImageMap imgMap = new ImageMap();
-		        imgMap.BuildTileMap(tm.image, 14, 14);
+		        imgMap.BuildTileMap(tm.image, outtileWidth, outtileHeight);
 		        imgMap.WriteTileSet(new File(depOutTileset.outTileset));
 		        imgMap.WriteMap(new File(depOutTileset.outTileMap), fileMaxSize, false);
 	        }
@@ -244,7 +251,7 @@ public class MainCommand implements Runnable {
 	        // saves tileset and map
 	        if (depOutTileset1 != null) {
 		        ImageMap imgMap1 = new ImageMap();
-		        imgMap1.BuildTileMap(shiftedImage, 14, 14);
+		        imgMap1.BuildTileMap(shiftedImage, outtileWidth, outtileHeight);
 		        imgMap1.WriteTileSet(new File(depOutTileset1.outTileset));
 		        imgMap1.WriteMap(new File(depOutTileset1.outTileMap), fileMaxSize, false);
 	        }

@@ -40,7 +40,7 @@ public class Png {
 	}
 	
 	public void set(BufferedImage bufferedImage) {
-		colorModel = image.getColorModel();
+		colorModel = bufferedImage.getColorModel();
 		
 		if (!(colorModel instanceof IndexColorModel)) {
 			log.info("Unsupported file format: colors are not indexed.");

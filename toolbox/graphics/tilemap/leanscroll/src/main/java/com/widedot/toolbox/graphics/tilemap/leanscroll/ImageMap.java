@@ -24,6 +24,8 @@ public class ImageMap {
 	BufferedImage image;
 	BufferedImage tileset;
 	public int[] mapData;
+	private int tileWidth;
+	private int tileHeight;
 	
 	public ImageMap() {
 	}
@@ -32,12 +34,17 @@ public class ImageMap {
 		this.image = image;
 		DataBuffer dataBuffer = (DataBufferByte) image.getRaster().getDataBuffer();
 		
+		this.tileWidth = tileWidth;
+		this.tileHeight = tileHeight;
 		int mapWidth = image.getWidth()/tileWidth;
 		int tileSize = tileWidth*tileHeight;
 		int nbTiles = dataBuffer.getSize()/tileSize;
 		List<byte[]> tiles = new ArrayList<byte[]>();
 		int tilesetLineWidth = tileWidth*mapWidth;
 		mapData = new int[nbTiles];
+		
+		// init tile 0 to a blank tile
+		tiles.add(new byte[tileSize]);
 		
 		for (int t = 0; t < nbTiles; t++) {
 			
@@ -84,6 +91,8 @@ public class ImageMap {
 	
 	public void WriteTileSet(File file) throws Exception {
 		ImageIO.write(tileset, "png", file);
+		String properties = (tileset.getHeight()/tileHeight)+",1,"+(tileset.getHeight()/tileHeight);
+		log.info("properties for: "+file.getName()+" "+properties);
 	}
 	
 	public void WriteMap(File file, int fileMaxSize, boolean word) throws Exception {
