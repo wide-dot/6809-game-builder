@@ -15,6 +15,7 @@ This tool also provides a way to build an image from a tilemap and vice versa wi
 * save the rendered map, with or without the lean process (optional)
 * produce a binary map and a tileset with tiles of an choosen size (optional)
 * produce a shifted version of the map and tileset (optional)
+* outputs tileset properties to log : nb of tiles, tileset width, tileset height
 
 ## Usage
 

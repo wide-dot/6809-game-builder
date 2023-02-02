@@ -94,10 +94,10 @@ public class MainCommand implements Runnable {
 	private int fileMaxSize = Integer.MAX_VALUE;
 	
     @Option(names = { "-outtilewidth"}, description = "Output tile width in pixel")
-    private int outtileWidth=exclusiveInput.inMap.tileWidth;
+    private Integer outtileWidth = null;
     
     @Option(names = { "-outtileheight"}, description = "Output tile Height in pixel")
-    private int outtileHeight=exclusiveInput.inMap.tileHeight;
+    private Integer outtileHeight = null;
     
     @ArgGroup(exclusive = false)
     DepOutTileset depOutTileset;
@@ -176,6 +176,11 @@ public class MainCommand implements Runnable {
 	        TileMap tm;
 
 	        if (exclusiveInput.inImage != null) {
+	        	
+	        	// set default tile size
+	        	if (outtileWidth == null) outtileWidth=exclusiveInput.inMap.tileWidth;
+	        	if (outtileHeight == null) outtileHeight=exclusiveInput.inMap.tileHeight;
+	        	
 		        // read input image
 	        	tm = new TileMap();
 	    		Png png = new Png(new File(exclusiveInput.inImage));
