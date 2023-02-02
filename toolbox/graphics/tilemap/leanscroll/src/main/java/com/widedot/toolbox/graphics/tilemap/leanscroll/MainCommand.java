@@ -1,9 +1,6 @@
 package com.widedot.toolbox.graphics.tilemap.leanscroll;
 
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.awt.image.IndexColorModel;
 import java.io.File;
 import javax.imageio.ImageIO;
 
@@ -97,10 +94,10 @@ public class MainCommand implements Runnable {
 	private int fileMaxSize = Integer.MAX_VALUE;
 	
     @Option(names = { "-outtilewidth"}, description = "Output tile width in pixel")
-    private int outtileWidth;
+    private int outtileWidth=exclusiveInput.inMap.tileWidth;
     
     @Option(names = { "-outtileheight"}, description = "Output tile Height in pixel")
-    private int outtileHeight;
+    private int outtileHeight=exclusiveInput.inMap.tileHeight;
     
     @ArgGroup(exclusive = false)
     DepOutTileset depOutTileset;
@@ -129,9 +126,6 @@ public class MainCommand implements Runnable {
 	    @Option(names = { "-outtilemap1"}, required=true, description = "Processed output tilemap (1px shift)")
 	    private String outTileMap;
     }
-    
-    @Option(names = { "-outimage1"}, description = "Processed output image (1px shift)")
-    private String outImage1;
 
 	// LEAN parameters
 	// ************************************************************************
@@ -140,11 +134,11 @@ public class MainCommand implements Runnable {
     DepLean depLean;
 
     static class DepLean {
-    	@Option(names = { "-steps"}, required=true, split = ",", description = "Scroll step in pixels for each directions : U,D,L,R,UL,UR,DL,DR ex: 0,0,2,0,0,0,0,0 for left scrolling of 2 pixels")
-        private int[] scrollSteps;
+    	@Option(names = { "-scrollstep"}, required=true, split = ",", description = "Scroll step in pixels for each directions : U,D,L,R,UL,UR,DL,DR ex: 0,0,2,0,0,0,0,0 for left scrolling of 2 pixels")
+        private int[] scrollStep;
 
     	@Option(names = { "-nbsteps"}, required=true, split = ",", description = "Scroll number of steps for each directions : U,D,L,R,UL,UR,DL,DR ex: 0,0,1,0,0,0,0,0 for left scrolling of 1 step maximum")
-        private int[] scrollNbSteps;
+        private int[] scrollNbSteps; 
 
     	@Option(names = { "-multidir"}, description = "Multidirectional scroll, steps must be declared for up, down, left and right")
         private boolean multiDir = false;
@@ -199,14 +193,6 @@ public class MainCommand implements Runnable {
 		        	tm.read(tilesetFile, exclusiveInput.inMap.tileWidth, exclusiveInput.inMap.tileHeight, exclusiveInput.inMap.tilesetWidth, mapcsvFile);
 		        }
 	        }
-	        
-	        // shift image to produce tileset (shifted by 1px left)
-	        BufferedImage shiftedImage = new BufferedImage(tm.image.getWidth(), tm.image.getHeight(), tm.image.getType(), (IndexColorModel)tm.image.getColorModel());
-	        for (int y=0; y < tm.image.getHeight(); y++) {
-	        	for (int x=0; x < tm.image.getWidth(); x++) {
-	        		shiftedImage.getRaster().getDataBuffer().setElem(x+y*tm.image.getWidth(), tm.image.getRaster().getDataBuffer().getElem((x+1)%tm.image.getWidth()+y*tm.image.getWidth()));
-	        	}
-	        }
 
 	        // Non Shifted Image
 	        // ****************************************************************
@@ -216,12 +202,15 @@ public class MainCommand implements Runnable {
 	        	ImageIO.write(tm.image, "png", new File(outImage));
 	        }
 	        
+	        BufferedImage ImageCommon = null;
+	        
 	        if (depLean != null) {
-	        	LeanScroll ls = new LeanScroll(new Png(tm.image), depLean.scrollSteps, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
+	        	LeanScroll ls = new LeanScroll(new Png(tm.image), depLean.scrollStep, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
 	        	if (depLean.outLeanImage != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImage));      	
 	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, ls.leanCommon.getWidth(), ls.leanCommon.getHeight()};}
 	        	if (depLean.outLeanImageCommon != null) ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommon));
 	        	tm.image = ls.lean;
+	        	ImageCommon = ls.leanCommon;
 	        }
 	        
 	        // saves tileset and map
@@ -235,17 +224,14 @@ public class MainCommand implements Runnable {
 	        // Shifted Image
 	        // ****************************************************************
 	        
-	        // saves full map render image (shifted by 1px left)
-	        if (outImage1 != null) {
-	        	ImageIO.write(shiftedImage, "png", new File(outImage1));
-	        }
-	        
+        	BufferedImage shiftedImage = ImageTransform.shift(tm.image, 1, 0);
+        	
 	        if (depLean != null) {
-	        	LeanScroll ls = new LeanScroll(new Png(shiftedImage), depLean.scrollSteps, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
-	        	if (depLean.outLeanImageShift != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImageShift));
-	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, ls.leanCommon.getWidth(), ls.leanCommon.getHeight()};}
-	        	if (depLean.outLeanImageCommonShift != null) ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommonShift));
-	        	shiftedImage = ls.lean;
+	        	if (depLean.outLeanImageShift != null) ImageIO.write(shiftedImage, "png", new File(depLean.outLeanImageShift));
+	        	
+	        	BufferedImage shiftedImageCommon = ImageTransform.shift(ImageCommon, 1, 0);
+	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, shiftedImageCommon.getWidth(), shiftedImageCommon.getHeight()};}
+	        	if (depLean.outLeanImageCommonShift != null) ImageIO.write(shiftedImageCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommonShift));
 	        }
 	        
 	        // saves tileset and map

@@ -1,63 +1,100 @@
-# stm2bin
+# leanscroll
 ## Description
-Convert [.stm][file-format-stm] Tilemaps produced by Pro Motion NG (Cosmigo) into usable assembly data and code.
+Parse an image or a tilemap and build a lean tilset and map.
+When a scroll is made, some pixels on screen do not change, this tool remove any repetitive pixels in a tilemap, taking in account some scroll parameters.
+It produces an output tileset with the dedicated map.
+
+This tool also provides a way to build an image from a tilemap and vice versa without any transformation.
+
 ## Features
-* extract stm header informations and produce an asm equate file
-* convert tile id from little endian to big endian
-* adjust tile id byte depth to desired size
-* produce a binary file that contains only the tileid
-* split binary files based on a max size (ex: to fit a memory page)
+* read a map as:
+    - a png image
+    - a csv map and a tileset
+    - a bin map and a tileset
+* apply a lean scroll process (optional) and produce a common image that hold deleted pixels (used for screen initilisation before scroll start)
+* save the rendered map, with or without the lean process (optional)
+* produce a binary map and a tileset with tiles of an choosen size (optional)
+* produce a shifted version of the map and tileset (optional)
 
 ## Usage
 
 (for Windows users, add .bat to the script name)
 
-    stm2bin [-ibd=Input byte depth] [-obd=Output byte depth] [-oms=Output file max size] (-d=Input   directory | -f=Input file)
+```
+leanscroll 
 
-    simple tile map to binary converter
-        -d, --dir=Input directory
-        -f, --file=Input file
-        -ibd, --in-byte-depth=Input byte depth          (default: 4)
-        -obd, --out-byte-depth=Output byte depth        (default: 2)
-        -oms, --out-max-size=Output file max size       (default: 16384)
+; input as an image
 
+           -image=<file>       ; png file (indexed color: 0 transp. 1-16 colors)
 
-### Examples
+; or input as a tileset
 
-Convert all .stm tilemaps in current directory to a 8 bit array and split data in 16Ko bin files :
+           -tileset=<file>     ; png file (indexed color: 0 transp. 1-16 colors)
+           -tilesetwidth=<int> ; number of tiles in a tilset row
+           -tilewidth=<int>    ; tile width in pixel
+           -tileheight=<int>   ; tile height in pixel
 
-    stm2bin -d=./ -ibd=4 -obd=1 -oms=16384
+        ; tilemap as csv
 
-Convert the tilemap china.stm to a 16 bit array and split data in 16Ko bin files :
+           -csv=<file>         ; csv file (semicolon separator, tile index 0-n)
 
-    stm2bin -f=china.stm -odb=2
+        ; or tilemap as binary
 
-## Sample Test
-### Input
-china.stm
+           -tilemap=<file>     ; binary file (tile index)
+           -mapwidth=<int>     ; number of tiles in a map row
+           -mapbitdepth=<int>  ; nb of bits for a tile index
+           [-bigendian]        ; (optional) big endian byte order (default little endian)
 
-    53 54 4D 50 14 00 01 00 01 00 00 00 02 00 00 00
-    03 00 00 00 04 00 00 00 05 00 00 00 06 00 00 00
-    07 00 00 00 08 00 00 00 09 00 00 00 0A 00 00 00
-    0B 00 00 00 0C 00 00 00 0D 00 00 00 0E 00 00 00
-    0F 00 00 00 10 00 00 00 11 00 00 00 12 00 00 00
-    13 00 00 00 14 00 00 00
+; output image
 
-### Command
+           [-outimage=<file>]  ; (optional) full map image in png
 
-    stm2bin -f=china.stm -odb=2
+; output tilesets and tilemaps
 
-### Output
-china.equ
+           [-outtileset=<file>    ; (optional) output tileset in png
+            -outtilemap=<file>]   ; (optional) output map in binary
 
-    china.width equ 20
-    china.height equ 1
-    china.bytedepth equ 2
+           [-outtileset1=<file>   ; (optional) output tileset in png, X(1) shifted
+            -outtilemap1=<file>]  ; (optional) output map in binary for X(1) shifted tiles
 
-china.bin
+           [-outtilewidth=<int>]  ; (optional) ouput tile width (default input tile width)
+           [-outtileheight=<int>] ; (optional) ouput tile height (default input tile height)
 
-    00 01 00 02 00 03 00 04 00 05 00 06 00 07 00 08
-    00 09 00 0A 00 0B 00 0C 00 0D 00 0E 00 0F 00 10
-    00 11 00 12 00 13 00 14
+           [-outmaxsize=<int>]    ; (optional) split map files over n bytes (default no split)
 
-[file-format-stm]: ../../../../doc/file-format-stm.md
+; lean processing
+
+           [-scrollstep=<int,int,int,int,int,int,int,int> ; (optional) scroll step in pixel for : up, down, left, right, upleft, upright, downleft, downright directions
+            -nbsteps=<int,int,int,int,int,int,int,int>] ; (optional) number of maximum scroll steps in one frame (used for variable scroll speed) for each directions
+           [-multidir] ; multidirectional scroll (needs scrollstep for up, down , left and right directions)
+           [-interlace=<int>] ; (optional) erase even (0) or odd (1) lines
+           [-leanCsize=<int,int,int,int>] ; common image crop parameters : x, y, width, height
+           [-lean=<file>]   ; (optional) full map image lean in png
+           [-leanC=<file>]  ; (optional) full map image lean common in png
+           [-leanS=<file>]  ; (optional) full map image lean shifted in png
+           [-leanCS=<file>] ; (optional) full map image lean common shifted in png
+```
+
+### Example
+
+```
+leanscroll
+
+-csv=<path>/r-type/objects/levels/01/map/map.csv
+-tileset=<path>/r-type/objects/levels/01/map/tileset.png
+-tilewidth=28
+-tileheight=14
+-tilesetwidth=1
+-outtileset=<path>/r-type/objects/levels/01/map/0/0.png
+-outtilemap=<path>/r-type/objects/levels/01/map/0/0.bin
+-outtileset1=<path>r-type/objects/levels/01/map/1/1.png
+-outtilemap1=<path>/r-type/objects/levels/01/map/1/1.bin
+-scrollstep=0,0,2,0,0,0,0,0
+-nbsteps=0,0,1,0,0,0,0,0
+-lean=<path>/r-type/objects/levels/01/map/0/fullLean.png
+-leanC=<path>/r-type/objects/levels/01/map/init.png
+-leanS=<path>/r-type/objects/levels/01/map/1/fullLean.png
+-leanCsize=0,0,140,168
+-outtilewidth=14
+-outtileheight=14
+```

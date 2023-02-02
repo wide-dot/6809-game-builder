@@ -32,7 +32,7 @@ public class LeanScroll{
 		this.scrollSteps = scrollSteps;
 		this.scrollNbSteps = scrollNbSteps;
 
-		// apply interlace by adding black lines
+		// apply interlace by applying transparent lines
 		if (interlace != null) {
 			for (int y = 1-interlace; y < height; y+=2) {
 				for (int x = 0; x < width; x++) {	

@@ -9,6 +9,8 @@ Here you will find all tools provided by the game engine :
 |[pcm2dpcm][pcm2dpcm]|lossy pcm audio compression|.raw|.bin|
 
 [stm2bin]: ../toolbox/graphics/tilemap/stm/readme.md
+[png2bin]: ../toolbox/graphics/tilemap/stm/readme.md
+[leanscroll]: ../toolbox/graphics/tilemap/leanscroll/readme.md
 [pcm2dpcm]: ../toolbox/third-party/src/audio/dpcm/readme.md
 
 [readme]: ../readme.md
