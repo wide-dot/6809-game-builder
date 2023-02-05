@@ -37,7 +37,7 @@ leanscroll
 
         ; tilemap as csv
 
-           -csv=<file>         ; csv file (semicolon separator, tile index 0-n)
+           -csv=<file>         ; csv file (comma separator, tile index 0-n, 0: transparent tile)
 
         ; or tilemap as binary
 

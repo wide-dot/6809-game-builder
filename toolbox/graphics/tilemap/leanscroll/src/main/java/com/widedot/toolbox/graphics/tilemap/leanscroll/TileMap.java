@@ -122,8 +122,8 @@ public class TileMap {
     			boolean firstLine = true;
     		    List<Integer> records = new ArrayList<>();
     		    while ((line = br.readLine()) != null) {
-    		    	for (String s : line.split(";")) {
-    		    		records.add(Integer.valueOf(s));
+    		    	for (String s : line.split(",", -1)) { // -1 does not ignore empty value
+    		    		records.add(Integer.valueOf((s==""?"0":s))); // allows empty values in csv for tile 0 (transparent)
     		    	}
     		    	if (firstLine) {
     		    		mapWidth = records.size();
