@@ -161,6 +161,9 @@ public class MainCommand implements Runnable {
     	@Option(names = { "-leanCsize"}, split = ",", description = "Lean Full Common image crop: x,y,width,height")
         private int[] crop;
     }
+    
+    @Option(names = { "-outmapbitdepth"}, description = "Output Tilemap bit depth")
+    private int outMapBitDepth;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -223,7 +226,7 @@ public class MainCommand implements Runnable {
 		        ImageMap imgMap = new ImageMap();
 		        imgMap.BuildTileMap(tm.image, outtileWidth, outtileHeight);
 		        imgMap.WriteTileSet(new File(depOutTileset.outTileset));
-		        imgMap.WriteMap(new File(depOutTileset.outTileMap), fileMaxSize, false);
+		        imgMap.WriteMap(new File(depOutTileset.outTileMap), fileMaxSize, outMapBitDepth);
 	        }
 	        
 	        // Shifted Image
@@ -244,7 +247,7 @@ public class MainCommand implements Runnable {
 		        ImageMap imgMap1 = new ImageMap();
 		        imgMap1.BuildTileMap(shiftedImage, outtileWidth, outtileHeight);
 		        imgMap1.WriteTileSet(new File(depOutTileset1.outTileset));
-		        imgMap1.WriteMap(new File(depOutTileset1.outTileMap), fileMaxSize, false);
+		        imgMap1.WriteMap(new File(depOutTileset1.outTileMap), fileMaxSize, outMapBitDepth);
 	        }
 	        
 		} catch (Throwable e) {

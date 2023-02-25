@@ -37,7 +37,7 @@ public class MainCommand implements Runnable {
     @Option(names = { "-ym2413", "--ym2413"}, description = "make a stream for YM2413vgm player")
     Boolean ym2413vgm = false;
     
-    @Option(names = { "-sn76489", "--sn76489"}, description = "output vgm data for sn76489")
+    @Option(names = { "-sn76489", "--sn76489"}, description = "output filtered vgm data for sn76489")
     Boolean sn76489vgm = false;
 	
     @Option(names = { "-v", "--verbose"}, description = "Verbose mode. Helpful for troubleshooting.")
@@ -86,14 +86,14 @@ public class MainCommand implements Runnable {
 		}
 
         if (exclusive.inputDir != null) {
-		log.info("Process each stm file of the directory {}", exclusive.inputDir);
+		log.info("Process each vgm file of the directory {}", exclusive.inputDir);
 
                 // process each stm file of the directory		
                 File dir = new File(exclusive.inputDir);
                 if (!dir.exists() || !dir.isDirectory()) {
                 	log.error("Input directory does not exists !");
                 } else {	
-                	File[] files = dir.listFiles((d, name) -> name.endsWith(".stm"));
+                	File[] files = dir.listFiles((d, name) -> name.endsWith(".vgm"));
                 	for (File stmFile : files) {
                 		String fileName = stmFile.getAbsolutePath();
            				outputFilename = fileName.replace(".vgm", "");
@@ -124,7 +124,9 @@ public class MainCommand implements Runnable {
 				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._YM2413, VGMInterpreter._ALL);
 				vGMInterpreter.close();
 				exportSound(vGMInterpreter, new File(outputFilename+"-ym2413.ymm"));
-			} else {
+			}
+			
+			if (!sn76489vgm&&!ym2413vgm) {
 				vGMInterpreter = new VGMInterpreter(paramFile, drumAtt, drum, VGMInterpreter._ALL, VGMInterpreter._ALL);
 				vGMInterpreter.close();
 				exportSound(vGMInterpreter, new File(outputFilename+".svgm"));

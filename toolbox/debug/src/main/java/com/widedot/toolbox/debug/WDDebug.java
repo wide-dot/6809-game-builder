@@ -3,9 +3,11 @@ package com.widedot.toolbox.debug;
 import com.widedot.toolbox.debug.ui.*;
 
 import imgui.ImGui;
+import imgui.ImVec2;
 import imgui.app.Application;
 import imgui.app.Configuration;
 import imgui.type.ImBoolean;
+import imgui.ImColor;
 
 public class WDDebug extends Application {
 	
@@ -13,6 +15,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_COLLISION_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
 	
@@ -44,6 +47,7 @@ public class WDDebug extends Application {
             }
             if (ImGui.beginMenu("Engine"))
             {
+                ImGui.menuItem("Collision", null, SHOW_IMGUI_COLLISION_WINDOW);
                 ImGui.menuItem("Object slots", null, SHOW_IMGUI_OJECT_SLOTS_WINDOW);
                 ImGui.menuItem("Smps driver", null, SHOW_IMGUI_SMPS_WINDOW);
                 ImGui.endMenu();
@@ -52,7 +56,7 @@ public class WDDebug extends Application {
             ImGui.endMainMenuBar();
             
         }
-
+        
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
@@ -65,6 +69,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
         if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+        if (SHOW_IMGUI_COLLISION_WINDOW.get()) CollisionBox.show(SHOW_IMGUI_COLLISION_WINDOW);
         if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);
         if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
         

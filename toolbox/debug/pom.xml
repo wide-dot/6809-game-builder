@@ -12,11 +12,6 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
-		<dependency>
-			<groupId>com.wide-dot</groupId>
-			<artifactId>gamebuilder</artifactId>
-			<version>${project.version}</version>
-		</dependency>
         <dependency>
             <groupId>io.github.spair</groupId>
             <artifactId>imgui-java-app</artifactId>

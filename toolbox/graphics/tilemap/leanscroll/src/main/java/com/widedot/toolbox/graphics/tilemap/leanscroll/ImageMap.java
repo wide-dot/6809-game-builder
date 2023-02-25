@@ -95,10 +95,11 @@ public class ImageMap {
 		log.info("properties for: "+file.getName()+" "+properties);
 	}
 	
-	public void WriteMap(File file, int fileMaxSize, boolean word) throws Exception {
+	public void WriteMap(File file, int fileMaxSize, Integer bitDepth) throws Exception {
 		int readIdx = 0;
 		int writeIdx = 0;
 		int fileId = 0;
+		boolean word = (bitDepth!=null?(bitDepth==16?true:false):false);
 
 		while (readIdx < mapData.length) {
 			String filename = FileUtil.removeExtension(file.toString()) + "." + fileId + ".bin";

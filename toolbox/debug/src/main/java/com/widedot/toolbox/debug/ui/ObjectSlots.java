@@ -4,6 +4,7 @@ import com.widedot.toolbox.debug.Emulator;
 import com.widedot.toolbox.debug.Symbols;
 
 import imgui.ImColor;
+import imgui.ImVec2;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
 
@@ -46,6 +47,7 @@ public class ObjectSlots {
                  }
                  ImGui.popID();
         	 }
+        	 
     	    ImGui.end();
         }
 	}
