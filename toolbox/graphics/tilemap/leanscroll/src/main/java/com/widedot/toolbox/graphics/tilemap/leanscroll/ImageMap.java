@@ -89,6 +89,21 @@ public class ImageMap {
 		}
 	}
 	
+	public void Transpose() {
+		// transpose lines to columns
+		int[] newMapData = new int[mapData.length];
+		
+		int mapWidth = image.getWidth()/tileWidth;
+		int mapHeight = image.getHeight()/tileHeight;
+		
+		for (int y=0; y<mapHeight; y++) {
+			for (int x=0; x<mapWidth; x++) {
+				newMapData[x*mapHeight+y] = mapData[x+y*mapWidth];
+			}
+		}
+		mapData = newMapData;
+	}
+	
 	public void WriteTileSet(File file) throws Exception {
 		ImageIO.write(tileset, "png", file);
 		String properties = (tileset.getHeight()/tileHeight)+",1,"+(tileset.getHeight()/tileHeight);
