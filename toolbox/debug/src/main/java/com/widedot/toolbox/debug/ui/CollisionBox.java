@@ -1,6 +1,8 @@
 package com.widedot.toolbox.debug.ui;
 
+import com.sun.jna.Memory;
 import com.widedot.toolbox.debug.Emulator;
+import com.widedot.toolbox.debug.OS;
 import com.widedot.toolbox.debug.Symbols;
 
 import imgui.ImVec2;
@@ -9,20 +11,33 @@ import imgui.type.ImBoolean;
 
 public class CollisionBox {
 
-	private static final int WHITE_COLOR = 0xFFFFFFFF;
-	private static final int GREY_COLOR = 0xFFAAAAAA;
-	
-	private static final int PLAYER_COLOR = 0xFF00FF00;
-	private static final int PLAYER_COLOR_HIT = 0xFF0000FF;
-	private static final int PLAYER_LIST = 0;
-	
-	private static final int AI_COLOR = 0xFFFF0000;
-	private static final int AI_COLOR_HIT = 0xFF0000FF;
-	private static final int AI_LIST = 1;
+	private static final int COLOR_WHITE = 0xFFFFFFFF;
+	private static final int COLOR_GREY = 0xFFAAAAAA;
+	private static final int COLOR_RED = 0xFF0000FF;
+	private static final int COLOR_PURPLE = 0xFFFF0FE7;
+	private static final int COLOR_GREEN = 0xFF00FF00;
+	private static final int COLOR_BLUE = 0xFFFF0000;	
+	private static final int COLOR_LBLUE = 0xFFFFEF0F;
+	private static int to8RGB[] = {0,  97, 122, 143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255};
 	
 	private static int xscale = 4;
 	private static int yscale = 2;
+	
+	private static int XRES = 160;
+	private static int YRES = 200;
+	
+	private static int VRES = 256;	
+	
+	private static int vp_x = 144;
+	private static int vp_y = 180;
+	
+	private static int xoffset = (VRES-vp_x)/2;
+	private static int yoffset = (VRES-vp_y)/2;
+
 	private static ImVec2 vMin;
+	
+	private static int[] pixels = new int[XRES*YRES];
+	private static int[] color = new int[16];
 	
 	public static void show(ImBoolean showImGui) {
 		
@@ -31,17 +46,43 @@ public class CollisionBox {
 			vMin.x += ImGui.getWindowPos().x;
 			vMin.y += ImGui.getWindowPos().y;
 			
-			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*256, vMin.y+yscale*256, GREY_COLOR);
-			ImGui.getWindowDrawList().addRect(vMin.x+xscale*((256-160)/2), vMin.y+yscale*((256-200)/2), vMin.x+xscale*((256-160)/2+160), vMin.y+yscale*((256-200)/2+200), WHITE_COLOR);
+			Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+3*0x4000, 8000);
+			Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+3*0x4000+0x2000, 8000);
 			
-			displayList("AABB_player_first", PLAYER_LIST);
-			displayList("AABB_ai_first", AI_LIST);
+			Memory color4bit = OS.readMemory(Emulator.process, Emulator.x7daAddress, 0x20);
+			for (int c=0; c < 0x20; c = c + 2) {
+				color[c/2] = 0xFF000000 | (to8RGB[(color4bit.getByte(c) & 0x0f)] << 16) | (to8RGB[(color4bit.getByte(c) & 0xf0) >> 4] << 8) | to8RGB[color4bit.getByte(c+1) & 0x0f];
+			}
+			
+			int j = 0;
+	        for (int i = 0; i < pixels.length; i=i+4) {
+	        	j = i/4;
+	        	pixels[i]   = color[(ramA.getByte(j) & 0xf0) >> 4];
+	        	pixels[i+1] = color[(ramA.getByte(j) & 0x0f)];
+	        	pixels[i+2] = color[(ramB.getByte(j) & 0xf0) >> 4];
+	        	pixels[i+3] = color[(ramB.getByte(j) & 0x0f)];
+	        }
+			
+			int image = TextureLoader.loadTexture(pixels, XRES, YRES);
+
+			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
+			int x1 = (int) vMin.x+xscale*((VRES-XRES)/2);
+			int y1 = (int) vMin.y+yscale*((VRES-YRES)/2);
+			int x2 = x1+xscale*XRES;
+			int y2 = y1+yscale*YRES;
+			ImGui.getWindowDrawList().addImage(image, x1, y1, x2, y2);
+			//ImGui.getWindowDrawList().addRect(x1, y1, x2, y2, COLOR_WHITE);
+			
+			displayList("AABB_list_friend", COLOR_GREEN);
+			displayList("AABB_list_ennemy", COLOR_BLUE);
+			displayList("AABB_list_player", COLOR_LBLUE);
+			displayList("AABB_list_bonus", COLOR_PURPLE);
 	   	 	
     	    ImGui.end();
         }
 	}
 	
-	private static void displayList(String list, int listColor) {
+	private static void displayList(String list, int color) {
     	String listFirst = Symbols.symbols.get(list);
    	 	Long curAdr = Emulator.getAbsoluteAddress(1, listFirst);
    	 	if (curAdr==null) {return;}
@@ -51,6 +92,9 @@ public class CollisionBox {
    	 	do {
 	   	 	Long hitbox = Emulator.getAbsoluteAddress(1, next);
 	   	 	
+	   	 	if (hitbox == null)
+	   	 		break;
+	   	 	
 			p = Emulator.get(hitbox, 1);
 			rx = Emulator.get(hitbox+1, 1);
 			ry = Emulator.get(hitbox+2, 1);
@@ -58,8 +102,8 @@ public class CollisionBox {
 			cy = Emulator.get(hitbox+4, 1);
 			prev = Emulator.get(hitbox+5, 2);
 			
-            ImGui.getWindowDrawList().addRect(vMin.x+xscale*(cx-rx), vMin.y+yscale*(cy-ry), vMin.x+xscale*(cx+rx), vMin.y+yscale*(cy+ry), (listColor==PLAYER_LIST?(p!=0?PLAYER_COLOR:PLAYER_COLOR_HIT):(p!=0?AI_COLOR:AI_COLOR_HIT)));
-            ImGui.getWindowDrawList().addText(vMin.x+xscale*(cx-rx), vMin.y+yscale*(cy-ry-10), WHITE_COLOR, Integer.toHexString(next)+" p:"+p);
+            ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry), xscale*xoffset+vMin.x+xscale*(cx+rx), yscale*yoffset+vMin.y+yscale*(cy+ry), color);
+            ImGui.getWindowDrawList().addText(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-10), COLOR_WHITE, Integer.toHexString(next)+" p:"+p);
             
 			next = Emulator.get(hitbox+7, 2);
             
