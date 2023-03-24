@@ -8,13 +8,14 @@ import com.widedot.toolbox.debug.Symbols;
 import imgui.ImVec2;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
+import imgui.type.ImString;
 
 public class CollisionBox {
 
 	private static final int COLOR_WHITE = 0xFFFFFFFF;
 	private static final int COLOR_GREY = 0xFFAAAAAA;
 	private static final int COLOR_RED = 0xFF0000FF;
-	private static final int COLOR_PURPLE = 0xFFFF0FE7;
+	private static final int COLOR_PURPLE = 0xFFFF00FF;
 	private static final int COLOR_GREEN = 0xFF00FF00;
 	private static final int COLOR_BLUE = 0xFFFF0000;	
 	private static final int COLOR_LBLUE = 0xFFFFEF0F;
@@ -28,26 +29,31 @@ public class CollisionBox {
 	
 	private static int VRES = 256;	
 	
-	private static int vp_x = 144;
-	private static int vp_y = 180;
-	
-	private static int xoffset = (VRES-vp_x)/2;
-	private static int yoffset = (VRES-vp_y)/2;
+	private static int xoffset = (VRES-XRES)/2;
+	private static int yoffset = (VRES-YRES)/2;
 
 	private static ImVec2 vMin;
 	
 	private static int[] pixels = new int[XRES*YRES];
 	private static int[] color = new int[16];
 	
+	public static ImBoolean workingChk = new ImBoolean(true);
+	
 	public static void show(ImBoolean showImGui) {
 		
         if (ImGui.begin("Collision", showImGui)) {
 			vMin = ImGui.getWindowContentRegionMin();
 			vMin.x += ImGui.getWindowPos().x;
-			vMin.y += ImGui.getWindowPos().y;
+			vMin.y += ImGui.getWindowPos().y+25;
 			
-			Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+3*0x4000, 8000);
-			Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+3*0x4000+0x2000, 8000);
+	   	 	ImGui.checkbox("visible buffer##workingChk", workingChk);
+	   	 	String var = Symbols.symbols.get("glb_Cur_Wrk_Screen_Id");
+	   	 	Long pos = Emulator.getAbsoluteAddress(1, var);
+	   	 	Integer page = Emulator.get(pos, 1);
+	   	 	Integer wrkPage = page+2;
+	   	 	Integer curPage = (workingChk.get()?wrkPage^1:wrkPage);
+			Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000, 8000);
+			Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000+0x2000, 8000);
 			
 			Memory color4bit = OS.readMemory(Emulator.process, Emulator.x7daAddress, 0x20);
 			for (int c=0; c < 0x20; c = c + 2) {
@@ -66,12 +72,12 @@ public class CollisionBox {
 			int image = TextureLoader.loadTexture(pixels, XRES, YRES);
 
 			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
-			int x1 = (int) vMin.x+xscale*((VRES-XRES)/2);
-			int y1 = (int) vMin.y+yscale*((VRES-YRES)/2);
+			int x1 = (int) vMin.x+xscale*xoffset;
+			int y1 = (int) vMin.y+yscale*yoffset;
 			int x2 = x1+xscale*XRES;
 			int y2 = y1+yscale*YRES;
 			ImGui.getWindowDrawList().addImage(image, x1, y1, x2, y2);
-			//ImGui.getWindowDrawList().addRect(x1, y1, x2, y2, COLOR_WHITE);
+			ImGui.getWindowDrawList().addRect(x1-1, y1-1, x2+1, y2+1, COLOR_PURPLE);
 			
 			displayList("AABB_list_friend", COLOR_GREEN);
 			displayList("AABB_list_ennemy", COLOR_BLUE);
