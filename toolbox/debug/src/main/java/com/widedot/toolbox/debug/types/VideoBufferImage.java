@@ -21,13 +21,17 @@ public class VideoBufferImage {
 		yres = yr;
 		pixels = new int[xres*yres];
 	}
-	
-	public int get(ImBoolean workingChk) {
+
+	public int getPage(ImBoolean workingChk) {
 	 	String var = Symbols.symbols.get("glb_Cur_Wrk_Screen_Id");
 	 	Long pos = Emulator.getAbsoluteAddress(1, var);
 	 	Integer page = Emulator.get(pos, 1);
 	 	Integer wrkPage = page+2;
-	 	Integer curPage = (workingChk.get()?wrkPage^1:wrkPage);
+	 	return (workingChk.get()?wrkPage^1:wrkPage);
+	}
+	
+	public int get(ImBoolean workingChk) {
+		int curPage = getPage(workingChk);
 		Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000, 8000);
 		Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000+0x2000, 8000);
 		
