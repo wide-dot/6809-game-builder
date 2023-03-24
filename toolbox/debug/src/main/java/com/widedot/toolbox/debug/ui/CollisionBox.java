@@ -4,6 +4,7 @@ import com.sun.jna.Memory;
 import com.widedot.toolbox.debug.Emulator;
 import com.widedot.toolbox.debug.OS;
 import com.widedot.toolbox.debug.Symbols;
+import com.widedot.toolbox.debug.types.VideoBufferImage;
 
 import imgui.ImVec2;
 import imgui.internal.ImGui;
@@ -19,7 +20,6 @@ public class CollisionBox {
 	private static final int COLOR_GREEN = 0xFF00FF00;
 	private static final int COLOR_BLUE = 0xFFFF0000;	
 	private static final int COLOR_LBLUE = 0xFFFFEF0F;
-	private static int to8RGB[] = {0,  97, 122, 143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255};
 	
 	private static int xscale = 4;
 	private static int yscale = 2;
@@ -34,10 +34,8 @@ public class CollisionBox {
 
 	private static ImVec2 vMin;
 	
-	private static int[] pixels = new int[XRES*YRES];
-	private static int[] color = new int[16];
-	
 	public static ImBoolean workingChk = new ImBoolean(true);
+	public static VideoBufferImage image = new VideoBufferImage(XRES, YRES);
 	
 	public static void show(ImBoolean showImGui) {
 		
@@ -47,36 +45,12 @@ public class CollisionBox {
 			vMin.y += ImGui.getWindowPos().y+25;
 			
 	   	 	ImGui.checkbox("visible buffer##workingChk", workingChk);
-	   	 	String var = Symbols.symbols.get("glb_Cur_Wrk_Screen_Id");
-	   	 	Long pos = Emulator.getAbsoluteAddress(1, var);
-	   	 	Integer page = Emulator.get(pos, 1);
-	   	 	Integer wrkPage = page+2;
-	   	 	Integer curPage = (workingChk.get()?wrkPage^1:wrkPage);
-			Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000, 8000);
-			Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000+0x2000, 8000);
-			
-			Memory color4bit = OS.readMemory(Emulator.process, Emulator.x7daAddress, 0x20);
-			for (int c=0; c < 0x20; c = c + 2) {
-				color[c/2] = 0xFF000000 | (to8RGB[(color4bit.getByte(c) & 0x0f)] << 16) | (to8RGB[(color4bit.getByte(c) & 0xf0) >> 4] << 8) | to8RGB[color4bit.getByte(c+1) & 0x0f];
-			}
-			
-			int j = 0;
-	        for (int i = 0; i < pixels.length; i=i+4) {
-	        	j = i/4;
-	        	pixels[i]   = color[(ramA.getByte(j) & 0xf0) >> 4];
-	        	pixels[i+1] = color[(ramA.getByte(j) & 0x0f)];
-	        	pixels[i+2] = color[(ramB.getByte(j) & 0xf0) >> 4];
-	        	pixels[i+3] = color[(ramB.getByte(j) & 0x0f)];
-	        }
-			
-			int image = TextureLoader.loadTexture(pixels, XRES, YRES);
-
 			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
 			int x1 = (int) vMin.x+xscale*xoffset;
 			int y1 = (int) vMin.y+yscale*yoffset;
 			int x2 = x1+xscale*XRES;
 			int y2 = y1+yscale*YRES;
-			ImGui.getWindowDrawList().addImage(image, x1, y1, x2, y2);
+			ImGui.getWindowDrawList().addImage(image.get(workingChk), x1, y1, x2, y2);
 			ImGui.getWindowDrawList().addRect(x1-1, y1-1, x2+1, y2+1, COLOR_PURPLE);
 			
 			displayList("AABB_list_friend", COLOR_GREEN);
