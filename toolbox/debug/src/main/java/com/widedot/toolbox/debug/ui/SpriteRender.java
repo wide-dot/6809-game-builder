@@ -13,16 +13,16 @@ import imgui.type.ImString;
 
 public class SpriteRender {
 
-	private static final int COLOR_WHITE = 0xFFFFFFFF;
-	private static final int COLOR_GREY = 0xFFAAAAAA;
-	private static final int COLOR_RED = 0xFF0000FF;
-	private static final int COLOR_PURPLE = 0xFFFF00FF;
-	private static final int COLOR_GREEN = 0xFF00FF00;
-	private static final int COLOR_BLUE = 0xFFFF0000;	
-	private static final int COLOR_LBLUE = 0xFFFFEF0F;
+	private static final int COLOR_WHITE = 0x88FFFFFF;
+	private static final int COLOR_GREY = 0x88AAAAAA;
+	private static final int COLOR_RED = 0x880000FF;
+	private static final int COLOR_PURPLE = 0x88FF00FF;
+	private static final int COLOR_GREEN = 0x8800FF00;
+	private static final int COLOR_BLUE = 0x88FF0000;	
+	private static final int COLOR_LBLUE = 0x88FFEF0F;
 	
-	private static int xscale = 4;
-	private static int yscale = 2;
+	private static int xscale = 6;
+	private static int yscale = 3;
 	
 	private static int XRES = 160;
 	private static int YRES = 200;
@@ -36,7 +36,7 @@ public class SpriteRender {
 	
 	public static ImBoolean workingChk = new ImBoolean(true);
 	public static VideoBufferImage image = new VideoBufferImage(XRES, YRES);
-	
+		
 	public static void show(ImBoolean showImGui) {
 		
         if (ImGui.begin("Sprite Render", showImGui)) {
@@ -45,6 +45,7 @@ public class SpriteRender {
 			vMin.y += ImGui.getWindowPos().y+25;
 			
 	   	 	ImGui.checkbox("visible buffer##workingChkSR", workingChk);
+	   	 	ImGui.text("Page: "+image.getPage(workingChk));
 			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
 			int x1 = (int) vMin.x+xscale*xoffset;
 			int y1 = (int) vMin.y+yscale*yoffset;
@@ -99,7 +100,7 @@ public class SpriteRender {
 			y2 = Emulator.get(bufferPos+rsv_prev_y2_pixel, 1);
 			
             ImGui.getWindowDrawList().addRect(vMin.x+xscale*x1, vMin.y+yscale*y1,
-            		                          vMin.x+xscale*x2, vMin.y+yscale*y2, color);
+            		                          vMin.x+xscale*(x2+1), vMin.y+yscale*(y2+1), color);
             
 			next = Emulator.get(obj+run_object_next, 2);
             

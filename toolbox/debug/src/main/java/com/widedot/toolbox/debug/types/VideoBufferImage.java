@@ -16,10 +16,13 @@ public class VideoBufferImage {
 	private static int[] pixels;
 	private static int[] color = new int[16];
 	
+	public static TextureLoader image;
+	
 	public VideoBufferImage(int xr, int yr) {
 		xres = xr;
 		yres = yr;
 		pixels = new int[xres*yres];
+		image = new TextureLoader();
 	}
 
 	public int getPage(ImBoolean workingChk) {
@@ -48,6 +51,6 @@ public class VideoBufferImage {
 	    	pixels[i+2] = color[(ramB.getByte(j) & 0xf0) >> 4];
 	    	pixels[i+3] = color[(ramB.getByte(j) & 0x0f)];
 	    }
-	    return TextureLoader.loadTexture(pixels, xres, yres);
+	    return image.loadTexture(pixels, xres, yres);
 	}
 }

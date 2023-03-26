@@ -13,13 +13,13 @@ import imgui.type.ImString;
 
 public class CollisionBox {
 
-	private static final int COLOR_WHITE = 0xFFFFFFFF;
-	private static final int COLOR_GREY = 0xFFAAAAAA;
-	private static final int COLOR_RED = 0xFF0000FF;
-	private static final int COLOR_PURPLE = 0xFFFF00FF;
-	private static final int COLOR_GREEN = 0xFF00FF00;
-	private static final int COLOR_BLUE = 0xFFFF0000;	
-	private static final int COLOR_LBLUE = 0xFFFFEF0F;
+	private static final int COLOR_WHITE = 0x88FFFFFF;
+	private static final int COLOR_GREY = 0x88AAAAAA;
+	private static final int COLOR_RED = 0x880000FF;
+	private static final int COLOR_PURPLE = 0x88FF00FF;
+	private static final int COLOR_GREEN = 0x8800FF00;
+	private static final int COLOR_BLUE = 0x88FF0000;	
+	private static final int COLOR_LBLUE = 0x88FFEF0F;
 	
 	private static int xscale = 4;
 	private static int yscale = 2;
@@ -45,6 +45,7 @@ public class CollisionBox {
 			vMin.y += ImGui.getWindowPos().y+25;
 			
 	   	 	ImGui.checkbox("visible buffer##workingChk", workingChk);
+	   	 	ImGui.text("Page: "+image.getPage(workingChk));
 			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
 			int x1 = (int) vMin.x+xscale*xoffset;
 			int y1 = (int) vMin.y+yscale*yoffset;
@@ -83,8 +84,10 @@ public class CollisionBox {
 			cy = Emulator.get(hitbox+4, 1);
 			prev = Emulator.get(hitbox+5, 2);
 			
-            ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry), xscale*xoffset+vMin.x+xscale*(cx+rx), yscale*yoffset+vMin.y+yscale*(cy+ry), color);
-            ImGui.getWindowDrawList().addText(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-10), COLOR_WHITE, Integer.toHexString(next)+" p:"+p);
+            ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry),
+            		                          xscale*xoffset+vMin.x+xscale*(cx+rx+1), yscale*yoffset+vMin.y+yscale*(cy+ry+1), color);
+            ImGui.getWindowDrawList().addText(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-10),
+            								  COLOR_WHITE, Integer.toHexString(next)+" p:"+p);
             
 			next = Emulator.get(hitbox+7, 2);
             
