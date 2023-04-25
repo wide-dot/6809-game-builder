@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStack;
+import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStackNode;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprTerm;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Section;
@@ -16,6 +17,7 @@ import com.widedot.m6809.gamebuilder.lwtools.struct.Symbol;
 
 public class LWObj {
 
+	public String filename;
 	public byte[] filedata;
 	public int cc;
 	
@@ -45,6 +47,7 @@ public class LWObj {
 	}
 	
 	public LWObj(String fileName) throws Exception {
+		filename = fileName;
 		Path path = Paths.get(fileName);
 		filedata = Files.readAllBytes(path);
 		
@@ -143,7 +146,6 @@ public class LWObj {
 			Section section = new Section();
 			secLst.add(section);
 			
-			section.localsyms = null;
 			section.flags = 0;
 			section.codesize = 0;
 			section.name = fp;
@@ -259,19 +261,23 @@ public class LWObj {
 						tt |= CURBYTE();
 						NEXTBYTE();
 						// normalize for negatives...
-						if (tt > 0x7fff)
-							tt -= 0x10000;
+						if (tt > 0x7fff) tt -= 0x10000;
 						System.out.printf(" I16=%d", tt);
+						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_INT);
 						break;
 					
 					case 0x02:
 						// external symbol reference
-						System.out.printf(" ES=%s", string_cleanup(CURSTR()));
+						fp = CURSTR();
+						System.out.printf(" ES=%s", string_cleanup(fp));
+						term = new LWExprTerm(fp, 0);
 						break;
 						
 					case 0x03:
 						// internal symbol reference
-						System.out.printf(" IS=%s", string_cleanup(CURSTR()));
+						fp = CURSTR();
+						System.out.printf(" IS=%s", string_cleanup(fp));
+						term = new LWExprTerm(fp, 1);
 						break;
 					
 					case 0x04:
@@ -280,6 +286,7 @@ public class LWObj {
 							System.out.printf(" OP=%s", opernames[CURBYTE()]);
 						else
 							System.out.printf(" OP=?");
+						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_OPER);
 						NEXTBYTE();
 						break;
 
@@ -287,16 +294,24 @@ public class LWObj {
 						// section base reference (NULL internal reference is
 						// the section base address
 						System.out.printf(" SB");
+						term = new LWExprTerm(null, 1);
 						break;
 					
 					case 0xFF:
 						// section flags
 						System.out.printf(" FLAGS=%02X", CURBYTE());
+						tt = CURBYTE();
+						section.flags = tt;
 						NEXTBYTE();
+						term = null;
 						break;
 						
 					default:
-						System.out.printf(" ERR");
+						throw new Exception (String.format("%s (%s): bad relocation expression (%02X)\n", filename, section.name, tt));
+					}
+					
+					if (term != null) {
+						lw_expr_stack_push(rel.expr, term);
 					}
 				}
 				// skip the NUL
@@ -305,7 +320,8 @@ public class LWObj {
 				// fetch the offset
 				val = CURBYTE() << 8;
 				NEXTBYTE();
-				val |= CURBYTE() & 0xff;
+				val |= CURBYTE();
+				rel.offset = val;
 				NEXTBYTE();
 				System.out.printf(" ) @ %04X\n", val);
 			}
@@ -317,25 +333,56 @@ public class LWObj {
 			val = CURBYTE() << 8;
 			NEXTBYTE();
 			val |= CURBYTE();
+			section.codesize = val;
 			NEXTBYTE();
 			
-			System.out.printf("    CODE %04X bytes", val);
+			section.code = new byte[section.codesize];
+			
+			System.out.printf("    CODE %04X bytes", section.codesize);
 			
 			// skip the code if we're not in a BSS section
 			if (bss==0)
 			{
 				int i;
-				for (i = 0; i < val; i++)
+				for (i = 0; i < section.codesize; i++)
 				{
 					if ((i % 16)==0)
 					{
 						System.out.printf("\n    %04X ", i);
 					}
 					System.out.printf("%02X", CURBYTE());
+					section.code[i] = (byte) CURBYTE();
 					NEXTBYTE();
 				}
 			}
 			System.out.printf("\n");
+		}
+	}
+	
+
+	private void lw_expr_stack_push(LWExprStack s, LWExprTerm t) throws Exception
+	{
+		LWExprStackNode n;
+
+		if (s == null)
+		{
+			throw new Exception();
+		}
+		
+		n = new LWExprStackNode();
+		n.next = null;
+		n.prev = s.tail;
+		n.term = new LWExprTerm(t.symbol, t.value, t.term_type);
+		
+		if (s.head != null)
+		{
+			s.tail.next = n;
+			s.tail = n;
+		}
+		else
+		{
+			s.head = n;
+			s.tail = n;
 		}
 	}
 

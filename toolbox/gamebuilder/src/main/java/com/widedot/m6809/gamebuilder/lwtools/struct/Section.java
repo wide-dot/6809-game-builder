@@ -7,7 +7,7 @@ public class Section {
 	public String name;				// name of the section
 	public int flags;				// section flags
 	public int codesize;			// size of the code
-	public String code;				// pointer to the code
+	public byte[] code;				// binary code
 	public int loadaddress;			// the actual load address of the section
 	public int processed;			// was the section processed yet?
 		
