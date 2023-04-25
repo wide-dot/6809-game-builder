@@ -26,7 +26,7 @@ public class VideoBufferImage {
 	}
 
 	public int getPage(ImBoolean workingChk) {
-	 	String var = Symbols.symbols.get("glb_Cur_Wrk_Screen_Id");
+	 	String var = Symbols.symbols.get("gfxlock.backBuffer.id");
 	 	Long pos = Emulator.getAbsoluteAddress(1, var);
 	 	Integer page = Emulator.get(pos, 1);
 	 	Integer wrkPage = page+2;

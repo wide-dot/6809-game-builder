@@ -1,15 +1,12 @@
 package com.widedot.toolbox.debug.ui;
 
-import com.sun.jna.Memory;
 import com.widedot.toolbox.debug.Emulator;
-import com.widedot.toolbox.debug.OS;
 import com.widedot.toolbox.debug.Symbols;
 import com.widedot.toolbox.debug.types.VideoBufferImage;
 
 import imgui.ImVec2;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
-import imgui.type.ImString;
 
 public class CollisionBox {
 

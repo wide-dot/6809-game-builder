@@ -16,6 +16,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_COLLISION_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_FRAME_RENDER_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SPRITE_RENDER_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
@@ -49,6 +50,7 @@ public class WDDebug extends Application {
             if (ImGui.beginMenu("Engine"))
             {
                 ImGui.menuItem("Collision", null, SHOW_IMGUI_COLLISION_WINDOW);
+                ImGui.menuItem("Frame Render", null, SHOW_IMGUI_FRAME_RENDER_WINDOW);
                 ImGui.menuItem("Sprite Render", null, SHOW_IMGUI_SPRITE_RENDER_WINDOW);
                 ImGui.menuItem("Object slots", null, SHOW_IMGUI_OJECT_SLOTS_WINDOW);
                 ImGui.menuItem("Smps driver", null, SHOW_IMGUI_SMPS_WINDOW);
@@ -58,6 +60,9 @@ public class WDDebug extends Application {
             ImGui.endMainMenuBar();
             
         }
+
+        // tools non related to process
+        if (SHOW_IMGUI_FRAME_RENDER_WINDOW.get()) FrameRender.show(SHOW_IMGUI_FRAME_RENDER_WINDOW);
         
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
