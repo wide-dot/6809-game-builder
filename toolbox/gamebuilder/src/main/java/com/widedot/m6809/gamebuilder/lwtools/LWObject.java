@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 public class LWObject {
 
 	public byte[] filedata;
-	public int filesize;
 	public static byte[] MAGIC_NUMBER = {0x4C, 0x57, 0x4F, 0x42, 0x4A, 0x31, 0x36, 0x00};
 	public static String[] opernames = {
 			"?",
@@ -86,11 +85,11 @@ public class LWObject {
 	
 	private void NEXTBYTE() throws Exception	{
 		cc++;
-		if (cc > filesize) throw new Exception ("***invalid file format\n");
+		if (cc > filedata.length) throw new Exception ("***invalid file format\n");
 	}
 	
 	private byte CURBYTE() {
-		return filedata[(cc<filesize?cc:filesize-1)];
+		return filedata[(cc<filedata.length?cc:filedata.length-1)];
 	}
 	
 	private String CURSTR() throws Exception {
