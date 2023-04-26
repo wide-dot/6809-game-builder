@@ -1,6 +1,5 @@
 package com.widedot.m6809.gamebuilder.lwtools;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +42,9 @@ public class LWObj {
 	public static final int numopers = 13;
 	
 	public static void main(String[] args) throws Exception {
-		new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\boot\\fd.o");
+		new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\resources\\ymm\\01.o");
+		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\main\\main.o");
+		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\engine\\sound\\ymm.o");
 	}
 	
 	public LWObj(String fileName) throws Exception {
@@ -298,10 +299,10 @@ public class LWObj {
 						break;
 					
 					case 0xFF:
-						// section flags
+						// reloc flags (1 means 8 bits)
 						System.out.printf(" FLAGS=%02X", CURBYTE());
 						tt = CURBYTE();
-						section.flags = tt;
+						rel.flags = tt;
 						NEXTBYTE();
 						term = null;
 						break;
@@ -313,6 +314,7 @@ public class LWObj {
 					if (term != null) {
 						lw_expr_stack_push(rel.expr, term);
 					}
+					
 				}
 				// skip the NUL
 				NEXTBYTE();
@@ -323,6 +325,7 @@ public class LWObj {
 				val |= CURBYTE();
 				rel.offset = val;
 				NEXTBYTE();
+				
 				System.out.printf(" ) @ %04X\n", val);
 			}
 			// skip the NUL terminating the relocations
