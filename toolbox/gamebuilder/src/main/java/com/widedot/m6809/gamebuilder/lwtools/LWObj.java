@@ -1,11 +1,19 @@
 package com.widedot.m6809.gamebuilder.lwtools;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang3.time.StopWatch;
 
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStack;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStackNode;
@@ -14,14 +22,13 @@ import com.widedot.m6809.gamebuilder.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Section;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Symbol;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class LWObj {
 
 	public String filename;
-	public byte[] filedata;
-	public int cc;
-	
 	public List<Section> secLst;
-	
 	public static byte[] MAGIC_NUMBER = {0x4C, 0x57, 0x4F, 0x42, 0x4A, 0x31, 0x36, 0x00};
 	public static String[] opernames = {
 			"?",
@@ -39,29 +46,43 @@ public class LWObj {
 			"NEG",
 			"COM"
 		};
-	public static final int numopers = 13;
+	
+	private byte[] filedata;
+	private int cc;
+	private static final int numopers = 13;
 	
 	public static void main(String[] args) throws Exception {
-		new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\resources\\ymm\\01.o");
-		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\main\\main.o");
-		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\engine\\sound\\ymm.o");
+		//StopWatch watch = new StopWatch();
+		//watch.start();
+		
+		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\resources\\ymm\\01.o");
+		
+		//watch.stop();
+		//System.out.println("Time Elapsed: " + watch.getTime()); // Prints: Time Elapsed: 2501
 	}
 	
 	public LWObj(String fileName) throws Exception {
-		filename = fileName;
-		Path path = Paths.get(fileName);
-		filedata = Files.readAllBytes(path);
 		
-		if (filedata.length < MAGIC_NUMBER.length) {
-			throw new Exception("Invalid LW object file : " + fileName);
-		}
-		
-		for (int i=0; i < MAGIC_NUMBER.length; i++) {
-			if (MAGIC_NUMBER[i] != filedata[i])
+		// do not use cache here, performance is worst by a factor of 7x
+		//if (!loadCache(fileName))
+		{
+			Path path = Paths.get(fileName);
+			filedata = Files.readAllBytes(path);
+			
+			if (filedata.length < MAGIC_NUMBER.length)
+			{
 				throw new Exception("Invalid LW object file : " + fileName);
+			}
+			
+			for (int i=0; i < MAGIC_NUMBER.length; i++)
+			{
+				if (MAGIC_NUMBER[i] != filedata[i]) 
+					throw new Exception("Invalid LW object file : " + fileName);
+			}
+			
+			read_lwobj16v0();
+			//saveCache(fileName);
 		}
-		
-		read_lwobj16v0();
 	}
 	
 	public String string_cleanup(String sym) {
@@ -140,7 +161,7 @@ public class LWObj {
 				break;
 			
 			fp = CURSTR();
-			System.out.printf("SECTION %s\n", fp);
+			//System.out.printf("SECTION %s\n", fp);
 			
 			// we now have a section name in fp
 			// create new section entry
@@ -164,17 +185,17 @@ public class LWObj {
 				switch (CURBYTE())
 				{
 				case 0x01:
-					System.out.printf("    FLAG: BSS\n");
+					//System.out.printf("    FLAG: BSS\n");
 					section.flags |= Section.SECTION_BSS;
 					bss = 1;
 					break;
 				case 0x02:
-					System.out.printf("    FLAG: CONSTANT\n");
+					//System.out.printf("    FLAG: CONSTANT\n");
 					section.flags |= Section.SECTION_CONST;
 					break;
 					
 				default:
-					System.out.printf("    FLAG: %02X (unknown)\n", CURBYTE());
+					//System.out.printf("    FLAG: %02X (unknown)\n", CURBYTE());
 					break;
 				}
 				NEXTBYTE();
@@ -182,7 +203,7 @@ public class LWObj {
 			// skip NUL terminating flags
 			NEXTBYTE();
 			
-			System.out.printf("    Local symbols:\n");
+			//System.out.printf("    Local symbols:\n");
 			// now parse the local symbol table
 			while (CURBYTE()!=0)
 			{
@@ -195,7 +216,7 @@ public class LWObj {
 				NEXTBYTE();
 				// val is now the symbol value
 				
-				System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
+				//System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
 				
 				// create symbol table entry
 				Symbol sbl = new Symbol();
@@ -207,7 +228,7 @@ public class LWObj {
 			// skip terminating NUL
 			NEXTBYTE();
 
-			System.out.printf("    Exported symbols\n");
+			//System.out.printf("    Exported symbols\n");
 					
 			// now parse the exported symbol table
 			while (CURBYTE()!=0)
@@ -221,7 +242,7 @@ public class LWObj {
 				NEXTBYTE();
 				// val is now the symbol value
 				
-				System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
+				//System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
 				
 				// create symbol table entry
 				Symbol sbl = new Symbol();
@@ -234,10 +255,10 @@ public class LWObj {
 			
 			// now parse the incomplete references and make a list of
 			// external references that need resolution
-			System.out.printf("    Incomplete references\n");
+			//System.out.printf("    Incomplete references\n");
 			while (CURBYTE()!=0)
 			{
-				System.out.printf("        (");
+				//System.out.printf("        (");
 				
 				LWExprTerm term = null;
 				
@@ -263,30 +284,31 @@ public class LWObj {
 						NEXTBYTE();
 						// normalize for negatives...
 						if (tt > 0x7fff) tt -= 0x10000;
-						System.out.printf(" I16=%d", tt);
+						//System.out.printf(" I16=%d", tt);
 						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_INT);
 						break;
 					
 					case 0x02:
 						// external symbol reference
 						fp = CURSTR();
-						System.out.printf(" ES=%s", string_cleanup(fp));
+						//System.out.printf(" ES=%s", string_cleanup(fp));
 						term = new LWExprTerm(fp, 0);
 						break;
 						
 					case 0x03:
 						// internal symbol reference
 						fp = CURSTR();
-						System.out.printf(" IS=%s", string_cleanup(fp));
+						//System.out.printf(" IS=%s", string_cleanup(fp));
 						term = new LWExprTerm(fp, 1);
 						break;
 					
 					case 0x04:
 						// operator
-						if (CURBYTE() > 0 && CURBYTE() <= numopers)
-							System.out.printf(" OP=%s", opernames[CURBYTE()]);
-						else
-							System.out.printf(" OP=?");
+						if (CURBYTE() > 0 && CURBYTE() <= numopers) {
+							//System.out.printf(" OP=%s", opernames[CURBYTE()]);
+						} else {
+							//System.out.printf(" OP=?");
+						}
 						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_OPER);
 						NEXTBYTE();
 						break;
@@ -294,13 +316,13 @@ public class LWObj {
 					case 0x05:
 						// section base reference (NULL internal reference is
 						// the section base address
-						System.out.printf(" SB");
+						//System.out.printf(" SB");
 						term = new LWExprTerm(null, 1);
 						break;
 					
 					case 0xFF:
 						// reloc flags (1 means 8 bits)
-						System.out.printf(" FLAGS=%02X", CURBYTE());
+						//System.out.printf(" FLAGS=%02X", CURBYTE());
 						tt = CURBYTE();
 						rel.flags = tt;
 						NEXTBYTE();
@@ -326,7 +348,7 @@ public class LWObj {
 				rel.offset = val;
 				NEXTBYTE();
 				
-				System.out.printf(" ) @ %04X\n", val);
+				//System.out.printf(" ) @ %04X\n", val);
 			}
 			// skip the NUL terminating the relocations
 			NEXTBYTE();
@@ -341,7 +363,7 @@ public class LWObj {
 			
 			section.code = new byte[section.codesize];
 			
-			System.out.printf("    CODE %04X bytes", section.codesize);
+			//System.out.printf("    CODE %04X bytes", section.codesize);
 			
 			// skip the code if we're not in a BSS section
 			if (bss==0)
@@ -351,14 +373,14 @@ public class LWObj {
 				{
 					if ((i % 16)==0)
 					{
-						System.out.printf("\n    %04X ", i);
+						//System.out.printf("\n    %04X ", i);
 					}
-					System.out.printf("%02X", CURBYTE());
+					//System.out.printf("%02X", CURBYTE());
 					section.code[i] = (byte) CURBYTE();
 					NEXTBYTE();
 				}
 			}
-			System.out.printf("\n");
+			//System.out.printf("\n");
 		}
 	}
 	
@@ -387,6 +409,46 @@ public class LWObj {
 			s.head = n;
 			s.tail = n;
 		}
+	}
+
+	public boolean loadCache(String fileName) {
+		
+		this.filename = fileName;
+		log.debug(fileName);
+		
+		String serFileName = fileName+".ser";
+		File serFile = new File(serFileName);
+        long serTime = serFile.lastModified();
+        
+        if (serTime == 0L) return false;
+        
+		File file = new File(fileName);
+        long time = file.lastModified();
+        
+        if (serTime < time) return false;
+		
+        try {
+            FileInputStream fileIn = new FileInputStream(serFileName);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            secLst = (List<Section>) in.readObject();
+            in.close();
+            fileIn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		return true;
+	}
+	
+	public void saveCache(String fileName) {	
+        try {
+            FileOutputStream fileOut = new FileOutputStream(fileName+".ser");
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(secLst);
+            out.close();
+            fileOut.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 }

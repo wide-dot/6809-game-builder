@@ -1,9 +1,12 @@
 package com.widedot.m6809.gamebuilder.lwtools.struct;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.List;
 
-public class Section {
+public class Section implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	public String name;				// name of the section
 	public int flags;				// section flags
 	public int codesize;			// size of the code

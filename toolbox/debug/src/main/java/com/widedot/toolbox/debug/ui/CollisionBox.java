@@ -13,6 +13,7 @@ public class CollisionBox {
 	private static final int COLOR_WHITE = 0x88FFFFFF;
 	private static final int COLOR_GREY = 0x88AAAAAA;
 	private static final int COLOR_RED = 0x880000FF;
+	private static final int COLOR_ORANGE = 0x8842ADF5;
 	private static final int COLOR_PURPLE = 0x88FF00FF;
 	private static final int COLOR_GREEN = 0x8800FF00;
 	private static final int COLOR_BLUE = 0x88FF0000;	
@@ -56,6 +57,8 @@ public class CollisionBox {
 			displayList("AABB_list_ennemy", COLOR_BLUE);
 			displayList("AABB_list_player", COLOR_LBLUE);
 			displayList("AABB_list_bonus", COLOR_PURPLE);
+			displayList("AABB_list_forcepod", COLOR_ORANGE);
+			displayList("AABB_list_foefire", COLOR_RED);
 	   	 	
     	    ImGui.end();
         }

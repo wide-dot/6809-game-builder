@@ -1,6 +1,10 @@
 package com.widedot.m6809.gamebuilder.lwtools.struct;
 
-public class LWExprTerm {
+import java.io.Serializable;
+
+public class LWExprTerm implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	public int term_type = 0;		// type of term (see above)
 	public String symbol = null;	// name of a symbol
 	public int value     = 0;		// value of the term (int) or operator number (OPER)

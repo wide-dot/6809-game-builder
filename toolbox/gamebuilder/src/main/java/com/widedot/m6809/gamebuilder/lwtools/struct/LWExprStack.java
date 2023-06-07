@@ -1,6 +1,10 @@
 package com.widedot.m6809.gamebuilder.lwtools.struct;
 
-public class LWExprStack {
+import java.io.Serializable;
+
+public class LWExprStack implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	public LWExprStackNode head = null;
 	public LWExprStackNode tail = null;
 	
