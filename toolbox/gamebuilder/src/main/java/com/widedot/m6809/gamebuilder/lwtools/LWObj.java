@@ -56,6 +56,7 @@ public class LWObj {
 		//watch.start();
 		
 		//new LWObj("C:\\Users\\bhrou\\git\\builder-v2\\build\\resources\\ymm\\01.o");
+		//lwasm.exe -f obj -I ../ -I ./ --list=../build/main/main.lst -o ../build/main/main.o ./main/main.asm
 		
 		//watch.stop();
 		//System.out.println("Time Elapsed: " + watch.getTime()); // Prints: Time Elapsed: 2501
