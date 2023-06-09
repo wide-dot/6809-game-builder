@@ -40,7 +40,7 @@ DSP_Start
         andb  #^render_hide_mask            ; unset hide flag
         stb   render_flags,u
 
-        ldb   glb_Cur_Wrk_Screen_Id         ; read current screen buffer for write operations
+        ldb   gfxlock.backBuffer.id         ; read current screen buffer for write operations
         bne   DSP_SetBuffer1
         
 DSP_SetBuffer0        
@@ -80,7 +80,7 @@ DSP_rts
         
 DSP_addToExistingNode
         ldx   a,y                           ; x register now store last object at the priority level of current object
-        ldb   glb_Cur_Wrk_Screen_Id
+        ldb   gfxlock.backBuffer.id
         bne   DSP_LinkBuffer1
         stu   rsv_priority_next_obj_0,x     ; link last object with current object if active screen buffer 0
         stx   rsv_priority_prev_obj_0,u     ; link current object with previous object
@@ -192,4 +192,32 @@ DPS_buffer_end
 
 buf_Tbl_Priority_First_Entry  equ   0                                                            
 buf_Tbl_Priority_Last_Entry   equ   Tbl_Priority_Last_Entry_0-DPS_buffer_0          
-buf_Lst_Priority_Unset        equ   Lst_Priority_Unset_0-DPS_buffer_0                                       
+buf_Lst_Priority_Unset        equ   Lst_Priority_Unset_0-DPS_buffer_0                   
+
+DisplaySprite_ClearAll
+        ldd   #0
+        ldx   #0
+        leay  ,x
+        ldu   #DPS_buffer_0+6+nb_priority_levels*4+nb_graphical_objects*2
+!       cmpu  #DPS_buffer_0+6
+        bls   >
+        pshu  d,x,y
+        bra   <
+!       pshu  a
+        cmpu  #DPS_buffer_0
+        bne   <
+
+        ldu   #DPS_buffer_1+6+nb_priority_levels*4+nb_graphical_objects*2
+!       cmpu  #DPS_buffer_1+6
+        bls   >
+        pshu  d,x,y
+        bra   <
+!       pshu  a
+        cmpu  #DPS_buffer_1
+        bne   <
+
+        ldd   #Lst_Priority_Unset_0+2
+        std   Lst_Priority_Unset_0
+        ldd   #Lst_Priority_Unset_1+2
+        std   Lst_Priority_Unset_1
+        rts

@@ -1,3 +1,0 @@
-<package name="t2flash" type="absolute" compression="zx0" org="$6300">
-    <asm name="t2flash">engine/system/to8/megarom-t2/t2-flash.asm</asm>
-</package>

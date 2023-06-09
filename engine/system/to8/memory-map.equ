@@ -49,13 +49,24 @@ CF74021.SYS1    equ $E7E7
 
 ; extension port
 EXTPORT         equ $E7
-SN76489.D       equ $E7FF
-EF5860.CTRL     equ $E7F2
-EF5860.TX       equ $E7F3
+IEEE488         equ $E7F0 ; to E7F7
+EF5860.CTRL     equ $E7F2 ; MIDI
+EF5860.TX       equ $E7F3 ; MIDI
+ ifndef SOUND_CARD_PROTOTYPE
 YM2413.A        equ $E7FC
 YM2413.D        equ $E7FD
+SN76489.D       equ $E7F7
+ else
+YM2413.A        equ $E7FC
+YM2413.D        equ $E7FD
+SN76489.D       equ $E7FF
+ endc
+MEA8000.D       equ $E7FE
+MEA8000.A       equ $E7FF
 
 ; ROM routines
+GETC            equ $E806
+KTST            equ $E809
 DKCO            equ $E82A ; read or write floppy disk routine
 IRQ.EXIT        equ $E830 ; to exit an irq
 

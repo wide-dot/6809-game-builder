@@ -18,6 +18,38 @@ _lds MACRO
         lds   #((\1)*256)+\2
  ENDM   
  
+_SetCartPageA MACRO
+ IFDEF T2
+        jsr   SetCartPageA
+ ELSE
+        sta   $E7E6                    ; selection de la page RAM en zone cartouche
+ ENDC
+ ENDM      
+ 
+_GetCartPageA MACRO
+ IFDEF T2
+        jsr   GetCartPageA
+ ELSE
+        lda   $E7E6
+ ENDC
+ ENDM
+
+_SetCartPageB MACRO
+ IFDEF T2
+        jsr   SetCartPageB
+ ELSE
+        stb   $E7E6                    ; selection de la page RAM en zone cartouche
+ ENDC
+ ENDM      
+ 
+_GetCartPageB MACRO
+ IFDEF T2
+        jsr   GetCartPageB
+ ELSE
+        ldb   $E7E6
+ ENDC
+ ENDM     
+
 _RunObjectSwap MACRO
         ; param 1 : ObjID_
         ; param 2 : Object data RAM address
@@ -77,6 +109,13 @@ _RunObjectRoutineB MACRO
         _MountObject \1
         ldb   \2        
         jsr   ,x
+ ENDM
+
+_SwitchScreenBuffer MACRO
+        ldb   $E7E5
+        eorb  #1                       ; switch btw page 2 and 3
+        orb   #$02
+        stb   $E7E5
  ENDM
 
 _asld MACRO
@@ -143,4 +182,12 @@ _aab MACRO
 _sab MACRO
         pshs  a
         subb  ,s+
+ ENDM
+
+_breakpoint MACRO
+ IFDEF DEBUG
+        pshs  CC
+        sta   >$ffff
+        puls  CC
+ ENDC
  ENDM

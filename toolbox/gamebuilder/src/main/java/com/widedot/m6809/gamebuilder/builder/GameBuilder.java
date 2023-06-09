@@ -15,7 +15,7 @@ public class GameBuilder {
 			for (FileGroup pack : media.fileGroups) {
 				for (Ressource ressource : pack.fileset.ressources) {
 					if (ressource.type == Ressource.ASM_INT) {
-						Assembler.process(ressource.file, defines);
+						Assembler.process(ressource.file, path, defines);
 					}
 				}
 			}

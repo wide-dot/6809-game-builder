@@ -108,8 +108,6 @@
 *
 * ---------------------------------------------------------------------------
 
-        setdp dp
-
 PSG_STOPPED         equ 0
 PSG_PLAYING         equ 1
 
@@ -537,7 +535,7 @@ PSGSFXGetStatus
 * ************************************************************************************
 * processes a music frame
 * destroys A,B,X
-        setdp EXTPORT
+        
 PSGFrame 
         lda   PSGMusicStatus                          ; check if we have got to play a tune
         bne   PSGFrame_continue
@@ -805,8 +803,6 @@ _SFXsubstring
         ldx   PSGSFXStart
         leax  d,x                                     ; make substring current
         bra   _intSFXLoop
-
-        setdp dp
 
   * fundamental vars
 PSGMusicStatus             fcb   $00 ; are we playing a background music?

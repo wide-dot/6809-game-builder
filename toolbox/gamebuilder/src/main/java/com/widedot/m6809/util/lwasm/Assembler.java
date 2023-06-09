@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Assembler
 {
-	public static void process(String asmFile, HashMap<String, String> defines) throws Exception {
+	public static void process(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
 		String asmFileName = FileUtil.removeExtension(asmFile);
 		String binFile = asmFileName + ".bin";
@@ -26,7 +26,7 @@ public class Assembler
 		del = new File (lstFile);
 		del.delete();
 	
-		log.info("Compiling {} ",path.toString());
+		log.debug("Assembling {} ",path.toString());
 		
 		// TODO apply section as a parameter
 		//SECTION
@@ -34,13 +34,11 @@ public class Assembler
 		
 		List<String> command = new ArrayList<String>(List.of("lwasm.exe", //TODO make a global value
 				   path.toString(),
-				   "--obj",
 				   "--output=" + binFile,
 				   "--list=" + lstFile,
 				   "--6809",
-				   "--pragma=undefextern",
-				   "--includedir="+path.getParent().toString(),
-				   "--includedir=C:/Users/Public/Documents/6809-game-builder/sonic2"
+				   "--includedir="+rootPath,
+				   "--includedir="+path.getParent().toString()
 				   ));
 		
 		for (Entry<String, String> define : defines.entrySet()) {

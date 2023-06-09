@@ -6,6 +6,7 @@
 * 62,5 cycles between 2 DAC samples (alternation of 62 and 63 cycles)
 *
 * No IRQ here, this will freeze anything running ...
+* DAC Init from Mission: Liftoff (merci Prehisto ;-))
 *
 * input REG : [y] Pcm_ index to play
 * reset REG : none
@@ -17,11 +18,17 @@
 * $00
 *
 * ---------------------------------------------------------------------------
-        setdp dp
+
 PlayDPCM16kHz 
         pshs  d,x,y,u
         _GetCartPageA
         sta   @RestorePage+1
+        ldd   #$fb3f  ! Mute by CRA to 
+        anda  $e7cf   ! avoid sound when 
+        sta   $e7cf   ! $e7cd written
+        stb   $e7cd   ! Full sound line
+        ora   #$04    ! Disable mute by
+        sta   $e7cf   ! CRA and sound
         ldu   #@DACDecodeTbl
         lda   #32                      ; init delta value
         sta   @smplh+1
@@ -40,7 +47,7 @@ PlayDPCM16kHz
         ldb   a,u                      ; [5] read high nibble sample
 @smplh  addb  #00                      ; [2]
         stb   @smpll+1                 ; [5]
-        stb   CORE.DAC                 ; [5] send byte to DAC
+        stb   $e7cd                    ; [5] send byte to DAC
         lda   ,x+                      ; [6] reload data byte
         anda  #$0F                     ; [2]
         ldb   a,u                      ; [5] read low nibble sample
@@ -52,7 +59,7 @@ PlayDPCM16kHz
         exg   a,b                      ; ...                                       
         brn   *                        ; ...        
         brn   *                        ; ...                                                
-        stb   CORE.DAC                 ; [5] send byte to DAC
+        stb   $e7cd                    ; [5] send byte to DAC
         cmpx  sound_end_addr,y         ; [7]
         beq   @NextChunk               ; [3]
         exg   a,b                      ; [20] wait        
@@ -65,8 +72,14 @@ PlayDPCM16kHz
         bra   @ReadChunk               ; [3]
 @End
         lda   #$00
-        sta   CORE.DAC
-
+        sta   $e7cd
+        ldd   #$fbfc  ! Mute by CRA to
+        anda  $e7cf   ! avoid sound when
+        sta   $e7cf   ! $e7cd is written
+        andb  $e7cd   ! Activate
+        stb   $e7cd   ! joystick port
+        ora   #$04    ! Disable mute by
+        sta   $e7cf   ! CRA + joystick
 @RestorePage        
         lda   #$00
         _SetCartPageA

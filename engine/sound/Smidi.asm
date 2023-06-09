@@ -5,8 +5,14 @@
 * with inputs from Fool-DupleX
 * ---------------------------------------------------------------------------
 
-        opt   c,ct
-        setdp dp
+    opt   c,ct
+
+MIDI.CTRL       equ    $E7F2
+MIDI.TX         equ    $E7F3
+MIDI.TXIRQON    equ    %00110101 ; 8bits, no parity check, stop 1, tx interrupt
+MIDI.TXIRQOFF   equ    %00010101 ; 8bits, no parity check, stop 1, no interrupt
+
+FIRQ.ROUTINE    equ    $6023
 
 MusicLoop       fcb   0                ; 0 : do not loop music
 MusicIndex      fdb   0                ; first index of all data chuncks (page, address)
@@ -25,9 +31,9 @@ NbByteInFrame   fcb   0                ; number of bytes already written in curr
 ResetMidi
         pshs  a
         lda   #$03
-        sta   EF5860.CTRL                ; reset midi controller
-        lda   #EF5860.TXIRQOFF
-        sta   EF5860.CTRL
+        sta   MIDI.CTRL                ; reset midi controller
+        lda   #MIDI.TXIRQOFF
+        sta   MIDI.CTRL
         puls  a,pc
 
 ******************************************************************************
@@ -61,7 +67,7 @@ PlayMusic
         puls  d,pc
 
 ******************************************************************************
-* MusicFrame - processes a music frame (IRQ)
+* MusicFrame - processes a music frame (IRQ - DP $E7)
 *
 * format:
 * -------
@@ -74,8 +80,8 @@ PlayMusic
 * destroys A,B,X,Y
 ******************************************************************************
 _enableFIRQ MACRO
-        lda   #EF5860.TXIRQON
-        sta   EF5860.CTRL
+        lda   #MIDI.TXIRQON
+        sta   MIDI.CTRL
  ENDM 
 
 _writeBuffer MACRO
@@ -130,7 +136,7 @@ ReadCommand
         sta   NbByteInFrame
         ldb   CircularBufferEnd+1      ; load next free position in circular buffer
         addb  #$80                     ; adjust offset because write is made with 8 bit offset (-128,+127)
-        ldy   #CircularBuffer+128      ; and reading buffer is made by direct address (lda   CircularBuffer)
+        ldy   #CircularBuffer          ; and reading buffer is made by direct address (lda   CircularBuffer)
         ldx   MusicDataPos             ; load current position in music track
         lda   MusicPage
 @a      _SetCartPageA
@@ -185,15 +191,17 @@ CircularBufferEnd
         beq   DisableFIRQ              ; branch if no more data to read (todo shutdown midi interface interupt until next buffer write ?)
 CircularBufferPos       
         lda   CircularBuffer           ; (dynamic) read the buffer at the current index
-        sta   EF5860.TX                ; send byte to the midi interface           
+        sta   MIDI.TX                  ; send byte to the midi interface           
         inc   CircularBufferPos+2      ; increment the offset in buffer
 @a      lda   #0                       ; (dynamic) restore register A
         rti
 DisableFIRQ
-        lda   #EF5860.TXIRQOFF
-        sta   EF5860.CTRL
+        lda   #MIDI.TXIRQOFF
+        sta   MIDI.CTRL
         bra   @a
 
         align 256
+        fill  0,128
 CircularBuffer
-        fill  0,256
+        fill  0,128
+

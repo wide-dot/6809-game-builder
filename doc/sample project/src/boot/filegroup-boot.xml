@@ -1,5 +1,0 @@
-<configuration>
-    <filegroup name="boot">
-        <asm>fd.asm</asm>
-    </filegroup>
-</configuration>

@@ -45,14 +45,18 @@ AnimateSpriteSync                           *AnimateSprite:
                                             *; loc_16560:
 @Anim_Run                                   *Anim_Run:
         ldb   anim_frame_duration,u
-        subb  Vint_Main_runcount
+        subb  gfxlock.frameDrop.count
         stb   anim_frame_duration,u
                                             *    subq.b  #1,anim_frame_duration(a0)   ; subtract 1 from frame duration
         bpl   @Anim_Rts                     *    bpl.s   Anim_Wait                    ; if time remains, branch
         * no offset table                   *    add.w   d0,d0
         * anim is the address of anim       *    adda.w  (a1,d0.w),a1                 ; calculate address of appropriate animation script
 @b      ldb   -1,x                            
-        stb   anim_frame_duration,u         *    move.b  (a1),anim_frame_duration(a0) ; load frame duration
+        addb  anim_frame_duration,u         *    move.b  (a1),anim_frame_duration(a0) ; load frame duration
+        subb  gfxlock.frameDrop.count
+        stb   anim_frame_duration,u
+        bpl   @Anim_Reload             ; apply skipped frames unless frame drop is too high (cap to zero)
+        clr   anim_frame_duration,u
 @Anim_Reload                                *    moveq   #0,d1
         ldb   anim_frame,u                  *    move.b  anim_frame(a0),d1 ; load current frame number
         lda   #0
@@ -70,7 +74,7 @@ AnimateSpriteSync                           *AnimateSprite:
         anda  #status_xflip_mask|status_yflip_mask
         sta   @dyn+1
         lda   render_flags,u
-        anda  #^render_xmirror_mask
+        anda  #^(render_xmirror_mask|render_ymirror_mask)
 @dyn    ora   #0
         sta   render_flags,u
                                             *    move.b  status(a0),d1         ; match the orientaion dictated by the object

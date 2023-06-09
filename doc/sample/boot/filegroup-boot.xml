@@ -1,0 +1,5 @@
+<configuration>
+    <filegroup name="boot">
+        <asm>boot.asm</asm>
+    </filegroup>
+</configuration>

@@ -11,8 +11,6 @@
 * - Test real hardware wait time and adjust the code
 * ---------------------------------------------------------------------------
 
-        setdp dp
-
 ; SMPS Header
 SMPS_VOICE                   equ   0
 SMPS_NB_FM                   equ   2
@@ -169,6 +167,26 @@ SpeedUpFlag                    rmb   1
 DACEnabled                     rmb   1                
 60HzData                       rmb   1                ; 1: play 60hz track at 50hz, 0: do not skip frames
  ENDSTRUCT
+
+SFXPriorityVal                 equ   0
+TempoTimeout                   equ   1        
+CurrentTempo                   equ   2
+StopMusic                      equ   3
+FadeOutCounter                 equ   4        
+FadeOutDelay                   equ   5        
+QueueToPlay                    equ   6
+SFXToPlay                      equ   7
+VoiceTblPtr                    equ   9
+SFXVoiceTblPtr                 equ   11
+FadeInFlag                     equ   13       
+FadeInDelay                    equ   14        
+FadeInCounter                  equ   15        
+_1upPlaying                    equ   16        
+TempoMod                       equ   17        
+TempoTurbo                     equ   18
+SpeedUpFlag                    equ   19        
+DACEnabled                     equ   20                
+_60HzData                      equ   21
 
 ******************************************************************************
 
@@ -358,6 +376,46 @@ YM2413_DrumModeOn
 InitMusicPlayback
         jsr   FMSilenceAll
         jsr   PSGSilenceAll
+
+        ldu   #SongFM1+sizeof{Track}
+        jsr   ClearTrack
+        ldu   #SongFM2+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM3+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM4+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM5+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM6+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM7+sizeof{Track}
+        jsr   ClearTrack  
+        ldu   #SongFM8+sizeof{Track}
+        jsr   ClearTrack          
+        ldu   #SongFM9+sizeof{Track}
+        jsr   ClearTrack  
+
+        ldu   #SongPSG1+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SongPSG2+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SongPSG3+sizeof{Track}
+        jsr   ClearTrack 
+
+        ldu   #SFXFM3+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SFXFM4+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SFXFM5+sizeof{Track}
+        jsr   ClearTrack 
+
+        ldu   #SFXPSG1+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SFXPSG2+sizeof{Track}
+        jsr   ClearTrack 
+        ldu   #SFXPSG3+sizeof{Track}
+        jsr   ClearTrack 
         rts
 
 ******************************************************************************
@@ -627,16 +685,16 @@ UpdateSound
 * input Y (ptr to SONGDAC, is used by CoordFlag)
 * destroys A,B,X
 ******************************************************************************
-        setdp EXTPORT
+
 DACUpdateTrack        
         dec   SongDAC.DurationTimeout
         beq   @a
         rts
 @a
         ldd   #$0E20                   ; note has ended, so note off
-        sta   YM2413.A
+        sta   <YM2413.A
         ldx   SongDAC.DataPointer
-        stb   YM2413.D        
+        stb   <YM2413.D        
                  
 @b      ldb   ,x+                      ; read DAC song data
         cmpb  #$E0
@@ -668,9 +726,9 @@ DACAfterDur
         ldx   #@data            
         subb  #$81                     ; transform note into an index...      
         lda   #$0E
-        sta   YM2413.A
+        sta   <YM2413.A
         ldb   b,x
-        stb   YM2413.D      
+        stb   <YM2413.D      
         rts
 @data
         fcb   $30 ; $81 - Kick  (BD+TOM) 34
@@ -699,10 +757,10 @@ _FMNoteOff MACRO                       ; (dependency) should be preceded by A lo
         bita  #$04                     ; Is SFX overriding set?
         bne   @skip                    ; if true skip note off, sfx is playing        
         addb  #$20                     ; set Sus/Key/Block/FNum(MSB) Command
-        stb   YM2413.A
+        stb   <YM2413.A
         ldb   NoteControl,y            ; load current value (do not erase FNum MSB)
         andb  #$EF                     ; clear bit 4 (10h) Key Off
-        stb   YM2413.D               ; send to YM
+        stb   <YM2413.D               ; send to YM
         stb   NoteControl,y               
 @skip   equ   *        
  ENDM        
@@ -807,17 +865,17 @@ FMUpdateFreqAndNoteOn
         sta   @dyn+1
         lda   #$10                     ; set LSB Frequency Command
         adda  VoiceControl,y
-        sta   YM2413.A
+        sta   <YM2413.A
         adda  #$10                     ; set Sus/Key/Block/FNum(MSB) Command
-        stb   YM2413.D
+        stb   <YM2413.D
         _YMBusyWait9
         ldb   NoteControl,y            ; load current value (do not erase FNum MSB) (and used as 5 cycles tempo)
         orb   #$10                     ; Set bit 4 (10h) Key On
         andb  #$F0                     ; Clear FNum MSB (and used as 2 cycles tempo)
 @dyn    addb  #0                       ; (dynamic) Set Fnum MSB (and used as 2 cycles tempo)                
-        sta   YM2413.A
+        sta   <YM2413.A
         stb   NoteControl,y
-        stb   YM2413.D   
+        stb   <YM2413.D   
         
 DoModulation  
         lda   PlaybackControl,y
@@ -870,16 +928,16 @@ FMUpdateFreq
         sta   @dynb+1
         lda   #$10                     ; set LSB Frequency Command
         adda  VoiceControl,y           ; get channel number
-        sta   YM2413.A               ; send Fnum update Command
+        sta   <YM2413.A               ; send Fnum update Command
         adda  #$10                     ; set Sus/Key/Block/FNum(MSB) Command
-        stb   YM2413.D               ; send FNum (b0-b7)
+        stb   <YM2413.D               ; send FNum (b0-b7)
         _YMBusyWait11                  ; total wait 20 cycles
         ldb   NoteControl,y            ; load current value (do not erase FNum MSB) (and used as 5 cycles tempo)
         andb  #$F0                     ; clear FNum MSB (and used as 2 cycles tempo)
 @dynb   addb  #0                       ; (dynamic) Set Fnum MSB (and used as 2 cycles tempo)        
-        sta   YM2413.A               ; send command
+        sta   <YM2413.A               ; send command
         stb   NoteControl,y
-        stb   YM2413.D               ; send FNum (b8) and Block (b0-b2)
+        stb   <YM2413.D               ; send FNum (b8) and Block (b0-b2)
 @rts    rts        
  
 ; 95 notes (Note value $81=C0 $DF=A#7) with direct access
@@ -905,7 +963,7 @@ _PSGNoteOff MACRO                      ; (dependency) should be preceded by A lo
         bita  #$04                     ; Is SFX overriding set?
         bne   @skip                    ; if true skip note off, sfx is playing               
         orb   #$1F                     ; Volume Off
-        stb   SN76489.D
+        stb   <SN76489.D
 @skip   equ   *        
  ENDM
  
@@ -1008,13 +1066,13 @@ PSGUpdateFreq
         addb  #$C0
         bra   @b
 @a      addb  VoiceControl,y           ; Get "voice control" byte...
-@b      stb   SN76489.D
+@b      stb   <SN76489.D
 @dyn    ldd   #0
         _lsrd
         _lsrd
         _lsrd
         _lsrd              
-        stb   SN76489.D
+        stb   <SN76489.D
         bra   PSGDoVolFX
         
 PSGUpdateVolFX
@@ -1062,7 +1120,7 @@ DynVol  ldb   #0                       ; (dynamic) volume
         ldb   #$0F
 @a      addb  VoiceControl,y
         orb   #$10
-        stb   SN76489.D
+        stb   <SN76489.D
         bra   PSGDoModulation        
 @b      lda   NoteFillMaster,y         ; If you get here, then "do not attack next note" was set...
         beq   DynVol                   ; If it's zero, then just process normally
@@ -1112,13 +1170,13 @@ PSGUpdateFreq2
         addb  #$C0
         bra   @b
 @a      addb  VoiceControl,y           ; Get "voice control" byte...
-@b      stb   SN76489.D
+@b      stb   <SN76489.D
 @dyn    ldd   #0
         _lsrd
         _lsrd
         _lsrd
         _lsrd              
-        stb   SN76489.D
+        stb   <SN76489.D
         rts        
  
 ; 70 notes (Note value $81=C3 $C7=G#8) with direct access
@@ -1249,9 +1307,9 @@ PlaySound
 @psg    cmpb  #$C0
         bne   @b
         lda   #$DF                     ; set silence on PSG3
-        sta   SN76489.D
+        sta   <SN76489.D
         lda   #$FF
-        sta   SN76489.D
+        sta   <SN76489.D
 @b      lsrb                           ; this is a psg track
         lsrb
         lsrb
@@ -1405,7 +1463,7 @@ cfChangeFMVolume
         sta   @dyn1+1
         lda   #$30
         adda  VoiceControl,y
-        sta   YM2413.A
+        sta   <YM2413.A
         ldb   InstrAndVolume,y         
         tfr   b,a
         ora   #$0F                     ; set maximum attenuation for compare        
@@ -1414,7 +1472,7 @@ cfChangeFMVolume
 @dyn2   cmpb  #0                       ; (dynamic) test if overflow of attenuation value
         blo   @write                   ; attenuation < F and no overflow
         tfr   a,b                      ; set maximum attenuation (F)
-@write  stb   YM2413.D        
+@write  stb   <YM2413.D        
 @rts    rts     
 
 cfPreventAttack
@@ -1488,7 +1546,7 @@ cfSetVoice
 @b        
         lda   VoiceControl,y           ; read channel nb   
         adda  #$30
-        sta   YM2413.A
+        sta   <YM2413.A
         aslb
         ldd   b,u
         sta   InstrAndVolume,y        
@@ -1500,7 +1558,7 @@ cfSetVoice
         stb   @dyn1+1
         ldb   #$30
         addb  VoiceControl,y
-        stb   YM2413.A
+        stb   <YM2413.A
         tfr   a,b
         orb   #$0F                     ; set maximum attenuation for compare        
         stb   @dyn2+1
@@ -1508,7 +1566,7 @@ cfSetVoice
 @dyn2   cmpa  #0                       ; (dynamic) test if overflow of attenuation value
         blo   @write                   ; attenuation < F and no overflow
         tfr   b,a                      ; set maximum attenuation (F)
-@write  sta   YM2413.D     
+@write  sta   <YM2413.D     
 @rts    rts
 
 ; (via Saxman's doc): F0wwxxyyzz - modulation
@@ -1578,7 +1636,7 @@ cfStopTrack
         ldb   VoiceIndex,u
         lda   VoiceControl,u           ; read channel nb  
         adda  #$30
-        sta   YM2413.A
+        sta   <YM2413.A
         aslb
         ldd   b,x
         sta   InstrAndVolume,u        
@@ -1595,7 +1653,7 @@ cfStopTrack
 @dyn2   cmpa  #0                       ; (dynamic) test if overflow of attenuation value
         blo   @write                   ; attenuation < F and no overflow
         tfr   b,a                      ; set maximum attenuation (F)
-@write  sta   YM2413.D   
+@write  sta   <YM2413.D   
         lda   SoundPage
         _SetCartPageA  
         puls  u                        ; removing return address from stack; will not return to coord flag loop
@@ -1614,7 +1672,7 @@ cfStopTrack
         cmpa  #$E0                     ; Is this a PSG 3 noise (not tone) track?
         bne   @c                       ; If it isn't, don't do next part (non-PSG Noise doesn't restore)
         lda   PSGNoise,u               ; Get PSG noise setting
-        sta   SN76489.D                     ; Write it to PSG
+        sta   <SN76489.D               ; Write it to PSG
 @c      puls  u                        ; removing return address from stack; will not return to coord flag loop                        
         rts
 
@@ -1628,7 +1686,7 @@ cfSetPSGNoise
         ldb   PlaybackControl,y
         bitb  #$04                     ; Is bit 2 (04h) Is SFX overriding this track?
         bne   @rts        
-        sta   SN76489.D
+        sta   <SN76489.D
 @rts    rts        
 
 cfDisableModulation
@@ -1689,9 +1747,37 @@ cfJumpToGosub
 cfSkip1
         leax  1,x
 cfNop 
-        rts               
+        rts      
 
-        setdp dp
+ClearTrack
+        pshs  d,x,y
+        ldd   #$0000        ; init regs to zero
+        ldx   #$0000
+        leay  ,x
+
+        fill $36,((sizeof{Track}-2)/6)*2 ; generate object_size/6 assembly instructions $3636 (pshu  d,x,y) 
+
+        IFEQ (sizeof{Track}-2)%6-5
+        pshu  a,x,y
+        ENDC
+
+        IFEQ (sizeof{Track}-2)%6-4
+        pshu  d,x
+        ENDC
+
+        IFEQ (sizeof{Track}-2)%6-3
+        pshu  a,x
+        ENDC
+
+        IFEQ (sizeof{Track}-2)%6-2
+        pshu  d
+        ENDC
+
+        IFEQ (sizeof{Track}-2)%6-1
+        pshu  a
+        ENDC
+
+        puls  d,x,y,pc
 
 * YM2413 Instrument presets
 * -------------------------

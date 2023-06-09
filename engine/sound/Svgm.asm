@@ -5,7 +5,6 @@
 * ---------------------------------------------------------------------------
 
         opt   c,ct
-        setdp dp
 
 MusicPage       fcb   0                ; memory page of music data
 MusicData       fdb   0                ; address of song data
@@ -33,7 +32,7 @@ PlayMusic
         puls  d,pc        
 
 ******************************************************************************
-* MusicFrame - processes a music frame (IRQ)
+* MusicFrame - processes a music frame (VInt)
 *
 * format:
 * -------
@@ -42,12 +41,16 @@ PlayMusic
 * x39     xnn           : (2 bytes) command code xnn (x00-xff)
 *   |____ x00           : (2 bytes) stop track
 *   |____ xnn           : (2 bytes) wait xnn frames (x01-x7f)
+*
+* For future use (not yet available) :
 *   |____ x80 xnnnn     : (4 bytes) jump to xnnnn 
-*   |____ x81 xnnnn xnn : (5 bytes) replay at xnnnn (signed offset) xnn bytes and return
+*   |____ x81 xnnnn xnn : (5 bytes) replay at xnnnn (unsigned offset to start) xnn bytes and return
+*
+* replay offset is 16bits, it can address 4 pages of 16Ko
 *
 * destroys A,B,X,Y
 ******************************************************************************
-        setdp EXTPORT
+        
 MusicFrame 
         lda   MusicStatus
         bne   @a
@@ -72,7 +75,7 @@ UpdateLoop
         blo   YM2413
 
 SN76489        
-        sta   SN76489.D
+        sta   <SN76489.D
         bra   UpdateLoop
 
 DoCommand
@@ -99,20 +102,18 @@ DoStopTrack
         rts
                
 YM2413
-        sta   YM2413.A
+        sta   <YM2413.A
         ldb   ,x+
-        stb   YM2413.D
+        stb   <YM2413.D
         nop
         nop                            ; tempo (should be 24 cycles between two register writes)
         bra   UpdateLoop
-
-        setdp dp        
 
 ******************************************************************************
 * PSGSilenceAll
 * destroys A
 ******************************************************************************
-
+        
 PSGSilenceAll
         lda   #$9F
         sta   SN76489.D
@@ -140,7 +141,7 @@ FMSilenceAll
         stb   YM2413.A
         nop                            ; (wait of 2 cycles)
         ldb   #0                       ; (wait of 2 cycles)
-        sta   YM2413.D                 ; note off for all drums     
+        sta   YM2413.D                ; note off for all drums     
 
         lda   #$20                     ; (wait of 2 cycles)
         brn   *                        ; (wait of 3 cycles)

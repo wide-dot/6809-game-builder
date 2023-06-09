@@ -12,7 +12,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<main-class>com.widedot.m6809.gamebuilder.unpack.engine.MainProg</main-class>
+		<main-class>com.widedot.m6809.gamebuilder.MainCommand</main-class>
 	</properties>
 
 	<build>
@@ -29,7 +29,7 @@
 							<skipAssembly>false</skipAssembly>
 							<archive>
 								<manifest>
-									<mainClass>com.widedot.m6809.gamebuilder.MainProg</mainClass>
+									<mainClass>com.widedot.m6809.gamebuilder.MainCommand</mainClass>
 								</manifest>
 							</archive>
 							<descriptors>

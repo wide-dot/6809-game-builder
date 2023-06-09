@@ -28,7 +28,7 @@ import com.widedot.m6809.util.FileUtil;
  * 6809 game builder
  */
 
-@Command(name = "gmb", description = "6809 game builder")
+@Command(name = "gamebuilder", description = "6809 game builder")
 @Slf4j
 public class MainCommand implements Runnable {
 	

@@ -1,0 +1,5 @@
+<configuration>
+    <filegroup name="loader">
+        <asm>loader.asm</asm>
+    </filegroup>
+</configuration>

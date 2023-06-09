@@ -1,5 +1,0 @@
-<configuration>
-    <filegroup name="loader">
-        <asm>fd.asm</asm>
-    </filegroup>
-</configuration>
