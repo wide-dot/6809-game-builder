@@ -16,3 +16,5 @@ Un fichier .fd est considéré comme ayant un entrelacement implicite de 0 (sect
 Au moment de créer une image disquette .fd, les secteurs logiques sont positionnés de manière a créer l'entrelacement demandé dans la configuration.
 
 Au runtime, les secteurs sont lus les uns à la suite des autres (1, 2, 3, ...)
+
+Il faut a terme creer une image .fd et .sap par build distincts, avec chacun leur loader et leur entrelacement.
