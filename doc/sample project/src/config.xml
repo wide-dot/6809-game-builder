@@ -7,14 +7,14 @@
                 <!-- builder must check if it fits BOOT store location -->
                 <!-- codec="none" is the default value for codec -->
                 <!-- other supported value is codec="zx0" -->
-                <filegroup store="BOOT">src/boot/filegroup-boot.xml</filegroup> 
+                <filegroup store="BOOT">boot/filegroup-boot.xml</filegroup> 
 
                 <!-- le loader est à un endroit fixe sur la disquette 3840 octets (diminuer et répartir sur la toc unfois au point)-->
-                <filegroup store="LOAD">src/loader/filegroup-loader.xml</filegroup>
+                <filegroup store="LOAD">loader/filegroup-loader.xml</filegroup>
 
                 <!-- la toc est à un endroit fixe sur la disquette : 4Ko -->
                 <toc store="TOC" symbol="media.toc.0" bin="src/media/toc/0.bin">
-                    <filegroup store="FD" codec="zx0">src/main/filegroup-main.xml</filegroup>
+                    <filegroup store="FD" codec="zx0">main/filegroup-main.xml</filegroup>
                 </toc>
 
         </media>

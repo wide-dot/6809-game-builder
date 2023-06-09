@@ -21,7 +21,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.builder.GameBuilder;
-import com.widedot.m6809.gamebuilder.configuration.Medium;
+import com.widedot.m6809.gamebuilder.configuration.Media;
 import com.widedot.m6809.util.FileUtil;
 
 /**
@@ -176,7 +176,7 @@ public class MainCommand implements Runnable {
 		String targetName = target.getString("[@name]");
 		log.info("Processing target {}", target.getString("[@name]"));
 		log.debug("name: "+targetName);
-		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedium(target, path), path);
+		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedia(target, path), path);
 		gameBuilder.build();
 		log.info("End of processing target {}", target.getString("[@name]"));
 	}
@@ -204,17 +204,17 @@ public class MainCommand implements Runnable {
     	return newDefines;
 	}
 	
-	private List<Medium> getMedium(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	private List<Media> getMedia(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
-		List<Medium> newMedium = new ArrayList<Medium>();
+		List<Media> newMedia = new ArrayList<Media>();
 		
-		// parse each medium
-	    List<HierarchicalConfiguration<ImmutableNode>> mediumFields = node.configurationsAt("medium");
-    	for(HierarchicalConfiguration<ImmutableNode> medium : mediumFields)
+		// parse each media
+	    List<HierarchicalConfiguration<ImmutableNode>> mediaFields = node.configurationsAt("media");
+    	for(HierarchicalConfiguration<ImmutableNode> media : mediaFields)
     	{
-    		newMedium.add(new Medium(medium, path));
+    		newMedia.add(new Media(media, path));
     	}	     
-    	return newMedium;
+    	return newMedia;
 	}
 	
 }
