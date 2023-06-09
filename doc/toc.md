@@ -45,9 +45,10 @@ Packed
   start >>                            <--->
                                       delta
 
-Test à la compression (sortie en erreur en demandant de passer en mode non compressé pour ce filegroup) :
+Test à la compression, en retirant les 4 derniers octets du fichier a compresser (sortie en erreur en demandant de passer en mode non compressé pour ce filegroup) :
 - si le fichier a compresser est <= 4 : 
 - si le fichier diminué de 4 compressé est plus grand que l'original
+- Si le delta est > 4
 
 File compressed from 16384 to 12269 bytes! (delta 3) (end data 0)
 File compressed from 16381 to 12266 bytes! (delta 4) (end data 3)
