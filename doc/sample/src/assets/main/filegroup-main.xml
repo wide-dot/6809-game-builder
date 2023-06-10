@@ -1,5 +1,5 @@
 <configuration>
-    <filegroup name="assets.main.main-game">
-        <asm>main.asm</asm>
+    <filegroup name="assets.main.game">
+        <asm>game.asm</asm>
     </filegroup>
 </configuration>

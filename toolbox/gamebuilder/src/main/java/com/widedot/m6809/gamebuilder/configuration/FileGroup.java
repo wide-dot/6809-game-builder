@@ -23,6 +23,8 @@ public class FileGroup {
 	public String codec;
 	public FileSet fileset;
 	
+	public static final String NO_CODEC = "none";
+	
 	public FileGroup(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		filename = node.getString("", null);
 		if (filename == null) {
@@ -32,8 +34,11 @@ public class FileGroup {
 		
 		file = new File(filename);
 		if (!file.exists() || file.isDirectory()) {
-			throw new Exception("File "+file.getName()+" does not exists !");
+			throw new Exception("File "+filename+" does not exists !");
 		}
+		
+		codec = node.getString("[@codec]", NO_CODEC);
+		log.debug("codec: " + codec + " file: " + filename);
 		
 		parse();
 	}
@@ -45,20 +50,18 @@ public class FileGroup {
 		Configurations configs = new Configurations();
 	    XMLConfiguration node = configs.xml(file);		
 	    
-	    List<HierarchicalConfiguration<ImmutableNode>> pkgFields = node.configurationsAt("filegroup");
-    	for(HierarchicalConfiguration<ImmutableNode> pkg : pkgFields)
+	    List<HierarchicalConfiguration<ImmutableNode>> fgs = node.configurationsAt("filegroup");
+    	for(HierarchicalConfiguration<ImmutableNode> fg : fgs)
     	{	
     		// for all all types
-    		name = pkg.getString("[@name]", null);
+    		name = fg.getString("[@name]", null);
     		if (name == null) {
     			throw new Exception("name is missing for filegroup");
     		}
     		
-    		codec = pkg.getString("[@codec]", "none");
+    		log.debug("name: " + name);
     		
-    		log.debug("name: " + name + " codec: " + codec);
-    		
-    		fileset = new FileSet(pkg, path);
+    		fileset = new FileSet(fg, path);
     	}
 	}
 }

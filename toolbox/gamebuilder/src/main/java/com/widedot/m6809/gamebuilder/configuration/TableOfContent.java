@@ -9,12 +9,29 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Media {
+public class TableOfContent {
 	
+	public String store;
+	public String symbol;
+	public String bin;
 	public List<FileGroup> fileGroups;
-	public List<TableOfContent> tablesOfContent;
 	
-	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	public TableOfContent(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+		
+		store = node.getString("[@store]", null);
+		if (store == null) {
+			throw new Exception("store is missing for toc");
+		}
+
+		symbol = node.getString("[@symbol]", null);
+		if (store == null) {
+			throw new Exception("symbol is missing for toc");
+		}
+		
+		bin = node.getString("[@bin]", null);
+		if (store == null) {
+			throw new Exception("bin is missing for toc");
+		}
 		
 		fileGroups = new ArrayList<FileGroup>();
 
@@ -23,14 +40,6 @@ public class Media {
     	{
    			fileGroups.add(new FileGroup(fg, path));
     	}
-    	
-    	tablesOfContent = new ArrayList<TableOfContent>();
-
-	    List<HierarchicalConfiguration<ImmutableNode>> tocs = node.configurationsAt("toc");
-    	for(HierarchicalConfiguration<ImmutableNode> toc : tocs)
-    	{
-    		tablesOfContent.add(new TableOfContent(toc, path));
-    	}    	
 	}
 }
 

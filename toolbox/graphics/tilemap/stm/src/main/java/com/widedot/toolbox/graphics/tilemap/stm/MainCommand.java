@@ -112,7 +112,7 @@ public class MainCommand implements Runnable {
 
 		// generate equate file with heigth, width and bit depth
 		String pathNoExt = FileUtil.removeExtension(paramFile.toString());
-		String basename = FileUtil.basename(pathNoExt);
+		String basename = FileUtil.getBasename(pathNoExt);
 		
 		FileWriter writer = new FileWriter(pathNoExt + ".equ", false);
 		BufferedWriter bufferedWriter = new BufferedWriter(writer);
