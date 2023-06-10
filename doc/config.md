@@ -1,3 +1,7 @@
+                <!-- builder must check if it fits BOOT store location -->
+                <!-- codec="none" is the default value for codec -->
+                <!-- other supported value is codec="zx0" -->
+
 
 "Interleave" refers to the ordering of sectors on the same track. Processing a read sector took so much time that the start of the next sector on the track would already have passed the read/write head by the time the processor came back to look for it, so it had to wait an entire disk revolution to see it again. So sectors where ordered alternatingly like 1 - 14 - 2 - 15 - 3 - 16 - ... giving the processor the time to process sector 1 while sector 14 flew by and finishing in time for sector 2 to arrive. If this interleave factor of 2 wasn't enough you could go to interleave factor 3 (1 - 10 - 19 - 2 - 11 - 20 - ...) giving two sectors' time for the processing of one sector, and so on.
 

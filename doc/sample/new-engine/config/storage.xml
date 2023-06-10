@@ -1,0 +1,44 @@
+<configuration>
+    <interleaves>
+        <!-- interleave should be based on default interleave (platform specific) -->
+        <!-- for Thomson, real floppy disk should be formatted with interleave 7 (default)-->
+        <interleave name="fd" skew="2">1,15,13,11,9,7,5,3,8,6,4,2,16,14,12,10</interleave>
+    <interleaves>
+    <storages>
+        <storage name="MEGAROM T.2" type="rom" ext=".rom"/>
+            <segment pages="128" pageSize="0x4000" org="0"/>
+            <sections>
+                <section name="BOOT" page="0" org="0"/>
+                <section name="LOAD" page="0" org="0x100"/>
+                <section name="TOC"  page="0" org="0x200"/>
+                <section name="ROM"  page="0" org="0x300"/>
+            </sections>
+        </storage>
+
+        <storage name="THOMSON FD640K BOOT" type="floppydisk" ext=".fd">
+            <segment tracks="80" faces="2" sectors="16" sectorSize="256" interleave="fd"/>
+            <sections>
+                <section name="BOOT"  track="0" face="0" sector="1"/>
+                <section name="LOAD"  track="0" face="0" sector="2"/>
+                <section name="SCENE" track="0" face="0" sector="9"/>
+                <section name="TOC"   track="0" face="1" sector="1"/>
+                <section name="FD"    track="1" face="0" sector="1"/>
+            </sections>
+        </storage>
+
+        <storage name="THOMSON FD640K NOBOOT" type="floppydisk" ext=".fd">
+            <segment tracks="80" faces="2" sectors="16" sectorSize="256" interleave="fd"/>
+            <sections>
+                <section name="LOAD"  track="0" face="0" sector="1"/>
+                <section name="TOC"   track="0" face="1" sector="1"/>
+                <section name="SCENE" track="0" face="0" sector="9"/>
+                <section name="FD"    track="1" face="0" sector="1"/>
+            </sections>
+        </storage>
+
+        <!-- to be defined
+        <storage name="TRS FD158K" type="floppydisk" ext=".fd"/>
+            <segment tracks="35" faces="1" sectors="18" sectorSize="256"/>
+        </storage> -->
+    </storages>
+</configuration>

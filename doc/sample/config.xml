@@ -1,22 +1,14 @@
 <!--  -->
 <configuration>
     <target name="fd">
-        <storage>engine/config/storage.xml</storage>
+        <storage>new-engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-
-                <!-- builder must check if it fits BOOT store location -->
-                <!-- codec="none" is the default value for codec -->
-                <!-- other supported value is codec="zx0" -->
-                <filegroup store="BOOT">boot/filegroup-boot.xml</filegroup> 
-
-                <!-- le loader est à un endroit fixe sur la disquette 3840 octets (diminuer et répartir sur la toc unfois au point)-->
-                <filegroup store="LOAD">loader/filegroup-loader.xml</filegroup>
-
-                <!-- la toc est à un endroit fixe sur la disquette : 4Ko -->
-                <toc store="TOC" symbol="media.toc.0" bin="src/media/toc/0.bin">
-                    <filegroup store="FD" codec="zx0">main/filegroup-main.xml</filegroup>
-                </toc>
-
+            <filegroup store="BOOT" >new-engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
+            <filegroup store="LOAD" >new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
+            <filegroup store="SCENE">new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
+            <toc store="TOC" symbol="media.toc.0" bin="src/media/toc/0.bin">
+                <filegroup store="FD" codec="zx0">src/assets/main/filegroup-main.xml</filegroup>
+            </toc>
         </media>
     </target>
 </configuration>

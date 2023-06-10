@@ -165,6 +165,8 @@ filegroup Loader
         - code de chargement en zone tampon
         - stockage du loader et des données d'index de manière séparée
 - expliquer le principe de fonctionnement (comme charge t on le loader ?) => bootloader
+- load a scene or individual filegroups
+- loader can be instancied anywhere (page 0, 4, ...)
 
 -------------------------------------------------------------------------------
 Boot loader
@@ -196,6 +198,7 @@ Graphical Editor
 - use engine Components defined as Packages
 - declare Files by adding Objects, Components or Assets
 - declare FileGroups by adding Files
+- declare scenes based on filegroups and destinations
 - declare Medium
 - Build Medium
 - Execute/Debug Medium
