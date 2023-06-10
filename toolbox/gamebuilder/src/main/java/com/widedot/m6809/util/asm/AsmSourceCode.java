@@ -16,7 +16,7 @@ public class AsmSourceCode
 
 	public AsmSourceCode(Path path) throws Exception {
 
-	    File directory = new File(FileUtil.getParentDir(path));
+	    File directory = new File(FileUtil.getDir(path));
 	    if (! directory.exists()){
 	        directory.mkdirs();
 	    }

@@ -39,7 +39,7 @@ public class FileGroup {
 	}
 	
 	private void parse() throws Exception {
-	    String path = FileUtil.getParentDir(file);
+	    String path = FileUtil.getDir(file);
 		
 	    // parse the xml
 		Configurations configs = new Configurations();

@@ -1,6 +1,7 @@
 package com.widedot.m6809.util.lwasm;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -15,15 +16,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Assembler
 {
+	
+	public static final String BUILD_DIR = ".build";
+	
 	public static void process(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
-		String asmFileName = FileUtil.removeExtension(asmFile);
-		String binFile = asmFileName + ".bin";
-		String lstFile = asmFileName + ".lst";
+		String buildDir = FileUtil.getDir(asmFile) + BUILD_DIR + "/";
+		String asmBasename = FileUtil.removeExtension(FileUtil.getBasename(asmFile));
+		String binFilename = buildDir + asmBasename + ".bin";
+		String lstFilename = buildDir + asmBasename + ".lst";
+
+		Files.createDirectories(Paths.get(buildDir));
 		
-		File del = new File (binFile);
+		File del = new File (binFilename);
 		del.delete();
-		del = new File (lstFile);
+		del = new File (lstFilename);
 		del.delete();
 	
 		log.debug("Assembling {} ",path.toString());
@@ -34,8 +41,8 @@ public class Assembler
 		
 		List<String> command = new ArrayList<String>(List.of("lwasm.exe", //TODO make a global value
 				   path.toString(),
-				   "--output=" + binFile,
-				   "--list=" + lstFile,
+				   "--output=" + binFilename,
+				   "--list=" + lstFilename,
 				   "--6809",
 				   "--includedir="+rootPath,
 				   "--includedir="+path.getParent().toString()

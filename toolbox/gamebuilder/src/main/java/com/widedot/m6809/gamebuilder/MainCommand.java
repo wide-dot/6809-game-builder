@@ -135,7 +135,7 @@ public class MainCommand implements Runnable {
   
 		// Get absolute directory of configuration file. Will be used as the base directory
 		// for all relative paths of files given in this configuration file.
-	    String path = FileUtil.getParentDir(file);
+	    String path = FileUtil.getDir(file);
 		
 	    // parse the xml
 		Configurations configs = new Configurations();

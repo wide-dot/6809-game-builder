@@ -39,7 +39,7 @@ public class FileSet {
     		file = path + file;
     		
     		if (name == null) {
-    			name = FileUtil.basename(file);
+    			name = FileUtil.getBasename(file);
     		}
     		
     		log.debug("bin: " + name + " " + file);
@@ -59,7 +59,7 @@ public class FileSet {
     		file = path + file;
     		
     		if (name == null) {
-    			name = FileUtil.basename(file);
+    			name = FileUtil.getBasename(file);
     		}
     		
     		log.debug("asm: " + name + " " + file);
@@ -93,7 +93,7 @@ public class FileSet {
     		String[] files = dirFile.list(wildCardFilter);
     		for (int i = 0; i < files.length; i++) {
     			log.debug("|_ asm: " + files[i]);
-    		    ressources.add(new Ressource(FileUtil.basename(files[i]), dirName + "/" + files[i], Ressource.id.get(type)));
+    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + "/" + files[i], Ressource.id.get(type)));
     		}
     	}
     	
@@ -107,7 +107,7 @@ public class FileSet {
     			throw new Exception("File " + file.getName() + " does not exists !");
     		}
       
-    	    String currentPath = FileUtil.getParentDir(file);
+    	    String currentPath = FileUtil.getDir(file);
     		
     	    // parse the xml
     		Configurations configs = new Configurations();

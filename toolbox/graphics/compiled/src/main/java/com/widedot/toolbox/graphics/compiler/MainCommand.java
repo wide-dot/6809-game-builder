@@ -92,7 +92,7 @@ public class MainCommand implements Runnable {
     
 	private void gfxcomp(File paramFile) throws Exception {
 	    
-	    path = FileUtil.getParentDir(paramFile);
+	    path = FileUtil.getDir(paramFile);
 		
 		Configurations configs = new Configurations();
 		try

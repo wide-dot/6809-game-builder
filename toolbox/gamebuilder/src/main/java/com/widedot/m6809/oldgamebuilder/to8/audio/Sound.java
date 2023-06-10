@@ -22,7 +22,7 @@ public class Sound{
 	
 	public void setAllBinaries(String fileName, boolean inRAM) throws Exception {
 		// split data based on content
-		if (FileUtil.getExtensionByStringHandling(fileName).equals(Optional.of("smid"))) {
+		if (FileUtil.getExtension(fileName).equals(Optional.of("smid"))) {
 			processSmid(fileName);
 		} else {
 			process(fileName);
