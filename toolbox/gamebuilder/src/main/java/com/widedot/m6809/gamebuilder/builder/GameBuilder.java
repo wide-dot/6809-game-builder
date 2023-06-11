@@ -12,6 +12,7 @@ import com.widedot.m6809.gamebuilder.configuration.TableOfContent;
 import com.widedot.m6809.gamebuilder.lwtools.LwAsm;
 import com.widedot.m6809.gamebuilder.lwtools.LwObj;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Section;
+import com.widedot.m6809.gamebuilder.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
 import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 
@@ -22,6 +23,8 @@ public class GameBuilder {
 
 	public GameBuilder(HashMap<String, String> defines, List<Media> mediaList, String path) throws Exception {
 		for (Media media : mediaList) {
+			
+			FdUtil mediaData = new FdUtil(2, 80, 16, 256); // todo replace with media properties
 			
 			// build filegroups that are outside of tables of content
 			for (TableOfContent tocs : media.tablesOfContent) {
@@ -53,7 +56,7 @@ public class GameBuilder {
 
 					// compress data
 					if (!fgs.codec.equals(FileGroup.NO_CODEC)) {
-						log.debug("compress");
+						log.debug("compress data");
 						byte[] output = null;
 				        int[] delta = { 0 };
 				        output = new Compressor().compress(new Optimizer().optimize(data, 0, 32640, 4, false), data, 0, false, false, delta);
@@ -64,9 +67,16 @@ public class GameBuilder {
 				        data = output;
 					}
 					
-					// write do media
-					// add to toc
+					// write data to media
+					log.debug("write data to media");
+					
+					
+					// add filegroup to toc
+					log.debug("add filegroup to toc");
 				}
+				
+				// write toc to media
+				log.debug("write toc to media");
 			}
 			
 			// build filegroups that are outside of tables of content
@@ -77,11 +87,11 @@ public class GameBuilder {
 					}
 				}
 			}
+			
+			// write media to image file
+			log.debug("write media to image file");
+			
 		}
-	}
-
-	public void build() {
-		
 	}
 	
 }

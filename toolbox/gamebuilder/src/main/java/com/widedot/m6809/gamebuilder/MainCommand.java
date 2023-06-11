@@ -177,7 +177,6 @@ public class MainCommand implements Runnable {
 		log.info("Processing target {}", target.getString("[@name]"));
 		log.debug("name: "+targetName);
 		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedia(target, path), path);
-		gameBuilder.build();
 		log.info("End of processing target {}", target.getString("[@name]"));
 	}
 
