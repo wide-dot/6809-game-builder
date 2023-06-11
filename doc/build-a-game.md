@@ -31,6 +31,14 @@ to8, to8d, to9+|[Megarom T.2] (rom)|2 MiB|.rom (loader in .sd)
 
 ... TODO ...
 
+Le builder traite les targets d'un fichier :
+- si les targets sont précisées, elles sont traitées dans l'ordre demandé
+- si les targets ne sont pas précisées, elles toutes traitées
+
+une target peut contenir des balises define destinées à être utilisées lors de l'assemblage
+
+----------------------------------------------
+
 [SDDRIVE]: http://dcmoto.free.fr/bricolage/sddrive/index.html
 [Megarom T.2]: https://megarom.forler.ch/fr/
 

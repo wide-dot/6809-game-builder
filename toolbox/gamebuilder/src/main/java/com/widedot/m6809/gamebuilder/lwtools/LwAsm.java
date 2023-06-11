@@ -47,7 +47,6 @@ public class LwAsm
 				   "--format="+(object?"obj":"raw"),
 				   "--output=" + binFilename,
 				   "--list=" + lstFilename,
-				   "--6809",
 				   "--includedir="+rootPath,
 				   "--includedir="+path.getParent().toString()
 				   ));

@@ -8,6 +8,7 @@ import java.util.List;
 import com.widedot.m6809.gamebuilder.configuration.Media;
 import com.widedot.m6809.gamebuilder.configuration.FileGroup;
 import com.widedot.m6809.gamebuilder.configuration.Ressource;
+import com.widedot.m6809.gamebuilder.configuration.Storages;
 import com.widedot.m6809.gamebuilder.configuration.TableOfContent;
 import com.widedot.m6809.gamebuilder.lwtools.LwAsm;
 import com.widedot.m6809.gamebuilder.lwtools.LwObj;
@@ -21,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GameBuilder {
 
-	public GameBuilder(HashMap<String, String> defines, List<Media> mediaList, String path) throws Exception {
+	public GameBuilder(HashMap<String, String> defines, List<Media> mediaList, Storages storageList, String path) throws Exception {
 		for (Media media : mediaList) {
 			
 			FdUtil mediaData = new FdUtil(2, 80, 16, 256); // todo replace with media properties

@@ -22,6 +22,7 @@ import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.builder.GameBuilder;
 import com.widedot.m6809.gamebuilder.configuration.Media;
+import com.widedot.m6809.gamebuilder.configuration.Target;
 import com.widedot.m6809.util.FileUtil;
 
 /**
@@ -132,7 +133,7 @@ public class MainCommand implements Runnable {
 			log.error("File "+file.getName()+" does not exists !");
 			return;
 		}
-  
+		
 		// Get absolute directory of configuration file. Will be used as the base directory
 		// for all relative paths of files given in this configuration file.
 	    String path = FileUtil.getDir(file);
@@ -142,26 +143,27 @@ public class MainCommand implements Runnable {
 		try
 		{
 		    XMLConfiguration config = configs.xml(file);
+		    Target target = new Target(path);
 		    
 		    if (targets!=null && targets.length>0) {
 			    // process specific targets by order
 				for (int i = 0; i < targets.length; i++) {
-				    List<HierarchicalConfiguration<ImmutableNode>> targetFields = config.configurationsAt("target");
-			    	for(HierarchicalConfiguration<ImmutableNode> target : targetFields)
+				    List<HierarchicalConfiguration<ImmutableNode>> targetNodes = config.configurationsAt("target");
+			    	for(HierarchicalConfiguration<ImmutableNode> targetNode : targetNodes)
 			    	{
-		    			if (!target.getString("[@name]").equals(targets[i])) {
+		    			if (!targetNode.getString("[@name]").equals(targets[i])) {
 		    				continue;
 		    			}
 		    			
-			    		processTarget(target, path);
+		    			target.process(targetNode);
 		    		}
 		    	}
 		    } else {
 		    	// process all targets
-			    List<HierarchicalConfiguration<ImmutableNode>> targetFields = config.configurationsAt("target");
-		    	for(HierarchicalConfiguration<ImmutableNode> target : targetFields)
+			    List<HierarchicalConfiguration<ImmutableNode>> targetNodes = config.configurationsAt("target");
+		    	for(HierarchicalConfiguration<ImmutableNode> targetNode : targetNodes)
 		    	{
-		    		processTarget(target, path);
+		    		target.process(targetNode);
 		    	}
 		    }
 		}
@@ -170,50 +172,5 @@ public class MainCommand implements Runnable {
 			log.error("Error reading xml configuration file.");
 			log.error(ExceptionUtils.getStackTrace(cex));
 		}
-	}
-    
-	private void processTarget(HierarchicalConfiguration<ImmutableNode> target, String path) throws Exception {
-		String targetName = target.getString("[@name]");
-		log.info("Processing target {}", target.getString("[@name]"));
-		log.debug("name: "+targetName);
-		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedia(target, path), path);
-		log.info("End of processing target {}", target.getString("[@name]"));
-	}
-
-	private HashMap<String, String> getDefines(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-	    HashMap<String, String> newDefines = new HashMap<String, String>();
-		
-		// parse each defines
-	    List<HierarchicalConfiguration<ImmutableNode>> definesFields = node.configurationsAt("defines");
-    	for(HierarchicalConfiguration<ImmutableNode> defines : definesFields)
-    	{
-    		// parse each define inside defines
-		    List<HierarchicalConfiguration<ImmutableNode>> defineFields = defines.configurationsAt("define");
-	    	for(HierarchicalConfiguration<ImmutableNode> define : defineFields)
-	    	{
-	    		String symbol = define.getString("[@symbol]", null);
-	    		String value = define.getString("[@value]", null);
-	    		newDefines.put(symbol, value);
-	    		log.debug(">> define");
-	    		log.debug("   symbol: "+symbol);
-	    		log.debug("   value: "+value);
-	    	} 	
-    	}	       	
-    	return newDefines;
-	}
-	
-	private List<Media> getMedia(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
-		
-		List<Media> newMedia = new ArrayList<Media>();
-		
-		// parse each media
-	    List<HierarchicalConfiguration<ImmutableNode>> mediaFields = node.configurationsAt("media");
-    	for(HierarchicalConfiguration<ImmutableNode> media : mediaFields)
-    	{
-    		newMedia.add(new Media(media, path));
-    	}	     
-    	return newMedia;
-	}
-	
+	}	
 }
