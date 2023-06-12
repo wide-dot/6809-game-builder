@@ -7,6 +7,14 @@ public class Section {
 	public int sector;
 	
 	public Section() {
-		
+		face = 0;
+		track = 0;
+		sector = 1;
+	}
+	
+	public Section(Section section) {
+		this.face = section.face;
+		this.track = section.track;
+		this.sector = section.sector;
 	}
 }

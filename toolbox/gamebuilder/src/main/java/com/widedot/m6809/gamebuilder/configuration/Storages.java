@@ -51,4 +51,8 @@ public class Storages {
        	}
 	}
 	
+	public Storage get(String key) {
+		return storages.get(key);
+	}
+	
 }

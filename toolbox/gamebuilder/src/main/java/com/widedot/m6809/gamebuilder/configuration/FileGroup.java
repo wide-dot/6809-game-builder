@@ -19,7 +19,7 @@ public class FileGroup {
 	public String filename;
 	public File file;
 	public String name;
-	public String store;
+	public String section;
 	public String codec;
 	public FileSet fileset;
 	
@@ -35,6 +35,11 @@ public class FileGroup {
 		file = new File(filename);
 		if (!file.exists() || file.isDirectory()) {
 			throw new Exception("File "+filename+" does not exists !");
+		}
+		
+		section = node.getString("[@section]", null);
+		if (section == null) {
+			throw new Exception("section is missing for filegroup");
 		}
 		
 		codec = node.getString("[@codec]", NO_CODEC);

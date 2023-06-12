@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.widedot.m6809.gamebuilder.configuration.Section;
 import com.widedot.m6809.gamebuilder.storage.sap.Sap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +36,23 @@ public class FdUtil {
 		return (face * 327680) + (track * 4096) + ((sector - 1) * 256);
 	}
 
-	public int writeSector(byte[] srcData, int srcIdx, int face, int track, int sector) throws Exception {
-		log.debug("Write (face:"+face+", track:"+track+", sector:"+sector+")");
-		int start = getIndex(face, track, sector);
+	public void nextSector(Section section) throws Exception {
+		section.sector++;
+		if (section.sector-1==sectors) {
+			section.sector=0;
+			section.track++;
+			if (section.track==tracks) {
+				section.face++;
+				if (section.face==faces) {
+					throw new Exception("No more space on media !");
+				}
+			}
+		}
+	}
+	
+	public int writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
+		log.debug("Write face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
+		int start = getIndex(section.face, section.track, section.sector);
 		int end = start + sectorSize;
 		int nbBytes = 0;
 		

@@ -49,23 +49,23 @@ public class Storage {
 		    
 		    HierarchicalConfiguration<ImmutableNode> segmentNode = segmentNodes.get(0);
 	
-			faces = segmentNode.getInteger("[@faces]", 0);
-			if (faces == 0) {
+			faces = segmentNode.getInteger("[@faces]", -1);
+			if (faces == -1) {
 				throw new Exception("faces is missing for segment");
 			}
 			
-			tracks = segmentNode.getInteger("[@tracks]", 0);
-			if (tracks == 0) {
+			tracks = segmentNode.getInteger("[@tracks]", -1);
+			if (tracks == -1) {
 				throw new Exception("tracks is missing for segment");
 			}
 			
-			sectors = segmentNode.getInteger("[@sectors]", 0);
-			if (sectors == 0) {
+			sectors = segmentNode.getInteger("[@sectors]", -1);
+			if (sectors == -1) {
 				throw new Exception("sectors is missing for segment");
 			}
 		    
-			sectorSize = segmentNode.getInteger("[@sectorSize]", 0);
-			if (sectors == 0) {
+			sectorSize = segmentNode.getInteger("[@sectorSize]", -1);
+			if (sectors == -1) {
 				throw new Exception("sectorSize is missing for segment");
 			}
 			
@@ -86,18 +86,18 @@ public class Storage {
 	    			throw new Exception("name is missing for section");
 	    		}
 	
-	    		section.face = sectionNode.getInteger("[@face]", 0);
-	    		if (section.face == 0) {
+	    		section.face = sectionNode.getInteger("[@face]", -1);
+	    		if (section.face == -1) {
 	    			throw new Exception("face is missing for section");
 	    		}
 	    		
-	    		section.track = sectionNode.getInteger("[@track]", 0);
-	    		if (section.track == 0) {
+	    		section.track = sectionNode.getInteger("[@track]", -1);
+	    		if (section.track == -1) {
 	    			throw new Exception("track is missing for section");
 	    		}
 	    		
-	    		section.sector = sectionNode.getInteger("[@sector]", 0);
-	    		if (section.sector == 0) {
+	    		section.sector = sectionNode.getInteger("[@sector]", -1);
+	    		if (section.sector == -1) {
 	    			throw new Exception("sector is missing for section");
 	    		}
 	    		

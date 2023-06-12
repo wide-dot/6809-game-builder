@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
-public class Section implements Serializable{
+public class LWSection implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	public String name;				// name of the section

@@ -11,10 +11,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Media {
 	
+	public String storage;
 	public List<FileGroup> fileGroups;
 	public List<TableOfContent> tablesOfContent;
 	
 	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+		
+		storage = node.getString("[@storage]", null);
+		if (storage == null) {
+			throw new Exception("storage is missing for media");
+		}
 		
 		fileGroups = new ArrayList<FileGroup>();
 

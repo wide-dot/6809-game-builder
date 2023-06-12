@@ -1,18 +1,14 @@
-loader data entry for a filegroup (6 or 12 bytes):
+loader data entry for a filegroup (7 or 14 bytes):
 
-[0]         - compression [0:none, 1:packed]
-[00]        - <free>
-[0000]      - disk [0-15]
-[0]         - face [0-1]
-[0000 0000] - track [0-255]
-[0000 0000] - sector [0-255]
-[0000 0000] - [start offset in first sector] (0 means no partial sector at beginning)
-[0000 0000] - [nb full sectors to read]
-[0000 0000] - [nb of bytes in last sector] (0 means no partial sector at ending)
+[0] [000 0000] - [compression 0:none, 1:packed] [free]
+[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
+[0000 0000] [0000 0000] - [bytes in first sector] [start offset in first sector (0: no sector)]
+[0000 0000] - [full sectors to read]
+[0000 0000] - [bytes in last sector (0: no sector)]
 
-Option (6 bytes)
-[0000 0000] [0000 0000] - offset to compressed data
-[0000 0000] [0000 0000] [0000 0000] [0000 0000] - end data (zx0)
+Option (7 bytes)
+[0000 0000] [0000 0000] - [offset to write compressed data]
+[0000 0000] [0000 0000] [0000 0000] [0000 0000] [0000 0000] - [end data to write over delta (zx0)]
 
 Pour gérer les deux types de longueur : on saute un id quand on a un filegroup compressé
 ex :

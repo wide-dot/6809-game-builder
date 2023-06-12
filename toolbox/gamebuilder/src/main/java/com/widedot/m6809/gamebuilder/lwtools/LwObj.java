@@ -20,7 +20,7 @@ import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStack;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStackNode;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprTerm;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Reloc;
-import com.widedot.m6809.gamebuilder.lwtools.struct.Section;
+import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Symbol;
 import com.widedot.m6809.util.FileUtil;
 
@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LwObj {
 
 	public Path path;
-	public List<Section> secLst;
+	public List<LWSection> secLst;
 	public static byte[] MAGIC_NUMBER = {0x4C, 0x57, 0x4F, 0x42, 0x4A, 0x31, 0x36, 0x00};
 	public static String[] opernames = {
 			"?",
@@ -143,7 +143,7 @@ public class LwObj {
 		cc = 8;
 		
 		// init data
-		secLst = new ArrayList<Section>();
+		secLst = new ArrayList<LWSection>();
 		
 		while (true)
 		{
@@ -158,7 +158,7 @@ public class LwObj {
 			
 			// we now have a section name in fp
 			// create new section entry
-			Section section = new Section();
+			LWSection section = new LWSection();
 			secLst.add(section);
 			
 			section.flags = 0;
@@ -179,12 +179,12 @@ public class LwObj {
 				{
 				case 0x01:
 					System.out.printf("    FLAG: BSS\n");
-					section.flags |= Section.SECTION_BSS;
+					section.flags |= LWSection.SECTION_BSS;
 					bss = 1;
 					break;
 				case 0x02:
 					System.out.printf("    FLAG: CONSTANT\n");
-					section.flags |= Section.SECTION_CONST;
+					section.flags |= LWSection.SECTION_CONST;
 					break;
 					
 				default:
@@ -422,7 +422,7 @@ public class LwObj {
         try {
             FileInputStream fileIn = new FileInputStream(serFileName);
             ObjectInputStream in = new ObjectInputStream(fileIn);
-            secLst = (List<Section>) in.readObject();
+            secLst = (List<LWSection>) in.readObject();
             in.close();
             fileIn.close();
         } catch (Exception e) {
