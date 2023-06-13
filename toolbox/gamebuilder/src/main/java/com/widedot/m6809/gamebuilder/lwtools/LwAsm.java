@@ -24,8 +24,8 @@ public class LwAsm
 		return new LwObj(objectFileName);
 	}
 	
-	public static void makeBinary(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
-		assemble(asmFile, rootPath, defines, ".bin", false);
+	public static String makeBinary(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
+		return assemble(asmFile, rootPath, defines, ".bin", false);
 	}
 	
 	public static String assemble(String asmFile, String rootPath, HashMap<String, String> defines, String ext, boolean object) throws Exception {

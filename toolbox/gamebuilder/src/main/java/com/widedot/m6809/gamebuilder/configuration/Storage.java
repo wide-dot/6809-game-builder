@@ -73,7 +73,7 @@ public class Storage {
 			if (interleaveName == null) {
 				interleave = new Interleave(null, sectors); 
 			} else {
-				if (interleaves.containsKey(interleaveName)) {
+				if (!interleaves.containsKey(interleaveName)) {
 					throw new Exception("undeclared interleave name: " + interleaveName);
 				}
 				interleave = new Interleave(interleaves.get(interleaveName), sectors);
