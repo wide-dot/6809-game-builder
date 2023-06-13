@@ -71,9 +71,12 @@ public class Storage {
 			
 			String interleaveName = segmentNode.getString("[@interleave]", null);
 			if (interleaveName == null) {
-				interleave = new Interleave(sectors); 
+				interleave = new Interleave(null, sectors); 
 			} else {
-				interleave = interleaves.get(interleaveName);
+				if (interleaves.containsKey(interleaveName)) {
+					throw new Exception("undeclared interleave name: " + interleaveName);
+				}
+				interleave = new Interleave(interleaves.get(interleaveName), sectors);
 			}
 			
 		    List<HierarchicalConfiguration<ImmutableNode>> sectionNodes = node.configurationsAt("section");

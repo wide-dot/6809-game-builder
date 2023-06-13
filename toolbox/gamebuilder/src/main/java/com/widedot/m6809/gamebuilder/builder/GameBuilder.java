@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.widedot.m6809.gamebuilder.configuration.Media;
 import com.widedot.m6809.gamebuilder.configuration.FileGroup;
+import com.widedot.m6809.gamebuilder.configuration.FloppyDiskIndex;
 import com.widedot.m6809.gamebuilder.configuration.Ressource;
 import com.widedot.m6809.gamebuilder.configuration.Section;
 import com.widedot.m6809.gamebuilder.configuration.Storage;
@@ -72,7 +73,11 @@ public class GameBuilder {
 							}
 						}
 					}
-
+					
+					// create index
+					FloppyDiskIndex fdi = new FloppyDiskIndex();
+					fdi.compression = false;
+					
 					// compress data
 					if (!filegroup.codec.equals(FileGroup.NO_CODEC)) {
 						log.debug("compress data");
@@ -81,7 +86,8 @@ public class GameBuilder {
 				        output = new Compressor().compress(new Optimizer().optimize(data, 0, 32640, 4, false), data, 0, false, false, delta);
 				        if (data.length > output.length) {
 				        	data = output;
-				        } else if (delta[0] > 5) { // TODO adjust delta size limit
+				        	fdi.compression = true;
+				        } else if (delta[0] > FloppyDiskIndex.DELTA_SIZE) { // TODO adjust delta size limit
 				        	log.warn("filegroup {}: compressed data delta ({}) is too high, will be using uncompressed data", filegroup.name, delta[0]);
 				        } else {
 				        	log.warn("filegroup {}: compressed data is bigger or equal, will be using uncompressed data", filegroup.name);
@@ -92,12 +98,32 @@ public class GameBuilder {
 					// write data to media
 					log.debug("write data to media");
 					Section section = sectionIndexes.get(filegroup.section);
+					fdi.face = section.face;
+					fdi.track = section.track;
+					fdi.sector = section.sector;
 					int pos = 0, wBytes;
+					boolean firstPass = true;
+					int actualPos = mediaData.getIndex(section);
+					
 					while (pos<data.length) {
-						// test if write section is already the starting point of ANOTHER section (check overlaping section)
-						// TODO
-						
 						wBytes=mediaData.writeSector(data, pos, section);
+						
+						if (firstPass) {
+							if (wBytes<storage.sectorSize) {
+								// if first sector is partial
+								fdi.sFirstOffset = actualPos-wBytes;
+								fdi.sFirstSize = wBytes;
+							}
+						} else {
+							if (wBytes==storage.sectorSize) {
+								// count full sectors
+								fdi.sFullNbSectors++;
+							} else {
+								// if last sector is partial
+								fdi.sLastSize = wBytes;
+							}
+						}
+						
 						mediaData.nextSector(section);
 						pos = pos + wBytes;
 					}
@@ -121,6 +147,7 @@ public class GameBuilder {
 			
 			// write media to image file
 			log.debug("write media to image file");
+			mediaData.interleaveData(storage.interleave);
 			mediaData.save(path+"/out"); // TODO parametre xml ?
 		}
 	}

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.widedot.m6809.gamebuilder.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.configuration.Section;
 import com.widedot.m6809.gamebuilder.storage.sap.Sap;
 
@@ -28,11 +29,11 @@ public class FdUtil {
 		dataMask = new boolean[data.length];
 	}
 
-	public int getIndex(int face, int track, int sector) throws Exception {
-		if (face < 0 || face > 3 || track < 0 || track > 79 || sector < 1 || sector > 16) {
-			log.debug("face (0-3):" + face + " track (0-79):" + track + " sector (1-16):" + sector);
-			throw new Exception ("Incorrect value for face, track or sector !");
-		}
+	public int getIndex(Section section) {
+		return (section.face * 327680) + (section.track * 4096) + ((section.sector - 1) * 256);
+	}
+	
+	public int getIndex(int face, int track, int sector) {
 		return (face * 327680) + (track * 4096) + ((sector - 1) * 256);
 	}
 
@@ -71,10 +72,57 @@ public class FdUtil {
 			if (srcIdx >= srcData.length) break; // break if no more data to write
 		}
 		
+		if (nbBytes==0) {
+			throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
+		}
+		
 		// return nb bytes written to sector
 		return nbBytes;
 	}
+	
+	public void writeFullSector(byte[] srcData, int srcIdx, Section section) throws Exception {
+		log.debug("Write face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
+		int start = getIndex(section.face, section.track, section.sector);
+		int end = start + sectorSize;
+		
+		// check that sector is empty
+		for (int i = 0; i < sectorSize; i++) {
+			if (dataMask[i]) {
+				throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
+			}
+		}
+		
+		// write to sector
+		for (int i = start; i < end; i++) {
+			data[i] = srcData[srcIdx++];
+			dataMask[i] = true;
+			
+			if (srcIdx >= srcData.length) break; // break if no more data to write
+		}
+	}
 
+	public void interleaveData(Interleave interleave) {
+		byte[] idata = new byte[data.length];
+		
+		// apply sector interleaving and face optimisation
+		int pos = 0;
+		for (int t = 0; t < tracks; t++) {
+			for (int f = 0; f < faces; f++) {
+				for (int s = 0; s < sectors; s++) {
+					
+					// sector change, apply skip
+					int index = getIndex(f, t, s);
+					System.arraycopy(data, pos, idata, index, sectorSize);
+					pos += sectorSize;
+				}
+			}
+			
+			// track change, apply skew
+		}
+		
+		data = idata;
+	}
+	
 	public void save(String outputFileName) {
 		Path outputFile = Paths.get(outputFileName + ".fd");
 		try {
