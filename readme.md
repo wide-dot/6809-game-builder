@@ -93,7 +93,7 @@ Then plateform distrubutions are generated in .\package\target :
 [dott]: doc/demo2.gif
 [unpack-tools]: doc/unpack-tools.md
 [project-setup]: doc/project-setup.md
-[build-a-game]: doc/build-a-game.md
+[project-build]: doc/project-build.md
 [objects]: doc/objects.md
 [sprites]: doc/sprites.md
 [tilemaps]: doc/tilemaps.md
