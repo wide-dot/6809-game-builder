@@ -1,14 +1,10 @@
 /[readme]/project-setup
 
 
-# Setup a new project
-## Description
+# Setup a new game project
+## Usage
 
-This small tutorial will guide you through the creation of an empty game project file structure.
-
-## Steps
-
-To create a new project, you have to use the following command :
+To create a new game project, you have to use the following command :
 
 `gamebuilder -e /mydir/newproject`
 
