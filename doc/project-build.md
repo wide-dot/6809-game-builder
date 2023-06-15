@@ -27,7 +27,7 @@ The builder handle several media types, all are specific to a system or a system
 
 system|storage media|max. size|file extension
 -|-|-|-
-to8, to8d, to9+|floppy disk|640 KiB|.fd, .hfe
+to8, to8d, to9+|floppy disk|640 KiB|.sap, .hfe, .fd
 to8, to8d, to9+|[SDDRIVE] (sd card)|16 GiB|.sd
 to8, to8d, to9+|[Megarom T.2] (rom)|2 MiB|.rom (loader in .sd)
 
