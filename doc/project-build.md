@@ -70,6 +70,10 @@ In this configuration, the builder will produce a floppy disk image, based on th
 
 A section parameter for filegroup and toc tells the builder where to write data on media. The builder will use the storage configuration to resolve sections.
 
+### storage
+
+***todo***
+
 ### filegroup
 
 A filegroup is defined by a name and hold a list of asm files or other filegroups.
@@ -85,10 +89,6 @@ The builder will produce the toc as an asm file and a bin file named after the s
 Ex : symbol="media.toc.0" will produce data in "media/toc/0.asm" and "media/toc/0.bin"
 
 Only top level filegroups directly defined in the toc will have a file index. Nested filegroups can have a name but can't be loaded to RAM at runtime.
-
-### storage
-
-***todo***
 
 ### Load time linker metadata
 
