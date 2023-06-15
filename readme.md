@@ -46,7 +46,7 @@ Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine
 - use ym2413 and sn76489 sound chips
 - play midi files (EF6850 ACIA)
 
-## Building the project an Running
+## Building the 6809-game-builder
 
 Download the latest release or build the project.
 
@@ -63,7 +63,7 @@ Then plateform distrubutions are generated in .\package\target :
 - gamebuilder-package.exe (for windows, obviously)
 - gamebuilder-package (for Linux and MacOS)
 
-## Tutorials
+## Documentation
 
 [unpack tools][unpack-tools]
 
