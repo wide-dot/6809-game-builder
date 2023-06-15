@@ -29,13 +29,13 @@ SIZEOF macro
 * Gfx structure       
        STRUCT ENTRY
        BYTE   E_BANK
-       BYTE   E_NSEC
-       BYTE   E_TRACK
+       BYTE   E_NSEC ; nombre de secteurs entiers
+       BYTE   E_TRACK ; [0000 000] track [0] drive
        BYTE   E_SECT
        POINTR E_ADDR
-       BYTE   E_SIZEA
-       BYTE   E_OFFSA
-       BYTE   E_SIZEZ
+       BYTE   E_SIZEA ; taille dans le premier secteur
+       BYTE   E_OFFSA ; offset dans le premier secteur
+       BYTE   E_SIZEZ ; taille dans le dernier secteur
        POINTR E_EXEC
        SIZEOF E_SIZEOF
 
@@ -226,36 +226,36 @@ return equ    *
 * Load a sector
 ldsec  equ    *
        pshs   x,y,u
-       lda    >track  !
-       lsr    <$6049  ! Initialize
-       lsra           ! head
-       rol    <$6049  !
-       ldb    >track   !
-       andb   #$06     ! Compute
-       addb   >sector  ! sector offset
-       andb   #$0f     !
-       ldx    #sclist Interleave table
-       ldb    b,x     Read sector number
-       clr    <$604a  ! Init
-       std    <$604b  ! track/sector
-       jsr    >$e004  Load sector
-       bcc    ldsec1  Skip if ok
-       jsr    >$e004  Reload sector
-       lbcs   error   >I/O Error
+       lda    >track  ; [0000 000] track [0] drive
+       lsr    <$6049  ; make room to drive id
+       lsra           ; set cc with bit0 (drive) of track variable
+       rol    <$6049  ; set bit0 of drive id with cc
+       ldb    >track
+       andb   #$06    ; get skew based on track nb : 0, 2, 4, 6, 0, 2, 4, 6, ...
+       addb   >sector ; add sector to skew
+       andb   #$0f    ; loop the index
+       ldx    #sclist ; interleave table
+       ldb    b,x     ; read sector number
+       clr    <$604a  ; init track msb (always 0)
+       std    <$604b  ; track/sector
+       jsr    >$e004  ; load sector
+       bcc    ldsec1  ; skip if ok
+       jsr    >$e004  ; reload sector
+       lbcs   error   ; I/O Error
 * Next sector
-ldsec1 ldd    >track  Read track/sect
-       addd   #$f1    Add offset
-       andb   #$0f    Sector bits
-       std    >track  Save track/sectr
-       dec    >nsect  Counter-1
+ldsec1 ldd    >track  ; read track/sect
+       addd   #$f1    ; inc sector, move to next face and move to next track
+       andb   #$0f    ; keep only sector bits
+       std    >track  ; save track/face/sector
+       dec    >nsect  ; counter-1
 * Update load bar
-       jsr    >pulse  Send sector pulse
+       jsr    >pulse  ; send sector pulse
        puls   x,y,u,pc
 
 * Default exit if disk error
 dskerr jmp    [$fffe]
 
-* Interleave 7
+* Interleave 2 with a default disk format (interleave 7)
 sclist equ    *
        fcb    $01,$0f,$0d,$0b
        fcb    $09,$07,$05,$03

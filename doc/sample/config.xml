@@ -3,11 +3,10 @@
     <target name="fd">
         <storage>new-engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-            <filegroup store="BOOT" >new-engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
-            <filegroup store="LOAD" >new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
-            <filegroup store="SCENE">new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
-            <toc store="TOC" symbol="media.toc.0" bin="src/media/toc/0.bin">
-                <filegroup store="FD" codec="zx0">src/assets/main/filegroup-main.xml</filegroup>
+            <filegroup section="BOOT" >new-engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
+            <filegroup section="LOAD" >new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
+            <toc section="TOC" symbol="media.toc.0">
+                <filegroup section="DATA" codec="zx0">src/assets/main/filegroup-game.xml</filegroup>
             </toc>
         </media>
     </target>

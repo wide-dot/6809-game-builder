@@ -2,6 +2,9 @@
 ## Description
 The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolset and game engine for 6809 computers.
 
+**WARNING**: This is the next generation of the builder and game engine. However, this version is still under development and should not be used.
+Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine) instead.
+
 [![CodeFactor](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder/badge?s=8289592f61057a9492abfadaf23c94fe1bb4e60b)](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e77ba840d36c43bf8c4e839bac1bde06)](https://www.codacy.com/gh/wide-dot/6809-game-builder/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wide-dot/6809-game-builder&amp;utm_campaign=Badge_Grade)
 
 ### Currently supported computers
@@ -18,28 +21,27 @@ The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolse
 
 ### Demos
 
-Demonstrations are available in a dedicated repository : [6809-game-projects]
-
 ![sonic2][sonic2] ![dott][dott] 
 
 ### Main features
 
 #### Tools
 
-- build bootable cartridge or floppy disk
-- define packages of code and data to be loaded in RAM pages
-- compress your code and data
 - generate compilated images from png files or tilesets
-- pre-process your images
 - convert Tiled tmx tilemaps in asm data
 - convert pcm, vgm, midi, smps audio data
+- compress code and data
+- build bootable cartridge or floppy disk
 
 #### Engine
-- load packages of asm binary and data in subset of RAM pages
+- load code and data to RAM pages
+- link at load time
 - manage objects
+- manage collisions
 - display sprites by priority
-- animate your sprites
+- animate sprites
 - display tilemaps (tile groups, animation, buffering, ...)
+- use multiple software scroll engines
 - play audio with dpcm, svgm, smid, smps, psg audio formats
 - use ym2413 and sn76489 sound chips
 - play midi files (EF6850 ACIA)
@@ -48,15 +50,15 @@ Demonstrations are available in a dedicated repository : [6809-game-projects]
 
 Download the latest release or build the project.
 
-You need to have Java 11 (or newer) and Maven to be installed first.
+You need to have Java 8 (or newer) and Maven to be installed first.
 
-To produce the packager which contains all the tools and all their dependencies, including engine (asm) and tools (lwasm, exo, etc.) :
+To produce the packager which contains all the tools and all their dependencies, including engine (asm) and tools (lwasm, etc.) :
 
 ```bash
 $ mvn clean package
 ```
 
-Then the different plateform distrubution are generated in .\package\target :
+Then plateform distrubutions are generated in .\package\target :
 
 - gamebuilder-package.exe (for windows, obviously)
 - gamebuilder-package (for Linux and MacOS)
@@ -65,9 +67,9 @@ Then the different plateform distrubution are generated in .\package\target :
 
 [unpack tools][unpack-tools]
 
-[setup a game][setup-a-game]
+[setup a new project][project-setup]
 
-[build a game][build-a-game]
+[build a project][project-build]
 
 [objects][objects]
 
@@ -90,7 +92,7 @@ Then the different plateform distrubution are generated in .\package\target :
 [sonic2]: doc/demo.gif
 [dott]: doc/demo2.gif
 [unpack-tools]: doc/unpack-tools.md
-[setup-a-game]: doc/setup-a-game.md
+[project-setup]: doc/project-setup.md
 [build-a-game]: doc/build-a-game.md
 [objects]: doc/objects.md
 [sprites]: doc/sprites.md
