@@ -50,10 +50,10 @@ Here is an example:
 ```xml
 <configuration>
     <target name="fd">
-        <storage>new-engine/config/storage.xml</storage>
+        <storage>engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-            <filegroup section="BOOT" >new-engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
-            <filegroup section="LOAD" >new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
+            <filegroup section="BOOT" >engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
+            <filegroup section="LOAD" >engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
             <toc section="TOC" symbol="media.toc.0">
                 <filegroup section="DATA" codec="zx0">src/assets/main/filegroup-main.xml</filegroup>
             </toc>
