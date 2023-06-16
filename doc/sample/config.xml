@@ -1,13 +1,20 @@
-<!--  -->
 <configuration>
     <target name="fd">
         <storage>new-engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-            <filegroup section="BOOT" >new-engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
-            <filegroup section="LOAD" >new-engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
-            <toc section="TOC" symbol="media.toc.0">
-                <filegroup section="DATA" codec="zx0">src/assets/main/filegroup-game.xml</filegroup>
-            </toc>
+            <lwasm format="raw" section="BOOT" maxsize="0x4000">
+                <asm>new-engine/system/to8/bootloader/boot.asm</asm>
+            </lwasm>
+
+            <lwasm format="raw" section="LOAD" maxsize="0x4000">
+                <asm>new-engine/system/to8/bootloader/loader.asm</asm>
+            </lwasm>
+
+            <index section="INDEX" symbol="media.index.0">
+                <lwasm format="obj" section="DATA" codec="zx0" symbol="assets.main.game" maxsize="0x4000">
+                    <filegroup>src/assets/main/filegroup-game.xml</filegroup>
+                </lwasm>
+            </index>
         </media>
     </target>
 </configuration>

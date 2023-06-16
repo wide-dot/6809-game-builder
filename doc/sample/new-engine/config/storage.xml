@@ -3,11 +3,11 @@
     <interleave name="thomson" softskip="2" softskew="4" hardskip="7"/>
 
     <storage name="MEGAROM T.2" type="rom" ext=".rom">
-        <segment pages="128" pageSize="0x4000" org="0"/>
-        <section name="BOOT" page="0" org="0"/>
-        <section name="LOAD" page="0" org="0x100"/>
-        <section name="TOC"  page="0" org="0x200"/>
-        <section name="DATA" page="0" org="0x300"/>
+        <segment pages="128"  pageSize="0x4000" org="0"/>
+        <section name="BOOT"  page="0" org="0"/>
+        <section name="LOAD"  page="0" org="0x100"/>
+        <section name="INDEX" page="0" org="0x200"/>
+        <section name="DATA"  page="0" org="0x300"/>
     </storage>
 
     <storage name="THOMSON FD640K BOOT" type="floppydisk" ext=".fd">
@@ -15,14 +15,14 @@
         <section name="BOOT"  face="0" track="0" sector="1"/>
         <section name="LOAD"  face="0" track="0" sector="2"/>
         <section name="SCENE" face="0" track="0" sector="9"/>
-        <section name="TOC"   face="1" track="0" sector="1"/>
+        <section name="INDEX" face="1" track="0" sector="1"/>
         <section name="DATA"  face="0" track="1" sector="1"/>
     </storage>
 
     <storage name="THOMSON FD640K NOBOOT" type="floppydisk" ext=".fd">
         <segment faces="2" tracks="80" sectors="16" sectorSize="256" interleave="thomson"/>
         <section name="LOAD"  face="0" track="0" sector="1"/>
-        <section name="TOC"   face="1" track="0" sector="1"/>
+        <section name="INDEX" face="1" track="0" sector="1"/>
         <section name="SCENE" face="0" track="0" sector="9"/>
         <section name="DATA"  face="0" track="1" sector="1"/>
     </storage>

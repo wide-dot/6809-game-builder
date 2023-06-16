@@ -1,5 +1,0 @@
-<configuration>
-    <filegroup name="engine.system.to8.bootloader.loader">
-        <asm>loader.asm</asm>
-    </filegroup>
-</configuration>
