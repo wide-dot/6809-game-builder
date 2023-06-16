@@ -50,49 +50,81 @@ Here is an example:
 ```xml
 <configuration>
     <target name="fd">
-        <storage>engine/config/storage.xml</storage>
+        <storage>new-engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-            <filegroup section="BOOT" >engine/system/to8/bootloader/filegroup-boot.xml</filegroup> 
-            <filegroup section="LOAD" >engine/system/to8/bootloader/filegroup-loader.xml</filegroup>
+            <entry section="BOOT">new-engine/system/to8/bootloader/filegroup-boot.xml</entry>
+            <entry section="LOAD">new-engine/system/to8/bootloader/filegroup-loader.xml</entry>
             <toc section="TOC" symbol="media.toc.0">
-                <filegroup section="DATA" codec="zx0">src/assets/main/filegroup-main.xml</filegroup>
+                <entry section="DATA" codec="zx0" name="assets.main.game">src/assets/main/filegroup-game.xml</entry>
             </toc>
         </media>
     </target>
 </configuration>
+
 ```
 
 In this configuration, the builder will produce a floppy disk image, based on the storage profile "THOMSON FD640K BOOT":
 
-- two filegroups will be assembled and written to media (filegroup_boot and filegroup-loader).
+- two entry filegroups will be assembled and written to media (filegroup_boot and filegroup-loader).
 
-- one filegroup will be assembled as an LW Object file (filegroup-main), and a loader index (Table Of Content) will be generated. Both will be added to media.
+- one entry filegroup will be assembled as an LW Object file (filegroup-main), and a loader index (Table Of Content) will be generated. Both will be added to media.
 
-A section parameter for filegroup and toc tells the builder where to write data on media. The builder will use the storage configuration to resolve sections.
+A section parameter for each entry and toc tells the builder where to write data on media. The builder will use the storage configuration to resolve sections.
 
 ### storage
 
-***todo***
+```xml
+<configuration>
+
+    <interleave name="thomson" softskip="2" softskew="4" hardskip="7"/>
+
+    <storage name="THOMSON FD640K BOOT" type="floppydisk" ext=".fd">
+        <segment faces="2" tracks="80" sectors="16" sectorSize="256" interleave="thomson"/>
+        <section name="BOOT"  face="0" track="0" sector="1"/>
+        <section name="LOAD"  face="0" track="0" sector="2"/>
+        <section name="SCENE" face="0" track="0" sector="9"/>
+        <section name="TOC"   face="1" track="0" sector="1"/>
+        <section name="DATA"  face="0" track="1" sector="1"/>
+    </storage>
+
+</configuration>
+```
+
+### entry
+
+An entry defines a group of source code or data that will be assembled to a LW object.
+The builder will generate metadata for the load time linker.
 
 ### filegroup
 
 A filegroup is defined by a name and hold a list of asm files or other filegroups.
+```xml
+<configuration>
+    <filegroup name="assets.main.game">
+        <asm>game.asm</asm>
+    </filegroup>
+</configuration>
+```
 
 ### table of content (toc)
 
 The buider is able to generate many file indexes called TOC (for Table Of Content). Each TOC is referenced by a symbol that is used to load the TOC to RAM before running the loader.
 
 The section parameter defines where the data must be stored to media.
-
+```xml
+<toc section="TOC" symbol="media.toc.0">
+    <entry ...>...</entry>
+    ...
+</toc>
+```
 The builder will produce the toc as an asm file and a bin file named after the symbol.
 
 Ex : symbol="media.toc.0" will produce data in "media/toc/0.asm" and "media/toc/0.bin"
 
-Only top level filegroups directly defined in the toc will have a file index. Nested filegroups can have a name but can't be loaded to RAM at runtime.
-
 ### Load time linker metadata
 
 The builder is also able to produce binaries that will be load time linked, it allows you to load your code or data anywhere on RAM.
+This runtime link is based on LWASM object output information that is generated for each "entry" spcified in the builder configuration file (not only the toc entrie, all entries).
 
 ***todo***
 
@@ -127,13 +159,13 @@ WORK IN PROGRESS
 
 ADDITIONNAL NOTES ON LOAD TIME LINKER DATA
 
-```linker.filegroup.page 04 ; [page]
-linker.filegroup.addr 0C00 ; [address]
-linker.filegroup.size equ 3 ; allocated space for array is based on used defined equate (2+linker.filegroup.size*10)
+```linker.entry.page 04 ; [page]
+linker.entry.addr 0C00 ; [address]
+linker.entry.size equ 3 ; allocated space for array is based on used defined equate (2+linker.entry.size*10)
 (04 0C00) 0003 ; [nb of elements]
-0000 04 0000 03 0100 ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
-0000 04 123C 03 0200 ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
-0000 05 2F10 03 0300 ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+0000 04 0000 03 0100 ; [entry:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+0000 04 123C 03 0200 ; [entry:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+0000 05 2F10 03 0300 ; [entry:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
 ...
 ```
 

@@ -14,14 +14,14 @@ import com.widedot.m6809.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LwAsm
+public class LwAssembler
 {
 	
 	public static final String BUILD_DIR = ".build";
 	
-	public static LwObj makeObject(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
+	public static LwObject makeObject(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {
 		String objectFileName = assemble(asmFile, rootPath, defines, ".o", true);
-		return new LwObj(objectFileName);
+		return new LwObject(objectFileName);
 	}
 	
 	public static String makeBinary(String asmFile, String rootPath, HashMap<String, String> defines) throws Exception {

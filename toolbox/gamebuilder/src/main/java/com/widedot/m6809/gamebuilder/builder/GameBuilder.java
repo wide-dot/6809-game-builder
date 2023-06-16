@@ -7,15 +7,15 @@ import java.util.HashMap;
 import java.util.List;
  
 import com.widedot.m6809.gamebuilder.configuration.Media;
-import com.widedot.m6809.gamebuilder.configuration.FileGroup;
+import com.widedot.m6809.gamebuilder.configuration.LwAsm;
 import com.widedot.m6809.gamebuilder.configuration.FloppyDiskIndex;
 import com.widedot.m6809.gamebuilder.configuration.Ressource;
 import com.widedot.m6809.gamebuilder.configuration.Section;
 import com.widedot.m6809.gamebuilder.configuration.Storage;
 import com.widedot.m6809.gamebuilder.configuration.Storages;
-import com.widedot.m6809.gamebuilder.configuration.TableOfContent;
-import com.widedot.m6809.gamebuilder.lwtools.LwAsm;
-import com.widedot.m6809.gamebuilder.lwtools.LwObj;
+import com.widedot.m6809.gamebuilder.configuration.Index;
+import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+import com.widedot.m6809.gamebuilder.lwtools.LwObject;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
@@ -33,30 +33,32 @@ public class GameBuilder {
             FdUtil mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
             HashMap<String, Section> sectionIndexes = new HashMap<String, Section>();
            
-            // build filegroups that are inside tables of content
-            for (TableOfContent tocs : media.tablesOfContent) {
+            // process lwasm commands that are inside indexes
+            log.debug("process lwasms inside indexes");
+            for (Index indexes : media.indexes) {
                
-                // init starting point for toc writing operations
-                if (!sectionIndexes.containsKey(tocs.section)) {
-                    Section sectionDefinition = storage.sections.get(tocs.section);
+                // init starting point for index writing operations
+                if (!sectionIndexes.containsKey(indexes.section)) {
+                    Section sectionDefinition = storage.sections.get(indexes.section);
                     Section section = new Section(sectionDefinition);
-                    sectionIndexes.put(tocs.section, section);
+                    sectionIndexes.put(indexes.section, section);
                 }
                
-                for (FileGroup filegroup : tocs.fileGroups) {
+                
+                for (LwAsm lwasm : indexes.lwasms) {
                    
                     // init starting point for writing operations
-                    if (!sectionIndexes.containsKey(filegroup.section)) {
-                        Section sectionDefinition = storage.sections.get(filegroup.section);
+                    if (!sectionIndexes.containsKey(lwasm.section)) {
+                        Section sectionDefinition = storage.sections.get(lwasm.section);
                         Section section = new Section(sectionDefinition);
-                        sectionIndexes.put(filegroup.section, section);
+                        sectionIndexes.put(lwasm.section, section);
                     }
                    
-                    List<LwObj> objLst = new ArrayList<LwObj>();
+                    List<LwObject> objLst = new ArrayList<LwObject>();
                     int dataSize = 0;
-                    for (Ressource ressource : filegroup.fileset.ressources) {
+                    for (Ressource ressource : lwasm.ressources) {
                         if (ressource.type == Ressource.ASM_INT) {
-                            LwObj obj = LwAsm.makeObject(ressource.file, path, defines);
+                            LwObject obj = LwAssembler.makeObject(ressource.file, path, defines);
                             objLst.add(obj);
                             for (LWSection section : obj.secLst) {
                                 dataSize += section.code.length;
@@ -64,11 +66,11 @@ public class GameBuilder {
                         }
                     }
                    
-                    // concat all code sections for this filegroup
+                    // concat all code sections for this lwasm
                     log.debug("concat code sections");
                     byte[] data = new byte[dataSize];
                     int j=0;
-                    for (LwObj obj : objLst) {
+                    for (LwObject obj : objLst) {
                         for (LWSection section : obj.secLst) {
                             for (int i=0; i<section.code.length; i++) {
                                 data[j++] = section.code[i];
@@ -81,7 +83,7 @@ public class GameBuilder {
                     fdi.compression = false;
                    
                     // compress data
-                    if (!filegroup.codec.equals(FileGroup.NO_CODEC)) {
+                    if (!lwasm.codec.equals(LwAsm.NO_CODEC)) {
                         log.debug("compress data");
                         byte[] output = null;
                         int[] delta = { 0 };
@@ -90,16 +92,16 @@ public class GameBuilder {
                             data = output;
                             fdi.compression = true;
                         } else if (delta[0] > FloppyDiskIndex.DELTA_SIZE) { // TODO adjust delta size limit
-                            log.warn("filegroup {}: compressed data delta ({}) is too high, will be using uncompressed data", filegroup.name, delta[0]);
+                            log.warn("lwasm {}: compressed data delta ({}) is too high, will be using uncompressed data", lwasm.symbol, delta[0]);
                         } else {
-                            log.warn("filegroup {}: compressed data is bigger or equal, will be using uncompressed data", filegroup.name);
+                            log.warn("lwasm {}: compressed data is bigger or equal, will be using uncompressed data", lwasm.symbol);
                         }
                         log.debug("Original size: {}, Packed size: {}, Delta: {}", data.length, output.length, delta[0]);
                     }
                    
                     // write data to media
                     log.debug("write data to media");
-                    Section section = sectionIndexes.get(filegroup.section);
+                    Section section = sectionIndexes.get(lwasm.section);
                     fdi.face = section.face;
                     fdi.track = section.track;
                     fdi.sector = section.sector;
@@ -130,32 +132,32 @@ public class GameBuilder {
                         pos = pos + wBytes;
                     }
                    
-                    // add filegroup to toc
-                    log.debug("add filegroup to toc");
+                    // add lwasm to index
+                    log.debug("add lwasm to index");
                 }
                
-                // write toc to media
-                log.debug("write toc to media");
+                // write index to media
+                log.debug("write index to media");
             }
            
-            // build filegroups that are outside of tables of content
-            log.debug("process filegroups outside toc");
-            for (FileGroup filegroup : media.fileGroups) {
+            // process lwasm commands that are outside of indexes
+            log.debug("process lwasms outside indexes");
+            for (LwAsm lwasm : media.lwasms) {
             	
                 // init starting point for writing operations
-                if (!sectionIndexes.containsKey(filegroup.section)) {
-                    Section sectionDefinition = storage.sections.get(filegroup.section);
+                if (!sectionIndexes.containsKey(lwasm.section)) {
+                    Section sectionDefinition = storage.sections.get(lwasm.section);
                     Section section = new Section(sectionDefinition);
-                    sectionIndexes.put(filegroup.section, section);
+                    sectionIndexes.put(lwasm.section, section);
                 }
             	
-                for (Ressource ressource : filegroup.fileset.ressources) {
+                for (Ressource ressource : lwasm.ressources) {
                     if (ressource.type == Ressource.ASM_INT) {
-                        String filename = LwAsm.makeBinary(ressource.file, path, defines);
+                        String filename = LwAssembler.makeBinary(ressource.file, path, defines);
  
 	                    log.debug("write data to media");
 	                    byte[] data = Files.readAllBytes(Paths.get(filename));
-	                    Section section = sectionIndexes.get(filegroup.section);
+	                    Section section = sectionIndexes.get(lwasm.section);
 	                    int pos = 0;
 	                   
 	                    while (pos<data.length) {

@@ -9,17 +9,23 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Media {
+public class Index {
 	
-	public String storage;
+	public String section;
+	public String symbol;
+	public String bin;
 	public List<LwAsm> lwasms;
-	public List<Index> indexes;
 	
-	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	public Index(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
-		storage = node.getString("[@storage]", null);
-		if (storage == null) {
-			throw new Exception("storage is missing for media");
+		section = node.getString("[@section]", null);
+		if (section == null) {
+			throw new Exception("section is missing for index");
+		}
+
+		symbol = node.getString("[@symbol]", null);
+		if (symbol == null) {
+			throw new Exception("symbol is missing for index");
 		}
 		
 		lwasms = new ArrayList<LwAsm>();
@@ -29,14 +35,6 @@ public class Media {
     	{
    			lwasms.add(new LwAsm(lwasm, path));
     	}
-    	
-    	indexes = new ArrayList<Index>();
-
-	    List<HierarchicalConfiguration<ImmutableNode>> indexList = node.configurationsAt("index");
-    	for(HierarchicalConfiguration<ImmutableNode> index : indexList)
-    	{
-    		indexes.add(new Index(index, path));
-    	}    	
 	}
 }
 

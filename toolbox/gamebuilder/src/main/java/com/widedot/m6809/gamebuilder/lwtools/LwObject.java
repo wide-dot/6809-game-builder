@@ -27,7 +27,7 @@ import com.widedot.m6809.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LwObj {
+public class LwObject {
 
 	public Path path;
 	public List<LWSection> secLst;
@@ -53,7 +53,7 @@ public class LwObj {
 	private int cc;
 	private static final int numopers = 13;
 	
-	public LwObj(String filename) throws Exception {
+	public LwObject(String filename) throws Exception {
 		
 		path = Paths.get(filename);
 		
