@@ -38,7 +38,7 @@ public class FileGroup {
     		}
     		
     		log.debug("bin: " + name + " " + file);
-    		ressources.add(new Ressource(name, file, Ressource.BIN_INT));
+    		ressources.add(new Ressource(name, file, Ressource.BIN));
     	}
     	
 	    List<HierarchicalConfiguration<ImmutableNode>> asmFields = node.configurationsAt("asm");
@@ -58,7 +58,7 @@ public class FileGroup {
     		}
     		
     		log.debug("asm: " + name + " " + file);
-    		ressources.add(new Ressource(name, file, Ressource.ASM_INT));
+    		ressources.add(new Ressource(name, file, Ressource.ASM));
     	}
     	
 	    List<HierarchicalConfiguration<ImmutableNode>> dirFields = node.configurationsAt("dir");
@@ -88,7 +88,7 @@ public class FileGroup {
     		String[] files = dirFile.list(wildCardFilter);
     		for (int i = 0; i < files.length; i++) {
     			log.debug("|_ asm: " + files[i]);
-    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + "/" + files[i], Ressource.id.get(type)));
+    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + "/" + files[i], type));
     		}
     	}
     	

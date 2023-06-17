@@ -6,6 +6,8 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -19,13 +21,11 @@ public class LwAsm {
 	
 	public List<Ressource> ressources = new ArrayList<Ressource>();
 	
-	public static final String RAW = "raw";
-	public static final String OBJECT = "obj";
 	public static final String NO_CODEC = "none";
 	
 	public LwAsm(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
-		format = node.getString("[@format]", RAW);
+		format = node.getString("[@format]", LwAssembler.RAW);
 		
 		section = node.getString("[@section]", null);
 		if (section == null) {

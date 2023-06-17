@@ -15,7 +15,7 @@ import com.widedot.m6809.gamebuilder.configuration.Storage;
 import com.widedot.m6809.gamebuilder.configuration.Storages;
 import com.widedot.m6809.gamebuilder.configuration.Index;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
-import com.widedot.m6809.gamebuilder.lwtools.LwObject;
+import com.widedot.m6809.gamebuilder.lwtools.format.LwObject;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
@@ -54,30 +54,22 @@ public class GameBuilder {
                         sectionIndexes.put(lwasm.section, section);
                     }
                    
-                    List<LwObject> objLst = new ArrayList<LwObject>();
-                    int dataSize = 0;
+                    // assemble ressources
+                    int length = 0;
                     for (Ressource ressource : lwasm.ressources) {
-                        if (ressource.type == Ressource.ASM_INT) {
-                            LwObject obj = LwAssembler.makeObject(ressource.file, path, defines);
-                            objLst.add(obj);
-                            for (LWSection section : obj.secLst) {
-                                dataSize += section.code.length;
-                            }
-                        }
+                        ressource.computeBin(path, defines, lwasm.format);
+                        length += ressource.bin.length;
                     }
-                   
-                    // concat all code sections for this lwasm
-                    log.debug("concat code sections");
-                    byte[] data = new byte[dataSize];
-                    int j=0;
-                    for (LwObject obj : objLst) {
-                        for (LWSection section : obj.secLst) {
-                            for (int i=0; i<section.code.length; i++) {
-                                data[j++] = section.code[i];
-                            }
-                        }
+                    
+                    // concat binaries
+                    log.debug("concat binaries");
+                    byte[] data = new byte[length];
+                    int i = 0;
+                    for (Ressource ressource : lwasm.ressources) {
+                    	System.arraycopy(ressource.bin, 0, data, i, ressource.bin.length);
+                    	i += ressource.bin.length;
                     }
-                   
+                                        
                     // create index
                     FloppyDiskIndex fdi = new FloppyDiskIndex();
                     fdi.compression = false;
@@ -153,15 +145,14 @@ public class GameBuilder {
             	
                 for (Ressource ressource : lwasm.ressources) {
                     if (ressource.type == Ressource.ASM_INT) {
-                        String filename = LwAssembler.makeBinary(ressource.file, path, defines);
+                    	ressource.computeBin(path, defines, lwasm.format);
  
 	                    log.debug("write data to media");
-	                    byte[] data = Files.readAllBytes(Paths.get(filename));
 	                    Section section = sectionIndexes.get(lwasm.section);
 	                    int pos = 0;
 	                   
-	                    while (pos<data.length) {
-	                        mediaData.writeFullSector(data, pos, section);                      
+	                    while (pos<ressource.bin.length) {
+	                        mediaData.writeFullSector(ressource.bin, pos, section);                      
 	                        mediaData.nextSector(section);
 	                        pos = pos + storage.sectorSize;
 	                    }

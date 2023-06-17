@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools;
+package com.widedot.m6809.gamebuilder.lwtools.format;
 
 import java.io.File;
 import java.io.FileInputStream;
