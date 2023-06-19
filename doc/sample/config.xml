@@ -1,20 +1,60 @@
 <configuration>
     <target name="fd">
+
         <storage>new-engine/config/storage.xml</storage>
-        <media storage="THOMSON FD640K BOOT">
-            <lwasm format="raw" section="BOOT" maxsize="0x4000">
-                <asm>new-engine/system/to8/bootloader/boot.asm</asm>
-            </lwasm>
 
-            <lwasm format="raw" section="LOAD" maxsize="0x4000">
-                <asm>new-engine/system/to8/bootloader/loader.asm</asm>
-            </lwasm>
+        <media storage="fd640 boot">
 
-            <index section="INDEX" symbol="media.index.0">
-                <lwasm format="obj" section="DATA" codec="zx0" symbol="assets.main.game" maxsize="0x4000">
-                    <filegroup>src/assets/main/filegroup-game.xml</filegroup>
+            <default>
+                <maxsize>0x4000</maxsize>
+            <default>
+
+            <file section="LOAD" maxsize="0x100">   
+                <lwasm format="raw">
+                    <asm>new-engine/system/to8/bootloader/boot.asm</asm>
                 </lwasm>
-            </index>
+            </file>
+
+            <file section="LOAD">   
+                <lwasm format="raw">
+                    <asm>new-engine/system/to8/bootloader/loader.asm</asm>
+                </lwasm>
+            </file>
+
+            <directory name="media.index.title" section="INDEX">
+                <file name="assets.main.title" codec="zx0" section="DATA">
+                    <lwasm format="obj">
+                        <group>src/assets/main/group-title.xml</group>
+                    </lwasm>
+                </file>
+            </directory>
+
+            <directory fat="dd" name="IMAGEBAS" section="FAT0">
+                <file name="auto.bat" block="130">
+                    <bas tokenset="to">src/assets/basic/auto.bat</bas> <!-- tokenset : mo, to, nano, coco, dragon. (default is to)-->
+                </file>
+                <file name="image.map" block="131"> <!-- will use block as starting point, will throw an error if block are not contiguous (no more free space), why make the filesystem partitionned ? -->
+                    <bin>src/assets/image/image.map</bin>
+                </file>
+            </directory>
+
+            <directory fat="dd" name="IMAGEASM" section="FAT1">
+                <file name="load.bas" block="0">
+                    <bas tokenset="to">src/assets/linktest/load.bas</bas>
+                </file>
+                <file name="image.bin" block="1">
+                    <lwlink format="decb" script=""> <!-- decb or raw, process a lwasm followed by lwlink. section is optionnal -->
+                        <section name="" base=""/>
+                        <section name="" base=""/>
+                        <asm>src/assets/image/intro.asm</asm>
+                        <asm>src/assets/image/image1.asm</asm>
+                        <asm>src/assets/image/image2.asm</asm>
+                        <bin>src/assets/lib/util.o</bin>
+                    </lwlink>
+                </file>
+            </directory>
+
         </media>
     </target>
 </configuration>
+
