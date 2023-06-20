@@ -9,10 +9,10 @@ Chaque asm doit contenir deux sections :
 Contrôles du builder : ORG interdit dans le code source
 
 Il n'est pas utile de dédoublonner Les symboles EXTERNAL avant passage de la commande LWASM
-LWASM va naturellement fusionner les sections des asm, on concatène donc les fichiers d'un filegroup avant compilation
+LWASM va naturellement fusionner les sections des asm, on concatène donc les fichiers d'un group avant compilation
 Les ID de symboles externes sont définis en triant les symboles par ordre alphabetique au sein d'un block
 
-??? L'ID de file est défini manuellement dans la déclaration des filegroup
+??? L'ID de file est défini manuellement dans la déclaration des group
 
 Les binaires exécutables sont stockés séparément des valeurs de symboles utilisés pour le link.
 Sur le média (disquette ...) on a d'un coté les binaires a charger, de l'autre les données de load-time link.
@@ -21,7 +21,7 @@ Une fois les binaires chargés, on charge les définitions de symbole correspond
 (Ex : page video de double buffer, ou espace RAM disponible. Dans le cas d'une ROM adossée à la RAM, les données peuvent être lues directement depuis la ROM).
 Dans le cas d'un chargement d'un ou plusieurs nouveaux blocks, en présence d'autres block déjà chargés, il faudra recharger les valeurs de symboles de tous les blocks en oeuvre.
 (Pour cela on se basera sur un index des blocs chargés en mémoire).
-On effectuera un nouveau link complet, ceci afin de gérer le cas des instances multiples de filegroup ou de file.
+On effectuera un nouveau link complet, ceci afin de gérer le cas des instances multiples de group ou de file.
 
 Un outil indépendant devra pouvoir générer cette liste optimisée d'asm en blocks (reorder in place dans le fichier qui définit les blocks)
 => objectif, avoir des pages de RAM remplies au maximum
@@ -43,13 +43,13 @@ Dans le cas de deux blocs avec le même id, la liste des exports doit être iden
 Les exports sont triés par ordre alphabétique de manière a avoir les mêmes index entre deux blocks partageant la même interface.
 
 Nouveautés : 
-- A l'écriture du code, on défini des fichiers (file) et des groupes de fichiers (filegroup)
-- le filegroup sert à :
+- A l'écriture du code, on défini des fichiers (file) et des groupes de fichiers (group)
+- le group sert à :
         - définir un id pour le chargement d'un ensemble de fichiers au runtime
         - permet le chargement d'une zone mémoire continue en RAM d'un seul coup (compression d'une suite continue de fichiers)
-        - optimiser l'usage de la RAM en effectuant un précalcul de répartition dans le cas de paginated filegroup
-        - les paginated filegroups sont divisés en filegroups par outillage avant le build en fonction d'un org prédéfini, il en resulte la définition de plusieurs filegroups
-        - au runtime, le link se fait entre filegroups, ce qui diminue la quantité d'index nécessaire (par rapport à une gestion fichier par fichier).
+        - optimiser l'usage de la RAM en effectuant un précalcul de répartition dans le cas de paginated group
+        - les paginated groups sont divisés en groups par outillage avant le build en fonction d'un org prédéfini, il en resulte la définition de plusieurs groups
+        - au runtime, le link se fait entre groups, ce qui diminue la quantité d'index nécessaire (par rapport à une gestion fichier par fichier).
                 
 
 J'ai terminé le chargement des .o en java hier et je suis resté calqué sur le modèle de données de lwasm. En particulier pour le moteur d'expression (celui qui applique les fameux opérateurs d'addition et autres.
@@ -79,41 +79,43 @@ Dans le builder actuel, on "voit" la valeur player1 partout car les equates du m
 load-time linker
 -------------------------------------------------------------------------------
 
-The load-time linker keep a state of loaded filegroups at runtime.
-When a load is requested, parameters are : filegroup id, destination (page/addr)
-User can request if a particular filegroup is actually loaded in RAM.
-A filegroup can also be unloaded by user request.
-Filegroup alias is a text value that is unique in a project (checked at build time).
-The builder set an id number for each filegroup alias and export equates at build time.
-User must declare equates as EXTERNAL and use this syntax : ldd   #builder.filegroup.<alias> when requesting filegroup to be loaded, or when checking if a filegroup is loaded.
+The load-time linker keep a state of loaded groups at runtime.
+When a load is requested, parameters are : group id, destination (page/addr)
+User can request if a particular group is actually loaded in RAM.
+A group can also be unloaded by user request.
+group alias is a text value that is unique in a project (checked at build time).
+The builder set an id number for each group alias and export equates at build time.
+User must declare equates as EXTERNAL and use this syntax : ldd   #builder.group.<alias> when requesting group to be loaded, or when checking if a group is loaded.
 File exported equates must be unique in the whole project.
-When paginated filegroup are used, each filegroup must be loaded manually at runtime, it does not change anything for the code as dynamic link resolve addresses.
-For paginated filegroup, the builder generates equates as EXTERNAL : builder.pageOffset.<file alias>
-file alias are requested only for paginated filegroup.
-This value should be added at runtime to the known page id where filegroup was loaded.
+When paginated group are used, each group must be loaded manually at runtime, it does not change anything for the code as dynamic link resolve addresses.
+For paginated group, the builder generates equates as EXTERNAL : builder.pageOffset.<file alias>
+file alias are requested only for paginated group.
+This value should be added at runtime to the known page id where group was loaded.
 known page id must be set as equates for each "scene" (see loader samples)
 
-loaded filegroups at runtime
+loaded groups at runtime
 ----------------------------
+
+ci dessous c'est l'index au runtime (pas la référence sur disquette)
 
 *** RAM
 
-linker.filegroup.page
+linker.file.page
              04                                 ; [page]
-linker.filegroup.addr
+linker.file.addr
              0C00                               ; [address]
 
 *** RAM or ROM
 
-linker.filegroup.size equ 3                     ; allocated space for array is based on used defined equate (2+linker.filegroup.size*10)
+linker.file.size equ 3                          ; allocated space for array is based on used defined equate (2+linker.file.size*10)
 
 04 0C00      0003                               ; [nb of elements]
-             0000 04 0000 03 0100               ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
-             0000 04 123C 03 0200               ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
-             0000 05 2F10 03 0300               ; [filegroup:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+             0000 04 0000 03 0100               ; [file:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+             0000 04 123C 03 0200               ; [file:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
+             0000 05 2F10 03 0300               ; [file:id] [code:page] [code:address] [linkmeta:page] [linkmeta:address]
              ...
 
-filegroup binaries
+file binaries
 ------------------
           
 *** RAM or ROM
@@ -124,8 +126,11 @@ filegroup binaries
           2019116B21133A12B02217130014E524
           ...
 
-filegroup link metadata (5 consecutive arrays)
+file link metadata (5 consecutive arrays)
 ----------------------------------------------
+
+Les données d'index chargées au runtime (dynamiquement puis écrasées ou non a voir)
+sont les mêmes sur disquette ou rom ou en RAM ... 
 
 - exported constant
 
@@ -155,7 +160,7 @@ filegroup link metadata (5 consecutive arrays)
              003E 0000 0003 0002              ;                                                            external ( ES=ymm.music.processFrame ) @ 003E
 
 -------------------------------------------------------------------------------
-filegroup Loader
+file Loader
 -------------------------------------------------------------------------------
 
 - décrire ici le principe du loader
@@ -165,7 +170,7 @@ filegroup Loader
         - code de chargement en zone tampon
         - stockage du loader et des données d'index de manière séparée
 - expliquer le principe de fonctionnement (comme charge t on le loader ?) => bootloader
-- load a scene or individual filegroups
+- load a scene or individual groups
 - loader can be instancied anywhere (page 0, 4, ...)
 
 -------------------------------------------------------------------------------
@@ -175,11 +180,11 @@ Boot loader
 - Principe de chargement en $6200 du secteur 1
 - personalisation du code (objet + component ?)
 - loader simplifié : chargement des données situées après le secteur 1 en respectant l'entrelacement, vers une destination spécifique.
-- le nombre de secteurs à lire est déterminé par le builder (EXPORT builder.bootloader.sectors), le builder se base sur la taille des données du filegroup a positionner sur le média disquette en secteur 2
-- la destination et le point de lancement est déterminé par include d'equates dans le filegroup du bootloader : bootloader.page bootloader.address
+- le nombre de secteurs à lire est déterminé par le builder (EXPORT builder.bootloader.sectors), le builder se base sur la taille des données du group a positionner sur le média disquette en secteur 2
+- la destination et le point de lancement est déterminé par include d'equates dans le group du bootloader : bootloader.page bootloader.address
 - version disquette / T.2
 
-- TODO : tous les secteurs de boot sont en 1 ?  clarifier la définition du boot et du filegroup de loader
+- TODO : tous les secteurs de boot sont en 1 ?  clarifier la définition du boot et du group de loader
 
 -------------------------------------------------------------------------------
 Graphical Editor
@@ -197,8 +202,8 @@ Graphical Editor
 - write Component's assembly code
 - use engine Components defined as Packages
 - declare Files by adding Objects, Components or Assets
-- declare FileGroups by adding Files
-- declare scenes based on filegroups and destinations
+- declare groups by adding Files
+- declare scenes based on groups and destinations
 - declare Medium
 - Build Medium
 - Execute/Debug Medium

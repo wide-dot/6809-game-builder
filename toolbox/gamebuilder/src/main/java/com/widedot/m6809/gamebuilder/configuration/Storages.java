@@ -9,12 +9,15 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.storage.fat.FatSettings;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Storages {
 	
 	public HashMap<String, Storage> storages = new HashMap<String, Storage>();
+	public HashMap<String, FatSettings> fats = new HashMap<String, FatSettings>();
 	
 	public Storages() {
 		
@@ -35,6 +38,13 @@ public class Storages {
 		Configurations configs = new Configurations();
 	    XMLConfiguration childNode = configs.xml(file);		
 
+   	    List<HierarchicalConfiguration<ImmutableNode>> fatNodes = childNode.configurationsAt("fat");
+       	for(HierarchicalConfiguration<ImmutableNode> fatNode : fatNodes)
+       	{	
+       		FatSettings fat = new FatSettings(fatNode);
+		    fats.put(fat.name, fat);
+       	}
+	    
 		HashMap<String, Interleave> interleaves = new HashMap<String, Interleave>();
    	    List<HierarchicalConfiguration<ImmutableNode>> interleaveNodes = childNode.configurationsAt("interleave");
        	for(HierarchicalConfiguration<ImmutableNode> interleaveNode : interleaveNodes)

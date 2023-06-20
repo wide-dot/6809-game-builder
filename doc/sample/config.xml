@@ -9,21 +9,21 @@
                 <maxsize>0x4000</maxsize>
             <default>
 
-            <file section="LOAD" maxsize="0x100">   
+            <file section="BOOT" maxsize="0x100">   
                 <lwasm format="raw">
                     <asm>new-engine/system/to8/bootloader/boot.asm</asm>
                 </lwasm>
             </file>
 
-            <file section="LOAD">   
+            <file section="LOAD">
                 <lwasm format="raw">
                     <asm>new-engine/system/to8/bootloader/loader.asm</asm>
                 </lwasm>
             </file>
 
-            <directory name="media.index.title" section="INDEX">
+            <directory index="0" section="INDEX"> <!-- index tell that this is the custom directory type, 0 is the disk number -->
                 <file name="assets.main.title" codec="zx0" section="DATA">
-                    <lwasm format="obj">
+                    <lwasm format="obj"> <!-- obj are converted to load timer linker data, data is integrated to INDEX because related to (used when loading a ressource !)-->
                         <group>src/assets/main/group-title.xml</group>
                     </lwasm>
                 </file>
