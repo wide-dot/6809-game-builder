@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.media;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;

@@ -1,8 +1,11 @@
 package com.widedot.m6809.gamebuilder.lwtools;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -10,6 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.FileUtils;
+
+import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LwAssembler
 {
-	
-	public static final String BUILD_DIR = ".build";
-	
 	// format types
 	public static final String OBJ  = "obj";
 	public static final String DECB = "decb";
@@ -48,7 +51,7 @@ public class LwAssembler
 	public static Object assemble(String asmFile, String rootPath, HashMap<String, String> defines, String format) throws Exception {
 		
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
-		String buildDir = FileUtil.getDir(asmFile) + BUILD_DIR + "/";
+		String buildDir = FileUtil.getDir(asmFile) + File.separator +Settings.values.get("build.dir") + File.separator;
 		String asmBasename = FileUtil.removeExtension(FileUtil.getBasename(asmFile));
 		String binFilename = buildDir + asmBasename + "." + format;
 		String lstFilename = buildDir + asmBasename + "." + LST;
@@ -84,7 +87,41 @@ public class LwAssembler
         Constructor<?> ctor = clazz.getConstructor(String.class);
         Object object = ctor.newInstance(new Object[] { binFilename });
         
+        // add a file tag in the build directory
+        File tag = new File(buildDir+Settings.values.get("build.dir.tag"));
+        tag.createNewFile();
+        
 		return object;
 	}
-
+	
+	public static void clean(String path) throws IOException {
+		log.info("Clean build directories ...");	   
+	    deleteDirectoryRecursion(Paths.get(path));
+	    log.info("Clean ended.");
+	}
+	
+	public static void deleteDirectoryRecursion(Path path) throws IOException {
+		if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+			
+			// only delete the directory that ends with the expected name
+			if (path.getFileName().toString().equals(Settings.values.get("build.dir"))) {
+				
+				// to ensure that the directory is a one created by the builder, a file tag is controlled
+				File tag = new File(path.toString()+File.separator+Settings.values.get("build.dir.tag"));
+				if (tag.isFile()) {
+					log.debug("delete: {}", path.toString());
+					FileUtils.deleteDirectory(path.toFile());
+				} else {
+					log.warn("cancel deletion of: {} - tag: {} not found", path.toString(), tag.toString());
+				}
+				
+			} else {
+				try (DirectoryStream<Path> entries = Files.newDirectoryStream(path)) {
+					for (Path entry : entries) {
+						deleteDirectoryRecursion(entry);
+					}
+				}
+			}
+		}
+	}
 }

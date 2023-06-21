@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.storage;
 
 public class Section {
 	public String name;

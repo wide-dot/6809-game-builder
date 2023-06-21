@@ -21,8 +21,10 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.builder.GameBuilder;
-import com.widedot.m6809.gamebuilder.configuration.Media;
-import com.widedot.m6809.gamebuilder.configuration.Target;
+import com.widedot.m6809.gamebuilder.configuration.media.Media;
+import com.widedot.m6809.gamebuilder.configuration.target.Target;
+import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
 /**
@@ -76,21 +78,24 @@ public class MainCommand implements Runnable {
 			}
 
 			if (exclusive.extractDir != null) {
+				
 				// exctract assembly engine
 				extract(exclusive.extractDir);
+				
 			} else {
-
-				if (clean) {
-					// clean assembled .o files
-					Startup.clean();
-				}
-
-				// process a conf file or all conf files in a dir
-				String[] targets = (target!=null?target.split(","):null);				
-				if (exclusive.confFile != null) {
-					processFile(new File(exclusive.confFile), targets);
-				} else if (exclusive.confDir != null) {
-					processDir(new File(exclusive.confDir), targets);
+				
+				// load properties
+				Settings.values = FileResourcesUtils.getHashMap("settings.properties");
+				
+				if (Settings.isValid()) {
+					
+					// process a conf file or all conf files in a dir
+					String[] targets = (target!=null?target.split(","):null);				
+					if (exclusive.confFile != null) {
+						processFile(new File(exclusive.confFile), targets);
+					} else if (exclusive.confDir != null) {
+						processDir(new File(exclusive.confDir), targets);
+					}
 				}
 			}
 
@@ -137,6 +142,12 @@ public class MainCommand implements Runnable {
 		// Get absolute directory of configuration file. Will be used as the base directory
 		// for all relative paths of files given in this configuration file.
 	    String path = FileUtil.getDir(file);
+	    
+	    // clean build files
+		if (clean) {
+			LwAssembler.clean(path);
+			return;
+		}
 		
 	    // parse the xml
 		Configurations configs = new Configurations();
@@ -146,25 +157,9 @@ public class MainCommand implements Runnable {
 		    Target target = new Target(path);
 		    
 		    if (targets!=null && targets.length>0) {
-			    // process specific targets by order
-				for (int i = 0; i < targets.length; i++) {
-				    List<HierarchicalConfiguration<ImmutableNode>> targetNodes = config.configurationsAt("target");
-			    	for(HierarchicalConfiguration<ImmutableNode> targetNode : targetNodes)
-			    	{
-		    			if (!targetNode.getString("[@name]").equals(targets[i])) {
-		    				continue;
-		    			}
-		    			
-		    			target.process(targetNode);
-		    		}
-		    	}
+		    	target.processTargetSelection(config, targets);
 		    } else {
-		    	// process all targets
-			    List<HierarchicalConfiguration<ImmutableNode>> targetNodes = config.configurationsAt("target");
-		    	for(HierarchicalConfiguration<ImmutableNode> targetNode : targetNodes)
-		    	{
-		    		target.process(targetNode);
-		    	}
+		    	target.processAllTargets(config);
 		    }
 		}
 		catch (ConfigurationException cex)

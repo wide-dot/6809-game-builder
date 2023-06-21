@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.media;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ public class Media {
 	
 	public String storage;
 	public List<LwAsm> lwasms;
-	public List<Index> indexes;
+	public List<Directory> indexes;
 	
 	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
@@ -29,12 +29,12 @@ public class Media {
    			lwasms.add(new LwAsm(lwasm, path));
     	}
     	
-    	indexes = new ArrayList<Index>();
+    	indexes = new ArrayList<Directory>();
 
 	    List<HierarchicalConfiguration<ImmutableNode>> indexList = node.configurationsAt("index");
     	for(HierarchicalConfiguration<ImmutableNode> index : indexList)
     	{
-    		indexes.add(new Index(index, path));
+    		indexes.add(new Directory(index, path));
     	}    	
 	}
 }

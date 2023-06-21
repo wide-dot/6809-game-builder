@@ -5,15 +5,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
- 
-import com.widedot.m6809.gamebuilder.configuration.Media;
-import com.widedot.m6809.gamebuilder.configuration.LwAsm;
-import com.widedot.m6809.gamebuilder.configuration.FloppyDiskIndex;
-import com.widedot.m6809.gamebuilder.configuration.Ressource;
-import com.widedot.m6809.gamebuilder.configuration.Section;
-import com.widedot.m6809.gamebuilder.configuration.Storage;
-import com.widedot.m6809.gamebuilder.configuration.Storages;
-import com.widedot.m6809.gamebuilder.configuration.Index;
+
+import com.widedot.m6809.gamebuilder.configuration.media.Directory;
+import com.widedot.m6809.gamebuilder.configuration.media.LwAsm;
+import com.widedot.m6809.gamebuilder.configuration.media.Media;
+import com.widedot.m6809.gamebuilder.configuration.media.Ressource;
+import com.widedot.m6809.gamebuilder.configuration.storage.Section;
+import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
+import com.widedot.m6809.gamebuilder.configuration.storage.Storages;
+import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
 import com.widedot.m6809.gamebuilder.lwtools.format.LwObject;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
@@ -35,7 +35,7 @@ public class GameBuilder {
            
             // process lwasm commands that are inside indexes
             log.debug("process lwasms inside indexes");
-            for (Index indexes : media.indexes) {
+            for (Directory indexes : media.indexes) {
                
                 // init starting point for index writing operations
                 if (!sectionIndexes.containsKey(indexes.section)) {
@@ -71,7 +71,7 @@ public class GameBuilder {
                     }
                                         
                     // create index
-                    FloppyDiskIndex fdi = new FloppyDiskIndex();
+                    FloppyDiskDirectory fdi = new FloppyDiskDirectory();
                     fdi.compression = false;
                    
                     // compress data

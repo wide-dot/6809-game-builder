@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.target;
 
 import java.util.Collection;
 import java.util.HashMap;

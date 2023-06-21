@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.media;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,14 +9,14 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Index {
+public class Directory {
 	
 	public String section;
 	public String symbol;
 	public String bin;
 	public List<LwAsm> lwasms;
 	
-	public Index(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	public Directory(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
 		section = node.getString("[@section]", null);
 		if (section == null) {

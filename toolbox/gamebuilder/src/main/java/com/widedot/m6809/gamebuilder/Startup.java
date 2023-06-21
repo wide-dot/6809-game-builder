@@ -15,9 +15,6 @@ import net.lingala.zip4j.model.LocalFileHeader;
 @Slf4j
 public class Startup
 {
-	public static final String TMP_DIR = "./_tmp";	
-	public static final Path TMP_DIR_PATH = Path.of(TMP_DIR).normalize().toAbsolutePath();
-	
 	public static String prjDir = "./";	
 	public static Path prjDirPath = Path.of(prjDir).normalize().toAbsolutePath();
 	
@@ -76,19 +73,6 @@ public class Startup
 			Files.copy(zipInputStream, extractedPath);
 			extractedPath.toFile().setExecutable(executable);
 		}
-	}
-
-	public static void createTemporaryDirectory() throws IOException
-	{
-		log.info("Creating temporary directory : {} ", TMP_DIR_PATH);
-		Files.createDirectories(TMP_DIR_PATH);
-	}
-
-	public static void clean() throws IOException {
-		log.info("Clean ...");	   
-		log.info("Erasing temporary directory : {} ", TMP_DIR_PATH);
-		FileUtils.deleteDirectory(TMP_DIR_PATH.toFile());
-		createTemporaryDirectory();
 	}
 
 }

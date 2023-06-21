@@ -5,8 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import com.widedot.m6809.gamebuilder.configuration.Interleave;
-import com.widedot.m6809.gamebuilder.configuration.Section;
+import com.widedot.m6809.gamebuilder.configuration.storage.Interleave;
+import com.widedot.m6809.gamebuilder.configuration.storage.Section;
 import com.widedot.m6809.gamebuilder.storage.sap.Sap;
 
 import lombok.extern.slf4j.Slf4j;

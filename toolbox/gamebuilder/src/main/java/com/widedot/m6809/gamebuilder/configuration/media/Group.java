@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.configuration.media;
 
 import java.io.File;
 
@@ -88,14 +88,14 @@ public class Group {
     		String[] files = dirFile.list(wildCardFilter);
     		for (int i = 0; i < files.length; i++) {
     			log.debug("|_ asm: " + files[i]);
-    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + "/" + files[i], type));
+    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + File.separator + files[i], type));
     		}
     	}
     	
 	    List<HierarchicalConfiguration<ImmutableNode>> groupFields = node.configurationsAt("group");
     	for(HierarchicalConfiguration<ImmutableNode> group : groupFields)
     	{		
-    		File file = new File(path + "/" + group.getString("", null));
+    		File file = new File(path + File.separator + group.getString("", null));
     		log.info("group: {}", file.getName());
 
     		if (!file.exists() || file.isDirectory()) {

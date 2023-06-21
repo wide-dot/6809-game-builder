@@ -1,6 +1,6 @@
-package com.widedot.m6809.gamebuilder.configuration;
+package com.widedot.m6809.gamebuilder.directory;
 
-public class FloppyDiskIndex {
+public class FloppyDiskDirectory {
 	
 	public byte[] indexEntry;
 	
@@ -18,7 +18,7 @@ public class FloppyDiskIndex {
 	public int writeOffset = 0;                   // offset to write compressed data for in place decompression
 	public byte[] endData = new byte[DELTA_SIZE]; // end data that can not be included in compressed data
 	
-	public FloppyDiskIndex() {
+	public FloppyDiskDirectory() {
 	}
 	
 	public byte[] computeIndexEntry() {
