@@ -18,7 +18,7 @@ import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
-public class FileGroup {
+public class Group {
 	
 	public static void recurse(HierarchicalConfiguration<ImmutableNode> node, String path, List<Ressource> ressources) throws Exception {
 	    List<HierarchicalConfiguration<ImmutableNode>> binFields = node.configurationsAt("bin");
@@ -92,11 +92,11 @@ public class FileGroup {
     		}
     	}
     	
-	    List<HierarchicalConfiguration<ImmutableNode>> filegroupFields = node.configurationsAt("filegroup");
-    	for(HierarchicalConfiguration<ImmutableNode> filegroup : filegroupFields)
+	    List<HierarchicalConfiguration<ImmutableNode>> groupFields = node.configurationsAt("group");
+    	for(HierarchicalConfiguration<ImmutableNode> group : groupFields)
     	{		
-    		File file = new File(path + "/" + filegroup.getString("", null));
-    		log.info("filegroup: {}", file.getName());
+    		File file = new File(path + "/" + group.getString("", null));
+    		log.info("group: {}", file.getName());
 
     		if (!file.exists() || file.isDirectory()) {
     			throw new Exception("File " + file.getName() + " does not exists !");
@@ -108,7 +108,7 @@ public class FileGroup {
     		Configurations configs = new Configurations();
    		    XMLConfiguration config = configs.xml(file);
    		    recurse(config, currentPath, ressources);
-    		log.info("end of filegroup: {}", file.getName());
+    		log.info("end of group: {}", file.getName());
     	}
 	}
 }

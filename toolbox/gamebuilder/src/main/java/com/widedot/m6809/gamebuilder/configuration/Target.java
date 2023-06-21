@@ -15,67 +15,42 @@ import lombok.extern.slf4j.Slf4j;
 public class Target {
 	
 	public String path;
+	List<Media> medias;
+	public Defines defines;
+	public Defaults defaults;
+	public Storages storages;
 	
 	public Target(String path) throws Exception {
 		this.path = path;
+		medias = new ArrayList<Media>();
+		defines = new Defines();
+		defaults = new Defaults();
+		storages = new Storages();
 	}
     
 	public void process(HierarchicalConfiguration<ImmutableNode> target) throws Exception {
 		String targetName = target.getString("[@name]");
-		log.info("Processing target {}", target.getString("[@name]"));
-		log.debug("name: "+targetName);
-		GameBuilder gameBuilder = new GameBuilder(getDefines(target), getMedia(target), getStorages(target), path);
-		log.info("End of processing target {}", target.getString("[@name]"));
-	}
+		
+		log.info("Processing target {}", targetName);
+		
+		defines.add(target);
+		defaults.add(target);
 
-	private HashMap<String, String> getDefines(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-	    HashMap<String, String> defines = new HashMap<String, String>();
-		
-		// parse each defines
-	    List<HierarchicalConfiguration<ImmutableNode>> definesNodes = node.configurationsAt("defines");
-    	for(HierarchicalConfiguration<ImmutableNode> definesNode : definesNodes)
-    	{
-    		// parse each define inside defines
-		    List<HierarchicalConfiguration<ImmutableNode>> defineNodes = definesNode.configurationsAt("define");
-	    	for(HierarchicalConfiguration<ImmutableNode> defineNode : defineNodes)
-	    	{
-	    		String symbol = defineNode.getString("[@symbol]", null);
-	    		String value = defineNode.getString("[@value]", null);
-	    		defines.put(symbol, value);
-	    		log.debug(">> define");
-	    		log.debug("   symbol: "+symbol);
-	    		log.debug("   value: "+value);
-	    	} 	
-    	}	       	
-    	return defines;
-	}
-	
-	private List<Media> getMedia(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-		List<Media> medias = new ArrayList<Media>();
-		
-		// parse each media
-	    List<HierarchicalConfiguration<ImmutableNode>> mediaNodes = node.configurationsAt("media");
-    	for(HierarchicalConfiguration<ImmutableNode> mediaNode : mediaNodes)
-    	{
-    		medias.add(new Media(mediaNode, path));
-    	}	     
-    	return medias;
-	}
-
-	private Storages getStorages(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-		Storages storages = new Storages();
-		
-		// parse each media
-	    List<HierarchicalConfiguration<ImmutableNode>> storageNodes = node.configurationsAt("storage");
+		// parse each file of storage definition in a single object
+	    List<HierarchicalConfiguration<ImmutableNode>> storageNodes = target.configurationsAt("storage");
 	    for(HierarchicalConfiguration<ImmutableNode> storageNode : storageNodes)
     	{
 	    	storages.add(storageNode, path);
     	}
-	     
-    	return storages;
+		
+		// parse each media
+	    List<HierarchicalConfiguration<ImmutableNode>> mediaNodes = target.configurationsAt("media");
+    	for(HierarchicalConfiguration<ImmutableNode> mediaNode : mediaNodes)
+    	{
+    		medias.add(new Media(mediaNode, path));
+    	}	
+		
+		new GameBuilder(medias, storages, defines.values, defaults.values, path);
+		log.info("End of processing target {}", target.getString("[@name]"));
 	}
-	
 }

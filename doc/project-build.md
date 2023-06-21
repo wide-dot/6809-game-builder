@@ -52,10 +52,10 @@ Here is an example:
     <target name="fd">
         <storage>new-engine/config/storage.xml</storage>
         <media storage="THOMSON FD640K BOOT">
-            <entry section="BOOT">new-engine/system/to8/bootloader/filegroup-boot.xml</entry>
-            <entry section="LOAD">new-engine/system/to8/bootloader/filegroup-loader.xml</entry>
+            <entry section="BOOT">new-engine/system/to8/bootloader/group-boot.xml</entry>
+            <entry section="LOAD">new-engine/system/to8/bootloader/group-loader.xml</entry>
             <toc section="TOC" symbol="media.toc.0">
-                <entry section="DATA" codec="zx0" name="assets.main.game">src/assets/main/filegroup-game.xml</entry>
+                <entry section="DATA" codec="zx0" name="assets.main.game">src/assets/main/group-game.xml</entry>
             </toc>
         </media>
     </target>
@@ -65,9 +65,9 @@ Here is an example:
 
 In this configuration, the builder will produce a floppy disk image, based on the storage profile "THOMSON FD640K BOOT":
 
-- two entry filegroups will be assembled and written to media (filegroup_boot and filegroup-loader).
+- two entry groups will be assembled and written to media (group_boot and group-loader).
 
-- one entry filegroup will be assembled as an LW Object file (filegroup-main), and a loader index (Table Of Content) will be generated. Both will be added to media.
+- one entry group will be assembled as an LW Object file (group-main), and a loader index (Table Of Content) will be generated. Both will be added to media.
 
 A section parameter for each entry and toc tells the builder where to write data on media. The builder will use the storage configuration to resolve sections.
 
@@ -95,14 +95,12 @@ A section parameter for each entry and toc tells the builder where to write data
 An entry defines a group of source code or data that will be assembled to a LW object.
 The builder will generate metadata for the load time linker.
 
-### filegroup
+### group
 
-A filegroup is defined by a name and hold a list of asm files or other filegroups.
+A group is defined by a name and hold a list of asm files or other groups.
 ```xml
 <configuration>
-    <filegroup name="assets.main.game">
-        <asm>game.asm</asm>
-    </filegroup>
+    <asm>game.asm</asm>
 </configuration>
 ```
 

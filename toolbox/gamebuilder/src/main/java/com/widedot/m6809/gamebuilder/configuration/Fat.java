@@ -1,9 +1,9 @@
-package com.widedot.m6809.gamebuilder.storage.fat;
+package com.widedot.m6809.gamebuilder.configuration;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public class FatSettings {
+public class Fat {
 
 	public String name;
 	public Integer sectorPerBlock;
@@ -13,7 +13,7 @@ public class FatSettings {
 	public Integer dirStart;
 	public Integer nDirEntries;
 	
-	public FatSettings (HierarchicalConfiguration<ImmutableNode> node) throws Exception {
+	public Fat (HierarchicalConfiguration<ImmutableNode> node) throws Exception {
 		
 		name = node.getString("[@name]", null);
 		if (name == null) {

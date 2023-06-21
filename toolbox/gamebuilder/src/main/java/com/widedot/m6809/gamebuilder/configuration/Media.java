@@ -8,7 +8,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class Media {
 	
 	public String storage;

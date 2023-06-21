@@ -98,7 +98,7 @@ données de file id 1 :
 
 
 
-la numérotation filegroup est sur 16 bits
+la numérotation group est sur 16 bits
 pour multiplier par 6 on fait :
 - asld
 - std @d
@@ -119,7 +119,7 @@ Packed
   start >>                            <--->
                                       delta
 
-Test à la compression, en retirant les 4 derniers octets du fichier a compresser (sortie en erreur en demandant de passer en mode non compressé pour ce filegroup) :
+Test à la compression, en retirant les 4 derniers octets du fichier a compresser (sortie en erreur en demandant de passer en mode non compressé pour ce group) :
 - si le fichier a compresser est <= 4 : 
 - si le fichier diminué de 4 compressé est plus grand que l'original
 - Si le delta est > 4

@@ -9,18 +9,16 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.storage.fat.FatSettings;
-
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class Storages {
 	
-	public HashMap<String, Storage> storages = new HashMap<String, Storage>();
-	public HashMap<String, FatSettings> fats = new HashMap<String, FatSettings>();
+	public HashMap<String, Storage> storages;
+	public HashMap<String, Fat> fats;
 	
 	public Storages() {
-		
+		storages = new HashMap<String, Storage>();
+		fats = new HashMap<String, Fat>();
 	}
 	
 	public void add(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
@@ -41,7 +39,7 @@ public class Storages {
    	    List<HierarchicalConfiguration<ImmutableNode>> fatNodes = childNode.configurationsAt("fat");
        	for(HierarchicalConfiguration<ImmutableNode> fatNode : fatNodes)
        	{	
-       		FatSettings fat = new FatSettings(fatNode);
+       		Fat fat = new Fat(fatNode);
 		    fats.put(fat.name, fat);
        	}
 	    
