@@ -13,6 +13,7 @@ import com.widedot.m6809.gamebuilder.configuration.media.Ressource;
 import com.widedot.m6809.gamebuilder.configuration.storage.Section;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storages;
+import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
 import com.widedot.m6809.gamebuilder.lwtools.format.LwObject;
@@ -26,10 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GameBuilder {
  
-    public GameBuilder(List<Media> mediaList, Storages storages, HashMap<String, String> defines, HashMap<String, String> defaults, String path) throws Exception {
-        for (Media media : mediaList) {
+    public GameBuilder(Target target, String path) throws Exception {
+    	
+        for (Media media : target.medias.mediaList) {
            
-            Storage storage = storages.get(media.storage);
+            Storage storage = target.storages.get(media.storage);
             FdUtil mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
             HashMap<String, Section> sectionIndexes = new HashMap<String, Section>();
            
@@ -57,7 +59,7 @@ public class GameBuilder {
                     // assemble ressources
                     int length = 0;
                     for (Ressource ressource : lwasm.ressources) {
-                        ressource.computeBin(path, defines, lwasm.format);
+                        ressource.computeBin(path, target.defines.values, lwasm.format);
                         length += ressource.bin.length;
                     }
                     
@@ -145,7 +147,7 @@ public class GameBuilder {
 //            	
 //                for (Ressource ressource : lwasm.ressources) {
 //                    if (ressource.type == Ressource.ASM_INT) {
-//                    	ressource.computeBin(path, defines, lwasm.format);
+//                    	ressource.computeBin(path, target.defines.values, lwasm.format);
 // 
 //	                    log.debug("write data to media");
 //	                    Section section = sectionIndexes.get(lwasm.section);

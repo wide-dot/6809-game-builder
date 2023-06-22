@@ -22,10 +22,6 @@ public class Target {
 	
 	public Target(String path) throws Exception {
 		this.path = path;
-		medias = new Medias();
-		defines = new Defines();
-		defaults = new Defaults();
-		storages = new Storages();
 	}
 	
 	public void processTargetSelection(HierarchicalConfiguration<ImmutableNode> node, String[] targets) throws Exception {
@@ -41,17 +37,23 @@ public class Target {
 	}
 	
 	private void processTargets(List<HierarchicalConfiguration<ImmutableNode>> targetNodes) throws Exception {
+		
+		medias = new Medias();
+		defines = new Defines();
+		defaults = new Defaults();
+		storages = new Storages();
+		
     	for(HierarchicalConfiguration<ImmutableNode> target : targetNodes)
     	{
 			String targetName = target.getString("[@name]");
 			log.info("Processing target {}", targetName);
-			
+
+	   		medias.add(target, path);
 			defines.add(target);
 			defaults.add(target);
 	    	storages.add(target, path);
-	   		medias.add(target, path);
 			
-			new GameBuilder(medias.mediaList, storages, defines.values, defaults.values, path);
+			new GameBuilder(this, path);
 			log.info("End of processing target {}", target.getString("[@name]"));
     	}
 	}
