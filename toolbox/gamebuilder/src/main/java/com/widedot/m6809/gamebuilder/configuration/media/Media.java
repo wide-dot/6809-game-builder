@@ -6,35 +6,35 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import lombok.extern.slf4j.Slf4j;
+import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
 
 public class Media {
 	
 	public String storage;
-	public List<LwAsm> lwasms;
-	public List<Directory> indexes;
+	public List<File> files;
+	public List<Directory> directories;
 	
-	public Media(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	public Media(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults) throws Exception {
 		
 		storage = node.getString("[@storage]", null);
 		if (storage == null) {
 			throw new Exception("storage is missing for media");
 		}
 		
-		lwasms = new ArrayList<LwAsm>();
+		files = new ArrayList<File>();
 
-	    List<HierarchicalConfiguration<ImmutableNode>> lwasmList = node.configurationsAt("lwasm");
-    	for(HierarchicalConfiguration<ImmutableNode> lwasm : lwasmList)
+	    List<HierarchicalConfiguration<ImmutableNode>> fileList = node.configurationsAt("file");
+    	for(HierarchicalConfiguration<ImmutableNode> file : fileList)
     	{
-   			lwasms.add(new LwAsm(lwasm, path));
+    		files.add(new File(file, defaults));
     	}
     	
-    	indexes = new ArrayList<Directory>();
+    	directories = new ArrayList<Directory>();
 
-	    List<HierarchicalConfiguration<ImmutableNode>> indexList = node.configurationsAt("index");
-    	for(HierarchicalConfiguration<ImmutableNode> index : indexList)
+	    List<HierarchicalConfiguration<ImmutableNode>> directoryList = node.configurationsAt("directory");
+    	for(HierarchicalConfiguration<ImmutableNode> directory : directoryList)
     	{
-    		indexes.add(new Directory(index, path));
+    		directories.add(new Directory(directory, path));
     	}    	
 	}
 }

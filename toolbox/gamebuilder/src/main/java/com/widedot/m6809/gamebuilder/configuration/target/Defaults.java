@@ -8,6 +8,8 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.Settings;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -42,4 +44,11 @@ public class Defaults {
     	}
 	}
 	
+    public Integer getInteger(String key) {
+    	return (Settings.values.containsKey(key)?Integer.parseInt(Settings.values.get(key)):0);
+    }
+    
+    public String getString(String key) {
+    	return (Settings.values.containsKey(key)?Settings.values.get(key):"");
+    }	
 }

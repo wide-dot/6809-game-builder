@@ -15,10 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 public class Target {
 	
 	public String path;
-	public Medias medias;
 	public Defines defines;
 	public Defaults defaults;
 	public Storages storages;
+	public Medias medias;
 	
 	public Target(String path) throws Exception {
 		this.path = path;
@@ -38,20 +38,20 @@ public class Target {
 	
 	private void processTargets(List<HierarchicalConfiguration<ImmutableNode>> targetNodes) throws Exception {
 		
-		medias = new Medias();
 		defines = new Defines();
 		defaults = new Defaults();
 		storages = new Storages();
+		medias = new Medias();
 		
     	for(HierarchicalConfiguration<ImmutableNode> target : targetNodes)
     	{
 			String targetName = target.getString("[@name]");
 			log.info("Processing target {}", targetName);
 
-	   		medias.add(target, path);
 			defines.add(target);
 			defaults.add(target);
 	    	storages.add(target, path);
+	   		medias.add(target, path, defaults);
 			
 			new GameBuilder(this, path);
 			log.info("End of processing target {}", target.getString("[@name]"));

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Directory;
+import com.widedot.m6809.gamebuilder.configuration.media.File;
 import com.widedot.m6809.gamebuilder.configuration.media.LwAsm;
 import com.widedot.m6809.gamebuilder.configuration.media.Media;
 import com.widedot.m6809.gamebuilder.configuration.media.Ressource;
@@ -34,49 +35,53 @@ public class GameBuilder {
             Storage storage = target.storages.get(media.storage);
             FdUtil mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
             HashMap<String, Section> sectionIndexes = new HashMap<String, Section>();
-           
-            // process lwasm commands that are inside indexes
-            log.debug("process lwasms inside indexes");
-            for (Directory indexes : media.indexes) {
-               
-                // init starting point for index writing operations
-                if (!sectionIndexes.containsKey(indexes.section)) {
-                    Section sectionDefinition = storage.sections.get(indexes.section);
-                    Section section = new Section(sectionDefinition);
-                    sectionIndexes.put(indexes.section, section);
-                }
-               
-                
-                for (LwAsm lwasm : indexes.lwasms) {
-                   
-                    // init starting point for writing operations
+            
+            log.debug("process files");
+            for (File file : media.files) {
+            	processFiles(file);
+            }
+//
+//            log.debug("process directories");
+//            for (Directory indexes : media.indexes) {
+//               
+//                // init starting point for index writing operations
+//                if (!sectionIndexes.containsKey(indexes.section)) {
+//                    Section sectionDefinition = storage.sections.get(indexes.section);
+//                    Section section = new Section(sectionDefinition);
+//                    sectionIndexes.put(indexes.section, section);
+//                }
+//               
+//                
+//                for (LwAsm lwasm : indexes.lwasms) {
+//                   
+//                    // init starting point for writing operations
 //                    if (!sectionIndexes.containsKey(lwasm.section)) {
 //                        Section sectionDefinition = storage.sections.get(lwasm.section);
 //                        Section section = new Section(sectionDefinition);
 //                        sectionIndexes.put(lwasm.section, section);
 //                    }
-                   
-                    // assemble ressources
-                    int length = 0;
-                    for (Ressource ressource : lwasm.ressources) {
-                        ressource.computeBin(path, target.defines.values, lwasm.format);
-                        length += ressource.bin.length;
-                    }
-                    
-                    // concat binaries
-                    log.debug("concat binaries");
-                    byte[] data = new byte[length];
-                    int i = 0;
-                    for (Ressource ressource : lwasm.ressources) {
-                    	System.arraycopy(ressource.bin, 0, data, i, ressource.bin.length);
-                    	i += ressource.bin.length;
-                    }
-                                        
-                    // create index
-                    FloppyDiskDirectory fdi = new FloppyDiskDirectory();
-                    fdi.compression = false;
-                   
-                    // compress data
+//                   
+//                    // assemble ressources
+//                    int length = 0;
+//                    for (Ressource ressource : lwasm.ressources) {
+//                        ressource.computeBin(path, target.defines.values, lwasm.format);
+//                        length += ressource.bin.length;
+//                    }
+//                    
+//                    // concat binaries
+//                    log.debug("concat binaries");
+//                    byte[] data = new byte[length];
+//                    int i = 0;
+//                    for (Ressource ressource : lwasm.ressources) {
+//                    	System.arraycopy(ressource.bin, 0, data, i, ressource.bin.length);
+//                    	i += ressource.bin.length;
+//                    }
+//                                        
+//                    // create index
+//                    FloppyDiskDirectory fdi = new FloppyDiskDirectory();
+//                    fdi.compression = false;
+//                   
+//                    // compress data
 //                    if (!lwasm.codec.equals(LwAsm.NO_CODEC)) {
 //                        log.debug("compress data");
 //                        byte[] output = null;
@@ -92,8 +97,8 @@ public class GameBuilder {
 //                        }
 //                        log.debug("Original size: {}, Packed size: {}, Delta: {}", data.length, output.length, delta[0]);
 //                    }
-                   
-                    // write data to media
+//                   
+//                    // write data to media
 //                    log.debug("write data to media");
 //                    Section section = sectionIndexes.get(lwasm.section);
 //                    fdi.face = section.face;
@@ -128,38 +133,10 @@ public class GameBuilder {
 //                   
 //                    // add lwasm to index
 //                    log.debug("add lwasm to index");
-                }
-               
-                // write index to media
-                log.debug("write index to media");
-            }
-           
-            // process lwasm commands that are outside of indexes
-//            log.debug("process lwasms outside indexes");
-//            for (LwAsm lwasm : media.lwasms) {
-//            	
-//                // init starting point for writing operations
-//                if (!sectionIndexes.containsKey(lwasm.section)) {
-//                    Section sectionDefinition = storage.sections.get(lwasm.section);
-//                    Section section = new Section(sectionDefinition);
-//                    sectionIndexes.put(lwasm.section, section);
 //                }
-//            	
-//                for (Ressource ressource : lwasm.ressources) {
-//                    if (ressource.type == Ressource.ASM_INT) {
-//                    	ressource.computeBin(path, target.defines.values, lwasm.format);
-// 
-//	                    log.debug("write data to media");
-//	                    Section section = sectionIndexes.get(lwasm.section);
-//	                    int pos = 0;
-//	                   
-//	                    while (pos<ressource.bin.length) {
-//	                        mediaData.writeFullSector(ressource.bin, pos, section);                      
-//	                        mediaData.nextSector(section);
-//	                        pos = pos + storage.sectorSize;
-//	                    }
-//                    }
-//                }
+//               
+//                // write index to media
+//                log.debug("write index to media");
 //            }
            
             // write media to image file
@@ -167,6 +144,32 @@ public class GameBuilder {
             mediaData.interleaveData(storage.interleave);
             mediaData.save(path+"/out"); // TODO parametre xml ?
 		}
+	}
+    
+	private void processFiles(File file) {
+
+//		// init starting point for writing operations
+//		if (!sectionIndexes.containsKey(file.section)) {
+//			Section sectionDefinition = storage.sections.get(file.section);
+//			Section section = new Section(sectionDefinition);
+//			sectionIndexes.put(file.section, section);
+//		}
+//
+//		for (Ressource ressource : file.ressources) {
+//			if (ressource.type == Ressource.ASM_INT) {
+//				ressource.computeBin(path, target.defines.values, file.format);
+//
+//				log.debug("write data to media");
+//				Section section = sectionIndexes.get(file.section);
+//				int pos = 0;
+//
+//				while (pos < ressource.bin.length) {
+//					mediaData.writeFullSector(ressource.bin, pos, section);
+//					mediaData.nextSector(section);
+//					pos = pos + storage.sectorSize;
+//				}
+//			}
+//		}
 	}
 	
 }
