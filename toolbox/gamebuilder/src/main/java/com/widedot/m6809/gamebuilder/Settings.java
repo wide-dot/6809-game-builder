@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Settings {
     public static HashMap<String,String> values;
     
-    private static String[] mandatoryKeys = new String[]{"build.dir", "build.dir.tag"};
+    private static String[] mandatoryKeys = new String[]{"build.dir", "build.dir.tag", "plugin.dir", "plugin.package"};
     
     public static boolean isValid() {
     	

@@ -30,22 +30,22 @@ public class Fat {
 			throw new Exception("@nblocks is missing for fat");
 		}
 		
-		sectorSize = node.getInteger("[sectorsize]", null);
+		sectorSize = node.getInteger("[@sectorsize]", null);
 		if (sectorSize == null) {
 			throw new Exception("sectorsize is missing for fat");
 		}
 		
-		fatStart = node.getInteger("[fatstart]", null);
+		fatStart = node.getInteger("[@fatstart]", null);
 		if (fatStart == null) {
 			throw new Exception("fatstart is missing for fat");
 		}
 		
-		dirStart = node.getInteger("[dirstart]", null);
+		dirStart = node.getInteger("[@dirstart]", null);
 		if (dirStart == null) {
 			throw new Exception("dirstart is missing for fat");
 		}
 		
-		nDirEntries = node.getInteger("[ndirentries]", null);
+		nDirEntries = node.getInteger("[@ndirentries]", null);
 		if (nDirEntries == null) {
 			throw new Exception("ndirentries is missing for fat");
 		}		

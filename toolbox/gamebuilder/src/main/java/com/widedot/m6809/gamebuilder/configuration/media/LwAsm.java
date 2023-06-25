@@ -15,7 +15,7 @@ public class LwAsm {
 	
 	public String format;
 	
-	public List<Ressource> ressources = new ArrayList<Ressource>();
+	public List<Resource> ressources = new ArrayList<Resource>();
 	
 	public LwAsm(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		

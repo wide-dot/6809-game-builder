@@ -26,7 +26,7 @@ public class Media {
 	    List<HierarchicalConfiguration<ImmutableNode>> fileList = node.configurationsAt("file");
     	for(HierarchicalConfiguration<ImmutableNode> file : fileList)
     	{
-    		files.add(new File(file, defaults));
+    		files.add(new File(file, path, defaults));
     	}
     	
     	directories = new ArrayList<Directory>();
@@ -34,7 +34,7 @@ public class Media {
 	    List<HierarchicalConfiguration<ImmutableNode>> directoryList = node.configurationsAt("directory");
     	for(HierarchicalConfiguration<ImmutableNode> directory : directoryList)
     	{
-    		directories.add(new Directory(directory, path));
+    		directories.add(new Directory(directory, path, defaults));
     	}    	
 	}
 }

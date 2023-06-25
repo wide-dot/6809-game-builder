@@ -10,7 +10,6 @@ import com.widedot.m6809.gamebuilder.configuration.media.Directory;
 import com.widedot.m6809.gamebuilder.configuration.media.File;
 import com.widedot.m6809.gamebuilder.configuration.media.LwAsm;
 import com.widedot.m6809.gamebuilder.configuration.media.Media;
-import com.widedot.m6809.gamebuilder.configuration.media.Ressource;
 import com.widedot.m6809.gamebuilder.configuration.storage.Section;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storages;
@@ -38,7 +37,30 @@ public class GameBuilder {
             
             log.debug("process files");
             for (File file : media.files) {
-            	processFiles(file);
+
+                // if a new section is used, load it's definition
+                if (!sectionIndexes.containsKey(file.section)) {
+                    Section sectionDefinition = storage.sections.get(file.section);
+                    Section section = new Section(sectionDefinition);
+                    sectionIndexes.put(file.section, section);
+                }
+
+                
+//              for (Resource ressource : file.resources) {
+//                    if (ressource.type == Resource.ASM_INT) {
+//                        ressource.computeBin(path, target.defines.values, "asm"); // TODO remove asm here format is hosted by lwasm instead of file now
+//
+//                        log.debug("write data to media");
+//                        Section section = sectionIndexes.get(file.section);
+//                        int pos = 0;
+//
+//                        while (pos < ressource.bin.length) {
+//                            mediaData.writeFullSector(ressource.bin, pos, section);
+//                            mediaData.nextSector(section);
+//                            pos = pos + storage.sectorSize;
+//                        }
+//                    }
+//              }
             }
 //
 //            log.debug("process directories");
@@ -145,31 +167,4 @@ public class GameBuilder {
             mediaData.save(path+"/out"); // TODO parametre xml ?
 		}
 	}
-    
-	private void processFiles(File file) {
-
-//		// init starting point for writing operations
-//		if (!sectionIndexes.containsKey(file.section)) {
-//			Section sectionDefinition = storage.sections.get(file.section);
-//			Section section = new Section(sectionDefinition);
-//			sectionIndexes.put(file.section, section);
-//		}
-//
-//		for (Ressource ressource : file.ressources) {
-//			if (ressource.type == Ressource.ASM_INT) {
-//				ressource.computeBin(path, target.defines.values, file.format);
-//
-//				log.debug("write data to media");
-//				Section section = sectionIndexes.get(file.section);
-//				int pos = 0;
-//
-//				while (pos < ressource.bin.length) {
-//					mediaData.writeFullSector(ressource.bin, pos, section);
-//					mediaData.nextSector(section);
-//					pos = pos + storage.sectorSize;
-//				}
-//			}
-//		}
-	}
-	
 }

@@ -20,95 +20,78 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Group {
 	
-	public static void recurse(HierarchicalConfiguration<ImmutableNode> node, String path, List<Ressource> ressources) throws Exception {
-	    List<HierarchicalConfiguration<ImmutableNode>> binFields = node.configurationsAt("bin");
-    	for(HierarchicalConfiguration<ImmutableNode> bin : binFields)
-    	{	
-    		String name = bin.getString("[@name]", null);
-    		String file = bin.getString("", null);
-    		
-    		if (file == null) {
-    			throw new Exception("filename value is missing for bin");
-    		}
-    		
-    		file = path + file;
-    		
-    		if (name == null) {
-    			name = FileUtil.getBasename(file);
-    		}
-    		
-    		log.debug("bin: " + name + " " + file);
-    		ressources.add(new Ressource(name, file, Ressource.BIN));
-    	}
-    	
-	    List<HierarchicalConfiguration<ImmutableNode>> asmFields = node.configurationsAt("asm");
-    	for(HierarchicalConfiguration<ImmutableNode> asm : asmFields)
-    	{		
-    		String name = asm.getString("[@name]", null);
-    		String file = asm.getString("", null);
-    		
-    		if (file == null) {
-    			throw new Exception("filename value is missing for asm");
-    		}
-    		
-    		file = path + file;
-    		
-    		if (name == null) {
-    			name = FileUtil.getBasename(file);
-    		}
-    		
-    		log.debug("asm: " + name + " " + file);
-    		ressources.add(new Ressource(name, file, Ressource.ASM));
-    	}
-    	
-	    List<HierarchicalConfiguration<ImmutableNode>> dirFields = node.configurationsAt("dir");
-    	for(HierarchicalConfiguration<ImmutableNode> dir : dirFields)
-    	{		
-    		String dirName = dir.getString("", null);
-    		if (dirName == null) {
-    			throw new Exception("directory value is missing for dir");
-    		}
-    		
-    		String type = dir.getString("[@type]", null);
-    		if (type == null) {
-    			throw new Exception("type (asm or bin) is missing for dir " + dirName);
-    		}
+	public static void recurse(HierarchicalConfiguration<ImmutableNode> node, String path, List<Resource> ressources) throws Exception {
 
-    		dirName = path + dirName; 
-    		
-    		String[] filters = dir.getString("[@filter]", "*").split(",");
-    		log.debug("dir: " + dirName + " filter: " + Arrays.toString(filters));
-    		
-    		File dirFile = new File(dirName);
-    		if (!dirFile.exists() || !dirFile.isDirectory()) {
-    			throw new Exception("dir " + dirName + " does not exists !");
-    		}
-    		IOFileFilter wildCardFilter = new WildcardFileFilter(filters, IOCase.INSENSITIVE);
-
-    		String[] files = dirFile.list(wildCardFilter);
-    		for (int i = 0; i < files.length; i++) {
-    			log.debug("|_ asm: " + files[i]);
-    		    ressources.add(new Ressource(FileUtil.getBasename(files[i]), dirName + File.separator + files[i], type));
-    		}
-    	}
+		// read all known ressource files
+		for (String type : Resource.id.keySet()) {
+			loadFile(type, node, path, ressources);
+		}
     	
 	    List<HierarchicalConfiguration<ImmutableNode>> groupFields = node.configurationsAt("group");
     	for(HierarchicalConfiguration<ImmutableNode> group : groupFields)
     	{		
-    		File file = new File(path + File.separator + group.getString("", null));
-    		log.info("group: {}", file.getName());
+			// a group is an xml definition declared outside of the current xml, it may be recursive
+			String filename = group.getString("", null);
+    		if (filename == null) {
+    			throw new Exception("no value for file.");
+    		}
 
+			log.info("group: {}", filename);
+    		File file = new File(path + File.separator + filename);
     		if (!file.exists() || file.isDirectory()) {
     			throw new Exception("File " + file.getName() + " does not exists !");
     		}
       
     	    String currentPath = FileUtil.getDir(file);
     		
-    	    // parse the xml
+    	    // parse the sub xml file
     		Configurations configs = new Configurations();
    		    XMLConfiguration config = configs.xml(file);
    		    recurse(config, currentPath, ressources);
     		log.info("end of group: {}", file.getName());
+    	}
+	}
+
+	private static void loadFile(String type, HierarchicalConfiguration<ImmutableNode> node, String path, List<Resource> ressources) throws Exception {
+		    List<HierarchicalConfiguration<ImmutableNode>> nodes = node.configurationsAt(type);
+    	for(HierarchicalConfiguration<ImmutableNode> element : nodes)
+    	{	
+    		String filename = element.getString("", null);
+    		if (filename == null) {
+    			throw new Exception("no value for file or directory.");
+    		}
+    		
+    		filename = path + filename;
+			File file = new File(filename);
+
+			if (!file.exists()) {
+				throw new Exception("file or directory does not exists: " + filename);
+			}
+    		
+			if (file.isDirectory()) {
+
+				// all files in the directory
+				String[] filters = element.getString("[@filter]", "*").split(","); // when no filter is set, will take al files ("*")
+				IOFileFilter wildCardFilter = new WildcardFileFilter(filters, IOCase.INSENSITIVE);
+				log.debug("dir: {} filter: {}", filename, Arrays.toString(filters));
+
+				String[] filenames = file.list(wildCardFilter);
+
+				for (int i = 0; i < filenames.length; i++) {
+					filename = filename + File.separator + filenames[i];
+					file = new File(filename);
+					if (!file.isDirectory()) {
+						log.debug("|_ type: {} file: {}", type, filename);
+						ressources.add(new Resource(filename, type));
+					}
+				}
+
+			} else {
+
+				// simple file
+				log.debug("type: {} file: {}", type, filename);
+				ressources.add(new Resource(filename, type));				
+			}
     	}
 	}
 }
