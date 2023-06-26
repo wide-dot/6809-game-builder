@@ -1,4 +1,4 @@
-package com.widedot.m6809.util;
+package com.widedot.toolbox.text.ascii2bas;
 
 import java.io.*;
 
@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FileResourcesUtils {
 
-    public static HashMap<String, String> getHashMap(String filename) throws Exception {
+    public static HashMap<byte[], byte[]> getHashMap(String filename) throws Exception {
 
         FileResourcesUtils app = new FileResourcesUtils();
 
@@ -35,17 +35,17 @@ public class FileResourcesUtils {
 
     }
 
-    private static HashMap<String, String> readInputStream(InputStream is) {
+    private static HashMap<byte[], byte[]> readInputStream(InputStream is) {
 
-    	HashMap<String, String> data = new HashMap<String, String>();
+    	HashMap<byte[], byte[]> data = new HashMap<byte[], byte[]>();
     	
         try (InputStreamReader streamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
              BufferedReader reader = new BufferedReader(streamReader)) {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] kv = line.split("=");
-                if (kv.length==2) data.put(kv[0], kv[1]);
+                String[] kv = line.split("\\s");
+                if (kv.length==2) data.put(kv[1].getBytes(), hexStringToByteArray(kv[0]));
             }
 
         } catch (IOException e) {
@@ -54,5 +54,15 @@ public class FileResourcesUtils {
         
 		return data;
     }
+    
+	public static byte[] hexStringToByteArray(String s) {
+	    int len = s.length();
+	    byte[] data = new byte[len / 2];
+	    for (int i = 0; i < len; i += 2) {
+	        data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+	                             + Character.digit(s.charAt(i+1), 16));
+	    }
+	    return data;
+	}
 
 }

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin;
+package com.widedot.m6809.gamebuilder.plugins;
 
 import java.io.IOException;
 import java.nio.file.Files;

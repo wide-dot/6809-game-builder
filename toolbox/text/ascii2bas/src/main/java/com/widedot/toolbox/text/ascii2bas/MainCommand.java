@@ -1,0 +1,74 @@
+package com.widedot.toolbox.text.ascii2bas;
+
+import java.io.File;
+import java.util.HashMap;
+
+import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+/**
+ * simple tile map to binary converter - extract stm header informations and
+ * produce an asm equate file - convert tile id from little endian to big endian
+ * - adjust tile id byte depth to desired size - produce a binary file that
+ * contains only the tileid - split binary files based on a max size (ex: to fit
+ * a memory page)
+ */
+
+@Command(name = "ascii2bas", description = "Convert ascii text file (.txt) to basic langage files (.bas)")
+@Slf4j
+public class MainCommand implements Runnable {
+
+	@ArgGroup(exclusive = true, multiplicity = "1")
+	Exclusive exclusive;
+
+	static class Exclusive {
+		@Option(names = { "-d",
+				"--dir" }, paramLabel = "Input directory", description = "Process all .txt files located in the input directory")
+		String inputDir;
+
+		@Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process a text input file")
+		String inputFile;
+	}
+
+	@Option(names = { "-t",
+			"--tokenset" }, paramLabel = "Basic token set", description = "Predifined token set (mo, to (default), nano, coco, dragon)")
+	private String tokenset = "to";
+
+	public static void main(String[] args) {
+		CommandLine cmdLine = new CommandLine(new MainCommand());
+		cmdLine.execute(args);
+	}
+
+	@Override
+	public void run() {
+		
+		log.info("Convert ascii text file (.txt) to basic langage files (.bas)");
+		
+		try {
+			HashMap<byte[], byte[]> tokenmap = FileResourcesUtils.getHashMap(tokenset+".def");
+		
+			if (exclusive.inputFile != null) {
+				File txtFile = new File(exclusive.inputFile);
+				new AsciiConverter(txtFile, tokenmap);
+			} else {
+				log.info("Process each .txt file of the directory: {}", exclusive.inputDir);
+				File dir = new File(exclusive.inputDir);
+				if (!dir.exists() || !dir.isDirectory()) {
+					log.error("Input directory does not exists !");
+				} else {
+					File[] files = dir.listFiles((d, name) -> name.endsWith(".txt"));
+					for (File txtFile : files) {
+						new AsciiConverter(txtFile, tokenmap);
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		log.info("Conversion ended sucessfully.");
+	}
+}

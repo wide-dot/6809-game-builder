@@ -24,6 +24,7 @@ import com.widedot.m6809.gamebuilder.builder.GameBuilder;
 import com.widedot.m6809.gamebuilder.configuration.media.Media;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+import com.widedot.m6809.gamebuilder.plugins.PluginsLoader;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -89,7 +90,10 @@ public class MainCommand implements Runnable {
 				
 				if (Settings.isValid()) {
 					
-					// process a conf file or all conf files in a dir
+					// load plugin classes
+					new PluginsLoader();
+					
+					// process targets of a conf file or all conf files in a dir
 					String[] targets = (target!=null?target.split(","):null);				
 					if (exclusive.confFile != null) {
 						processFile(new File(exclusive.confFile), targets);

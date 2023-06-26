@@ -18,3 +18,10 @@
 |audio|smps driver|Z80 asm|Xenowhirl|https://github.com/sonicretro/s2disasm/blob/master/s2.sounddriver.asm|6809 asm|
 |audio|pcm2dpcm|exe|ValleyBell|https://sonicresearch.org/community/index.php?threads/valley-bells-smps-research.3498/||
 
+## third-party data
+
+|resource|author|url|
+|-|-|-|
+|Thomson Basic tokens|DiscoSeb|http://forum.system-cfg.com/viewtopic.php?f=24&t=12577|
+|Coco and Dragon Basic tokens|Edmond Orignac|http://edmond.orignac.pagesperso-orange.fr/detokenizer.html|
+

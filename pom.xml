@@ -112,6 +112,7 @@
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/audio/smid</module>
 		<module>./toolbox/audio/svgm</module>
+		<module>./toolbox/text/ascii2bas</module>
 		<module>./toolbox/debug</module>
 		<module>./package</module>
 	</modules>
