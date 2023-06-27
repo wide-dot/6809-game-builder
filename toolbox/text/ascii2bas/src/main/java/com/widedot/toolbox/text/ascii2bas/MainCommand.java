@@ -1,7 +1,11 @@
 package com.widedot.toolbox.text.ascii2bas;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
+
+import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -52,7 +56,7 @@ public class MainCommand implements Runnable {
 		
 			if (exclusive.inputFile != null) {
 				File txtFile = new File(exclusive.inputFile);
-				new AsciiConverter(txtFile, tokenmap);
+				convert(txtFile, tokenmap);
 			} else {
 				log.info("Process each .txt file of the directory: {}", exclusive.inputDir);
 				File dir = new File(exclusive.inputDir);
@@ -61,14 +65,18 @@ public class MainCommand implements Runnable {
 				} else {
 					File[] files = dir.listFiles((d, name) -> name.endsWith(".txt"));
 					for (File txtFile : files) {
-						new AsciiConverter(txtFile, tokenmap);
+						convert(txtFile, tokenmap);
 					}
 				}
 			}
+			log.info("Conversion ended sucessfully.");
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-		
-		log.info("Conversion ended sucessfully.");
+		}		
+	}
+	
+	private void convert(File file, HashMap<byte[], byte[]> tokenmap) throws Exception {
+		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+AsciiConverter.BASIC_EXT;
+		Files.write(Path.of(outFileName), AsciiConverter.getBasic(file, tokenmap));
 	}
 }

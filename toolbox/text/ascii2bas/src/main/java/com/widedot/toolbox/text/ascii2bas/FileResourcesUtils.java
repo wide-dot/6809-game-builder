@@ -64,5 +64,4 @@ public class FileResourcesUtils {
 	    }
 	    return data;
 	}
-
 }

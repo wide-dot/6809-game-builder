@@ -26,90 +26,141 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AsciiConverter {
 
-	byte[] basBytes;
-	int fileSize;
-	
-	public static int HEADER_SIZE = 3;
+	// basic file format
+	// -----------------
+	// header : FF
+	// XX XX (file length with header, but without trailer)
+	// line : XX XX (line length, with line header and end of line)
+	// XX XX (line number 0-63999)
+	// ... (instruction tokens [>=0x80] or ascii chars [<0x80], ascii can be
+	// multiple bytes for one char)
+	// 00 (end of line)
+	// line : ...
+	// trailer: 00 00 (end of file)
+
 	public static String BASIC_EXT = ".bas";
+
+	public static int BASIC_FILE_HEADER_SIZE = 3;
+	public static int BASIC_LINE_HEADER_SIZE = 4;
 	public static int BASIC_MAX_FILE_SIZE = 0x10000;
+	public static int BASIC_MAX_LINE_NB = 64000;
+
 	public static byte ASCII_SPACE = 0x20;
-	
-	public AsciiConverter(File file, HashMap<byte[], byte[]> tokenmap) throws Exception {
-		
-		// checks
+	public static byte BASIC_END_LINE = 0x00;
+	public static byte BASIC_END_FILE = 0x00;
+
+	public static byte[] getBasic(File file, HashMap<byte[], byte[]> tokenmap) throws Exception {
+
+		// control input parameters
 		if (!file.exists() || file.isDirectory()) {
 			log.error("Input file: {} does not exists !", file.toString());
-			return;
+			return null;
 		}
-	    
-	    // read input file line by line and build a byte array list
-	    Stream<String> lineStream = Files.lines(file.toPath());
-	    List<String> lineString = lineStream.collect(Collectors.toList());
-	    lineStream.close();
-	    List<byte[]> lineByte = new ArrayList<byte[]>();
-	    for (int i = 0; i < lineString.size(); i++) {
-	    	lineByte.add(lineString.get(i).getBytes());	    	
-	    }
-		
-	    // init output data
-		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+BASIC_EXT;
+
+		// read input file line by line and build a byte array list
+		Stream<String> lineStream = Files.lines(file.toPath());
+		List<String> lineString = lineStream.collect(Collectors.toList());
+		lineStream.close();
+		List<byte[]> lineByte = new ArrayList<byte[]>();
+		for (int i = 0; i < lineString.size(); i++) {
+			lineByte.add(lineString.get(i).getBytes());
+		}
+
+		// init output data
 		byte[] outb = new byte[BASIC_MAX_FILE_SIZE];
-		
+
 		// parse input data and generate output data
-		int pos = HEADER_SIZE;	    
-		int i, j, k, startpos, lineNumber, lineLength;
+		int outPos = BASIC_FILE_HEADER_SIZE;
+		int inPos, tmpInPos, decimal, linePos, lineNumber, lineLength;
 		for (byte[] curLine : lineByte) {
-			
+
 			// decode line number
 			lineNumber = 0;
-			i = 0;
-			while (i >= 0 && i < curLine.length && (curLine[i] == 0x20 || curLine[i] == 0x09)) i++; // skip spaces and tabs
-			while (i >= 0 && i < curLine.length && (curLine[i] >= 0x30 && curLine[i] <= 0x39)) i++; // skip numbers
-			k = i;                                                                                  // keep after number position 
-			i--;
-			j = 1;
-			while (i >= 0 && i < curLine.length && (curLine[i] >= 0x30 && curLine[i] <= 0x39)) {    // go back an decode line number
-				lineNumber += (curLine[i--] - 0x30)*j;
-				j *= 10;
+			inPos = 0;
+			while (inPos >= 0 && inPos < curLine.length && (curLine[inPos] == 0x20 || curLine[inPos] == 0x09))
+				inPos++; // skip spaces and tabs
+			while (inPos >= 0 && inPos < curLine.length && (curLine[inPos] >= 0x30 && curLine[inPos] <= 0x39))
+				inPos++; // skip numbers
+			tmpInPos = inPos; // keep after number position
+			inPos--;
+			decimal = 1;
+			while (inPos >= 0 && inPos < curLine.length && (curLine[inPos] >= 0x30 && curLine[inPos] <= 0x39)) { // go back an decode
+																									// line number
+				lineNumber += (curLine[inPos--] - 0x30) * decimal;
+				decimal *= 10;
 			}
-			i = k;
-			while (i >= 0 && i < curLine.length && (curLine[i] == 0x20 || curLine[i] == 0x09)) i++; // skip spaces and tabs
+			inPos = tmpInPos;
+			while (inPos >= 0 && inPos < curLine.length && (curLine[inPos] == 0x20 || curLine[inPos] == 0x09))
+				inPos++; // skip spaces and tabs
+
+			// control line number
+			if (lineNumber >= BASIC_MAX_LINE_NB)
+				throw new Exception("Line number " + lineNumber + " is out of range, should be < " + BASIC_MAX_LINE_NB);
+
+			// copy ascii and replace tokens
+			linePos = outPos;
+			outPos += BASIC_LINE_HEADER_SIZE;
+			while (inPos >= 0 && inPos < curLine.length) {
+
+				// search a key from this position 
+				boolean replaced = false;
+				for (byte[] key : tokenmap.keySet()) {
+					if (match(curLine, inPos, key)) {
+						
+						// there is a match, replace key by token
+						byte[] token = tokenmap.get(key);
+						for (int l = 0; l < token.length; l++) {
+							outb[outPos++] = token[l];
+						}
+						inPos += key.length;
+						replaced = true;
+						break;
+					}
+				}
+
+				if (!replaced) {
 					
-			// replace tokens
-			startpos = pos;
-			pos += 4;
-			while (i >= 0 && i < curLine.length) {
-				outb[pos++] = curLine[i++];
-		    }
-			lineLength = pos-startpos-4;
-		    
-			outb[startpos++] = (byte) ((lineLength & 0xff00) >> 8);
-			outb[startpos++] = (byte) (lineLength  & 0xff);
-			outb[startpos++] = (byte) ((lineNumber & 0xff00) >> 8);
-			outb[startpos++] = (byte) (lineNumber  & 0xff);
+					// no key found, copy a simple ascii char
+					byte val = curLine[inPos++];
+					if (val < 0)
+						throw new Exception("Unable to convert ascii code: " + String.format("%02x", val));
+					outb[outPos++] = val;
+				}
+				
+			}
+			outb[outPos++] = BASIC_END_LINE;
+
+			// compute line length
+			lineLength = outPos - linePos;
+
+			// set line header
+			outb[linePos++] = (byte) ((lineLength & 0xff00) >> 8);
+			outb[linePos++] = (byte) (lineLength & 0xff);
+			outb[linePos++] = (byte) ((lineNumber & 0xff00) >> 8);
+			outb[linePos++] = (byte) (lineNumber & 0xff);
 		}
-			
+
 		// basic header
-		outb[0] = (byte) 0xff;                  // Basic file type
-		outb[1] = (byte) ((pos & 0xff00) >> 8); // file length MSB
-		outb[2] = (byte) (pos & 0xff);          // file length LSB
-			
-		byte[] data = Arrays.copyOf(outb, pos);
-		Files.write(Path.of(outFileName), data);
-	}	
-	
-	public int indexOf(byte[] outerArray, byte[] smallerArray) {
-	    for(int i = 0; i < outerArray.length - smallerArray.length+1; ++i) {
-	        boolean found = true;
-	        for(int j = 0; j < smallerArray.length; ++j) {
-	           if (outerArray[i+j] != smallerArray[j]) {
-	               found = false;
-	               break;
-	           }
-	        }
-	        if (found) return i;
-	     }
-	   return -1;  
-	} 
-	
+		outb[0] = (byte) 0xff; // Basic file type
+		outb[1] = (byte) ((outPos & 0xff00) >> 8); // file length MSB
+		outb[2] = (byte) (outPos & 0xff); // file length LSB
+
+		// basic trailer
+		outb[outPos++] = BASIC_END_FILE;
+		outb[outPos++] = BASIC_END_FILE;
+
+		// set final data
+		byte[] basic = Arrays.copyOf(outb, outPos);
+		return basic;
+	}
+
+	private static boolean match(byte[] outerArray, int start, byte[] smallerArray) {
+		for (int j = 0; j < smallerArray.length; j++) {
+			if (outerArray[start + j] != smallerArray[j]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 }
