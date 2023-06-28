@@ -105,6 +105,7 @@
 	</build>
 
 	<modules>
+		<module>./spi</module>
 		<module>./toolbox/gamebuilder</module>
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./toolbox/graphics/tilemap/leanscroll</module>

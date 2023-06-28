@@ -15,6 +15,14 @@
 		<main-class>com.widedot.m6809.gamebuilder.MainCommand</main-class>
 	</properties>
 
+  <dependencies>
+    <dependency>
+      <artifactId>6809-game-builder-spi</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>0.0.1</version>
+    </dependency>
+  </dependencies>
+
 	<build>
 		<plugins>
 			<plugin>

@@ -10,10 +10,14 @@
 	<fileSets>
 		<fileSet>
 			<directory>${project.parent.basedir}</directory>
-			<outputDirectory>./</outputDirectory>			
+			<outputDirectory>./</outputDirectory>
 			<includes>
-				<include>/repo/**</include>				
+				<include>/repo/**</include>
 			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/ascii2bas/0.0.1</directory>
+			<outputDirectory>./plugins</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>

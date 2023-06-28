@@ -13,9 +13,10 @@
 
 	<dependencies>
 		<dependency>
+			<artifactId>6809-game-builder-spi</artifactId>
 			<groupId>com.wide-dot</groupId>
-			<artifactId>gamebuilder</artifactId>
-			<version>${project.version}</version>
+			<version>0.0.1</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
@@ -39,7 +40,7 @@
 						<configuration>
 							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
 							<binFolder>/bin/unix</binFolder>
-							<repositoryName>repo</repositoryName>							
+							<repositoryName>repo</repositoryName>
 							<programs>
 								<program>
 									<platforms>
@@ -58,9 +59,9 @@
 						</goals>
 						<phase>package</phase>
 						<configuration>
-							<assembleDirectory>${project.parent.basedir}</assembleDirectory>							
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
 							<binFolder>/bin/windows</binFolder>
-							<repositoryName>repo</repositoryName>							
+							<repositoryName>repo</repositoryName>
 							<programs>
 								<program>
 									<platforms>
@@ -73,7 +74,7 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>			
+			</plugin>
 		</plugins>
 	</build>
 </project>

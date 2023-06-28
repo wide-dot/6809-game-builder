@@ -1,25 +1,13 @@
 package com.widedot.toolbox.text.ascii2bas;
 
 import java.io.File;
-import java.nio.CharBuffer;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.xml.bind.DatatypeConverter;
-
-import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 

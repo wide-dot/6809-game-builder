@@ -2,15 +2,10 @@ package com.widedot.m6809.gamebuilder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -20,11 +15,11 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import com.widedot.m6809.gamebuilder.builder.GameBuilder;
-import com.widedot.m6809.gamebuilder.configuration.media.Media;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
-import com.widedot.m6809.gamebuilder.plugins.PluginsLoader;
+import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
+import com.widedot.m6809.gamebuilder.spi.foo.Foo;
+import com.widedot.m6809.gamebuilder.spi.foo.FooFactory;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -85,14 +80,26 @@ public class MainCommand implements Runnable {
 				
 			} else {
 				
+				// load plugins
+			    String pluginsPath = "plugins";
+			    PluginLoader pluginLoader = new PluginLoader(new File(pluginsPath));
+			    pluginLoader.loadPlugins();
+
+			    FooFactory f = pluginLoader.getFooFactory("foo");
+			    if (f == null) {
+			      log.error("No factories loaded!");
+			      return;
+			    }
+
+			    log.info("This is running from the plugin");
+			    final Foo foo = f.build();
+			    foo.doFoo();
+				
 				// load properties
 				Settings.values = FileResourcesUtils.getHashMap("settings.properties");
 				
 				if (Settings.isValid()) {
-					
-					// load plugin classes
-					new PluginsLoader();
-					
+				
 					// process targets of a conf file or all conf files in a dir
 					String[] targets = (target!=null?target.split(","):null);				
 					if (exclusive.confFile != null) {
