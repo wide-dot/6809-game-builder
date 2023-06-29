@@ -21,11 +21,19 @@
 	</dependencies>
 
 	<properties>
-		<main-class>com.widedot.toolbox.test.txt2bas.MainCommand</main-class>
+		<main-class>com.widedot.toolbox.text.txt2bas.MainCommand</main-class>
 	</properties>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.1</version>
+				<configuration>
+					<outputDirectory>../../../plugins/txt2bas</outputDirectory>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>

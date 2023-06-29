@@ -79,7 +79,13 @@ public class MainCommand implements Runnable {
 			} else {
 				
 				// load plugins
-			    String pluginsPath = "plugins";
+				// basedir is set by launch script of maven exec plugin
+				// it is null when running from eclipse
+				String pluginsPath = "";
+				if (System.getProperty("basedir") != null) {
+					pluginsPath = System.getProperty("basedir") + File.separator;
+				}
+				pluginsPath += "plugins";
 			    Settings.pluginLoader = new PluginLoader(new File(pluginsPath));
 			    Settings.pluginLoader.loadPlugins();
 				

@@ -143,6 +143,8 @@ public class Converter {
 	}
 
 	private static boolean match(byte[] outerArray, int start, byte[] smallerArray) {
+		if (start + smallerArray.length > outerArray.length) return false;
+		
 		for (int j = 0; j < smallerArray.length; j++) {
 			if (outerArray[start + j] != smallerArray[j]) {
 				return false;

@@ -53,9 +53,12 @@ public class File {
 			key = keyIter.next();
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(key);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-			    FileProcessorFactory f = Settings.pluginLoader.getFileProcessorFactory("txt2bas");
+			    FileProcessorFactory f = Settings.pluginLoader.getFileProcessorFactory(element.getRootElementName());
+			    if (f == null) {
+			    	throw new Exception("Unknown File processor: " + element.getRootElementName());
+			    }
 			    final FileProcessor fileProcessor = f.build();
-			    byte[] bin = fileProcessor.doFileProcessor(element);
+			    byte[] bin = fileProcessor.doFileProcessor(element, path);
 		        binList.add(bin);
 			}
 		}

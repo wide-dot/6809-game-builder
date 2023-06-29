@@ -5,5 +5,5 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public interface FileProcessor {
 
-  byte[] doFileProcessor(HierarchicalConfiguration<ImmutableNode> node) throws Exception;
+  byte[] doFileProcessor(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception;
 }
