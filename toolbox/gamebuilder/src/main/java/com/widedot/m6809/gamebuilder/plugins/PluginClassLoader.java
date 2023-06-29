@@ -14,7 +14,7 @@ import java.util.List;
 public class PluginClassLoader extends URLClassLoader {
 
   public static final List<String> SHARED_PACKAGES = Arrays.asList(
-      "org.spyne.javapluginquickstart.spi"
+      "com.widedot.m6809.gamebuilder.spi"
   );
 
   private final ClassLoader parentClassLoader;
@@ -27,6 +27,7 @@ public class PluginClassLoader extends URLClassLoader {
   @Override
   protected Class<?> loadClass(String name, boolean resolve)
       throws ClassNotFoundException {
+	  
     // has the class loaded already?
     Class<?> loadedClass = findLoadedClass(name);
     if (loadedClass == null) {
@@ -38,7 +39,8 @@ public class PluginClassLoader extends URLClassLoader {
       }
     }
 
-    if (resolve) {      // marked to resolve
+    // marked to resolve
+    if (resolve) {
       resolveClass(loadedClass);
     }
     return loadedClass;

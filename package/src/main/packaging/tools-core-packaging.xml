@@ -16,8 +16,8 @@
 			</includes>
 		</fileSet>
 		<fileSet>
-			<directory>${project.parent.basedir}/repo/com/wide-dot/ascii2bas/0.0.1</directory>
-			<outputDirectory>./plugins</outputDirectory>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/txt2bas/0.0.1</directory>
+			<outputDirectory>./plugins/txt2bas</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>

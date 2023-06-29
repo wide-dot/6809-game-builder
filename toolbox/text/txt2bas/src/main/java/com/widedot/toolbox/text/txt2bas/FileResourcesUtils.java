@@ -1,4 +1,4 @@
-package com.widedot.toolbox.text.ascii2bas;
+package com.widedot.toolbox.text.txt2bas;
 
 import java.io.*;
 

@@ -8,7 +8,7 @@
 		<version>0.0.1</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>ascii2bas</artifactId>
+	<artifactId>txt2bas</artifactId>
 	<packaging>jar</packaging>
 
 	<dependencies>
@@ -21,7 +21,7 @@
 	</dependencies>
 
 	<properties>
-		<main-class>com.widedot.toolbox.graphics.tilemap.stm.MainCommand</main-class>
+		<main-class>com.widedot.toolbox.test.txt2bas.MainCommand</main-class>
 	</properties>
 
 	<build>

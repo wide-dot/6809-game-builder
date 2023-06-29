@@ -14,11 +14,11 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
-import com.widedot.m6809.gamebuilder.spi.foo.FooFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
 
 public class PluginLoader {
 
-  private final Map<String, FooFactory> fooFactoryMap = new HashMap<>();
+  private final Map<String, FileProcessorFactory> fileProcessorFactoryMap = new HashMap<>();
   private final File pluginsDir;
   private final AtomicBoolean loading = new AtomicBoolean();
 
@@ -59,8 +59,8 @@ public class PluginLoader {
 
   private void installPlugin(final Plugin plugin) {
     System.out.println("Installing plugin: " + plugin.getClass().getName());
-    for (FooFactory f : plugin.getFooFactories()) {
-      fooFactoryMap.put(f.name(), f);
+    for (FileProcessorFactory f : plugin.getFileProcessorFactories()) {
+    	fileProcessorFactoryMap.put(f.name(), f);
     }
   }
 
@@ -82,7 +82,7 @@ public class PluginLoader {
     }
   }
 
-  public FooFactory getFooFactory(String name) {
-    return fooFactoryMap.get(name);
+  public FileProcessorFactory getFileProcessorFactory(String name) {
+    return fileProcessorFactoryMap.get(name);
   }
 }

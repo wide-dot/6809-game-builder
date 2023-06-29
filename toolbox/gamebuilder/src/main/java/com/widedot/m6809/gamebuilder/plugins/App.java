@@ -1,8 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugins;
 
 import java.io.File;
-import com.widedot.m6809.gamebuilder.spi.foo.Foo;
-import com.widedot.m6809.gamebuilder.spi.foo.FooFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
 
 /**
  * Launcher for javapluginquickstart
@@ -24,14 +24,14 @@ public class App {
     PluginLoader pluginLoader = new PluginLoader(new File(pluginsPath));
     pluginLoader.loadPlugins();
 
-    FooFactory f = pluginLoader.getFooFactory("foo");
+    FileProcessorFactory f = pluginLoader.getFileProcessorFactory("txt2bas");
     if (f == null) {
       System.err.println("No factories loaded!");
       return;
     }
 
     System.out.println("This is running from the plugin");
-    final Foo foo = f.build();
-    foo.doFoo();
+    final FileProcessor fileProcessor = f.build();
+    fileProcessor.doFileProcessor();
   }
 }

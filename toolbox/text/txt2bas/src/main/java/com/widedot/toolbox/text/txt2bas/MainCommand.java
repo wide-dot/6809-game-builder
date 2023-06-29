@@ -1,4 +1,4 @@
-package com.widedot.toolbox.text.ascii2bas;
+package com.widedot.toolbox.text.txt2bas;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -13,15 +13,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-/**
- * simple tile map to binary converter - extract stm header informations and
- * produce an asm equate file - convert tile id from little endian to big endian
- * - adjust tile id byte depth to desired size - produce a binary file that
- * contains only the tileid - split binary files based on a max size (ex: to fit
- * a memory page)
- */
-
-@Command(name = "ascii2bas", description = "Convert ascii text file (.txt) to basic langage files (.bas)")
+@Command(name = "txt2bas", description = "Convert UTF-8 text file (.txt) to basic langage files (.bas)")
 @Slf4j
 public class MainCommand implements Runnable {
 

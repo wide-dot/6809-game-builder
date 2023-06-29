@@ -1,4 +1,4 @@
-# ascii2bas
+# txt2bas
 ## Description
 Convert ascii text file (.txt) to basic langage files (.bas).
 ## Features
@@ -8,7 +8,7 @@ Convert ascii text file (.txt) to basic langage files (.bas).
 
 (for Windows users, add .bat to the script name)
 
-    ascii2bas [-t=token set name] (-d=Input directory | -f=Input file)
+    txt2bas [-t=token set name] (-d=Input directory | -f=Input file)
 
     ascii to basic converter
         -d, --dir=Input directory (will take only .txt files)
