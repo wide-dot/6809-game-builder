@@ -1,0 +1,14 @@
+                      (C:\Users\bhrou\gi):00001          SECTION code
+0000 4444             (C:\Users\bhrou\gi):00002          fdb $4444
+0002 FC0000           (C:\Users\bhrou\gi):00003          ldd location
+                      (C:\Users\bhrou\gi):00004          ENDSECTION
+                      (C:\Users\bhrou\gi):00005         
+Warning: Section flags can only be specified the first time; ignoring duplicate definition
+                      (C:\Users\bhrou\gi):00006          SECTION code,bss
+0005                  (C:\Users\bhrou\gi):00007          rmb 10
+                      (C:\Users\bhrou\gi):00008          ENDSECTION
+                      (C:\Users\bhrou\gi):00009         
+                      (C:\Users\bhrou\gi):00010          SECTION code
+000F FC0000           (C:\Users\bhrou\gi):00011          ldd location
+0012                  (C:\Users\bhrou\gi):00012         location
+                      (C:\Users\bhrou\gi):00013          ENDSECTION

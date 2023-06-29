@@ -68,7 +68,7 @@ public class MainCommand implements Runnable {
 	}
 	
 	private void convert(File file, HashMap<byte[], byte[]> tokenmap) throws Exception {
-		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+AsciiConverter.BASIC_EXT;
-		Files.write(Path.of(outFileName), AsciiConverter.getBasic(file, tokenmap));
+		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+Converter.BASIC_EXT;
+		Files.write(Path.of(outFileName), Converter.getBasic(file, tokenmap));
 	}
 }

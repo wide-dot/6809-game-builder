@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class AsciiConverter {
+public class Converter {
 
 	// basic file format
 	// -----------------

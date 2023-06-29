@@ -10,6 +10,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
 
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
@@ -51,10 +53,10 @@ public class File {
 			key = keyIter.next();
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(key);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-		        Class<?> clazz = Class.forName(Settings.values.get("plugin.package") + "." + key.substring(0, 1).toUpperCase() + key.substring(1));
-		        Constructor<?> ctor = clazz.getConstructor(HierarchicalConfiguration.class);
-		        Object object = ctor.newInstance(new Object[] { element });
-		        //binList.add(object.bin);
+			    FileProcessorFactory f = Settings.pluginLoader.getFileProcessorFactory("txt2bas");
+			    final FileProcessor fileProcessor = f.build();
+			    byte[] bin = fileProcessor.doFileProcessor(element);
+		        binList.add(bin);
 			}
 		}
 	}

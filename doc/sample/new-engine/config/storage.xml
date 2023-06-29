@@ -1,7 +1,7 @@
 <configuration>
 
     <fat name="thomson dd" sectorperblock="8" nblocks="160" sectorsize="255" fatstart="129" dirstart="512" ndirentries="112"/>
-    <fat name="thomson sd" sectorperblock="8" nblocks="80"  sectorsize="127" fatstart="129" dirstart="256" ndirentries="112"/>
+    <fat name="thomson sd" sectorperblock="8" nblocks="80"  sectorsize="128" fatstart="129" dirstart="256" ndirentries="112"/>
     <fat name="tandy"      sectorperblock="9" nblocks="68"  sectorsize="256" fatstart="128" dirstart="512" ndirentries="72"/>
 
     <interleave name="thomson" softskip="2" softskew="4" hardskip="7"/>

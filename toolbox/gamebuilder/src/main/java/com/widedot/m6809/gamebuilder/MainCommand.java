@@ -18,8 +18,6 @@ import picocli.CommandLine.Option;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
 import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -82,18 +80,8 @@ public class MainCommand implements Runnable {
 				
 				// load plugins
 			    String pluginsPath = "plugins";
-			    PluginLoader pluginLoader = new PluginLoader(new File(pluginsPath));
-			    pluginLoader.loadPlugins();
-
-			    FileProcessorFactory f = pluginLoader.getFileProcessorFactory("txt2bas");
-			    if (f == null) {
-			      log.error("No factories loaded!");
-			      return;
-			    }
-
-			    log.info("This is running from the plugin");
-			    final FileProcessor fileProcessor = f.build();
-			    fileProcessor.doFileProcessor();
+			    Settings.pluginLoader = new PluginLoader(new File(pluginsPath));
+			    Settings.pluginLoader.loadPlugins();
 				
 				// load properties
 				Settings.values = FileResourcesUtils.getHashMap("settings.properties");

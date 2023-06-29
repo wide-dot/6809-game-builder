@@ -1,0 +1,532 @@
+                      (C:\Users\bhrou\gi):00001         ;*******************************************************************************
+                      (C:\Users\bhrou\gi):00002         ; FD Boot loader - Benoit Rousseau 04/2023
+                      (C:\Users\bhrou\gi):00003         ; ------------------------------------------------------------------------------
+                      (C:\Users\bhrou\gi):00004         ; A simple boot loader
+                      (C:\Users\bhrou\gi):00005         ;*******************************************************************************
+                      (C:\Users\bhrou\gi):00006         
+                      (C:\Users\bhrou\gi):00007                 INCLUDE "./engine/constants.asm"
+                      (./engine/constant):00001         * ---------------------------------------------------------------------------
+                      (./engine/constant):00002         * Constants
+                      (./engine/constant):00003         *
+                      (./engine/constant):00004         * Naming convention
+                      (./engine/constant):00005         * -----------------
+                      (./engine/constant):00006         * - lower case
+                      (./engine/constant):00007         * - underscore-separated names
+                      (./engine/constant):00008         *
+                      (./engine/constant):00009         * ---------------------------------------------------------------------------
+                      (./engine/constant):00010         
+                      (./engine/constant):00011          ifndef CONSTANTS_ASM
+     0001             (./engine/constant):00012         CONSTANTS_ASM equ 1
+                      (./engine/constant):00013         
+                      (./engine/constant):00014         * ===========================================================================
+                      (./engine/constant):00015         * TO8 Registers
+                      (./engine/constant):00016         * ===========================================================================
+                      (./engine/constant):00017         
+                      (./engine/constant):00018         ; Disk routine registers (ROM)
+                      (./engine/constant):00019         
+     6049             (./engine/constant):00020         dk_drive                      equ $6049
+     604A             (./engine/constant):00021         dk_track                      equ $604A
+     604B             (./engine/constant):00022         dk_track_lsb                  equ $604B
+     604C             (./engine/constant):00023         dk_sector                     equ $604C
+     604F             (./engine/constant):00024         dk_write_location             equ $604F
+                      (./engine/constant):00025         
+                      (./engine/constant):00026         * ===========================================================================
+                      (./engine/constant):00027         * Globals
+                      (./engine/constant):00028         * ===========================================================================
+                      (./engine/constant):00029         
+                      (./engine/constant):00030         ; WARNING - BuildSprite allow to cross $A000 limit by glb_camera_x_offset/4
+                      (./engine/constant):00031         ; Graphics routines using S to write may cross by 12 bytes
+                      (./engine/constant):00032         ; be sure to compile with enough margin here
+     9FF4             (./engine/constant):00033         glb_ram_end                   equ $A000-12
+                      (./engine/constant):00034         
+                      (./engine/constant):00035         ; compilated sprite
+     9FF2             (./engine/constant):00036         glb_register_s                equ glb_ram_end-2             ; reverved space to store S from ROM routines
+                      (./engine/constant):00037         
+                      (./engine/constant):00038         ; DrawSprites
+     9FF0             (./engine/constant):00039         glb_screen_location_1         equ glb_register_s-2          ; start address for rendering of current sprite Part1     
+     9FEE             (./engine/constant):00040         glb_screen_location_2         equ glb_screen_location_1-2   ; start address for rendering of current sprite Part2 (DEPENDENCY Must follow Part1)
+                      (./engine/constant):00041         
+     9FEC             (./engine/constant):00042         glb_camera_height             equ glb_screen_location_2-2
+     9FEA             (./engine/constant):00043         glb_camera_width              equ glb_camera_height-2
+     9FE8             (./engine/constant):00044         glb_camera_x_pos_coarse       equ glb_camera_width-2        ; ((glb_camera_x_pos - 64) / 64) * 64
+     9FE6             (./engine/constant):00045         glb_camera_x_pos              equ glb_camera_x_pos_coarse-2 ; 16.8 camera x position in palyfield coordinates
+     9FE5             (./engine/constant):00046         glb_camera_x_sub              equ glb_camera_x_pos-1        ; 
+     9FE4             (./engine/constant):00047         glb_camera_y_pos              equ glb_camera_x_pos-2        ; 16.8 camera y position in palyfield coordinates
+     9FE3             (./engine/constant):00048         glb_camera_y_sub              equ glb_camera_y_pos-1        ;
+     9FE2             (./engine/constant):00049         glb_camera_x_min_pos          equ glb_camera_y_pos-2
+     9FE0             (./engine/constant):00050         glb_camera_y_min_pos          equ glb_camera_x_min_pos-2
+     9FDE             (./engine/constant):00051         glb_camera_x_max_pos          equ glb_camera_y_min_pos-2
+     9FDC             (./engine/constant):00052         glb_camera_y_max_pos          equ glb_camera_x_max_pos-2
+     9FDA             (./engine/constant):00053         glb_camera_x_offset           equ glb_camera_y_max_pos-2
+     9FD8             (./engine/constant):00054         glb_camera_y_offset           equ glb_camera_x_offset-2
+     9FD7             (./engine/constant):00055         glb_force_sprite_refresh      equ glb_camera_y_offset-1
+     9FD6             (./engine/constant):00056         glb_camera_move               equ glb_force_sprite_refresh-1
+     9FD5             (./engine/constant):00057         glb_alphaTiles                equ glb_camera_move-1
+     9FD4             (./engine/constant):00058         glb_timer_second              equ glb_alphaTiles-1
+     9FD3             (./engine/constant):00059         glb_timer_minute              equ glb_timer_second-1
+     9FD3             (./engine/constant):00060         glb_timer                     equ glb_timer_minute
+     9FD2             (./engine/constant):00061         glb_timer_frame               equ glb_timer-1
+                      (./engine/constant):00062         
+                      (./engine/constant):00063         ; BankSwitch
+     9FD1             (./engine/constant):00064         glb_Page                      equ glb_timer_frame-1
+     9FB3             (./engine/constant):00065         dp_engine                     equ glb_Page-30  ; engine routines tmp var space
+     9F97             (./engine/constant):00066         dp_extreg                     equ dp_engine-28 ; extra register space (user and engine common)
+     9F00             (./engine/constant):00067         dp                            equ $9F00        ; user space (149 bytes max)
+     9F00             (./engine/constant):00068         glb_system_stack              equ dp
+                      (./engine/constant):00069         
+                      (./engine/constant):00070         ; generic direct page extra registers
+                      (./engine/constant):00071         ; -----------------------------------
+     9F97             (./engine/constant):00072         glb_d0   equ   dp_extreg
+     9F98             (./engine/constant):00073         glb_d0_b equ   dp_extreg+1
+                      (./engine/constant):00074         ; must be a free byte here for 24bits computation
+     9F9A             (./engine/constant):00075         glb_d1   equ   dp_extreg+3
+     9F9B             (./engine/constant):00076         glb_d1_b equ   dp_extreg+4
+                      (./engine/constant):00077         ; must be a free byte here for 24bits computation
+     9F9D             (./engine/constant):00078         glb_d2   equ   dp_extreg+6
+     9F9E             (./engine/constant):00079         glb_d2_b equ   dp_extreg+7
+                      (./engine/constant):00080         ; must be a free byte here for 24bits computation
+     9FA0             (./engine/constant):00081         glb_d3   equ   dp_extreg+9
+     9FA1             (./engine/constant):00082         glb_d3_b equ   dp_extreg+10
+                      (./engine/constant):00083         ; must be a free byte here for 24bits computation
+     9FA3             (./engine/constant):00084         glb_d4   equ   dp_extreg+12
+     9FA4             (./engine/constant):00085         glb_d4_b equ   dp_extreg+13
+     9FA5             (./engine/constant):00086         glb_d5   equ   dp_extreg+14
+     9FA6             (./engine/constant):00087         glb_d5_b equ   dp_extreg+15
+     9FA7             (./engine/constant):00088         glb_d6   equ   dp_extreg+16
+     9FA8             (./engine/constant):00089         glb_d6_b equ   dp_extreg+17
+     9FA9             (./engine/constant):00090         glb_a0   equ   dp_extreg+18
+     9FAA             (./engine/constant):00091         glb_a0_b equ   dp_extreg+19
+     9FAB             (./engine/constant):00092         glb_a1   equ   dp_extreg+20
+     9FAC             (./engine/constant):00093         glb_a1_b equ   dp_extreg+21
+     9FAD             (./engine/constant):00094         glb_a2   equ   dp_extreg+22
+     9FAE             (./engine/constant):00095         glb_a2_b equ   dp_extreg+23
+     9FAF             (./engine/constant):00096         glb_a3   equ   dp_extreg+24
+     9FB0             (./engine/constant):00097         glb_a3_b equ   dp_extreg+25
+     9FB1             (./engine/constant):00098         glb_a4   equ   dp_extreg+26
+     9FB2             (./engine/constant):00099         glb_a4_b equ   dp_extreg+27
+                      (./engine/constant):00100         
+                      (./engine/constant):00101         * ===========================================================================
+                      (./engine/constant):00102         * Display Constants
+                      (./engine/constant):00103         * ===========================================================================
+                      (./engine/constant):00104         
+     00A0             (./engine/constant):00105         screen_width                  equ 160             ; in pixel
+     00C8             (./engine/constant):00106         screen_height                 equ 200             ; in pixel
+     001C             (./engine/constant):00107         screen_top                    equ (256-200)/2     ; in pixel
+     00E3             (./engine/constant):00108         screen_bottom                 equ screen_top+199  ; in pixel
+     0030             (./engine/constant):00109         screen_left                   equ (256-160)/2     ; in pixel
+     00CF             (./engine/constant):00110         screen_right                  equ screen_left+159 ; in pixel
+     0008             (./engine/constant):00111         nb_priority_levels            equ 8               ; number of priority levels (need code change if modified)
+                      (./engine/constant):00112         
+                      (./engine/constant):00113         * ===========================================================================
+                      (./engine/constant):00114         * Images Constants
+                      (./engine/constant):00115         * ===========================================================================
+                      (./engine/constant):00116         
+     0004             (./engine/constant):00117         image_x_size                  equ 4
+     0005             (./engine/constant):00118         image_y_size                  equ 5
+     0006             (./engine/constant):00119         image_center_offset           equ 6
+                      (./engine/constant):00120         
+     0004             (./engine/constant):00121         image_subset_x1_offset        equ 4
+     0005             (./engine/constant):00122         image_subset_y1_offset        equ 5
+                      (./engine/constant):00123         
+     0000             (./engine/constant):00124         page_draw_routine             equ 0
+     0001             (./engine/constant):00125         draw_routine                  equ 1
+     0003             (./engine/constant):00126         page_erase_routine            equ 3
+     0004             (./engine/constant):00127         erase_routine                 equ 4
+     0006             (./engine/constant):00128         erase_nb_cell                 equ 6
+                      (./engine/constant):00129         
+                      (./engine/constant):00130         * ===========================================================================
+                      (./engine/constant):00131         * Sound Constants
+                      (./engine/constant):00132         * ===========================================================================
+                      (./engine/constant):00133         
+     0000             (./engine/constant):00134         sound_page        equ 0
+     0001             (./engine/constant):00135         sound_start_addr  equ 1
+     0003             (./engine/constant):00136         sound_end_addr    equ 3
+     0005             (./engine/constant):00137         sound_meta_size   equ 5
+                      (./engine/constant):00138         
+                      (./engine/constant):00139         * ===========================================================================
+                      (./engine/constant):00140         * Object Constants
+                      (./engine/constant):00141         * ===========================================================================
+                      (./engine/constant):00142         
+                      (./engine/constant):00143         ; ext_variables_size should be declared in game source code
+                      (./engine/constant):00144         
+     0026             (./engine/constant):00145         object_base_size              equ 38  ; the size of an object without rsvd and ext_vars
+                      (./engine/constant):00146          ifndef OverlayMode
+     003B             (./engine/constant):00147         object_rsvd_size              equ 59
+                      (./engine/constant):00148          else
+0000                  (./engine/constant):00149         object_rsvd_size              equ 5
+                      (./engine/constant):00150          endc
+                      (./engine/constant):00151         
+     ????             (./engine/constant):00152         object_rsvd                   equ object_base_size+ext_variables_size
+     ????             (./engine/constant):00153         object_size                   equ object_base_size+ext_variables_size+object_rsvd_size ; the size of a dynamic object
+     ????             (./engine/constant):00154         next_object                   equ object_size
+     0026             (./engine/constant):00155         ext_variables                 equ object_base_size ; start of reserved space for additionnal variables
+                      (./engine/constant):00156         
+     0000             (./engine/constant):00157         id                            equ 0   ; reference to object model id (ObjID_) (0: free slot)
+     0001             (./engine/constant):00158         subtype                       equ 1   ; reference to object subtype (Sub_) DEPENDENCY subtype must follow id
+     0001             (./engine/constant):00159         subtype_w                     equ 1   ; reference to object subtype (Sub_) takes 2 bytes and overlap render_flags DEPENDENCY subtype must follow id
+     0002             (./engine/constant):00160         render_flags                  equ 2
+     0003             (./engine/constant):00161         run_object_prev               equ 3   ; previous object to update when deleting current object
+     0005             (./engine/constant):00162         run_object_next               equ 5   ; next object to run by RunObjects
+                      (./engine/constant):00163         
+                      (./engine/constant):00164          ifndef OverlayMode
+                      (./engine/constant):00165         * --- render_flags bitfield variables --- background erase pack
+     0001             (./engine/constant):00166         render_xmirror_mask           equ $01 ; (bit 0) DEPENDENCY should be bit 0 - tell display engine to mirror sprite on horizontal axis
+     0002             (./engine/constant):00167         render_ymirror_mask           equ $02 ; (bit 1) DEPENDENCY should be bit 1 - tell display engine to mirror sprite on vertical axis
+     0004             (./engine/constant):00168         render_overlay_mask           equ $04 ; (bit 2) DEPENDENCY should be bit 2 - compilated sprite with no background save
+     0008             (./engine/constant):00169         render_playfieldcoord_mask    equ $08 ; (bit 3) tell display engine to use playfield (1) or screen (0) coordinates
+     0010             (./engine/constant):00170         render_xloop_mask             equ $10 ; (bit 4) (in screen coordinate) tell display engine to hide sprite when x is out of screen (0) or to display (1)  
+     0020             (./engine/constant):00171         render_todelete_mask          equ $20 ; (bit 5) tell display engine to delete sprite and clear OST for this object
+     0040             (./engine/constant):00172         render_subobjects_mask        equ $40 ; (bit 6) tell display engine to render subobjects for this object
+     0080             (./engine/constant):00173         render_hide_mask              equ $80 ; (bit 7) tell display engine to hide sprite (keep priority and mapping_frame)
+                      (./engine/constant):00174          else
+                      (./engine/constant):00175         ; --- render_flags bitfield variables --- overlay pack
+0000                  (./engine/constant):00176         render_xmirror_mask           equ $01 ; (bit 0) DEPENDENCY should be bit 0 - tell display engine to mirror sprite on horizontal axis
+0000                  (./engine/constant):00177         render_ymirror_mask           equ $02 ; (bit 1) DEPENDENCY should be bit 1 - tell display engine to mirror sprite on vertical axis
+                      (./engine/constant):00178         
+0000                  (./engine/constant):00179         render_playfieldcoord_mask    equ $08 ; (bit 3) tell display engine to use playfield (1) or screen (0) coordinates
+0000                  (./engine/constant):00180         render_xloop_mask             equ $10 ; (bit 4) (in screen coordinate) tell display engine to hide sprite when x is out of screen (0) or to display (1)  
+0000                  (./engine/constant):00181         render_no_range_ctrl_mask     equ $20 ; (bit 5) tell display engine to skip out of range controls (this may lead to memory corruption BEWARE)
+0000                  (./engine/constant):00182         render_subobjects_mask        equ $40 ; (bit 6) tell display engine to render subobjects for this object
+0000                  (./engine/constant):00183         render_hide_mask              equ $80 ; (bit 7) tell display engine to hide sprite (keep priority and mapping_frame)
+                      (./engine/constant):00184          endc
+                      (./engine/constant):00185         
+     0007             (./engine/constant):00186         priority                      equ 7           ; display priority (0: nothing to display, 1:front, ..., 8:back)
+     0008             (./engine/constant):00187         anim                          equ 8  ; and 9  ; reference to current animation (Ani_)
+     000A             (./engine/constant):00188         prev_anim                     equ 10 ; and 11 ; reference to previous animation (Ani_)
+     000A             (./engine/constant):00189         sub_anim                      equ 10 ; and 11 ; reference to sub animation
+     000C             (./engine/constant):00190         anim_frame                    equ 12          ; index of current frame in animation
+     000D             (./engine/constant):00191         anim_frame_duration           equ 13          ; number of frames for each image in animation, range: 00-7F (0-127), 0 means display only during one frame
+     000E             (./engine/constant):00192         anim_flags                    equ 14          ; byte offset to reference an anim_flags LUT (adv) / store a link flag (non adv)
+                      (./engine/constant):00193         
+                      (./engine/constant):00194         * --- anim_flags bitfield variables ---
+     0004             (./engine/constant):00195         anim_link_mask                equ $04 ; (bit 2) if set, allow the load of a new animation without reseting anim_frame and anim_frame_duration
+                      (./engine/constant):00196         
+     000E             (./engine/constant):00197         status_flags                  equ 14          ; orientation of sprite, is applied to animation xmirror flag during AnimateSprite
+                      (./engine/constant):00198         
+                      (./engine/constant):00199         * --- status_flags bitfield variables ---
+     0001             (./engine/constant):00200         status_xflip_mask             equ $01 ; (bit 0) X Flip
+     0002             (./engine/constant):00201         status_yflip_mask             equ $02 ; (bit 1) Y Flip
+                      (./engine/constant):00202         
+     0010             (./engine/constant):00203         image_set                     equ 16 ; and 17 ; reference to current image (Img_) (0000 if no image)
+     0012             (./engine/constant):00204         x_pos                         equ 18 ; and 19 ; x playfield coordinate
+     0014             (./engine/constant):00205         x_sub                         equ 20          ; x subpixel (1/256 of a pixel), must follow x_pos in data structure
+     0015             (./engine/constant):00206         y_pos                         equ 21 ; and 22 ; y playfield coordinate
+     0017             (./engine/constant):00207         y_sub                         equ 23          ; y subpixel (1/256 of a pixel), must follow y_pos in data structure
+     0018             (./engine/constant):00208         xy_pixel                      equ 24          ; x and y screen coordinate
+     0018             (./engine/constant):00209         x_pixel                       equ 24          ; x screen coordinate
+     0019             (./engine/constant):00210         y_pixel                       equ 25          ; y screen coordinate, must follow x_pixel
+     001A             (./engine/constant):00211         x_vel                         equ 26 ; and 27 ; s8.8 horizontal velocity
+     001C             (./engine/constant):00212         y_vel                         equ 28 ; and 29 ; s8.8 vertical velocity
+     001E             (./engine/constant):00213         x_acl                         equ 30 ; and 31 ; s8.8 horizontal gravity
+     0020             (./engine/constant):00214         y_acl                         equ 32 ; and 33 ; s8.8 vertical gravity
+     0022             (./engine/constant):00215         routine                       equ 34          ; index of current object routine
+     0023             (./engine/constant):00216         routine_secondary             equ 35          ; index of current secondary routine
+     0024             (./engine/constant):00217         routine_tertiary              equ 36          ; index of current tertiary routine
+     0025             (./engine/constant):00218         routine_quaternary            equ 37          ; index of current quaternary routine
+                      (./engine/constant):00219         
+                      (./engine/constant):00220          ifndef OverlayMode
+                      (./engine/constant):00221         * ---------------------------------------------------------------------------
+                      (./engine/constant):00222         * reserved variables (read/write by engine)
+                      (./engine/constant):00223         
+     ????             (./engine/constant):00224         rsv_render_flags              equ object_rsvd
+                      (./engine/constant):00225         
+                      (./engine/constant):00226         * --- rsv_render_flags bitfield variables ---
+     0001             (./engine/constant):00227         rsv_render_checkrefresh_mask  equ $01 ; (bit 0) if erasesprite and display sprite flag are processed for this frame
+     0002             (./engine/constant):00228         rsv_render_erasesprite_mask   equ $02 ; (bit 1) if a sprite need to be cleared on screen
+     0004             (./engine/constant):00229         rsv_render_displaysprite_mask equ $04 ; (bit 2) if a sprite need to be rendered on screen
+     0008             (./engine/constant):00230         rsv_render_outofrange_mask    equ $08 ; (bit 3) if a sprite is out of range for full rendering in screen
+     0080             (./engine/constant):00231         rsv_render_onscreen_mask      equ $80 ; (bit 7) DEPENDENCY should be bit 7 - has been rendered on last screen buffer (may be 0 or 1)
+                      (./engine/constant):00232         
+     ????             (./engine/constant):00233         rsv_prev_anim                 equ object_rsvd+1 ; and +2 ; reference to previous animation (Ani_) w * UTILE ?
+     ????             (./engine/constant):00234         rsv_image_center_offset       equ object_rsvd+3 ; 0 or 1 offset that indicate if image center is even or odd (DRS_XYToAddress)
+     ????             (./engine/constant):00235         rsv_image_subset              equ object_rsvd+4 ; and +5 ; reference to current image regarding mirror flags w
+     ????             (./engine/constant):00236         rsv_mapping_frame             equ object_rsvd+6 ; and +7 ; reference to current image regarding mirror flags, overlay flag and x precision w
+     ????             (./engine/constant):00237         rsv_erase_nb_cell             equ object_rsvd+8 ; b 
+     ????             (./engine/constant):00238         rsv_page_draw_routine         equ object_rsvd+9 ; b
+     ????             (./engine/constant):00239         rsv_draw_routine              equ object_rsvd+10 ; and +11 ; w
+     ????             (./engine/constant):00240         rsv_page_erase_routine        equ object_rsvd+12 ; b
+     ????             (./engine/constant):00241         rsv_erase_routine             equ object_rsvd+13 ; and +14 ; w 
+     ????             (./engine/constant):00242         rsv_xy1_pixel                 equ object_rsvd+15 ;
+     ????             (./engine/constant):00243         rsv_x1_pixel                  equ object_rsvd+15 ; x+x_offset-(x_size/2) screen coordinate
+     ????             (./engine/constant):00244         rsv_y1_pixel                  equ object_rsvd+16 ; y+y_offset-(y_size/2) screen coordinate, must follow rsv_x1_pixel
+     ????             (./engine/constant):00245         rsv_xy2_pixel                 equ object_rsvd+17 ;
+     ????             (./engine/constant):00246         rsv_x2_pixel                  equ object_rsvd+17 ; x+x_offset+(x_size/2) screen coordinate
+     ????             (./engine/constant):00247         rsv_y2_pixel                  equ object_rsvd+18 ; y+y_offset+(y_size/2) screen coordinate, must follow rsv_x2_pixel
+                      (./engine/constant):00248         
+                      (./engine/constant):00249         * ---------------------------------------------------------------------------
+                      (./engine/constant):00250         * reserved variables (engine) - buffer specific
+                      (./engine/constant):00251         
+     ????             (./engine/constant):00252         rsv_buffer_0                  equ object_rsvd+19 ; Start index of buffer 0 variables
+     ????             (./engine/constant):00253         rsv_priority_0                equ object_rsvd+19 ; internal value that hold priority in video buffer 0
+     ????             (./engine/constant):00254         rsv_priority_prev_obj_0       equ object_rsvd+20 ; and +21 ; previous object (OST address) in display priority list for video buffer 0 (0000 if none) w
+     ????             (./engine/constant):00255         rsv_priority_next_obj_0       equ object_rsvd+22 ; and +23 ; next object (OST address) in display priority list for video buffer 0 (0000 if none) w
+     ????             (./engine/constant):00256         rsv_prev_mapping_frame_0      equ object_rsvd+24 ; and +25 ; reference to previous image in video buffer 0 w
+     ????             (./engine/constant):00257         rsv_prev_erase_nb_cell_0      equ object_rsvd+26 : b
+     ????             (./engine/constant):00258         rsv_prev_page_erase_routine_0 equ object_rsvd+27 ; b
+     ????             (./engine/constant):00259         rsv_prev_erase_routine_0      equ object_rsvd+28 ; and +29 ; w
+     ????             (./engine/constant):00260         rsv_bgdata_0                  equ object_rsvd+30 ; and +31 ; address of background data in screen 0 w
+     ????             (./engine/constant):00261         rsv_prev_xy_pixel_0           equ object_rsvd+32 ;
+     ????             (./engine/constant):00262         rsv_prev_x_pixel_0            equ object_rsvd+32 ; previous x screen coordinate b
+     ????             (./engine/constant):00263         rsv_prev_y_pixel_0            equ object_rsvd+33 ; previous y screen coordinate b, must follow x_pixel
+     ????             (./engine/constant):00264         rsv_prev_xy1_pixel_0          equ object_rsvd+34 ;
+     ????             (./engine/constant):00265         rsv_prev_x1_pixel_0           equ object_rsvd+34 ; previous x+x_offset-(x_size/2) screen coordinate b
+     ????             (./engine/constant):00266         rsv_prev_y1_pixel_0           equ object_rsvd+35 ; previous y+y_offset-(y_size/2) screen coordinate b, must follow x1_pixel
+     ????             (./engine/constant):00267         rsv_prev_xy2_pixel_0          equ object_rsvd+36 ;
+     ????             (./engine/constant):00268         rsv_prev_x2_pixel_0           equ object_rsvd+36 ; previous x+x_offset+(x_size/2) screen coordinate b
+     ????             (./engine/constant):00269         rsv_prev_y2_pixel_0           equ object_rsvd+37 ; previous y+y_offset+(y_size/2) screen coordinate b, must follow x2_pixel
+     ????             (./engine/constant):00270         rsv_prev_render_flags_0       equ object_rsvd+38 ;
+                      (./engine/constant):00271         * --- rsv_prev_render_flags_0 bitfield variables ---
+     0001             (./engine/constant):00272         rsv_prev_render_overlay_mask  equ $01 ; (bit 0) if a sprite has been rendered with compilated sprite and no background save on screen buffer 0/1
+     0080             (./engine/constant):00273         rsv_prev_render_onscreen_mask equ $80 ; (bit 7) DEPENDENCY should be bit 7 - has been rendered on screen buffer 0/1
+                      (./engine/constant):00274         
+     ????             (./engine/constant):00275         rsv_buffer_1                  equ object_rsvd+39 ; Start index of buffer 1 variables
+     ????             (./engine/constant):00276         rsv_priority_1                equ object_rsvd+39 ; internal value that hold priority in video buffer 1
+     ????             (./engine/constant):00277         rsv_priority_prev_obj_1       equ object_rsvd+40 ; and +41 ; previous object (OST address) in display priority list for video buffer 1 (0000 if none) w
+     ????             (./engine/constant):00278         rsv_priority_next_obj_1       equ object_rsvd+42 ; and +43 ; next object (OST address) in display priority list for video buffer 1 (0000 if none) w
+     ????             (./engine/constant):00279         rsv_prev_mapping_frame_1      equ object_rsvd+44 ; and +45 ; reference to previous image in video buffer 1 w
+     ????             (./engine/constant):00280         rsv_prev_erase_nb_cell_1      equ object_rsvd+46 ; b
+     ????             (./engine/constant):00281         rsv_prev_page_erase_routine_1 equ object_rsvd+47 ; b
+     ????             (./engine/constant):00282         rsv_prev_erase_routine_1      equ object_rsvd+48 ; and +49 ; w
+     ????             (./engine/constant):00283         rsv_bgdata_1                  equ object_rsvd+50 ; and +51 ; address of background data in screen 1 w
+     ????             (./engine/constant):00284         rsv_prev_xy_pixel_1           equ object_rsvd+52 ;
+     ????             (./engine/constant):00285         rsv_prev_x_pixel_1            equ object_rsvd+52 ; previous x screen coordinate b
+     ????             (./engine/constant):00286         rsv_prev_y_pixel_1            equ object_rsvd+53 ; previous y screen coordinate b, must follow x_pixel
+     ????             (./engine/constant):00287         rsv_prev_xy1_pixel_1          equ object_rsvd+54 ;
+     ????             (./engine/constant):00288         rsv_prev_x1_pixel_1           equ object_rsvd+54 ; previous x+x_size screen coordinate b
+     ????             (./engine/constant):00289         rsv_prev_y1_pixel_1           equ object_rsvd+55 ; previous y+y_size screen coordinate b, must follow x_pixel
+     ????             (./engine/constant):00290         rsv_prev_xy2_pixel_1          equ object_rsvd+56 ;
+     ????             (./engine/constant):00291         rsv_prev_x2_pixel_1           equ object_rsvd+56 ; previous x+x_size screen coordinate b
+     ????             (./engine/constant):00292         rsv_prev_y2_pixel_1           equ object_rsvd+57 ; previous y+y_size screen coordinate b, must follow x_pixel
+     ????             (./engine/constant):00293         rsv_prev_render_flags_1       equ object_rsvd+58 ;
+                      (./engine/constant):00294         
+     0000             (./engine/constant):00295         buf_priority                  equ 0  ; offset for each rsv_buffer variables
+     0001             (./engine/constant):00296         buf_priority_prev_obj         equ 1  ;
+     0003             (./engine/constant):00297         buf_priority_next_obj         equ 3  ;
+     0005             (./engine/constant):00298         buf_prev_mapping_frame        equ 5  ;
+     0007             (./engine/constant):00299         buf_erase_nb_cell             equ 7  ;
+     0008             (./engine/constant):00300         buf_page_erase_routine        equ 8 ;
+     0009             (./engine/constant):00301         buf_erase_routine             equ 9 ;
+     000B             (./engine/constant):00302         buf_bgdata                    equ 11 ;
+     000D             (./engine/constant):00303         buf_prev_xy_pixel             equ 13 ;
+     000D             (./engine/constant):00304         buf_prev_x_pixel              equ 13 ;
+     000E             (./engine/constant):00305         buf_prev_y_pixel              equ 14 ;
+     000F             (./engine/constant):00306         buf_prev_xy1_pixel            equ 15 ;
+     000F             (./engine/constant):00307         buf_prev_x1_pixel             equ 15 ;
+     0010             (./engine/constant):00308         buf_prev_y1_pixel             equ 16 ;
+     0011             (./engine/constant):00309         buf_prev_xy2_pixel            equ 17 ;
+     0011             (./engine/constant):00310         buf_prev_x2_pixel             equ 17 ;
+     0012             (./engine/constant):00311         buf_prev_y2_pixel             equ 18 ;
+     0013             (./engine/constant):00312         buf_prev_render_flags         equ 19 ;
+                      (./engine/constant):00313          else
+                      (./engine/constant):00314         * ---------------------------------------------------------------------------
+                      (./engine/constant):00315         * reserved variables (engine) - buffer specific - overlay pack
+                      (./engine/constant):00316         
+0000                  (./engine/constant):00317         rsv_priority                  equ object_rsvd   ; internal value that hold priority in video buffer 0
+0000                  (./engine/constant):00318         rsv_priority_prev_obj         equ object_rsvd+1 ; and +2 ; previous object (OST address) in display priority list for video buffer 0 (0000 if none) w
+0000                  (./engine/constant):00319         rsv_priority_next_obj         equ object_rsvd+3 ; and +4 ; next object (OST address) in display priority list for video buffer 0 (0000 if none) w
+                      (./engine/constant):00320         
+                      (./engine/constant):00321         ; ---------------------------------------------------------------------------
+                      (./engine/constant):00322         ; when childsprites are activated (i.e. bit #6 of render_flags set)
+                      (./engine/constant):00323         ; object_base_size+ext_variables_size should cover at least 7+56 bytes 
+                      (./engine/constant):00324         ; subtype is recovered
+0000                  (./engine/constant):00325         mainspr_childsprites    equ   subtype         ; amount of child sprites
+0000                  (./engine/constant):00326         mainspr_width           equ   run_object_next+2
+0000                  (./engine/constant):00327         mainspr_height          equ   run_object_next+3
+0000                  (./engine/constant):00328         mainspr_x_pos           equ   mainspr_height+1
+0000                  (./engine/constant):00329         mainspr_y_pos           equ   mainspr_height+3
+0000                  (./engine/constant):00330         mainspr_mapframe        equ   mainspr_height+5
+0000                  (./engine/constant):00331         sub2_x_pos              equ   mainspr_x_pos+6
+0000                  (./engine/constant):00332         sub2_y_pos              equ   mainspr_y_pos+6
+0000                  (./engine/constant):00333         sub2_mapframe           equ   mainspr_mapframe+6
+0000                  (./engine/constant):00334         sub3_x_pos              equ   sub2_x_pos+6
+0000                  (./engine/constant):00335         sub3_y_pos              equ   sub2_y_pos+6
+0000                  (./engine/constant):00336         sub3_mapframe           equ   sub2_mapframe+6
+0000                  (./engine/constant):00337         sub4_x_pos              equ   sub3_x_pos+6
+0000                  (./engine/constant):00338         sub4_y_pos              equ   sub3_y_pos+6
+0000                  (./engine/constant):00339         sub4_mapframe           equ   sub3_mapframe+6
+0000                  (./engine/constant):00340         sub5_x_pos              equ   sub4_x_pos+6
+0000                  (./engine/constant):00341         sub5_y_pos              equ   sub4_y_pos+6
+0000                  (./engine/constant):00342         sub5_mapframe           equ   sub4_mapframe+6
+0000                  (./engine/constant):00343         sub6_x_pos              equ   sub5_x_pos+6
+0000                  (./engine/constant):00344         sub6_y_pos              equ   sub5_y_pos+6
+0000                  (./engine/constant):00345         sub6_mapframe           equ   sub5_mapframe+6
+0000                  (./engine/constant):00346         sub7_x_pos              equ   sub6_x_pos+6
+0000                  (./engine/constant):00347         sub7_y_pos              equ   sub6_y_pos+6
+0000                  (./engine/constant):00348         sub7_mapframe           equ   sub6_mapframe+6
+0000                  (./engine/constant):00349         sub8_x_pos              equ   sub7_x_pos+6
+0000                  (./engine/constant):00350         sub8_y_pos              equ   sub7_y_pos+6
+0000                  (./engine/constant):00351         sub8_mapframe           equ   sub7_mapframe+6
+0000                  (./engine/constant):00352         sub9_x_pos              equ   sub8_x_pos+6
+0000                  (./engine/constant):00353         sub9_y_pos              equ   sub8_y_pos+6
+0000                  (./engine/constant):00354         sub9_mapframe           equ   sub8_mapframe+6
+0000                  (./engine/constant):00355         next_subspr             equ   6 ; size of a subsprite data
+                      (./engine/constant):00356          endc
+                      (./engine/constant):00357          endc
+                      (C:\Users\bhrou\gi):00008                 INCLUDE "./engine/system/to8/map.const.asm"
+                      (./engine/system/t):00001         ; Thomson TO8 - Memory map
+                      (./engine/system/t):00002         
+                      (./engine/system/t):00003         ; -----------------------------------------------------------------------------
+                      (./engine/system/t):00004         ; system addresses
+                      (./engine/system/t):00005         
+                      (./engine/system/t):00006         ; mc6846
+     E7C0             (./engine/system/t):00007         map.MC6846.CSR      equ $E7C0
+     E7C1             (./engine/system/t):00008         map.MC6846.CRC      equ $E7C1
+     E7C2             (./engine/system/t):00009         map.MC6846.DDRC     equ $E7C2
+     E7C3             (./engine/system/t):00010         map.MC6846.PRC      equ $E7C3 ; (bit0) set half ram page 0 (low or high) in video area ($4000-$5FFF)
+     E7C4             (./engine/system/t):00011         map.MC6846.CSR2     equ $E7C4
+     E7C5             (./engine/system/t):00012         map.MC6846.TCR      equ $E7C5 ; irq timer ctrl
+     E7C6             (./engine/system/t):00013         map.MC6846.TMSB     equ $E7C6 ; irq timer MSB
+     E7C7             (./engine/system/t):00014         map.MC6846.TLSB     equ $E7C7 ; irq timer LSB
+                      (./engine/system/t):00015         
+                      (./engine/system/t):00016         ; mc6821 system
+     E7C8             (./engine/system/t):00017         map.MC6821.PRA      equ $E7C8
+     E7C9             (./engine/system/t):00018         map.MC6821.PRB      equ $E7C9
+     E7CA             (./engine/system/t):00019         map.MC6821.CRA      equ $E7CA
+     E7CB             (./engine/system/t):00020         map.MC6821.CRB      equ $E7CB
+                      (./engine/system/t):00021         
+                      (./engine/system/t):00022         ; mc6821 music and game
+     E7CC             (./engine/system/t):00023         map.MC6821.PRA1     equ $E7CC
+     E7CD             (./engine/system/t):00024         map.MC6821.PRA2     equ $E7CD
+     E7CE             (./engine/system/t):00025         map.MC6821.CRA1     equ $E7CE
+     E7CF             (./engine/system/t):00026         map.MC6821.CRA2     equ $E7CF
+                      (./engine/system/t):00027         
+                      (./engine/system/t):00028         ; thmfc01 gate controler floppy disk
+     E7D0             (./engine/system/t):00029         map.THMFC01.STAT0   equ $E7D0
+     E7D0             (./engine/system/t):00030         map.THMFC01.CMD0    equ $E7D0
+     E7D1             (./engine/system/t):00031         map.THMFC01.STAT1   equ $E7D1
+     E7D1             (./engine/system/t):00032         map.THMFC01.CMD1    equ $E7D1
+     E7D2             (./engine/system/t):00033         map.THMFC01.CMD2    equ $E7D2
+     E7D3             (./engine/system/t):00034         map.THMFC01.WDATA   equ $E7D3
+     E7D3             (./engine/system/t):00035         map.THMFC01.RDATA   equ $E7D3
+     E7D4             (./engine/system/t):00036         map.THMFC01.WCLK    equ $E7D4
+     E7D5             (./engine/system/t):00037         map.THMFC01.WSECT   equ $E7D5
+     E7D6             (./engine/system/t):00038         map.THMFC01.TRCK    equ $E7D6
+     E7D7             (./engine/system/t):00039         map.THMFC01.CELL    equ $E7D7
+                      (./engine/system/t):00040         
+                      (./engine/system/t):00041         ; ef9369 palette
+     E7DA             (./engine/system/t):00042         map.EF9369.D        equ $E7DA
+     E7DB             (./engine/system/t):00043         map.EF9369.A        equ $E7DB
+                      (./engine/system/t):00044         
+                      (./engine/system/t):00045         ; cf74021 gate array page mode - (TO8D: EFG2021FN)
+     E7DC             (./engine/system/t):00046         map.CF74021.LGAMOD  equ $E7DC
+     E7DD             (./engine/system/t):00047         map.CF74021.SYS2    equ $E7DD ; (bit0-3) set screen border color, (bit6-7) set onscreen video memory page
+     E7E4             (./engine/system/t):00048         map.CF74021.COM     equ $E7E4
+     E7E5             (./engine/system/t):00049         map.CF74021.DATA    equ $E7E5 ; (bit0-4) set ram page in data area ($A000-$DFFF)
+     E7E6             (./engine/system/t):00050         map.CF74021.CART    equ $E7E6 ; (bit0-4) set page in cartridge area ($0000-$3FFF), (bit5) ram over cartridge, (bit6) write enable
+     E7E7             (./engine/system/t):00051         map.CF74021.SYS1    equ $E7E7
+                      (./engine/system/t):00052         
+                      (./engine/system/t):00053         ; extension port
+     00E7             (./engine/system/t):00054         map.EXTPORT         equ $E7
+     E7F0             (./engine/system/t):00055         map.IEEE488         equ $E7F0 ; to E7F7
+     E7F2             (./engine/system/t):00056         map.EF5860.CTRL     equ $E7F2 ; MIDI
+     E7F3             (./engine/system/t):00057         map.EF5860.TX       equ $E7F3 ; MIDI
+                      (./engine/system/t):00058          ifndef SOUND_CARD_PROTOTYPE
+     E7FC             (./engine/system/t):00059         map.YM2413.A        equ $E7FC
+     E7FD             (./engine/system/t):00060         map.YM2413.D        equ $E7FD
+     E7F7             (./engine/system/t):00061         map.SN76489.D       equ $E7F7
+                      (./engine/system/t):00062          else
+0000                  (./engine/system/t):00063         map.YM2413.A        equ $E7FC
+0000                  (./engine/system/t):00064         map.YM2413.D        equ $E7FD
+0000                  (./engine/system/t):00065         map.SN76489.D       equ $E7FF
+                      (./engine/system/t):00066          endc
+     E7FE             (./engine/system/t):00067         map.MEA8000.D       equ $E7FE
+     E7FF             (./engine/system/t):00068         map.MEA8000.A       equ $E7FF
+                      (./engine/system/t):00069         
+                      (./engine/system/t):00070         ; ROM routines
+     E806             (./engine/system/t):00071         map.GETC            equ $E806
+     E809             (./engine/system/t):00072         map.KTST            equ $E809
+     E82A             (./engine/system/t):00073         map.DKCO            equ $E82A ; read or write floppy disk routine
+     E830             (./engine/system/t):00074         map.IRQ.EXIT        equ $E830 ; to exit an irq
+                      (./engine/system/t):00075         
+                      (./engine/system/t):00076         ; system variables
+     6019             (./engine/system/t):00077         map.STATUS          equ $6019 ; status bitfield
+     6048             (./engine/system/t):00078         map.DK.OPC          equ $6048 ; operation
+     6049             (./engine/system/t):00079         map.DK.DRV          equ $6049 ; drive
+     604C             (./engine/system/t):00080         map.DK.SEC          equ $604C ; sector
+     604A             (./engine/system/t):00081         map.DK.TRK          equ $604A ; $604B ; track
+     604E             (./engine/system/t):00082         map.DK.STA          equ $604E ; return status
+     604F             (./engine/system/t):00083         map.DK.BUF          equ $604F ; $6050 ; data write location
+     6023             (./engine/system/t):00084         map.FIRQPT          equ $6023 ; routine firq
+     6027             (./engine/system/t):00085         map.TIMERPT         equ $6027 ; routine irq timer
+     6081             (./engine/system/t):00086         map.CF74021.SYS1.R  equ $6081 ; reading value for map.CF74021.SYS1
+                      (./engine/system/t):00087         
+                      (./engine/system/t):00088         ; -----------------------------------------------------------------------------
+                      (./engine/system/t):00089         ; constants
+                      (./engine/system/t):00090         
+     0035             (./engine/system/t):00091         map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interrupt
+     0015             (./engine/system/t):00092         map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
+     4DFF             (./engine/system/t):00093         map.IRQ.ONE_FRAME     equ 312*64-1  ; one frame timer (lines*cycles_per_lines-1), timer launch at -1
+                      (./engine/system/t):00094         
+                      (./engine/system/t):00095         ; -----------------------------------------------------------------------------
+                      (./engine/system/t):00096         ; mapping to generic names
+                      (./engine/system/t):00097         
+     E7CD             (./engine/system/t):00098         map.DAC            equ map.MC6821.PRA2
+     E7C6             (./engine/system/t):00099         map.RND            equ map.MC6846.TMSB
+                      (C:\Users\bhrou\gi):00009         
+0000 1A50             (C:\Users\bhrou\gi):00010                 orcc  #$50                     ; stop irq
+0002 10CE9F00         (C:\Users\bhrou\gi):00011                 lds   #glb_system_stack        ; set system stack
+0006 867B             (C:\Users\bhrou\gi):00012                 lda   #$7B 
+0008 B7E7DC           (C:\Users\bhrou\gi):00013                 sta   map.CF74021.LGAMOD       ; set video mode to bm16 (160x200x16)
+                      (C:\Users\bhrou\gi):00014         
+                      (C:\Users\bhrou\gi):00015                 ; init ram settings
+000B F66081           (C:\Users\bhrou\gi):00016                 ldb   map.CF74021.SYS1.R       ; hold $E7E7 state
+000E CA10             (C:\Users\bhrou\gi):00017                 orb   #$10
+0010 F76081           (C:\Users\bhrou\gi):00018                 stb   map.CF74021.SYS1.R
+0013 F7E7E7           (C:\Users\bhrou\gi):00019                 stb   map.CF74021.SYS1         ; $A000-$DFFF can now be recovered by RAM
+0016 C664             (C:\Users\bhrou\gi):00020                 ldb   #$64                     ; $0000-$3FFF set RAM page 4
+0018 F7E7E6           (C:\Users\bhrou\gi):00021                 stb   map.CF74021.CART
+                      (C:\Users\bhrou\gi):00022          
+                      (C:\Users\bhrou\gi):00023                 ; read floppy disk and load default program
+001B 8660             (C:\Users\bhrou\gi):00024                 lda   #$60
+001D 1F8B             (C:\Users\bhrou\gi):00025                 tfr   a,dp
+                      (C:\Users\bhrou\gi):00026            
+001F CC0000           (C:\Users\bhrou\gi):00027                 ldd   #$0000
+0022 DD4F             (C:\Users\bhrou\gi):00028                 std   <map.DK.BUF              ; DK.BUF $0000 data destination
+0024 9749             (C:\Users\bhrou\gi):00029                 sta   <map.DK.DRV              ; DK.DRV $00
+0026 DD4A             (C:\Users\bhrou\gi):00030                 std   <map.DK.TRK              ; DK.TRK $00
+0028 8602             (C:\Users\bhrou\gi):00031                 lda   #$02                     ; start reading after boot sector
+002A 974C             (C:\Users\bhrou\gi):00032                 sta   <map.DK.SEC              ; DK.SEC $02
+002C 9748             (C:\Users\bhrou\gi):00033                 sta   <map.DK.OPC              ; DK.OPC $02 set operation to read
+002E BDE82A           (C:\Users\bhrou\gi):00034         @loop   jsr   map.DKCO                 ; run operation
+0031 0C4C             (C:\Users\bhrou\gi):00035                 inc   <map.DK.SEC              ; next sector
+0033 964C             (C:\Users\bhrou\gi):00036                 lda   <map.DK.SEC
+0035 8110             (C:\Users\bhrou\gi):00037                 cmpa  #$10                     ; if sector is <= 16
+0037 2310             (C:\Users\bhrou\gi):00038                 bls   >                        ; continue
+0039 8601             (C:\Users\bhrou\gi):00039                 lda   #$01                     ; else
+003B 974C             (C:\Users\bhrou\gi):00040                 sta   <map.DK.SEC              ; init sector to 1
+003D 0C4B             (C:\Users\bhrou\gi):00041                 inc   <map.DK.TRK+1            ; move to next track
+003F 964B             (C:\Users\bhrou\gi):00042                 lda   <map.DK.TRK+1
+0041 814F             (C:\Users\bhrou\gi):00043                 cmpa  #$4F                     ; if track <= 79
+0043 2304             (C:\Users\bhrou\gi):00044                 bls   >                        ; continue
+0045 0F4B             (C:\Users\bhrou\gi):00045                 clr   <map.DK.TRK+1            ; else set track to 0
+0047 0C49             (C:\Users\bhrou\gi):00046                 inc   <map.DK.DRV              ; move to next drive (face)
+0049 0C4F             (C:\Users\bhrou\gi):00047         !       inc   <map.DK.BUF              ; move to next data destination (by 256 bytes)
+004B DC4F             (C:\Users\bhrou\gi):00048                 ldd   <map.DK.BUF
+004D 10830000         (C:\Users\bhrou\gi):00049                 cmpd  #0                       ; end of data ? (boot.sector.end)
+0051 23DB             (C:\Users\bhrou\gi):00050                 bls   @loop
+                      (C:\Users\bhrou\gi):00051         
+                      (C:\Users\bhrou\gi):00052                 ; wait spot to be out of display area
+0053 7DE7E7           (C:\Users\bhrou\gi):00053         !       tst   map.CF74021.SYS1
+0056 2AFB             (C:\Users\bhrou\gi):00054                 bpl   <
+0058 7DE7E7           (C:\Users\bhrou\gi):00055         !       tst   map.CF74021.SYS1
+005B 2BFB             (C:\Users\bhrou\gi):00056                 bmi   <
+                      (C:\Users\bhrou\gi):00057         
+                      (C:\Users\bhrou\gi):00058                 ; set video pages
+005D CCC002           (C:\Users\bhrou\gi):00059                 ldd   #$C002
+0060 B7E7DD           (C:\Users\bhrou\gi):00060                 sta   map.CF74021.SYS2         ; display RAM page 3 on screen
+0063 F7E7E5           (C:\Users\bhrou\gi):00061                 stb   map.CF74021.DATA         ; set RAM page 2 in $A000-$DFFF
+                      (C:\Users\bhrou\gi):00062         
+                      (C:\Users\bhrou\gi):00063                 ; run the loader
+0066 0E00             (C:\Users\bhrou\gi):00064                 jmp   $0000
+                      (C:\Users\bhrou\gi):00065         
+0068 0000000000000000 (C:\Users\bhrou\gi):00066                 align $0078
+     0000000000000000
+0078                  (C:\Users\bhrou\gi):00067         @magicNumber
+0078 42415349433200   (C:\Users\bhrou\gi):00068                 fcn   "BASIC2"
+007F 00               (C:\Users\bhrou\gi):00069                 fcb   $00                      ; checksum
+                      (C:\Users\bhrou\gi):00070         
+0080 7E0089           (C:\Users\bhrou\gi):00071                 jmp   @test
+0083 7E0087           (C:\Users\bhrou\gi):00072                 jmp   fd.test
+0086 12               (C:\Users\bhrou\gi):00073                 nop
+0087 0000             (C:\Users\bhrou\gi):00074         fd.test fdb   0
+0089 00               (C:\Users\bhrou\gi):00075         @test   fcb   0
