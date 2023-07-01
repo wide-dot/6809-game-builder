@@ -14,8 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Directory {
 	
 	public String fat;
-	public String name;
-	public String index;
+	public String diskName;
 	public String section;
 
 	public List<File> files;
@@ -25,23 +24,17 @@ public class Directory {
 		// load attributes
 		section = node.getString("[@section]", null);
 		fat = node.getString("[@fat]", null);
-		if (fat != null) name = node.getString("[@name]", null);
-		index = node.getString("[@index]", null);
+		if (fat != null) diskName = node.getString("[@diskname]", null);
 
-   		log.debug("fat: {} \t name: {} \t index: {} \t section: {}", fat, name, index, section);
+   		log.debug("fat: {} \t diskname: {} \t section: {}", fat, diskName, section);
 		
    		// controls
 		if (section == null) {
 			throw new Exception("section is missing for directory");
 		}		
-		if (fat == null && index == null) {
-			throw new Exception("fat or index is missing for directory");
-		}		
-		if (fat != null && index != null) {
-			throw new Exception("cannot have fat and index at the same time for directory");
-		}
-		if (fat != null && name == null) {
-			throw new Exception("name is missing for directory");
+
+		if (diskName == null) {
+			throw new Exception("diskname is missing for directory");
 		}
 		
    		// load sub-elements

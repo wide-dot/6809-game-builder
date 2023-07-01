@@ -4,7 +4,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
-import com.widedot.m6809.gamebuilder.fileprocessor.bin.Converter;
+import com.widedot.m6809.gamebuilder.fileprocessor.lwasm.Converter;
 
 public class FileProcessorImpl implements FileProcessor {
 

@@ -28,27 +28,31 @@ public class GameBuilder {
 			mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
 			sectionIndexes = new HashMap<String, Section>();
 
-			log.debug("Process files with no associated directory.");
+			log.debug("Process files (no directory) ...");
 			for (File file : media.files) {
+				log.debug("Write file to section: {}", file.section);
 				writeFullSector(file);
 			}
 
-			log.debug("Process files with an associated directory.");
+			log.debug("End of Process files (no directory)");
+			
+			log.debug("Process files (directory) ...");
 			for (Directory directory : media.directories) {
 					
 				// Directory can be engine specific or fat
 				// TODO could have been a plugin
 				if (directory.isFat()) {
 					
+					log.debug("FAT - Write dir entry to diskname: {}", directory.diskName);
 					for (File file : directory.files) {
-						log.debug("create directory (FAT)");
+						log.debug("filename: {}", file.name);
 					}
 					
-					
 				} else {
-					
+
+					log.debug("CUSTOM - Write dir entry to diskname: {}", directory.diskName);
 					for (File file : directory.files) {
-						log.debug("create directory (custom)");
+						log.debug("filename: {}", file.name);
 						FloppyDiskDirectory fdi = new FloppyDiskDirectory();
 						fdi.compression = file.compression;
 						
@@ -89,19 +93,22 @@ public class GameBuilder {
 	
 					log.debug("Write directory to media");
 				}
-	
-				log.debug("Write media to image file");
-				mediaData.interleaveData(storage.interleave);
-				mediaData.save(path + "/out"); // TODO parametre xml ?
-			}
+			}	
+			
+			log.debug("End of Process files (directory)");
+			
+			log.debug("Write media to image file");
+			mediaData.interleaveData(storage.interleave);
+			mediaData.save(path + "/out"); // TODO parametre xml ?
 		}
 	}
 	
 	public void writeFullSector(File file) throws Exception {
-		log.debug("Write data to media.");
+		
 		Section section = getSection(file.section);
 		int pos = 0;
-
+		
+		log.debug("Write data to media.");
 		while (pos < file.bin.length) {
 			mediaData.writeFullSector(file.bin, pos, section);
 			mediaData.nextSector(section);
@@ -110,7 +117,7 @@ public class GameBuilder {
 	}
 	
 	public Section getSection(String sectionName) {
-		// if a new section is used, load it's definition
+
 		if (!sectionIndexes.containsKey(sectionName)) {
 			log.debug("Load section definition: {}", sectionName);
 			Section sectionDefinition = storage.sections.get(sectionName);
