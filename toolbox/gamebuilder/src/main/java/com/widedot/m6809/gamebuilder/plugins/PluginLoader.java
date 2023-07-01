@@ -83,8 +83,6 @@ public class PluginLoader {
 	}
 
 	public FileProcessorFactory getFileProcessorFactory(String name) {
-		FileProcessorFactory f = fileProcessorFactoryMap.get(name);
-		if (f == null) log.error("Factory: {} not loaded!", name);
-		return f;
+		return fileProcessorFactoryMap.get(name);
 	}
 }

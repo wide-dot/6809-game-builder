@@ -13,7 +13,7 @@ public class FileResourcesUtils {
 
         FileResourcesUtils app = new FileResourcesUtils();
 
-        log.debug("{}", filename);
+        log.debug("Reading: {}", filename);
         InputStream is = app.getFileFromResourceAsStream(filename);
 		return readInputStream(is);
     }

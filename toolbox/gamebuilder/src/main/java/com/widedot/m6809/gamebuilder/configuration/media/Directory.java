@@ -52,5 +52,9 @@ public class Directory {
     		files.add(new File(file, path, defaults));
     	}
 	}
+	
+	public boolean isFat() {
+		return (fat!=null);
+	}
 }
 

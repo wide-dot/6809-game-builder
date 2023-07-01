@@ -1,6 +1,5 @@
 package com.widedot.m6809.gamebuilder.configuration.media;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,8 +9,11 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
+import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
+import com.widedot.m6809.gamebuilder.zx0.Compressor;
+import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
@@ -22,9 +24,11 @@ public class File {
 	public String block;
 	public String codec;
 	public int maxsize;
-	public List<byte[]> binList;
+	public byte[] bin;
+	public boolean compression = false;
 	
 	public static final String NO_CODEC = "none";
+	public static final String ZX0 = "zx0";
 	
 	public File(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults) throws Exception {
 		
@@ -46,14 +50,14 @@ public class File {
    		}
    		
    		// instanciate each plugins
-   		binList = new ArrayList<byte[]>();
+   		List<byte[]> binList = new ArrayList<byte[]>();
 		Iterator<String> keyIter = node.getKeys();
 		String key;
-		byte[] bin;
 		FileProcessorFactory f;
 		
 		while (keyIter.hasNext()) {
 			key = keyIter.next();
+			if (key.contains(".")) continue; // TODO skip sub elements, should be a better way to do that ... 
 			
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(key);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
@@ -69,8 +73,45 @@ public class File {
 			    }
 			    
 			    final FileProcessor fileProcessor = f.build();
+			    log.debug("Running plugin: {}", f.name());
 			    bin = fileProcessor.doFileProcessor(element, path);
 		        binList.add(bin);
+			}
+		}
+		
+		// merge all binaries in one byte array
+		int length = 0;
+		for (byte[] b : binList) {
+			length += b.length;
+		}
+		
+		bin = new byte[length];
+		int outpos = 0;
+		for (byte[] b : binList) {
+			for (int i=0; i< b.length; i++) {
+				bin[outpos++] = b[i];
+			}
+		}
+		
+		binList.clear();
+		
+		// compress data
+		// TODO could have been a plugin, but need a recursive plugin call system ...
+		if (!codec.equals(NO_CODEC) && bin.length > 0) {
+			if (codec.equals(ZX0)) {
+				log.debug("Compress data with zx0");
+				byte[] output = null;
+				int[] delta = { 0 };
+				output = new Compressor().compress(new Optimizer().optimize(bin, 0, 32640, 4, false), bin, 0, false, false, delta);
+				if (bin.length > output.length) {
+					bin = output;
+					compression = true;
+				} else if (delta[0] > FloppyDiskDirectory.DELTA_SIZE) {
+					log.warn("Skip compression: delta ({}) is too high", delta[0]);
+				} else {
+					log.warn("Skip compression: compressed data is bigger or equal");
+				}
+				log.debug("Original size: {}, Packed size: {}, Delta: {}", bin.length, output.length, delta[0]);
 			}
 		}
 	}

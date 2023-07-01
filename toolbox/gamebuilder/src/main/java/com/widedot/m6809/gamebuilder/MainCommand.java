@@ -122,7 +122,7 @@ public class MainCommand implements Runnable {
 	
 	private void processDir(File dir, String[] targets) throws Exception {
 		if (dir.isDirectory()) {
-			log.info("Processing directory {}", dir.getName());
+			log.info("Processing directory: {}", dir.getName());
 			for (File file : dir.listFiles())
 			{
 			   if (FilenameUtils.getExtension(file.getName()).equals("xml"))
@@ -131,16 +131,16 @@ public class MainCommand implements Runnable {
 			   }
 			}
 		} else {
-			log.error("Directory "+dir.getName()+" does not exists !");
+			log.error("Directory: {} does not exists !", dir.getName());
 		}
 	}
 	
 	private void processFile(File file, String[] targets) throws Exception{
 		
-		log.info("Processing file {}", file.getName());
+		log.info("Processing file: {}", file.getName());
 
 		if (!file.exists() || file.isDirectory()) {
-			log.error("File "+file.getName()+" does not exists !");
+			log.error("File: {} does not exists !", file.getName());
 			return;
 		}
 		

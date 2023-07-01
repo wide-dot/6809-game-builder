@@ -8,7 +8,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.builder.GameBuilder;
 import com.widedot.m6809.gamebuilder.configuration.media.Medias;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storages;
-import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
 
 import lombok.extern.slf4j.Slf4j;
 
