@@ -70,7 +70,7 @@ public class Group {
     		
 			if (file.isDirectory()) {
 
-				// all files in the directory
+				// all files in the directory (not recursive)
 				String[] filters = element.getString("[@filter]", "*").split(","); // when no filter is set, will take al files ("*")
 				IOFileFilter wildCardFilter = new WildcardFileFilter(filters, IOCase.INSENSITIVE);
 				log.debug("dir: {} filter: {}", filename, Arrays.toString(filters));

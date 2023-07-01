@@ -2,6 +2,7 @@ package com.widedot.m6809.gamebuilder;
 
 import java.util.HashMap;
 
+import com.widedot.m6809.gamebuilder.plugins.EmbededPluginLoader;
 import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
 
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ public class Settings {
 	
     public static HashMap<String,String> values;
     public static PluginLoader pluginLoader;
+    public static EmbededPluginLoader embededPluginLoader;
     
     private static String[] mandatoryKeys = new String[]{"build.dir", "build.dir.tag", "plugin.dir", "plugin.package"};
     

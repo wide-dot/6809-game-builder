@@ -1,5 +1,8 @@
 package com.widedot.m6809.gamebuilder.configuration.media;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,19 +23,19 @@ public class Resource {
 		}
 	};
 	
-	public String name;
 	public String filename;
 	public int filetype;
-	public String section;
 	public byte[] bin;
 	
-	public Resource(String name, String filename) throws Exception {
-		this.name = name;
+	public Resource(String filename, String filetype) throws Exception {
 		this.filename = filename;
-		if (!id.containsKey(filename)) {
-			throw new Exception("Unknown file type: " + filename);
+		if (!id.containsKey(filetype)) {
+			throw new Exception("Unknown file type: " + filetype);
 		}
-		this.filetype = id.get(filename);
+		this.filetype = id.get(filetype);
+		
+		Path path = Paths.get(filename);
+		bin = Files.readAllBytes(path);
 	}
 
 }

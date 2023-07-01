@@ -17,6 +17,7 @@ import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+import com.widedot.m6809.gamebuilder.plugins.EmbededPluginLoader;
 import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
@@ -62,7 +63,7 @@ public class MainCommand implements Runnable {
 		try {
 			Startup.showSplash();
 
-			// verbose mode
+			// check verbose mode
 			ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
 					.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
 			if (verbose) {
@@ -71,14 +72,10 @@ public class MainCommand implements Runnable {
 				root.setLevel(ch.qos.logback.classic.Level.INFO);
 			}
 
-			if (exclusive.extractDir != null) {
-				
-				// exctract assembly engine
+			if (exclusive.extractDir != null) {		// MODE 1 : extract assembly engine
 				extract(exclusive.extractDir);
-				
-			} else {
-				
-				// load plugins
+			} else {								// MODE 2 : run the builder
+				// load external plugins
 				// basedir is set by launch script of maven exec plugin
 				// it is null when running from eclipse
 				String pluginsPath = "";
@@ -88,12 +85,15 @@ public class MainCommand implements Runnable {
 				pluginsPath += "plugins";
 			    Settings.pluginLoader = new PluginLoader(new File(pluginsPath));
 			    Settings.pluginLoader.loadPlugins();
-				
+
+				// load embeded plugins
+			    Settings.embededPluginLoader = new EmbededPluginLoader();
+			    Settings.embededPluginLoader.loadPlugins();
+			    
 				// load properties
 				Settings.values = FileResourcesUtils.getHashMap("settings.properties");
 				
 				if (Settings.isValid()) {
-				
 					// process targets of a conf file or all conf files in a dir
 					String[] targets = (target!=null?target.split(","):null);				
 					if (exclusive.confFile != null) {

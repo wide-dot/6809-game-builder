@@ -49,16 +49,27 @@ public class File {
    		binList = new ArrayList<byte[]>();
 		Iterator<String> keyIter = node.getKeys();
 		String key;
+		byte[] bin;
+		FileProcessorFactory f;
+		
 		while (keyIter.hasNext()) {
 			key = keyIter.next();
+			
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(key);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-			    FileProcessorFactory f = Settings.pluginLoader.getFileProcessorFactory(element.getRootElementName());
+				
+				// external plugin
+			    f = Settings.pluginLoader.getFileProcessorFactory(key);
 			    if (f == null) {
-			    	throw new Exception("Unknown File processor: " + element.getRootElementName());
+			    	// embeded plugin
+			    	f = Settings.embededPluginLoader.getFileProcessorFactory(key);
+			        if (f == null) {
+			        	throw new Exception("Unknown File processor: " + key);   	
+			        }
 			    }
+			    
 			    final FileProcessor fileProcessor = f.build();
-			    byte[] bin = fileProcessor.doFileProcessor(element, path);
+			    bin = fileProcessor.doFileProcessor(element, path);
 		        binList.add(bin);
 			}
 		}
