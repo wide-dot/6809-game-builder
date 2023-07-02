@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.configuration.media;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,18 +58,24 @@ public class File {
 		
 		while (keyIter.hasNext()) {
 			key = keyIter.next();
-			if (key.contains(".")) continue; // TODO skip sub elements, should be a better way to do that ... 
-			
-			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(key);
+
+			// skip this key if not a node
+			String plugin = null;
+			String[] names = key.split("\\[");
+			if (names[0] != null) names = key.split("\\.");
+			plugin = names[0];
+			if (plugin == null) continue;
+	        
+			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
 				
 				// external plugin
-			    f = Settings.pluginLoader.getFileProcessorFactory(key);
+			    f = Settings.pluginLoader.getFileProcessorFactory(plugin);
 			    if (f == null) {
 			    	// embeded plugin
-			    	f = Settings.embededPluginLoader.getFileProcessorFactory(key);
+			    	f = Settings.embededPluginLoader.getFileProcessorFactory(plugin);
 			        if (f == null) {
-			        	throw new Exception("Unknown File processor: " + key);   	
+			        	throw new Exception("Unknown File processor: " + plugin);   	
 			        }
 			    }
 			    
