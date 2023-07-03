@@ -62,9 +62,8 @@ public class File {
 			// skip this key if not a node
 			String plugin = null;
 			String[] names = key.split("\\[");
-			if (names[0] != null) names = key.split("\\.");
-			plugin = names[0];
-			if (plugin == null) continue;
+			if (names[0] == null || names[0].equals("") || names[0].contains(".")) continue;
+	        plugin = names[0];
 	        
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {

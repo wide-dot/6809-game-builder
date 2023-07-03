@@ -81,7 +81,7 @@ public class FdUtil {
     }
     
     public void writeFullSector(byte[] srcData, int srcIdx, Section section) throws Exception {
-        log.debug("Write face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
+        log.debug("Write full sector, face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
         int start = getIndex(section.face, section.track, section.sector);
         int end = start + sectorSize;
         

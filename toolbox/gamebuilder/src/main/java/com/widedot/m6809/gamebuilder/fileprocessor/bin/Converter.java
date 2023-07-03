@@ -1,5 +1,7 @@
 package com.widedot.m6809.gamebuilder.fileprocessor.bin;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,26 +9,29 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Group;
-import com.widedot.m6809.gamebuilder.configuration.media.Resource;
 
 public class Converter {
 	public static byte[] getBin(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
-		List<Resource> resources = new ArrayList<Resource>();
-		Group.recurse(node, path, resources);
+		List<File> files = new ArrayList<File>();
+		List<byte[]> bins = new ArrayList<byte[]>();
 		
+		Group.recurse(node, path, files);
+
 		int length = 0;
-		for (Resource resource : resources) {
-			length += resource.bin.length;
+		for (File file : files) {
+			byte[] bin = Files.readAllBytes(file.toPath());
+			bins.add(bin);
+			length += bin.length;
 		}
 		
-		byte[] bin = new byte[length];
+		byte[] finalbin = new byte[length];
 		int outpos = 0;
-		for (Resource resource : resources) {
-			for (int i=0; i<resource.bin.length; i++) {
-				bin[outpos++] = resource.bin[i];
+		for (byte[] bin : bins) {
+			for (int i=0; i<bin.length; i++) {
+				finalbin[outpos++] = bin[i];
 			}
 		}
 		
-		return bin;
+		return finalbin;
 	}
 }

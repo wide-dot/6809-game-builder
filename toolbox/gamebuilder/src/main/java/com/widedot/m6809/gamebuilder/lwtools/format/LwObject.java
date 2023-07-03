@@ -3,7 +3,6 @@ package com.widedot.m6809.gamebuilder.lwtools.format;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -14,20 +13,17 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.time.StopWatch;
-
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStack;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStackNode;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprTerm;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.lwtools.struct.Symbol;
-import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LwObject {
+public class LwObject implements LwInterface {
 
 	public Path path;
 	public List<LWSection> secLst;
@@ -441,6 +437,25 @@ public class LwObject {
         } catch (Exception e) {
             e.printStackTrace();
         }
+	}
+
+	@Override
+	public byte[] getBin() {
+
+		int length = 0;
+		for(LWSection section : secLst) {
+			length += section.code.length;
+		}
+		
+		byte[] finalbin = new byte[length];
+		int outpos = 0;
+		for(LWSection section : secLst) {
+			for (int i=0; i<section.code.length; i++) {
+				finalbin[outpos++] = section.code[i];
+			}
+		}
+		
+		return finalbin;
 	}
 
 }

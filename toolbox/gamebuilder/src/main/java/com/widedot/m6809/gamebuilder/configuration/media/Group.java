@@ -19,15 +19,17 @@ import com.widedot.m6809.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Group {
+
+	public static List<String> filetypes = Arrays.asList("asm", "obj");
 	
-	public static void recurse(HierarchicalConfiguration<ImmutableNode> node, String path, List<Resource> ressources) throws Exception {
+	public static void recurse(HierarchicalConfiguration<ImmutableNode> node, String path, List<File> files) throws Exception {
 
 		// read all known ressource files
-		for (String type : Resource.id.keySet()) {
-			loadFile(type, node, path, ressources);
+		for (String type : filetypes) {
+			loadFile(type, node, path, files);
 		}
     	
-	    List<HierarchicalConfiguration<ImmutableNode>> groupFields = node.configurationsAt("group");
+	    List<HierarchicalConfiguration<ImmutableNode>> groupFields = node.configurationsAt("xml");
     	for(HierarchicalConfiguration<ImmutableNode> group : groupFields)
     	{		
 			// a group is an xml definition declared outside of the current xml, it may be recursive
@@ -36,7 +38,7 @@ public class Group {
     			throw new Exception("no value for file.");
     		}
 
-			log.info("group: {}", filename);
+			log.info("xml: {}", filename);
     		File file = new File(path + File.separator + filename);
     		if (!file.exists() || file.isDirectory()) {
     			throw new Exception("File " + file.getName() + " does not exists !");
@@ -47,12 +49,13 @@ public class Group {
     	    // parse the sub xml file
     		Configurations configs = new Configurations();
    		    XMLConfiguration config = configs.xml(file);
-   		    recurse(config, currentPath, ressources);
+   		    recurse(config, currentPath, files);
     		log.info("end of group: {}", file.getName());
     	}
+
 	}
 
-	private static void loadFile(String type, HierarchicalConfiguration<ImmutableNode> node, String path, List<Resource> ressources) throws Exception {
+	private static void loadFile(String type, HierarchicalConfiguration<ImmutableNode> node, String path, List<File> files) throws Exception {
 		    List<HierarchicalConfiguration<ImmutableNode>> nodes = node.configurationsAt(type);
     	for(HierarchicalConfiguration<ImmutableNode> element : nodes)
     	{	
@@ -81,16 +84,16 @@ public class Group {
 					filename = filename + File.separator + filenames[i];
 					file = new File(filename);
 					if (!file.isDirectory()) {
-						log.debug("|_ type: {} file: {}", type, filename);
-						ressources.add(new Resource(filename, type));
+						log.debug("|_ file: {}", filename);
+						files.add(new File(filename));
 					}
 				}
 
 			} else {
 
 				// simple file
-				log.debug("type: {} file: {}", type, filename);
-				ressources.add(new Resource(filename, type));				
+				log.debug("file: {}", filename);
+				files.add(new File(filename));				
 			}
     	}
 	}
