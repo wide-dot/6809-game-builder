@@ -11,6 +11,12 @@ public class Section {
 		track = 0;
 		sector = 1;
 	}
+
+	public Section(int face, int track, int sector) {
+		this.face = face;
+		this.track = track;
+		this.sector = sector;
+	}
 	
 	public Section(Section section) {
 		this.face = section.face;

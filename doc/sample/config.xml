@@ -1,64 +1,112 @@
 <configuration>
     <target name="fd">
 
-        <storage>new-engine/config/storage.xml</storage>
+        <target.default>
+            <media.storage>new-engine/config/storage.xml</media.storage>
+        </target.default>
 
         <media storage="fd640 boot">
+            <media.out type="fd" file="demo.fd" />
+            <media.out type="sap" file="demo.sap" />
+            <media.default>
+                <file.maxsize>0x4000</file.maxsize>
+            </media.default>
 
-            <default>
-                <maxsize>0x4000</maxsize>
-            </default>
-
-<!--
             <file section="BOOT" maxsize="0x100">   
-                <lwasm format="raw">
-                    <asm>new-engine/system/to8/bootloader/boot.asm</asm>
-                </lwasm>
+                <checksum type="moto.fd640.boot">
+                    <lwasm format="raw">
+                        <lwasm.define symbol="debug" value="1"/>
+                        new-engine/system/to8/bootloader/boot.asm
+                    </lwasm>
+                </checksum>
             </file>
 
             <file section="LOAD">
                 <lwasm format="raw">
-                    <asm>new-engine/system/to8/bootloader/loader.asm</asm>
+                    new-engine/system/to8/bootloader/loader.asm <!-- a single file -->
                 </lwasm>
             </file>
 
-            <directory index="0" section="INDEX">
-                <file name="assets.main.title" codec="zx0" section="DATA">
-                    <lwasm format="obj">
-                        <group>src/assets/main/group-title.xml</group>
-                    </lwasm>
-                </file>
-            </directory>
--->
-            <directory fat="dd" name="IMAGEBAS" section="FAT0">
-                <file name="auto.bat" block="130">
-                    <txt2bas tokenset="to">src/assets/basic/auto.bat</txt2bas> <!-- tokenset : mo, to, nano, coco, dragon. (default is to)-->
-                </file>
-                <file name="image.map" block="131"> <!-- will use block as starting point, will throw an error if block are not contiguous (no more free space), why make the filesystem partitionned ? -->
-                    <binary>src/assets/image/rtype.map</binary>
-                </file>
+            <!-- target est un plugin qui retourne null, c'est le premier niveau d'appel de plugin -->
+            <!-- media est un plugin qui retourne null, mais produit une image sur le disque. Il écrit le bin des files sur le media. Il écrit le bin du directory sur le media -->
+            <!-- |_ directory produit un bin contenant l'index qui doit être écrit sur le media -->
+            <!-- |  |_ file produit un bin qui doit être écrit sur le media -->
+            <!-- |_ file produit un bin qui doit être écrit sur le media -->
+
+            <directory id="0" section="INDEX"> <!-- retourne à media une liste de binaires à écrire dans des sections : List<objet> contenant deux champs : Section, byte[] (qu'il s'agisse du répertoire ou de fichiers, ce sont les mêmes données -->
+                                               <!-- agrège les direntry pour construire le répertoire, remonte ce répertoire+section et les données de fichiers+section -->
+
+                <direntry name="assets.main.title" codec="zx0" linksection="LINK"> <!-- retourne une liste à deux éléments avec deux types d'objects possibles : DirEntryData (byte[] bin) ou SectionData (Section section, byte[] bin) -->
+                                                                                    <!-- Directory devra tester le classname avant toute action sur un élément de la liste -->
+                                                                                    <!-- DirEntryData et SectionData implémentent la même interface PluginData -->
+                                                                                    <!-- compresse les données bin avec le codec (optionel, default none) -->
+                                                                                    <!-- effectue la création d'un index loadtimelink avec les données des objets LWObject (optionel, default none) -->
+                                                                                    <!-- sauvegarde les données de link sur le media (linksection)-->
+                                                                                    <!-- pour sauvegarder les données index loadtimelink, on a besoin des objets distincts -->
+                    <file section="DATA">  <!-- retourne une liste à n éléments de LWData (interface PluginData) contenant deux champs : Section section, LWInterface obj (obj est soit de type LWRaw soit LWObject) -->
+                                           <!-- controle un fichier (file) fait au max une page de RAM, maxsize est un champ obligatoire de file -->
+
+                        <!-- dans file ci dessous on retrouve le contenu des données dans une page de RAM (partielle ou entiere) -->
+
+                        <include>src/assets/object/list.xml</include> <!-- permet d'importer des sous définitions (par objet par exemple, on attend des balises lwasm ou equivalent ...) -->
+
+                        <lwasm format="obj">src/assets/object/01.asm</lwasm> <!-- possibilité de lister les fichiers a compiler un a un avec des formats differents -->
+                        <lwasm format="obj">src/assets/object/01.asm</lwasm>
+                        <lwasm format="obj">src/assets/object/02.asm</lwasm> <!-- nom de fichier ou de répertoire : fonctionnement implicite de la valeur dans lwasm (valeur unique) -->
+                        <lwasm format="obj"> <!-- tout plugin dans lwasm est attendu comme renvoyant une liste de noms de fichier (lwasm va les concat avant d'assembler) -->
+<!-- TODO params -->        <gfxcomp symbol="img.test">src/assets/object/image/test.png</gfxcomp> <!-- produce a file in the build dir, with the generated asm code-->
+                                                                                                      <!-- return the name of the file -->
+                        </lwasm>                                                                      <!-- les index d'image et d'animation seront insérés par le developpeur dans le code par macro (generera la structure) et par etiquettes (voir param du csprite) -->
+                    </file>
+                </direntry>
+                <direntry name="assets.main.stage1" codec="zx0" loadtimelink="true">
+                    <file section="DATA">
+                        <lwasm format="obj">src/assets/object/03.asm</lwasm>
+                    </file>
+                </direntry>
             </directory>
 
+            <directory fat="dd" name="IMAGEBAS" section="FAT0">
+                <direntry name="auto.bat">
+                <file block="130">
+                    <txt2bas tokenset="to">src/assets/basic/auto.bat</txt2bas> <!-- txt2bas plugin -->
+                </file>
+                </direntry>
+                <direntry name="image.map">
+                    <file block="131">
+                        <bin>src/assets/image/rtype.map</bin> <!-- bin plugin -->
+                    </file>
+                </direntry>
+            </directory>
+
+<!-- index tell that this is the custom directory type, 0 is the disk number / directory id -->
+<!-- tokenset : mo, to, nano, coco, dragon. (default is to)-->
+<!-- will use block as starting point, will throw an error if block are not contiguous (no more free space), why make the filesystem partitionned ? -->
 <!-- si on a une balise "bas" qui contient un nom de répertoire, on peut utiliser un attribut "filter" qui permet d'importer un ensemble de fichiers (par défaut *), le filtre est une liste de paramètres séparée par des virgules -->
 <!-- decb or raw, process a lwasm followed by lwlink. section is optionnal -->
 
-<!--
+
             <directory fat="dd" name="IMAGEASM" section="FAT1">
-                <file name="load.bas" block="0">
-                    <bas tokenset="to">src/assets/linktest/load.bas</bas>
-                </file>
-                <file name="image.bin" block="1">
-                    <lwlink format="decb" script="">
-                        <section name="" base=""/>
-                        <section name="" base=""/>
-                        <asm>src/assets/image/intro.asm</asm>
-                        <asm>src/assets/image/image1.asm</asm>
-                        <asm>src/assets/image/image2.asm</asm>
-                        <bin>src/assets/lib/util.o</bin>
-                    </lwlink>
-                </file>
+                <direntry name="load.bas">
+                    <file block="0">
+                        <txt2bas tokenset="to">src/assets/linktest/load.bas</bas>
+                    </file>
+                </direntry>
+                <direntry name="image.bin">
+                    <file block="1">
+                        <lwlink format="decb" script="">
+                            <lwlink.section name="" base=""/>
+                            <lwlink.section name="" base=""/>
+                            <lwasm format="obj" >
+                                <asm>src/assets/image/intro.asm</asm>
+                                <asm>src/assets/image/image1.asm</asm>
+                                <asm>src/assets/image/image2.asm</asm>
+                            </lwasm>
+                            <lwlink.obj>src/assets/lib/util.o</obj>
+                        </lwlink>
+                    </file>
+                </direntry>
             </directory>
--->
 
         </media>
     </target>
