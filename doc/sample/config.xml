@@ -5,8 +5,9 @@
             <media.storage>new-engine/config/storage.xml</media.storage>
         </target.default>
 
-        <!-- produit des fichiers d'include pour file en fonction d'une taille et d'un offset de page? Le xml en entrée contient des balises de plugin respectant une interface LWInterface -->
-        <!-- seule limite, le nombre de déclaration direntry/file devra correspondre au nombre de fichiers en sortie de knapsack. Pour cela on renseigne l'attribut assetnbfiles, qui leve une erreur si != de l'attendu -->
+        <!-- produit des fichiers d'include pour file en fonction d'une taille et d'un offset de page. Le xml en entrée contient une liste de plugins -->
+        <!-- on execute chaque plugin et on evalue la taille, puis on joue le knapsack sur l'ensemble -->
+        <!-- l'attribut assetnbfiles leve une erreur si le nb de fichiers produit est différent de l'attendu -->
         <knapsack offset="0x3000" maxsize="0x4000" assertnbfiles="4" in="src/assets/object/list.xml" out="src/assets/object/list.#.xml"/>
 
         <media storage="fd640 boot">
@@ -31,13 +32,6 @@
                 </lwasm>
             </file>
 
-            <!-- target est un plugin qui retourne null, c'est le premier niveau d'appel de plugin -->
-            <!-- knapsack est un plugin qui retourne null, il produit des fichiers sur le file system -->
-            <!-- media est un plugin qui retourne null, mais produit une image sur le disque. Il écrit le bin des files sur le media. Il écrit le bin du directory sur le media -->
-            <!-- |_ directory produit un bin contenant l'index qui doit être écrit sur le media -->
-            <!-- |  |_ file produit un bin qui doit être écrit sur le media -->
-            <!-- |_ file produit un bin qui doit être écrit sur le media -->
-
             <directory id="0" section="INDEX"> <!-- retourne à media une liste de binaires à écrire dans des sections : List<objet> contenant deux champs : Section, byte[] (qu'il s'agisse du répertoire ou de fichiers, ce sont les mêmes données -->
                                                <!-- agrège les direntry pour construire le répertoire, remonte ce répertoire+section et les données de fichiers+section -->
 
@@ -51,20 +45,25 @@
                     <file section="DATA">  <!-- retourne une liste à n éléments de LWData (interface PluginData) contenant deux champs : Section section, LWInterface obj (obj est soit de type LWRaw soit LWObject) -->
                                            <!-- controle un fichier (file) fait au max une page de RAM, maxsize est un champ obligatoire de file -->
                                             <!-- dans file ci dessous on retrouve le contenu des données dans une page de RAM (partielle ou entiere) -->
-                        <include>src/assets/object/list.xml</include> <!-- permet d'importer des sous définitions (par objet par exemple, on attend des balises lwasm ou equivalent ...) -->
-
-                        <lwasm format="obj">src/assets/object/01.asm</lwasm> <!-- possibilité de lister les fichiers a compiler un a un avec des formats differents -->
-                        <lwasm format="obj">src/assets/object/01.asm</lwasm>
-                        <lwasm format="obj">src/assets/object/02.asm</lwasm> <!-- nom de fichier ou de répertoire : fonctionnement implicite de la valeur dans lwasm (valeur unique) -->
-                        <lwasm format="obj"> <!-- tout plugin dans lwasm est attendu comme renvoyant une liste de noms de fichier (lwasm va les concat avant d'assembler) -->
-<!-- TODO params -->        <gfxcomp symbol="img.test">src/assets/object/image/test.png</gfxcomp> <!-- produce a file in the build dir, with the generated asm code-->
+                        <lwasm format="obj"> <!-- concat de tous les fichiers .asm et build unique -->
+<!-- TODO params -->        <gfxcomp symbol="img.test">src/assets/object/image/test.png</gfxcomp>     <!-- tout plugin dans lwasm est attendu comme renvoyant une liste de noms de fichier (lwasm va les concat avant d'assembler) -->
+                                                                                                      <!-- produce a file in the build dir, with the generated asm code-->
                                                                                                       <!-- return the name of the file -->
-                        </lwasm>                                                                      <!-- les index d'image et d'animation seront insérés par le developpeur dans le code par macro (generera la structure) et par etiquettes (voir param du csprite) -->
+                                                                                                      <!-- les index d'image et d'animation seront insérés par le developpeur dans le code par macro (generera la structure) et par etiquettes (voir param du csprite) -->
+                            <asm>src/assets/object/01.asm</asm> <!-- nom de fichier ou de répertoire (possibilité de "filter") -->
+                        </lwasm>                                                                      
                     </file>
                 </direntry>
                 <direntry name="assets.main.stage1" codec="zx0" loadtimelink="true">
                     <file section="DATA">
-                        <lwasm format="obj">src/assets/object/03.asm</lwasm>
+                        <lwasm format="obj">
+                            <include>src/assets/object/list.0.xml</include> <!-- permet d'importer des sous définitions (gfxcomp, asm, ...) -->
+                        </lwasm>
+                    </file>
+                </direntry>
+                <direntry name="assets.music.stage1">
+                    <file section="DATA">
+                        <bin>src/assets/music/stage1.bin</bin>
                     </file>
                 </direntry>
             </directory>
@@ -83,33 +82,8 @@
             </directory>
 
 <!-- index tell that this is the custom directory type, 0 is the disk number / directory id -->
-<!-- tokenset : mo, to, nano, coco, dragon. (default is to)-->
-<!-- will use block as starting point, will throw an error if block are not contiguous (no more free space), why make the filesystem partitionned ? -->
-<!-- si on a une balise "bas" qui contient un nom de répertoire, on peut utiliser un attribut "filter" qui permet d'importer un ensemble de fichiers (par défaut *), le filtre est une liste de paramètres séparée par des virgules -->
-<!-- decb or raw, process a lwasm followed by lwlink. section is optionnal -->
-
-
-            <directory fat="dd" name="IMAGEASM" section="FAT1">
-                <direntry name="load.bas">
-                    <file block="0">
-                        <txt2bas tokenset="to">src/assets/linktest/load.bas</bas>
-                    </file>
-                </direntry>
-                <direntry name="image.bin">
-                    <file block="1">
-                        <lwlink format="decb" script="">
-                            <lwlink.section name="" base=""/>
-                            <lwlink.section name="" base=""/>
-                            <lwasm format="obj" >
-                                <asm>src/assets/image/intro.asm</asm>
-                                <asm>src/assets/image/image1.asm</asm>
-                                <asm>src/assets/image/image2.asm</asm>
-                            </lwasm>
-                            <lwlink.obj>src/assets/lib/util.o</obj>
-                        </lwlink>
-                    </file>
-                </direntry>
-            </directory>
+<!-- txt2bas tokenset : mo, to, nano, coco, dragon. (default is to)-->
+<!-- FAT will use block as starting point, will throw an error if block are not contiguous (no more free space) -->
 
         </media>
     </target>
