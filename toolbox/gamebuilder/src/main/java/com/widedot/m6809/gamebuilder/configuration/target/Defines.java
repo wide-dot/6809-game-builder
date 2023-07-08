@@ -19,20 +19,13 @@ public class Defines {
 	
 	public void add(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
 		
-		// parse each defines
-	    List<HierarchicalConfiguration<ImmutableNode>> definesNodes = node.configurationsAt("defines");
-    	for(HierarchicalConfiguration<ImmutableNode> definesNode : definesNodes)
+	    List<HierarchicalConfiguration<ImmutableNode>> defineNodes = node.configurationsAt("target.define");
+    	for(HierarchicalConfiguration<ImmutableNode> defineNode : defineNodes)
     	{
-    		// parse each define inside defines
-		    List<HierarchicalConfiguration<ImmutableNode>> defineNodes = definesNode.configurationsAt("define");
-	    	for(HierarchicalConfiguration<ImmutableNode> defineNode : defineNodes)
-	    	{
-	    		String symbol = defineNode.getString("[@symbol]", null);
-	    		String value = defineNode.getString("[@value]", null);
-	    		values.put(symbol, value);
-	    		log.debug("symbol: {} value: {}", symbol, value);
-	    	} 	
-    	}	      
+    		String symbol = defineNode.getString("[@symbol]", null);
+    		String value = defineNode.getString("[@value]", null);
+    		values.put(symbol, value);
+    		log.debug("target.define symbol: {} value: {}", symbol, value);
+    	} 	
 	}
-	
 }

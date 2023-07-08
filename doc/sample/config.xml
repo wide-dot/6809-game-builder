@@ -1,23 +1,23 @@
 <configuration>
     <target name="fd">
-        <target.default>
-            <media.storage>new-engine/config/storage.xml</media.storage>
-        </target.default>
+        <target.default name="media.storage" value="new-engine/config/storage.xml"/>
+        <target.define symbol="debug.targetlevel" value="1"/>
 
         <media storage="fd640 boot">
-            <media.out type="fd">dist/demo.fd</media.out>
-            <media.default>
-                <file.maxsize>0x4000</file.maxsize>
-            </media.default>
+            <media.default name="file.maxsize" value="0x4000"/>
+            <media.define symbol="debug.medialevel" value="1"/>
 
             <file section="BOOT" maxsize="0x100">   
                 <checksum type="moto.fd640.boot">
                     <lwasm format="raw">
-                        <lwasm.define symbol="debug" value="1"/>
-                        <asm>new-engine/system/to8/bootloader/boot.asm</asm>
+                        <lwasm.define symbol="debug.lwasmlevel" value="1"/>
+                        <asm filename="new-engine/system/to8/bootloader/boot.asm"/>
                     </lwasm>
                 </checksum>
             </file>
+
+            <fd  filename="dist/demo.fd"/>
+            <sap filename="dist/demo.sap"/>
 
         </media>
     </target>

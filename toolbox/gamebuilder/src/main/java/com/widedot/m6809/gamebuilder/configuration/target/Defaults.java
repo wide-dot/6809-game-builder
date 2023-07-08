@@ -1,8 +1,6 @@
 package com.widedot.m6809.gamebuilder.configuration.target;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -22,32 +20,22 @@ public class Defaults {
 	}
 
 	public void add(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		List<HierarchicalConfiguration<ImmutableNode>> defaults = node.configurationsAt("defaults");
+		List<HierarchicalConfiguration<ImmutableNode>> defaults = node.configurationsAt("target.default");
 		for (HierarchicalConfiguration<ImmutableNode> defaultTags : defaults) {
-			Iterator<String> keyIter = defaultTags.getKeys();
-			String key;
-			while (keyIter.hasNext()) {
-				key = keyIter.next();
-				Object prop = defaultTags.getProperty(key);
-				if (prop instanceof Collection) {
-					List<String> valList = (List<String>) prop;
-					for (String value : valList) {
-						values.put(key, value);
-						log.debug("key: {} value: {}", key, value);
-					}
-				} else {
-					values.put(key, prop.toString());
-					log.debug("key: {} value: {}", key, prop.toString());
-				}
-			}
+    		String name = defaultTags.getString("[@name]", null);
+    		String value = defaultTags.getString("[@value]", null);
+    		values.put(name, value);
+    		log.debug("target.default name: {} value: {}", name, value);
 		}
 	}
 
-	public Integer getInteger(String key) {
-		return (Settings.values.containsKey(key) ? Integer.parseInt(Settings.values.get(key)) : 0);
+	// default Integer value when plugin does not exists
+	public Integer getInteger(String name, Integer defaultVal) {
+		return (Settings.values.containsKey(name) ? Integer.parseInt(Settings.values.get(name)) : defaultVal);
 	}
 
-	public String getString(String key) {
-		return (Settings.values.containsKey(key) ? Settings.values.get(key) : "");
+	// default String value when plugin does not exists
+	public String getString(String name, String defaultVal) {
+		return (Settings.values.containsKey(name) ? Settings.values.get(name) : defaultVal);
 	}
 }

@@ -16,7 +16,7 @@
             </lwasm>
         </knapsack>
 
-        <media storage="fd640 boot">
+        <media storage="fd640 boot" fat="thomson dd">
             <media.out type="fd" file="demo.fd" />
             <media.default>
                 <file.maxsize>0x4000</file.maxsize>

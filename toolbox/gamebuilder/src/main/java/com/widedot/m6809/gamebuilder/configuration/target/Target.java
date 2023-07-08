@@ -17,7 +17,6 @@ public class Target {
 	public String path;
 	public Defines defines;
 	public Defaults defaults;
-	public Storages storages;
 	public Medias medias;
 	
 	public Target(String path) throws Exception {
@@ -40,7 +39,6 @@ public class Target {
 		
 		defines = new Defines();
 		defaults = new Defaults();
-		storages = new Storages();
 		medias = new Medias();
 		
     	for(HierarchicalConfiguration<ImmutableNode> target : targetNodes)
@@ -50,9 +48,9 @@ public class Target {
 
 			defines.add(target);
 			defaults.add(target);
-	    	storages.add(target, path);
 	   		medias.add(target, path, defaults);
 			
+	   		// no more gamebuilder ... replaced by plugin / embedded plugin launch
 			new GameBuilder(this, path);
 			log.info("End of processing target {}", target.getString("[@name]"));
     	}
