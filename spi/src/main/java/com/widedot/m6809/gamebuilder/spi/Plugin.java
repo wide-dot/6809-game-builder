@@ -4,12 +4,17 @@ import java.util.Collections;
 import java.util.List;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.DirEntryFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 
 // https://medium.com/geekculture/designing-a-lightweight-plugin-architecture-in-java-5eedfeaa92a9
 
 public interface Plugin {
 
+	default List<EmptyFactory> getEmptyFactories() {
+		return Collections.emptyList();
+	}
+	
 	default List<MediaFactory> getMediaFactories() {
 		return Collections.emptyList();
 	}
