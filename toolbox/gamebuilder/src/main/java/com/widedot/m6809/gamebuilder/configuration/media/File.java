@@ -11,7 +11,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
 import com.widedot.m6809.gamebuilder.zx0.Optimizer;
@@ -54,7 +54,7 @@ public class File {
    		List<byte[]> binList = new ArrayList<byte[]>();
 		Iterator<String> keyIter = node.getKeys();
 		String key;
-		FileProcessorFactory f;
+		FileFactory f;
 		
 		while (keyIter.hasNext()) {
 			key = keyIter.next();
