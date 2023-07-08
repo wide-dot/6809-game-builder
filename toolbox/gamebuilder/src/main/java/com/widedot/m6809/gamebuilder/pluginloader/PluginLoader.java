@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugins;
+package com.widedot.m6809.gamebuilder.pluginloader;
 
 import static java.util.Objects.requireNonNull;
 
@@ -15,14 +15,14 @@ import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.widedot.m6809.gamebuilder.spi.Plugin;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class PluginLoader {
 
-	private final Map<String, FileProcessorFactory> fileProcessorFactoryMap = new HashMap<>();
+	private final Map<String, FileFactory> fileProcessorFactoryMap = new HashMap<>();
 	private final File pluginsDir;
 	private final AtomicBoolean loading = new AtomicBoolean();
 
@@ -62,7 +62,7 @@ public class PluginLoader {
 
 	private void installPlugin(final Plugin plugin) {
 		log.info("Installing plugin: " + plugin.getClass().getName());
-		for (FileProcessorFactory f : plugin.getFileProcessorFactories()) {
+		for (FileFactory f : plugin.getFileFactories()) {
 			fileProcessorFactoryMap.put(f.name(), f);
 		}
 	}
@@ -82,7 +82,7 @@ public class PluginLoader {
 		}
 	}
 
-	public FileProcessorFactory getFileProcessorFactory(String name) {
+	public FileFactory getFileProcessorFactory(String name) {
 		return fileProcessorFactoryMap.get(name);
 	}
 }

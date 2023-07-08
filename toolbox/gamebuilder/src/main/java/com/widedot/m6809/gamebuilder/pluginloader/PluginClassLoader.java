@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugins;
+package com.widedot.m6809.gamebuilder.pluginloader;
 
 import java.net.URL;
 import java.net.URLClassLoader;

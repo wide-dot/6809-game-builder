@@ -20,11 +20,13 @@ public class GameBuilder {
 	FdUtil mediaData;
 	HashMap<String, Section> sectionIndexes;
 	
+	// n'est plus utilisé !!!!
+	
 	public GameBuilder(Target target, String path) throws Exception {
 
 		for (Media media : target.medias.mediaList) {
 
-			storage = target.storages.get(media.storage);
+			//storage = target.storages.get(media.storage);
 			mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
 			sectionIndexes = new HashMap<String, Section>();
 

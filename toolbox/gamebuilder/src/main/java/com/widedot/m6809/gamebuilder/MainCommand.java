@@ -14,11 +14,11 @@ import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import com.widedot.m6809.gamebuilder.pluginloader.EmbeddedPluginLoader;
+import com.widedot.m6809.gamebuilder.pluginloader.PluginLoader;
 
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
-import com.widedot.m6809.gamebuilder.plugins.EmbededPluginLoader;
-import com.widedot.m6809.gamebuilder.plugins.PluginLoader;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -87,7 +87,7 @@ public class MainCommand implements Runnable {
 			    Settings.pluginLoader.loadPlugins();
 
 				// load embeded plugins
-			    Settings.embededPluginLoader = new EmbededPluginLoader();
+			    Settings.embededPluginLoader = new EmbeddedPluginLoader();
 			    Settings.embededPluginLoader.loadPlugins();
 			    
 				// load properties

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.fileprocessor.bin;
+package com.widedot.m6809.gamebuilder.plugin.bin;
 
 import java.io.File;
 import java.nio.file.Files;

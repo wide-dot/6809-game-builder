@@ -11,8 +11,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
 import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 
@@ -78,7 +78,7 @@ public class File {
 			        }
 			    }
 			    
-			    final FileProcessor fileProcessor = f.build();
+			    final FilePluginInterface fileProcessor = f.build();
 			    log.debug("Running plugin: {}", f.name());
 			    bin = fileProcessor.doFileProcessor(element, path);
 		        binList.add(bin);

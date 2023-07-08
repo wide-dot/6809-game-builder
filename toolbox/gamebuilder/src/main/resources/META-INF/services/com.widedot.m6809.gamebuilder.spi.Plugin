@@ -1,2 +1,2 @@
-com.widedot.m6809.gamebuilder.fileprocessor.bin.plugin.FileProcessorPlugin
-com.widedot.m6809.gamebuilder.fileprocessor.lwasm.plugin.FileProcessorPlugin
+com.widedot.m6809.gamebuilder.fileprocessor.bin.plugin.FilePlugin
+com.widedot.m6809.gamebuilder.fileprocessor.lwasm.plugin.FilePlugin

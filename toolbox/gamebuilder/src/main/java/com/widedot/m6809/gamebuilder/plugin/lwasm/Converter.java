@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.fileprocessor.lwasm;
+package com.widedot.m6809.gamebuilder.plugin.lwasm;
 
 import java.io.File;
 import java.util.ArrayList;

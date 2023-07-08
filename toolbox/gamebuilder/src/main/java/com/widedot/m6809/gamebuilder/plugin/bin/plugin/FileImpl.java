@@ -1,12 +1,12 @@
-package com.widedot.m6809.gamebuilder.fileprocessor.lwasm.plugin;
+package com.widedot.m6809.gamebuilder.plugin.bin.plugin;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessor;
-import com.widedot.m6809.gamebuilder.fileprocessor.lwasm.Converter;
+import com.widedot.m6809.gamebuilder.plugin.bin.Converter;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
 
-public class FileProcessorImpl implements FileProcessor {
+public class FileImpl implements FilePluginInterface {
 
   @Override
   public byte[] doFileProcessor(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {

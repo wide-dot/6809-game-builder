@@ -1,8 +1,8 @@
 package com.widedot.m6809.gamebuilder.spi.fileprocessor;
 
-public interface FileProcessorFactory {
+public interface FileFactory {
 
   String name();
 
-  FileProcessor build();
+  FilePluginInterface build();
 }

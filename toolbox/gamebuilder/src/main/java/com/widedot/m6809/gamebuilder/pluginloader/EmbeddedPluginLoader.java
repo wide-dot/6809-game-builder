@@ -1,20 +1,20 @@
-package com.widedot.m6809.gamebuilder.plugins;
+package com.widedot.m6809.gamebuilder.pluginloader;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
 import com.widedot.m6809.gamebuilder.spi.Plugin;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileProcessorFactory;
+import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class EmbededPluginLoader {
+public class EmbeddedPluginLoader {
 
-	private final Map<String, FileProcessorFactory> fileProcessorFactoryMap = new HashMap<>();
+	private final Map<String, FileFactory> fileFactoryMap = new HashMap<>();
 
-	public EmbededPluginLoader() {
+	public EmbeddedPluginLoader() {
 	}
 
 	public void loadPlugins() {
@@ -26,13 +26,13 @@ public class EmbededPluginLoader {
 
 	private void installPlugin(final Plugin plugin) {
 		log.info("Installing plugin: " + plugin.getClass().getName());
-		for (FileProcessorFactory f : plugin.getFileProcessorFactories()) {
-			fileProcessorFactoryMap.put(f.name(), f);
+		for (FileFactory f : plugin.getFileFactories()) {
+			fileFactoryMap.put(f.name(), f);
 		}
 	}
 
-	public FileProcessorFactory getFileProcessorFactory(String name) {
-		FileProcessorFactory f = fileProcessorFactoryMap.get(name);
+	public FileFactory getFileProcessorFactory(String name) {
+		FileFactory f = fileFactoryMap.get(name);
 		if (f == null) log.error("Factory: {} not loaded!", name);
 		return f;
 	}
