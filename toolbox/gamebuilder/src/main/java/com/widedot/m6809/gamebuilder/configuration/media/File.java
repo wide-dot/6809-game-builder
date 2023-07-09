@@ -9,7 +9,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
+import com.widedot.m6809.gamebuilder.configuration.common.Defaults;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
@@ -38,7 +38,7 @@ public class File {
    		codec = node.getString("[@codec]", NO_CODEC);
    		section = node.getString("[@section]", null);
    		block = node.getString("[@block]", null);
-   		maxsize = node.getInteger("[@maxsize]", defaults.getInteger("file[@maxsize]"));
+   		maxsize = node.getInteger("[@maxsize]", defaults.getInteger("file.maxsize", 0));
    		
    		log.debug("name: {} \t codec: {} \t section: {} \t block: {} \t max size: {}", name, codec, section, block, maxsize);
    		
@@ -69,10 +69,10 @@ public class File {
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
 				
 				// external plugin
-			    f = Settings.pluginLoader.getFileProcessorFactory(plugin);
+			    f = Settings.pluginLoader.getFileFactory(plugin);
 			    if (f == null) {
 			    	// embeded plugin
-			    	f = Settings.embededPluginLoader.getFileProcessorFactory(plugin);
+			    	f = Settings.embededPluginLoader.getFileFactory(plugin);
 			        if (f == null) {
 			        	throw new Exception("Unknown File processor: " + plugin);   	
 			        }

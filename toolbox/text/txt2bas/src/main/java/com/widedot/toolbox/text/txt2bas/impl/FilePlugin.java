@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.bin.plugin;
+package com.widedot.toolbox.text.txt2bas.impl;
 
 import java.util.Arrays;
 import java.util.List;

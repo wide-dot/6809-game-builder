@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.bin.plugin;
+package com.widedot.m6809.gamebuilder.plugin.bin.impl;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.lwasm.plugin;
+package com.widedot.m6809.gamebuilder.plugin.bin.impl;
 
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
@@ -7,7 +7,7 @@ public class FileFactoryImpl implements FileFactory {
 
   @Override
   public String name() {
-    return "lwasm";
+    return "bin";
   }
 
   @Override

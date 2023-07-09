@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.target;
+package com.widedot.m6809.gamebuilder.configuration.common;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,12 +20,13 @@ public class Defaults {
 	}
 
 	public void add(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		List<HierarchicalConfiguration<ImmutableNode>> defaults = node.configurationsAt("target.default");
+		log.debug("Reading default values ...");
+		List<HierarchicalConfiguration<ImmutableNode>> defaults = node.configurationsAt("default");
 		for (HierarchicalConfiguration<ImmutableNode> defaultTags : defaults) {
     		String name = defaultTags.getString("[@name]", null);
     		String value = defaultTags.getString("[@value]", null);
     		values.put(name, value);
-    		log.debug("target.default name: {} value: {}", name, value);
+    		log.debug("default name: {} value: {}", name, value);
 		}
 	}
 

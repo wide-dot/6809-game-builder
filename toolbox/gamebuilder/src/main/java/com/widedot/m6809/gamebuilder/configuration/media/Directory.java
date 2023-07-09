@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.configuration.target.Defaults;
+import com.widedot.m6809.gamebuilder.configuration.common.Defaults;
 
 import lombok.extern.slf4j.Slf4j;
 

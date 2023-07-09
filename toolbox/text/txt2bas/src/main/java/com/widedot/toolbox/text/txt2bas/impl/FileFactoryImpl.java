@@ -1,4 +1,4 @@
-package com.widedot.toolbox.text.txt2bas.plugin;
+package com.widedot.toolbox.text.txt2bas.impl;
 
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;

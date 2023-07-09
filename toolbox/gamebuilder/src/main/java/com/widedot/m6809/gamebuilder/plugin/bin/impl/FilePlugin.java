@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.lwasm.plugin;
+package com.widedot.m6809.gamebuilder.plugin.bin.impl;
 
 import java.util.Arrays;
 import java.util.List;

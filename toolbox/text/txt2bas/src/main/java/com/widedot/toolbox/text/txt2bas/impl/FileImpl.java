@@ -1,4 +1,4 @@
-package com.widedot.toolbox.text.txt2bas.plugin;
+package com.widedot.toolbox.text.txt2bas.impl;
 
 import java.io.File;
 import java.util.HashMap;

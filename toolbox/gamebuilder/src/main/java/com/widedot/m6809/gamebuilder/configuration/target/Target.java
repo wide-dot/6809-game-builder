@@ -1,6 +1,5 @@
 package com.widedot.m6809.gamebuilder.configuration.target;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -8,7 +7,8 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.media.Medias;
+import com.widedot.m6809.gamebuilder.configuration.common.Defaults;
+import com.widedot.m6809.gamebuilder.configuration.common.Defines;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyFactory;
 import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyPluginInterface;
 
@@ -20,7 +20,6 @@ public class Target {
 	public String path;
 	public Defines defines;
 	public Defaults defaults;
-	public Medias medias;
 	
 	public Target(String path) throws Exception {
 		this.path = path;
@@ -42,7 +41,6 @@ public class Target {
 		
 		defines = new Defines();
 		defaults = new Defaults();
-		medias = new Medias();
 		
     	for(HierarchicalConfiguration<ImmutableNode> node : targetNodes)
     	{
@@ -51,7 +49,6 @@ public class Target {
 
 			defines.add(node);
 			defaults.add(node);
-	   		medias.add(node, path, defaults);
 
 	   		// instanciate plugins
 			Iterator<String> keyIter = node.getKeys();
@@ -61,10 +58,15 @@ public class Target {
 			while (keyIter.hasNext()) {
 				key = keyIter.next();
 
-				// skip this key if not a node
+				// skip non plugins
 				String plugin = null;
 				String[] names = key.split("\\[");
-				if (names[0] == null || names[0].equals("") || names[0].contains(".")) continue;
+				if (names[0] == null ||
+					names[0].equals("") ||
+					names[0].contains(".") ||            // process only first level nodes
+					names[0].equals("default") ||
+					names[0].equals("define")) continue;
+				
 		        plugin = names[0];
 		        
 				List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);

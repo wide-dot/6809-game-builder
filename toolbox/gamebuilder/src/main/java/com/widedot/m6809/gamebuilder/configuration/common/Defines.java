@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.media;
+package com.widedot.m6809.gamebuilder.configuration.common;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,14 +18,14 @@ public class Defines {
 	}
 	
 	public void add(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-	    List<HierarchicalConfiguration<ImmutableNode>> defineNodes = node.configurationsAt("media.define");
+		log.debug("Reading define values ...");
+	    List<HierarchicalConfiguration<ImmutableNode>> defineNodes = node.configurationsAt("define");
     	for(HierarchicalConfiguration<ImmutableNode> defineNode : defineNodes)
     	{
     		String symbol = defineNode.getString("[@symbol]", null);
     		String value = defineNode.getString("[@value]", null);
     		values.put(symbol, value);
-    		log.debug("media.define symbol: {} value: {}", symbol, value);
+    		log.debug("define symbol: {} value: {}", symbol, value);
     	} 	
 	}
 }

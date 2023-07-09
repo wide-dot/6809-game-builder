@@ -1,4 +1,4 @@
-package com.widedot.toolbox.text.txt2bas.plugin;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.impl;
 
 import java.util.Arrays;
 import java.util.List;

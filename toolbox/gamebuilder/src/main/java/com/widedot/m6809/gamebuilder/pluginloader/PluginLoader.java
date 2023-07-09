@@ -39,7 +39,7 @@ public class PluginLoader {
 
 	public void loadPlugins() {
 		if (!pluginsDir.exists() || !pluginsDir.isDirectory()) {
-			log.error("Skipping Plugin Loading. Plugin dir not found: " + pluginsDir);
+			log.debug("Skipping Plugin Loading. Plugin dir not found: " + pluginsDir);
 			return;
 		}
 
@@ -100,25 +100,25 @@ public class PluginLoader {
 
 	public EmptyFactory getEmptyFactory(String name) {
 		EmptyFactory f = emptyFactoryMap.get(name);
-		if (f == null) log.error("EmptyFactory: {} not loaded!", name);
+		if (f == null) log.debug("EmptyFactory: {} not loaded!", name);
 		return f;
 	}
 	
 	public MediaFactory getMediaFactory(String name) {
 		MediaFactory f = mediaFactoryMap.get(name);
-		if (f == null) log.error("MediaFactory: {} not loaded!", name);
+		if (f == null) log.debug("MediaFactory: {} not loaded!", name);
 		return f;
 	}
 	
 	public DirEntryFactory getDirEntryFactory(String name) {
 		DirEntryFactory f = dirEntryFactoryMap.get(name);
-		if (f == null) log.error("irEntryFactory: {} not loaded!", name);
+		if (f == null) log.debug("DirEntryFactory: {} not loaded!", name);
 		return f;
 	}
 	
 	public FileFactory getFileFactory(String name) {
 		FileFactory f = fileFactoryMap.get(name);
-		if (f == null) log.error("FileFactory: {} not loaded!", name);
+		if (f == null) log.debug("FileFactory: {} not loaded!", name);
 		return f;
 	}
 }
