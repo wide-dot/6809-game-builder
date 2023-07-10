@@ -1,9 +1,9 @@
-package com.widedot.m6809.gamebuilder.spi.fileprocessor;
+package com.widedot.m6809.gamebuilder.spi;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public interface DirEntryPluginInterface {
+public interface MediaPluginInterface {
 
   byte[] doFileProcessor(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception;
 }

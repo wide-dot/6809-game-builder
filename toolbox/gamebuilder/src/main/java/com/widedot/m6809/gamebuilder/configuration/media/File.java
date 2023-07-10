@@ -9,10 +9,10 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.common.Defaults;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.FileFactory;
+import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.zx0.Compressor;
 import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 

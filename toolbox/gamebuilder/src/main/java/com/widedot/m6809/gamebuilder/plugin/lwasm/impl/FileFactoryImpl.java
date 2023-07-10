@@ -1,7 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm.impl;
 
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.FileFactory;
+import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 
 public class FileFactoryImpl implements FileFactory {
 

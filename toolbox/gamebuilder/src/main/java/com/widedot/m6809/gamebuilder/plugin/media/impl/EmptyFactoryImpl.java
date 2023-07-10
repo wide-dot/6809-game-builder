@@ -1,9 +1,9 @@
 package com.widedot.m6809.gamebuilder.plugin.media.impl;
 
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
+import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.FileFactory;
+import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 
 public class EmptyFactoryImpl implements EmptyFactory {
 

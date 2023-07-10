@@ -1,9 +1,9 @@
 <configuration>
     <target name="fd">
-        <default name="media.storage" value="new-engine/config/storage.xml"/>
+        <default name="media.include" value="new-engine/config/storage.xml"/>
         <define symbol="debug.targetlevel" value="1"/>
 
-        <media storage="fd640 boot">
+        <media storage="fd640 boot" include="new-engine/config/storage.xml">
             <default name="file.maxsize" value="0x4000"/>
             <define symbol="debug.medialevel" value="1"/>
 

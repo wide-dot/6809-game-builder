@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.spi.fileprocessor;
+package com.widedot.m6809.gamebuilder.spi;
 
 public interface EmptyFactory {
 

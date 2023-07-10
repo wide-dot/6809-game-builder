@@ -7,10 +7,10 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.common.Defaults;
-import com.widedot.m6809.gamebuilder.configuration.common.Defines;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
+import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
+import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,8 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 public class Target {
 	
 	public String path;
-	public Defines defines;
 	public Defaults defaults;
+	public Defines defines;
 	
 	public Target(String path) throws Exception {
 		this.path = path;
@@ -39,16 +39,16 @@ public class Target {
 	
 	private void processTargets(List<HierarchicalConfiguration<ImmutableNode>> targetNodes) throws Exception {
 		
-		defines = new Defines();
 		defaults = new Defaults();
+		defines = new Defines();
 		
     	for(HierarchicalConfiguration<ImmutableNode> node : targetNodes)
     	{
 			String targetName = node.getString("[@name]");
 			log.info("Processing target {}", targetName);
 
-			defines.add(node);
 			defaults.add(node);
+			defines.add(node);
 
 	   		// instanciate plugins
 			Iterator<String> keyIter = node.getKeys();
@@ -84,7 +84,7 @@ public class Target {
 				    
 				    final EmptyPluginInterface processor = factory.build();
 				    log.debug("Running plugin: {}", factory.name());
-				    processor.run(element, path);
+				    processor.run(element, path, defaults, defines);
 				}
 			}
 			

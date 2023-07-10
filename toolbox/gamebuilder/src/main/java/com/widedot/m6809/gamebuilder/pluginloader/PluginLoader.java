@@ -14,11 +14,11 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.widedot.m6809.gamebuilder.spi.DirEntryFactory;
+import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
+import com.widedot.m6809.gamebuilder.spi.FileFactory;
+import com.widedot.m6809.gamebuilder.spi.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.DirEntryFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.EmptyFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.fileprocessor.MediaFactory;
 
 import lombok.extern.slf4j.Slf4j;
 

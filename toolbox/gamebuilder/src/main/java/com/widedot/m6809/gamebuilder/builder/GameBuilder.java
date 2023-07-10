@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Directory;
 import com.widedot.m6809.gamebuilder.configuration.media.File;
-import com.widedot.m6809.gamebuilder.configuration.media.Media;
 import com.widedot.m6809.gamebuilder.configuration.storage.Section;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;

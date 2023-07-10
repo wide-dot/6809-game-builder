@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.common;
+package com.widedot.m6809.gamebuilder.spi.configuration;
 
 import java.util.HashMap;
 import java.util.List;

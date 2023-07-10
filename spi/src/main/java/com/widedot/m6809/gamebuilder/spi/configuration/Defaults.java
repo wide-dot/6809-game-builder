@@ -1,12 +1,10 @@
-package com.widedot.m6809.gamebuilder.configuration.common;
+package com.widedot.m6809.gamebuilder.spi.configuration;
 
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-
-import com.widedot.m6809.gamebuilder.Settings;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,11 +30,11 @@ public class Defaults {
 
 	// default Integer value when plugin does not exists
 	public Integer getInteger(String name, Integer defaultVal) {
-		return (Settings.values.containsKey(name) ? Integer.parseInt(Settings.values.get(name)) : defaultVal);
+		return (values.containsKey(name) ? Integer.parseInt(values.get(name)) : defaultVal);
 	}
 
 	// default String value when plugin does not exists
 	public String getString(String name, String defaultVal) {
-		return (Settings.values.containsKey(name) ? Settings.values.get(name) : defaultVal);
+		return (values.containsKey(name) ? values.get(name) : defaultVal);
 	}
 }
