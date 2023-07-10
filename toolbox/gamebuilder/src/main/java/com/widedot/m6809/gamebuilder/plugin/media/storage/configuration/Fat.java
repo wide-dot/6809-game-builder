@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.storage;
+package com.widedot.m6809.gamebuilder.plugin.media.storage.configuration;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

@@ -4,8 +4,6 @@ import java.util.HashMap;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Directory;
 import com.widedot.m6809.gamebuilder.configuration.media.File;
-import com.widedot.m6809.gamebuilder.configuration.storage.Section;
-import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
 import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.storage.FdUtil;
@@ -15,9 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GameBuilder {
 
-	Storage storage;
-	FdUtil mediaData;
-	HashMap<String, Section> sectionIndexes;
+//	Storage storage;
+//	FdUtil mediaData;
+//	HashMap<String, Section> sectionIndexes;
 	
 	// n'est plus utilisé !!!!
 	
@@ -104,27 +102,27 @@ public class GameBuilder {
 //		}
 	}
 	
-	public void writeFullSector(File file) throws Exception {
-		
-		Section section = getSection(file.section);
-		int pos = 0;
-		
-		log.debug("Write data to media.");
-		while (pos < file.bin.length) {
-			mediaData.writeFullSector(file.bin, pos, section);
-			mediaData.nextSector(section);
-			pos = pos + storage.sectorSize;
-		}
-	}
-	
-	public Section getSection(String sectionName) {
-
-		if (!sectionIndexes.containsKey(sectionName)) {
-			log.debug("Load section definition: {}", sectionName);
-			Section sectionDefinition = storage.sections.get(sectionName);
-			Section section = new Section(sectionDefinition);
-			sectionIndexes.put(sectionName, section);
-		}
-		return sectionIndexes.get(sectionName);
-	}
+//	public void writeFullSector(File file) throws Exception {
+//		
+//		Section section = getSection(file.section);
+//		int pos = 0;
+//		
+//		log.debug("Write data to media.");
+//		while (pos < file.bin.length) {
+//			mediaData.writeFullSector(file.bin, pos, section);
+//			mediaData.nextSector(section);
+//			pos = pos + storage.sectorSize;
+//		}
+//	}
+//	
+//	public Section getSection(String sectionName) {
+//
+//		if (!sectionIndexes.containsKey(sectionName)) {
+//			log.debug("Load section definition: {}", sectionName);
+//			Section sectionDefinition = storage.sections.get(sectionName);
+//			Section section = new Section(sectionDefinition);
+//			sectionIndexes.put(sectionName, section);
+//		}
+//		return sectionIndexes.get(sectionName);
+//	}
 }

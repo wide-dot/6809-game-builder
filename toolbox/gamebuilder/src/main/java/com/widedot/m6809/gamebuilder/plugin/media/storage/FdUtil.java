@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.storage;
+package com.widedot.m6809.gamebuilder.plugin.media.storage;
 
 import java.io.IOException;
 import java.nio.file.Files;

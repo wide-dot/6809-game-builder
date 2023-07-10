@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.storage;
+package com.widedot.m6809.gamebuilder.plugin.media.storage.configuration;
 
 import java.util.HashMap;
 import java.util.List;

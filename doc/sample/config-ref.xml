@@ -95,3 +95,18 @@
     </target>
 </configuration>
 
+<!-- pour la T.2
+        <section name="BOOT"  page="0" org="0"/>
+        <section name="LOAD"  page="0" org="0x100"/>
+        <section name="INDEX" page="0" org="0x200"/>
+        <section name="DATA"  page="0" org="0x300"/>
+-->
+<!-- pour la FD
+            <section name="BOOT"  face="0" track="0"  sector="1"/>
+            <section name="LOAD"  face="0" track="0"  sector="2"/>
+            <section name="SCENE" face="0" track="0"  sector="9"/>
+            <section name="INDEX" face="1" track="0"  sector="1"/>
+            <section name="FAT0"  face="0" track="20" sector="1"/>
+            <section name="FAT1"  face="1" track="20" sector="1"/>
+            <section name="DATA"  face="0" track="1"  sector="1"/>
+-->

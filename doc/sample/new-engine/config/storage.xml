@@ -1,41 +1,25 @@
 <configuration>
 
-    <interleave name="thomson" softskip="2" softskew="4" hardskip="7"/>
-
-    <storage name="t2" type="rom" ext=".rom">
+    <storage name="t2" type="rom">
         <segment pages="128"  pageSize="0x4000" org="0"/>
-        <section name="BOOT"  page="0" org="0"/>
-        <section name="LOAD"  page="0" org="0x100"/>
-        <section name="INDEX" page="0" org="0x200"/>
-        <section name="DATA"  page="0" org="0x300"/>
     </storage>
 
-    <storage name="fd640 boot" type="floppydisk" ext=".fd">
-        <segment faces="2" tracks="80" sectors="16" sectorSize="256" interleave="thomson"/>
-        <section name="BOOT"  face="0" track="0"  sector="1"/>
-        <section name="LOAD"  face="0" track="0"  sector="2"/>
-        <section name="SCENE" face="0" track="0"  sector="9"/>
-        <section name="INDEX" face="1" track="0"  sector="1"/>
-        <section name="FAT0"  face="0" track="20" sector="1"/>
-        <section name="FAT1"  face="1" track="20" sector="1"/>
-        <section name="DATA"  face="0" track="1"  sector="1"/>
+    <storage name="fd640" type="floppydisk">
+        <segment faces="2" tracks="80" sectors="16" sectorSize="256"/>
+        <interleave softskip="2" softskew="4" hardskip="7"/>
+        <fat sectorperblock="8" nblocks="160" sectorsize="255" fatstart="129" dirstart="512" ndirentries="112"/>
     </storage>
 
-    <storage name="fd640 noboot" type="floppydisk" ext=".fd">
-        <segment faces="2" tracks="80" sectors="16" sectorSize="256" interleave="thomson"/>
-        <section name="LOAD"  face="0" track="0" sector="1"/>
-        <section name="INDEX" face="1" track="0" sector="1"/>
-        <section name="SCENE" face="0" track="0" sector="9"/>
-        <section name="DATA"  face="0" track="1" sector="1"/>
+    <storage name="fd320" type="floppydisk">
+        <segment faces="2" tracks="80" sectors="16" sectorSize="256"/>
+        <interleave softskip="2" softskew="4" hardskip="7"/>
+        <fat sectorperblock="8" nblocks="80"  sectorsize="128" fatstart="129" dirstart="256" ndirentries="112"/>
     </storage>
-
-    <!-- to be defined
-    <storage name="fd158" type="floppydisk" ext=".fd"/>
+    
+    <storage name="fd158" type="floppydisk"/>
         <segment tracks="35" faces="1" sectors="18" sectorSize="256"/>
-    </storage> -->
-
-    <fat name="thomson dd" sectorperblock="8" nblocks="160" sectorsize="255" fatstart="129" dirstart="512" ndirentries="112"/>
-    <fat name="thomson sd" sectorperblock="8" nblocks="80"  sectorsize="128" fatstart="129" dirstart="256" ndirentries="112"/>
-    <fat name="tandy"      sectorperblock="9" nblocks="68"  sectorsize="256" fatstart="128" dirstart="512" ndirentries="72" />
+        <interleave softskip="2" softskew="4" hardskip="3"/>
+        <fat sectorperblock="9" nblocks="68"  sectorsize="256" fatstart="128" dirstart="512" ndirentries="72" />
+    </storage>
 
 </configuration>

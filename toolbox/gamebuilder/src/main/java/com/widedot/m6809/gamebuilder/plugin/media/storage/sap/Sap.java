@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.storage.sap;
+package com.widedot.m6809.gamebuilder.plugin.media.storage.sap;
 
 import java.io.*;
 import java.nio.file.Files;

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media;
+package com.widedot.m6809.gamebuilder.plugin.file;
 
 import java.util.Iterator;
 import java.util.List;
@@ -9,12 +9,15 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
 import com.widedot.m6809.gamebuilder.configuration.storage.StorageConfiguration;
+import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
 import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
 import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.zx0.Compressor;
+import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,8 +26,14 @@ public class Processor {
 	
 	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing media ...");
+		log.info("Processing data ...");
 		
+		String name = node.getString("[@name]", defaults.getString("data.name", null));
+		String section = node.getString("[@section]",  defaults.getString("data.section", null));
+		int maxsize = node.getInteger("[@maxsize]", defaults.getInteger("data.maxsize", 0));
+   		
+   		log.debug("name: {} \t section: {} \t max size: {}", name, section, maxsize);
+   		
 		String storageName = node.getString("[@storage]", defaults.getString("media.storage", null));
 		if (storageName == null) {
 			throw new Exception("storage is missing for media");
@@ -101,9 +110,6 @@ public class Processor {
 			
 			log.info("End of processing target {}", node.getString("[@name]"));
     	}
-    	
-    	
-    	
 	}
 
 }
