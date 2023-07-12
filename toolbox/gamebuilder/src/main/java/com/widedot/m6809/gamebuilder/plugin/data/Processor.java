@@ -37,24 +37,16 @@ public class Processor {
 		defaults.add(node);
 
    		// instanciate plugins
-		Iterator<String> keyIter = node.getKeys();
-		String key;
 		DefaultFactory emptyfactory;
 		FileFactory fileFactory;
 		
-		while (keyIter.hasNext()) {
-			key = keyIter.next();
+		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
+		for (ImmutableNode child : root) {
+			String plugin = child.getNodeName();
 
 			// skip non plugins
-			String plugin = null;
-			String[] names = key.split("\\[");
-			if (names[0] == null ||
-				names[0].equals("") ||
-				names[0].contains(".") ||            // process only first level nodes
-				names[0].equals("default") ||
-				names[0].equals("define")) continue;
-			
-	        plugin = names[0];
+			if (plugin.equals("default") ||
+				plugin.equals("define")) continue;
 	        
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
