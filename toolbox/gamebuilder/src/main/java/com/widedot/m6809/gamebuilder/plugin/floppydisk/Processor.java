@@ -1,6 +1,5 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;

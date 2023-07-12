@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.data;
+package com.widedot.m6809.gamebuilder.plugin.cksumfd640;
 
 import java.util.List;
 
@@ -18,23 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
-	public static byte[] run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing data ...");
+		log.info("Processing cksumfd640 ...");
 		
-		String section = node.getString("[@section]",  defaults.getString("data.section", null));
-		int maxsize = Integer.decode(node.getString("[@maxsize]", defaults.getString("data.maxsize", String.valueOf(Integer.MAX_VALUE))));
-   		
-   		log.debug("section: {} \t max size: {}", section, maxsize);
-   		
-		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
-		//sectionIndexes = new HashMap<String, Section>();
-    	
 		defines.add(node);
 		defaults.add(node);
 
    		// instanciate plugins
-		DefaultFactory emptyfactory;
+		DefaultFactory defaultFactory;
 		FileFactory fileFactory;
 		
 		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
@@ -49,10 +41,10 @@ public class Processor {
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
 				
 				// external plugin
-				emptyfactory = Settings.pluginLoader.getDefaultFactory(plugin);
-			    if (emptyfactory == null) {
+				defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
+			    if (defaultFactory == null) {
 			    	// embeded plugin
-			    	emptyfactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+			    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
 			    }
 			    
 				// external plugin
@@ -62,13 +54,13 @@ public class Processor {
 			    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
 			    }
 			    
-		        if (emptyfactory == null && fileFactory == null) {
+		        if (defaultFactory == null && fileFactory == null) {
 		        	throw new Exception("Unknown File processor: " + plugin);   	
 		        }
 			    
-		        if (emptyfactory != null) {
-				    final DefaultPluginInterface processor = emptyfactory.build();
-				    log.debug("Running plugin: {}", emptyfactory.name());
+		        if (defaultFactory != null) {
+				    final DefaultPluginInterface processor = defaultFactory.build();
+				    log.debug("Running plugin: {}", defaultFactory.name());
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
@@ -79,8 +71,7 @@ public class Processor {
 		        }
 			}
     	}
-		log.info("End of processing data");
-		return null;
+		log.info("End of processing cksumfd640");
 	}
 
 }
