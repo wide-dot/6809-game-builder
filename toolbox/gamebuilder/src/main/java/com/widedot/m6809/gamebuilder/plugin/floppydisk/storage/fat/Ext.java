@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media.storage.fat;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.fat;
 
 import java.util.HashMap;
 

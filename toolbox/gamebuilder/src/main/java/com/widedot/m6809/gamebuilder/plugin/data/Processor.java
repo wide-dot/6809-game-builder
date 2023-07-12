@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.file;
+package com.widedot.m6809.gamebuilder.plugin.data;
 
 import java.util.Iterator;
 import java.util.List;
@@ -7,17 +7,13 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
-import com.widedot.m6809.gamebuilder.configuration.storage.StorageConfiguration;
-import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
-import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
-import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
+import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
+import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
-import com.widedot.m6809.gamebuilder.zx0.Compressor;
-import com.widedot.m6809.gamebuilder.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,20 +30,6 @@ public class Processor {
    		
    		log.debug("name: {} \t section: {} \t max size: {}", name, section, maxsize);
    		
-		String storageName = node.getString("[@storage]", defaults.getString("media.storage", null));
-		if (storageName == null) {
-			throw new Exception("storage is missing for media");
-		}
-		
-		String include = node.getString("[@include]", defaults.getString("media.include", null));
-		if (include == null) {
-			throw new Exception("include is missing for media");
-		}
-		include = path + include;
-		
-		
-		StorageConfiguration storages = new StorageConfiguration(include);
-		Storage storage = storages.get(storageName);
 		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
 		//sectionIndexes = new HashMap<String, Section>();
     	
@@ -57,7 +39,7 @@ public class Processor {
    		// instanciate plugins
 		Iterator<String> keyIter = node.getKeys();
 		String key;
-		EmptyFactory emptyfactory;
+		DefaultFactory emptyfactory;
 		FileFactory fileFactory;
 		
 		while (keyIter.hasNext()) {
@@ -78,10 +60,10 @@ public class Processor {
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
 				
 				// external plugin
-				emptyfactory = Settings.pluginLoader.getEmptyFactory(plugin);
+				emptyfactory = Settings.pluginLoader.getDefaultFactory(plugin);
 			    if (emptyfactory == null) {
 			    	// embeded plugin
-			    	emptyfactory = Settings.embededPluginLoader.getEmptyFactory(plugin);
+			    	emptyfactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
 			    }
 			    
 				// external plugin
@@ -96,7 +78,7 @@ public class Processor {
 		        }
 			    
 		        if (emptyfactory != null) {
-				    final EmptyPluginInterface processor = emptyfactory.build();
+				    final DefaultPluginInterface processor = emptyfactory.build();
 				    log.debug("Running plugin: {}", emptyfactory.name());
 				    processor.run(element, path, defaults, defines);
 		        }
@@ -107,9 +89,8 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 			}
-			
-			log.info("End of processing target {}", node.getString("[@name]"));
     	}
+		log.info("End of processing data");
 	}
 
 }

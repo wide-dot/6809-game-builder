@@ -22,6 +22,11 @@
                 <file.maxsize>0x4000</file.maxsize>
             </media.default>
 
+            <section name="LOAD"  face="0" track="0"  sector="2"/>
+            <section name="SCENE" face="0" track="0"  sector="9"/>
+            <section name="INDEX" face="1" track="0"  sector="1"/>
+            <section name="DATA"  face="0" track="1"  sector="1"/>
+
             <file section="BOOT" maxsize="0x100">   
                 <checksum type="moto.fd640.boot">
                     <lwasm format="raw">

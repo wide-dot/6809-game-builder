@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.file.impl;
+package com.widedot.m6809.gamebuilder.plugin.data.impl;
 
 import java.util.Arrays;
 import java.util.List;

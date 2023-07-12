@@ -4,5 +4,5 @@ public interface DirEntryFactory {
 
   String name();
 
-  FilePluginInterface build();
+  DirEntryPluginInterface build();
 }

@@ -1,12 +1,6 @@
 package com.widedot.m6809.gamebuilder.builder;
 
-import java.util.HashMap;
-
-import com.widedot.m6809.gamebuilder.configuration.media.Directory;
-import com.widedot.m6809.gamebuilder.configuration.media.File;
 import com.widedot.m6809.gamebuilder.configuration.target.Target;
-import com.widedot.m6809.gamebuilder.directory.FloppyDiskDirectory;
-import com.widedot.m6809.gamebuilder.storage.FdUtil;
 
 import lombok.extern.slf4j.Slf4j;
 

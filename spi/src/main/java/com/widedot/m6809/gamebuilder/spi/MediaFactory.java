@@ -4,5 +4,5 @@ public interface MediaFactory {
 
   String name();
 
-  FilePluginInterface build();
+  MediaPluginInterface build();
 }

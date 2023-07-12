@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media.storage.configuration;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Interleave {
-	public String name;
 	public int hardskip;
 	public int softskip;
 	public int softskew;
@@ -15,11 +14,6 @@ public class Interleave {
 	public int[] softMap;
 	
 	public Interleave(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		name = node.getString("[@name]", null);
-		if (name == null) {
-			throw new Exception("name is missing for interleave");
-		}
-
 		hardskip = node.getInteger("[@hardskip]", 1);
 		softskip = node.getInteger("[@softskip]", 1);
 		softskew = node.getInteger("[@softskew]", 1);
@@ -28,12 +22,10 @@ public class Interleave {
 	public Interleave(Interleave interleave, int sectors) {
 		
 		if (interleave!=null) {
-			name = interleave.name;
 			hardskip = interleave.hardskip;
 			softskip = interleave.softskip;
 			softskew = interleave.softskew;
 		} else {
-			name = "none";
 			hardskip = 1;
 			softskip = 1;
 			softskew = 1;

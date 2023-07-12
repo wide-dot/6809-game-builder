@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface Plugin {
 
-	default List<EmptyFactory> getEmptyFactories() {
+	default List<DefaultFactory> getDefaultFactories() {
 		return Collections.emptyList();
 	}
 	

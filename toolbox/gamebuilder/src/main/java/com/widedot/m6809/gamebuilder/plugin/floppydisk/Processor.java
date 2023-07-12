@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
 import java.util.Iterator;
 import java.util.List;
@@ -7,10 +7,11 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.configuration.storage.Storage;
-import com.widedot.m6809.gamebuilder.configuration.storage.StorageConfiguration;
-import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
-import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storages;
+import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
+import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
@@ -23,32 +24,41 @@ public class Processor {
 	
 	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing media ...");
+		log.info("Processing floppydisk ...");
 		
-		String storageName = node.getString("[@storage]", defaults.getString("media.storage", null));
-		if (storageName == null) {
-			throw new Exception("storage is missing for media");
+		String model = node.getString("[@model]", defaults.getString("floppydisk.model", null));
+		if (model == null) {
+			throw new Exception("model is missing for floppydisk");
 		}
 		
-		String include = node.getString("[@include]", defaults.getString("media.include", null));
-		if (include == null) {
-			throw new Exception("include is missing for media");
+		String storageFilename = node.getString("[@storage]", defaults.getString("floppydisk.storage", null));
+		if (storageFilename == null) {
+			throw new Exception("storage is missing for floppydisk");
 		}
-		include = path + include;
+		storageFilename = path + storageFilename;
 		
-		
-		StorageConfiguration storages = new StorageConfiguration(include);
-		Storage storage = storages.get(storageName);
-		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
-		//sectionIndexes = new HashMap<String, Section>();
+		// load storage definitions from external file
+		Storages storages = new Storages(storageFilename);
+		Storage storage = storages.get(model);
     	
+		// load custom storage sections inside floppydisk
+	    List<HierarchicalConfiguration<ImmutableNode>> sectionNodes = node.configurationsAt("section");
+    	for(HierarchicalConfiguration<ImmutableNode> sectionNode : sectionNodes)
+    	{	
+    		Section section = new Section(sectionNode);
+    		storage.sections.put(section.name, section);
+    	}
+		
 		defines.add(node);
 		defaults.add(node);
 
+		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
+		//sectionIndexes = new HashMap<String, Section>();
+		
    		// instanciate plugins
 		Iterator<String> keyIter = node.getKeys();
 		String key;
-		EmptyFactory emptyfactory;
+		DefaultFactory defaultFactory;
 		FileFactory fileFactory;
 		
 		while (keyIter.hasNext()) {
@@ -69,10 +79,10 @@ public class Processor {
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
 				
 				// external plugin
-				emptyfactory = Settings.pluginLoader.getEmptyFactory(plugin);
-			    if (emptyfactory == null) {
+				defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
+			    if (defaultFactory == null) {
 			    	// embeded plugin
-			    	emptyfactory = Settings.embededPluginLoader.getEmptyFactory(plugin);
+			    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
 			    }
 			    
 				// external plugin
@@ -82,13 +92,13 @@ public class Processor {
 			    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
 			    }
 			    
-		        if (emptyfactory == null && fileFactory == null) {
+		        if (defaultFactory == null && fileFactory == null) {
 		        	throw new Exception("Unknown File processor: " + plugin);   	
 		        }
 			    
-		        if (emptyfactory != null) {
-				    final EmptyPluginInterface processor = emptyfactory.build();
-				    log.debug("Running plugin: {}", emptyfactory.name());
+		        if (defaultFactory != null) {
+				    final DefaultPluginInterface processor = defaultFactory.build();
+				    log.debug("Running plugin: {}", defaultFactory.name());
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
@@ -98,12 +108,11 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 			}
-			
-			log.info("End of processing target {}", node.getString("[@name]"));
     	}
-    	
-    	
-    	
+		log.info("End of processing floppydisk");
 	}
 
+	public static void add(String sectionName, byte[] data) throws Exception {
+		
+	}
 }

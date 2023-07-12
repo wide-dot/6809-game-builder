@@ -1,11 +1,10 @@
-package com.widedot.m6809.gamebuilder.plugin.media.storage.configuration;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public class Fat {
 
-	public String name;
 	public Integer sectorPerBlock;
 	public Integer nBlocks;
 	public Integer sectorSize;
@@ -14,12 +13,7 @@ public class Fat {
 	public Integer nDirEntries;
 	
 	public Fat (HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		
-		name = node.getString("[@name]", null);
-		if (name == null) {
-			throw new Exception("name is missing for fat");
-		}
-		
+
 		sectorPerBlock = node.getInteger("[sectorperblock]", 0);
 		if (sectorPerBlock == null) {
 			throw new Exception("sectorperblock is missing for fat");

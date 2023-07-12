@@ -1,25 +1,31 @@
 <configuration>
 
-    <storage name="t2" type="rom">
+    <rom model="t2">
         <segment pages="128"  pageSize="0x4000" org="0"/>
-    </storage>
+        <section name="BOOT"  page="0" org="0"/>
+    </rom>
 
-    <storage name="fd640" type="floppydisk">
+    <floppydisk model="fd640">
         <segment faces="2" tracks="80" sectors="16" sectorSize="256"/>
         <interleave softskip="2" softskew="4" hardskip="7"/>
         <fat sectorperblock="8" nblocks="160" sectorsize="255" fatstart="129" dirstart="512" ndirentries="112"/>
-    </storage>
+        <section name="BOOT" face="0" track="0" sector="1"/>
+        <section name="FAT0"  face="0" track="20" sector="1"/>
+        <section name="FAT1"  face="1" track="20" sector="1"/>
+    </floppydisk>
 
-    <storage name="fd320" type="floppydisk">
-        <segment faces="2" tracks="80" sectors="16" sectorSize="256"/>
+    <floppydisk model="fd320">
+        <segment faces="1" tracks="80" sectors="16" sectorSize="256"/>
         <interleave softskip="2" softskew="4" hardskip="7"/>
         <fat sectorperblock="8" nblocks="80"  sectorsize="128" fatstart="129" dirstart="256" ndirentries="112"/>
-    </storage>
+        <section name="BOOT" face="0" track="0" sector="1"/>
+        <section name="FAT0"  face="0" track="20" sector="1"/>
+    </floppydisk>
     
-    <storage name="fd158" type="floppydisk"/>
+    <floppydisk model="fd158">
         <segment tracks="35" faces="1" sectors="18" sectorSize="256"/>
         <interleave softskip="2" softskew="4" hardskip="3"/>
-        <fat sectorperblock="9" nblocks="68"  sectorsize="256" fatstart="128" dirstart="512" ndirentries="72" />
-    </storage>
+        <fat sectorperblock="9" nblocks="68"  sectorsize="256" fatstart="128" dirstart="512" ndirentries="72"/>
+    </floppydisk>
 
 </configuration>

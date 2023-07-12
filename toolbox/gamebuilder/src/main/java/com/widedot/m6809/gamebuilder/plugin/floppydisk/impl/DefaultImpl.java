@@ -1,16 +1,14 @@
-package com.widedot.m6809.gamebuilder.plugin.media.impl;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.impl;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.plugin.lwasm.Converter;
-import com.widedot.m6809.gamebuilder.plugin.media.Processor;
-import com.widedot.m6809.gamebuilder.spi.EmptyPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.Processor;
+import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
-public class EmptyImpl implements EmptyPluginInterface {
+public class DefaultImpl implements DefaultPluginInterface {
 
   @Override
   public void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {

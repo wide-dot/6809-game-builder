@@ -15,7 +15,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.widedot.m6809.gamebuilder.spi.DirEntryFactory;
-import com.widedot.m6809.gamebuilder.spi.EmptyFactory;
+import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PluginLoader {
 
-	private final Map<String, EmptyFactory> emptyFactoryMap = new HashMap<>();
+	private final Map<String, DefaultFactory> defaultFactoryMap = new HashMap<>();
 	private final Map<String, MediaFactory> mediaFactoryMap = new HashMap<>();
 	private final Map<String, DirEntryFactory> dirEntryFactoryMap = new HashMap<>();
 	private final Map<String, FileFactory> fileFactoryMap = new HashMap<>();
@@ -69,8 +69,8 @@ public class PluginLoader {
 
 	private void installPlugin(final Plugin plugin) {
 		log.info("Installing plugin: " + plugin.getClass().getName());
-		for (EmptyFactory f : plugin.getEmptyFactories()) {
-			emptyFactoryMap.put(f.name(), f);
+		for (DefaultFactory f : plugin.getDefaultFactories()) {
+			defaultFactoryMap.put(f.name(), f);
 		}
 		for (MediaFactory f : plugin.getMediaFactories()) {
 			mediaFactoryMap.put(f.name(), f);
@@ -98,27 +98,27 @@ public class PluginLoader {
 		}
 	}
 
-	public EmptyFactory getEmptyFactory(String name) {
-		EmptyFactory f = emptyFactoryMap.get(name);
-		if (f == null) log.debug("EmptyFactory: {} not loaded!", name);
+	public DefaultFactory getDefaultFactory(String name) {
+		DefaultFactory f = defaultFactoryMap.get(name);
+		if (f == null) log.debug("DefaultFactory: {} not an external plugin.", name);
 		return f;
 	}
 	
 	public MediaFactory getMediaFactory(String name) {
 		MediaFactory f = mediaFactoryMap.get(name);
-		if (f == null) log.debug("MediaFactory: {} not loaded!", name);
+		if (f == null) log.debug("MediaFactory: {} not an external plugin.", name);
 		return f;
 	}
 	
 	public DirEntryFactory getDirEntryFactory(String name) {
 		DirEntryFactory f = dirEntryFactoryMap.get(name);
-		if (f == null) log.debug("DirEntryFactory: {} not loaded!", name);
+		if (f == null) log.debug("DirEntryFactory: {} not an external plugin.", name);
 		return f;
 	}
 	
 	public FileFactory getFileFactory(String name) {
 		FileFactory f = fileFactoryMap.get(name);
-		if (f == null) log.debug("FileFactory: {} not loaded!", name);
+		if (f == null) log.debug("FileFactory: {} not an external plugin.", name);
 		return f;
 	}
 }

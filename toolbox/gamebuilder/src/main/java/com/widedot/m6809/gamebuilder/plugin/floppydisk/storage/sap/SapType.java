@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media.storage.sap;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.sap;
 
 public class SapType {
 	public static int[] nbTracks = {0, 80, 40};

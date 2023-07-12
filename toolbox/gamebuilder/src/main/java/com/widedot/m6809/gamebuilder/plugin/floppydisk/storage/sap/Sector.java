@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.media.storage.sap;
+package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.sap;
 
 import lombok.extern.slf4j.Slf4j;
 

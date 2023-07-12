@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.file.impl;
+package com.widedot.m6809.gamebuilder.plugin.data.impl;
 
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
