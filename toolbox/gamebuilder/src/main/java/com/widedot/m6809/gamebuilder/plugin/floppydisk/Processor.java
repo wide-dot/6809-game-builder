@@ -93,11 +93,11 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
-		        if (fileFactory != null) {
-				    final FilePluginInterface processor = fileFactory.build();
-				    log.debug("Running plugin: {}", fileFactory.name());
-				    processor.run(element, path, defaults, defines);
-		        }
+//		        if (fileFactory != null) {
+//				    final FilePluginInterface processor = fileFactory.build();
+//				    log.debug("Running plugin: {}", fileFactory.name());
+//				    processor.run(element, path, defaults, defines);
+//		        }
 			}
     	}
 		log.info("End of processing floppydisk");

@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.plugin.lwasm;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -10,15 +9,14 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Group;
 import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
-import com.widedot.m6809.gamebuilder.lwtools.format.LwRaw;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Converter {
-	public static byte[] getBin(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+public class Processor {
+	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
 		
 		String format = node.getString("[@format]", LwAssembler.RAW);
 		log.debug("format: {}", format);

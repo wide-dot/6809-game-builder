@@ -1,5 +1,6 @@
-com.widedot.m6809.gamebuilder.plugin.bin.impl.FilePlugin
-com.widedot.m6809.gamebuilder.plugin.data.impl.FilePlugin
-com.widedot.m6809.gamebuilder.plugin.cksumfd640.impl.FilePlugin
-com.widedot.m6809.gamebuilder.plugin.lwasm.impl.FilePlugin
+com.widedot.m6809.gamebuilder.plugin.asm.impl.FilePlugin
+com.widedot.m6809.gamebuilder.plugin.bin.impl.BytesPlugin
+com.widedot.m6809.gamebuilder.plugin.cksumfd640.impl.BytesPlugin
+com.widedot.m6809.gamebuilder.plugin.data.impl.DefaultPlugin
 com.widedot.m6809.gamebuilder.plugin.floppydisk.impl.DefaultPlugin
+com.widedot.m6809.gamebuilder.plugin.lwasm.impl.BytesPlugin

@@ -3,15 +3,15 @@ package com.widedot.m6809.gamebuilder.plugin.bin.impl;
 import java.util.Arrays;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.spi.FileFactory;
+import com.widedot.m6809.gamebuilder.spi.BytesFactory;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
 
-public class FilePlugin implements Plugin {
+public class BytesPlugin implements Plugin {
 
   @Override
-  public List<FileFactory> getFileFactories() {
+  public List<BytesFactory> getBytesFactories() {
     return Arrays.asList(
-        new FileFactoryImpl()
+        new BytesFactoryImpl()
     );
   }
 }

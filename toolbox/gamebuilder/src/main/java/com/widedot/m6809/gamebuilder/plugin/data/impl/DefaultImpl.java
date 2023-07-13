@@ -4,15 +4,15 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.plugin.data.Processor;
-import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
-public class FileImpl implements FilePluginInterface {
+public class DefaultImpl implements DefaultPluginInterface {
 
   @Override
-  public byte[] run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+  public void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
-	  return Processor.run(node, path, defaults, defines);
+	  Processor.run(node, path, defaults, defines);
   }
 }

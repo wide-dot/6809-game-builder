@@ -11,6 +11,10 @@ public interface Plugin {
 		return Collections.emptyList();
 	}
 	
+	default List<BytesFactory> getBytesFactories() {
+		return Collections.emptyList();
+	}
+	
 	default List<MediaFactory> getMediaFactories() {
 		return Collections.emptyList();
 	}

@@ -6,10 +6,10 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.spi.BytesFactory;
+import com.widedot.m6809.gamebuilder.spi.BytesPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
-	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
 		log.info("Processing cksumfd640 ...");
 		
@@ -27,7 +27,7 @@ public class Processor {
 
    		// instanciate plugins
 		DefaultFactory defaultFactory;
-		FileFactory fileFactory;
+		BytesFactory bytesFactory;
 		
 		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
 		for (ImmutableNode child : root) {
@@ -48,13 +48,13 @@ public class Processor {
 			    }
 			    
 				// external plugin
-			    fileFactory = Settings.pluginLoader.getFileFactory(plugin);
-			    if (fileFactory == null) {
+			    bytesFactory = Settings.pluginLoader.getBytesFactory(plugin);
+			    if (bytesFactory == null) {
 			    	// embeded plugin
-			    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
+			    	bytesFactory = Settings.embededPluginLoader.getBytesFactory(plugin);
 			    }
 			    
-		        if (defaultFactory == null && fileFactory == null) {
+		        if (defaultFactory == null && bytesFactory == null) {
 		        	throw new Exception("Unknown File processor: " + plugin);   	
 		        }
 			    
@@ -64,14 +64,15 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
-		        if (fileFactory != null) {
-				    final FilePluginInterface processor = fileFactory.build();
-				    log.debug("Running plugin: {}", fileFactory.name());
-				    processor.run(element, path, defaults, defines);
+		        if (bytesFactory != null) {
+				    final BytesPluginInterface processor = bytesFactory.build();
+				    log.debug("Running plugin: {}", bytesFactory.name());
+				    processor.getBytes(element, path, defaults, defines);
 		        }
 			}
     	}
 		log.info("End of processing cksumfd640");
+		return null;
 	}
 
 }

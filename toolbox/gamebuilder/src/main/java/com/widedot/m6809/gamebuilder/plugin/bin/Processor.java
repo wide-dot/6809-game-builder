@@ -10,8 +10,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.configuration.media.Group;
 
-public class Converter {
-	public static byte[] getBin(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+public class Processor {
+	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		List<File> files = new ArrayList<File>();
 		List<byte[]> bins = new ArrayList<byte[]>();
 		
