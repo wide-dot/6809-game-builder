@@ -10,8 +10,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.zx0.Compressor;
-import com.widedot.m6809.gamebuilder.zx0.Optimizer;
+import com.widedot.m6809.util.zx0.Compressor;
+import com.widedot.m6809.util.zx0.Optimizer;
 import com.widedot.m6809.util.asm.AsmSourceCode;
 import com.widedot.toolbox.graphics.compiler.Image;
 import com.widedot.toolbox.graphics.compiler.encoder.Encoder;

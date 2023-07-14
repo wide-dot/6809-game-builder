@@ -6,16 +6,16 @@ import java.util.HashMap;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.BytesPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.toolbox.text.txt2bas.Converter;
 import com.widedot.toolbox.text.txt2bas.FileResourcesUtils;
 
-public class FileImpl implements FilePluginInterface {
+public class BytesImpl implements BytesPluginInterface {
 
   @Override
-  public byte[] run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+  public byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
 	  //read input xml
 	  String filename = node.getString("", null);
