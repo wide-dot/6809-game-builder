@@ -6,10 +6,10 @@
 
     <parent>
 		<groupId>com.wide-dot</groupId>
-		<artifactId>6809-game-builder</artifactId>
+		<artifactId>6809-gamebuilder</artifactId>
 		<version>0.0.1</version>
-		<relativePath>../pom.xml</relativePath>
+		<relativePath>../../../pom.xml</relativePath>
     </parent>
-    <artifactId>6809-game-builder-spi</artifactId>
+    <artifactId>6809-gamebuilder-spi</artifactId>
 
 </project>

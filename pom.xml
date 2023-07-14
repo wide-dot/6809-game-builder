@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.wide-dot</groupId>
-	<artifactId>6809-game-builder</artifactId>
+	<artifactId>6809-gamebuilder</artifactId>
 	<version>0.0.1</version>
 	<packaging>pom</packaging>
 
@@ -105,8 +105,9 @@
 	</build>
 
 	<modules>
-		<module>./spi</module>
-		<module>./toolbox/gamebuilder</module>
+		<module>./toolbox/gamebuilder/spi</module>
+		<module>./toolbox/gamebuilder/util</module>
+		<module>./toolbox/gamebuilder/core</module>
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./toolbox/graphics/tilemap/leanscroll</module>
 		<module>./toolbox/graphics/compiled</module>

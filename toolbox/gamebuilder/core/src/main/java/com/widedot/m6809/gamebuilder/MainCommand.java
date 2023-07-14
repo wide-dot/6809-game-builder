@@ -18,7 +18,7 @@ import picocli.CommandLine.Option;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.util.FileUtil;
 import com.widedot.m6809.gamebuilder.pluginloader.EmbeddedPluginLoader;
 import com.widedot.m6809.gamebuilder.pluginloader.PluginLoader;
-import com.widedot.m6809.gamebuilder.util.FileResourcesUtils;
+import com.widedot.m6809.util.FileResourcesUtils;
 
 /**
  * 6809 game builder

@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.wide-dot</groupId>
-		<artifactId>6809-game-builder</artifactId>
+		<artifactId>6809-gamebuilder</artifactId>
 		<version>0.0.1</version>
-		<relativePath>../../pom.xml</relativePath>
+		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>gamebuilder</artifactId>
+	<artifactId>6809-gamebuilder-core</artifactId>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -17,7 +17,12 @@
 
   <dependencies>
     <dependency>
-      <artifactId>6809-game-builder-spi</artifactId>
+      <artifactId>6809-gamebuilder-spi</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>0.0.1</version>
+    </dependency>
+    <dependency>
+      <artifactId>6809-gamebuilder-util</artifactId>
       <groupId>com.wide-dot</groupId>
       <version>0.0.1</version>
     </dependency>

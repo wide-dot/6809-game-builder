@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.util;
+package com.widedot.m6809.util;
 
 import java.io.*;
 

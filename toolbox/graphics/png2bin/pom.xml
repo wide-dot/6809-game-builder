@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.wide-dot</groupId>
-		<artifactId>6809-game-builder</artifactId>
+		<artifactId>6809-gamebuilder</artifactId>
 		<version>0.0.1</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.wide-dot</groupId>
-			<artifactId>gamebuilder</artifactId>
+			<artifactId>6809-gamebuilder-util</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
