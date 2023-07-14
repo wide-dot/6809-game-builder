@@ -89,14 +89,14 @@ Then plateform distrubutions are generated in .\package\target :
 [third-party libraries and tools][credits]
 
 [6809-game-projects]: https://github.com/wide-dot/6809-game-projects
-[sonic2]: doc/demo.gif
-[dott]: doc/demo2.gif
-[unpack-tools]: doc/unpack-tools.md
-[project-setup]: doc/project-setup.md
-[project-build]: doc/project-build.md
-[objects]: doc/objects.md
-[sprites]: doc/sprites.md
-[tilemaps]: doc/tilemaps.md
-[audio]: doc/audio.md
-[toolbox-reference]: doc/toolbox.md
-[credits]: doc/credits.md
+[sonic2]: docs/demo.gif
+[dott]: docs/demo2.gif
+[unpack-tools]: docs/unpack-tools.md
+[project-setup]: docs/project-setup.md
+[project-build]: docs/project-build.md
+[objects]: docs/objects.md
+[sprites]: docs/sprites.md
+[tilemaps]: docs/tilemaps.md
+[audio]: docs/audio.md
+[toolbox-reference]: docs/toolbox.md
+[credits]: docs/credits.md
