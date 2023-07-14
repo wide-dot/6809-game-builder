@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.widedot.m6809.gamebuilder.zx0;
+package com.widedot.m6809.gamebuilder.plugin.direntry.zx0;
 
 import java.util.*;
 

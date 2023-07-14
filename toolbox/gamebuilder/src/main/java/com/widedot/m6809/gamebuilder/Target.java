@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.configuration.target;
+package com.widedot.m6809.gamebuilder;
 
 import java.util.Iterator;
 import java.util.List;
@@ -6,7 +6,6 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;

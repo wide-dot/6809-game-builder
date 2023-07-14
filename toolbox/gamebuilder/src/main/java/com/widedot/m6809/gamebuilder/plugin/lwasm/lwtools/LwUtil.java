@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools;
 
 import java.io.BufferedReader;
 import java.io.IOException;

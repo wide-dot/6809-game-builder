@@ -8,14 +8,18 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.configuration.media.Group;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Processor {
 	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+		
+		log.debug("Processing bin ...");
+		
 		List<File> files = new ArrayList<File>();
 		List<byte[]> bins = new ArrayList<byte[]>();
 		
-		Group.recurse(node, path, files);
+		//Group.recurse(node, path, files);
 
 		int length = 0;
 		for (File file : files) {
@@ -31,6 +35,8 @@ public class Processor {
 				finalbin[outpos++] = bin[i];
 			}
 		}
+		
+		log.debug("End of processing bin");
 		
 		return finalbin;
 	}

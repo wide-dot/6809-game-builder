@@ -10,7 +10,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.LwAssembler;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+		
+		log.debug("Processing lwasm ...");
 		
 		String format = node.getString("[@format]", LwAssembler.RAW);
 		log.debug("format: {}", format);
@@ -88,7 +90,11 @@ public class Processor {
 			FileUtils.write(tmpfile, fileStr, StandardCharsets.UTF_8, true);
 		}
 		
-		// assemble
-		return LwAssembler.assemble(tmpfile.getAbsolutePath(), path, defines.values, format);
+		// assemble		
+		byte[] out = LwAssembler.assemble(tmpfile.getAbsolutePath(), path, defines.values, format);
+		
+		log.debug("End of processing lwasm");
+		
+		return out;
 	}
 }

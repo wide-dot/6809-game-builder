@@ -14,13 +14,11 @@ import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import com.widedot.m6809.gamebuilder.plugin.lwasm.util.FileUtil;
 import com.widedot.m6809.gamebuilder.pluginloader.EmbeddedPluginLoader;
 import com.widedot.m6809.gamebuilder.pluginloader.PluginLoader;
-
-import com.widedot.m6809.gamebuilder.configuration.target.Target;
-import com.widedot.m6809.gamebuilder.lwtools.LwAssembler;
-import com.widedot.m6809.util.FileResourcesUtils;
-import com.widedot.m6809.util.FileUtil;
+import com.widedot.m6809.gamebuilder.util.FileResourcesUtils;
 
 /**
  * 6809 game builder
@@ -150,7 +148,7 @@ public class MainCommand implements Runnable {
 	    
 	    // clean build files
 		if (clean) {
-			LwAssembler.clean(path);
+			//LwAssembler.clean(path);
 			return;
 		}
 		

@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools.format;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,12 +13,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStack;
-import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprStackNode;
-import com.widedot.m6809.gamebuilder.lwtools.struct.LWExprTerm;
-import com.widedot.m6809.gamebuilder.lwtools.struct.Reloc;
-import com.widedot.m6809.gamebuilder.lwtools.struct.LWSection;
-import com.widedot.m6809.gamebuilder.lwtools.struct.Symbol;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprStack;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprStackNode;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprTerm;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Reloc;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWSection;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Symbol;
 
 import lombok.extern.slf4j.Slf4j;
 

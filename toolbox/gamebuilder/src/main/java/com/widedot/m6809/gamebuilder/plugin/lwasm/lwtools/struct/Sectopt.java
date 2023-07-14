@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools.struct;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct;
 
 public class Sectopt {
 	public String name;			// section name

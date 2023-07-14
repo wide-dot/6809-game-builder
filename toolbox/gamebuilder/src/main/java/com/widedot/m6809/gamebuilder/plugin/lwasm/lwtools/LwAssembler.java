@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +16,8 @@ import java.util.Map.Entry;
 import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.util.FileUtil;
-import com.widedot.m6809.gamebuilder.lwtools.format.LwInterface;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwInterface;
+import com.widedot.m6809.gamebuilder.plugin.lwasm.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,13 +39,13 @@ public class LwAssembler
 	public static final HashMap<String, String> formatClass = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;
 		{
-			put(OBJ,  "com.widedot.m6809.gamebuilder.lwtools.format.LwObject");
-			put(DECB, "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
-			put(OS9,  "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
-			put(RAW,  "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
-			put(HEX,  "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
-			put(SREC, "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
-			put(IHEX, "com.widedot.m6809.gamebuilder.lwtools.format.LwRaw");
+			put(OBJ,  "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwObject");
+			put(DECB, "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
+			put(OS9,  "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
+			put(RAW,  "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
+			put(HEX,  "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
+			put(SREC, "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
+			put(IHEX, "com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format.LwRaw");
 		}
 	};
 	

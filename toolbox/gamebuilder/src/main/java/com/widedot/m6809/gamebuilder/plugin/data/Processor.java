@@ -20,7 +20,7 @@ public class Processor {
 	
 	public static byte[] run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing data ...");
+		log.debug("Processing data ...");
 		
 		String section = node.getString("[@section]",  defaults.getString("data.section", null));
 		int maxsize = Integer.decode(node.getString("[@maxsize]", defaults.getString("data.maxsize", String.valueOf(Integer.MAX_VALUE))));
@@ -79,7 +79,7 @@ public class Processor {
 		        }
 			}
     	}
-		log.info("End of processing data");
+		log.debug("End of processing data");
 		return null;
 	}
 

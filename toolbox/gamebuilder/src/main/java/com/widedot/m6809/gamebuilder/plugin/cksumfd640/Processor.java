@@ -20,7 +20,7 @@ public class Processor {
 	
 	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing cksumfd640 ...");
+		log.debug("Processing cksumfd640 ...");
 		
 		defines.add(node);
 		defaults.add(node);
@@ -71,7 +71,7 @@ public class Processor {
 		        }
 			}
     	}
-		log.info("End of processing cksumfd640");
+		log.debug("End of processing cksumfd640");
 		return null;
 	}
 

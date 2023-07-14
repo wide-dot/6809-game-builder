@@ -23,7 +23,7 @@ public class Processor {
 	
 	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
     	
-		log.info("Processing floppydisk ...");
+		log.debug("Processing floppydisk ...");
 		
 		String model = node.getString("[@model]", defaults.getString("floppydisk.model", null));
 		if (model == null) {
@@ -100,7 +100,7 @@ public class Processor {
 		        }
 			}
     	}
-		log.info("End of processing floppydisk");
+		log.debug("End of processing floppydisk");
 	}
 
 	public static void add(String sectionName, byte[] data) throws Exception {

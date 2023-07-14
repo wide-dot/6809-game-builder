@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.lwtools.struct;
+package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct;
 
 import java.io.Serializable;
 
