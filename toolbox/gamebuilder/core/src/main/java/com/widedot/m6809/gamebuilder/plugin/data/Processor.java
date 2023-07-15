@@ -1,15 +1,20 @@
 package com.widedot.m6809.gamebuilder.plugin.data;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.spi.BytesFactory;
-import com.widedot.m6809.gamebuilder.spi.BytesPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
+import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -35,12 +40,12 @@ public class Processor {
 
    		// instanciate plugins
 		DefaultFactory emptyfactory;
-		BytesFactory bytesFactory;
+		ObjectFactory objectFactory;
 		
 		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
 		for (ImmutableNode child : root) {
 			String plugin = child.getNodeName();
-
+		
 			// skip non plugins
 			if (plugin.equals("default") ||
 				plugin.equals("define")) continue;
@@ -56,14 +61,14 @@ public class Processor {
 			    }
 			    
 				// external plugin
-			    bytesFactory = Settings.pluginLoader.getBytesFactory(plugin);
-			    if (bytesFactory == null) {
+			    objectFactory = Settings.pluginLoader.getObjectFactory(plugin);
+			    if (objectFactory == null) {
 			    	// embeded plugin
-			    	bytesFactory = Settings.embededPluginLoader.getBytesFactory(plugin);
+			    	objectFactory = Settings.embededPluginLoader.getObjectFactory(plugin);
 			    }
 			    
-		        if (emptyfactory == null && bytesFactory == null) {
-		        	throw new Exception("Unknown File processor: " + plugin);   	
+		        if (emptyfactory == null && objectFactory == null) {
+		        	throw new Exception("Unknown Plugin: " + plugin);   	
 		        }
 			    
 		        if (emptyfactory != null) {
@@ -72,10 +77,15 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
-		        if (bytesFactory != null) {
-				    final BytesPluginInterface processor = bytesFactory.build();
-				    log.debug("Running plugin: {}", bytesFactory.name());
-				    processor.getBytes(element, path, defaults, defines);
+		        if (objectFactory != null) {
+				    final ObjectPluginInterface processor = objectFactory.build();
+				    log.debug("Running plugin: {}", objectFactory.name());
+				    ObjectDataType obj = processor.getObject(element, path, defaults, defines);
+				    
+				    String dirname = path + File.separator + Settings.values.get("dist.dir");
+				    File dir = new File(dirname);
+				    dir.mkdirs();
+				    Files.write(Path.of(dirname + File.separator + "disk.fd"), obj.getBytes());
 		        }
 			}
     	}

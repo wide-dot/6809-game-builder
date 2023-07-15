@@ -84,7 +84,7 @@ public class Processor {
 			    }
 			    
 		        if (defaultFactory == null && fileFactory == null) {
-		        	throw new Exception("Unknown File processor: " + plugin);   	
+		        	throw new Exception("Unknown Plugin: " + plugin);   	
 		        }
 			    
 		        if (defaultFactory != null) {

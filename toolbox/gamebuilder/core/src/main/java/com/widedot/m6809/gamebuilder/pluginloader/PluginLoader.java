@@ -15,7 +15,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.widedot.m6809.gamebuilder.spi.DirEntryFactory;
-import com.widedot.m6809.gamebuilder.spi.BytesFactory;
+import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.MediaFactory;
@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PluginLoader {
 
 	private final Map<String, DefaultFactory> defaultFactoryMap = new HashMap<>();
-	private final Map<String, BytesFactory> bytesFactoryMap = new HashMap<>();
+	private final Map<String, ObjectFactory> objectFactoryMap = new HashMap<>();
 	private final Map<String, MediaFactory> mediaFactoryMap = new HashMap<>();
 	private final Map<String, DirEntryFactory> dirEntryFactoryMap = new HashMap<>();
 	private final Map<String, FileFactory> fileFactoryMap = new HashMap<>();
@@ -74,8 +74,8 @@ public class PluginLoader {
 		for (DefaultFactory f : plugin.getDefaultFactories()) {
 			defaultFactoryMap.put(f.name(), f);
 		}
-		for (BytesFactory f : plugin.getBytesFactories()) {
-			bytesFactoryMap.put(f.name(), f);
+		for (ObjectFactory f : plugin.getObjectFactories()) {
+			objectFactoryMap.put(f.name(), f);
 		}
 		for (MediaFactory f : plugin.getMediaFactories()) {
 			mediaFactoryMap.put(f.name(), f);
@@ -109,9 +109,9 @@ public class PluginLoader {
 		return f;
 	}
 	
-	public BytesFactory getBytesFactory(String name) {
-		BytesFactory f = bytesFactoryMap.get(name);
-		if (f == null) log.error("BytesFactory: {} not loaded!", name);
+	public ObjectFactory getObjectFactory(String name) {
+		ObjectFactory f = objectFactoryMap.get(name);
+		if (f == null) log.error("ObjectFactory: {} not loaded!", name);
 		return f;
 	}
 	

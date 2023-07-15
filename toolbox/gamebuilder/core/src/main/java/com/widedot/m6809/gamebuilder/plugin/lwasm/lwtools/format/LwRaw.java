@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class LwRaw implements LwInterface{
+import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+
+public class LwRaw implements ObjectDataType{
 
 	public byte[] bin;
 	
@@ -13,7 +15,7 @@ public class LwRaw implements LwInterface{
 	}
 
 	@Override
-	public byte[] getBin() {
+	public byte[] getBytes() throws Exception {
 		return bin;
 	}
 	

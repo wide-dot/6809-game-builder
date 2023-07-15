@@ -6,7 +6,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
-public interface BytesPluginInterface {
+public interface ObjectPluginInterface {
 
-  byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception;
+  ObjectDataType getObject(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception;
 }

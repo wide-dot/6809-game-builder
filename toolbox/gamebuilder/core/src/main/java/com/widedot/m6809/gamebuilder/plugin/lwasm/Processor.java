@@ -16,6 +16,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -23,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Processor {
-	public static byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static Object getObject(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
 		
 		log.debug("Processing lwasm ...");
 		
@@ -66,7 +67,7 @@ public class Processor {
 			    }
 			    
 		        if (defaultFactory == null && fileFactory == null) {
-		        	throw new Exception("Unknown File processor: " + plugin);   	
+		        	throw new Exception("Unknown Plugin: " + plugin);   	
 		        }
 			    
 		        if (defaultFactory != null) {
@@ -114,11 +115,11 @@ public class Processor {
 		}
 
 		// assemble		
-		byte[] out = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
+		ObjectDataType obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
 		
 		log.debug("End of processing lwasm");
 		
-		return out;
+		return obj;
 	}
 	
 	public static File concat(List<File> files, String asmFilename) throws IOException {

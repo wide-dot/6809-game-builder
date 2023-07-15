@@ -19,11 +19,12 @@ import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprTerm;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Symbol;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LwObject implements LwInterface {
+public class LwObject implements ObjectDataType{
 
 	public Path path;
 	public List<LWSection> secLst;
@@ -46,6 +47,7 @@ public class LwObject implements LwInterface {
 		};
 	
 	private byte[] filedata;
+	byte[] bin; // contains all sections data as ordered by lwasm
 	private int cc;
 	private static final int numopers = 13;
 	
@@ -440,22 +442,24 @@ public class LwObject implements LwInterface {
 	}
 
 	@Override
-	public byte[] getBin() {
+	public byte[] getBytes() throws Exception {
 
-		int length = 0;
-		for(LWSection section : secLst) {
-			length += section.code.length;
-		}
-		
-		byte[] finalbin = new byte[length];
-		int outpos = 0;
-		for(LWSection section : secLst) {
-			for (int i=0; i<section.code.length; i++) {
-				finalbin[outpos++] = section.code[i];
+		if (bin == null) {
+			int length = 0;
+			for(LWSection section : secLst) {
+				length += section.code.length;
+			}
+			
+			bin = new byte[length];
+			int outpos = 0;
+			for(LWSection section : secLst) {
+				for (int i=0; i<section.code.length; i++) {
+					bin[outpos++] = section.code[i];
+				}
 			}
 		}
 		
-		return finalbin;
+		return bin;
 	}
 
 }

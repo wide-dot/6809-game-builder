@@ -6,16 +6,18 @@ import java.util.HashMap;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.spi.BytesPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.toolbox.text.txt2bas.Binary;
 import com.widedot.toolbox.text.txt2bas.Converter;
 import com.widedot.toolbox.text.txt2bas.FileResourcesUtils;
 
-public class BytesImpl implements BytesPluginInterface {
+public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public byte[] getBytes(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataType getObject(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
 	  //read input xml
 	  String filename = node.getString("", null);
@@ -23,7 +25,8 @@ public class BytesImpl implements BytesPluginInterface {
 	  
 	  File file = new File(path + File.separator + filename);
 	  HashMap<byte[], byte[]> tokenmap = FileResourcesUtils.getHashMap(tokenset+".def");
-	  
-	  return Converter.getBasic(file, tokenmap);
+	  Binary bin = new Binary();
+	  bin.bytes = Converter.getBasic(file, tokenmap);
+	  return bin;
   }
 }

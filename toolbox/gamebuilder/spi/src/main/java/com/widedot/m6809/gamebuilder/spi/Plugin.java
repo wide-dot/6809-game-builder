@@ -11,7 +11,7 @@ public interface Plugin {
 		return Collections.emptyList();
 	}
 	
-	default List<BytesFactory> getBytesFactories() {
+	default List<ObjectFactory> getObjectFactories() {
 		return Collections.emptyList();
 	}
 	
