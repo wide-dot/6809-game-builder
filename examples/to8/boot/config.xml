@@ -8,7 +8,7 @@
             <define symbol="debug.medialevel" value="1"/>
 
             <data section="BOOT" maxsize="0x100">   
-                <cksumfd640>
+                <cksumfd640 test="10">
                     <lwasm format="raw">
                         <define symbol="debug.lwasmlevel" value="1"/>
                         <asm filename="new-engine/system/to8/bootloader/boot.asm"/>
