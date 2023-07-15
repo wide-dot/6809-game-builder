@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,8 @@ public class Processor {
 		log.debug("Processing lwasm ...");
 		
 		String format = node.getString("[@format]", LwAssembler.RAW);
-		log.debug("format: {}", format);
+		String gensource = node.getString("[@gensource]", null);
+		log.debug("format: {} gensource: {}", format, gensource);
 		
 		defines.add(node);
 		defaults.add(node);
@@ -80,21 +82,53 @@ public class Processor {
 		        }
 			}
 		}
-		
-		// concat ressources
-		String filename = path + File.separator + Settings.values.get("build.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
-		File tmpfile = new File(filename);		
-		
-		for (File file : files) {
-			String fileStr = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-			FileUtils.write(tmpfile, fileStr, StandardCharsets.UTF_8, true);
+
+		// check if at least a file is provided
+		if (files.size() == 0) {
+			String msg = "no files to process for lwasm!";
+			log.error(msg);
+			throw new Exception(msg);
 		}
+
+		// input file for lwasm
+		File asmFile = null;
+		String asmFilename = null;
 		
+		// set default generated source filename if specified
+		if (gensource != null) {
+			asmFilename = path + File.separator + Settings.values.get("generate.dir") + File.separator + gensource;
+			asmFile = concat(files, asmFilename);
+			
+		} else {
+		
+			// no specified gensource
+			
+			if (files.size() == 1 ) {
+				// only one file, use original file as source
+				asmFile = files.get(0);
+			} else {
+				// multiple files, use temp file with timestamp name 
+				asmFilename = path + File.separator + Settings.values.get("generate.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
+				asmFile = concat(files, asmFilename);
+			}
+		}
+
 		// assemble		
-		byte[] out = LwAssembler.assemble(tmpfile.getAbsolutePath(), path, defines.values, format);
+		byte[] out = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
 		
 		log.debug("End of processing lwasm");
 		
 		return out;
+	}
+	
+	public static File concat(List<File> files, String asmFilename) throws IOException {
+		File asmFile = new File(asmFilename);
+		boolean append = false;
+		for (File file : files) {
+			String fileStr = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+			FileUtils.write(asmFile, fileStr, StandardCharsets.UTF_8, append);
+			append = true;
+		}	
+		return asmFile;
 	}
 }
