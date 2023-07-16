@@ -1,10 +1,10 @@
 package com.widedot.m6809.gamebuilder.plugin.cksumfd640.types;
 
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 
 public class LwRaw {
 	
-	public LwRaw (ObjectDataType inobj) throws Exception {
+	public LwRaw (ObjectDataInterface inobj) throws Exception {
 		byte[] bin = inobj.getBytes();
 		
 		

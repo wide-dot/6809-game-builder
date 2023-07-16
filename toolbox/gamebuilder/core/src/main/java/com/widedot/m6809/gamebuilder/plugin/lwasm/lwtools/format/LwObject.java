@@ -19,12 +19,12 @@ import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprTerm;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Symbol;
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LwObject implements ObjectDataType{
+public class LwObject implements ObjectDataInterface{
 
 	public Path path;
 	public List<LWSection> secLst;

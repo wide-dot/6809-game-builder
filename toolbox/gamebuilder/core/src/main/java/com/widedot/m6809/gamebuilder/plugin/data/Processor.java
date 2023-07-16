@@ -1,9 +1,5 @@
 package com.widedot.m6809.gamebuilder.plugin.data;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -14,16 +10,17 @@ import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Processor {
 	
-	public static byte[] run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing data ...");
 		
@@ -80,17 +77,13 @@ public class Processor {
 		        if (objectFactory != null) {
 				    final ObjectPluginInterface processor = objectFactory.build();
 				    log.debug("Running plugin: {}", objectFactory.name());
-				    ObjectDataType obj = processor.getObject(element, path, defaults, defines);
+				    ObjectDataInterface obj = processor.getObject(element, path, defaults, defines);
 				    
-				    String dirname = path + File.separator + Settings.values.get("dist.dir");
-				    File dir = new File(dirname);
-				    dir.mkdirs();
-				    Files.write(Path.of(dirname + File.separator + "disk.fd"), obj.getBytes());
+				    media.write(section, obj.getBytes());
 		        }
 			}
     	}
 		log.debug("End of processing data");
-		return null;
 	}
 
 }

@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 
-public class LwRaw implements ObjectDataType{
+public class LwRaw implements ObjectDataInterface{
 
 	public byte[] bin;
 	

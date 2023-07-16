@@ -17,7 +17,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.util.FileUtil;
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,7 +49,7 @@ public class LwAssembler
 		}
 	};
 	
-	public static ObjectDataType assemble(String asmFile, String rootPath, HashMap<String, String> defines, String format) throws Exception {
+	public static ObjectDataInterface assemble(String asmFile, String rootPath, HashMap<String, String> defines, String format) throws Exception {
 		
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
 		String buildDir = FileUtil.getDir(asmFile) + File.separator +Settings.values.get("build.dir") + File.separator;
@@ -86,7 +86,7 @@ public class LwAssembler
         
         Class<?> clazz = Class.forName(formatClass.get(format));
         Constructor<?> ctor = clazz.getConstructor(String.class);
-        ObjectDataType object = (ObjectDataType) ctor.newInstance(new Object[] { binFilename });
+        ObjectDataInterface object = (ObjectDataInterface) ctor.newInstance(new Object[] { binFilename });
         
         // add a file tag in the build directory
         File tag = new File(buildDir+Settings.values.get("build.dir.tag"));

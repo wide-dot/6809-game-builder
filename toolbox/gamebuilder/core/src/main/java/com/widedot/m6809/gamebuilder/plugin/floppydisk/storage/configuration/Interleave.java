@@ -13,29 +13,15 @@ public class Interleave {
 	public int[] hardMap;
 	public int[] softMap;
 	
-	public Interleave(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
+	public Interleave(HierarchicalConfiguration<ImmutableNode> node, int sectors) throws Exception {
 		hardskip = node.getInteger("[@hardskip]", 1);
 		softskip = node.getInteger("[@softskip]", 1);
 		softskew = node.getInteger("[@softskew]", 1);
-	}
-	
-	public Interleave(Interleave interleave, int sectors) {
-		
-		if (interleave!=null) {
-			hardskip = interleave.hardskip;
-			softskip = interleave.softskip;
-			softskew = interleave.softskew;
-		} else {
-			hardskip = 1;
-			softskip = 1;
-			softskew = 1;
-		}
 		
 		// get interleaved map (as formatted on floppy disk)
 		int[] uninterleavedMap = getUninterleavedMap(sectors);
 		hardMap = getMap(hardskip, uninterleavedMap);
 		softMap = getMap(hardskip, hardMap);
-
 	}
 	
 	private int[] getUninterleavedMap(int sectors) {

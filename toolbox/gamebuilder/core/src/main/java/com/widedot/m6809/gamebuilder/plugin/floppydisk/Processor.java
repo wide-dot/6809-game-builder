@@ -1,18 +1,20 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
+import java.io.File;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storages;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
+import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
+import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -51,12 +53,12 @@ public class Processor {
 		defines.add(node);
 		defaults.add(node);
 
-		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
-		//sectionIndexes = new HashMap<String, Section>();
+		// Instanciate the floppy disk image
+		FdUtil mediaData = new FdUtil(storage);
 		
    		// instanciate plugins
 		DefaultFactory defaultFactory;
-		FileFactory fileFactory;
+		MediaFactory mediaFactory;
 		
 		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
 		for (ImmutableNode child : root) {
@@ -77,13 +79,13 @@ public class Processor {
 			    }
 			    
 				// external plugin
-			    fileFactory = Settings.pluginLoader.getFileFactory(plugin);
-			    if (fileFactory == null) {
+			    mediaFactory = Settings.pluginLoader.getMediaFactory(plugin);
+			    if (mediaFactory == null) {
 			    	// embeded plugin
-			    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
+			    	mediaFactory = Settings.embededPluginLoader.getMediaFactory(plugin);
 			    }
 			    
-		        if (defaultFactory == null && fileFactory == null) {
+		        if (defaultFactory == null && mediaFactory == null) {
 		        	throw new Exception("Unknown Plugin: " + plugin);   	
 		        }
 			    
@@ -93,17 +95,19 @@ public class Processor {
 				    processor.run(element, path, defaults, defines);
 		        }
 		        
-		        if (fileFactory != null) {
-				    final FilePluginInterface processor = fileFactory.build();
-				    log.debug("Running plugin: {}", fileFactory.name());
-				    processor.getFile(element, path, defaults, defines);
+		        if (mediaFactory != null) {
+				    final MediaPluginInterface processor = mediaFactory.build();
+				    log.debug("Running plugin: {}", mediaFactory.name());
+				    processor.run(element, path, defaults, defines, mediaData);
 		        }
 			}
     	}
-		log.debug("End of processing floppydisk");
-	}
-
-	public static void add(String sectionName, byte[] data) throws Exception {
 		
+		mediaData.interleaveData();
+		String dirname = path + File.separator + Settings.values.get("dist.dir");
+	    File dir = new File(dirname);
+	    dir.mkdirs();
+		mediaData.save(dirname + File.separator + "disk");
+		log.debug("End of processing floppydisk");
 	}
 }

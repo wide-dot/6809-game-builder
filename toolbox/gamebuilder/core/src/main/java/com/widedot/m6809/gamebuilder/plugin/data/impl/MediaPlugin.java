@@ -3,15 +3,15 @@ package com.widedot.m6809.gamebuilder.plugin.data.impl;
 import java.util.Arrays;
 import java.util.List;
 
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
+import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
 
-public class DefaultPlugin implements Plugin {
+public class MediaPlugin implements Plugin {
 
   @Override
-  public List<DefaultFactory> getDefaultFactories() {
+  public List<MediaFactory> getMediaFactories() {
     return Arrays.asList(
-        new DefaultFactoryImpl()
+        new MediaFactoryImpl()
     );
   }
 }

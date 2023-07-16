@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.spi;
+package com.widedot.m6809.gamebuilder.spi.media;
 
 public interface MediaFactory {
 

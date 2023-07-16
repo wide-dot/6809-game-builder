@@ -3,6 +3,8 @@ package com.widedot.m6809.gamebuilder.spi;
 import java.util.Collections;
 import java.util.List;
 
+import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
+
 // https://medium.com/geekculture/designing-a-lightweight-plugin-architecture-in-java-5eedfeaa92a9
 
 public interface Plugin {

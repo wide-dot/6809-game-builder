@@ -18,7 +18,7 @@ import com.widedot.m6809.gamebuilder.spi.DirEntryFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
-import com.widedot.m6809.gamebuilder.spi.MediaFactory;
+import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.Plugin;
 
 import lombok.extern.slf4j.Slf4j;

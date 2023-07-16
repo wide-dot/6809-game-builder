@@ -7,25 +7,21 @@ import java.nio.file.Paths;
 
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.sap.Sap;
+import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class FdUtil {
-    public int faces;
-    public int tracks;
-    public int sectors;
-    public int sectorSize;
+public class FdUtil implements MediaDataInterface{
+	public Storage storage;
     public boolean[] dataMask;
     private byte[] data;
 
-    public FdUtil(int faces, int tracks, int sectors, int sectorSize) {
-        this.faces = faces;
-        this.tracks = tracks;
-        this.sectors = sectors;
-        this.sectorSize = sectorSize;
-        data = new byte[faces*tracks*sectors*sectorSize];
+    public FdUtil(Storage storage) {
+        this.storage = storage;
+        data = new byte[storage.segment.faces*storage.segment.tracks*storage.segment.sectors*storage.segment.sectorSize];
         dataMask = new boolean[data.length];
     }
 
@@ -39,12 +35,12 @@ public class FdUtil {
 
     public void nextSector(Section section) throws Exception {
         section.sector++;
-        if (section.sector-1==sectors) {
+        if (section.sector-1==storage.segment.sectors) {
             section.sector=0;
             section.track++;
-            if (section.track==tracks) {
+            if (section.track==storage.segment.tracks) {
                 section.face++;
-                if (section.face==faces) {
+                if (section.face==storage.segment.faces) {
                     throw new Exception("No more space on media !");
                 }
             }
@@ -54,7 +50,7 @@ public class FdUtil {
     public int writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
         log.debug("Write face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
         int start = getIndex(section.face, section.track, section.sector);
-        int end = start + sectorSize;
+        int end = start + storage.segment.sectorSize;
         int nbBytes = 0;
         
         // search for free space inside the sector
@@ -83,10 +79,10 @@ public class FdUtil {
     public void writeFullSector(byte[] srcData, int srcIdx, Section section) throws Exception {
         log.debug("Write full sector, face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
         int start = getIndex(section.face, section.track, section.sector);
-        int end = start + sectorSize;
+        int end = start + storage.segment.sectorSize;
         
         // check that sector is empty
-        for (int i = 0; i < sectorSize; i++) {
+        for (int i = 0; i < storage.segment.sectorSize; i++) {
             if (dataMask[i]) {
                 throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
             }
@@ -101,35 +97,35 @@ public class FdUtil {
         }
     }
 
-    public void interleaveData(Interleave interleave) {
+    public void interleaveData() {
         byte[] idata = new byte[data.length];
         boolean[] slot = new boolean[data.length];
 
         // apply sector interleaving and face optimisation
         int pos = 0, s = 0;
-        for (int t = 0; t < tracks; t++) {
-            for (int f = 0; f < faces; f++) {
+        for (int t = 0; t < storage.segment.tracks; t++) {
+            for (int f = 0; f < storage.segment.faces; f++) {
 
                 // init mask array, used to know already loaded sector indexes
-                for (int i = 0; i < sectors; i++) {slot[i]=false;}
+                for (int i = 0; i < storage.segment.sectors; i++) {slot[i]=false;}
 
-                // iterate n sectors
-                for (int ns = 0; ns < sectors; ns++) {
+                // iterate n storage.segment.sectors
+                for (int ns = 0; ns < storage.segment.sectors; ns++) {
 
                     // skip already written sector id
-                	s = s%sectors;
-                    while (slot[s]) {s = (s+1)%sectors;}
-                    System.arraycopy(data, pos, idata, getIndex(f, t, interleave.softMap[s]), sectorSize);
-                    pos += sectorSize;
+                	s = s%storage.segment.sectors;
+                    while (slot[s]) {s = (s+1)%storage.segment.sectors;}
+                    System.arraycopy(data, pos, idata, getIndex(f, t, storage.interleave.softMap[s]), storage.segment.sectorSize);
+                    pos += storage.segment.sectorSize;
                     slot[s] = true;
 
                     // sector change, apply skip
-                    s += interleave.softskip;
+                    s += storage.interleave.softskip;
                 }
             }
             
             // track change, apply skew
-            s = s + interleave.softskew - interleave.softskip;
+            s = s + storage.interleave.softskew - storage.interleave.softskip;
         }
         
         data = idata;
@@ -173,5 +169,16 @@ public class FdUtil {
         Sap sap = new Sap(data, Sap.SAP_FORMAT1);
         sap.write(outputDiskName);
     }
+
+	@Override
+	public void write(String location, byte[] data) throws Exception {
+		Section s = storage.sections.get(location);
+		if (s == null) {
+			String m = "Unknown Section: " + location;
+			log.error(m);
+			throw new Exception(m);
+		}
+		writeSector(data, 0, s);
+	}
 
 }

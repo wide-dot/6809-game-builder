@@ -16,7 +16,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -115,7 +115,7 @@ public class Processor {
 		}
 
 		// assemble		
-		ObjectDataType obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
+		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
 		
 		log.debug("End of processing lwasm");
 		

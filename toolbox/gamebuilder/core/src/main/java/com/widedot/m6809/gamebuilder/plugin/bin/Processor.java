@@ -6,13 +6,13 @@ import java.nio.file.Files;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.spi.ObjectDataType;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Processor {
-	public static ObjectDataType getObject(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
+	public static ObjectDataInterface getObject(HierarchicalConfiguration<ImmutableNode> node, String path) throws Exception {
 		
 		log.debug("Processing bin ...");
 		

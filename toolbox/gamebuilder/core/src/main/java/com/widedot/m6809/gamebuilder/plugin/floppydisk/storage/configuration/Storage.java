@@ -37,7 +37,7 @@ public class Storage {
 	    	throw new Exception("Only one interleave allowed for storage.");
 	    }
 	    HierarchicalConfiguration<ImmutableNode> interleaveNode = interleaveNodes.get(0);
-		interleave = new Interleave(interleaveNode);
+		interleave = new Interleave(interleaveNode, segment.sectors);
        	
    	    List<HierarchicalConfiguration<ImmutableNode>> fatNodes = node.configurationsAt("fat");
 	    if (fatNodes.size()==0) {
