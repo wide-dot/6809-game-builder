@@ -1,4 +1,4 @@
-package com.widedot.m6809.gamebuilder.plugin.fd;
+package com.widedot.m6809.gamebuilder.plugin.sd;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class Processor {
 	
 	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
-		log.debug("Processing fd ...");
+		log.debug("Processing sd ...");
 		
 		String filename = node.getString("[@filename]",  defaults.getString("fd.filename", null));
    		
@@ -29,6 +29,7 @@ public class Processor {
    		
    		// interleave data
 		media.interleave();
+		byte[] data = media.getBytes();
 		
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");
@@ -37,16 +38,28 @@ public class Processor {
 	    String absFilename = dirname + File.separator + filename;
 
 	    // output file
+        final byte[] sdBytes = new byte[data.length*2];
+
+        for (int ifd = 0, isd = 0; ifd < data.length; ifd++) {
+            sdBytes[isd] = data[ifd];
+            isd++;
+            
+            // fill with 256x(0xFF) each 256 bytes
+            if ((ifd + 1) % 256 == 0)
+                for (int i = 0; i < 256; i++)
+                    sdBytes[isd++] = (byte) 0xFF;
+        }
+
         Path outputFile = Paths.get(absFilename);
         try {
             Files.deleteIfExists(outputFile);
             Files.createFile(outputFile);
-            Files.write(outputFile, media.getBytes());
+            Files.write(outputFile, sdBytes);
         } catch (IOException e) {
             e.printStackTrace();
         }
 		
-		log.debug("End of processing fd");
+		log.debug("End of processing sd");
 	}
 
 }

@@ -17,6 +17,7 @@
             </data>
 
             <fd  filename="demo.fd"/>
+            <sd  filename="demo.sd"/>
 <!--
             <sap filename="dist/demo.sap"/>
 -->

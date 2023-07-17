@@ -131,29 +131,6 @@ public class FdUtil implements MediaDataInterface{
         data = idata;
     }
     
-    public void saveToSd(String outputFileName) {
-        final byte[] sdBytes = new byte[0x140000];
-
-        for (int ifd = 0, isd = 0; ifd < data.length; ifd++) {
-            sdBytes[isd] = data[ifd];
-            isd++;
-            
-            // fill with 256x(0xFF) each 256 bytes
-            if ((ifd + 1) % 256 == 0)
-                for (int i = 0; i < 256; i++)
-                    sdBytes[isd++] = (byte) 0xFF;
-        }
-
-        Path outputFile = Paths.get(outputFileName + ".sd");
-        try {
-            Files.deleteIfExists(outputFile);
-            Files.createFile(outputFile);
-            Files.write(outputFile, sdBytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void saveToSap(String outputDiskName) throws Exception {
         Sap sap = new Sap(data, Sap.SAP_FORMAT1);
         sap.write(outputDiskName);
