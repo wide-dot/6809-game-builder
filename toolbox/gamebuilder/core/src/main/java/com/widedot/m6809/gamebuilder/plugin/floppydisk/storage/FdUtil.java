@@ -97,7 +97,7 @@ public class FdUtil implements MediaDataInterface{
         }
     }
 
-    public void interleaveData() {
+    public void interleave() {
         byte[] idata = new byte[data.length];
         boolean[] slot = new boolean[data.length];
 
@@ -131,17 +131,6 @@ public class FdUtil implements MediaDataInterface{
         data = idata;
     }
     
-    public void save(String outputFileName) {
-        Path outputFile = Paths.get(outputFileName + ".fd");
-        try {
-            Files.deleteIfExists(outputFile);
-            Files.createFile(outputFile);
-            Files.write(outputFile, data);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void saveToSd(String outputFileName) {
         final byte[] sdBytes = new byte[0x140000];
 
@@ -181,4 +170,9 @@ public class FdUtil implements MediaDataInterface{
 		writeSector(data, 0, s);
 	}
 
+	@Override
+	public byte[] getBytes() throws Exception {
+		return data;
+	}
+	
 }

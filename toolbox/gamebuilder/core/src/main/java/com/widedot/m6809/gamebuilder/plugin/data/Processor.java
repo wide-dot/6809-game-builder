@@ -28,10 +28,7 @@ public class Processor {
 		int maxsize = Integer.decode(node.getString("[@maxsize]", defaults.getString("data.maxsize", String.valueOf(Integer.MAX_VALUE))));
    		
    		log.debug("section: {} \t max size: {}", section, maxsize);
-   		
-		//mediaData = new FdUtil(storage.faces, storage.tracks, storage.sectors, storage.sectorSize);
-		//sectionIndexes = new HashMap<String, Section>();
-    	
+
 		defines.add(node);
 		defaults.add(node);
 

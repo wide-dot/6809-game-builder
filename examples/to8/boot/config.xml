@@ -15,8 +15,9 @@
                     </lwasm>
                 </cksumfd640>
             </data>
+
+            <fd  filename="demo.fd"/>
 <!--
-            <fd  filename="dist/demo.fd"/>
             <sap filename="dist/demo.sap"/>
 -->
         </floppydisk>

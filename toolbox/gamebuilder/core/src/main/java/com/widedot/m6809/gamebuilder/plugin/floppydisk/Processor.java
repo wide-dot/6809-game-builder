@@ -103,11 +103,6 @@ public class Processor {
 			}
     	}
 		
-		mediaData.interleaveData();
-		String dirname = path + File.separator + Settings.values.get("dist.dir");
-	    File dir = new File(dirname);
-	    dir.mkdirs();
-		mediaData.save(dirname + File.separator + "disk");
 		log.debug("End of processing floppydisk");
 	}
 }
