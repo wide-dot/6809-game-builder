@@ -90,7 +90,7 @@ public class Processor {
 		data[127] = (byte) 0x55;
 
 		for (i = 0; i < data.length && i < 120; i++) {
-			// Ajout de l'octet courant (avant complément 2) à la somme de contrôle
+			// Ajout de l'octet courant (sans complément 2) à la somme de contrôle
 			data[127] = (byte) (data[127] + data[i]);
 
 			// Encodage de l'octet par complément à 2
@@ -98,8 +98,8 @@ public class Processor {
 		}
 
 		for (i = 120; i <= 125; i++) {
-			// Ajout de l'octet courant (signature BASIC2) à la somme de contrôle
-			data[127] = (byte) (data[127] + data[i]);
+			// Ajout de la signature BASIC2 (avec complément à 2) à la somme de contrôle
+			data[127] = (byte) (data[127] + (256 - data[i]));
 		}
 		
 	}

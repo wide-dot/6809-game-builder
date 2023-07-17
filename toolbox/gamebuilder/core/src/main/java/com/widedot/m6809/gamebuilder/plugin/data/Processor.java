@@ -79,6 +79,11 @@ public class Processor {
 				    log.debug("Running plugin: {}", objectFactory.name());
 				    ObjectDataInterface obj = processor.getObject(element, path, defaults, defines);
 				    
+				    if (obj.getBytes().length > maxsize) {
+						String m = "data size is over maxsize: " + obj.getBytes().length;
+						log.error(m);
+						throw new Exception(m);
+				    }
 				    media.write(section, obj.getBytes());
 		        }
 			}
