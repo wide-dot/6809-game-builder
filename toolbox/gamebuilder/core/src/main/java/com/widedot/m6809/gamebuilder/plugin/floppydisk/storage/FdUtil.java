@@ -1,14 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
-import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.sap.Sap;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
@@ -131,11 +124,6 @@ public class FdUtil implements MediaDataInterface{
         data = idata;
     }
     
-    public void saveToSap(String outputDiskName) throws Exception {
-        Sap sap = new Sap(data, Sap.SAP_FORMAT1);
-        sap.write(outputDiskName);
-    }
-
 	@Override
 	public void write(String location, byte[] data) throws Exception {
 		Section s = storage.sections.get(location);

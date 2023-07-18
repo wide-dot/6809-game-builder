@@ -1,9 +1,12 @@
-package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.sap;
+package com.widedot.m6809.gamebuilder.plugin.sap.util;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
+
+import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,8 +19,8 @@ public class Sap {
 
 	public static final int SAP_HEADER_SIZE = 66;
 	public static final int SAP_SECTOR_META_SIZE = 6;
-	public static final byte SAP_FORMAT1 = 1;
-	public static final byte SAP_FORMAT2 = 2;
+	public static final int SAP_FORMAT1 = 1;
+	public static final int SAP_FORMAT2 = 2;
 
 	public static final byte SAP_MAGIC_NUM = (byte) 0xB3;
 	public static final int puktable[] = { 0x0000, 0x1081, 0x2102, 0x3183, 0x4204, 0x5285, 0x6306, 0x7387, 0x8408, 0x9489,
@@ -27,9 +30,9 @@ public class Sap {
 	
 	private byte sapFile[][];
 	private boolean usedDrive[];
-	public byte type;
+	public int type;
 	
-	public Sap(byte[] data, byte type) throws Exception {
+	public Sap(byte[] data, int type) throws Exception {
 		sapFile = new byte[NB_DRIVE][];
 		usedDrive = new boolean[NB_DRIVE];
 		this.type = type;
@@ -86,7 +89,7 @@ public class Sap {
 	}
 
 	private void setHeader(byte data[]) {
-		data[0] = type;
+		data[0] = (byte) type;
 		byte[] header = sapHeader.getBytes();
 		for (int i=0; i<header.length; i++) {
 			data[i+1] = header[i];
@@ -94,9 +97,26 @@ public class Sap {
 	}
 
 	public void write(String file) {
+		
+		String ext = FileUtil.getExtension(file).get();
+		String filebase = FileUtil.removeExtension(file);
+		
 		for (int drive = 0; drive < NB_DRIVE; drive++) {
 			if (sapFile[drive] != null) {
-				Path outputFile = Paths.get(file + "_" + drive + ".sap");
+				
+				Path outputFile;
+				if (sapFile[1] == null) {
+					
+					// only one drive, don't use file numbering
+					FileUtil.getExtension(file);
+					outputFile = Paths.get(file);
+					
+				} else {
+					
+					FileUtil.getExtension(file);
+					outputFile = Paths.get(filebase + "_" + drive + "." + ext);
+				}
+				
 				try {
 					Files.deleteIfExists(outputFile);
 					Files.createFile(outputFile);

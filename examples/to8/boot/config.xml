@@ -18,9 +18,7 @@
 
             <fd  filename="demo.fd"/>
             <sd  filename="demo.sd"/>
-<!--
-            <sap filename="dist/demo.sap"/>
--->
+            <sap filename="demo.sap"/>
         </floppydisk>
     </target>
 </configuration>
