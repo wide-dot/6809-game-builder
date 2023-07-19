@@ -16,8 +16,8 @@ import java.util.Map.Entry;
 import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
-import com.widedot.m6809.gamebuilder.plugin.lwasm.util.FileUtil;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 

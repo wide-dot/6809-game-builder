@@ -124,7 +124,6 @@ public class FdUtil implements MediaDataInterface{
         data = idata;
     }
     
-	@Override
 	public void write(String location, byte[] data) throws Exception {
 		Section s = storage.sections.get(location);
 		if (s == null) {
@@ -135,7 +134,6 @@ public class FdUtil implements MediaDataInterface{
 		writeSector(data, 0, s);
 	}
 
-	@Override
 	public byte[] getBytes() throws Exception {
 		return data;
 	}

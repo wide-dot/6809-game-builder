@@ -45,6 +45,7 @@
 						<descriptor>./src/main/packaging/tools-win-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/tools-macos-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/tools-linux-packaging.xml</descriptor>																		
+						<descriptor>./src/main/packaging/tools-linux-arm-packaging.xml</descriptor>
 						<descriptor>./src/main/packaging/jar-with-dependencies.xml</descriptor>
 					</descriptors>
 				</configuration>

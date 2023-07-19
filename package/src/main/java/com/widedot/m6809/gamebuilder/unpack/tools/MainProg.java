@@ -20,8 +20,13 @@ public class MainProg
 			} else if (OSValidator.IS_MAC) {
 				Startup.extractResource("/tools-macos.zip", true);
 			} else if (OSValidator.IS_UNIX) {
-				Startup.extractResource("/tools-linux.zip", true);
+				if (OSValidator.IS_ARM) {
+					Startup.extractResource("/tools-linux-arm.zip", true);
+				} else {
+					Startup.extractResource("/tools-linux.zip", true);
+				}
 			}
+			
 			
 		} catch (Exception e) {
 			log.error("Error : {}", e);
