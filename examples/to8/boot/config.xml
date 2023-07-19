@@ -19,6 +19,7 @@
             <fd  filename="demo.fd"/>
             <sd  filename="demo.sd"/>
             <sap filename="demo.sap"/>
+            <hfe filename="demo.hfe"/>
         </floppydisk>
     </target>
 </configuration>
