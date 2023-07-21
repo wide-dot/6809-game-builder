@@ -68,6 +68,21 @@ map.MEA8000.D       equ $E7FE
 map.MEA8000.A       equ $E7FF
 
 ; ROM routines
+map.DKCONT          equ $E004 ; TO:DKCO, MO:SWI $26
+map.DKBOOT          equ $E007 ; boot
+map.DKFMT           equ $E00A ; format
+map.LECFA           equ $E00D ; read FAT
+map.RECFI           equ $E010 ; search file
+map.RECUP           equ $E010 ; clear file
+map.ECRSE           equ $E010 ; sector write
+map.ALLOD           equ $E019 ; catalog file allocation
+map.ALLOB           equ $E01C ; bloc allocation
+map.MAJCL           equ $E01F ; cluster update
+map.FINTR           equ $E022 ; transfert end
+map.QDDSTD          equ $E025 ; QDD std functions
+map.QDDSYS          equ $E028 ; QDD sys functions
+
+map.PUTC            equ $E803
 map.GETC            equ $E806
 map.KTST            equ $E809
 map.DKCO            equ $E82A ; read or write floppy disk routine

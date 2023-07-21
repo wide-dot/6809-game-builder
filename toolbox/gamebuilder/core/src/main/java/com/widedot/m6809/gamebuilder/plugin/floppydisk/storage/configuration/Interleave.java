@@ -21,7 +21,7 @@ public class Interleave {
 		// get interleaved map (as formatted on floppy disk)
 		int[] uninterleavedMap = getUninterleavedMap(sectors);
 		hardMap = getMap(hardskip, uninterleavedMap);
-		softMap = getMap(hardskip, hardMap);
+		softMap = getMap(softskip, hardMap);
 	}
 	
 	private int[] getUninterleavedMap(int sectors) {

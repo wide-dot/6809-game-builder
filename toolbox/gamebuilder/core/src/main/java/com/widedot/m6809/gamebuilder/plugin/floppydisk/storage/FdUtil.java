@@ -11,6 +11,7 @@ public class FdUtil implements MediaDataInterface{
 	public Storage storage;
     public boolean[] dataMask;
     private byte[] data;
+    private byte[] interleavedData;
 
     public FdUtil(Storage storage) {
         this.storage = storage;
@@ -53,15 +54,15 @@ public class FdUtil implements MediaDataInterface{
         }
         
         // write to sector
-        for (int i = freePos; i < end; i++) {
+        int i = freePos;
+        while ((i < end) && (srcIdx < srcData.length)) {
             data[i] = srcData[srcIdx++];
             dataMask[i] = true;
             nbBytes++;
-            
-            if (srcIdx >= srcData.length) break; // break if no more data to write
+            i++;
         }
         
-        if (nbBytes==0) {
+        if (nbBytes==0 && srcData.length!=0) {
             throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
         }
         
@@ -121,7 +122,7 @@ public class FdUtil implements MediaDataInterface{
             s = s + storage.interleave.softskew - storage.interleave.softskip;
         }
         
-        data = idata;
+        interleavedData = idata;
     }
     
 	public void write(String location, byte[] data) throws Exception {
@@ -134,8 +135,11 @@ public class FdUtil implements MediaDataInterface{
 		writeSector(data, 0, s);
 	}
 
-	public byte[] getBytes() throws Exception {
-		return data;
+	public byte[] getInterleavedData() throws Exception {
+		if (interleavedData==null) {
+			interleave();
+		}
+		return interleavedData;
 	}
 	
 }

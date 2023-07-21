@@ -25,17 +25,14 @@ public class Processor {
    		
    		log.debug("filename: {}", filename);
    		
-   		// interleave data
-		media.interleave();
-		byte[] data = media.getBytes();
-		
+
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");
 	    File dir = new File(dirname);
 	    dir.mkdirs();
 	    String absFilename = dirname + File.separator + filename;
 		
-        Sap sap = new Sap(data, format);
+        Sap sap = new Sap(media.getInterleavedData(), format);
         sap.write(absFilename);
         
 		log.debug("End of processing sap");

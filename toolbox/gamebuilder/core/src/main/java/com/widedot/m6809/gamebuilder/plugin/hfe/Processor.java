@@ -28,10 +28,6 @@ public class Processor {
 		String filename = node.getString("[@filename]",  defaults.getString("hfe.filename", null));
    		
    		log.debug("filename: {}", filename);
-   		
-   		// interleave data
-		media.interleave();
-		byte[] data = media.getBytes();
 		
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");
@@ -44,7 +40,7 @@ public class Processor {
         Path tmpoutputFile = Paths.get(tmpfile);
         Files.deleteIfExists(tmpoutputFile);
         Files.createFile(tmpoutputFile);
-        Files.write(tmpoutputFile, media.getBytes());
+        Files.write(tmpoutputFile, media.getInterleavedData());
 
 	    // convert to hfe
         String hxcfe;

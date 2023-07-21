@@ -28,8 +28,7 @@ public class Processor {
    		log.debug("filename: {}", filename);
    		
    		// interleave data
-		media.interleave();
-		byte[] data = media.getBytes();
+		byte[] data = media.getInterleavedData();
 		
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");

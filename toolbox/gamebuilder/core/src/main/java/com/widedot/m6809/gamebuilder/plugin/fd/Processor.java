@@ -26,9 +26,6 @@ public class Processor {
 		String filename = node.getString("[@filename]",  defaults.getString("fd.filename", null));
    		
    		log.debug("filename: {}", filename);
-   		
-   		// interleave data
-		media.interleave();
 		
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");
@@ -41,7 +38,7 @@ public class Processor {
         try {
             Files.deleteIfExists(outputFile);
             Files.createFile(outputFile);
-            Files.write(outputFile, media.getBytes());
+            Files.write(outputFile, media.getInterleavedData());
         } catch (IOException e) {
             e.printStackTrace();
         }

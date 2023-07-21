@@ -66,7 +66,8 @@ public class Processor {
 
 			// skip non plugins
 			if (plugin.equals("default") ||
-				plugin.equals("define")) continue;
+				plugin.equals("define")  ||
+				plugin.equals("section")) continue;
 			
 			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
 			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
