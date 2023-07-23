@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
@@ -67,23 +68,19 @@ public class Target {
 			log.info("Processing target {}", targetName);
 
 	   		// instanciate plugins
-			DefaultFactory factory;
+			DefaultFactory defaultFactory;
 			
 			for (ImmutableNode child : node.getChildren()) {
 				String plugin = child.getNodeName();
 			
 				// external plugin
-			    factory = Settings.pluginLoader.getDefaultFactory(plugin);
-			    if (factory == null) {
-			    	// embeded plugin
-			    	factory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-			        if (factory == null) {
-			        	throw new Exception("Unknown plugin: " + plugin);   	
-			        }
+				defaultFactory = Plugins.getDefaultFactory(plugin);
+			    if (defaultFactory == null) {
+			       	throw new Exception("Unknown plugin: " + plugin);   	
 			    }
 			    
-			    final DefaultPluginInterface processor = factory.build();
-			    log.debug("Running plugin: {}", factory.name());
+			    final DefaultPluginInterface processor = defaultFactory.build();
+			    log.debug("Running plugin: {}", defaultFactory.name());
 			    processor.run(child, path, defaults, defines);
 			}
 			log.info("End of processing target {}", targetName);

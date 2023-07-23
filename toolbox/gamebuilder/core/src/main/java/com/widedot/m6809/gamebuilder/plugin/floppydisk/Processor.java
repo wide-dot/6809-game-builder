@@ -7,6 +7,7 @@ import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storages;
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
@@ -49,19 +50,8 @@ public class Processor {
 	    		continue;
 	    	}
 	    	
-			// external plugin
-			defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
-		    if (defaultFactory == null) {
-		    	// embeded plugin
-		    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-		    }
-		    
-			// external plugin
-		    mediaFactory = Settings.pluginLoader.getMediaFactory(plugin);
-		    if (mediaFactory == null) {
-		    	// embeded plugin
-		    	mediaFactory = Settings.embededPluginLoader.getMediaFactory(plugin);
-		    }
+			defaultFactory = Plugins.getDefaultFactory(plugin);
+			mediaFactory = Plugins.getMediaFactory(plugin);
 		    
 	        if (defaultFactory == null && mediaFactory == null) {
 	        	throw new Exception("Unknown Plugin: " + plugin);   	

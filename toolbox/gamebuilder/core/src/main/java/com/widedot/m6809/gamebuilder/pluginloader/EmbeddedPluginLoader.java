@@ -1,7 +1,6 @@
 package com.widedot.m6809.gamebuilder.pluginloader;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.ServiceLoader;
 
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
@@ -24,7 +23,7 @@ public class EmbeddedPluginLoader {
 	}
 
 	public void loadPlugins() {
-		log.info("Loading embeded plugins");
+		log.info("Loading embeded plugins ...");
 		for (Plugin plugin : ServiceLoader.load(Plugin.class)) {
 			installPlugin(plugin);
 		}
@@ -51,26 +50,18 @@ public class EmbeddedPluginLoader {
 	}
 
 	public DefaultFactory getDefaultFactory(String name) {
-		DefaultFactory f = defaultFactoryMap.get(name);
-		if (f == null) log.debug("DefaultFactory: {} not loaded", name);
-		return f;
+		return defaultFactoryMap.get(name);
 	}
 	
 	public ObjectFactory getObjectFactory(String name) {
-		ObjectFactory f = objectFactoryMap.get(name);
-		if (f == null) log.debug("ObjectFactory: {} not loaded", name);
-		return f;
+		return objectFactoryMap.get(name);
 	}
 	
 	public MediaFactory getMediaFactory(String name) {
-		MediaFactory f = mediaFactoryMap.get(name);
-		if (f == null) log.debug("MediaFactory: {} not loaded", name);
-		return f;
+		return mediaFactoryMap.get(name);
 	}
 	
 	public FileFactory getFileFactory(String name) {
-		FileFactory f = fileFactoryMap.get(name);
-		if (f == null) log.debug("FileFactory: {} not loaded", name);
-		return f;
+		return fileFactoryMap.get(name);
 	}
 }

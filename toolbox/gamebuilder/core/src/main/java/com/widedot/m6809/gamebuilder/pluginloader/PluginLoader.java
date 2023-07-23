@@ -9,7 +9,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +37,7 @@ public class PluginLoader {
 	}
 
 	public void loadPlugins() {
+		log.info("Loading plugins ...");
 		if (!pluginsDir.exists() || !pluginsDir.isDirectory()) {
 			log.debug("Skipping Plugin Loading. Plugin dir not found: " + pluginsDir);
 			return;
@@ -103,26 +103,18 @@ public class PluginLoader {
 	}
 
 	public DefaultFactory getDefaultFactory(String name) {
-		DefaultFactory f = defaultFactoryMap.get(name);
-		if (f == null) log.debug("DefaultFactory: {} not an external plugin.", name);
-		return f;
+		return defaultFactoryMap.get(name);
 	}
 	
 	public ObjectFactory getObjectFactory(String name) {
-		ObjectFactory f = objectFactoryMap.get(name);
-		if (f == null) log.debug("ObjectFactory: {} not an external plugin.", name);
-		return f;
+		return objectFactoryMap.get(name);
 	}
 	
 	public MediaFactory getMediaFactory(String name) {
-		MediaFactory f = mediaFactoryMap.get(name);
-		if (f == null) log.debug("MediaFactory: {} not an external plugin.", name);
-		return f;
+		return mediaFactoryMap.get(name);
 	}
 	
 	public FileFactory getFileFactory(String name) {
-		FileFactory f = fileFactoryMap.get(name);
-		if (f == null) log.debug("FileFactory: {} not an external plugin.", name);
-		return f;
+		return fileFactoryMap.get(name);
 	}
 }

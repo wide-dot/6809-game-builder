@@ -2,7 +2,7 @@ package com.widedot.m6809.gamebuilder.plugin.data;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
@@ -26,33 +26,22 @@ public class Processor {
 		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "data.maxsize", Integer.MAX_VALUE);
 
    		// instanciate plugins
-		DefaultFactory emptyfactory;
+		DefaultFactory defaultFactory;
 		ObjectFactory objectFactory;
 		
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 		
-			// external plugin
-			emptyfactory = Settings.pluginLoader.getDefaultFactory(plugin);
-		    if (emptyfactory == null) {
-		    	// embeded plugin
-		    	emptyfactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-		    }
+			defaultFactory = Plugins.getDefaultFactory(plugin);
+			objectFactory = Plugins.getObjectFactory(plugin);
 		    
-			// external plugin
-		    objectFactory = Settings.pluginLoader.getObjectFactory(plugin);
-		    if (objectFactory == null) {
-		    	// embeded plugin
-		    	objectFactory = Settings.embededPluginLoader.getObjectFactory(plugin);
-		    }
-		    
-	        if (emptyfactory == null && objectFactory == null) {
+	        if (defaultFactory == null && objectFactory == null) {
 	        	throw new Exception("Unknown Plugin: " + plugin);   	
 	        }
 		    
-	        if (emptyfactory != null) {
-			    final DefaultPluginInterface processor = emptyfactory.build();
-			    log.debug("Running plugin: {}", emptyfactory.name());
+	        if (defaultFactory != null) {
+			    final DefaultPluginInterface processor = defaultFactory.build();
+			    log.debug("Running plugin: {}", defaultFactory.name());
 			    processor.run(child, path, defaults, defines);
 	        }
 	        

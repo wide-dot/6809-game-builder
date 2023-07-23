@@ -11,6 +11,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.LwAssembler;
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
@@ -40,19 +41,8 @@ public class Processor {
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
-			// external plugin
-			defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
-		    if (defaultFactory == null) {
-		    	// embeded plugin
-		    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-		    }
-		    
-			// external plugin
-		    fileFactory = Settings.pluginLoader.getFileFactory(plugin);
-		    if (fileFactory == null) {
-		    	// embeded plugin
-		    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
-		    }
+			defaultFactory = Plugins.getDefaultFactory(plugin);
+			fileFactory = Plugins.getFileFactory(plugin);
 		    
 	        if (defaultFactory == null && fileFactory == null) {
 	        	throw new Exception("Unknown Plugin: " + plugin);   	

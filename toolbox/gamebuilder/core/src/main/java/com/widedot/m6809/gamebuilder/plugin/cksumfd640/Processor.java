@@ -2,7 +2,7 @@ package com.widedot.m6809.gamebuilder.plugin.cksumfd640;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
@@ -28,19 +28,8 @@ public class Processor {
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 				
-			// external plugin
-			defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
-		    if (defaultFactory == null) {
-		    	// embeded plugin
-		    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-		    }
-		    
-			// external plugin
-		    objectFactory = Settings.pluginLoader.getObjectFactory(plugin);
-		    if (objectFactory == null) {
-		    	// embeded plugin
-		    	objectFactory = Settings.embededPluginLoader.getObjectFactory(plugin);
-		    }
+			defaultFactory = Plugins.getDefaultFactory(plugin);
+			objectFactory = Plugins.getObjectFactory(plugin);
 		    
 	        if (defaultFactory == null && objectFactory == null) {
 	        	throw new Exception("Unknown Plugin: " + plugin);   	
