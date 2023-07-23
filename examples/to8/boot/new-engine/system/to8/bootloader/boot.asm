@@ -67,9 +67,3 @@
 @magicNumber
         fcn   "BASIC2"
         fcb   $00                      ; checksum
-
-        jmp   @test
-        jmp   fd.test
-        nop
-fd.test fdb   0
-@test   fcb   0

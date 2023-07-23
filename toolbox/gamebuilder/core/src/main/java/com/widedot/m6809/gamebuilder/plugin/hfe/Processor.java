@@ -7,10 +7,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -21,13 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
-	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
+	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing hfe ...");
 		
-		String filename = node.getString("[@filename]",  defaults.getString("hfe.filename", null));
-   		
-   		log.debug("filename: {}", filename);
+		String filename = Attribute.getString(node, defaults, "filename", "hfe.filename");
 		
 		// create destination directory
 		String dirname = path + File.separator + Settings.values.get("dist.dir");

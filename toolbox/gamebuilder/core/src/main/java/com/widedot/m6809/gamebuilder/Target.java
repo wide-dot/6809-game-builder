@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -25,66 +26,65 @@ public class Target {
 	}
 	
 	public void processTargetSelection(HierarchicalConfiguration<ImmutableNode> node, String[] targets) throws Exception {
-		for (int i = 0; i < targets.length; i++) {
-			List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target[name='"+targets[i]+"']");
-   			processTargets(targetNodes);
-    	}
+		log.info("Processing targets: {}", Arrays.toString(targets));
+		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>(); 
+		List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target");
+		for(HierarchicalConfiguration<ImmutableNode> target : targetNodes) {
+			for (int i = 0; i < targets.length; i++) {
+				String name = target.getString("[@name]", null);
+				if (name.equals(targets[i])) {
+					nodesToProcess.add(target.getNodeModel().getNodeHandler().getRootNode());
+				}
+			}
+		}
+		
+		processTargets(nodesToProcess);
 	}
     
 	public void processAllTargets(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-	    List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target");
-   		processTargets(targetNodes);
+		log.info("Processing all targets in configuration file.");
+		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>(); 
+		List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target");
+		for(HierarchicalConfiguration<ImmutableNode> target : targetNodes) {
+			nodesToProcess.add(target.getNodeModel().getNodeHandler().getRootNode());
+		}
+		if (nodesToProcess.isEmpty()) {
+			String m = "No target found !";
+			log.error(m);
+			throw new Exception(m);
+		}
+   		processTargets(nodesToProcess);
 	}
 	
-	private void processTargets(List<HierarchicalConfiguration<ImmutableNode>> targetNodes) throws Exception {
+	private void processTargets(List<ImmutableNode> targetNodes) throws Exception {
 		
 		defaults = new Defaults();
 		defines = new Defines();
 		
-    	for(HierarchicalConfiguration<ImmutableNode> node : targetNodes)
+    	for(ImmutableNode node : targetNodes)
     	{
-			String targetName = node.getString("[@name]");
+			String targetName = (String) node.getAttributes().get("name");
 			log.info("Processing target {}", targetName);
 
-			defaults.add(node);
-			defines.add(node);
-
 	   		// instanciate plugins
-			Iterator<String> keyIter = node.getKeys();
-			String key;
 			DefaultFactory factory;
 			
-			while (keyIter.hasNext()) {
-				key = keyIter.next();
-
-				// skip non plugins
-				String plugin = null;
-				String[] names = key.split("\\[");
-				if (names[0] == null ||
-					names[0].equals("") ||
-					names[0].contains(".") ||            // process only first level nodes
-					names[0].equals("default") ||
-					names[0].equals("define")) continue;
-				
-		        plugin = names[0];
-		        
-				List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
-				for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-					
-					// external plugin
-				    factory = Settings.pluginLoader.getDefaultFactory(plugin);
-				    if (factory == null) {
-				    	// embeded plugin
-				    	factory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-				        if (factory == null) {
-				        	throw new Exception("Unknown plugin: " + plugin);   	
-				        }
-				    }
-				    
-				    final DefaultPluginInterface processor = factory.build();
-				    log.debug("Running plugin: {}", factory.name());
-				    processor.run(element, path, defaults, defines);
-				}
+			for (ImmutableNode child : node.getChildren()) {
+				String plugin = child.getNodeName();
+			
+				// external plugin
+			    factory = Settings.pluginLoader.getDefaultFactory(plugin);
+			    if (factory == null) {
+			    	// embeded plugin
+			    	factory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+			        if (factory == null) {
+			        	throw new Exception("Unknown plugin: " + plugin);   	
+			        }
+			    }
+			    
+			    final DefaultPluginInterface processor = factory.build();
+			    log.debug("Running plugin: {}", factory.name());
+			    processor.run(child, path, defaults, defines);
 			}
 			log.info("End of processing target {}", targetName);
     	}

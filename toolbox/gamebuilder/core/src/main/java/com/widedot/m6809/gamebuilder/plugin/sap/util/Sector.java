@@ -1,9 +1,6 @@
 package com.widedot.m6809.gamebuilder.plugin.sap.util;
 
-import lombok.extern.slf4j.Slf4j;
-
 // based on jteo code from Gilles Fetis
-@Slf4j
 public class Sector{
 	public byte format;
 	public byte protection;

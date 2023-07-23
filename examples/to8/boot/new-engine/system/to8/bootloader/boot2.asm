@@ -1,7 +1,7 @@
 ;*******************************************************************************
 ; FD Boot loader
-; Original code from Prehisto (Mission: Liftoff)
-; Benoit Rousseau 07/2023 (lwasm syntax)
+; Original code from Prehisto
+; Benoit Rousseau 07/2023 (memory ext. check)
 ; ------------------------------------------------------------------------------
 ; A fully featured boot loader
 ;*******************************************************************************
@@ -22,7 +22,9 @@
         cmpa  >$fff0     ; Check machine code
         bhs   err        ; Error if not TO+
 
+        IFDEF builder.CHECKMEMORYEXT
         jsr   checkmemoryext
+        ENDC
 
 * Switch to Basic 1.0 if necessary
         ldb   #$60
@@ -81,9 +83,8 @@ err3    tfr   dp,a     ; Read DP
         align $6278
 @magicNumber
         fcn   "BASIC2"
-        fcb   $00     ; checksum (set at build stage)
-
-secnbr  fcb   $00     ; Sector number (set at build stage)
+        fcb   $00                               ; checksum (set at build stage)
+secnbr  fcb   (builder.lwasm.size.loader/256)+1 ; number of sectors to read
 
 * Error messages
 mess1   fcs   "Only for TO8/8D/9+"

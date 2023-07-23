@@ -1,9 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
-import java.io.File;
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
@@ -15,6 +13,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -23,36 +22,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
-	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
     	
 		log.debug("Processing floppydisk ...");
 		
-		String model = node.getString("[@model]", defaults.getString("floppydisk.model", null));
-		if (model == null) {
-			throw new Exception("model is missing for floppydisk");
-		}
-		
-		String storageFilename = node.getString("[@storage]", defaults.getString("floppydisk.storage", null));
-		if (storageFilename == null) {
-			throw new Exception("storage is missing for floppydisk");
-		}
+		String model = Attribute.getString(node, defaults, "model", "floppydisk.model");
+		String storageFilename = Attribute.getString(node, defaults, "storage", "floppydisk.storage");
 		storageFilename = path + storageFilename;
 		
 		// load storage definitions from external file
 		Storages storages = new Storages(storageFilename);
 		Storage storage = storages.get(model);
     	
-		// load custom storage sections inside floppydisk
-	    List<HierarchicalConfiguration<ImmutableNode>> sectionNodes = node.configurationsAt("section");
-    	for(HierarchicalConfiguration<ImmutableNode> sectionNode : sectionNodes)
-    	{	
-    		Section section = new Section(sectionNode);
-    		storage.sections.put(section.name, section);
-    	}
-		
-		defines.add(node);
-		defaults.add(node);
-
 		// Instanciate the floppy disk image
 		FdUtil mediaData = new FdUtil(storage);
 		
@@ -60,48 +41,46 @@ public class Processor {
 		DefaultFactory defaultFactory;
 		MediaFactory mediaFactory;
 		
-		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
+		List<ImmutableNode> root = node.getChildren();
 		for (ImmutableNode child : root) {
 			String plugin = child.getNodeName();
 
-			// skip non plugins
-			if (plugin.equals("default") ||
-				plugin.equals("define")  ||
-				plugin.equals("section")) continue;
-			
-			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
-			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-				
-				// external plugin
-				defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
-			    if (defaultFactory == null) {
-			    	// embeded plugin
-			    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-			    }
-			    
-				// external plugin
-			    mediaFactory = Settings.pluginLoader.getMediaFactory(plugin);
-			    if (mediaFactory == null) {
-			    	// embeded plugin
-			    	mediaFactory = Settings.embededPluginLoader.getMediaFactory(plugin);
-			    }
-			    
-		        if (defaultFactory == null && mediaFactory == null) {
-		        	throw new Exception("Unknown Plugin: " + plugin);   	
-		        }
-			    
-		        if (defaultFactory != null) {
-				    final DefaultPluginInterface processor = defaultFactory.build();
-				    log.debug("Running plugin: {}", defaultFactory.name());
-				    processor.run(element, path, defaults, defines);
-		        }
-		        
-		        if (mediaFactory != null) {
-				    final MediaPluginInterface processor = mediaFactory.build();
-				    log.debug("Running plugin: {}", mediaFactory.name());
-				    processor.run(element, path, defaults, defines, mediaData);
-		        }
-			}
+			// non plugins
+			if (plugin.equals("section")) {	
+	    		Section section = new Section(child, defaults);
+	    		storage.sections.put(section.name, section);
+	    		continue;
+	    	}
+	    	
+			// external plugin
+			defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
+		    if (defaultFactory == null) {
+		    	// embeded plugin
+		    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+		    }
+		    
+			// external plugin
+		    mediaFactory = Settings.pluginLoader.getMediaFactory(plugin);
+		    if (mediaFactory == null) {
+		    	// embeded plugin
+		    	mediaFactory = Settings.embededPluginLoader.getMediaFactory(plugin);
+		    }
+		    
+	        if (defaultFactory == null && mediaFactory == null) {
+	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        }
+		    
+	        if (defaultFactory != null) {
+			    final DefaultPluginInterface processor = defaultFactory.build();
+			    log.debug("Running plugin: {}", defaultFactory.name());
+			    processor.run(child, path, defaults, defines);
+	        }
+	        
+	        if (mediaFactory != null) {
+			    final MediaPluginInterface processor = mediaFactory.build();
+			    log.debug("Running plugin: {}", mediaFactory.name());
+			    processor.run(child, path, defaults, defines, mediaData);
+	        }
     	}
 		
 		log.debug("End of processing floppydisk");

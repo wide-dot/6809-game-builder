@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 
@@ -17,6 +16,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 
@@ -24,64 +24,52 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Processor {
-	public static Object getObject(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static Object getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
 		
 		log.debug("Processing lwasm ...");
 		
-		String format = node.getString("[@format]", LwAssembler.RAW);
-		String gensource = node.getString("[@gensource]", null);
-		log.debug("format: {} gensource: {}", format, gensource);
-		
-		defines.add(node);
-		defaults.add(node);
+		String format = Attribute.getString(node, defaults, "format", "lwasm.format", LwAssembler.RAW);
+		String gensource = Attribute.getStringOpt(node, defaults, "gensource", "lwasm.gensource");
 		
 		List<File> files = new ArrayList<File>();
 		
    		// instanciate plugins
 		DefaultFactory defaultFactory;
 		FileFactory fileFactory;
-		
-		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
+				
+		List<ImmutableNode> root = node.getChildren();
 		for (ImmutableNode child : root) {
 			String plugin = child.getNodeName();
 
-			// skip non plugins
-			if (plugin.equals("default") ||
-				plugin.equals("define")) continue;
-			
-			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
-			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-				
-				// external plugin
-				defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
-			    if (defaultFactory == null) {
-			    	// embeded plugin
-			    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
-			    }
-			    
-				// external plugin
-			    fileFactory = Settings.pluginLoader.getFileFactory(plugin);
-			    if (fileFactory == null) {
-			    	// embeded plugin
-			    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
-			    }
-			    
-		        if (defaultFactory == null && fileFactory == null) {
-		        	throw new Exception("Unknown Plugin: " + plugin);   	
-		        }
-			    
-		        if (defaultFactory != null) {
-				    final DefaultPluginInterface processor = defaultFactory.build();
-				    log.debug("Running plugin: {}", defaultFactory.name());
-				    processor.run(element, path, defaults, defines);
-		        }
-		        
-		        if (fileFactory != null) {
-				    final FilePluginInterface processor = fileFactory.build();
-				    log.debug("Running plugin: {}", fileFactory.name());
-				    files.add(processor.getFile(element, path, defaults, defines));
-		        }
-			}
+			// external plugin
+			defaultFactory = Settings.pluginLoader.getDefaultFactory(plugin);
+		    if (defaultFactory == null) {
+		    	// embeded plugin
+		    	defaultFactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+		    }
+		    
+			// external plugin
+		    fileFactory = Settings.pluginLoader.getFileFactory(plugin);
+		    if (fileFactory == null) {
+		    	// embeded plugin
+		    	fileFactory = Settings.embededPluginLoader.getFileFactory(plugin);
+		    }
+		    
+	        if (defaultFactory == null && fileFactory == null) {
+	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        }
+		    
+	        if (defaultFactory != null) {
+			    final DefaultPluginInterface processor = defaultFactory.build();
+			    log.debug("Running plugin: {}", defaultFactory.name());
+			    processor.run(child, path, defaults, defines);
+	        }
+	        
+	        if (fileFactory != null) {
+			    final FilePluginInterface processor = fileFactory.build();
+			    log.debug("Running plugin: {}", fileFactory.name());
+			    files.add(processor.getFile(child, path, defaults, defines));
+	        }
 		}
 
 		// check if at least a file is provided

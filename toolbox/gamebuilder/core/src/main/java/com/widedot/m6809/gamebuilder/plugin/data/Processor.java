@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.plugin.data;
 
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
@@ -11,6 +10,7 @@ import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -20,70 +20,57 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
-	public static void run(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
+	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing data ...");
 		
-		String section = node.getString("[@section]",  defaults.getString("data.section", null));
-		int maxsize = Integer.decode(node.getString("[@maxsize]", defaults.getString("data.maxsize", String.valueOf(Integer.MAX_VALUE))));
-   		
-   		log.debug("section: {} \t max size: {}", section, maxsize);
-
-		defines.add(node);
-		defaults.add(node);
+		String section = Attribute.getString(node, defaults, "section", "data.section");
+		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "data.maxsize", Integer.MAX_VALUE);
 
    		// instanciate plugins
 		DefaultFactory emptyfactory;
 		ObjectFactory objectFactory;
 		
-		List<ImmutableNode> root = node.getNodeModel().getNodeHandler().getRootNode().getChildren();
+		List<ImmutableNode> root = node.getChildren();
 		for (ImmutableNode child : root) {
 			String plugin = child.getNodeName();
 		
-			// skip non plugins
-			if (plugin.equals("default") ||
-				plugin.equals("define")) continue;
+			// external plugin
+			emptyfactory = Settings.pluginLoader.getDefaultFactory(plugin);
+		    if (emptyfactory == null) {
+		    	// embeded plugin
+		    	emptyfactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+		    }
+		    
+			// external plugin
+		    objectFactory = Settings.pluginLoader.getObjectFactory(plugin);
+		    if (objectFactory == null) {
+		    	// embeded plugin
+		    	objectFactory = Settings.embededPluginLoader.getObjectFactory(plugin);
+		    }
+		    
+	        if (emptyfactory == null && objectFactory == null) {
+	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        }
+		    
+	        if (emptyfactory != null) {
+			    final DefaultPluginInterface processor = emptyfactory.build();
+			    log.debug("Running plugin: {}", emptyfactory.name());
+			    processor.run(child, path, defaults, defines);
+	        }
 	        
-			List<HierarchicalConfiguration<ImmutableNode>> elements = node.configurationsAt(plugin);
-			for (HierarchicalConfiguration<ImmutableNode> element : elements) {
-				
-				// external plugin
-				emptyfactory = Settings.pluginLoader.getDefaultFactory(plugin);
-			    if (emptyfactory == null) {
-			    	// embeded plugin
-			    	emptyfactory = Settings.embededPluginLoader.getDefaultFactory(plugin);
+	        if (objectFactory != null) {
+			    final ObjectPluginInterface processor = objectFactory.build();
+			    log.debug("Running plugin: {}", objectFactory.name());
+			    ObjectDataInterface obj = processor.getObject(child, path, defaults, defines);
+			    
+			    if (obj.getBytes().length > maxsize) {
+					String m = "data size is over maxsize: " + obj.getBytes().length;
+					log.error(m);
+					throw new Exception(m);
 			    }
-			    
-				// external plugin
-			    objectFactory = Settings.pluginLoader.getObjectFactory(plugin);
-			    if (objectFactory == null) {
-			    	// embeded plugin
-			    	objectFactory = Settings.embededPluginLoader.getObjectFactory(plugin);
-			    }
-			    
-		        if (emptyfactory == null && objectFactory == null) {
-		        	throw new Exception("Unknown Plugin: " + plugin);   	
-		        }
-			    
-		        if (emptyfactory != null) {
-				    final DefaultPluginInterface processor = emptyfactory.build();
-				    log.debug("Running plugin: {}", emptyfactory.name());
-				    processor.run(element, path, defaults, defines);
-		        }
-		        
-		        if (objectFactory != null) {
-				    final ObjectPluginInterface processor = objectFactory.build();
-				    log.debug("Running plugin: {}", objectFactory.name());
-				    ObjectDataInterface obj = processor.getObject(element, path, defaults, defines);
-				    
-				    if (obj.getBytes().length > maxsize) {
-						String m = "data size is over maxsize: " + obj.getBytes().length;
-						log.error(m);
-						throw new Exception(m);
-				    }
-				    media.write(section, obj.getBytes());
-		        }
-			}
+			    media.write(section, obj.getBytes());
+	        }
     	}
 		log.debug("End of processing data");
 	}

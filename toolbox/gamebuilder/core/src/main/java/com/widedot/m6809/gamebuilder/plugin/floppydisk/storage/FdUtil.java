@@ -63,7 +63,7 @@ public class FdUtil implements MediaDataInterface{
         }
         
         if (nbBytes==0 && srcData.length!=0) {
-            throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
+            throw new Exception("Overlapping data at face:"+section.face+", track: "+section.track+", sector: "+section.sector);
         }
         
         // return nb bytes written to sector
@@ -78,7 +78,7 @@ public class FdUtil implements MediaDataInterface{
         // check that sector is empty
         for (int i = 0; i < storage.segment.sectorSize; i++) {
             if (dataMask[i]) {
-                throw new Exception("Overlapping data at face:"+section.face+", track: "+section.face+", sector: "+section.face);
+                throw new Exception("Overlapping data at face:"+section.face+", track: "+section.track+", sector: "+section.sector);
             }
         }
         

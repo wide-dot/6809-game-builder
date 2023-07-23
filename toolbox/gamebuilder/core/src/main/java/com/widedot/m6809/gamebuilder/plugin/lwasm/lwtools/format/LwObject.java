@@ -402,6 +402,7 @@ public class LwObject implements ObjectDataInterface{
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean loadCache(String fileName) {
 		
 		log.debug(fileName);

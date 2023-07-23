@@ -21,10 +21,6 @@ public interface Plugin {
 		return Collections.emptyList();
 	}
 	
-	default List<DirEntryFactory> getDirEntryFactories() {
-		return Collections.emptyList();
-	}
-
 	default List<FileFactory> getFileFactories() {
 		return Collections.emptyList();
 	}

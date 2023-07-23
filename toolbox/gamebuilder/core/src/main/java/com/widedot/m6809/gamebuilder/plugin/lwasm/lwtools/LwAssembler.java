@@ -17,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.util.Constants;
 import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,17 @@ public class LwAssembler
         Class<?> clazz = Class.forName(formatClass.get(format));
         Constructor<?> ctor = clazz.getConstructor(String.class);
         ObjectDataInterface object = (ObjectDataInterface) ctor.newInstance(new Object[] { binFilename });
+        
+        // export builder defines
+        String defineKey = Constants.BUILDER_DEFINE_PREFIX + "lwasm.size." + asmBasename;
+        String binLength = Integer.toString(object.getBytes().length);
+        
+        if (defines.containsKey(defineKey)) {
+        	log.warn("Duplicate filename: <" + asmBasename + ">. Builder will overwrite the define: <" + defineKey + ">. Use gensource attribute on lwasm element to set an alias");
+        }
+
+        defines.put(defineKey, binLength);
+        log.debug("generate define : {} {}", defineKey,  binLength);
         
         // add a file tag in the build directory
         File tag = new File(buildDir+Settings.values.get("build.dir.tag"));

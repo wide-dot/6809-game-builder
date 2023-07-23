@@ -2,6 +2,8 @@ com.widedot.m6809.gamebuilder.plugin.asm.impl.FilePlugin
 com.widedot.m6809.gamebuilder.plugin.bin.impl.ObjectPlugin
 com.widedot.m6809.gamebuilder.plugin.cksumfd640.impl.ObjectPlugin
 com.widedot.m6809.gamebuilder.plugin.data.impl.MediaPlugin
+com.widedot.m6809.gamebuilder.plugin.defaults.impl.DefaultPlugin
+com.widedot.m6809.gamebuilder.plugin.define.impl.DefaultPlugin
 com.widedot.m6809.gamebuilder.plugin.fd.impl.MediaPlugin
 com.widedot.m6809.gamebuilder.plugin.floppydisk.impl.DefaultPlugin
 com.widedot.m6809.gamebuilder.plugin.hfe.impl.MediaPlugin

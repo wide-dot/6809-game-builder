@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.plugin.asm.impl;
 
 import java.io.File;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.plugin.asm.Processor;
@@ -13,8 +12,8 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 public class FileImpl implements FilePluginInterface {
 
   @Override
-  public File getFile(HierarchicalConfiguration<ImmutableNode> node, String path, Defaults defaults, Defines defines) throws Exception {
+  public File getFile(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
-	  return Processor.getFile(node, path);
+	  return Processor.getFile(node, path, defaults);
   }
 }

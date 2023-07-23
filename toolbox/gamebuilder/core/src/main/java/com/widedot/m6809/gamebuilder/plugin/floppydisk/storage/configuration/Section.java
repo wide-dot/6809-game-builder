@@ -1,7 +1,9 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 
 public class Section {
 	public String name;
@@ -15,28 +17,14 @@ public class Section {
 		sector = 1;
 	}
 	
-	public Section(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-		name = node.getString("[@name]", null);
-		if (name == null) {
-			throw new Exception("name is missing for section");
-		}
-
-		face = node.getInteger("[@face]", -1);
-		if (face == -1) {
-			throw new Exception("face is missing for section");
-		}
-		
-		track = node.getInteger("[@track]", -1);
-		if (track == -1) {
-			throw new Exception("track is missing for section");
-		}
-		
-		sector = node.getInteger("[@sector]", -1);
-		if (sector == -1) {
-			throw new Exception("sector is missing for section");
-		}
+	public Section(ImmutableNode node) throws Exception {
+		setAttributes(node, (Defaults)null);
 	}
-
+	
+	public Section(ImmutableNode node, Defaults defaults) throws Exception {
+		setAttributes(node, defaults);
+	}
+	
 	public Section(int face, int track, int sector) {
 		this.face = face;
 		this.track = track;
@@ -47,6 +35,13 @@ public class Section {
 		this.face = section.face;
 		this.track = section.track;
 		this.sector = section.sector;
+	}
+	
+	private void setAttributes(ImmutableNode node, Defaults defaults) throws Exception {
+		name = Attribute.getString(node, defaults, "name", "floppydisk.section.name");
+		face = Attribute.getInteger(node, defaults, "face", "floppydisk.section.face");
+		track = Attribute.getInteger(node, defaults, "track", "floppydisk.section.track");
+		sector = Attribute.getInteger(node, defaults, "sector", "floppydisk.section.sector");
 	}
 	
 }

@@ -52,7 +52,7 @@ public class Storage {
 	    List<HierarchicalConfiguration<ImmutableNode>> sectionNodes = node.configurationsAt("section");
     	for(HierarchicalConfiguration<ImmutableNode> sectionNode : sectionNodes)
     	{	
-    		Section section = new Section(sectionNode);
+    		Section section = new Section(sectionNode.getNodeModel().getNodeHandler().getRootNode());
     	    sections.put(section.name, section);
     	}
 	}
