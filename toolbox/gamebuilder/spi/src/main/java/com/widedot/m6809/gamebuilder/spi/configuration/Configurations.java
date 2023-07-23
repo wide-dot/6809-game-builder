@@ -10,8 +10,7 @@ public class Configurations {
 	public static List<ImmutableNode> at(ImmutableNode node, String nodeName) throws Exception {
 		List<ImmutableNode> nodes = new ArrayList<ImmutableNode>();
 		
-		List<ImmutableNode> root = node.getChildren();
-		for (ImmutableNode child : root) {
+		for (ImmutableNode child : node.getChildren()) {
 			if (child.getNodeName().equals(nodeName)) {
 				nodes.add(child);
 			}

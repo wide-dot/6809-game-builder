@@ -1,7 +1,5 @@
 package com.widedot.m6809.gamebuilder.plugin.data;
 
-import java.util.List;
-
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
@@ -31,8 +29,7 @@ public class Processor {
 		DefaultFactory emptyfactory;
 		ObjectFactory objectFactory;
 		
-		List<ImmutableNode> root = node.getChildren();
-		for (ImmutableNode child : root) {
+		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 		
 			// external plugin

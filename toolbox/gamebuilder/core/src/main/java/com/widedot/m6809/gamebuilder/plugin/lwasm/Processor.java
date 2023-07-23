@@ -37,8 +37,7 @@ public class Processor {
 		DefaultFactory defaultFactory;
 		FileFactory fileFactory;
 				
-		List<ImmutableNode> root = node.getChildren();
-		for (ImmutableNode child : root) {
+		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
 			// external plugin
