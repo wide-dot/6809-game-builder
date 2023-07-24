@@ -27,6 +27,7 @@
         ENDC
 
 * Switch to Basic 1.0 if necessary
+        bra   boot1
         ldb   #$60
         cmpb  >$001a  ; Skip if
         beq   boot1   ; BASIC1.0
@@ -56,7 +57,7 @@ boot3   inc   <map.DK.BUF  ; Move sector ptr
         dec   >secnbr      ; Next
         bne   boot2        ; sector
         clra               ; Load first
-        jmp   $0000        ; program
+        jmp   $6300        ; program
 
 * Display error message
 err     leau  <mess0,pcr ; Location
@@ -112,8 +113,7 @@ mess0   fcb   $1f,$21,$21
         fcb   $1f,$4c,$4b+$80 ; locate for MO
 
 * Interleave table
-blist   equ   *
-        fcb   $0f,$0d,$0b
+blist   fcb   $0f,$0d,$0b     ; first value is omitted ($01 : boot sector)
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a

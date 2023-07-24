@@ -1,5 +1,6 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage;
 
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -93,33 +94,22 @@ public class FdUtil implements MediaDataInterface{
 
     public void interleave() {
         byte[] idata = new byte[data.length];
-        boolean[] slot = new boolean[data.length];
 
         // apply sector interleaving and face optimisation
         int pos = 0, s = 0;
         for (int t = 0; t < storage.segment.tracks; t++) {
             for (int f = 0; f < storage.segment.faces; f++) {
-
-                // init mask array, used to know already loaded sector indexes
-                for (int i = 0; i < storage.segment.sectors; i++) {slot[i]=false;}
-
+            	
+                // apply skew based on track number
+            	s = Interleave.getSoftIndex(storage.interleave.softMap, storage.interleave.hardMap[(t*storage.interleave.softskew)%storage.segment.sectors]);
+            	
                 // iterate n storage.segment.sectors
                 for (int ns = 0; ns < storage.segment.sectors; ns++) {
-
-                    // skip already written sector id
-                	s = s%storage.segment.sectors;
-                    while (slot[s]) {s = (s+1)%storage.segment.sectors;}
                     System.arraycopy(data, pos, idata, getIndex(f, t, storage.interleave.softMap[s]), storage.segment.sectorSize);
                     pos += storage.segment.sectorSize;
-                    slot[s] = true;
-
-                    // sector change, apply skip
-                    s += storage.interleave.softskip;
+                    s = (s+1)%storage.segment.sectors;
                 }
             }
-            
-            // track change, apply skew
-            s = s + storage.interleave.softskew - storage.interleave.softskip;
         }
         
         interleavedData = idata;

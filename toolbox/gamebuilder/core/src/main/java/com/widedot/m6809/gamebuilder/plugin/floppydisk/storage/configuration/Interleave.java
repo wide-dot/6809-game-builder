@@ -21,6 +21,15 @@ public class Interleave {
 		softMap = getMap(softskip, hardMap);
 	}
 	
+	public static int getSoftIndex(int[] map, int val) {
+		int i = 0;
+		for (i = 0; i < map.length; i++) {
+			if (map[i] == val) break;
+		}
+		
+		return i;
+	}
+	
 	private int[] getUninterleavedMap(int sectors) {
 		int[] defaultMap = new int[sectors];
 		for (int i = 0 ; i < sectors; i++) {
@@ -52,4 +61,5 @@ public class Interleave {
 		
 		return omap;
 	}
+	
 }

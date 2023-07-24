@@ -23,7 +23,8 @@ E_EXEC  rmb POINTR ;
         ENDSTRUCT
 
 *---------------------------------------
-* Loader reset (org $6300)
+* Loader reset
+        org   $6300
 
 ptsec  equ    $6200
 
@@ -154,13 +155,10 @@ ldsec1 ldd    >track  ; read track/sect
 dskerr jmp    [$fffe]
 
 * Interleave 2 with a default disk format (interleave 7)
-sclist equ    *
-       fcb    $01,$0f,$0d,$0b
+sclist fcb    $01,$0f,$0d,$0b
        fcb    $09,$07,$05,$03
        fcb    $08,$06,$04,$02
        fcb    $10,$0e,$0c,$0a
 
 * Entry list
-list   equ    *
-
-       end
+list
