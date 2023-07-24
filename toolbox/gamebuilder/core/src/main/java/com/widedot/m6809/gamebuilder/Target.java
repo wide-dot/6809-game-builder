@@ -84,6 +84,10 @@ public class Target {
 			    processor.run(child, path, defaults, defines);
 			}
 			log.info("End of processing target {}", targetName);
+			
+			// clear target local definitions
+			defaults.values.clear();
+			defines.values.clear();
     	}
 	}
 }

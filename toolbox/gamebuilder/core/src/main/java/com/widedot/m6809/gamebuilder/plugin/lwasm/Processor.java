@@ -37,6 +37,10 @@ public class Processor {
    		// instanciate plugins
 		DefaultFactory defaultFactory;
 		FileFactory fileFactory;
+		
+		// instanciate local definitions
+		Defaults localDefaults = new Defaults(defaults.values);
+		Defines localDefines = new Defines(defines.values);
 				
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
@@ -51,13 +55,15 @@ public class Processor {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, defaults, defines);
+			    processor.run(child, path, localDefaults, localDefines);
+			    defines.publish(localDefines);
 	        }
 	        
 	        if (fileFactory != null) {
 			    final FilePluginInterface processor = fileFactory.build();
 			    log.debug("Running plugin: {}", fileFactory.name());
-			    files.add(processor.getFile(child, path, defaults, defines));
+			    files.add(processor.getFile(child, path, localDefaults, localDefines));
+			    defines.publish(localDefines);
 	        }
 		}
 
@@ -92,8 +98,8 @@ public class Processor {
 		}
 
 		// assemble		
-		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, defines.values, format);
-		
+		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, localDefines, format);
+		defines.publish(localDefines);
 		log.debug("End of processing lwasm");
 		
 		return obj;

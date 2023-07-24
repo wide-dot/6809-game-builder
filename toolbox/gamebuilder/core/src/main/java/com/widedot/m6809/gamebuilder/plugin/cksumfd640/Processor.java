@@ -25,6 +25,10 @@ public class Processor {
 		DefaultFactory defaultFactory;
 		ObjectFactory objectFactory;
 		
+		// instanciate local definitions
+		Defaults localDefaults = new Defaults(defaults.values);
+		Defines localDefines = new Defines(defines.values);
+		
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 				
@@ -38,13 +42,15 @@ public class Processor {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, defaults, defines);
+			    processor.run(child, path, localDefaults, localDefines);
+			    defines.publish(localDefines);
 	        }
 	        
 	        if (objectFactory != null) {
 			    final ObjectPluginInterface processor = objectFactory.build();
 			    log.debug("Running plugin: {}", objectFactory.name());
-			    obj = processor.getObject(child, path, defaults, defines);
+			    obj = processor.getObject(child, path, localDefaults, localDefines);
+			    defines.publish(localDefines);
 			    
 			    checksum(obj.getBytes());
 	        }

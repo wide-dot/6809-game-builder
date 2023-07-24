@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
@@ -40,6 +39,10 @@ public class Processor {
 		DefaultFactory defaultFactory;
 		MediaFactory mediaFactory;
 		
+		// instanciate local definitions
+		Defaults localDefaults = new Defaults(defaults.values);
+		Defines localDefines = new Defines(defines.values);
+
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
@@ -60,13 +63,15 @@ public class Processor {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, defaults, defines);
+			    processor.run(child, path, localDefaults, localDefines);
+				defines.publish(localDefines);
 	        }
 	        
 	        if (mediaFactory != null) {
 			    final MediaPluginInterface processor = mediaFactory.build();
 			    log.debug("Running plugin: {}", mediaFactory.name());
-			    processor.run(child, path, defaults, defines, mediaData);
+			    processor.run(child, path, localDefaults, localDefines, mediaData);
+			    defines.publish(localDefines);
 	        }
     	}
 		

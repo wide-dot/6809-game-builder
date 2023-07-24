@@ -17,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.util.Constants;
 import com.widedot.m6809.util.FileUtil;
 
@@ -50,7 +51,7 @@ public class LwAssembler
 		}
 	};
 	
-	public static ObjectDataInterface assemble(String asmFile, String rootPath, HashMap<String, String> defines, String format) throws Exception {
+	public static ObjectDataInterface assemble(String asmFile, String rootPath, Defines defines, String format) throws Exception {
 		
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
 		String buildDir = FileUtil.getDir(asmFile) + File.separator +Settings.values.get("build.dir") + File.separator;
@@ -74,7 +75,7 @@ public class LwAssembler
 				   "--includedir=" + path.getParent().toString()
 				   ));
 		
-		for (Entry<String, String> define : defines.entrySet()) {
+		for (Entry<String, String> define : defines.values.entrySet()) {
 			command.add("--define="+define.getKey()+"="+define.getValue());
 		}
 
@@ -93,11 +94,11 @@ public class LwAssembler
         String defineKey = Constants.BUILDER_DEFINE_PREFIX + "lwasm.size." + asmBasename;
         String binLength = Integer.toString(object.getBytes().length);
         
-        if (defines.containsKey(defineKey)) {
+        if (defines.values.containsKey(defineKey)) {
         	log.warn("Duplicate filename: <" + asmBasename + ">. Builder will overwrite the define: <" + defineKey + ">. Use gensource attribute on lwasm element to set an alias");
         }
 
-        defines.put(defineKey, binLength);
+        defines.newValues.put(defineKey, binLength);
         log.debug("generate define : {} {}", defineKey,  binLength);
         
         // add a file tag in the build directory

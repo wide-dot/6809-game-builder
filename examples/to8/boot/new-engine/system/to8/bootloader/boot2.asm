@@ -17,27 +17,23 @@
         orcc  #$50
 
 * Check computer type
-        leax  <mess1,pcr ; Error message
-        lda   #$02       ; Load code
-        cmpa  >$fff0     ; Check machine code
-        bhs   err        ; Error if not TO+
+        leax  <mess1,pcr   ; Error message
+        ldd   #$0260       ; Load code
+        cmpa  >$fff0       ; Check machine code
+        bhs   err          ; Error if not TO+
 
+* Check computer memory
         IFDEF builder.CHECKMEMORYEXT
-        jsr   checkmemoryext
+        ldx   #mess2       ; Error message
+        lda   #$10
+        sta   map.CF74021.DATA
+        ldu   #$A000
+        lda   #$55
+        sta   ,u
+        cmpa  ,u
+        bne   err          ; Error if no memory ext.
         ENDC
 
-* Switch to Basic 1.0 if necessary
-        bra   boot1
-        ldb   #$60
-        cmpb  >$001a  ; Skip if
-        beq   boot1   ; BASIC1.0
-        ldu   #boot0  ; Switch to
-        jmp   >$ec03  ; BASIC 1.0
-boot0   jmp   [$001e] ; Reset cartridge
-
-* Prepare to load
-* Initialize system
-boot1   lds   #$60cc  ; System stack
 * Load loader sectors
         ldd   #$6300       ; Loading
         std   <map.DK.BUF  ; address
@@ -77,6 +73,14 @@ err3    tfr   dp,a     ; Read DP
         swi            ; Display for MO
         fcb   $82      ; Display for MO - PUTC parameter
 
+* Location message
+mess0   fcb   $1f,$21,$21
+        fcb   $1f,$11,$13     ; 3 lines (11-13)
+        fcb   $1b,$47         ; font : white
+        fcb   $1b,$51         ; background : red
+        fcb   $0c             ; cls
+        fcb   $1f,$4c,$4b+$80 ; locate for MO
+
         IFGT *-$6278
         ERROR "boot code part 1 is too large !"
         ENDC
@@ -91,26 +95,6 @@ secnbr  fcb   (builder.lwasm.size.loader/256)+1 ; number of sectors to read
 mess1   fcs   "Only for TO8/8D/9+"
 mess2   fcs   "Requires 256Ko ext."
 mess3   fcs   "     I/O|Error"
-
-* Check computer memory
-checkmemoryext
-        ldx   #mess2  ; Error message
-        lda   #$10
-        sta   map.CF74021.DATA
-        ldu   #$A000
-        lda   #$55
-        sta   ,u
-        cmpa  ,u
-        bne   err     ; Error if no memory ext.
-        rts
-
-* Location message
-mess0   fcb   $1f,$21,$21
-        fcb   $1f,$11,$13     ; 3 lines (11-13)
-        fcb   $1b,$47         ; font : white
-        fcb   $1b,$51         ; background : red
-        fcb   $0c             ; cls
-        fcb   $1f,$4c,$4b+$80 ; locate for MO
 
 * Interleave table
 blist   fcb   $0f,$0d,$0b     ; first value is omitted ($01 : boot sector)
