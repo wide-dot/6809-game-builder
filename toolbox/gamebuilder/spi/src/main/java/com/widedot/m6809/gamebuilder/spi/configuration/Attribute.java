@@ -59,4 +59,8 @@ public class Attribute {
 	public static Integer getInteger(ImmutableNode node, Defaults defaults, String attrName, String fullAttrName, Integer defaultVal, boolean optional) throws Exception {
 		return Integer.decode(getString(node, defaults, attrName, fullAttrName, (defaultVal==null?(String)null:defaultVal.toString()), optional));
 	}
+
+	public static boolean getBoolean(ImmutableNode node, Defaults defaults, String attrName, String fullAttrName, Boolean defaultVal) throws Exception {
+		return (getString(node, defaults, attrName, fullAttrName, String.valueOf(defaultVal), false).equals("true")?true:false);
+	}
 }
