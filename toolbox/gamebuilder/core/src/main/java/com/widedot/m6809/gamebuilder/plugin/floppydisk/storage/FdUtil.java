@@ -114,9 +114,8 @@ public class FdUtil implements MediaDataInterface{
 
         // apply sector interleaving and face optimisation
         int pos = 0, s = 0;
-        for (int t = 0; t < storage.segment.tracks; t++) {
-            for (int f = 0; f < storage.segment.faces; f++) {
-            	
+        for (int f = 0; f < storage.segment.faces; f++) {
+        	for (int t = 0; t < storage.segment.tracks; t++) {
                 // apply skew based on track number
             	s = Interleave.getSoftIndex(storage.interleave.softMap, storage.interleave.hardMap[(t*storage.interleave.softskew)%storage.segment.sectors]);
             	
