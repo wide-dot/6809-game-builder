@@ -19,6 +19,23 @@ public class FdUtil implements MediaDataInterface{
         data = new byte[storage.segment.faces*storage.segment.tracks*storage.segment.sectors*storage.segment.sectorSize];
         dataMask = new boolean[data.length];
     }
+    
+	public void write(String location, byte[] data) throws Exception {
+		Section s = storage.sections.get(location);
+		if (s == null) {
+			String m = "Unknown Section: " + location;
+			log.error(m);
+			throw new Exception(m);
+		}
+		writeSector(data, 0, s);
+	}
+
+	public byte[] getInterleavedData() throws Exception {
+		if (interleavedData==null) {
+			interleave();
+		}
+		return interleavedData;
+	}    
 
     public int getIndex(Section section) {
         return (section.face * 327680) + (section.track * 4096) + ((section.sector - 1) * 256);
@@ -114,22 +131,5 @@ public class FdUtil implements MediaDataInterface{
         
         interleavedData = idata;
     }
-    
-	public void write(String location, byte[] data) throws Exception {
-		Section s = storage.sections.get(location);
-		if (s == null) {
-			String m = "Unknown Section: " + location;
-			log.error(m);
-			throw new Exception(m);
-		}
-		writeSector(data, 0, s);
-	}
-
-	public byte[] getInterleavedData() throws Exception {
-		if (interleavedData==null) {
-			interleave();
-		}
-		return interleavedData;
-	}
 	
 }

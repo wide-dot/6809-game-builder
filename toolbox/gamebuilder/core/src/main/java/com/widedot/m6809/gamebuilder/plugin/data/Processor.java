@@ -1,5 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugin.data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
@@ -25,6 +28,10 @@ public class Processor {
 		String section = Attribute.getString(node, defaults, "section", "data.section");
 		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "data.maxsize", Integer.MAX_VALUE);
 
+		// binary data
+		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
+		byte[] bin;
+		
    		// instanciate plugins
 		DefaultFactory defaultFactory;
 		ObjectFactory objectFactory;
@@ -53,17 +60,34 @@ public class Processor {
 	        if (objectFactory != null) {
 			    final ObjectPluginInterface processor = objectFactory.build();
 			    log.debug("Running plugin: {}", objectFactory.name());
-			    ObjectDataInterface obj = processor.getObject(child, path, localDefaults, localDefines);
+			    objects.add(processor.getObject(child, path, localDefaults, localDefines));
 			    defines.publish(localDefines);
-			    
-			    if (obj.getBytes().length > maxsize) {
-					String m = "data size is over maxsize: " + obj.getBytes().length;
-					log.error(m);
-					throw new Exception(m);
-			    }
-			    media.write(section, obj.getBytes());
 	        }
     	}
+		
+		// merge all binaries in one byte array
+		int length = 0;
+		for (ObjectDataInterface obj : objects) {
+			length += obj.getBytes().length;
+		}
+		
+	    if (length > maxsize) {
+			String m = "data size " + length + " is over maxsize: " + maxsize;
+			log.error(m);
+			throw new Exception(m);
+	    }
+		
+		bin = new byte[length];
+		int o = 0;
+		for (ObjectDataInterface obj : objects) {
+			byte[] sbin = obj.getBytes();
+			for (int i=0; i< sbin.length; i++) {
+				bin[o++] = sbin[i];
+			}
+		}		
+		
+	    media.write(section, bin);
+		
 		log.debug("End of processing data");
 	}
 
