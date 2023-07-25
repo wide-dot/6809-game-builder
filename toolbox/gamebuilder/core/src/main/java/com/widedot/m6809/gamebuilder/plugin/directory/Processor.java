@@ -17,6 +17,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Processor {
 	
+//	Directory Header (5 bytes)
+//  -----------------------------------------------------------------------------------------------
+//	[I] [D] [X] : [tag]
+//	[0000 0000] : [disk id 0-255]
+//	[0000 0000] : [nb of sectors to load for this index]
+	
+//	Directory content
+//  -----------------------------------------------------------------------------------------------
+//  ...         : direntries
+
+	
 	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing directory ...");
