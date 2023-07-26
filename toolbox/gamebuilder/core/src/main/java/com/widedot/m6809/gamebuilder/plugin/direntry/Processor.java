@@ -35,8 +35,7 @@ public class Processor {
 //
 //	Option (8 bytes) - compression
 //	[0000 0000 0000 0000] - [offset to compressed data]
-//  [0000 0] [000] - [free] [number of delta bytes]
-//	[0000 0000] [0000 0000] [0000 0000] [0000 0000] [0000 0000] - [delta byte] * n (max 5)
+//	[0000 0000] [0000 0000] [0000 0000] [0000 0000] [0000 0000] [0000 0000] - [6x delta bytes]
 //	
 //  start >>           |------------------| compressed data
 //  |---------------------------------|     decompressed data
@@ -115,7 +114,6 @@ public class Processor {
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
-		byte[] bin;
 		
    		// instanciate plugins
 		DefaultFactory defaultFactory;
@@ -150,7 +148,10 @@ public class Processor {
 	        }
     	}
 
-		// merge all binaries in one byte array
+		// init direntry
+		byte[] direntry = new byte[24];
+		
+		// merge all binaries
 		int length = 0;
 		for (ObjectDataInterface obj : objects) {
 			length += obj.getBytes().length;
@@ -162,7 +163,8 @@ public class Processor {
 			throw new Exception(m);
 	    }
 		
-		bin = new byte[length];
+		byte[] bin = new byte[length];
+		
 		int o = 0;
 		for (ObjectDataInterface obj : objects) {
 			byte[] sbin = obj.getBytes();
@@ -170,47 +172,53 @@ public class Processor {
 				bin[o++] = sbin[i];
 			}
 		}		
-
-		// init direntry
-		byte[] direntry = new byte[24];
 		
 		// apply codec
 		boolean compress = false;
+	    int maxdelta = Integer.parseInt(Settings.values.get("direntry.zx0.delta"));
 		if (codec != null && bin.length > 0) {
+			
 			if (codec.equals(ZX0)) {
 				
-				// TODO : compresser plus petit pour gérer le delta
-				// le code avait été testé mais apparement perdu ...
+				if (length > maxdelta) {
 				
-				log.debug("Compress data with zx0");
-				int[] delta = { 0 };				
-				byte[] cbin = new Compressor().compress(new Optimizer().optimize(bin, 0, maxsize, 4, false), bin, 0, false, false, delta);
-				log.debug("Original size: {}, Packed size: {}, Delta: {}", bin.length, cbin.length, delta[0]);
-				
-				// automatic selection of compressed or uncompressed data
-				if (bin.length > cbin.length) {
-				
-					// build direntry data (compression bloc)
-					int offset = bin.length-cbin.length;
-					direntry[8] = (byte) ((offset & 0xff00) >> 8);
-					direntry[9] = (byte) (offset & 0xff);
-					direntry[10] = (byte) (delta.length & 0x07);
-					for (int i = 0; i < delta[0]; i++) {
-						direntry[i+11] = (byte) 0; // TODO remplacer par les valeurs de delta ...
-						i++;
+					log.debug("Compress data with zx0");
+					int[] delta = { 0 };				
+					
+					// prepare data, shorten by n bytes (maxdelta)
+					byte[] sbin = new byte[bin.length-maxdelta];
+					System.arraycopy(bin, 0, sbin, 0, sbin.length);
+					
+					// compress the shortened data
+					byte[] cbin = new Compressor().compress(new Optimizer().optimize(sbin, 0, maxsize, 4, false), bin, 0, false, false, delta);
+					log.debug("Original size: {}+{}, Packed size: {}, Delta: {}", bin.length-maxdelta, maxdelta, cbin.length, delta[0]);
+					
+					// automatic selection of compressed or uncompressed data
+					if (delta[0] > maxdelta) {
+						log.warn("Skip compression: delta ({}) is higher than max delta.", delta[0]);
+						
+					} else if (bin.length <= cbin.length+maxdelta) {
+						log.warn("Skip compression: compressed data size is bigger or equal to original size.");
+						
+					} else {
+										
+						// build direntry data (compression bloc)
+						int offset = bin.length-cbin.length;
+						direntry[8] = (byte) ((offset & 0xff00) >> 8);
+						direntry[9] = (byte) (offset & 0xff);
+						
+						// copy delta bytes
+						System.arraycopy(bin, bin.length-maxdelta, direntry, 10, maxdelta);
+						
+						bin = cbin;
+						compress = true;
 					}
-					
-					bin = cbin;
-					compress = true;
-					
-				} else if (delta[0] > Integer.parseInt(Settings.values.get("direntry.zx0.maxdelta"))) {
-					log.warn("Skip compression: delta ({}) is too high.", delta[0]);
 				} else {
-					log.warn("Skip compression: compressed data size is bigger or equal to original size.");
+					log.warn("Skip compression: data size is lower or equal to max delta bytes");
 				}
 			}
 		}
-		
+				
 		// write file to media
 	    media.write(section, bin);
 	    
