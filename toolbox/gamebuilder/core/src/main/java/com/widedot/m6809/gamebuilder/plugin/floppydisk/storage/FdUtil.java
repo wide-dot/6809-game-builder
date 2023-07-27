@@ -135,11 +135,11 @@ public class FdUtil implements MediaDataInterface{
         section.sector++;
         if (section.sector-1==storage.segment.sectors) {
             section.sector=0;
-            section.track++;
-            if (section.track==storage.segment.tracks) {
-                section.face++;
-                if (section.face==storage.segment.faces) {
-                    throw new Exception("No more space on media !");
+            section.face++;
+            if (section.face==storage.segment.faces) {
+                section.track++;
+                if (section.track==storage.segment.tracks) {
+                	throw new Exception("No more space on media !");
                 }
             }
         }

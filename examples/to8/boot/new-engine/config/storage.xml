@@ -9,19 +9,19 @@
         <segment faces="2" tracks="80" sectors="16" sectorSize="256"/>
         <interleave softskip="2" softskew="4" hardskip="7"/>
         <fat sectorperblock="8" nblocks="160" sectorsize="255" fatstart="129" dirstart="512" ndirentries="112"/>
-        <section name="BOOT"   face="0" track="0" sector="1"/>
-        <section name="LOADER" face="0" track="0"  sector="2"/>
-        <section name="FAT0"   face="0" track="20" sector="1"/>
-        <section name="FAT1"   face="1" track="20" sector="1"/>
+        <section name="BOOT"   track="0"  face="0" sector="1"/>
+        <section name="LOADER" track="0"  face="0" sector="2"/>
+        <section name="FAT0"   track="20" face="0" sector="1"/>
+        <section name="FAT1"   track="20" face="1" sector="1"/>
     </floppydisk>
 
     <floppydisk model="fd320">
         <segment faces="1" tracks="80" sectors="16" sectorSize="256"/>
         <interleave softskip="2" softskew="4" hardskip="7"/>
         <fat sectorperblock="8" nblocks="80"  sectorsize="128" fatstart="129" dirstart="256" ndirentries="112"/>
-        <section name="BOOT"   face="0" track="0" sector="1"/>
-        <section name="LOADER" face="0" track="0"  sector="2"/>
-        <section name="FAT0"   face="0" track="20" sector="1"/>
+        <section name="BOOT"   track="0"  face="0" sector="1"/>
+        <section name="LOADER" track="0"  face="0" sector="2"/>
+        <section name="FAT0"   track="20" face="0" sector="1"/>
     </floppydisk>
     
     <floppydisk model="fd158">

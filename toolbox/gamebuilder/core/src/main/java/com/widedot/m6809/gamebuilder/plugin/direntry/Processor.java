@@ -257,7 +257,7 @@ public class Processor {
 		}
 		
 		if (loadtimelink) {
-			    byte[] linkbin = new byte[0]; // replace by LWOBJ data ... formatted to expected format
+			    byte[] linkbin = new byte[0]; // replace by LWOBJ data ... formatted to expected format ... make a dedicated class
 			    byte[] linkDiskLocation = media.write(linkSection, linkbin);
 			    
 				direntry[i++] = (byte)(linkbin.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
