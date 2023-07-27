@@ -1,6 +1,11 @@
 package com.widedot.m6809.gamebuilder.plugin.direntry;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -15,7 +20,9 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
+import com.widedot.m6809.util.FileUtil;
 import com.widedot.m6809.util.zx0.Compressor;
 import com.widedot.m6809.util.zx0.Optimizer;
 
@@ -105,12 +112,27 @@ public class Processor {
 		String name = Attribute.getString(node, defaults, "name", "direntry.name");
 		String section = Attribute.getString(node, defaults, "section", "direntry.section");
 		String codec = Attribute.getStringOpt(node, defaults, "codec", "direntry.codec");
-		boolean loadtimelink = Attribute.getBoolean(node, defaults, "loadtimelink", "direntry.loadtimelink", false);
+		String linkSection = Attribute.getStringOpt(node, defaults, "loadtimelink", "direntry.linksection");
+		boolean loadtimelink = (linkSection!=null?true:false);
 		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "directory.maxsize", Integer.MAX_VALUE);
 		String gensymbols = Attribute.getStringOpt(node, defaults, "gensymbols", "direntry.gensymbols");
 		
 		// generate symbols file
-		// ... TODO
+		if (gensymbols != null) {
+			int id = 0;
+			gensymbols = path + File.separator + gensymbols;
+			Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
+			FileWriter writer = new FileWriter(gensymbols);
+			for (DirEntry de : media.getDirEntries()) {
+				writer.write(de.name + " equ " + id + System.lineSeparator());
+				writer.write(" EXPORT " + de.name + System.lineSeparator());
+				id += de.data.length/8; // each id is an index to 8 bytes
+			}
+			// current entry pre-generation
+			writer.write(name + " equ " + id + System.lineSeparator());
+			writer.write(" EXPORT " + name + System.lineSeparator());
+			writer.close();
+		}
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
@@ -220,24 +242,31 @@ public class Processor {
 		}
 				
 		// write file to media
-	    media.write(section, bin);
+	    byte[] dataDiskLocation = media.write(section, bin);
 	    
-		// write link data to media
-	    if (loadtimelink) {
-	    	byte[] linkbin = new byte[0]; // replace by LWOBJ data ... formatted to expected format
-	    	media.write(section, linkbin);
-	    	
-			// build direntry data (link data bloc)
-			direntry[16] = (byte)(linkbin.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
-			// TODO disk location
-	    }
-	    
-		// build direntry data (file bloc)
-		if (compress)     direntry[0] = (byte) (direntry[0] | 0b10000000);
-		if (loadtimelink) direntry[0] = (byte) (direntry[0] | 0b01000000);
-		// TODO disk location
-
-	    //media.addEntry(...);
+		// build direntry data
+	    int i = 0;
+		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
+		if (loadtimelink) direntry[i] = (byte) (direntry[i] | 0b01000000);
+		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
+		
+		if (compress) {
+			i = 16;
+		} else {
+			i = 8;
+		}
+		
+		if (loadtimelink) {
+			    byte[] linkbin = new byte[0]; // replace by LWOBJ data ... formatted to expected format
+			    byte[] linkDiskLocation = media.write(linkSection, linkbin);
+			    
+				direntry[i++] = (byte)(linkbin.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
+				System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
+				i += 7;
+			}
+			
+		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
+	    media.addDirEntry(new DirEntry(name, sizedDirentry));
 		
 		log.debug("End of processing direntry");
 	}

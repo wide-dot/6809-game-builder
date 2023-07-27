@@ -19,16 +19,17 @@
             </data>
 
             <section name="INDEX" face="1" track="0"  sector="1"/>
-            <section name="DATA"  face="0" track="1"  sector="1"/>
+            <section name="LINK"  face="0" track="1"  sector="1"/>
+            <section name="DATA"  face="0" track="2"  sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="src/directories/directory.bin"> <!--genbinary is optional-->
                 <default name="direntry.section"      value="DATA"/>
                 <default name="direntry.codec"        value="zx0"/>
-                <default name="direntry.loadtimelink" value="true"/>
+                <default name="direntry.linksection"  value="LINK"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
-                <direntry name="assets.main.run-pixel">
+                <direntry name="assets.main.runpixel">
                     <lwasm>
                         <asm filename="src/assets/main/run-pixel.asm"/>
                     </lwasm>
@@ -38,13 +39,12 @@
                         <asm filename="src/assets/object/pixel.asm"/>
                     </lwasm>
                 </direntry>
-<!--
-                <direntry name="builder.floppydisk.directory" gensymbols="src/directories/direntry-id.asm">
+
+                <direntry name="builder.floppydisk.directory" gensymbols="src/directories/direntries-id.asm">
                     <lwasm>
-                        <asm filename="src/directories/direntry-id.asm"/>
+                        <asm filename="src/directories/direntries-id.asm"/>
                     </lwasm>
                 </direntry>
--->
             </directory>
 
             <fd  filename="demo.fd"/>

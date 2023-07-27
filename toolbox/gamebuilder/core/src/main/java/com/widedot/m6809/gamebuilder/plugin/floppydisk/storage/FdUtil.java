@@ -1,8 +1,12 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
+import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,11 +17,13 @@ public class FdUtil implements MediaDataInterface{
     public boolean[] dataMask;
     private byte[] data;
     private byte[] interleavedData;
+    private List<DirEntry> dirEntries;
 
     public FdUtil(Storage storage) {
         this.storage = storage;
         data = new byte[storage.segment.faces*storage.segment.tracks*storage.segment.sectors*storage.segment.sectorSize];
         dataMask = new boolean[data.length];
+        dirEntries = new ArrayList<DirEntry>();
     }
     
 	public byte[] write(String location, byte[] data) throws Exception {
@@ -71,7 +77,14 @@ public class FdUtil implements MediaDataInterface{
 			first = false;
 		}
 		
-        // log.debug(""); // print direntry
+        log.debug("write - track {}, face {}, start sector {}, nb bytes in first sector {}, offset in first sector {}, full sectors {}, nb bytes in last sector {}",
+        		direntry[0] >> 1,
+				direntry[0] & 0x1,
+				direntry[1],
+				direntry[2],
+				direntry[3],
+				direntry[4],
+				direntry[5]);
         
         return direntry;
 	}
@@ -82,6 +95,14 @@ public class FdUtil implements MediaDataInterface{
 		}
 		return interleavedData;
 	}    
+	
+	public void addDirEntry(DirEntry entry) throws Exception {
+		dirEntries.add(entry);
+	}
+
+	public List<DirEntry> getDirEntries() throws Exception {
+		return dirEntries;
+	}
 
     public int[] writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
     	int[] ret = new int[3];
