@@ -20,14 +20,60 @@ public class FdUtil implements MediaDataInterface{
         dataMask = new boolean[data.length];
     }
     
-	public void write(String location, byte[] data) throws Exception {
+	public byte[] write(String location, byte[] data) throws Exception {
+		
+		// retrieve dest section
 		Section s = storage.sections.get(location);
 		if (s == null) {
 			String m = "Unknown Section: " + location;
 			log.error(m);
 			throw new Exception(m);
 		}
-		writeSector(data, 0, s);
+		
+		// write sectors
+		int pos = 0;
+		boolean first = true;
+		
+        //build directory entry
+        byte[] direntry = new byte[6];
+		direntry[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
+		direntry[1] = (byte) s.sector;											// start sector nb
+        direntry[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
+        
+		while (pos < data.length) {
+			int[] v = writeSector(data, pos, s);
+			
+			if (first) {
+				if (v[1] == storage.segment.sectorSize) {
+					
+					// first written sector is full filled with data
+					direntry[2] = 0;	// nb of bytes in first sector
+					direntry[3] = 0;	// start offset in first sector
+					direntry[4] = 1;	// full sectors
+			        
+				} else {
+					
+					// first written sector is partially written
+					direntry[2] = (byte) v[1]; 	// nb of bytes in first sector
+					direntry[3] = (byte) v[0]; 	// start offset in first sector
+					direntry[4] = 0; 			// full sectors
+				}
+			} else {
+				if (v[1] == storage.segment.sectorSize) { 
+					direntry[4]++;		 		// inc full sectors
+				} else {
+					direntry[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
+				}
+			}
+			
+			pos += v[1];				// moves ahead in source data 
+			if (v[2]==0) nextSector(s);	// moves pointer to current free sector in common section
+			first = false;
+		}
+		
+        // log.debug(""); // print direntry
+        
+        return direntry;
 	}
 
 	public byte[] getInterleavedData() throws Exception {
@@ -37,30 +83,8 @@ public class FdUtil implements MediaDataInterface{
 		return interleavedData;
 	}    
 
-    public int getIndex(Section section) {
-        return (section.face * 327680) + (section.track * 4096) + ((section.sector - 1) * 256);
-    }
-    
-    public int getIndex(int face, int track, int sector) {
-        return (face * 327680) + (track * 4096) + ((sector - 1) * 256);
-    }
-
-    public void nextSector(Section section) throws Exception {
-        section.sector++;
-        if (section.sector-1==storage.segment.sectors) {
-            section.sector=0;
-            section.track++;
-            if (section.track==storage.segment.tracks) {
-                section.face++;
-                if (section.face==storage.segment.faces) {
-                    throw new Exception("No more space on media !");
-                }
-            }
-        }
-    }
-    
-    public int writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
-        log.debug("Write face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
+    public int[] writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
+    	int[] ret = new int[3];
         int start = getIndex(section.face, section.track, section.sector);
         int end = start + storage.segment.sectorSize;
         int nbBytes = 0;
@@ -79,37 +103,36 @@ public class FdUtil implements MediaDataInterface{
             nbBytes++;
             i++;
         }
-        
-        if (nbBytes==0 && srcData.length!=0) {
-            throw new Exception("Overlapping data at face:"+section.face+", track: "+section.track+", sector: "+section.sector);
-        }
-        
-        // return nb bytes written to sector
-        return nbBytes;
+
+        ret[0] = freePos-start; // offset to written data
+        ret[1] = nbBytes;       // nb of written bytes
+        ret[2] = end-i;         // remaining bytes in sector
+        return ret;
     }
     
-    public void writeFullSector(byte[] srcData, int srcIdx, Section section) throws Exception {
-        log.debug("Write full sector, face:{}, track: {}, sector: {}", section.face, section.track, section.sector);
-        int start = getIndex(section.face, section.track, section.sector);
-        int end = start + storage.segment.sectorSize;
-        
-        // check that sector is empty
-        for (int i = 0; i < storage.segment.sectorSize; i++) {
-            if (dataMask[i]) {
-                throw new Exception("Overlapping data at face:"+section.face+", track: "+section.track+", sector: "+section.sector);
+    public void nextSector(Section section) throws Exception {
+        section.sector++;
+        if (section.sector-1==storage.segment.sectors) {
+            section.sector=0;
+            section.track++;
+            if (section.track==storage.segment.tracks) {
+                section.face++;
+                if (section.face==storage.segment.faces) {
+                    throw new Exception("No more space on media !");
+                }
             }
         }
-        
-        // write to sector
-        for (int i = start; i < end; i++) {
-            data[i] = srcData[srcIdx++];
-            dataMask[i] = true;
-            
-            if (srcIdx >= srcData.length) break; // break if no more data to write
-        }
+    }
+    
+    public int getIndex(Section section) {
+        return (section.face * 327680) + (section.track * 4096) + ((section.sector - 1) * 256);
+    }
+    
+    public int getIndex(int face, int track, int sector) {
+        return (face * 327680) + (track * 4096) + ((sector - 1) * 256);
     }
 
-    public void interleave() {
+    private void interleave() {
         byte[] idata = new byte[data.length];
 
         // apply sector interleaving and face optimisation
