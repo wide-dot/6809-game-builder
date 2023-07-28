@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Settings;
+import com.widedot.m6809.gamebuilder.plugin.direntry.format.LinkData;
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
@@ -64,44 +65,6 @@ public class Processor {
 //	file.c equ 3 ;    compression,    load time link => 24 bytes = 3 blocks
 //	file.d equ 6
 //	...
-	
-// load time link data
-// -----------------------------------------------------------------------------------------------
-//
-//  file link data :
-//  - use allocation/desallocation algorithm to store data
-//  - simple buffer for all link data (user defined size)
-//  - bloc size for allocation is hardcoded (8 bytes ?)
-//  - use an index to access all link data for each file id
-//  - the index is a sorted linked list
-//  - an index entry is made with an disk id (8 bits) and a file id (16 bits), and point to a page (8 bits) + address location (16 bits)
-//
-//		- exported constant
-//
-//		03 0100 :    0002                             ; [nb of elements]
-//		             0003                             ; value of symbol 1
-//		             0004                             ; value of symbol 2
-//
-//		- exported
-//
-//		03 0106 :    0001                             ; [nb of elements]
-//		             0586                             ; value of symbol 0 (should add section base address to this value before applying)
-//		             
-//		- local
-//		            
-//		03 010A :    0001                             ; [nb of elements]
-//		             0162 00C3                        ; [dest offset] [val offset] - example : internal ( I16=195 IS=\02code OP=PLUS ) @ 0162
-//
-//		- incomplete (8bit)
-//		             
-//		03 0122 :    0001                             ; [nb of elements]
-//		             0014 0000 0003 0001              ; [dest offset] [val offset] [id block] [id ref] - example : external 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
-//
-//		- incomplete (16bit)
-//		             
-//		03 0110 :    0002                             ; [nb of elements]
-//		             0001 FFF4 0003 0001              ; [dest offset] [val offset] [id block] [id ref] - example : external ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
-//		             003E 0000 0003 0002              ;                                                            external ( ES=ymm.music.processFrame ) @ 003E
 	
 	public static final String ZX0 = "zx0";
 	
@@ -257,13 +220,19 @@ public class Processor {
 		}
 		
 		if (loadtimelink) {
-			    byte[] linkbin = new byte[0]; // replace by LWOBJ data ... formatted to expected format ... make a dedicated class
-			    byte[] linkDiskLocation = media.write(linkSection, linkbin);
-			    
-				direntry[i++] = (byte)(linkbin.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
-				System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
-				i += 7;
+			
+			// aggregate all link data
+			LinkData linkdata = new LinkData();
+			for (ObjectDataInterface obj : objects) {
+				linkdata.add(obj);
 			}
+			linkdata.process();
+		    byte[] linkDiskLocation = media.write(linkSection, linkdata.data);
+		    
+			direntry[i++] = (byte)(linkdata.data.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
+			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
+			i += 7;
+		}
 			
 		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
 	    media.addDirEntry(new DirEntry(name, sizedDirentry));

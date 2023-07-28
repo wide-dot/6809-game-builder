@@ -463,4 +463,29 @@ public class LwObject implements ObjectDataInterface{
 		return bin;
 	}
 
+	@Override
+	public List<byte[]> getExportedConst() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
+	@Override
+	public List<byte[]> getExported() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
+	@Override
+	public List<byte[]> getLocal() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
+	@Override
+	public List<byte[]> getIncomplete8() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
+	@Override
+	public List<byte[]> getIncomplete16() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
 }
