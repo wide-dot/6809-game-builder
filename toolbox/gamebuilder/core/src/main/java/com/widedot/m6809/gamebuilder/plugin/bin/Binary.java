@@ -29,7 +29,7 @@ public class Binary implements ObjectDataInterface {
 	}
 
 	@Override
-	public List<byte[]> getLocal() throws Exception {
+	public List<byte[]> getInternal() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 

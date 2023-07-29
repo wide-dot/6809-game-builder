@@ -9,7 +9,7 @@ public interface ObjectDataInterface {
 
 	List<byte[]> getExported() throws Exception;
 
-	List<byte[]> getLocal() throws Exception;
+	List<byte[]> getInternal() throws Exception;
 
 	List<byte[]> getIncomplete8() throws Exception;
 

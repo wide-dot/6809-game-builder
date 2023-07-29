@@ -20,6 +20,7 @@ import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Symbol;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.util.ByteUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -142,6 +143,7 @@ public class LwObject implements ObjectDataInterface{
 		
 		// init data
 		secLst = new ArrayList<LWSection>();
+		String LogText = ""; 
 		
 		while (true)
 		{
@@ -152,7 +154,7 @@ public class LwObject implements ObjectDataInterface{
 				break;
 			
 			fp = CURSTR();
-			System.out.printf("SECTION %s\n", fp);
+			if (log.isDebugEnabled()) LogText += String.format("SECTION %s\n", fp);
 			
 			// we now have a section name in fp
 			// create new section entry
@@ -176,17 +178,17 @@ public class LwObject implements ObjectDataInterface{
 				switch (CURBYTE())
 				{
 				case 0x01:
-					System.out.printf("    FLAG: BSS\n");
+					if (log.isDebugEnabled()) LogText += String.format("    FLAG: BSS\n");
 					section.flags |= LWSection.SECTION_BSS;
 					bss = 1;
 					break;
 				case 0x02:
-					System.out.printf("    FLAG: CONSTANT\n");
+					if (log.isDebugEnabled()) LogText += String.format("    FLAG: CONSTANT\n");
 					section.flags |= LWSection.SECTION_CONST;
 					break;
 					
 				default:
-					System.out.printf("    FLAG: %02X (unknown)\n", CURBYTE());
+					if (log.isDebugEnabled()) LogText += String.format("    FLAG: %02X (unknown)\n", CURBYTE());
 					break;
 				}
 				NEXTBYTE();
@@ -194,7 +196,7 @@ public class LwObject implements ObjectDataInterface{
 			// skip NUL terminating flags
 			NEXTBYTE();
 			
-			System.out.printf("    Local symbols:\n");
+			if (log.isDebugEnabled()) LogText += String.format("    Local symbols:\n");
 			// now parse the local symbol table
 			while (CURBYTE()!=0)
 			{
@@ -207,7 +209,7 @@ public class LwObject implements ObjectDataInterface{
 				NEXTBYTE();
 				// val is now the symbol value
 				
-				System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
+				if (log.isDebugEnabled()) LogText += String.format("        %s=%04X\n", string_cleanup(fp), val);
 				
 				// create symbol table entry
 				Symbol sbl = new Symbol();
@@ -219,7 +221,7 @@ public class LwObject implements ObjectDataInterface{
 			// skip terminating NUL
 			NEXTBYTE();
 
-			System.out.printf("    Exported symbols\n");
+			if (log.isDebugEnabled()) LogText += String.format("    Exported symbols\n");
 					
 			// now parse the exported symbol table
 			while (CURBYTE()!=0)
@@ -233,7 +235,7 @@ public class LwObject implements ObjectDataInterface{
 				NEXTBYTE();
 				// val is now the symbol value
 				
-				System.out.printf("        %s=%04X\n", string_cleanup(fp), val);
+				if (log.isDebugEnabled()) LogText += String.format("        %s=%04X\n", string_cleanup(fp), val);
 				
 				// create symbol table entry
 				Symbol sbl = new Symbol();
@@ -246,10 +248,11 @@ public class LwObject implements ObjectDataInterface{
 			
 			// now parse the incomplete references and make a list of
 			// external references that need resolution
-			System.out.printf("    Incomplete references\n");
+			if (log.isDebugEnabled()) LogText += String.format("    Incomplete references\n");
+			
 			while (CURBYTE()!=0)
 			{
-				System.out.printf("        (");
+				if (log.isDebugEnabled()) LogText += String.format("        (");
 				
 				LWExprTerm term = null;
 				
@@ -275,30 +278,30 @@ public class LwObject implements ObjectDataInterface{
 						NEXTBYTE();
 						// normalize for negatives...
 						if (tt > 0x7fff) tt -= 0x10000;
-						System.out.printf(" I16=%d", tt);
+						if (log.isDebugEnabled()) LogText += String.format(" I16=%d", tt);
 						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_INT);
 						break;
 					
 					case 0x02:
 						// external symbol reference
 						fp = CURSTR();
-						System.out.printf(" ES=%s", string_cleanup(fp));
+						if (log.isDebugEnabled()) LogText += String.format(" ES=%s", string_cleanup(fp));
 						term = new LWExprTerm(fp, 0);
 						break;
 						
 					case 0x03:
 						// internal symbol reference
 						fp = CURSTR();
-						System.out.printf(" IS=%s", string_cleanup(fp));
+						if (log.isDebugEnabled()) LogText += String.format(" IS=%s", string_cleanup(fp));
 						term = new LWExprTerm(fp, 1);
 						break;
 					
 					case 0x04:
 						// operator
 						if (CURBYTE() > 0 && CURBYTE() <= numopers) {
-							System.out.printf(" OP=%s", opernames[CURBYTE()]);
+							if (log.isDebugEnabled()) LogText += String.format(" OP=%s", opernames[CURBYTE()]);
 						} else {
-							System.out.printf(" OP=?");
+							if (log.isDebugEnabled()) LogText += String.format(" OP=?");
 						}
 						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_OPER);
 						NEXTBYTE();
@@ -307,13 +310,13 @@ public class LwObject implements ObjectDataInterface{
 					case 0x05:
 						// section base reference (NULL internal reference is
 						// the section base address
-						System.out.printf(" SB");
+						if (log.isDebugEnabled()) LogText += String.format(" SB");
 						term = new LWExprTerm(null, 1);
 						break;
 					
 					case 0xFF:
 						// reloc flags (1 means 8 bits)
-						System.out.printf(" FLAGS=%02X", CURBYTE());
+						if (log.isDebugEnabled()) LogText += String.format(" FLAGS=%02X", CURBYTE());
 						tt = CURBYTE();
 						rel.flags = tt;
 						NEXTBYTE();
@@ -339,7 +342,7 @@ public class LwObject implements ObjectDataInterface{
 				rel.offset = val;
 				NEXTBYTE();
 				
-				System.out.printf(" ) @ %04X\n", val);
+				if (log.isDebugEnabled()) LogText += String.format(" ) @ %04X\n", val);
 			}
 			// skip the NUL terminating the relocations
 			NEXTBYTE();
@@ -354,7 +357,7 @@ public class LwObject implements ObjectDataInterface{
 			
 			section.code = new byte[section.codesize];
 			
-			System.out.printf("    CODE %04X bytes", section.codesize);
+			if (log.isDebugEnabled()) LogText += String.format("    CODE %04X bytes", section.codesize);
 			
 			// skip the code if we're not in a BSS section
 			if (bss==0)
@@ -364,14 +367,16 @@ public class LwObject implements ObjectDataInterface{
 				{
 					if ((i % 16)==0)
 					{
-						System.out.printf("\n    %04X ", i);
+						if (log.isDebugEnabled()) LogText += String.format("\n    %04X ", i);
 					}
-					System.out.printf("%02X", CURBYTE());
+					if (log.isDebugEnabled()) LogText += String.format("%02X", CURBYTE());
 					section.code[i] = (byte) CURBYTE();
 					NEXTBYTE();
 				}
 			}
-			System.out.printf("\n");
+			if (log.isDebugEnabled()) LogText += String.format("\n");
+			log.debug("{}", LogText);
+			if (log.isDebugEnabled()) LogText = "";
 		}
 	}
 	
@@ -465,17 +470,49 @@ public class LwObject implements ObjectDataInterface{
 
 	@Override
 	public List<byte[]> getExportedConst() throws Exception {
+//		for (LWSection section : secLst) {
+//			for (Symbol symbol : section.exportedsyms) {
+//				
+//			}
+//		}
 		return new ArrayList<byte[]>();
 	}
 
 	@Override
 	public List<byte[]> getExported() throws Exception {
+//		for (LWSection section : secLst) {
+//		for (Symbol symbol : section.exportedsyms) {
+//			
+//		}
+//	}
 		return new ArrayList<byte[]>();
 	}
 
+	private List<byte[]> internal;
+	
 	@Override
-	public List<byte[]> getLocal() throws Exception {
-		return new ArrayList<byte[]>();
+	public List<byte[]> getInternal() throws Exception {
+
+		if (internal == null) {
+			internal = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				for (Reloc reloc : section.incompletes) {
+					if (reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_INT) {
+						
+						byte[] val = new byte[4];
+						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
+						val[1] = (byte) (reloc.offset & 0xff);
+						val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
+						val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						
+						log.debug("INTERNAL: {}", ByteUtil.bytesToHex(val));
+						internal.add(val);
+					}
+				}
+			}
+		}
+
+		return internal;
 	}
 
 	@Override

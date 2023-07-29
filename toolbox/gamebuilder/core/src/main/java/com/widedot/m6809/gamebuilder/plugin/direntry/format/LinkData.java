@@ -23,7 +23,7 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //		03 0106 :    0001                             ; [nb of elements]
 //		             0586                             ; value of symbol 0 (should add section base address to this value before applying)
 //		             
-//		- local
+//		- local                                       ; relocation of local variables
 //		            
 //		03 010A :    0001                             ; [nb of elements]
 //		             0162 00C3                        ; [dest offset] [val offset] - example : internal ( I16=195 IS=\02code OP=PLUS ) @ 0162
@@ -44,14 +44,14 @@ public class LinkData {
 	public byte[] data;
 	private List<byte[]> exportedConst;
 	private List<byte[]> exported;
-	private List<byte[]> local;
+	private List<byte[]> internal;
 	private List<byte[]> incomplete8;
 	private List<byte[]> incomplete16;
 	
 	public LinkData() {
 		exportedConst = new ArrayList<byte[]>();
 		exported = new ArrayList<byte[]>();
-		local = new ArrayList<byte[]>();
+		internal = new ArrayList<byte[]>();
 		incomplete8 = new ArrayList<byte[]>();
 		incomplete16 = new ArrayList<byte[]>();
 	}
@@ -59,7 +59,7 @@ public class LinkData {
 	public void add(ObjectDataInterface obj) throws Exception {
 		exportedConst.addAll(obj.getExportedConst());
 		exported.addAll(obj.getExported());
-		local.addAll(obj.getLocal());
+		internal.addAll(obj.getInternal());
 		incomplete8.addAll(obj.getIncomplete8());
 		incomplete16.addAll(obj.getIncomplete16());
 	}
@@ -67,7 +67,7 @@ public class LinkData {
 	public void process() {
 		int length =	2 + 2 * exportedConst.size() +
 						2 + 2 * exported.size() +
-						2 + 4 * local.size() +
+						2 + 4 * internal.size() +
 						2 + 8 * incomplete8.size() +
 						2 + 8 * incomplete16.size();
 		
@@ -86,11 +86,11 @@ public class LinkData {
 		System.arraycopy(flatExported, 0, data, i, flatExported.length);
 		i += flatExported.length;
 		
-		data[i++] = (byte) ((local.size() & 0xff00) >> 8);
-		data[i++] = (byte) (local.size() & 0xff);
-		byte[] flatLocal = local.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatLocal, 0, data, i, flatLocal.length);
-		i += flatLocal.length;
+		data[i++] = (byte) ((internal.size() & 0xff00) >> 8);
+		data[i++] = (byte) (internal.size() & 0xff);
+		byte[] flatInternal = internal.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatInternal, 0, data, i, flatInternal.length);
+		i += flatInternal.length;
 		
 		data[i++] = (byte) ((incomplete8.size() & 0xff00) >> 8);
 		data[i++] = (byte) (incomplete8.size() & 0xff);
