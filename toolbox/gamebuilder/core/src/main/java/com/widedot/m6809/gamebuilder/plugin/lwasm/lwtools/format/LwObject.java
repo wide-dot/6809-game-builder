@@ -467,37 +467,65 @@ public class LwObject implements ObjectDataInterface{
 		
 		return bin;
 	}
+	
+	private List<byte[]> exportAbs;
 
 	@Override
-	public List<byte[]> getExportedConst() throws Exception {
-//		for (LWSection section : secLst) {
-//			for (Symbol symbol : section.exportedsyms) {
-//				
-//			}
-//		}
-		return new ArrayList<byte[]>();
+	public List<byte[]> getExportAbs() throws Exception {
+		
+		if (exportAbs == null) {
+			exportAbs = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				if (section.flags == LWSection.SECTION_CONST) {
+					for (Symbol symbol : section.exportedsyms) {
+						
+						byte[] val = new byte[2];
+						val[0] = (byte) ((symbol.offset & 0xff00) >> 8);
+						val[1] = (byte) (symbol.offset & 0xff);
+						
+						log.debug("EXPORTABS: {} {}", ByteUtil.bytesToHex(val), symbol.sym);
+						exportAbs.add(val);
+					}
+				}
+			}
+		}
+		return exportAbs;
 	}
 
-	@Override
-	public List<byte[]> getExported() throws Exception {
-//		for (LWSection section : secLst) {
-//		for (Symbol symbol : section.exportedsyms) {
-//			
-//		}
-//	}
-		return new ArrayList<byte[]>();
-	}
-
-	private List<byte[]> internal;
+	private List<byte[]> exportRel;
 	
 	@Override
-	public List<byte[]> getInternal() throws Exception {
+	public List<byte[]> getExportRel() throws Exception {
+		
+		if (exportRel == null) {
+			exportRel = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				if (section.flags != LWSection.SECTION_CONST) {
+					for (Symbol symbol : section.exportedsyms) {
+						
+						byte[] val = new byte[2];
+						val[0] = (byte) ((symbol.offset & 0xff00) >> 8);
+						val[1] = (byte) (symbol.offset & 0xff);
+						
+						log.debug("EXPORTREL: {} {}", ByteUtil.bytesToHex(val), symbol.sym);
+						exportRel.add(val);
+					}
+				}
+			}
+		}
+		return exportRel;
+	}
 
-		if (internal == null) {
-			internal = new ArrayList<byte[]>();
+	private List<byte[]> intern;
+	
+	@Override
+	public List<byte[]> getIntern() throws Exception {
+
+		if (intern == null) {
+			intern = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
 				for (Reloc reloc : section.incompletes) {
-					if (reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_INT) {
+					if (reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_INT) { // && reloc.expr.head.term.value == 1 ?
 						
 						byte[] val = new byte[4];
 						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
@@ -505,24 +533,74 @@ public class LwObject implements ObjectDataInterface{
 						val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
 						val[3] = (byte) (reloc.expr.head.term.value & 0xff);
 						
-						log.debug("INTERNAL: {}", ByteUtil.bytesToHex(val));
-						internal.add(val);
+						log.debug("INTERN   : {}", ByteUtil.bytesToHex(val));
+						intern.add(val);
 					}
 				}
 			}
 		}
 
-		return internal;
+		return intern;
 	}
+	
+	private List<byte[]> extern8;
 
 	@Override
-	public List<byte[]> getIncomplete8() throws Exception {
-		return new ArrayList<byte[]>();
+	public List<byte[]> getExtern8() throws Exception {
+		
+		if (extern8 == null) {
+			extern8 = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				for (Reloc reloc : section.incompletes) {
+					if (reloc.flags == 1 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
+						
+						byte[] val = new byte[4];
+						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
+						val[1] = (byte) (reloc.offset & 0xff);
+						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
+						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						
+						log.debug("EXTERN8  : {} {}", ByteUtil.bytesToHex(val), reloc.expr.head.term.symbol);
+						extern8.add(val);
+					}
+				}
+			}
+		}
+		
+		return extern8;
 	}
 
+	private List<byte[]> extern16;
+	
 	@Override
-	public List<byte[]> getIncomplete16() throws Exception {
-		return new ArrayList<byte[]>();
+	public List<byte[]> getExtern16() throws Exception {
+		if (extern16 == null) {
+			extern16 = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				for (Reloc reloc : section.incompletes) {
+					if (reloc.flags == 0 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
+						
+						byte[] val = new byte[4];
+						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
+						val[1] = (byte) (reloc.offset & 0xff);
+						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
+						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						
+						log.debug("EXTERN16 : {} {}", ByteUtil.bytesToHex(val), reloc.expr.head.term.symbol);
+						extern16.add(val);
+					}
+				}
+			}
+		}
+		
+		return extern16;
 	}
 
+//    ( I16=-257 ES=dualpix2 OP=PLUS ) @ 0028 => "ES" external, appliquer le -257 
+//    ( FLAGS=01 ES=dualpix1 ) @ 0023
+//    ( I16=36 IS=\02code OP=PLUS ) @ 0013
+//    ( ES=gfx.ram.a ) @ 0010
+//    ( I16=31 IS=\02code OP=PLUS ) @ 0004 => "IS" internal, relatif à la section avec OP PLUS
+//    ( ES=gfx.ram.b ) @ 0001
+	
 }

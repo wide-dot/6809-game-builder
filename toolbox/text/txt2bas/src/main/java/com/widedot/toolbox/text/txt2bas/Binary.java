@@ -19,27 +19,27 @@ public class Binary implements ObjectDataInterface {
 	}
 
 	@Override
-	public List<byte[]> getExportedConst() throws Exception {
+	public List<byte[]> getExportAbs() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 
 	@Override
-	public List<byte[]> getExported() throws Exception {
+	public List<byte[]> getExportRel() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 
 	@Override
-	public List<byte[]> getInternal() throws Exception {
+	public List<byte[]> getIntern() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 
 	@Override
-	public List<byte[]> getIncomplete8() throws Exception {
+	public List<byte[]> getExtern8() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 
 	@Override
-	public List<byte[]> getIncomplete16() throws Exception {
+	public List<byte[]> getExtern16() throws Exception {
 		return new ArrayList<byte[]>();
 	}
 

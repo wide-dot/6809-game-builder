@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.plugin.direntry.format;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
@@ -12,97 +11,97 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //
 // file link data :
 //
-//		- exported constant
-//
+//		- export absolute                             ; export a 16 bit constant (will be processed as a 8 or 16 bits extern when applying value)
+// 
 //		03 0100 :    0002                             ; [nb of elements]
 //		             0003                             ; value of symbol 1
 //		             0004                             ; value of symbol 2
 //
-//		- exported
+//      - export relative                             ; export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
 //
 //		03 0106 :    0001                             ; [nb of elements]
 //		             0586                             ; value of symbol 0 (should add section base address to this value before applying)
 //		             
-//		- local                                       ; relocation of local variables
+//		- intern                                      ; relocation of local variables
 //		            
 //		03 010A :    0001                             ; [nb of elements]
-//		             0162 00C3                        ; [dest offset] [val offset] - example : internal ( I16=195 IS=\02code OP=PLUS ) @ 0162
+//		             0162 00C3                        ; [offset to write location] [relative offset value to write] - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
 //
-//		- incomplete (8bit)
+//		- extern (8bit)                               ; link to extern 8 bit variables
 //		             
 //		03 0122 :    0001                             ; [nb of elements]
-//		             0014 0000 0003 0001              ; [dest offset] [val offset] [id block] [id ref] - example : external 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
+//		             0014 0000 0003 0001              ; [offset to write location] [relative offset value to write] [file id] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
 //
-//		- incomplete (16bit)
+//		- extern (16bit)                              ; link to extern 16 bit variables
 //		             
 //		03 0110 :    0002                             ; [nb of elements]
-//		             0001 FFF4 0003 0001              ; [dest offset] [val offset] [id block] [id ref] - example : external ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
-//		             003E 0000 0003 0002              ;                                                            external ( ES=ymm.music.processFrame ) @ 003E
+//		             0001 FFF4 0003 0001              ; [offset to write location] [relative offset value to write] [file id] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
+//		             003E 0000 0003 0002              ;                                                            extern ( ES=ymm.music.processFrame ) @ 003E
 
 public class LinkData {
 	
 	public byte[] data;
-	private List<byte[]> exportedConst;
-	private List<byte[]> exported;
-	private List<byte[]> internal;
-	private List<byte[]> incomplete8;
-	private List<byte[]> incomplete16;
+	private List<byte[]> exportAbs;
+	private List<byte[]> exportRel;
+	private List<byte[]> intern;
+	private List<byte[]> extern8;
+	private List<byte[]> extern16;
 	
 	public LinkData() {
-		exportedConst = new ArrayList<byte[]>();
-		exported = new ArrayList<byte[]>();
-		internal = new ArrayList<byte[]>();
-		incomplete8 = new ArrayList<byte[]>();
-		incomplete16 = new ArrayList<byte[]>();
+		exportAbs = new ArrayList<byte[]>();
+		exportRel = new ArrayList<byte[]>();
+		intern = new ArrayList<byte[]>();
+		extern8 = new ArrayList<byte[]>();
+		extern16 = new ArrayList<byte[]>();
 	}
 	
 	public void add(ObjectDataInterface obj) throws Exception {
-		exportedConst.addAll(obj.getExportedConst());
-		exported.addAll(obj.getExported());
-		internal.addAll(obj.getInternal());
-		incomplete8.addAll(obj.getIncomplete8());
-		incomplete16.addAll(obj.getIncomplete16());
+		exportAbs.addAll(obj.getExportAbs());
+		exportRel.addAll(obj.getExportRel());
+		intern.addAll(obj.getIntern());
+		extern8.addAll(obj.getExtern8());
+		extern16.addAll(obj.getExtern16());
 	}
 	
 	public void process() {
-		int length =	2 + 2 * exportedConst.size() +
-						2 + 2 * exported.size() +
-						2 + 4 * internal.size() +
-						2 + 8 * incomplete8.size() +
-						2 + 8 * incomplete16.size();
+		int length =	2 + 2 * exportAbs.size() +
+						2 + 2 * exportRel.size() +
+						2 + 4 * intern.size() +
+						2 + 8 * extern8.size() +
+						2 + 8 * extern16.size();
 		
 		data = new byte[length];
 		int i = 0;
 		
-		data[i++] = (byte) ((exportedConst.size() & 0xff00) >> 8);
-		data[i++] = (byte) (exportedConst.size() & 0xff);
-		byte[] flatExportedConst = exportedConst.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatExportedConst, 0, data, i, flatExportedConst.length);
-		i += flatExportedConst.length;
+		data[i++] = (byte) ((exportAbs.size() & 0xff00) >> 8);
+		data[i++] = (byte) (exportAbs.size() & 0xff);
+		byte[] flatExportAbs = exportAbs.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatExportAbs, 0, data, i, flatExportAbs.length);
+		i += flatExportAbs.length;
 		
-		data[i++] = (byte) ((exported.size() & 0xff00) >> 8);
-		data[i++] = (byte) (exported.size() & 0xff);
-		byte[] flatExported = exported.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatExported, 0, data, i, flatExported.length);
-		i += flatExported.length;
+		data[i++] = (byte) ((exportRel.size() & 0xff00) >> 8);
+		data[i++] = (byte) (exportRel.size() & 0xff);
+		byte[] flatExportRel = exportRel.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatExportRel, 0, data, i, flatExportRel.length);
+		i += flatExportRel.length;
 		
-		data[i++] = (byte) ((internal.size() & 0xff00) >> 8);
-		data[i++] = (byte) (internal.size() & 0xff);
-		byte[] flatInternal = internal.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatInternal, 0, data, i, flatInternal.length);
-		i += flatInternal.length;
+		data[i++] = (byte) ((intern.size() & 0xff00) >> 8);
+		data[i++] = (byte) (intern.size() & 0xff);
+		byte[] flatIntern = intern.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatIntern, 0, data, i, flatIntern.length);
+		i += flatIntern.length;
 		
-		data[i++] = (byte) ((incomplete8.size() & 0xff00) >> 8);
-		data[i++] = (byte) (incomplete8.size() & 0xff);
-		byte[] flatIncomplete8 = incomplete8.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatIncomplete8, 0, data, i, flatIncomplete8.length);
-		i += flatIncomplete8.length;
+		data[i++] = (byte) ((extern8.size() & 0xff00) >> 8);
+		data[i++] = (byte) (extern8.size() & 0xff);
+		byte[] flatExtern8 = extern8.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatExtern8, 0, data, i, flatExtern8.length);
+		i += flatExtern8.length;
 		
-		data[i++] = (byte) ((incomplete16.size() & 0xff00) >> 8);
-		data[i++] = (byte) (incomplete16.size() & 0xff);
-		byte[] flatIncomplete16 = incomplete16.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
-		System.arraycopy(flatIncomplete16, 0, data, i, flatIncomplete16.length);
-		i += flatIncomplete16.length;
+		data[i++] = (byte) ((extern16.size() & 0xff00) >> 8);
+		data[i++] = (byte) (extern16.size() & 0xff);
+		byte[] flatExtern16 = extern16.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatExtern16, 0, data, i, flatExtern16.length);
+		i += flatExtern16.length;
 	}
 	
 }

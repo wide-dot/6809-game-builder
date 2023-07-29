@@ -5,13 +5,13 @@ import java.util.List;
 public interface ObjectDataInterface {
 	byte[] getBytes() throws Exception;
 
-	List<byte[]> getExportedConst() throws Exception;
+	List<byte[]> getExportAbs() throws Exception;
 
-	List<byte[]> getExported() throws Exception;
+	List<byte[]> getExportRel() throws Exception;
 
-	List<byte[]> getInternal() throws Exception;
+	List<byte[]> getIntern() throws Exception;
 
-	List<byte[]> getIncomplete8() throws Exception;
+	List<byte[]> getExtern8() throws Exception;
 
-	List<byte[]> getIncomplete16() throws Exception;
+	List<byte[]> getExtern16() throws Exception;
 }
