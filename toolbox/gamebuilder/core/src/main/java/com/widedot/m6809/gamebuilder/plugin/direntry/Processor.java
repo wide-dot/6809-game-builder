@@ -51,7 +51,7 @@ public class Processor {
 //        offset                      delta	
 //
 //	Option (8 bytes) - load time linker data
-//	[0000 0000] - [nb of allocation blocs needed]
+//	[0000 0000] - [nb of allocation blocks needed]
 //	[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
 //	[0000 0000] [0000 0000] - [bytes in first sector] [start offset in first sector (0: no sector)]
 //	[0000 0000] - [full sectors to read]

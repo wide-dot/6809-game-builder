@@ -88,8 +88,8 @@ mess0   fcb   $1f,$21,$21
         align $6278
 @magicNumber
         fcn   "BASIC2"
-        fcb   $00                               ; checksum (set at build stage)
-secnbr  fcb   (builder.lwasm.size.loader/256)+1 ; number of sectors to read
+        fcb   $00                                ; checksum (set at build stage)
+secnbr  fcb   (builder.lwasm.size.loader2/256)+1 ; number of sectors to read
 
 * Error messages
 mess1   fcs   "Only for TO8/8D/9+"

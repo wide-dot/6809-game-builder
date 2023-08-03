@@ -6,7 +6,7 @@
         <floppydisk model="fd640">
             <data section="LOADER">
                 <lwasm format="raw">
-                    <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
+                    <asm filename="new-engine/system/to8/bootloader/loader2.asm"/>
                 </lwasm>
             </data>
 
