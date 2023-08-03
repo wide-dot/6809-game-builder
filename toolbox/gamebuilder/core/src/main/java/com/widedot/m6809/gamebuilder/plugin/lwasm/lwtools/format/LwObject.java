@@ -20,6 +20,7 @@ import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Reloc;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWSection;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.Symbol;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import com.widedot.m6809.util.ByteUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -479,11 +480,15 @@ public class LwObject implements ObjectDataInterface{
 				if (section.flags == LWSection.SECTION_CONST) {
 					for (Symbol symbol : section.exportedsyms) {
 						
-						byte[] val = new byte[2];
-						val[0] = (byte) ((symbol.offset & 0xff00) >> 8);
-						val[1] = (byte) (symbol.offset & 0xff);
+						int symid = LinkSymbols.add(symbol.sym);
 						
-						log.debug("EXPORTABS: {} {}", ByteUtil.bytesToHex(val), symbol.sym);
+						byte[] val = new byte[4];
+						val[0] = (byte) ((symid & 0xff00) >> 8);
+						val[1] = (byte) (symid & 0xff);
+						val[2] = (byte) ((symbol.offset & 0xff00) >> 8);
+						val[3] = (byte) (symbol.offset & 0xff);
+						
+						log.debug("EXPORTABS: {}:{} {}", symbol.sym, symid, ByteUtil.bytesToHex(val));
 						exportAbs.add(val);
 					}
 				}
@@ -503,11 +508,16 @@ public class LwObject implements ObjectDataInterface{
 				if (section.flags != LWSection.SECTION_CONST) {
 					for (Symbol symbol : section.exportedsyms) {
 						
-						byte[] val = new byte[2];
-						val[0] = (byte) ((symbol.offset & 0xff00) >> 8);
-						val[1] = (byte) (symbol.offset & 0xff);
+						int symid = LinkSymbols.add(symbol.sym);
 						
-						log.debug("EXPORTREL: {} {}", ByteUtil.bytesToHex(val), symbol.sym);
+						byte[] val = new byte[4];
+						val[0] = (byte) ((symid & 0xff00) >> 8);
+						val[1] = (byte) (symid & 0xff);
+						val[2] = (byte) ((symbol.offset & 0xff00) >> 8);
+						val[3] = (byte) (symbol.offset & 0xff);
+						
+						log.debug("EXPORTREL: {}:{} {}", symbol.sym, symid, ByteUtil.bytesToHex(val));
+						
 						exportRel.add(val);
 					}
 				}
@@ -553,14 +563,18 @@ public class LwObject implements ObjectDataInterface{
 			for (LWSection section : secLst) {
 				for (Reloc reloc : section.incompletes) {
 					if (reloc.flags == 1 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
+												
+						int symid = LinkSymbols.add(reloc.expr.head.term.symbol);
 						
-						byte[] val = new byte[4];
+						byte[] val = new byte[6];
 						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
 						val[1] = (byte) (reloc.offset & 0xff);
 						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
 						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						val[4] = (byte) ((symid & 0xff00) >> 8);
+						val[5] = (byte) (symid & 0xff);
 						
-						log.debug("EXTERN8  : {} {}", ByteUtil.bytesToHex(val), reloc.expr.head.term.symbol);
+						log.debug("EXTERN8  : {}:{} {}", reloc.expr.head.term.symbol, symid, ByteUtil.bytesToHex(val));
 						extern8.add(val);
 					}
 				}
@@ -580,13 +594,17 @@ public class LwObject implements ObjectDataInterface{
 				for (Reloc reloc : section.incompletes) {
 					if (reloc.flags == 0 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
 						
-						byte[] val = new byte[4];
+						int symid = LinkSymbols.add(reloc.expr.head.term.symbol);
+						
+						byte[] val = new byte[6];
 						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
 						val[1] = (byte) (reloc.offset & 0xff);
 						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
 						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						val[4] = (byte) ((symid & 0xff00) >> 8);
+						val[5] = (byte) (symid & 0xff);
 						
-						log.debug("EXTERN16 : {} {}", ByteUtil.bytesToHex(val), reloc.expr.head.term.symbol);
+						log.debug("EXTERN16 : {}:{} {}", reloc.expr.head.term.symbol, symid, ByteUtil.bytesToHex(val));
 						extern16.add(val);
 					}
 				}
@@ -596,6 +614,11 @@ public class LwObject implements ObjectDataInterface{
 		return extern16;
 	}
 
+// TODO apply operations !
+	
+	// Pour le moment l'operation -257 fait qu'on nbe référence pas l'EXTERN dans l'index de link ... 
+	// Il faut aussi clean LinkSymbols a chaque changement de target !!!!!!!!!!!!!!!!!!!
+	
 //    ( I16=-257 ES=dualpix2 OP=PLUS ) @ 0028 => "ES" external, appliquer le -257 
 //    ( FLAGS=01 ES=dualpix1 ) @ 0023
 //    ( I16=36 IS=\02code OP=PLUS ) @ 0013

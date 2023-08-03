@@ -14,13 +14,13 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //		- export absolute                             ; export a 16 bit constant (will be processed as a 8 or 16 bits extern when applying value)
 // 
 //		03 0100 :    0002                             ; [nb of elements]
-//		             0003                             ; value of symbol 1
-//		             0004                             ; value of symbol 2
+//		             0047 0003                        ; key of symbol, value of symbol
+//		             0048 0004                        ; key of symbol, value of symbol
 //
 //      - export relative                             ; export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
 //
 //		03 0106 :    0001                             ; [nb of elements]
-//		             0586                             ; value of symbol 0 (should add section base address to this value before applying)
+//		             0059 0586                        ; key of symbol, value of symbol (should add section base address to this value before applying)
 //		             
 //		- intern                                      ; relocation of local variables
 //		            
@@ -30,13 +30,13 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //		- extern (8bit)                               ; link to extern 8 bit variables
 //		             
 //		03 0122 :    0001                             ; [nb of elements]
-//		             0014 0000 0003 0001              ; [offset to write location] [relative offset value to write] [file id] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
+//		             0014 0000 0001                   ; [offset to write location] [relative offset value to write] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
 //
 //		- extern (16bit)                              ; link to extern 16 bit variables
 //		             
 //		03 0110 :    0002                             ; [nb of elements]
-//		             0001 FFF4 0003 0001              ; [offset to write location] [relative offset value to write] [file id] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
-//		             003E 0000 0003 0002              ;                                                            extern ( ES=ymm.music.processFrame ) @ 003E
+//		             0001 FFF4 0002                   ; [offset to write location] [relative offset value to write] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
+//		             003E 0000 0003                   ;                                                            extern ( ES=ymm.music.processFrame ) @ 003E
 
 public class LinkData {
 	
@@ -64,11 +64,11 @@ public class LinkData {
 	}
 	
 	public void process() {
-		int length =	2 + 2 * exportAbs.size() +
-						2 + 2 * exportRel.size() +
+		int length =	2 + 4 * exportAbs.size() +
+						2 + 4 * exportRel.size() +
 						2 + 4 * intern.size() +
-						2 + 8 * extern8.size() +
-						2 + 8 * extern16.size();
+						2 + 6 * extern8.size() +
+						2 + 6 * extern16.size();
 		
 		data = new byte[length];
 		int i = 0;

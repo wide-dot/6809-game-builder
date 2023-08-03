@@ -1,5 +1,17 @@
+pixel.draw EXTERN
+
+singlepix EXPORT
+dualpix   EXPORT
+gfx.ram.a EXPORT
+gfx.ram.b EXPORT
+
+ SECTION absval,constant
+singlepix equ $CD
+dualpix   equ $ABEF
+gfx.ram.a equ $C000
+gfx.ram.b equ $A000
+ ENDSECTION
+
  SECTION code
-        fdb $4444,$4444,$4444,$4444,$4444,$4444,$4444,$4444
-        ldd location
-location
+        jsr   pixel.draw
  ENDSECTION
