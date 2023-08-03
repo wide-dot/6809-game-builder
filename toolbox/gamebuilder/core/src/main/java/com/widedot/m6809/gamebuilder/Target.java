@@ -12,6 +12,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +60,7 @@ public class Target {
 	
 	private void processTargets(List<ImmutableNode> targetNodes) throws Exception {
 		
+		LinkSymbols.clear();
 		defaults = new Defaults();
 		defines = new Defines();
 		

@@ -31,4 +31,8 @@ public class LinkSymbols {
 	    
 	    return nbSymbols;
 	}
+	
+	public static void clear() {
+		ids.clear();
+	}
 }

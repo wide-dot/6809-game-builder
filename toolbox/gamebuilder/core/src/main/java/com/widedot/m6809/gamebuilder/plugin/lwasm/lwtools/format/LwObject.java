@@ -304,7 +304,7 @@ public class LwObject implements ObjectDataInterface{
 						} else {
 							if (log.isDebugEnabled()) LogText += String.format(" OP=?");
 						}
-						term = new LWExprTerm(tt, LWExprTerm.LW_TERM_OPER);
+						term = new LWExprTerm(CURBYTE(), LWExprTerm.LW_TERM_OPER);
 						NEXTBYTE();
 						break;
 
@@ -535,17 +535,53 @@ public class LwObject implements ObjectDataInterface{
 			intern = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
 				for (Reloc reloc : section.incompletes) {
-					if (reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_INT) { // && reloc.expr.head.term.value == 1 ?
-						
-						byte[] val = new byte[4];
-						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
-						val[1] = (byte) (reloc.offset & 0xff);
-						val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
-						val[3] = (byte) (reloc.expr.head.term.value & 0xff);
-						
-						log.debug("INTERN   : {}", ByteUtil.bytesToHex(val));
-						intern.add(val);
+					
+					int value = 0;
+					int oper = 0;
+					boolean skip = false;
+					
+					// max one operator, only one PLUS is allowed
+					LWExprStackNode node = reloc.expr.head;
+					while (node != null) {
+						switch (node.term.term_type) {
+							case LWExprTerm.LW_TERM_INT:
+								value = node.term.value;
+								break;
+
+							case LWExprTerm.LW_TERM_SYM:
+								if (node.term.value == 0) {
+									skip = true; // external symbol
+								}
+								break;
+
+							case LWExprTerm.LW_TERM_OPER:
+								if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
+									oper++;
+								} else {
+									throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
+								}
+								break;
+								
+							default :
+								throw new Exception ("unexpected term type: " + node.term.term_type);
+						}
+						node = node.next;
 					}
+					
+					if (oper>1) {
+						throw new Exception ("multiple PLUS operator is not supported");
+					}
+					
+					if (skip) continue;
+				
+					byte[] val = new byte[4];
+					val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
+					val[1] = (byte) (reloc.offset & 0xff);
+					val[2] = (byte) ((value & 0xff00) >> 8);
+					val[3] = (byte) (value & 0xff);
+				
+					log.debug("INTERN   : {}", ByteUtil.bytesToHex(val));
+					intern.add(val);
 				}
 			}
 		}
@@ -562,19 +598,59 @@ public class LwObject implements ObjectDataInterface{
 			extern8 = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
 				for (Reloc reloc : section.incompletes) {
-					if (reloc.flags == 1 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
-												
-						int symid = LinkSymbols.add(reloc.expr.head.term.symbol);
+					
+					if (reloc.flags == 1) {
+						int value = 0;
+						int oper = 0;
+						String sym = "";
+						boolean skip = false;
+						
+						// max one operator, only one PLUS is allowed
+						LWExprStackNode node = reloc.expr.head;
+						while (node != null) {
+							switch (node.term.term_type) {
+								case LWExprTerm.LW_TERM_INT:
+									value = node.term.value;
+									break;
+
+								case LWExprTerm.LW_TERM_SYM:
+									sym = node.term.symbol;
+									if (node.term.value == 1) {
+										skip = true; // internal symbol
+									}
+									break;
+
+								case LWExprTerm.LW_TERM_OPER:
+									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
+										oper++;
+									} else {
+										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
+									}
+									break;
+									
+								default :
+									throw new Exception ("unexpected term type: " + node.term.term_type);
+							}
+							node = node.next;
+						}
+						
+						if (oper>1) {
+							throw new Exception ("multiple PLUS operator is not supported");
+						}
+						
+						if (skip) continue;
+					
+						int symid = LinkSymbols.add(sym);
 						
 						byte[] val = new byte[6];
 						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
 						val[1] = (byte) (reloc.offset & 0xff);
-						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
-						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						val[2] = (byte) ((value & 0xff00) >> 8);
+						val[3] = (byte) (value & 0xff);
 						val[4] = (byte) ((symid & 0xff00) >> 8);
 						val[5] = (byte) (symid & 0xff);
 						
-						log.debug("EXTERN8  : {}:{} {}", reloc.expr.head.term.symbol, symid, ByteUtil.bytesToHex(val));
+						log.debug("EXTERN8  : {}:{} {}", sym, symid, ByteUtil.bytesToHex(val));
 						extern8.add(val);
 					}
 				}
@@ -592,19 +668,59 @@ public class LwObject implements ObjectDataInterface{
 			extern16 = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
 				for (Reloc reloc : section.incompletes) {
-					if (reloc.flags == 0 && reloc.expr.head.term.value == 0 && reloc.expr.head.term.term_type == LWExprTerm.LW_TERM_SYM) {
+
+					if (reloc.flags == 0) {
+						int value = 0;
+						int oper = 0;
+						String sym = "";
+						boolean skip = false;
 						
-						int symid = LinkSymbols.add(reloc.expr.head.term.symbol);
+						// max one operator, only one PLUS is allowed
+						LWExprStackNode node = reloc.expr.head;
+						while (node != null) {
+							switch (node.term.term_type) {
+								case LWExprTerm.LW_TERM_INT:
+									value = node.term.value;
+									break;
+
+								case LWExprTerm.LW_TERM_SYM:
+									sym = node.term.symbol;
+									if (node.term.value == 1) {
+										skip = true; // internal symbol
+									}
+									break;
+
+								case LWExprTerm.LW_TERM_OPER:
+									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
+										oper++;
+									} else {
+										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
+									}
+									break;
+									
+								default :
+									throw new Exception ("unexpected term type: " + node.term.term_type);
+							}
+							node = node.next;
+						}
+						
+						if (oper>1) {
+							throw new Exception ("multiple PLUS operator is not supported");
+						}
+						
+						if (skip) continue;
+					
+						int symid = LinkSymbols.add(sym);
 						
 						byte[] val = new byte[6];
 						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
 						val[1] = (byte) (reloc.offset & 0xff);
-						//val[2] = (byte) ((reloc.expr.head.term.value & 0xff00) >> 8);
-						//val[3] = (byte) (reloc.expr.head.term.value & 0xff);
+						val[2] = (byte) ((value & 0xff00) >> 8);
+						val[3] = (byte) (value & 0xff);
 						val[4] = (byte) ((symid & 0xff00) >> 8);
 						val[5] = (byte) (symid & 0xff);
 						
-						log.debug("EXTERN16 : {}:{} {}", reloc.expr.head.term.symbol, symid, ByteUtil.bytesToHex(val));
+						log.debug("EXTERN16 : {}:{} {}", sym, symid, ByteUtil.bytesToHex(val));
 						extern16.add(val);
 					}
 				}
@@ -612,18 +728,5 @@ public class LwObject implements ObjectDataInterface{
 		}
 		
 		return extern16;
-	}
-
-// TODO apply operations !
-	
-	// Pour le moment l'operation -257 fait qu'on nbe référence pas l'EXTERN dans l'index de link ... 
-	// Il faut aussi clean LinkSymbols a chaque changement de target !!!!!!!!!!!!!!!!!!!
-	
-//    ( I16=-257 ES=dualpix2 OP=PLUS ) @ 0028 => "ES" external, appliquer le -257 
-//    ( FLAGS=01 ES=dualpix1 ) @ 0023
-//    ( I16=36 IS=\02code OP=PLUS ) @ 0013
-//    ( ES=gfx.ram.a ) @ 0010
-//    ( I16=31 IS=\02code OP=PLUS ) @ 0004 => "IS" internal, relatif à la section avec OP PLUS
-//    ( ES=gfx.ram.b ) @ 0001
-	
+	}	
 }

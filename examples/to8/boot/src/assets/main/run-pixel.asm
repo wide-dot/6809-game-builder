@@ -13,5 +13,7 @@ gfx.ram.b equ $A000
  ENDSECTION
 
  SECTION code
-        jsr   pixel.draw
+        ;jsr   pixel.draw+1
+        ldd   #testbro        
+testbro equ *
  ENDSECTION

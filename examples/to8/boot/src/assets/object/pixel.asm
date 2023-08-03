@@ -16,14 +16,15 @@ pixel.odd.length equ pixels.odd.end-pixels.odd
 
  SECTION code
 pixel.draw
-        ldu   #gfx.ram.b
+        nop
+        ldu   #gfx.ram.b+40
         ldx   #pixels.even
         lda   #pixel.even.length
 !       ldb   ,x+
         stb   ,u+
         deca
         bne   <
-        ldu   #gfx.ram.a
+        ldu   #gfx.ram.a+40
         ldx   #pixels.odd
         lda   #pixel.odd.length
 !       ldb   ,x+

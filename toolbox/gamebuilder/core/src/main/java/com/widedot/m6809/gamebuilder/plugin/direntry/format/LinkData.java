@@ -25,17 +25,17 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //		- intern                                      ; relocation of local variables
 //		            
 //		03 010A :    0001                             ; [nb of elements]
-//		             0162 00C3                        ; [offset to write location] [relative offset value to write] - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
+//		             0162 00C3                        ; [offset to write location] [PLUS operand] - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
 //
 //		- extern (8bit)                               ; link to extern 8 bit variables
 //		             
 //		03 0122 :    0001                             ; [nb of elements]
-//		             0014 0000 0001                   ; [offset to write location] [relative offset value to write] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
+//		             0014 0000 0001                   ; [offset to write location] [PLUS operand] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
 //
 //		- extern (16bit)                              ; link to extern 16 bit variables
 //		             
 //		03 0110 :    0002                             ; [nb of elements]
-//		             0001 FFF4 0002                   ; [offset to write location] [relative offset value to write] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
+//		             0001 FFF4 0002                   ; [offset to write location] [PLUS operand] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
 //		             003E 0000 0003                   ;                                                            extern ( ES=ymm.music.processFrame ) @ 003E
 
 public class LinkData {
