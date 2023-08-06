@@ -125,65 +125,66 @@ loaddir
 ;---------------------------------------
 load    pshs  dp
         lda   #$10
-        ora   <$6081  ; Set RAM
-        sta   <$6081  ; over data
-        sta   >$e7e7  ; space
+        ora   <$6081             ; Set RAM
+        sta   <$6081             ; over data
+        sta   >$e7e7             ; space
         lda   #$60
-        tfr   a,dp    ; Set DP
+        tfr   a,dp               ; Set DP
 * Switch page
-        cmpu   #$4000 ; Skip if
-        blo    ld0    ; cartridge space
-        stb    >$e7e5 ; Switch RAM page
-        bra    ld1    ; Load file
-ld0     orb    #$60   ; Set RAM over data space
-        stb    >$e7e6 ; Switch ram page
+        cmpu  #$4000            ; Skip if
+        blo   ld0               ; cartridge space
+        stb   >$e7e5            ; Switch RAM page
+        bra   ld1               ; Load file
+ld0     orb   #$60              ; Set RAM over data space
+        stb   >$e7e6            ; Switch ram page
 * Prepare loading
-
-        ldy   #direntries.data
+ld1     ldy   #direntries.data
+        tfr   x,d
+        _lsld                    ; Scale file id
+        _lsld                    ; to dir entry size
         _lsld
-        _lsld
-        _lsld
-        leay  d,y                      ; Y ptr to main direntry
-        ldb   direntry.nsector,y
-        stb   >nsect                   ; Set sector count
+        leay  d,y                ; Y ptr to file direntry
+        ldb   direntry.nsector,y ; Get number of sectors
+        stb   >nsect             ; Set sector count
+        ldd   direntry.track,y   ; Set track and
+        std   >track             ; sector number
 
+*** WIP
 
-ld1    ldd    GFX.E_TRACK,y ! Set track and
-       std    >track    ! sector number
 * First sector
-       ldb    GFX.E_SIZEA,y ! Skip if
+       ldb    direntry.sizea,y ! Skip if
        beq    ld3       ! full sect
        ldx    #ptsec  ! Init sector
-       stx    <$604f  ! pointer
+       stx    <map.DK.BUF  ! pointer
        bsr    ldsec   Load sector
-       ldd    GFX.E_SIZEA,y Read offs
+       ldd    direntry.sizea,y Read offs
        abx            Adjust data ptr
        bsr    tfrxua  Copy data
 * Intermediate sectors
-ld3    stu    <$604f  Init ptr secteur
+ld3    stu    <map.DK.BUF  Init ptr secteur
 ld4    ldb    >nsect  ! Exit if
        beq    ld7     ! no sector
        cmpb   #1        !
        bhi    ld5       ! Exit if 
-       lda    GFX.E_SIZEZ,y ! last sector
+       lda    direntry.sizez,y ! last sector
        bne    ld6       !
 ld5    bsr    ldsec   Load sector
-       inc    <$604f  Move sector ptr
+       inc    <map.DK.BUF  Move sector ptr
        bra    ld4     Next sector
 * Last sector
 ld6    ldb    >nsect  ! Skip if
        beq    ld7     ! no sector
-       ldu    <$604f  Data pointer
+       ldu    <map.DK.BUF  Data pointer
        ldx    #ptsec  ! Init sector
-       stx    <$604f  ! pointer
+       stx    <map.DK.BUF  ! pointer
        bsr    ldsec   Load sector
-       lda    GFX.E_SIZEZ,y ! Copy
+       lda    direntry.sizez,y ! Copy
        bsr    tfrxua    ! data
 * Next entry
 ld7    puls   dp
-       ldb    GFX.E_BANK,y ! Next if
+       ldb    direntry.E_BANK,y ! Next if
        bpl    ld8      ! no exec
-       jmp    [GFX.E_EXEC,y] Exec
+       jmp    [direntry.E_EXEC,y] Exec
 ld8    rts
 
 * Copy memory space
