@@ -47,8 +47,8 @@ map.CF74021.LGAMOD  equ $E7DC
 map.CF74021.SYS2    equ $E7DD ; (bit0-3) set screen border color, (bit6-7) set onscreen video memory page
 map.CF74021.COM     equ $E7E4
 map.CF74021.DATA    equ $E7E5 ; (bit0-4) set ram page in data area ($A000-$DFFF)
-map.CF74021.CART    equ $E7E6 ; (bit0-4) set page in cartridge area ($0000-$3FFF), (bit5) ram over cartridge, (bit6) write enable
-map.CF74021.SYS1    equ $E7E7
+map.CF74021.CART    equ $E7E6 ; (bit0-4) set page in cartridge area ($0000-$3FFF), (bit5) set ram over cartridge, (bit6) enable write
+map.CF74021.SYS1    equ $E7E7 ; (bit4) set ram over data area
 
 ; extension port
 map.EXTPORT         equ $E7

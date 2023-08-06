@@ -6,11 +6,14 @@
 ; A fully featured boot loader
 ;*******************************************************************************
 
+        INCLUDE "./engine/constants.asm"
+        INCLUDE "./engine/system/to8/map.const.asm"
+
 BYTE equ 1
 WORD equ 2
 
 * directory structure
-directory STRUCT
+dirheader STRUCT
 tag     rmb BYTE*3 ; [I] [D] [X]
 diskid  rmb BYTE   ; [0000 0000] - [disk id 0-255]
 nsector rmb BYTE   ; [0000 0000] - [nb of sectors to load direntries]
@@ -51,25 +54,91 @@ free    rmb BYTE ; [0000 0000]    - [free]
 *---------------------------------------
         org   $6300
         jmp   >loaddir ; Load directory entries
-        jmp   >load    ; Load file (D = File number)
+        jmp   >load    ; Load file
 error   jmp   >dskerr  ; Error
 pulse   jmp   >return  ; Load pulse
 
 ptsec   equ   $6200    ; temporary space for partial sector loading
+diskid   fcb   $00     ; disk id
 nsect   fcb   $00      ; Sector counter
 track   fcb   $00      ; Track number
 sector  fcb   $00      ; Sector number
 
-*---------------------------------------
-* Load directory entries
-*---------------------------------------
-; TODO
-; ldy    #directory.data
-       
-*---------------------------------------
-* Load file (D = File number)
-*---------------------------------------
+;---------------------------------------
+; Load directory entries
+;
+; D: [diskid] [face]
+; X: [track] [sector]
+;---------------------------------------
+
+loaddir
+; read first directory sector
+        sta   >diskid         ; Save desired directory id for check
+        stb   <map.DK.DRV     ; Set directory location
+        tfr   x,d             ; on floppy disk
+        sta   <map.DK.TRK+1   ; B is loaded with sector id
+        ldy   #dirheader.data ; Loading address for
+        sty   <map.DK.BUF     ; directory data
+        lda   #$02            ; Read code
+        sta   <map.DK.OPC     ; operation
+        ldu   #sclist         ; Interleave list
+        ldx   #messIO         ; Info message
+        lda   b,u             ; Get sector
+        sta   <map.DK.SEC     ; number
+@retry  jsr   >map.DKCONT     ; Load sector
+        bcc   >               ; Skip if no error
+        jsr   >map.DKCONT     ; Reload sector
+        bcc   >               ; Skip if no error
+        jsr   >info           ; Error
+        bra   @retry
+; check for directory id match
+!       ldx   #messdiskid
+        lda   directory.diskid,y
+        cmpa  >diskid
+        beq   >               ; Skip if disk id is ok
+        jsr   >info
+        bra   @retry
+; read remaining directory entries
+!       lda   directory.nsector,y ; init nb sectors to read       
+        sta   >nsect
+        ldx   #messIO      ; Error message
+        bra   @next
+@load   lda   b,u          ; Get sector
+        sta   <map.DK.SEC  ; number
+        jsr   >map.DKCONT  ; Load sector
+        bcc   @next        ; Skip if no error
+        jsr   >map.DKCONT  ; Reload sector
+        bcc   @next        ; Skip if no error
+        jmp   err          ; Error
+@next   inc   <map.DK.BUF  ; Move sector ptr
+        incb               ; Sector+1
+        dec   >nsect       ; Next
+        bne   @load        ; sector
+        rts
+
+;---------------------------------------
+; Load file
+;
+; X: [file number]
+; B: [destination - page number]
+; U: [destination - address]
+;---------------------------------------
 load    pshs  dp
+        lda   #$10
+        ora   <$6081  ; Set RAM
+        sta   <$6081  ; over data
+        sta   >$e7e7  ; space
+        lda   #$60
+        tfr   a,dp    ; Set DP
+* Switch page
+        cmpu   #$4000 ; Skip if
+        blo    ld0    ; cartridge space
+        stb    >$e7e5 ; Switch RAM page
+        bra    ld1    ; Load file
+ld0     orb    #$60   ; Set RAM over data space
+        stb    >$e7e6 ; Switch ram page
+* Prepare loading
+
         ldy   #direntries.data
         _lsld
         _lsld
@@ -78,23 +147,7 @@ load    pshs  dp
         ldb   direntry.nsector,y
         stb   >nsect                   ; Set sector count
 
-; to be continued ... WIP
 
-       ldd    #$1060  Direst RAM code/DP
-       tfr    b,dp    Set DP
-       ora    <$6081  ! Activate
-       sta    <$6081  ! direct
-       sta    >$e7e7  ! RAM
-* Switch bank
-       ldb    GFX.E_BANK,y Read bank number
-       ldu    GFX.E_ADDR,y Start address
-       cmpu   #$4000   ! Skip if
-       blo    ld0      ! ROM space
-       stb    >$e7e5   Switch RAM bank
-       bra    ld1      Load file
-ld0    orb    #$60     >Write
-       stb    >$e7e6   Switch ROM bank
-* Prepare loading
 ld1    ldd    GFX.E_TRACK,y ! Set track and
        std    >track    ! sector number
 * First sector
@@ -133,7 +186,7 @@ ld7    puls   dp
        jmp    [GFX.E_EXEC,y] Exec
 ld8    rts
 
-* Copy memory area
+* Copy memory space
 tfrxua equ    *
        ldb    ,x+      Read data
        stb    ,u+      Write data
@@ -180,6 +233,46 @@ sclist fcb    $01,$0f,$0d,$0b
        fcb    $08,$06,$04,$02
        fcb    $10,$0e,$0c,$0a
 
-* directory header, followed by direntries
-directory.data
-direntries.data equ directory.data+sizeof{directory}
+;---------------------------------------
+; Display messages
+;
+; X : [ptr to ascii string]
+;---------------------------------------
+
+* Display error message
+err     ldu   #messloc   ; Location
+        bsr   err2       ; Display location
+        leau  ,x         ; Message pointer
+        bsr   err2       ; Display message
+err0    bra   err0       ; Infinite loop
+
+* Display message
+err1    bsr   err3     ; Display char
+err2    ldb   ,u+      ; Read char
+        bpl   err1     ; Next if not last
+        andb  #$7f     ; Mask char
+err3    bra  map.PUTC  ; Display for TO - PUTC
+
+* Display info message and wait a keystroke
+info    
+!       jsr   KTST
+        bcs   <
+        rts
+
+* Location message
+messloc fcb   $1f,$21,$21
+        fcb   $1f,$11,$13     ; 3 lines (11-13)
+        fcb   $1b,$47         ; font : white
+        fcb   $1b,$51         ; background : red
+        fcb   $0c             ; cls
+        fcb   $1f,$4c,$4b+$80 ; locate for MO
+
+messIO     fcs   "     I/O|Error"
+messdiskid fcs   " Insert disk "
+
+*---------------------------------------
+* Directory entries
+*---------------------------------------
+
+dirheader.data
+direntries.data equ dirheader.data+sizeof{dirheader}
