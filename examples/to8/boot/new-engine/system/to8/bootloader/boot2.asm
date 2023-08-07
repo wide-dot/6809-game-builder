@@ -102,13 +102,19 @@ blist   fcb   $0f,$0d,$0b     ; first value is omitted ($01 : boot sector)
         fcb   $10,$0e,$0c,$0a
 
 runloader
+        ; load direntries
         ldd   #$0000 ; D: [diskid] [face]
         ldx   #$0008 ; X: [track] [sector]
         jsr   $6300  ; load direntries
+
+        ; load files
         ldx   #$0000 ; X: [file number]
         ldb   #$04   ; B: [destination - page number]
         ldu   #$A000 ; U: [destination - address]
         jsr   $6303  ; load file
+        jsr   $6306  ; uncompress file
+
+        ; run
         jmp   $A000  ; run program
 
         IFGT *-$6300

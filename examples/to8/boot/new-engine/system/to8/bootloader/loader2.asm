@@ -22,40 +22,35 @@ nsector rmb BYTE   ; [0000 0000] - [nb of sectors to load direntries]
 
 * direntry main structure
 direntry STRUCT
-bitfld  rmb BYTE   ; [0] [0] [00 0000] - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
-track   rmb BYTE   ; [0000 000] [0]    - [track 0-128] [face 0-1]
-sector  rmb BYTE   ; [0000 0000]       - [sector 0-255]
-sizea   rmb BYTE   ; [0000 0000]       - [bytes in first sector]
-offseta rmb BYTE   ; [0000 0000]       - [start offset in first sector (0: no sector)]
-nsector rmb BYTE   ; [0000 0000]       - [full sectors to read]
-sizez   rmb BYTE   ; [0000 0000]       - [bytes in last sector (0: no sector)]
-free    rmb BYTE   ; [0000 0000]       - [free]
-        ENDSTRUCT
-
+bitfld   rmb BYTE   ; [0] [0] [00 0000] - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
+track    rmb BYTE   ; [0000 000] [0]    - [track 0-128] [face 0-1]
+sector   rmb BYTE   ; [0000 0000]       - [sector 0-255]
+sizea    rmb BYTE   ; [0000 0000]       - [bytes in first sector]
+offseta  rmb BYTE   ; [0000 0000]       - [start offset in first sector (0: no sector)]
+nsector  rmb BYTE   ; [0000 0000]       - [full sectors to read]
+sizez    rmb BYTE   ; [0000 0000]       - [bytes in last sector (0: no sector)]
+free     rmb BYTE   ; [0000 0000]       - [free]
 * direntry compressor structure
-cdirentry STRUCT
-offset  rmb WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
-dataz   rmb BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
-        ENDSTRUCT
-
+coffset  rmb WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
+cdataz   rmb BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
 * direntry linker structure
-ldirentry STRUCT
-blocks  rmb BYTE ; [0000 0000]    - [nb of allocation blocks needed]
-track   rmb BYTE ; [0000 000] [0] - [track 0-128] [face 0-1]
-sector  rmb BYTE ; [0000 0000]    - [sector 0-255]
-sizea   rmb BYTE ; [0000 0000]    - [bytes in first sector]
-offseta rmb BYTE ; [0000 0000]    - [start offset in first sector (0: no sector)]
-nsector rmb BYTE ; [0000 0000]    - [full sectors to read]
-sizez   rmb BYTE ; [0000 0000]    - [bytes in last sector (0: no sector)]
-free    rmb BYTE ; [0000 0000]    - [free]
+lblocks  rmb BYTE ; [0000 0000]    - [nb of allocation blocks needed]
+ltrack   rmb BYTE ; [0000 000] [0] - [track 0-128] [face 0-1]
+lsector  rmb BYTE ; [0000 0000]    - [sector 0-255]
+lsizea   rmb BYTE ; [0000 0000]    - [bytes in first sector]
+loffseta rmb BYTE ; [0000 0000]    - [start offset in first sector (0: no sector)]
+lnsector rmb BYTE ; [0000 0000]    - [full sectors to read]
+lsizez   rmb BYTE ; [0000 0000]    - [bytes in last sector (0: no sector)]
+lfree    rmb BYTE ; [0000 0000]    - [free]
         ENDSTRUCT
 
 *---------------------------------------
 * Loader routines
 *---------------------------------------
         org   $6300
-        jmp   >loaddir ; Load directory entries
-        jmp   >load    ; Load file
+        jmp   >loaddir        ; Load directory entries
+        jmp   >load           ; Load file
+        jmp   >decompress     ; Decompress file
 error   jmp   >dskerr  ; Error
 pulse   jmp   >return  ; Load pulse
 
@@ -134,28 +129,17 @@ loaddir
 ; B: [destination - page number]
 ; U: [destination - address]
 ;---------------------------------------
-load    pshs  dp
-        lda   #$10
-        ora   <$6081             ; Set RAM
-        sta   <$6081             ; over data
-        sta   >$e7e7             ; space
+load    pshs  dp,b,x,u
         lda   #$60
         tfr   a,dp               ; Set DP
-* Switch page
-        cmpu  #$4000             ; Skip if
-        blo   ld0                ; cartridge space
-        stb   >map.CF74021.DATA  ; Switch RAM page
-        bra   ld1                ; Load file
-ld0     orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch ram page
+        jsr   switchpage
 * Prepare loading
-ld1     ldy   #direntries.data
-        tfr   x,d
-        _lsld                    ; Scale file id
-        _lsld                    ; to dir entry size
-        _lsld
-        leay  d,y                ; Y ptr to file direntry
-        ldb   direntry.nsector,y ; Get number of sectors
+        jsr   getfileentry
+        ldb   direntry.bitfld,y  ; test if compressed data
+        bpl   >                  ; skip if not compressed
+        ldd   direntry.coffset,y ; get offset to write data
+        leau  d,u
+!       ldb   direntry.nsector,y ; Get number of sectors
         stb   >nsect             ; Set sector count
         ldd   direntry.track,y   ; Set track, face and
         std   >track             ; sector number
@@ -189,7 +173,7 @@ ld6     ldb   >nsect             ; Skip if
         lda   direntry.sizez,y   ; Copy
         bsr   tfrxua             ; data
 * Exit
-ld7     puls  dp,pc
+ld7     puls  dp,b,x,u,pc
 
 * Copy memory space
 tfrxua
@@ -278,6 +262,65 @@ messloc fcb   $1f,$21,$21
 messIO         fcs   "     I/O|Error"
 messinsertdisk fcs   "   Insert disk 0"
 messdiskid     equ *-1
+
+;---------------------------------------
+; Switch page
+;
+; B: [destination - page number]
+; U: [destination - address]
+;---------------------------------------
+switchpage
+        lda   #$10
+        ora   <$6081             ; Set RAM
+        sta   <$6081             ; over data
+        sta   >$e7e7             ; space
+        cmpu  #$4000             ; Skip if
+        blo   >                  ; cartridge space
+        stb   >map.CF74021.DATA  ; Switch RAM page
+        rts
+!       orb   #$60               ; Set RAM over cartridge space
+        stb   >map.CF74021.CART  ; Switch ram page
+        rts
+
+;---------------------------------------
+; Get file directory entry
+;
+; X: [file number]
+;---------------------------------------
+getfileentry
+        ldy   #direntries.data
+        tfr   x,d
+        _lsld                    ; Scale file id
+        _lsld                    ; to dir entry size
+        _lsld
+        leay  d,y                ; Y ptr to file direntry
+        rts
+
+;---------------------------------------
+; zx0
+;
+; X: [file number]
+; B: [destination - page number]
+; U: [destination - address]
+;---------------------------------------
+
+decompress
+        jsr   switchpage
+        jsr   getfileentry
+        ldb   direntry.bitfld,y  ; test if compressed file
+        bmi   >                  ; yes, continue
+        rts                      ; no, exit
+!       ldd   direntry.coffset,y ; get offset to write data
+        leax  d,u                ; set x to start of compressed data
+        pshs  y
+        jsr   >zx0_decompress    ; decompress and set u to end of decompressed data
+        puls  y
+        lda   #6                 ; copy last 6 bytes
+        leax  direntry.cdataz,y  ; set read ptr
+        jmp   tfrxua
+
+ align  $6500
+ INCLUDE "./engine/compression/zx0/zx0_6809_mega.asm"
 
 *---------------------------------------
 * Directory entries
