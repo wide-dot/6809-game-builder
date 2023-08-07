@@ -14,6 +14,7 @@ gfx.ram.b equ $A000
 
  SECTION code
         ;jsr   pixel.draw+1
-        ldd   #testbro        
+        ldd   #testbro     
+        bra   *
 testbro equ *
  ENDSECTION

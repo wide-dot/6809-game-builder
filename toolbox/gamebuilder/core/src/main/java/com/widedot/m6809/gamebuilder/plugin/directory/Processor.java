@@ -1,5 +1,12 @@
 package com.widedot.m6809.gamebuilder.plugin.directory;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
@@ -8,9 +15,11 @@ import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
+import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +41,7 @@ public class Processor {
     	
 		log.debug("Processing directory ...");
 
-		String id = Attribute.getString(node, defaults, "id", "directory.id");
+		Integer id = Attribute.getInteger(node, defaults, "id", "directory.id");
 		String section = Attribute.getString(node, defaults, "section", "directory.section");
 		String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "directory.genbinary");
 		
@@ -69,10 +78,37 @@ public class Processor {
 	        }
     	}
 		
-		// parse media directory entries
-		// ... TODO
-		// media.write(section, bin);
-	    
+		// compute directory size 
+		int size = 5;
+		for (DirEntry entry : media.getDirEntries()) {
+			size += entry.data.length;
+		}
+		
+		// set header data 
+		byte[] bin = new byte[size];
+		int i = 0;
+		bin[i++] = 'I';
+		bin[i++] = 'D';
+		bin[i++] = 'X';
+		bin[i++] = id.byteValue();
+		bin[i++] = (byte) (Math.ceil(size/256.0));
+		
+		// set each direntry data
+		for (DirEntry entry : media.getDirEntries()) {
+			System.arraycopy(entry.data,0,bin,i,entry.data.length);
+			i += entry.data.length;
+		}
+
+		// write whole directory to media
+		media.write(section, bin);
+		
+		// write whole directory to debug file
+		if (genbinary != null) {
+			genbinary = path + File.separator + genbinary;
+			Files.createDirectories(Paths.get(FileUtil.getDir(genbinary)));
+			Files.write(Paths.get(genbinary), bin);
+		}
+		
 		log.debug("End of processing directory");
 	}
 

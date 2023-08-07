@@ -37,7 +37,7 @@ public class Processor {
 //	[0] [0] [00 0000] - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
 //	[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
 //	[0000 0000] [0000 0000] - [bytes in first sector] [start offset in first sector (0: no sector)]
-//	[0000 0000] - [full sectors to read]
+//	[0000 0000] - [nb sectors]
 //	[0000 0000] - [bytes in last sector (0: no sector)]
 //	[0000 0000] - [free]
 //
@@ -54,7 +54,7 @@ public class Processor {
 //	[0000 0000] - [nb of allocation blocks needed]
 //	[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
 //	[0000 0000] [0000 0000] - [bytes in first sector] [start offset in first sector (0: no sector)]
-//	[0000 0000] - [full sectors to read]
+//	[0000 0000] - [nb sectors]
 //	[0000 0000] - [bytes in last sector (0: no sector)]
 //	[0000 0000] - free
 //
@@ -211,6 +211,7 @@ public class Processor {
 	    int i = 0;
 		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
 		if (loadtimelink) direntry[i] = (byte) (direntry[i] | 0b01000000);
+		i++;
 		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
 		
 		if (compress) {
@@ -229,7 +230,7 @@ public class Processor {
 			linkdata.process();
 		    byte[] linkDiskLocation = media.write(linkSection, linkdata.data);
 		    
-			direntry[i++] = (byte)(linkdata.data.length/Integer.parseInt(Settings.values.get("direntry.linkdata.allocunitsize")));
+			direntry[i++] = (byte)(Math.ceil(linkdata.data.length/Double.parseDouble(Settings.values.get("direntry.linkdata.allocunitsize"))));
 			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
 			i += 7;
 		}

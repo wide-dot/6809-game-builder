@@ -44,6 +44,7 @@ public class FdUtil implements MediaDataInterface{
         byte[] direntry = new byte[6];
 		direntry[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
 		direntry[1] = (byte) s.sector;											// start sector nb
+		direntry[4] = 0;	                                                    // nb sectors
         direntry[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
         
 		while (pos < data.length) {
@@ -51,33 +52,28 @@ public class FdUtil implements MediaDataInterface{
 			
 			if (first) {
 				if (v[1] == storage.segment.sectorSize) {
-					
+
 					// first written sector is full filled with data
 					direntry[2] = 0;	// nb of bytes in first sector
 					direntry[3] = 0;	// start offset in first sector
-					direntry[4] = 1;	// full sectors
-			        
 				} else {
 					
 					// first written sector is partially written
 					direntry[2] = (byte) v[1]; 	// nb of bytes in first sector
 					direntry[3] = (byte) v[0]; 	// start offset in first sector
-					direntry[4] = 0; 			// full sectors
 				}
-			} else {
-				if (v[1] == storage.segment.sectorSize) { 
-					direntry[4]++;		 		// inc full sectors
-				} else {
-					direntry[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
-				}
+			} else if (v[1] != storage.segment.sectorSize) { 
+				direntry[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
 			}
+			
+			direntry[4]++;		 		// inc nb sectors
 			
 			pos += v[1];				// moves ahead in source data 
 			if (v[2]==0) nextSector(s);	// moves pointer to current free sector in common section
 			first = false;
 		}
 		
-        log.debug("write - track {}, face {}, start sector {}, nb bytes in first sector {}, offset in first sector {}, full sectors {}, nb bytes in last sector {}",
+        log.debug("write - track {}, face {}, start sector {}, nb bytes in first sector {}, offset in first sector {}, sectors {}, nb bytes in last sector {}",
         		direntry[0] >> 1,
 				direntry[0] & 0x1,
 				direntry[1],

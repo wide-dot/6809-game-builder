@@ -24,7 +24,7 @@
 
             <directory id="0" section="INDEX" genbinary="src/directories/directory.bin"> <!--genbinary is optional-->
                 <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.codec"        value="zx0"/>
+                <default name="direntry.codec"        value="none"/> <!--zx0-->
                 <default name="direntry.linksection"  value="LINK"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>

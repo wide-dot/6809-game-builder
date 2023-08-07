@@ -6,6 +6,7 @@
 ; A fully featured boot loader
 ;*******************************************************************************
 
+        INCLUDE "./engine/macros.asm"
         INCLUDE "./engine/constants.asm"
         INCLUDE "./engine/system/to8/map.const.asm"
 
@@ -58,8 +59,8 @@ free    rmb BYTE ; [0000 0000]    - [free]
 error   jmp   >dskerr  ; Error
 pulse   jmp   >return  ; Load pulse
 
-ptsec   equ   $6200    ; temporary space for partial sector loading
-diskid   fcb   $00     ; disk id
+ptsec   equ   $6100    ; temporary space for partial sector loading
+diskid  fcb   $00      ; disk id
 nsect   fcb   $00      ; Sector counter
 track   fcb   $00      ; Track number
 sector  fcb   $00      ; Sector number
@@ -74,6 +75,8 @@ sector  fcb   $00      ; Sector number
 loaddir
 ; read first directory sector
         sta   >diskid         ; Save desired directory id for check
+        adda  #48+128         ; base index for ascii numbers (works for ten disks max) plus end string bit flag
+        sta   messdiskid      ; update message string with id
         stb   <map.DK.DRV     ; Set directory location
         tfr   x,d             ; on floppy disk
         sta   <map.DK.TRK+1   ; B is loaded with sector id
@@ -89,17 +92,25 @@ loaddir
         bcc   >               ; Skip if no error
         jsr   >map.DKCONT     ; Reload sector
         bcc   >               ; Skip if no error
-        jsr   >info           ; Error
+@info   jsr   >info           ; Error
         bra   @retry
+; check for directory tag match
+!       ldx   #messinsertdisk
+        lda   dirheader.tag,y
+        cmpa  #'I'
+        bne   @info
+        lda   dirheader.tag+1,y
+        cmpa  #'D'
+        bne   @info
+        lda   dirheader.tag+2,y
+        cmpa  #'X'
+        bne   @info
 ; check for directory id match
-!       ldx   #messdiskid
-        lda   directory.diskid,y
+        lda   dirheader.diskid,y
         cmpa  >diskid
-        beq   >               ; Skip if disk id is ok
-        jsr   >info
-        bra   @retry
+        bne   @info
 ; read remaining directory entries
-!       lda   directory.nsector,y ; init nb sectors to read       
+!       lda   dirheader.nsector,y ; init nb sectors to read       
         sta   >nsect
         ldx   #messIO      ; Error message
         bra   @next
@@ -133,10 +144,10 @@ load    pshs  dp
 * Switch page
         cmpu  #$4000             ; Skip if
         blo   ld0                ; cartridge space
-        stb   >$e7e5             ; Switch RAM page
+        stb   >map.CF74021.DATA  ; Switch RAM page
         bra   ld1                ; Load file
-ld0     orb   #$60               ; Set RAM over data space
-        stb   >$e7e6             ; Switch ram page
+ld0     orb   #$60               ; Set RAM over cartridge space
+        stb   >map.CF74021.CART  ; Switch ram page
 * Prepare loading
 ld1     ldy   #direntries.data
         tfr   x,d
@@ -177,7 +188,7 @@ ld6     ldb   >nsect             ; Skip if
         bsr   ldsec              ; Load sector
         lda   direntry.sizez,y   ; Copy
         bsr   tfrxua             ; data
-* Next entry
+* Exit
 ld7     puls  dp,pc
 
 * Copy memory space
@@ -221,7 +232,8 @@ ldsec1  ldd   >track             ; read track/sect
 dskerr  jmp   [$fffe]
 
 * Interleave 2 with a default disk format (interleave 7)
-sclist  fcb   $01,$0f,$0d,$0b
+sclist  equ   *-1
+        fcb   $01,$0f,$0d,$0b
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a
@@ -244,12 +256,15 @@ err1    bsr   err3               ; Display char
 err2    ldb   ,u+                ; Read char
         bpl   err1               ; Next if not last
         andb  #$7f               ; Mask char
-err3    bra   map.PUTC           ; Display for TO - PUTC
+err3    jmp   map.PUTC           ; Display for TO - PUTC
 
 * Display info message and wait a keystroke
-info    
-!       jsr   KTST
-        bcs   <
+info    ldu   #messloc           ; Location
+        bsr   err2               ; Display location
+        leau  ,x                 ; Message pointer
+        bsr   err2               ; Display message
+!       jsr   map.KTST
+        bcc   <
         rts
 
 * Location message
@@ -260,8 +275,9 @@ messloc fcb   $1f,$21,$21
         fcb   $0c                ; cls
         fcb   $1f,$4c,$4b+$80    ; locate for MO
 
-messIO     fcs   "     I/O|Error"
-messdiskid fcs   " Insert disk "
+messIO         fcs   "     I/O|Error"
+messinsertdisk fcs   "   Insert disk 0"
+messdiskid     equ *-1
 
 *---------------------------------------
 * Directory entries

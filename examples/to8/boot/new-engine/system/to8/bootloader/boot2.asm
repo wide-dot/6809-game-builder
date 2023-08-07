@@ -52,8 +52,7 @@ boot3   inc   <map.DK.BUF  ; Move sector ptr
         incb               ; Sector+1
         dec   >secnbr      ; Next
         bne   boot2        ; sector
-        clra               ; Load first
-        jmp   $6300        ; program
+        jmp   runloader
 
 * Display error message
 err     leau  <mess0,pcr ; Location
@@ -101,6 +100,16 @@ blist   fcb   $0f,$0d,$0b     ; first value is omitted ($01 : boot sector)
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a
+
+runloader
+        ldd   #$0000 ; D: [diskid] [face]
+        ldx   #$0008 ; X: [track] [sector]
+        jsr   $6300  ; load direntries
+        ldx   #$0000 ; X: [file number]
+        ldb   #$04   ; B: [destination - page number]
+        ldu   #$A000 ; U: [destination - address]
+        jsr   $6303  ; load file
+        jmp   $A000  ; run program
 
         IFGT *-$6300
         ERROR "boot code part 2 is too large !"
