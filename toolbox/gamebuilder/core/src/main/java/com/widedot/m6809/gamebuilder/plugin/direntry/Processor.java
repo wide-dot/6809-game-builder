@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -230,7 +231,7 @@ public class Processor {
 			linkdata.process();
 		    byte[] linkDiskLocation = media.write(linkSection, linkdata.data);
 		    
-			direntry[i++] = (byte)(Math.ceil(linkdata.data.length/Double.parseDouble(Settings.values.get("direntry.linkdata.allocunitsize"))));
+			direntry[i++] = (byte)(Math.ceil(linkdata.data.length/Double.parseDouble(Settings.values.get("direntry.linkdata.unitsize"))));
 			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
 			i += 7;
 		}

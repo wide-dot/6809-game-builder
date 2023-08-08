@@ -6,14 +6,14 @@
         <floppydisk model="fd640">
             <data section="LOADER">
                 <lwasm format="raw">
-                    <asm filename="new-engine/system/to8/bootloader/loader2.asm"/>
+                    <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>
             </data>
 
             <data section="BOOT" maxsize="0x100">   
                 <cksumfd640>
                     <lwasm format="raw">
-                        <asm filename="new-engine/system/to8/bootloader/boot2.asm"/>
+                        <asm filename="new-engine/system/to8/bootloader/boot.asm"/>
                     </lwasm>
                 </cksumfd640>
             </data>
