@@ -58,89 +58,107 @@ memory.alloc
 ; input  REG : [A] number of released cells
 ; input  REG : [X] released memory address
 ;---------------------------------------
-memory.free.endlocation fdb 0
-
 memory.free
-        sta   memory.free.nbcells
+        ; ----------------------------------------------------------
+        ; Init
+        ; ---------------------------------------------------------- 
+        sta   memory.free.nbcells           ; Store parameters of released memory
         stx   memory.free.location
-        ldb   #cellsize
+        ldb   #cellsize                     ; Compute end location of released memory
         mul
         leax  d,x
         stx   memory.free.endlocation
+        ldy   #0                            ; Init previous region in list to 0
+        ; ----------------------------------------------------------
+        ; Check if free region list is empty (memory full)
+        ; ---------------------------------------------------------- 
         ldu   freeregionlist
-        beq   @newendentry                  ; No more free region, add a new entry
-!       ldx   cell_end,u ; TODO COMPUTE !!! freeregion.location
-        cmpx  memory.free.endlocation       ; Search the free region list that is ordered by location
-        blo   @combinenext                  ; Branch if we reached position in list
-        ldd   freeregion.next,u             ; Test next region
-        beq   @combineatend                 ; Branch if no more region
-        leax  freeregion.next,u             ; Keep next ptr of previous free region
-        stx   @preventry
-        ldu   freeregion.next,u             ; Move to next entry        
+        beq   @newentry                     ; No free region, add a new one
+        ; ----------------------------------------------------------
+        ; Parse free region list
+        ; ---------------------------------------------------------- 
+!       ldx   freeregion.location,u         ; Get location of current region in list
+        cmpx  #0                            ; Compare to location of released memory
+memory.free.location equ *-2
+        bhi   @mergenext                    ; Exit if current region in list is after released memory location
+        leay  ,u                            ; Saves previous region to Y
+        ldu   freeregion.next,u             ; Move to next region  
+        beq   @mergeprev                    ; Branch if no more region
         bra   <
         ; ----------------------------------------------------------
-        ; try to combine with next region
+        ; Check if next region is adjacent
         ; ----------------------------------------------------------        
-@combinenext
-        stu   @nextentry
-        ldx   memory.free.location
-        cmpx  cell_end,u ; TODO COMPUTE !!! freeregion.location
-        bne   @combineprev
-        lda   freeregion.nbcells,u          ; released memory is adjacent to the end of actual free region
+@mergenext
+        cmpx  memory.free.endlocation       ; Compare location of current region in list
+memory.free.endlocation equ *-2
+        bne   @mergeprev                    ; with released memory end location
+        ; ----------------------------------------------------------
+        ; Merge with next region
+        ; ----------------------------------------------------------      
+        lda   freeregion.nbcells,u          ; Released memory is adjacent to the end of actual free region
         adda  memory.free.nbcells           ; extend free region
         sta   freeregion.nbcells,u
-        ldx   memory.free.endlocation       ; check if next region is now adjacent
-        ldy   freeregionlist
-        cmpx  freeregion.location,y         ; Branch if end location of dessalocated region
-        beq   >                             ; match start of an existing free region
-        rts
-!       ldx   freeregion.location,u         ; extend free region by lowering location
-        stx   freeregion.location,y         ; of existing region
-        lda   freeregion.nbcells,u        
-        adda  freeregion.nbcells,y
+        ldd   memory.free.location
+        std   freeregion.location,u
+        ; ----------------------------------------------------------
+        ; Check if prev region is adjacent
+        ; ----------------------------------------------------------  
+        cmpy  #0
+        beq   @rts                          ; Exit if no previous region
+        ldx   freeregion.location,y         ; Compute previous region end location
+        lda   freeregion.nbcells,y
+        ldb   #cellsize
+        mul
+        leax  d,x
+        cmpx  memory.free.location          ; Compare to location of released memory
+        bne   @rts                          ; Exit if not adjacent
+        ; ----------------------------------------------------------
+        ; Merge with prev region
+        ; ---------------------------------------------------------- 
+        lda   freeregion.nbcells,u          ; Expand prev region
+        adda  freeregion.nbcells,y          ; with next region
         sta   freeregion.nbcells,y
         ldd   freeregion.next,u
         std   freeregion.next,y
-        clr   freeregion.nbcells,u          ; delete the entry
-        rts 
+        clr   freeregion.nbcells,u          ; delete the next region
+@rts    rts 
         ; ----------------------------------------------------------
-        ; try to combine with prev region 
-        ; ----------------------------------------------------------      
-@combineatend
-        ldd   #$0000
-        std   @nextentry
-@combineprev
-        ldx   memory.free.endlocation
-        cmpx  freeregion.location,u
-        bne   @newentry
-        ldx   memory.free.location
-        stx   freeregion.location,u
-        lda   freeregion.nbcells,u        
-        adda  memory.free.nbcells
-        sta   freeregion.nbcells,u
+        ; Check if prev region is adjacent
+        ; ----------------------------------------------------------  
+@mergeprev
+        ldx   freeregion.location,y         ; Compute previous region end location
+        lda   freeregion.nbcells,y
+        ldb   #cellsize
+        mul
+        leax  d,x
+        cmpx  memory.free.location          ; Compare to location of released memory
+        bne   @newentry                     ; Branch if not adjacent
+        ; ----------------------------------------------------------
+        ; Merge with prev region
+        ; ---------------------------------------------------------- 
+        lda   freeregion.nbcells,y          ; Expand prev region        
+        adda  memory.free.nbcells           ; with released memory
+        sta   freeregion.nbcells,y
         rts   
         ; ----------------------------------------------------------
         ; Add new entry to free region list
         ; ----------------------------------------------------------
-@newendentry
-        ldd   #$0000                        ; End of list
-        std   @nextentry                    ; no next region
 @newentry
-        ldu   #firstfreeregion              ; Read free region list as a table
-!       ldb   freeregion.nbcells,u          ; not as a linked list
-        beq   @setnewentry                  ; branch if empty entry
-        leau  sizeof{freeregion},u          ; move to next entry
+        ldx   #firstfreeregion              ; Read free region list as a table
+!       ldb   freeregion.nbcells,x          ; not as a linked list
+        beq   @setnewentry                  ; Branch if empty slot
+        leax  sizeof{freeregion},x          ; Move to next slot
         bra   <
 @setnewentry        
-        lda   #0
+        lda   #0                            ; (dynamic)
 memory.free.nbcells equ *-1
-        sta   freeregion.nbcells,u          ; store released cells
-        ldd   #0
-memory.free.location equ *-2
-        std   freeregion.location,u         ; store free memory location
-        ldd   #$0000                        ; (dynamic) next free region
-@nextentry equ *-2
-        std   freeregion.next,u             ; link next free region (0 if end of list)
-        stu   >$0                           ; (dynamic) prev free region
-@preventry equ *-2
+        sta   freeregion.nbcells,x          ; Store released cells to new free region
+        ldd   memory.free.location
+        std   freeregion.location,x         ; Store released memory location to new free region
+        stu   freeregion.next,x             ; Link next free region (0 if end of list)
+        cmpy  #0
+        bne   >
+        stx   freeregionlist                ; No previous element, update start of linked list
+        rts
+!       stx   freeregion.next,y             ; Link new region to previous one
         rts
