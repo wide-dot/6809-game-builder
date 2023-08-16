@@ -3,9 +3,9 @@ maxcells equ   256
 cellsize equ   8
 
 freeregion STRUCT
-nbcells  rmb BYTE
-location rmb WORD
-next     rmb WORD
+nbcells  rmb 1
+location rmb 2
+next     rmb 2
         ENDSTRUCT
 
 freeregionlist fdb   firstfreeregion
@@ -36,10 +36,7 @@ memory.alloc
         ldd   freeregion.next,y             ; Chain previous region
         std   ,x                            ; with next region
         ldu   freeregion.location,y         ; Return allocated memory address
-        ;ldd   #0                            ; Clean current free region
         clr   freeregion.nbcells,y
-        ;std   freeregion.location,y
-        ;std   freeregion.next,y
         rts
 @dividecell
         nega                                ; Substract requested cells
