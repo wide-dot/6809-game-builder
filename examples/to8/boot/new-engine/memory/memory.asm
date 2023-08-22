@@ -1,3 +1,11 @@
+;-----------------------------------------------------------------
+; simple dynamic memory allocator 
+; -------------------------------
+; Benoit Rousseau - 22/08/2023
+; ! WARNING ! Work in progress !
+; --- This code is untested ---
+;-----------------------------------------------------------------
+
 heap     equ   $8000
 maxcells equ   256
 cellsize equ   8
@@ -16,15 +24,15 @@ firstfreeregion
         fill  0,(sizeof{freeregion}*(maxcells/2))-1
 
 ;-----------------------------------------------------------------
-; memory.alloc
+; memory.malloc
 ;
 ; input  REG : [A] number of requested cells
 ; output REG : [U] allocated memory location or 0 if no more space
 ;-----------------------------------------------------------------
-memory.alloc
+memory.malloc
         ldu   #0                            ; Default value (no more free space)
         ldx   #freeregionlist               ; Keep next ptr of previous free region
-        ldy   freeregionlist                ; Load first free region
+        ldy   ,x                            ; Load first free region
 @next   beq   @rts                          ; Branch if no more free region
         cmpa  freeregion.nbcells,y          ; Compare requested cells with the nb of free cells of this region
         beq   @fitcell                      ; Branch if same size
@@ -100,7 +108,7 @@ memory.free.endlocation equ *-2
         ; ----------------------------------------------------------
         ; Check if prev region is adjacent
         ; ----------------------------------------------------------  
-        cmpy  #0
+        leay  ,y                            ; equivalent to cmpy #0
         beq   @rts                          ; Exit if no previous region
         ldx   freeregion.location,y         ; Compute previous region end location
         lda   freeregion.nbcells,y
@@ -153,7 +161,7 @@ memory.free.nbcells equ *-1
         ldd   memory.free.location
         std   freeregion.location,x         ; Store released memory location to new free region
         stu   freeregion.next,x             ; Link next free region (0 if end of list)
-        cmpy  #0
+        leay  ,y                            ; equivalent to cmpy #0
         bne   >
         stx   freeregionlist                ; No previous element, update start of linked list
         rts
