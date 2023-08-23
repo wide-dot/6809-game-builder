@@ -16,8 +16,10 @@ gfx.ram.b equ $A000
         ;jsr   pixel.draw+1
         ldd   #testbro     
         bra   *
+
         fill  -1,251
         fill  -2,256
         fill  -3,16
 testbro equ *
+
  ENDSECTION

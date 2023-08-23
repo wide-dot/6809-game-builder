@@ -132,8 +132,11 @@ runloader
         ldu   #$B000 ; U: [destination - address]
         jsr   $6306  ; uncompress file
 
+        ; test DMA
+        jmp   $6309  ;
+
         ; run
-        jmp   $A000  ; run program
+        ;jmp   $A000  ; run program
 
         IFGT *-$6300
         ERROR "boot code part 2 is too large !"

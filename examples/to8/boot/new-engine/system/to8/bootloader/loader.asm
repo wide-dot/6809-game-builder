@@ -51,6 +51,7 @@ lfree    rmb BYTE ; [0000 0000]    - [free]
         jmp   >loaddir        ; Load directory entries
         jmp   >load           ; Load file
         jmp   >decompress     ; Decompress file
+        jmp   >alloc          ; Debug mode for Dynamic Memory Allocation
 error   jmp   >dskerr  ; Error
 pulse   jmp   >return  ; Load pulse
 
@@ -330,6 +331,48 @@ decompress
 ;---------------------------------------
 link
         rts
+
+
+;---------------------------------------
+; alloc
+;
+;
+;---------------------------------------
+alloc ; 6638
+
+        ldd   #%1110000000000001
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000000001111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000000011111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000000111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000001111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000011111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0000111111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0001111111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0011111111111111
+        jsr   memory.tlsf.malloc
+
+        ldd   #%1111111111111111
+        jsr   memory.tlsf.malloc
+
+        rts
+
+        INCLUDE   "new-engine\memory\tlsf.asm"
 
 *---------------------------------------
 * Directory entries

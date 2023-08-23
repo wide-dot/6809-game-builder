@@ -1,9 +1,8 @@
 ;-----------------------------------------------------------------
-; simple dynamic memory allocator 
-; -------------------------------
+; first fit dynamic memory allocator 
+; ----------------------------------
 ; Benoit Rousseau - 22/08/2023
-; ! WARNING ! Work in progress !
-; --- This code is untested ---
+; ! WARNING ! This code is untested !
 ;-----------------------------------------------------------------
 
 heap     equ   $8000
