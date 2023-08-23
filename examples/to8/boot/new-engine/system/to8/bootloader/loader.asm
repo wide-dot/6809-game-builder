@@ -5,7 +5,7 @@
 ; ------------------------------------------------------------------------------
 ; A fully featured boot loader
 ;*******************************************************************************
-
+ SETDP $FF
         INCLUDE "./engine/macros.asm"
         INCLUDE "./engine/constants.asm"
         INCLUDE "./engine/system/to8/map.const.asm"
@@ -322,6 +322,7 @@ decompress
 
  align  $6500
  INCLUDE "./engine/compression/zx0/zx0_6809_mega.asm"
+ SETDP $FF
 
 
 ;---------------------------------------
@@ -340,36 +341,53 @@ link
 ;---------------------------------------
 alloc ; 6638
 
-        ldd   #%1110000000000001
+        ldd   #%0000000000010000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000000001111111
+        ldd   #%0000000000100010
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000000011111111
+        ldd   #%0000000001001000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000000111111111
+        ldd   #%0000000010011000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000001111111111
+        ldd   #%0000000101000000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000011111111111
+        ldd   #%0000001010100000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0000111111111111
+        ldd   #%0000010110000000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0001111111111111
+        ldd   #%0000101110000000
         jsr   memory.tlsf.malloc
 
-        ldd   #%0011111111111111
+        ldd   #%0001100000000000
         jsr   memory.tlsf.malloc
 
-        ldd   #%1111111111111111
+        ldd   #%0011001000000000
         jsr   memory.tlsf.malloc
 
+        ldd   #%0110100000000000
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0110110000000000
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0111000000000000
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0111010000000000
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0111100000000000
+        jsr   memory.tlsf.malloc
+
+        ldd   #%0111110000000000
+        jsr   memory.tlsf.malloc
         rts
 
         INCLUDE   "new-engine\memory\tlsf.asm"

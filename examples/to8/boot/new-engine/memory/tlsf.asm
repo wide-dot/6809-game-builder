@@ -66,7 +66,7 @@ memory.tlsf.free
 memory.tlsf.mappingsearch
         ; check in parameter
         cmpd  #$F800
-        ble   >
+        bls   >
         clra
         sta   memory.tlsf.fl
         sta   memory.tlsf.sl
