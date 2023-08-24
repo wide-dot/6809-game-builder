@@ -8,12 +8,12 @@
 
  opt c
 
-memory.tlsf.sloffset equ 0  ; non significant rightmost bits
+memory.tlsf.padbits  equ 0  ; non significant rightmost bits
 memory.tlsf.slbits   equ 4  ; significant bits for second level split
 memory.tlsf.slsize   equ 16 ; 2^memory.tlsf.slbits
 
- IFLT 8-memory.tlsf.sloffset-memory.tlsf.slbits
-        ERROR "Sum of memory.tlsf.sloffset and memory.tlsf.slbits should not exceed 8"
+ IFLT 8-memory.tlsf.padbits-memory.tlsf.slbits
+        ERROR "Sum of memory.tlsf.padbits and memory.tlsf.slbits should not exceed 8"
  ENDC
 
  IFLT memory.tlsf.slbits-1
@@ -23,21 +23,14 @@ memory.tlsf.slsize   equ 16 ; 2^memory.tlsf.slbits
 memory.tlsf.rsize    fdb 0  ; requested memory size
 memory.tlsf.msize    fdb 0  ; memory size
 memory.tlsf.fl       fcb 0  ; first level index
-memory.tlsf.sl       fcb 0  ; second level index
+memory.tlsf.sl       fcb 0  ; second level index (should be adjacent to fl in memory)
 
 ;-----------------------------------------------------------------
 ; memory.tlsf.malloc
 ; input  REG : [D] requested memory size
 ; output REG : [U] allocated memory location or 0 if no more space
 ;-----------------------------------------------------------------
-; size is splitted in two levels to find a "good fit" free region
-;-----------------------------------------------------------------
-memory.tlsf.malloc
-        std   memory.tlsf.rsize
-        jsr   memory.tlsf.mappingsearch
-
-
-
+; mapping_search(r, fl, sl);
 ; free_block:= find_suitable_block(r, fl, sl);
 ; if not(free_block) then return error; end if;
 ; remove_head(free_block);
@@ -47,6 +40,11 @@ memory.tlsf.malloc
 ; insert_block(remaining_block, fl, sl);
 ; end if ;
 ; return free_block;
+;-----------------------------------------------------------------
+memory.tlsf.malloc
+        std   memory.tlsf.rsize
+        jsr   memory.tlsf.mappingsearch
+        jsr   memory.tlsf.findsuitableblock
         rts
 
 ;-----------------------------------------------------------------
@@ -62,27 +60,26 @@ memory.tlsf.free
 ; output VAR : [memory.tlsf.fl] first level index
 ; output VAR : [memory.tlsf.sl] second level index
 ;-----------------------------------------------------------------
+; r  = r+(1<<(fls(r)-J))-1;
+; fl = fls(r);
+; sl = (r>>(fl-J))-2^J;
 ;-----------------------------------------------------------------
 memory.tlsf.mappingsearch
-        ; check in parameter
-        cmpd  #$F800
+        cmpd  #$F800                   ; check input parameter upper limit
         bls   >
-        clra
-        sta   memory.tlsf.fl
-        sta   memory.tlsf.sl
+        ldd   #0                       ; error return 0 as fl/sl
+@zero   std   memory.tlsf.fl           ; and memory.tlsf.sl
         rts
         ; round up requested size to next list
 !       std   memory.tlsf.msize
-        jsr   memory.tlsf.fls
-        cmpb  #memory.tlsf.sloffset+memory.tlsf.slbits
-        bhs   >
-       IFEQ  memory.tlsf.sloffset
-        ldd   memory.tlsf.rsize       ; skip round up when list
-        bra   @computefl              ; hold only one size
-       ELSE
-        addd  #memory.tlsf.sloffset
-       ENDC
-!       subb  #memory.tlsf.slbits     ; round up
+        beq   @zero                    ; check input parameter lower limit 
+        ldx   #memory.tlsf.msize
+        jsr   memory.tlsf.fls          ; split memory size in power of two
+        cmpb  #memory.tlsf.padbits+memory.tlsf.slbits
+        bhi   >                        ; branch to round up if fl is not at minimum value
+        ldd   memory.tlsf.rsize
+        bra   @computefl               ; skip round up
+!       subb  #memory.tlsf.slbits      ; round up
         aslb
         ldx   #memory.tlsf.map.bitpos
         ldd   b,x
@@ -90,19 +87,21 @@ memory.tlsf.mappingsearch
         addd  memory.tlsf.rsize
 @computefl
         std   memory.tlsf.msize
-        jsr   memory.tlsf.fls
-        stb   memory.tlsf.fl
+        ldx   #memory.tlsf.msize
+        jsr   memory.tlsf.fls          ; split memory size in power of two
+        stb   memory.tlsf.fl           ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
+        cmpb  #memory.tlsf.padbits+memory.tlsf.slbits
+        bhi   @computesl
+        ldb   #memory.tlsf.padbits+memory.tlsf.slbits+1 ; cap fl minimum value
 @computesl
-        ;addb  #memory.tlsf.sloffset-memory.tlsf.slbits
         negb
-        addb  #15-memory.tlsf.sloffset+memory.tlsf.slbits
+        addb  #16+memory.tlsf.slbits
         aslb
         ldx   #@rshift
         leax  b,x
         ldd   memory.tlsf.msize
         jmp   ,x
-@rshift lsra
-        rorb
+@rshift equ *-2                        ; saves 1 useless bytes (slbits should be >= 1)
         lsra
         rorb
         lsra
@@ -131,16 +130,16 @@ memory.tlsf.mappingsearch
         rorb
         lsra
         rorb
-       IFGE  255-memory.tlsf.sloffset ; when slbits=8, no need to strip (a is discarded)
-        lda   memory.tlsf.fl
-        cmpa  #memory.tlsf.sloffset+memory.tlsf.slbits ; if fl is too small (cap first level to 0)
-        blo   >                                        ; do not strip fl bit
-        subb  #memory.tlsf.slsize                      ; strip fl bit to keep only sl value
-       ENDC
-!       stb   memory.tlsf.sl
+        lda   memory.tlsf.fl           ; rescale fl
+        suba  #memory.tlsf.padbits+memory.tlsf.slbits
+        bpl   >
+        clra                           ; cap fl to 0
+!       sta   memory.tlsf.fl
+        andb  #memory.tlsf.slsize-1
+        stb   memory.tlsf.sl
         rts
 
-memory.tlsf.map.bitpos
+memory.tlsf.map.bitpos equ *-2         ; saves 2 useless bytes
         fdb   %0000000000000001
         fdb   %0000000000000010
         fdb   %0000000000000100
@@ -159,22 +158,50 @@ memory.tlsf.map.bitpos
         fdb   %1000000000000000
 
 ;-----------------------------------------------------------------
-; memory.tlsf.fls
-; input  VAR : [memory.tlsf.msize] memory size
-; input  REG : [B] fl index
+; memory.tlsf.findsuitableblock
+;
 ;-----------------------------------------------------------------
-; split memory size in power of two
-; (..., 32>m>=16 r=4, 16>m>=8 r=3, ...)
+; bitmap_tmp:= SL_bitmaps[ f l] and (FFFFFFFF#16# left shift sl);
+; if bitmap_tmp != 0 then
+; non_empty_sl:= ffs(bitmap_tmp);
+; non_empty_fl:= f l;
+; else
+; bitmap_tmp:= FL_bitmap and (FFFFFFFF#16# left shift ( f l+1));
+; non_empty_fl:= ffs(bitmap_tmp);
+; non_empty_sl:= ffs(SL_bitmaps[non_empty_fl]);
+; end if ;
+; return head_list(non_empty_fl, non empty_sl);
+;-----------------------------------------------------------------
+memory.tlsf.findsuitableblock
+        rts
+
+memory.tlsf.mappinginsert
+        rts
+
+memory.tlsf.mergeprev
+        rts
+
+memory.tlsf.mergenext
+        rts
+
+;-----------------------------------------------------------------
+; memory.tlsf.fls
+; input  REG : [X] ptr to a 16bit integer
+; output REG : [B] last set bit
+;-----------------------------------------------------------------
+; Find last set bit in a 16 bit integer
+; Bit position is from 1 to 16, 0 means no bit set
 ;-----------------------------------------------------------------
 memory.tlsf.fls
-        lda   memory.tlsf.msize
+        lda   ,x
         beq   @lsb
 @msb
-        ldb   #15
+        ldb   #16
         bra   >
 @lsb
-        lda   memory.tlsf.msize+1
-        ldb   #7
+        lda   1,x
+        beq   @zero
+        ldb   #8
 !
         bita  #$f0
         bne   >
@@ -192,15 +219,43 @@ memory.tlsf.fls
         bne   >
         decb
 !       rts
-
-memory.tlsf.findsuitableblock
+@zero   clrb
         rts
 
-memory.tlsf.mappinginsert
-        rts
-
-memory.tlsf.mergeprev
-        rts
-
-memory.tlsf.mergenext
+;-----------------------------------------------------------------
+; memory.tlsf.ffs
+; input  REG : [X] ptr to a 16bit integer
+; output REG : [B] first set bit
+;-----------------------------------------------------------------
+; Find first set bit in a 16 bit integer
+; Bit position is from 1 to 16, 0 means no bit set
+;-----------------------------------------------------------------
+memory.tlsf.ffs
+        lda   1,x
+        beq   @msb
+@lsb
+        clrb
+        bra   >
+@msb
+        lda   ,x
+        beq   @zero
+        ldb   #9
+!
+        bita  #$0f
+        bne   >
+        asra
+        asra
+        asra
+        asra
+        addb  #4
+!       bita  #$03
+        bne   >
+        asra
+        asra
+        addb  #2
+!       bita  #$01
+        bne   >
+        incb
+!       rts
+@zero   clrb
         rts
