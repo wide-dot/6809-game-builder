@@ -93,16 +93,44 @@ memory.tlsf.mappingsearch
         jsr   memory.tlsf.fls
         stb   memory.tlsf.fl
 @computesl
-        addb  #memory.tlsf.sloffset-memory.tlsf.slbits
-        stb   @rsb
-        decb
-        bmi   @skiplp
+        ;addb  #memory.tlsf.sloffset-memory.tlsf.slbits
+        negb
+        addb  #15-memory.tlsf.sloffset+memory.tlsf.slbits
+        aslb
+        ldx   #@rshift
+        leax  b,x
         ldd   memory.tlsf.msize
-@loop   lsra
+        jmp   ,x
+@rshift lsra
         rorb
-        dec   @rsb
-        bne   @loop
-@skiplp 
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
        IFGE  255-memory.tlsf.sloffset ; when slbits=8, no need to strip (a is discarded)
         lda   memory.tlsf.fl
         cmpa  #memory.tlsf.sloffset+memory.tlsf.slbits ; if fl is too small (cap first level to 0)
@@ -111,7 +139,6 @@ memory.tlsf.mappingsearch
        ENDC
 !       stb   memory.tlsf.sl
         rts
-@rsb    fcb   0
 
 memory.tlsf.map.bitpos
         fdb   %0000000000000001
