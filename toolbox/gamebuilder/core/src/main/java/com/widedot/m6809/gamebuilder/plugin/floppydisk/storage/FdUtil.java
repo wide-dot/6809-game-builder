@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FdUtil implements MediaDataInterface{
 	public Storage storage;
-    public boolean[] dataMask;
+    public boolean[] dataMask; // true : data set at this index
     private byte[] data;
     private byte[] interleavedData;
     private List<DirEntry> dirEntries;
@@ -26,7 +26,51 @@ public class FdUtil implements MediaDataInterface{
         dirEntries = new ArrayList<DirEntry>();
     }
     
-	public byte[] write(String location, byte[] data) throws Exception {
+    /**
+     * write data to a dedicated section - full sector write
+     */
+    public void write(String location, byte[] srcData) throws Exception {
+    	
+		// retrieve dest section
+		Section s = storage.sections.get(location);
+		if (s == null) {
+			String m = "Unknown Section: " + location;
+			log.error(m);
+			throw new Exception(m);
+		}
+		
+		int dstIdx = getIndex(s.face, s.track, s.sector);
+		
+		//write sectors
+		int srcIdx = 0;
+		while(srcIdx < srcData.length) {
+
+			if (dataMask[dstIdx]) {
+				String m = "Section already in use ! (" + s.getString() + ")";
+				log.error(m);
+				throw new Exception(m);
+			}
+			
+            data[dstIdx] = srcData[srcIdx++];
+            dataMask[dstIdx++] = true;
+			 
+			if (srcIdx%storage.segment.sectorSize == 0) nextSector(s);
+		}
+
+    }
+    
+    /**
+     * continuously write data to a section - partial sector write
+     */
+	public byte[] cwrite(String location, byte[] srcData) throws Exception {
+		
+		// check empty file
+		if (srcData.length == 0) {
+	        byte[] direntry = new byte[6];
+			direntry[2] = (byte) 0xff; // empty file flag 
+			direntry[3] = 0;	       // empty file flag
+			return direntry;
+		}
 		
 		// retrieve dest section
 		Section s = storage.sections.get(location);
@@ -47,8 +91,8 @@ public class FdUtil implements MediaDataInterface{
 		direntry[4] = 0;	                                                    // nb sectors
         direntry[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
         
-		while (pos < data.length) {
-			int[] v = writeSector(data, pos, s);
+		while (pos < srcData.length) {
+			int[] v = writeSector(srcData, pos, s);
 			
 			if (first) {
 				if (v[1] == storage.segment.sectorSize) {
@@ -100,9 +144,9 @@ public class FdUtil implements MediaDataInterface{
 		return dirEntries;
 	}
 
-    public int[] writeSector(byte[] srcData, int srcIdx, Section section) throws Exception {
+    public int[] writeSector(byte[] srcData, int srcIdx, Section s) throws Exception {
     	int[] ret = new int[3];
-        int start = getIndex(section.face, section.track, section.sector);
+        int start = getIndex(s.face, s.track, s.sector);
         int end = start + storage.segment.sectorSize;
         int nbBytes = 0;
         
@@ -115,6 +159,13 @@ public class FdUtil implements MediaDataInterface{
         // write to sector
         int i = freePos;
         while ((i < end) && (srcIdx < srcData.length)) {
+        	
+			if (dataMask[i]) {
+				String m = "Section already in use ! (" + s.getString() + ")";;
+				log.error(m);
+				throw new Exception(m);
+			}
+        	
             data[i] = srcData[srcIdx++];
             dataMask[i] = true;
             nbBytes++;

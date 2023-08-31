@@ -5,61 +5,58 @@
 ; ------------------------------------------------------------------------------
 ; A fully featured boot loader
 ;*******************************************************************************
- SETDP $FF
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/constants.asm"
-        INCLUDE "./engine/system/to8/map.const.asm"
-
-BYTE equ 1
-WORD equ 2
+ SETDP $ff
+        INCLUDE "new-engine/constant/types.const.asm"
+        INCLUDE "engine/macros.asm"
+        INCLUDE "engine/constants.asm"
+        INCLUDE "engine/system/to8/map.const.asm"
 
 * directory structure
 dirheader STRUCT
-tag     rmb BYTE*3 ; [I] [D] [X]
-diskid  rmb BYTE   ; [0000 0000] - [disk id 0-255]
-nsector rmb BYTE   ; [0000 0000] - [nb of sectors to load direntries]
+tag     rmb types.BYTE*3 ; [I] [D] [X]
+diskid  rmb types.BYTE   ; [0000 0000]              - [disk id 0-255]
+nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors to load direntries]
         ENDSTRUCT
 
 * direntry main structure
 direntry STRUCT
-bitfld   rmb BYTE   ; [0] [0] [00 0000] - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
-track    rmb BYTE   ; [0000 000] [0]    - [track 0-128] [face 0-1]
-sector   rmb BYTE   ; [0000 0000]       - [sector 0-255]
-sizea    rmb BYTE   ; [0000 0000]       - [bytes in first sector]
-offseta  rmb BYTE   ; [0000 0000]       - [start offset in first sector (0: no sector)]
-nsector  rmb BYTE   ; [0000 0000]       - [full sectors to read]
-sizez    rmb BYTE   ; [0000 0000]       - [bytes in last sector (0: no sector)]
-free     rmb BYTE   ; [0000 0000]       - [free]
+bitfld   rmb types.BYTE   ; [0] [0] [00 0000]       - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
+free     rmb types.BYTE   ; [0000 0000]             - [free]
+track    rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
+sector   rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
+sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector]
+offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
+nsector  rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
+sizez    rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
 * direntry compressor structure
-coffset  rmb WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
-cdataz   rmb BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
+coffset  rmb types.WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
+cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
 * direntry linker structure
-lblocks  rmb BYTE ; [0000 0000]    - [nb of allocation blocks needed]
-ltrack   rmb BYTE ; [0000 000] [0] - [track 0-128] [face 0-1]
-lsector  rmb BYTE ; [0000 0000]    - [sector 0-255]
-lsizea   rmb BYTE ; [0000 0000]    - [bytes in first sector]
-loffseta rmb BYTE ; [0000 0000]    - [start offset in first sector (0: no sector)]
-lnsector rmb BYTE ; [0000 0000]    - [full sectors to read]
-lsizez   rmb BYTE ; [0000 0000]    - [bytes in last sector (0: no sector)]
-lfree    rmb BYTE ; [0000 0000]    - [free]
+lsize    rmb types.BYTE   ; [0000 0000] [0000 0000] - [linker data size]
+ltrack   rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
+lsector  rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
+lsizea   rmb types.BYTE   ; [0000 0000]             - [bytes in first sector]
+loffseta rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
+lnsector rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
+lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
         ENDSTRUCT
 
 *---------------------------------------
 * Loader routines
 *---------------------------------------
         org   $6300
-        jmp   >loaddir        ; Load directory entries
-        jmp   >load           ; Load file
-        jmp   >decompress     ; Decompress file
-        jmp   >alloc          ; Debug mode for Dynamic Memory Allocation
-error   jmp   >dskerr  ; Error
-pulse   jmp   >return  ; Load pulse
+        jmp   >loaddir    ; Load directory entries
+        jmp   >load       ; Load file
+        jmp   >decompress ; Decompress file
+        jmp   >alloc      ; Debug mode for Dynamic Memory Allocation
+error   jmp   >dskerr     ; Error
+pulse   jmp   >return     ; Load pulse
 
-ptsec   equ   $6100    ; temporary space for partial sector loading
-diskid  fcb   $00      ; disk id
-nsect   fcb   $00      ; Sector counter
-track   fcb   $00      ; Track number
-sector  fcb   $00      ; Sector number
+ptsec   equ   $6100       ; temporary space for partial sector loading
+diskid  fcb   $00         ; disk id
+nsect   fcb   $00         ; Sector counter
+track   fcb   $00         ; Track number
+sector  fcb   $00         ; Sector number
 
 ;---------------------------------------
 ; Load directory entries
@@ -106,7 +103,7 @@ loaddir
         cmpa  >diskid
         bne   @info
 ; read remaining directory entries
-!       lda   dirheader.nsector,y ; init nb sectors to read       
+        lda   dirheader.nsector,y ; init nb sectors to read       
         sta   >nsect
         ldx   #messIO      ; Error message
         bra   @next
@@ -126,9 +123,11 @@ loaddir
 ;---------------------------------------
 ; Load file
 ;
-; X: [file number]
-; B: [destination - page number]
-; U: [destination - address]
+; input  REG : [X] file number
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+;
+; output REG : [A] $ff = empty file
 ;---------------------------------------
 load    pshs  dp,b,x,u
         lda   #$60
@@ -136,7 +135,11 @@ load    pshs  dp,b,x,u
         jsr   switchpage
 * Prepare loading
         jsr   getfileentry
-        ldb   direntry.bitfld,y  ; test if compressed data
+        ldd   direntry.sizea,y   ; check empty file flag
+        cmpd  #$ff00
+        bne   >
+        rts                      ; file is empty, exit
+!       ldb   direntry.bitfld,y  ; test if compressed data
         bpl   >                  ; skip if not compressed
         ldd   direntry.coffset,y ; get offset to write data
         leau  d,u
@@ -174,7 +177,8 @@ ld6     ldb   >nsect             ; Skip if
         lda   direntry.sizez,y   ; Copy
         bsr   tfrxua             ; data
 * Exit
-ld7     puls  dp,b,x,u,pc
+ld7     clra                     ; file is not empty
+        puls  dp,b,x,u,pc
 
 * Copy memory space
 tfrxua
@@ -322,7 +326,7 @@ decompress
 
  align  $6500
  INCLUDE "./engine/compression/zx0/zx0_6809_mega.asm"
- SETDP $FF
+ SETDP $ff
 
 
 ;---------------------------------------

@@ -37,11 +37,15 @@ public class Section {
 		this.sector = section.sector;
 	}
 	
+	public String getString() {
+		return "name: " + name + " face: " + face + " track: " + track + " sector: " + sector;
+	}
+	
 	private void setAttributes(ImmutableNode node, Defaults defaults) throws Exception {
 		name = Attribute.getString(node, defaults, "name", "floppydisk.section.name");
 		face = Attribute.getInteger(node, defaults, "face", "floppydisk.section.face");
 		track = Attribute.getInteger(node, defaults, "track", "floppydisk.section.track");
 		sector = Attribute.getInteger(node, defaults, "sector", "floppydisk.section.sector");
 	}
-	
+		
 }
