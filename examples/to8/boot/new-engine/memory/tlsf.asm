@@ -95,8 +95,10 @@ tlsf.mappingsearch
         bra   @computefl               ; skip round up
 !       subb  #tlsf.slbits             ; round up
         aslb
-        ldx   #tlsf.map.shiftoff-2     ; saves 2 useless bytes
+        ldx   #tlsf.map.shift-2        ; saves 2 useless bytes
         ldd   b,x
+        coma
+        comb
         addd  tlsf.rsize
 @computefl
         std   tlsf.msize
@@ -152,24 +154,6 @@ tlsf.mappingsearch
         stb   tlsf.sl
         rts
 
-tlsf.map.shiftoff
-        fdb   %0000000000000000
-        fdb   %0000000000000001
-        fdb   %0000000000000011
-        fdb   %0000000000000111
-        fdb   %0000000000001111
-        fdb   %0000000000011111
-        fdb   %0000000000111111
-        fdb   %0000000001111111
-        fdb   %0000000011111111
-        fdb   %0000000111111111
-        fdb   %0000001111111111
-        fdb   %0000011111111111
-        fdb   %0000111111111111
-        fdb   %0001111111111111
-        fdb   %0011111111111111
-        fdb   %0111111111111111
-
 ;-----------------------------------------------------------------
 ; tlsf.findsuitableblock
 ; input  VAR : [tlsf.fl] first level index
@@ -194,7 +178,7 @@ tlsf.findsuitableblock
         ldb   #(tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS
         mul
         leax  d,x                      ; set x to selected sl bitmap
-        ldy   #tlsf.map.shifton
+        ldy   #tlsf.map.shift
         ldb   tlsf.sl
         aslb
         leay  b,y                      ; set y to selected sl mask
@@ -213,7 +197,7 @@ tlsf.findsuitableblock
         bra   @headlist
 @searchatupperfl
         ; search for non empty list at upper fl
-        ldx   #tlsf.map.shifton
+        ldx   #tlsf.map.shift
         ldb   tlsf.fl
         incb                           ; select upper fl value
         aslb
@@ -242,7 +226,7 @@ tlsf.findsuitableblock
         ldx   d,x                      ; load head of free region list to X
         rts
 
-tlsf.map.shifton
+tlsf.map.shift
         fdb   %1111111111111111
         fdb   %1111111111111110
         fdb   %1111111111111100
