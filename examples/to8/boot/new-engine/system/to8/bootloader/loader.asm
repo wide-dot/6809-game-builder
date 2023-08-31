@@ -346,196 +346,196 @@ link
 alloc ; 6638
 
         ;ldd   #%0000000000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000001
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000010
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000011
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000100
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000101
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000110
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000000111
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001001
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001010
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001011
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001100
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001101
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001110
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000001111
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010001
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010010
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010011
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010100
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010101
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010110
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010111
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011001
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011010
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011011
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011100
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011101
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011110
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000011111
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000010000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000000100010
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000001001000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000010011000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000000101000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000001010100000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000010110000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0000101110000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0001100000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0011001000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0110100000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0110110000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0111000000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0111010000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0111100000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 ;
         ;ldd   #%0111110000000000
-        ;jsr   memory.tlsf.malloc
+        ;jsr   tlsf.malloc
 
         ldd   #%0000000000010001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000000000100011
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000000001001001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000000010011001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000000101000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000001010100001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000010110000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0000101110000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0001100000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0011001000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0110100000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0110110000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0111000000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0111010000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0111100000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         ldd   #%0111110000000001
-        jsr   memory.tlsf.malloc
+        jsr   tlsf.malloc
 
         rts
 

@@ -6,8 +6,8 @@
 ; A fully featured boot loader
 ;*******************************************************************************
 
-        INCLUDE "./engine/constants.asm"
-        INCLUDE "./engine/system/to8/map.const.asm"
+        INCLUDE "engine/constants.asm"
+        INCLUDE "engine/system/to8/map.const.asm"
 
 * Disk boot
         org    $6200
@@ -107,7 +107,7 @@ runloader
 
         ; load direntries
         ldd   #$0000 ; D: [diskid] [face]
-        ldx   #$0008 ; X: [track] [sector]
+        ldx   #$0009 ; X: [track] [sector]
         jsr   $6300  ; load direntries
 
         ; load files
