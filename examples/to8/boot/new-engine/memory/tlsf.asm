@@ -38,6 +38,40 @@ tlsf.sl.bitmaps  fill 0,(1+tlsf.flbits)*((tlsf.slsize+types.BYTE_BITS-1)/types.B
 tlsf.bitmap      fdb 0 ; working bitmap
 tlsf.headlist    fill 0,(1+tlsf.flbits)*tlsf.slsize*2 ; ptr to each free list by fl/sl
 
+* Block structure
+tlsf.block STRUCT
+size      rmb types.WORD ; [0] [000 0000 0000 0000] - [0:free/1:used] [free size - 1]
+prev.phys rmb types.WORD ; [0000 0000 0000 0000]    - [previous physical block in memory]
+prev.free rmb types.WORD ; [0000 0000 0000 0000]    - [previous block in free list] (only for free block)
+next.free rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list] (only for free block)
+        ENDSTRUCT
+
+;-----------------------------------------------------------------
+; tlsf.init
+; input  REG : [D] total memory size
+; input  REG : [X] memory location
+;-----------------------------------------------------------------
+; this version can not address more than 32 768 bytes
+; to handle 65 536 bytes, use one more byte in block structure
+;-----------------------------------------------------------------
+tlsf.init
+        ; cap total memory size
+        cmpd  #$8000
+        bls   >
+        ldd   #$8000
+
+!       ; set a single free block
+        subd  #1               ; size is stored as val-1
+        std   tlsf.block.size,x      ; implicitly set bit 7 to free
+        ldd   #0
+        std   tlsf.block.prev.phys,x ; no previous physical block (set to 0)
+        std   tlsf.block.prev.free,x ; no previous free block (set to 0)
+        std   tlsf.block.next.free,x ; no next free block (set to 0)
+
+        ; insert into fl/sl bitmap
+        ; todo
+        rts
+
 ;-----------------------------------------------------------------
 ; tlsf.malloc
 ; input  REG : [D] requested memory size
@@ -77,6 +111,9 @@ tlsf.free
 ; r  = r+(1<<(fls(r)-J))-1;
 ; fl = fls(r);
 ; sl = (r>>(fl-J))-2^J;
+; 
+; This function handle requested size up to $F800 (included)
+; otherwise it will have an unexpected behaviour, keep input check
 ;-----------------------------------------------------------------
 tlsf.mappingsearch
         cmpd  #$F800                   ; check input parameter upper limit
