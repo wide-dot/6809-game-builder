@@ -107,7 +107,7 @@ runloader
 
         ; load direntries
         ldd   #$0000 ; D: [diskid] [face]
-        ldx   #$0009 ; X: [track] [sector]
+        ldx   #$000A ; X: [track] [sector]
         jsr   $6300  ; load direntries
 
         ; load files

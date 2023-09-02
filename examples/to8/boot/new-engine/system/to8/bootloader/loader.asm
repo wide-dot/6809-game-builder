@@ -343,203 +343,28 @@ link
 ;
 ;
 ;---------------------------------------
-alloc ; 6638
+alloc
+        ; unit test
+        jsr   tlsf.ut.mappingsearch
 
-        ;ldd   #%0000000000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000001
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000010
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000011
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000100
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000101
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000110
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000000111
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001001
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001010
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001011
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001100
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001101
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001110
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000001111
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010001
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010010
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010011
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010100
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010101
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010110
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010111
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011001
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011010
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011011
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011100
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011101
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011110
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000011111
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000010000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000000100010
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000001001000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000010011000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000000101000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000001010100000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000010110000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0000101110000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0001100000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0011001000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0110100000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0110110000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0111000000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0111010000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0111100000000000
-        ;jsr   tlsf.malloc
-;
-        ;ldd   #%0111110000000000
-        ;jsr   tlsf.malloc
+        ; switch page
+        ldb   #15
+        ldu   #0
+        jsr   switchpage
 
-        ldd   #%0000000000010001
+        ; init allocator
+        ldd   #0
+        ldx   #0
+        jsr   tlsf.init
+
+        ; allocate some memory space
+        ldd   #63
         jsr   tlsf.malloc
 
-        ldd   #%0000000000100011
-        jsr   tlsf.malloc
-
-        ldd   #%0000000001001001
-        jsr   tlsf.malloc
-
-        ldd   #%0000000010011001
-        jsr   tlsf.malloc
-
-        ldd   #%0000000101000001
-        jsr   tlsf.malloc
-
-        ldd   #%0000001010100001
-        jsr   tlsf.malloc
-
-        ldd   #%0000010110000001
-        jsr   tlsf.malloc
-
-        ldd   #%0000101110000001
-        jsr   tlsf.malloc
-
-        ldd   #%0001100000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0011001000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0110100000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0110110000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0111000000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0111010000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0111100000000001
-        jsr   tlsf.malloc
-
-        ldd   #%0111110000000001
-        jsr   tlsf.malloc
-
-        rts
+        bra   *
 
         INCLUDE   "new-engine\memory\tlsf.asm"
+        INCLUDE   "new-engine\memory\tlsf.ut.asm"
 
 *---------------------------------------
 * Directory entries

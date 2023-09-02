@@ -27,16 +27,18 @@ tlsf.flbits   equ types.WORD_BITS-tlsf.padbits-tlsf.slbits ; significant bits fo
         ERROR "tlsf.slbits should be <= 4"
  ENDC
 
-tlsf.rsize       fdb 0 ; requested memory size
-tlsf.msize       fdb 0 ; memory size
-tlsf.fl          fcb 0 ; first level index
-tlsf.sl          fcb 0 ; second level index (should be adjacent to fl in memory)
-tlsf.fl.nonempty fcb 0 ; non empty first level index
-tlsf.sl.nonempty fcb 0 ; non empty second level index (should be adjacent to fl in memory)
-tlsf.fl.bitmap   fdb 0 ; each bit is a boolean, does a free list exists for an fl index ?
-tlsf.sl.bitmaps  fill 0,(1+tlsf.flbits)*((tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS) ; each bit is a boolean, does a free list exists for an sl index ?
-tlsf.bitmap      fdb 0 ; working bitmap
-tlsf.headlist    fill 0,(1+tlsf.flbits)*tlsf.slsize*2 ; ptr to each free list by fl/sl
+tlsf.rsize           fdb   0 ; requested memory size
+tlsf.msize           fdb   0 ; memory size
+tlsf.fl              fcb   0 ; first level index
+tlsf.sl              fcb   0 ; second level index (should be adjacent to fl in memory)
+tlsf.fl.nonempty     fcb   0 ; non empty first level index
+tlsf.sl.nonempty     fcb   0 ; non empty second level index (should be adjacent to fl in memory)
+tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for an fl index ?
+tlsf.sl.bitmaps      fill  0,(1+tlsf.flbits)*((tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS) ; each bit is a boolean, does a free list exists for an sl index ?
+tlsf.bitmap          fdb   0 ; working bitmap
+tlsf.headlist        fill  0,(1+tlsf.flbits)*tlsf.slsize*2 ; ptr to each free list by fl/sl
+tlsf.memorypool      fdb   0 ; memory pool location     
+tlsf.memorypool.size fdb   0 ; memory pool size
 
 * Block structure
 tlsf.block STRUCT
@@ -48,20 +50,23 @@ next.free rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list] 
 
 ;-----------------------------------------------------------------
 ; tlsf.init
-; input  REG : [D] total memory size
-; input  REG : [X] memory location
+; input  REG : [D] total memory pool size
+; input  REG : [X] memory pool location
 ;-----------------------------------------------------------------
 ; this version can not address more than 32 768 bytes
-; to handle 65 536 bytes, use one more byte in block structure
+; to handle up to 65 536 bytes, use one more byte in block struct
 ;-----------------------------------------------------------------
 tlsf.init
-        ; cap total memory size
+        ; cap min and max memory size
+        ; TODO check for minimum, must cap or throw an error ?
         cmpd  #$8000
         bls   >
         ldd   #$8000
 
 !       ; set a single free block
-        subd  #1               ; size is stored as val-1
+        stx   tlsf.memorypool
+        std   tlsf.memorypool.size
+        subd  #1                     ; size is stored as val-1
         std   tlsf.block.size,x      ; implicitly set bit 7 to free
         ldd   #0
         std   tlsf.block.prev.phys,x ; no previous physical block (set to 0)
@@ -69,7 +74,9 @@ tlsf.init
         std   tlsf.block.next.free,x ; no next free block (set to 0)
 
         ; insert into fl/sl bitmap
-        ; todo
+        ldd   tlsf.memorypool.size
+        jsr   tlsf.mappingsearch
+        ldd   tlsf.fl                ; and tlsf.sl
         rts
 
 ;-----------------------------------------------------------------
@@ -89,7 +96,6 @@ tlsf.init
 ; return free_block;
 ;-----------------------------------------------------------------
 tlsf.malloc
-        std   tlsf.rsize
         jsr   tlsf.mappingsearch
         jsr   tlsf.findsuitableblock
         beq   @rts                          ; branch if no more space available
@@ -107,6 +113,7 @@ tlsf.free
 ; input  REG : [D] requested memory size
 ; output VAR : [tlsf.fl] first level index
 ; output VAR : [tlsf.sl] second level index
+; trash      : [D,X]
 ;-----------------------------------------------------------------
 ; r  = r+(1<<(fls(r)-J))-1;
 ; fl = fls(r);
@@ -116,6 +123,7 @@ tlsf.free
 ; otherwise it will have an unexpected behaviour, keep input check
 ;-----------------------------------------------------------------
 tlsf.mappingsearch
+        std   tlsf.rsize
         cmpd  #$F800                   ; check input parameter upper limit
         bls   >
         ldd   #0                       ; error return 0 as fl/sl
