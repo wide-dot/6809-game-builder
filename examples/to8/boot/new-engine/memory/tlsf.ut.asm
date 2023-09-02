@@ -5,6 +5,7 @@
 ;-----------------------------------------------------------------
 
 tlsf.ut.mappingsearch
+        ; for default settings only
         ldx   #tlsf.ut.mappingsearch.in
         ldy   #tlsf.ut.mappingsearch.out
 !       ldd   ,x++
@@ -89,69 +90,69 @@ tlsf.ut.mappingsearch.in
 tlsf.ut.mappingsearch.in.end
 
 tlsf.ut.mappingsearch.out
-        fcb   0,0               ; fl,sl
-        fcb   0,1
-        fcb   0,2
-        fcb   0,3
-        fcb   0,4
-        fcb   0,5
-        fcb   0,6
-        fcb   0,7
-        fcb   0,8
-        fcb   0,9
-        fcb   0,10
-        fcb   0,11
-        fcb   0,12
-        fcb   0,13
-        fcb   0,14
-        fcb   0,15
-        fcb   1,0
-        fcb   1,1
-        fcb   1,2
-        fcb   1,3
-        fcb   1,4
-        fcb   1,5
-        fcb   1,6
-        fcb   1,7
-        fcb   1,8
-        fcb   1,9
-        fcb   1,10
-        fcb   1,11
-        fcb   1,12
-        fcb   1,13
-        fcb   1,14
-        fcb   1,15
-
-        fcb   1,0
-        fcb   2,1
+        fcb   3,0               ; fl,sl
+        fcb   3,1
         fcb   3,2
-        fcb   4,3
-        fcb   5,4
-        fcb   6,5
-        fcb   7,6
-        fcb   8,7
-        fcb   9,8
-        fcb   10,9
-        fcb   11,10
-        fcb   11,11
-        fcb   11,12
-        fcb   11,13
-        fcb   11,14
-        fcb   11,15
-
-        fcb   1,1
-        fcb   2,2
         fcb   3,3
+        fcb   3,4
+        fcb   3,5
+        fcb   3,6
+        fcb   3,7
+        fcb   3,8
+        fcb   3,9
+        fcb   3,10
+        fcb   3,11
+        fcb   3,12
+        fcb   3,13
+        fcb   3,14
+        fcb   3,15
+        fcb   4,0
+        fcb   4,1
+        fcb   4,2
+        fcb   4,3
         fcb   4,4
-        fcb   5,5
-        fcb   6,6
-        fcb   7,7
-        fcb   8,8
-        fcb   9,9
-        fcb   10,10
-        fcb   11,11
-        fcb   11,12
-        fcb   11,13
-        fcb   11,14
-        fcb   11,15
-        fcb   12,0
+        fcb   4,5
+        fcb   4,6
+        fcb   4,7
+        fcb   4,8
+        fcb   4,9
+        fcb   4,10
+        fcb   4,11
+        fcb   4,12
+        fcb   4,13
+        fcb   4,14
+        fcb   4,15
+
+        fcb   4,0
+        fcb   5,1
+        fcb   6,2
+        fcb   7,3
+        fcb   8,4
+        fcb   9,5
+        fcb   10,6
+        fcb   11,7
+        fcb   12,8
+        fcb   13,9
+        fcb   14,10
+        fcb   14,11
+        fcb   14,12
+        fcb   14,13
+        fcb   14,14
+        fcb   14,15
+
+        fcb   4,1
+        fcb   5,2
+        fcb   6,3
+        fcb   7,4
+        fcb   8,5
+        fcb   9,6
+        fcb   10,7
+        fcb   11,8
+        fcb   12,9
+        fcb   13,10
+        fcb   14,11
+        fcb   14,12
+        fcb   14,13
+        fcb   14,14
+        fcb   14,15
+        fcb   15,0
