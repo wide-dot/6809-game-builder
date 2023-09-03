@@ -74,7 +74,7 @@ tlsf.init
         stx   tlsf.memorypool
         std   tlsf.memorypool.size
         ; cap min and max memory size
-        ; TODO check for minimum, must cap or throw an error ?
+        ; TODO check for minimum
         cmpd  #$8000
         bls   >
         ldd   #$8000
@@ -311,6 +311,7 @@ tlsf.findsuitableblock
         ldx   #0                       ; no suitable list found
         rts
 !       jsr   tlsf.ffs                 ; search first non empty fl index
+        decb
         stb   tlsf.fl.nonempty
         lda   #tlsf.sl.bitmap.size
         mul

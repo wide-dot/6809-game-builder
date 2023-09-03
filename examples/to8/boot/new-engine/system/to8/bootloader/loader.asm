@@ -354,7 +354,7 @@ alloc
 
         ; init allocator
         ldd   #$8000
-        ldx   #$AAAA
+        ldx   #$0000
         jsr   tlsf.init
 
         ; allocate some memory space

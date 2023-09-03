@@ -5,6 +5,14 @@
 ;-----------------------------------------------------------------
 
 tlsf.ut
+        ldb   #15                ; page number
+        lda   #$10
+        ora   <$6081             ; Set RAM
+        sta   <$6081             ; over data
+        sta   >$e7e7             ; space
+        orb   #$60               ; Set RAM over cartridge space
+        stb   >map.CF74021.CART  ; Switch ram page
+
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingsearch
         rts
@@ -12,7 +20,7 @@ tlsf.ut
 tlsf.ut.init
         ; for default settings only
         ldd   #$0001
-        ldx   #$AAAA
+        ldx   #$1111
         jsr   tlsf.init
         ldd   tlsf.index
         cmpd  #$0008
@@ -21,11 +29,11 @@ tlsf.ut.init
         cmpd  #$0002
         bne   *
         ldd   tlsf.index+28
-        cmpd  #$AAAA
+        cmpd  #$1111
         bne   *
 
         ldd   #$8000
-        ldx   #$BBBB
+        ldx   #$2222
         jsr   tlsf.init
         ldd   tlsf.index
         cmpd  #$8000
@@ -34,7 +42,7 @@ tlsf.ut.init
         cmpd  #$0001
         bne   *
         ldd   tlsf.index+410
-        cmpd  #$BBBB
+        cmpd  #$2222
         bne   *
 
         rts
