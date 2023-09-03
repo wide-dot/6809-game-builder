@@ -353,8 +353,8 @@ alloc
         jsr   switchpage
 
         ; init allocator
-        ldd   #0
-        ldx   #0
+        ldd   #$8000
+        ldx   #$AAAA
         jsr   tlsf.init
 
         ; allocate some memory space

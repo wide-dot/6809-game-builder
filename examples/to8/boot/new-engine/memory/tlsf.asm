@@ -36,12 +36,12 @@ tlsf.memorypool      fdb   0 ; memory pool location
 tlsf.memorypool.size fdb   0 ; memory pool size
 
 tlsf.index
-tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for an fl index ?
+tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for a fl index ?
 tlsf.sl.bitmap.size  equ   (tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS
-tlsf.sl.bitmaps      equ   *-2 ; fl=0, sl=0 is useless. Last fl index hold only one sl level (0)
-                     fill  0,tlsf.flbits*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for an sl index ?
-tlsf.headmatrix      equ   *-2 ; fl=0, sl=0 is useless. Last fl index hold only one sl level (0)
-                     fill  0,tlsf.flbits*tlsf.slsize*2 ; head ptr to each free list by fl/sl, last fl index only hold one sl value
+tlsf.sl.bitmaps      equ   *-(types.WORD_BITS-(tlsf.flbits+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
+                     fill  0,(tlsf.flbits+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
+tlsf.headmatrix      equ   *-2-(types.WORD_BITS-(tlsf.flbits+1))*tlsf.slsize*2 ; -2 because fl=0, sl=0 is useless
+                     fill  0,tlsf.flbits*tlsf.slsize*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
  IFNE (*-tlsf.index)/2-(*-tlsf.index+1)/2
                      fcb   0 ; index size should be even (see tlsf.init)
  ENDC
@@ -89,6 +89,7 @@ tlsf.init
         bne   <
 
         ; set a single free block
+        ldx   tlsf.memorypool
         ldd   tlsf.memorypool.size
         subd  #1                     ; size is stored as val-1
         std   tlsf.block.size,x      ; implicitly set bit 7 to free
@@ -100,15 +101,20 @@ tlsf.init
         ; insert into fl/sl head list matrix
         ldd   tlsf.memorypool.size
         jsr   tlsf.mappingsearch
-        ldd   tlsf.fl                ; and tlsf.sl
+        lda   tlsf.fl
+        ldb   #tlsf.slsize*2
         mul
-        ldx   tlsf.memorypool
         ldu   #tlsf.headmatrix
-        stx   d,u                    ; store head of free region list
+        leau  d,u
+        ldb   tlsf.sl
+        aslb                         ; headmatrix store WORD
+        ldx   tlsf.memorypool
+        stx   b,u                    ; store head of free region list
 
         ; insert into fl/sl bitmap
         ldx   #tlsf.map.shift
         ldb   tlsf.fl
+        aslb
         ldd   b,x
         coma
         comb
@@ -119,12 +125,12 @@ tlsf.init
 
         ; insert into fl/sl bitmap
         lda   tlsf.fl
-        asla
         ldb   #tlsf.sl.bitmap.size
         mul
-        ldy   #tlsf.sl.bitmaps-(tlsf.padbits+tlsf.slbits-1)*tlsf.sl.bitmap.size ; implicit rescale of fl value
+        ldy   #tlsf.sl.bitmaps
         leay  d,y
         ldb   tlsf.sl
+        aslb
         ldd   b,x                      ; x is already #tlsf.map.shift
         coma
         comb
@@ -272,7 +278,7 @@ tlsf.findsuitableblock
         lda   tlsf.fl
         ldb   #tlsf.sl.bitmap.size
         mul
-        ldx   #tlsf.sl.bitmaps-(tlsf.padbits+tlsf.slbits-1)*tlsf.sl.bitmap.size ; implicit rescale of fl value
+        ldx   #tlsf.sl.bitmaps
         leax  d,x                      ; set x to selected sl bitmap
         ldy   #tlsf.map.shift
         ldb   tlsf.sl
@@ -308,7 +314,7 @@ tlsf.findsuitableblock
         stb   tlsf.fl.nonempty
         lda   #tlsf.sl.bitmap.size
         mul
-        ldx   #tlsf.sl.bitmaps-(tlsf.padbits+tlsf.slbits-1)*tlsf.sl.bitmap.size ; implicit rescale of fl value
+        ldx   #tlsf.sl.bitmaps
         ldd   d,x                      ; load suitable sl bitmap value
         std   tlsf.ffs.in              ; no need to test zero value here, no applied mask
         jsr   tlsf.ffs                 ; search first non empty sl index
@@ -316,8 +322,12 @@ tlsf.findsuitableblock
         lda   tlsf.fl.nonempty
 @headlist
         ldx   #tlsf.headmatrix
-        mul                            ; A and B are already loaded with suitable fl and sl
-        ldx   d,x                      ; load head of free region list to X
+        ldb   #tlsf.slsize*2
+        mul
+        leax  d,x
+        ldb   tlsf.sl
+        aslb                           ; headmatrix store WORD
+        ldx   b,x                      ; load head of free region list to X
         rts
 
 tlsf.map.shift
