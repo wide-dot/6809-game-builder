@@ -38,8 +38,10 @@ tlsf.memorypool.size fdb   0 ; memory pool size
 tlsf.index
 tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for an fl index ?
 tlsf.sl.bitmap.size  equ   (tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS
-tlsf.sl.bitmaps      fill  0,(1+tlsf.flbits)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for an sl index ?
-tlsf.headmatrix      fill  0,(1+tlsf.flbits*tlsf.slsize)*2 ; head ptr to each free list by fl/sl, last fl index only hold one sl value
+tlsf.sl.bitmaps      equ   *-2 ; fl=0, sl=0 is useless. Last fl index hold only one sl level (0)
+                     fill  0,tlsf.flbits*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for an sl index ?
+tlsf.headmatrix      equ   *-2 ; fl=0, sl=0 is useless. Last fl index hold only one sl level (0)
+                     fill  0,tlsf.flbits*tlsf.slsize*2 ; head ptr to each free list by fl/sl, last fl index only hold one sl value
  IFNE (*-tlsf.index)/2-(*-tlsf.index+1)/2
                      fcb   0 ; index size should be even (see tlsf.init)
  ENDC
@@ -177,44 +179,45 @@ tlsf.free
 ;-----------------------------------------------------------------
 tlsf.mappingsearch
         std   tlsf.rsize
-        cmpd  #$F800                    ; check input parameter upper limit
+        cmpd  #$F800                      ; check input parameter upper limit
         bls   >
-        ldd   #0                        ; error return 0 as fl/sl
-@zero   std   tlsf.fl                   ; and tlsf.sl
+        ldd   #0                          ; error return 0 as fl/sl
+@zero   std   tlsf.fl                     ; and tlsf.sl
         rts
         ; round up requested size to next list
 !       std   tlsf.fls.in
-        beq   @zero                     ; check input parameter lower limit 
-        jsr   tlsf.fls                  ; split memory size in power of two
-        cmpb  #tlsf.padbits+tlsf.slbits
-        bhi   >                         ; branch to round up if fl is not at minimum value
+        beq   @zero                       ; check input parameter lower limit 
+        jsr   tlsf.fls                    ; split memory size in power of two
+        cmpb  #tlsf.padbits+tlsf.slbits+1 ; (fls return bitpos range 1-16, so +1 here)
+        bhi   >                           ; branch to round up if fl is not at minimum value
         ldd   tlsf.rsize
-        bra   @computefl                ; skip round up
-!       subb  #tlsf.slbits              ; round up
+        bra   @computefl                  ; skip round up
+!       subb  #tlsf.slbits+1              ; round up (fls return bitpos range 1-16, so +1 here)
         aslb
-        ldx   #tlsf.map.shift-2         ; saves 2 useless bytes
+        ldx   #tlsf.map.shift
         ldd   b,x
         coma
         comb
         addd  tlsf.rsize
 @computefl
         std   tlsf.fls.in
-        jsr   tlsf.fls                  ; split memory size in power of two
-        stb   tlsf.fl                   ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
-        cmpb  #tlsf.padbits+tlsf.slbits
-        bhi   @computesl
-        ldb   #tlsf.padbits+tlsf.slbits ; cap fl minimum value
+        jsr   tlsf.fls                    ; split memory size in power of two
+        decb                              ; (fls return bitpos range 1-16, so -1 here)
+        stb   tlsf.fl                     ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
+        cmpb  #tlsf.padbits+tlsf.slbits-1 ; test if there is a fl bit
+        bhi   @computesl                  ; if so branch
+        ldb   #tlsf.padbits+tlsf.slbits-1 ; no fl bit, cap to fl minimum value
         stb   tlsf.fl
         incb
 @computesl
-        negb                            ; rescale sl based on fl
+        negb
         addb  #types.WORD_BITS+tlsf.slbits
-        aslb
-        ldx   #@rshift
-        abx
-        ldd   tlsf.fls.in               ; apply rounded requested size here
+        aslb                              ; 2 bytes of instructions for each element of @rshift table
+        ldx   #@rshift-4                  ; saves 4 useless bytes (max 14 shift with slbits=1)
+        abx                               ; cannot use indexed jump, so move x
+        ldd   tlsf.fls.in                 ; get rounded requested size to rescale sl based on fl
         jmp   ,x
-@rshift equ *-2                         ; saves 2 useless bytes (slbits always >= 1)
+@rshift
         lsra
         rorb
         lsra
@@ -243,7 +246,7 @@ tlsf.mappingsearch
         rorb
         lsra
         rorb
-!       andb  #tlsf.slsize-1
+!       andb  #tlsf.slsize-1              ; keep only sl bits
         stb   tlsf.sl
         rts
 

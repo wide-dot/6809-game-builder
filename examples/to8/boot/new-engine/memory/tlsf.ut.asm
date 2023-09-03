@@ -90,7 +90,7 @@ tlsf.ut.mappingsearch.in
 tlsf.ut.mappingsearch.in.end
 
 tlsf.ut.mappingsearch.out
-        fcb   3,0               ; fl,sl
+        fcb   0,0               ; fl,sl
         fcb   3,1
         fcb   3,2
         fcb   3,3
@@ -141,7 +141,7 @@ tlsf.ut.mappingsearch.out
         fcb   14,15
 
         fcb   4,1
-        fcb   5,2
+        fcb   5,2 ; pb d'arrondi
         fcb   6,3
         fcb   7,4
         fcb   8,5
