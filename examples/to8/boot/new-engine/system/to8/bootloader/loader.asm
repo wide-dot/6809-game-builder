@@ -345,7 +345,7 @@ link
 ;---------------------------------------
 alloc
         ; unit test
-        jsr   tlsf.ut.mappingsearch
+        jsr   tlsf.ut
 
         ; switch page
         ldb   #15

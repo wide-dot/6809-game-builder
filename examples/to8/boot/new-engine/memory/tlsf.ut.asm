@@ -4,6 +4,41 @@
 ; Benoit Rousseau - 02/09/2023
 ;-----------------------------------------------------------------
 
+tlsf.ut
+        jsr   tlsf.ut.init
+        jsr   tlsf.ut.mappingsearch
+        rts
+
+tlsf.ut.init
+        ; for default settings only
+        ldd   #$0001
+        ldx   #$AAAA
+        jsr   tlsf.init
+        ldd   tlsf.index
+        cmpd  #$0008
+        bne   *
+        ldd   tlsf.index+2
+        cmpd  #$0002
+        bne   *
+        ldd   tlsf.index+28
+        cmpd  #$AAAA
+        bne   *
+
+        ldd   #$8000
+        ldx   #$BBBB
+        jsr   tlsf.init
+        ldd   tlsf.index
+        cmpd  #$8000
+        bne   *
+        ldd   tlsf.index+26
+        cmpd  #$0001
+        bne   *
+        ldd   tlsf.index+410
+        cmpd  #$BBBB
+        bne   *
+
+        rts
+
 tlsf.ut.mappingsearch
         ; for default settings only
         ldx   #tlsf.ut.mappingsearch.in
