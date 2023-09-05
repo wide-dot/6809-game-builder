@@ -14,7 +14,7 @@ tlsf.ut
         stb   >map.CF74021.CART  ; Switch ram page
 
         jsr   tlsf.ut.init
-        jsr   tlsf.ut.mappingsearch
+        jsr   tlsf.ut.mappingSearch
         rts
 
 tlsf.ut.init
@@ -47,23 +47,23 @@ tlsf.ut.init
 
         rts
 
-tlsf.ut.mappingsearch
+tlsf.ut.mappingSearch
         ; for default settings only
-        ldx   #tlsf.ut.mappingsearch.in
-        ldy   #tlsf.ut.mappingsearch.out
+        ldx   #tlsf.ut.mappingSearch.in
+        ldy   #tlsf.ut.mappingSearch.out
 !       ldd   ,x++
         pshs  x,y
-        jsr   tlsf.mappingsearch
+        jsr   tlsf.mappingSearch
         puls  x,y
         lda   tlsf.fl
         ldb   tlsf.sl
         cmpd  ,y++
         bne   *
-        cmpx  #tlsf.ut.mappingsearch.in.end
+        cmpx  #tlsf.ut.mappingSearch.in.end
         bne   <
         rts
 
-tlsf.ut.mappingsearch.in
+tlsf.ut.mappingSearch.in
         fdb   %0000000000000000 ;      0
         fdb   %0000000000000001 ;      1
         fdb   %0000000000000010 ;      2
@@ -130,9 +130,9 @@ tlsf.ut.mappingsearch.in
         fdb   %0111010000000001 ; 29 697
         fdb   %0111100000000001 ; 30 721
         fdb   %0111110000000001 ; 31 745
-tlsf.ut.mappingsearch.in.end
+tlsf.ut.mappingSearch.in.end
 
-tlsf.ut.mappingsearch.out
+tlsf.ut.mappingSearch.out
         fcb   0,0               ; fl,sl
         fcb   3,1
         fcb   3,2

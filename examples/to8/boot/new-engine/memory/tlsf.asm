@@ -14,34 +14,47 @@
 
  INCLUDE "new-engine/constant/types.const.asm"
 
-tlsf.block STRUCT
+; tlsf structures
+; ---------------
+tlsf.freePtr STRUCT ; this structure is used only when block is free
+prev rmb types.WORD ; [0000 0000 0000 0000]    - [previous block in free list]
+next rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list]
+ ENDSTRUCT
+
+tlsf.blockHdr STRUCT ; this structure is common to all blocks (free or used)
 size      rmb types.WORD ; [0] [000 0000 0000 0000] - [0:free/1:used] [free size - 1]
 prev.phys rmb types.WORD ; [0000 0000 0000 0000]    - [previous physical block in memory]
-prev.free rmb types.WORD ; [0000 0000 0000 0000]    - [previous block in free list] (only for free block)
-next.free rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list] (only for free block)
-        ENDSTRUCT
+freePtr   rmb sizeof{tlsf.freePtr}
+ ENDSTRUCT
 
-tlsf.padbits  equ 0  ; non significant rightmost bits
-tlsf.slbits   equ 4  ; significant bits for second level index
-tlsf.slsize   equ 16 ; 2^tlsf.slbits
-tlsf.flbits   equ types.WORD_BITS-tlsf.padbits-tlsf.slbits ; significant bits for first level index
+; tlsf configuration
+; -----------------------
+tlsf.PAD_BITS        equ   0  ; non significant rightmost bits
+tlsf.SL_BITS         equ   4  ; significant bits for second level index
+tlsf.SL_SIZE         equ   16 ; 2^tlsf.SL_BITS
 
+; tlsf constants
+; -----------------------
+tlsf.FL_BITS         equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
+tlsf.MIN_BLOCK_SIZE  equ   sizeof{tlsf.freePtr} ; a memory block in use should be able to return to free state, so a min block size is mandatory
+tlsf.BHDR_OVERHEAD   equ   sizeof{tlsf.blockHdr}-tlsf.MIN_BLOCK_SIZE ; overhead when a block is in use
+tlsf.mask.BLOCK_SIZE equ   %01111111
+tlsf.mask.FREE_BLOCK equ   %10000000
+
+; tlsf internal variables
+; -----------------------
 tlsf.rsize           fdb   0 ; requested memory size
 tlsf.fl              fcb   0 ; first level index
 tlsf.sl              fcb   0 ; second level index (should be adjacent to fl in memory)
-tlsf.fl.nonempty     fcb   0 ; non empty first level index
-tlsf.sl.nonempty     fcb   0 ; non empty second level index (should be adjacent to fl in memory)
-
-tlsf.memorypool      fdb   0 ; memory pool location     
-tlsf.memorypool.size fdb   0 ; memory pool size
-
+tlsf.memoryPool      fdb   0 ; memory pool location     
+tlsf.memoryPool.size fdb   0 ; memory pool size
 tlsf.index
 tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for a fl index ?
-tlsf.sl.bitmap.size  equ   (tlsf.slsize+types.BYTE_BITS-1)/types.BYTE_BITS
-tlsf.sl.bitmaps      equ   *-(types.WORD_BITS-(tlsf.flbits+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
-                     fill  0,(tlsf.flbits+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
-tlsf.headmatrix      equ   *-2-(types.WORD_BITS-(tlsf.flbits+1))*tlsf.slsize*2 ; -2 because fl=0, sl=0 is useless
-                     fill  0,tlsf.flbits*tlsf.slsize*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
+tlsf.sl.bitmap.size  equ   (tlsf.SL_SIZE+types.BYTE_BITS-1)/types.BYTE_BITS
+tlsf.sl.bitmaps      equ   *-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
+                     fill  0,(tlsf.FL_BITS+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
+tlsf.headMatrix      equ   *-2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; -2 because fl=0, sl=0 is useless
+                     fill  0,tlsf.FL_BITS*tlsf.SL_SIZE*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
  IFNE (*-tlsf.index)/2-(*-tlsf.index+1)/2
                      fcb   0 ; index size should be even (see tlsf.init)
  ENDC
@@ -50,16 +63,16 @@ tlsf.index.end
 ;-----------------------------------------------------------------
 ; configuration check
 ;-----------------------------------------------------------------
- IFLT 8-tlsf.padbits-tlsf.slbits
-        ERROR "Sum of tlsf.padbits and tlsf.slbits should not exceed 8"
+ IFLT 8-(tlsf.PAD_BITS+tlsf.SL_BITS)
+        ERROR "Sum of tlsf.PAD_BITS and tlsf.SL_BITS should not exceed 8"
  ENDC
 
- IFLT tlsf.slbits-1
-        ERROR "tlsf.slbits should be >= 1"
+ IFLT tlsf.SL_BITS-1
+        ERROR "tlsf.SL_BITS should be >= 1"
  ENDC
 
- IFGT tlsf.slbits-4
-        ERROR "tlsf.slbits should be <= 4"
+ IFGT tlsf.SL_BITS-4
+        ERROR "tlsf.SL_BITS should be <= 4"
  ENDC
 
 ;-----------------------------------------------------------------
@@ -71,17 +84,15 @@ tlsf.index.end
 ; to handle up to 65 536 bytes, use one more byte in block struct
 ;-----------------------------------------------------------------
 tlsf.init
-        stx   tlsf.memorypool
-        std   tlsf.memorypool.size
+        stx   tlsf.memoryPool
+        std   tlsf.memoryPool.size
         ; cap min and max memory size
         ; TODO check for minimum
         cmpd  #$8000
         bls   >
         ldd   #$8000
 
-!       
-        ; Zeroing the tlsf index
-        ; TODO check if zeroing the matrix is useless
+!       ; Zeroing the tlsf index
         ldx   #tlsf.index
         ldd   #0
 !       std   ,x++
@@ -89,61 +100,24 @@ tlsf.init
         bne   <
 
         ; set a single free block
-        ldx   tlsf.memorypool
-        ldd   tlsf.memorypool.size
-        subd  #1                     ; size is stored as val-1
-        std   tlsf.block.size,x      ; implicitly set bit 7 to free
+        ldx   tlsf.memoryPool
+        ldd   tlsf.memoryPool.size
+        subd  #1                        ; size is stored as val-1
+        ora   #tlsf.mask.FREE_BLOCK     ; set free block bit
+        std   tlsf.blockHdr.size,x
         ldd   #0
-        std   tlsf.block.prev.phys,x ; no previous physical block (set to 0)
-        std   tlsf.block.prev.free,x ; no previous free block (set to 0)
-        std   tlsf.block.next.free,x ; no next free block (set to 0)
+        std   tlsf.blockHdr.prev.phys,x ; no previous physical block (set to 0)
 
-        ; insert into fl/sl head list matrix
-        ldd   tlsf.memorypool.size
-        jsr   tlsf.mappingsearch
-        lda   tlsf.fl
-        ldb   #tlsf.slsize*2
-        mul
-        ldu   #tlsf.headmatrix
-        leau  d,u
-        ldb   tlsf.sl
-        aslb                         ; headmatrix store WORD
-        ldx   tlsf.memorypool
-        stx   b,u                    ; store head of free region list
-
-        ; insert into fl/sl bitmap
-        ldx   #tlsf.map.shift
-        ldb   tlsf.fl
-        aslb
-        ldd   b,x
-        coma
-        comb
-        addd  #1
-        ora   tlsf.fl.bitmap
-        orb   tlsf.fl.bitmap+1
-        std   tlsf.fl.bitmap
-
-        ; insert into fl/sl bitmap
-        lda   tlsf.fl
-        ldb   #tlsf.sl.bitmap.size
-        mul
-        ldy   #tlsf.sl.bitmaps
-        leay  d,y
-        ldb   tlsf.sl
-        aslb
-        ldd   b,x                      ; x is already #tlsf.map.shift
-        coma
-        comb
-        addd  #1
-        ora   ,y
-        orb   1,y
-        std   ,y
+        ldd   tlsf.memoryPool.size
+        jsr   tlsf.mapping
+        ldx   tlsf.memoryPool
+        jsr   tlsf.insertBlock
         rts
 
 ;-----------------------------------------------------------------
 ; tlsf.malloc
 ; input  REG : [D] requested memory size
-; output REG : [X] allocated memory location or 0 if no more space
+; output REG : [U] allocated memory address or 0 if no more space
 ;-----------------------------------------------------------------
 ; mapping_search(r, fl, sl);
 ; free_block:= find_suitable_block(r, fl, sl);
@@ -157,10 +131,49 @@ tlsf.init
 ; return free_block;
 ;-----------------------------------------------------------------
 tlsf.malloc
-        jsr   tlsf.mappingsearch
-        jsr   tlsf.findsuitableblock
-        beq   @rts                          ; branch if no more space available
-@rts    rts
+        cmpd  #tlsf.MIN_BLOCK_SIZE     ; Apply minimum size to requested memory size
+        bhs   >
+        ldd   #tlsf.MIN_BLOCK_SIZE
+!       jsr   tlsf.mappingSearch       ; Set tlsf.rsize, fl and sl
+        beq   @error                   ; Branch if an error occured
+        jsr   tlsf.findSuitableBlock   ; Searching a free block, recall that this function changes the values of fl and sl
+        beq   @error                   ; Branch if no more space available
+        jsr   tlsf.removeHeadBlock     ; Remove the allocated block from the free matrix
+        ; Should the block be split?
+        ldd   tlsf.blockHdr.size,u     ; Size of available memory -1
+        anda  #tlsf.mask.BLOCK_SIZE
+        addd  #1                       ; Size is stored as size-1
+        subd  tlsf.rsize               ; Substract requested memory size
+        cmpd  #sizeof{tlsf.blockHdr}   ; Check against block header size
+        blo   >                        ; Not enough bytes for a new splitted block
+        ; Split
+        subd  #tlsf.BHDR_OVERHEAD+1    ; Size is stored as size-1
+        std   @d
+        ldd   #tlsf.BHDR_OVERHEAD      ; Compute address
+        addd  tlsf.rsize               ; of new instancied block
+        leax  d,u                      ; into x
+        ldd   #0                       ; (dynamic) get remaining usable memory
+@d      equ   *-2
+        ora   #tlsf.mask.FREE_BLOCK    ; Set free block bit
+        std   tlsf.blockHdr.size,x     ; Store new block size
+        ldd   tlsf.blockHdr.size,u
+        anda  #tlsf.mask.BLOCK_SIZE
+        addd  #tlsf.MIN_BLOCK_SIZE+tlsf.blockHdr.prev.phys+1  ; Size is stored as size-1
+        stx   d,u                      ; Set the prev phys of the next block
+        ldd   @d
+        addd  #1
+        stx   @x
+        jsr   tlsf.mapping
+        ldx   #0                       ; (dynamic)
+@x      equ   *-2
+        jsr   tlsf.insertBlock
+!       lda   tlsf.blockHdr.size,u
+        anda  #^tlsf.mask.FREE_BLOCK   ; Unset free block bit
+        sta   tlsf.blockHdr.size,u
+        leau  tlsf.MIN_BLOCK_SIZE,u    ; Skip block header when returning allocated memory address
+        rts
+@error  ldu   #0
+        rts
 
 ;-----------------------------------------------------------------
 ; tlsf.free
@@ -170,10 +183,12 @@ tlsf.free
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.mappingsearch
+; tlsf.mappingSearch
 ; input  REG : [D] requested memory size
+; output VAR : [tlsf.rsize] requested memory size
 ; output VAR : [tlsf.fl] first level index
 ; output VAR : [tlsf.sl] second level index
+; output VAR : [D] tlsf.fl and tlsf.sl
 ; trash      : [D,X]
 ;-----------------------------------------------------------------
 ; r  = r+(1<<(fls(r)-J))-1;
@@ -183,45 +198,45 @@ tlsf.free
 ; This function handle requested size up to $F800 (included)
 ; otherwise it will have an unexpected behaviour, keep input check
 ;-----------------------------------------------------------------
-tlsf.mappingsearch
+tlsf.mappingSearch
         std   tlsf.rsize
-        cmpd  #$F800                      ; check input parameter upper limit
+        cmpd  #$F800                        ; Check input parameter upper limit
         bls   >
-        ldd   #0                          ; error return 0 as fl/sl
-@zero   std   tlsf.fl                     ; and tlsf.sl
+        ldd   #0                            ; Error return 0 as fl/sl
+@zero   std   tlsf.fl                       ; and tlsf.sl
         rts
         ; round up requested size to next list
 !       std   tlsf.fls.in
-        beq   @zero                       ; check input parameter lower limit 
-        jsr   tlsf.fls                    ; split memory size in power of two
-        cmpb  #tlsf.padbits+tlsf.slbits+1 ; (fls return bitpos range 1-16, so +1 here)
-        bhi   >                           ; branch to round up if fl is not at minimum value
+        beq   @zero                         ; Check input parameter lower limit 
+        jsr   tlsf.fls                      ; Split memory size in power of two
+        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS+1 ; (fls return bitpos range 1-16, so +1 here)
+        bhi   >                             ; Branch to round up if fl is not at minimum value
         ldd   tlsf.rsize
-        bra   @computefl                  ; skip round up
-!       subb  #tlsf.slbits+1              ; round up (fls return bitpos range 1-16, so +1 here)
+        bra   tlsf.mapping                  ; Skip round up
+!       subb  #tlsf.SL_BITS+1               ; Round up (fls return bitpos range 1-16, so +1 here)
         aslb
-        ldx   #tlsf.map.shift
+        ldx   #tlsf.map.mask
         ldd   b,x
         coma
         comb
         addd  tlsf.rsize
-@computefl
+tlsf.mapping
         std   tlsf.fls.in
-        jsr   tlsf.fls                    ; split memory size in power of two
-        decb                              ; (fls return bitpos range 1-16, so -1 here)
-        stb   tlsf.fl                     ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
-        cmpb  #tlsf.padbits+tlsf.slbits-1 ; test if there is a fl bit
-        bhi   @computesl                  ; if so branch
-        ldb   #tlsf.padbits+tlsf.slbits-1 ; no fl bit, cap to fl minimum value
+        jsr   tlsf.fls                      ; Split memory size in power of two
+        decb                                ; (fls return bitpos range 1-16, so -1 here)
+        stb   tlsf.fl                       ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
+        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; Test if there is a fl bit
+        bhi   @computesl                    ; if so branch
+        ldb   #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; No fl bit, cap to fl minimum value
         stb   tlsf.fl
         incb
 @computesl
         negb
-        addb  #types.WORD_BITS+tlsf.slbits
-        aslb                              ; 2 bytes of instructions for each element of @rshift table
-        ldx   #@rshift-4                  ; saves 4 useless bytes (max 14 shift with slbits=1)
-        abx                               ; cannot use indexed jump, so move x
-        ldd   tlsf.fls.in                 ; get rounded requested size to rescale sl based on fl
+        addb  #types.WORD_BITS+tlsf.SL_BITS
+        aslb                                ; 2 bytes of instructions for each element of @rshift table
+        ldx   #@rshift-4                    ; Saves 4 useless bytes (max 14 shift with slbits=1)
+        abx                                 ; Cannot use indexed jump, so move x
+        ldd   tlsf.fls.in                   ; Get rounded requested size to rescale sl based on fl
         jmp   ,x
 @rshift
         lsra
@@ -252,20 +267,23 @@ tlsf.mappingsearch
         rorb
         lsra
         rorb
-!       andb  #tlsf.slsize-1              ; keep only sl bits
+!       andb  #tlsf.SL_SIZE-1               ; Keep only sl bits
         stb   tlsf.sl
+        lda   tlsf.fl
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.findsuitableblock
+; tlsf.findSuitableBlock
 ; input  VAR : [tlsf.fl] first level index
 ; input  VAR : [tlsf.sl] second level index
-; output REG : [X] head of free memory region list or zero if err
+; output REG : [X] head of free memory block list or zero if err
+; output VAR : [tlsf.fl] suitable first level index
+; output VAR : [tlsf.sl] suitable second level index
 ;-----------------------------------------------------------------
 ; bitmap_tmp:= SL_bitmaps[fl] and (FFFFFFFF#16# left shift sl);
 ; if bitmap_tmp != 0 then
 ;    non_empty_sl:= ffs(bitmap_tmp);
-;    non_empty_fl:= f l;
+;    non_empty_fl:= fl;
 ; else
 ;    bitmap_tmp:= FL_bitmap and (FFFFFFFF#16# left shift ( f l+1));
 ;    non_empty_fl:= ffs(bitmap_tmp);
@@ -273,14 +291,14 @@ tlsf.mappingsearch
 ; end if ;
 ; return head_list(non_empty_fl, non empty_sl);
 ;-----------------------------------------------------------------
-tlsf.findsuitableblock
+tlsf.findSuitableBlock
         ; search for non empty list in selected fl/sl index
         lda   tlsf.fl
         ldb   #tlsf.sl.bitmap.size
         mul
         ldx   #tlsf.sl.bitmaps
         leax  d,x                      ; set x to selected sl bitmap
-        ldy   #tlsf.map.shift
+        ldy   #tlsf.map.mask
         ldb   tlsf.sl
         aslb
         leay  b,y                      ; set y to selected sl mask
@@ -292,13 +310,11 @@ tlsf.findsuitableblock
 @foundatcurrentfl
         ; found non empty free list at current fl
         jsr   tlsf.ffs                 ; search first non empty sl index
-        stb   tlsf.sl.nonempty
-        lda   tlsf.fl
-        sta   tlsf.fl.nonempty
+        stb   tlsf.sl
         bra   @headlist
 @searchatupperfl
         ; search for non empty list at upper fl
-        ldx   #tlsf.map.shift
+        ldx   #tlsf.map.mask
         ldb   tlsf.fl
         incb                           ; select upper fl value
         aslb
@@ -312,26 +328,26 @@ tlsf.findsuitableblock
         rts
 !       jsr   tlsf.ffs                 ; search first non empty fl index
         decb
-        stb   tlsf.fl.nonempty
+        stb   tlsf.fl
         lda   #tlsf.sl.bitmap.size
         mul
         ldx   #tlsf.sl.bitmaps
         ldd   d,x                      ; load suitable sl bitmap value
         std   tlsf.ffs.in              ; no need to test zero value here, no applied mask
         jsr   tlsf.ffs                 ; search first non empty sl index
-        stb   tlsf.sl.nonempty
-        lda   tlsf.fl.nonempty
+        stb   tlsf.sl
 @headlist
-        ldx   #tlsf.headmatrix
-        ldb   #tlsf.slsize*2
+        lda   tlsf.fl
+        ldb   #tlsf.SL_SIZE*2
         mul
+        ldx   #tlsf.headMatrix
         leax  d,x
         ldb   tlsf.sl
-        aslb                           ; headmatrix store WORD
-        ldx   b,x                      ; load head of free region list to X
+        aslb                           ; headMatrix store WORD
+        leax  b,x                      ; load head of free block list to X
         rts
 
-tlsf.map.shift
+tlsf.map.mask
         fdb   %1111111111111111
         fdb   %1111111111111110
         fdb   %1111111111111100
@@ -349,7 +365,130 @@ tlsf.map.shift
         fdb   %1100000000000000
         fdb   %1000000000000000
 
-tlsf.mappinginsert
+tlsf.map.bitset
+        fdb   %0000000000000001
+        fdb   %0000000000000010
+        fdb   %0000000000000100
+        fdb   %0000000000001000
+        fdb   %0000000000010000
+        fdb   %0000000000100000
+        fdb   %0000000001000000
+        fdb   %0000000010000000
+        fdb   %0000000100000000
+        fdb   %0000001000000000
+        fdb   %0000010000000000
+        fdb   %0000100000000000
+        fdb   %0001000000000000
+        fdb   %0010000000000000
+        fdb   %0100000000000000
+        fdb   %1000000000000000
+
+;-----------------------------------------------------------------
+; tlsf.insertBlock
+; input  VAR : [tlsf.fl] first level index
+; input  VAR : [tlsf.sl] second level index
+; input  REG : [X] memory block location
+;-----------------------------------------------------------------
+;
+;-----------------------------------------------------------------
+tlsf.insertBlock
+        ; insert into head matrix
+        ldd   #0
+        std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x ; no previous free block (set to 0)
+        lda   tlsf.fl
+        ldb   #tlsf.SL_SIZE*2
+        mul
+        ldu   #tlsf.headMatrix
+        leau  d,u
+        ldb   tlsf.sl
+        aslb                                            ; HeadMatrix store WORD
+        leau  b,u
+        ldy   ,u                                        ; Check if a block exists
+        sty   tlsf.blockHdr.freePtr+tlsf.freePtr.next,x
+        beq   >                                         ; Branch if no Block
+        stx   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; Link new block in free list
+!       stx   ,u                                        ; Store new block as head of free list
+
+tlsf.mappingInsert
+        ; insert into fl bitmap
+        ldx   #tlsf.map.bitset
+        ldb   tlsf.fl
+        aslb
+        ldd   b,x
+        ora   tlsf.fl.bitmap
+        orb   tlsf.fl.bitmap+1
+        std   tlsf.fl.bitmap
+
+        ; insert into sl bitmap
+        lda   tlsf.fl
+        ldb   #tlsf.sl.bitmap.size
+        mul
+        ldy   #tlsf.sl.bitmaps
+        leay  d,y
+        ldb   tlsf.sl
+        aslb
+        ldd   b,x
+        ora   ,y
+        orb   1,y
+        std   ,y
+        rts
+
+;-----------------------------------------------------------------
+; tlsf.removeHeadBlock
+; input  REG : [X] head of free memory block list
+; output REG : [U] free memory block address
+;-----------------------------------------------------------------
+;
+;-----------------------------------------------------------------
+tlsf.removeHeadBlock
+        ldu   ,x                                        ; load address of block
+        ldd   #0
+        ;std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,u
+        ;std   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
+        ldy   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
+        sty   ,x                                        ; store new head of list
+        beq   tlsf.mappingRemove                        ; clear bit for this fl/sl index when no more block in list
+        std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; clear previous element in the new head of list
+        rts
+
+;-----------------------------------------------------------------
+; tlsf.extractblock
+; input  VAR : [tlsf.fl] first level index
+; input  VAR : [tlsf.sl] second level index
+; input  REG : [X] memory block location
+;-----------------------------------------------------------------
+;
+;-----------------------------------------------------------------
+tlsf.removeBlock
+        ; ...
+        jmp   tlsf.mappingRemove
+
+tlsf.mappingRemove
+        ; remove from fl bitmap
+        ldx   #tlsf.map.bitset
+        ldb   tlsf.fl
+        aslb
+        ldd   b,x
+        coma
+        comb
+        anda  tlsf.fl.bitmap
+        andb  tlsf.fl.bitmap+1
+        std   tlsf.fl.bitmap
+
+        ; remove from sl bitmap
+        lda   tlsf.fl
+        ldb   #tlsf.sl.bitmap.size
+        mul
+        ldy   #tlsf.sl.bitmaps
+        leay  d,y
+        ldb   tlsf.sl
+        aslb
+        ldd   b,x
+        coma
+        comb
+        anda  ,y
+        andb  1,y
+        std   ,y
         rts
 
 tlsf.mergeprev
@@ -380,18 +519,19 @@ tlsf.fls
 !
         bita  #$f0
         bne   >
-        asla
-        asla
-        asla
-        asla
         subb  #4
+        asla
+        asla
+        asla
+        asla
 !       bita  #$c0
         bne   >
-        asla
-        asla
         subb  #2
-!       bita  #$80
-        bne   >
+        asla
+        asla
+!       ;bita  #$80
+        ;bne   >
+        bmi   >
         decb
 !       rts
 @zero   clrb
@@ -419,18 +559,19 @@ tlsf.ffs
 !
         bita  #$0f
         bne   >
-        asra
-        asra
-        asra
-        asra
         addb  #4
+        asra
+        asra
+        asra
+        asra
 !       bita  #$03
         bne   >
-        asra
-        asra
         addb  #2
-!       bita  #$01
-        bne   >
+        asra
+        asra
+!       ;bita  #$01
+        ;bne   >
+        beq   >
         incb
 !       rts
 @zero   clrb
