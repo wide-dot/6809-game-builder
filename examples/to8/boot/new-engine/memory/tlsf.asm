@@ -29,34 +29,42 @@ freePtr   rmb sizeof{tlsf.freePtr}
 
 ; tlsf configuration
 ; -----------------------
-tlsf.PAD_BITS        equ   0  ; non significant rightmost bits
-tlsf.SL_BITS         equ   4  ; significant bits for second level index
-tlsf.SL_SIZE         equ   16 ; 2^tlsf.SL_BITS
+tlsf.PAD_BITS         equ   0  ; non significant rightmost bits
+tlsf.SL_BITS          equ   4  ; significant bits for second level index
+tlsf.SL_SIZE          equ   16 ; 2^tlsf.SL_BITS
 
 ; tlsf constants
 ; -----------------------
-tlsf.FL_BITS         equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
-tlsf.MIN_BLOCK_SIZE  equ   sizeof{tlsf.freePtr} ; a memory block in use should be able to return to free state, so a min block size is mandatory
-tlsf.BHDR_OVERHEAD   equ   sizeof{tlsf.blockHdr}-tlsf.MIN_BLOCK_SIZE ; overhead when a block is in use
-tlsf.mask.BLOCK_SIZE equ   %01111111
-tlsf.mask.FREE_BLOCK equ   %10000000
+tlsf.FL_BITS          equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
+tlsf.MIN_BLOCK_SIZE   equ   sizeof{tlsf.freePtr} ; a memory block in use should be able to return to free state, so a min block size is mandatory
+tlsf.BHDR_OVERHEAD    equ   sizeof{tlsf.blockHdr}-tlsf.MIN_BLOCK_SIZE ; overhead when a block is in use
+tlsf.mask.BLOCK_SIZE  equ   %01111111
+tlsf.mask.FREE_BLOCK  equ   %10000000
+
+; tlsf external variables and constants
+; -------------------------------------
+tlsf.err              fcb   0
+tlsf.err.init.MIN_SIZE        equ   1   ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
+tlsf.err.init.MAX_SIZE        equ   2   ; memory pool should have 32768 ($8000) as a maximum size
+tlsf.err.malloc.NO_MORE_SPACE equ   3   ; no more space in memory pool 
+tlsf.err.malloc.MAX_SIZE      equ   4   ; malloc can not handle more than 63488 ($F800) bytes request
 
 ; tlsf internal variables
 ; -----------------------
-tlsf.rsize           fdb   0 ; requested memory size
-tlsf.fl              fcb   0 ; first level index
-tlsf.sl              fcb   0 ; second level index (should be adjacent to fl in memory)
-tlsf.memoryPool      fdb   0 ; memory pool location     
-tlsf.memoryPool.size fdb   0 ; memory pool size
+tlsf.rsize            fdb   0 ; requested memory size
+tlsf.fl               fcb   0 ; first level index
+tlsf.sl               fcb   0 ; second level index (should be adjacent to fl in memory)
+tlsf.memoryPool       fdb   0 ; memory pool location     
+tlsf.memoryPool.size  fdb   0 ; memory pool size
 tlsf.index
-tlsf.fl.bitmap       fdb   0 ; each bit is a boolean, does a free list exists for a fl index ?
-tlsf.sl.bitmap.size  equ   (tlsf.SL_SIZE+types.BYTE_BITS-1)/types.BYTE_BITS
-tlsf.sl.bitmaps      equ   *-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
-                     fill  0,(tlsf.FL_BITS+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
-tlsf.headMatrix      equ   *-2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; -2 because fl=0, sl=0 is useless
-                     fill  0,tlsf.FL_BITS*tlsf.SL_SIZE*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
+tlsf.fl.bitmap        fdb   0 ; each bit is a boolean, does a free list exists for a fl index ?
+tlsf.sl.bitmap.size   equ   (tlsf.SL_SIZE+types.BYTE_BITS-1)/types.BYTE_BITS
+tlsf.sl.bitmaps       equ   *-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
+                      fill  0,(tlsf.FL_BITS+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
+tlsf.headMatrix       equ   *-2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; -2 because fl=0, sl=0 is useless
+                      fill  0,tlsf.FL_BITS*tlsf.SL_SIZE*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
  IFNE (*-tlsf.index)/2-(*-tlsf.index+1)/2
-                     fcb   0 ; index size should be even (see tlsf.init)
+                      fcb   0 ; index size should be even (see tlsf.init)
  ENDC
 tlsf.index.end
 
@@ -79,18 +87,25 @@ tlsf.index.end
 ; tlsf.init
 ; input  REG : [D] total memory pool size
 ; input  REG : [X] memory pool location
+; output VAR : [tlsf.err] error code
 ;-----------------------------------------------------------------
 ; this version can not address more than 32 768 bytes
-; to handle up to 65 536 bytes, use one more byte in block struct
 ;-----------------------------------------------------------------
 tlsf.init
         stx   tlsf.memoryPool
         std   tlsf.memoryPool.size
-        ; cap min and max memory size
-        ; TODO check for minimum
-        cmpd  #$8000
+
+        ; check memory pool size
+        cmpd  #sizeof{tlsf.blockHdr}
+        bhs   >
+        lda   #tlsf.err.init.MIN_SIZE
+        sta   tlsf.err
+        rts
+!       cmpd  #$8000
         bls   >
-        ldd   #$8000
+        lda   #tlsf.err.init.MAX_SIZE
+        sta   tlsf.err
+        rts
 
 !       ; Zeroing the tlsf index
         ldx   #tlsf.index
@@ -134,11 +149,18 @@ tlsf.malloc
         cmpd  #tlsf.MIN_BLOCK_SIZE     ; Apply minimum size to requested memory size
         bhs   >
         ldd   #tlsf.MIN_BLOCK_SIZE
+!       cmpd  #$F800                   ; greater values are not handled by mappingSearch function
+        bls   >                        ; this prevents unexpected behaviour
+        lda   #tlsf.err.malloc.MAX_SIZE
+        sta   tlsf.err
+        rts
 !       jsr   tlsf.mappingSearch       ; Set tlsf.rsize, fl and sl
-        beq   @error                   ; Branch if an error occured
         jsr   tlsf.findSuitableBlock   ; Searching a free block, recall that this function changes the values of fl and sl
-        beq   @error                   ; Branch if no more space available
-        jsr   tlsf.removeHeadBlock     ; Remove the allocated block from the free matrix
+        bne   > 
+        lda   #tlsf.err.malloc.NO_MORE_SPACE
+        sta   tlsf.err
+        rts
+!       jsr   tlsf.removeHeadBlock     ; Remove the allocated block from the free matrix
         ; Should the block be split?
         ldd   tlsf.blockHdr.size,u     ; Size of available memory -1
         anda  #tlsf.mask.BLOCK_SIZE
@@ -195,19 +217,12 @@ tlsf.free
 ; fl = fls(r);
 ; sl = (r>>(fl-J))-2^J;
 ; 
-; This function handle requested size up to $F800 (included)
-; otherwise it will have an unexpected behaviour, keep input check
+; This function handle requested size from 1 up to $F800 (included)
 ;-----------------------------------------------------------------
 tlsf.mappingSearch
         std   tlsf.rsize
-        cmpd  #$F800                        ; Check input parameter upper limit
-        bls   >
-        ldd   #0                            ; Error return 0 as fl/sl
-@zero   std   tlsf.fl                       ; and tlsf.sl
-        rts
         ; round up requested size to next list
 !       std   tlsf.fls.in
-        beq   @zero                         ; Check input parameter lower limit 
         jsr   tlsf.fls                      ; Split memory size in power of two
         cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS+1 ; (fls return bitpos range 1-16, so +1 here)
         bhi   >                             ; Branch to round up if fl is not at minimum value
@@ -529,9 +544,7 @@ tlsf.fls
         subb  #2
         asla
         asla
-!       ;bita  #$80
-        ;bne   >
-        bmi   >
+!       bmi   >
         decb
 !       rts
 @zero   clrb
@@ -569,9 +582,7 @@ tlsf.ffs
         addb  #2
         asra
         asra
-!       ;bita  #$01
-        ;bne   >
-        beq   >
+!       beq   >
         incb
 !       rts
 @zero   clrb

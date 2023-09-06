@@ -5,6 +5,7 @@
 ;-----------------------------------------------------------------
 
 tlsf.ut
+        ; for default settings only
         ldb   #15                ; page number
         lda   #$10
         ora   <$6081             ; Set RAM
@@ -15,27 +16,42 @@ tlsf.ut
 
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingSearch
+        jsr   tlsf.ut.malloc
         rts
 
 tlsf.ut.init
-        ; for default settings only
         ldd   #$0001
         ldx   #$1111
         jsr   tlsf.init
-        ldd   tlsf.index
+        lda   tlsf.err
+        cmpa  #tlsf.err.init.MIN_SIZE
+        beq   >
+        bra   *
+!       clr   tlsf.err
+
+        ldd   #$0008
+        ldx   #$1111
+        jsr   tlsf.init
+        lda   tlsf.err
+        beq   >
+        bra   *
+!       ldd   tlsf.index
         cmpd  #$0008
         bne   *
         ldd   tlsf.index+2
-        cmpd  #$0002
+        cmpd  #$0100
         bne   *
-        ldd   tlsf.index+28
+        ldd   tlsf.index+42
         cmpd  #$1111
         bne   *
 
         ldd   #$8000
         ldx   #$2222
         jsr   tlsf.init
-        ldd   tlsf.index
+        lda   tlsf.err
+        beq   >
+        bra   *
+!       ldd   tlsf.index
         cmpd  #$8000
         bne   *
         ldd   tlsf.index+26
@@ -45,10 +61,18 @@ tlsf.ut.init
         cmpd  #$2222
         bne   *
 
+        ldd   #$8001
+        ldx   #$1111
+        jsr   tlsf.init
+        lda   tlsf.err
+        cmpa  #tlsf.err.init.MAX_SIZE
+        beq   >
+        bra   *
+!       clr   tlsf.err
         rts
 
 tlsf.ut.mappingSearch
-        ; for default settings only
+        ; test all values in table
         ldx   #tlsf.ut.mappingSearch.in
         ldy   #tlsf.ut.mappingSearch.out
 !       ldd   ,x++
@@ -63,8 +87,9 @@ tlsf.ut.mappingSearch
         bne   <
         rts
 
+
+
 tlsf.ut.mappingSearch.in
-        fdb   %0000000000000000 ;      0
         fdb   %0000000000000001 ;      1
         fdb   %0000000000000010 ;      2
         fdb   %0000000000000011 ;    ...
@@ -133,7 +158,6 @@ tlsf.ut.mappingSearch.in
 tlsf.ut.mappingSearch.in.end
 
 tlsf.ut.mappingSearch.out
-        fcb   0,0               ; fl,sl
         fcb   3,1
         fcb   3,2
         fcb   3,3
@@ -184,7 +208,7 @@ tlsf.ut.mappingSearch.out
         fcb   14,15
 
         fcb   4,1
-        fcb   5,2 ; pb d'arrondi
+        fcb   5,2
         fcb   6,3
         fcb   7,4
         fcb   8,5
@@ -199,3 +223,19 @@ tlsf.ut.mappingSearch.out
         fcb   14,14
         fcb   14,15
         fcb   15,0
+
+tlsf.ut.malloc
+        ; test unvalid sizes
+        ldy   #$F801
+!       clr   tlsf.err
+        tfr   y,d
+        pshs  y
+        jsr   tlsf.malloc
+        puls  y
+        leay  1,y
+        beq   @rts
+        lda   tlsf.err
+        cmpa  #tlsf.err.malloc.MAX_SIZE
+        beq   <
+        bra   *
+@rts    rts
