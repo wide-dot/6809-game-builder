@@ -8,6 +8,7 @@
 ; WORK IN PROGRESS :
 ; - this code does not fully handle single byte SL bitmap
 ; - default settings should be set by defines
+;
 ;-----------------------------------------------------------------
 
  opt c
@@ -307,7 +308,7 @@ tlsf.mapping
 ; return head_list(non_empty_fl, non empty_sl);
 ;-----------------------------------------------------------------
 tlsf.findSuitableBlock
-        ; search for non empty list in selected fl/sl index
+        ; search for free list in selected fl/sl index
         lda   tlsf.fl
         ldb   #tlsf.sl.bitmap.size
         mul
@@ -323,12 +324,13 @@ tlsf.findSuitableBlock
         std   tlsf.ffs.in
         beq   @searchatupperfl
 @foundatcurrentfl
-        ; found non empty free list at current fl
+        ; found free list at current fl
         jsr   tlsf.ffs                 ; search first non empty sl index
+        decb
         stb   tlsf.sl
         bra   @headlist
 @searchatupperfl
-        ; search for non empty list at upper fl
+        ; search for free list at upper fl
         ldx   #tlsf.map.mask
         ldb   tlsf.fl
         incb                           ; select upper fl value
@@ -350,6 +352,7 @@ tlsf.findSuitableBlock
         ldd   d,x                      ; load suitable sl bitmap value
         std   tlsf.ffs.in              ; no need to test zero value here, no applied mask
         jsr   tlsf.ffs                 ; search first non empty sl index
+        decb
         stb   tlsf.sl
 @headlist
         lda   tlsf.fl
