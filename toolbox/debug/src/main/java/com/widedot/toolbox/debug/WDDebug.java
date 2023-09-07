@@ -67,11 +67,14 @@ public class WDDebug extends Application {
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
-       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>");
+       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>. Set DCMOTO to TO8 mode and make a hard reboot.");
     		return;
     	}
     	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
-        
+    	// todo tester si changement de pid, alors on fait :
+    	Emulator.baseAddress = OS.getBaseAdress(Emulator.pid);
+    	//Emulator.ramAddress = Emulator.setRamAddress();
+    	
         // Display active dialog boxes
         if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);

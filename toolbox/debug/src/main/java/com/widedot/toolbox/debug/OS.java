@@ -1,12 +1,11 @@
 package com.widedot.toolbox.debug;
 
-import java.util.HashMap;
-
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Tlhelp32;
 import com.sun.jna.platform.win32.WinDef;
+import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APIOptions;
@@ -15,30 +14,45 @@ public class OS {
 	
     static Kernel32 kernel32 = (Kernel32) Native.load("kernel32",Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
     static User32 user32 = (User32) Native.load("user32", User32.class, W32APIOptions.UNICODE_OPTIONS);
+    public static CustomPsapi c_psapi = Native.load("psapi", CustomPsapi.class);
 
     public static int PROCESS_VM_READ= 0x0010;
     public static int PROCESS_VM_WRITE = 0x0020;
     public static int PROCESS_VM_OPERATION = 0x0008;	
 	
-    public static int getProcessId(String name) {
-	   //HashMap<String, Integer> p = new HashMap<String, Integer>();
-	   
-	   Tlhelp32.PROCESSENTRY32.ByReference processEntry = new Tlhelp32.PROCESSENTRY32.ByReference();          
-       WinNT.HANDLE snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinDef.DWORD(0));
-       try  {
-           while (kernel32.Process32Next(snapshot, processEntry)) {             
-               //System.out.println(processEntry.th32ProcessID + "\t" + Native.toString(processEntry.szExeFile));
-               if (Native.toString(processEntry.szExeFile).contains(name)) {
-            	   //p.put(Native.toString(processEntry.szExeFile), processEntry.th32ProcessID.intValue());
-            	   return processEntry.th32ProcessID.intValue();
-               }
-           }
-       }
-       finally {
-           kernel32.CloseHandle(snapshot);
-       }
-       return 0;
+    public static int getProcessId(String name) {	 
+    	Tlhelp32.PROCESSENTRY32.ByReference processEntry = new Tlhelp32.PROCESSENTRY32.ByReference();          
+    	WinNT.HANDLE snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinDef.DWORD(0));
+    	try  {
+    		while (kernel32.Process32Next(snapshot, processEntry)) {             
+    			if (Native.toString(processEntry.szExeFile).contains(name)) {
+    				return processEntry.th32ProcessID.intValue();
+    			}
+    		}
+    	}
+    	finally {
+    		kernel32.CloseHandle(snapshot);
+    	}
+    	return 0;
    }
+    
+    public static long getBaseAdress(int pid) {
+        Tlhelp32.MODULEENTRY32W moduleEntry = new Tlhelp32.MODULEENTRY32W.ByReference();
+        WinNT.HANDLE snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPMODULE, new WinDef.DWORD(pid));
+
+        Tlhelp32.MODULEENTRY32W match = null;
+        if (kernel32.Module32FirstW(snapshot, moduleEntry)) {
+            do {
+                if (new String(moduleEntry.szModule).contains(".exe")) {
+                    match = moduleEntry;
+                    break;
+                }
+            } while (kernel32.Module32NextW(snapshot, moduleEntry));
+        }
+
+        kernel32.CloseHandle(snapshot);
+        return Pointer.nativeValue(match.modBaseAddr);
+    }
     
    public static Pointer openProcess(int permissions, int pid) {
         Pointer process = kernel32.OpenProcess(permissions, true, pid);

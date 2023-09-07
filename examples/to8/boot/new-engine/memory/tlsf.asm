@@ -9,6 +9,10 @@
 ; - this code does not fully handle single byte SL bitmap
 ; - default settings should be set by defines
 ;
+; TODO - OPTIM :
+; 1.
+; tlsf.ffs => supprimer le decb qui suit tous les appels jsr tlsf.ffs
+; et modifier ffs pour renvoyer la bonne valeur directement
 ;-----------------------------------------------------------------
 
  opt c
