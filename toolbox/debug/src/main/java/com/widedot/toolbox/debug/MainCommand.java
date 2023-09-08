@@ -23,10 +23,10 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class MainCommand implements Runnable {
 
-    @Option(names = { "-d", "--dir" }, paramLabel = "Input directory for .map files", description = "Process all .map files located in the directory and sub directories")
+    @Option(names = { "-d", "--dir" }, paramLabel = "Input directory for .lwmap files", description = "Process all .lwmap files located in the directory and sub directories")
     String inputDir;
 
-    @Option(names = { "-f", "--file" }, paramLabel = "Input .map file(s) separated by semicolon", description = "Process .map input files")
+    @Option(names = { "-f", "--file" }, paramLabel = "Input .lwmap file(s) separated by semicolon", description = "Process .lwmap input files")
     String inputFile;
     
 	public static void main(String[] args) {
@@ -43,7 +43,7 @@ public class MainCommand implements Runnable {
 		if (inputDir != null) {
 			try (Stream<Path> walkStream = Files.walk(Paths.get(inputDir))) {
 			    walkStream.filter(p -> p.toFile().isFile()).forEach(f -> {
-			        if (f.toString().endsWith(".map")) {
+			        if (f.toString().endsWith(".lwmap")) {
 						log.info("Load symbols <"+f.toString()+">");
 			        	Symbols.addMap(f.toString());
 			        }
@@ -53,7 +53,7 @@ public class MainCommand implements Runnable {
 			}
 		}
 
-		// load .map files
+		// load .lwmap files
 		if (inputFile != null) {
 			String[] files = inputFile.split(";");
 			for (int i = 0; i < files.length; i++) {

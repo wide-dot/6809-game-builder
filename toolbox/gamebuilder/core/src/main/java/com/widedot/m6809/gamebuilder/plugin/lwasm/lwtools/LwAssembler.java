@@ -37,6 +37,7 @@ public class LwAssembler
 	
 	// auxiliary output types
 	public static final String LST = "lst";
+	public static final String LWMAP = "lwmap";
 	
 	public static final HashMap<String, String> formatClass = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;
@@ -58,12 +59,15 @@ public class LwAssembler
 		String asmBasename = FileUtil.removeExtension(FileUtil.getBasename(asmFile));
 		String binFilename = buildDir + asmBasename + "." + format;
 		String lstFilename = buildDir + asmBasename + "." + LST;
+		String mapFilename = buildDir + asmBasename + "." + LWMAP;
 
 		Files.createDirectories(Paths.get(buildDir));
 		
 		File del = new File (binFilename);
 		del.delete();
 		del = new File (lstFilename);
+		del.delete();
+		del = new File (mapFilename);
 		del.delete();
 	
 		List<String> command = new ArrayList<String>(List.of("lwasm.exe",
@@ -72,7 +76,8 @@ public class LwAssembler
 				   "--output=" + binFilename,
 				   "--list="   + lstFilename,
 				   "--includedir=" + rootPath,
-				   "--includedir=" + path.getParent().toString()
+				   "--includedir=" + path.getParent().toString(),
+				   "--map=" + mapFilename
 				   ));
 		
 		for (Entry<String, String> define : defines.values.entrySet()) {

@@ -18,6 +18,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_EDITOR_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEMORY_WATCH_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_TLSF_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_COLLISION_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_FRAME_RENDER_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SPRITE_RENDER_WINDOW = new ImBoolean(false);
@@ -48,6 +49,7 @@ public class WDDebug extends Application {
             {
                 ImGui.menuItem("Edit", null, SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
                 ImGui.menuItem("Watch", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+                ImGui.menuItem("Tlsf", null, SHOW_IMGUI_TLSF_WINDOW);
                 ImGui.endMenu();
             }
             if (ImGui.beginMenu("Engine"))
@@ -91,6 +93,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
         if (SHOW_IMGUI_MEMORY_WATCH_WINDOW.get()) MemoryWatch.show(SHOW_IMGUI_MEMORY_WATCH_WINDOW);
+        if (SHOW_IMGUI_TLSF_WINDOW.get()) Tlsf.show(SHOW_IMGUI_TLSF_WINDOW);
         if (SHOW_IMGUI_COLLISION_WINDOW.get()) CollisionBox.show(SHOW_IMGUI_COLLISION_WINDOW);
         if (SHOW_IMGUI_SPRITE_RENDER_WINDOW.get()) SpriteRender.show(SHOW_IMGUI_SPRITE_RENDER_WINDOW);
         if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);

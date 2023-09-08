@@ -38,8 +38,8 @@ import com.widedot.toolbox.debug.Symbols;
 	        ImGui.setNextWindowPos(ImGui.getMainViewport().getPosX() + 100, ImGui.getMainViewport().getPosY() + 100, ImGuiCond.Once);
 	        if (ImGui.begin("Memory Map", showImGui)) {
 
-	            if (ImGui.button("Add .map files")) {
-	                ImGuiFileDialog.openModal("browse-key", "Choose many File", ".map", lastDirectory, callback, 250, 0, 42, ImGuiFileDialogFlags.None);
+	            if (ImGui.button("Add .lwmap files")) {
+	                ImGuiFileDialog.openModal("browse-key", "Choose many File", ".lwmap", lastDirectory, callback, 250, 0, 42, ImGuiFileDialogFlags.None);
 	            }
 	            ImGui.sameLine();
 	            
@@ -68,7 +68,7 @@ import com.widedot.toolbox.debug.Symbols;
 		        			//try (Stream<Path> walkStream = Files.walk(Paths.get(selection.get(key)))) {
 		        			try (Stream<Path> walkStream = Files.walk(Paths.get(selection.get(key).substring(0,selection.get(key).lastIndexOf("\\"))))) { // fix for a bug in dir selection
 		        			    walkStream.filter(p -> p.toFile().isFile()).forEach(f -> {
-		        			        if (f.toString().endsWith(".map")) {
+		        			        if (f.toString().endsWith(".lwmap")) {
 		        						log.info("Load symbols <"+f.toString()+">");
 		        			        	Symbols.addMap(f.toString());
 		        			        }
