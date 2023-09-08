@@ -18,7 +18,8 @@ public class MemoryEditor {
 	public static void show(ImBoolean showImGui) {
 
 		if (ImGui.begin("Memory Editor", showImGui)) {
-	       	hexBuffer = OS.readMemory(Emulator.process,Emulator.ramAddress,0x80000).getByteBuffer(0, 0x80000);
+	       	//hexBuffer = OS.readMemory(Emulator.process,Emulator.ramAddress,0x80000).getByteBuffer(0, 0x80000);
+			hexBuffer = OS.readMemory(Emulator.process,0x81D800,0x80000).getByteBuffer(0, 0x80000);
 	       	mem_edit.drawWindow("Memory Editor",  MemoryUtil.memAddress(hexBuffer), hexBuffer.capacity());
 	       	System.gc();
    		    ImGui.end();

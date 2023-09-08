@@ -5,7 +5,6 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Tlhelp32;
 import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APIOptions;
@@ -36,14 +35,14 @@ public class OS {
     	return 0;
    }
     
-    public static long getBaseAdress(int pid) {
+    public static Tlhelp32.MODULEENTRY32W getBaseAdress(int pid, String name) {
         Tlhelp32.MODULEENTRY32W moduleEntry = new Tlhelp32.MODULEENTRY32W.ByReference();
         WinNT.HANDLE snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPMODULE, new WinDef.DWORD(pid));
 
         Tlhelp32.MODULEENTRY32W match = null;
         if (kernel32.Module32FirstW(snapshot, moduleEntry)) {
             do {
-                if (new String(moduleEntry.szModule).contains(".exe")) {
+                if (new String(moduleEntry.szModule).contains(name)) {
                     match = moduleEntry;
                     break;
                 }
@@ -51,7 +50,7 @@ public class OS {
         }
 
         kernel32.CloseHandle(snapshot);
-        return Pointer.nativeValue(match.modBaseAddr);
+        return match;
     }
     
    public static Pointer openProcess(int permissions, int pid) {
