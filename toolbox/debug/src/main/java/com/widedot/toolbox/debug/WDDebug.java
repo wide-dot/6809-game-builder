@@ -83,6 +83,7 @@ public class WDDebug extends Application {
 	           	Emulator.baseAddress = Pointer.nativeValue(module.modBaseAddr);
 	           	Emulator.baseSize = module.modBaseSize.intValue();
 	    		Emulator.searchRamAddress();
+	        	if (Emulator.ramAddress == 0) return;
     		}
     	}
     	
