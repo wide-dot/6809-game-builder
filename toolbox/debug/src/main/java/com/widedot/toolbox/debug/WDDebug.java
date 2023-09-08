@@ -78,7 +78,7 @@ public class WDDebug extends Application {
     		ImGui.text("Set DCMOTO mode to TO8 and make a hard reboot.");
     		curPid = Emulator.pid;
         	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
-    		module = OS.getBaseAdress(Emulator.pid, Emulator.processName);
+    		module = OS.getModule(Emulator.pid, Emulator.processName);
     		if (module != null) {
 	           	Emulator.baseAddress = Pointer.nativeValue(module.modBaseAddr);
 	           	Emulator.baseSize = module.modBaseSize.intValue();

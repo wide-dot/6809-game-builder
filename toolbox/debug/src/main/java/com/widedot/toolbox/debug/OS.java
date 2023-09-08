@@ -13,7 +13,6 @@ public class OS {
 	
     static Kernel32 kernel32 = (Kernel32) Native.load("kernel32",Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
     static User32 user32 = (User32) Native.load("user32", User32.class, W32APIOptions.UNICODE_OPTIONS);
-    public static CustomPsapi c_psapi = Native.load("psapi", CustomPsapi.class);
 
     public static int PROCESS_VM_READ= 0x0010;
     public static int PROCESS_VM_WRITE = 0x0020;
@@ -35,7 +34,7 @@ public class OS {
     	return 0;
    }
     
-    public static Tlhelp32.MODULEENTRY32W getBaseAdress(int pid, String name) {
+    public static Tlhelp32.MODULEENTRY32W getModule(int pid, String name) {
         Tlhelp32.MODULEENTRY32W moduleEntry = new Tlhelp32.MODULEENTRY32W.ByReference();
         WinNT.HANDLE snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPMODULE, new WinDef.DWORD(pid));
 
