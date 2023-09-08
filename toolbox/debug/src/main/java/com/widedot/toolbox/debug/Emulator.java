@@ -19,6 +19,11 @@ public class Emulator {
 	public static long baseAddress  = 0;
 	public static int baseSize  = 0;
 	public static long ramAddress = 0;
+	
+	// public static final long ramAddress   = 0x000081D800;       // ram[0x80000] ram (maxi 512K pour TO9+) 2023.02.25
+	// public static final long ramAddress   = 0x00007F67C0;       // ram[0x80000] ram (maxi 512K pour TO9+) dcmoto 2023.01.30
+	// public static final long ramAddress   = 0x000081E800;       // ram[0x80000] ram (maxi 512K pour TO9+) dcmoto 2023.02.13
+
 	public static long portAddress = 0;  // port[0x40]   ports d'entrees/sorties
 	public static long ddrAddress = 0;   // ddr[0x40]    registres de direction des PIA 6821
 	public static long plineAddress = 0; // pline[0x40]  peripheral input-control lines des PIA 6821
@@ -86,7 +91,7 @@ public class Emulator {
     public static void searchRamAddress() {
     	ByteBuffer buffer = OS.readMemory(Emulator.process,Emulator.baseAddress,baseSize).getByteBuffer(0, baseSize);
         for(int i = 0; i < baseSize - key.length+1; ++i) {
-            boolean found = true;
+        	boolean found = true;
             for(int j = 0; j < key.length; ++j) {
                if (buffer.get(i+j) != key[j]) {
                    found = false;
@@ -95,14 +100,15 @@ public class Emulator {
             }
             if (found) {
             	Emulator.ramAddress = Emulator.baseAddress + i - keypos;
-            	System.out.println("RAM: "+Emulator.ramAddress);
             	portAddress  = ramAddress+0x80000; // port[0x40]   ports d'entrees/sorties
             	ddrAddress   = portAddress+0x40;   // ddr[0x40]    registres de direction des PIA 6821
             	plineAddress = ddrAddress+0x40;    // pline[0x40]  peripheral input-control lines des PIA 6821
             	carAddress   = plineAddress+0x40;  // car[0x20000] espace cartouche 8x16K (pour OS-9)
             	x7daAddress  = ramAddress+0x805C0; // x7da[0x20]   stockage de la palette de couleurs
+            	return;
             }
          }
+    	Emulator.ramAddress = 0;
     }  
      
 }

@@ -5,15 +5,14 @@ import com.sun.jna.platform.win32.Tlhelp32;
 import com.widedot.toolbox.debug.ui.*;
 
 import imgui.ImGui;
-import imgui.ImVec2;
 import imgui.app.Application;
 import imgui.app.Configuration;
 import imgui.type.ImBoolean;
-import imgui.ImColor;
 
 public class WDDebug extends Application {
 	
 	public static int curPid = 0;
+	public static Tlhelp32.MODULEENTRY32W module;
 	
 	// Dialog display status
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
@@ -71,17 +70,20 @@ public class WDDebug extends Application {
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
-       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>. Set DCMOTO mode to TO8 and make a hard reboot.");
+       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>.");
     		return;
     	}
-    	if (curPid != Emulator.pid) {
+    	// automatic hook
+    	if (curPid != Emulator.pid || module == null || Emulator.ramAddress == 0) {
+    		ImGui.text("Set DCMOTO mode to TO8 and make a hard reboot.");
     		curPid = Emulator.pid;
         	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
-        	Tlhelp32.MODULEENTRY32W module;
     		module = OS.getBaseAdress(Emulator.pid, Emulator.processName);
-           	Emulator.baseAddress = Pointer.nativeValue(module.modBaseAddr);
-           	Emulator.baseSize = module.modBaseSize.intValue();
-    		Emulator.searchRamAddress();
+    		if (module != null) {
+	           	Emulator.baseAddress = Pointer.nativeValue(module.modBaseAddr);
+	           	Emulator.baseSize = module.modBaseSize.intValue();
+	    		Emulator.searchRamAddress();
+    		}
     	}
     	
         // Display active dialog boxes
