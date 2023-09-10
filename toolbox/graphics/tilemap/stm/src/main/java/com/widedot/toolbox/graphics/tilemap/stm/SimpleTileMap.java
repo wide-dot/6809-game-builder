@@ -58,7 +58,7 @@ public class SimpleTileMap {
 	    	
 	    	// parse input file in little endian
 	    	for (int offset = readOffset; offset >= 0; offset--) {
-	    		data[outPos+offset] = (byte)bufferedInputStream.read();
+	    		data[outPos+offset] = (byte)bufferedInputStream.read(); // copy input data to output
 	    	}
 	    	outPos += readOffset+1;
     		bufferedInputStream.skip(inByteDepth-(readOffset+1));

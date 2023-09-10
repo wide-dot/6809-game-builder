@@ -8,6 +8,7 @@ import java.util.ArrayList;
 
 import com.widedot.m6809.util.FileUtil;
 import com.widedot.toolbox.graphics.engine.VerticalScroll;
+import com.widedot.toolbox.graphics.engine.VerticalScrollTile;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -29,9 +30,12 @@ import picocli.CommandLine.Option;
 public class MainCommand implements Runnable {
 	
     @ArgGroup(exclusive = true, multiplicity = "1")
-    Exclusive exclusive;
+    ExclusiveInputType exclusiveInputType;
+    
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    ExclusiveOutput exclusiveOutput;
 
-    static class Exclusive {
+    static class ExclusiveInputType {
             @Option(names = { "-d", "--dir" }, paramLabel = "Input directory", description = "Process all .png files located in the input directory")
             String inputDir;
 
@@ -57,8 +61,13 @@ public class MainCommand implements Runnable {
 	@Option(names = { "-oms", "--out-max-size" }, paramLabel = "Output file max size", description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = Integer.MAX_VALUE;
 	
-	@Option(names = { "-vs", "--vertical-scroll" }, paramLabel = "Vertical Scroll Buffer", description = "Output data buffer for Vertical Scroll")
-	private boolean vscroll = false;
+    static class ExclusiveOutput {
+	   	@Option(names = { "-vs", "--vertical-scroll" }, paramLabel = "Vertical Scroll Buffer", description = "Output data buffer for Vertical Scroll")
+	   	private boolean vscroll = false;
+	   	
+	   	@Option(names = { "-vst", "--vertical-scroll-tile" }, paramLabel = "Vertical Scroll Tile", description = "Output tile data for Vertical Scroll")
+	   	private boolean vscrollTile = false;
+    }
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -67,14 +76,14 @@ public class MainCommand implements Runnable {
 
 	// Thomson - MO/TO
 	// ---------------
-	//	mode t0  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t1  : -lb 1 -pb 1 -l 40 -p 2 -pd 2
-	//	mode t1s : -lb 2 -pb 8 -l 40 -p 2 -pd 2
-	//	mode t2  : -lb 1 -pb 8 -l 40 -p 2 -pd 1
-	//	mode t3  : -lb 4 -pb 8 -l 40 -p 2 -pd 4
-	//	mode t4  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t5  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t6  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
+	//	mode t0  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
+	//	mode t1  320x200x4  : -lb 1 -pb 1 -l 40 -p 2 -pd 2
+	//	mode t1s 320x200x4  : -lb 2 -pb 8 -l 40 -p 2 -pd 2
+	//	mode t2  640x200x1  : -lb 1 -pb 8 -l 40 -p 2 -pd 1
+	//	mode t3  160x200x16 : -lb 4 -pb 8 -l 40 -p 2 -pd 4
+	//	mode t4  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
+	//	mode t5  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
+	//	mode t6  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
 	//
 	// Tandy - CoCo3
 	// -------------
@@ -87,11 +96,11 @@ public class MainCommand implements Runnable {
 	{
 		log.info("png to binary converter");
 
-                if (exclusive.inputDir != null) {
-        		log.info("Process each png file of the directory {}", exclusive.inputDir);
+                if (exclusiveInputType.inputDir != null) {
+        		log.info("Process each png file of the directory {}", exclusiveInputType.inputDir);
 
                         // process each png file of the directory		
-                        File dir = new File(exclusive.inputDir);
+                        File dir = new File(exclusiveInputType.inputDir);
                         if (!dir.exists() || !dir.isDirectory()) {
                         	log.error("Input directory does not exists !");
                         } else {	
@@ -105,10 +114,10 @@ public class MainCommand implements Runnable {
                         	}
                         }
                 } else {
-                        log.info("Process {}", exclusive.inputFile);
+                        log.info("Process {}", exclusiveInputType.inputFile);
 
                         // process a single png file
-                        File pngFile = new File(exclusive.inputFile);
+                        File pngFile = new File(exclusiveInputType.inputFile);
                         if(!pngFile.exists() || pngFile.isDirectory()) { 
                         	log.error("Input file does not exists !");
                         } else {
@@ -132,9 +141,13 @@ public class MainCommand implements Runnable {
 		
 		ArrayList<String> files = write(out, paramFile); // write output files by splitting if over memorypage size
 		
-		if (vscroll) {
+		if (exclusiveOutput.vscroll) {
 			for (String file : files) {
 				new VerticalScroll(file);
+			}
+		} else if (exclusiveOutput.vscrollTile) {
+			for (String file : files) {
+				new VerticalScrollTile(file);
 			}
 		}
 
