@@ -17,8 +17,8 @@ import picocli.CommandLine.Option;
  * simple tile map to binary converter
  * - extract stm header informations and produce an asm equate file
  * - convert tile id from little endian to big endian
- * - adjust tile id byte depth to desired size
- * - produce a binary file that contains only the tileid
+ * - adjust tile id bit depth to desired size
+ * - produce a binary file that contains only tileids (no header)
  * - split binary files based on a max size (ex: to fit a memory page)
  */
 
@@ -26,22 +26,25 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class MainCommand implements Runnable {
 	
-        @ArgGroup(exclusive = true, multiplicity = "1")
-        Exclusive exclusive;
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    ExclusiveInput exclusiveInput;
 
-        static class Exclusive {
-                @Option(names = { "-d", "--dir" }, paramLabel = "Input directory", description = "Process all .stm files located in the input directory")
-                String inputDir;
+    static class ExclusiveInput {
+            @Option(names = { "-d", "--dir" }, paramLabel = "Input directory", description = "Process all .stm files located in the input directory")
+            String inputDir;
 
-                @Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process .stm input file")
-                String inputFile;
-        }
+            @Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process .stm input file")
+            String inputFile;
+    }
 
-	@Option(names = { "-ibd", "--in-byte-depth" }, paramLabel = "Input byte depth", description = "Input file byte depth for a tile id")
-        private int inByteDepth = 4;
-
-	@Option(names = { "-obd", "--out-byte-depth" }, paramLabel = "Output byte depth", description = "Output file byte depth for a tile id")
-        private int outByteDepth = 2;
+	@Option(names = { "-ibd", "--in-bit-depth" }, paramLabel = "Input bit depth", description = "Input file bit depth for a tile id")
+    private int inBitDepth = 4*8;
+	
+	@Option(names = { "-obd", "--out-bit-depth" }, paramLabel = "Output bit depth", description = "Output file bit depth for a tile id")
+	private int outBitDepth = 2*8;
+	
+	@Option(names = { "-mul", "--out-mult" }, paramLabel = "Output tile id multiplicator", description = "Output tile id multiplicator")
+	private int outmult = 1;
 
 	@Option(names = { "-oms", "--out-max-size" }, paramLabel = "Output file max size", description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = 16384;
@@ -56,43 +59,44 @@ public class MainCommand implements Runnable {
 	{
 		log.info("Simple Tile Map to binary converter");
 
-                if (exclusive.inputDir != null) {
-        		log.info("Process each stm file of the directory {}", exclusive.inputDir);
+                if (exclusiveInput.inputDir != null) {
+        		log.info("Process each stm file of the directory {}", exclusiveInput.inputDir);
 
                         // process each stm file of the directory		
-                        File dir = new File(exclusive.inputDir);
+                        File dir = new File(exclusiveInput.inputDir);
                         if (!dir.exists() || !dir.isDirectory()) {
                         	log.error("Input directory does not exists !");
                         } else {	
                         	File[] files = dir.listFiles((d, name) -> name.endsWith(".stm"));
                         	for (File stmFile : files) {
                         		try {
-                        			stmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
+                        			stmConverter(stmFile, inBitDepth, outBitDepth, fileMaxSize);
                         		} catch (Exception e) {
-                        			log.error("Error converting .stm file");
+                        			log.error("Error converting .stm file: "+e);
                         		}
                         	}
                         }
                 } else {
-                        log.info("Process {}", exclusive.inputFile);
+                        log.info("Process {}", exclusiveInput.inputFile);
 
                         // process a single stm file
-                        File stmFile = new File(exclusive.inputFile);
+                        File stmFile = new File(exclusiveInput.inputFile);
                         if(!stmFile.exists() || stmFile.isDirectory()) { 
                         	log.error("Input file does not exists !");
                         } else {
                         	try {
-                        		stmConverter(stmFile, inByteDepth, outByteDepth, fileMaxSize);
+                        		stmConverter(stmFile, inBitDepth, outBitDepth, fileMaxSize);
                         	} catch (Exception e) {
                     			log.error("Error converting .stm file");
+                    			e.printStackTrace();
                     		}
                         }
                 }
 	}
 
-	private void stmConverter(File paramFile, int inByteDepth, int outByteDepth, int fileMaxSize) throws Exception {
+	private void stmConverter(File paramFile, int inBitDepth, int outBitDepth, int fileMaxSize) throws Exception {
 
-		SimpleTileMap stm = new SimpleTileMap(paramFile, inByteDepth, outByteDepth);
+		SimpleTileMap stm = new SimpleTileMap(paramFile, inBitDepth, outBitDepth, outmult);
 
 		// split data into multiple files that are maximum fileMaxSize long
 		int readIdx = 0;
@@ -121,7 +125,9 @@ public class MainCommand implements Runnable {
 		bufferedWriter.newLine();
 		bufferedWriter.write(basename+".height equ " + stm.height);
 		bufferedWriter.newLine();
-		bufferedWriter.write(basename+".bytedepth equ " + outByteDepth);
+		bufferedWriter.write(basename+".bytedepth equ " + (outBitDepth+8-1)/8 + " ; rounded up byte size for one tileid");
+		bufferedWriter.newLine();
+		bufferedWriter.write(basename+".bitdepth equ " + outBitDepth + " ; bit size for one tileid");
 		bufferedWriter.newLine();
 		bufferedWriter.close();
 	}
