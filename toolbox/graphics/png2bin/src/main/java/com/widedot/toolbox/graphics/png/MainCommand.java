@@ -1,9 +1,7 @@
 package com.widedot.toolbox.graphics.png;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 
 import com.widedot.m6809.util.FileUtil;
@@ -68,6 +66,9 @@ public class MainCommand implements Runnable {
 	   	@Option(names = { "-vst", "--vertical-scroll-tile" }, paramLabel = "Vertical Scroll Tile", description = "Output tile data for Vertical Scroll")
 	   	private boolean vscrollTile = false;
     }
+    
+	@Option(names = { "-slc", "--shiftLeftColors" }, required = true, paramLabel = "Shift left colors", description = "Shift index of colors to the left by one")
+    private boolean shiftLeftColors = false;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -136,6 +137,8 @@ public class MainCommand implements Runnable {
 
 		byte image[] = resize(png); // resize image to a multiple of byte and planes of final image
 		if (image == null) return;
+		
+		if (shiftLeftColors) stripAlpha(image);
 
 		byte out[][] = convert(image, png.colorModel.getPixelSize(), png.height); // Convert source image to video memory data
 		
@@ -151,6 +154,13 @@ public class MainCommand implements Runnable {
 			}
 		}
 
+	}
+
+	private void stripAlpha(byte image[]) {
+		for (int i=0; i < image.length; i++) {
+			if (image[i]!=0) image[i] = (byte) (((image[i] & 0xff)-1) & 0xff);
+		}
+		
 	}
 	
 	private byte[] resize(Png png) {

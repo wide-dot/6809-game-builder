@@ -53,7 +53,8 @@ public class SimpleTileMap {
         int o = 0;
         int bcnt = 0;
         byte cbyte = 0;
-        byte[] tileId = new byte[inBitDepth/8];
+        int inByteDepth = inBitDepth/8;
+        byte[] tileId = new byte[inByteDepth];
         
 	    // read each tile id
 	    while(bufferedInputStream.available()>0){
@@ -72,14 +73,14 @@ public class SimpleTileMap {
 	    	// input file is in little endian, reverse byte in a temporary array
 	    	// and apply mult factor
 	    	int val = 0;
-	    	for (int i = inBitDepth/8-1; i >= 0; i--) {
-	    		val = (val << 8) + (byte)bufferedInputStream.read();
+	    	for (int i = 0; i < inByteDepth; i++) {
+	    		val = ((bufferedInputStream.read() & 0xff) << i*8) + val;
 	    	}
 	    	
 	    	val = val * outmult;
 	    	
-	    	for (int i = 0; i < inBitDepth/8; i++) {
-	    		tileId [i] = (byte)((val >> i*8) & 0xff);
+	    	for (int i = 0; i < inByteDepth; i++) {
+	    		tileId [inByteDepth-1-i] = (byte)((val >> i*8) & 0xff);
 	    	}
 	    	
 	    	// if output byte depth is smaller than input, skip bits
