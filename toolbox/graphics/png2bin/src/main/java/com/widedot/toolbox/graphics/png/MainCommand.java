@@ -67,7 +67,7 @@ public class MainCommand implements Runnable {
 	   	private boolean vscrollTile = false;
     }
     
-	@Option(names = { "-slc", "--shiftLeftColors" }, required = true, paramLabel = "Shift left colors", description = "Shift colors indexes to the left by one position")
+	@Option(names = { "-slc", "--shiftLeftColors" }, paramLabel = "Shift left colors", description = "Shift colors indexes to the left by one position")
     private boolean shiftLeftColors = false;
 
 	public static void main(String[] args) {
