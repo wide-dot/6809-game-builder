@@ -11,14 +11,16 @@
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/system/to8/map.const.asm"
 
-* directory structure
+; directory structure
+; -------------------
 dirheader STRUCT
 tag     rmb types.BYTE*3 ; [I] [D] [X]
 diskid  rmb types.BYTE   ; [0000 0000]              - [disk id 0-255]
-nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors to load direntries]
+nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors for direntries]
         ENDSTRUCT
 
-* direntry main structure
+; direntry main structure
+; -----------------------
 direntry STRUCT
 bitfld   rmb types.BYTE   ; [0] [0] [00 0000]       - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
 free     rmb types.BYTE   ; [0000 0000]             - [free]
@@ -28,10 +30,14 @@ sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector]
 offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
 nsector  rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 sizez    rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
-* direntry compressor structure
+
+; direntry compressor structure
+; -----------------------------
 coffset  rmb types.WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
 cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
-* direntry linker structure
+
+; direntry linker structure
+; -------------------------
 lsize    rmb types.BYTE   ; [0000 0000] [0000 0000] - [linker data size]
 ltrack   rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
 lsector  rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
@@ -41,9 +47,9 @@ lnsector rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
         ENDSTRUCT
 
-*---------------------------------------
-* Loader routines
-*---------------------------------------
+;----------------------------------------
+; Loader routines
+;----------------------------------------
         org   $6300
         jmp   >loaddir    ; Load directory entries
         jmp   >load       ; Load file
@@ -52,8 +58,8 @@ lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: 
 error   jmp   >dskerr     ; Error
 pulse   jmp   >return     ; Load pulse
 
-ptsec   equ   $6100       ; temporary space for partial sector loading
-diskid  fcb   $00         ; disk id
+ptsec   equ   $6100       ; Temporary space for partial sector loading
+diskid  fcb   $00         ; Disk id
 nsect   fcb   $00         ; Sector counter
 track   fcb   $00         ; Track number
 sector  fcb   $00         ; Sector number
@@ -345,7 +351,7 @@ link
 ;---------------------------------------
 alloc
         ; unit test
-        jsr   tlsf.ut
+        ;jsr   tlsf.ut
 
         ; switch page
         ldb   #15
@@ -354,12 +360,12 @@ alloc
 
         ; init allocator
         ldd   #$8000
-        ldx   #$0000
+        ldx   #$1234
         jsr   tlsf.init
 
         ; allocate some memory space
-        ldd   #63
-        jsr   tlsf.malloc
+        ;ldd   #63
+        ;jsr   tlsf.malloc
 
         bra   *
 

@@ -121,7 +121,7 @@ runloader
         ldu   #$B000 ; U: [destination - address]
         jsr   $6303  ; load file
 
-        ; load files
+        ; uncompress files
         ldx   #$0000 ; X: [file number]
         ldb   #$04   ; B: [destination - page number]
         ldu   #$A000 ; U: [destination - address]

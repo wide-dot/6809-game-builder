@@ -2,7 +2,7 @@
 ; first fit dynamic memory allocator 
 ; ----------------------------------
 ; Benoit Rousseau - 22/08/2023
-; ! WARNING ! This code is untested !
+; ! WARNING ! This code is untested ! It's a prototype !
 ;-----------------------------------------------------------------
 
 heap     equ   $8000

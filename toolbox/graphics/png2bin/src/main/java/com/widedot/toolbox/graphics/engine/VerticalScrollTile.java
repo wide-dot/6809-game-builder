@@ -60,7 +60,7 @@ public class VerticalScrollTile {
 					out[j++] = raw[tpos+lpos+1];
 				}
 				
-				if (j+tiles*bpl >= MAX_FILE_SIZE || l == 15) {
+				if (j+tiles*bpl > MAX_FILE_SIZE || l == 15) {
 					
 					// clear pad bytes
 					while (j < MAX_FILE_SIZE) out[j++] = 0;
