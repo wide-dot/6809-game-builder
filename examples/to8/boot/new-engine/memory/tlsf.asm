@@ -27,7 +27,7 @@ next rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list]
  ENDSTRUCT
 
 tlsf.blockHdr STRUCT ; this structure is common to all blocks (free or used)
-size      rmb types.WORD ; [0] [000 0000 0000 0000] - [0:free/1:used] [free size - 1]
+size      rmb types.WORD ; [0] [000 0000 0000 0000] - [1:free/0:used] [free size - 1]
 prev.phys rmb types.WORD ; [0000 0000 0000 0000]    - [previous physical block in memory]
 freePtr   rmb sizeof{tlsf.freePtr}
  ENDSTRUCT
@@ -43,7 +43,6 @@ tlsf.SL_SIZE          equ   16 ; 2^tlsf.SL_BITS
 tlsf.FL_BITS          equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
 tlsf.MIN_BLOCK_SIZE   equ   sizeof{tlsf.freePtr} ; a memory block in use should be able to return to free state, so a min block size is mandatory
 tlsf.BHDR_OVERHEAD    equ   sizeof{tlsf.blockHdr}-tlsf.MIN_BLOCK_SIZE ; overhead when a block is in use
-tlsf.mask.BLOCK_SIZE  equ   %01111111
 tlsf.mask.FREE_BLOCK  equ   %10000000
 
 ; tlsf external variables and constants
@@ -56,7 +55,6 @@ tlsf.err.malloc.MAX_SIZE      equ   4   ; malloc can not handle more than 63488 
 
 ; tlsf internal variables
 ; -----------------------
-tlsf.rsize            fdb   0 ; requested memory size
 tlsf.fl               fcb   0 ; first level index
 tlsf.sl               fcb   0 ; second level index (should be adjacent to fl in memory)
 tlsf.memoryPool       fdb   0 ; memory pool location     
@@ -90,7 +88,7 @@ tlsf.index.end
 
 ;-----------------------------------------------------------------
 ; tlsf.init
-; input  REG : [D] total memory pool size
+; input  REG : [D] total memory pool size (overhead included)
 ; input  REG : [X] memory pool location
 ; output VAR : [tlsf.err] error code
 ;-----------------------------------------------------------------
@@ -122,8 +120,8 @@ tlsf.init
         ; set a single free block
         ldx   tlsf.memoryPool
         ldd   tlsf.memoryPool.size
-        subd  #1                        ; size is stored as val-1
-        ora   #tlsf.mask.FREE_BLOCK     ; set free block bit
+        subd  #tlsf.BHDR_OVERHEAD+1 ; size is stored as val-1
+        ora   #tlsf.mask.FREE_BLOCK ; set free block bit
         std   tlsf.blockHdr.size,x
         ldd   #0
         std   tlsf.blockHdr.prev.phys,x ; no previous physical block (set to 0)
@@ -151,53 +149,47 @@ tlsf.init
 ; return free_block;
 ;-----------------------------------------------------------------
 tlsf.malloc
-        cmpd  #tlsf.MIN_BLOCK_SIZE     ; Apply minimum size to requested memory size
+        cmpd  #tlsf.MIN_BLOCK_SIZE      ; Apply minimum size to requested memory size
         bhs   >
         ldd   #tlsf.MIN_BLOCK_SIZE
-!       cmpd  #$F800                   ; greater values are not handled by mappingSearch function
-        bls   >                        ; this prevents unexpected behaviour
+!       cmpd  #$F800                    ; greater values are not handled by mappingSearch function
+        bls   >                         ; this prevents unexpected behaviour
         lda   #tlsf.err.malloc.MAX_SIZE
         sta   tlsf.err
         rts
-!       jsr   tlsf.mappingSearch       ; Set tlsf.rsize, fl and sl
-        jsr   tlsf.findSuitableBlock   ; Searching a free block, recall that this function changes the values of fl and sl
+!       jsr   tlsf.mappingSearch        ; Set tlsf.rsize, fl and sl
+        jsr   tlsf.findSuitableBlock    ; Searching a free block, this function changes the values of fl and sl
         bne   > 
         lda   #tlsf.err.malloc.NO_MORE_SPACE
         sta   tlsf.err
         rts
-!       jsr   tlsf.removeHeadBlock     ; Remove the allocated block from the free matrix
+!       jsr   tlsf.removeHeadBlock      ; Remove the allocated block from the free matrix
         ; Should the block be split?
-        ldd   tlsf.blockHdr.size,u     ; Size of available memory -1
-        anda  #tlsf.mask.BLOCK_SIZE
-        addd  #1                       ; Size is stored as size-1
-        subd  tlsf.rsize               ; Substract requested memory size
-        cmpd  #sizeof{tlsf.blockHdr}   ; Check against block header size
-        blo   >                        ; Not enough bytes for a new splitted block
+        ldd   tlsf.blockHdr.size,u      ; Size of available memory -1
+        subd  tlsf.rsize                ; Substract requested memory size
+        cmpd  #$8000+sizeof{tlsf.blockHdr}-1 ; Check against block header size, Size is stored as size-1, take care of free flag
+        blo   @nosplit                       ; Not enough bytes for a new splitted block
         ; Split
-        subd  #tlsf.BHDR_OVERHEAD+1    ; Size is stored as size-1
-        std   @d
-        ldd   #tlsf.BHDR_OVERHEAD      ; Compute address
-        addd  tlsf.rsize               ; of new instancied block
-        leax  d,u                      ; into x
-        ldd   #0                       ; (dynamic) get remaining usable memory
-@d      equ   *-2
-        ora   #tlsf.mask.FREE_BLOCK    ; Set free block bit
-        std   tlsf.blockHdr.size,x     ; Store new block size
-        ldd   tlsf.blockHdr.size,u
-        anda  #tlsf.mask.BLOCK_SIZE
-        addd  #tlsf.MIN_BLOCK_SIZE+tlsf.blockHdr.prev.phys+1  ; Size is stored as size-1
-        stx   d,u                      ; Set the prev phys of the next block
-        ldd   @d
-        addd  #1
+        leax  $1234,u                   ; Compute address of new instancied free block into x
+tlsf.rsize equ *-2                      ; requested memory size
+        leax  tlsf.BHDR_OVERHEAD,x
+        std   tlsf.blockHdr.size,x      ; Set allocated size for used Block
+        stu   tlsf.blockHdr.prev.phys,x ; Set the prev phys of the new free block
+        ldd   tlsf.rsize
+        subd  #1                        ; Size is stored as size-1
+        std   tlsf.blockHdr.size,u      ; Store new block size
+        ldd   tlsf.blockHdr.size,x
+        anda  #^tlsf.mask.FREE_BLOCK    ; Unset free block bit
         stx   @x
         jsr   tlsf.mapping
-        ldx   #0                       ; (dynamic)
+        ldx   #0
 @x      equ   *-2
-        jsr   tlsf.insertBlock
-!       lda   tlsf.blockHdr.size,u
-        anda  #^tlsf.mask.FREE_BLOCK   ; Unset free block bit
+        jmp   tlsf.insertBlock
+@nosplit
+        lda   tlsf.blockHdr.size,u      ; No split, use the whole block
+        anda  #^tlsf.mask.FREE_BLOCK    ; Unset free block bit
         sta   tlsf.blockHdr.size,u
-        leau  tlsf.MIN_BLOCK_SIZE,u    ; Skip block header when returning allocated memory address
+        leau  tlsf.MIN_BLOCK_SIZE,u     ; Skip block header when returning allocated memory address
         rts
 @error  ldu   #0
         rts
@@ -233,7 +225,7 @@ tlsf.mappingSearch
         bhi   >                             ; Branch to round up if fl is not at minimum value
         ldd   tlsf.rsize
         bra   tlsf.mapping                  ; Skip round up
-!       subb  #tlsf.SL_BITS+1               ; Round up (fls return bitpos range 1-16, so +1 here)
+!       subb  #tlsf.SL_BITS                 ; Round up
         aslb
         ldx   #tlsf.map.mask
         ldd   b,x
@@ -369,7 +361,7 @@ tlsf.findSuitableBlock
         leax  b,x                      ; load head of free block list to X
         rts
 
-tlsf.map.mask
+tlsf.map.mask equ *-2                  ; skip zero fl/sl value
         fdb   %1111111111111111
         fdb   %1111111111111110
         fdb   %1111111111111100
@@ -387,7 +379,7 @@ tlsf.map.mask
         fdb   %1100000000000000
         fdb   %1000000000000000
 
-tlsf.map.bitset
+tlsf.map.bitset equ *-2                  ; skip zero fl/sl value
         fdb   %0000000000000001
         fdb   %0000000000000010
         fdb   %0000000000000100
@@ -464,12 +456,10 @@ tlsf.mappingInsert
 ;-----------------------------------------------------------------
 tlsf.removeHeadBlock
         ldu   ,x                                        ; load address of block
-        ldd   #0
-        ;std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,u
-        ;std   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
         ldy   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
         sty   ,x                                        ; store new head of list
         beq   tlsf.mappingRemove                        ; clear bit for this fl/sl index when no more block in list
+        ldd   #0
         std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; clear previous element in the new head of list
         rts
 
@@ -483,7 +473,7 @@ tlsf.removeHeadBlock
 ;-----------------------------------------------------------------
 tlsf.removeBlock
         ; ...
-        jmp   tlsf.mappingRemove
+        ;jmp   tlsf.mappingRemove
 
 tlsf.mappingRemove
         ; remove from fl bitmap

@@ -20,10 +20,6 @@ public class Emulator {
 	public static int baseSize  = 0;
 	public static long ramAddress = 0;
 	
-	// public static final long ramAddress   = 0x000081D800;       // ram[0x80000] ram (maxi 512K pour TO9+) 2023.02.25
-	// public static final long ramAddress   = 0x00007F67C0;       // ram[0x80000] ram (maxi 512K pour TO9+) dcmoto 2023.01.30
-	// public static final long ramAddress   = 0x000081E800;       // ram[0x80000] ram (maxi 512K pour TO9+) dcmoto 2023.02.13
-
 	public static long portAddress = 0;  // port[0x40]   ports d'entrees/sorties
 	public static long ddrAddress = 0;   // ddr[0x40]    registres de direction des PIA 6821
 	public static long plineAddress = 0; // pline[0x40]  peripheral input-control lines des PIA 6821
@@ -70,9 +66,14 @@ public class Emulator {
     	if (address >= 0x6000 && address < 0xA000) {
     		page = 1;
     		address -= 0x6000;
+    	} else {
+    		if (address >= 0x4000) return null;
+    		if (address >= 0x2000) {
+    			address -= 0x2000;
+    		} else {
+    			address += 0x2000;
+    		}
     	}
-    	
-    	if (address >= 0x4000) return null;
     	
 		return ramAddress + page*0x4000 + address;
     } 

@@ -359,13 +359,13 @@ alloc
         jsr   switchpage
 
         ; init allocator
-        ldd   #$8000
-        ldx   #$1234
+        ldd   #$4000
+        ldx   #$0000
         jsr   tlsf.init
 
         ; allocate some memory space
-        ;ldd   #63
-        ;jsr   tlsf.malloc
+        ldd   #63
+        jsr   tlsf.malloc
 
         bra   *
 
