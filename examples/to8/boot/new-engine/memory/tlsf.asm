@@ -225,7 +225,7 @@ tlsf.mappingSearch
         bhi   >                             ; Branch to round up if fl is not at minimum value
         ldd   tlsf.rsize
         bra   tlsf.mapping                  ; Skip round up
-!       subb  #tlsf.SL_BITS                 ; Round up
+!       subb  #tlsf.SL_BITS+1               ; Round up (fls return bitpos range 1-16, so +1 here)
         aslb
         ldx   #tlsf.map.mask
         ldd   b,x
@@ -361,7 +361,7 @@ tlsf.findSuitableBlock
         leax  b,x                      ; load head of free block list to X
         rts
 
-tlsf.map.mask equ *-2                  ; skip zero fl/sl value
+tlsf.map.mask
         fdb   %1111111111111111
         fdb   %1111111111111110
         fdb   %1111111111111100
@@ -379,7 +379,7 @@ tlsf.map.mask equ *-2                  ; skip zero fl/sl value
         fdb   %1100000000000000
         fdb   %1000000000000000
 
-tlsf.map.bitset equ *-2                  ; skip zero fl/sl value
+tlsf.map.bitset
         fdb   %0000000000000001
         fdb   %0000000000000010
         fdb   %0000000000000100
