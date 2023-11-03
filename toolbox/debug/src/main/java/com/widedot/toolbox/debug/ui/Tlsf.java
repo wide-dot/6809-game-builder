@@ -81,7 +81,7 @@ public class Tlsf {
 			ImGui.sameLine();
 			ImGui.pushStyleColor(ImGuiCol.Text, ORANGE);
 			ImGui.text("              SL");
-			for (int i = 1; i <= 16; i++) {
+			for (int i = 0; i <= 15; i++) {
 				ImGui.sameLine();
 				ImGui.text(String.format("%4s", i));
 			}
@@ -93,7 +93,7 @@ public class Tlsf {
 			for (int i = 0; i < 48; i++) {
 				if (col == 0) {
 					ImGui.pushStyleColor(ImGuiCol.Text, ORANGE);
-					ImGui.text(String.format("%2s", fl+1));
+					ImGui.text(String.format("%2s", fl));
 					ImGui.popStyleColor();
 					ImGui.sameLine();
 					ImGui.text(" " + flBitmapArray[fl++]);
@@ -114,7 +114,7 @@ public class Tlsf {
 			ImGui.popStyleColor();
 
 			ImGui.pushStyleColor(ImGuiCol.Text, ORANGE);
-			ImGui.text(String.format("%2s", fl+1));
+			ImGui.text(String.format("%2s", fl));
 			ImGui.popStyleColor();
 			ImGui.sameLine();
 			ImGui.text(" " + flBitmapArray[fl++]);
@@ -171,7 +171,7 @@ public class Tlsf {
 			}
 
 			ImGui.pushStyleColor(ImGuiCol.Text, ORANGE);
-			ImGui.text(String.format("%2s", fl+1));
+			ImGui.text(String.format("%2s", fl));
 			ImGui.popStyleColor();
 			ImGui.sameLine();
 			ImGui.text(" " + flBitmapArray[fl++]);

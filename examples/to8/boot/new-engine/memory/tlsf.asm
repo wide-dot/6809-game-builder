@@ -226,12 +226,12 @@ tlsf.mappingSearch
         ldd   tlsf.rsize
         bra   tlsf.mapping                  ; Skip round up
 !       subb  #tlsf.SL_BITS+1               ; Round up (fls return bitpos range 1-16, so +1 here)
-        aslb
-        ldx   #tlsf.map.mask
-        ldd   b,x
+        aslb                                ; Fit requested size
+        ldx   #tlsf.map.mask                ; to a level that
+        ldd   b,x                           ; is big enough
         coma
         comb
-        addd  tlsf.rsize
+        addd  tlsf.rsize                    ; requested size is rounded up
 tlsf.mapping
         std   tlsf.fls.in
         jsr   tlsf.fls                      ; Split memory size in power of two
@@ -452,30 +452,25 @@ tlsf.mappingInsert
 ; input  REG : [X] head of free memory block list
 ; output REG : [U] free memory block address
 ;-----------------------------------------------------------------
-;
+; update new head of list
 ;-----------------------------------------------------------------
 tlsf.removeHeadBlock
         ldu   ,x                                        ; load address of block
         ldy   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
         sty   ,x                                        ; store new head of list
-        beq   tlsf.mappingRemove                        ; clear bit for this fl/sl index when no more block in list
+        beq   tlsf.removeBlock
         ldd   #0
         std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; clear previous element in the new head of list
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.extractblock
+; tlsf.removeBlock
 ; input  VAR : [tlsf.fl] first level index
 ; input  VAR : [tlsf.sl] second level index
-; input  REG : [X] memory block location
 ;-----------------------------------------------------------------
-;
+; clear bit for this fl/sl index when no more block in list
 ;-----------------------------------------------------------------
 tlsf.removeBlock
-        ; ...
-        ;jmp   tlsf.mappingRemove
-
-tlsf.mappingRemove
         ; remove from fl bitmap
         ldx   #tlsf.map.bitset
         ldb   tlsf.fl
@@ -501,12 +496,6 @@ tlsf.mappingRemove
         anda  ,y
         andb  1,y
         std   ,y
-        rts
-
-tlsf.mergeprev
-        rts
-
-tlsf.mergenext
         rts
 
 ;-----------------------------------------------------------------
@@ -565,7 +554,7 @@ tlsf.ffs
 @msb
         lda   tlsf.ffs.in
         beq   @zero
-        ldb   #types.BYTE_BITS+1
+        ldb   #types.BYTE_BITS
 !
         bita  #$0f
         bne   >
