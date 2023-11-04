@@ -129,18 +129,17 @@ tlsf.init
 
         ; set a single free block
         ldx   tlsf.memoryPool
+        stx   tlsf.insertBlock.location
         ldd   tlsf.memoryPool.size
         subd  #tlsf.BHDR_OVERHEAD+1 ; size is stored as val-1
         ora   #tlsf.mask.FREE_BLOCK ; set free block bit
         std   tlsf.blockHdr.size,x
-        ldd   #0
-        std   tlsf.blockHdr.prev.phys,x ; no previous physical block (set to 0)
+        ldd   #-1
+        std   tlsf.blockHdr.prev.phys,x ; no previous physical block
 
         ldd   tlsf.memoryPool.size
         jsr   tlsf.mapping
-        ldx   tlsf.memoryPool
-        jsr   tlsf.insertBlock
-        rts
+        jmp   tlsf.insertBlock
 
 ;-----------------------------------------------------------------
 ; tlsf.malloc
@@ -170,11 +169,7 @@ tlsf.safe.malloc
 tlsf.malloc
 !       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
         jsr   tlsf.findSuitableBlock         ; Searching a free block, this function changes the values of fl and sl
-        bne   > 
-            lda   #tlsf.err.malloc.NO_MORE_SPACE
-            sta   tlsf.err
-            jmp   tlsf.err.callback
-!       jsr   tlsf.removeHeadBlock           ; Remove the allocated block from the free matrix
+        jsr   tlsf.removeBlockHead           ; Remove the allocated block from the free matrix
         ; Should the block be split?
         ldd   tlsf.blockHdr.size,u           ; Size of available memory -1
         subd  tlsf.rsize                     ; Substract requested memory size
@@ -193,11 +188,9 @@ tlsf.rsize  equ *-2                          ; requested memory size
             std   tlsf.blockHdr.size,u       ; Store new block size
             ldd   tlsf.blockHdr.size,x
             anda  #^tlsf.mask.FREE_BLOCK     ; Unset free block bit
-            stx   @x
-            jsr   tlsf.mapping
-            ldx   #0
-@x          equ   *-2
-            jmp   tlsf.insertBlock
+            stx   tlsf.insertBlock.location
+            jsr   tlsf.mapping               ; compute fl/sl index
+            jmp   tlsf.insertBlock           ; update index
 !       lda   tlsf.blockHdr.size,u           ; No split, use the whole block
         anda  #^tlsf.mask.FREE_BLOCK         ; Unset free block bit
         sta   tlsf.blockHdr.size,u
@@ -217,7 +210,29 @@ tlsf.safe.free
             sta   tlsf.err
             jmp   tlsf.err.callback
 tlsf.free
-!
+!       ; check previous physical block
+        ; and extend if already free 
+        ldx   tlsf.blockHdr.prev.phys,u
+        cmpx  #-1
+        beq   >                                 ; branch if no previous physical block
+            ldd   tlsf.blockHdr.size,x
+            bpl   >                             ; branch if previous physical block is used
+                pshs  x,u
+                jsr   tlsf.mapping              ; compute fl/sl index of previous physical free block
+                jsr   tlsf.removeBlock          ; remove it from index
+                puls  x,u
+                subd  tlsf.blockHdr.size,u      ; add size of freed memory while keeping free bit on
+                subd  tlsf.BHDR_OVERHEAD        ; TODO : do global change to make size reflect usage + overhead
+                std   tlsf.blockHdr.size,x
+                stx   tlsf.insertBlock.location
+                anda  #^tlsf.mask.FREE_BLOCK    ; TODO : global move the AND to mapping routine
+                jsr   tlsf.mapping
+                jsr   tlsf.insertBlock
+!       ; check next physical block
+        ; and extend if already free
+        ldx   tlsf.blockHdr.prev.phys,u
+!       ; turn the current used block
+        ; to a free one
         rts
 
 ;-----------------------------------------------------------------
@@ -307,7 +322,6 @@ tlsf.mapping
 ; tlsf.findSuitableBlock
 ; input  VAR : [tlsf.fl] first level index
 ; input  VAR : [tlsf.sl] second level index
-; output REG : [X] head of free memory block list or zero if err
 ; output VAR : [tlsf.fl] suitable first level index
 ; output VAR : [tlsf.sl] suitable second level index
 ;-----------------------------------------------------------------
@@ -320,7 +334,6 @@ tlsf.mapping
 ;    non_empty_fl:= ffs(bitmap_tmp);
 ;    non_empty_sl:= ffs(SL_bitmaps[non_empty_fl]);
 ; end if ;
-; return head_list(non_empty_fl, non empty_sl);
 ;-----------------------------------------------------------------
 tlsf.findSuitableBlock
         ; search for free list in selected fl/sl index
@@ -343,7 +356,7 @@ tlsf.findSuitableBlock
         jsr   tlsf.ffs                 ; search first non empty sl index
         decb
         stb   tlsf.sl
-        bra   @headlist
+        rts
 @searchatupperfl
         ; search for free list at upper fl
         ldx   #tlsf.map.mask
@@ -356,8 +369,9 @@ tlsf.findSuitableBlock
         andb  1,x                      ; apply mask to keep only upper fl values
         std   tlsf.ffs.in
         bne   >
-        ldx   #0                       ; no suitable list found
-        rts
+            lda   #tlsf.err.malloc.NO_MORE_SPACE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
 !       jsr   tlsf.ffs                 ; search first non empty fl index
         decb
         stb   tlsf.fl
@@ -369,15 +383,6 @@ tlsf.findSuitableBlock
         jsr   tlsf.ffs                 ; search first non empty sl index
         decb
         stb   tlsf.sl
-@headlist
-        lda   tlsf.fl
-        ldb   #tlsf.SL_SIZE*2
-        mul
-        ldx   #tlsf.headMatrix
-        leax  d,x
-        ldb   tlsf.sl
-        aslb                           ; headMatrix store WORD
-        leax  b,x                      ; load head of free block list to X
         rts
 
 tlsf.map.mask
@@ -426,6 +431,8 @@ tlsf.map.bitset
 ;-----------------------------------------------------------------
 tlsf.insertBlock
         ; insert into head matrix
+        ldx   #0
+tlsf.insertBlock.location equ *-2
         ldd   #0
         std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x ; no previous free block (set to 0)
         lda   tlsf.fl
@@ -467,30 +474,56 @@ tlsf.mappingInsert
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.removeHeadBlock
-; input  REG : [X] head of free memory block list
-; output REG : [U] free memory block address
-;-----------------------------------------------------------------
-; update new head of list
-;-----------------------------------------------------------------
-tlsf.removeHeadBlock
-        ldu   ,x                                        ; load address of block
-        ldy   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
-        sty   ,x                                        ; store new head of list
-        beq   tlsf.removeBlock
-        ldd   #0
-        std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; clear previous element in the new head of list
-        rts
-
-;-----------------------------------------------------------------
 ; tlsf.removeBlock
 ; input  VAR : [tlsf.fl] first level index
 ; input  VAR : [tlsf.sl] second level index
+; input  REG : [U] address of block to remove
+; trash      : [D,X]
 ;-----------------------------------------------------------------
-; clear bit for this fl/sl index when no more block in list
+; remove a free block in his linked list, and update index
 ;-----------------------------------------------------------------
 tlsf.removeBlock
-        ; remove from fl bitmap
+        ldx   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,u     ; check if removed block is a head
+        cmpx  #-1
+        beq   tlsf.removeBlockHead                          ; branch if yes
+            leay  ,u
+            ldu   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u ; not a head, just update the linked list
+            stu   tlsf.blockHdr.freePtr+tlsf.freePtr.next,x
+            cmpu  #-1
+            beq   >
+                ldd   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y
+                std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,u
+!           rts
+
+;-----------------------------------------------------------------
+; tlsf.removeBlockHead
+; input  VAR : [tlsf.fl] first level index
+; input  VAR : [tlsf.sl] second level index
+; output REG : [U] address of block at head of list
+; trash      : [D,X]
+;-----------------------------------------------------------------
+; remove a free block in his linked list, and update index
+;-----------------------------------------------------------------
+tlsf.removeBlockHead
+        lda   tlsf.fl
+        ldb   #tlsf.SL_SIZE*2
+        mul
+        ldx   #tlsf.headMatrix
+        leax  d,x
+        ldb   tlsf.sl
+        aslb                                                ; headMatrix store WORD sized data
+        leay  b,x                                           ; load head of free block list to Y
+        ldu   ,y                                            ; load block to U (output value)
+
+        ldx   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u     ; load next block in list (if exists)
+        stx   ,y                                            ; store new head of list
+        cmpx  #-1
+        beq   >                                             ; branch if no more head at this index
+            ldd   #-1                                       ; update new head
+            std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x ; with no previous block
+            rts                                         
+!
+        ; remove index from fl bitmap
         ldx   #tlsf.map.bitset
         ldb   tlsf.fl
         aslb
@@ -501,7 +534,7 @@ tlsf.removeBlock
         andb  tlsf.fl.bitmap+1
         std   tlsf.fl.bitmap
 
-        ; remove from sl bitmap
+        ; remove index from sl bitmap
         lda   tlsf.fl
         ldb   #tlsf.sl.bitmap.size
         mul

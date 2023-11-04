@@ -200,8 +200,6 @@ public class Tlsf {
 			}
 			
 			// Memory pool page
-			// ----------------
-			
 			ImGui.text("");
 			ImGui.separator();
 			ImGui.text("MEMORY POOL");
@@ -215,6 +213,7 @@ public class Tlsf {
 				page.set(31);
 			}
 			
+			// Memory pool location
 			curStr = Symbols.symbols.get("tlsf.memoryPool");
 			curAdr = Emulator.getAbsoluteAddress(1, curStr);
 			if (curAdr == null) {
@@ -224,6 +223,7 @@ public class Tlsf {
 			address = Emulator.get(curAdr, 2);
 			ImGui.inputText("address", new ImString(String.format("%04X", address)), ImGuiInputTextFlags.ReadOnly);
 			
+			// Pool size
 			curStr = Symbols.symbols.get("tlsf.memoryPool.size");
 			curAdr = Emulator.getAbsoluteAddress(1, curStr);
 			if (curAdr == null) {
@@ -232,6 +232,16 @@ public class Tlsf {
 			}
 			size = Emulator.get(curAdr, 2);
 			ImGui.inputText("size", new ImString(String.format("%04X", size)), ImGuiInputTextFlags.ReadOnly);
+
+			// Error code
+			curStr = Symbols.symbols.get("tlsf.err");
+			curAdr = Emulator.getAbsoluteAddress(1, curStr);
+			if (curAdr == null) {
+				ImGui.end();
+				return;
+			}
+			curVal = Emulator.get(curAdr, 2);
+			ImGui.inputText("error code", new ImString(String.format("%02X", curVal)), ImGuiInputTextFlags.ReadOnly);
 			ImGui.popItemWidth();
 			
 			ImVec2 vMin = ImGui.getWindowContentRegionMin();
