@@ -48,10 +48,12 @@ tlsf.mask.FREE_BLOCK  equ   %10000000
 ; tlsf external variables and constants
 ; -------------------------------------
 tlsf.err              fcb   0
+tlsf.err.callback     fdb   tlsf.loop   ; error callback, default is an infinite loop
 tlsf.err.init.MIN_SIZE        equ   1   ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
 tlsf.err.init.MAX_SIZE        equ   2   ; memory pool should have 32768 ($8000) as a maximum size
 tlsf.err.malloc.NO_MORE_SPACE equ   3   ; no more space in memory pool 
 tlsf.err.malloc.MAX_SIZE      equ   4   ; malloc can not handle more than 63488 ($F800) bytes request
+tlsf.err.free.NULL_PTR        equ   5   ; memory location to free cannot be NULL
 
 ; tlsf internal variables
 ; -----------------------
@@ -87,6 +89,14 @@ tlsf.index.end
  ENDC
 
 ;-----------------------------------------------------------------
+; tlsf.loop
+;-----------------------------------------------------------------
+; default error callback
+;-----------------------------------------------------------------
+tlsf.loop
+        bra   *
+
+;-----------------------------------------------------------------
 ; tlsf.init
 ; input  REG : [D] total memory pool size (overhead included)
 ; input  REG : [X] memory pool location
@@ -101,20 +111,20 @@ tlsf.init
         ; check memory pool size
         cmpd  #sizeof{tlsf.blockHdr}
         bhs   >
-        lda   #tlsf.err.init.MIN_SIZE
-        sta   tlsf.err
-        rts
+            lda   #tlsf.err.init.MIN_SIZE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
 !       cmpd  #$8000
         bls   >
-        lda   #tlsf.err.init.MAX_SIZE
-        sta   tlsf.err
-        rts
+            lda   #tlsf.err.init.MAX_SIZE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
 
 !       ; Zeroing the tlsf index
         ldx   #tlsf.index
         ldd   #0
-!       std   ,x++
-        cmpx  #tlsf.index.end
+!           std   ,x++
+            cmpx  #tlsf.index.end
         bne   <
 
         ; set a single free block
@@ -148,57 +158,66 @@ tlsf.init
 ; end if ;
 ; return free_block;
 ;-----------------------------------------------------------------
-tlsf.malloc
-        cmpd  #tlsf.MIN_BLOCK_SIZE      ; Apply minimum size to requested memory size
+tlsf.safe.malloc
+        cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
         bhs   >
-        ldd   #tlsf.MIN_BLOCK_SIZE
-!       cmpd  #$F800                    ; greater values are not handled by mappingSearch function
-        bls   >                         ; this prevents unexpected behaviour
-        lda   #tlsf.err.malloc.MAX_SIZE
-        sta   tlsf.err
-        rts
-!       jsr   tlsf.mappingSearch        ; Set tlsf.rsize, fl and sl
-        jsr   tlsf.findSuitableBlock    ; Searching a free block, this function changes the values of fl and sl
+            ldd   #tlsf.MIN_BLOCK_SIZE
+!       cmpd  #$F800                         ; greater values are not handled by mappingSearch function
+        bls   >                              ; this prevents unexpected behaviour
+            lda   #tlsf.err.malloc.MAX_SIZE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
+tlsf.malloc
+!       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
+        jsr   tlsf.findSuitableBlock         ; Searching a free block, this function changes the values of fl and sl
         bne   > 
-        lda   #tlsf.err.malloc.NO_MORE_SPACE
-        sta   tlsf.err
-        rts
-!       jsr   tlsf.removeHeadBlock      ; Remove the allocated block from the free matrix
+            lda   #tlsf.err.malloc.NO_MORE_SPACE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
+!       jsr   tlsf.removeHeadBlock           ; Remove the allocated block from the free matrix
         ; Should the block be split?
-        ldd   tlsf.blockHdr.size,u      ; Size of available memory -1
-        subd  tlsf.rsize                ; Substract requested memory size
+        ldd   tlsf.blockHdr.size,u           ; Size of available memory -1
+        subd  tlsf.rsize                     ; Substract requested memory size
         cmpd  #$8000+sizeof{tlsf.blockHdr}-1 ; Check against block header size, Size is stored as size-1, take care of free flag
-        blo   @nosplit                       ; Not enough bytes for a new splitted block
-        ; Split
-        leax  $1234,u                   ; Compute address of new instancied free block into x
-tlsf.rsize equ *-2                      ; requested memory size
-        leax  tlsf.BHDR_OVERHEAD,x
-        std   tlsf.blockHdr.size,x      ; Set allocated size for used Block
-        stu   tlsf.blockHdr.prev.phys,x ; Set the prev phys of the new free block
-        ldd   tlsf.rsize
-        subd  #1                        ; Size is stored as size-1
-        std   tlsf.blockHdr.size,u      ; Store new block size
-        ldd   tlsf.blockHdr.size,x
-        anda  #^tlsf.mask.FREE_BLOCK    ; Unset free block bit
-        stx   @x
-        jsr   tlsf.mapping
-        ldx   #0
-@x      equ   *-2
-        jmp   tlsf.insertBlock
-@nosplit
-        lda   tlsf.blockHdr.size,u      ; No split, use the whole block
-        anda  #^tlsf.mask.FREE_BLOCK    ; Unset free block bit
+        blo   >                              ; Not enough bytes for a new splitted block
+            ; Split a free block in two
+            ; smaller blocks: one allocated,
+            ; one free
+            leax  $1234,u                    ; Compute address of new instancied free block into x
+tlsf.rsize  equ *-2                          ; requested memory size
+            leax  tlsf.BHDR_OVERHEAD,x
+            std   tlsf.blockHdr.size,x       ; Set allocated size for used Block
+            stu   tlsf.blockHdr.prev.phys,x  ; Set the prev phys of the new free block
+            ldd   tlsf.rsize
+            subd  #1                         ; Size is stored as size-1
+            std   tlsf.blockHdr.size,u       ; Store new block size
+            ldd   tlsf.blockHdr.size,x
+            anda  #^tlsf.mask.FREE_BLOCK     ; Unset free block bit
+            stx   @x
+            jsr   tlsf.mapping
+            ldx   #0
+@x          equ   *-2
+            jmp   tlsf.insertBlock
+!       lda   tlsf.blockHdr.size,u           ; No split, use the whole block
+        anda  #^tlsf.mask.FREE_BLOCK         ; Unset free block bit
         sta   tlsf.blockHdr.size,u
-        leau  tlsf.MIN_BLOCK_SIZE,u     ; Skip block header when returning allocated memory address
-        rts
-@error  ldu   #0
+        leau  tlsf.MIN_BLOCK_SIZE,u          ; Skip block header when returning allocated memory address
         rts
 
 ;-----------------------------------------------------------------
 ; tlsf.free
+; input REG : [U] allocated memory address to free
 ;-----------------------------------------------------------------
+; 
 ;-----------------------------------------------------------------
+tlsf.safe.free
+        cmpu  #0
+        bne   >
+            lda   #tlsf.err.malloc.MAX_SIZE
+            sta   tlsf.err
+            jmp   tlsf.err.callback
 tlsf.free
+!
         rts
 
 ;-----------------------------------------------------------------
