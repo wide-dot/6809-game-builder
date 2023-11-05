@@ -35,13 +35,13 @@ tlsf.ut.init
         lda   tlsf.err
         beq   >
         bra   *
-!       ldd   tlsf.index
+!       ldd   tlsf.bitmap.start
         cmpd  #$0008
         bne   *
-        ldd   tlsf.index+2
+        ldd   tlsf.bitmap.start+2
         cmpd  #$0100
         bne   *
-        ldd   tlsf.index+42
+        ldd   tlsf.bitmap.start+42
         cmpd  #$1111
         bne   *
 
@@ -51,13 +51,13 @@ tlsf.ut.init
         lda   tlsf.err
         beq   >
         bra   *
-!       ldd   tlsf.index
+!       ldd   tlsf.bitmap.start
         cmpd  #$8000
         bne   *
-        ldd   tlsf.index+26
+        ldd   tlsf.bitmap.start+26
         cmpd  #$0001
         bne   *
-        ldd   tlsf.index+410
+        ldd   tlsf.bitmap.start+410
         cmpd  #$2222
         bne   *
 

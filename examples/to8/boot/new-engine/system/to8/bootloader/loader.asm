@@ -366,6 +366,11 @@ alloc
         ; allocate some memory space
         ldd   #63
         jsr   tlsf.malloc
+        ; U store allocated memory location
+
+        ; deallocate some memory space
+        ; U already set
+        jsr   tlsf.free
 
         bra   *
 
