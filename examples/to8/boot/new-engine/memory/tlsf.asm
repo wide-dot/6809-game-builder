@@ -141,14 +141,15 @@ tlsf.init
         ; set a single free block
         ldx   tlsf.memoryPool
         stx   tlsf.insertBlock.location
-        ldd   tlsf.memoryPool.size
-        subd  #tlsf.BHDR_OVERHEAD+1 ; size is stored as val-1
-        ora   #tlsf.mask.FREE_BLOCK ; set free block bit
-        std   tlsf.blockHdr.size,x
+
         ldd   #tlsf.block.nullptr
         std   tlsf.blockHdr.prev.phys,x ; no previous physical block
 
         ldd   tlsf.memoryPool.size
+        subd  #tlsf.BHDR_OVERHEAD+1 ; size is stored as val-1
+        ora   #tlsf.mask.FREE_BLOCK ; set free block bit
+        std   tlsf.blockHdr.size,x
+        anda  #^tlsf.mask.FREE_BLOCK ; unset free block bit, size parameter for mapping
         jsr   tlsf.mapping
         jmp   tlsf.insertBlock
 
@@ -200,13 +201,15 @@ tlsf.rsize  equ *-2                          ; requested memory size
             std   tlsf.blockHdr.size,u       ; Store new block size
             ldd   tlsf.blockHdr.size,x       ; load parameter for mapping routine
             anda  #^tlsf.mask.FREE_BLOCK     ; Unset free block bit
+            pshs  u
             stx   tlsf.insertBlock.location
             jsr   tlsf.mapping               ; compute fl/sl index
-            jmp   tlsf.insertBlock           ; update index
-!       lda   tlsf.blockHdr.size,x           ; No split, use the whole block
+            jsr   tlsf.insertBlock           ; update index
+            puls  u
+!       lda   tlsf.blockHdr.size,u           ; No split, use the whole block
         anda  #^tlsf.mask.FREE_BLOCK         ; Unset free block bit
-        sta   tlsf.blockHdr.size,x
-        leau  tlsf.MIN_BLOCK_SIZE,x          ; Skip block header when returning allocated memory address
+        sta   tlsf.blockHdr.size,u
+        leau  tlsf.MIN_BLOCK_SIZE,u          ; Skip block header when returning allocated memory address
         rts
 
 ;-----------------------------------------------------------------
@@ -225,6 +228,7 @@ tlsf.safe.free
 tlsf.free
 !       ; check previous physical block
         ; and extend if already free 
+        leau  -tlsf.BHDR_OVERHEAD,u
         ldx   tlsf.blockHdr.prev.phys,u
         cmpx  #tlsf.block.nullptr
         beq   >                                 ; branch if no previous physical block
@@ -245,7 +249,7 @@ tlsf.free
         ; check next physical block
         ; and extend if already free
         ldd   tlsf.blockHdr.size,u                  ; used block do not have the free bit
-        addd  tlsf.BHDR_OVERHEAD
+        addd  #tlsf.BHDR_OVERHEAD+1                 ; size is stored as size-1
 @checkNext
         leax  d,u                                   ; X is now a ptr to next block
         beq   >                                     ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
@@ -268,7 +272,7 @@ tlsf.free
                     ; but it saves 2 bytes of memory for each block
                     ldd   tlsf.blockHdr.size,x
                     anda  #^tlsf.mask.FREE_BLOCK
-                    addd  #tlsf.BHDR_OVERHEAD
+                    addd  #tlsf.BHDR_OVERHEAD+1     ; size is stored as size-1
                     leax  d,x                       ; X is now a ptr to next physical of next physical (from deallocated block)
                     beq   >                         ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
                         cmpx  tlsf.memoryPool.end
@@ -401,7 +405,6 @@ tlsf.findSuitableBlock
 @foundatcurrentfl
         ; found free list at current fl
         jsr   tlsf.ffs                 ; search first non empty sl index
-        decb
         stb   tlsf.sl
         rts
 @searchatupperfl
@@ -420,14 +423,12 @@ tlsf.findSuitableBlock
             sta   tlsf.err
             jmp   tlsf.err.callback
 !       jsr   tlsf.ffs                 ; search first non empty fl index
-        decb
         stb   tlsf.fl
         aslb                           ; mul by tlsf.sl.bitmap.size
         ldx   #tlsf.sl.bitmaps
         ldd   b,x                      ; load suitable sl bitmap value
         std   tlsf.ffs.in              ; no need to test zero value here, no applied mask
         jsr   tlsf.ffs                 ; search first non empty sl index
-        decb
         stb   tlsf.sl
         rts
 
