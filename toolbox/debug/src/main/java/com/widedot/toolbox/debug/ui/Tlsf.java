@@ -240,8 +240,8 @@ public class Tlsf {
 				ImGui.end();
 				return;
 			}
-			curVal = Emulator.get(curAdr, 2);
-			ImGui.inputText("error code", new ImString(String.format("%02X", curVal)), ImGuiInputTextFlags.ReadOnly);
+			curVal = Emulator.get(curAdr, 1);
+			ImGui.inputText("error code", new ImString(String.format("%01X", curVal)), ImGuiInputTextFlags.ReadOnly);
 			ImGui.popItemWidth();
 			
 			ImVec2 vMin = ImGui.getWindowContentRegionMin();
