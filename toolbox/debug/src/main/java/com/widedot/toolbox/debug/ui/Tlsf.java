@@ -252,7 +252,7 @@ public class Tlsf {
 			
 			// init pixel map
 			for (int i=0; i<size; i++) {
-				pixels[i] = 0xFFFF0000;
+				pixels[i] = 0xFF800000;
 			}
 			for (int i=size; i<MAP_WIDTH*MAP_HEIGHT; i++) {
 				pixels[i] = 0x00000000;

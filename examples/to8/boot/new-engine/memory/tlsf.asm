@@ -11,7 +11,7 @@
 ;
 ; TODO - OPTIM :
 ; 1.
-; tlsf.ffs => supprimer le decb qui suit tous les appels jsr tlsf.ffs
+; tlsf.ctz => supprimer le decb qui suit tous les appels jsr tlsf.ctz
 ; et modifier ffs pour renvoyer la bonne valeur directement
 ;-----------------------------------------------------------------
 
@@ -158,16 +158,7 @@ tlsf.init
 ; input  REG : [D] requested memory size
 ; output REG : [U] allocated memory address or 0 if no more space
 ;-----------------------------------------------------------------
-; mapping_search(r, fl, sl);
-; free_block:= find_suitable_block(r, fl, sl);
-; if not(free_block) then return error; end if;
-; remove_head(free_block);
-; if size(free_block)-r {>} split_size_threshold then
-;    remaining_block:= split(free_block, r);
-;    mapping_insert(size(remaining_block), fl, sl);
-;    insert_block(remaining_block, fl, sl);
-; end if ;
-; return free_block;
+;
 ;-----------------------------------------------------------------
 tlsf.safe.malloc
         cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
@@ -236,6 +227,7 @@ tlsf.free
             bpl   >                             ; branch if previous physical block is used
                 pshs  x,u                       ; previous free block is ready to merge
                 jsr   tlsf.mapping              ; compute fl/sl index of previous physical free block
+                ldx   ,s
                 jsr   tlsf.removeBlock          ; remove it from list and index
                 puls  x,u
                 ldd   tlsf.blockHdr.size,u      ; load size of deallocated block
@@ -260,6 +252,7 @@ tlsf.free
                 bpl   >                             ; branch if next physical block is used
                     pshs  x,u
                     jsr   tlsf.mapping              ; compute fl/sl index of next physical free block
+                    ldx   ,s
                     jsr   tlsf.removeBlock          ; remove it from list and index
                     puls  x,u
                     ldd   tlsf.blockHdr.size,u
@@ -296,45 +289,40 @@ tlsf.free
 ; output VAR : [D] tlsf.fl and tlsf.sl
 ; trash      : [D,X]
 ;-----------------------------------------------------------------
-; r  = r+(1<<(fls(r)-J))-1;
-; fl = fls(r);
-; sl = (r>>(fl-J))-2^J;
-; 
 ; This function handle requested size from 1 up to $F800 (included)
 ;-----------------------------------------------------------------
 tlsf.mappingSearch
         std   tlsf.rsize
         ; round up requested size to next list
-!       std   tlsf.fls.in
-        jsr   tlsf.fls                      ; Split memory size in power of two
-        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS+1 ; (fls return bitpos range 1-16, so +1 here)
-        bhi   >                             ; Branch to round up if fl is not at minimum value
-        ldd   tlsf.rsize
-        bra   tlsf.mapping                  ; Skip round up
-!       subb  #tlsf.SL_BITS+1               ; Round up (fls return bitpos range 1-16, so +1 here)
-        aslb                                ; Fit requested size
-        ldx   #tlsf.map.mask                ; to a level that
-        ldd   b,x                           ; is big enough
+        std   tlsf.clz.in
+        jsr   tlsf.clz                          ; Split memory size in power of two
+        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS
+        bhi   >                                 ; Branch to round up if fl is not at minimum value
+            ldd   tlsf.rsize
+            bra   tlsf.mapping                  ; Skip round up
+!       subb  #tlsf.SL_BITS
+        aslb                                    ; Fit requested size
+        ldx   #tlsf.map.mask                    ; to a level that contain
+        ldd   b,x                               ; big enough free list
         coma
         comb
-        addd  tlsf.rsize                    ; requested size is rounded up
+        addd  tlsf.rsize                        ; requested size is rounded up
 tlsf.mapping
-        std   tlsf.fls.in
-        jsr   tlsf.fls                      ; Split memory size in power of two
-        decb                                ; (fls return bitpos range 1-16, so -1 here)
-        stb   tlsf.fl                       ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
-        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; Test if there is a fl bit
-        bhi   @computesl                    ; if so branch
-        ldb   #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; No fl bit, cap to fl minimum value
-        stb   tlsf.fl
-        incb
+        std   tlsf.clz.in
+        jsr   tlsf.clz                          ; Split memory size in power of two
+        stb   tlsf.fl                           ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
+        cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS-1     ; Test if there is a fl bit
+        bhi   @computesl                        ; if so branch
+            ldb   #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; No fl bit, cap to fl minimum value
+            stb   tlsf.fl
+            incb
 @computesl
         negb
         addb  #types.WORD_BITS+tlsf.SL_BITS
-        aslb                                ; 2 bytes of instructions for each element of @rshift table
-        ldx   #@rshift-4                    ; Saves 4 useless bytes (max 14 shift with slbits=1)
-        abx                                 ; Cannot use indexed jump, so move x
-        ldd   tlsf.fls.in                   ; Get rounded requested size to rescale sl based on fl
+        aslb                                    ; 2 bytes of instructions for each element of @rshift table
+        ldx   #@rshift-4                        ; Saves 4 useless bytes (max 14 shift with slbits=1)
+        abx                                     ; Cannot use indexed jump, so move x
+        ldd   tlsf.clz.in                       ; Get rounded requested size to rescale sl based on fl
         jmp   ,x
 @rshift
         lsra
@@ -365,7 +353,7 @@ tlsf.mapping
         rorb
         lsra
         rorb
-!       andb  #tlsf.SL_SIZE-1               ; Keep only sl bits
+        andb  #tlsf.SL_SIZE-1               ; Keep only sl bits
         stb   tlsf.sl
         lda   tlsf.fl
         rts
@@ -377,22 +365,14 @@ tlsf.mapping
 ; output VAR : [tlsf.fl] suitable first level index
 ; output VAR : [tlsf.sl] suitable second level index
 ;-----------------------------------------------------------------
-; bitmap_tmp:= SL_bitmaps[fl] and (FFFFFFFF#16# left shift sl);
-; if bitmap_tmp != 0 then
-;    non_empty_sl:= ffs(bitmap_tmp);
-;    non_empty_fl:= fl;
-; else
-;    bitmap_tmp:= FL_bitmap and (FFFFFFFF#16# left shift ( f l+1));
-;    non_empty_fl:= ffs(bitmap_tmp);
-;    non_empty_sl:= ffs(SL_bitmaps[non_empty_fl]);
-; end if ;
+;
 ;-----------------------------------------------------------------
 tlsf.findSuitableBlock
         ; search for free list in selected fl/sl index
-        lda   tlsf.fl
-        asla                           ; mul by tlsf.sl.bitmap.size
+        ldb   tlsf.fl
+        aslb                           ; mul by tlsf.sl.bitmap.size
         ldx   #tlsf.sl.bitmaps
-        leax  a,x                      ; set x to selected sl bitmap
+        abx                            ; set x to selected sl bitmap
         ldy   #tlsf.map.mask
         ldb   tlsf.sl
         aslb
@@ -400,16 +380,12 @@ tlsf.findSuitableBlock
         ldd   ,x                       ; load selected sl bitmap value
         anda  ,y                       ; apply mask to keep only selected sl and upper values
         andb  1,y                      ; apply mask to keep only selected sl and upper values
-        std   tlsf.ffs.in
-        beq   @searchatupperfl
-@foundatcurrentfl
-        ; found free list at current fl
-        jsr   tlsf.ffs                 ; search first non empty sl index
-        stb   tlsf.sl
-        rts
-@searchatupperfl
-        ; search for free list at upper fl
-        ldx   #tlsf.map.mask
+        std   tlsf.ctz.in
+        beq   >
+            jsr   tlsf.ctz             ; found free list at current fl
+            stb   tlsf.sl              ; search first non empty sl index
+            rts
+!       ldx   #tlsf.map.mask           ; search for free list at upper fl
         ldb   tlsf.fl
         incb                           ; select upper fl value
         aslb
@@ -417,18 +393,18 @@ tlsf.findSuitableBlock
         ldd   tlsf.fl.bitmap
         anda  ,x                       ; apply mask to keep only upper fl values
         andb  1,x                      ; apply mask to keep only upper fl values
-        std   tlsf.ffs.in
+        std   tlsf.ctz.in
         bne   >
             lda   #tlsf.err.malloc.NO_MORE_SPACE
             sta   tlsf.err
             jmp   tlsf.err.callback
-!       jsr   tlsf.ffs                 ; search first non empty fl index
+!       jsr   tlsf.ctz                 ; search first non empty fl index
         stb   tlsf.fl
         aslb                           ; mul by tlsf.sl.bitmap.size
         ldx   #tlsf.sl.bitmaps
         ldd   b,x                      ; load suitable sl bitmap value
-        std   tlsf.ffs.in              ; no need to test zero value here, no applied mask
-        jsr   tlsf.ffs                 ; search first non empty sl index
+        std   tlsf.ctz.in              ; zero is not expected here, no test required
+        jsr   tlsf.ctz                 ; search first non empty sl index
         stb   tlsf.sl
         rts
 
@@ -596,77 +572,80 @@ tlsf.removeBlockHead
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.fls
-; input  REG : [tlsf.fls.in] 16bit integer
+; tlsf.clz
+; input  REG : [tlsf.clz.in] 16bit integer
 ; output REG : [B] last set bit
 ;-----------------------------------------------------------------
-; Find last (msb) set bit in a 16 bit integer
-; Bit position is from 1 to 16, 0 means no bit set
+; Count leading zeros (clz) in a 16 bit integer,
+; also known as Number of leading zeros (nlz)
+; Bit position is from 0 to 15
+; A zero input value will default to a result of 16
 ;-----------------------------------------------------------------
-tlsf.fls.in fdb 0 ; input parameter
-tlsf.fls
-        lda   tlsf.fls.in
+tlsf.clz.in fdb 0 ; input parameter
+tlsf.clz
+        lda   tlsf.clz.in
         beq   @lsb
 @msb
-        ldb   #types.WORD_BITS
+        ldb   #types.WORD_BITS-1
         bra   >
 @lsb
-        lda   tlsf.fls.in+1
-        beq   @zero
-        ldb   #types.BYTE_BITS
-!
-        bita  #$f0
+            lda   tlsf.clz.in+1
+            beq   @zero
+            ldb   #types.BYTE_BITS-1
+!       bita  #$f0
         bne   >
-        subb  #4
-        asla
-        asla
-        asla
-        asla
+            subb  #4
+            lsla
+            lsla
+            lsla
+            lsla
 !       bita  #$c0
         bne   >
-        subb  #2
-        asla
-        asla
+            subb  #2
+            lsla
+            lsla
 !       bmi   >
-        decb
+            decb
 !       rts
-@zero   clrb
+@zero   ldb   #16
         rts
 
 ;-----------------------------------------------------------------
-; tlsf.ffs
-; input  REG : [tlsf.ffs.in] 16bit integer
+; tlsf.ctz
+; input  REG : [tlsf.ctz.in] 16bit integer
 ; output REG : [B] first set bit
 ;-----------------------------------------------------------------
-; Find first (lsb) set bit in a 16 bit integer
-; Bit position is from 1 to 16, 0 means no bit set
+; Count trailing zeros in a 16 bit integer,
+; also known as Number of trailing zeros (ntz)
+; Bit position is from 0 to 15
+; A zero input value will default to a result of 16
 ;-----------------------------------------------------------------
-tlsf.ffs.in fdb 0 ; input parameter
-tlsf.ffs
-        lda   tlsf.ffs.in+1
+tlsf.ctz.in fdb 0 ; input parameter
+tlsf.ctz
+        lda   tlsf.ctz.in+1
         beq   @msb
 @lsb
         clrb
         bra   >
 @msb
-        lda   tlsf.ffs.in
-        beq   @zero
-        ldb   #types.BYTE_BITS
-!
-        bita  #$0f
+            lda   tlsf.ctz.in
+            beq   @zero
+            ldb   #types.BYTE_BITS
+!       bita  #$0f
         bne   >
-        addb  #4
-        asra
-        asra
-        asra
-        asra
+            addb  #4
+            lsra
+            lsra
+            lsra
+            lsra
 !       bita  #$03
         bne   >
-        addb  #2
-        asra
-        asra
-!       beq   >
-        incb
+            addb  #2
+            lsra
+            lsra
+!       bita  #$01
+        bne   >
+            incb
 !       rts
-@zero   clrb
+@zero   ldb   #16
         rts
