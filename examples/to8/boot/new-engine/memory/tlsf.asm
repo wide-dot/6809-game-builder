@@ -149,8 +149,7 @@ tlsf.init
         subd  #tlsf.BHDR_OVERHEAD+1 ; size is stored as val-1
         ora   #tlsf.mask.FREE_BLOCK ; set free block bit
         std   tlsf.blockHdr.size,x
-        anda  #^tlsf.mask.FREE_BLOCK ; unset free block bit, size parameter for mapping
-        jsr   tlsf.mapping
+        jsr   tlsf.mappingFreeBlock
         jmp   tlsf.insertBlock
 
 ;-----------------------------------------------------------------
@@ -191,10 +190,9 @@ tlsf.rsize  equ *-2                          ; requested memory size
             subd  #1                         ; Size is stored as size-1
             std   tlsf.blockHdr.size,u       ; Store new block size
             ldd   tlsf.blockHdr.size,x       ; load parameter for mapping routine
-            anda  #^tlsf.mask.FREE_BLOCK     ; Unset free block bit
             pshs  u
             stx   tlsf.insertBlock.location
-            jsr   tlsf.mapping               ; compute fl/sl index
+            jsr   tlsf.mappingFreeBlock      ; compute fl/sl index
             jsr   tlsf.insertBlock           ; update index
             puls  u
 !       lda   tlsf.blockHdr.size,u           ; No split, use the whole block
@@ -226,7 +224,7 @@ tlsf.free
             ldd   tlsf.blockHdr.size,x
             bpl   >                             ; branch if previous physical block is used
                 pshs  x,u                       ; previous free block is ready to merge
-                jsr   tlsf.mapping              ; compute fl/sl index of previous physical free block
+                jsr   tlsf.mappingFreeBlock     ; compute fl/sl index of previous physical free block
                 ldx   ,s
                 jsr   tlsf.removeBlock          ; remove it from list and index
                 puls  x,u
@@ -251,7 +249,7 @@ tlsf.free
                 ldd   tlsf.blockHdr.size,x
                 bpl   >                             ; branch if next physical block is used
                     pshs  x,u
-                    jsr   tlsf.mapping              ; compute fl/sl index of next physical free block
+                    jsr   tlsf.mappingFreeBlock     ; compute fl/sl index of next physical free block
                     ldx   ,s
                     jsr   tlsf.removeBlock          ; remove it from list and index
                     puls  x,u
@@ -276,8 +274,7 @@ tlsf.free
         ; to a free one
         stu   tlsf.insertBlock.location
         ldd   tlsf.blockHdr.size,u
-        anda  #^tlsf.mask.FREE_BLOCK
-        jsr   tlsf.mapping
+        jsr   tlsf.mappingFreeBlock
         jmp   tlsf.insertBlock
 
 ;-----------------------------------------------------------------
@@ -307,6 +304,10 @@ tlsf.mappingSearch
         coma
         comb
         addd  tlsf.rsize                        ; requested size is rounded up
+        bra   tlsf.mapping
+tlsf.mappingFreeBlock
+        anda  #^tlsf.mask.FREE_BLOCK
+        addd  #1
 tlsf.mapping
         std   tlsf.clz.in
         jsr   tlsf.clz                          ; Split memory size in power of two
