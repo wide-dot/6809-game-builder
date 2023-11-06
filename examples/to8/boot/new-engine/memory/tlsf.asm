@@ -229,11 +229,12 @@ tlsf.free
                 jsr   tlsf.removeBlock          ; remove it from list and index
                 puls  x,u
                 ldd   tlsf.blockHdr.size,u      ; load size of deallocated block
-                addd  #tlsf.BHDR_OVERHEAD+1     ; add overhead of deallocated block (we are merging), all size are -1, so when adding two block size, we must add 1
                 addd  tlsf.blockHdr.size,x      ; add size of previous free block, and keep free bit
+                addd  #tlsf.BHDR_OVERHEAD+1     ; add overhead of deallocated block (we are merging), all size are -1, so when adding two block size, we must add 1
                 leau  ,x                        ; U is now a ptr to merged block
                 std   tlsf.blockHdr.size,u      ; set the new block size, prev physical is already up to date
                 anda  #^tlsf.mask.FREE_BLOCK    ; Unset free block bit
+                addd  #tlsf.BHDR_OVERHEAD+1
                 bra   @checkNext                ; no need to reload the size, skip a bit of code
 !
         ; check next physical block
@@ -254,7 +255,7 @@ tlsf.free
                     jsr   tlsf.removeBlock          ; remove it from list and index
                     puls  x,u
                     ldd   tlsf.blockHdr.size,u
-                    anda  #^tlsf.mask.FREE_BLOCK    ; might be a used or free block (previously merged), must unset free block bit
+                    anda  #^tlsf.mask.FREE_BLOCK    ; might be a used or free block (previously merged with previous), must unset free block bit
                     addd  tlsf.blockHdr.size,x      ; add size of freed memory while keeping free bit on
                     addd  #tlsf.BHDR_OVERHEAD+1     ; add overhead of merged block, all size are -1, so when adding two block size, we must add 1
                     std   tlsf.blockHdr.size,u
@@ -274,6 +275,8 @@ tlsf.free
         ; to a free one
         stu   tlsf.insertBlock.location
         ldd   tlsf.blockHdr.size,u
+        ora   #tlsf.mask.FREE_BLOCK
+        std   tlsf.blockHdr.size,u
         jsr   tlsf.mappingFreeBlock
         jmp   tlsf.insertBlock
 

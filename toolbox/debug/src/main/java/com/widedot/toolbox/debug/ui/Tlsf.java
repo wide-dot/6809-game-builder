@@ -260,25 +260,29 @@ public class Tlsf {
 			
 			// parse free lists and update pixel map
 			for (int i=0; i<12*16; i++) {
-				if (sl[i]) {
-					curAdr = matrixAdr + i*2;
-					int start = Emulator.get(curAdr, 2) - address;
-					int end = start + (Emulator.get(Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)), 2) & 0x7FFF) + 1 + 4; // size is stored as (val - 1), header size 4
-					int j=start;
-					// header
-					while (j<start+4)
-						pixels[j++] = 0xFF80FFFF;
-					while (j<start+8)
-						pixels[j++] = 0xFF40BBBB;
-					// free space
-					while (j<end)
-						pixels[j++] = 0xFF808080;
-				}
+				if (sl[i]) drawFreeBlock(matrixAdr + i*2);
 			}
 						
 			ImGui.getWindowDrawList().addImage(image.loadTexture(pixels, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
 			
 			ImGui.end();
 		}
+	}
+	
+	private static void drawFreeBlock(long curAdr) {
+		int start = Emulator.get(curAdr, 2) - address;
+		int end = start + (Emulator.get(Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)), 2) & 0x7FFF) + 1 + 4; // size is stored as (val - 1), header size 4
+		int j=start;
+		// header
+		while (j<start+4)
+			pixels[j++] = 0xFF80FFFF;
+		while (j<start+8)
+			pixels[j++] = 0xFF40BBBB;
+		// free space
+		while (j<end)
+			pixels[j++] = 0xFF808080;
+		
+		long next = Emulator.get(curAdr+6, 2);
+		if (next != 0xFFFF) drawFreeBlock(next);
 	}
 }

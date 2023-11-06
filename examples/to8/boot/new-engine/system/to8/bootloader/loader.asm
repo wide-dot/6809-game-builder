@@ -366,28 +366,31 @@ alloc
         ; allocate some memory space
         ldd   #63
         jsr   tlsf.malloc
-        pshs  u
+        stu   allocatedMemory
         ldd   #879
         jsr   tlsf.malloc
-        pshs  u
-        ldd   #231
-        jsr   tlsf.malloc
-        pshs  u
+        stu   allocatedMemory+2
         ldd   #12
         jsr   tlsf.malloc
-        pshs  u
+        stu   allocatedMemory+4
+        ldd   #1024
+        jsr   tlsf.malloc
+        stu   allocatedMemory+6
 
         ; deallocate some memory space
-        puls  u
+        ldu   allocatedMemory
         jsr   tlsf.free
-        puls  u
+        ldu   allocatedMemory+2
         jsr   tlsf.free
-        puls  u
+        ldu   allocatedMemory+4
         jsr   tlsf.free
-        puls  u
+        ldu   allocatedMemory+6
         jsr   tlsf.free
 
         bra   *
+
+allocatedMemory
+        fill  0,4*2
 
         INCLUDE   "new-engine\memory\tlsf.asm"
         INCLUDE   "new-engine\memory\tlsf.ut.asm"
