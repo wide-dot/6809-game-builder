@@ -59,15 +59,15 @@ public class Emulator {
     	return getAbsoluteAddress(page, address);
     } 
     
-    public static Long getAbsoluteAddress(int page, Integer address)
+    public static long getAbsoluteAddress(int page, Integer address)
     {
- 	   	if (address == null) return null;
+ 	   	if (address == null) return 0L;
     	
     	if (address >= 0x6000 && address < 0xA000) {
     		page = 1;
     		address -= 0x6000;
     	} else {
-    		if (address >= 0x4000) return null;
+    		if (address >= 0x4000) return 0;
     		if (address >= 0x2000) {
     			address -= 0x2000;
     		} else {
@@ -80,6 +80,8 @@ public class Emulator {
     
     public static Integer get(Long address, int nbBytes)
     {
+    	if (address==null) return 0;
+    	
         Integer result = 0;
         Memory x_velMem = OS.readMemory(Emulator.process, address, nbBytes);
 	        

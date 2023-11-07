@@ -364,33 +364,39 @@ alloc
         jsr   tlsf.init
 
         ; allocate some memory space
-        ldd   #63
+        ldd   #128
+        ldx   #allocatedMemory
+!       pshs  d,x
         jsr   tlsf.malloc
-        stu   allocatedMemory
-        ldd   #879
-        jsr   tlsf.malloc
-        stu   allocatedMemory+2
-        ldd   #12
-        jsr   tlsf.malloc
-        stu   allocatedMemory+4
-        ldd   #1024
-        jsr   tlsf.malloc
-        stu   allocatedMemory+6
+        puls  d,x
+        stu   ,x++
+        cmpx  #allocatedMemory.end
+        bne   <
 
         ; deallocate some memory space
-        ldu   allocatedMemory
-        jsr   tlsf.free
         ldu   allocatedMemory+2
-        jsr   tlsf.free
-        ldu   allocatedMemory+4
         jsr   tlsf.free
         ldu   allocatedMemory+6
         jsr   tlsf.free
+        ldu   allocatedMemory+10
+        jsr   tlsf.free
+
+        ; realloc based on a list
+        ldd   #128
+        jsr   tlsf.malloc
+        stu   allocatedMemory+2
+        ldd   #128
+        jsr   tlsf.malloc
+        stu   allocatedMemory+6
+        ldd   #128
+        jsr   tlsf.malloc
+        stu   allocatedMemory+10
 
         bra   *
 
 allocatedMemory
-        fill  0,4*2
+        fill  0,7*2
+allocatedMemory.end
 
         INCLUDE   "new-engine\memory\tlsf.asm"
         INCLUDE   "new-engine\memory\tlsf.ut.asm"

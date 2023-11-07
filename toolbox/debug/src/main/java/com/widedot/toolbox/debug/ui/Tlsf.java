@@ -274,15 +274,12 @@ public class Tlsf {
 		int end = start + (Emulator.get(Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)), 2) & 0x7FFF) + 1 + 4; // size is stored as (val - 1), header size 4
 		int j=start;
 		// header
-		while (j<start+4)
-			pixels[j++] = 0xFF80FFFF;
-		while (j<start+8)
-			pixels[j++] = 0xFF40BBBB;
+		while (j<start+4) if (j<pixels.length) {pixels[j++] = 0xFF80FFFF;} else {break;}
+		while (j<start+8) if (j<pixels.length) {pixels[j++] = 0xFF40BBBB;} else {break;}
 		// free space
-		while (j<end)
-			pixels[j++] = 0xFF808080;
+		while (j<end) if (j<pixels.length) {pixels[j++] = 0xFF808080;} else {break;}
 		
-		long next = Emulator.get(curAdr+6, 2);
-		if (next != 0xFFFF) drawFreeBlock(next);
+		long next = Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)+6);
+		if ((Emulator.get(next, 2) - address) != 0xFFFF) drawFreeBlock(next);
 	}
 }
