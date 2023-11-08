@@ -116,12 +116,14 @@ tlsf.init
             lda   #tlsf.err.init.MIN_SIZE
             sta   tlsf.err
             ldx   tlsf.err.callback
+            leas  2,s
             jmp   ,x
 !       cmpd  #$8000
         bls   >
             lda   #tlsf.err.init.MAX_SIZE
             sta   tlsf.err
             ldx   tlsf.err.callback
+            leas  2,s
             jmp   ,x
 !
         ; set the memory pool upper limit
@@ -170,6 +172,7 @@ tlsf.safe.malloc
             lda   #tlsf.err.malloc.MAX_SIZE
             sta   tlsf.err
             ldx   tlsf.err.callback
+            leas  2,s
             jmp   ,x
 tlsf.malloc
 !       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
@@ -216,6 +219,7 @@ tlsf.safe.free
             lda   #tlsf.err.malloc.MAX_SIZE
             sta   tlsf.err
             ldx   tlsf.err.callback
+            leas  2,s
             jmp   ,x
 
 tlsf.free
@@ -323,7 +327,6 @@ tlsf.mapping
         bhi   @computesl                        ; if so branch
             ldb   #tlsf.PAD_BITS+tlsf.SL_BITS-1 ; No fl bit, cap to fl minimum value
             stb   tlsf.fl
-            incb
 @computesl
         negb
         addb  #types.WORD_BITS+tlsf.SL_BITS
@@ -389,11 +392,8 @@ tlsf.findSuitableBlock
         anda  ,y                       ; apply mask to keep only selected sl and upper values
         andb  1,y                      ; apply mask to keep only selected sl and upper values
         std   tlsf.ctz.in
-        beq   >
-            jsr   tlsf.ctz             ; found free list at current fl
-            stb   tlsf.sl              ; search first non empty sl index
-            rts
-!       ldx   #tlsf.map.mask           ; search for free list at upper fl
+        bne   @flmatch                 ; branch if free list exists at current fl
+        ldx   #tlsf.map.mask           ; search for free list at upper fl
         ldb   tlsf.fl
         incb                           ; select upper fl value
         aslb
@@ -406,6 +406,7 @@ tlsf.findSuitableBlock
             lda   #tlsf.err.malloc.NO_MORE_SPACE
             sta   tlsf.err
             ldx   tlsf.err.callback
+            leas  4,s
             jmp   ,x
 !       jsr   tlsf.ctz                 ; search first non empty fl index
         stb   tlsf.fl
@@ -413,6 +414,7 @@ tlsf.findSuitableBlock
         ldx   #tlsf.sl.bitmaps
         ldd   b,x                      ; load suitable sl bitmap value
         std   tlsf.ctz.in              ; zero is not expected here, no test required
+@flmatch
         jsr   tlsf.ctz                 ; search first non empty sl index
         stb   tlsf.sl
         rts
@@ -480,8 +482,24 @@ tlsf.insertBlock.location equ *-2
         beq   >                                             ; Branch if no Block
             stx   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; Link to existing
 !       stx   ,u                                            ; Store new block as head of free list
+        ldu   #tlsf.block.nullptr
+        stu   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x     ; init prev of new block
 
-tlsf.mappingInsert
+        ; insert into sl bitmap
+        ldx   #tlsf.map.bitset
+        lda   tlsf.fl
+        asla                           ; mul by tlsf.sl.bitmap.size
+        ldy   #tlsf.sl.bitmaps
+        leay  a,y
+        ldb   tlsf.sl
+        aslb
+        abx
+        ldd   ,y
+        bne   >                        ; if a sl already exists, fl is also already set, branch
+        ora   ,x
+        orb   1,x
+        std   ,y
+
         ; insert into fl bitmap
         ldx   #tlsf.map.bitset
         ldb   tlsf.fl
@@ -490,17 +508,10 @@ tlsf.mappingInsert
         ora   tlsf.fl.bitmap
         orb   tlsf.fl.bitmap+1
         std   tlsf.fl.bitmap
-
-        ; insert into sl bitmap
-        lda   tlsf.fl
-        asla                           ; mul by tlsf.sl.bitmap.size
-        ldy   #tlsf.sl.bitmaps
-        leay  a,y
-        ldb   tlsf.sl
-        aslb
-        ldd   b,x
-        ora   ,y
-        orb   1,y
+        rts
+!
+        ora   ,x
+        orb   1,x
         std   ,y
         rts
 
@@ -533,7 +544,7 @@ tlsf.removeBlock
 ; output REG : [U] address of block at head of list
 ; trash      : [D,X]
 ;-----------------------------------------------------------------
-; remove a free block in his linked list, and update index
+; remove a free block when at head of a list
 ;-----------------------------------------------------------------
 tlsf.removeBlockHead
         lda   tlsf.fl
@@ -554,18 +565,8 @@ tlsf.removeBlockHead
             std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x ; with no previous block
             rts                                         
 !
-        ; remove index from fl bitmap
-        ldx   #tlsf.map.bitset
-        ldb   tlsf.fl
-        aslb
-        ldd   b,x
-        coma
-        comb
-        anda  tlsf.fl.bitmap
-        andb  tlsf.fl.bitmap+1
-        std   tlsf.fl.bitmap
-
         ; remove index from sl bitmap
+        ldx   #tlsf.map.bitset
         lda   tlsf.fl
         asla                           ; mul by tlsf.sl.bitmap.size
         ldy   #tlsf.sl.bitmaps
@@ -578,7 +579,18 @@ tlsf.removeBlockHead
         anda  ,y
         andb  1,y
         std   ,y
-        rts
+        bne   >
+
+        ; remove index from fl bitmap
+        ldb   tlsf.fl
+        aslb
+        ldd   b,x
+        coma
+        comb
+        anda  tlsf.fl.bitmap
+        andb  tlsf.fl.bitmap+1
+        std   tlsf.fl.bitmap
+!       rts
 
 ;-----------------------------------------------------------------
 ; tlsf.clz

@@ -251,35 +251,43 @@ public class Tlsf {
 			int y1 = (int) vMin.y;
 			
 			// init pixel map
-			for (int i=0; i<size; i++) {
-				if (i>=0 && i<pixels.length) pixels[i] = 0xFF800000;
-			}
-			for (int i=size; i<MAP_WIDTH*MAP_HEIGHT; i++) {
-				if (i>=0 && i<pixels.length) pixels[i] = 0x00000000;
-			}
+			if (!(size>pixels.length || size<=0)) {
 			
-			// parse free lists and update pixel map
-			for (int i=0; i<12*16; i++) {
-				if (sl[i]) drawFreeBlock(matrixAdr + i*2);
+				for (int i=0; i<size; i++) pixels[i] = 0xFF800000;
+				for (int i=size; i<MAP_WIDTH*MAP_HEIGHT; i++) pixels[i] = 0x00000000;
+				
+				// parse free lists and update pixel map
+				for (int i=0; i<12*16; i++) {
+					if (sl[i]) {
+						if (drawFreeBlock(matrixAdr + i*2) == false) {
+							ImGui.end();
+							return;
+						}
+					}
+				}
+							
+				ImGui.getWindowDrawList().addImage(image.loadTexture(pixels, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
 			}
-						
-			ImGui.getWindowDrawList().addImage(image.loadTexture(pixels, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
 			
 			ImGui.end();
 		}
 	}
 	
-	private static void drawFreeBlock(long curAdr) {
+	private static boolean drawFreeBlock(long curAdr) {
 		int start = Emulator.get(curAdr, 2) - address;
 		int end = start + (Emulator.get(Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)), 2) & 0x7FFF) + 1 + 4; // size is stored as (val - 1), header size 4
 		int j=start;
+		
+		if (start<0 || end>pixels.length || start+8>pixels.length) return false;
+		
 		// header
-		while (j<start+4) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF80FFFF;} else {return;}
-		while (j<start+8) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF40BBBB;} else {return;}
+		while (j<start+4) pixels[j++] = 0xFF80FFFF;
+		while (j<start+8) pixels[j++] = 0xFF40BBBB;
 		// free space
-		while (j<end) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF808080;} else {return;}
+		while (j<end) pixels[j++] = 0xFF808080;
 		
 		long next = Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)+6);
-		if ((Emulator.get(next, 2) - address) != 0xFFFF) drawFreeBlock(next);
+		if ((Emulator.get(next, 2) - address) != 0xFFFF) return drawFreeBlock(next);
+		return true;
 	}
 }
