@@ -252,10 +252,10 @@ public class Tlsf {
 			
 			// init pixel map
 			for (int i=0; i<size; i++) {
-				pixels[i] = 0xFF800000;
+				if (i>=0 && i<pixels.length) pixels[i] = 0xFF800000;
 			}
 			for (int i=size; i<MAP_WIDTH*MAP_HEIGHT; i++) {
-				pixels[i] = 0x00000000;
+				if (i>=0 && i<pixels.length) pixels[i] = 0x00000000;
 			}
 			
 			// parse free lists and update pixel map
@@ -274,10 +274,10 @@ public class Tlsf {
 		int end = start + (Emulator.get(Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)), 2) & 0x7FFF) + 1 + 4; // size is stored as (val - 1), header size 4
 		int j=start;
 		// header
-		while (j<start+4) if (j<pixels.length) {pixels[j++] = 0xFF80FFFF;} else {break;}
-		while (j<start+8) if (j<pixels.length) {pixels[j++] = 0xFF40BBBB;} else {break;}
+		while (j<start+4) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF80FFFF;} else {return;}
+		while (j<start+8) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF40BBBB;} else {return;}
 		// free space
-		while (j<end) if (j<pixels.length) {pixels[j++] = 0xFF808080;} else {break;}
+		while (j<end) if (j>=0 && j<pixels.length) {pixels[j++] = 0xFF808080;} else {return;}
 		
 		long next = Emulator.getAbsoluteAddress(page.get(), Emulator.get(curAdr, 2)+6);
 		if ((Emulator.get(next, 2) - address) != 0xFFFF) drawFreeBlock(next);

@@ -351,52 +351,8 @@ link
 ;---------------------------------------
 alloc
         ; unit test
-        ;jsr   tlsf.ut
-
-        ; switch page
-        ldb   #15
-        ldu   #0
-        jsr   switchpage
-
-        ; init allocator
-        ldd   #$4000
-        ldx   #$0000
-        jsr   tlsf.init
-
-        ; allocate some memory space
-        ldd   #128
-        ldx   #allocatedMemory
-!       pshs  d,x
-        jsr   tlsf.malloc
-        puls  d,x
-        stu   ,x++
-        cmpx  #allocatedMemory.end
-        bne   <
-
-        ; deallocate some memory space
-        ldu   allocatedMemory+2
-        jsr   tlsf.free
-        ldu   allocatedMemory+6
-        jsr   tlsf.free
-        ldu   allocatedMemory+10
-        jsr   tlsf.free
-
-        ; realloc based on a list
-        ldd   #128
-        jsr   tlsf.malloc
-        stu   allocatedMemory+2
-        ldd   #128
-        jsr   tlsf.malloc
-        stu   allocatedMemory+6
-        ldd   #128
-        jsr   tlsf.malloc
-        stu   allocatedMemory+10
-
+        jsr   tlsf.ut
         bra   *
-
-allocatedMemory
-        fill  0,7*2
-allocatedMemory.end
 
         INCLUDE   "new-engine\memory\tlsf.asm"
         INCLUDE   "new-engine\memory\tlsf.ut.asm"

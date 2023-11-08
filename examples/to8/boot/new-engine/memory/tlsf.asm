@@ -115,12 +115,14 @@ tlsf.init
         bhs   >
             lda   #tlsf.err.init.MIN_SIZE
             sta   tlsf.err
-            jmp   tlsf.err.callback
+            ldx   tlsf.err.callback
+            jmp   ,x
 !       cmpd  #$8000
         bls   >
             lda   #tlsf.err.init.MAX_SIZE
             sta   tlsf.err
-            jmp   tlsf.err.callback
+            ldx   tlsf.err.callback
+            jmp   ,x
 !
         ; set the memory pool upper limit
         leau  d,x
@@ -155,7 +157,7 @@ tlsf.init
 ;-----------------------------------------------------------------
 ; tlsf.malloc
 ; input  REG : [D] requested memory size
-; output REG : [U] allocated memory address or 0 if no more space
+; output REG : [U] allocated memory address
 ;-----------------------------------------------------------------
 ;
 ;-----------------------------------------------------------------
@@ -167,7 +169,8 @@ tlsf.safe.malloc
         bls   >                              ; this prevents unexpected behaviour
             lda   #tlsf.err.malloc.MAX_SIZE
             sta   tlsf.err
-            jmp   tlsf.err.callback
+            ldx   tlsf.err.callback
+            jmp   ,x
 tlsf.malloc
 !       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
         jsr   tlsf.findSuitableBlock         ; Searching a free block, this function changes the values of fl and sl
@@ -212,7 +215,8 @@ tlsf.safe.free
         bne   >
             lda   #tlsf.err.malloc.MAX_SIZE
             sta   tlsf.err
-            jmp   tlsf.err.callback
+            ldx   tlsf.err.callback
+            jmp   ,x
 
 tlsf.free
 !       ; check previous physical block
@@ -401,7 +405,8 @@ tlsf.findSuitableBlock
         bne   >
             lda   #tlsf.err.malloc.NO_MORE_SPACE
             sta   tlsf.err
-            jmp   tlsf.err.callback
+            ldx   tlsf.err.callback
+            jmp   ,x
 !       jsr   tlsf.ctz                 ; search first non empty fl index
         stb   tlsf.fl
         aslb                           ; mul by tlsf.sl.bitmap.size

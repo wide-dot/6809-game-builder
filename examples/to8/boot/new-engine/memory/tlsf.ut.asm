@@ -4,6 +4,8 @@
 ; Benoit Rousseau - 02/09/2023
 ;-----------------------------------------------------------------
 
+        INCLUDE   "new-engine\math\random.asm"
+
 tlsf.ut
         ; for default settings only
         ldb   #15                ; page number
@@ -14,9 +16,10 @@ tlsf.ut
         orb   #$60               ; Set RAM over cartridge space
         stb   >map.CF74021.CART  ; Switch ram page
 
-        jsr   tlsf.ut.init
-        jsr   tlsf.ut.mappingSearch
-        jsr   tlsf.ut.malloc
+        ;jsr   tlsf.ut.init
+        ;jsr   tlsf.ut.mappingSearch
+        ;jsr   tlsf.ut.malloc
+        jsr   tlsf.ut.random
         rts
 
 tlsf.ut.init
@@ -239,3 +242,56 @@ tlsf.ut.malloc
         beq   <
         bra   *
 @rts    rts
+
+tlsf.ut.random
+        ; init allocator
+        ldd   #$4000
+        ldx   #$0000
+        jsr   tlsf.init
+
+        ldd   #tlsf.ut.random.free
+        std   tlsf.err.callback        ; routine to call when tlsf raise an error
+
+        jsr   random.init
+
+tlsf.ut.random.malloc
+!       jsr   random.get
+        clra
+        andb  #%00011110               ; get a random even number btw 0-30
+        ldx   #allocRefs
+        ldu   d,x
+        bne   tlsf.ut.random.free.switch
+tlsf.ut.random.malloc.switch
+        std   @d
+        jsr   random.get
+        anda  #%00111111
+        addd  #1                       ; get a random number btw 1-$4000
+        jsr   tlsf.malloc
+        ldx   #allocRefs
+        stu   1234,x
+@d      equ   *-2
+        bra   <
+
+        ; deallocate some memory space
+
+tlsf.ut.random.free
+        lda   tlsf.err
+        cmpa  #tlsf.err.malloc.NO_MORE_SPACE
+        beq   >
+        bra   *
+!       clr   tlsf.err
+        jsr   random.get
+        clra
+        andb  #%00011110               ; get a random even number btw 0-30
+        ldx   #allocRefs
+        ldu   d,x
+        beq   tlsf.ut.random.malloc.switch
+tlsf.ut.random.free.switch
+        ldy   #0
+        sty   d,x
+        jsr   tlsf.free
+        bra   <
+        rts
+
+allocRefs
+        fill  0,32
