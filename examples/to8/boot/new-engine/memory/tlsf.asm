@@ -19,17 +19,14 @@
 
  INCLUDE "new-engine/constant/types.const.asm"
 
-; tlsf structures
-; ---------------
-tlsf.freePtr STRUCT ; this structure is used only when block is free
-prev rmb types.WORD ; [0000 0000 0000 0000]    - [previous block in free list]
-next rmb types.WORD ; [0000 0000 0000 0000]    - [next block in free list]
- ENDSTRUCT
+; tlsf structure
+; --------------
 
-tlsf.blockHdr STRUCT ; this structure is common to all blocks (free or used)
-size      rmb types.WORD ; [0] [000 0000 0000 0000] - [1:free/0:used] [free size - 1]
-prev.phys rmb types.WORD ; [0000 0000 0000 0000]    - [previous physical block in memory]
-freePtr   rmb sizeof{tlsf.freePtr}
+tlsf.blockHdr STRUCT
+size      rmb types.WORD ; (FREE/USED) [0] [000 0000 0000 0000] - [1:free/0:used] [free size - 1]
+prev.phys rmb types.WORD ; (FREE/USED) [0000 0000 0000 0000]    - [previous physical block in memory]
+prev      rmb types.WORD ; (FREE)      [0000 0000 0000 0000]    - [previous block in free list]
+next      rmb types.WORD ; (FREE)      [0000 0000 0000 0000]    - [next block in free list]
  ENDSTRUCT
 
 ; tlsf configuration
@@ -41,8 +38,8 @@ tlsf.SL_BITS          equ   4  ; significant bits for second level index
 ; -----------------------
 tlsf.FL_BITS            equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
 tlsf.SL_SIZE            equ   16 ; 2^tlsf.SL_BITS
-tlsf.MIN_BLOCK_SIZE     equ   sizeof{tlsf.freePtr} ; a memory block in use should be able to return to free state, so a min block size is mandatory
-tlsf.BHDR_OVERHEAD      equ   sizeof{tlsf.blockHdr}-tlsf.MIN_BLOCK_SIZE ; overhead when a block is in use
+tlsf.MIN_BLOCK_SIZE     equ   types.WORD*2 ; a memory block in use should be able to return to free state, so a min block size is mandatory (prev and next)
+tlsf.BHDR_OVERHEAD      equ   types.WORD*2 ; overhead when a block is in use (size and prev.phys)
 tlsf.mask.FREE_BLOCK    equ   %10000000
 tlsf.block.nullptr      equ   -1
 
@@ -163,7 +160,7 @@ tlsf.init
 ;-----------------------------------------------------------------
 ;
 ;-----------------------------------------------------------------
-tlsf.safe.malloc
+tlsf.malloc
         cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
         bhs   >
             ldd   #tlsf.MIN_BLOCK_SIZE
@@ -174,7 +171,6 @@ tlsf.safe.malloc
             ldx   tlsf.err.callback
             leas  2,s
             jmp   ,x
-tlsf.malloc
 !       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
         jsr   tlsf.findSuitableBlock         ; Searching a free block, this function changes the values of fl and sl
         jsr   tlsf.removeBlockHead           ; Remove the allocated block from the free matrix
@@ -223,15 +219,6 @@ tlsf.rsize  equ *-2                          ; requested memory size
 ;-----------------------------------------------------------------
 ; 
 ;-----------------------------------------------------------------
-tlsf.safe.free
-        cmpu  #0
-        bne   >
-            lda   #tlsf.err.malloc.MAX_SIZE
-            sta   tlsf.err
-            ldx   tlsf.err.callback
-            leas  2,s
-            jmp   ,x
-
 tlsf.free
 !       ; check previous physical block
         ; and extend if already free 
@@ -475,23 +462,23 @@ tlsf.insertBlock
         ldx   #$1234
 tlsf.insertBlock.location equ *-2
         ldd   #tlsf.block.nullptr
-        std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x     ; no previous free block
+        std   tlsf.blockHdr.prev,x     ; no previous free block
         lda   tlsf.fl
         ldb   #tlsf.SL_SIZE*2
         mul
         ldu   #tlsf.headMatrix
-        leau  d,u                                           ; U is a ptr to head list (first level)
+        leau  d,u                      ; U is a ptr to head list (first level)
         ldb   tlsf.sl
-        aslb                                                ; HeadMatrix store WORD
-        leau  b,u                                           ; U is a ptr to head list (first and second level)
-        ldy   ,u                                            ; Check if a block exists
-        sty   tlsf.blockHdr.freePtr+tlsf.freePtr.next,x     ; if no block, will put nullptr to next, if a block exists, link to existing
+        aslb                           ; HeadMatrix store WORD
+        leau  b,u                      ; U is a ptr to head list (first and second level)
+        ldy   ,u                       ; Check if a block exists
+        sty   tlsf.blockHdr.next,x     ; if no block, will put nullptr to next, if a block exists, link to existing
         cmpy  #tlsf.block.nullptr
-        beq   >                                             ; Branch if no Block
-            stx   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y ; Link to existing
-!       stx   ,u                                            ; Store new block as head of free list
+        beq   >                        ; Branch if no Block
+            stx   tlsf.blockHdr.prev,y ; Link to existing
+!       stx   ,u                       ; Store new block as head of free list
         ldu   #tlsf.block.nullptr
-        stu   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x     ; init prev of new block
+        stu   tlsf.blockHdr.prev,x     ; init prev of new block
 
         ; insert into sl bitmap
         ldx   #tlsf.map.bitset
@@ -533,16 +520,16 @@ tlsf.insertBlock.location equ *-2
 ; remove a free block in his linked list, and update index
 ;-----------------------------------------------------------------
 tlsf.removeBlock
-        ldu   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x     ; check if removed block is a head
+        ldu   tlsf.blockHdr.prev,x     ; check if removed block is a head
         cmpu  #tlsf.block.nullptr
-        beq   tlsf.removeBlockHead                          ; branch if yes
+        beq   tlsf.removeBlockHead     ; branch if yes
             leay  ,x
-            ldx   tlsf.blockHdr.freePtr+tlsf.freePtr.next,x ; not a head, just update the linked list
-            stx   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u
+            ldx   tlsf.blockHdr.next,x ; not a head, just update the linked list
+            stx   tlsf.blockHdr.next,u
             cmpx  #tlsf.block.nullptr
             beq   >
-                ldd   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,y
-                std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x
+                ldd   tlsf.blockHdr.prev,y
+                std   tlsf.blockHdr.prev,x
 !           rts
 
 ;-----------------------------------------------------------------
@@ -561,16 +548,16 @@ tlsf.removeBlockHead
         ldx   #tlsf.headMatrix
         leax  d,x
         ldb   tlsf.sl
-        aslb                                                ; headMatrix store WORD sized data
-        leay  b,x                                           ; load head of free block list to Y
-        ldu   ,y                                            ; load block to U (output value)
+        aslb                           ; headMatrix store WORD sized data
+        leay  b,x                      ; load head of free block list to Y
+        ldu   ,y                       ; load block to U (output value)
 
-        ldx   tlsf.blockHdr.freePtr+tlsf.freePtr.next,u     ; load next block in list (if exists)
-        stx   ,y                                            ; store new head of list
+        ldx   tlsf.blockHdr.next,u     ; load next block in list (if exists)
+        stx   ,y                       ; store new head of list
         cmpx  #tlsf.block.nullptr
-        beq   >                                             ; branch if no more head at this index
-            ldd   #tlsf.block.nullptr                                       ; update new head
-            std   tlsf.blockHdr.freePtr+tlsf.freePtr.prev,x ; with no previous block
+        beq   >                        ; branch if no more head at this index
+            ldd   #tlsf.block.nullptr  ; update new head
+            std   tlsf.blockHdr.prev,x ; with no previous block
             rts                                         
 !
         ; remove index from sl bitmap

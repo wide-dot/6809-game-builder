@@ -24,6 +24,7 @@ public class Tlsf {
 	private static final int MAP_WIDTH = 128;
 	private static final int MAP_HEIGHT = 256;
 	private static int[] pixels = new int[MAP_WIDTH*MAP_HEIGHT];
+	private static int[] pixelsRender = new int[MAP_WIDTH*MAP_HEIGHT];
 	private static TextureLoader image = new TextureLoader();
 	private static boolean[] sl = new boolean[12*16];
 	
@@ -260,13 +261,15 @@ public class Tlsf {
 				for (int i=0; i<12*16; i++) {
 					if (sl[i]) {
 						if (drawFreeBlock(matrixAdr + i*2) == false) {
+							ImGui.getWindowDrawList().addImage(image.loadTexture(pixelsRender, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
 							ImGui.end();
 							return;
 						}
 					}
 				}
 							
-				ImGui.getWindowDrawList().addImage(image.loadTexture(pixels, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
+				for (int i=0; i<pixels.length; i++) pixelsRender[i]=pixels[i];
+				ImGui.getWindowDrawList().addImage(image.loadTexture(pixelsRender, MAP_WIDTH, MAP_HEIGHT), x1, y1, x1+4*MAP_WIDTH, y1+4*MAP_HEIGHT);
 			}
 			
 			ImGui.end();

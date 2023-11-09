@@ -257,15 +257,16 @@ tlsf.ut.random
 tlsf.ut.random.malloc
 !       jsr   random.get
         clra
-        andb  #%00011110               ; get a random even number btw 0-30
+        andb  #%11111110
         ldx   #allocRefs
         ldu   d,x
         bne   tlsf.ut.random.free.switch
 tlsf.ut.random.malloc.switch
         std   @d
         jsr   random.get
-        anda  #%00111111
-        addd  #1                       ; get a random number btw 1-$4000
+        anda  #%00000011
+        andb  #%11111111
+        addd  #1
         jsr   tlsf.malloc
         cmpu  #$4000
         bhs   @exit
@@ -283,7 +284,7 @@ tlsf.ut.random.free
 !       clr   tlsf.err
         jsr   random.get
         clra
-        andb  #%00011110               ; get a random even number btw 0-30
+        andb  #%11111110
         ldx   #allocRefs
         ldu   d,x
         beq   tlsf.ut.random.malloc.switch
@@ -295,4 +296,4 @@ tlsf.ut.random.free.switch
         rts
 
 allocRefs
-        fill  0,32
+        fill  0,256
