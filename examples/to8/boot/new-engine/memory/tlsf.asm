@@ -195,6 +195,16 @@ tlsf.rsize  equ *-2                          ; requested memory size
             ldd   tlsf.rsize
             subd  #1                         ; Size is stored as size-1
             std   tlsf.blockHdr.size,u       ; Store new block size
+
+            ldd   tlsf.blockHdr.size,x      ; load parameter for mapping routine
+            anda  #^tlsf.mask.FREE_BLOCK    ; must update the following block to the new previous physical block
+            addd  #tlsf.BHDR_OVERHEAD+1     ; size is stored as size-1
+            leay  d,x                       ; X is now a ptr to next physical of next physical (from deallocated block)
+            beq   @nonext                   ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
+                cmpy  tlsf.memoryPool.end
+                bhs   @nonext               ; branch if no next of next physical block (beyond memorypool)
+                    stx   tlsf.blockHdr.prev.phys,y ; update the physical link
+@nonext
             ldd   tlsf.blockHdr.size,x       ; load parameter for mapping routine
             pshs  u
             stx   tlsf.insertBlock.location
@@ -267,17 +277,15 @@ tlsf.free
                     addd  tlsf.blockHdr.size,x      ; add size of freed memory while keeping free bit on
                     addd  #tlsf.BHDR_OVERHEAD+1     ; add overhead of merged block, all size are -1, so when adding two block size, we must add 1
                     std   tlsf.blockHdr.size,u
-                    ; must update the following block to the new previous physical block
-                    ; this is the cost for not storing bi-directionnal physical link
-                    ; but it saves 2 bytes of memory for each block
-                    ldd   tlsf.blockHdr.size,x
+
+                    ldd   tlsf.blockHdr.size,x      ; must update the following block to the new previous physical block
                     anda  #^tlsf.mask.FREE_BLOCK
                     addd  #tlsf.BHDR_OVERHEAD+1     ; size is stored as size-1
                     leax  d,x                       ; X is now a ptr to next physical of next physical (from deallocated block)
                     beq   >                         ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
                         cmpx  tlsf.memoryPool.end
-                        bhs   >                         ; branch if no next of next physical block (beyond memorypool)
-                        stu   tlsf.blockHdr.prev.phys,x ; update the physical link
+                        bhs   >                             ; branch if no next of next physical block (beyond memorypool)
+                            stu   tlsf.blockHdr.prev.phys,x ; update the physical link
 !
         ; turn the used/merged block
         ; to a free one

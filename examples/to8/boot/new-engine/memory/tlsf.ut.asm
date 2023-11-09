@@ -267,12 +267,13 @@ tlsf.ut.random.malloc.switch
         anda  #%00111111
         addd  #1                       ; get a random number btw 1-$4000
         jsr   tlsf.malloc
+        cmpu  #$4000
+        bhs   @exit
         ldx   #allocRefs
         stu   1234,x
 @d      equ   *-2
         bra   <
-
-        ; deallocate some memory space
+@exit   bra   *                        ; error, allocated block is out of range
 
 tlsf.ut.random.free
         lda   tlsf.err
