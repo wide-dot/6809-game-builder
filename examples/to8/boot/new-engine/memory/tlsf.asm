@@ -5,14 +5,6 @@
 ; Benoit Rousseau - 22/08/2023
 ; Based on http://www.gii.upv.es/tlsf/files/spe_2008.pdf
 ;
-; WORK IN PROGRESS :
-; - this code does not fully handle single byte SL bitmap
-; - default settings should be set by defines
-;
-; TODO - OPTIM :
-; 1.
-; tlsf.ctz => supprimer le decb qui suit tous les appels jsr tlsf.ctz
-; et modifier ffs pour renvoyer la bonne valeur directement
 ;-----------------------------------------------------------------
 
  opt c
@@ -46,12 +38,12 @@ tlsf.block.nullptr      equ   -1
 ; tlsf external variables and constants
 ; -------------------------------------
 tlsf.err              fcb   0
-tlsf.err.callback     fdb   tlsf.loop   ; error callback, default is an infinite loop
-tlsf.err.init.MIN_SIZE        equ   1   ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
-tlsf.err.init.MAX_SIZE        equ   2   ; memory pool should have 32768 ($8000) as a maximum size
-tlsf.err.malloc.NO_MORE_SPACE equ   3   ; no more space in memory pool 
-tlsf.err.malloc.MAX_SIZE      equ   4   ; malloc can not handle more than 63488 ($F800) bytes request
-tlsf.err.free.NULL_PTR        equ   5   ; memory location to free cannot be NULL
+tlsf.err.callback     fdb   tlsf.err.loop ; error callback, default is an infinite loop
+tlsf.err.init.MIN_SIZE        equ   1     ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
+tlsf.err.init.MAX_SIZE        equ   2     ; memory pool should have 32768 ($8000) as a maximum size
+tlsf.err.malloc.NO_MORE_SPACE equ   3     ; no more space in memory pool 
+tlsf.err.malloc.MAX_SIZE      equ   4     ; malloc can not handle more than 63488 ($F800) bytes request
+tlsf.err.free.NULL_PTR        equ   5     ; memory location to free cannot be NULL
 
 ; tlsf internal variables
 ; -----------------------
@@ -87,12 +79,21 @@ tlsf.headMatrix.end
  ENDC
 
 ;-----------------------------------------------------------------
-; tlsf.loop
+; tlsf.err.loop
 ;-----------------------------------------------------------------
 ; default error callback
 ;-----------------------------------------------------------------
-tlsf.loop
+tlsf.err.loop
         bra   *
+
+;-----------------------------------------------------------------
+; tlsf.err.return
+;-----------------------------------------------------------------
+; alternative error callback
+;-----------------------------------------------------------------
+tlsf.err.return
+        leas  -2,s
+        rts
 
 ;-----------------------------------------------------------------
 ; tlsf.init
@@ -101,7 +102,10 @@ tlsf.loop
 ; output VAR : [tlsf.err] error code
 ; trash      : [D,X,U]
 ;-----------------------------------------------------------------
-; this version can not address more than 32 768 bytes
+; Initialize memory management index with a size and a location
+; The provided size include the header block overhead.
+; The maximum usable size is $8000 bytes and it requires a
+; countinuous memory space of $8004 bytes (max value for in reg D)
 ;-----------------------------------------------------------------
 tlsf.init
         stx   tlsf.memoryPool
@@ -115,7 +119,7 @@ tlsf.init
             ldx   tlsf.err.callback
             leas  2,s
             jmp   ,x
-!       cmpd  #$8000
+!       cmpd  #$8000+tlsf.BHDR_OVERHEAD
         bls   >
             lda   #tlsf.err.init.MAX_SIZE
             sta   tlsf.err
@@ -154,11 +158,100 @@ tlsf.init
         jmp   tlsf.insertBlock
 
 ;-----------------------------------------------------------------
-; tlsf.malloc
-; input  REG : [D] requested memory size
-; output REG : [U] allocated memory address
+; _tlsf.findSuitableBlock
+; input  VAR : [tlsf.fl] first level index
+; input  VAR : [tlsf.sl] second level index
+; output VAR : [tlsf.fl] suitable first level index
+; output VAR : [tlsf.sl] suitable second level index
 ;-----------------------------------------------------------------
 ;
+; This routine is a MACRO to make the code inline in malloc
+;-----------------------------------------------------------------
+_tlsf.findSuitableBlock MACRO
+        ; search for free list in selected fl/sl index
+        ldb   tlsf.fl
+        aslb                           ; mul by tlsf.sl.bitmap.size
+        ldx   #tlsf.sl.bitmaps
+        abx                            ; set x to selected sl bitmap
+        ldy   #tlsf.map.mask
+        ldb   tlsf.sl
+        aslb
+        leay  b,y                      ; set y to selected sl mask
+        ldd   ,x                       ; load selected sl bitmap value
+        anda  ,y                       ; apply mask to keep only selected sl and upper values
+        andb  1,y                      ; apply mask to keep only selected sl and upper values
+        std   tlsf.ctz.in
+        bne   @flmatch                 ; branch if free list exists at current fl
+        ldx   #tlsf.map.mask           ; search for free list at upper fl
+        ldb   tlsf.fl
+        incb                           ; select upper fl value
+        aslb
+        abx                            ; set x to selected fl mask
+        ldd   tlsf.fl.bitmap
+        anda  ,x                       ; apply mask to keep only upper fl values
+        andb  1,x                      ; apply mask to keep only upper fl values
+        std   tlsf.ctz.in
+        bne   >
+            lda   #tlsf.err.malloc.NO_MORE_SPACE
+            sta   tlsf.err
+            ldx   tlsf.err.callback
+            leas  2,s                  ; WARNING ! dependency on calling tree, when using as a macro in malloc, should be 2
+            jmp   ,x
+!       jsr   tlsf.ctz                 ; search first non empty fl index
+        stb   tlsf.fl
+        aslb                           ; mul by tlsf.sl.bitmap.size
+        ldx   #tlsf.sl.bitmaps
+        ldd   b,x                      ; load suitable sl bitmap value
+        std   tlsf.ctz.in              ; zero is not expected here, no test required
+@flmatch
+        jsr   tlsf.ctz                 ; search first non empty sl index
+        stb   tlsf.sl
+        ;rts
+ ENDM
+
+tlsf.map.mask
+        fdb   %1111111111111111
+        fdb   %1111111111111110
+        fdb   %1111111111111100
+        fdb   %1111111111111000
+        fdb   %1111111111110000
+        fdb   %1111111111100000
+        fdb   %1111111111000000
+        fdb   %1111111110000000
+        fdb   %1111111100000000
+        fdb   %1111111000000000
+        fdb   %1111110000000000
+        fdb   %1111100000000000
+        fdb   %1111000000000000
+        fdb   %1110000000000000
+        fdb   %1100000000000000
+        fdb   %1000000000000000
+
+tlsf.map.bitset
+        fdb   %0000000000000001
+        fdb   %0000000000000010
+        fdb   %0000000000000100
+        fdb   %0000000000001000
+        fdb   %0000000000010000
+        fdb   %0000000000100000
+        fdb   %0000000001000000
+        fdb   %0000000010000000
+        fdb   %0000000100000000
+        fdb   %0000001000000000
+        fdb   %0000010000000000
+        fdb   %0000100000000000
+        fdb   %0001000000000000
+        fdb   %0010000000000000
+        fdb   %0100000000000000
+        fdb   %1000000000000000
+
+;-----------------------------------------------------------------
+; tlsf.malloc
+; input  REG : [D] requested user memory size
+; output REG : [U] allocated memory address
+;-----------------------------------------------------------------
+; allocate some memory, should be deallocated with a call to free
+; WARNING : this does not initialize memory bytes
 ;-----------------------------------------------------------------
 tlsf.malloc
         cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
@@ -172,7 +265,7 @@ tlsf.malloc
             leas  2,s
             jmp   ,x
 !       jsr   tlsf.mappingSearch             ; Set tlsf.rsize, fl and sl
-        jsr   tlsf.findSuitableBlock         ; Searching a free block, this function changes the values of fl and sl
+        _tlsf.findSuitableBlock              ; Searching a free block, this function changes the values of fl and sl
         jsr   tlsf.removeBlockHead           ; Remove the allocated block from the free matrix
         ; Should the block be split?
         ldd   tlsf.blockHdr.size,u           ; Size of available memory -1
@@ -217,7 +310,7 @@ tlsf.rsize  equ *-2                          ; requested memory size
 ; tlsf.free
 ; input REG : [U] allocated memory address to free
 ;-----------------------------------------------------------------
-; 
+; deallocate previously allocated memory
 ;-----------------------------------------------------------------
 tlsf.free
 !       ; check previous physical block
@@ -363,92 +456,6 @@ tlsf.mapping
         stb   tlsf.sl
         lda   tlsf.fl
         rts
-
-;-----------------------------------------------------------------
-; tlsf.findSuitableBlock
-; input  VAR : [tlsf.fl] first level index
-; input  VAR : [tlsf.sl] second level index
-; output VAR : [tlsf.fl] suitable first level index
-; output VAR : [tlsf.sl] suitable second level index
-;-----------------------------------------------------------------
-;
-;-----------------------------------------------------------------
-tlsf.findSuitableBlock
-        ; search for free list in selected fl/sl index
-        ldb   tlsf.fl
-        aslb                           ; mul by tlsf.sl.bitmap.size
-        ldx   #tlsf.sl.bitmaps
-        abx                            ; set x to selected sl bitmap
-        ldy   #tlsf.map.mask
-        ldb   tlsf.sl
-        aslb
-        leay  b,y                      ; set y to selected sl mask
-        ldd   ,x                       ; load selected sl bitmap value
-        anda  ,y                       ; apply mask to keep only selected sl and upper values
-        andb  1,y                      ; apply mask to keep only selected sl and upper values
-        std   tlsf.ctz.in
-        bne   @flmatch                 ; branch if free list exists at current fl
-        ldx   #tlsf.map.mask           ; search for free list at upper fl
-        ldb   tlsf.fl
-        incb                           ; select upper fl value
-        aslb
-        abx                            ; set x to selected fl mask
-        ldd   tlsf.fl.bitmap
-        anda  ,x                       ; apply mask to keep only upper fl values
-        andb  1,x                      ; apply mask to keep only upper fl values
-        std   tlsf.ctz.in
-        bne   >
-            lda   #tlsf.err.malloc.NO_MORE_SPACE
-            sta   tlsf.err
-            ldx   tlsf.err.callback
-            leas  4,s
-            jmp   ,x
-!       jsr   tlsf.ctz                 ; search first non empty fl index
-        stb   tlsf.fl
-        aslb                           ; mul by tlsf.sl.bitmap.size
-        ldx   #tlsf.sl.bitmaps
-        ldd   b,x                      ; load suitable sl bitmap value
-        std   tlsf.ctz.in              ; zero is not expected here, no test required
-@flmatch
-        jsr   tlsf.ctz                 ; search first non empty sl index
-        stb   tlsf.sl
-        rts
-
-tlsf.map.mask
-        fdb   %1111111111111111
-        fdb   %1111111111111110
-        fdb   %1111111111111100
-        fdb   %1111111111111000
-        fdb   %1111111111110000
-        fdb   %1111111111100000
-        fdb   %1111111111000000
-        fdb   %1111111110000000
-        fdb   %1111111100000000
-        fdb   %1111111000000000
-        fdb   %1111110000000000
-        fdb   %1111100000000000
-        fdb   %1111000000000000
-        fdb   %1110000000000000
-        fdb   %1100000000000000
-        fdb   %1000000000000000
-
-tlsf.map.bitset
-        fdb   %0000000000000001
-        fdb   %0000000000000010
-        fdb   %0000000000000100
-        fdb   %0000000000001000
-        fdb   %0000000000010000
-        fdb   %0000000000100000
-        fdb   %0000000001000000
-        fdb   %0000000010000000
-        fdb   %0000000100000000
-        fdb   %0000001000000000
-        fdb   %0000010000000000
-        fdb   %0000100000000000
-        fdb   %0001000000000000
-        fdb   %0010000000000000
-        fdb   %0100000000000000
-        fdb   %1000000000000000
 
 ;-----------------------------------------------------------------
 ; tlsf.insertBlock

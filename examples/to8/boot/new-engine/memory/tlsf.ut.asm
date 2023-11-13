@@ -16,14 +16,17 @@ tlsf.ut
         orb   #$60               ; Set RAM over cartridge space
         stb   >map.CF74021.CART  ; Switch ram page
 
-        ;jsr   tlsf.ut.init
-        ;jsr   tlsf.ut.mappingSearch
-        ;jsr   tlsf.ut.malloc
+        jsr   tlsf.ut.init
+        jsr   tlsf.ut.mappingSearch
+        jsr   tlsf.ut.malloc
         jsr   tlsf.ut.random
         rts
 
 tlsf.ut.init
-        ldd   #$0001
+        ldd   #tlsf.err.return
+        std   tlsf.err.callback        ; routine to call when tlsf raise an error
+
+        ldd   #$0001                   ; only 1 byte is not enough for header info
         ldx   #$1111
         jsr   tlsf.init
         lda   tlsf.err
@@ -32,39 +35,39 @@ tlsf.ut.init
         bra   *
 !       clr   tlsf.err
 
-        ldd   #$0008
+        ldd   #$0008                   ; with 4 bytes as headroom, make only 4 bytes available for a malloc
         ldx   #$1111
         jsr   tlsf.init
         lda   tlsf.err
         beq   >
         bra   *
 !       ldd   tlsf.bitmap.start
-        cmpd  #$0008
+        cmpd  #%0000000000001000       ; fl=3
         bne   *
         ldd   tlsf.bitmap.start+2
-        cmpd  #$0100
+        cmpd  #%0000000000010000       ; sl=4
         bne   *
-        ldd   tlsf.bitmap.start+42
+        ldd   tlsf.bitmap.start+34
         cmpd  #$1111
         bne   *
 
-        ldd   #$8000
+        ldd   #$8004                   ; maximum allowed allocation for this tlsf implementation (with header)
         ldx   #$2222
         jsr   tlsf.init
         lda   tlsf.err
         beq   >
         bra   *
 !       ldd   tlsf.bitmap.start
-        cmpd  #$8000
+        cmpd  #%1000000000000000       ; fl=15
         bne   *
         ldd   tlsf.bitmap.start+26
-        cmpd  #$0001
+        cmpd  #%0000000000000001       ; sl=0
         bne   *
         ldd   tlsf.bitmap.start+410
         cmpd  #$2222
         bne   *
 
-        ldd   #$8001
+        ldd   #$8005                   ; over the maximum allowed allocation for this tlsf implementation (with header)
         ldx   #$1111
         jsr   tlsf.init
         lda   tlsf.err
@@ -89,8 +92,6 @@ tlsf.ut.mappingSearch
         cmpx  #tlsf.ut.mappingSearch.in.end
         bne   <
         rts
-
-
 
 tlsf.ut.mappingSearch.in
         fdb   %0000000000000001 ;      1
