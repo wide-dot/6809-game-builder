@@ -40,7 +40,7 @@ L'initialisation du gestionnaire d'allocation mémoire consiste en :
 
 #### Stockage des données dans le *memory pool*
 
-La création d'un emplacement libre dans le *memory pool* s'effectue par l'écriture des données suivantes à l'adresse de l'emplacement :
+La création d'un emplacement libre dans le *memory pool* s'effectue par l'écriture des données d'entête suivantes à l'adresse de l'emplacement mémoire:
 
 - [ 1 bit ] type d'emplacement (1: libre)
 - [15 bits] taille-1 (3-x7FFF)   
@@ -48,19 +48,78 @@ La création d'un emplacement libre dans le *memory pool* s'effectue par l'écri
 - [16 bits] emplacement libre précédent dans la liste chainée (adresse)
 - [16 bits] emplacement libre suivant dans la liste chainée (adresse)
 
-La création d'un emplacement alloué dans le *memory pool* s'effectue par l'écriture des données suivantes à l'adresse de l'emplacement :
+Dans le cas d'un emplacement alloué, l'entête est le suivant:
 
 - [ 1 bit ] type d'emplacement (0: alloué)
-- [15 bits] taille-1 (0-x7FFF)   
+- [15 bits] taille-1 (3-x7FFF)   
 - [16 bits] emplacement physique précédent (adresse)
 
 Un emplacement libre a une taille minimum de 4 octets, cela permet de transformer un emplacement occupé (entête de taille 4 octets) en emplacement libre (entête de taille 8 octets).
 
+L'espace libre ou alloué est localisé à la suite des entêtes d'emplacement.
+
 Les implémentations de TLSF pour les processeurs 32bits ou plus peuvent utiliser un positionnement du bit de type d'emplacement en début de mot et non en fin (comme proposé ici). Cette solution est pertinente dans le cas où il est nécessaire de garantir un alignement des données (mots de 4 octets par exemple). Cela permet de libérer deux bits non significatifs en début du mot.   
 Dans l'implémentation proposée pour le 6809, l'utilisation du bit de signe est préférable car cela permet un test plus rapide du type d'emplacement. D'autre part cela permet de conserver une allocation à l'octet près (au dela du minimum de 4).
 
+#### Stockage des données d'indexation
 
+Lorsqu'un emplacement libre est créé ou supprimé dans le *memory pool*, il est nécessaire de mettre à jour les données d'indexation. 
 
+Voici un exemple de décomposition d'une taille d'emplacement de 781 octets en fonction des index de premier et second niveau :
+
+    0000 0011 0000 1101   
+    ffff ffff ffff ssss
+
+    f: first level
+    s: second level
+
+L'indexation de premier niveau (fl) s'effectue par classement de la taille de l'emplacement par puissance de 2 en 13 niveaux:   
+(3:1-15, 4:16-31, 5:32-63, 6:64-127, 7:128-255, 8:256-511, 9:512-1023, 10:1024-2047, 11:2048-4095, 12:4096-8191, 13:8192-16383, 14:16384-32767, 15:32768)
+
+Ce résultat est obtenu en effectuant deux opérations :
+- un appel à la routine **B**it **S**can **R**everse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
+- l'application d'un seuil minimum (égal à 3) pour la valeur de fl 
+
+Dans notre exemple le résultat de l'opération BSR vaut donc 9.
+
+L'implémentation de la routine **B**it **S**can **R**everse est la suivante:
+
+    ;-----------------------------------------------------------------
+    ; tlsf.bsr
+    ; input  REG : [tlsf.bsr.in] 16bit integer (1-xFFFF)
+    ; output REG : [B] number of leading 0-bits
+    ;-----------------------------------------------------------------
+    ; Bit Scan Reverse (bsr) in a 16 bit integer,
+    ; searches for the most significant set bit (1 bit).
+    ; Output number is bit position from 0 to 15.
+    ; A zero input value will result in an unexpected behaviour,
+    ; value 0 will be returned.
+    ;-----------------------------------------------------------------
+    tlsf.bsr.in fdb 0 ; input parameter
+    tlsf.bsr
+            lda   tlsf.bsr.in
+            beq   @lsb
+    @msb
+            ldb   #types.WORD_BITS-1
+            bra   >
+    @lsb
+                lda   tlsf.bsr.in+1
+                ldb   #types.BYTE_BITS-1
+    !       bita  #$f0
+            bne   >
+                subb  #4
+                lsla
+                lsla
+                lsla
+                lsla
+    !       bita  #$c0
+            bne   >
+                subb  #2
+                lsla
+                lsla
+    !       bmi   >
+                decb
+    !       rts
 
 
 

@@ -390,8 +390,8 @@ tlsf.free
 tlsf.mappingSearch
         std   tlsf.rsize
         ; round up requested size to next list
-        std   tlsf.clz.in
-        jsr   tlsf.clz                          ; Split memory size in power of two
+        std   tlsf.bsr.in
+        jsr   tlsf.bsr                          ; Split memory size in power of two
         cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS
         bhi   >                                 ; Branch to round up if fl is not at minimum value
             ldd   tlsf.rsize
@@ -408,8 +408,8 @@ tlsf.mappingFreeBlock
         anda  #^tlsf.mask.FREE_BLOCK
         addd  #1
 tlsf.mapping
-        std   tlsf.clz.in
-        jsr   tlsf.clz                          ; Split memory size in power of two
+        std   tlsf.bsr.in
+        jsr   tlsf.bsr                          ; Split memory size in power of two
         stb   tlsf.fl                           ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
         cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS-1     ; Test if there is a fl bit
         bhi   @computesl                        ; if so branch
@@ -421,7 +421,7 @@ tlsf.mapping
         aslb                                    ; 2 bytes of instructions for each element of @rshift table
         ldx   #@rshift-4                        ; Saves 4 useless bytes (max 14 shift with slbits=1)
         abx                                     ; Cannot use indexed jump, so move x
-        ldd   tlsf.clz.in                       ; Get rounded requested size to rescale sl based on fl
+        ldd   tlsf.bsr.in                       ; Get rounded requested size to rescale sl based on fl
         jmp   ,x
 @rshift
         lsra
@@ -595,25 +595,25 @@ tlsf.removeBlockHead
 !       rts
 
 ;-----------------------------------------------------------------
-; tlsf.clz
-; input  REG : [tlsf.clz.in] 16bit integer
-; output REG : [B] last set bit
+; tlsf.bsr
+; input  REG : [tlsf.bsr.in] 16bit integer (1-xFFFF)
+; output REG : [B] number of leading 0-bits
 ;-----------------------------------------------------------------
-; Count leading zeros (clz) in a 16 bit integer,
-; also known as Number of leading zeros (nlz)
-; Bit position is from 0 to 15
-; A zero input value will default to a result of 16
+; Bit Scan Reverse (bsr) in a 16 bit integer,
+; searches for the most significant set bit (1 bit).
+; Output number is bit position from 0 to 15.
+; A zero input value will result in an unexpected behaviour,
+; value 0 will be returned.
 ;-----------------------------------------------------------------
-tlsf.clz.in fdb 0 ; input parameter
-tlsf.clz
-        lda   tlsf.clz.in
+tlsf.bsr.in fdb 0 ; input parameter
+tlsf.bsr
+        lda   tlsf.bsr.in
         beq   @lsb
 @msb
         ldb   #types.WORD_BITS-1
         bra   >
 @lsb
-            lda   tlsf.clz.in+1
-            beq   @zero
+            lda   tlsf.bsr.in+1
             ldb   #types.BYTE_BITS-1
 !       bita  #$f0
         bne   >
@@ -630,18 +630,15 @@ tlsf.clz
 !       bmi   >
             decb
 !       rts
-@zero   ldb   #16
-        rts
 
 ;-----------------------------------------------------------------
 ; tlsf.ctz
 ; input  REG : [tlsf.ctz.in] 16bit integer
-; output REG : [B] first set bit
+; output REG : [B] number of trailing 0-bits
 ;-----------------------------------------------------------------
 ; Count trailing zeros in a 16 bit integer,
 ; also known as Number of trailing zeros (ntz)
-; Bit position is from 0 to 15
-; A zero input value will default to a result of 16
+; Output number is from 0 to 16
 ;-----------------------------------------------------------------
 tlsf.ctz.in fdb 0 ; input parameter
 tlsf.ctz
