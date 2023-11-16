@@ -9,8 +9,8 @@ Les mécanismes employés permettent d'obtenir ce bloc libre de manière indexé
 Les résultats obtenus en terme de fragmentation mémoire sont proches d'une solution de type "best-fit".
 
 Publications :
-- [A constant-time dynamic storage allocator for real-time systems.](./paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
-- [Implementation of a constant-time dynamic storage allocator.](./paper/spe_2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Software: Practice and Experience. Volume 38 Issue 10, Pages 995 - 1026. 2008.
+- [A constant-time dynamic storage allocator for real-time systems.](doc/paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
+- [Implementation of a constant-time dynamic storage allocator.](doc/paper/spe_2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Software: Practice and Experience. Volume 38 Issue 10, Pages 995 - 1026. 2008.
 
 ### Principe de fonctionnement
 
@@ -58,6 +58,8 @@ Un emplacement libre a une taille minimum de 4 octets, cela permet de transforme
 
 L'espace libre ou alloué est localisé à la suite des entêtes d'emplacement.
 
+![](doc/image/header.png)
+
 Les implémentations de TLSF pour les processeurs 32bits ou plus peuvent utiliser un positionnement du bit de type d'emplacement en début de mot et non en fin (comme proposé ici). Cette solution est pertinente dans le cas où il est nécessaire de garantir un alignement des données (mots de 4 octets par exemple). Cela permet de libérer deux bits non significatifs en début du mot.   
 Dans l'implémentation proposée pour le 6809, l'utilisation du bit de signe est préférable car cela permet un test plus rapide du type d'emplacement. D'autre part cela permet de conserver une allocation à l'octet près (au dela du minimum de 4).
 
@@ -77,52 +79,55 @@ L'indexation de premier niveau (fl) s'effectue par classement de la taille de l'
 (3:1-15, 4:16-31, 5:32-63, 6:64-127, 7:128-255, 8:256-511, 9:512-1023, 10:1024-2047, 11:2048-4095, 12:4096-8191, 13:8192-16383, 14:16384-32767, 15:32768)
 
 Ce résultat est obtenu en effectuant deux opérations :
-- un appel à la routine **B**it **S**can **R**everse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
+- un appel à la routine Bit Scan Reverse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
 - l'application d'un seuil minimum (égal à 3) pour la valeur de fl 
 
 Dans notre exemple le résultat de l'opération BSR vaut donc 9.
 
-L'implémentation de la routine **B**it **S**can **R**everse est la suivante:
+L'implémentation de la routine Bit Scan Reverse est la suivante:
+```nasm
+;-----------------------------------------------------------------
+; tlsf.bsr
+; input  REG : [tlsf.bsr.in] 16bit integer (1-xFFFF)
+; output REG : [B] number of leading 0-bits
+;-----------------------------------------------------------------
+; Bit Scan Reverse (bsr) in a 16 bit integer,
+; searches for the most significant set bit (1 bit).
+; Output number is bit position from 0 to 15.
+; A zero input value will result in an unexpected behaviour,
+; value 0 will be returned.
+;-----------------------------------------------------------------
+tlsf.bsr.in fdb 0 ; input parameter
+tlsf.bsr
+        lda   tlsf.bsr.in
+        beq   @lsb
+@msb
+        ldb   #types.WORD_BITS-1
+        bra   >
+@lsb
+            lda   tlsf.bsr.in+1
+            ldb   #types.BYTE_BITS-1
+!       bita  #$f0
+        bne   >
+            subb  #4
+            lsla
+            lsla
+            lsla
+            lsla
+!       bita  #$c0
+        bne   >
+            subb  #2
+            lsla
+            lsla
+!       bmi   >
+            decb
+!       rts
+```
+L'indexation de second niveau (sl) s'effectue par classement lineaire de la taille de l'emplacement en 16 niveaux pour chaque premier niveau (fl).
+Exemple: Pour un niveau fl=5, l'ensemble des valeurs indexées par le second niveau sont comprises entre 2^5 et 2^6-1, soit 32 à 63. Il y a 16 niveaux possibles pour sl, donc 32/16=2 valeurs pour chaque niveau sl.
+Les valeurs sont donc (fl:5, sl:0) 32-33, (fl:5, sl:1) 34-35, ..., (fl:5, sl:15) 62-63
 
-    ;-----------------------------------------------------------------
-    ; tlsf.bsr
-    ; input  REG : [tlsf.bsr.in] 16bit integer (1-xFFFF)
-    ; output REG : [B] number of leading 0-bits
-    ;-----------------------------------------------------------------
-    ; Bit Scan Reverse (bsr) in a 16 bit integer,
-    ; searches for the most significant set bit (1 bit).
-    ; Output number is bit position from 0 to 15.
-    ; A zero input value will result in an unexpected behaviour,
-    ; value 0 will be returned.
-    ;-----------------------------------------------------------------
-    tlsf.bsr.in fdb 0 ; input parameter
-    tlsf.bsr
-            lda   tlsf.bsr.in
-            beq   @lsb
-    @msb
-            ldb   #types.WORD_BITS-1
-            bra   >
-    @lsb
-                lda   tlsf.bsr.in+1
-                ldb   #types.BYTE_BITS-1
-    !       bita  #$f0
-            bne   >
-                subb  #4
-                lsla
-                lsla
-                lsla
-                lsla
-    !       bita  #$c0
-            bne   >
-                subb  #2
-                lsla
-                lsla
-    !       bmi   >
-                decb
-    !       rts
+Le tableau ci dessous représente chaque couple fl/sl possible. Pour chaque couple on stocke un départ de liste chainée. Cette liste chainée ne contient que des emplacements libres dont la taille minimum est indiquée dans le tableau (la taille maximum n'est pas représentée pour plus de lisibilité, elle correspond à la valeur de la cellule suivante-1).   
+Remarque : sont présentés en vert les cas particuliers pour lesquels une indexation exacte a lieu (pas de plage de valeurs).
 
-
-
-
-
-
+![](doc/image/head-matrix.png)

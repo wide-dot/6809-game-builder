@@ -59,8 +59,8 @@ tlsf.sl.bitmap.size   equ   (tlsf.SL_SIZE+types.BYTE_BITS-1)/types.BYTE_BITS
 tlsf.sl.bitmaps       equ   *-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
                       fill  0,(tlsf.FL_BITS+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
 tlsf.bitmap.end
-tlsf.headMatrix       equ   *-2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; -2 because fl=0, sl=0 is useless
-tlsf.headMatrix.start fill  0,tlsf.FL_BITS*tlsf.SL_SIZE*2 ; head ptr to each free list by fl/sl. Last fl index hold only one sl level (sl=0). Thus a whole fl level is saved (no +1 on flbits).
+tlsf.headMatrix       equ   *-4*2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; fl=0 sl=0 to sl=3 is useless (minimum bloc size)
+tlsf.headMatrix.start fill  0,(tlsf.FL_BITS+1)*tlsf.SL_SIZE*2-(4+15)*2 ; head ptr to each free list by fl/sl. First fl index hold only 12 sl levels (sl=4-15). Last fl index hold only one sl level (sl=0).
 tlsf.headMatrix.end
 
 ;-----------------------------------------------------------------
@@ -132,8 +132,8 @@ tlsf.init
         stu   tlsf.memoryPool.end
         ; Zeroing the tlsf index
         ldx   #tlsf.bitmap.start
-        lda   #0
-!           sta   ,x+
+        ldd   #0
+!           std   ,x++
             cmpx  #tlsf.bitmap.end
         bne   <
 
@@ -638,7 +638,9 @@ tlsf.bsr
 ;-----------------------------------------------------------------
 ; Count trailing zeros in a 16 bit integer,
 ; also known as Number of trailing zeros (ntz)
-; Output number is from 0 to 16
+; Output number is from 0 to 15
+; A zero input value will result in an unexpected behaviour,
+; value 15 will be returned.
 ;-----------------------------------------------------------------
 tlsf.ctz.in fdb 0 ; input parameter
 tlsf.ctz
@@ -649,7 +651,6 @@ tlsf.ctz
         bra   >
 @msb
             lda   tlsf.ctz.in
-            beq   @zero
             ldb   #types.BYTE_BITS
 !       bita  #$0f
         bne   >
@@ -667,5 +668,3 @@ tlsf.ctz
         bne   >
             incb
 !       rts
-@zero   ldb   #16
-        rts

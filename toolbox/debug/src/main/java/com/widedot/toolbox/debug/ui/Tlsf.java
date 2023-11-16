@@ -65,8 +65,8 @@ public class Tlsf {
 				ImGui.end();
 				return;
 			}
-			curAdr += 2; // padding
-			matrixAdr += 2;
+			curAdr += 8; // padding
+			matrixAdr += 8;
 
 			int fl = 0;
 
@@ -126,23 +126,26 @@ public class Tlsf {
 			}
 
 			ImGui.pushStyleVar(ImGuiStyleVar.ItemSpacing, 0, 0);
-			ImGui.text((String.format("%16s", Integer.toBinaryString(curVal)).replace(' ', '0')).substring(0, 15));
+			ImGui.text((String.format("%16s", Integer.toBinaryString(curVal)).replace(' ', '0')).substring(0, 12));
 			ImGui.sameLine();
 			ImGui.popStyleVar();
 
 			ImGui.pushStyleColor(ImGuiCol.Text, GREY);
-			ImGui.text((String.format("%16s", Integer.toBinaryString(curVal)).replace(' ', '0')).substring(15, 16));
+			ImGui.text((String.format("%16s", Integer.toBinaryString(curVal)).replace(' ', '0')).substring(12, 16));
 			ImGui.popStyleColor();
 			ImGui.sameLine();
 
-			slAdr += 2;
-			ImGui.pushStyleColor(ImGuiCol.Text, GREY);
-			ImGui.text("----");
-			ImGui.popStyleColor();
-			ImGui.sameLine();
+			int pre;
+			for (pre=0; pre<4; pre++) {
+				ImGui.pushStyleColor(ImGuiCol.Text, GREY);
+				ImGui.text("----");
+				ImGui.popStyleColor();
+				ImGui.sameLine();
+			}
 
-			col = 1;
-			for (int i = 0; i < 191; i++) {
+			slAdr+=2;
+			col = pre;
+			for (int i = 0; i < 192-pre; i++) {
 
 				if (col == 0) {
 					ImGui.pushStyleColor(ImGuiCol.Text, ORANGE);
