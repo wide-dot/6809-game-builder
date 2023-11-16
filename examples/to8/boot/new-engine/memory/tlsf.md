@@ -1,12 +1,44 @@
 # Allocation dynamique de mémoire pour Motorola 6809
 
+Il existe plusieurs manières d'utiliser la mémoire vive lors de l'exécution d'un programme.
+
+**la mémoire statique**
+L'utilisation de la mémoire statique (qui est réservée directement dans le programme) est une solution performante, mais elle ne constitue pas pour autant une solution à toutes les problématiques.
+
+Sa principale contrainte réside dans le fait que la taille des données est fixée lors de la constitution de l'exécutable.
+
+**la pile (stack)**
+La pile est utilisée comme zone temporaire pour stocker les paramètres ou l'adresse de retour lors d'un appel de routine. Elle peut également être utilisée pour stockée des variables temporaires.   
+
+Il s'agit d'une structure de données de type LIFO (Last In, First Out), son usage est donc contraint. On peut bien entendu accéder en lecture et en écriture à tout son contenu de manière indexée, mais pour libérer de la place il faut obligatoirement le faire dans l'ordre inverse de l'insertion des données.
+
+La pile étant directement utilisée par le processeur lors des appels de routines, elle doit être positionnée dans une zone mémoire visible en permanence.   
+
+Dans le contexte d'une routine il est possible de redéfinir la position de la pile en mémoire, il faut simplement veiller à ce que les différents changements de position restent cohérents par rapport à l'arbre d'appel des routines.
+
+**le tas (heap)**
+Le tas est un espace mémoire géré par les programmes. Son utilisation est libre mais peut nécessiter un gestionnaire si le contexte l'impose.   
+
+Une gestion simple consiste par exemple à définir des plages d'utilisation mémoire réservées à certains objets en utilisant des positions fixes déterminées lors de l'implémentation du code.
+
+Un gestionnaire permettra au programme :
+- de mutualiser l'espace disponible (et donc faire une économie de la mémoire)
+- de charger des données dont il ne connait pas la taille à l'avance.
+- de libérer ou d'allouer de la mémoire dans n'importe quel ordre
+
+Ces gestionnaires sont appelés DMA pour Dynamic Memory Allocator.
+
+Ce document présente l'implémentation d'un DMA de type TLSF pour le processeur Motorola 6809. La mise en oeuvre a été effectuée sur Thomson TO8, mais il n'y a pas de spécificité particulière, les routines présentées ici fonctionnent sur n'importe quelle machine à base de Motorola 6809.
+
 ## TLSF (Two-Level Segregated Fit)
 
-TLSF est un algorithme dont la complexité en temps des fonctions malloc et free est O(1).
-Le temps d'exécution est prévisible et ne dépend pas du niveau de fragmentation de la mémoire.
-Concrètement, cela signifie qu'il n'y a pas de boucle dans le code pour effectuer la recherche d'un bloc libre d'une taille optimale lors d'un malloc.
-Les mécanismes employés permettent d'obtenir ce bloc libre de manière indexée.
+TLSF est un algorithme dont la complexité en temps des fonctions d'allocation et de désallocation mémoire est O(1). Le temps d'exécution est donc prévisible et ne dépend pas du niveau de fragmentation de la mémoire.
+
+Par exemple, cela signifie qu'il n'y a pas de boucle dans le code pour effectuer la recherche d'un bloc libre d'une taille optimale lors d'une allocation (malloc). Les mécanismes employés permettent d'obtenir ce bloc libre de manière indexée.
+
 Les résultats obtenus en terme de fragmentation mémoire sont proches d'une solution de type "best-fit".
+
+Je vous invite à consulter les documents ci dessous pour une explication détaillée des différents types de gestionnaire d'allocation mémoire et une présentation de TLSF.
 
 Publications :
 - [A constant-time dynamic storage allocator for real-time systems.](doc/paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
@@ -14,7 +46,7 @@ Publications :
 
 ### Principe de fonctionnement
 
-Le système d'allocation mémoire est constitué des éléments suivants :
+Le système d'allocation mémoire TLSF est constitué des éléments suivants :
 
 - **memory pool**   
     Il s'agit d'une zone de mémoire continue dans laquelle sont stockées les données allouées par l'utilisateur, les propriétés des emplacements libres et allouées.
