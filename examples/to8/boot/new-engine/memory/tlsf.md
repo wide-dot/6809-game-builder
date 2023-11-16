@@ -67,25 +67,25 @@ Dans l'implémentation proposée pour le 6809, l'utilisation du bit de signe est
 
 Lorsqu'un emplacement libre est créé ou supprimé dans le *memory pool*, il est nécessaire de mettre à jour les données d'indexation. 
 
-Voici un exemple de décomposition d'une taille d'emplacement de 781 octets en fonction des index de premier et second niveau :
+Voici un exemple de décomposition d'une taille d'emplacement de 781 octets en fonction des index de premier (fl) et second niveau (sl) :
+```
+0000 0011 0000 1101 = x030D = 781 octets  
+______________ ____
+     fl=9      sl=13
+(MSB position) (value)
+```
 
-    0000 0011 0000 1101   
-    ffff ffff ffff ssss
+L'indexation de premier niveau (fl) s'effectue par classement de la taille de l'emplacement (minimun 4) par puissance de 2 en 13 niveaux, de fl=3 à fl=15.   
 
-    f: first level
-    s: second level
-
-L'indexation de premier niveau (fl) s'effectue par classement de la taille de l'emplacement par puissance de 2 en 13 niveaux:   
-(3:1-15, 4:16-31, 5:32-63, 6:64-127, 7:128-255, 8:256-511, 9:512-1023, 10:1024-2047, 11:2048-4095, 12:4096-8191, 13:8192-16383, 14:16384-32767, 15:32768)
+Le tableau ci dessous présente les tailles d'emplacement indexées par chaque valeur de premier niveau (fl).   
+![](doc/image/fl-sizes.png)
 
 Ce résultat est obtenu en effectuant deux opérations :
 - un appel à la routine Bit Scan Reverse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
-- l'application d'un seuil minimum (égal à 3) pour la valeur de fl 
-
-Dans notre exemple le résultat de l'opération BSR vaut donc 9.
+- l'application d'un seuil minimum pour la valeur de fl. On utilise la valeur 3 pour toute taille d'emplacement inférieure à 16 (les 4 premiers bits sont utilisés par l'index de second niveau).
 
 L'implémentation de la routine Bit Scan Reverse est la suivante:
-```nasm
+```
 ;-----------------------------------------------------------------
 ; tlsf.bsr
 ; input  REG : [tlsf.bsr.in] 16bit integer (1-xFFFF)
@@ -123,9 +123,14 @@ tlsf.bsr
             decb
 !       rts
 ```
-L'indexation de second niveau (sl) s'effectue par classement lineaire de la taille de l'emplacement en 16 niveaux pour chaque premier niveau (fl).
-Exemple: Pour un niveau fl=5, l'ensemble des valeurs indexées par le second niveau sont comprises entre 2^5 et 2^6-1, soit 32 à 63. Il y a 16 niveaux possibles pour sl, donc 32/16=2 valeurs pour chaque niveau sl.
-Les valeurs sont donc (fl:5, sl:0) 32-33, (fl:5, sl:1) 34-35, ..., (fl:5, sl:15) 62-63
+L'indexation de second niveau (sl) s'effectue par classement lineaire de la taille de l'emplacement en 16 niveaux pour chaque premier niveau (fl).   
+
+**Exemple:** Pour un niveau fl=5, l'ensemble des valeurs indexées par le second niveau sont comprises entre 2^5 et 2^6-1, soit 32 à 63. Il y a 16 niveaux possibles pour sl, donc 32/16=2 valeurs pour chaque niveau sl.
+Les valeurs sont donc :
+- fl:5,sl:0 [32,33]
+- fl:5,sl:1 [34,35]
+...
+- fl:5,sl:15 [62,63]
 
 Le tableau ci dessous représente chaque couple fl/sl possible. Pour chaque couple on stocke un départ de liste chainée. Cette liste chainée ne contient que des emplacements libres dont la taille minimum est indiquée dans le tableau (la taille maximum n'est pas représentée pour plus de lisibilité, elle correspond à la valeur de la cellule suivante-1).   
 Remarque : sont présentés en vert les cas particuliers pour lesquels une indexation exacte a lieu (pas de plage de valeurs).
