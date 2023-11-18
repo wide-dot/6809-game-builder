@@ -1,5 +1,9 @@
 # Allocation dynamique de mémoire pour Motorola 6809
 
+Ce document présente l'implémentation d'un gestionnaire d'allocation mémoire de type TLSF pour le processeur Motorola 6809. La mise en oeuvre a été effectuée sur Thomson TO8, mais il n'y a pas de spécificité particulière liée à ce matériel. Les routines présentées ici fonctionnent sur n'importe quelle ordinateur à base de Motorola 6809.
+
+## Introduction
+
 Il existe plusieurs manières d'utiliser la mémoire vive lors de l'exécution d'un programme.
 
 **la mémoire statique**
@@ -29,7 +33,7 @@ Ces deux piles permettent la sauvegarde ou le chargement des registres du proces
 
 La pile S a pour particularité d'être utilisée par le processeur pour sauvegarder le contenu du registre PC (Program Counter) lors de l'appel à une sous-routine, ou pour sauvegarder l'ensemble des registres lors de l'appel à des interruptions.
 
-Exemple d'utilisation de la pile pour recharger le contexte du code appellant (B, DP, X, U), retourner un paramètre de sortie (A) et retourner au programme appellant (PC) :
+Exemple d'utilisation de la pile pour recharger le contexte du code appellant (B, DP, X, U) et retourner au programme appellant (PC) :
 ```
 Addr Binary           Code                  Comments
 ---- ---------------- ----------------- -------------------
@@ -41,23 +45,25 @@ Addr Binary           Code                  Comments
 - Il s'agit d'une structure de données de type LIFO (Last In, First Out). On peut bien entendu accéder en lecture et en écriture à tout son contenu de manière indexée, mais pour libérer de la place il faut obligatoirement le faire dans l'ordre inverse de l'insertion des données.
 
 **le tas (heap)**
-C'est un espace mémoire géré par les programmes. Son utilisation est libre mais peut nécessiter un gestionnaire si le contexte l'impose.   
+Ce concept n'a pas d'implémentation normalisée dans le contexte d'un programme en assembleur 6809. Il s'agit d'un espace mémoire organisé qui peut être géré par un *heap manager*, également appelé *dynamic memory allocator*.
 
-<Ajout d'une représentation typique du tas/pile ici>
-<Expliquer les variantes : tas à la suite du programme ou dans une page RAM indépendante>
+Dans les cas les plus simples, il n'est pas nécessaire d'utiliser un gestionnaire. Il suffit de définir des plages d'utilisation mémoire réservées à certains objets ou fonctions en utilisant des zones suffisament larges et déterminées lors de l'implémentation du code.
 
-Une gestion simple consiste par exemple à définir des plages d'utilisation mémoire réservées à certains objets en utilisant des positions fixes déterminées lors de l'implémentation du code.
+Un gestionnaire apporte cependant plus de souplesse au programme, il lui permettra :
+- de mutualiser l'espace disponible de manière temporelle, par allocation / désallocation des données
+- de charger des données dont il ne connait pas la taille à l'avance, sans surconsommer la mémoire
 
-Un gestionnaire permettra au programme :
-- de mutualiser l'espace disponible (et donc faire une économie de la mémoire)
-- de charger des données dont il ne connait pas la taille à l'avance.
-- de libérer ou d'allouer de la mémoire dans n'importe quel ordre
+L'organisation mémoire recommandée est décrite dans le diagramme suivant. Elle permet de mutualiser l'espace mémoire libre entre la pile et le tas.
+![](doc/image/stack-heap.png)
 
-Ces gestionnaires sont appelés DMA pour Dynamic Memory Allocator.
+Dans le cas de programmes nécessitant une plus grande quantité de mémoire pour le programme et pour la mémoire dynamique, il peut être pertinent de stocker le tas dans une page mémoire dédiée. Dans ce cas l'organisation serait plutôt la suivante :
+![](doc/image/stack-heap-2.png)
 
-Ce document présente l'implémentation d'un DMA de type TLSF pour le processeur Motorola 6809. La mise en oeuvre a été effectuée sur Thomson TO8, mais il n'y a pas de spécificité particulière, les routines présentées ici fonctionnent sur n'importe quelle machine à base de Motorola 6809.
+*Contrainte*
+- L'appel à une routine d'allocation ou de desallocation a un coût non négligeable.
+- Un phénomène de fragmentation mémoire apparait au fil des allocations / désallocations, il doit être maitrisé.
 
-## TLSF (Two-Level Segregated Fit)
+## Implémentation de TLSF (Two-Level Segregated Fit)
 
 TLSF est un algorithme dont la complexité en temps des fonctions d'allocation et de désallocation mémoire est O(1). Le temps d'exécution est donc prévisible et ne dépend pas du niveau de fragmentation de la mémoire.
 
@@ -75,8 +81,8 @@ Je vous invite à consulter les documents ci dessous pour une explication détai
 
 Le système d'allocation mémoire TLSF est constitué des éléments suivants :
 
-- **memory pool**   
-    Il s'agit d'une zone de mémoire continue dans laquelle sont stockées les données allouées par l'utilisateur, les propriétés des emplacements libres et allouées.
+- **memory pool (heap)**   
+    Il s'agit d'une zone de mémoire continue (le tas) dans laquelle sont stockées les données allouées par l'utilisateur, les propriétés des emplacements libres et allouées.
 
 - **linked list head matrix**   
     Cette matrice stocke le point d'entrée de chaque liste chainée référençant les emplacements libres du *memory pool*. Les listes chainées rassemblent des emplacements de tailles similaires.
@@ -85,7 +91,7 @@ Le système d'allocation mémoire TLSF est constitué des éléments suivants :
     Le premier niveau d'indexation est stocké sous la forme d'un mot de 16 bits. Chaque bit indique l'existance d'au moins une liste chainée dans le second niveau d'indexation. Le classement s'effectue par puissance de 2 sur la taille de l'emplacement.
 
 - **second level bitmaps**   
-    Le second niveau d'indexation utilise un mot de 16 bits pour chaque premier niveau d'indexation. Chaque bit indique l'existance dans la *linked list head matrix* d'une liste chainée contenant des emplacements de mémoire libres. Le classement s'effectue de manière linéaire sur la taille de l'emplacement.
+    Le second niveau d'indexation utilise un mot de 16 bits pour chaque premier niveau d'indexation. Chaque bit indique l'existance dans la *linked list head matrix* d'une liste chainée contenant des emplacements de mémoire libres. Le classement s'effectue de manière linéaire sur la taille de l'emplacement dans une fourchette définie par le premier niveau d'indexation.
 
 #### Initialisation
 
