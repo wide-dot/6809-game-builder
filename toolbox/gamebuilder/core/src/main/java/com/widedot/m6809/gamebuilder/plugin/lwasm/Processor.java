@@ -31,6 +31,7 @@ public class Processor {
 		
 		String format = Attribute.getString(node, defaults, "format", "lwasm.format", LwAssembler.RAW);
 		String gensource = Attribute.getStringOpt(node, defaults, "gensource", "lwasm.gensource");
+		String lwasmProcessor = Attribute.getString(node, defaults, "processor", "lwasm.processor", "6809");
 		
 		List<File> files = new ArrayList<File>();
 		
@@ -98,7 +99,7 @@ public class Processor {
 		}
 
 		// assemble		
-		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, localDefines, format);
+		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, localDefines, format, lwasmProcessor);
 		defines.publish(localDefines);
 		log.debug("End of processing lwasm");
 		

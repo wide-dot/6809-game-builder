@@ -52,7 +52,7 @@ public class LwAssembler
 		}
 	};
 	
-	public static ObjectDataInterface assemble(String asmFile, String rootPath, Defines defines, String format) throws Exception {
+	public static ObjectDataInterface assemble(String asmFile, String rootPath, Defines defines, String format, String processor) throws Exception {
 		
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
 		String buildDir = FileUtil.getDir(asmFile) + File.separator +Settings.values.get("build.dir") + File.separator;
@@ -72,6 +72,7 @@ public class LwAssembler
 	
 		List<String> command = new ArrayList<String>(List.of("lwasm.exe",
 				   path.toString(),
+				   "--" + processor,
 				   "--format=" + format,
 				   "--output=" + binFilename,
 				   "--list="   + lstFilename,

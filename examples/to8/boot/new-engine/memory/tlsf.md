@@ -3,21 +3,48 @@
 Il existe plusieurs manières d'utiliser la mémoire vive lors de l'exécution d'un programme.
 
 **la mémoire statique**
-L'utilisation de la mémoire statique (qui est réservée directement dans le programme) est une solution performante, mais elle ne constitue pas pour autant une solution à toutes les problématiques.
+Il s'agit de la mémoire réservée directement dans le binaire du programme au moment de sa génération.   
+Exemple de variables en mémoire statique :
+```
+Addr Binary           Code                  Comments
+---- ---------------- --------------------- -------------------------------------------
+6312 00               diskid  fcb   $00     ; Disk id
+6313 00               nsect   fcb   $00     ; Sector counter
+6314 00               track   fcb   $00     ; Track number
+6315 00               sector  fcb   $00     ; Sector number
+6316                  loaddir
+6316 B76312                   sta   >diskid ; Save desired directory id for later check
+```
 
-Sa principale contrainte réside dans le fait que la taille des données est fixée lors de la constitution de l'exécutable.
+*Contraintes*
+- Elle ne peut pas être mis en oeuvre dans le cas d'un programme exécuté depuis une mémoire morte (ROM).
+- La taille des données est fixée lors de la constitution de l'exécutable.
 
 **la pile (stack)**
-La pile est utilisée comme zone temporaire pour stocker les paramètres ou l'adresse de retour lors d'un appel de routine. Elle peut également être utilisée pour stockée des variables temporaires.   
+Elle est utilisée pour stocker des variables temporaires lors de l'exécution du programme. Le processeur 6809 possède deux pointeurs de pile : U (User), S (System).
+Ces deux piles permettent la sauvegarde ou le chargement des registres du processeur, les cas d'usage les plus courants sont :
+- le passage d'arguments à un sous programme
+- le stockage de variables temporaires
+- la sauvegarde du contexte des registres
 
-Il s'agit d'une structure de données de type LIFO (Last In, First Out), son usage est donc contraint. On peut bien entendu accéder en lecture et en écriture à tout son contenu de manière indexée, mais pour libérer de la place il faut obligatoirement le faire dans l'ordre inverse de l'insertion des données.
+La pile S a pour particularité d'être utilisée par le processeur pour sauvegarder le contenu du registre PC (Program Counter) lors de l'appel à une sous-routine, ou pour sauvegarder l'ensemble des registres lors de l'appel à des interruptions.
 
-La pile étant directement utilisée par le processeur lors des appels de routines, elle doit être positionnée dans une zone mémoire visible en permanence.   
+Exemple d'utilisation de la pile pour recharger le contexte du code appellant (B, DP, X, U), retourner un paramètre de sortie (A) et retourner au programme appellant (PC) :
+```
+Addr Binary           Code                  Comments
+---- ---------------- ----------------- -------------------
+63E6 4F               clra              ; file is not empty
+63E7 35DC             puls  b,dp,x,u,pc ; return to caller
+```
 
-Dans le contexte d'une routine il est possible de redéfinir la position de la pile en mémoire, il faut simplement veiller à ce que les différents changements de position restent cohérents par rapport à l'arbre d'appel des routines.
+*Contrainte*
+- Il s'agit d'une structure de données de type LIFO (Last In, First Out). On peut bien entendu accéder en lecture et en écriture à tout son contenu de manière indexée, mais pour libérer de la place il faut obligatoirement le faire dans l'ordre inverse de l'insertion des données.
 
 **le tas (heap)**
-Le tas est un espace mémoire géré par les programmes. Son utilisation est libre mais peut nécessiter un gestionnaire si le contexte l'impose.   
+C'est un espace mémoire géré par les programmes. Son utilisation est libre mais peut nécessiter un gestionnaire si le contexte l'impose.   
+
+<Ajout d'une représentation typique du tas/pile ici>
+<Expliquer les variantes : tas à la suite du programme ou dans une page RAM indépendante>
 
 Une gestion simple consiste par exemple à définir des plages d'utilisation mémoire réservées à certains objets en utilisant des positions fixes déterminées lors de l'implémentation du code.
 
@@ -40,7 +67,7 @@ Les résultats obtenus en terme de fragmentation mémoire sont proches d'une sol
 
 Je vous invite à consulter les documents ci dessous pour une explication détaillée des différents types de gestionnaire d'allocation mémoire et une présentation de TLSF.
 
-Publications :
+*Publications*
 - [A constant-time dynamic storage allocator for real-time systems.](doc/paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
 - [Implementation of a constant-time dynamic storage allocator.](doc/paper/spe_2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Software: Practice and Experience. Volume 38 Issue 10, Pages 995 - 1026. 2008.
 
@@ -72,7 +99,7 @@ L'initialisation du gestionnaire d'allocation mémoire consiste en :
 
 #### Stockage des données dans le *memory pool*
 
-La création d'un emplacement libre dans le *memory pool* s'effectue par l'écriture des données d'entête suivantes à l'adresse de l'emplacement mémoire:
+La création d'un emplacement libre dans le *memory pool* s'effectue par l'écriture des données d'entête suivantes à l'adresse de l'emplacement mémoire :
 
 - [ 1 bit ] type d'emplacement (1: libre)
 - [15 bits] taille-1 (3-x7FFF)   
@@ -80,7 +107,7 @@ La création d'un emplacement libre dans le *memory pool* s'effectue par l'écri
 - [16 bits] emplacement libre précédent dans la liste chainée (adresse)
 - [16 bits] emplacement libre suivant dans la liste chainée (adresse)
 
-Dans le cas d'un emplacement alloué, l'entête est le suivant:
+Dans le cas d'un emplacement alloué, l'entête est le suivant :
 
 - [ 1 bit ] type d'emplacement (0: alloué)
 - [15 bits] taille-1 (3-x7FFF)   
@@ -116,7 +143,7 @@ Ce résultat est obtenu en effectuant deux opérations :
 - un appel à la routine Bit Scan Reverse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
 - l'application d'un seuil minimum pour la valeur de fl. On utilise la valeur 3 pour toute taille d'emplacement inférieure à 16 (les 4 premiers bits sont utilisés par l'index de second niveau).
 
-L'implémentation de la routine Bit Scan Reverse est la suivante:
+L'implémentation de la routine Bit Scan Reverse est la suivante :
 ```
 ;-----------------------------------------------------------------
 ; tlsf.bsr
