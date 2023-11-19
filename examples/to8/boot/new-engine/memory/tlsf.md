@@ -84,7 +84,7 @@ Le système d'allocation mémoire TLSF est constitué des éléments suivants :
 - **memory pool (heap)**   
     Il s'agit d'une zone de mémoire continue (le tas) dans laquelle sont stockées les données allouées par l'utilisateur, les propriétés des emplacements libres et allouées.
 
-- **linked list head matrix**   
+- **linked list head pointer matrix**   
     Cette matrice stocke le point d'entrée de chaque liste chainée référençant les emplacements libres du *memory pool*. Les listes chainées rassemblent des emplacements de tailles similaires.
 
 - **first level bitmap**   
@@ -92,6 +92,19 @@ Le système d'allocation mémoire TLSF est constitué des éléments suivants :
 
 - **second level bitmaps**   
     Le second niveau d'indexation utilise un mot de 16 bits pour chaque premier niveau d'indexation. Chaque bit indique l'existance dans la *linked list head matrix* d'une liste chainée contenant des emplacements de mémoire libres. Le classement s'effectue de manière linéaire sur la taille de l'emplacement dans une fourchette définie par le premier niveau d'indexation.
+
+Dans le cadre de la présente implémentation, voici les caractéristiques retenues:
+
+- memory pool : taille admissible entre 8 et 32768 octets dont un minimum de 4 octets d'overhead
+- linked list head pointer matrix : 189 pointeurs de 16 bits
+- first level bitmap : 16 bits
+- second level bitmap : 13x16 bits
+
+Voici une vue globale des données mises en oeuvre dans notre impémentation, n'y cherchez pas une cinématique ou un cas d'usage particulier. L'objectif est de représenter les relations entre les différentes données d'indexation.
+
+On retrouve dans cet exemple un emplacement mémoire déjà alloué et deux emplacements libres, chacun d'une taille équivalente (entre 15872 et 16383 octets), ce qui explique qu'ils soient référencés dans la même liste chainée.
+
+![](doc/image/index-full.png)
 
 #### Initialisation
 
@@ -201,3 +214,4 @@ Le tableau ci dessous représente chaque couple fl/sl possible. Pour chaque coup
 Remarque : sont présentés en vert les cas particuliers pour lesquels une indexation exacte a lieu (pas de plage de valeurs).
 
 ![](doc/image/head-matrix.png)
+![](doc/image/index.png)
