@@ -20,8 +20,7 @@ Addr Binary           Code                  Comments
 6316 B76312                   sta   >diskid ; Save desired directory id for later check
 ```
 
-*Contraintes*
-- Elle ne peut pas être mis en oeuvre dans le cas d'un programme exécuté depuis une mémoire morte (ROM).
+*Contrainte*
 - La taille des données est fixée lors de la constitution de l'exécutable.
 
 **la pile (stack)**
