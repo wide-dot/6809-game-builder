@@ -30,7 +30,7 @@ Ces deux piles permettent la sauvegarde ou le chargement des registres du proces
 - le stockage de variables temporaires
 - la sauvegarde du contexte des registres
 
-La pile S a pour particularité d'être utilisée par le processeur pour sauvegarder le contenu du registre PC (Program Counter) lors de l'appel à une sous-routine, ou pour sauvegarder l'ensemble des registres lors de l'appel à des interruptions.
+La pile S a pour particularité d'être utilisée par le processeur pour sauvegarder le contenu du registre PC (Program Counter) lors de l'appel à une sous-routine, ou pour sauvegarder l'ensemble des registres lors de l'exécution d'une interruption.
 
 Exemple d'utilisation de la pile pour recharger le contexte du code appellant (B, DP, X, U) et retourner au programme appellant (PC) :
 ```
