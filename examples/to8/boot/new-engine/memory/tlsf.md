@@ -101,7 +101,7 @@ Dans le cadre de la présente implémentation, voici les caractéristiques reten
 
 Voici une vue globale des données mises en oeuvre dans notre impémentation, n'y cherchez pas une cinématique ou un cas d'usage particulier. L'objectif est de représenter les relations entre les différentes données d'indexation.
 
-On retrouve dans cet exemple un emplacement mémoire déjà alloué et deux emplacements libres, chacun d'une taille équivalente (entre 7936 et 8192 octets), ce qui explique qu'ils soient référencés dans la même liste chainée.
+On retrouve dans cet exemple un emplacement mémoire déjà alloué et deux emplacements libres, chacun d'une taille équivalente (entre 7936 et 8191 octets inclus), ce qui explique qu'ils soient référencés dans la même liste chainée.
 
 ![](doc/image/index-full.png)
 
