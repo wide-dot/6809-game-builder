@@ -81,7 +81,7 @@ Je vous invite à consulter les documents ci dessous pour une explication détai
 Le système d'allocation mémoire TLSF est constitué des éléments suivants :
 
 - **memory pool (heap)**   
-    Il s'agit d'une zone de mémoire continue (le tas) dans laquelle sont stockées les données allouées par l'utilisateur, les propriétés des emplacements libres et allouées.
+    Il s'agit d'une zone de mémoire continue (le tas) dans laquelle sont stockées les données allouées par l'utilisateur. TLSF y stocke également les propriétés des emplacements libres et allouées.
 
 - **linked list head pointer matrix**   
     Cette matrice stocke le point d'entrée de chaque liste chainée référençant les emplacements libres du *memory pool*. Les listes chainées rassemblent des emplacements de tailles similaires.
