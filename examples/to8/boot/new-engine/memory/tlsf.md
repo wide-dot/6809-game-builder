@@ -6,7 +6,7 @@ Ce document présente l'implémentation d'un gestionnaire d'allocation mémoire 
 
 Il existe plusieurs manières d'utiliser la mémoire vive lors de l'exécution d'un programme.
 
-**la mémoire statique**
+**la mémoire statique**   
 Il s'agit de la mémoire réservée directement dans le binaire du programme au moment de sa génération.   
 Exemple de variables en mémoire statique :
 ```
@@ -23,7 +23,7 @@ Addr Binary           Code                  Comments
 *Contrainte*
 - La taille des données est fixée lors de la constitution de l'exécutable.
 
-**la pile (stack)**
+**la pile (stack)**   
 Elle est utilisée pour stocker des variables temporaires lors de l'exécution du programme. Le processeur 6809 possède deux pointeurs de pile : U (User), S (System).
 Ces deux piles permettent la sauvegarde ou le chargement des registres du processeur, les cas d'usage les plus courants sont :
 - le passage d'arguments à un sous programme
@@ -43,7 +43,7 @@ Addr Binary           Code                  Comments
 *Contrainte*
 - Il s'agit d'une structure de données de type LIFO (Last In, First Out). On peut bien entendu accéder en lecture et en écriture à tout son contenu de manière indexée, mais pour libérer de la place il faut obligatoirement le faire dans l'ordre inverse de l'insertion des données.
 
-**le tas (heap)**
+**le tas (heap)**   
 Ce concept n'a pas d'implémentation normalisée dans le contexte d'un programme en assembleur 6809. Il s'agit d'un espace mémoire organisé qui peut être géré par un *heap manager*, également appelé *dynamic memory allocator*.
 
 Dans les cas les plus simples, il n'est pas nécessaire d'utiliser un gestionnaire. Il suffit de définir des plages d'utilisation mémoire réservées à certains objets ou fonctions en utilisant des zones suffisament larges et déterminées lors de l'implémentation du code.
