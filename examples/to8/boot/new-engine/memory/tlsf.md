@@ -52,10 +52,10 @@ Un gestionnaire apporte cependant plus de souplesse au programme, il lui permett
 - de mutualiser l'espace disponible de manière temporelle, par allocation / désallocation des données
 - de charger des données dont il ne connait pas la taille à l'avance, sans surconsommer la mémoire
 
-L'organisation mémoire recommandée est décrite dans le diagramme suivant. Elle permet de mutualiser l'espace mémoire libre entre la pile et le tas.
+L'organisation mémoire recommandée est décrite dans le diagramme suivant. Elle permet de mutualiser l'espace mémoire libre entre la pile et le tas.   
 ![](doc/image/stack-heap.png)
 
-Dans le cas de programmes nécessitant une plus grande quantité de mémoire pour le programme et pour la mémoire dynamique, il peut être pertinent de stocker le tas dans une page mémoire dédiée. Dans ce cas l'organisation serait plutôt la suivante :
+Dans le cas de programmes nécessitant une plus grande quantité de mémoire pour le programme et pour la mémoire dynamique, il peut être pertinent de stocker le tas dans une page mémoire dédiée. Dans ce cas l'organisation serait plutôt la suivante :   
 ![](doc/image/stack-heap-2.png)
 
 *Contrainte*
