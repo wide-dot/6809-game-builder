@@ -105,15 +105,6 @@ On retrouve dans cet exemple un emplacement mémoire déjà alloué et deux empl
 
 ![](doc/image/index-full.png)
 
-#### Initialisation
-
-L'initialisation du gestionnaire d'allocation mémoire consiste en :   
-
-1. la réinitialisation des données *linked list head matrix*, *first level bitmap*, *second level bitmaps*
-2. la création d'un emplacement libre dans le *memory pool*
-3. le positionnement d'un bit dans le *first level bitmap*
-4. le positionnement d'un bit dans une des *second level bitmaps*
-5. le référencement d'un départ de liste chainée dans la *linked list head matrix* pointant sur l'emplacement créé dans le *memory pool* à l'étape 1
 
 #### Stockage des données dans le *memory pool*
 

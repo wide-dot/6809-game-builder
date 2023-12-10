@@ -4,6 +4,7 @@
 ;-----------------------------------------------------------------
 ; Benoit Rousseau - 22/08/2023
 ; Based on http://www.gii.upv.es/tlsf/files/spe_2008.pdf
+; Written for LWASM assembler http://www.lwtools.ca/
 ;
 ;-----------------------------------------------------------------
 
