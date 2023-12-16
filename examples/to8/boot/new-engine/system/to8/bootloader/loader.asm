@@ -10,6 +10,7 @@
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "new-engine/system/to8/bootloader/loader.const.asm"
 
 ; directory structure
 ; -------------------
@@ -47,14 +48,11 @@ lnsector rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
         ENDSTRUCT
 
-;----------------------------------------
-; Loader routines
-;----------------------------------------
-        org   $6300
+        org   loader.ADDRESS
+        jmp   >loadscene  ; Load a scene
         jmp   >loaddir    ; Load directory entries
         jmp   >load       ; Load file
         jmp   >decompress ; Decompress file
-        jmp   >alloc      ; Debug mode for Dynamic Memory Allocation
 error   jmp   >dskerr     ; Error
 pulse   jmp   >return     ; Load pulse
 
@@ -63,6 +61,40 @@ diskid  fcb   $00         ; Disk id
 nsect   fcb   $00         ; Sector counter
 track   fcb   $00         ; Track number
 sector  fcb   $00         ; Sector number
+
+
+;---------------------------------------
+; Load a scene
+;
+; input  REG : [D] scene id
+;---------------------------------------
+
+loadscene
+        bra *
+
+        ; set system stack
+        ;lds   #$9F00
+
+        ; load direntries
+        ;ldd   #$0000 ; D: [diskid] [face]
+        ;ldx   #$000E ; X: [track] [sector]
+        ;jsr   loaddir
+
+        ; load files
+        ;ldx   #$0000 ; X: [file number]
+        ;ldb   #$04   ; B: [destination - page number]
+        ;ldu   #$A000 ; U: [destination - address]
+        ;jsr   load
+
+        ; uncompress files
+        ;ldx   #$0000 ; X: [file number]
+        ;ldb   #$04   ; B: [destination - page number]
+        ;ldu   #$A000 ; U: [destination - address]
+        ;jsr   decompress
+
+        ; run
+        ;jmp   $6200  ; run program
+
 
 ;---------------------------------------
 ; Load directory entries
@@ -125,6 +157,7 @@ loaddir
         dec   >nsect       ; Next
         bne   @load        ; sector
         rts
+
 
 ;---------------------------------------
 ; Load file
@@ -233,6 +266,7 @@ sclist  equ   *-1
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a
 
+
 ;---------------------------------------
 ; Display messages
 ;
@@ -274,6 +308,7 @@ messIO         fcs   "     I/O|Error"
 messinsertdisk fcs   "   Insert disk 0"
 messdiskid     equ *-1
 
+
 ;---------------------------------------
 ; Switch page
 ;
@@ -281,17 +316,18 @@ messdiskid     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
+        cmpu  #$4000             ; Skip if
+        blo   >                  ; cartridge space
         lda   #$10
         ora   <$6081             ; Set RAM
         sta   <$6081             ; over data
         sta   >$e7e7             ; space
-        cmpu  #$4000             ; Skip if
-        blo   >                  ; cartridge space
         stb   >map.CF74021.DATA  ; Switch RAM page
         rts
 !       orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch ram page
+        stb   >map.CF74021.CART  ; Switch RAM page
         rts
+
 
 ;---------------------------------------
 ; Get file directory entry
@@ -306,6 +342,7 @@ getfileentry
         _lsld
         leay  d,y                ; Y ptr to file direntry
         rts
+
 
 ;---------------------------------------
 ; zx0
@@ -330,8 +367,7 @@ decompress
         leax  direntry.cdataz,y  ; set read ptr
         jmp   tfrxua
 
- align  $6500
- INCLUDE "./engine/compression/zx0/zx0_6809_mega.asm"
+ INCLUDE "new-engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
 
 
@@ -340,26 +376,18 @@ decompress
 ;
 ;
 ;---------------------------------------
+        INCLUDE   "new-engine/memory/tlsf.asm"
+        INCLUDE   "new-engine/memory/tlsf.ut.asm"
+
 link
         rts
 
 
 ;---------------------------------------
-; alloc
+; Directory entries
 ;
 ;
 ;---------------------------------------
-alloc
-        ; unit test
-        jsr   tlsf.ut
-        bra   *
-
-        INCLUDE   "new-engine\memory\tlsf.asm"
-        INCLUDE   "new-engine\memory\tlsf.ut.asm"
-
-*---------------------------------------
-* Directory entries
-*---------------------------------------
 
 dirheader.data
 direntries.data equ dirheader.data+sizeof{dirheader}

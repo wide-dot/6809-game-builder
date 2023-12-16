@@ -82,7 +82,12 @@ public class LwAssembler
 				   ));
 		
 		for (Entry<String, String> define : defines.values.entrySet()) {
-			command.add("--define="+define.getKey()+"="+define.getValue());
+			String val = define.getValue();
+			if (val.startsWith("$")) {
+				command.add("--define="+define.getKey()+"="+Integer.parseInt(val.substring(1),16));
+			} else {
+				command.add("--define="+define.getKey()+"="+define.getValue());
+			}
 		}
 
 		log.debug("{}", command);

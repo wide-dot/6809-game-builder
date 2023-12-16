@@ -1,6 +1,6 @@
 <configuration>
     <target name="fd">
-        <define symbol="builder.CHECKMEMORYEXT" value="1"/>
+        <define symbol="boot.CHECK_MEMORY_EXT" value="1"/>
         <default name="floppydisk.storage" value="new-engine/config/storage.xml"/>
 
         <floppydisk model="fd640">

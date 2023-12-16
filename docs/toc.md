@@ -38,7 +38,7 @@ l'index de runtime est maintenu ailleurs (info de qui est chargé ou) c'est auss
 ces infos en param du loader peuvent etre stockées dans une scene ... et le chargement commandé par le scene loader
 Par opposition au chargement d'un seul fichier.
 
-Attention le mieux est de charger tous les fichiers en RAM, puis de carger toutes les link data et enfin faire le dynamic link
+Attention le mieux est de charger tous les fichiers en RAM, puis de charger toutes les link data et enfin faire le dynamic link
 ça veut dire charger l'index en RAM forcement ...
 
 Cas d'un chargement d'un fichier sur autre disquette : 
