@@ -1,7 +1,12 @@
 <configuration>
     <target name="fd">
-        <define symbol="boot.CHECK_MEMORY_EXT" value="1"/>
         <default name="floppydisk.storage" value="new-engine/config/storage.xml"/>
+
+        <!-- optional defines - default values are declared in relevant <routine>.const.asm -->
+        <define symbol="boot.CHECK_MEMORY_EXT"/>            <!-- throw an error at boot if memory ext. is not detected -->
+        <define symbol="loader.PAGE" value="4"/>            <!-- tells where the boot will place the loader (default: 4) -->
+        <define symbol="loader.ADDRESS" value="$0000"/>     <!-- tells where the boot will place the loader (default: $0000) -->
+        <define symbol="loader.DEFAULT_SCENE" value="0"/>   <!-- tells what scene will be loaded at boot time (default: 0) -->
 
         <floppydisk model="fd640">
             <data section="LOADER">
