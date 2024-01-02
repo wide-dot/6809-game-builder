@@ -5,7 +5,7 @@
         <!-- optional defines - default values are declared in relevant <routine>.const.asm -->
         <define symbol="boot.CHECK_MEMORY_EXT"/>            <!-- throw an error at boot if memory ext. is not detected -->
         <define symbol="loader.PAGE" value="4"/>            <!-- tells where the boot will place the loader (default: 4) -->
-        <define symbol="loader.ADDRESS" value="$0000"/>     <!-- tells where the boot will place the loader (default: $0000) -->
+        <define symbol="loader.ADDRESS" value="$A000"/>     <!-- tells where the boot will place the loader (default: $0000) -->
         <define symbol="loader.DEFAULT_SCENE" value="0"/>   <!-- tells what scene will be loaded at boot time (default: 0) -->
 
         <floppydisk model="fd640">
@@ -23,8 +23,8 @@
                 </cksumfd640>
             </data>
 
-            <section name="INDEX" track="0" face="0" sector="14"/>
-            <section name="LINK"  track="0" face="1" sector="1"/>
+            <section name="INDEX" track="0" face="1" sector="1"/>
+            <section name="LINK"  track="0" face="1" sector="9"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="src/directories/directory.bin"> <!--genbinary is optional-->
@@ -39,6 +39,7 @@
                         <asm filename="src/assets/main/run-pixel.asm"/>
                     </lwasm>
                 </direntry>
+
                 <direntry name="assets.object.pixel">
                     <lwasm>
                         <asm filename="src/assets/object/pixel.asm"/>

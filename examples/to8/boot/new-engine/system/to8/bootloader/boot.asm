@@ -75,7 +75,7 @@ boot3   inc   <map.DK.BUF        ; Move sector ptr
         incb                     ; Sector+1
         dec   >secnbr            ; Next
         bne   boot2              ; sector
-        ldd   #loader.DEFAULT_SCENE
+        lds   #$9F00             ; Set system stack
         jmp   >loader.ADDRESS
 
 ; Display error message
