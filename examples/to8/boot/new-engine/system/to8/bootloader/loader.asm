@@ -27,7 +27,7 @@ bitfld   rmb types.BYTE   ; [0] [0] [00 0000]       - [compression 0:none, 1:pac
 free     rmb types.BYTE   ; [0000 0000]             - [free]
 track    rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
 sector   rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
-sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector]
+sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector ($ff00 : empty file)]
 offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
 nsector  rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 sizez    rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
@@ -60,17 +60,20 @@ lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: 
 error   jmp   >dskerr     ; Called if a read error is detected
 pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
 
+        INCLUDE   "new-engine/memory/tlsf.asm"
+
 ; temporary space
 ; ---------------
 ; directory entries
 dirheader.data
 direntries.data equ dirheader.data+sizeof{dirheader}
-ptsec            fill  0,256 ; Temporary space for partial sector loading and direntries data
-loader.dir.array fill 0,10*2 ; Max 10 directories allowed
-diskid           fcb   $00   ; Disk id
-nsect            fcb   $00   ; Sector counter
-track            fcb   $00   ; Track number
-sector           fcb   $00   ; Sector number
+ptsec              fill  0,256  ; Temporary space for partial sector loading and direntries data
+loader.dir.id      fcb   $00    ; Actual Directory/Disk id
+loader.dir.entries fdb   $00    ; Ptr to actual directory entries
+diskid             fcb   $00    ; Disk id
+nsect              fcb   $00    ; Sector counter
+track              fcb   $00    ; Track number
+sector             fcb   $00    ; Sector number
 
 ;-----------------------------------------------------------------
 ; loader.scene.loadDefault
@@ -82,7 +85,7 @@ sector           fcb   $00   ; Sector number
 loader.scene.loadDefault
         ; init allocator
         ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
-        ldx   #loader.dynamicMemory
+        ldx   #loader.memoryPool
         jsr   tlsf.init
 
         ldb   #loader.DEFAULT_SCENE_DIR_ID
@@ -104,10 +107,7 @@ loader.scene.loadDefault
 ;-----------------------------------------------------------------
 loader.scene.data    fdb   0
 loader.scene.load
-        pshs  x
-
-        ; load scene data
-        ; ---------------
+        pshs  x                                                                     ; Backup scene file id parameter
 
         ; check if directory is already loaded
         ldx   #loader.dir.array
@@ -115,24 +115,20 @@ loader.scene.load
         ldu   b,x
         bne   >
 
-        pshs  b
-        ; load direntries
-        ldd   #$0001 ; D: [diskid] [face]
-        ldx   #$0001 ; X: [track] [sector]
-        jsr   loader.loadDir
-        ; TODO : upgrade loader.loadDir to write to allocated memory
-
+        ; if not, load direntries
+        pshs  b                                                                     ; Backup scene directory id parameter
+        ldd   #loader.DEFAULT_SCENE_DIR_ID*256+loader.DEFAULT_SCENE_FILE_FACE       ; D: [diskid] [face]
+        ldx   #loader.DEFAULT_SCENE_FILE_TRACK*256+loader.DEFAULT_SCENE_FILE_SECTOR ; X: [track] [sector]
+        jsr   loader.dir.load                                                       ; Load directory data from disk and store to memory pool
         ldx   #loader.dir.array
-        puls  b
-        aslb
-        stu   b,x
+        puls  b                                                                     ; Restore scene directory id parameter
+        stu   b,x                                                                   ; Store ptr reference to directory data in directory array
 
-!       ; now U is a ptr to dir data
-
-        ; load file data from directory
-        ; by using file id (offset in directory data)
-        ; default scene is first file, but can be changed by user at build stage
-        ; ...
+!       ; Load scene file data by using directory index
+        ; Use file id as an offset in directory data
+        puls  x                                                                     ; Restore scene file id parameter
+        ; TODO directory id parameter a recharger : modifier le pshs/puls
+        jsr   loader.dir.getFile
 
         ldd   #1234 ; file data size
         jsr   tlsf.malloc
@@ -141,7 +137,7 @@ loader.scene.load
         ; load files
         puls  x                 ; X: [file number]
         ldb   #loader.PAGE      ; B: [destination - page number]
-        jsr   loader.loadFile
+        jsr   loader.file.load
 
         rts
 
@@ -209,7 +205,7 @@ loader.scene.apply
         ;ldx   #$0000 ; X: [file number]
         ;ldb   #$04   ; B: [destination - page number]
         ;ldu   #$A000 ; U: [destination - address]
-        ;jsr   decompress
+        ;jsr   loader.file.decompress
 
         ; store dir/file meta data in dynamic ram and store pointer somewhere
         puls  u,pc
@@ -266,7 +262,7 @@ loader.dir.load
         cmpa  >diskid
         bne   @info
 ; read remaining directory entries
-        lda   dirheader.nsector,y ; init nb sectors to read       
+        lda   dirheader.nsector,y ; init nb sectors to read      
         sta   >nsect
         ldx   #messIO      ; Error message
         bra   @next
@@ -303,7 +299,7 @@ loader.dir.unload
 ; input  REG : [B] destination - page number
 ; input  REG : [U] destination - address
 ;
-; output REG : [A] $ff = empty file
+; output REG : [D] $ff00 = empty file
 ;---------------------------------------
 ; load a file from disk to RAM
 ;---------------------------------------
@@ -313,7 +309,10 @@ loader.file.load
         tfr   a,dp               ; Set DP
         jsr   switchpage
 * Prepare loading
-        jsr   getfileentry
+
+; TODO dir id !!!
+
+        jsr   loader.dir.getFile
         ldd   direntry.sizea,y   ; check empty file flag
         cmpd  #$ff00
         bne   >
@@ -340,7 +339,7 @@ ld3     stu   <map.DK.BUF        ; Init dest location
 ld4     ldb   >nsect             ; Exit if
         beq   ld7                ; no sector
         cmpb  #1
-        bhi   ld5                ; Exit if 
+        bhi   ld5                ; Exit if
         lda   direntry.sizez,y   ; last sector
         bne   ld6
 ld5     bsr   ldsec              ; Load sector
@@ -470,31 +469,53 @@ switchpage
 
 
 ;---------------------------------------
-; Get file directory entry
+; loader.dir.getFile
 ;
-; X: [file number]
+; input  REG : [A] dir id
+; input  REG : [X] file id
+; output REG : [Y] ptr to file direntry ($00ff = empty file)
 ;---------------------------------------
-getfileentry
-        ldy   #direntries.data
-        tfr   x,d
-        _lsld                    ; Scale file id
-        _lsld                    ; to dir entry size
+; Get file directory entry
+;---------------------------------------
+loader.dir.getFile
+        pshs  x,u
+        ldx   #loader.dir.array
+        asla
+        sta   @a
+        ldu   a,x
+        bne   >                 ; branch if directory is already loaded
+        ldb   #$01              ; D: [dirid] [face]
+        ldx   #$0001            ; X: [track] [sector]
+        jsr   loader.dir.load   ; Load directory data from disk and store to memory pool
+        ldx   #loader.dir.array
+        lda   #0
+@a      equ   *-1
+        stu   a,x               ; Store ptr reference to directory data in directory array
+!
+        ; Load scene file data by using directory index
+        puls  d
+        _lsld                   ; Scale file id
+        _lsld                   ; to dir entry size
         _lsld
-        leay  d,y                ; Y ptr to file direntry
-        rts
+        leay  d,u               ; Y ptr to file direntry
+        puls  u,pc
 
 
 ;---------------------------------------
-; zx0
+; loader.file.decompress
 ;
 ; X: [file number]
 ; B: [destination - page number]
 ; U: [destination - address]
 ;---------------------------------------
+; uncompress a file by using zx0
+;---------------------------------------
 
-decompress
+; TODO necessite un nouveau parametre : dir id utilisé par getFile
+
+loader.file.decompress
         jsr   switchpage
-        jsr   getfileentry
+        jsr   loader.dir.getFile
         ldb   direntry.bitfld,y  ; test if compressed file
         bmi   >                  ; yes, continue
         rts                      ; no, exit
@@ -512,20 +533,12 @@ decompress
 
 
 ;---------------------------------------
-; link
+; loader.link
 ;
 ;
 ;---------------------------------------
-        INCLUDE   "new-engine/memory/tlsf.asm"
-        INCLUDE   "new-engine/memory/tlsf.ut.asm"
-
-link
+loader.link
         rts
 
-;---------------------------------------
-; Dynamic memory
-;
-;
-;---------------------------------------
 
-loader.dynamicMemory equ *
+loader.memoryPool equ *

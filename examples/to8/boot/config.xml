@@ -23,8 +23,6 @@
                 </cksumfd640>
             </data>
 
-            <section name="INDEX" track="0" face="1" sector="1"/>
-            <section name="LINK"  track="0" face="1" sector="9"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="src/directories/directory.bin"> <!--genbinary is optional-->
