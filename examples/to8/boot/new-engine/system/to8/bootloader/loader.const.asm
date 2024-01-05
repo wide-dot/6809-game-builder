@@ -3,11 +3,11 @@ loader.PAGE equ 4
  ENDC
 
  IFNDEF loader.ADDRESS
-loader.ADDRESS equ 0
+loader.ADDRESS equ $A000
  ENDC
 
  IFNDEF loader.DEFAULT_DYNAMIC_MEMORY_SIZE
-loader.DEFAULT_DYNAMIC_MEMORY_SIZE equ loader.ADDRESS-loader.dynamicMemory+$4000
+loader.DEFAULT_DYNAMIC_MEMORY_SIZE equ loader.ADDRESS-loader.memoryPool+$4000
  ENDC
 
  IFNDEF loader.DEFAULT_SCENE_DIR_ID

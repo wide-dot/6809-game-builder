@@ -1,9 +1,12 @@
 package com.widedot.m6809.gamebuilder.plugin.asm;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.io.FileUtils;
 
+import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 
@@ -15,20 +18,24 @@ public class Processor {
 	
 		log.debug("Processing asm ...");
 		
-		String filename = Attribute.getString(node, defaults, "filename", "asm.filename");
-		if (filename == null) {
-			String s = "Missing filename attribute for asm plugin !";
-			log.error(s);
-			throw new Exception(s);
+		File file = null;
+		String filename = null;
+		String content = (String) node.getValue();
+		
+		if (content != null) {
+			filename = path + File.separator + Settings.values.get("generate.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
+			file = new File(filename);
+			FileUtils.write(file, System.lineSeparator()+content+System.lineSeparator(), StandardCharsets.UTF_8, false);
+		} else {
+			filename = path + File.separator + Attribute.getString(node, defaults, "filename", "asm.filename");
+			file = new File(filename);
+			if (!file.exists()) {
+				String s = "file: "+filename+" does not exists !";
+				log.error(s);
+				throw new Exception(s);			
+			}
 		}
 		
-		filename = path + File.separator + filename;
-		File file = new File(filename);
-		if (!file.exists()) {
-			String s = "file: "+filename+" does not exists !";
-			log.error(s);
-			throw new Exception(s);			
-		}
 		
 		log.debug("End of processing asm");
 		

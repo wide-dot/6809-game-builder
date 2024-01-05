@@ -1,9 +1,14 @@
 ;*******************************************************************************
 ; FD File loader
-; Benoit Rousseau 07/2023 (compressor, linker direntries)
-; Based on loader from Prehisto (main direntry)
+; Benoit Rousseau 07/2023
+; Based on loader from Prehisto
 ; ------------------------------------------------------------------------------
 ; A fully featured boot loader
+;
+; TODO :
+; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
+;   ex: equates exportées
+;
 ;*******************************************************************************
  SETDP $ff
         INCLUDE "new-engine/constant/types.const.asm"
@@ -23,9 +28,12 @@ nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors for direntr
 ; direntry main structure
 ; -----------------------
 direntry STRUCT
-bitfld   rmb types.BYTE   ; [0] [0] [00 0000]       - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes] [free]
-free     rmb types.BYTE   ; [0000 0000]             - [free]
-track    rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
+bitfld   rmb 0            ; alias to bitfld
+sizeu    rmb types.WORD   ; [0]                     - [compression 0:none, 1:packed]
+                          ; [0]                     - [load time linker 0:no, 1:yes]
+                          ; [00 0000] [0000 0000]   - [uncompressed file size -1]
+track    rmb types.BYTE   ; [0000 000]              - [track 0-128]
+                          ; [0]                     - [face 0-1]
 sector   rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
 sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector ($ff00 : empty file)]
 offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
@@ -40,7 +48,8 @@ cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompres
 ; direntry linker structure
 ; -------------------------
 lsize    rmb types.BYTE   ; [0000 0000] [0000 0000] - [linker data size]
-ltrack   rmb types.BYTE   ; [0000 000] [0]          - [track 0-128] [face 0-1]
+ltrack   rmb types.BYTE   ; [0000 000]              - [track 0-128]
+                          ; [0]                     - [face 0-1]
 lsector  rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
 lsizea   rmb types.BYTE   ; [0000 0000]             - [bytes in first sector]
 loffseta rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
@@ -49,12 +58,12 @@ lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: 
         ENDSTRUCT
 
         org   loader.ADDRESS
-        jmp   >loader.scene.loadDefault
-        jmp   >loader.scene.load
-        jmp   >loader.scene.unload
-        jmp   >loader.dir.load
-        jmp   >loader.dir.unload
-        jmp   >loader.file.load
+        jmp   >loader.scene.loadDefault  ; OK
+        jmp   >loader.scene.apply        ; OK
+        jmp   >loader.dir.load           ; OK
+        jmp   >loader.file.load          ; OK
+        jmp   >loader.file.malloc        ; OK
+        jmp   >loader.file.unload        ; TODO
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -64,16 +73,15 @@ pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
 
 ; temporary space
 ; ---------------
-; directory entries
-dirheader.data
-direntries.data equ dirheader.data+sizeof{dirheader}
-ptsec              fill  0,256  ; Temporary space for partial sector loading and direntries data
-loader.dir.id      fcb   $00    ; Actual Directory/Disk id
-loader.dir.entries fdb   $00    ; Ptr to actual directory entries
-diskid             fcb   $00    ; Disk id
-nsect              fcb   $00    ; Sector counter
-track              fcb   $00    ; Track number
-sector             fcb   $00    ; Sector number
+ptsec      fill  0,256 ; Temporary space for partial sector loading
+diskid     fcb   0     ; Disk id
+nsect      fcb   0     ; Sector counter
+track      fcb   0     ; Track number
+sector     fcb   0     ; Sector number
+
+; directory
+; ---------
+loader.dir fdb   0
 
 ;-----------------------------------------------------------------
 ; loader.scene.loadDefault
@@ -83,168 +91,270 @@ sector             fcb   $00    ; Sector number
 ; settings can be overided by defines at build time
 ;-----------------------------------------------------------------
 loader.scene.loadDefault
+
         ; init allocator
         ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
         ldx   #loader.memoryPool
         jsr   tlsf.init
 
-        ldb   #loader.DEFAULT_SCENE_DIR_ID
+        ; load directory entries
+        lda   #loader.DEFAULT_SCENE_DIR_ID
+        jsr   loader.dir.load
+
+        ; load default scene files
         ldx   #loader.DEFAULT_SCENE_FILE_ID
-        jsr   loader.scene.load
+        jsr   loader.file.malloc
+
+        ldb   #loader.PAGE
+
+        ; batch load files from disk, before decompression
+        ; to benefit from sector interlacing
+        ldx   #loader.file.load
+        stx   loader.scene.routine
         jsr   loader.scene.apply
+
+        ldx   #loader.file.decompress
+        stx   loader.scene.routine
+        jsr   loader.scene.apply
+
+        ; TODO add link here
+
+        jsr   tlsf.free
         jmp   loader.DEFAULT_SCENE_ENTRY_POINT
 
 ;-----------------------------------------------------------------
-; loader.scene.load
+; loader.file.malloc
 ;
-; input  REG : [B] scene directory id
-; input  REG : [X] scene file id
-; output REG : [U] ptr to allocated scene data
+; input  REG : [X] file id
+; output REG : [U] ptr to allocated memory
 ;-----------------------------------------------------------------
-; Load a scene from Disk to RAM
-; A scene is a file that contains all directories and file id to
-; load, but also destination page and location in RAM
+; Allocate memory for a file
 ;-----------------------------------------------------------------
-loader.scene.data    fdb   0
-loader.scene.load
-        pshs  x                                                                     ; Backup scene file id parameter
-
-        ; check if directory is already loaded
-        ldx   #loader.dir.array
-        aslb
-        ldu   b,x
-        bne   >
-
-        ; if not, load direntries
-        pshs  b                                                                     ; Backup scene directory id parameter
-        ldd   #loader.DEFAULT_SCENE_DIR_ID*256+loader.DEFAULT_SCENE_FILE_FACE       ; D: [diskid] [face]
-        ldx   #loader.DEFAULT_SCENE_FILE_TRACK*256+loader.DEFAULT_SCENE_FILE_SECTOR ; X: [track] [sector]
-        jsr   loader.dir.load                                                       ; Load directory data from disk and store to memory pool
-        ldx   #loader.dir.array
-        puls  b                                                                     ; Restore scene directory id parameter
-        stu   b,x                                                                   ; Store ptr reference to directory data in directory array
-
-!       ; Load scene file data by using directory index
-        ; Use file id as an offset in directory data
-        puls  x                                                                     ; Restore scene file id parameter
-        ; TODO directory id parameter a recharger : modifier le pshs/puls
+loader.file.malloc
+        pshs  x
         jsr   loader.dir.getFile
 
-        ldd   #1234 ; file data size
-        jsr   tlsf.malloc
-        stu   loader.scene.data ; U: [destination - address]
-
-        ; load files
-        puls  x                 ; X: [file number]
-        ldb   #loader.PAGE      ; B: [destination - page number]
-        jsr   loader.file.load
-
+        ldd   direntry.sizea,y  ; Check for empty file flag
+        cmpd  #$ff00
+        bne   >
+        ldu   #0                ; If file is empty, return 0
         rts
+!
+        ldd   direntry.sizeu,y  ; Read file data size
+        anda  #%00111111        ; File size is stored in 14 bits
+        addd  #1                ; File size is stored as size-1
+        jsr   tlsf.malloc
+        puls  x,pc
 
-;-----------------------------------------------------------------
-; loader.scene.unload
-;
-; input  REG : [U] ptr to allocated scene data
-;-----------------------------------------------------------------
-; Unload scene data from memory pool
-;-----------------------------------------------------------------
-loader.scene.unload
-        jmp   tlsf.free
 
 ;-----------------------------------------------------------------
 ; loader.scene.apply
 ;
-; input  REG : [U] ptr to allocated scene data
-; output REG : [U] ptr to allocated scene data
+; input  REG : [U] ptr to scene data
+; input  VAR : [loader.scene.routine] routine to run against files
 ;-----------------------------------------------------------------
-; Apply a preloaded scene
-;
-; 3 different entry types can be combined in a scene
-; a scene can use different directory ids (also called disk id)
-;
+; Apply a scene by loading files to RAM
+; 3 different entry types can be combined in a scene.
 ; endmarker is type: %00
-;
+;-----------------------------------------------------------------
+
+; scene structure
+; ---------------
+scene.header STRUCT
+type     rmb 0
+nbfiles  rmb types.WORD   ; [00]                     - [00:endmarker, 01:list of dest and id, 10:ajdacent dest and list of id, 11:adjacent dest and id]
+                          ; [00 000] [0000 000]      - [nb files]
+        ENDSTRUCT
+
+scene   STRUCT
+page     rmb types.BYTE   ; [0000 000]               - [page]
+address  rmb types.WORD   ; [0000 000] [0000 000]    - [dest address]
+fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
+        ENDSTRUCT
+
+loader.scene.routine   fdb 0
+loader.scene.fileCount fdb 0
+
+loader.scene.apply
+        ; parse scene data and load dir/files
+        pshs  b,x,u
+        leay  ,u
+        
+        ; a scene contains a list of blocks with a certain type
+        ; a block type of 0 is the end marker
+@nextblock
+        lda   scene.header.type,y
+        anda  #%11000000
+        bne   >
+        puls  b,x,u,pc                  ; end marker %00 found, return
+!
+        cmpa  #%01000000
+        bne   >
+        jsr   loader.scene.apply.type01
+        bra   @nextblock
+!       cmpa  #%10000000
+        bne   >
+        jsr   loader.scene.apply.type10
+        bra   @nextblock
+!       jsr   loader.scene.apply.type11
+        bra   @nextblock
+
+;-----------------------------------------------------------------
+; loader.scene.apply.type01
+;-----------------------------------------------------------------
 ; type %01 | nb files (0-16383)
-; directory id
-; dest page |\
-; dest addr | > n times (for each file)
-; file id   |/
-; ...
-;
+; dest page \
+; dest addr  - n times (for each file)
+; file id   /
+;-----------------------------------------------------------------
+
+loader.scene.apply.type01
+        ldd   scene.header.nbfiles,y
+        leay  sizeof{scene.header},y
+        anda  #%00111111
+@loop
+        ldb   scene.page,y
+        ldu   scene.address,y
+        ldx   scene.fileid,y
+        jsr   [loader.scene.routine]
+        leay  sizeof{scene},y
+        ldd   loader.scene.fileCount
+        subd  #1
+        std   loader.scene.fileCount
+        bne   @loop
+        rts
+
+;-----------------------------------------------------------------
+; loader.scene.apply.type10
+;-----------------------------------------------------------------
 ; type %10 | nb files (0-16383)
-; directory id
 ; dest page
 ; dest addr
-; file id | file id | ...
-;
+; file id - n times (for each file)
+;-----------------------------------------------------------------
+
+loader.scene.apply.type10
+        ldd   scene.header.nbfiles,y
+        leay  sizeof{scene.header},y
+        anda  #%00111111
+        std   loader.scene.fileCount
+        ldb   scene.page,y
+        ldu   scene.address,y
+        leay  scene.fileid,y
+@loop
+        ldx   ,y++
+        jsr   [loader.scene.routine]
+        pshs  d,y
+        jsr   loader.dir.getFile
+        ldd   direntry.sizeu,y  ; Read file data size
+        anda  #%00111111        ; File size is stored in 14 bits
+        addd  #1                ; File size is stored as size-1
+        leau  d,u               ; move address to next location
+        puls  d,y
+        cmpu  #$4000
+        bne  >
+        ldu   #0
+        incb                    ; move to next page
+!
+        ldx   loader.scene.fileCount
+        leax  -1,x
+        stx   loader.scene.fileCount
+        bne   @loop
+        rts
+
+;-----------------------------------------------------------------
+; loader.scene.apply.type11
+;-----------------------------------------------------------------
 ; type %11 | nb files (0-16383)
-; directory id
 ; dest page
 ; dest addr
 ; start file id
 ;-----------------------------------------------------------------
-loader.scene.apply
-        pshs  u
-        ; parse scene data and load dir/files
 
-        ; load scene must check already loaded directories
-        ; and load new ones in memory
-
-        ; load direntries
-        ldd   #$0001 ; D: [diskid] [face]
-        ldx   #$0001 ; X: [track] [sector]
-        jsr   loaddir
-
-        ; load files
-        ;ldx   #$0000 ; X: [file number]
-        ;ldb   #$04   ; B: [destination - page number]
-        ;ldu   #$A000 ; U: [destination - address]
-        ;jsr   load
-
-        ; uncompress files
-        ;ldx   #$0000 ; X: [file number]
-        ;ldb   #$04   ; B: [destination - page number]
-        ;ldu   #$A000 ; U: [destination - address]
-        ;jsr   loader.file.decompress
-
-        ; store dir/file meta data in dynamic ram and store pointer somewhere
-        puls  u,pc
-
+loader.scene.apply.type11
+        ldd   scene.header.nbfiles,y
+        leay  sizeof{scene.header},y
+        anda  #%00111111
+        std   loader.scene.fileCount
+        ldb   scene.page,y
+        ldu   scene.address,y
+        ldx   scene.fileid,y
+        leay  sizeof{scene},y
+        pshs  y
+@loop
+        jsr   [loader.scene.routine]
+        pshs  b
+        jsr   loader.dir.getFile
+        ldd   direntry.sizeu,y  ; Read file data size
+        anda  #%00111111        ; File size is stored in 14 bits
+        addd  #1                ; File size is stored as size-1
+        leau  d,u               ; move address to next location
+        puls  b                 ; retore page id
+        cmpu  #$4000
+        bne  >
+        ldu   #0
+        incb                    ; move to next page id
+!
+        ldb   #1                ; move to next file id (add one)
+        lda   direntry.bitfld,y
+        lsla
+        adcb  #0                ; add one if file is compressed 
+        lsla
+        adcb  #0                ; add one if file is dynamically linked
+        abx                     ; apply new file id
+        ldy   loader.scene.fileCount
+        leay  -1,y
+        sty   loader.scene.fileCount
+        bne   @loop
+        puls  y,pc
 
 ;---------------------------------------
 ; loader.dir.load
 ;
-; D: [diskid] [face]
-; X: [track] [sector]
+; input  REG : [A] diskid
 ;---------------------------------------
 ; Load directory entries
 ;---------------------------------------
 
 loader.dir.load
+        sta   >diskid             ; Save desired directory id for later check
+        ldu   >loader.dir
+        beq   >
+        cmpa  dirheader.diskid,u
+        bne   @free
+        rts                       ; Requested diskid is already loaded, return
+@free   
+        jsr   tlsf.free           ; Requested diskid is different, free actual directory
+!
+        ldd   #ptsec
+        std   >loader.dir
+; set default dir location on disk
+        ldb   #$01                ; D: [face]
+        ldx   #$0001              ; X: [track] [sector]
 ; read first directory sector
-        sta   >diskid         ; Save desired directory id for later check
-        cmpa  #10             ; This version handle the display of disk id range 0-9
-        blo   @2ascii
-        lda   #33+128         ; Print an esclamation when disk id is over 9
+        lda   >diskid
+        cmpa  #10                 ; This version handle the display of disk id range 0-9
+        blo   @ascii
+        lda   #33+128             ; Print an esclamation when disk id is over 9
         bra   >
-@2ascii adda  #48+128         ; Base index for ascii numbers plus end string bit flag
-!       sta   >messdiskid     ; Update message string with id
-        stb   <map.DK.DRV     ; Set directory location
-        tfr   x,d             ; on floppy disk
-        sta   <map.DK.TRK+1   ; B is loaded with sector id
-        ldy   #dirheader.data ; Loading address for
-        sty   <map.DK.BUF     ; directory data
-        lda   #$02            ; Read code
-        sta   <map.DK.OPC     ; operation
-        ldu   #sclist         ; Interleave list
-        ldx   #messIO         ; Info message
-        lda   b,u             ; Get sector
-        sta   <map.DK.SEC     ; number
-@retry  jsr   >map.DKCONT     ; Load sector
-        bcc   >               ; Skip if no error
-        jsr   >map.DKCONT     ; Reload sector
-        bcc   >               ; Skip if no error
-@info   jsr   >info           ; Error
+@ascii  adda  #48+128             ; Base index for ascii numbers plus end string bit flag
+!       sta   >messdiskid         ; Update message string with id
+        stb   <map.DK.DRV         ; Set directory location
+        tfr   x,d                 ; on floppy disk
+        sta   <map.DK.TRK+1       ; B is loaded with sector id
+        ldy   >loader.dir         ; Loading address for
+        sty   <map.DK.BUF         ; directory data
+        lda   #$02                ; Read code
+        sta   <map.DK.OPC         ; operation
+        ldu   #sclist             ; Interleave list
+        ldx   #messIO             ; Info message
+        lda   b,u                 ; Get sector
+        sta   <map.DK.SEC         ; number
+@retry  jsr   >map.DKCONT         ; Load sector
+        bcc   >                   ; Skip if no error
+        jsr   >map.DKCONT         ; Reload sector
+        bcc   >                   ; Skip if no error
+@info   jsr   >info               ; Error
         bra   @retry
 ; check for directory tag match
 !       ldx   #messinsertdisk
@@ -264,33 +374,38 @@ loader.dir.load
 ; read remaining directory entries
         lda   dirheader.nsector,y ; init nb sectors to read      
         sta   >nsect
-        ldx   #messIO      ; Error message
+; allocate memory
+        stb   @b
+        clrb
+        jsr   tlsf.malloc
+        stu   >loader.dir
+        leay  256,u               ; First sector will be copied later
+        ldb   #0
+@b      equ   *-1
+        ldu   #sclist
+        ldx   #messIO             ; Error message
         bra   @next
-@load   lda   b,u          ; Get sector
-        sta   <map.DK.SEC  ; number
-        jsr   >map.DKCONT  ; Load sector
-        bcc   @next        ; Skip if no error
-        jsr   >map.DKCONT  ; Reload sector
-        bcc   @next        ; Skip if no error
-        jmp   err          ; Error
-@next   inc   <map.DK.BUF  ; Move sector ptr
-        incb               ; Sector+1
-        dec   >nsect       ; Next
-        bne   @load        ; sector
+@load   lda   b,u                 ; Get sector
+        sta   <map.DK.SEC         ; number
+        jsr   >map.DKCONT         ; Load sector
+        bcc   @next               ; Skip if no error
+        jsr   >map.DKCONT         ; Reload sector
+        bcc   @next               ; Skip if no error
+        jmp   err                 ; Error
+@next   inc   <map.DK.BUF         ; Move sector ptr
+        incb                      ; Sector+1
+        dec   >nsect              ; Next
+        bne   @load               ; sector
+; copy first sector into allocated memory
+        lda   #128
+        ldx   #ptsec
+        ldy   loader.dir
+!       ldu   ,x++               ; Read data
+        stu   ,y++               ; Write data
+        deca                     ; Until last
+        bne   <                  ; data reached
         rts
 
-;-----------------------------------------------------------------
-; loader.dir.unload
-;
-; input  REG : [B] directory id to free
-;-----------------------------------------------------------------
-; Unload directory data from memory pool
-;-----------------------------------------------------------------
-loader.dir.unload
-        ldx   #loader.dir.array
-        aslb
-        ldu   b,x               ; get allocated directory data by dir id
-        jmp   tlsf.free
 
 ;---------------------------------------
 ; loader.file.load
@@ -304,14 +419,11 @@ loader.dir.unload
 ; load a file from disk to RAM
 ;---------------------------------------
 loader.file.load
-        pshs  dp,b,x,u
+        pshs  dp,d,x,y,u
         lda   #$60
         tfr   a,dp               ; Set DP
         jsr   switchpage
 * Prepare loading
-
-; TODO dir id !!!
-
         jsr   loader.dir.getFile
         ldd   direntry.sizea,y   ; check empty file flag
         cmpd  #$ff00
@@ -356,7 +468,7 @@ ld6     ldb   >nsect             ; Skip if
         bsr   tfrxua             ; data
 * Exit
 ld7     clra                     ; file is not empty
-        puls  dp,b,x,u,pc
+        puls  dp,d,x,y,u,pc
 
 * Copy memory space
 tfrxua
@@ -405,6 +517,14 @@ sclist  equ   *-1
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a
 
+;---------------------------------------
+; loader.file.unload
+;
+;---------------------------------------
+; unload a file from RAM
+;---------------------------------------
+loader.file.unload
+        rts
 
 ;---------------------------------------
 ; Display messages
@@ -471,34 +591,23 @@ switchpage
 ;---------------------------------------
 ; loader.dir.getFile
 ;
-; input  REG : [A] dir id
 ; input  REG : [X] file id
-; output REG : [Y] ptr to file direntry ($00ff = empty file)
+; output REG : [Y] ptr to file direntry
 ;---------------------------------------
 ; Get file directory entry
+;
+; TODO : scale the file id in the builder,
+;        and saves a lot of instructions here
 ;---------------------------------------
 loader.dir.getFile
-        pshs  x,u
-        ldx   #loader.dir.array
-        asla
-        sta   @a
-        ldu   a,x
-        bne   >                 ; branch if directory is already loaded
-        ldb   #$01              ; D: [dirid] [face]
-        ldx   #$0001            ; X: [track] [sector]
-        jsr   loader.dir.load   ; Load directory data from disk and store to memory pool
-        ldx   #loader.dir.array
-        lda   #0
-@a      equ   *-1
-        stu   a,x               ; Store ptr reference to directory data in directory array
-!
-        ; Load scene file data by using directory index
-        puls  d
-        _lsld                   ; Scale file id
-        _lsld                   ; to dir entry size
+        ldy   >loader.dir
+        leay  sizeof{dirheader},y 
+        tfr   x,d
+        _lsld      ; Scale file id
+        _lsld      ; to dir entry size
         _lsld
-        leay  d,u               ; Y ptr to file direntry
-        puls  u,pc
+        leay  d,y  ; Y ptr to file direntry
+        rts
 
 
 ;---------------------------------------
@@ -510,10 +619,8 @@ loader.dir.getFile
 ;---------------------------------------
 ; uncompress a file by using zx0
 ;---------------------------------------
-
-; TODO necessite un nouveau parametre : dir id utilisé par getFile
-
 loader.file.decompress
+        pshs  d,x,y,u
         jsr   switchpage
         jsr   loader.dir.getFile
         ldb   direntry.bitfld,y  ; test if compressed file
@@ -526,19 +633,19 @@ loader.file.decompress
         puls  y
         lda   #6                 ; copy last 6 bytes
         leax  direntry.cdataz,y  ; set read ptr
-        jmp   tfrxua
+        jsr   tfrxua
+        puls  d,x,y,u,pc
 
  INCLUDE "new-engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
 
 
 ;---------------------------------------
-; loader.link
+; loader.file.link
 ;
 ;
 ;---------------------------------------
-loader.link
+loader.file.link
         rts
-
 
 loader.memoryPool equ *
