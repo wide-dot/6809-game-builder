@@ -7,7 +7,7 @@
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
-            <directory id="0" section="INDEX" genbinary="src/directories/directory.bin"> <!--genbinary is optional-->
+            <directory id="0" section="INDEX" genbinary="src/directories/00/directory.bin" gensymbols="src/directories/00/entries.asm"> <!--genbinary is optional-->
                 <default name="direntry.section"      value="DATA"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
@@ -24,15 +24,9 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="builder.floppydisk.directory" gensymbolsex="src/directories/direntries-id.asm">
-                    <lwasm>
-                        <asm filename="src/directories/direntries-id.asm"/>
-                    </lwasm>
-                </direntry>
-
-                <direntry name="scenes.title" section="SCENE" gensymbols="src/directories/scene-direntries-id.asm">
+                <direntry name="scenes.title" section="SCENE">
                     <lwasm format="raw">
-                        <asm filename="src/directories/scene-direntries-id.asm"/>
+                        <asm filename="src/directories/00/entries.asm"/>
                         <asm filename="src/scenes/title/scene-type-01.asm"/>
                     </lwasm>
                 </direntry>
@@ -46,7 +40,7 @@
 
             <data section="LOADER">
                 <lwasm format="raw" gensource="new-engine/system/to8/bootloader/loader.asm">
-                    <asm filename="src/directories/scene-direntries-id.asm"/>
+                    <asm filename="src/directories/00/entries.asm"/>
                     <asm>loader.DEFAULT_SCENE_DIR_ID      equ 0</asm>
                     <asm>loader.DEFAULT_SCENE_ENTRY_POINT equ $0100</asm>
                     <asm>loader.DEFAULT_SCENE_FILE_ID     equ scenes.title</asm>

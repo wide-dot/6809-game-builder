@@ -44,7 +44,37 @@ public class Processor {
 		Integer id = Attribute.getInteger(node, defaults, "id", "directory.id");
 		String section = Attribute.getString(node, defaults, "section", "directory.section");
 		String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "directory.genbinary");
-		
+	    String gensymbols = Attribute.getString(node, defaults, "gensymbols", "direntry.gensymbols");
+			
+		// generate symbols file
+		gensymbols = path + File.separator + gensymbols;
+		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
+		FileWriter writer = new FileWriter(gensymbols);
+
+		int direntryId = 0;
+		for (ImmutableNode child : node.getChildren()) {
+			String plugin = child.getNodeName();
+			if (plugin.equals("direntry")) {
+				
+				String name = Attribute.getString(child, defaults, "name", "direntry.name");
+				writer.write(name + " equ " + direntryId + System.lineSeparator());
+				
+				String codec = Attribute.getStringOpt(child, defaults, "codec", "direntry.codec");
+				String linkSection = Attribute.getStringOpt(child, defaults, "loadtimelink", "direntry.linksection");
+
+				direntryId++;
+				
+				if (codec != null) {
+					direntryId++;
+				}
+				
+				if (linkSection != null) {
+					direntryId++;
+				}
+			}
+		}
+		writer.close();
+	    
    		// instanciate plugins
 		DefaultFactory defaultFactory;
 		MediaFactory mediaFactory;

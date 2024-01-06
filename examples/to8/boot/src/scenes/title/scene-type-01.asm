@@ -1,5 +1,5 @@
          ; type of scene
-        fdb   %01000000+3     ; [type | nb files] (0: end marker)
+        fdb   %01000000+2     ; [type | nb files] (0: end marker)
 
         ; scene data
         fcb   $01   ; [destination - page id]
@@ -9,11 +9,6 @@
         fcb   $01   ; [destination - page id]
         fdb   $2000 ; [destination - address]
         fdb   assets.object.pixel ; [file id]
-
-        ; this file contains only link data, no need to give a destination
-        fcb   0     ; [destination - page id]
-        fdb   0     ; [destination - address]
-        fdb   builder.floppydisk.directory
 
         ; another type of scene, or 0 if end
         fdb   0               ; [type | nb files] (0: end marker)

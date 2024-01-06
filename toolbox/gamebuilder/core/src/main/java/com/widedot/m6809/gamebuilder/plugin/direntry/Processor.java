@@ -78,40 +78,6 @@ public class Processor {
 		String linkSection = Attribute.getStringOpt(node, defaults, "loadtimelink", "direntry.linksection");
 		boolean loadtimelink = (linkSection!=null?true:false);
 		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "directory.maxsize", Integer.MAX_VALUE);
-		String gensymbols = Attribute.getStringOpt(node, defaults, "gensymbols", "direntry.gensymbols");
-		String gensymbolsex = Attribute.getStringOpt(node, defaults, "gensymbolsex", "direntry.gensymbolsex");
-		
-		// generate symbols file
-		if (gensymbols != null) {
-			int id = 0;
-			gensymbols = path + File.separator + gensymbols;
-			Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
-			FileWriter writer = new FileWriter(gensymbols);
-			for (DirEntry de : media.getDirEntries()) {
-				writer.write(de.name + " equ " + id + System.lineSeparator());
-				id += de.data.length/8; // each id is an index to 8 bytes
-			}
-			// current entry pre-generation
-			writer.write(name + " equ " + id + System.lineSeparator());
-			writer.close();
-		}
-		
-		// generate exported symbols file
-		if (gensymbolsex != null) {
-			int id = 0;
-			gensymbolsex = path + File.separator + gensymbolsex;
-			Files.createDirectories(Paths.get(FileUtil.getDir(gensymbolsex)));
-			FileWriter writer = new FileWriter(gensymbolsex);
-			for (DirEntry de : media.getDirEntries()) {
-				writer.write(de.name + " equ " + id + System.lineSeparator());
-				writer.write(" EXPORT " + de.name + System.lineSeparator());
-				id += de.data.length/8; // each id is an index to 8 bytes
-			}
-			// current entry pre-generation
-			writer.write(name + " equ " + id + System.lineSeparator());
-			writer.write(" EXPORT " + name + System.lineSeparator());
-			writer.close();
-		}
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
@@ -177,7 +143,7 @@ public class Processor {
 		// apply codec
 		boolean compress = false;
 	    int maxdelta = Integer.parseInt(Settings.values.get("direntry.zx0.delta"));
-		if (codec != null && bin.length > 0) {
+		if (codec != null) {
 			
 			if (codec.equals(ZX0)) {
 				
@@ -196,10 +162,10 @@ public class Processor {
 					
 					// automatic selection of compressed or uncompressed data
 					if (delta[0] > maxdelta) {
-						log.warn("Skip compression: delta ({}) is higher than max delta.", delta[0]);
+						log.error("Unable to compress: delta ({}) is higher than max delta.", delta[0]);
 						
 					} else if (bin.length <= cbin.length+maxdelta) {
-						log.warn("Skip compression: compressed data size is bigger or equal to original size.");
+						log.error("Unable to compress: compressed data size of {} is bigger or equal to original size.", length);
 						
 					} else {
 										
@@ -215,9 +181,15 @@ public class Processor {
 						compress = true;
 					}
 				} else {
-					log.warn("Skip compression: data size is lower or equal to max delta bytes");
+					log.warn("Unable to compress: data size of {} is lower or equal to max delta bytes", length);
 				}
 			}
+		}
+		
+		if (codec != null && compress == false) {
+			String m = "Build aborted, please remove codec for direntry: " + name;
+			log.error(m);
+			throw new Exception(m);
 		}
 				
 		// write file to media
