@@ -1,9 +1,14 @@
 ;*******************************************************************************
 ; FD File loader
 ; Benoit Rousseau 07/2023
-; Based on loader from Prehisto
+; Based on loader from Prehisto (file load routine)
 ; ------------------------------------------------------------------------------
-; A fully featured boot loader
+; A fully featured boot/file loader
+; - zx0 compressed files
+; - dynamic link of lwasm obj files
+; - scene management
+; - directory management
+; - multiple floppy management
 ;
 ; TODO :
 ; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
@@ -106,6 +111,7 @@ loader.scene.loadDefault
         jsr   loader.file.malloc
 
         ldb   #loader.PAGE
+        jsr   loader.file.load
 
         ; batch load files from disk, before decompression
         ; to benefit from sector interlacing
@@ -212,6 +218,7 @@ loader.scene.apply.type01
         ldd   scene.header.nbfiles,y
         leay  sizeof{scene.header},y
         anda  #%00111111
+        std   loader.scene.fileCount
 @loop
         ldb   scene.page,y
         ldu   scene.address,y
@@ -289,19 +296,19 @@ loader.scene.apply.type11
         anda  #%00111111        ; File size is stored in 14 bits
         addd  #1                ; File size is stored as size-1
         leau  d,u               ; move address to next location
+        ldb   #1                ; move to next file id, offset of 1
+        lda   direntry.bitfld,y
+        lsla
+        adcb  #0                ; add one offset if file is compressed 
+        lsla
+        adcb  #0                ; add one offset if file is dynamically linked
+        abx                     ; apply new file id
         puls  b                 ; retore page id
         cmpu  #$4000
         bne  >
         ldu   #0
         incb                    ; move to next page id
 !
-        ldb   #1                ; move to next file id (add one)
-        lda   direntry.bitfld,y
-        lsla
-        adcb  #0                ; add one if file is compressed 
-        lsla
-        adcb  #0                ; add one if file is dynamically linked
-        abx                     ; apply new file id
         ldy   loader.scene.fileCount
         leay  -1,y
         sty   loader.scene.fileCount
@@ -330,7 +337,7 @@ loader.dir.load
         std   >loader.dir
 ; set default dir location on disk
         ldb   #$01                ; D: [face]
-        ldx   #$0001              ; X: [track] [sector]
+        ldx   #$0000              ; X: [track] [sector]
 ; read first directory sector
         lda   >diskid
         cmpa  #10                 ; This version handle the display of disk id range 0-9
@@ -511,8 +518,7 @@ ldsec1  ldd   >track             ; read track/sect
 dskerr  jmp   [$fffe]
 
 * Interleave 2 with a default disk format (interleave 7)
-sclist  equ   *-1
-        fcb   $01,$0f,$0d,$0b
+sclist  fcb   $01,$0f,$0d,$0b
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a

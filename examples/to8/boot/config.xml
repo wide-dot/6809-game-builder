@@ -27,7 +27,7 @@
                 <direntry name="scenes.title" section="SCENE">
                     <lwasm format="raw">
                         <asm filename="src/directories/00/entries.asm"/>
-                        <asm filename="src/scenes/title/scene-type-01.asm"/>
+                        <asm filename="src/scenes/title/scene-type-11.asm"/>
                     </lwasm>
                 </direntry>
 
@@ -38,6 +38,8 @@
             <define symbol="loader.ADDRESS" value="$A000"/>                      <!-- tells where the boot will place the loader -->
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>  <!-- tells size of dynamic memory pool -->
 
+            <define symbol="boot.CHECK_MEMORY_EXT"/>                             <!-- throw an error at boot if memory ext. is not detected -->
+
             <data section="LOADER">
                 <lwasm format="raw" gensource="new-engine/system/to8/bootloader/loader.asm">
                     <asm filename="src/directories/00/entries.asm"/>
@@ -47,8 +49,6 @@
                     <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>
             </data>
-
-            <define symbol="boot.CHECK_MEMORY_EXT"/>                             <!-- throw an error at boot if memory ext. is not detected -->
 
             <data section="BOOT" maxsize="0x100">   
                 <cksumfd640>

@@ -60,6 +60,9 @@
  ENDC
         ldd   #loader.ADDRESS    ; Loading
         std   <map.DK.BUF        ; address
+        IFGT loader.ADDRESS-((loader.ADDRESS/256)*256)
+        ERROR "loader.ADDRESS is expected to be a multiple of 256 bytes. Ex: $A000, $6100, ..."
+        ENDC                     ; b register is always 0
         stb   <$60ff             ; Cold reset
         lda   #$02               ; >read code
         std   <map.DK.OPC        ; Read/Head 0

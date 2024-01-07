@@ -199,10 +199,10 @@ public class Processor {
 	    int i = 0;
 		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
 		if (loadtimelink) direntry[i] = (byte) (direntry[i] | 0b01000000);
-		direntry[i] = (byte) (direntry[i] | (((bin.length-1) >> 8) & 0b00111111)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
+		direntry[i] = (byte) (direntry[i] | (((length-1) >> 8) & 0b00111111)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
 		
-		direntry[i++] = (byte) (direntry[i] | ((bin.length-1) & 0xff)); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
+		direntry[i++] = (byte) (direntry[i] | ((length-1) & 0xff)); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
 		
 		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
 		i += 6;

@@ -17,7 +17,7 @@
 
 tlsf.blockHdr STRUCT
 size      rmb types.WORD ; (FREE/USED) [0] [000 0000 0000 0000] - [1:free/0:used] [free size - 1]
-prev.phys rmb types.WORD ; (FREE/USED) [0000 0000 0000 0000]    - [previous physical block in memory]
+prev.phys rmb types.WORD ; (FREE/USED) [0000 0000 0000 0000]    - [previous physical block in memory, tlsf.block.nullptr if no one]
 prev      rmb types.WORD ; (FREE)      [0000 0000 0000 0000]    - [previous block in free list]
 next      rmb types.WORD ; (FREE)      [0000 0000 0000 0000]    - [next block in free list]
  ENDSTRUCT

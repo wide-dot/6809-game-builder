@@ -87,7 +87,7 @@ public class FdUtil implements MediaDataInterface{
         //build directory entry
         byte[] direntry = new byte[6];
 		direntry[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
-		direntry[1] = (byte) s.sector;											// start sector nb
+		direntry[1] = (byte) (s.sector - 1);									// start sector nb
 		direntry[4] = 0;	                                                    // nb sectors
         direntry[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
         
