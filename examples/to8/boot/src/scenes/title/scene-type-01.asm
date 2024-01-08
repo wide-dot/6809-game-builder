@@ -2,12 +2,12 @@
         fdb   $4000+2              ; [type | nb files] (0: end marker)
 
         ; scene data
-        fcb   $01                  ; [destination - page id]
-        fdb   $0100                ; [destination - address]
+        fcb   $05                  ; [destination - page id]
+        fdb   $0000                ; [destination - address]
         fdb   assets.main.runpixel ; [file id]
 
-        fcb   $01                  ; [destination - page id]
-        fdb   $2000                ; [destination - address]
+        fcb   $06                  ; [destination - page id]
+        fdb   $0000                ; [destination - address]
         fdb   assets.object.pixel  ; [file id]
 
         ; another type of scene, or 0 if end

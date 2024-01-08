@@ -18,8 +18,8 @@ gfx.ram.b equ $A000
         bra   *
 
         fill  -1,251
-        fill  -2,256
-        fill  -3,16
+        fill  -2,$3E00
+        fill  -3,256
 testbro equ *
 
  ENDSECTION

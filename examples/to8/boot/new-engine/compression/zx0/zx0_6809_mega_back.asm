@@ -85,10 +85,12 @@ zx0_decompress
                    endc
 
                    ifndef ZX0_DISABLE_ALIGN
+                   jmp   zx0_start
                    align  (*/256)*256+256
                    endc
 
 zx0_dp             equ */256
+zx0_start
                    ldd #($80*256)+zx0_dp  ; init bit stream and register DP
                    tfr b,dp
                    setdp zx0_dp

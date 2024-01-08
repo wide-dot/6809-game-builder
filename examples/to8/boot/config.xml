@@ -27,7 +27,7 @@
                 <direntry name="scenes.title" section="SCENE">
                     <lwasm format="raw">
                         <asm filename="src/directories/00/entries.asm"/>
-                        <asm filename="src/scenes/title/scene-type-11.asm"/>
+                        <asm filename="src/scenes/title/scene-type-01.asm"/>
                     </lwasm>
                 </direntry>
 
@@ -43,9 +43,10 @@
             <data section="LOADER">
                 <lwasm format="raw" gensource="new-engine/system/to8/bootloader/loader.asm">
                     <asm filename="src/directories/00/entries.asm"/>
-                    <asm>loader.DEFAULT_SCENE_DIR_ID      equ 0</asm>
-                    <asm>loader.DEFAULT_SCENE_ENTRY_POINT equ $0100</asm>
-                    <asm>loader.DEFAULT_SCENE_FILE_ID     equ scenes.title</asm>
+                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 5</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
                     <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>
             </data>

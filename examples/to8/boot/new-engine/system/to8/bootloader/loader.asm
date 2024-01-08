@@ -14,6 +14,9 @@
 ; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
 ;   ex: equates exportées
 ;
+; - tester et finir d'implémenter le changement de page pour les scenes avec
+;   fichiers qui ne vont pas jusqu'a la fin de la page
+;
 ;*******************************************************************************
  SETDP $ff
         INCLUDE "new-engine/constant/types.const.asm"
@@ -126,7 +129,11 @@ loader.scene.loadDefault
         ; TODO add link here
 
         jsr   tlsf.free
-        jmp   loader.DEFAULT_SCENE_ENTRY_POINT
+
+        ldb   #loader.DEFAULT_SCENE_EXEC_PAGE
+        ldu   #loader.DEFAULT_SCENE_EXEC_ADDR
+        jsr   switchpage
+        jmp   loader.DEFAULT_SCENE_EXEC_ADDR
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc
@@ -249,20 +256,33 @@ loader.scene.apply.type10
         ldu   scene.address,y
         leay  scene.fileid,y
 @loop
-        ldx   ,y++
-        jsr   [loader.scene.routine]
-        pshs  d,y
+        ldx   ,y++               ; Read file id
+        pshs  b,y                ; Save page id [b] and current scene data cursor [y]
+;
         jsr   loader.dir.getFile
-        ldd   direntry.sizeu,y  ; Read file data size
-        anda  #%00111111        ; File size is stored in 14 bits
-        addd  #1                ; File size is stored as size-1
-        leau  d,u               ; move address to next location
-        puls  d,y
-        cmpu  #$4000
-        bne  >
-        ldu   #0
-        incb                    ; move to next page
+        ldd   direntry.sizeu,y   ; Read file data size
+        anda  #%00111111         ; File size is stored in 14 bits
+        addd  #1                 ; File size is stored as size-1
+        std   @size
+        leay  d,u                ; Will the file fit the page ?
+        puls  b                  ; Restore page id
+        cmpy  #$4000             ; Branch if data fits memory page
+        bls   >
+        ldu   #0                 ; else move to next page
+        incb
+ IFDEF boot.CHECK_MEMORY_EXT
+        cmpb  #31
+ ELSE
+        cmpb  #15
+ ENDC
+        bls   >
+        bra   *                  ; no more memory !
 !
+        jsr   [loader.scene.routine]
+        leau  $1234,u
+@size   equ   *-2
+        puls  y
+;
         ldx   loader.scene.fileCount
         leax  -1,x
         stx   loader.scene.fileCount
@@ -289,13 +309,36 @@ loader.scene.apply.type11
         leay  sizeof{scene},y
         pshs  y
 @loop
-        jsr   [loader.scene.routine]
-        pshs  b
+        stb   @b1                ; Save page id [b]
+;
         jsr   loader.dir.getFile
-        ldd   direntry.sizeu,y  ; Read file data size
-        anda  #%00111111        ; File size is stored in 14 bits
-        addd  #1                ; File size is stored as size-1
-        leau  d,u               ; move address to next location
+        sty   @y
+        ldd   direntry.sizeu,y   ; Read file data size
+        anda  #%00111111         ; File size is stored in 14 bits
+        addd  #1                 ; File size is stored as size-1
+        std   @size
+        leay  d,u                ; Will the file fit the page ?
+        ldb   #0                 ; Restore page id
+@b1     equ   *-1
+        cmpy  #$4000             ; Branch if data fits memory page
+        bls   >
+        ldu   #0                 ; else move to next page
+        incb
+ IFDEF boot.CHECK_MEMORY_EXT
+        cmpb  #31
+ ELSE
+        cmpb  #15
+ ENDC
+        bls   >
+        bra   *                  ; no more memory !
+!
+        jsr   [loader.scene.routine]
+        leau  $1234,u
+@size   equ   *-2
+;
+        ldy   #0
+@y      equ   *-2
+        stb   @b
         ldb   #1                ; move to next file id, offset of 1
         lda   direntry.bitfld,y
         lsla
@@ -303,15 +346,13 @@ loader.scene.apply.type11
         lsla
         adcb  #0                ; add one offset if file is dynamically linked
         abx                     ; apply new file id
-        puls  b                 ; retore page id
-        cmpu  #$4000
-        bne  >
-        ldu   #0
-        incb                    ; move to next page id
-!
-        ldy   loader.scene.fileCount
-        leay  -1,y
-        sty   loader.scene.fileCount
+        ldb   #0
+@b      equ   *-1
+;
+        tst   loader.scene.fileCount+1
+        bne   >
+        dec   loader.scene.fileCount
+!       dec   loader.scene.fileCount+1
         bne   @loop
         puls  y,pc
 

@@ -40,4 +40,7 @@ pixels.even.end
 pixels.odd
         fdb   $2367,$ABEF,dualpix-257 ; length 6 bytes
 pixels.odd.end
+
+        fill -4,$3F00
+@end
  ENDSECTION
