@@ -713,7 +713,6 @@ loader.file.decompress
 ;---------------------------------------
 loader.file.link
         pshs  d,x,y,u
-        jsr   switchpage
         jsr   loader.dir.getFile
         ldb   direntry.bitfld,y  ; test if load time link flag
         cmpb  #%01000000
@@ -721,7 +720,9 @@ loader.file.link
 ;
         ; load link data for a file
         ldd   direntry.lsize,y  ; Read file data size
+        pshs  x,y,u
         jsr   tlsf.malloc
+        puls  x,y,u
 ;
         ldb   direntry.bitfld,y  ; test if compression flag
         bpl   >
@@ -729,6 +730,8 @@ loader.file.link
 !       leay  8,y                ; skip file block
         ldb   #loader.PAGE
         jsr   loader.file.loadByDir
+;
+        ldb   1,s                ; reload file dest page, x and u already loaded
 ;
 ;       TODO conserver l'état en RAM des fichiers chargés et des données de link
 ;       possible de le gérer avec le memory pool, a condition de réallouer l'espace à chaque nouveau fichier
