@@ -44,7 +44,7 @@
             <directory id="0" section="INDEX"> <!-- retourne à media une liste de binaires à écrire dans des sections : List<objet> contenant deux champs : Section, byte[] (qu'il s'agisse du répertoire ou de fichiers, ce sont les mêmes données -->
                                                <!-- agrège les direntry pour construire le répertoire, remonte ce répertoire+section et les données de fichiers+section -->
 
-                <direntry name="assets.main.title" codec="zx0" linksection="LINK"> <!-- retourne une liste à deux éléments avec deux types d'objects possibles : DirEntryData (byte[] bin) ou SectionData (Section section, byte[] bin) -->
+                <direntry name="assets.main.title" codec="zx0" loadtimelink="LINK"> <!-- retourne une liste à deux éléments avec deux types d'objects possibles : DirEntryData (byte[] bin) ou SectionData (Section section, byte[] bin) -->
                                                                                     <!-- Directory devra tester le classname avant toute action sur un élément de la liste -->
                                                                                     <!-- DirEntryData et SectionData implémentent la même interface PluginData -->
                                                                                     <!-- compresse les données bin avec le codec (optionel, default none) -->
@@ -63,7 +63,7 @@
                         </lwasm>                                                                      
                     </file>
                 </direntry>
-                <direntry name="assets.main.stage1" codec="zx0" loadtimelink="true">
+                <direntry name="assets.main.stage1" codec="zx0" loadtimelink="LINK">
                     <file section="DATA">
                         <lwasm format="obj">
                             <lwasm.define symbol="debug" value="1"/>

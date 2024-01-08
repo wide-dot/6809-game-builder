@@ -12,13 +12,13 @@
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
-                <direntry name="assets.main.runpixel" codec="zx0">
+                <direntry name="assets.main.runpixel" codec="zx0" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="src/assets/main/run-pixel.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="assets.object.pixel" codec="zx0">
+                <direntry name="assets.object.pixel" codec="zx0" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="src/assets/object/pixel.asm"/>
                     </lwasm>

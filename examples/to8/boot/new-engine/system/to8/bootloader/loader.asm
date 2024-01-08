@@ -14,9 +14,6 @@
 ; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
 ;   ex: equates exportées
 ;
-; - tester et finir d'implémenter le changement de page pour les scenes avec
-;   fichiers qui ne vont pas jusqu'a la fin de la page
-;
 ;*******************************************************************************
  SETDP $ff
         INCLUDE "new-engine/constant/types.const.asm"
@@ -43,13 +40,13 @@ sizeu    rmb types.WORD   ; [0]                     - [compression 0:none, 1:pac
 track    rmb types.BYTE   ; [0000 000]              - [track 0-128]
                           ; [0]                     - [face 0-1]
 sector   rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
-sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector ($ff00 : empty file)]
+sizea    rmb types.BYTE   ; [0000 0000]             - [bytes in first sector (empty file: $ff00)]
 offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sector (0: no sector)]
 nsector  rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 sizez    rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
 
-; direntry compressor structure
-; -----------------------------
+; direntry compress structure
+; ---------------------------
 coffset  rmb types.WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
 cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
 
@@ -126,7 +123,9 @@ loader.scene.loadDefault
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
-        ; TODO add link here
+        ldx   #loader.file.link
+        stx   loader.scene.routine
+        jsr   loader.scene.apply
 
         jsr   tlsf.free
 
@@ -464,12 +463,11 @@ loader.dir.load
 ;
 ; output REG : [D] $ff00 = empty file
 ;---------------------------------------
-; load a file from disk to RAM
+; Load a file from disk to RAM
+; by file id
 ;---------------------------------------
 loader.file.load
         pshs  dp,d,x,y,u
-        lda   #$60
-        tfr   a,dp               ; Set DP
         jsr   switchpage
 * Prepare loading
         jsr   loader.dir.getFile
@@ -481,7 +479,23 @@ loader.file.load
         bpl   >                  ; skip if not compressed
         ldd   direntry.coffset,y ; get offset to write data
         leau  d,u
-!       ldb   direntry.nsector,y ; Get number of sectors
+        bra   >
+
+;---------------------------------------
+; loader.file.loadByDir
+;
+; input  REG : [Y] ptr to file directory
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+;---------------------------------------
+; Load a file from disk to RAM
+; by ptr to file directory
+;---------------------------------------
+loader.file.loadByDir
+        pshs  dp,d,x,y,u
+!       lda   #$60
+        tfr   a,dp               ; Set DP
+        ldb   direntry.nsector,y ; Get number of sectors
         stb   >nsect             ; Set sector count
         ldd   direntry.track,y   ; Set track, face and
         std   >track             ; sector number
@@ -660,9 +674,9 @@ loader.dir.getFile
 ;---------------------------------------
 ; loader.file.decompress
 ;
-; X: [file number]
-; B: [destination - page number]
-; U: [destination - address]
+; input  REG : [X] file number
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
 ;---------------------------------------
 ; uncompress a file by using zx0
 ;---------------------------------------
@@ -670,10 +684,9 @@ loader.file.decompress
         pshs  d,x,y,u
         jsr   switchpage
         jsr   loader.dir.getFile
-        ldb   direntry.bitfld,y  ; test if compressed file
-        bmi   >                  ; yes, continue
-        rts                      ; no, exit
-!       ldd   direntry.coffset,y ; get offset to write data
+        ldb   direntry.bitfld,y  ; test if compression flag
+        bpl   @rts               ; no, exit
+        ldd   direntry.coffset,y ; get offset to write data
         leax  d,u                ; set x to start of compressed data
         pshs  y
         jsr   >zx0_decompress    ; decompress and set u to end of decompressed data
@@ -681,7 +694,7 @@ loader.file.decompress
         lda   #6                 ; copy last 6 bytes
         leax  direntry.cdataz,y  ; set read ptr
         jsr   tfrxua
-        puls  d,x,y,u,pc
+@rts    puls  d,x,y,u,pc
 
  INCLUDE "new-engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
@@ -690,9 +703,70 @@ loader.file.decompress
 ;---------------------------------------
 ; loader.file.link
 ;
-;
+; input  REG : [X] file number
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+;---------------------------------------
+; load time link using lwasm simplified
+; obj data (not all link features are
+; implemented)
 ;---------------------------------------
 loader.file.link
-        rts
+        pshs  d,x,y,u
+        jsr   switchpage
+        jsr   loader.dir.getFile
+        ldb   direntry.bitfld,y  ; test if load time link flag
+        cmpb  #%01000000
+        beq   @rts               ; no, exit
+;
+        ; load link data for a file
+        ldd   direntry.lsize,y  ; Read file data size
+        jsr   tlsf.malloc
+;
+        ldb   direntry.bitfld,y  ; test if compression flag
+        bpl   >
+        leay  8,y                ; skip compression block
+!       leay  8,y                ; skip file block
+        ldb   #loader.PAGE
+        jsr   loader.file.loadByDir
+;
+;       TODO conserver l'état en RAM des fichiers chargés et des données de link
+;       possible de le gérer avec le memory pool, a condition de réallouer l'espace à chaque nouveau fichier
+;       eventuellement en utilisant une allocation par groupe
+; ex: 
+;00 0000 04 0000 0100 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
+;00 0000 04 123C 0200 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
+;00 0000 05 2F10 0300 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
+;
+@rts    puls  d,x,y,u,pc
+
+; file link data :
+;
+;		- export absolute           ; export a 16 bit constant (will be processed as a 8 or 16 bits extern when applying value)
+; 
+;		03 0100 :    0002           ; [nb of elements]
+;		             0047 0003      ; key of symbol, value of symbol
+;		             0048 0004      ; key of symbol, value of symbol
+;
+;       - export relative           ; export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
+;
+;		03 0106 :    0001           ; [nb of elements]
+;		             0059 0586      ; key of symbol, value of symbol (should add section base address to this value before applying)
+;		             
+;		- intern                    ; relocation of local variables
+;		            
+;		03 010A :    0001           ; [nb of elements]
+;		             0162 00C3      ; [offset to write location] [PLUS operand] - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
+;
+;		- extern (8bit)             ; link to extern 8 bit variables
+;		             
+;		03 0122 :    0001           ; [nb of elements]
+;		             0014 0000 0001 ; [offset to write location] [PLUS operand] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
+;
+;		- extern (16bit)            ; link to extern 16 bit variables
+;		             
+;		03 0110 :    0002           ; [nb of elements]
+;		             0001 FFF4 0002 ; [offset to write location] [PLUS operand] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
+;		             003E 0000 0003 ;  
 
 loader.memoryPool equ *
