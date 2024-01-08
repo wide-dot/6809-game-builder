@@ -720,9 +720,10 @@ loader.file.link
 ;
         ; load link data for a file
         ldd   direntry.lsize,y  ; Read file data size
-        pshs  x,y,u
+        std   @y
         jsr   tlsf.malloc
-        puls  x,y,u
+        ldy   #0
+@y      equ   *-2
 ;
         ldb   direntry.bitfld,y  ; test if compression flag
         bpl   >
@@ -731,7 +732,15 @@ loader.file.link
         ldb   #loader.PAGE
         jsr   loader.file.loadByDir
 ;
-        ldb   1,s                ; reload file dest page, x and u already loaded
+        ; [u] is linkmeta
+; store ...
+        ldx   2,s                ; load file id
+        ldb   1,s                ; load file dest page
+        ldu   6,s                ; load file dest addr
+; store ...
+        ldu   >loader.dir
+        lda   dirheader.diskid,u ; load disk id
+; store ...
 ;
 ;       TODO conserver l'état en RAM des fichiers chargés et des données de link
 ;       possible de le gérer avec le memory pool, a condition de réallouer l'espace à chaque nouveau fichier
