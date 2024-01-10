@@ -843,12 +843,10 @@ loader.file.linkData.unload
 ;---------------------------------------
 ; loader.file.link
 ;
-; input  REG : [B] directory id
-; input  REG : [X] file id
 ;---------------------------------------
 ; load time link using lwasm simplified
 ; obj data (not all link features are
-; implemented)
+; implemented, just a single ADD op)
 ;---------------------------------------
 
 ; file link data :
@@ -881,7 +879,30 @@ loader.file.linkData.unload
 ;		             003E 0000 0003 ;                                                                   extern ( ES=ymm.music.processFrame ) @ 003E
 
 loader.file.link
-        ; TODO
+        
+        ; parse each file of loader.file.linkDataIdx
+
+        ; set RAM page to make file visible
+        ; get file location
+
+        ; parse INTERN elements
+        ; load offset
+        ; add location
+        ; add plus operand
+        ; update value to offset
+
+        ; parse EXTERN8 elements
+        ; find symbol by searching in all file's linkData 
+        ; load symbol value as 8 bits
+        ; add plus operand
+        ; update value to offset as 8 bits
+
+        ; parse EXTERN16 elements
+        ; find symbol by searching in all file's linkData 
+        ; load symbol value as 16 bits
+        ; add plus operand
+        ; update value to offset as 16 bits
+
         rts
 
 
