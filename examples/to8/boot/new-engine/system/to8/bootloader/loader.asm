@@ -24,15 +24,15 @@
 
 ; directory structure
 ; -------------------
-dirheader STRUCT
+dir.header STRUCT
 tag     rmb types.BYTE*3 ; [I] [D] [X]
-diskid  rmb types.BYTE   ; [0000 0000]              - [disk id 0-255]
+diskId  rmb types.BYTE   ; [0000 0000]              - [disk id 0-255]
 nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors for direntries]
         ENDSTRUCT
 
-; direntry main structure
+; dir.entry main structure
 ; -----------------------
-direntry STRUCT
+dir.entry STRUCT
 bitfld   rmb 0            ; alias to bitfld
 sizeu    rmb types.WORD   ; [0]                     - [compression 0:none, 1:packed]
                           ; [0]                     - [load time linker 0:no, 1:yes]
@@ -45,12 +45,12 @@ offseta  rmb types.BYTE   ; [0000 0000]             - [start offset in first sec
 nsector  rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 sizez    rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
 
-; direntry compress structure
+; dir.entry compress structure
 ; ---------------------------
 coffset  rmb types.WORD   ; [0000 0000] [0000 0000] - [offset to compressed data]
 cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompressed file data]
 
-; direntry linker structure
+; dir.entry linker structure
 ; -------------------------
 lsize    rmb types.BYTE   ; [0000 0000] [0000 0000] - [linker data size]
 ltrack   rmb types.BYTE   ; [0000 000]              - [track 0-128]
@@ -78,16 +78,16 @@ pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
 
 ; temporary space
 ; ---------------
-ptsec      fill  0,256 ; Temporary space for partial sector loading
-diskid     fcb   0     ; Disk id
-nsect      fcb   0     ; Sector counter
-track      fcb   0     ; Track number
-sector     fcb   0     ; Sector number
+ptsec  fill  0,256 ; Temporary space for partial sector loading
+diskId fcb   0     ; Disk id
+nsect  fcb   0     ; Sector counter
+track  fcb   0     ; Track number
+sector fcb   0     ; Sector number
 
 ; globals
 ; --------------
-loader.dir       fdb   0 ; ; file directory
-loader.file.link fdb   0 ; link data of loaded files
+loader.dir              fdb   0 ; file directory
+loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 
 ;-----------------------------------------------------------------
 ; loader.scene.loadDefault
@@ -124,11 +124,13 @@ loader.scene.loadDefault
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
-        ldx   #loader.file.link
+        ldx   #loader.file.linkData.add
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
-        jsr   tlsf.free
+        jsr   loader.file.link
+
+        jsr   tlsf.free ; scene file
 
         ldb   #loader.DEFAULT_SCENE_EXEC_PAGE
         ldu   #loader.DEFAULT_SCENE_EXEC_ADDR
@@ -147,13 +149,13 @@ loader.file.malloc
         pshs  x
         jsr   loader.dir.getFile
 
-        ldd   direntry.sizea,y  ; Check for empty file flag
+        ldd   dir.entry.sizea,y  ; Check for empty file flag
         cmpd  #$ff00
         bne   >
         ldu   #0                ; If file is empty, return 0
         rts
 !
-        ldd   direntry.sizeu,y  ; Read file data size
+        ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111        ; File size is stored in 14 bits
         addd  #1                ; File size is stored as size-1
         jsr   tlsf.malloc
@@ -260,7 +262,7 @@ loader.scene.apply.type10
         pshs  b,y                ; Save page id [b] and current scene data cursor [y]
 ;
         jsr   loader.dir.getFile
-        ldd   direntry.sizeu,y   ; Read file data size
+        ldd   dir.entry.sizeu,y   ; Read file data size
         anda  #%00111111         ; File size is stored in 14 bits
         addd  #1                 ; File size is stored as size-1
         std   @size
@@ -313,7 +315,7 @@ loader.scene.apply.type11
 ;
         jsr   loader.dir.getFile
         sty   @y
-        ldd   direntry.sizeu,y   ; Read file data size
+        ldd   dir.entry.sizeu,y   ; Read file data size
         anda  #%00111111         ; File size is stored in 14 bits
         addd  #1                 ; File size is stored as size-1
         std   @size
@@ -340,7 +342,7 @@ loader.scene.apply.type11
 @y      equ   *-2
         stb   @b
         ldb   #1                ; move to next file id, offset of 1
-        lda   direntry.bitfld,y
+        lda   dir.entry.bitfld,y
         lsla
         adcb  #0                ; add one offset if file is compressed 
         lsla
@@ -359,38 +361,38 @@ loader.scene.apply.type11
 ;---------------------------------------
 ; loader.dir.load
 ;
-; input  REG : [A] diskid
+; input  REG : [A] diskId
 ;---------------------------------------
 ; Load directory entries
 ;---------------------------------------
 
 loader.dir.load
-        sta   >diskid             ; Save desired directory id for later check
-        ldu   >loader.file.dir
+        sta   >diskId             ; Save desired directory id for later check
+        ldu   >loader.dir
         beq   >
-        cmpa  dirheader.diskid,u
+        cmpa  dir.header.diskId,u
         bne   @free
-        rts                       ; Requested diskid is already loaded, return
+        rts                       ; Requested diskId is already loaded, return
 @free   
-        jsr   tlsf.free           ; Requested diskid is different, free actual directory
+        jsr   tlsf.free           ; Requested diskId is different, free actual directory
 !
         ldd   #ptsec
-        std   >loader.file.dir
+        std   >loader.dir
 ; set default dir location on disk
         ldb   #$01                ; D: [face]
         ldx   #$0000              ; X: [track] [sector]
 ; read first directory sector
-        lda   >diskid
+        lda   >diskId
         cmpa  #10                 ; This version handle the display of disk id range 0-9
         blo   @ascii
         lda   #33+128             ; Print an esclamation when disk id is over 9
         bra   >
 @ascii  adda  #48+128             ; Base index for ascii numbers plus end string bit flag
-!       sta   >messdiskid         ; Update message string with id
+!       sta   >messdiskId         ; Update message string with id
         stb   <map.DK.DRV         ; Set directory location
         tfr   x,d                 ; on floppy disk
         sta   <map.DK.TRK+1       ; B is loaded with sector id
-        ldy   >loader.file.dir    ; Loading address for
+        ldy   >loader.dir    ; Loading address for
         sty   <map.DK.BUF         ; directory data
         lda   #$02                ; Read code
         sta   <map.DK.OPC         ; operation
@@ -406,27 +408,27 @@ loader.dir.load
         bra   @retry
 ; check for directory tag match
 !       ldx   #messinsertdisk
-        lda   dirheader.tag,y
+        lda   dir.header.tag,y
         cmpa  #'I'
         bne   @info
-        lda   dirheader.tag+1,y
+        lda   dir.header.tag+1,y
         cmpa  #'D'
         bne   @info
-        lda   dirheader.tag+2,y
+        lda   dir.header.tag+2,y
         cmpa  #'X'
         bne   @info
 ; check for directory id match
-        lda   dirheader.diskid,y
-        cmpa  >diskid
+        lda   dir.header.diskId,y
+        cmpa  >diskId
         bne   @info
 ; read remaining directory entries
-        lda   dirheader.nsector,y ; init nb sectors to read      
+        lda   dir.header.nsector,y ; init nb sectors to read      
         sta   >nsect
 ; allocate memory
         stb   @b
         clrb
         jsr   tlsf.malloc
-        stu   >loader.file.dir
+        stu   >loader.dir
         leay  256,u               ; First sector will be copied later
         ldb   #0
 @b      equ   *-1
@@ -447,7 +449,7 @@ loader.dir.load
 ; copy first sector into allocated memory
         lda   #128
         ldx   #ptsec
-        ldy   loader.file.dir
+        ldy   loader.dir
 !       ldu   ,x++               ; Read data
         stu   ,y++               ; Write data
         deca                     ; Until last
@@ -458,7 +460,7 @@ loader.dir.load
 ;---------------------------------------
 ; loader.file.load
 ;
-; input  REG : [X] file number
+; input  REG : [X] file id
 ; input  REG : [B] destination - page number
 ; input  REG : [U] destination - address
 ;
@@ -472,13 +474,13 @@ loader.file.load
         jsr   switchpage
 * Prepare loading
         jsr   loader.dir.getFile
-        ldd   direntry.sizea,y   ; check empty file flag
+        ldd   dir.entry.sizea,y   ; check empty file flag
         cmpd  #$ff00
         bne   >
         rts                      ; file is empty, exit
-!       ldb   direntry.bitfld,y  ; test if compressed data
+!       ldb   dir.entry.bitfld,y  ; test if compressed data
         bpl   >                  ; skip if not compressed
-        ldd   direntry.coffset,y ; get offset to write data
+        ldd   dir.entry.coffset,y ; get offset to write data
         leau  d,u
         bra   >
 
@@ -496,17 +498,17 @@ loader.file.loadByDir
         pshs  dp,d,x,y,u
 !       lda   #$60
         tfr   a,dp               ; Set DP
-        ldb   direntry.nsector,y ; Get number of sectors
+        ldb   dir.entry.nsector,y ; Get number of sectors
         stb   >nsect             ; Set sector count
-        ldd   direntry.track,y   ; Set track, face and
+        ldd   dir.entry.track,y   ; Set track, face and
         std   >track             ; sector number
 * First sector
-        ldb   direntry.sizea,y   ; Skip if
+        ldb   dir.entry.sizea,y   ; Skip if
         beq   ld3                ; full sect
         ldx   #ptsec             ; Init buffer
         stx   <map.DK.BUF        ; location
         bsr   ldsec              ; Load sector
-        ldd   direntry.sizea,y   ; Read A:size, B:offset
+        ldd   dir.entry.sizea,y   ; Read A:size, B:offset
         abx                      ; Adjust data ptr
         bsr   tfrxua             ; Copy data from buffer to RAM
 * Intermediate sectors
@@ -515,7 +517,7 @@ ld4     ldb   >nsect             ; Exit if
         beq   ld7                ; no sector
         cmpb  #1
         bhi   ld5                ; Exit if
-        lda   direntry.sizez,y   ; last sector
+        lda   dir.entry.sizez,y   ; last sector
         bne   ld6
 ld5     bsr   ldsec              ; Load sector
         inc   <map.DK.BUF        ; Update dest location MSB
@@ -527,7 +529,7 @@ ld6     ldb   >nsect             ; Skip if
         ldx   #ptsec             ; Init buffer
         stx   <map.DK.BUF        ; location
         bsr   ldsec              ; Load sector
-        lda   direntry.sizez,y   ; Copy
+        lda   dir.entry.sizez,y   ; Copy
         bsr   tfrxua             ; data
 * Exit
 ld7     clra                     ; file is not empty
@@ -627,7 +629,7 @@ messloc fcb   $1f,$21,$21
 
 messIO         fcs   "     I/O|Error"
 messinsertdisk fcs   "   Insert disk 0"
-messdiskid     equ *-1
+messdiskId     equ *-1
 
 
 ;---------------------------------------
@@ -654,7 +656,7 @@ switchpage
 ; loader.dir.getFile
 ;
 ; input  REG : [X] file id
-; output REG : [Y] ptr to file direntry
+; output REG : [Y] ptr to file dir.entry
 ;---------------------------------------
 ; Get file directory entry
 ;
@@ -662,20 +664,20 @@ switchpage
 ;        and saves a lot of instructions here
 ;---------------------------------------
 loader.dir.getFile
-        ldy   >loader.file.dir
-        leay  sizeof{dirheader},y 
+        ldy   >loader.dir
+        leay  sizeof{dir.header},y 
         tfr   x,d
         _lsld      ; Scale file id
         _lsld      ; to dir entry size
         _lsld
-        leay  d,y  ; Y ptr to file direntry
+        leay  d,y  ; Y ptr to file dir.entry
         rts
 
 
 ;---------------------------------------
 ; loader.file.decompress
 ;
-; input  REG : [X] file number
+; input  REG : [X] file id
 ; input  REG : [B] destination - page number
 ; input  REG : [U] destination - address
 ;---------------------------------------
@@ -685,15 +687,15 @@ loader.file.decompress
         pshs  d,x,y,u
         jsr   switchpage
         jsr   loader.dir.getFile
-        ldb   direntry.bitfld,y  ; test if compression flag
+        ldb   dir.entry.bitfld,y  ; test if compression flag
         bpl   @rts               ; no, exit
-        ldd   direntry.coffset,y ; get offset to write data
+        ldd   dir.entry.coffset,y ; get offset to write data
         leax  d,u                ; set x to start of compressed data
         pshs  y
         jsr   >zx0_decompress    ; decompress and set u to end of decompressed data
         puls  y
         lda   #6                 ; copy last 6 bytes
-        leax  direntry.cdataz,y  ; set read ptr
+        leax  dir.entry.cdataz,y  ; set read ptr
         jsr   tfrxua
 @rts    puls  d,x,y,u,pc
 
@@ -702,98 +704,140 @@ loader.file.decompress
 
 
 ;---------------------------------------
-; loader.file.link
+; loader.file.linkData.add
 ;
-; input  REG : [X] file number
+; input  REG : [X] file id
 ; input  REG : [B] destination - page number
 ; input  REG : [U] destination - address
+;---------------------------------------
+; add load time link data to RAM
+; for a specified file
+;---------------------------------------
+
+; linkDataIdx structure
+; -------------------
+linkData.header STRUCT
+totalSlots    rmb types.WORD ; [0000 0000] [0000 0000] - [nb of total slots]
+occupiedSlots rmb types.WORD ; [0000 0000] [0000 0000] - [nb of occupied slots]
+        ENDSTRUCT
+
+linkData.entry STRUCT
+diskId   rmb types.BYTE   ; [0000 0000]              - [disk id]
+fileId   rmb types.WORD   ; [0000 0000] [0000 0000]  - [file id]
+filePage rmb types.BYTE   ; [0000 0000]              - [file data page location]
+fileAddr rmb types.BYTE   ; [0000 0000]              - [file data address location]
+linkData rmb types.WORD   ; [0000 0000] [0000 0000]  - [ptr in memory pool to link data]
+        ENDSTRUCT
+
+loader.file.linkData.add
+        pshs  d,x,y,u
+        jsr   loader.dir.getFile
+        ldb   dir.entry.bitfld,y              ; Test if load time link flag
+        cmpb  #%01000000
+        bne   >                               ; yes, continue
+        puls  d,x,y,u,pc                      ; no, exit
+!
+        ; check link data size for this file, and allocate memory for loading
+        ldd   dir.entry.lsize,y               ; Read file data size
+        bne   >
+        puls  d,x,y,u,pc                      ; Ignore empty link file
+!       sty   @y
+        jsr   tlsf.malloc
+        stu   @linkData
+        ldy   #0
+@y      equ   *-2
+;
+        ; load link data file
+        ldb   dir.entry.bitfld,y              ; test if compression flag
+        bpl   >
+        leay  8,y                             ; skip compression block
+!       leay  8,y                             ; skip file block
+        ldb   #loader.PAGE
+        jsr   loader.file.loadByDir
+;
+        ; store file location index on RAM (data and link data)
+        ldu   >loader.file.linkDataIdx
+        bne   >
+        ldd   #types.WORD*2+8*8               ; a. First load of link data
+        jsr   tlsf.malloc                     ; Allocate a new set of slots
+        ldd   #8
+        std   linkData.header.totalSlots,u    ; init nb of allocated slots
+        ldd   #1
+        std   linkData.header.occupiedSlots,u ; init nb of current occupied slots
+        bra   @end
+!       ldx   linkData.header.occupiedSlots,u ; b. Already loaded link data
+        cmpx  linkData.header.totalSlots,u
+        blo   >                               ; Branch if no more slot available
+        leax  1,x                             ; c. Use a free slot
+        stx   linkData.header.occupiedSlots,u
+        bra   @end
+!       ldd   linkData.header.totalSlots,u    ; d. All slots are in use, reallocate
+        addd  #8                              ; add new bunch of blocks
+        std   @d
+        _asld
+        _asld
+        _asld                                 ; mult by struct size
+        addd  #types.WORD*2                   ; add header
+        ;jsr   tlsf.realloc                   ; TODO [d] : new size - [u] : ptr to memory
+        stu   >loader.file.linkDataIdx
+        ldd   #0                              ; Update new block header
+@d      equ   *-2
+        std   linkData.header.totalSlots,u    ; Set max number of slots
+        ldd   linkData.header.occupiedSlots,u
+        addd  #1
+        std   linkData.header.occupiedSlots,u ; Set current slots in use
+        bra   *
+@end
+        ; compute location of slot
+        ldd   linkData.header.occupiedSlots,u ; Read nb of occupied slots
+        _asld
+        _asld
+        _asld                                 ; mult by struct size
+        addd  #types.WORD*2                   ; add header
+        leau  d,u                             ; u is a ptr to slot
+        ldx   >loader.dir
+        lda   dir.header.diskId,x             ; load disk id
+        sta   linkData.entry.diskId,u
+        ldd   2,s                             ; load file id
+        std   linkData.entry.fileId,u
+        ldb   1,s                             ; load file dest page
+        stb   linkData.entry.filePage,u
+        ldd   6,s                             ; load file dest addr
+        std   linkData.entry.fileAddr,u 
+        ldd   #0                              ; load ptr to link data
+@linkData equ *-2
+        std   linkData.entry.linkData,u
+@rts    puls  d,x,y,u,pc
+
+
+;---------------------------------------
+; loader.file.linkData.remove
+;
+; input  REG : [B] directory id
+; input  REG : [X] file id
+;---------------------------------------
+; remove load time link data from RAM
+; for a specified file
+;---------------------------------------
+loader.file.linkData.remove
+        ; TODO
+        ; search for dir/file id in loader.file.linkData
+        ; move following linkdata one slot ahead
+        ; decrement nb of occupied slots
+        ; reallocate if total slots - occupied slots = 8
+        rts
+
+
+;---------------------------------------
+; loader.file.link
+;
+; input  REG : [B] directory id
+; input  REG : [X] file id
 ;---------------------------------------
 ; load time link using lwasm simplified
 ; obj data (not all link features are
 ; implemented)
 ;---------------------------------------
-loader.file.link
-        pshs  d,x,y,u
-        jsr   loader.dir.getFile
-        ldb   direntry.bitfld,y  ; Test if load time link flag
-        cmpb  #%01000000
-        beq   @rts               ; no, exit
-;
-        ; load link data for a file
-        ldd   direntry.lsize,y  ; Read file data size
-        bne   >
-        puls  d,x,y,u,pc        ; Ignore empty link file
-!       sty   @y
-        jsr   tlsf.malloc
-        ldy   #0
-@y      equ   *-2
-;
-        ; load link data file
-        ldb   direntry.bitfld,y  ; test if compression flag
-        bpl   >
-        leay  8,y                ; skip compression block
-!       leay  8,y                ; skip file block
-        ldb   #loader.PAGE
-        jsr   loader.file.loadByDir
-;
-        ; store file location of his data and link data
-        jsr   loader.file.addLinkData
-;
-;
-;       TODO conserver l'état en RAM des fichiers chargés et des données de link
-;       possible de le gérer avec le memory pool, a condition de réallouer l'espace à chaque nouveau fichier
-;       eventuellement en utilisant une allocation par groupe
-; ex: 
-;00 0000 04 0000 0100 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
-;00 0000 04 123C 0200 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
-;00 0000 05 2F10 0300 ; [dir:id] [file:id] [code:page] [code:address] [linkmeta:ptr in memory pool]
-;
-@rts    puls  d,x,y,u,pc
-
-loader.file.addLinkData
-        pshs  u
-        ldu   >loader.file.link
-        bne   >
-        ldd   #types.WORD*2+8*8 ; Allocate a new set of blocks
-        jsr   tlsf.malloc
-        ldd   #8
-        std   ,u                ; init nb of allocated blocks
-        ldd   #1
-        std   2,u               ; init nb of current blocks occupation
-        bra   @end
-!       ldx   2,u
-        cmpx  ,u
-        blo   >
-        leax  1,x               ; Found a free block
-        stx   2,u
-        bra   @end
-        ldd   ,u                ; All blocks are used, reallocate
-        addd  #8                ; add new bunch of blocks
-        std   @d
-        _asld
-        _asld
-        _asld                   ; mult by struct size
-        addd  #types.WORD*2     ; add header
-        jsr   tlsf.malloc
-        ; copy to new block
-        ; update new block header
-!       
-@end
-
-        ; [u] is a ptr to link data
-        ldx   2+2,s                ; load file id
-        ldb   1+2,s                ; load file dest page
-        ldu   6+2,s                ; load file dest addr
-
-        ldu   >loader.file.dir
-        lda   dirheader.diskid,u ; load disk id
-; store ...
-;
-        puls  d,x,y,u,pc
-
-; add a file in loader.file.link
-;         addd  #types.WORD*2     ; add header size   
-
 
 ; file link data :
 ;
@@ -823,5 +867,10 @@ loader.file.addLinkData
 ;		03 0110 :    0002           ; [nb of elements]
 ;		             0001 FFF4 0002 ; [offset to write location] [PLUS operand] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
 ;		             003E 0000 0003 ;                                                                   extern ( ES=ymm.music.processFrame ) @ 003E
+
+loader.file.link
+        ; TODO
+        rts
+
 
 loader.memoryPool equ *
