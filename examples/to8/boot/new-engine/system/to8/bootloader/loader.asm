@@ -15,7 +15,7 @@
 ;   ex: equates exportées
 ;
 ;*******************************************************************************
- SETDP $ff
+ SETDP $ff ; prevents lwasm from using direct address mode
         INCLUDE "new-engine/constant/types.const.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/constants.asm"
@@ -63,12 +63,15 @@ lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: 
         ENDSTRUCT
 
         org   loader.ADDRESS
-        jmp   >loader.scene.loadDefault  ; OK
-        jmp   >loader.scene.apply        ; OK
-        jmp   >loader.dir.load           ; OK
-        jmp   >loader.file.load          ; OK
-        jmp   >loader.file.malloc        ; OK
-        jmp   >loader.file.unload        ; TODO
+        jmp   >loader.scene.loadDefault    ; OK
+        jmp   >loader.scene.load           ; OK
+        jmp   >loader.scene.apply          ; OK
+        jmp   >loader.dir.load             ; OK
+        jmp   >loader.file.load            ; OK
+        jmp   >loader.file.malloc          ; OK
+        jmp   >loader.file.decompress      ; OK
+        jmp   >loader.file.linkData.load   ; OK
+        jmp   >loader.file.linkData.unload ; TODO
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -107,8 +110,27 @@ loader.scene.loadDefault
         lda   #loader.DEFAULT_SCENE_DIR_ID
         jsr   loader.dir.load
 
-        ; load default scene files
+        ; load default scene file
         ldx   #loader.DEFAULT_SCENE_FILE_ID
+        jsr   loader.scene.load
+
+        ldb   #loader.DEFAULT_SCENE_EXEC_PAGE
+        ldu   #loader.DEFAULT_SCENE_EXEC_ADDR
+        jsr   switchpage
+        jmp   loader.DEFAULT_SCENE_EXEC_ADDR
+
+
+;-----------------------------------------------------------------
+; loader.scene.load
+;
+; input  REG : [X] scene file id
+;
+;-----------------------------------------------------------------
+; Load a scene
+;-----------------------------------------------------------------
+loader.scene.load
+
+        ; load default scene file
         jsr   loader.file.malloc
 
         ldb   #loader.PAGE
@@ -124,18 +146,17 @@ loader.scene.loadDefault
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
-        ldx   #loader.file.linkData.add
+        ldx   #loader.file.linkData.load
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
+        ; once all files are loaded, proceed to the link
         jsr   loader.file.link
 
-        jsr   tlsf.free ; scene file
+        ; free memory for default scene file
+        jsr   tlsf.free
+        rts
 
-        ldb   #loader.DEFAULT_SCENE_EXEC_PAGE
-        ldu   #loader.DEFAULT_SCENE_EXEC_ADDR
-        jsr   switchpage
-        jmp   loader.DEFAULT_SCENE_EXEC_ADDR
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc
@@ -581,14 +602,6 @@ sclist  fcb   $01,$0f,$0d,$0b
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a
 
-;---------------------------------------
-; loader.file.unload
-;
-;---------------------------------------
-; unload a file from RAM
-;---------------------------------------
-loader.file.unload
-        rts
 
 ;---------------------------------------
 ; Display messages
@@ -704,7 +717,7 @@ loader.file.decompress
 
 
 ;---------------------------------------
-; loader.file.linkData.add
+; loader.file.linkData.load
 ;
 ; input  REG : [X] file id
 ; input  REG : [B] destination - page number
@@ -729,7 +742,7 @@ fileAddr rmb types.BYTE   ; [0000 0000]              - [file data address locati
 linkData rmb types.WORD   ; [0000 0000] [0000 0000]  - [ptr in memory pool to link data]
         ENDSTRUCT
 
-loader.file.linkData.add
+loader.file.linkData.load
         pshs  d,x,y,u
         jsr   loader.dir.getFile
         ldb   dir.entry.bitfld,y              ; Test if load time link flag
@@ -760,16 +773,15 @@ loader.file.linkData.add
         bne   >
         ldd   #types.WORD*2+8*8               ; a. First load of link data
         jsr   tlsf.malloc                     ; Allocate a new set of slots
+        stu   >loader.file.linkDataIdx
         ldd   #8
         std   linkData.header.totalSlots,u    ; init nb of allocated slots
         ldd   #1
-        std   linkData.header.occupiedSlots,u ; init nb of current occupied slots
         bra   @end
-!       ldx   linkData.header.occupiedSlots,u ; b. Already loaded link data
-        cmpx  linkData.header.totalSlots,u
-        blo   >                               ; Branch if no more slot available
-        leax  1,x                             ; c. Use a free slot
-        stx   linkData.header.occupiedSlots,u
+!       ldd   linkData.header.occupiedSlots,u ; b. Already loaded link data
+        cmpd  linkData.header.totalSlots,u
+        bhs   >                               ; Branch if no more slot available
+        addd  #1                              ; c. Use a free slot
         bra   @end
 !       ldd   linkData.header.totalSlots,u    ; d. All slots are in use, reallocate
         addd  #8                              ; add new bunch of blocks
@@ -779,17 +791,17 @@ loader.file.linkData.add
         _asld                                 ; mult by struct size
         addd  #types.WORD*2                   ; add header
         ;jsr   tlsf.realloc                   ; TODO [d] : new size - [u] : ptr to memory
+        bra   * ; stop and remember to implement realloc ...
         stu   >loader.file.linkDataIdx
         ldd   #0                              ; Update new block header
 @d      equ   *-2
         std   linkData.header.totalSlots,u    ; Set max number of slots
         ldd   linkData.header.occupiedSlots,u
         addd  #1
-        std   linkData.header.occupiedSlots,u ; Set current slots in use
-        bra   *
 @end
+        std   linkData.header.occupiedSlots,u ; Set current slots in use
+        subd  #1
         ; compute location of slot
-        ldd   linkData.header.occupiedSlots,u ; Read nb of occupied slots
         _asld
         _asld
         _asld                                 ; mult by struct size
@@ -811,7 +823,7 @@ loader.file.linkData.add
 
 
 ;---------------------------------------
-; loader.file.linkData.remove
+; loader.file.linkData.unload
 ;
 ; input  REG : [B] directory id
 ; input  REG : [X] file id
@@ -819,7 +831,7 @@ loader.file.linkData.add
 ; remove load time link data from RAM
 ; for a specified file
 ;---------------------------------------
-loader.file.linkData.remove
+loader.file.linkData.unload
         ; TODO
         ; search for dir/file id in loader.file.linkData
         ; move following linkdata one slot ahead
