@@ -738,9 +738,11 @@ linkData.entry STRUCT
 diskId   rmb types.BYTE   ; [0000 0000]              - [disk id]
 fileId   rmb types.WORD   ; [0000 0000] [0000 0000]  - [file id]
 filePage rmb types.BYTE   ; [0000 0000]              - [file data page location]
-fileAddr rmb types.BYTE   ; [0000 0000]              - [file data address location]
+fileAddr rmb types.WORD   ; [0000 0000] [0000 0000]  - [file data address location]
 linkData rmb types.WORD   ; [0000 0000] [0000 0000]  - [ptr in memory pool to link data]
         ENDSTRUCT
+
+loader.file.linkData.POOL_QTY equ 8
 
 loader.file.linkData.load
         pshs  d,x,y,u
@@ -771,10 +773,10 @@ loader.file.linkData.load
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
         bne   >
-        ldd   #types.WORD*2+8*8               ; a. First load of link data
+        ldd   #sizeof{linkData.header}+loader.file.linkData.POOL_QTY*sizeof{linkData.entry} ; a. First load of link data
         jsr   tlsf.malloc                     ; Allocate a new set of slots
         stu   >loader.file.linkDataIdx
-        ldd   #8
+        ldd   #loader.file.linkData.POOL_QTY
         std   linkData.header.totalSlots,u    ; init nb of allocated slots
         ldd   #1
         bra   @end
@@ -784,12 +786,12 @@ loader.file.linkData.load
         addd  #1                              ; c. Use a free slot
         bra   @end
 !       ldd   linkData.header.totalSlots,u    ; d. All slots are in use, reallocate
-        addd  #8                              ; add new bunch of blocks
+        addd  #loader.file.linkData.POOL_QTY  ; add new bunch of blocks
         std   @d
         _asld
         _asld
         _asld                                 ; mult by struct size
-        addd  #types.WORD*2                   ; add header
+        addd  #sizeof{linkData.header}        ; add header
         ;jsr   tlsf.realloc                   ; TODO [d] : new size - [u] : ptr to memory
         bra   * ; stop and remember to implement realloc ...
         stu   >loader.file.linkDataIdx
@@ -849,61 +851,114 @@ loader.file.linkData.unload
 ; implemented, just a single ADD op)
 ;---------------------------------------
 
-; file link data :
-;
-;		- export absolute           ; export a 16 bit constant (will be processed as a 8 or 16 bits extern when applying value)
-; 
-;		03 0100 :    0002           ; [nb of elements]
-;		             0047 0003      ; key of symbol, value of symbol
-;		             0048 0004      ; key of symbol, value of symbol
-;
-;       - export relative           ; export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
-;
-;		03 0106 :    0001           ; [nb of elements]
-;		             0059 0586      ; key of symbol, value of symbol (should add section base address to this value before applying)
-;		             
-;		- intern                    ; relocation of local variables
-;		            
-;		03 010A :    0001           ; [nb of elements]
-;		             0162 00C3      ; [offset to write location] [PLUS operand] - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
-;
-;		- extern (8bit)             ; link to extern 8 bit variables
-;		             
-;		03 0122 :    0001           ; [nb of elements]
-;		             0014 0000 0001 ; [offset to write location] [PLUS operand] [symbol id] - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
-;
-;		- extern (16bit)            ; link to extern 16 bit variables
-;		             
-;		03 0110 :    0002           ; [nb of elements]
-;		             0001 FFF4 0002 ; [offset to write location] [PLUS operand] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
-;		             003E 0000 0003 ;                                                                   extern ( ES=ymm.music.processFrame ) @ 003E
+; linkData.content structures
+; ---------------------------
+
+linkData.content.header    STRUCT ; this header is ahead of each content type
+size    rmb types.WORD            ; number of items
+        ENDSTRUCT
+
+linkData.content.exportAbs STRUCT ; export absolute : export a 16 bit constant (will be processed as a 8 or 16 bits extern when applying value)
+key     rmb types.WORD            ; key of symbol
+value   rmb types.WORD            ; value of symbol
+        ENDSTRUCT
+
+linkData.content.exportRel STRUCT ; export relative : export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
+key     rmb types.WORD            ; key of symbol
+value   rmb types.WORD            ; value of symbol (should add section base address to this value before applying)
+        ENDSTRUCT
+
+linkData.content.intern    STRUCT ; relocation of local variables - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
+offset  rmb types.WORD            ; offset to symbol
+operand rmb types.WORD            ; PLUS operand
+        ENDSTRUCT
+
+linkData.content.extern8   STRUCT ; link to extern 8 bit variables - example : intern ( I16=195 IS=\02code OP=PLUS ) @ 0162
+offset  rmb types.WORD            ; offset to symbol
+operand rmb types.WORD            ; PLUS operand
+symbol  rmb types.WORD            ; symbol id
+        ENDSTRUCT
+
+linkData.content.extern16  STRUCT ; link to extern 16 bit variables - examples : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001, extern ( ES=ymm.music.processFrame ) @ 003E
+offset  rmb types.WORD            ; offset to symbol
+operand rmb types.WORD            ; PLUS operand
+symbol  rmb types.WORD            ; symbol id
+        ENDSTRUCT
 
 loader.file.link
         
         ; parse each file of loader.file.linkDataIdx
-
+        ldx   >loader.file.linkDataIdx
+        ldd   linkData.header.occupiedSlots,x
+        std   @counter
+        leax  sizeof{linkData.header},x
+!
         ; set RAM page to make file visible
-        ; get file location
+        ldb   linkData.entry.filePage,x
+        ldu   linkData.entry.fileAddr,x
+        jsr   switchpage
+        jsr   loader.file.intern.link
+        jsr   loader.file.extern8.link
+        jsr   loader.file.extern16.link
+        leax  sizeof{linkData.entry},x ; move to next file
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   <                        ; check if more file to process
+        rts
+
+loader.file.intern.link                         ; this routine relocate the code
+        pshs  d,x,y,u
+        ldy   linkData.entry.linkData,x
+
+        ; skip export link data
+        ldd   linkData.content.header.size,y
+        _asld
+        _asld
+        addd  #sizeof{linkData.content.header}
+        leay  d,y
+        ldd   linkData.content.header.size,y
+        _asld
+        _asld
+        addd  #sizeof{linkData.content.header}
+        leay  d,y
 
         ; parse INTERN elements
-        ; load offset
-        ; add location
-        ; add plus operand
-        ; update value to offset
+        ldd   linkData.content.header.size,y
+        std   @counter
+        leay  sizeof{linkData.content.header},y
+!
+        ldd   linkData.content.intern.operand,y ; load plus operand
+        leax  d,u                               ; add file binary location
+        ldd   linkData.content.intern.offset,y  ; load offset to symbol reference
+        stx   d,u                               ; update address
+        leay  sizeof{linkData.content.intern},y ; move to next symbol reference
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   <                                 ; check if more file to process
 
+        puls  d,x,y,u,pc
+
+loader.file.extern8.link
+        pshs  d,x,y,u
         ; parse EXTERN8 elements
         ; find symbol by searching in all file's linkData 
         ; load symbol value as 8 bits
         ; add plus operand
         ; update value to offset as 8 bits
+        puls  d,x,y,u,pc
 
+loader.file.extern16.link
+        pshs  d,x,y,u
         ; parse EXTERN16 elements
         ; find symbol by searching in all file's linkData 
         ; load symbol value as 16 bits
         ; add plus operand
         ; update value to offset as 16 bits
-
-        rts
+        puls  d,x,y,u,pc
 
 
 loader.memoryPool equ *
