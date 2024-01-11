@@ -14,6 +14,10 @@
 ; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
 ;   ex: equates exportées
 ;
+; - réfléchir aux points suivants :
+;   - gérer le fait que la résolution des liens internes (link) n'a pas besoin d'être fait plus d'une fois => mettre un flag msb sur le size des intern ?
+;   - gérer le fait qu'on puisse charger plusieurs instances d'un meme fichier à deux endroits différents en RAM, comment identifier celui qu'on "remove" dans le linkdata ? => addr en param in
+;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
         INCLUDE "new-engine/constant/types.const.asm"
@@ -821,6 +825,13 @@ loader.file.linkData.load
         ldd   #0                              ; load ptr to link data
 @linkData equ *-2
         std   linkData.entry.linkData,u
+        ; relocate the binary
+        ldy   @linkData                       ; set y as ptr to file link data
+        jsr   linkData.content.exportAbs.skip ; skip export link data
+        jsr   linkData.content.exportRel.skip
+        ldb   1,s                             ; load file dest page
+        ldu   6,s                             ; load file dest addr
+        jsr   loader.file.intern.link
 @rts    puls  d,x,y,u,pc
 
 
@@ -865,7 +876,7 @@ value   rmb types.WORD            ; value of symbol
 
 linkData.content.exportRel STRUCT ; export relative : export a 16 bit relative constant (will be processed as a 8 or 16 bits extern when applying value)
 key     rmb types.WORD            ; key of symbol
-value   rmb types.WORD            ; value of symbol (should add section base address to this value before applying)
+value   rmb types.WORD            ; value of symbol (should add section base address of export to this value before applying)
         ENDSTRUCT
 
 linkData.content.intern    STRUCT ; relocation of local variables - example : extern 8bit ( FLAGS=01 ES=ymm.NO_LOOP ) @ 0014
@@ -897,7 +908,10 @@ loader.file.link
         ldb   linkData.entry.filePage,x
         ldu   linkData.entry.fileAddr,x
         jsr   switchpage
-        jsr   loader.file.intern.link
+        ldy   linkData.entry.linkData,x
+        jsr   linkData.content.exportAbs.skip
+        jsr   linkData.content.exportRel.skip
+        jsr   linkData.content.intern.skip
         jsr   loader.file.extern8.link
         jsr   loader.file.extern16.link
         leax  sizeof{linkData.entry},x ; move to next file
@@ -908,23 +922,42 @@ loader.file.link
         bne   <                        ; check if more file to process
         rts
 
-loader.file.intern.link                         ; this routine relocate the code
-        pshs  d,x,y,u
-        ldy   linkData.entry.linkData,x
 
-        ; skip export link data
+;---------------------------------------
+; linkData.content.<xxx>.skip
+;
+; input  REG : [Y] position in link data
+; output REG : [Y] position in link data
+;---------------------------------------
+; relocate file binary with link data
+;---------------------------------------
+
+linkData.content.exportAbs.skip
+linkData.content.exportRel.skip
+linkData.content.intern.skip
         ldd   linkData.content.header.size,y
         _asld
         _asld
         addd  #sizeof{linkData.content.header}
         leay  d,y
-        ldd   linkData.content.header.size,y
-        _asld
-        _asld
-        addd  #sizeof{linkData.content.header}
-        leay  d,y
+        rts
 
-        ; parse INTERN elements
+
+;---------------------------------------
+; loader.file.intern.link
+;
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+; input  REG : [Y] position in link data
+; output REG : [Y] position in link data
+;---------------------------------------
+; relocate file binary with link data
+;---------------------------------------
+
+loader.file.intern.link
+        pshs  d,x,u
+
+        ; parse all INTERN symbols
         ldd   linkData.content.header.size,y
         std   @counter
         leay  sizeof{linkData.content.header},y
@@ -933,32 +966,142 @@ loader.file.intern.link                         ; this routine relocate the code
         leax  d,u                               ; add file binary location
         ldd   linkData.content.intern.offset,y  ; load offset to symbol reference
         stx   d,u                               ; update address
-        leay  sizeof{linkData.content.intern},y ; move to next symbol reference
+        leay  sizeof{linkData.content.intern},y ; move to next symbol
         ldd   #0
 @counter equ *-2
         subd  #1
         std   @counter
-        bne   <                                 ; check if more file to process
+        bne   <                                 ; check if more elements to process
 
-        puls  d,x,y,u,pc
+        puls  d,x,u,pc
+
+
+;---------------------------------------
+; loader.file.extern8.link
+;
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+; input  REG : [Y] position in link data
+; output REG : [Y] position in link data
+;---------------------------------------
+; resolve external 8 bits symbols
+;---------------------------------------
 
 loader.file.extern8.link
-        pshs  d,x,y,u
-        ; parse EXTERN8 elements
+        pshs  d,x,u
+
+        ; parse all EXTERN8 symbols
+        ldd   linkData.content.header.size,y
+        std   @counter
+        leay  sizeof{linkData.content.header},y
+!
         ; find symbol by searching in all file's linkData 
-        ; load symbol value as 8 bits
-        ; add plus operand
-        ; update value to offset as 8 bits
-        puls  d,x,y,u,pc
+        ldd   linkData.content.extern8.symbol,y
+        std   linkData.symbol
+        jsr   linkData.symbol.search
+        addd  linkData.content.extern8.operand,y ; add external symbol value to plus operand
+        ldx   linkData.content.extern8.offset,y  ; load offset to symbol reference
+        stx   @addr
+        stb   1234,u                             ; update address
+@addr   equ   *-2
+        leay  sizeof{linkData.content.extern8},y ; move to next symbol
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   <                                 ; check if more elements to process
+        puls  d,x,u,pc
+
+
+;---------------------------------------
+; loader.file.extern16.link
+;
+; input  REG : [U] destination - address
+; input  REG : [Y] position in link data
+; output REG : [Y] position in link data
+;---------------------------------------
+; resolve external 16 bits symbols
+;---------------------------------------
 
 loader.file.extern16.link
-        pshs  d,x,y,u
-        ; parse EXTERN16 elements
-        ; find symbol by searching in all file's linkData 
-        ; load symbol value as 16 bits
-        ; add plus operand
-        ; update value to offset as 16 bits
-        puls  d,x,y,u,pc
+        pshs  d,x,u
 
+        ; parse all EXTERN16 symbols
+        ldd   linkData.content.header.size,y
+        std   @counter
+        leay  sizeof{linkData.content.header},y
+!
+        ; find symbol by searching in all file's linkData 
+        ldd   linkData.content.extern16.symbol,y
+        std   linkData.symbol
+        jsr   linkData.symbol.search
+        ldx   linkData.content.extern16.operand,y ; load plus operand
+        leax  d,x                                 ; add external symbol value
+        ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference
+        stx   d,u                                 ; update address
+        leay  sizeof{linkData.content.extern8},y  ; move to next symbol
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   <                                 ; check if more elements to process
+        puls  d,x,u,pc
+
+
+linkData.symbol fdb 0
+linkData.symbol.search
+        pshs  y,u
+        ; parse each file of loader.file.linkDataIdx
+        ldx   >loader.file.linkDataIdx
+        ldd   linkData.header.occupiedSlots,x
+        std   @fileCounter
+        leax  sizeof{linkData.header},x
+@fileLoop
+        ; set RAM page to make file visible
+        ldu   linkData.entry.fileAddr,x
+        ldy   linkData.entry.linkData,x
+;
+        ; parse all absolute symbols
+        ldd   linkData.content.header.size,y
+        std   @AbsSymbolCounter
+        leay  sizeof{linkData.content.header},y
+@AbsSymbolLoop
+        ldd   linkData.content.exportAbs.key,y
+        cmpd  linkData.symbol
+        bne   >
+        ldd   linkData.content.exportAbs.value,y ; this value is absolute
+        puls  y,u,pc
+!       leay  sizeof{linkData.content.intern},y  ; move to next symbol
+        ldd   #0
+@AbsSymbolCounter equ *-2
+        subd  #1
+        std   @AbsSymbolCounter
+        bne   @AbsSymbolLoop                     ; check if more elements to process
+;
+        ; parse all relative symbols
+        ldd   linkData.content.header.size,y
+        std   @RelSymbolCounter
+        leay  sizeof{linkData.content.header},y
+@RelSymbolLoop
+        ldd   linkData.content.exportRel.key,y
+        cmpd  linkData.symbol
+        bne   >
+        tfr   u,d                                ; get base section offset
+        addd  linkData.content.exportRel.value,y ; add symbol value (relative address)
+        puls  y,u,pc
+!       leay  sizeof{linkData.content.intern},y  ; move to next symbol
+        ldd   #0
+@RelSymbolCounter equ *-2
+        subd  #1
+        std   @RelSymbolCounter
+        bne   @RelSymbolLoop                     ; check if more elements to process
+;
+        leax  sizeof{linkData.entry},x           ; move to next file
+        ldd   #0
+@fileCounter equ *-2
+        subd  #1
+        std   @fileCounter
+        bne   @fileLoop                          ; check if more file to process
+        bra   *                                  ; unresolved symbol
 
 loader.memoryPool equ *

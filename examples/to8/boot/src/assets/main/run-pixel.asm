@@ -13,11 +13,10 @@ gfx.ram.b equ $A000
  ENDSECTION
 
  SECTION code
-        ;jsr   pixel.draw+1
+        jsr   pixel.draw+2
         ldd   #testbro     
         bra   *
-
-        fill  -1,251
+        fill  -1,248
         fill  -2,$3E00
         fill  -3,256
 testbro equ *

@@ -15,7 +15,13 @@ pixel.odd.length equ pixels.odd.end-pixels.odd
  ENDSECTION
 
  SECTION code
+        nop
+        nop
+        nop
+        nop
+        nop
 pixel.draw
+        nop
         nop
         ldu   #gfx.ram.b+40
         ldx   #pixels.even
