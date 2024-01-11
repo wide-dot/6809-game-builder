@@ -4,6 +4,7 @@ singlepix EXPORT
 dualpix   EXPORT
 gfx.ram.a EXPORT
 gfx.ram.b EXPORT
+rel8      EXPORT
 
  SECTION absval,constant
 singlepix equ $CD
@@ -16,6 +17,7 @@ gfx.ram.b equ $A000
         jsr   pixel.draw+2
         ldd   #testbro     
         bra   *
+rel8 equ *
         fill  -1,248
         fill  -2,$3E00
         fill  -3,256

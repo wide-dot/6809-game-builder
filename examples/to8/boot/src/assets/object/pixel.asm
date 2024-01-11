@@ -2,6 +2,7 @@ gfx.ram.a EXTERN
 gfx.ram.b EXTERN
 singlepix EXTERN ; 8 bits
 dualpix   EXTERN ; 16 bits
+rel8      EXTERN
 
 pixel.draw        EXPORT
 pixels.even       EXPORT
@@ -39,8 +40,10 @@ pixel.draw
         bne   <
         rts
 
+        fcb  rel8
+
 pixels.even
-        fcb   $01,$45,$89,$CD,singlepix ; length 5 bytes
+        fcb   $01,$45,$89,$CD,singlepix+2 ; length 5 bytes
 pixels.even.end
 
 pixels.odd

@@ -897,14 +897,18 @@ symbol  rmb types.WORD            ; symbol id
         ENDSTRUCT
 
 loader.file.link
-        
+        pshs  d,x,y,u
         ; parse each file of loader.file.linkDataIdx
         ldx   >loader.file.linkDataIdx
         ldd   linkData.header.occupiedSlots,x
-        std   @counter
         leax  sizeof{linkData.header},x
+        std   @counter
+        bne   >
+        puls  d,x,y,u,pc
 !
         ; set RAM page to make file visible
+        ldd   linkData.entry.fileId,x
+        std   linkData.currentFile
         ldb   linkData.entry.filePage,x
         ldu   linkData.entry.fileAddr,x
         jsr   switchpage
@@ -920,7 +924,7 @@ loader.file.link
         subd  #1
         std   @counter
         bne   <                        ; check if more file to process
-        rts
+        puls  d,x,y,u,pc
 
 
 ;---------------------------------------
@@ -959,8 +963,13 @@ loader.file.intern.link
 
         ; parse all INTERN symbols
         ldd   linkData.content.header.size,y
-        std   @counter
         leay  sizeof{linkData.content.header},y
+        std   @counter
+        bne   >
+        puls  d,x,u,pc
+!
+        ldb   1,s                               ; restore file page number
+        jsr   switchpage
 !
         ldd   linkData.content.intern.operand,y ; load plus operand
         leax  d,u                               ; add file binary location
@@ -992,12 +1001,14 @@ loader.file.extern8.link
 
         ; parse all EXTERN8 symbols
         ldd   linkData.content.header.size,y
-        std   @counter
         leay  sizeof{linkData.content.header},y
+        std   @counter
+        bne   >
+        puls  d,x,u,pc
 !
         ; find symbol by searching in all file's linkData 
         ldd   linkData.content.extern8.symbol,y
-        std   linkData.symbol
+        std   linkData.currentSymbol
         jsr   linkData.symbol.search
         addd  linkData.content.extern8.operand,y ; add external symbol value to plus operand
         ldx   linkData.content.extern8.offset,y  ; load offset to symbol reference
@@ -1028,12 +1039,14 @@ loader.file.extern16.link
 
         ; parse all EXTERN16 symbols
         ldd   linkData.content.header.size,y
-        std   @counter
         leay  sizeof{linkData.content.header},y
+        std   @counter
+        bne   >
+        puls  d,x,u,pc
 !
         ; find symbol by searching in all file's linkData 
         ldd   linkData.content.extern16.symbol,y
-        std   linkData.symbol
+        std   linkData.currentSymbol
         jsr   linkData.symbol.search
         ldx   linkData.content.extern16.operand,y ; load plus operand
         leax  d,x                                 ; add external symbol value
@@ -1048,7 +1061,8 @@ loader.file.extern16.link
         puls  d,x,u,pc
 
 
-linkData.symbol fdb 0
+linkData.currentFile fdb 0
+linkData.currentSymbol fdb 0
 linkData.symbol.search
         pshs  y,u
         ; parse each file of loader.file.linkDataIdx
@@ -1057,45 +1071,52 @@ linkData.symbol.search
         std   @fileCounter
         leax  sizeof{linkData.header},x
 @fileLoop
+        ; exclude from search the current file being resolved
+        ldd   linkData.entry.fileId,x
+        cmpd  linkData.currentFile
+        beq   @nextFile
+;
         ; set RAM page to make file visible
         ldu   linkData.entry.fileAddr,x
         ldy   linkData.entry.linkData,x
 ;
         ; parse all absolute symbols
         ldd   linkData.content.header.size,y
-        std   @AbsSymbolCounter
         leay  sizeof{linkData.content.header},y
-@AbsSymbolLoop
+        std   @absSymbolCounter
+        beq   @parseRelSymbol
+@absSymbolLoop
         ldd   linkData.content.exportAbs.key,y
-        cmpd  linkData.symbol
+        cmpd  linkData.currentSymbol
         bne   >
         ldd   linkData.content.exportAbs.value,y ; this value is absolute
         puls  y,u,pc
 !       leay  sizeof{linkData.content.intern},y  ; move to next symbol
         ldd   #0
-@AbsSymbolCounter equ *-2
+@absSymbolCounter equ *-2
         subd  #1
-        std   @AbsSymbolCounter
-        bne   @AbsSymbolLoop                     ; check if more elements to process
-;
+        std   @absSymbolCounter
+        bne   @absSymbolLoop                     ; check if more elements to process
+@parseRelSymbol
         ; parse all relative symbols
         ldd   linkData.content.header.size,y
-        std   @RelSymbolCounter
         leay  sizeof{linkData.content.header},y
-@RelSymbolLoop
+        std   @relSymbolCounter
+        beq   @nextFile
+@relSymbolLoop
         ldd   linkData.content.exportRel.key,y
-        cmpd  linkData.symbol
+        cmpd  linkData.currentSymbol
         bne   >
         tfr   u,d                                ; get base section offset
         addd  linkData.content.exportRel.value,y ; add symbol value (relative address)
         puls  y,u,pc
 !       leay  sizeof{linkData.content.intern},y  ; move to next symbol
         ldd   #0
-@RelSymbolCounter equ *-2
+@relSymbolCounter equ *-2
         subd  #1
-        std   @RelSymbolCounter
-        bne   @RelSymbolLoop                     ; check if more elements to process
-;
+        std   @relSymbolCounter
+        bne   @relSymbolLoop                     ; check if more elements to process
+@nextFile
         leax  sizeof{linkData.entry},x           ; move to next file
         ldd   #0
 @fileCounter equ *-2
