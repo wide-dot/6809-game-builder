@@ -45,6 +45,7 @@ tlsf.err.init.MAX_SIZE        equ   2     ; memory pool should have 32768 ($8000
 tlsf.err.malloc.NO_MORE_SPACE equ   3     ; no more space in memory pool 
 tlsf.err.malloc.MAX_SIZE      equ   4     ; malloc can not handle more than 63488 ($F800) bytes request
 tlsf.err.free.NULL_PTR        equ   5     ; memory location to free cannot be NULL
+tlsf.err.realloc.MAX_SIZE     equ   6     ; realloc can not handle more than 63488 ($F800) bytes request
 
 ; tlsf internal variables
 ; -----------------------
@@ -669,3 +670,65 @@ tlsf.ctz
         bne   >
             incb
 !       rts
+
+
+;-----------------------------------------------------------------
+; tlsf.realloc
+; input  REG : [D] requested user memory size
+; output REG : [U] allocated memory address
+;-----------------------------------------------------------------
+; reallocate memory, should be deallocated with a call to free
+; WARNING : this does not initialize memory bytes
+;
+; If requested memory size is lower than actual size, it will
+; shrink the allocated space by keeping data in place.
+;
+; If requested memory size is greater than actual size, it will
+; look if next physical area is free and enough to hold new size,
+; it will keep data in place.
+;
+; Otherwise realloc will use malloc, copy the existing data and
+; free previous allocated memory.
+;-----------------------------------------------------------------
+tlsf.realloc
+        pshs  d,x,y,u
+
+        ; initial check
+        cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
+        bhs   >
+            ldd   #tlsf.MIN_BLOCK_SIZE
+!       cmpd  #$F800                         ; greater values are not handled by mappingSearch function
+        bls   >                              ; this prevents unexpected behaviour
+            lda   #tlsf.err.realloc.MAX_SIZE
+            sta   tlsf.err
+            ldx   tlsf.err.callback
+            leas  2,s
+            jmp   ,x
+!
+        leau  -tlsf.BHDR_OVERHEAD,u
+        subd  #1                             ; size is stored as size-1
+        cmpd  tlsf.blockHdr.size,u
+        beq   @rts
+        bhi   >                              ; branch if new size is greater
+        jmp   tlsf.realloc.shrink
+!       ldd   tlsf.blockHdr.size,u
+        addd  #tlsf.BHDR_OVERHEAD+1          ; size is stored as size-1
+        leax  d,u                            ; X is now a ptr to next physical block
+        ldd   tlsf.blockHdr.size,x
+        bpl   tlsf.realloc.do                ; branch if next physical block is not free
+        anda  #^tlsf.mask.FREE_BLOCK         ; unset free block bit
+        addd  #1                             ; size is stored as size-1
+        cmpd  ,s                             ; compare free size with requested size
+        blo   tlsf.realloc.do                ; branch if next physical block does not fit
+        jmp   tlsf.realloc.growth            ; !!! TODO !!! prendre en compte l'entete dans la place dispo du bloc libre
+
+@rts    puls  d,x,y,u,pc
+
+tlsf.realloc.do
+        puls  d,x,y,u
+
+tlsf.realloc.shrink
+        puls  d,x,y,u
+
+tlsf.realloc.growth
+        puls  d,x,y,u
