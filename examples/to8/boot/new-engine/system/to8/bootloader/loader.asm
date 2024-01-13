@@ -796,8 +796,7 @@ loader.file.linkData.load
         _asld
         _asld                                 ; mult by struct size
         addd  #sizeof{linkData.header}        ; add header
-        ;jsr   tlsf.realloc                   ; TODO [d] : new size - [u] : ptr to memory
-        bra   * ; stop and remember to implement realloc ...
+        jsr   tlsf.realloc                    ; [d] : new size - [u] : ptr to allocated memory
         stu   >loader.file.linkDataIdx
         ldd   #0                              ; Update new block header
 @d      equ   *-2

@@ -675,7 +675,8 @@ tlsf.ctz
 ;-----------------------------------------------------------------
 ; tlsf.realloc
 ; input  REG : [D] requested user memory size
-; output REG : [U] allocated memory address
+; input  REG : [U] actual allocated memory address
+; output REG : [U] new allocated memory address
 ;-----------------------------------------------------------------
 ; reallocate memory, should be deallocated with a call to free
 ; WARNING : this does not initialize memory bytes
@@ -691,7 +692,7 @@ tlsf.ctz
 ; free previous allocated memory.
 ;-----------------------------------------------------------------
 tlsf.realloc
-        pshs  d,x,y,u
+        pshs  d,x,y
 
         ; initial check
         cmpd  #tlsf.MIN_BLOCK_SIZE           ; Apply minimum size to requested memory size
@@ -702,33 +703,72 @@ tlsf.realloc
             lda   #tlsf.err.realloc.MAX_SIZE
             sta   tlsf.err
             ldx   tlsf.err.callback
-            leas  2,s
+            leas  8,s                        ; restore the stack position (dependency with pshs at routine start)
             jmp   ,x
 !
-        leau  -tlsf.BHDR_OVERHEAD,u
-        subd  #1                             ; size is stored as size-1
-        cmpd  tlsf.blockHdr.size,u
-        beq   @rts
-        bhi   >                              ; branch if new size is greater
-        jmp   tlsf.realloc.shrink
-!       ldd   tlsf.blockHdr.size,u
-        addd  #tlsf.BHDR_OVERHEAD+1          ; size is stored as size-1
-        leax  d,u                            ; X is now a ptr to next physical block
+        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
+        addd  #1                             ; size is stored as size-1
+        cmpd  ,s                             ; Get requested size
+        bne   >
+        puls  d,x,y,pc                       ; nothing to do ... this is the actual size
+!       bhi   >                              ; branch if new size is greater
+        subd  sizeof{tlsf.blockHdr}
+        cmpd  ,s
+        bhs   >
+        puls  d,x,y,pc                       ; nothing to do ... requested size is lower but does not allow a new block (need a minimum size)
+!       jmp   tlsf.realloc.shrink
+!       leax  d,u                            ; X is now a ptr to next physical block
         ldd   tlsf.blockHdr.size,x
         bpl   tlsf.realloc.do                ; branch if next physical block is not free
         anda  #^tlsf.mask.FREE_BLOCK         ; unset free block bit
-        addd  #1                             ; size is stored as size-1
+        addd  #tlsf.BHDR_OVERHEAD+1          ; size is stored as size-1
         cmpd  ,s                             ; compare free size with requested size
-        blo   tlsf.realloc.do                ; branch if next physical block does not fit
-        jmp   tlsf.realloc.growth            ; !!! TODO !!! prendre en compte l'entete dans la place dispo du bloc libre
-
-@rts    puls  d,x,y,u,pc
+        blo   tlsf.realloc.do                ; branch if next physical block does not have enough space
+        jmp   tlsf.realloc.growth            ; branch if next physical block fits
 
 tlsf.realloc.do
-        puls  d,x,y,u
+        ldd   tlsf.blockHdr.prev,u           ; Saves 4 bytes that will otherwise be lost
+        std   @data12                        ; when changing occupied block to free
+        ldd   tlsf.blockHdr.next,u
+        std   @data34
+        stu   @start                         ; Saves data location for later copy
+        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
+        addd  #1-4                           ; size is stored as size-1, get rid of the 4 bytes already copied
+        std   @size
+;
+        jsr   tlsf.free
+        ldd   ,s                             ; Get requested size
+        jsr   tlsf.malloc
+;
+        ; move data to newly allocated space
+        ldd   #0                             ; first 4 bytes are special case
+@data12 equ   *-2
+        std   ,u++                           ; [u] destination
+        ldd   #0
+@data34 equ   *-2
+        std   ,u++
+;
+        ldx   #0                             ; [x] source
+@start  equ   *-2
+        leax  4,x
+        ldd   #0                             ; remaining size to copy
+@size   equ   *-2
+        beq   @rts
+!
+        lda   ,x+
+        sta   ,u+
+        decb
+        bne   <
+        dec   @size
+        bpl   <                              ; work because max copy size here is always < $8000 (first 4 bytes are copied manually)
+@rts    puls  d,x,y,pc
 
 tlsf.realloc.shrink
-        puls  d,x,y,u
+        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
+        subd  ,s                             ; requested size
+        ; [d] is now the remaining size of the new block to create (header included)
+
+        puls  d,x,y,pc
 
 tlsf.realloc.growth
-        puls  d,x,y,u
+        puls  d,x,y,pc
