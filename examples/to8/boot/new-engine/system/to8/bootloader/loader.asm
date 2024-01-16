@@ -66,6 +66,20 @@ lnsector rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
         ENDSTRUCT
 
+; scene structure
+; ---------------
+scene.header STRUCT
+type     rmb 0
+nbfiles  rmb types.WORD   ; [00]                     - [00:endmarker, 01:list of dest and id, 10:ajdacent dest and list of id, 11:adjacent dest and id]
+                          ; [00 000] [0000 000]      - [nb files]
+        ENDSTRUCT
+
+scene   STRUCT
+page     rmb types.BYTE   ; [0000 000]               - [page]
+address  rmb types.WORD   ; [0000 000] [0000 000]    - [dest address]
+fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
+        ENDSTRUCT
+
         org   loader.ADDRESS
         jmp   >loader.scene.loadDefault    ; OK
         jmp   >loader.scene.load           ; OK
@@ -81,8 +95,6 @@ lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: 
 error   jmp   >dskerr     ; Called if a read error is detected
 pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
 
-        INCLUDE   "new-engine/memory/tlsf.asm"
-
 ; temporary space
 ; ---------------
 ptsec  fill  0,256 ; Temporary space for partial sector loading
@@ -95,6 +107,16 @@ sector fcb   0     ; Sector number
 ; --------------
 loader.dir              fdb   0 ; file directory
 loader.file.linkDataIdx fdb   0 ; link data index of loaded files
+loader.scene.routine    fdb   0
+loader.scene.fileCount  fdb   0
+linkData.currentFile    fdb   0
+linkData.currentSymbol  fdb   0
+
+; memory utils
+; --------------
+        INCLUDE   "new-engine/memory/malloc/tlsf.asm"
+        INCLUDE   "new-engine/memory/malloc/tlsf-realloc.asm"
+        INCLUDE   "new-engine/memory/memcpy/memcpy.asm"
 
 ;-----------------------------------------------------------------
 ; loader.scene.loadDefault
@@ -197,24 +219,6 @@ loader.file.malloc
 ; 3 different entry types can be combined in a scene.
 ; endmarker is type: %00
 ;-----------------------------------------------------------------
-
-; scene structure
-; ---------------
-scene.header STRUCT
-type     rmb 0
-nbfiles  rmb types.WORD   ; [00]                     - [00:endmarker, 01:list of dest and id, 10:ajdacent dest and list of id, 11:adjacent dest and id]
-                          ; [00 000] [0000 000]      - [nb files]
-        ENDSTRUCT
-
-scene   STRUCT
-page     rmb types.BYTE   ; [0000 000]               - [page]
-address  rmb types.WORD   ; [0000 000] [0000 000]    - [dest address]
-fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
-        ENDSTRUCT
-
-loader.scene.routine   fdb 0
-loader.scene.fileCount fdb 0
-
 loader.scene.apply
         ; parse scene data and load dir/files
         pshs  b,x,u
@@ -273,7 +277,6 @@ loader.scene.apply.type01
 ; dest addr
 ; file id - n times (for each file)
 ;-----------------------------------------------------------------
-
 loader.scene.apply.type10
         ldd   scene.header.nbfiles,y
         leay  sizeof{scene.header},y
@@ -324,7 +327,6 @@ loader.scene.apply.type10
 ; dest addr
 ; start file id
 ;-----------------------------------------------------------------
-
 loader.scene.apply.type11
         ldd   scene.header.nbfiles,y
         leay  sizeof{scene.header},y
@@ -390,7 +392,6 @@ loader.scene.apply.type11
 ;---------------------------------------
 ; Load directory entries
 ;---------------------------------------
-
 loader.dir.load
         sta   >diskId             ; Save desired directory id for later check
         ldu   >loader.dir
@@ -612,7 +613,6 @@ sclist  fcb   $01,$0f,$0d,$0b
 ;
 ; X : [ptr to ascii string]
 ;---------------------------------------
-
 * Display error message
 err     ldu   #messloc           ; Location
         bsr   err2               ; Display location
@@ -956,7 +956,6 @@ linkData.content.intern.skip
 ;---------------------------------------
 ; relocate file binary with link data
 ;---------------------------------------
-
 loader.file.intern.link
         pshs  d,x,u
 
@@ -994,7 +993,6 @@ loader.file.intern.link
 ;---------------------------------------
 ; resolve external 8 bits symbols
 ;---------------------------------------
-
 loader.file.extern8.link
         pshs  d,x,u
 
@@ -1032,7 +1030,6 @@ loader.file.extern8.link
 ;---------------------------------------
 ; resolve external 16 bits symbols
 ;---------------------------------------
-
 loader.file.extern16.link
         pshs  d,x,u
 
@@ -1060,8 +1057,6 @@ loader.file.extern16.link
         puls  d,x,u,pc
 
 
-linkData.currentFile fdb 0
-linkData.currentSymbol fdb 0
 linkData.symbol.search
         pshs  y,u
         ; parse each file of loader.file.linkDataIdx

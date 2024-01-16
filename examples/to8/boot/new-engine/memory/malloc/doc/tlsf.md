@@ -53,10 +53,10 @@ Un gestionnaire apporte cependant plus de souplesse au programme, il lui permett
 - de charger des données dont il ne connait pas la taille à l'avance, sans surconsommer la mémoire
 
 L'organisation mémoire recommandée est décrite dans le diagramme suivant. Elle permet de mutualiser l'espace mémoire libre entre la pile et le tas.   
-![](doc/image/stack-heap.png)
+![](image/stack-heap.png)
 
 Dans le cas de programmes nécessitant une plus grande quantité de mémoire, il peut être pertinent de stocker le tas dans une page mémoire dédiée. Dans ce cas l'organisation serait la suivante :   
-![](doc/image/stack-heap-2.png)
+![](image/stack-heap-2.png)
 
 *Contrainte*
 - L'appel à une routine d'allocation ou de desallocation a un coût non négligeable.
@@ -73,8 +73,8 @@ Les résultats obtenus en terme de fragmentation mémoire sont proches d'une sol
 Je vous invite à consulter les documents ci dessous pour une explication détaillée des différents types de gestionnaire d'allocation mémoire et une présentation de TLSF.
 
 *Publications*
-- [A constant-time dynamic storage allocator for real-time systems.](doc/paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
-- [Implementation of a constant-time dynamic storage allocator.](doc/paper/spe_2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Software: Practice and Experience. Volume 38 Issue 10, Pages 995 - 1026. 2008.
+- [A constant-time dynamic storage allocator for real-time systems.](paper/jrts2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Real-Time Systems. Volume 40, Number2 / Nov 2008. Pp 149-179 ISSN: 0922-6443.
+- [Implementation of a constant-time dynamic storage allocator.](paper/spe_2008.pdf) Miguel Masmano, Ismael Ripoll, et al. Software: Practice and Experience. Volume 38 Issue 10, Pages 995 - 1026. 2008.
 
 ### Principe de fonctionnement
 
@@ -103,7 +103,7 @@ Voici une vue globale des données mises en oeuvre dans notre impémentation, n'
 
 On retrouve dans cet exemple un emplacement mémoire déjà alloué et deux emplacements libres, chacun d'une taille équivalente (entre 7936 et 8191 octets inclus), ce qui explique qu'ils soient référencés dans la même liste chainée.
 
-![](doc/image/index-full.png)
+![](image/index-full.png)
 
 
 #### Stockage des données dans le *memory pool*
@@ -126,7 +126,7 @@ Un emplacement libre a une taille minimum de 4 octets, cela permet de transforme
 
 L'espace libre ou alloué est localisé à la suite des entêtes d'emplacement.
 
-![](doc/image/header.png)
+![](image/header.png)
 
 Les implémentations de TLSF pour les processeurs 32bits ou plus peuvent utiliser un positionnement du bit de type d'emplacement en début de mot et non en fin (comme proposé ici). Cette solution est pertinente dans le cas où il est nécessaire de garantir un alignement des données (mots de 4 octets par exemple). Cela permet de libérer deux bits non significatifs en début du mot.   
 Dans l'implémentation proposée pour le 6809, l'utilisation du bit de signe est préférable car cela permet un test plus rapide du type d'emplacement. D'autre part cela permet de conserver une allocation à l'octet près (au dela du minimum de 4).
@@ -146,7 +146,7 @@ _______ ____
 L'indexation de premier niveau (fl) s'effectue par classement de la taille de l'emplacement (minimun 4) par puissance de 2 en 13 niveaux, de fl=3 à fl=15.   
 
 Le tableau ci dessous présente les tailles d'emplacement indexées par chaque valeur de premier niveau (fl).   
-![](doc/image/fl-sizes.png)
+![](image/fl-sizes.png)
 
 Ce résultat est obtenu en effectuant deux opérations :
 - un appel à la routine Bit Scan Reverse, qui va effectuer le calcul de la position du bit le plus significatif dans la taille de l'emplacement (valeur fl).
@@ -203,5 +203,5 @@ Les valeurs sont donc :
 Le tableau ci dessous représente chaque couple fl/sl possible. Pour chaque couple on stocke un départ de liste chainée. Cette liste chainée ne contient que des emplacements libres dont la taille minimum est indiquée dans le tableau (la taille maximum n'est pas représentée pour plus de lisibilité, elle correspond à la valeur de la cellule suivante-1).   
 Remarque : sont présentés en vert les cas particuliers pour lesquels une indexation exacte a lieu (pas de plage de valeurs).
 
-![](doc/image/head-matrix.png)
-![](doc/image/index.png)
+![](image/head-matrix.png)
+![](image/index.png)
