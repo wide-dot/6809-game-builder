@@ -35,7 +35,7 @@ tlsf.realloc
         ; determines the strategy for realloc
         ; based on the physical state of memory
         ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
-        addd  #1                             ; size is stored as size-1
+        addd  #1                             ; get actual block size, size is stored as size-1
         cmpd  ,s                             ; Get requested size
         bne   >
             puls  d,x,y,pc                   ; nothing to do ... this is the actual size
@@ -45,49 +45,56 @@ tlsf.realloc
             bhs   >
                 puls  d,x,y,pc               ; nothing to do ... requested size is lower but does not allow a new block (need a minimum size)
 !       jmp   tlsf.realloc.shrink
-!       leax  d,u                            ; X is now a ptr to next physical block
-        ldd   tlsf.blockHdr.size,x
+!       leax  d,u                            ; X is now a ptr to next physical block header
+        beq   tlsf.realloc.do                ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
+        cmpx  tlsf.memoryPool.end
+        bhs   tlsf.realloc.do                ; branch if no next physical block (beyond memorypool)
+        tst   tlsf.blockHdr.size,x
         bpl   tlsf.realloc.do                ; branch if next physical block is not free
+        addd  tlsf.blockHdr.size,x           ; add to actual size, the size of next free block
+        addd  #tlsf.BHDR_OVERHEAD+1          ; available size takes header in account in case of merge, size is stored as size-1
         anda  #^tlsf.mask.FREE_BLOCK         ; unset free block bit
-        addd  #tlsf.BHDR_OVERHEAD+1          ; size is stored as size-1
-        cmpd  ,s                             ; compare free size with requested size
-        blo   tlsf.realloc.do                ; branch if next physical block does not have enough space
-        jmp   tlsf.realloc.growth            ; branch if next physical block fits
+        subd  ,s                             ; substract requested size
+        cmpd  #0                             ; is the free space enough ?
+        bmi   tlsf.realloc.do                ; branch if next physical block does not have enough space
+        jmp   tlsf.realloc.growth            ; branch if next physical block fits, [d] is the remaining free memory bytes
 
 
 ;-----------------------------------------------------------------
 ; tlsf.realloc.do
+;
+; input  REG : [U] ptr to current physical block
 ;-----------------------------------------------------------------
 ; Make a realloc by doing a free/malloc
 ; Data is copied
 ;-----------------------------------------------------------------
 tlsf.realloc.do
-        ldd   tlsf.blockHdr.prev,u           ; Saves 4 bytes that will otherwise be lost
-        std   @data12                        ; when changing occupied block to free
-        ldd   tlsf.blockHdr.next,u
+        ldd   tlsf.blockHdr.prev-tlsf.BHDR_OVERHEAD,u ; Saves 4 bytes that will otherwise be lost
+        std   @data12                                 ; when changing occupied block to free
+        ldd   tlsf.blockHdr.next-tlsf.BHDR_OVERHEAD,u
         std   @data34
-        stu   @start                         ; Saves data location for later copy
+        stu   @start                                  ; Saves data location for later copy
         ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
-        addd  #1-4                           ; size is stored as size-1, get rid of the 4 bytes already copied
+        addd  #1-4                                    ; size is stored as size-1, get rid of the 4 bytes already copied
         std   @size
 ;
         jsr   tlsf.free
-        ldd   ,s                             ; Get requested size
+        ldd   ,s                                      ; Get requested size
         jsr   tlsf.malloc
 ;
         ; move data to newly allocated space
-        leay  ,u                             ; [y] destination set with returned malloc value
-        ldd   #0                             ; first 4 bytes are special case
+        leay  ,u                                      ; [y] destination set with returned malloc value
+        ldd   #0                                      ; first 4 bytes are special case
 @data12 equ   *-2
         std   ,y++
         ldd   #0
 @data34 equ   *-2
         std   ,y++
 ;
-        ldu   #0                             ; [u] source
+        ldu   #0                                      ; [u] source
 @start  equ   *-2
         leau  4,u
-        ldd   #0                             ; [d] remaining size to copy
+        ldd   #0                                      ; [d] remaining size to copy
 @size   equ   *-2
         beq   @rts
         jsr   memcpy.uyd
@@ -96,6 +103,8 @@ rts     puls  d,x,y,pc
 
 ;-----------------------------------------------------------------
 ; tlsf.realloc.shrink
+;
+; input  REG : [U] ptr to current physical block
 ;-----------------------------------------------------------------
 ; Make a realloc by reducing current block size
 ; Data stays in place
@@ -116,9 +125,53 @@ tlsf.realloc.shrink
 
 ;-----------------------------------------------------------------
 ; tlsf.realloc.growth
+;
+; input  REG : [U] ptr to current physical block
+; input  REG : [X] ptr to next physical block header
+; input  REG : [D] size of remaining bytes in next physical block
 ;-----------------------------------------------------------------
 ; Make a realloc by enlarging current block size
 ; Data stays in place
 ;-----------------------------------------------------------------
 tlsf.realloc.growth
+
+        std   @freeSize
+
+        ; remove following free block from index
+        ldd   tlsf.blockHdr.size,x
+        pshs  x,u
+        jsr   tlsf.mappingFreeBlock                  ; compute fl/sl index of next physical free block
+        ldx   ,s
+        jsr   tlsf.removeBlock                       ; remove it from list and index
+        puls  x,u
+
+        ; check room for a new free block
+        ldd   #0
+@freeSize equ *-2
+        cmpd  #sizeof{tlsf.blockHdr}
+        bhs   >                                      ; branch if enough room to build a new free block
+        addd  ,s                                     ; add requested size
+        std   tlsf.blockHdr.size-lsf.BHDR_OVERHEAD,u ; update size of currently allocated block
+        puls  d,x,y,pc                               ; return
+!
+        ; create a new free block
+        ldd   ,s                                     ; get requested size
+        addd  #lsf.BHDR_OVERHEAD                     ; add overhead of block
+        leax  d,u                                    ; [x] is now ptr to new free block header to create
+        stu   tlsf.blockHdr.prev.phys,x              ; link new free block with previous physical
+        ldd   @freeSize
+        subd  #tlsf.BHDR_OVERHEAD+1
+        ora   #tlsf.mask.FREE_BLOCK
+        std   tlsf.blockHdr.size,x                   ; store size of new free block
+        stx   tlsf.insertBlock.location              ; setup parameter for block insertion
+        ldd   @freesize
+        leay  d,x                                    ; Y is now a ptr to next physical of free block
+        beq   @nonext                                ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
+            cmpy  tlsf.memoryPool.end
+            bhs   @nonext                            ; branch if no next of next physical block (beyond memorypool)
+                stx   tlsf.blockHdr.prev.phys,y      ; update the physical link
+@nonext
+        ldd   tlsf.blockHdr.size,x
+        jsr   tlsf.mappingFreeBlock
+        jsr   tlsf.insertBlock
         puls  d,x,y,pc
