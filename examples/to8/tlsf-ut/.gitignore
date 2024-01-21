@@ -1,0 +1,7 @@
+*.fd
+*.sd
+*.sap
+*.hfe
+**/dist/
+**/build/
+**/generated-source/

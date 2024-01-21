@@ -93,7 +93,7 @@ public class Processor {
 				asmFile = files.get(0);
 			} else {
 				// multiple files, use temp file with timestamp name 
-				asmFilename = path + File.separator + Settings.values.get("generate.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
+				asmFilename = path + File.separator + Settings.values.get("generate.unnamedFiles.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
 				asmFile = concat(files, asmFilename);
 			}
 		}
@@ -111,6 +111,7 @@ public class Processor {
 		boolean append = false;
 		for (File file : files) {
 			String fileStr = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+			fileStr += System.lineSeparator();
 			FileUtils.write(asmFile, fileStr, StandardCharsets.UTF_8, append);
 			append = true;
 		}	

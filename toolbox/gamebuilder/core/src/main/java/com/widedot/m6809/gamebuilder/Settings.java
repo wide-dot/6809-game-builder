@@ -13,7 +13,7 @@ public class Settings {
     public static PluginLoader pluginLoader;
     public static EmbeddedPluginLoader embededPluginLoader;
     
-    private static String[] mandatoryKeys = new String[]{"build.dir", "build.dir.tag", "plugin.dir", "plugin.package"};
+    private static String[] mandatoryKeys = new String[]{"build.dir", "build.dir.tag", "plugin.dir", "plugin.package", "generate.dir", "dist.dir", "direntry.zx0.delta"};
     
     public static boolean isValid() {
     	

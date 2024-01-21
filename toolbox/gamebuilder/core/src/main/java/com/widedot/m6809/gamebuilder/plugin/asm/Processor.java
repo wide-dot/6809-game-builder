@@ -23,9 +23,9 @@ public class Processor {
 		String content = (String) node.getValue();
 		
 		if (content != null) {
-			filename = path + File.separator + Settings.values.get("generate.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
+			filename = path + File.separator + Settings.values.get("generate.unnamedFiles.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
 			file = new File(filename);
-			FileUtils.write(file, content+System.lineSeparator(), StandardCharsets.UTF_8, false);
+			FileUtils.write(file, content, StandardCharsets.UTF_8, false);
 		} else {
 			filename = path + File.separator + Attribute.getString(node, defaults, "filename", "asm.filename");
 			file = new File(filename);
