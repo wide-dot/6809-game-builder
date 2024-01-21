@@ -81,7 +81,7 @@ public class Processor {
 		
 		// set default generated source filename if specified
 		if (gensource != null) {
-			asmFilename = path + File.separator + Settings.values.get("generate.dir") + File.separator + gensource;
+			asmFilename = path + File.separator + gensource;
 			asmFile = concat(files, asmFilename);
 			
 		} else {

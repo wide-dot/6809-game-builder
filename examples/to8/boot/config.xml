@@ -7,7 +7,7 @@
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
-            <directory id="0" section="INDEX" genbinary="src/directories/00/directory.bin" gensymbols="src/directories/00/entries.asm"> <!--genbinary is optional-->
+            <directory id="0" section="INDEX" genbinary="gen/directories/00/directory.bin" gensymbols="gen/directories/00/entries.asm"> <!--genbinary is optional-->
                 <default name="direntry.section"      value="DATA"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
@@ -26,7 +26,7 @@
 
                 <direntry name="scenes.title" section="SCENE">
                     <lwasm format="raw">
-                        <asm filename="src/directories/00/entries.asm"/>
+                        <asm filename="gen/directories/00/entries.asm"/>
                         <asm filename="src/scenes/title/scene-type-01.asm"/>
                     </lwasm>
                 </direntry>
@@ -41,8 +41,8 @@
             <define symbol="boot.CHECK_MEMORY_EXT"/>                             <!-- throw an error at boot if memory ext. is not detected -->
 
             <data section="LOADER">
-                <lwasm format="raw" gensource="new-engine/system/to8/bootloader/loader.asm">
-                    <asm filename="src/directories/00/entries.asm"/>
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/00/entries.asm"/>
                     <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 5</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ 0</asm>

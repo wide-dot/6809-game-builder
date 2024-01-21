@@ -4,4 +4,4 @@
 *.hfe
 **/dist/
 **/build/
-**/generated-source/
+**/gen/

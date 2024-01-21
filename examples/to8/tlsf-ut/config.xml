@@ -7,12 +7,12 @@
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
-            <directory id="0" section="INDEX" gensymbols="src/directories/00/entries.asm">
+            <directory id="0" section="INDEX" gensymbols="gen/directories/00/entries.asm">
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="raw"/>
 
                 <direntry name="engine.memory.malloc.tlsf.ut" codec="zx0" section="DATA">
-                    <lwasm gensource="tlsf/tlsf.ut.asm">
+                    <lwasm gensource="gen/tlsf/tlsf.ut.asm">
                         <asm xml:space="preserve">        org $6100</asm>
                         <asm filename="new-engine/memory/malloc/tlsf.ut.asm"/>
                         <asm filename="new-engine/memory/malloc/tlsf.asm"/>
@@ -23,7 +23,7 @@
 
                 <direntry name="scenes.default" section="SCENE">
                     <lwasm>
-                        <asm filename="src/directories/00/entries.asm"/>
+                        <asm filename="gen/directories/00/entries.asm"/>
                         <asm filename="src/scenes/default/scene.asm"/>
                     </lwasm>
                 </direntry>
@@ -37,8 +37,8 @@
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
             <data section="LOADER">
-                <lwasm format="raw" gensource="new-engine/system/to8/bootloader/loader.asm">
-                    <asm filename="src/directories/00/entries.asm"/>
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/00/entries.asm"/>
                     <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
