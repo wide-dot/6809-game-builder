@@ -1,5 +1,5 @@
          ; type of scene
-        fdb   $4000+2                      ; [type | nb files] (0: end marker)
+        fdb   $4000+1                      ; [type | nb files] (0: end marker)
 
         ; scene data
         fcb   $01                          ; [destination - page id]
