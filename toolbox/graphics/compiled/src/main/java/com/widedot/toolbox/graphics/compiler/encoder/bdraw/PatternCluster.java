@@ -4,16 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.widedot.toolbox.graphics.compiler.encoder.bdraw.pattern.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PatternCluster{
 	// Regroupe les Patterns d'une solution en noeuds
 	// recalcul les offset dans la plage -128 +127 autour de l'adresse de chaque noeud
-
-	private static final Logger logger = LogManager.getLogger("log");
 
 	public Solution solution;
 	private List<Integer> AssignedPatterns;
@@ -170,17 +167,17 @@ public class PatternCluster{
 		for (Pattern snippet : solution.patterns) {
 			currentNode = it2.next();
 			if (oldNode != currentNode) {
-				logger.debug("");
-				logger.debug("Noeud: "+currentNode);
-				logger.debug("(index:position:offset:pattern)");
+				log.debug("");
+				log.debug("Noeud: "+currentNode);
+				log.debug("(index:position:offset:pattern)");
 				oldNode = currentNode;
 			}
 
-			logger.debug("("+i+":"+it1.next()+":"+it3.next()+":"+snippet.getClass().getSimpleName()+")");
+			log.debug("("+i+":"+it1.next()+":"+it3.next()+":"+snippet.getClass().getSimpleName()+")");
 			i++;
 		}
-		logger.debug("");
-		logger.debug("LEAS: (noeud=offset) "+solution.computedLeau);
-		logger.debug("");
+		log.debug("");
+		log.debug("LEAS: (noeud=offset) "+solution.computedLeau);
+		log.debug("");
 	}
 }

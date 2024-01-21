@@ -8,15 +8,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.widedot.m6809.util.asm.Register;
+import com.widedot.toolbox.graphics.compiler.encoder.bdraw.PatternCluster;
 import com.widedot.toolbox.graphics.compiler.encoder.draw.pattern.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SolutionOptim{
-
-	private static final Logger logger = LogManager.getLogger("log");
 
 	private int[] fact = new int[]{0, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880};
 	private int maxTries;
@@ -189,7 +187,7 @@ public class SolutionOptim{
 
 				if (score < bestScore) {
 					bestScore = score;
-					//logger.debug("score: "+score);
+					//log.debug("score: "+score);
 					bestSolution.clear();
 					bestSolution.addAll(testSolution);
 					regEBest.clear();
@@ -309,7 +307,7 @@ public class SolutionOptim{
 
 				if (score < bestScore) {
 					bestScore = score;
-					//logger.debug("score: "+score);
+					//log.debug("score: "+score);
 					bestSolution.clear();
 					bestSolution.addAll(testSolution);
 					regEBest.clear();
@@ -473,7 +471,7 @@ public class SolutionOptim{
 					nbPatterns += patterns.get(j).size();
 				}
 
-				//logger.debug("Noeud: "+currentNode+" nb. patterns: "+nbPatterns+" nb. groupes: "+ind.length);
+				//log.debug("Noeud: "+currentNode+" nb. patterns: "+nbPatterns+" nb. groupes: "+ind.length);
 
 				// Optimisation combinatoire
 				if (ind.length < combMax) {
@@ -495,19 +493,19 @@ public class SolutionOptim{
 				}
 				restoreState(regSetBest, regValBest);
 
-				//logger.debug("Cycles: "+asmCodeCycles);
+				//log.debug("Cycles: "+asmCodeCycles);
 
 				//asmECode.addAll(0, Pattern.getEraseCodeBuf(bestSolution, regEBest, offsetEBest));
 				//asmECodeCycles += Pattern.getEraseCodeBufCycles(bestSolution, regEBest, offsetEBest);
 				//asmECodeSize += Pattern.getEraseCodeBufSize(bestSolution, regEBest, offsetEBest);
 
-				//logger.debug("CyclesE: "+asmECodeCycles);
+				//log.debug("CyclesE: "+asmECodeCycles);
 			}
 
 			saveS = false;
 
 		} catch (Exception e) {
-			logger.fatal("", e);
+			log.error("", e);
 		}
 	}
 
@@ -725,7 +723,7 @@ public class SolutionOptim{
 		}
 
 		if (selectedCombi == -1) {
-			logger.fatal("Aucune combinaison de registres pour le pattern en position: "+solution.positions.get(id));
+			log.error("Aucune combinaison de registres pour le pattern en position: "+solution.positions.get(id));
 		}
 
 		// Sauvegarde de la méthode a exécuter
