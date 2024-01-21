@@ -13,7 +13,7 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven.compiler.source>11</maven.compiler.source>
 		<lombok.version>1.18.22</lombok.version>
-		<logback.version>1.2.10</logback.version>
+		<logback.version>1.2.13</logback.version>
 		<commons-lang.version>3.12.0</commons-lang.version>
 	</properties>
 
