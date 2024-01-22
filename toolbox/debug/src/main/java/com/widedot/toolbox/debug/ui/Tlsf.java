@@ -18,7 +18,7 @@ public class Tlsf {
 	private static final int GREY = ImColor.intToColor(0x80, 0x80, 0x80, 0xFF);
 	private static final int ORANGE = ImColor.intToColor(0xB5, 0x98, 0x4D, 0xFF); 
 	
-	private static ImInt page = new ImInt(15);
+	private static ImInt page = new ImInt(5);
 	private static Integer address = 0;
 	private static Integer size = 0;
 	private static final int MAP_WIDTH = 128;

@@ -656,17 +656,32 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$4000             ; Skip if
-        blo   >                  ; cartridge space
+        cmpu  #$A000             ; Skip if not data space
+        blo   >
         lda   #$10
         ora   <$6081             ; Set RAM
         sta   <$6081             ; over data
         sta   >$e7e7             ; space
         stb   >map.CF74021.DATA  ; Switch RAM page
         rts
-!       orb   #$60               ; Set RAM over cartridge space
+!
+        cmpu  #$6000             ; Skip if not resident space
+        blo   >
+        rts                      ; nothing to do ... it's resident memory
+!
+        cmpu  #$4000             ; Skip if not video space
+        blo   >
+        andb  #$01               ; Keep only half page A or B
+        orb   $E7C3              ; Merge register value
+        stb   $E7C3              ; Set desired half page in video space
+        rts
+!
+        cmpu  #$E000             ; Skip if not valid address 
+        bhs   >
+        orb   #$60               ; Set RAM over cartridge space
         stb   >map.CF74021.CART  ; Switch RAM page
         rts
+!       bra   *                  ; error trap
 
 
 ;---------------------------------------
@@ -752,7 +767,7 @@ loader.file.linkData.load
         pshs  d,x,y,u
         jsr   loader.dir.getFile
         ldb   dir.entry.bitfld,y              ; Test if load time link flag
-        cmpb  #%01000000
+        andb  #%01000000
         bne   >                               ; yes, continue
         puls  d,x,y,u,pc                      ; no, exit
 !
@@ -899,12 +914,12 @@ loader.file.link
         pshs  d,x,y,u
         ; parse each file of loader.file.linkDataIdx
         ldx   >loader.file.linkDataIdx
+        beq   @rts                            ; branch if link data has never been created
         ldd   linkData.header.occupiedSlots,x
         leax  sizeof{linkData.header},x
         std   @counter
-        bne   >
-        puls  d,x,y,u,pc
-!
+        beq   @rts                            ; branch if link data was created, but all slots were removed
+@next
         ; set RAM page to make file visible
         ldd   linkData.entry.fileId,x
         std   linkData.currentFile
@@ -917,13 +932,13 @@ loader.file.link
         jsr   linkData.content.intern.skip
         jsr   loader.file.extern8.link
         jsr   loader.file.extern16.link
-        leax  sizeof{linkData.entry},x ; move to next file
+        leax  sizeof{linkData.entry},x        ; move to next file
         ldd   #0
 @counter equ *-2
         subd  #1
         std   @counter
-        bne   <                        ; check if more file to process
-        puls  d,x,y,u,pc
+        bne   @next                           ; check if more file to process
+@rts    puls  d,x,y,u,pc
 
 
 ;---------------------------------------

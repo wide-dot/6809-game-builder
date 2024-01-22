@@ -4,14 +4,14 @@
 ; Benoit Rousseau - 02/09/2023
 ;-----------------------------------------------------------------
 
-        INCLUDE   "new-engine\math\random.asm"
-
 tlsf.ut
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingSearch
         jsr   tlsf.ut.malloc
         jsr   tlsf.ut.random
         rts
+
+        INCLUDE   "new-engine\math\random.asm"
 
 tlsf.ut.init
         ldd   #tlsf.err.return

@@ -11,9 +11,12 @@
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="raw"/>
 
-                <direntry name="engine.memory.malloc.tlsf.ut" codec="zx0" section="DATA">
+                <direntry name="fileid.tlsf.ut" codec="zx0" section="DATA">
                     <lwasm gensource="gen/tlsf/tlsf.ut.asm">
-                        <asm xml:space="preserve">        org $6100</asm>
+                        <asm xml:space="preserve">        org   $6100</asm>
+                        <asm xml:space="preserve">        INCLUDE "engine/system/to8/map.const.asm"</asm>
+                        <asm xml:space="preserve">        orb   #$65               ; Set RAM page 5 over cartridge space</asm>
+                        <asm xml:space="preserve">        stb   >map.CF74021.CART  ; Switch RAM page</asm>
                         <asm filename="new-engine/memory/malloc/tlsf.ut.asm"/>
                         <asm filename="new-engine/memory/malloc/tlsf.asm"/>
                         <asm filename="new-engine/memory/malloc/tlsf-realloc.asm"/>

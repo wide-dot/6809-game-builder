@@ -4,23 +4,14 @@
 ; Benoit Rousseau - 02/09/2023
 ;-----------------------------------------------------------------
 
-        INCLUDE   "new-engine\math\random.asm"
-
 tlsf.ut
-        ; for default settings only
-        ldb   #15                ; page number
-        lda   #$10
-        ora   <$6081             ; Set RAM
-        sta   <$6081             ; over data
-        sta   >$e7e7             ; space
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch ram page
-
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingSearch
         jsr   tlsf.ut.malloc
         jsr   tlsf.ut.random
         rts
+
+        INCLUDE   "new-engine\math\random.asm"
 
 tlsf.ut.init
         ldd   #tlsf.err.return

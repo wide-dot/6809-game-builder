@@ -4,7 +4,7 @@
         ; scene data
         fcb   $01                          ; [destination - page id]
         fdb   $6100                        ; [destination - address]
-        fdb   engine.memory.malloc.tlsf.ut ; [file id]
+        fdb   fileid.tlsf.ut               ; [file id]
 
         ; another type of scene
         ; or 0 if end
