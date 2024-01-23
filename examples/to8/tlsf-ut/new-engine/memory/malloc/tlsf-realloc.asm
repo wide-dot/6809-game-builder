@@ -64,6 +64,7 @@ tlsf.realloc
 ; tlsf.realloc.do
 ;
 ; input  REG : [U] ptr to current physical block
+; output REG : [U] new allocated memory address
 ;-----------------------------------------------------------------
 ; Make a realloc by doing a free/malloc
 ; Data is copied
@@ -81,6 +82,7 @@ tlsf.realloc.do
         jsr   tlsf.free
         ldd   ,s                                      ; Get requested size
         jsr   tlsf.malloc
+        stu   @u
 ;
         ; move data to newly allocated space
         leay  ,u                                      ; [y] destination set with returned malloc value
@@ -98,6 +100,8 @@ tlsf.realloc.do
 @size   equ   *-2
         beq   @rts
         jsr   memcpy.uyd
+        ldu   #0                                      ; restore new allocated addr in u
+@u      equ   *-2
 @rts    puls  d,x,y,pc
 
 
@@ -105,11 +109,13 @@ tlsf.realloc.do
 ; tlsf.realloc.shrink
 ;
 ; input  REG : [U] ptr to current physical block
+; output REG : [U] unchanged allocated memory address
 ;-----------------------------------------------------------------
 ; Make a realloc by reducing current block size
 ; Data stays in place
 ;-----------------------------------------------------------------
 tlsf.realloc.shrink
+        stu   @u
         ; split existing block in two parts (one occupied, one free)
         leax  ,u                                           ; x is block to shrink
         ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,x      ; load size-1 of data block
@@ -120,6 +126,8 @@ tlsf.realloc.shrink
         std   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u      ; set size of new block
         stx   tlsf.blockHdr.prev.phys-tlsf.BHDR_OVERHEAD,u ; set previous physical block of new block
         jsr   tlsf.free
+        ldu   #0                                           ; restore allocated addr in u
+@u      equ   *-2
         puls  d,x,y,pc
 
 
@@ -129,12 +137,13 @@ tlsf.realloc.shrink
 ; input  REG : [U] ptr to current physical block
 ; input  REG : [X] ptr to next physical block header
 ; input  REG : [D] size of remaining bytes in next physical block
+; output REG : [U] unchanged allocated memory address
 ;-----------------------------------------------------------------
 ; Make a realloc by enlarging current block size
 ; Data stays in place
 ;-----------------------------------------------------------------
 tlsf.realloc.growth
-
+        stu   @u
         std   @freeSize
 ;
         ; remove following free block from index
@@ -174,4 +183,6 @@ tlsf.realloc.growth
         ldd   tlsf.blockHdr.size,x
         jsr   tlsf.mappingFreeBlock
         jsr   tlsf.insertBlock
+        ldu   #0                                      ; restore allocated addr in u
+@u      equ   *-2
         puls  d,x,y,pc

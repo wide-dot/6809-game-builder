@@ -10,6 +10,7 @@ tlsf.ut
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingSearch
         jsr   tlsf.ut.malloc
+        jsr   tlsf.ut.realloc
         jsr   tlsf.ut.random
         rts
 
@@ -236,6 +237,81 @@ tlsf.ut.malloc
         beq   <
         bra   *
 @rts    rts
+
+tlsf.ut.realloc
+        clr   tlsf.err
+        ldd   #$20
+        jsr   tlsf.malloc              ; allocate a temp block
+        stu   @u0
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #$4000-$20-tlsf.BHDR_OVERHEAD-tlsf.BHDR_OVERHEAD
+        jsr   tlsf.malloc
+        stu   @u1
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ; [u] contain address of allocated memory
+        ldd   #$2000
+        clr   tlsf.err
+        jsr   tlsf.realloc             ; test case : shrink to a specific size
+        lda   tlsf.err
+        beq   >
+        cmpu  @u1
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #1
+        jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4
+        lda   tlsf.err
+        beq   >
+        cmpu  @u1
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #0
+        jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4
+        lda   tlsf.err
+        beq   >
+        cmpu  @u1
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #$1000
+        jsr   tlsf.realloc             ; test case : growth
+        lda   tlsf.err
+        beq   >
+        cmpu  @u1
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #$4000-$20-tlsf.BHDR_OVERHEAD-$1000-tlsf.BHDR_OVERHEAD-tlsf.BHDR_OVERHEAD ; allocate full memory
+        jsr   tlsf.malloc
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ldu   @u0
+        jsr   tlsf.free                ; free temp block
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ldd   #$1020+tlsf.BHDR_OVERHEAD
+        jsr   tlsf.realloc             ; test case : free+malloc in place (growth on top with copy)
+        lda   tlsf.err
+        beq   >
+        cmpu  @u1
+        beq   >
+        bra   * ; error trap
+!
+        rts
+@u0     fdb   0
+@u1     fdb   0
+@u2     fdb   0
 
 tlsf.ut.random
         ; init allocator
