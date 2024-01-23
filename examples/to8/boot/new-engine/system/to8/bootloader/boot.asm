@@ -12,49 +12,49 @@
 
 ; Disk boot
         org    $6200
-        setdp  $60
+        setdp  map.REG.DP
 
 ; Freeze interrupts
         orcc  #$50
 
 ; Check computer type
-        leax  <mess1,pcr         ; Error message
-        ldd   #$0260             ; Load code
-        cmpa  >$fff0             ; Check machine code
-        bhs   err                ; Error if not TO+
+        leax  <mess1,pcr          ; Error message
+        lda   #$02                ; Load code
+        cmpa  >$fff0              ; Check machine code
+        bhs   err                 ; Error if not TO+
 
 ; Check computer memory
         IFDEF boot.CHECK_MEMORY_EXT
-        ldx   #mess2             ; Error message
+        ldx   #mess2              ; Error message
         lda   #$10
         sta   map.CF74021.DATA
         ldu   #$A000
         lda   #$55
         sta   ,u
         cmpa  ,u
-        bne   err                ; Error if no memory ext.
+        bne   err                 ; Error if no memory ext.
         ENDC
 
 ; Load loader sectors
- IFGE loader.ADDRESS-$A000       ; Skip if not data space
+ IFGE loader.ADDRESS-$A000        ; Skip if not data space
         lda   #$10
-        ora   <$6081             ; Set RAM
-        sta   <$6081             ; over data
-        sta   >$e7e7             ; space
-        ldb   #loader.PAGE       ; Load RAM page
-        stb   >map.CF74021.DATA  ; Switch RAM page
+        ora   <map.CF74021.SYS1.R ; Set RAM
+        sta   <map.CF74021.SYS1.R ; over data
+        sta   >map.CF74021.SYS1   ; space
+        ldb   #loader.PAGE        ; Load RAM page
+        stb   >map.CF74021.DATA   ; Switch RAM page
  ELSE
-  IFGE loader.ADDRESS-$6000      ; Skip if not resident space
+  IFGE loader.ADDRESS-$6000       ; Skip if not resident space
   ELSE
    IFGE loader.ADDRESS-$4000      ; Skip if not video space
-        ldb   #loader.PAGE       ; Load RAM page
-        andb  #$01               ; Keep only half page A or B
-        orb   $E7C3              ; Merge register value
-        stb   $E7C3              ; Set desired half page in video space
+        ldb   #loader.PAGE        ; Load RAM page
+        andb  #$01                ; Keep only half page A or B
+        orb   map.MC6846.PRC      ; Merge register value
+        stb   map.MC6846.PRC      ; Set desired half page in video space
    ELSE
-        ldb   #loader.PAGE       ; Load RAM page
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch RAM page
+        ldb   #loader.PAGE        ; Load RAM page
+        orb   #$60                ; Set RAM over cartridge space
+        stb   >map.CF74021.CART   ; Switch RAM page
    ENDC
   ENDC
  ENDC

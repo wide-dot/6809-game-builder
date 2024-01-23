@@ -4,6 +4,8 @@
 ; Benoit Rousseau - 02/09/2023
 ;-----------------------------------------------------------------
 
+
+
 tlsf.ut
         jsr   tlsf.ut.init
         jsr   tlsf.ut.mappingSearch
@@ -18,7 +20,7 @@ tlsf.ut.init
         std   tlsf.err.callback        ; routine to call when tlsf raise an error
 
         ldd   #$0001                   ; only 1 byte is not enough for header info
-        ldx   #$1111
+        ldx   #$1111+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
         lda   tlsf.err
         cmpa  #tlsf.err.init.MIN_SIZE
@@ -27,7 +29,7 @@ tlsf.ut.init
 !       clr   tlsf.err
 
         ldd   #$0008                   ; with 4 bytes as headroom, make only 4 bytes available for a malloc
-        ldx   #$1111
+        ldx   #$1111+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
         lda   tlsf.err
         beq   >
@@ -43,7 +45,7 @@ tlsf.ut.init
         bne   *
 
         ldd   #$8004                   ; maximum allowed allocation for this tlsf implementation (with header)
-        ldx   #$2222
+        ldx   #$2222+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
         lda   tlsf.err
         beq   >
@@ -59,7 +61,7 @@ tlsf.ut.init
         bne   *
 
         ldd   #$8005                   ; over the maximum allowed allocation for this tlsf implementation (with header)
-        ldx   #$1111
+        ldx   #$1111+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
         lda   tlsf.err
         cmpa  #tlsf.err.init.MAX_SIZE
@@ -238,7 +240,7 @@ tlsf.ut.malloc
 tlsf.ut.random
         ; init allocator
         ldd   #$4000
-        ldx   #$0000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
 
         ldd   #tlsf.ut.random.free
@@ -260,8 +262,13 @@ tlsf.ut.random.malloc.switch
         andb  #%11111111
         addd  #1
         jsr   tlsf.malloc
-        cmpu  #$4000
+ IFEQ tlsf.ut.MEMORY_POOL-$C000
+        cmpu  #tlsf.ut.MEMORY_POOL     ; special case, when $4000 memory pool is at the end of RAM
+        blo   @exit
+ ELSE
+        cmpu  #$4000+tlsf.ut.MEMORY_POOL
         bhs   @exit
+ ENDC
         ldx   #allocRefs
         stu   1234,x
 @d      equ   *-2

@@ -88,7 +88,8 @@ map.KTST            equ $E809
 map.DKCO            equ $E82A ; read or write floppy disk routine
 map.IRQ.EXIT        equ $E830 ; to exit an irq
 
-; system variables
+; system monitor registers
+map.REG.DP          equ $20   ; direct page for system monitor registers
 map.STATUS          equ $6019 ; status bitfield
 map.DK.OPC          equ $6048 ; operation
 map.DK.DRV          equ $6049 ; drive
