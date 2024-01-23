@@ -3,19 +3,27 @@
 * ----------
 * Routine to instanciate objects based on a 16bit meter
 * expected data sequence :
-* AAAA (timestamp) BB (id objet) CC (subtype) DDDD (x_pos) EEEE (y_pos) 
+* AAAA (time meter) BB (id objet) CC (subtype) DDDD (x_pos) EEEE (y_pos) 
 * end marker : $FFFF
 * ---------------------------------------------------------------------------
 
-ObjectWave
+; -----------------------------------------------------------------------------
+; objectWave.do
+; -----------------------------------------------------------------------------
+; input  REG : [X] time
+; -----------------------------------------------------------------------------
+; load objects when time is elapsed
+; -----------------------------------------------------------------------------
+objectWave.do
         lda   #0
-object_wave_data_page equ *-1          ; wave data page
+objectWave.data.page equ *-1           ; wave data page
         _SetCartPageA
         ldy   #0
-object_wave_data equ *-2               ; current position in wave data
-        ldx   glb_camera_x_pos
+objectWave.data.cursor equ *-2         ; current position in wave data
 !       cmpx  ,y
-        bls   @rts
+        blo   @rts
+        cmpx  #$FFFF
+        beq   @rts                     ; end marker
         pshs  x,y
         jsr   LoadObject_u
         puls  x,y                      ; puls does not change zero
@@ -28,20 +36,27 @@ object_wave_data equ *-2               ; current position in wave data
         std   y_pos,u
 @bypass leay  8,y
         bra   <
-@rts    sty   object_wave_data
+@rts    sty   objectWave.data.cursor
         rts
 
-ObjectWave_Init
-        pshs  a,x,y
-        lda   object_wave_data_page
+; -----------------------------------------------------------------------------
+; objectWave.init
+; -----------------------------------------------------------------------------
+; input  REG : [A] data page
+; input  REG : [X] data address
+; input  REG : [X] time
+; -----------------------------------------------------------------------------
+; move to desired position in wave
+; -----------------------------------------------------------------------------
+objectWave.init
+        sta   objectWave.data.page
         _SetCartPageA
-        ldy   object_wave_data_start
-        ldx   glb_camera_x_pos
+        sty   objectWave.data.address
 !       cmpx  ,y
-        bls   @end
+        blo   @end
         leay  8,y
         bra   <
-@end    sty   object_wave_data
-        puls  a,x,y,pc
+@end    sty   objectWave.data.cursor
+        rts
 
-object_wave_data_start fdb 0
+objectWave.data.address fdb 0

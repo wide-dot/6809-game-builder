@@ -4,7 +4,7 @@
 ; system addresses
 
 ; mc6846
-map.MC6846.CSR      equ $E7C0
+map.MC6846.CSR      equ $E7C0 ; (bit2) set mute
 map.MC6846.CRC      equ $E7C1
 map.MC6846.DDRC     equ $E7C2
 map.MC6846.PRC      equ $E7C3 ; (bit0) set half ram page 0 (low or high) in video area ($4000-$5FFF)
@@ -58,11 +58,19 @@ map.EF5860.TX       equ $E7F3 ; MIDI
  ifndef SOUND_CARD_PROTOTYPE
 map.YM2413.A        equ $E7FC
 map.YM2413.D        equ $E7FD
+ ifndef SN76489_JUMPER_LOW
 map.SN76489.D       equ $E7F7
+ else
+map.SN76489.D       equ $E7F6
+ endc
  else
 map.YM2413.A        equ $E7FC
 map.YM2413.D        equ $E7FD
+ ifndef SN76489_JUMPER_LOW
 map.SN76489.D       equ $E7FF
+ else
+map.SN76489.D       equ $E7FE
+ endc
  endc
 map.MEA8000.D       equ $E7FE
 map.MEA8000.A       equ $E7FF
