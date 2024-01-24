@@ -239,6 +239,11 @@ tlsf.ut.malloc
 @rts    rts
 
 tlsf.ut.realloc
+        ; init allocator
+        ldd   #$4000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
+        jsr   tlsf.init
+
         clr   tlsf.err
         ldd   #$20
         jsr   tlsf.malloc              ; allocate a temp block
@@ -247,7 +252,7 @@ tlsf.ut.realloc
         beq   >
         bra   * ; error trap
 !
-        ldd   #$4000-$20-tlsf.BHDR_OVERHEAD-tlsf.BHDR_OVERHEAD
+        ldd   #$3DFF                   ; maximum allowed size here, due to indexation of free block (see steps in chart)
         jsr   tlsf.malloc
         stu   @u1
         lda   tlsf.err
@@ -288,7 +293,7 @@ tlsf.ut.realloc
         beq   >
         bra   * ; error trap
 !
-        ldd   #$4000-$20-tlsf.BHDR_OVERHEAD-$1000-tlsf.BHDR_OVERHEAD-tlsf.BHDR_OVERHEAD ; allocate full memory
+        ldd   #$2DFF                   ; allocate near full memory
         jsr   tlsf.malloc
         lda   tlsf.err
         beq   >
@@ -300,7 +305,7 @@ tlsf.ut.realloc
         beq   >
         bra   * ; error trap
 !
-        ldd   #$1020+tlsf.BHDR_OVERHEAD
+        ldd   #$1023                   ; not 1024, request are always one fl/sl index lower than available
         jsr   tlsf.realloc             ; test case : free+malloc in place (growth on top with copy)
         lda   tlsf.err
         beq   >

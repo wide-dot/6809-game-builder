@@ -111,22 +111,26 @@ tlsf.realloc.do
 ; input  REG : [U] ptr to current physical block
 ; output REG : [U] unchanged allocated memory address
 ;-----------------------------------------------------------------
-; Make a realloc by reducing current block size
+; Make a realloc by reducing current block size, and making a new
+; free block.
 ; Data stays in place
 ;-----------------------------------------------------------------
 tlsf.realloc.shrink
         stu   @u
-        ; split existing block in two parts (one occupied, one free)
-        leax  ,u                                           ; x is block to shrink
-        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,x      ; load size-1 of data block
+        leax  -tlsf.BHDR_OVERHEAD,u                        ; x is now block to shrink (header)
+        ldd   ,s                                           ; get requested size
+        leau  d,u                                          ; set u to new block location (header)
+        ldd   tlsf.blockHdr.size,x                         ; load size-1 of data block
         subd  ,s                                           ; substract requested size
-        addd  #1                                           ; size is stored as -1
-        leau  d,x                                          ; set u to new block location (data)
-        subd  #tlsf.BHDR_OVERHEAD+1                        ; substract new header size and size is stored as -1
-        std   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u      ; set size of new block
-        stx   tlsf.blockHdr.prev.phys-tlsf.BHDR_OVERHEAD,u ; set previous physical block of new block
+        subd  #tlsf.BHDR_OVERHEAD                          ; substract new block overhead
+        std   tlsf.blockHdr.size,u                         ; set size of new block
+        stx   tlsf.blockHdr.prev.phys,u                    ; set previous physical block of new block
+        ldd   ,s                                           ; get requested size
+        subd  #1                                           ; size is stored as -1
+        std   tlsf.blockHdr.size,x                         ; update shrinked bock to requested size
+        leau  tlsf.BHDR_OVERHEAD,u                         ; set input parameter for free routine: block (data) location
         jsr   tlsf.free
-        ldu   #0                                           ; restore allocated addr in u
+        ldu   #0                                           ; return unchanged allocated addr in u
 @u      equ   *-2
         puls  d,x,y,pc
 

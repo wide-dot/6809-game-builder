@@ -290,7 +290,7 @@ tlsf.rsize  equ *-2                          ; requested memory size
             ldd   tlsf.blockHdr.size,x      ; load parameter for mapping routine
             anda  #^tlsf.mask.FREE_BLOCK    ; must update the following block to the new previous physical block
             addd  #tlsf.BHDR_OVERHEAD+1     ; size is stored as size-1
-            leay  d,x                       ; X is now a ptr to next physical of next physical (from deallocated block)
+            leay  d,x                       ; Y is now a ptr to next physical of next physical (from deallocated block)
             beq   @nonext                   ; branch if end of memory (when memory pool goes up to the end of addressable 16bit memory)
                 cmpy  tlsf.memoryPool.end
                 bhs   @nonext               ; branch if no next of next physical block (beyond memorypool)
