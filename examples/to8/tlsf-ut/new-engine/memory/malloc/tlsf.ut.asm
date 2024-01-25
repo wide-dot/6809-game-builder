@@ -245,7 +245,7 @@ tlsf.ut.realloc
         jsr   tlsf.init
 
         clr   tlsf.err
-        ldd   #$20
+        ldd   #$100
         jsr   tlsf.malloc              ; allocate a temp block
         stu   @u0
         lda   tlsf.err
@@ -262,7 +262,7 @@ tlsf.ut.realloc
         ; [u] contain address of allocated memory
         ldd   #$2000
         clr   tlsf.err
-        jsr   tlsf.realloc             ; test case : shrink to a specific size
+        jsr   tlsf.realloc             ; test case : shrink to a specific size (tlsf.realloc.shrink)
         lda   tlsf.err
         beq   >
         cmpu  @u1
@@ -270,7 +270,7 @@ tlsf.ut.realloc
         bra   * ; error trap
 !
         ldd   #1
-        jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4
+        jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4 (tlsf.realloc.shrink)
         lda   tlsf.err
         beq   >
         cmpu  @u1
@@ -278,7 +278,7 @@ tlsf.ut.realloc
         bra   * ; error trap
 !
         ldd   #0
-        jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4
+        jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4 (tlsf.realloc.shrink), size is identical, return
         lda   tlsf.err
         beq   >
         cmpu  @u1
@@ -286,7 +286,7 @@ tlsf.ut.realloc
         bra   * ; error trap
 !
         ldd   #$1000
-        jsr   tlsf.realloc             ; test case : growth
+        jsr   tlsf.realloc             ; test case : growth (tlsf.realloc.growth)
         lda   tlsf.err
         beq   >
         cmpu  @u1
@@ -305,8 +305,9 @@ tlsf.ut.realloc
         beq   >
         bra   * ; error trap
 !
-        ldd   #$1023                   ; not 1024, request are always one fl/sl index lower than available
-        jsr   tlsf.realloc             ; test case : free+malloc in place (growth on top with copy)
+        ldu   @u1
+        ldd   #$10FF                   ; not $1100, request are always one fl/sl index lower than available
+        jsr   tlsf.realloc             ; test case : free+malloc in place (tlsf.realloc.do)
         lda   tlsf.err
         beq   >
         cmpu  @u1
@@ -316,7 +317,6 @@ tlsf.ut.realloc
         rts
 @u0     fdb   0
 @u1     fdb   0
-@u2     fdb   0
 
 tlsf.ut.random
         ; init allocator
