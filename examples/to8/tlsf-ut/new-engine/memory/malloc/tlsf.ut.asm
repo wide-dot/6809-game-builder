@@ -263,33 +263,33 @@ tlsf.ut.realloc
         ldd   #$2000
         clr   tlsf.err
         jsr   tlsf.realloc             ; test case : shrink to a specific size (tlsf.realloc.shrink)
-        lda   tlsf.err
-        beq   >
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #1
         jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4 (tlsf.realloc.shrink)
-        lda   tlsf.err
-        beq   >
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #0
         jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4 (tlsf.realloc.shrink), size is identical, return
-        lda   tlsf.err
-        beq   >
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #$1000
         jsr   tlsf.realloc             ; test case : growth (tlsf.realloc.growth)
-        lda   tlsf.err
-        beq   >
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
@@ -308,11 +308,18 @@ tlsf.ut.realloc
         ldu   @u1
         ldd   #$10FF                   ; not $1100, request are always one fl/sl index lower than available
         jsr   tlsf.realloc             ; test case : free+malloc in place (tlsf.realloc.do)
-        lda   tlsf.err
-        beq   >
         cmpu  @u1
         beq   >
+        lda   tlsf.err
+        beq   >
         bra   * ; error trap
+!
+        ldu   @u1
+        ldd   #$30FF                   ; not $1100, request are always one fl/sl index lower than available
+        jsr   tlsf.realloc             ; test case : free+malloc in place (tlsf.realloc.do)
+        lda   tlsf.err
+        bne   >                        ; an error is actually excepted ! it ends unit test for realloc
+        bra   * ; error trap           ; no error is an error in this test
 !
         rts
 @u0     fdb   0

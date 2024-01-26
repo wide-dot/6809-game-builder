@@ -66,37 +66,39 @@ tlsf.realloc
 ;
 ; input  REG : [U] ptr to current block data
 ; output REG : [U] new allocated memory address
+; when an malloc error is raised :
+; output REG : [U] unchanged
 ;-----------------------------------------------------------------
 ; Make a realloc by doing a free/malloc
 ; Data is copied
+;
+; When a malloc error is raised (out of memory)
+; Data stays in place, input block is no more allocated
+; Freed memory block may have been merged with prev and next block
 ;-----------------------------------------------------------------
 tlsf.realloc.do
-        ldd   tlsf.blockHdr.prev-tlsf.BHDR_OVERHEAD,u ; Saves 4 bytes that will otherwise be lost
-        std   @data12                                 ; when changing occupied block to free
+        ; Saves 4 bytes that will otherwise be lost when changing occupied block to free
+        ldd   tlsf.blockHdr.prev-tlsf.BHDR_OVERHEAD,u
+        std   @data12
         ldd   tlsf.blockHdr.next-tlsf.BHDR_OVERHEAD,u
         std   @data34
-        stu   @start                                  ; Saves data location for later copy
-        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u
+        stu   @start                                  ; Saves data location for later restoration
+        ldd   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u ; Saves size for copying data
         addd  #1-4                                    ; size is stored as size-1, get rid of the 4 bytes already copied
         std   @size
 ;
+        ; reallocate memory
         jsr   tlsf.free
         ldd   ,s                                      ; Get requested size
         jsr   tlsf.malloc
         stu   @u
-;
-; TODO HERE !!!
-; Check for allocation error !!! undo free !!! and replace 4 erased bytes !!!
-;
+        lda   tlsf.err
+        beq   >                                       ; Branch if no error
+        ldu   @start                                  ; If an error is raised, skip memcopy
+        bra   @error                                  ; but restore the 4 erased bytes
+!
         ; move data to newly allocated space
-        leay  ,u                                      ; [y] destination set with returned malloc value
-        ldd   #0                                      ; first 4 bytes are special case
-@data12 equ   *-2
-        std   ,y++
-        ldd   #0
-@data34 equ   *-2
-        std   ,y++
-;
+        leay  4,u                                     ; [y] destination set with returned malloc value
         ldu   #0                                      ; [u] source
 @start  equ   *-2
         leau  4,u
@@ -104,8 +106,19 @@ tlsf.realloc.do
 @size   equ   *-2
         beq   @rts
         jsr   memcpy.uyd
-        ldu   #0                                      ; restore new allocated addr in u
+;
+        ; restore 4 erased bytes by free routine
+        ldu   #0                                      ; Restore new allocated addr in u
 @u      equ   *-2
+@error
+        leay  ,u                                      ; [y] destination set with returned malloc value
+        ldd   #0                                      ; First 4 bytes are special case
+@data12 equ   *-2
+        std   ,y++
+        ldd   #0
+@data34 equ   *-2
+        std   ,y++
+;
 @rts    puls  d,x,y,pc
 
 
