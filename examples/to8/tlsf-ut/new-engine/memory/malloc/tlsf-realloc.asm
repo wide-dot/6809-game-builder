@@ -66,15 +66,14 @@ tlsf.realloc
 ;
 ; input  REG : [U] ptr to current block data
 ; output REG : [U] new allocated memory address
-; when an malloc error is raised :
-; output REG : [U] unchanged
 ;-----------------------------------------------------------------
 ; Make a realloc by doing a free/malloc
 ; Data is copied
 ;
-; When a malloc error is raised (out of memory)
-; Data stays in place, input block is no more allocated
-; Freed memory block may have been merged with prev and next block
+; When a realloc error is raised (out of memory) :
+; Data may have been moved as best effort to provide more space,
+; freed memory block may have been merged with prev or prev/next
+; physical block(s)
 ;-----------------------------------------------------------------
 tlsf.realloc.do
         ; Saves 4 bytes that will otherwise be lost when changing occupied block to free
@@ -104,7 +103,7 @@ tlsf.realloc.do
         clr   tlsf.err                                ; Clear error code
         ldu   #0                                      ; Out of memory, so reallocate the original block
 @freeBlock equ *-2                                    ; When the block was freed, it may have been merged
-        ldd   tlsf.blockHdr.size,u                    ; with previous physical block
+        ldd   tlsf.blockHdr.size,u                    ; with prev or prev/next physical block(s)
         anda  #^tlsf.mask.FREE_BLOCK
         sta   tlsf.blockHdr.size,u
         addd  #1                                      ; Get (merged) free block size
