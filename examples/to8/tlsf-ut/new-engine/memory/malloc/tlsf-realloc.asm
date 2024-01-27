@@ -89,16 +89,42 @@ tlsf.realloc.do
 ;
         ; reallocate memory
         jsr   tlsf.free
+        stx   @freeBlock                              ; Free block can be ahead of current deallocated block when merging
         ldd   ,s                                      ; Get requested size
-        jsr   tlsf.malloc
-        stu   @u
+        ldd   tlsf.err.callback                       ; Backup routine to call when tlsf raise an error
+        std   @callback
+        ldd   #tlsf.err.return
+        std   tlsf.err.callback                       ; setup return callback
+        clr   tlsf.err                                ; clear error code
+        jsr   tlsf.malloc                             ; try a malloc
         lda   tlsf.err
-        beq   >                                       ; Branch if no error
-        ldu   @start                                  ; If an error is raised, skip memcopy
-        bra   @error                                  ; but restore the 4 erased bytes
-!
+        beq   @continue                               ; Branch if no error
+;
+;       Handle out of memory
+        clr   tlsf.err                                ; Clear error code
+        ldu   #0                                      ; Out of memory, so reallocate the original block
+@freeBlock equ *-2                                    ; When the block was freed, it may have been merged
+        ldd   tlsf.blockHdr.size,u                    ; with previous physical block
+        anda  #^tlsf.mask.FREE_BLOCK
+        sta   tlsf.blockHdr.size,u
+        addd  #1                                      ; Get (merged) free block size
+        pshs  d,x,u                                   ; Reallocate free block
+        jsr   tlsf.mappingFreeBlock                   ; by computing fl/sl index (size in [d])
+        ldx   @freeBlock
+        jsr   tlsf.removeBlock                        ; and removing free block from list and index (free block in [x])
+        puls  d,x,u
+        leau  4,u                                     ; [u] is reallocated block data
+        cmpd  ,s                                      ; Check reallocated block against requested size
+        bhs   @continue                               ; Branch if reallocated block is large enough
+        lda   #tlsf.err.realloc.OUT_OF_MEMORY
+        sta   tlsf.err                                ; Raise an error if realllocated block is not large enough
+        cmpu  @start                                  ; Check against original block addr
+        beq   @skipMemcpy                             ; Skip memcpy if block has not moved, but restore the 4 erased bytes
+                                                      ; or move data to newly allocated block, even if block size is not enough
+@continue
         ; move data to newly allocated space
-        leay  4,u                                     ; [y] destination set with returned malloc value
+        leay  4,u                                     ; [y] destination + skip 4 bytes that were saved earlier
+        stu   @u
         ldu   #0                                      ; [u] source
 @start  equ   *-2
         leau  4,u
@@ -110,8 +136,8 @@ tlsf.realloc.do
         ; restore 4 erased bytes by free routine
         ldu   #0                                      ; Restore new allocated addr in u
 @u      equ   *-2
-@error
-        leay  ,u                                      ; [y] destination set with returned malloc value
+@skipMemcpy
+        leay  ,u                                      ; [y] destination
         ldd   #0                                      ; First 4 bytes are special case
 @data12 equ   *-2
         std   ,y++
@@ -119,6 +145,13 @@ tlsf.realloc.do
 @data34 equ   *-2
         std   ,y++
 ;
+        ldx   #0
+@callback equ *-2
+        stx   tlsf.err.callback                       ; setup return callback
+        lda   tlsf.err
+        beq   @rts
+        leas  2,s                                     ; Handle realloc error
+        jmp   ,x                                      ; by calling user callback
 @rts    puls  d,x,y,pc
 
 

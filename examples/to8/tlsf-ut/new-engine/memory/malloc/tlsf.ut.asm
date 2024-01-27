@@ -365,7 +365,7 @@ tlsf.ut.random.malloc.switch
 
 tlsf.ut.random.free
         lda   tlsf.err
-        cmpa  #tlsf.err.malloc.NO_MORE_SPACE
+        cmpa  #tlsf.err.malloc.OUT_OF_MEMORY
         beq   >
         bra   *
 !       clr   tlsf.err
