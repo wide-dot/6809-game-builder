@@ -316,9 +316,9 @@ tlsf.ut.realloc.doOneTest
         beq   >
         bra   * ; error trap
 !                                      ; should test three branches of test case: tlsf.realloc.do
-        ldu   @u1                      ; $1100 (malloc ok)
-        ldd   tlsf.ut.realloc.var      ; $1105 (malloc ko, but recycle of free block ok)
-        jsr   tlsf.realloc             ; $1106 (malloc ko, recycle of free block ko)
+        ldu   @u1                      ; $1100 (malloc ok, memcpy)
+        ldd   tlsf.ut.realloc.var      ; $1105 (malloc ko, but recycle of free block ok, memcpy)
+        jsr   tlsf.realloc             ; $1106 (malloc ko, recycle of free block ko, memcpy)
         ldd   tlsf.ut.realloc.var
         cmpd  #$1106
         beq   @errorCase               ; an error is expected for the third case
@@ -328,6 +328,13 @@ tlsf.ut.realloc.doOneTest
 !
         rts
 @errorCase
+        lda   tlsf.err
+        bne   >
+        bra   * ; error trap
+!
+        ldu   #$0004
+        ldd   #$1107
+        jsr   tlsf.realloc             ; (malloc ko, recycle of free block ko, no memcpy)
         lda   tlsf.err
         bne   >
         bra   * ; error trap

@@ -239,13 +239,24 @@ tlsf.ut.malloc
 @rts    rts
 
 tlsf.ut.realloc
+        ldd   #$1100
+        std   tlsf.ut.realloc.var
+        jsr   tlsf.ut.realloc.doOneTest
+        ldd   #$1105
+        std   tlsf.ut.realloc.var
+        jsr   tlsf.ut.realloc.doOneTest
+        ldd   #$1106
+        std   tlsf.ut.realloc.var
+        jmp   tlsf.ut.realloc.doOneTest
+
+tlsf.ut.realloc.doOneTest
         ; init allocator
         ldd   #$4000
         ldx   #$0000+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
 
         clr   tlsf.err
-        ldd   #$20
+        ldd   #$101
         jsr   tlsf.malloc              ; allocate a temp block
         stu   @u0
         lda   tlsf.err
@@ -262,34 +273,34 @@ tlsf.ut.realloc
         ; [u] contain address of allocated memory
         ldd   #$2000
         clr   tlsf.err
-        jsr   tlsf.realloc             ; test case : shrink to a specific size
-        lda   tlsf.err
-        beq   >
+        jsr   tlsf.realloc             ; test case : shrink to a specific size (tlsf.realloc.shrink)
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #1
-        jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4
-        lda   tlsf.err
-        beq   >
+        jsr   tlsf.realloc             ; test case : shrink min size 1 rounded to 4 (tlsf.realloc.shrink)
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #0
-        jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4
-        lda   tlsf.err
-        beq   >
+        jsr   tlsf.realloc             ; test case : shrink min size 0 rounded to 4 (tlsf.realloc.shrink), size is identical, return
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
         ldd   #$1000
-        jsr   tlsf.realloc             ; test case : growth
-        lda   tlsf.err
-        beq   >
+        jsr   tlsf.realloc             ; test case : growth (tlsf.realloc.growth)
         cmpu  @u1
+        beq   >
+        lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
@@ -304,19 +315,35 @@ tlsf.ut.realloc
         lda   tlsf.err
         beq   >
         bra   * ; error trap
-!
-        ldd   #$1023                   ; not 1024, request are always one fl/sl index lower than available
-        jsr   tlsf.realloc             ; test case : free+malloc in place (growth on top with copy)
+!                                      ; should test three branches of test case: tlsf.realloc.do
+        ldu   @u1                      ; $1100 (malloc ok, memcpy)
+        ldd   tlsf.ut.realloc.var      ; $1105 (malloc ko, but recycle of free block ok, memcpy)
+        jsr   tlsf.realloc             ; $1106 (malloc ko, recycle of free block ko, memcpy)
+        ldd   tlsf.ut.realloc.var
+        cmpd  #$1106
+        beq   @errorCase               ; an error is expected for the third case
         lda   tlsf.err
-        beq   >
-        cmpu  @u1
         beq   >
         bra   * ; error trap
 !
         rts
+@errorCase
+        lda   tlsf.err
+        bne   >
+        bra   * ; error trap
+!
+        ldu   #$0004
+        ldd   #$1107
+        jsr   tlsf.realloc             ; (malloc ko, recycle of free block ko, no memcpy)
+        lda   tlsf.err
+        bne   >
+        bra   * ; error trap
+!
+        rts
+;
+tlsf.ut.realloc.var fdb 0
 @u0     fdb   0
 @u1     fdb   0
-@u2     fdb   0
 
 tlsf.ut.random
         ; init allocator
@@ -358,7 +385,7 @@ tlsf.ut.random.malloc.switch
 
 tlsf.ut.random.free
         lda   tlsf.err
-        cmpa  #tlsf.err.malloc.NO_MORE_SPACE
+        cmpa  #tlsf.err.malloc.OUT_OF_MEMORY
         beq   >
         bra   *
 !       clr   tlsf.err

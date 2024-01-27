@@ -523,80 +523,80 @@ loader.file.load
 ;---------------------------------------
 loader.file.loadByDir
         pshs  dp,d,x,y,u
-!       lda   #$60
-        tfr   a,dp               ; Set DP
+!       lda   #map.REG.DP
+        tfr   a,dp                ; Set DP
         ldb   dir.entry.nsector,y ; Get number of sectors
-        stb   >nsect             ; Set sector count
+        stb   >nsect              ; Set sector count
         ldd   dir.entry.track,y   ; Set track, face and
-        std   >track             ; sector number
+        std   >track              ; sector number
 * First sector
         ldb   dir.entry.sizea,y   ; Skip if
-        beq   ld3                ; full sect
-        ldx   #ptsec             ; Init buffer
-        stx   <map.DK.BUF        ; location
-        bsr   ldsec              ; Load sector
+        beq   ld3                 ; full sect
+        ldx   #ptsec              ; Init buffer
+        stx   <map.DK.BUF         ; location
+        bsr   ldsec               ; Load sector
         ldd   dir.entry.sizea,y   ; Read A:size, B:offset
-        abx                      ; Adjust data ptr
-        bsr   tfrxua             ; Copy data from buffer to RAM
+        abx                       ; Adjust data ptr
+        bsr   tfrxua              ; Copy data from buffer to RAM
 * Intermediate sectors
-ld3     stu   <map.DK.BUF        ; Init dest location
-ld4     ldb   >nsect             ; Exit if
-        beq   ld7                ; no sector
+ld3     stu   <map.DK.BUF         ; Init dest location
+ld4     ldb   >nsect              ; Exit if
+        beq   ld7                 ; no sector
         cmpb  #1
-        bhi   ld5                ; Exit if
+        bhi   ld5                 ; Exit if
         lda   dir.entry.sizez,y   ; last sector
         bne   ld6
-ld5     bsr   ldsec              ; Load sector
-        inc   <map.DK.BUF        ; Update dest location MSB
-        bra   ld4                ; Next sector
+ld5     bsr   ldsec               ; Load sector
+        inc   <map.DK.BUF         ; Update dest location MSB
+        bra   ld4                 ; Next sector
 * Last sector
-ld6     ldb   >nsect             ; Skip if
-        beq   ld7                ; no last sector
-        ldu   <map.DK.BUF        ; Data pointer
-        ldx   #ptsec             ; Init buffer
-        stx   <map.DK.BUF        ; location
-        bsr   ldsec              ; Load sector
+ld6     ldb   >nsect              ; Skip if
+        beq   ld7                 ; no last sector
+        ldu   <map.DK.BUF         ; Data pointer
+        ldx   #ptsec              ; Init buffer
+        stx   <map.DK.BUF         ; location
+        bsr   ldsec               ; Load sector
         lda   dir.entry.sizez,y   ; Copy
-        bsr   tfrxua             ; data
+        bsr   tfrxua              ; data
 * Exit
-ld7     clra                     ; file is not empty
+ld7     clra                      ; file is not empty
         puls  dp,d,x,y,u,pc
 
 * Copy memory space
 tfrxua
-        ldb   ,x+                ; Read data
-        stb   ,u+                ; Write data
-        deca                     ; Until las
-        bne   tfrxua             ; data reached
+        ldb   ,x+                 ; Read data
+        stb   ,u+                 ; Write data
+        deca                      ; Until las
+        bne   tfrxua              ; data reached
 return  rts
 
 * Load a sector
 ldsec   equ   *
         pshs  x,y,u
-        lda   >track             ; [0000 000] track [0] drive
-        lsr   <map.DK.DRV        ; make room to drive id
-        lsra                     ; set cc with bit0 (drive) of track variable
-        rol   <map.DK.DRV        ; set bit0 of drive id with cc
+        lda   >track              ; [0000 000] track [0] drive
+        lsr   <map.DK.DRV         ; make room to drive id
+        lsra                      ; set cc with bit0 (drive) of track variable
+        rol   <map.DK.DRV         ; set bit0 of drive id with cc
         ldb   >track
-        andb  #$06               ; get skew based on track nb : 0, 2, 4, 6, 0, 2, 4, 6, ...
-        addb  >sector            ; add sector to skew
-        andb  #$0f               ; loop the index
-        ldx   #sclist            ; interleave table
-        ldb   b,x                ; read sector number
-        clr   <map.DK.TRK        ; init track msb (always 0)
-        std   <map.DK.TRK+1      ; track/sector
-        jsr   >map.DKCONT        ; load sector
-        bcc   ldsec1             ; skip if ok
-        jsr   >map.DKCONT        ; reload sector
-        lbcs  error              ; I/O Error
+        andb  #$06                ; get skew based on track nb : 0, 2, 4, 6, 0, 2, 4, 6, ...
+        addb  >sector             ; add sector to skew
+        andb  #$0f                ; loop the index
+        ldx   #sclist             ; interleave table
+        ldb   b,x                 ; read sector number
+        clr   <map.DK.TRK         ; init track msb (always 0)
+        std   <map.DK.TRK+1       ; track/sector
+        jsr   >map.DKCONT         ; load sector
+        bcc   ldsec1              ; skip if ok
+        jsr   >map.DKCONT         ; reload sector
+        lbcs  error               ; I/O Error
 * Next sector
-ldsec1  ldd   >track             ; read track/sect
-        addd  #$f1               ; inc sector, move to next face and move to next track
-        andb  #$0f               ; keep only sector bits
-        std   >track             ; save track/face/sector
-        dec   >nsect             ; counter-1
+ldsec1  ldd   >track              ; read track/sect
+        addd  #$f1                ; inc sector, move to next face and move to next track
+        andb  #$0f                ; keep only sector bits
+        std   >track              ; save track/face/sector
+        dec   >nsect              ; counter-1
 * Update load bar
-        jsr   >pulse             ; send sector pulse
+        jsr   >pulse              ; send sector pulse
         puls  x,y,u,pc
 
 * Default exit if disk error

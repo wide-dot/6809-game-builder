@@ -11,7 +11,7 @@
 
 ; Disk boot
         org    $2200
-        setdp  $20
+        setdp  map.REG.DP
 
 ; Freeze interrupts
         orcc  #$50
