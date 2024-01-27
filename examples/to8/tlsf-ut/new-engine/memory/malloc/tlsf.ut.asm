@@ -239,13 +239,24 @@ tlsf.ut.malloc
 @rts    rts
 
 tlsf.ut.realloc
+        ldd   #$1100
+        std   tlsf.ut.realloc.var
+        jsr   tlsf.ut.realloc.doOneTest
+        ldd   #$1105
+        std   tlsf.ut.realloc.var
+        jsr   tlsf.ut.realloc.doOneTest
+        ldd   #$1106
+        std   tlsf.ut.realloc.var
+        jmp   tlsf.ut.realloc.doOneTest
+
+tlsf.ut.realloc.doOneTest
         ; init allocator
         ldd   #$4000
         ldx   #$0000+tlsf.ut.MEMORY_POOL
         jsr   tlsf.init
 
         clr   tlsf.err
-        ldd   #$100
+        ldd   #$101
         jsr   tlsf.malloc              ; allocate a temp block
         stu   @u0
         lda   tlsf.err
@@ -304,24 +315,26 @@ tlsf.ut.realloc
         lda   tlsf.err
         beq   >
         bra   * ; error trap
-!
-        ldu   @u1
-        ldd   #$10FF                   ; not $1100, request are always one fl/sl index lower than available
-        jsr   tlsf.realloc             ; test case : free+malloc in place (tlsf.realloc.do)
-        cmpu  @u1
-        beq   >
+!                                      ; should test three branches of test case: tlsf.realloc.do
+        ldu   @u1                      ; $1100 (malloc ok)
+        ldd   tlsf.ut.realloc.var      ; $1105 (malloc ko, but recycle of free block ok)
+        jsr   tlsf.realloc             ; $1106 (malloc ko, recycle of free block ko)
+        ldd   tlsf.ut.realloc.var
+        cmpd  #$1106
+        beq   @errorCase               ; an error is expected for the third case
         lda   tlsf.err
         beq   >
         bra   * ; error trap
 !
-        ldu   @u1
-        ldd   #$30FF                   ; not $1100, request are always one fl/sl index lower than available
-        jsr   tlsf.realloc             ; test case : free+malloc in place (tlsf.realloc.do)
+        rts
+@errorCase
         lda   tlsf.err
-        bne   >                        ; an error is actually excepted ! it ends unit test for realloc
-        bra   * ; error trap           ; no error is an error in this test
+        bne   >
+        bra   * ; error trap
 !
         rts
+;
+tlsf.ut.realloc.var fdb 0
 @u0     fdb   0
 @u1     fdb   0
 

@@ -89,13 +89,13 @@ tlsf.realloc.do
         ; reallocate memory
         jsr   tlsf.free
         stx   @freeBlock                              ; Free block can be ahead of current deallocated block when merging
-        ldd   ,s                                      ; Get requested size
         ldd   tlsf.err.callback                       ; Backup routine to call when tlsf raise an error
         std   @callback
         ldd   #tlsf.err.return
         std   tlsf.err.callback                       ; setup return callback
         clr   tlsf.err                                ; clear error code
-        jsr   tlsf.malloc                             ; try a malloc
+        ldd   ,s                                      ; Get requested size
+        jsr   tlsf.malloc                             ; try a malloc (size in [d])
         lda   tlsf.err
         beq   @continue                               ; Branch if no error
 ;
@@ -144,13 +144,14 @@ tlsf.realloc.do
 @data34 equ   *-2
         std   ,y++
 ;
-        ldx   #0
+        ldd   #0
 @callback equ *-2
-        stx   tlsf.err.callback                       ; setup return callback
+        std   tlsf.err.callback                       ; setup return callback
         lda   tlsf.err
         beq   @rts
+        puls  d,x,y
         leas  2,s                                     ; Handle realloc error
-        jmp   ,x                                      ; by calling user callback
+        jmp   [tlsf.err.callback]                     ; by calling user callback
 @rts    puls  d,x,y,pc
 
 
