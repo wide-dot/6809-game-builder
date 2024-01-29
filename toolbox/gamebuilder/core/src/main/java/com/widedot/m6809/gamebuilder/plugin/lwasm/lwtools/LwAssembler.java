@@ -62,6 +62,12 @@ public class LwAssembler
 		String mapFilename = buildDir + asmBasename + "." + LWMAP;
 
 		Files.createDirectories(Paths.get(buildDir));
+
+		List.of(binFilename, lstFilename, mapFilename)
+		    .stream()
+			.map(File::new)
+			.forEach(File::delete);
+
 		
 		File del = new File (binFilename);
 		del.delete();
