@@ -1,1 +1,0 @@
-loader.DEFAULT_SCENE_EXEC_ADDR equ 0
