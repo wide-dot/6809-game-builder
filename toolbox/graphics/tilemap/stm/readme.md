@@ -1,3 +1,8 @@
+/[index]/[toolbox]/stm2bin
+
+[index]: ../../../../readme.md
+[toolbox]: ../../../../docs/toolbox.md
+
 # stm2bin
 ## Description
 Convert [.stm][file-format-stm] Tilemaps produced by Pro Motion NG (Cosmigo) into usable assembly data and code.

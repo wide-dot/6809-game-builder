@@ -27,21 +27,19 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  Integer offset = Attribute.getInteger(node, defaults, "offset", "png2pal.offset", 1);
 	  String profile = Attribute.getString(node, defaults, "profile", "png2pal.profile", "to");
 	  String filename = Attribute.getStringOpt(node, defaults, "filename", "png2pal.filename");
-	  String dirname = Attribute.getStringOpt(node, defaults, "dirname", "png2pal.dirname");
 	  String gensource = Attribute.getStringOpt(node, defaults, "gensource", "png2pal.gensource");
 
-	  if ((filename == null || filename.equals("")) && (dirname == null || dirname.equals(""))) {
-		  String m = "An input filename or dirname should be provided for png2pal!";
+	  if ((filename == null || filename.equals(""))) {
+		  String m = "An input filename should be provided for png2pal!";
 		  log.error(m);
 		  throw new Exception(m);
 	  }
 	  
 	  if (filename != null) filename = path + File.separator + filename;
-	  if (dirname != null) dirname = path + File.separator + dirname;
 	  if (gensource != null) gensource = path + File.separator + gensource;
 	  
 	  Binary bin = new Binary();
-	  bin.bytes = Converter.run(symbol, mode, colors, offset, profile, filename, dirname, gensource);
+	  bin.bytes = Converter.run(symbol, mode, colors, offset, profile, filename, gensource);
 	  return bin;
   }
 }

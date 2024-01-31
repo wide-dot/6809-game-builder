@@ -1,5 +1,6 @@
-/[readme]/project-setup
+/[index]/project-setup
 
+[index]: ../readme.md
 
 # Setup a new game project
 ## Usage
@@ -12,4 +13,3 @@ It will create a new directory called "newproject" and unpack all engine files i
 
 As a security, nothing will happen if the directory already exists. This prevents file overwriting on an existing project.
 
-[readme]: ../readme.md

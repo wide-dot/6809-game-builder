@@ -88,8 +88,8 @@ Symbol: buf_prev_y_pixel (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-ty
 Symbol: buf_priority (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0000
 Symbol: buf_priority_next_obj (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0003
 Symbol: buf_priority_prev_obj (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0001
-Symbol: builder.lwasm.size.28207280414900 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0060
-Symbol: builder.lwasm.size.28207385202400 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0009
+Symbol: builder.lwasm.size.30213540239000 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0060
+Symbol: builder.lwasm.size.30213651770500 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0009
 Symbol: constants.asm (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0001
 Symbol: dir.entry.bitfld (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 0000
 Symbol: dir.entry.cdataz (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/gen/bootloader/\build\loader.raw) = 000A

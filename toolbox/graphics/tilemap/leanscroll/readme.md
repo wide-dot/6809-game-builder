@@ -1,3 +1,8 @@
+/[index]/[toolbox]/leanscroll
+
+[index]: ../../../../readme.md
+[toolbox]: ../../../../docs/toolbox.md
+
 # leanscroll
 ## Description
 Parse an image or a tilemap and build a lean tilset and map.

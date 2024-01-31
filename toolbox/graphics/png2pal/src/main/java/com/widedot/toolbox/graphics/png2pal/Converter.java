@@ -32,54 +32,50 @@ public class Converter {
 	private static int rgbProfile[];
 	private static HashMap<Integer, Integer> rgbIndex = new HashMap<Integer, Integer>();	
 
-	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String dirname, String gensource) {
+	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
 		
-		log.debug("Convert an image file (.png) to palette data in an assembly file (.asm).");
+		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 		
-		try {
-			
-			// build full palette values
-			rgbProfile = FileResourcesUtils.get(profile+".txt");
-    		int i = 0;
-    		for (int r=0; r<16; r++) {
-    			for (int g=0; g<16; g++) {
-    				for (int b=0; b<16; b++) {
-    					labColor = LAB.fromRGBr(rgbProfile[r], rgbProfile[g], rgbProfile[b], 1.0);
-    					paletteLab[i]=labColor;
-    					paletteRGB[i] = (0xFF000000 & (255 << 24)) | (0x00FF0000 & (rgbProfile[r] << 16)) | (0x0000FF00 & (rgbProfile[g] << 8)) | (0x000000FF & rgbProfile[b]);
-    					i++;
-    				}
-    			}
-    			rgbIndex.put(rgbProfile[r], r);
-    		}
-			
-    		// process indexed colors of png files
-			if (filename != null) {
-				File file = new File(filename);
-				if (symbol == null) {
-					symbol = FileUtil.removeExtension(FileUtil.getBasename(filename));
-				}
-				outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource));
-			} else {
-				log.debug("Process each .png file of the directory: {}", dirname);
-				File dir = new File(dirname);
-				if (!dir.exists() || !dir.isDirectory()) {
-					log.error("Input directory does not exists !");
-				} else {
-					File[] files = dir.listFiles((d, name) -> name.endsWith(".png"));
-					for (File file : files) {
-						if (symbol == null) {
-							symbol = FileUtil.removeExtension(FileUtil.getBasename(filename));
-						}
-						outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource));
-					}
+		// build full palette values
+		rgbProfile = FileResourcesUtils.get(profile+".txt");
+		int i = 0;
+		for (int r=0; r<16; r++) {
+			for (int g=0; g<16; g++) {
+				for (int b=0; b<16; b++) {
+					labColor = LAB.fromRGBr(rgbProfile[r], rgbProfile[g], rgbProfile[b], 1.0);
+					paletteLab[i]=labColor;
+					paletteRGB[i] = (0xFF000000 & (255 << 24)) | (0x00FF0000 & (rgbProfile[r] << 16)) | (0x0000FF00 & (rgbProfile[g] << 8)) | (0x000000FF & rgbProfile[b]);
+					i++;
 				}
 			}
-			log.debug("Conversion ended sucessfully.");
-		} catch (Exception e) {
-			e.printStackTrace();
+			rgbIndex.put(rgbProfile[r], r);
 		}
+		
+		// process indexed colors of png files
+		File file = new File(filename);
+		if (!file.exists()) {
+		  String m = "filename: "+filename+" does not exists !";
+		  log.error(m);
+		  throw new Exception(m);
+		}
+		
+		if (!file.isDirectory()) {
+			
+			// Single file processing
+			outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource));
+		} else {
+			
+			// Directory processing
+			log.debug("Process each .png file of the directory: {}", filename);
+
+			File[] files = file.listFiles((d, name) -> name.endsWith(".png"));
+			for (File curFile : files) {
+				outputStream.write(convertFile(symbol, mode, colors, offset, curFile, gensource));
+			}
+		}
+		log.debug("Conversion ended sucessfully.");
+
 		return outputStream.toByteArray();
 	}
 	
@@ -96,6 +92,7 @@ public class Converter {
 		// Set the process mode
 	     switch (mode) {
          case OBJ:
+     		 if (symbol == null) symbol = FileUtil.removeExtension(file.getName());
         	 result = Converter.genObject(symbol, mode, colors, offset, colorModel).getBytes();
         	 ext = ASM_EXT;
              break;
@@ -173,7 +170,7 @@ public class Converter {
 	public static String genData(String symbol, String mode, int colors, int offset, ColorModel colorModel) throws IOException {
 
 		// Generate assembly code
-		String code = "";
+		String code = symbol + System.lineSeparator();
 		
 		int nearestColor;
 		for (int colorIndex = offset; colorIndex < offset+colors; colorIndex++) {

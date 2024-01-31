@@ -1,5 +1,9 @@
-# pcm2dpcm
+/[index]/[toolbox]/pcm2dpcm
 
+[index]: ../../../../../readme.md
+[toolbox]: ../../../../../docs/toolbox.md
+
+# pcm2dpcm
 ## Description
 
 pcm2dpcm is a tool from ValleyBell's SMPS research pack

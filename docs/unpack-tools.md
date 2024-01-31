@@ -1,4 +1,6 @@
-/[readme]/unpack-tools
+/[index]/unpack-tools
+
+[index]: ../readme.md
 
 # Unpack the 6809 game builder tools
 ## Description
@@ -58,8 +60,3 @@ drwxrwxr-x 4 robin robin   4096 janv. 17 10:31 ../
 ```
 
 Then add the `6809-game-builder-tools/bin` directory in your PATH environment variable in order to make them launchable from anywhere.
-
-
-
-
-[readme]: ../readme.md

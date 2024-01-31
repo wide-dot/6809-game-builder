@@ -1,48 +1,39 @@
 package com.widedot.toolbox.graphics.png2pal;
 
 import picocli.CommandLine;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "png2pal", description = "Convert an image file (.png) to palette data in an assembly file (.asm)")
+@Command(name = "png2pal", description = "Process one or more PNG files to extract and convert indexed palette data", sortOptions = false)
 public class MainCommand implements Runnable {
 
-	@ArgGroup(exclusive = true, multiplicity = "1")
-	Exclusive exclusive;
-
-	static class Exclusive {
-		@Option(names = { "-d",
-				"--dir" }, paramLabel = "Input directory", description = "Process all .txt files located in the input directory")
-		String dirname;
-
-		@Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process a text input file")
-		String filename;
-	}
+	@Option(names = { "-f",
+	"--filename" }, required = true, description = "Process a png input file, or all png files in a directory")
+	private String filename;
 
 	@Option(names = { "-m",
-	"--mode" }, paramLabel = "Mode", description = "Conversion mode (obj (default), dat, bin")
+	"--mode" }, description = "Conversion mode (obj (default), dat, bin)")
 	private String mode = Converter.OBJ;
 	
 	@Option(names = { "-p",
-			"--profile" }, paramLabel = "Profile name", description = "Color profile (to (default))")
+	"--profile" }, description = "Color profile (to (default))")
 	private String profile = "to";
 	
-	@Option(names = { "-s",
-	"--symbol" }, paramLabel = "Symbol name", description = "Symbol name in asm (default to filename)")
+	@Option(names = { "-o",
+	"--offset" }, description = "Color index offset, determines the starting color index (default to 1, index 0 is gennarally assigned to transparent color)")
+	private int offset=1;
+	
+	@Option(names = { "-c",
+	"--colors" }, description = "Number of converted colors (default to 16)")
+	private int colors=16;
+
+		@Option(names = { "-s",
+	"--symbol" }, description = "Symbol name in asm (default to filename minus extension)")
 	private String symbol;
 
 	@Option(names = { "-g",
-	"--gensource" }, paramLabel = "Output file", description = "Output asm file name (default to input filename with .asm ext)")
+	"--gensource" }, description = "Output asm file name (default to filename with specific mode extension)")
 	private String gensource;
-	
-	@Option(names = { "-c",
-	"--colors" }, paramLabel = "Nb of colors", description = "Number of converted colors (default to 16)")
-	private int colors=16;
-	
-	@Option(names = { "-o",
-	"--offset" }, paramLabel = "Color index offset", description = "Color index offset, determines the starting color index (default to 1, index 0 is gennarally assigned to transparent color)")
-	private int offset=1;
 	
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -51,6 +42,10 @@ public class MainCommand implements Runnable {
 
 	@Override
 	public void run() {
-			Converter.run(symbol, mode, colors, offset, profile, exclusive.filename, exclusive.dirname, gensource);
+			try {
+				Converter.run(symbol, mode, colors, offset, profile, filename, gensource);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 	}
 }

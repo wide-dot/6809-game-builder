@@ -32,8 +32,12 @@ Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine
 - convert pcm, vgm, midi, smps audio data
 - compress code and data
 - build bootable cartridge or floppy disk
+- color conversion
 
 #### Engine
+- boot loader
+- load time linker on files
+- zx0 compression on files
 - load code and data to RAM pages
 - link at load time
 - manage objects
@@ -41,14 +45,14 @@ Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine
 - display sprites by priority
 - animate sprites
 - display tilemaps (tile groups, animation, buffering, ...)
-- use multiple software scroll engines
+- multiple software scroll engines
 - play audio with dpcm, svgm, smid, smps, psg audio formats
-- use ym2413 and sn76489 sound chips
+- support ym2413 and sn76489 sound chips
 - play midi files (EF6850 ACIA)
 
 ## Building the 6809-game-builder
 
-Download the latest release or build the project.
+Download the latest release if you don't want to build the project.
 
 You need to have Java 8 (or newer) and Maven to be installed first.
 

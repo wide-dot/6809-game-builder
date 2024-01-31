@@ -1,4 +1,6 @@
-/[readme]/project-build
+/[index]/project-build
+
+[index]: ../readme.md
 
 Build a game project
 =
@@ -171,6 +173,3 @@ page and address is updated at load time by the file loader
 
 [SDDRIVE]: http://dcmoto.free.fr/bricolage/sddrive/index.html
 [Megarom T.2]: https://megarom.forler.ch/fr/
-
-[readme]: ../readme.md
-[build-a-game]: build-a-game.md

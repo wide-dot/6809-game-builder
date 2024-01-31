@@ -1,3 +1,7 @@
+/[index]/credits
+
+[index]: ../readme.md
+
 # Credits
 
 ## third-party libraries and tools
