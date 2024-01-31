@@ -81,7 +81,7 @@
             <fat:directory name="IMAGEBAS" section="FAT0">
                 <fat:direntry name="auto.bat">
                 <fat:file block="130">
-                    <txt2bas tokenset="to">src/assets/basic/auto.bat</txt2bas> <!-- txt2bas plugin -->
+                    <txt2bas tokenset="to" filename="src/assets/basic/auto.bat"/> <!-- txt2bas plugin -->
                 </fat:file>
                 </fat:direntry>
                 <fat:direntry name="image.map">

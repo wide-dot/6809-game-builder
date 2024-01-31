@@ -15,6 +15,7 @@ public class PluginClassLoader extends URLClassLoader {
 
   public static final List<String> SHARED_PACKAGES = Arrays.asList(
       "com.widedot.m6809.gamebuilder.spi",
+      "com.widedot.m6809.util",
       "org.apache.commons.configuration2",
       "org.slf4j"
   );

@@ -1,0 +1,124 @@
+<configuration>
+    <target name="resources">
+        <png2pal symbol="pal.title" filename="src/assets/objects/title/logo/resources/logo_r.png"     gensource="src/assets/palettes/title/pal.asm"/>
+        <png2pal symbol="pal.score" filename="src/assets/objects/title/score/resources/number_01.png" gensource="src/assets/palettes/score/pal.asm"/>
+    </target>
+
+    <target name="fd">
+        <default name="floppydisk.storage" value="new-engine/config/storage.xml"/>
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm"> <!--genbinary is optional-->
+                <default name="direntry.section"      value="DATA"/>
+                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="lwasm.format"          value="obj"/>
+
+                <!-- Title - game mode -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <!-- <asm filename="src/assets/game-modes/title/main.asm"/> -->
+                        <asm filename="src/assets/palettes/black/pal.asm"/>
+                        <asm filename="src/assets/palettes/title/pal.asm"/>
+                        <asm filename="src/assets/palettes/score/pal.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Title - sound -->
+                <!-- ******************************************************* -->
+                <!--
+                <direntry name="engine.object.sound.vgc" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/object/sound/vgc/vgc.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="assets.obj.snd.title.vgc" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm>sound.title.vgc</asm>
+                    </lwasm>
+                    <bin filename="./src/assets/sounds/title/music.vgc"/>
+                </direntry>
+
+                <direntry name="engine.object.sound.ymm" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/object/sound/ymm/ymm.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="assets.obj.snd.title.ymm" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm>sound.title.ymm</asm>
+                    </lwasm>
+                    <bin filename="./src/assets/sounds/title/music.ymm"/>
+                </direntry>
+                -->
+
+                <!-- Title - objects -->
+                <!-- ******************************************************* -->
+                <!--
+                <direntry name="assets.obj.title" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="src/assets/objects/title/logo/obj.asm"/>
+                        <asm filename="src/assets/objects/title/text/obj.asm"/>
+                        <asm filename="src/assets/objects/title/pushButton/obj.asm"/>
+                        <asm filename="src/assets/objects/title/score/obj.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="assets.obj.sfx.fade" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="src/assets/objects/sfx/fade/obj.asm"/>
+                    </lwasm>
+                </direntry>
+                -->
+
+                <!-- Title - scene -->
+                <!-- ******************************************************* -->
+                <direntry name="scenes.title" section="SCENE">
+                    <lwasm format="raw">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/title/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.PAGE" value="4"/>
+            <define symbol="loader.ADDRESS" value="$A000"/>
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 5</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
+                    <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">   
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="new-engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="demo.fd"/>
+            <sd  filename="demo.sd"/>
+            <sap filename="demo.sap"/>
+            <hfe filename="demo.hfe"/>
+        </floppydisk>
+    </target>
+</configuration>
+

@@ -23,7 +23,7 @@ public class ObjectImpl implements ObjectPluginInterface {
   public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
 	  //read input xml
-	  String filename = (String) node.getValue();
+	  String filename = Attribute.getString(node, defaults, "filename", "txt2bas.filename");
 	  String tokenset = Attribute.getString(node, defaults, "tokenset", "txt2bas.tokenset", "to");
 
 	  if (filename == null || filename.equals("")) {

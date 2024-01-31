@@ -19,5 +19,9 @@
 			<directory>${project.parent.basedir}/repo/com/wide-dot/txt2bas/0.0.1</directory>
 			<outputDirectory>./plugins/txt2bas</outputDirectory>
 		</fileSet>
+		<fileSet>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/png2pal/0.0.1</directory>
+			<outputDirectory>./plugins/png2pal</outputDirectory>
+		</fileSet>
 	</fileSets>
 </assembly>

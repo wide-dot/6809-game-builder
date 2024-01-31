@@ -1,0 +1,1 @@
+loader.DEFAULT_SCENE_EXEC_PAGE equ 5

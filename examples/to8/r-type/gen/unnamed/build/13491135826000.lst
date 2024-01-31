@@ -1,0 +1,38 @@
+     0000             (C:\Users\bhrou\gi):00001         assets.gm.title equ 0
+     0003             (C:\Users\bhrou\gi):00002         scenes.title equ 3
+                      (C:\Users\bhrou\gi):00003         
+                      (C:\Users\bhrou\gi):00004                  ; type of scene
+0000 4001             (C:\Users\bhrou\gi):00005                 fdb   $4000+1                  ; [type | nb files] (0: end marker)
+                      (C:\Users\bhrou\gi):00006         
+                      (C:\Users\bhrou\gi):00007                 ; scene data
+0002 01               (C:\Users\bhrou\gi):00008                 fcb   $01                      ; [destination - page id]
+0003 6100             (C:\Users\bhrou\gi):00009                 fdb   $6100                    ; [destination - address]
+0005 0000             (C:\Users\bhrou\gi):00010                 fdb   assets.gm.title          ; [file id]
+                      (C:\Users\bhrou\gi):00011         
+                      (C:\Users\bhrou\gi):00012                 ;fcb   $05                      ; [destination - page id]
+                      (C:\Users\bhrou\gi):00013                 ;fdb   $0000                    ; [destination - address]
+                      (C:\Users\bhrou\gi):00014                 ;fdb   engine.object.sound.vgc
+                      (C:\Users\bhrou\gi):00015         
+                      (C:\Users\bhrou\gi):00016                 ;fcb   $05                      ; [destination - page id]
+                      (C:\Users\bhrou\gi):00017                 ;fdb   $1F90                    ; [destination - address]
+                      (C:\Users\bhrou\gi):00018                 ;fdb   assets.obj.snd.title.vgc
+                      (C:\Users\bhrou\gi):00019         
+                      (C:\Users\bhrou\gi):00020                 ;fcb   $06                      ; [destination - page id]
+                      (C:\Users\bhrou\gi):00021                 ;fdb   $0000                    ; [destination - address]
+                      (C:\Users\bhrou\gi):00022                 ;fdb   engine.object.sound.ymm
+                      (C:\Users\bhrou\gi):00023         
+                      (C:\Users\bhrou\gi):00024                 ;fcb   $06                      ; [destination - page id]
+                      (C:\Users\bhrou\gi):00025                 ;fdb   $0460                    ; [destination - address]
+                      (C:\Users\bhrou\gi):00026                 ;fdb   assets.obj.snd.title.ymm 
+                      (C:\Users\bhrou\gi):00027         
+                      (C:\Users\bhrou\gi):00028                 ; type of scene
+                      (C:\Users\bhrou\gi):00029                 ;fdb   $8000+2                  ; [type | nb files] (0: end marker)
+                      (C:\Users\bhrou\gi):00030         
+                      (C:\Users\bhrou\gi):00031                 ; scene data
+                      (C:\Users\bhrou\gi):00032                 ;fcb   $07                      ; [destination - starting page id]
+                      (C:\Users\bhrou\gi):00033                 ;fdb   $0000                    ; [destination - starting address]
+                      (C:\Users\bhrou\gi):00034                 ;fdb   assets.obj.title         ; [file id]
+                      (C:\Users\bhrou\gi):00035                 ;fdb   assets.obj.sfx.fade
+                      (C:\Users\bhrou\gi):00036         
+                      (C:\Users\bhrou\gi):00037                 ; type of scene, or 0 if end
+0007 0000             (C:\Users\bhrou\gi):00038                 fdb   0                        ; [type | nb files] (0: end marker)

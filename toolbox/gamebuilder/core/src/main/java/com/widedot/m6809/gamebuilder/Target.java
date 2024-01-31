@@ -10,6 +10,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
+import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
@@ -71,19 +73,29 @@ public class Target {
 
 	   		// instanciate plugins
 			DefaultFactory defaultFactory;
+			ObjectFactory objectFactory;
 			
 			for (ImmutableNode child : node.getChildren()) {
 				String plugin = child.getNodeName();
 			
-				// external plugin
 				defaultFactory = Plugins.getDefaultFactory(plugin);
-			    if (defaultFactory == null) {
-			       	throw new Exception("Unknown plugin: " + plugin);   	
-			    }
+				objectFactory = Plugins.getObjectFactory(plugin);
 			    
-			    final DefaultPluginInterface processor = defaultFactory.build();
-			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, defaults, defines);
+		        if (defaultFactory == null && objectFactory == null) {
+		        	throw new Exception("Unknown Plugin: " + plugin);   	
+		        }
+			    
+		        if (defaultFactory != null) {
+				    final DefaultPluginInterface processor = defaultFactory.build();
+				    log.debug("Running plugin: {}", defaultFactory.name());
+				    processor.run(child, path, defaults, defines);
+		        }
+		        
+		        if (objectFactory != null) {
+				    final ObjectPluginInterface processor = objectFactory.build();
+				    log.debug("Running plugin: {}", objectFactory.name());
+				    processor.getObject(child, path, defaults, defines);
+		        }
 			}
 			log.info("End of processing target {}", targetName);
 			

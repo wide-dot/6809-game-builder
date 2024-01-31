@@ -1,0 +1,1 @@
+loader.DEFAULT_SCENE_DIR_ID    equ 0
