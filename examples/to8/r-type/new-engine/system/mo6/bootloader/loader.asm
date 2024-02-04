@@ -21,9 +21,9 @@
 ;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
-        INCLUDE "new-engine/constant/types.const.asm"
-        INCLUDE "engine/macros.asm"
-        INCLUDE "engine/constants.asm"
+        INCLUDE "new-engine/global/glb.const.asm"
+        INCLUDE "new-engine/6809/macros.asm"
+        INCLUDE "new-engine/6809/types.const.asm"
         INCLUDE "new-engine/system/mo6/map.const.asm"
         INCLUDE "new-engine/system/mo6/bootloader/loader.const.asm"
 

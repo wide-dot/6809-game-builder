@@ -55,17 +55,8 @@ map.EXTPORT         equ $A7
 map.IEEE488         equ $A7F0 ; to A7F7
 map.EF5860.CTRL     equ $A7F2 ; MIDI
 map.EF5860.TX       equ $A7F3 ; MIDI
- ifndef SOUND_CARD_PROTOTYPE
-map.YM2413.A        equ $A7FC
-map.YM2413.D        equ $A7FD
-map.SN76489.D       equ $A7F7
- else
-map.YM2413.A        equ $A7FC
-map.YM2413.D        equ $A7FD
-map.SN76489.D       equ $A7FF
- endc
-map.MEA8000.D       equ $A7FE
-map.MEA8000.A       equ $A7FF
+map.MEA8000.D       equ $A7FE ; Vocal synth
+map.MEA8000.A       equ $A7FF ; Vocal synth
 
 ; ROM routines
 map.DKCONT          equ $A004 ; TO:DKCO, MO:SWI $26

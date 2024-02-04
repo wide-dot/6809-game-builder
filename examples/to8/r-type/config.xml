@@ -20,7 +20,7 @@
                 <!-- ******************************************************* -->
                 <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
                     <lwasm>
-                        <!-- <asm filename="src/assets/game-modes/title/main.asm"/> -->
+                        <asm filename="src/assets/game-modes/title/main.asm"/>
                         <asm filename="src/assets/palettes/black/pal.asm"/>
                         <asm filename="src/assets/palettes/title/pal.asm"/>
                         <asm filename="src/assets/palettes/score/pal.asm"/>
@@ -42,7 +42,7 @@
                     </lwasm>
                     <bin filename="./src/assets/sounds/title/music.vgc"/>
                 </direntry>
-
+                -->
                 <direntry name="engine.object.sound.ymm" codec="zx0" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="new-engine/object/sound/ymm/ymm.asm"/>
@@ -55,7 +55,24 @@
                     </lwasm>
                     <bin filename="./src/assets/sounds/title/music.ymm"/>
                 </direntry>
-                -->
+
+                <direntry name="engine.sound.ym.const" codec="zx0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/object/sound/ymm/ymm.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="engine.system.to8.sound.ym.const" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/system/to8/sound/ym.2.const.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="engine.system.to8.sound.sn.const" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/system/to8/sound/sn.1.const.asm"/>
+                    </lwasm>
+                </direntry>
 
                 <!-- Title - objects -->
                 <!-- ******************************************************* -->
