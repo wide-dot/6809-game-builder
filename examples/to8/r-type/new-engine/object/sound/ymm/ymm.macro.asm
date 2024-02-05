@@ -3,8 +3,9 @@
 ; ------------------------------------------------------------------------------
 
 _ymm.init MACRO
-    	ldx   \1       ; ymm.data
-        ldb   \2       ; ymm.loop
-        ldy   \3       ; ymm.callback
+        lda   \1       ; ymm.data.page
+    	ldx   \2       ; ymm.data
+        ldb   \3       ; ymm.loop
+        ldy   \4       ; ymm.callback
         jsr   ymm.init
  ENDM

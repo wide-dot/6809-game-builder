@@ -3,13 +3,12 @@ Symbol: blist (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engi
 Symbol: boot.CHECK_MEMORY_EXT (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0001
 Symbol: boot2 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 623E
 Symbol: boot3 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 624C
-Symbol: builder.lwasm.size.367761375897000 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0B66
-Symbol: builder.lwasm.size.367762293967500 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0000
-Symbol: builder.lwasm.size.367762553606900 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 000E
+Symbol: builder.lwasm.size.474838826204900 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0B53
+Symbol: builder.lwasm.size.474839589870400 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0000
+Symbol: builder.lwasm.size.474839689258700 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0017
 Symbol: builder.lwasm.size.loader (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0E9E
-Symbol: builder.lwasm.size.sn.1.const (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0000
 Symbol: builder.lwasm.size.ym.2.const (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 0000
-Symbol: builder.lwasm.size.ymm (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 043C
+Symbol: builder.lwasm.size.ymm (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 043F
 Symbol: err (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 625B
 Symbol: err0 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 6264
 Symbol: err1 (C:/Users/bhrou/git/6809-game-builder/examples/to8/r-type/new-engine/system/to8/bootloader/\build\boot.raw) = 6266

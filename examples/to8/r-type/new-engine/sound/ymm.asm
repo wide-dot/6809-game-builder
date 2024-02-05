@@ -11,6 +11,9 @@ irq.off      EXTERNAL
 map.YM2413.A EXTERNAL
 map.YM2413.D EXTERNAL
 
+ymm.play       EXPORT
+ymm.frame.play EXPORT
+
         INCLUDE "./new-engine/sound/ym2413.asm"
 
  SECTION code
@@ -74,9 +77,10 @@ ymm.frame.play
         lda   ymm.status
         beq   @rts
         dec   ymm.frame.waits
-        beq   @run
+        beq   >
 @rts    rts
-@run    _SetCartPageA
+!       lda   ymm.data.page
+        _SetCartPageA
 YVGM_do_MusicFrame
         ldx   ymm.data.pos
 @UpdateLoop

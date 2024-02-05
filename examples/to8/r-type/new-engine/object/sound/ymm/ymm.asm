@@ -1,11 +1,14 @@
 
+ymm.init EXPORT
+
         INCLUDE "new-engine/system/to8/map.const.asm"
 
  SECTION code
 
 ymm.init
-        stb   ymm.loop
+        sta   ymm.data.page
         stx   ymm.data
+        stb   ymm.loop
         sty   ymm.callback
         lda   #1
         sta   ymm.status

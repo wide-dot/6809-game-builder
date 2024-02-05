@@ -24,12 +24,12 @@ SOUND_CARD_PROTOTYPE equ 1
 viewport_width  equ 144
 viewport_height equ 180
 
-        org   $6100
         jsr   glb.init
 ;        jsr   InitDrawSprites
 ;        jsr   InitStack
 ;        jsr   InitJoypads
 ;        jsr   WaitVBL
+        jsr   ym2413.reset
 
 ; init user irq
 
@@ -326,7 +326,7 @@ viewport_height equ 180
 ;
         jsr   irq.off
         _MountObject ObjID_ymm00
-        _ymm.init #sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.init #$60+6,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 ;        _MountObject ObjID_vgc00
 ;        _MusicInit_objvgc #0,#MUSIC_LOOP,#0
         jsr   irq.on
@@ -573,7 +573,7 @@ viewport_height equ 180
 ;
 ;        jsr   irq.off                    
 ;        jsr   resetsn
-;        jsr   ym2413.reset
+        jsr   ym2413.reset
 ;        lda   #GmID_level01
 ;        sta   NEXT_GAME_MODE
 ;        lda   #GmID_title
@@ -700,7 +700,7 @@ ObjID_ymm00 equ 1
 
 Obj_Index_Page
         fcb   0
-        fcb   6
+        fcb   $60+6
 
 Obj_Index_Address
         fdb   $0000
@@ -713,4 +713,4 @@ Obj_Index_Address
         INCLUDE "new-engine/system/to8/palette/palette.update.asm"
         INCLUDE "new-engine/graphics/buffer/gfxlock.asm"
         INCLUDE "new-engine/sound/ym2413.asm"
-        INCLUDE "new-engine/sound/sn76489.asm"
+        ;INCLUDE "new-engine/sound/sn76489.asm"

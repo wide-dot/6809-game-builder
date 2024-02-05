@@ -42,7 +42,14 @@
                     </lwasm>
                     <bin filename="./src/assets/sounds/title/music.vgc"/>
                 </direntry>
+
+                <direntry name="engine.system.to8.sound.sn.const" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="new-engine/system/to8/sound/sn.1.const.asm"/>
+                    </lwasm>
+                </direntry>
                 -->
+
                 <direntry name="engine.object.sound.ymm" codec="zx0" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="new-engine/object/sound/ymm/ymm.asm"/>
@@ -51,26 +58,17 @@
 
                 <direntry name="assets.obj.snd.title.ymm" codec="zx0" loadtimelink="LINK">
                     <lwasm>
-                        <asm>sound.title.ymm</asm>
+                        <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">sound.title.ymm</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
                     <bin filename="./src/assets/sounds/title/music.ymm"/>
-                </direntry>
-
-                <direntry name="engine.sound.ym.const" codec="zx0" loadtimelink="LINK">
-                    <lwasm>
-                        <asm filename="new-engine/object/sound/ymm/ymm.asm"/>
-                    </lwasm>
                 </direntry>
 
                 <direntry name="engine.system.to8.sound.ym.const" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="new-engine/system/to8/sound/ym.2.const.asm"/>
-                    </lwasm>
-                </direntry>
-
-                <direntry name="engine.system.to8.sound.sn.const" loadtimelink="LINK">
-                    <lwasm>
-                        <asm filename="new-engine/system/to8/sound/sn.1.const.asm"/>
                     </lwasm>
                 </direntry>
 
@@ -116,8 +114,8 @@
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
                     <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 5</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
                     <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
                     <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>

@@ -157,7 +157,10 @@ loader.scene.load
 
         ; load default scene file
         jsr   loader.file.malloc
-
+        cmpu  #0
+        bne   >
+        rts
+!
         ldb   #loader.PAGE
         jsr   loader.file.load
 
@@ -199,7 +202,7 @@ loader.file.malloc
         cmpd  #$ff00
         bne   >
         ldu   #0                ; If file is empty, return 0
-        rts
+        puls  x,pc
 !
         ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111        ; File size is stored in 14 bits
@@ -502,9 +505,9 @@ loader.file.load
         ldd   dir.entry.sizea,y   ; check empty file flag
         cmpd  #$ff00
         bne   >
-        rts                      ; file is empty, exit
+        puls  dp,d,x,y,u,pc       ; file is empty, exit
 !       ldb   dir.entry.bitfld,y  ; test if compressed data
-        bpl   >                  ; skip if not compressed
+        bpl   >                   ; skip if not compressed
         ldd   dir.entry.coffset,y ; get offset to write data
         leau  d,u
         bra   >
@@ -1060,7 +1063,7 @@ loader.file.extern16.link
         jsr   linkData.symbol.search
         ldx   linkData.content.extern16.operand,y ; load plus operand
         leax  d,x                                 ; add external symbol value
-        ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference
+        ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference !!! ici [d]=6125 et [u]=6100
         stx   d,u                                 ; update address
         leay  sizeof{linkData.content.extern8},y  ; move to next symbol
         ldd   #0
