@@ -1,4 +1,5 @@
+map.SN76489.D EXPORT
 
  SECTION _constant
-map.SN76489.D       equ $A7F6
+map.SN76489.D       equ $67F6
  ENDSECTION

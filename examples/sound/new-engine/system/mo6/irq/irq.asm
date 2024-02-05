@@ -11,31 +11,14 @@
 ;
 ;*******************************************************************************
 
-irq.set50Hz        EXPORT
 irq.on             EXPORT
 irq.off            EXPORT
-irq.syncScreenLine EXPORT
 irq.userRoutine    EXPORT
 
  SECTION code
 
 irq.userRoutine fdb 0                  ; user irq routine called by irq.manage 
-
-;-----------------------------------------------------------------
-; irq.set50Hz
-;
-; reset REG : [d]
-;-----------------------------------------------------------------
-; set irq to call at 50Hz frequency
-;-----------------------------------------------------------------
-irq.set50Hz
-        ldb   #$42
-        stb   map.MC6846.TCR           ; timer precision x8
-        ldd   #irq.ONE_FRAME           ; on every frame
-        std   map.MC6846.TMSB
-        jsr   irq.on   
-        rts
-       
+    
 ;-----------------------------------------------------------------
 ; irq.on
 ;
@@ -44,11 +27,10 @@ irq.set50Hz
 ; set irq active
 ;-----------------------------------------------------------------
 irq.on
-        lda   map.STATUS
-        ora   #$20
-        sta   map.STATUS
+        lda   #1
+        sta   map.IRQSEMAPHORE
         andcc #$EF                     ; tell 6809 to activate irq
-        rts
+!       rts
 
 ;-----------------------------------------------------------------
 ; irq.off
@@ -58,41 +40,9 @@ irq.on
 ; set irq inactive
 ;-----------------------------------------------------------------
 irq.off 
-        lda   map.STATUS                           
-        anda  #$DF
-        sta   map.STATUS
+        clr   map.IRQSEMAPHORE
         orcc  #$10                     ; tell 6809 to inactivate irq
-        rts
-
-;-----------------------------------------------------------------
-; irq.syncScreenLine
-;
-; input REG : [d] screen line (0-311)
-;             [x] timer value
-; reset REG : [d] [y]
-;-----------------------------------------------------------------
-; This routine sync irq timer with a desired screen line
-; line 0 is the first one in visible area, lines 200-311 are
-; bottom followed by top border
-;-----------------------------------------------------------------
-irq.syncScreenLine
-        _asld                          ; ligne * 64 (cycles per line) / 8 (nb tempo loop cycles)
-        _asld
-        _asld
-        tfr   d,y
-        ldb   #$42
-        stb   map.MC6846.TCR
-        leay  -32,y                    ; manual adjustment
-!
-        tst   map.CF74021.SYS1         ;
-        bmi   <                        ; while spot is in a visible screen line        
-!       tst   map.CF74021.SYS1         ;
-        bpl   <                        ; while spot is not in a visible screen line
-!       leay  -1,y                     ;
-        bne   <                        ; wait until desired line
-                                       ; spot is at the end of desired line
-        stx   map.MC6846.TMSB          ; set timer
-        rts  
+!       rts
 
 ;-----------------------------------------------------------------
 ; irq.manage
@@ -121,7 +71,7 @@ irq.manage
         _SetCartPageA                  ; restore data page
 @end    lds   #0                       ; (dynamic) restore system stack   
 @stack  equ   *-2
-        jmp   map.IRQ.EXIT             ; return to caller
+        RTI                            ; return to caller
 @smode
         ldb   <map.STATUS
         stb   @page2                   ; backup data page

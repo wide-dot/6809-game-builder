@@ -1,11 +1,12 @@
 ;*******************************************************************************
 ; FD Boot loader
 ; Original code from Prehisto
+; Benoit Rousseau 07/2023 (memory ext. check)
 ; ------------------------------------------------------------------------------
 ; A fully featured boot loader
 ;*******************************************************************************
 
-        INCLUDE "engine/constants.asm"
+        INCLUDE "new-engine/6809/types.const.asm"
         INCLUDE "new-engine/system/mo6/map.const.asm"
         INCLUDE "new-engine/system/mo6/bootloader/loader.const.asm"
 
