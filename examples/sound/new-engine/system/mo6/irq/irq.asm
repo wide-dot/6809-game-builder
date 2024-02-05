@@ -71,7 +71,7 @@ irq.manage
         _SetCartPageA                  ; restore data page
 @end    lds   #0                       ; (dynamic) restore system stack   
 @stack  equ   *-2
-        RTI                            ; return to caller
+        rti                            ; return to caller
 @smode
         ldb   <map.STATUS
         stb   @page2                   ; backup data page

@@ -103,13 +103,13 @@ map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interru
 map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
 map.RAM_OVER_CART     equ %01100000
 map.STATUS.MINUSCULE  equ %10000000
-map.STATUS.SCROLL     equ %10000000
-map.STATUS.QWERTY     equ %10000000
-map.STATUS.GFXFORM    equ %10000000
-map.STATUS.CUTBUZZER  equ %10000000
-map.STATUS.CURSOR     equ %10000000
-map.STATUS.KEYREPEAT  equ %10000000
-map.STATUS.KEYREAD    equ %10000000
+map.STATUS.SCROLL     equ %01000000
+map.STATUS.QWERTY     equ %00100000
+map.STATUS.GFXFORM    equ %00010000
+map.STATUS.CUTBUZZER  equ %00001000
+map.STATUS.CURSOR     equ %00000100
+map.STATUS.KEYREPEAT  equ %00000010
+map.STATUS.KEYREAD    equ %00000001
 
 ; -----------------------------------------------------------------------------
 ; mapping to generic names
