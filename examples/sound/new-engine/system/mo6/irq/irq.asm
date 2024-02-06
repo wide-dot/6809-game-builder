@@ -47,7 +47,7 @@ irq.off
 ;-----------------------------------------------------------------
 ; irq.manage
 ;
-; input REG : [dp] $E7 (set by the monitor)
+; input REG : [dp] $20 (set by the monitor)
 ; reset REG : [none]
 ;-----------------------------------------------------------------
 ; This routine run all requested engine code before and after
@@ -55,6 +55,8 @@ irq.off
 ;-----------------------------------------------------------------
 
 irq.manage
+        lda   #map.EXTPORT
+        tfr   a,dp
         sts   @stack                   ; backup system stack
         lds   #irq.systemStack         ; set tmp system stack for IRQ 
         inc   gfxlock.frame.count+1
@@ -71,6 +73,8 @@ irq.manage
         _SetCartPageA                  ; restore data page
 @end    lds   #0                       ; (dynamic) restore system stack   
 @stack  equ   *-2
+        lda   #map.REG.DP
+        tfr   a,dp
         rti                            ; return to caller
 @smode
         ldb   <map.STATUS

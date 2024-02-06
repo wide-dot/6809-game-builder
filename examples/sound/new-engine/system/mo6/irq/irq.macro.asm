@@ -1,6 +1,6 @@
 _irq.init MACRO
         ldd   #irq.manage
-        std   map.IRQPT
+        std   map.TIMERPT
  ENDM
 
 _irq.setRoutine MACRO
