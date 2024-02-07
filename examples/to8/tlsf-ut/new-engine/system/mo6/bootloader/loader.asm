@@ -21,9 +21,9 @@
 ;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
-        INCLUDE "new-engine/constant/types.const.asm"
-        INCLUDE "engine/macros.asm"
-        INCLUDE "engine/constants.asm"
+        INCLUDE "new-engine/global/glb.const.asm"
+        INCLUDE "new-engine/6809/macros.asm"
+        INCLUDE "new-engine/6809/types.const.asm"
         INCLUDE "new-engine/system/mo6/map.const.asm"
         INCLUDE "new-engine/system/mo6/bootloader/loader.const.asm"
 
@@ -159,7 +159,10 @@ loader.scene.load
 
         ; load default scene file
         jsr   loader.file.malloc
-
+        cmpu  #0
+        bne   >
+        rts
+!
         ldb   #loader.PAGE
         jsr   loader.file.load
 
@@ -201,7 +204,7 @@ loader.file.malloc
         cmpd  #$ff00
         bne   >
         ldu   #0                ; If file is empty, return 0
-        rts
+        puls  x,pc
 !
         ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111        ; File size is stored in 14 bits
@@ -504,9 +507,9 @@ loader.file.load
         ldd   dir.entry.sizea,y   ; check empty file flag
         cmpd  #$ff00
         bne   >
-        rts                      ; file is empty, exit
+        puls  dp,d,x,y,u,pc       ; file is empty, exit
 !       ldb   dir.entry.bitfld,y  ; test if compressed data
-        bpl   >                  ; skip if not compressed
+        bpl   >                   ; skip if not compressed
         ldd   dir.entry.coffset,y ; get offset to write data
         leau  d,u
         bra   >
@@ -657,32 +660,32 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$B000             ; Skip if not RAM over cartridge space
+        cmpu  #$B000              ; Skip if not RAM over cartridge space
         blo   >
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch RAM page
+        orb   #$60                ; Set RAM over cartridge space
+        stb   >map.CF74021.CART   ; Switch RAM page
         rts
 !
-        cmpu  #$6000             ; Skip if not data space
+        cmpu  #$6000              ; Skip if not data space
         blo   >
         lda   #$10
         ora   <map.CF74021.SYS1.R ; Set RAM
         sta   <map.CF74021.SYS1.R ; over data
         sta   >map.CF74021.SYS1   ; space
-        stb   >map.CF74021.DATA  ; Switch RAM page
+        stb   >map.CF74021.DATA   ; Switch RAM page
         rts
 !
-        cmpu  #$2000             ; Skip if not resident space
+        cmpu  #$2000              ; Skip if not resident space
         blo   >
-        rts                      ; nothing to do ... it's resident memory
+        rts                       ; nothing to do ... it's resident memory
 !
-        cmpu  #$F000             ; Skip if not video space
+        cmpu  #$F000              ; Skip if not video space
         bhs   >
-        andb  #$01               ; Keep only half page A or B
-        orb   $E7C3              ; Merge register value
-        stb   $E7C3              ; Set desired half page in video space
+        andb  #$01                ; Keep only half page A or B
+        orb   >map.MC6846.PRC     ; Merge register value
+        stb   >map.MC6846.PRC     ; Set desired half page in video space
         rts
-!       bra   *                  ; error trap
+!       bra   *                   ; error trap
 
 
 ;---------------------------------------

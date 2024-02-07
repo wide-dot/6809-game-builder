@@ -1,7 +1,13 @@
+;*******************************************************************************
 ; Thomson MO6 - Memory map
 
-; -----------------------------------------------------------------------------
+; ------------------------------------------------------------------------------
+;
 ; system addresses
+;*******************************************************************************
+
+ IFNDEF map.const.asm
+map.const.asm equ 1
 
 ; mc6846
 map.MC6846.CSR      equ $A7C0
@@ -9,9 +15,6 @@ map.MC6846.CRC      equ $A7C1
 map.MC6846.DDRC     equ $A7C2
 map.MC6846.PRC      equ $A7C3 ; (bit0) set half ram page 0 (low or high) in video area ($0000-$1FFF)
 map.MC6846.CSR2     equ $A7C4
-map.MC6846.TCR      equ $A7C5 ; irq timer ctrl
-map.MC6846.TMSB     equ $A7C6 ; irq timer MSB
-map.MC6846.TLSB     equ $A7C7 ; irq timer LSB
 
 ; mc6821 system
 map.MC6821.PRA      equ $A7C8
@@ -55,17 +58,8 @@ map.EXTPORT         equ $A7
 map.IEEE488         equ $A7F0 ; to A7F7
 map.EF5860.CTRL     equ $A7F2 ; MIDI
 map.EF5860.TX       equ $A7F3 ; MIDI
- ifndef SOUND_CARD_PROTOTYPE
-map.YM2413.A        equ $A7FC
-map.YM2413.D        equ $A7FD
-map.SN76489.D       equ $A7F7
- else
-map.YM2413.A        equ $A7FC
-map.YM2413.D        equ $A7FD
-map.SN76489.D       equ $A7FF
- endc
-map.MEA8000.D       equ $A7FE
-map.MEA8000.A       equ $A7FF
+map.MEA8000.D       equ $A7FE ; Vocal synth
+map.MEA8000.A       equ $A7FF ; Vocal synth
 
 ; ROM routines
 map.DKCONT          equ $A004 ; TO:DKCO, MO:SWI $26
@@ -86,7 +80,6 @@ map.PUTC            equ $A803
 map.GETC            equ $A806
 map.KTST            equ $A809
 map.DKCO            equ $A82A ; read or write floppy disk routine
-map.IRQ.EXIT        equ $A830 ; to exit an irq
 
 ; system monitor registers
 map.REG.DP          equ $20   ; direct page for system monitor registers
@@ -97,8 +90,10 @@ map.DK.SEC          equ $204C ; sector
 map.DK.TRK          equ $204A ; $204B ; track
 map.DK.STA          equ $204E ; return status
 map.DK.BUF          equ $204F ; $2050 ; data write location
-map.FIRQPT          equ $2023 ; routine firq
-map.TIMERPT         equ $2027 ; routine irq timer
+map.TIMERPT         equ $2061 ; routine irq timer
+map.IRQSEMAPHORE    equ $2063 ; irq semaphore
+map.IRQPT           equ $2064 ; routine irq
+map.FIRQPT          equ $2067 ; routine firq
 map.CF74021.SYS1.R  equ $2081 ; reading value for map.CF74021.SYS1
 
 ; -----------------------------------------------------------------------------
@@ -106,10 +101,19 @@ map.CF74021.SYS1.R  equ $2081 ; reading value for map.CF74021.SYS1
 
 map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interrupt
 map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
-map.IRQ.ONE_FRAME     equ 312*64-1  ; one frame timer (lines*cycles_per_lines-1), timer launch at -1
+map.RAM_OVER_CART     equ %01100000
+map.STATUS.MINUSCULE  equ %10000000
+map.STATUS.SCROLL     equ %01000000
+map.STATUS.QWERTY     equ %00100000
+map.STATUS.GFXFORM    equ %00010000
+map.STATUS.CUTBUZZER  equ %00001000
+map.STATUS.CURSOR     equ %00000100
+map.STATUS.KEYREPEAT  equ %00000010
+map.STATUS.KEYREAD    equ %00000001
 
 ; -----------------------------------------------------------------------------
 ; mapping to generic names
 
 map.DAC            equ map.MC6821.PRA2
 map.RND            equ map.MC6846.TMSB
+    ENDC

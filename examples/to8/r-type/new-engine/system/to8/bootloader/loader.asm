@@ -16,6 +16,8 @@
 ;
 ; - réfléchir aux points suivants :
 ;   - gérer le fait qu'on puisse charger plusieurs instances d'un meme fichier à deux endroits différents en RAM, comment identifier celui qu'on "remove" dans le linkdata ? => addr en param in
+;   - ajouter un equate dans map.const.asm => end of RAM over ROM $4000 (TO8) ou $F000 (MO6) (utilisé dans load scene type 10 et 11)
+;   - mutualiser le code TO8 et MO6 => ce qui change c'est la routine switchpage => la sortir du loader permet de mutualiser
 ;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
@@ -658,32 +660,32 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$A000             ; Skip if not data space
+        cmpu  #$A000              ; Skip if not data space
         blo   >
         lda   #$10
-        ora   <$6081             ; Set RAM
-        sta   <$6081             ; over data
-        sta   >$e7e7             ; space
-        stb   >map.CF74021.DATA  ; Switch RAM page
+        ora   <map.CF74021.SYS1.R ; Set RAM
+        sta   <map.CF74021.SYS1.R ; over data
+        sta   >map.CF74021.SYS1   ; space
+        stb   >map.CF74021.DATA   ; Switch RAM page
         rts
 !
-        cmpu  #$6000             ; Skip if not resident space
+        cmpu  #$6000              ; Skip if not resident space
         blo   >
-        rts                      ; nothing to do ... it's resident memory
+        rts                       ; nothing to do ... it's resident memory
 !
-        cmpu  #$4000             ; Skip if not video space
+        cmpu  #$4000              ; Skip if not video space
         blo   >
-        andb  #$01               ; Keep only half page A or B
-        orb   $E7C3              ; Merge register value
-        stb   $E7C3              ; Set desired half page in video space
+        andb  #$01                ; Keep only half page A or B
+        orb   >map.MC6846.PRC     ; Merge register value
+        stb   >map.MC6846.PRC     ; Set desired half page in video space
         rts
 !
-        cmpu  #$E000             ; Skip if not valid address 
+        cmpu  #$E000              ; Skip if not valid address 
         bhs   >
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch RAM page
+        orb   #$60                ; Set RAM over cartridge space
+        stb   >map.CF74021.CART   ; Switch RAM page
         rts
-!       bra   *                  ; error trap
+!       bra   *                   ; error trap
 
 
 ;---------------------------------------
@@ -1063,7 +1065,7 @@ loader.file.extern16.link
         jsr   linkData.symbol.search
         ldx   linkData.content.extern16.operand,y ; load plus operand
         leax  d,x                                 ; add external symbol value
-        ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference !!! ici [d]=6125 et [u]=6100
+        ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference
         stx   d,u                                 ; update address
         leay  sizeof{linkData.content.extern8},y  ; move to next symbol
         ldd   #0

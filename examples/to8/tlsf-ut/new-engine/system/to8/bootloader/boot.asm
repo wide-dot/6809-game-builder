@@ -6,8 +6,8 @@
 ; A fully featured boot loader
 ;*******************************************************************************
 
-        INCLUDE "engine/constants.asm"
-        INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "new-engine/6809/types.const.asm"
+        INCLUDE "new-engine/system/to8/map.const.asm"
         INCLUDE "new-engine/system/to8/bootloader/loader.const.asm"
 
 ; Disk boot

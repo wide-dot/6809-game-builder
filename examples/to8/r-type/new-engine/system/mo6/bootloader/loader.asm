@@ -159,7 +159,10 @@ loader.scene.load
 
         ; load default scene file
         jsr   loader.file.malloc
-
+        cmpu  #0
+        bne   >
+        rts
+!
         ldb   #loader.PAGE
         jsr   loader.file.load
 
@@ -657,32 +660,32 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$B000             ; Skip if not RAM over cartridge space
+        cmpu  #$B000              ; Skip if not RAM over cartridge space
         blo   >
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch RAM page
+        orb   #$60                ; Set RAM over cartridge space
+        stb   >map.CF74021.CART   ; Switch RAM page
         rts
 !
-        cmpu  #$6000             ; Skip if not data space
+        cmpu  #$6000              ; Skip if not data space
         blo   >
         lda   #$10
         ora   <map.CF74021.SYS1.R ; Set RAM
         sta   <map.CF74021.SYS1.R ; over data
         sta   >map.CF74021.SYS1   ; space
-        stb   >map.CF74021.DATA  ; Switch RAM page
+        stb   >map.CF74021.DATA   ; Switch RAM page
         rts
 !
-        cmpu  #$2000             ; Skip if not resident space
+        cmpu  #$2000              ; Skip if not resident space
         blo   >
-        rts                      ; nothing to do ... it's resident memory
+        rts                       ; nothing to do ... it's resident memory
 !
-        cmpu  #$F000             ; Skip if not video space
+        cmpu  #$F000              ; Skip if not video space
         bhs   >
-        andb  #$01               ; Keep only half page A or B
-        orb   $E7C3              ; Merge register value
-        stb   $E7C3              ; Set desired half page in video space
+        andb  #$01                ; Keep only half page A or B
+        orb   >map.MC6846.PRC     ; Merge register value
+        stb   >map.MC6846.PRC     ; Set desired half page in video space
         rts
-!       bra   *                  ; error trap
+!       bra   *                   ; error trap
 
 
 ;---------------------------------------

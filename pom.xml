@@ -110,7 +110,7 @@
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/graphics/png2pal</module>
 		<module>./toolbox/audio/smid</module>
-		<module>./toolbox/audio/svgm</module>
+		<module>./toolbox/audio/vgm2ymm</module>
 		<module>./toolbox/text/txt2bas</module>
 		<module>./toolbox/debug</module>
 		<module>./package</module>

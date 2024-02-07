@@ -117,14 +117,14 @@ public class FdUtil implements MediaDataInterface{
 			first = false;
 		}
 		
-        log.debug("write - track {}, face {}, start sector {}, nb bytes in first sector {}, offset in first sector {}, sectors {}, nb bytes in last sector {}",
-        		direntry[0] >> 1,
+        log.debug("write - track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
+        		(direntry[0] >> 1) & 0xff,
 				direntry[0] & 0x1,
-				direntry[1],
-				direntry[2],
-				direntry[3],
-				direntry[4],
-				direntry[5]);
+				direntry[1] & 0xff,
+				direntry[2] & 0xff,
+				direntry[3] & 0xff,
+				direntry[4] & 0xff,
+				direntry[5] & 0xff);
         
         return direntry;
 	}

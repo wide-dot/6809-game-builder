@@ -46,7 +46,7 @@ Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine
 - animate sprites
 - display tilemaps (tile groups, animation, buffering, ...)
 - multiple software scroll engines
-- play audio with dpcm, svgm, smid, smps, psg audio formats
+- play audio with dpcm, svgm, smid, smps, psg, ymm, vgc audio formats
 - support ym2413 and sn76489 sound chips
 - play midi files (EF6850 ACIA)
 

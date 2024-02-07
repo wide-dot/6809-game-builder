@@ -1,0 +1,749 @@
+                      (C:\Users\bhrou\gi):00001         
+                      (C:\Users\bhrou\gi):00002         ymm.init EXPORT
+                      (C:\Users\bhrou\gi):00003         
+                      (C:\Users\bhrou\gi):00004                 INCLUDE "new-engine/system/to8/map.const.asm"
+                      (new-engine/system):00001         ;*******************************************************************************
+                      (new-engine/system):00002         ; Thomson TO8 - Memory map
+                      (new-engine/system):00003         ; ------------------------------------------------------------------------------
+                      (new-engine/system):00004         ;
+                      (new-engine/system):00005         ; system addresses
+                      (new-engine/system):00006         ;*******************************************************************************
+                      (new-engine/system):00007         
+                      (new-engine/system):00008          IFNDEF map.const.asm
+     0001             (new-engine/system):00009         map.const.asm equ 1
+                      (new-engine/system):00010         
+                      (new-engine/system):00011         ; mc6846
+     E7C0             (new-engine/system):00012         map.MC6846.CSR      equ $E7C0 ; (bit2) set mute
+     E7C1             (new-engine/system):00013         map.MC6846.CRC      equ $E7C1
+     E7C2             (new-engine/system):00014         map.MC6846.DDRC     equ $E7C2
+     E7C3             (new-engine/system):00015         map.MC6846.PRC      equ $E7C3 ; (bit0) set half ram page 0 (low or high) in video area ($4000-$5FFF)
+     E7C4             (new-engine/system):00016         map.MC6846.CSR2     equ $E7C4
+     E7C5             (new-engine/system):00017         map.MC6846.TCR      equ $E7C5 ; irq timer ctrl
+     E7C6             (new-engine/system):00018         map.MC6846.TMSB     equ $E7C6 ; irq timer MSB
+     E7C7             (new-engine/system):00019         map.MC6846.TLSB     equ $E7C7 ; irq timer LSB
+                      (new-engine/system):00020         
+                      (new-engine/system):00021         ; mc6821 system
+     E7C8             (new-engine/system):00022         map.MC6821.PRA      equ $E7C8
+     E7C9             (new-engine/system):00023         map.MC6821.PRB      equ $E7C9
+     E7CA             (new-engine/system):00024         map.MC6821.CRA      equ $E7CA
+     E7CB             (new-engine/system):00025         map.MC6821.CRB      equ $E7CB
+                      (new-engine/system):00026         
+                      (new-engine/system):00027         ; mc6821 music and game
+     E7CC             (new-engine/system):00028         map.MC6821.PRA1     equ $E7CC
+     E7CD             (new-engine/system):00029         map.MC6821.PRA2     equ $E7CD
+     E7CE             (new-engine/system):00030         map.MC6821.CRA1     equ $E7CE
+     E7CF             (new-engine/system):00031         map.MC6821.CRA2     equ $E7CF
+                      (new-engine/system):00032         
+                      (new-engine/system):00033         ; thmfc01 gate controler floppy disk
+     E7D0             (new-engine/system):00034         map.THMFC01.STAT0   equ $E7D0
+     E7D0             (new-engine/system):00035         map.THMFC01.CMD0    equ $E7D0
+     E7D1             (new-engine/system):00036         map.THMFC01.STAT1   equ $E7D1
+     E7D1             (new-engine/system):00037         map.THMFC01.CMD1    equ $E7D1
+     E7D2             (new-engine/system):00038         map.THMFC01.CMD2    equ $E7D2
+     E7D3             (new-engine/system):00039         map.THMFC01.WDATA   equ $E7D3
+     E7D3             (new-engine/system):00040         map.THMFC01.RDATA   equ $E7D3
+     E7D4             (new-engine/system):00041         map.THMFC01.WCLK    equ $E7D4
+     E7D5             (new-engine/system):00042         map.THMFC01.WSECT   equ $E7D5
+     E7D6             (new-engine/system):00043         map.THMFC01.TRCK    equ $E7D6
+     E7D7             (new-engine/system):00044         map.THMFC01.CELL    equ $E7D7
+                      (new-engine/system):00045         
+                      (new-engine/system):00046         ; ef9369 palette
+     E7DA             (new-engine/system):00047         map.EF9369.D        equ $E7DA
+     E7DB             (new-engine/system):00048         map.EF9369.A        equ $E7DB
+                      (new-engine/system):00049         
+                      (new-engine/system):00050         ; cf74021 gate array page mode - (TO8D: EFG2021FN)
+     E7DC             (new-engine/system):00051         map.CF74021.LGAMOD  equ $E7DC
+     E7DD             (new-engine/system):00052         map.CF74021.SYS2    equ $E7DD ; (bit0-3) set screen border color, (bit6-7) set onscreen video memory page
+     E7E4             (new-engine/system):00053         map.CF74021.COM     equ $E7E4
+     E7E5             (new-engine/system):00054         map.CF74021.DATA    equ $E7E5 ; (bit0-4) set ram page in data area ($A000-$DFFF)
+     E7E6             (new-engine/system):00055         map.CF74021.CART    equ $E7E6 ; (bit0-4) set page in cartridge area ($0000-$3FFF), (bit5) set ram over cartridge, (bit6) enable write
+     E7E7             (new-engine/system):00056         map.CF74021.SYS1    equ $E7E7 ; (bit4) set ram over data area
+                      (new-engine/system):00057         
+                      (new-engine/system):00058         ; extension port
+     00E7             (new-engine/system):00059         map.EXTPORT         equ $E7
+     E7F0             (new-engine/system):00060         map.IEEE488         equ $E7F0 ; to E7F7
+     E7F2             (new-engine/system):00061         map.EF5860.CTRL     equ $E7F2 ; MIDI
+     E7F3             (new-engine/system):00062         map.EF5860.TX       equ $E7F3 ; MIDI
+     E7FE             (new-engine/system):00063         map.MEA8000.D       equ $E7FE ; Vocal synth
+     E7FF             (new-engine/system):00064         map.MEA8000.A       equ $E7FF : Vocal synth
+                      (new-engine/system):00065         
+                      (new-engine/system):00066         ; ROM routines
+     E004             (new-engine/system):00067         map.DKCONT          equ $E004 ; TO:DKCO, MO:SWI $26
+     E007             (new-engine/system):00068         map.DKBOOT          equ $E007 ; boot
+     E00A             (new-engine/system):00069         map.DKFMT           equ $E00A ; format
+     E00D             (new-engine/system):00070         map.LECFA           equ $E00D ; read FAT
+     E010             (new-engine/system):00071         map.RECFI           equ $E010 ; search file
+     E010             (new-engine/system):00072         map.RECUP           equ $E010 ; clear file
+     E010             (new-engine/system):00073         map.ECRSE           equ $E010 ; sector write
+     E019             (new-engine/system):00074         map.ALLOD           equ $E019 ; catalog file allocation
+     E01C             (new-engine/system):00075         map.ALLOB           equ $E01C ; bloc allocation
+     E01F             (new-engine/system):00076         map.MAJCL           equ $E01F ; cluster update
+     E022             (new-engine/system):00077         map.FINTR           equ $E022 ; transfert end
+     E025             (new-engine/system):00078         map.QDDSTD          equ $E025 ; QDD std functions
+     E028             (new-engine/system):00079         map.QDDSYS          equ $E028 ; QDD sys functions
+                      (new-engine/system):00080         
+     E803             (new-engine/system):00081         map.PUTC            equ $E803
+     E806             (new-engine/system):00082         map.GETC            equ $E806
+     E809             (new-engine/system):00083         map.KTST            equ $E809
+     E82A             (new-engine/system):00084         map.DKCO            equ $E82A ; read or write floppy disk routine
+     E830             (new-engine/system):00085         map.IRQ.EXIT        equ $E830 ; to exit an irq
+                      (new-engine/system):00086         
+                      (new-engine/system):00087         ; system monitor registers
+     0060             (new-engine/system):00088         map.REG.DP          equ $60   ; direct page for system monitor registers
+     6019             (new-engine/system):00089         map.STATUS          equ $6019 ; status bitfield
+     6048             (new-engine/system):00090         map.DK.OPC          equ $6048 ; operation
+     6049             (new-engine/system):00091         map.DK.DRV          equ $6049 ; drive
+     604C             (new-engine/system):00092         map.DK.SEC          equ $604C ; sector
+     604A             (new-engine/system):00093         map.DK.TRK          equ $604A ; $604B ; track
+     604E             (new-engine/system):00094         map.DK.STA          equ $604E ; return status
+     604F             (new-engine/system):00095         map.DK.BUF          equ $604F ; $6050 ; data write location
+     6023             (new-engine/system):00096         map.FIRQPT          equ $6023 ; routine firq
+     6027             (new-engine/system):00097         map.TIMERPT         equ $6027 ; routine irq timer
+     6081             (new-engine/system):00098         map.CF74021.SYS1.R  equ $6081 ; reading value for map.CF74021.SYS1
+                      (new-engine/system):00099         
+                      (new-engine/system):00100         ; -----------------------------------------------------------------------------
+                      (new-engine/system):00101         ; constants
+                      (new-engine/system):00102         
+     0035             (new-engine/system):00103         map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interrupt
+     0015             (new-engine/system):00104         map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
+     0060             (new-engine/system):00105         map.RAM_OVER_CART     equ %01100000
+                      (new-engine/system):00106         
+                      (new-engine/system):00107         ; -----------------------------------------------------------------------------
+                      (new-engine/system):00108         ; mapping to generic names
+                      (new-engine/system):00109         
+     E7CD             (new-engine/system):00110         map.DAC            equ map.MC6821.PRA2
+     E7C6             (new-engine/system):00111         map.RND            equ map.MC6846.TMSB
+                      (new-engine/system):00112             ENDC
+                      (C:\Users\bhrou\gi):00005         
+                      (C:\Users\bhrou\gi):00006          SECTION code
+                      (C:\Users\bhrou\gi):00007         
+0000                  (C:\Users\bhrou\gi):00008         ymm.init
+0000 B70000           (C:\Users\bhrou\gi):00009                 sta   ymm.data.page
+0003 BF0000           (C:\Users\bhrou\gi):00010                 stx   ymm.data
+0006 F70000           (C:\Users\bhrou\gi):00011                 stb   ymm.loop
+0009 10BF0000         (C:\Users\bhrou\gi):00012                 sty   ymm.callback
+000D 8601             (C:\Users\bhrou\gi):00013                 lda   #1
+000F B70000           (C:\Users\bhrou\gi):00014                 sta   ymm.status
+0012 B70000           (C:\Users\bhrou\gi):00015                 sta   ymm.frame.waits
+0015 CE0000           (C:\Users\bhrou\gi):00016                 ldu   #ymm.buffer
+0018 FF0000           (C:\Users\bhrou\gi):00017                 stu   ymm.data.pos
+001B 7E0000           (C:\Users\bhrou\gi):00018                 jmp   ymm.decompress
+                      (C:\Users\bhrou\gi):00019         
+                      (C:\Users\bhrou\gi):00020          ENDSECTION
+                      (C:\Users\bhrou\gi):00021         
+                      (C:\Users\bhrou\gi):00022                 INCLUDE "./new-engine/sound/ymm.asm"
+                      (./new-engine/soun):00001         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00002         ; YM2413 VGM playback system for 6809
+                      (./new-engine/soun):00003         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00004         ; Play a compressed (ZX0) stream of ym2413 vgm data
+                      (./new-engine/soun):00005         ;
+                      (./new-engine/soun):00006         ; by Bentoc December 2022
+                      (./new-engine/soun):00007         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00008         
+                      (./new-engine/soun):00009         irq.on       EXTERNAL
+                      (./new-engine/soun):00010         irq.off      EXTERNAL
+                      (./new-engine/soun):00011         map.YM2413.A EXTERNAL
+                      (./new-engine/soun):00012         map.YM2413.D EXTERNAL
+                      (./new-engine/soun):00013         
+                      (./new-engine/soun):00014         ymm.play       EXPORT
+                      (./new-engine/soun):00015         ymm.frame.play EXPORT
+                      (./new-engine/soun):00016         
+                      (./new-engine/soun):00017                 INCLUDE "./new-engine/sound/ym2413.asm"
+                      (./new-engine/soun):00001         
+                      (./new-engine/soun):00002         ; Reset YM2413 sound chip to a default (silent) state
+                      (./new-engine/soun):00003         ; ----------------------------------------------------
+                      (./new-engine/soun):00004         
+                      (./new-engine/soun):00005         map.YM2413.A EXTERNAL
+                      (./new-engine/soun):00006         map.YM2413.D EXTERNAL
+                      (./new-engine/soun):00007         
+                      (./new-engine/soun):00008          SECTION code
+                      (./new-engine/soun):00009         
+                      (./new-engine/soun):00010          IFNDEF ym2413.init
+001E                  (./new-engine/soun):00011         ym2413.init
+001E CC200E           (./new-engine/soun):00012                 ldd   #$200E
+0021 F70000           (./new-engine/soun):00013                 stb   map.YM2413.A
+0024 12               (./new-engine/soun):00014                 nop                            ; (wait of 2 cycles)
+0025 C600             (./new-engine/soun):00015                 ldb   #0                       ; (wait of 2 cycles)
+0027 B70000           (./new-engine/soun):00016                 sta   map.YM2413.D             ; note off for all drums     
+002A 8620             (./new-engine/soun):00017                 lda   #$20                     ; (wait of 2 cycles)
+002C 21FE             (./new-engine/soun):00018                 brn   *                        ; (wait of 3 cycles)
+002E 1E89             (./new-engine/soun):00019         @c      exg   a,b                      ; (wait of 8 cycles)                                      
+0030 1E89             (./new-engine/soun):00020                 exg   a,b                      ; (wait of 8 cycles)                                      
+0032 B70000           (./new-engine/soun):00021                 sta   map.YM2413.A
+0035 12               (./new-engine/soun):00022                 nop
+0036 4C               (./new-engine/soun):00023                 inca
+0037 F70000           (./new-engine/soun):00024                 stb   map.YM2413.D
+003A 8129             (./new-engine/soun):00025                 cmpa  #$29                     ; (wait of 2 cycles)
+003C 26F0             (./new-engine/soun):00026                 bne   @c                       ; (wait of 3 cycles)
+003E 39               (./new-engine/soun):00027                 rts  
+                      (./new-engine/soun):00028          ENDC
+                      (./new-engine/soun):00029         
+                      (./new-engine/soun):00030          ENDSECTION
+                      (./new-engine/soun):00018         
+                      (./new-engine/soun):00019          SECTION code
+                      (./new-engine/soun):00020         
+                      (./new-engine/soun):00021                 INCLUDE "new-engine/6809/macros.asm"
+                      (new-engine/6809/m):00001         ;*******************************************************************************
+                      (new-engine/6809/m):00002         ; macros
+                      (new-engine/6809/m):00003         ; ------------------------------------------------------------------------------
+                      (new-engine/6809/m):00004         ;
+                      (new-engine/6809/m):00005         ; 6809 macros
+                      (new-engine/6809/m):00006         ;
+                      (new-engine/6809/m):00007         ; TODO : move engine macros in dedicated files xxx.macro.asm
+                      (new-engine/6809/m):00008         ; old naming convention, should be migrated
+                      (new-engine/6809/m):00009         ;*******************************************************************************
+                      (new-engine/6809/m):00010         
+003F                  (new-engine/6809/m):00011         _ldd MACRO
+                      (new-engine/6809/m):00012                 ldd   #((\1)*256)+\2
+                      (new-engine/6809/m):00013          ENDM
+                      (new-engine/6809/m):00014          
+003F                  (new-engine/6809/m):00015         _ldx MACRO
+                      (new-engine/6809/m):00016                 ldx   #((\1)*256)+\2
+                      (new-engine/6809/m):00017          ENDM
+                      (new-engine/6809/m):00018          
+003F                  (new-engine/6809/m):00019         _ldy MACRO
+                      (new-engine/6809/m):00020                 ldy   #((\1)*256)+\2
+                      (new-engine/6809/m):00021          ENDM
+                      (new-engine/6809/m):00022          
+003F                  (new-engine/6809/m):00023         _ldu MACRO
+                      (new-engine/6809/m):00024                 ldu   #((\1)*256)+\2
+                      (new-engine/6809/m):00025          ENDM  
+                      (new-engine/6809/m):00026          
+003F                  (new-engine/6809/m):00027         _lds MACRO
+                      (new-engine/6809/m):00028                 lds   #((\1)*256)+\2
+                      (new-engine/6809/m):00029          ENDM   
+                      (new-engine/6809/m):00030          
+003F                  (new-engine/6809/m):00031         _SetCartPageA MACRO
+                      (new-engine/6809/m):00032          IFDEF T2
+                      (new-engine/6809/m):00033                 jsr   SetCartPageA
+                      (new-engine/6809/m):00034          ELSE
+                      (new-engine/6809/m):00035                 sta   $E7E6                    ; selection de la page RAM en zone cartouche
+                      (new-engine/6809/m):00036          ENDC
+                      (new-engine/6809/m):00037          ENDM      
+                      (new-engine/6809/m):00038          
+003F                  (new-engine/6809/m):00039         _GetCartPageA MACRO
+                      (new-engine/6809/m):00040          IFDEF T2
+                      (new-engine/6809/m):00041                 jsr   GetCartPageA
+                      (new-engine/6809/m):00042          ELSE
+                      (new-engine/6809/m):00043                 lda   $E7E6
+                      (new-engine/6809/m):00044          ENDC
+                      (new-engine/6809/m):00045          ENDM
+                      (new-engine/6809/m):00046         
+003F                  (new-engine/6809/m):00047         _SetCartPageB MACRO
+                      (new-engine/6809/m):00048          IFDEF T2
+                      (new-engine/6809/m):00049                 jsr   SetCartPageB
+                      (new-engine/6809/m):00050          ELSE
+                      (new-engine/6809/m):00051                 stb   $E7E6                    ; selection de la page RAM en zone cartouche
+                      (new-engine/6809/m):00052          ENDC
+                      (new-engine/6809/m):00053          ENDM      
+                      (new-engine/6809/m):00054          
+003F                  (new-engine/6809/m):00055         _GetCartPageB MACRO
+                      (new-engine/6809/m):00056          IFDEF T2
+                      (new-engine/6809/m):00057                 jsr   GetCartPageB
+                      (new-engine/6809/m):00058          ELSE
+                      (new-engine/6809/m):00059                 ldb   $E7E6
+                      (new-engine/6809/m):00060          ENDC
+                      (new-engine/6809/m):00061          ENDM     
+                      (new-engine/6809/m):00062         
+003F                  (new-engine/6809/m):00063         _RunObjectSwap MACRO
+                      (new-engine/6809/m):00064                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00065                 ; param 2 : Object data RAM address
+                      (new-engine/6809/m):00066                 ; manual launch of an object from a different dynamic memory page and not from the resident page 1
+                      (new-engine/6809/m):00067                 lda   Obj_Index_Page+\1
+                      (new-engine/6809/m):00068                 sta   PSR_Page   
+                      (new-engine/6809/m):00069                 ldd   Obj_Index_Address+2*\1
+                      (new-engine/6809/m):00070                 std   PSR_Address       
+                      (new-engine/6809/m):00071                 ldu   \2             
+                      (new-engine/6809/m):00072                 jsr   RunPgSubRoutine
+                      (new-engine/6809/m):00073          ENDM    
+                      (new-engine/6809/m):00074         
+003F                  (new-engine/6809/m):00075         _RunObjectSwapRoutine MACRO
+                      (new-engine/6809/m):00076                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00077                 ; param 2 : Object routine
+                      (new-engine/6809/m):00078                 ; manual launch of an object from a different dynamic memory page and not from the resident page 1
+                      (new-engine/6809/m):00079                 lda   Obj_Index_Page+\1   
+                      (new-engine/6809/m):00080                 sta   PSR_Page   
+                      (new-engine/6809/m):00081                 ldd   Obj_Index_Address+2*\1
+                      (new-engine/6809/m):00082                 std   PSR_Address       
+                      (new-engine/6809/m):00083                 ldb   \2        
+                      (new-engine/6809/m):00084                 jsr   RunPgSubRoutine
+                      (new-engine/6809/m):00085          ENDM 
+                      (new-engine/6809/m):00086          
+003F                  (new-engine/6809/m):00087         _MountObject MACRO 
+                      (new-engine/6809/m):00088                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00089                 ; manual mount of an object from the resident page 1
+                      (new-engine/6809/m):00090                 lda   Obj_Index_Page+\1
+                      (new-engine/6809/m):00091                 _SetCartPageA
+                      (new-engine/6809/m):00092                 ldx   Obj_Index_Address+2*\1
+                      (new-engine/6809/m):00093          ENDM
+                      (new-engine/6809/m):00094         
+003F                  (new-engine/6809/m):00095         _RunObject MACRO 
+                      (new-engine/6809/m):00096                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00097                 ; param 2 : Object data RAM address
+                      (new-engine/6809/m):00098                 ; manual launch of an object from the resident page 1
+                      (new-engine/6809/m):00099                 _MountObject \1
+                      (new-engine/6809/m):00100                 ldu   \2        
+                      (new-engine/6809/m):00101                 jsr   ,x
+                      (new-engine/6809/m):00102          ENDM
+                      (new-engine/6809/m):00103         
+003F                  (new-engine/6809/m):00104         _RunObjectRoutineA MACRO 
+                      (new-engine/6809/m):00105                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00106                 ; param 2 : Object routine
+                      (new-engine/6809/m):00107                 ; manual launch of an object from the resident page 1
+                      (new-engine/6809/m):00108                 ; this object does not need or have a data structure for this routine
+                      (new-engine/6809/m):00109                 _MountObject \1
+                      (new-engine/6809/m):00110                 lda   \2        
+                      (new-engine/6809/m):00111                 jsr   ,x
+                      (new-engine/6809/m):00112          ENDM
+                      (new-engine/6809/m):00113         
+003F                  (new-engine/6809/m):00114         _RunObjectRoutineB MACRO 
+                      (new-engine/6809/m):00115                 ; param 1 : ObjID_
+                      (new-engine/6809/m):00116                 ; param 2 : Object routine
+                      (new-engine/6809/m):00117                 ; manual launch of an object from the resident page 1
+                      (new-engine/6809/m):00118                 ; this object does not need or have a data structure for this routine
+                      (new-engine/6809/m):00119                 _MountObject \1
+                      (new-engine/6809/m):00120                 ldb   \2        
+                      (new-engine/6809/m):00121                 jsr   ,x
+                      (new-engine/6809/m):00122          ENDM
+                      (new-engine/6809/m):00123         
+003F                  (new-engine/6809/m):00124         _SwitchScreenBuffer MACRO
+                      (new-engine/6809/m):00125                 ldb   $E7E5
+                      (new-engine/6809/m):00126                 eorb  #1                       ; switch btw page 2 and 3
+                      (new-engine/6809/m):00127                 orb   #$02
+                      (new-engine/6809/m):00128                 stb   $E7E5
+                      (new-engine/6809/m):00129          ENDM
+                      (new-engine/6809/m):00130         
+003F                  (new-engine/6809/m):00131         _asld MACRO
+                      (new-engine/6809/m):00132                 aslb
+                      (new-engine/6809/m):00133                 rola
+                      (new-engine/6809/m):00134          ENDM        
+                      (new-engine/6809/m):00135          
+003F                  (new-engine/6809/m):00136         _asrd MACRO
+                      (new-engine/6809/m):00137                 asra
+                      (new-engine/6809/m):00138                 rorb
+                      (new-engine/6809/m):00139          ENDM      
+                      (new-engine/6809/m):00140          
+003F                  (new-engine/6809/m):00141         _lsld MACRO
+                      (new-engine/6809/m):00142                 lslb
+                      (new-engine/6809/m):00143                 rola
+                      (new-engine/6809/m):00144          ENDM        
+                      (new-engine/6809/m):00145          
+003F                  (new-engine/6809/m):00146         _lsrd MACRO
+                      (new-engine/6809/m):00147                 lsra
+                      (new-engine/6809/m):00148                 rorb
+                      (new-engine/6809/m):00149          ENDM
+                      (new-engine/6809/m):00150          
+003F                  (new-engine/6809/m):00151         _rold MACRO
+                      (new-engine/6809/m):00152                 rolb
+                      (new-engine/6809/m):00153                 rola
+                      (new-engine/6809/m):00154          ENDM    
+                      (new-engine/6809/m):00155          
+003F                  (new-engine/6809/m):00156         _rord MACRO
+                      (new-engine/6809/m):00157                 rora
+                      (new-engine/6809/m):00158                 rorb
+                      (new-engine/6809/m):00159          ENDM
+                      (new-engine/6809/m):00160         
+003F                  (new-engine/6809/m):00161         _negd MACRO
+                      (new-engine/6809/m):00162                 nega
+                      (new-engine/6809/m):00163                 negb
+                      (new-engine/6809/m):00164                 sbca  #0
+                      (new-engine/6809/m):00165          ENDM
+                      (new-engine/6809/m):00166         
+003F                  (new-engine/6809/m):00167         _cba MACRO
+                      (new-engine/6809/m):00168                 pshs  b
+                      (new-engine/6809/m):00169                 cmpa  ,s+
+                      (new-engine/6809/m):00170          ENDM
+                      (new-engine/6809/m):00171         
+003F                  (new-engine/6809/m):00172         _aba MACRO
+                      (new-engine/6809/m):00173                 pshs  b
+                      (new-engine/6809/m):00174                 adda  ,s+
+                      (new-engine/6809/m):00175          ENDM
+                      (new-engine/6809/m):00176         
+003F                  (new-engine/6809/m):00177         _sba MACRO
+                      (new-engine/6809/m):00178                 pshs  b
+                      (new-engine/6809/m):00179                 suba  ,s+
+                      (new-engine/6809/m):00180          ENDM
+                      (new-engine/6809/m):00181         
+003F                  (new-engine/6809/m):00182         _cab MACRO
+                      (new-engine/6809/m):00183                 pshs  a
+                      (new-engine/6809/m):00184                 cmpb  ,s+
+                      (new-engine/6809/m):00185          ENDM
+                      (new-engine/6809/m):00186         
+003F                  (new-engine/6809/m):00187         _aab MACRO
+                      (new-engine/6809/m):00188                 pshs  a
+                      (new-engine/6809/m):00189                 addb  ,s+
+                      (new-engine/6809/m):00190          ENDM
+                      (new-engine/6809/m):00191         
+003F                  (new-engine/6809/m):00192         _sab MACRO
+                      (new-engine/6809/m):00193                 pshs  a
+                      (new-engine/6809/m):00194                 subb  ,s+
+                      (new-engine/6809/m):00195          ENDM
+                      (new-engine/6809/m):00196         
+003F                  (new-engine/6809/m):00197         _breakpoint MACRO
+                      (new-engine/6809/m):00198          IFDEF DEBUG
+                      (new-engine/6809/m):00199                 pshs  CC
+                      (new-engine/6809/m):00200                 sta   >$ffff
+                      (new-engine/6809/m):00201                 puls  CC
+                      (new-engine/6809/m):00202          ENDC
+                      (new-engine/6809/m):00203          ENDM
+                      (./new-engine/soun):00022         
+     003F             (./new-engine/soun):00023         ymm.base             equ   *
+                      (./new-engine/soun):00024         
+003F 0000             (./new-engine/soun):00025         ymm.data             fdb   0             ; address of song data
+0041 00               (./new-engine/soun):00026         ymm.data.page        fcb   0             ; memory page of music data
+0042 0000             (./new-engine/soun):00027         ymm.data.pos         fdb   0             ; current playing position in Music Data
+0044 00               (./new-engine/soun):00028         ymm.status           fcb   0             ; 0 : stop playing, 1-255 : play music
+0045 00               (./new-engine/soun):00029         ymm.frame.waits      fcb   0             ; number of frames to wait before next play
+0046 00               (./new-engine/soun):00030         ymm.loop             fcb   0             ; 0=no loop
+0047 0000             (./new-engine/soun):00031         ymm.callback         fdb   0             ; 0=no calback routine
+                      (./new-engine/soun):00032         
+                      (./new-engine/soun):00033         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00034         ; ymm.play - Load a new music and init all tracks
+                      (./new-engine/soun):00035         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00036         ; receives in X the address of the song
+                      (./new-engine/soun):00037         ; destroys X,A
+                      (./new-engine/soun):00038         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00039         
+0049                  (./new-engine/soun):00040         ymm.play
+0049 BD0000           (./new-engine/soun):00041                 jsr   irq.off
+004C F70000           (./new-engine/soun):00042                 stb   ymm.loop
+004F 10BF0000         (./new-engine/soun):00043                 sty   ymm.callback
+                      (./new-engine/soun):00044                 _GetCartPageA
+                      (    _GetCartPageA):00001          IFDEF T2
+                      (    _GetCartPageA):00002                 jsr   GetCartPageA
+                      (    _GetCartPageA):00003          ELSE
+0053 B6E7E6           (    _GetCartPageA):00004                 lda   $E7E6
+                      (    _GetCartPageA):00005          ENDC
+0056 B70000           (./new-engine/soun):00045                 sta   @a
+0059 A684             (./new-engine/soun):00046                 lda   ,x                         ; get memory page that contains track data
+005B B70000           (./new-engine/soun):00047                 sta   ymm.data.page
+005E B70000           (./new-engine/soun):00048                 sta   ymm.status
+                      (./new-engine/soun):00049                 _SetCartPageA
+                      (    _SetCartPageA):00001          IFDEF T2
+                      (    _SetCartPageA):00002                 jsr   SetCartPageA
+                      (    _SetCartPageA):00003          ELSE
+0061 B7E7E6           (    _SetCartPageA):00004                 sta   $E7E6                    ; selection de la page RAM en zone cartouche
+                      (    _SetCartPageA):00005          ENDC
+0064 8601             (./new-engine/soun):00050                 lda   #1
+0066 B70000           (./new-engine/soun):00051                 sta   ymm.frame.waits
+0069 AE01             (./new-engine/soun):00052                 ldx   1,x                        ; get ptr to track data
+006B BF0000           (./new-engine/soun):00053                 stx   ymm.data
+006E CE0000           (./new-engine/soun):00054                 ldu   #ymm.buffer
+0071 FF0000           (./new-engine/soun):00055                 stu   ymm.data.pos
+0074 BD0000           (./new-engine/soun):00056                 jsr   ymm.decompress
+0077 8600             (./new-engine/soun):00057                 lda   #0
+     0078             (./new-engine/soun):00058         @a      equ   *-1
+                      (./new-engine/soun):00059                 _SetCartPageA
+                      (    _SetCartPageA):00001          IFDEF T2
+                      (    _SetCartPageA):00002                 jsr   SetCartPageA
+                      (    _SetCartPageA):00003          ELSE
+0079 B7E7E6           (    _SetCartPageA):00004                 sta   $E7E6                    ; selection de la page RAM en zone cartouche
+                      (    _SetCartPageA):00005          ENDC
+007C BD0000           (./new-engine/soun):00060                 jsr   ym2413.init
+007F 7E0000           (./new-engine/soun):00061                 jmp   irq.on
+                      (./new-engine/soun):00062         
+                      (./new-engine/soun):00063         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00064         ; ymm.frame.play - processes a music frame (VInt)
+                      (./new-engine/soun):00065         ;
+                      (./new-engine/soun):00066         ; format:
+                      (./new-engine/soun):00067         ; -------
+                      (./new-engine/soun):00068         ; x00-x38 xnn           : (2 bytes) YM2413 registers
+                      (./new-engine/soun):00069         ; x39                   : (1 byte) end of stream
+                      (./new-engine/soun):00070         ; x40                   : (1 byte) wait 1 frames
+                      (./new-engine/soun):00071         ; ...
+                      (./new-engine/soun):00072         ; xFF                   ; (1 byte) wait 198 frames
+                      (./new-engine/soun):00073         ;
+                      (./new-engine/soun):00074         ; ------------------------------------------------------------------------------
+                      (./new-engine/soun):00075                 
+0082                  (./new-engine/soun):00076         ymm.frame.play
+0082 B60000           (./new-engine/soun):00077                 lda   ymm.status
+0085 2705             (./new-engine/soun):00078                 beq   @rts
+0087 7A0000           (./new-engine/soun):00079                 dec   ymm.frame.waits
+008A 2701             (./new-engine/soun):00080                 beq   >
+008C 39               (./new-engine/soun):00081         @rts    rts
+008D B60000           (./new-engine/soun):00082         !       lda   ymm.data.page
+                      (./new-engine/soun):00083                 _SetCartPageA
+                      (    _SetCartPageA):00001          IFDEF T2
+                      (    _SetCartPageA):00002                 jsr   SetCartPageA
+                      (    _SetCartPageA):00003          ELSE
+0090 B7E7E6           (    _SetCartPageA):00004                 sta   $E7E6                    ; selection de la page RAM en zone cartouche
+                      (    _SetCartPageA):00005          ENDC
+0093                  (./new-engine/soun):00084         YVGM_do_MusicFrame
+0093 BE0000           (./new-engine/soun):00085                 ldx   ymm.data.pos
+0096                  (./new-engine/soun):00086         @UpdateLoop
+0096 A680             (./new-engine/soun):00087                 lda   ,x+
+0098 8C0000           (./new-engine/soun):00088                 cmpx  #ymm.buffer.end
+009B 2603             (./new-engine/soun):00089                 bne >
+009D 8E0000           (./new-engine/soun):00090                 ldx   #ymm.buffer
+00A0 8139             (./new-engine/soun):00091         !       cmpa  #$39
+00A2 2536             (./new-engine/soun):00092                 blo   @YM2413
+00A4                  (./new-engine/soun):00093         @YVGM_DoWait
+00A4 8039             (./new-engine/soun):00094                 suba  #$39
+00A6 2709             (./new-engine/soun):00095                 beq   @DoStopTrack
+00A8 B70000           (./new-engine/soun):00096                 sta   ymm.frame.waits
+00AB BF0000           (./new-engine/soun):00097                 stx   ymm.data.pos
+00AE 7E0000           (./new-engine/soun):00098                 jmp   ymm.frame.resume           ; read next frame data
+00B1                  (./new-engine/soun):00099         @DoStopTrack
+00B1 BE0000           (./new-engine/soun):00100                 ldx   ymm.callback               ; check callback routine
+00B4 2702             (./new-engine/soun):00101                 beq   >
+00B6 6E84             (./new-engine/soun):00102                 jmp   ,x
+00B8 B60000           (./new-engine/soun):00103         !       lda   ymm.loop
+00BB 2714             (./new-engine/soun):00104                 beq   @no_looping
+00BD 8603             (./new-engine/soun):00105                 lda   #3 ; fix ? should be 1 ?
+00BF B70000           (./new-engine/soun):00106                 sta   ymm.frame.waits
+00C2 BE0000           (./new-engine/soun):00107                 ldx   ymm.data
+00C5 CE0000           (./new-engine/soun):00108                 ldu   #ymm.buffer
+00C8 FF0000           (./new-engine/soun):00109                 stu   ymm.data.pos
+00CB BD0000           (./new-engine/soun):00110                 jsr   ymm.decompress    
+00CE 7E0000           (./new-engine/soun):00111                 jmp   ymm.frame.play  
+00D1                  (./new-engine/soun):00112         @no_looping
+00D1 8600             (./new-engine/soun):00113                 lda   #0
+00D3 B70000           (./new-engine/soun):00114                 sta   ymm.status
+00D6 BD0000           (./new-engine/soun):00115                 jsr   ym2413.init
+00D9 39               (./new-engine/soun):00116                 rts
+00DA                  (./new-engine/soun):00117         @YM2413
+00DA 9700             (./new-engine/soun):00118                 sta   <map.YM2413.A
+00DC E680             (./new-engine/soun):00119                 ldb   ,x+
+00DE 8C0000           (./new-engine/soun):00120                 cmpx  #ymm.buffer.end
+00E1 2603             (./new-engine/soun):00121                 bne >
+00E3 8E0000           (./new-engine/soun):00122                 ldx   #ymm.buffer
+00E6 D700             (./new-engine/soun):00123         !       stb   <map.YM2413.D
+00E8 12               (./new-engine/soun):00124                 nop
+00E9 12               (./new-engine/soun):00125                 nop                              ; tempo (should be 24 cycles between two register writes)
+00EA 20AA             (./new-engine/soun):00126                 bra   @UpdateLoop
+                      (./new-engine/soun):00127         
+                      (./new-engine/soun):00128         ; @zx0_6809_mega.asm - ZX0 decompressor for M6809 - 189 bytes
+                      (./new-engine/soun):00129         ; Written for the LWTOOLS assembler, http://www.lwtools.ca/.
+                      (./new-engine/soun):00130         ;
+                      (./new-engine/soun):00131         ; Copyright (c) 2021 Doug Masten
+                      (./new-engine/soun):00132         ; ZX0 compression (c) 2021 Einar Saukas, https://github.com/einar-saukas/ZX0
+                      (./new-engine/soun):00133         ;
+                      (./new-engine/soun):00134         ; This software is provided 'as-is', without any express or implied
+                      (./new-engine/soun):00135         ; warranty. In no event will the authors be held liable for any damages
+                      (./new-engine/soun):00136         ; arising from the use of this software.
+                      (./new-engine/soun):00137         ;
+                      (./new-engine/soun):00138         ; Permission is granted to anyone to use this software for any purpose,
+                      (./new-engine/soun):00139         ; including commercial applications, and to alter it and redistribute it
+                      (./new-engine/soun):00140         ; freely, subject to the following restrictions:
+                      (./new-engine/soun):00141         ;
+                      (./new-engine/soun):00142         ; 1. The origin of this software must not be misrepresented; you must not
+                      (./new-engine/soun):00143         ;    claim that you wrote the original software. If you use this software
+                      (./new-engine/soun):00144         ;    in a product, an acknowledgment in the product documentation would be
+                      (./new-engine/soun):00145         ;    appreciated but is not required.
+                      (./new-engine/soun):00146         ; 2. Altered source versions must be plainly marked as such, and must not be
+                      (./new-engine/soun):00147         ;    misrepresented as being the original software.
+                      (./new-engine/soun):00148         ; 3. This notice may not be removed or altered from any source distribution.
+                      (./new-engine/soun):00149         ;
+                      (./new-engine/soun):00150         ; ************************************************************************
+                      (./new-engine/soun):00151         ; ALTERED SOURCE TO BE ABLE TO UNCOMPRESS ON THE FLY WITH A CYCLING BUFFER
+                      (./new-engine/soun):00152         ; ************************************************************************
+                      (./new-engine/soun):00153         ;------------------------------------------------------------------------------
+                      (./new-engine/soun):00154         ; Function    : zx0_decompress
+                      (./new-engine/soun):00155         ; Entry       : Reg X = start of compressed data
+                      (./new-engine/soun):00156         ;             : Reg U = start of decompression buffer
+                      (./new-engine/soun):00157         ; Exit        : Reg X = end of compressed data + 1
+                      (./new-engine/soun):00158         ;             : Reg U = end of decompression buffer + 1
+                      (./new-engine/soun):00159         ; Destroys    : Regs D, Y
+                      (./new-engine/soun):00160         ; Description : Decompress ZX0 data (version 1)
+                      (./new-engine/soun):00161         ;------------------------------------------------------------------------------
+00EC                  (./new-engine/soun):00162         ymm.decompress
+                      (./new-engine/soun):00163         ; initialize variables
+00EC 10FF0000         (./new-engine/soun):00164                            sts @saveS1
+00F0 10CE0000         (./new-engine/soun):00165                            lds #@stackContext
+00F4 CC80FF           (./new-engine/soun):00166                            ldd #$80ff
+00F7 B70000           (./new-engine/soun):00167                            sta @zx0_bit          ; init bit stream
+00FA 1D               (./new-engine/soun):00168                            sex                   ; reg A = $FF
+00FB FD0000           (./new-engine/soun):00169                            std @zx0_offset       ; init offset = -1
+                      (./new-engine/soun):00170         ; 0 - literal (copy next N bytes from compressed data)
+00FE 8D42             (./new-engine/soun):00171         @ym2413zx0_literals bsr @zx0_elias       ; obtain length
+0100 1F02             (./new-engine/soun):00172                            tfr d,y               ;  "      "
+0102 7F0000           (./new-engine/soun):00173                            clr @mode
+0105 8D58             (./new-engine/soun):00174                            bsr @zx0_copy_bytes   ; copy literals
+0107 2520             (./new-engine/soun):00175                            bcs @zx0_new_offset   ; branch if next block is new-offset
+                      (./new-engine/soun):00176         ; 0 - copy from last offset (repeat N bytes from last offset)
+0109 8D37             (./new-engine/soun):00177                            bsr @zx0_elias        ; obtain length
+     010B             (./new-engine/soun):00178         @zx0_copy          equ *
+010B BF0000           (./new-engine/soun):00179                            stx @saveX            ; save reg X
+010E 1F02             (./new-engine/soun):00180                            tfr d,y               ; setup length
+     0112             (./new-engine/soun):00181         @zx0_offset        equ *+2
+0110 30C9FFFF         (./new-engine/soun):00182                            leax >$ffff,u         ; calculate offset address
+0114 8C0000           (./new-engine/soun):00183                            cmpx #ymm.buffer      ; this test is a shortcut that need a buffer to be stored
+0117 2404             (./new-engine/soun):00184                            bhs >                 ; at an address >= buffer length
+0119 30890200         (./new-engine/soun):00185                            leax ymm.buffer.end-ymm.buffer,x ; cycle buffer
+011D 8601             (./new-engine/soun):00186         !                  lda #1
+011F B70000           (./new-engine/soun):00187                            sta @mode
+0122 8D3F             (./new-engine/soun):00188                            bsr @zx0_copy_bytes_b ; copy match
+0124 8E0000           (./new-engine/soun):00189                            ldx #0                ; restore reg X
+     0125             (./new-engine/soun):00190         @saveX             equ *-2
+0127 24D5             (./new-engine/soun):00191                            bcc @ym2413zx0_literals ; branch if next block is literals
+                      (./new-engine/soun):00192         ; 1 - copy from new offset (repeat N bytes from new offset)
+0129 8D17             (./new-engine/soun):00193         @zx0_new_offset    bsr @zx0_elias        ; obtain offset MSB
+012B 50               (./new-engine/soun):00194                            negb                  ; adjust for negative offset (set carry for RORA below)
+012C 2730             (./new-engine/soun):00195                            beq @zx0_eof          ; eof? (length = 256) if so exit
+012E 1F98             (./new-engine/soun):00196                            tfr b,a               ; transfer to MSB position
+0130 E680             (./new-engine/soun):00197                            ldb ,x+               ; obtain LSB offset
+                      (./new-engine/soun):00198                            ;cmpx #ymm.buffer.end
+                      (./new-engine/soun):00199                            ;blo >
+                      (./new-engine/soun):00200                            ;ldx  #ymm.buffer     ; cycle buffer
+0132 46               (./new-engine/soun):00201         !                  rora                  ; last offset bit becomes first length bit
+0133 56               (./new-engine/soun):00202                            rorb                  ;  "     "     "    "      "     "      "
+0134 FD0000           (./new-engine/soun):00203                            std @zx0_offset       ; preserve new offset
+0137 CC0001           (./new-engine/soun):00204                            ldd #1                ; set elias = 1
+013A 8D20             (./new-engine/soun):00205                            bsr @zx0_elias_bt     ; get length but skip first bit
+013C 5C               (./new-engine/soun):00206                            incb                  ; Tiny change to save a couple of CPU cycles
+013D 26CC             (./new-engine/soun):00207                            bne @zx0_copy        
+013F 4C               (./new-engine/soun):00208                            inca
+0140 20C9             (./new-engine/soun):00209                            bra @zx0_copy         ; copy new offset match
+                      (./new-engine/soun):00210         ; interlaced elias gamma coding
+0142 CC0001           (./new-engine/soun):00211         @zx0_elias         ldd #1                ; set elias = 1
+0145 2005             (./new-engine/soun):00212                            bra @zx0_elias_start  ; goto start of elias gamma coding
+0147 780000           (./new-engine/soun):00213         @zx0_elias_loop    lsl @zx0_bit          ; get next bit
+014A 59               (./new-engine/soun):00214                            rolb                  ; rotate elias value
+014B 49               (./new-engine/soun):00215                            rola                  ;   "     "     "
+014C 780000           (./new-engine/soun):00216         @zx0_elias_start   lsl @zx0_bit          ; get next bit
+014F 260B             (./new-engine/soun):00217                            bne @zx0_elias_bt     ; branch if bit stream is not empty
+0151 B70000           (./new-engine/soun):00218                            sta @saveA            ; save reg A
+0154 A680             (./new-engine/soun):00219                            lda ,x+               ; load another 8-bits
+                      (./new-engine/soun):00220                            ;cmpx #ymm.buffer.end
+                      (./new-engine/soun):00221                            ;blo >
+                      (./new-engine/soun):00222                            ;ldx  #ymm.buffer     ; cycle buffer
+0156 49               (./new-engine/soun):00223         !                  rola                  ; get next bit
+0157 B70000           (./new-engine/soun):00224                            sta @zx0_bit          ; save bit stream
+015A 8600             (./new-engine/soun):00225                            lda #0                ; restore reg A
+     015B             (./new-engine/soun):00226         @saveA             equ *-1
+                      (./new-engine/soun):00227                            endc
+015C 24E9             (./new-engine/soun):00228         @zx0_elias_bt      bcc @zx0_elias_loop   ; loop until done
+015E 39               (./new-engine/soun):00229         @zx0_eof           rts                   ; return
+                      (./new-engine/soun):00230         ; copy Y bytes from X to U and get next bit
+015F E680             (./new-engine/soun):00231         @zx0_copy_bytes    ldb ,x+               ; copy byte
+0161 200A             (./new-engine/soun):00232                            bra >
+0163 E680             (./new-engine/soun):00233         @zx0_copy_bytes_b  ldb ,x+               ; copy byte
+0165 8C0000           (./new-engine/soun):00234                            cmpx #ymm.buffer.end
+0168 2503             (./new-engine/soun):00235                            blo >
+016A 8E0000           (./new-engine/soun):00236                            ldx  #ymm.buffer      ; cycle buffer
+016D E7C0             (./new-engine/soun):00237         !                  stb ,u+               ;  "    "
+016F 11830000         (./new-engine/soun):00238                            cmpu #ymm.buffer.end
+0173 2603             (./new-engine/soun):00239                            bne >
+0175 CE0000           (./new-engine/soun):00240                            ldu #ymm.buffer
+                      (./new-engine/soun):00241         ; loop until a wait byte is found, this will unpack a whole sound frame
+0178 7D0000           (./new-engine/soun):00242         !                  tst @flip             ; handle 2 bytes cmd length
+017B 261C             (./new-engine/soun):00243                            bne @nextByte
+017D C139             (./new-engine/soun):00244                            cmpb #$39
+017F 2518             (./new-engine/soun):00245                            blo @nextByte         ; continue if a ym2413 cmd byte
+                      (./new-engine/soun):00246         ; save context for next byte ... and exit
+0181 3476             (./new-engine/soun):00247                            pshs d,x,y,u
+0183 10FF0000         (./new-engine/soun):00248                            sts @stackContextPos
+0187 10CE0000         (./new-engine/soun):00249                            lds #0
+     0189             (./new-engine/soun):00250         @saveS1            equ *-2
+018B 39               (./new-engine/soun):00251                            rts
+                      (./new-engine/soun):00252         ; next call will resume here ...
+018C 730000           (./new-engine/soun):00253         ymm.frame.resume   com @flip
+018F 10FF0000         (./new-engine/soun):00254                            sts @saveS1
+0193 10FE0000         (./new-engine/soun):00255                            lds @stackContextPos
+0197 3576             (./new-engine/soun):00256                            puls d,x,y,u
+0199 730000           (./new-engine/soun):00257         @nextByte          com @flip
+019C 7D0000           (./new-engine/soun):00258                            tst @mode
+019F 2608             (./new-engine/soun):00259                            bne >
+01A1 313F             (./new-engine/soun):00260                            leay -1,y             ; decrement loop counter
+01A3 26BA             (./new-engine/soun):00261                            bne @zx0_copy_bytes   ; loop until done
+01A5 780000           (./new-engine/soun):00262                            lsl @zx0_bit          ; get next bit
+01A8 39               (./new-engine/soun):00263                            rts
+01A9 313F             (./new-engine/soun):00264         !                  leay -1,y             ; decrement loop counter
+01AB 26B6             (./new-engine/soun):00265                            bne @zx0_copy_bytes_b ; loop until done
+01AD 780000           (./new-engine/soun):00266                            lsl @zx0_bit          ; get next bit
+01B0 39               (./new-engine/soun):00267                            rts
+01B1 80               (./new-engine/soun):00268         @zx0_bit  fcb $80
+01B2 00               (./new-engine/soun):00269         @flip     fcb 0
+01B3 00               (./new-engine/soun):00270         @mode     fcb 0
+01B4 0000             (./new-engine/soun):00271         @stackContextPos fdb 0
+01B6 0000000000000000 (./new-engine/soun):00272                   fill 0,32
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     01D6             (./new-engine/soun):00273         @stackContext equ *
+                      (./new-engine/soun):00274         
+     0200             (./new-engine/soun):00275         @buffersize equ 512
+     01D6             (./new-engine/soun):00276         @addr equ *
+                      (./new-engine/soun):00277          iflt @addr-ymm.base-@buffersize 
+01D6 0000000000000000 (./new-engine/soun):00278                   fill 0,@buffersize-(@addr-ymm.base) ; buffer need to be stored at an address >= buffersize
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     00
+                      (./new-engine/soun):00279          endc
+023F                  (./new-engine/soun):00280         ymm.buffer
+023F 0000000000000000 (./new-engine/soun):00281                   fill 0,@buffersize
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+     0000000000000000
+043F                  (./new-engine/soun):00282         ymm.buffer.end
+                      (./new-engine/soun):00283          ENDSECTION

@@ -23,5 +23,9 @@
 			<directory>${project.parent.basedir}/repo/com/wide-dot/png2pal/0.0.1</directory>
 			<outputDirectory>./plugins/png2pal</outputDirectory>
 		</fileSet>
+		<fileSet>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/vgm2ymm/0.0.1</directory>
+			<outputDirectory>./plugins/vgm2ymm</outputDirectory>
+		</fileSet>
 	</fileSets>
 </assembly>

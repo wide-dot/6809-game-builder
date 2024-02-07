@@ -51,9 +51,9 @@ public class Main {
         }
     }
 
-    private static byte[] zx0(byte[] input, int skip, boolean backwardsMode, boolean classicMode, boolean quickMode, int threads, boolean verbose, int delta[]) {
+    private static byte[] zx0(byte[] input, int skip, boolean backwardsMode, boolean classicMode, int offset, boolean quickMode, int threads, boolean verbose, int delta[]) {
         return new Compressor().compress(
-                new Optimizer().optimize(input, skip, quickMode ? MAX_OFFSET_ZX7 : MAX_OFFSET_ZX0, threads, verbose),
+                new Optimizer().optimize(input, skip, offset > 0 ? offset : (quickMode ? MAX_OFFSET_ZX7 : MAX_OFFSET_ZX0), threads, verbose),
                 input, skip, backwardsMode, !classicMode && !backwardsMode, delta);
     }
 
@@ -69,6 +69,7 @@ public class Main {
         boolean forcedMode = false;
         boolean classicMode = false;
         boolean backwardsMode = false;
+        int offset = 0;
         boolean quickMode = false;
         boolean decompress = false;
         int skip = 0;
@@ -77,6 +78,12 @@ public class Main {
             if (args[i].startsWith("-p")) {
                 threads = parseInt(args[i].substring(2));
                 if (threads <= 0) {
+                    System.err.println("Error: Invalid parameter " + args[i]);
+                    System.exit(1);
+                }
+            } else if (args[i].startsWith("-o")) {
+            	offset = parseInt(args[i].substring(2));
+                if (offset <= 0 || offset > MAX_OFFSET_ZX0) {
                     System.err.println("Error: Invalid parameter " + args[i]);
                     System.exit(1);
                 }
@@ -93,7 +100,7 @@ public class Main {
                         break;
                     case "-q":
                         quickMode = true;
-                        break;
+                        break;                        
                     case "-d":
                         decompress = true;
                         break;
@@ -129,11 +136,12 @@ public class Main {
         } else if (args.length == i+2) {
             outputName = args[i + 1];
         } else {
-            System.err.println("Usage: java -jar zx0.jar [-pN] [-f] [-c] [-b] [-q] [-d] input [output.zx0]\n" +
+            System.err.println("Usage: java -jar zx0.jar [-pN] [-f] [-c] [-b] [-oN] [-q] [-d] input [output.zx0]\n" +
                     "  -p      Parallel processing with N threads\n" +
                     "  -f      Force overwrite of output file\n" +
                     "  -c      Classic file format (v1.*)\n" +
                     "  -b      Compress backwards\n" +
+                    "  -o      Max offset of N bytes\n" +
                     "  -q      Quick non-optimal compression\n" +
                     "  -d      Decompress");
             System.exit(1);
@@ -176,7 +184,7 @@ public class Main {
         int[] delta = { 0 };
 
         if (!decompress) {
-            output = zx0(input, skip, backwardsMode, classicMode, quickMode, threads, true, delta);
+            output = zx0(input, skip, backwardsMode, classicMode, offset, quickMode, threads, true, delta);
         } else {
             try {
                 output = dzx0(input, backwardsMode, classicMode);

@@ -16,13 +16,15 @@
 ;
 ; - réfléchir aux points suivants :
 ;   - gérer le fait qu'on puisse charger plusieurs instances d'un meme fichier à deux endroits différents en RAM, comment identifier celui qu'on "remove" dans le linkdata ? => addr en param in
+;   - ajouter un equate dans map.const.asm => end of RAM over ROM $4000 (TO8) ou $F000 (MO6) (utilisé dans load scene type 10 et 11)
+;   - mutualiser le code TO8 et MO6 => ce qui change c'est la routine switchpage => la sortir du loader permet de mutualiser
 ;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
-        INCLUDE "new-engine/constant/types.const.asm"
-        INCLUDE "engine/macros.asm"
-        INCLUDE "engine/constants.asm"
-        INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "new-engine/global/glb.const.asm"
+        INCLUDE "new-engine/6809/macros.asm"
+        INCLUDE "new-engine/6809/types.const.asm"
+        INCLUDE "new-engine/system/to8/map.const.asm"
         INCLUDE "new-engine/system/to8/bootloader/loader.const.asm"
 
 ; directory structure
@@ -157,7 +159,10 @@ loader.scene.load
 
         ; load default scene file
         jsr   loader.file.malloc
-
+        cmpu  #0
+        bne   >
+        rts
+!
         ldb   #loader.PAGE
         jsr   loader.file.load
 
@@ -199,7 +204,7 @@ loader.file.malloc
         cmpd  #$ff00
         bne   >
         ldu   #0                ; If file is empty, return 0
-        rts
+        puls  x,pc
 !
         ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111        ; File size is stored in 14 bits
@@ -502,9 +507,9 @@ loader.file.load
         ldd   dir.entry.sizea,y   ; check empty file flag
         cmpd  #$ff00
         bne   >
-        rts                      ; file is empty, exit
+        puls  dp,d,x,y,u,pc       ; file is empty, exit
 !       ldb   dir.entry.bitfld,y  ; test if compressed data
-        bpl   >                  ; skip if not compressed
+        bpl   >                   ; skip if not compressed
         ldd   dir.entry.coffset,y ; get offset to write data
         leau  d,u
         bra   >
@@ -655,32 +660,32 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$A000             ; Skip if not data space
+        cmpu  #$A000              ; Skip if not data space
         blo   >
         lda   #$10
-        ora   <$6081             ; Set RAM
-        sta   <$6081             ; over data
-        sta   >$e7e7             ; space
-        stb   >map.CF74021.DATA  ; Switch RAM page
+        ora   <map.CF74021.SYS1.R ; Set RAM
+        sta   <map.CF74021.SYS1.R ; over data
+        sta   >map.CF74021.SYS1   ; space
+        stb   >map.CF74021.DATA   ; Switch RAM page
         rts
 !
-        cmpu  #$6000             ; Skip if not resident space
+        cmpu  #$6000              ; Skip if not resident space
         blo   >
-        rts                      ; nothing to do ... it's resident memory
+        rts                       ; nothing to do ... it's resident memory
 !
-        cmpu  #$4000             ; Skip if not video space
+        cmpu  #$4000              ; Skip if not video space
         blo   >
-        andb  #$01               ; Keep only half page A or B
-        orb   $E7C3              ; Merge register value
-        stb   $E7C3              ; Set desired half page in video space
+        andb  #$01                ; Keep only half page A or B
+        orb   >map.MC6846.PRC     ; Merge register value
+        stb   >map.MC6846.PRC     ; Set desired half page in video space
         rts
 !
-        cmpu  #$E000             ; Skip if not valid address 
+        cmpu  #$E000              ; Skip if not valid address 
         bhs   >
-        orb   #$60               ; Set RAM over cartridge space
-        stb   >map.CF74021.CART  ; Switch RAM page
+        orb   #$60                ; Set RAM over cartridge space
+        stb   >map.CF74021.CART   ; Switch RAM page
         rts
-!       bra   *                  ; error trap
+!       bra   *                   ; error trap
 
 
 ;---------------------------------------

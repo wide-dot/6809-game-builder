@@ -10,7 +10,7 @@
 
  opt c
 
- INCLUDE "new-engine/constant/types.const.asm"
+ INCLUDE "new-engine/6809/types.const.asm"
 
 ; tlsf structure
 ; --------------
@@ -38,15 +38,15 @@ tlsf.block.nullptr      equ   -1
 
 ; tlsf external variables and constants
 ; -------------------------------------
-tlsf.err              fcb   0
-tlsf.err.callback     fdb   tlsf.err.loop ; error callback, default is an infinite loop
-tlsf.err.init.MIN_SIZE         equ   1     ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
-tlsf.err.init.MAX_SIZE         equ   2     ; memory pool should have 32768 ($8000) as a maximum size
-tlsf.err.malloc.OUT_OF_MEMORY  equ   3     ; no more space in memory pool 
-tlsf.err.malloc.MAX_SIZE       equ   4     ; malloc can not handle more than 63488 ($F800) bytes request
-tlsf.err.free.NULL_PTR         equ   5     ; memory location to free cannot be NULL
-tlsf.err.realloc.MAX_SIZE      equ   6     ; realloc can not handle more than 63488 ($F800) bytes request
-tlsf.err.realloc.OUT_OF_MEMORY equ   7     ; 
+tlsf.err                       fcb   0
+tlsf.err.callback              fdb   tlsf.err.loop ; error callback, default is an infinite loop
+tlsf.err.init.MIN_SIZE         equ   1             ; memory pool should have sizeof{tlsf.blockHdr} as a minimum size
+tlsf.err.init.MAX_SIZE         equ   2             ; memory pool should have 32768 ($8000) as a maximum size
+tlsf.err.malloc.OUT_OF_MEMORY  equ   3             ; no more space in memory pool 
+tlsf.err.malloc.MAX_SIZE       equ   4             ; malloc can not handle more than 63488 ($F800) bytes request
+tlsf.err.free.NULL_PTR         equ   5             ; memory location to free cannot be NULL
+tlsf.err.realloc.MAX_SIZE      equ   6             ; realloc can not handle more than 63488 ($F800) bytes request
+tlsf.err.realloc.OUT_OF_MEMORY equ   7             ; 
 
 ; tlsf internal variables
 ; -----------------------

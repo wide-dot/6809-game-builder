@@ -157,7 +157,7 @@ public class Processor {
 					System.arraycopy(bin, 0, sbin, 0, sbin.length);
 					
 					// compress the shortened data
-					byte[] cbin = new Compressor().compress(new Optimizer().optimize(sbin, 0, maxsize, 4, false), bin, 0, false, false, delta);
+					byte[] cbin = new Compressor().compress(new Optimizer().optimize(sbin, 0, maxsize, 8, false), bin, 0, false, false, delta);
 					log.debug("Original size: {}+{}, Packed size: {}, Delta: {}", bin.length-maxdelta, maxdelta, cbin.length, delta[0]);
 					
 					// automatic selection of compressed or uncompressed data

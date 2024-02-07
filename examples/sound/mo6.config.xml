@@ -27,14 +27,14 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="assets.obj.snd.title.ymm" codec="zx0" loadtimelink="LINK">
+                <direntry name="assets.obj.snd.title.ymm" codec="zx0" loadtimelink="LINK"> <!-- si on retire le codec zx0 ici, plus de son ! -->
                     <lwasm>
                         <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
                         <asm xml:space="preserve"> SECTION code</asm>
                         <asm xml:space="preserve">sound.title.ymm</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                    <bin filename="./src/assets/sounds/title/music.ymm"/>
+                    <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.ym.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </direntry>
 
                 <direntry name="engine.system.mo6.sound.ym.const" loadtimelink="LINK">
