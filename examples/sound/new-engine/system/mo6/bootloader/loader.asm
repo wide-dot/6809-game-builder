@@ -771,12 +771,16 @@ loader.file.linkData.load
         pshs  d,x,y,u
         jsr   loader.dir.getFile
         ldb   dir.entry.bitfld,y              ; Test if load time link flag
-        andb  #%01000000
+        bitb  #%01000000
         bne   >                               ; yes, continue
         puls  d,x,y,u,pc                      ; no, exit
 !
         ; check link data size for this file, and allocate memory for loading
-        ldd   dir.entry.lsize,y               ; Read file data size
+        tstb                                  ; test if compression flag
+        bpl   >
+        leay  8,y                             ; skip compression block
+!       leay  8,y                             ; skip file block
+        ldd   ,y                              ; Read link file data size
         bne   >
         puls  d,x,y,u,pc                      ; Ignore empty link file
 !       sty   @y
@@ -786,10 +790,6 @@ loader.file.linkData.load
 @y      equ   *-2
 ;
         ; load link data file
-        ldb   dir.entry.bitfld,y              ; test if compression flag
-        bpl   >
-        leay  8,y                             ; skip compression block
-!       leay  8,y                             ; skip file block
         ldb   #loader.PAGE
         jsr   loader.file.loadByDir
 ;

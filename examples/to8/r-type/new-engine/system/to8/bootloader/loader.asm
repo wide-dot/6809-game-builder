@@ -776,7 +776,11 @@ loader.file.linkData.load
         puls  d,x,y,u,pc                      ; no, exit
 !
         ; check link data size for this file, and allocate memory for loading
-        ldd   dir.entry.lsize,y               ; Read file data size
+        ldb   dir.entry.bitfld,y              ; test if compression flag
+        bpl   >
+        leay  8,y                             ; skip compression block
+!       leay  8,y                             ; skip file block
+        ldd   ,y                              ; Read file data size
         bne   >
         puls  d,x,y,u,pc                      ; Ignore empty link file
 !       sty   @y
@@ -786,10 +790,6 @@ loader.file.linkData.load
 @y      equ   *-2
 ;
         ; load link data file
-        ldb   dir.entry.bitfld,y              ; test if compression flag
-        bpl   >
-        leay  8,y                             ; skip compression block
-!       leay  8,y                             ; skip file block
         ldb   #loader.PAGE
         jsr   loader.file.loadByDir
 ;

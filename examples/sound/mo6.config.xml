@@ -27,7 +27,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="assets.obj.snd.title.ymm" codec="zx0" loadtimelink="LINK"> <!-- si on retire le codec zx0 ici, plus de son ! -->
+                <direntry name="assets.obj.snd.title.ymm" loadtimelink="LINK">
                     <lwasm>
                         <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
                         <asm xml:space="preserve"> SECTION code</asm>
