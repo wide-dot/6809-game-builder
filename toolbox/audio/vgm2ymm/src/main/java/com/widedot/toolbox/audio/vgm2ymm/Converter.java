@@ -132,12 +132,12 @@ public class Converter {
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		if (intro != null) {
-			outputStream.write(((vGMInterpreter.loopMarkerHit+4) >> 8) & 0xff); // +4 will place the cursor to entry point
-			outputStream.write((vGMInterpreter.loopMarkerHit+4) & 0xff);
+			outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
+			outputStream.write((intro.length+2) & 0xff);
 			outputStream.write(intro);
 		} else {
 			outputStream.write(0);
-			outputStream.write(0);
+			outputStream.write(2);
 		}
 		
 		if (loop != null) {
