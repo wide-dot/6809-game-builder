@@ -22,27 +22,25 @@ irq.userRoutine fdb 0                  ; user irq routine called by irq.manage
 ;-----------------------------------------------------------------
 ; irq.on
 ;
-; reset REG : [a]
 ;-----------------------------------------------------------------
-; set irq active
+; set irq active, and preserve registers
 ;-----------------------------------------------------------------
 irq.on
-        lda   #1
-        sta   map.IRQSEMAPHORE
-        andcc #$EF                     ; tell 6809 to activate irq
-!       rts
+        orcc  #1               ; (3)
+        ror   map.IRQSEMAPHORE ; (7) set a value !=0 in semaphore
+        andcc #$EF             ; tell 6809 to activate irq
+        rts
 
 ;-----------------------------------------------------------------
 ; irq.off
 ;
-; reset REG : [a]
 ;-----------------------------------------------------------------
-; set irq inactive
+; set irq inactive, and preserve registers
 ;-----------------------------------------------------------------
 irq.off 
         clr   map.IRQSEMAPHORE
         orcc  #$10                     ; tell 6809 to inactivate irq
-!       rts
+        rts
 
 ;-----------------------------------------------------------------
 ; irq.manage

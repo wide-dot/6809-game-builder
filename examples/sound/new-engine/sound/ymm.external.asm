@@ -1,2 +1,2 @@
-ymm.init        EXTERNAL
+ymm.obj.play    EXTERNAL
 ymm.frame.play  EXTERNAL

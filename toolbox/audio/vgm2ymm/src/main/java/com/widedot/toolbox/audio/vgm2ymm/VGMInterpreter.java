@@ -77,16 +77,17 @@ public class VGMInterpreter {
 	}
 
 	public boolean run() throws IOException {		
-		boolean skipFrame = false;
+		boolean endFrame = false;
 		int waitTime = 0;
 		
-		while (!skipFrame) {
-			
-			if (this.input.isLoopPoint())
-				fireLoopPointHit(); 
-			int i = this.input.read();
+		while (!endFrame) {
 
-			switch (i) {
+			if (this.input.isLoopPoint()) {
+				fireWriteDelay();
+				fireLoopPointHit();
+			}
+
+			switch (this.input.read()) {
 			case 0x4F: // Game Gear PSG stereo
 				this.input.skip(1L);
 				continue;
@@ -104,15 +105,15 @@ public class VGMInterpreter {
 			case 0x61: // Wait n samples, n can range from 0 to 65535
 				waitTime = this.input.readShort();
 				cumulatedSamples += waitTime;
-           		skipFrame = true;
+           		endFrame = true;
 				continue;
 			case 0x62: // wait 735 samples (60th of a second)
 				cumulatedSamples += 735;
-				skipFrame = true;
+				endFrame = true;
 				continue;
             case 0x63: // wait 882 samples (50th of a second)
             	cumulatedSamples += 882;
-				skipFrame = true;
+				endFrame = true;
 				continue;
 			case 0x66: // end of sound data
 				fireWriteEnd();				
@@ -155,10 +156,11 @@ public class VGMInterpreter {
 				this.input.skip(4L); // data reg
 				continue;               
 			} 
+			
 			this.input.close();
 			throw new IOException("Unknown VGM command encountered at " + Integer.toHexString(this.input.getPosition() - 1) + ": " + Integer.toHexString(i));
-		} 
-
+		}
+		
 		return true;
 	}
 
@@ -168,22 +170,30 @@ public class VGMInterpreter {
 
 	public void fireLoopPointHit() {
 		loopMarkerHit = s;
+		
+		// reinit cache at loop start
+		for (int i=0; i < ymupd.length; i++) {
+			ymupd[i] = false;
+		}
+		
+		log.debug(String.format("            [LOOP POINT: %04X]", s));
 	}
-	
+
 	public void fireWrite(int cmd, int data) {
 		
 		// skip redundant command
 		if (ymupd[cmd] && ymreg[cmd] == data) {
-			log.debug(String.format("%02X %02X [SKIP]", cmd, data));
+			log.debug(String.format("%04X: %02X %02X [SKIP]", s, cmd, data));
 			return;
 		}
 		
 		fireWriteDelay();
+		
 		arrayOfInt[s++] = cmd;
 		arrayOfInt[s++] = data;
 		ymreg[cmd] = data;
 		ymupd[cmd] = true;
-		log.debug(String.format("%02X %02X", cmd, data));
+		log.debug(String.format("%04X: %02X %02X", s-2, cmd, data));
 		stat[cmd][data] = stat[cmd][data]+1; 
 	}
 	
@@ -201,7 +211,7 @@ public class VGMInterpreter {
 				arrayOfInt[s++] = offset+cumulatedFrames;
 				cumulatedFrames = 0;
 			}
-			log.debug(String.format("%02X    [WAIT %d frame(s)]", arrayOfInt[s-1], arrayOfInt[s-1]-offset));
+			log.debug(String.format("%04X: %02X    [WAIT: %d frame(s)]", s-1, arrayOfInt[s-1], arrayOfInt[s-1]-offset));
 		}
 	}
 	

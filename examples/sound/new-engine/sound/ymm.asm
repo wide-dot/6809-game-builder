@@ -14,13 +14,13 @@ map.YM2413.D EXTERNAL
 ymm.play       EXPORT
 ymm.frame.play EXPORT
 
-        INCLUDE "./new-engine/sound/ym2413.asm"
+        INCLUDE "new-engine/system/to8/map.const.asm"
+        INCLUDE "new-engine/sound/ym2413.macro.asm"
+        INCLUDE "new-engine/sound/ym2413.asm"
 
  SECTION code
 
         INCLUDE "new-engine/6809/macros.asm"
-
-ymm.base             equ   *
 
 ymm.data             fdb   0             ; address of song data
 ymm.data.page        fcb   0             ; memory page of music data
@@ -33,32 +33,39 @@ ymm.callback         fdb   0             ; 0=no calback routine
 ; ------------------------------------------------------------------------------
 ; ymm.play - Load a new music and init all tracks
 ; ------------------------------------------------------------------------------
-; receives in X the address of the song
-; destroys X,A
+; input REG : [B] loop flag 0: no 1: yes
+; input REG : [A] music data page
+; input REG : [X] music data
+; input REG : [Y] callback routine
 ; ------------------------------------------------------------------------------
 
 ymm.play
         jsr   irq.off
         stb   ymm.loop
         sty   ymm.callback
+        sta   ymm.data.page
+
         _GetCartPageA
         sta   @a
-        lda   ,x                         ; get memory page that contains track data
-        sta   ymm.data.page
-        sta   ymm.status
         _SetCartPageA
-        lda   #1
-        sta   ymm.frame.waits
-        ldx   1,x                        ; get ptr to track data
-        stx   ymm.data
-        ldu   #ymm.buffer
-        stu   ymm.data.pos
-        jsr   ymm.decompress
+        jsr   ymm.play.subroutine
         lda   #0
 @a      equ   *-1
         _SetCartPageA
-        jsr   ym2413.init
+
+        _ym2413.init
         jmp   irq.on
+
+
+ymm.play.subroutine
+        lda   #1
+        sta   ymm.frame.waits
+        sta   ymm.status
+        stx   ymm.data
+        ldu   #ymm.buffer
+        stu   ymm.data.pos
+        leax  2,x
+        jmp   ymm.decompress
 
 ; ------------------------------------------------------------------------------
 ; ymm.frame.play - processes a music frame (VInt)
@@ -95,16 +102,18 @@ YVGM_do_MusicFrame
         beq   @DoStopTrack
         sta   ymm.frame.waits
         stx   ymm.data.pos
-        jmp   ymm.frame.resume           ; read next frame data
+        jmp   ymm.frame.resume         ; read next frame data
 @DoStopTrack
-        ldx   ymm.callback               ; check callback routine
+        ldx   ymm.callback             ; check callback routine
         beq   >
         jmp   ,x
 !       lda   ymm.loop
         beq   @no_looping
-        lda   #3 ; fix ? should be 1 ?
+        lda   #1
         sta   ymm.frame.waits
         ldx   ymm.data
+        ldd   ,x
+        leax  d,x                      ; move to loop point
         ldu   #ymm.buffer
         stu   ymm.data.pos
         jsr   ymm.decompress    
@@ -122,7 +131,7 @@ YVGM_do_MusicFrame
         ldx   #ymm.buffer
 !       stb   <map.YM2413.D
         nop
-        nop                              ; tempo (should be 24 cycles between two register writes)
+        nop                            ; tempo (should be 24 cycles between two register writes)
         bra   @UpdateLoop
 
 ; @zx0_6809_mega.asm - ZX0 decompressor for M6809 - 189 bytes
@@ -226,7 +235,7 @@ ymm.decompress
 @saveA             equ *-1
                    endc
 @zx0_elias_bt      bcc @zx0_elias_loop   ; loop until done
-@zx0_eof           rts                   ; return
+                   rts
 ; copy Y bytes from X to U and get next bit
 @zx0_copy_bytes    ldb ,x+               ; copy byte
                    bra >
@@ -246,7 +255,7 @@ ymm.decompress
 ; save context for next byte ... and exit
                    pshs d,x,y,u
                    sts @stackContextPos
-                   lds #0
+@zx0_eof           lds #0
 @saveS1            equ *-2
                    rts
 ; next call will resume here ...
@@ -272,11 +281,8 @@ ymm.frame.resume   com @flip
           fill 0,32
 @stackContext equ *
 
-@buffersize equ 512
-@addr equ *
- iflt @addr-ymm.base-@buffersize 
-          fill 0,@buffersize-(@addr-ymm.base) ; buffer need to be stored at an address >= buffersize
- endc
+@buffersize equ  512
+          align  @buffersize
 ymm.buffer
           fill 0,@buffersize
 ymm.buffer.end

@@ -10,13 +10,11 @@ sound.title.ymm EXTERNAL
 page.ymm equ 6                   ; ram page that contains player and sound data (as defined in scene file)
 
         _glb.init                ; clean dp variables
-        _ym2413.init             ; init ym2413 sound chip registers
         _irq.init                ; set irq manager routine
         _irq.setRoutine #UserIRQ ; set user routine called by irq manager
 
         _cart.setRam page.ymm    ; mount ram page that contains player and sound data
-        _ymm.init #map.RAM_OVER_CART+page.ymm,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
-        _irq.on                  ; start playing music
+        _ymm.obj.play #map.RAM_OVER_CART+page.ymm,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
         bra   *                  ; infinite loop
 

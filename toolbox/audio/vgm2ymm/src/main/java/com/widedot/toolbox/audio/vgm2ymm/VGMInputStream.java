@@ -103,7 +103,7 @@ public class VGMInputStream extends InputStream {
 	public boolean isLoopPoint() {
 		return (this.pos == this.offsetLoop);
 	}
-
+	
 	public int getPosition() {
 		return this.pos;
 	}

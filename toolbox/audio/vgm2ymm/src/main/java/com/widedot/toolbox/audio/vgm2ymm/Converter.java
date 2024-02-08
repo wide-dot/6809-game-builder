@@ -2,6 +2,8 @@ package com.widedot.toolbox.audio.vgm2ymm;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,8 +74,7 @@ public class Converter {
 	}
 	
 	private static byte[] convertFile(File file, String genFileName, String codec, int[] drum) throws IOException {
-		byte[] result = null;
-		
+	
 		String outFileName;
 		if (genFileName == null || genFileName.equals(""))
 		{
@@ -91,22 +92,62 @@ public class Converter {
 		
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
 		VGMInterpreter vGMInterpreter = new VGMInterpreter(file, drum);
-		
+
 		int[] paramArrayOfint = vGMInterpreter.getArrayOfInt();
-		result = new byte[vGMInterpreter.getLastIndex()];
-		for (int b = 0; b < vGMInterpreter.getLastIndex(); b++)
-			result[b] = (byte)paramArrayOfint[b];
 		
-		if (codec.equals(CODEC_ZX0)) {
-			log.debug("Compress data with zx0.");
-			int originalSize = result.length;
-			int[] delta = { 0 };			
-			result = new Compressor().compress(new Optimizer().optimize(result, 0, MAX_OFFSET_YMM, 8, false), result, 0, false, false, delta);
-			log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, result.length, delta[0]);
+		byte[] intro = null;
+		if (vGMInterpreter.loopMarkerHit > 0) {
+			intro = new byte[vGMInterpreter.loopMarkerHit+1]; // make room for end marker
+			int b;
+			for (b = 0; b < vGMInterpreter.loopMarkerHit; b++)
+				intro[b] = (byte)paramArrayOfint[b];
+			intro[b] = 0x39;
 		}
 		
-		Files.write(Path.of(outFileName), result);
-		return result;
+		byte[] loop = null;
+		if (vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit > 0) {
+			loop = new byte[vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit];
+			int i = 0;
+			for (int b = vGMInterpreter.loopMarkerHit; b < vGMInterpreter.getLastIndex(); b++)
+				loop[i++] = (byte)paramArrayOfint[b];
+		}
+		
+		if (codec.equals(CODEC_ZX0)) {
+			if (intro != null) {
+				log.debug("Compress intro data with zx0.");
+				int originalSize = intro.length;
+				int[] delta = { 0 };			
+				intro = new Compressor().compress(new Optimizer().optimize(intro, 0, MAX_OFFSET_YMM, 8, false), intro, 0, false, false, delta);
+				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, intro.length, delta[0]);
+			}
+			
+			if (loop != null) {
+				log.debug("Compress loop data with zx0.");
+				int originalSize = loop.length;
+				int[] delta = { 0 };			
+				loop = new Compressor().compress(new Optimizer().optimize(loop, 0, MAX_OFFSET_YMM, 8, false), loop, 0, false, false, delta);
+				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, loop.length, delta[0]);
+			}
+		}
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		if (intro != null) {
+			outputStream.write(((vGMInterpreter.loopMarkerHit+4) >> 8) & 0xff); // +4 will place the cursor to entry point
+			outputStream.write((vGMInterpreter.loopMarkerHit+4) & 0xff);
+			outputStream.write(intro);
+		} else {
+			outputStream.write(0);
+			outputStream.write(0);
+		}
+		
+		if (loop != null) {
+			outputStream.write(loop);
+		}
+		
+		OutputStream fileStream = new FileOutputStream(outFileName);
+		outputStream.writeTo(fileStream);
+		
+		return outputStream.toByteArray();
 	}
 	
 }

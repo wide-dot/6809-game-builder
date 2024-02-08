@@ -1,22 +1,19 @@
 
-ymm.init EXPORT
-
-        INCLUDE "new-engine/system/to8/map.const.asm"
+ymm.obj.play EXPORT
 
  SECTION code
 
-ymm.init
-        sta   ymm.data.page
-        stx   ymm.data
+ymm.obj.play
+        jsr   irq.off
         stb   ymm.loop
         sty   ymm.callback
-        lda   #1
-        sta   ymm.status
-        sta   ymm.frame.waits
-        ldu   #ymm.buffer
-        stu   ymm.data.pos
-        jmp   ymm.decompress
+        sta   ymm.data.page
+
+        jsr   ymm.play.subroutine
+
+        jsr   ym2413.init
+        jmp   irq.on
 
  ENDSECTION
 
-        INCLUDE "./new-engine/sound/ymm.asm"
+        INCLUDE "new-engine/sound/ymm.asm"

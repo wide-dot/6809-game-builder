@@ -14,7 +14,7 @@
         fdb   $8000+2                  ; [type | nb files] (0: end marker)
 
         fcb   $06                      ; [destination - page id]
-        fdb   $043F                    ; [destination - address]
+        fdb   $0400                    ; [destination - address]
         fdb   assets.obj.snd.title.ymm 
         fdb   engine.system.to8.sound.ym.const
 

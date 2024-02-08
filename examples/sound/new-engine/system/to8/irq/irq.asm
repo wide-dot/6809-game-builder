@@ -39,30 +39,30 @@ irq.set50Hz
 ;-----------------------------------------------------------------
 ; irq.on
 ;
-; reset REG : [a]
 ;-----------------------------------------------------------------
-; set irq active
+; set irq active, and preserve registers
 ;-----------------------------------------------------------------
 irq.on
+        pshs  a
         lda   map.STATUS
         ora   #$20
         sta   map.STATUS
         andcc #$EF                     ; tell 6809 to activate irq
-        rts
+        puls  a,pc
 
 ;-----------------------------------------------------------------
 ; irq.off
 ;
-; reset REG : [a]
 ;-----------------------------------------------------------------
-; set irq inactive
+; set irq inactive, and preserve registers
 ;-----------------------------------------------------------------
-irq.off 
+irq.off
+        pshs  a
         lda   map.STATUS                           
         anda  #$DF
         sta   map.STATUS
         orcc  #$10                     ; tell 6809 to inactivate irq
-        rts
+        puls  a,pc
 
 ;-----------------------------------------------------------------
 ; irq.syncScreenLine
