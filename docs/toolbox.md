@@ -3,6 +3,11 @@
 [index]: ../readme.md
 
 # Toolbox
+
+The Toolbox is a collection of plugins provided for the builder. It's possible to add a custom plugin, by following this [procedure][plugin-add].
+
+[plugin-add]: ./plugin-add.md
+
 Here you will find all tools provided by the game engine :
 
 |command|description|in|out|
@@ -11,10 +16,14 @@ Here you will find all tools provided by the game engine :
 |[png2bin][png2bin]|image to binary converter|.png|.bin|
 |[png2pal][png2pal]|image to palette converter|.png|.asm, .bin|
 |[leanscroll][leanscroll]|lean a tilemap for diff scrolling|.raw|.bin|
-|[pcm2dpcm][pcm2dpcm]|lossy pcm audio compression|.raw|.bin|
+|[vgm2ymm][vgm2ymm]|image to binary converter|.vgm, .vgz|.ymm|
+|[vgm2vgc][vgm2vgc]|image to binary converter|.vgm, .vgz|.vgc|
+|[pcm2dpcm][pcm2dpcm]|**TODO change to a plugin** - lossy pcm audio compression|.raw|.bin|
 
 [stm2bin]: ../toolbox/graphics/tilemap/stm/readme.md
 [png2bin]: ../toolbox/graphics/png2bin/readme.md
 [png2pal]: ../toolbox/graphics/png2pal/readme.md
 [leanscroll]: ../toolbox/graphics/tilemap/leanscroll/readme.md
 [pcm2dpcm]: ../toolbox/third-party/src/audio/dpcm/readme.md
+[vgm2ymm]: ../toolbox/audio/vgm2ymm/readme.md
+[vgm2vgc]: ../toolbox/audio/vgm2vgc/readme.md

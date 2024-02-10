@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import com.widedot.m6809.util.FileUtil;
@@ -20,13 +19,20 @@ public class Converter {
 	
 	public static String CODEC_NONE = "none";
 	public static String CODEC_ZX0 = "zx0";
-	public static String INPUT_EXT = ".vgm";
+	public static String INPUT_EXT1 = ".vgm";
+	public static String INPUT_EXT2 = ".vgz";
 	public static String BIN_EXT = ".ymm";
 	public static int MAX_OFFSET_YMM = 512;
+	
+	public static String filename;
+	public static String genbinary;
+	public static String codec;
+	public static String drumStr;
+	public static int[] drum;
 
-	public static byte[] run(String filename, String genbinary, String codec, String drumStr) throws Exception {
+	public static byte[] run() throws Exception {
 		
-		log.debug("Convert vgm to ymm");
+		log.debug("Convert {} or {} to {}", INPUT_EXT1, INPUT_EXT2, BIN_EXT);
 		
 		// check input file
 		File file = new File(filename);
@@ -43,7 +49,7 @@ public class Converter {
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 		
-		int[] drum = null;
+		drum = null;
 		if (drumStr != null) {
 			String[] drumValues = drumStr.split(",");
 			drum = new int[3];
@@ -55,17 +61,13 @@ public class Converter {
 		if (!file.isDirectory()) {
 			
 			// Single file processing
-			outputStream.write(convertFile(file, genbinary, codec, drum));
+			outputStream.write(convertFile(file));
 			
 		} else {
 			
 			// Directory processing
-			log.debug("Process each .png file of the directory: {}", filename);
-
-			File[] files = file.listFiles((d, name) -> name.endsWith(INPUT_EXT));
-			for (File curFile : files) {
-				outputStream.write(convertFile(curFile, genbinary, codec, drum));
-			}
+			processDirectory(outputStream, file, INPUT_EXT1);
+			processDirectory(outputStream, file, INPUT_EXT2);
 			
 		}
 		log.debug("Conversion ended sucessfully.");
@@ -73,20 +75,31 @@ public class Converter {
 		return outputStream.toByteArray();
 	}
 	
-	private static byte[] convertFile(File file, String genFileName, String codec, int[] drum) throws IOException {
+	
+	private static void processDirectory(ByteArrayOutputStream outputStream, File file, String fileExt) throws IOException {
+		
+		log.debug("Process each {} file of the directory: {}", fileExt, file.getAbsolutePath());
+
+		File[] files = file.listFiles((d, name) -> name.endsWith(fileExt));
+		for (File curFile : files) {
+			outputStream.write(convertFile(curFile));
+		}
+	}
+	
+	private static byte[] convertFile(File file) throws IOException {
 	
 		String outFileName;
-		if (genFileName == null || genFileName.equals(""))
+		if (genbinary == null || genbinary.equals(""))
 		{
 			// output is not specified, produce file in same directory as input file
 			outFileName = FileUtil.removeExtension(file.getAbsolutePath()) + BIN_EXT;
 		} else {
-			if (Files.isDirectory(Paths.get(genFileName))) {
+			if (Files.isDirectory(Paths.get(genbinary))) {
 				// output directory is specified
-				outFileName = genFileName + File.separator + FileUtil.removeExtension(file.getName()) + BIN_EXT;
+				outFileName = genbinary + File.separator + FileUtil.removeExtension(file.getName()) + BIN_EXT;
 			} else {
 				// output file is specified
-				outFileName = genFileName;
+				outFileName = genbinary;
 			}
 		}
 		

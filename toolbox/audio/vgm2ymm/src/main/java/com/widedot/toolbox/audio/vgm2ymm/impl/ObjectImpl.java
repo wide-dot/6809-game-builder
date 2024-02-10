@@ -37,7 +37,11 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  if (genbinary != null) genbinary = path + File.separator + genbinary;
 	  
 	  Binary bin = new Binary();
-	  bin.bytes = Converter.run(filename, genbinary, codec, drum);
-	  return bin;
+		Converter.filename = filename;
+		Converter.genbinary = genbinary; 
+		Converter.codec = codec;
+		Converter.drumStr = drum;
+		bin.bytes = Converter.run();
+	return bin;
   }
 }

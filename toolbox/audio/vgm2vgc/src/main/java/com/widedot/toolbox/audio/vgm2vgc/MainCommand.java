@@ -1,10 +1,10 @@
-package com.widedot.toolbox.audio.vgm2ymm;
+package com.widedot.toolbox.audio.vgm2vgc;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "vgm2ymm", description = "Convert one or more .vgm files to .ymm binary data", sortOptions = false)
+@Command(name = "vgm2vgc", description = "Convert one or more .vgm files to .ymm binary data", sortOptions = false)
 public class MainCommand implements Runnable {
 
 	@Option(names = { "-f",
@@ -33,8 +33,6 @@ public class MainCommand implements Runnable {
 			try {
 				Converter.filename = filename;
 				Converter.genbinary = genbinary; 
-				Converter.codec = codec;
-				Converter.drumStr = drum;
 				Converter.run();
 			} catch (Exception e) {
 				e.printStackTrace();
