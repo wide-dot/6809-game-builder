@@ -2,14 +2,13 @@ package com.widedot.toolbox.audio.vgm2vgc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileReader;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import javax.script.ScriptContext;
-import javax.script.SimpleScriptContext; 
-import javax.script.ScriptEngine;
+
+import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
+
+import java.util.List;
 
 import com.widedot.m6809.util.FileUtil;
 
@@ -100,13 +99,28 @@ public class Converter {
 	}
 
 	public static void runPythonScript(File file) throws Exception {
-		StringWriter writer = new StringWriter();
-		ScriptContext context = new SimpleScriptContext();
-		context.setWriter(writer);
-
-		ScriptEngineManager manager = new ScriptEngineManager();
-		ScriptEngine engine = manager.getEngineByName("python");
-		engine.eval(new FileReader(Converter.class.getResource("vgm-packer/vgmpacker.py").getPath()), context);
-		log.debug(writer.toString());
+		ScriptEngineManager mgr = new ScriptEngineManager();
+		List<ScriptEngineFactory> factories = mgr.getEngineFactories();
+		for (ScriptEngineFactory factory : factories) {
+			System.out.println("ScriptEngineFactory Info");
+			String engName = factory.getEngineName();
+			String engVersion = factory.getEngineVersion();
+			String langName = factory.getLanguageName();
+			String langVersion = factory.getLanguageVersion();
+			System.out.printf("\tScript Engine: %s (%s)\n", engName, engVersion);
+			List<String> engNames = factory.getNames();
+			for (String name : engNames) {
+				System.out.printf("\tEngine Alias: %s\n", name);
+			}
+			System.out.printf("\tLanguage: %s (%s)\n", langName, langVersion);
+		}
+//		StringWriter writer = new StringWriter();
+//		ScriptContext context = new SimpleScriptContext();
+//		context.setWriter(writer);
+//
+//		ScriptEngineManager manager = new ScriptEngineManager();
+//		ScriptEngine engine = manager.getEngineByName("python");
+//		engine.eval(new FileReader(Converter.class.getResource("vgm-packer/vgmpacker.py").getPath()), context);
+//		log.debug(writer.toString());
 	}	
 }

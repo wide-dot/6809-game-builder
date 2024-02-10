@@ -17,7 +17,8 @@ public class PluginClassLoader extends URLClassLoader {
       "com.widedot.m6809.gamebuilder.spi",
       "com.widedot.m6809.util",
       "org.apache.commons.configuration2",
-      "org.slf4j"
+      "org.slf4j",
+      "javax.script"
   );
 
   private final ClassLoader parentClassLoader;
