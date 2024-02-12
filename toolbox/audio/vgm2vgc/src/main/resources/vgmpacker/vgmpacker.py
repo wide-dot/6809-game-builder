@@ -95,7 +95,7 @@ class VgmPacker:
 		# eg. the raw chip writes to all 11 registers every frame
 		n = 0
 		Packet = True
-		verbose = False
+		verbose = True
 
 		while (Packet):
 			packet_size = rawData[n]
@@ -451,7 +451,7 @@ class VgmPacker:
 	def testUnpackLZ4(self, compressed, uncompressed):
 		unpacked = bytearray()
 		eof = False
-		debug = False
+		debug = True
 		self.index = 4 # skip the block header
 		def getByte():		
 			byte = compressed[self.index]
@@ -530,18 +530,11 @@ class VgmPacker:
 		assert unpacked == uncompressed
 		print(" Test LZ4 unpack passed. \n")
 
-
-
-
-
-
 	#----------------------------------------------------------
 	# Process(filename)
 	# Convert the given VGM file to a compressd VGC file
 	#----------------------------------------------------------
 	def process(self, src_filename, dst_filename, buffersize = 255, use_huffman = True):
-
-
 
 		# load the VGM file, or alternatively interpret as a binary
 		if src_filename.lower()[-4:] == ".vgm":
@@ -616,27 +609,10 @@ class VgmPacker:
 			#	lz4.setCompression(level, windowsize)
 			#	lz4.optimizedCompression(False)
 
-
-
-
 		#----------------------------------------------------------
 		# Unpack the register data into 11 separate data streams
 		#----------------------------------------------------------
 		registers = self.split_raw(data_block, True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 		# test packer for raw data unsplit
 		if False:

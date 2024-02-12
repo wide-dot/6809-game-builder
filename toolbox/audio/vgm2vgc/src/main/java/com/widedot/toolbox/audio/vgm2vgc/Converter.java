@@ -2,13 +2,20 @@ package com.widedot.toolbox.audio.vgm2vgc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.StringWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
+import javax.script.SimpleScriptContext;
 
-import java.util.List;
+import javax.script.ScriptEngine;
+import javax.script.Invocable;
+import javax.script.ScriptContext;
 
 import com.widedot.m6809.util.FileUtil;
 
@@ -27,7 +34,7 @@ public class Converter {
 	public static byte[] run() throws Exception {
 
 		log.debug("Convert {} or {} to {}", INPUT_EXT1, INPUT_EXT2, BIN_EXT);
-
+		
 		// check input file
 		File file = new File(filename);
 		if (!file.exists()) {
@@ -86,8 +93,41 @@ public class Converter {
 
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
 
-		// Process
-		runPythonScript(file);
+		// Keep SN76489 data only
+		VGMInterpreter vgm = new VGMInterpreter(file);
+		byte[] intro = vgm.getIntroData();
+		byte[] loop = vgm.getLoopData();
+
+		if (intro != null) {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			outputStream.write(vgm.getIntroHeader());
+			outputStream.write(intro);
+			
+			String tmpFileName = file.getAbsolutePath() + ".sn76489.intro.vgm";
+			OutputStream fileStream = new FileOutputStream(tmpFileName);
+			outputStream.writeTo(fileStream);
+			outputStream.close();
+			
+			// Convert vgm to vgc
+			runPythonScript(tmpFileName, outFileName);
+			//Files.delete(Path.of(tmpFileName));
+		}
+		
+		if (loop != null) {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			outputStream.write(vgm.getLoopHeader());
+			outputStream.write(loop);
+			
+			String tmpFileName = file.getAbsolutePath() + ".sn76489.loop.vgm";
+			OutputStream fileStream = new FileOutputStream(tmpFileName);
+			outputStream.writeTo(fileStream);
+			outputStream.close();
+			
+			// Convert vgm to vgc
+			runPythonScript(tmpFileName, outFileName);
+			//Files.delete(Path.of(tmpFileName));
+		}
+		
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		//outputStream.write(bin);
@@ -98,29 +138,37 @@ public class Converter {
 		return outputStream.toByteArray();
 	}
 
-	public static void runPythonScript(File file) throws Exception {
-		ScriptEngineManager mgr = new ScriptEngineManager();
-		List<ScriptEngineFactory> factories = mgr.getEngineFactories();
-		for (ScriptEngineFactory factory : factories) {
-			System.out.println("ScriptEngineFactory Info");
-			String engName = factory.getEngineName();
-			String engVersion = factory.getEngineVersion();
-			String langName = factory.getLanguageName();
-			String langVersion = factory.getLanguageVersion();
-			System.out.printf("\tScript Engine: %s (%s)\n", engName, engVersion);
-			List<String> engNames = factory.getNames();
-			for (String name : engNames) {
-				System.out.printf("\tEngine Alias: %s\n", name);
-			}
-			System.out.printf("\tLanguage: %s (%s)\n", langName, langVersion);
+	public static void runPythonScript(String inFileName, String outFileName) throws Exception {
+
+		StringWriter writer = new StringWriter();
+		
+		try {
+			ScriptEngineManager manager = new ScriptEngineManager();
+			ScriptContext context = new SimpleScriptContext();
+			ScriptEngine engine = manager.getEngineByName("python");
+		    Invocable inv = (Invocable) engine;
+			
+			// share a common context
+			context.setWriter(writer);
+			engine.setContext(context);
+			
+			// add jar path to jython sys path
+			String jarPath = Converter.class.getProtectionDomain().getCodeSource().getLocation().getPath().toString();
+			engine.eval("import sys; sys.path.insert(0, \"" + jarPath + "/vgmpacker" + "\")");
+			
+			// load script
+			InputStreamReader script = new InputStreamReader(Converter.class.getResource("/vgmpacker/vgmpacker.py").openStream());
+			engine.eval(script);
+			script.close();
+			
+			// instanciate an object
+			Object vgmPacker = engine.eval("VgmPacker()");
+			
+			// run the method
+		    inv.invokeMethod(vgmPacker, "process", inFileName, outFileName, 255, false);
+		    
+		} finally {
+			log.debug(writer.toString());
 		}
-//		StringWriter writer = new StringWriter();
-//		ScriptContext context = new SimpleScriptContext();
-//		context.setWriter(writer);
-//
-//		ScriptEngineManager manager = new ScriptEngineManager();
-//		ScriptEngine engine = manager.getEngineByName("python");
-//		engine.eval(new FileReader(Converter.class.getResource("vgm-packer/vgmpacker.py").getPath()), context);
-//		log.debug(writer.toString());
 	}	
 }

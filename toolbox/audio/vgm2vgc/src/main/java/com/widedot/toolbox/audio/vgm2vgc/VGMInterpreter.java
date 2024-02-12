@@ -15,64 +15,21 @@ public class VGMInterpreter {
 	public static final int SAMPLES_PER_SECOND = 44100;
 	public static final int SAMPLES_PER_FRAME_NTSC = 735;
 	public static final int SAMPLES_PER_FRAME_PAL = 882;
-	public static final int _YMMAIN = 9;
+	
+	public static final int END_MARKER = 0x66;
 
 	private VGMInputStream input;
-	public int[] arrayOfInt = new int[0x80000];
-	public int i = 0, s = 0;
-	public int loopMarkerHit = 0;
-	public int cumulatedFrames = 0, oldCumulatedFrames = -1;
-	public int cumulatedSamples = 0;
-	public int[] drum;
-	public int[] ymreg = new int[0x39];
-	public boolean[] ymupd = new boolean[0x39];
-	public int[][] stat = new int[256][256];
+	public byte[] data = new byte[0x80000];
+	public int pos = 0;
+	public int loopMarkerHit = 0, totalLoopMarkerFrames = 0;
+	public int totalFrames = 1, oldCumulatedFrames = -1;
+	public int curWaitSamples = 0;
+	private byte[] header;
 	
 
-	public VGMInterpreter(File paramFile, int[] drum) throws IOException {
+	public VGMInterpreter(File paramFile) throws IOException {
 		this.input = new VGMInputStream(paramFile);
-		this.drum = drum;
-		
-		for (int j = 0; j < ymupd.length; j++) {
-			ymupd[j] = false;
-		}
-		
-		while(run());
-		
-		boolean debug = Boolean.getBoolean("logback.debug");
-		
-		if (debug) {
-			log.debug("YM2413 STAT");
-	        HashMap<String, Integer> map = new HashMap<>();
-	        LinkedHashMap<String, Integer> sortedMap = new LinkedHashMap<>();
-	        ArrayList<Integer> list = new ArrayList<>();
-	        int redundancy = 0, distinct = 0;
-	        
-			for (int k=0; k < stat.length; k++) {
-				for (int l=0; l < stat[0].length; l++) {
-					if (stat[k][l]>32) {
-						map.put(String.format("%02X%02X", k, l), stat[k][l]);
-						redundancy += stat[k][l];
-						distinct++;
-					}
-				}
-			}
-			
-	        for (Map.Entry<String, Integer> entry : map.entrySet()) {
-	            list.add(entry.getValue());
-	        }
-	        Collections.sort(list, Collections.reverseOrder());
-	        for (int num : list) {
-	            for (Entry<String, Integer> entry : map.entrySet()) {
-	                if (entry.getValue().equals(num)) {
-	                    sortedMap.put(entry.getKey(), num);
-	                }
-	            }
-	        }
-	        log.debug(sortedMap.toString());
-	        log.debug("redundancy: {} distinct: {}", redundancy, distinct);
-		}
-		
+		while(run());	
 		this.input.close();
 	}
 
@@ -87,144 +44,182 @@ public class VGMInterpreter {
 				fireLoopPointHit();
 			}
 
-			switch (this.input.read()) {
+			byte cmd = input.readByte();
+			switch (cmd) {
 			case 0x4F: // Game Gear PSG stereo
 				this.input.skip(1L);
 				continue;
 			case 0x50: // PSG (SN76489/SN76496) write value dd
-				this.input.skip(1L);
+				fireWrite(cmd, input.readByte());
 				continue;
 			case 0x51: // YM2413, write value dd to register aa
-				int cmd = this.input.read();
-				int data = this.input.read();
-				fireWrite(cmd, data);
+				this.input.skip(2L);
 				continue;          				
-			case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x57: case 0x58: case 0x59: case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x5F:        	
-				this.input.skip(2L); // write value dd to register aa
+			case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x57: case 0x58: case 0x59: case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x5F: // write value dd to register aa	
+				this.input.skip(2L);
 				continue;     
 			case 0x61: // Wait n samples, n can range from 0 to 65535
 				waitTime = this.input.readShort();
-				cumulatedSamples += waitTime;
+				curWaitSamples += waitTime;
            		endFrame = true;
 				continue;
 			case 0x62: // wait 735 samples (60th of a second)
-				cumulatedSamples += 735;
+				curWaitSamples += 735;
 				endFrame = true;
 				continue;
             case 0x63: // wait 882 samples (50th of a second)
-            	cumulatedSamples += 882;
+            	curWaitSamples += 882;
 				endFrame = true;
 				continue;
-			case 0x66: // end of sound data
-				fireWriteEnd();				
+			case END_MARKER: // end of sound data
+				data[pos++] = (byte) (cmd & 0xff) ;				
 				return false;
 			case 0x67: // data block
 				continue;				
-			case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F:
+			case (byte) 0x80: case (byte) 0x81: case (byte) 0x82: case (byte) 0x83:
+			case (byte) 0x84: case (byte) 0x85: case (byte) 0x86: case (byte) 0x87:
+			case (byte) 0x88: case (byte) 0x89: case (byte) 0x8A: case (byte) 0x8B:
+			case (byte) 0x8C: case (byte) 0x8D: case (byte) 0x8E: case (byte) 0x8F:
 				this.input.skip(1L);
 				continue;
-			case 0x90: // DAC Stream Control Write - Setup Stream Control
+			case (byte) 0x90: // DAC Stream Control Write - Setup Stream Control
 				this.input.skip(4L);
 				continue;
-			case 0x91: // DAC Stream Control Write - Set Stream Data
+			case (byte) 0x91: // DAC Stream Control Write - Set Stream Data
 				this.input.skip(4L);
 				continue;
-			case 0x92: // DAC Stream Control Write - Set Stream Frequency
+			case (byte) 0x92: // DAC Stream Control Write - Set Stream Frequency
 				this.input.skip(5L);
 				continue;
-			case 0x93: // DAC Stream Control Write - Start Stream
+			case (byte) 0x93: // DAC Stream Control Write - Start Stream
 				this.input.skip(10L);
 				continue;
-			case 0x94: // DAC Stream Control Write - Stop Stream
+			case (byte) 0x94: // DAC Stream Control Write - Stop Stream
 				this.input.skip(1L);
 				continue;
-			case 0x95: // DAC Stream Control Write - Start Stream (fast call)
-				if (drum != null) {
-					
-					// map dac start stream to ym drum sound
-					fireWrite(0x0E, 0x20);
-					this.input.read();                          // stream id
-					int blockId = this.input.readShort();       // block id
-					fireWrite(0x0E, drum[blockId%drum.length]);
-					this.input.skip(1L);                        // skip Flags
-					
-				} else {
-					this.input.skip(3L);
-				}
+			case (byte) 0x95: // DAC Stream Control Write - Start Stream (fast call)
+				this.input.skip(3L);
 				continue;								
-			case 0xE0:        	
+			case (byte) 0xE0:        	
 				this.input.skip(4L); // data reg
 				continue;               
 			} 
 			
 			this.input.close();
-			throw new IOException("Unknown VGM command encountered at " + Integer.toHexString(this.input.getPosition() - 1) + ": " + Integer.toHexString(i));
+			throw new IOException("Unknown VGM command encountered at " + Integer.toHexString(input.getPosition() - 1) + ": " + Integer.toHexString(cmd));
 		}
 		
 		return true;
 	}
 
 	public int getTotalSamples() {
-		return this.input.getTotalSamples();
+		return totalFrames*SAMPLES_PER_FRAME_PAL;
 	}
 
+	public int getTotalLoopMarkerSamples() {
+		return totalLoopMarkerFrames*SAMPLES_PER_FRAME_PAL;
+	}
+	
 	public void fireLoopPointHit() {
-		loopMarkerHit = s;
-		
-		// reinit cache at loop start
-		for (int i=0; i < ymupd.length; i++) {
-			ymupd[i] = false;
-		}
-		
-		log.debug(String.format("            [LOOP POINT: %04X]", s));
+		loopMarkerHit = pos;
+		totalLoopMarkerFrames = totalFrames;
+		log.debug(String.format("            [LOOP POINT: %04X]", pos));
 	}
 
-	public void fireWrite(int cmd, int data) {
-		
-		// skip redundant command
-		if (ymupd[cmd] && ymreg[cmd] == data) {
-			log.debug(String.format("%04X: %02X %02X [SKIP]", s, cmd, data));
-			return;
-		}
+	public void fireWrite(byte cmd, byte val) {
 		
 		fireWriteDelay();
+		data[pos++] = cmd;
+		data[pos++] = val;
 		
-		arrayOfInt[s++] = cmd;
-		arrayOfInt[s++] = data;
-		ymreg[cmd] = data;
-		ymupd[cmd] = true;
-		log.debug(String.format("%04X: %02X %02X", s-2, cmd, data));
-		stat[cmd][data] = stat[cmd][data]+1; 
+		log.debug(String.format("%04X: %02X %02X", pos-2, cmd, val));
 	}
 	
 	public void fireWriteDelay() {
-		int offset = 0x39;
+		int frames = curWaitSamples/SAMPLES_PER_FRAME_PAL;
+    	curWaitSamples = curWaitSamples%SAMPLES_PER_FRAME_PAL; // saves remaining value
+    	totalFrames += frames;
 		
-    	cumulatedFrames += cumulatedSamples/SAMPLES_PER_FRAME_PAL;
-    	cumulatedSamples = cumulatedSamples%SAMPLES_PER_FRAME_PAL; // saves remaining value
-		
-		while (cumulatedFrames > 0) {
-			if (cumulatedFrames > 198) {
-				arrayOfInt[s++] = offset+cumulatedFrames;
-				cumulatedFrames -= 198;
-			} else {
-				arrayOfInt[s++] = offset+cumulatedFrames;
-				cumulatedFrames = 0;
-			}
-			log.debug(String.format("%04X: %02X    [WAIT: %d frame(s)]", s-1, arrayOfInt[s-1], arrayOfInt[s-1]-offset));
+		while (frames > 0) {
+			data[pos++] = 0x63;
+			frames--;
+			log.debug(String.format("%04X: %02X    [WAIT]", pos-1, data[pos-1]));
 		}
 	}
 	
-	public void fireWriteEnd() {
-		fireWriteDelay();
-		arrayOfInt[s++] = 0x39;
-	}
-	
-	public int[] getArrayOfInt() {
-		return arrayOfInt;
-	}
-	
 	public int getLastIndex() {
-		return s;
+		return pos;
 	}	
+	
+	public byte[] getIntroHeader() {
+		return getHeader(loopMarkerHit+1, getTotalLoopMarkerSamples());
+	}
+	
+	public byte[] getLoopHeader() {
+		return getHeader(getLastIndex()-loopMarkerHit, getTotalSamples());
+	}
+	
+	public byte[] getHeader(int size, int samples) {
+		header = new byte[input.getHeaderSize()];
+		header[0]  = 'V';
+		header[1]  = 'g';
+		header[2]  = 'm';
+		header[3]  = ' ';
+		setInt(header,  4, input.getHeaderSize()-4+size);
+		setInt(header,  8, input.getVersion());
+		setInt(header, 12, input.getPsgClock());
+		
+		setInt(header, 16, 0x00000000);               // YM2413 clock off
+		setInt(header, 20, 0x00000000);               // GD3 offset (GD3 is stripped)
+		setInt(header, 24, samples);                  // Total # samples
+		setInt(header, 28, 0x00000000);               // loop offset (no loop, intro and loop are splitted in two files)
+		
+		setInt(header, 32, 0x00000000);               // loop # samples
+		setInt(header, 36, 0x00000032);               // rate if forced to 50hz (required for vgmPacker)
+		setInt(header, 40, input.getPsgConf());       // settings for SN76489 chip type
+		setInt(header, 44, 0x00000000);               // YM2612 clock off
+		
+		setInt(header, 48, 0x00000000);               // YM2151 clock off
+		setInt(header, 52, input.getVgmDataOffset()); // VGM data offset
+		setInt(header, 56, 0x00000000);               // Sega PCM clock
+		setInt(header, 60, 0x00000000);               // SPCM Interface
+
+		return header;
+	}
+	
+	public byte[] getIntroData() {
+		byte[] intro = null;
+		if (loopMarkerHit > 0) {
+			
+			intro = new byte[loopMarkerHit+1];
+			int i = 0;
+			for (i = 0; i < loopMarkerHit; i++) {
+				intro[i] = data[i];
+			}
+			intro[i] = (byte) (END_MARKER & 0xff);
+		}
+
+		return intro;
+	}
+	
+	public byte[] getLoopData() {
+		byte[] loop = null;
+		if (getLastIndex()-loopMarkerHit > 0) {
+			
+			loop = new byte[getLastIndex()-loopMarkerHit];
+			int j = 0;
+			for (int i = loopMarkerHit; i < getLastIndex(); i++) {
+				loop[j++] = data[i];
+			}
+		}
+
+		return loop;
+	}
+	
+	private void setInt(byte[] data, int pos, int val) {
+		data[pos]   = (byte) (val & 0xff);
+		data[pos+1] = (byte) ((val >>  8) & 0xff);
+		data[pos+2] = (byte) ((val >> 16) & 0xff);
+		data[pos+3] = (byte) ((val >> 24) & 0xff);
+	}
 }

@@ -9,15 +9,19 @@ import java.util.zip.GZIPInputStream;
 
 public class VGMInputStream extends InputStream {
 	private final InputStream input;
-	private final int offsetEOF;
-	private final int version;
-	private final int psgClock;
-	private final int fmClock;
-	private final int offsetGD3;
-	private final int totalSamples;
-	private final int offsetLoop;
-	private final int loopSamples;
-	private final int rate;
+	private int offsetEOF;
+	private int version;
+	private int psgClock;
+	private int fmClock;
+	private int offsetGD3;
+	private int totalSamples;
+	private int offsetLoop;
+	private int loopSamples;
+	private int psgConf;
+	private int rate;
+	private int vgmDataOffset;
+	private int headerSize;
+	
 	private int pos;
 
 	public VGMInputStream(File paramFile) throws IOException {
@@ -44,53 +48,70 @@ public class VGMInputStream extends InputStream {
 		this.offsetLoop = this.pos + readInt();
 		this.loopSamples = readInt();
 		this.rate = readInt();
+		this.psgConf = readInt();
 		if (this.version >= 336) {
 			seekTo(52);
 			int i = readInt();
+			vgmDataOffset = i;
 			if (i > 0) {
 				skip((i - 4));
 			} else {
 				seekTo(64);
 			} 
 		} else {
+			vgmDataOffset = 0;
 			seekTo(64);
 		} 
+		
+		headerSize = this.pos;
 	}
-
+	
 	public int getOffsetEOF() {
-		return this.offsetEOF;
+		return offsetEOF;
 	}
 
 	public int getVersion() {
-		return this.version;
+		return version;
 	}
 
 	public int getPsgClock() {
-		return this.psgClock;
+		return psgClock;
 	}
 
 	public int getFmClock() {
-		return this.fmClock;
+		return fmClock;
 	}
 
 	public int getOffsetGD3() {
-		return this.offsetGD3;
+		return offsetGD3;
 	}
 
 	public int getTotalSamples() {
-		return this.totalSamples;
+		return totalSamples;
 	}
 
 	public int getOffsetLoop() {
-		return this.offsetLoop;
+		return offsetLoop;
 	}
 
 	public int getLoopSamples() {
-		return this.loopSamples;
+		return loopSamples;
+	}
+
+	public int getPsgConf() {
+		return psgConf;
 	}
 
 	public int getRate() {
-		return this.rate;
+		return rate;
+	}
+
+	public int getVgmDataOffset() {
+		return vgmDataOffset;
+	}
+
+	public int getHeaderSize() {
+		return headerSize;
 	}
 
 	public void seekTo(int paramInt) throws IOException {
@@ -111,6 +132,11 @@ public class VGMInputStream extends InputStream {
 	public int read() throws IOException {
 		this.pos++;
 		return this.input.read();
+	}
+	
+	public byte readByte() throws IOException {
+		this.pos++;
+		return (byte) (this.input.read() & 0xff);
 	}
 
 	public int readShort() throws IOException {
@@ -140,4 +166,5 @@ public class VGMInputStream extends InputStream {
 	public synchronized void reset() throws IOException {
 		this.input.reset();
 	}
+	
 }

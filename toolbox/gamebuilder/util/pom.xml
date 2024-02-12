@@ -11,5 +11,13 @@
 		<relativePath>../../../pom.xml</relativePath>
     </parent>
     <artifactId>6809-gamebuilder-util</artifactId>
+    
+    <dependencies>
+    	<dependency>
+		    <groupId>org.python</groupId>
+		    <artifactId>jython-standalone</artifactId>
+		    <version>2.7.3</version>
+		</dependency>
+	</dependencies>
 
 </project>

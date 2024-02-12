@@ -21,12 +21,7 @@
 		<dependency>
 			<artifactId>6809-gamebuilder-util</artifactId>
 			<groupId>com.wide-dot</groupId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.python</groupId>
-		    <artifactId>jython-standalone</artifactId>
-		    <version>2.7.3</version>
+			<version>0.0.1</version>
 		</dependency>
 	</dependencies>
 
