@@ -12,9 +12,9 @@ map.YM2413.A EXTERNAL
 map.YM2413.D EXTERNAL
 
 ymm.play       EXPORT
+ymm.obj.play   EXPORT
 ymm.frame.play EXPORT
 
-        INCLUDE "new-engine/system/to8/map.const.asm"
         INCLUDE "new-engine/sound/ym2413.macro.asm"
         INCLUDE "new-engine/sound/ym2413.asm"
 
@@ -40,24 +40,20 @@ ymm.callback         fdb   0             ; 0=no calback routine
 ; ------------------------------------------------------------------------------
 
 ymm.play
+        _GetCartPageA
+        sta   @a
+        _SetCartPageA
+        jsr   ymm.obj.play
+        lda   #0
+@a      equ   *-1
+        _SetCartPageA
+        rts
+
+ymm.obj.play
         jsr   irq.off
         stb   ymm.loop
         sty   ymm.callback
         sta   ymm.data.page
-
-        _GetCartPageA
-        sta   @a
-        _SetCartPageA
-        jsr   ymm.play.subroutine
-        lda   #0
-@a      equ   *-1
-        _SetCartPageA
-
-        _ym2413.init
-        jmp   irq.on
-
-
-ymm.play.subroutine
         lda   #1
         sta   ymm.frame.waits
         sta   ymm.status
@@ -65,7 +61,9 @@ ymm.play.subroutine
         ldu   #ymm.buffer
         stu   ymm.data.pos
         leax  2,x
-        jmp   ymm.decompress
+        jsr   ymm.decompress
+        _ym2413.init
+        rts
 
 ; ------------------------------------------------------------------------------
 ; ymm.frame.play - processes a music frame (VInt)

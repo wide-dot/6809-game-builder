@@ -1,5 +1,5 @@
 
-; Reset YM2413 sound chip to a default (silent) state
+; Init YM2413 sound chip to a default (silent) state
 ; ----------------------------------------------------
 
 map.YM2413.A EXTERNAL
