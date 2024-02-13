@@ -63,6 +63,8 @@ vgc.obj.play
         jsr   irq.off
         sta   vgc.data.page
         stb   vgc.loop
+        ldd   #vgc.buffers
+        sta   vgc.buffers.hi
         sty   vgc.callback
         stx   vgc.data                 ; stash the data source addr for looping
         jsr   vgc_stream_mount         ; Prepare the data for streaming (passed in X)
@@ -125,7 +127,7 @@ vgc_do_update
         ; restart if looping
         ldx   vgc.data
         lda   vgc.loop
-        lda   #vgc.buffers
+        lda   vgc.buffers.hi
         jsr   vgc_stream_mount
         jmp   vgc.frame.play
 @no_looping 
@@ -158,6 +160,7 @@ vgc.loop        fcb 0    ; non zero if tune is to be looped
 vgc.data        fdb 0    ; vgc data address
 vgc.data.page   fdb 0    ; vgc data address
 vgc.callback    fdb 0    ; 0=no calback routine
+vgc.buffers.hi  fcb 0
 
 ; 8 counters for VGC register update counters (RLE)
 vgc_register_counts
@@ -228,10 +231,10 @@ vgc_get_register_data
         ldx   #0
         leax  a,x
         leax  a,x
-        adda  #vgc.buffers  ; hi byte of the base address of the 2Kb (8x256) vgc stream buffers
+        adda  vgc.buffers.hi  ; hi byte of the base address of the 2Kb (8x256) vgc stream buffers
         ; store hi byte of where the 256 byte vgc stream buffer for this stream is located
-        sta   lz_window_src ; **SELFMOD** HI
-        sta   lz_window_dst ; **SELFMOD** HI
+        sta   lz_window_src   ; **SELFMOD** HI
+        sta   lz_window_dst   ; **SELFMOD** HI
         ; calculate the stream buffer context
         stx   @loadX ; Stash X for later *** SELF MODIFYING SEE BELOW ***
         ;

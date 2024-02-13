@@ -40,5 +40,4 @@ UserIRQ
 
         INCLUDE "new-engine/global/glb.init.asm"
         INCLUDE "new-engine/system/mo6/irq/irq.asm"
-        INCLUDE "new-engine/sound/ym2413.asm"
         INCLUDE "new-engine/graphics/buffer/gfxlock.asm"

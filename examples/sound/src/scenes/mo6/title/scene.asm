@@ -26,7 +26,7 @@
         fdb   $8000+2                  ; [type | nb files] (0: end marker)
 
         fcb   $07                      ; [destination - page id]
-        fdb   $B400                    ; [destination - address]
+        fdb   $BA80                    ; [destination - address]
         fdb   assets.obj.snd.title.vgc
         fdb   engine.system.mo6.sound.sn.const
 
