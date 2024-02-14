@@ -99,7 +99,7 @@ public class Converter {
 		byte[] intro = vgm.getIntroData();
 		byte[] loop = vgm.getLoopData();
 
-		if (intro != null) {
+		if (false && intro != null) {
 			ByteArrayOutputStream tmpOS = new ByteArrayOutputStream();
 			tmpOS.write(vgm.getIntroHeader());
 			tmpOS.write(intro);
