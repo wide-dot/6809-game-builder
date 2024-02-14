@@ -72,6 +72,7 @@ public class VGMInterpreter {
 				endFrame = true;
 				continue;
 			case END_MARKER: // end of sound data
+				fireWriteDelay();
 				data[pos++] = (byte) (cmd & 0xff) ;				
 				return false;
 			case 0x67: // data block

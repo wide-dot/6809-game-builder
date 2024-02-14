@@ -30,7 +30,6 @@ ymm.status           fcb   0             ; 0 : stop playing, 1-255 : play music
 ymm.frame.waits      fcb   0             ; number of frames to wait before next play
 ymm.loop             fcb   0             ; 0=no loop
 ymm.callback         fdb   0             ; 0=no calback routine
-ymm.track            fcb   0             ; 0=intro, 1=loop
 
 ; ------------------------------------------------------------------------------
 ; ymm.play - Load a new music and init all tracks
@@ -62,14 +61,7 @@ ymm.obj.play
         stx   ymm.data
         ldu   #ymm.buffer
         stu   ymm.data.pos
-        lda   #ymm.track.INTRO
-        sta   ymm.track
-        ldd   ,x
-        cmpd  #2
-        bne   >
-        lda   #ymm.track.LOOP          ; if offset is +2, then no INTRO for this music
-        sta   ymm.track
-!       leax  2,x
+        leax  2,x
         jsr   ymm.decompress
         _ym2413.init
         rts
@@ -117,14 +109,6 @@ YVGM_do_MusicFrame
 !       lda   ymm.loop
         beq   @no_looping
         ldb   #1
-        lda   ymm.track
-        cmpa  #ymm.track.INTRO
-        beq   >                        ; branch if chaining intro to loop, same frame
-        incb                           ; add a single frame when looping
-        bra   @loop
-!       lda   #ymm.track.LOOP
-        sta   ymm.track
-@loop
         stb   ymm.frame.waits
         ldx   ymm.data
         ldd   ,x
