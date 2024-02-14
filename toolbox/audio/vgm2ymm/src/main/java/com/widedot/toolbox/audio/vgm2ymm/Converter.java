@@ -159,6 +159,7 @@ public class Converter {
 		
 		OutputStream fileStream = new FileOutputStream(outFileName);
 		outputStream.writeTo(fileStream);
+		outputStream.close();
 		
 		return outputStream.toByteArray();
 	}

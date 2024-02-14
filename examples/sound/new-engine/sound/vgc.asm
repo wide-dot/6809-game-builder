@@ -67,6 +67,7 @@ vgc.obj.play
         sta   vgc.buffers.hi
         sty   vgc.callback
         stx   vgc.data                 ; stash the data source addr for looping
+        leax  2,x
         jsr   vgc_stream_mount         ; Prepare the data for streaming (passed in X)
         _sn76489.init
         rts
@@ -81,11 +82,12 @@ vgc.obj.play
 ;-------------------------------------------
 vgc.frame.play
         lda   vgc.finished
-        bne   @exit        
-        lda   vgc.data.page
-        bne   @a
+        beq   >
+        rts
+!       lda   vgc.data.page
+        bne   >
         rts                            ; no music to play
-@a      _SetCartPageA
+!       _SetCartPageA
         ; SN76489 data register format is %1cctdddd where cc=channel, t=0=tone, t=1=volume, dddd=data
         ; The data is run length encoded.
         ; Get Channel 3 tone first because that contains the EOF marker        
@@ -94,11 +96,9 @@ vgc_do_update
         lda   #3
         jsr   vgc_update_register1  ; on exit C set if data changed, B is last value
         bcc   @more_updates
-        ;
         ldb   skip_tone3+1
         cmpb  #$08     ; EOF marker? (0x08 is an invalid tone 3 value)
         beq   @finished
-        ; 
 @more_updates
         lda   #7
         jsr   vgc_update_register1  ; Volume3
@@ -113,27 +113,23 @@ vgc_do_update
         lda   #2
         jsr   vgc_update_register2  ; Tone2
         lda   #6
-        jsr   vgc_update_register1  ; Volume2
-@exit
-        rts
-        ;
+        jmp   vgc_update_register1  ; Volume2
 @finished
         ; end of tune reached
-        ldx   vgc.callback             ; check callback routine
+        ldx   vgc.callback          ; check callback routine
         beq   >
         jmp   ,x
 !       lda   vgc.loop
         beq   @no_looping
         ; restart if looping
-        ldx   vgc.data
-        lda   vgc.loop
-        lda   vgc.buffers.hi
+        ldd   ,x
+        leax  d,x                   ; move to loop point
         jsr   vgc_stream_mount
-        jmp   vgc.frame.play
+        jmp   vgc.frame.play        ; last frame is just EOF, play first one
 @no_looping 
         ; no looping so set flag $ stop PSG
-        stb   vgc.finished    ; any NZ value is fine, in this case 0x08
-        jmp   sn76489.init   ; also returns non-zero in A
+        stb   vgc.finished          ; any NZ value is fine, in this case 0x08
+        jmp   sn76489.init          ; also returns non-zero in A
 
 ;-------------------------------------------
 ; VGC internal routines

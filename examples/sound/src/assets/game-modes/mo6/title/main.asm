@@ -30,7 +30,7 @@ page.vgc equ 7                   ; ram page that contains player and sound data 
 
 UserIRQ
         _cart.setRam page.ymm    ; mount object page
-        ;_ymm.frame.play          ; play a music frame
+        _ymm.frame.play          ; play a music frame
 
         _cart.setRam page.vgc    ; mount object page
         _vgc.frame.play          ; play a music frame
