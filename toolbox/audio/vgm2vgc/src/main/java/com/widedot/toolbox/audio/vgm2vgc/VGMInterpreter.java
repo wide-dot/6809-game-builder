@@ -113,11 +113,11 @@ public class VGMInterpreter {
 		return true;
 	}
 
-	public int getTotalSamples() {
-		return totalFrames*SAMPLES_PER_FRAME_PAL;
+	public int getLoopSamples() {
+		return (totalFrames-totalLoopMarkerFrames+1)*SAMPLES_PER_FRAME_PAL;
 	}
 
-	public int getTotalLoopMarkerSamples() {
+	public int getIntroSamples() {
 		return totalLoopMarkerFrames*SAMPLES_PER_FRAME_PAL;
 	}
 	
@@ -153,11 +153,11 @@ public class VGMInterpreter {
 	}	
 	
 	public byte[] getIntroHeader() {
-		return getHeader(loopMarkerHit+1, getTotalLoopMarkerSamples());
+		return getHeader(loopMarkerHit+1, getIntroSamples());
 	}
 	
 	public byte[] getLoopHeader() {
-		return getHeader(getLastIndex()-loopMarkerHit, getTotalSamples());
+		return getHeader(getLastIndex()-loopMarkerHit, getLoopSamples());
 	}
 	
 	public byte[] getHeader(int size, int samples) {
