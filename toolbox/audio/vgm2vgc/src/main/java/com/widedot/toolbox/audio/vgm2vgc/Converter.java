@@ -92,25 +92,27 @@ public class Converter {
 		}
 
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
-
+		ByteArrayOutputStream finalOS = new ByteArrayOutputStream();
+		
 		// Keep SN76489 data only
 		VGMInterpreter vgm = new VGMInterpreter(file);
 		byte[] intro = vgm.getIntroData();
 		byte[] loop = vgm.getLoopData();
 
 		if (intro != null) {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			outputStream.write(vgm.getIntroHeader());
-			outputStream.write(intro);
+			ByteArrayOutputStream tmpOS = new ByteArrayOutputStream();
+			tmpOS.write(vgm.getIntroHeader());
+			tmpOS.write(intro);
 			
 			String tmpFileName = file.getAbsolutePath() + ".sn76489.intro.vgm";
 			OutputStream fileStream = new FileOutputStream(tmpFileName);
-			outputStream.writeTo(fileStream);
-			outputStream.close();
+			tmpOS.writeTo(fileStream);
+			tmpOS.close();
 			
 			// Convert vgm to vgc
 			runPythonScript(tmpFileName, outFileName);
-			//Files.delete(Path.of(tmpFileName));
+			intro = Files.readAllBytes(Paths.get(outFileName));
+			finalOS.write(intro);
 		}
 		
 		if (loop != null) {
@@ -125,17 +127,15 @@ public class Converter {
 			
 			// Convert vgm to vgc
 			runPythonScript(tmpFileName, outFileName);
-			//Files.delete(Path.of(tmpFileName));
+			loop = Files.readAllBytes(Paths.get(outFileName));
+			finalOS.write(loop);
 		}
+
+		OutputStream fileStream = new FileOutputStream(outFileName);
+		finalOS.writeTo(fileStream);
+		finalOS.close();
 		
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		//outputStream.write(bin);
-
-		//OutputStream fileStream = new FileOutputStream(outFileName);
-		//outputStream.writeTo(fileStream);
-
-		return outputStream.toByteArray();
+		return finalOS.toByteArray();
 	}
 
 	public static void runPythonScript(String inFileName, String outFileName) throws Exception {

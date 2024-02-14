@@ -61,8 +61,7 @@
                         <asm xml:space="preserve">sound.title.vgc</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                        <bin filename="src/assets/sounds/title/music.vgc"/>
-                        <!--<vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>-->
+                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
                 </direntry>
 
                 <direntry name="engine.system.mo6.sound.sn.const" loadtimelink="LINK">

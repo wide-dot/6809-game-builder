@@ -534,7 +534,7 @@ class VgmPacker:
 	# Process(filename)
 	# Convert the given VGM file to a compressd VGC file
 	#----------------------------------------------------------
-	def process(self, src_filename, dst_filename, buffersize = 255, use_huffman = True):
+	def process(self, src_filename, dst_filename, buffersize = 255, use_huffman = False):
 
 		# load the VGM file, or alternatively interpret as a binary
 		if src_filename.lower()[-4:] == ".vgm":
@@ -743,7 +743,9 @@ class VgmPacker:
 		self.report(lz4, data_block, output, 8, "Paired 8 register blocks [01][23][45][6][7][8][9][A] WITH register masks ")
 
 		# write the lz4 compressed file.
-		open(dst_filename, "wb").write( output )
+		fo = open(dst_filename, "wb")
+		fo.write( output )
+		fo.close()
 
 
 #------------------------------------------------------------------------
