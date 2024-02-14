@@ -45,7 +45,7 @@
                         <asm xml:space="preserve">sound.title.ymm</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/title/resources/rtype-level1.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </direntry>
 
                 <direntry name="engine.system.mo6.sound.ym.const" loadtimelink="LINK">
@@ -61,7 +61,7 @@
                         <asm xml:space="preserve">sound.title.vgc</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
+                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-level1.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
                 </direntry>
 
                 <direntry name="engine.system.mo6.sound.sn.const" loadtimelink="LINK">

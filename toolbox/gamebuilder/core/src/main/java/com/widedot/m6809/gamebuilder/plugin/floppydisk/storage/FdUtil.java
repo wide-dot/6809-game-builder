@@ -117,10 +117,11 @@ public class FdUtil implements MediaDataInterface{
 			first = false;
 		}
 		
-        log.debug("write - track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
+        log.debug("write - section: {}, track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
+        		location,
         		(direntry[0] >> 1) & 0xff,
 				direntry[0] & 0x1,
-				direntry[1] & 0xff,
+				(direntry[1] + 1) & 0xff,
 				direntry[2] & 0xff,
 				direntry[3] & 0xff,
 				direntry[4] & 0xff,
@@ -181,9 +182,10 @@ public class FdUtil implements MediaDataInterface{
     public void nextSector(Section section) throws Exception {
         section.sector++;
         if (section.sector-1==storage.segment.sectors) {
-            section.sector=0;
+            section.sector=1;
             section.face++;
             if (section.face==storage.segment.faces) {
+            	section.face=0;
                 section.track++;
                 if (section.track==storage.segment.tracks) {
                 	throw new Exception("No more space on media !");

@@ -95,7 +95,7 @@ class VgmPacker:
 		# eg. the raw chip writes to all 11 registers every frame
 		n = 0
 		Packet = True
-		verbose = True
+		verbose = False
 
 		while (Packet):
 			packet_size = rawData[n]
@@ -451,7 +451,7 @@ class VgmPacker:
 	def testUnpackLZ4(self, compressed, uncompressed):
 		unpacked = bytearray()
 		eof = False
-		debug = True
+		debug = False
 		self.index = 4 # skip the block header
 		def getByte():		
 			byte = compressed[self.index]
@@ -652,7 +652,8 @@ class VgmPacker:
 		# Construct the optimal VGC file format output
 		#------------------------------------------------------------------------------
 		# check there's no odd noise settings
-		if True:
+		# Should be fixed to ignore noise register EOF marker '8'
+		if False:
 			invalid_noise_range = False
 			for n in range(len(registers[6])):
 				noise = registers[6][n]
