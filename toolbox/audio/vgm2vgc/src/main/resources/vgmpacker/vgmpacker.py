@@ -94,22 +94,24 @@ class VgmPacker:
 		# unpack the raw binary data in 11 arrays of register data without any deltas between them
 		# eg. the raw chip writes to all 11 registers every frame
 		n = 0
+		f = 0
 		Packet = True
 		verbose = False
 
 		while (Packet):
 			packet_size = rawData[n]
 			if verbose:
-				print("packet_size=" + str(packet_size))
+				print(str(f)+" - packet_size=" + str(packet_size))
 			n += 1
+			f += 1
 			if packet_size == 255:
 				Packet = False
 			else:
 				for x in range(packet_size):
 					d = rawData[n+x]
-					#if verbose:
-					#   print "  frame byte number=" +str(x)
-					#   print "    frame byte=" +str(d)
+					if verbose:
+					   print "  frame byte number=" +str(x)
+					   print "    frame byte=" +str(d)
 					if d & 128:
 						# latch
 						c = (d>>5)&3
@@ -451,7 +453,7 @@ class VgmPacker:
 	def testUnpackLZ4(self, compressed, uncompressed):
 		unpacked = bytearray()
 		eof = False
-		debug = False
+		debug = True
 		self.index = 4 # skip the block header
 		def getByte():		
 			byte = compressed[self.index]
@@ -672,6 +674,14 @@ class VgmPacker:
 		streams.append( self.rle( registers[8] ) ) # v1
 		streams.append( self.rle( registers[9] ) ) # v2
 		streams.append( self.rle( registers[10] ) ) # v3
+
+		if False:
+			for i in range(len(registers)):
+				print("")
+				print("register "+str(i)+" length="+str(len(registers[i])))
+				for j in range(len(registers[i])):
+					print("register "+str(i)+" index="+str(j)+" value="+str(registers[i][j]))
+			
 
 		if self.OUTPUT_RAWDATA:
 			# write a raw data version of the file in the most optimal data format

@@ -3,3 +3,4 @@
 /.settings
 /target/
 /.apt_generated_tests/
+/.pydevproject

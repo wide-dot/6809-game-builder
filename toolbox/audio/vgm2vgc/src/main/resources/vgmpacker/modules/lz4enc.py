@@ -64,7 +64,7 @@ class LZ4():
   DistanceByteSize = 2
 
   # Verbose mode
-  Verbose = False
+  Verbose = True
 
   # Debug mode
   Debug = False
@@ -781,6 +781,8 @@ class LZ4():
 
       # did compression do harm ?
       useCompression   = len(block) < uncompressedSize and not uncompressed
+      # Force compression as code actually fails if disabled
+      useCompression = True
 
       if LZ4.Verbose:
         print(" Writing output block - uncompressed (" + str(uncompressedSize) + "), compressed (" + str(len(block)) + ") ...")

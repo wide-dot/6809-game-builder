@@ -570,13 +570,13 @@ class VgmStream:
 			# 0x62 - Wait 735 samples (60th of a second)
 			# 0x63 - Wait 882 samples (50th of a second)
 			# 0x66 - End of sound data
-			elif command in [b'\x62', b'\x63', b'\x66']:
+			elif command in [b'\x62', b'\x63']:
 				self.command_list.append({'command': command, 'data': None})
 
+			elif command in [b'\x66']:
 				# Stop processing commands if we are at the end of the music
 				# data
-				if command == b'\x66':
-					break
+				break
 
 			# 0x67 0x66 tt ss ss ss ss - Data block
 			elif command == b'\x67':
@@ -692,7 +692,6 @@ class VgmStream:
 				packet_block.extend(q['data'])
 
 		# eof
-		data_block.append(0x00)	# append one last wait
 		data_block.append(0xFF)	# signal EOF
 
 

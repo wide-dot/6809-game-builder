@@ -114,7 +114,7 @@ public class VGMInterpreter {
 	}
 
 	public int getLoopSamples() {
-		return (totalFrames-totalLoopMarkerFrames+1)*SAMPLES_PER_FRAME_PAL;
+		return (totalFrames-totalLoopMarkerFrames)*SAMPLES_PER_FRAME_PAL;
 	}
 
 	public int getIntroSamples() {
