@@ -122,6 +122,7 @@ vgc_do_update
 !       lda   vgc.loop
         beq   @no_looping
         ; restart if looping
+        ldx   vgc.data
         ldd   ,x
         leax  d,x                   ; move to loop point
         jsr   vgc_stream_mount

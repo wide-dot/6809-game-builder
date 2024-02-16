@@ -64,7 +64,7 @@ class LZ4():
   DistanceByteSize = 2
 
   # Verbose mode
-  Verbose = True
+  Verbose = False
 
   # Debug mode
   Debug = False
@@ -781,7 +781,7 @@ class LZ4():
 
       # did compression do harm ?
       useCompression   = len(block) < uncompressedSize and not uncompressed
-      # Force compression as code actually fails if disabled
+      # Force compression as decoder does not handle uncompressed stream
       useCompression = True
 
       if LZ4.Verbose:

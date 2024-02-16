@@ -60,7 +60,7 @@ class VgmPacker:
 	OUTPUT_RAWDATA = False # output raw dumps of the data that was compressed by LZ4/Huffman
 	RLE = True # always set now.
 	ENABLE_HUFFMAN = True # optional
-	VERBOSE = True
+	VERBOSE = False
 
 	def __init__(self):
 		print("init")
@@ -453,7 +453,7 @@ class VgmPacker:
 	def testUnpackLZ4(self, compressed, uncompressed):
 		unpacked = bytearray()
 		eof = False
-		debug = True
+		debug = False
 		self.index = 4 # skip the block header
 		def getByte():		
 			byte = compressed[self.index]
