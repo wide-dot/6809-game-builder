@@ -75,7 +75,7 @@ class VgmPacker:
 	# returns array of 11 bytearrays
 	def split_raw(self, rawData, stripCommands = True):
 
-		registers = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		registers = [ 0x0, 0xF, 0x0, 0xF, 0x0, 0xF, 0x0, 0xF, 0xF, 0xF, 0xF]
 		registers_opt = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 		latched_channel = 0

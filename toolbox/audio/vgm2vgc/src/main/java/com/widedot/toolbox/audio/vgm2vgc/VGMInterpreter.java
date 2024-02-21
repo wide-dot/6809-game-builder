@@ -33,7 +33,7 @@ public class VGMInterpreter {
 	private boolean inIntroEnd = false;
 	
 	// cache
-	private byte[] registers = new byte[] {(byte) 0x80, 0, (byte) 0xA0, 0, (byte) 0xC0, 0, (byte) 0xE0, (byte) 0x9F, (byte) 0xBF, (byte) 0xDF, (byte) 0xFF};
+	private byte[] registers = new byte[] {(byte) 0x80, (byte) 0x3F, (byte) 0xA0, (byte) 0x3F, (byte) 0xC0, (byte) 0x3F, (byte) 0xE0, (byte) 0x9F, (byte) 0xBF, (byte) 0xDF, (byte) 0xFF};
 	private int latched_channel = 0;
 	private int latched_type = 0;
 	
