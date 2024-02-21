@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -23,12 +24,16 @@ public class VGMInterpreter {
 	public int pos = 0;
 	public boolean inLoop = false;
 	public int loopMarkerHit = 0, totalLoopMarkerFrames = 0;
-	public int totalFrames = 1, oldCumulatedFrames = -1;
+	public int totalFrames = 0, oldCumulatedFrames = -1;
 	public int curWaitSamples = 0;
 	private byte[] header;
+
+	// intro end
+	private List<Byte> introEnd = new ArrayList<Byte>();
+	private boolean inIntroEnd = false;
 	
 	// cache
-	private byte[] registers = new byte[11];
+	private byte[] registers = new byte[] {(byte) 0x80, 0, (byte) 0xA0, 0, (byte) 0xC0, 0, (byte) 0xE0, (byte) 0x9F, (byte) 0xBF, (byte) 0xDF, (byte) 0xFF};
 	private int latched_channel = 0;
 	private int latched_type = 0;
 	
@@ -113,6 +118,16 @@ public class VGMInterpreter {
 				continue;
 			case END_MARKER: // end of sound data
 				fireWriteDelay();
+				int i = 0;
+		        while (i < introEnd.size()) {
+					data[pos++] = introEnd.get(i++);
+					data[pos++] = introEnd.get(i++);
+					log.debug(String.format("%04X: %02X %02X [RESTORE]", pos-2, data[pos-2], data[pos-1]));
+				}
+		        if (introEnd.size()>0) {
+		        	data[pos++] = 0x63;
+		        	log.debug(String.format("%04X: %02X    [RESTORE WAIT]", pos-1, data[pos-1]));
+		        }
 				data[pos++] = (byte) (cmd & 0xff) ;				
 				return false;
 			case 0x67: // data block
@@ -153,19 +168,25 @@ public class VGMInterpreter {
 		return true;
 	}
 
-	public int getLoopSamples() {
-		return (totalFrames-totalLoopMarkerFrames)*SAMPLES_PER_FRAME_PAL;
-	}
-	
 	public int getIntroSamples() {
 		return totalLoopMarkerFrames*SAMPLES_PER_FRAME_PAL;
 	}
 	
+	public int getLoopSamples() {
+		return (totalFrames-totalLoopMarkerFrames)*SAMPLES_PER_FRAME_PAL;
+	}
+	
 	public void fireLoopPointHit() {
+		inIntroEnd = true;
+		log.debug(String.format("            [LOOP POINT (ORIGINAL): %04X]", pos));
+	}
+	
+	public void fireNewLoopPointHit() {
 		inLoop = true;
+		inIntroEnd = false;
 		loopMarkerHit = pos;
 		totalLoopMarkerFrames = totalFrames;
-		log.debug(String.format("            [LOOP POINT: %04X]", pos));
+		log.debug(String.format("            [LOOP POINT (NEW): %04X]", pos));
 	}
 
 	public void fireWrite(byte cmd, byte val) {
@@ -174,19 +195,41 @@ public class VGMInterpreter {
 		if (!inLoop) cache(val);
 		data[pos++] = cmd;
 		data[pos++] = val;
+		if (inIntroEnd) {
+			introEnd.add(cmd);
+			introEnd.add(val);
+			log.debug(String.format("%04X: %02X %02X [BACKUP]", pos-2, cmd, val));
+		} else {
+			log.debug(String.format("%04X: %02X %02X", pos-2, cmd, val));
+		}
 		
-		log.debug(String.format("%04X: %02X %02X", pos-2, cmd, val));
 	}
 	
 	public void fireWriteDelay() {
 		int frames = curWaitSamples/SAMPLES_PER_FRAME_PAL;
     	curWaitSamples = curWaitSamples%SAMPLES_PER_FRAME_PAL; // saves remaining value
-    	totalFrames += frames;
-		
+    	
 		while (frames > 0) {
-			data[pos++] = 0x63;
-			frames--;
-			log.debug(String.format("%04X: %02X    [WAIT]", pos-1, data[pos-1]));
+			if (inIntroEnd) {
+				if (introEnd.size() > 0) {
+					data[pos++] = 0x63;
+					totalFrames++;
+					frames--;
+					log.debug(String.format("%04X: %02X    [BACKUP WAIT]", pos-1, data[pos-1]));
+					fireNewLoopPointHit();
+				} else {
+					fireNewLoopPointHit();
+					data[pos++] = 0x63;
+					totalFrames++;
+					frames--;
+					log.debug(String.format("%04X: %02X    [WAIT]", pos-1, data[pos-1]));
+				}
+			} else {
+				data[pos++] = 0x63;
+				totalFrames++;
+				frames--;
+				log.debug(String.format("%04X: %02X    [WAIT]", pos-1, data[pos-1]));
+			}
 		}
 	}
 	

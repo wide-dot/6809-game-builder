@@ -642,7 +642,8 @@ class LZ4():
 
         # show progress
         if (i & 511) == 0 or i == (blockSize - 1):
-          sys.stdout.write("   Scanning block data " + str(int(i*100/(blockSize-1))) + "%...\r")
+          if (blockSize > 1):
+            sys.stdout.write("   Scanning block data " + str(int(i*100/(blockSize-1))) + "%...\r")
           sys.stdout.flush()
 
         # no matches at the end of the block (or matching disabled by command-line option -0 )
