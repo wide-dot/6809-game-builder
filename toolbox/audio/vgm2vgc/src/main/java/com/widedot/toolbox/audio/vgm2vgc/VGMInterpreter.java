@@ -21,10 +21,16 @@ public class VGMInterpreter {
 	private VGMInputStream input;
 	public byte[] data = new byte[0x80000];
 	public int pos = 0;
+	public boolean inLoop = false;
 	public int loopMarkerHit = 0, totalLoopMarkerFrames = 0;
 	public int totalFrames = 1, oldCumulatedFrames = -1;
 	public int curWaitSamples = 0;
 	private byte[] header;
+	
+	// cache
+	private byte[] registers = new byte[11];
+	private int latched_channel = 0;
+	private int latched_type = 0;
 	
 
 	public VGMInterpreter(File paramFile) throws IOException {
@@ -32,11 +38,45 @@ public class VGMInterpreter {
 		while(run());	
 		this.input.close();
 	}
+	
+	public void cache(byte d) {
+		if ((d&0b10000000) != 0) {
+
+			// latch
+			latched_channel = (d>>5)&3;
+			
+			if ((d&0b00010000) != 0) {
+			
+				// volume
+				registers[latched_channel+7] = d;
+				latched_type = 1;
+				
+			} else {
+				
+				// tone
+				registers[latched_channel*2] = d;
+				latched_type = 0;
+			}
+
+		} else {
+
+			// tone data on latched register
+			if (latched_type == 0) {
+				if (latched_channel < 3) {
+					registers[latched_channel*2+1] = d;
+				} else { 
+					registers[latched_channel*2] = (byte) (0b11100000|(d&0b00000111));
+				}
+			} else {
+				registers[latched_channel+7] = (byte) (0b10010000|(latched_channel<<5)|(d&0b00001111));
+			}
+		}
+	}
 
 	public boolean run() throws IOException {		
 		boolean endFrame = false;
 		int waitTime = 0;
-		
+				
 		while (!endFrame) {
 
 			if (this.input.isLoopPoint()) {
@@ -116,12 +156,13 @@ public class VGMInterpreter {
 	public int getLoopSamples() {
 		return (totalFrames-totalLoopMarkerFrames)*SAMPLES_PER_FRAME_PAL;
 	}
-
+	
 	public int getIntroSamples() {
 		return totalLoopMarkerFrames*SAMPLES_PER_FRAME_PAL;
 	}
 	
 	public void fireLoopPointHit() {
+		inLoop = true;
 		loopMarkerHit = pos;
 		totalLoopMarkerFrames = totalFrames;
 		log.debug(String.format("            [LOOP POINT: %04X]", pos));
@@ -130,6 +171,7 @@ public class VGMInterpreter {
 	public void fireWrite(byte cmd, byte val) {
 		
 		fireWriteDelay();
+		if (!inLoop) cache(val);
 		data[pos++] = cmd;
 		data[pos++] = val;
 		
@@ -186,6 +228,51 @@ public class VGMInterpreter {
 		setInt(header, 60, 0x00000000);               // SPCM Interface
 
 		return header;
+	}
+	
+	public byte[] getCache() {
+		int i = 0;
+		byte[] cache = new byte[11*2];
+		
+		// noise ch3
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[6];
+		
+		// volume ch3
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[10];
+		
+		// tone ch0
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[0];
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[1];
+		
+		// volume ch0
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[7];
+		
+		// tone ch1
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[2];
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[3];
+		
+		// volume ch1
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[8];
+		
+		// tone ch2
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[4];
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[5];
+		
+		// volume ch2
+		cache[i++] = (byte) 0x50;
+		cache[i++] = (byte) registers[9];
+		
+		return cache;
 	}
 	
 	public byte[] getIntroData() {

@@ -78,7 +78,8 @@ class VgmPacker:
 		registers = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		registers_opt = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-		latched_channel = -1
+		latched_channel = 0
+		latched_type = 0
 
 		output_block = bytearray()
 		output_blocks = []
@@ -121,20 +122,30 @@ class VgmPacker:
 							if verbose:
 								print(" volume on channel " + str(c))
 							registers[c+7] = d & register_mask
+							latched_type = 1
 
 						else:
 							# tone
 							if verbose:
 								print(" tone on channel " + str(c))
 
-							registers[c*2+0] = d & register_mask                    
+							registers[c*2+0] = d & register_mask
+							latched_type = 0                    
 
 					else:
 						if verbose:
 							print(" tone data on latched channel " + str(latched_channel))
-						registers[latched_channel*2+1] = d # we no longer do any masking here # d & 63 # tone data only contains 6 bits of info anyway, so no need for mask
-						if latched_channel == 3:
-							print("ERROR CHANNEL")
+
+						if latched_type == 0:
+							if latched_channel < 3:
+								# tone upper bits
+								registers[latched_channel*2+1] = d
+							else:
+								# update noise 
+								registers[latched_channel*2] = d & 7
+						else:
+							# update volume
+							registers[latched_channel+7] = d & 15
 
 
 

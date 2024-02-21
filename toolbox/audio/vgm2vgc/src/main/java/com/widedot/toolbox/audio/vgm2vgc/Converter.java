@@ -116,6 +116,7 @@ public class Converter {
 		if (loop != null) {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			outputStream.write(vgm.getLoopHeader());
+			outputStream.write(vgm.getCache());
 			outputStream.write(loop);
 			
 			String tmpFileName = file.getAbsolutePath() + ".sn76489.loop.vgm";
