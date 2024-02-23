@@ -1,75 +1,28 @@
 Avant migration :
 -----------------
 
+Initialisation :
+
         _MountObject ObjID_ymm00
         _MusicInit_objymm #0,#MUSIC_LOOP,#0
 
-_MusicInit_objymm MACRO
-        lda   \1
-        ldy   \3
-        ldb   \2 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
+Dans IRQ :
 
-_MusicFrame_objymm MACRO
-        ldb   #$80 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
+        _MountObject ObjID_ymm00
+        _MusicFrame_objymm
+
 
 Après migration :
 -----------------
 
-        _MountObject ObjID_ymm00
-        _ymm.init #sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+page.ymm equ 6                   ; ram page that contains player and sound data (as defined in scene file)
 
-        _MountObject ObjID_ymm00
-        jsr   ymm.frame.play
+Initialisation :
 
-_ymm.init MACRO
-	ldx   \1 ; YVGM_MusicData
-        ldb   \2 ; YVGM_loop
-        ldy   \3 ; YVGM_callback
-        jsr   ymm.init
- ENDM
+        _cart.setRam page.ymm    ; mount ram page that contains player and sound data
+        _ymm.obj.play #map.RAM_OVER_CART+page.ymm,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
-ymm.NO_CALLBACK equ 0
-ymm.NO_LOOP equ 0
-ymm.LOOP equ 1
+Dans IRQ :
 
-
-
-
-
-
-
-
-
-
-
-MUSIC_NO_LOOP   EQU 0
-MUSIC_LOOP      EQU 1
-
-_MusicInit_objvgc MACRO
-        lda   \1
-        ldy   \3
-        ldb   \2 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
-
-_MusicInit_objymm MACRO
-        lda   \1
-        ldy   \3
-        ldb   \2 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
-
-_MusicFrame_objvgc MACRO
-        ldb   #$80 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
-
-_MusicFrame_objymm MACRO
-        ldb   #$80 ; should be placed just before the jsr
-        jsr   ,x
-        ENDM
-
+        _cart.setRam page.ymm    ; mount object page
+        _ymm.frame.play          ; play a music frame

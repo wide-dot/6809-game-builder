@@ -11,8 +11,8 @@ sound.title.vgc EXTERNAL
         INCLUDE "new-engine/pack/ymm.asm"
         INCLUDE "new-engine/pack/vgc.asm"
 
-page.ymm equ 6                   ; ram page that contains player and sound data (as defined in scene file)
-page.vgc equ 7                   ; ram page that contains player and sound data (as defined in scene file)
+page.ymm equ 6                   ; ram page that contains ymm player and sound data (as defined in scene file)
+page.vgc equ 7                   ; ram page that contains vgc player and sound data (as defined in scene file)
 
         _glb.init                ; clean dp variables
         _irq.init                ; set irq manager routine

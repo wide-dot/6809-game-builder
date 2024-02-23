@@ -8,18 +8,18 @@
 ; ---------------------------------------------------------------------------
 
 palette.update  EXPORT
-palette.sate    EXPORT
+palette.status  EXPORT
 palette.current EXPORT
 palette.buffer  EXPORT
 
  SECTION code
 
-palette.sate    fcb   palette.REFRESH_OFF
+palette.status  fcb   palette.REFRESH_OFF
 palette.current fdb   palette.buffer
 palette.buffer  fill  0,$20
 
 palette.update
-        tst   palette.sate
+        tst   palette.status
         beq   >                        ; update only if state is ready
         rts
 !       pshs  dp
@@ -75,7 +75,7 @@ palette.update
         ldd   30,x
         sta   <map.EF9369.D
         stb   <map.EF9369.D
-        com   palette.sate             ; reset state
+        com   palette.status
         puls dp,pc
 
  ENDSECTION
