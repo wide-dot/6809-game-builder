@@ -8,28 +8,28 @@ MapKeyboardToJoypads
         lda   Key_Press
         cmpa  #8
         bne   >
-        orb   #c1_button_left_mask
+        orb   #joypad.0.LEFT
         bra   @saveDpad
 !       cmpa  #9
         bne   >
-        orb   #c1_button_right_mask
+        orb   #joypad.0.RIGHT
         bra   @saveDpad
 !       cmpa  #10
         bne   >
-        orb   #c1_button_down_mask
+        orb   #joypad.0.DOWN
         bra   @saveDpad
 !       cmpa  #11
         bne   >
-        orb   #c1_button_up_mask
+        orb   #joypad.0.UP
         bra   @saveDpad
 !       ldb   Fire_Press
         cmpa  #13
         bne   >
-        orb   #c1_button_A_mask
+        orb   #joypad.0.A
         bra   @saveFire
 !       cmpa  #32
         bne   >
-        orb   #c1_button_B_mask
+        orb   #joypad.0.B
         bra   @saveFire
         rts
 @saveDpad

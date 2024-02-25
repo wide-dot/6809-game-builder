@@ -36,6 +36,12 @@
     ||______ Btn A Joypad1
     |_______ Btn A Joypad2
 
+### Registers
+
+    $E7CE/$E7CF (bit 2) allows selection of a register in $A7CC/E7CC and $A7CD/E7CD:
+    (bit2) 0: Data Direction Register A (DDRA)
+    (bit2) 1: Peripherial Interface A (PIA) Register
+
 ## Mega Drive controller
 ### Six button control pad
 #### Pinout
