@@ -1,20 +1,29 @@
-********************************************************************************
-* Get Keyboard codes
-*
-********************************************************************************
+;*******************************************************************************
+; Read keyboard scan code
+;
+;
+; ------------------------------------------------------------------------------
+;
+;*******************************************************************************
 
-Key_Press                   fcb   $00
-Key_Held                    fcb   $00 
+keyboard.held    EXPORT
+keyboard.pressed EXPORT
 
-ReadKeyboard
+ SECTION code
+
+keyboard.held    fcb   0 
+keyboard.pressed fcb   0
+
+keyboard.read
         clrb
-        stb   Key_Press
-        jsr   KTST       ; was a key pressed ?
-        bcc   @clearHeld ; no exit
-        jsr   GETC       ; read new key code in b
-        cmpb  Key_Held
-        beq   @rts       ; return if key is already held, Press was cleared, but not Held
-        stb   Key_Press  ; store new key for one main loop
-@clearHeld
-        stb   Key_Held   ; new key code was read
+        stb   keyboard.pressed
+        jsr   map.KTST         ; Was a key pressed ?
+        bcc   >                ; No exit
+        jsr   map.GETC         ; Read new key code in b
+        cmpb  keyboard.held
+        beq   @rts             ; Return if key is already held, Press was cleared, but not Held
+        stb   keyboard.pressed ; Store new key for one main loop
+!       stb   keyboard.held    ; New key code was read
 @rts    rts
+
+ ENDSECTION

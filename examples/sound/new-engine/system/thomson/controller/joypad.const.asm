@@ -40,20 +40,6 @@ joypad.1.B     equ   %00001000
 
 ; masks for variables : 
 ; ---------------------
-; joypad.0.held
-; joypad.0.pressed
-; joypad.1.held
-; joypad.1.pressed
-
-joypad.UP    equ   %00010000
-joypad.DOWN  equ   %00100000
-joypad.LEFT  equ   %01000000
-joypad.RIGHT equ   %10000000
-joypad.A     equ   %00001000
-joypad.B     equ   %00000100
-
-; masks for variables : 
-; ---------------------
 ; joypad.md6.held.dpad
 ; joypad.md6.pressed.dpad
 
