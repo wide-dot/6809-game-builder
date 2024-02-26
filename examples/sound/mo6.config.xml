@@ -1,5 +1,4 @@
 <configuration>
-
     <target name="fd">
         <default name="floppydisk.storage" value="new-engine/config/storage.xml"/>
         <floppydisk model="fd640">
@@ -37,7 +36,6 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-
                 <direntry name="assets.obj.snd.title.ymm" loadtimelink="LINK">
                     <lwasm>
                         <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
