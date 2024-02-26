@@ -1136,6 +1136,10 @@ linkData.symbol.search
         subd  #1
         std   @fileCounter
         bne   @fileLoop                          ; check if more file to process
+ IFNDEF loader.CHECK_UNRESOLVED_SYMBOLS
+        puls  y,u,pc
+ ELSE
         bra   *                                  ; unresolved symbol
+ ENDC
 
 loader.memoryPool equ *

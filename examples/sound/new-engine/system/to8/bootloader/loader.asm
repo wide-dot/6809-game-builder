@@ -157,12 +157,10 @@ loader.scene.loadDefault
 ;-----------------------------------------------------------------
 loader.scene.load
 
-        ; load default scene file
         jsr   loader.file.malloc
         cmpu  #0
-        bne   >
-        rts
-!
+        beq   >
+
         ldb   #loader.PAGE
         jsr   loader.file.load
 
@@ -185,7 +183,7 @@ loader.scene.load
 
         ; free memory for default scene file
         jsr   tlsf.free
-        rts
+!       rts
 
 
 ;-----------------------------------------------------------------
@@ -1136,6 +1134,10 @@ linkData.symbol.search
         subd  #1
         std   @fileCounter
         bne   @fileLoop                          ; check if more file to process
+ IFNDEF loader.CHECK_UNRESOLVED_SYMBOLS
+        puls  y,u,pc
+ ELSE
         bra   *                                  ; unresolved symbol
+ ENDC
 
 loader.memoryPool equ *

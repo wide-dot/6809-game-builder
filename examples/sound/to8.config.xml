@@ -68,12 +68,41 @@
                     </lwasm>
                 </direntry>
 
-                <!-- Title - scene -->
+                <!-- Level1 - sound data -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.obj.snd.level1.ymm" loadtimelink="LINK">
+                    <lwasm>
+                        <asm xml:space="preserve">sound.level1.ymm EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">sound.level1.ymm</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                    <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
+                </direntry>
+
+                <direntry name="assets.obj.snd.level1.vgc" loadtimelink="LINK">
+                    <lwasm>
+                        <asm xml:space="preserve">sound.level1.vgc EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">sound.level1.vgc</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
+                </direntry>
+
+                <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.title" section="SCENE">
                     <lwasm format="raw">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/to8/title/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.level1" section="SCENE">
+                    <lwasm format="raw">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/level1/scene.asm"/>
                     </lwasm>
                 </direntry>
 

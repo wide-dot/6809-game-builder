@@ -17,3 +17,7 @@ _irq.set50Hz MACRO
 _irq.on MACRO
         jsr   irq.on
  ENDM
+
+_irq.off MACRO
+        jsr   irq.off
+ ENDM

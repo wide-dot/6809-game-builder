@@ -1,6 +1,9 @@
 package com.widedot.m6809.gamebuilder.plugin.sap.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 // based on jteo code from Gilles Fetis
+@Slf4j
 public class Sector{
 	public byte format;
 	public byte protection;
@@ -22,7 +25,7 @@ public class Sector{
 		this.sector = (byte) (sector+1);
 		
 		this.data = new byte[SapType.sectorSize[type]];
-		int p = (drive * SapType.driveSize[type]) + (track * (Sap.NB_SECT * SapType.sectorSize[type])) + (sector * SapType.sectorSize[type]);
+		int p = drive * SapType.nbTracks[type] * Sap.NB_SECT * SapType.sectorSize[type] + track * Sap.NB_SECT * SapType.sectorSize[type] + sector * SapType.sectorSize[type];
 		for (int i = 0; i < SapType.sectorSize[type]; i++) {
 			this.data[i] = (byte) (data[p+i]^Sap.SAP_MAGIC_NUM);
 		}
