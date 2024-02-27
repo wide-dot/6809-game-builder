@@ -1,7 +1,7 @@
-        ; new scene
-        fdb   $4000+3                  ; [type | nb files] (0: end marker)
+        ; new subscene
+        fdb   $4000+5                  ; [type | nb files] (0: end marker)
 
-        ; scene data
+        ; subscene data
         fcb   $01                      ; [destination - page id]
         fdb   $6100                    ; [destination - address]
         fdb   assets.gm.title          ; [file id]
@@ -14,21 +14,22 @@
         fdb   $0000                    ; [destination - address]
         fdb   engine.object.sound.vgc
 
-        ; new scene
-        fdb   $8000+2                  ; [type | nb files] (0: end marker)
-
         fcb   $06                      ; [destination - page id]
         fdb   $0400                    ; [destination - address]
         fdb   assets.obj.snd.title.ymm 
-        fdb   engine.system.to8.sound.ym.const
-
-        ; new scene
-        fdb   $8000+2                  ; [type | nb files] (0: end marker)
 
         fcb   $07                      ; [destination - page id]
         fdb   $0A80                    ; [destination - address]
         fdb   assets.obj.snd.title.vgc
+
+        ; subscene with only link data
+        fdb   $8000+3                  ; [type | nb files] (0: end marker)
+
+        fcb   0                        ; [destination - page id]
+        fdb   0                        ; [destination - address]
+        fdb   engine.system.to8.sound.ym.const
         fdb   engine.system.to8.sound.sn.const
+        fdb   direntries.disk0
 
         ; end scenes
         fdb   0                        ; [type | nb files] (0: end marker)

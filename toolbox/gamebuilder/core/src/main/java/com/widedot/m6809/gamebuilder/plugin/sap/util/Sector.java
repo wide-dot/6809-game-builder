@@ -23,10 +23,15 @@ public class Sector{
 		this.protection = 0;
 		this.track = (byte) track;
 		this.sector = (byte) (sector+1);
+
+		int sz = SapType.sectorSize[type];
+		int s = Sap.NB_SECT * sz;
+		int t = SapType.nbTracks[type] * s;
 		
-		this.data = new byte[SapType.sectorSize[type]];
-		int p = drive * SapType.nbTracks[type] * Sap.NB_SECT * SapType.sectorSize[type] + track * Sap.NB_SECT * SapType.sectorSize[type] + sector * SapType.sectorSize[type];
-		for (int i = 0; i < SapType.sectorSize[type]; i++) {
+		this.data = new byte[sz];
+		
+		int p = drive * t + track * s + sector * sz;
+		for (int i = 0; i < sz; i++) {
 			this.data[i] = (byte) (data[p+i]^Sap.SAP_MAGIC_NUM);
 		}
 

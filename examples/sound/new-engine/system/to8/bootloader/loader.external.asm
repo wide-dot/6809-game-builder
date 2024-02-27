@@ -1,1 +1,0 @@
-loader.scene.load EXTERNAL

@@ -11,6 +11,9 @@
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
@@ -90,6 +93,14 @@
                         <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
                 </direntry>
 
+                <!-- Directory entries -->
+                <!-- ******************************************************* -->
+                <direntry name="direntries.disk0" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.title" section="SCENE">
@@ -110,8 +121,6 @@
 
             <!-- Boot loader -->
             <!-- *********************************************************** -->
-            <define symbol="loader.PAGE" value="4"/>
-            <define symbol="loader.ADDRESS" value="$A000"/>
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>

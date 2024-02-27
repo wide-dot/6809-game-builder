@@ -1,8 +1,8 @@
         INCLUDE "new-engine/sound/ymm.external.asm"
         INCLUDE "new-engine/sound/vgc.external.asm"
-        INCLUDE "new-engine/system/to8/bootloader/loader.external.asm"
 
 loader.PAGE       EXTERNAL
+loader.ADDRESS    EXTERNAL
 scenes.level1     EXTERNAL
 sound.title.ymm   EXTERNAL
 sound.title.vgc   EXTERNAL
@@ -45,9 +45,10 @@ mainLoop
 
         _irq.off
 
+        ; load a new song from disk 
         _data.setRam #loader.PAGE
         ldx   #scenes.level1
-        jsr   loader.scene.load  ; load a new song from disk 
+        jsr   loader.ADDRESS+3
 
         _cart.setRam  #page.ymm
         _ymm.obj.play #page.ymm,#sound.level1.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
