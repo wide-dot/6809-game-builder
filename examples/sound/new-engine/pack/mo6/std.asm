@@ -2,3 +2,4 @@
         INCLUDE "new-engine/global/glb.const.asm"
         INCLUDE "new-engine/6809/macros.asm"
         INCLUDE "new-engine/global/glb.macro.asm"
+        INCLUDE "new-engine/system/mo6/ram/ram.macro.asm"

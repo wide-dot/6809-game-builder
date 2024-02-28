@@ -6,7 +6,7 @@
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
-            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm"> <!--genbinary is optional-->
+            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section"      value="DATA"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
@@ -17,7 +17,8 @@
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
                     </lwasm>
                 </direntry>
@@ -41,6 +42,7 @@
                 <!-- ******************************************************* -->
                 <direntry name="assets.obj.snd.title.ymm" loadtimelink="LINK">
                     <lwasm>
+                        <!-- <label name="sound.title.ymm"/> -->
                         <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
                         <asm xml:space="preserve"> SECTION code</asm>
                         <asm xml:space="preserve">sound.title.ymm</asm>
@@ -93,25 +95,17 @@
                         <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
                 </direntry>
 
-                <!-- Directory entries -->
-                <!-- ******************************************************* -->
-                <direntry name="direntries.disk0" loadtimelink="LINK">
-                    <lwasm>
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                    </lwasm>
-                </direntry>
-
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.title" section="SCENE">
-                    <lwasm format="raw">
+                    <lwasm format="raw" gensource="gen/scenes/title.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/to8/title/scene.asm"/>
                     </lwasm>
                 </direntry>
 
                 <direntry name="scenes.level1" section="SCENE">
-                    <lwasm format="raw">
+                    <lwasm format="raw" gensource="gen/scenes/level1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/to8/level1/scene.asm"/>
                     </lwasm>
@@ -128,10 +122,10 @@
             <data section="LOADER">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
-                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
-                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
                     <asm filename="new-engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>
             </data>

@@ -6,15 +6,19 @@
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="DATA"  track="1" face="0" sector="1"/>
 
-            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm"> <!--genbinary is optional-->
+            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section"      value="DATA"/>
                 <default name="direntry.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$6000"/>
+
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/game-modes/mo6/title/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/mo6/title/main.asm"/>
                     </lwasm>
                 </direntry>
@@ -68,12 +72,41 @@
                     </lwasm>
                 </direntry>
 
-                <!-- Title - scene -->
+                <!-- Level1 - sound data -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.obj.snd.level1.ymm" loadtimelink="LINK">
+                    <lwasm>
+                        <asm xml:space="preserve">sound.level1.ymm EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">sound.level1.ymm</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                    <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
+                </direntry>
+
+                <direntry name="assets.obj.snd.level1.vgc" loadtimelink="LINK">
+                    <lwasm>
+                        <asm xml:space="preserve">sound.level1.vgc EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">sound.level1.vgc</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
+                </direntry>
+
+                <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.title" section="SCENE">
-                    <lwasm format="raw">
+                    <lwasm format="raw" gensource="gen/scenes/title.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/mo6/title/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.level1" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/level1.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/mo6/level1/scene.asm"/>
                     </lwasm>
                 </direntry>
 
@@ -81,8 +114,6 @@
 
             <!-- Boot loader -->
             <!-- *********************************************************** -->
-            <define symbol="loader.PAGE" value="4"/>
-            <define symbol="loader.ADDRESS" value="$6000"/>
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>
@@ -90,10 +121,10 @@
             <data section="LOADER">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
-                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
-                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $2100</asm>
-                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $2100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
                     <asm filename="new-engine/system/mo6/bootloader/loader.asm"/>
                 </lwasm>
             </data>

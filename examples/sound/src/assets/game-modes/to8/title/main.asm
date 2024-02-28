@@ -1,8 +1,6 @@
         INCLUDE "new-engine/sound/ymm.external.asm"
         INCLUDE "new-engine/sound/vgc.external.asm"
 
-loader.PAGE       EXTERNAL
-loader.ADDRESS    EXTERNAL
 scenes.level1     EXTERNAL
 sound.title.ymm   EXTERNAL
 sound.title.vgc   EXTERNAL
@@ -16,25 +14,24 @@ sound.level1.vgc  EXTERNAL
         INCLUDE "new-engine/pack/ymm.asm"
         INCLUDE "new-engine/pack/vgc.asm"
 
-page.ymm equ map.RAM_OVER_CART+6 ; ram page that contains ymm player and sound data (as defined in scene file)
-page.vgc equ map.RAM_OVER_CART+7 ; ram page that contains vgc player and sound data (as defined in scene file)
-addr.ymm equ $0400
+page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
+page.vgc equ map.RAM_OVER_CART+7 
+addr.ymm equ $0400                ; ram addr that contains ymm player and sound data (as defined in scene file)
 addr.vgc equ $0A80
 
 ; ------------------------------------------------------------------------------
 init
-        _glb.init                ; clean dp variables
-        _irq.init                ; set irq manager routine
-        _irq.setRoutine #userIRQ ; set user routine called by irq manager
-        _irq.set50Hz             ; set irq to run every video frame, when spot is outside visible area
+        _glb.init                 ; clean dp variables
+        _irq.init                 ; set irq manager routine
+        _irq.setRoutine #userIRQ  ; set user routine called by irq manager
+        _irq.set50Hz              ; set irq to run every video frame, when spot is outside visible area
         ;_gfxlock.init
 
-        _cart.setRam  #page.ymm    ; mount ram page that contains player and sound data
+        _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
         _ymm.obj.play #page.ymm,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
-        _cart.setRam  #page.vgc    ; mount ram page that contains player and sound data
+        _cart.setRam  #page.vgc
         _vgc.obj.play #page.vgc,#sound.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
-
         _irq.on
 
 ; ------------------------------------------------------------------------------
@@ -44,9 +41,7 @@ mainLoop
         beq   >
 
         _irq.off
-
-        ; load a new song from disk 
-        _data.setRam #loader.PAGE
+        _data.setRam #loader.PAGE ; load a new song from disk 
         ldx   #scenes.level1
         jsr   loader.ADDRESS+3
 
@@ -55,7 +50,6 @@ mainLoop
 
         _cart.setRam  #page.vgc
         _vgc.obj.play #page.vgc,#sound.level1.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
-
         _irq.on
 !
 
@@ -81,4 +75,4 @@ userIRQ
         INCLUDE "new-engine/global/glb.init.asm"
         INCLUDE "new-engine/system/to8/irq/irq.asm"
         INCLUDE "new-engine/graphics/buffer/gfxlock.asm"
-        INCLUDE "new-engine/system/thomson/controller/keyboard.asm"
+        INCLUDE "new-engine/system/to8/controller/keyboard.asm"
