@@ -64,7 +64,7 @@ map.MEA8000.D       equ $E7FE ; Vocal synth
 map.MEA8000.A       equ $E7FF : Vocal synth
 
 ; ROM routines
-map.DKCONT          equ $E004 ; TO:DKCO, MO:SWI $26
+map.DKCONT          equ $E004 ; read sector
 map.DKBOOT          equ $E007 ; boot
 map.DKFMT           equ $E00A ; format
 map.LECFA           equ $E00D ; read FAT
@@ -78,10 +78,14 @@ map.FINTR           equ $E022 ; transfert end
 map.QDDSTD          equ $E025 ; QDD std functions
 map.QDDSYS          equ $E028 ; QDD sys functions
 
-map.PUTC            equ $E803
-map.GETC            equ $E806
-map.KTST            equ $E809
+map.PUTC            equ $E803 ; Affichage d'un caractère
+map.GETC            equ $E806 ; Lecture du clavier
+map.KTST            equ $E809 ; Lecture rapide du clavier
+map.DRAW            equ $E80C ; Tracé d'un segment de droite
+map.PLOT            equ $E80F ; Allumage ou extinction d'un point
+; ...
 map.DKCO            equ $E82A ; read or write floppy disk routine
+; ..
 map.IRQ.EXIT        equ $E830 ; to exit an irq
 
 ; system monitor registers

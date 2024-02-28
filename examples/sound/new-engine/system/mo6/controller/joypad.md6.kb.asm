@@ -38,9 +38,11 @@ joypad.md6.kb.read
         sta   joypad.md6.kb.state.dpad    ; Clear current state
         std   joypad.md6.kb.state.fire    ; Clear current state
 @loop                                     ; Read all buffered scan codes
-        jsr   map.KTST                    ; Was a key pressed ?
-        bcc   >                           ; No clear and exit
-        jsr   map.GETC                    ; Read new key code in b
+        swi                               ; Was a key pressed ?
+        fcb   $0C ; KTST 
+        bcc   >                           ; No exit
+        swi                               ; Read new key code in b
+        fcb   $0A ; GETC
         jsr   joypad.md6.kb.map
         bra   @loop
 !       

@@ -629,14 +629,16 @@ err1    bsr   err3               ; Display char
 err2    ldb   ,u+                ; Read char
         bpl   err1               ; Next if not last
         andb  #$7f               ; Mask char
-err3    jmp   map.PUTC           ; Display for TO - PUTC
+err3    swi
+        fcb   map.JMP_PUTC       ; Display for MO
 
 * Display info message and wait a keystroke
 info    ldu   #messloc           ; Location
         bsr   err2               ; Display location
         leau  ,x                 ; Message pointer
         bsr   err2               ; Display message
-!       jsr   map.KTST
+!       swi
+        fcb   map.JSR_KTST
         bcc   <
         rts
 

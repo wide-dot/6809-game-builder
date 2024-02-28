@@ -32,9 +32,11 @@ joypad.kb.read
         ldd   #0
         std   joypad.kb.state         ; Clear current state
 @loop                                 ; Read all buffered scan codes
-        jsr   map.KTST                ; Was a key pressed ?
-        bcc   >                       ; No clear and exit
-        jsr   map.GETC                ; Read new key code in b
+        swi                           ; Was a key pressed ?
+        fcb   $0C ; KTST 
+        bcc   >                       ; No exit
+        swi                           ; Read new key code in b
+        fcb   $0A ; GETC
         jsr   joypad.kb.map
         bra   @loop
 !       

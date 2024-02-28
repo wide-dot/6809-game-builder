@@ -95,9 +95,9 @@ err2    ldb   ,u+                ; Read char
         andb  #$7f               ; Mask char
 err3    tfr   dp,a               ; Read DP
         asla                     ; Check if MO or TO
-        lbmi  map.PUTC           ; Display for TO - PUTC
+        lbmi  map.PUTC           ; Display for TO
         swi                      ; Display for MO
-        fcb   $82                ; Display for MO - PUTC parameter
+        fcb   $82                ; Display for MO
 
         IFGT *-$6278
         ERROR "boot code part 1 is too large !"

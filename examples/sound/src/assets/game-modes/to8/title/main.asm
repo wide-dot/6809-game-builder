@@ -16,8 +16,6 @@ sound.level1.vgc  EXTERNAL
 
 page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
 page.vgc equ map.RAM_OVER_CART+7 
-addr.ymm equ $0400                ; ram addr that contains ymm player and sound data (as defined in scene file)
-addr.vgc equ $0A80
 
 ; ------------------------------------------------------------------------------
 init
@@ -42,8 +40,7 @@ mainLoop
 
         _irq.off
         _data.setRam #loader.PAGE ; load a new song from disk 
-        ldx   #scenes.level1
-        jsr   loader.ADDRESS+3
+        _loader.scene.load #scenes.level1
 
         _cart.setRam  #page.ymm
         _ymm.obj.play #page.ymm,#sound.level1.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
