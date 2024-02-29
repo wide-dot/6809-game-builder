@@ -40,31 +40,26 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.obj.snd.title.ymm" loadtimelink="LINK">
+                <direntry name="assets.sounds.title.ymm" loadtimelink="LINK">
                     <lwasm>
-                        <!-- <label name="sound.title.ymm"/> -->
-                        <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.title.ymm</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </direntry>
 
+                <direntry name="assets.sounds.title.vgc" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="sounds.title.vgc"/>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
+                </direntry>
+
+                <!-- Title - sound player dynamic port -->
+                <!-- ******************************************************* -->
                 <direntry name="engine.system.to8.sound.ym.const" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="new-engine/system/to8/sound/ym.2.const.asm"/>
                     </lwasm>
-                </direntry>
-
-                <direntry name="assets.obj.snd.title.vgc" loadtimelink="LINK">
-                    <lwasm>
-                        <asm xml:space="preserve">sound.title.vgc EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.title.vgc</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
-                    </lwasm>
-                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
                 </direntry>
 
                 <direntry name="engine.system.to8.sound.sn.const" loadtimelink="LINK">
@@ -75,22 +70,16 @@
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.obj.snd.level1.ymm" loadtimelink="LINK">
+                <direntry name="assets.sounds.level1.ymm" loadtimelink="LINK">
                     <lwasm>
-                        <asm xml:space="preserve">sound.level1.ymm EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.level1.ymm</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
                 </direntry>
 
-                <direntry name="assets.obj.snd.level1.vgc" loadtimelink="LINK">
+                <direntry name="assets.sounds.level1.vgc" loadtimelink="LINK">
                     <lwasm>
-                        <asm xml:space="preserve">sound.level1.vgc EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.level1.vgc</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.level1.vgc"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
                 </direntry>
@@ -138,10 +127,10 @@
                 </cksumfd640>
             </data>
 
-            <fd  filename="to8.sound.fd"/>
-            <sd  filename="to8.sound.sd"/>
-            <sap filename="to8.sound.sap"/>
-            <hfe filename="to8.sound.hfe"/>
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+            <hfe filename="to8.hfe"/>
         </floppydisk>
     </target>
 </configuration>

@@ -3,11 +3,11 @@
 
         fcb   $06                      ; [destination - page id]
         fdb   $0400                    ; [destination - address]
-        fdb   assets.obj.snd.level1.ymm 
+        fdb   assets.sounds.level1.ymm 
 
         fcb   $07                      ; [destination - page id]
         fdb   $0A80                    ; [destination - address]
-        fdb   assets.obj.snd.level1.vgc
+        fdb   assets.sounds.level1.vgc
 
         ; end scenes
         fdb   0                        ; [type | nb files] (0: end marker)

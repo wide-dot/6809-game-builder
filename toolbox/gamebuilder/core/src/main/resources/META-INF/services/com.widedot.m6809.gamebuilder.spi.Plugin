@@ -9,6 +9,7 @@ com.widedot.m6809.gamebuilder.plugin.direntry.impl.MediaPlugin
 com.widedot.m6809.gamebuilder.plugin.fd.impl.MediaPlugin
 com.widedot.m6809.gamebuilder.plugin.floppydisk.impl.DefaultPlugin
 com.widedot.m6809.gamebuilder.plugin.hfe.impl.MediaPlugin
+com.widedot.m6809.gamebuilder.plugin.label.impl.FilePlugin
 com.widedot.m6809.gamebuilder.plugin.lwasm.impl.ObjectPlugin
 com.widedot.m6809.gamebuilder.plugin.sap.impl.MediaPlugin
 com.widedot.m6809.gamebuilder.plugin.sd.impl.MediaPlugin

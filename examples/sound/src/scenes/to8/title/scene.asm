@@ -16,11 +16,11 @@
 
         fcb   $06                      ; [destination - page id]
         fdb   $0400                    ; [destination - address]
-        fdb   assets.obj.snd.title.ymm 
+        fdb   assets.sounds.title.ymm 
 
         fcb   $07                      ; [destination - page id]
         fdb   $0A80                    ; [destination - address]
-        fdb   assets.obj.snd.title.vgc
+        fdb   assets.sounds.title.vgc
 
         ; subscene with only link data
         fdb   $8000+2                  ; [type | nb files] (0: end marker)

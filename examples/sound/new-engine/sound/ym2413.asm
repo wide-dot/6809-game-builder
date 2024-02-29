@@ -2,12 +2,13 @@
 ; Init YM2413 sound chip to a default (silent) state
 ; ----------------------------------------------------
 
+ym2413.init EXPORT
+
 map.YM2413.A EXTERNAL
 map.YM2413.D EXTERNAL
 
  SECTION code
 
- IFNDEF ym2413.init
 ym2413.init
         ldd   #$200E
         stb   map.YM2413.A
@@ -24,7 +25,6 @@ ym2413.init
         stb   map.YM2413.D
         cmpa  #$29                     ; (wait of 2 cycles)
         bne   @c                       ; (wait of 3 cycles)
-        rts  
- ENDC
+        rts
 
  ENDSECTION

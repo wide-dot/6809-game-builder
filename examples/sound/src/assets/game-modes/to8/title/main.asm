@@ -1,11 +1,13 @@
         INCLUDE "new-engine/sound/ymm.external.asm"
         INCLUDE "new-engine/sound/vgc.external.asm"
 
-scenes.level1     EXTERNAL
-sound.title.ymm   EXTERNAL
-sound.title.vgc   EXTERNAL
-sound.level1.ymm  EXTERNAL
-sound.level1.vgc  EXTERNAL
+sn76489.init       EXTERNAL
+ym2413.init        EXTERNAL
+scenes.level1      EXTERNAL
+sounds.title.ymm   EXTERNAL
+sounds.title.vgc   EXTERNAL
+sounds.level1.ymm  EXTERNAL
+sounds.level1.vgc  EXTERNAL
 
  SECTION code
 
@@ -26,10 +28,10 @@ init
         ;_gfxlock.init
 
         _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
-        _ymm.obj.play #page.ymm,#sound.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
         _cart.setRam  #page.vgc
-        _vgc.obj.play #page.vgc,#sound.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
+        _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
 
 ; ------------------------------------------------------------------------------
@@ -39,14 +41,19 @@ mainLoop
         beq   >
 
         _irq.off
+        _cart.setRam  #page.vgc
+        _sn76489.init
+        _cart.setRam  #page.ymm
+        _ym2413.init
+
         _data.setRam #loader.PAGE ; load a new song from disk 
         _loader.scene.load #scenes.level1
 
         _cart.setRam  #page.ymm
-        _ymm.obj.play #page.ymm,#sound.level1.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #page.ymm,#sounds.level1.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
         _cart.setRam  #page.vgc
-        _vgc.obj.play #page.vgc,#sound.level1.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
+        _vgc.obj.play #page.vgc,#sounds.level1.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
 !
 

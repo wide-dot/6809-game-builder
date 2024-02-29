@@ -40,30 +40,26 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.obj.snd.title.ymm" loadtimelink="LINK">
+                <direntry name="assets.sounds.title.ymm" loadtimelink="LINK">
                     <lwasm>
-                        <asm xml:space="preserve">sound.title.ymm EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.title.ymm</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </direntry>
 
+                <direntry name="assets.sounds.title.vgc" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="sounds.title.vgc"/>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
+                </direntry>
+
+                <!-- Title - sound player dynamic port -->
+                <!-- ******************************************************* -->
                 <direntry name="engine.system.mo6.sound.ym.const" loadtimelink="LINK">
                     <lwasm>
                         <asm filename="new-engine/system/mo6/sound/ym.2.const.asm"/>
                     </lwasm>
-                </direntry>
-
-                <direntry name="assets.obj.snd.title.vgc" loadtimelink="LINK">
-                    <lwasm>
-                        <asm xml:space="preserve">sound.title.vgc EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.title.vgc</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
-                    </lwasm>
-                        <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
                 </direntry>
 
                 <direntry name="engine.system.mo6.sound.sn.const" loadtimelink="LINK">
@@ -74,22 +70,16 @@
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.obj.snd.level1.ymm" loadtimelink="LINK">
+                <direntry name="assets.sounds.level1.ymm" loadtimelink="LINK">
                     <lwasm>
-                        <asm xml:space="preserve">sound.level1.ymm EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.level1.ymm</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
                 </direntry>
 
-                <direntry name="assets.obj.snd.level1.vgc" loadtimelink="LINK">
+                <direntry name="assets.sounds.level1.vgc" loadtimelink="LINK">
                     <lwasm>
-                        <asm xml:space="preserve">sound.level1.vgc EXPORT</asm>
-                        <asm xml:space="preserve"> SECTION code</asm>
-                        <asm xml:space="preserve">sound.level1.vgc</asm>
-                        <asm xml:space="preserve"> ENDSECTION</asm>
+                        <label name="sounds.level1.vgc"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
                 </direntry>
@@ -121,10 +111,11 @@
             <data section="LOADER">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $2100</asm>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
+                    <!-- use xml:space="preserve" in asm element when line starts with spaces -->
+                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $2100</asm>
+                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
                     <asm filename="new-engine/system/mo6/bootloader/loader.asm"/>
                 </lwasm>
             </data>
@@ -137,10 +128,10 @@
                 </cksumfd640>
             </data>
 
-            <fd  filename="mo6.sound.fd"/>
-            <sd  filename="mo6.sound.sd"/>
-            <sap filename="mo6.sound.sap"/>
-            <hfe filename="mo6.sound.hfe"/>
+            <fd  filename="mo6.fd"/>
+            <sd  filename="mo6.sd"/>
+            <sap filename="mo6.sap"/>
+            <hfe filename="mo6.hfe"/>
         </floppydisk>
     </target>
 </configuration>
