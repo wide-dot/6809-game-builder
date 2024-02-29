@@ -6,8 +6,10 @@
 ;
 ;*******************************************************************************
 
-keyboard.held    EXPORT
-keyboard.pressed EXPORT
+keyboard.read          EXPORT
+keyboard.disableBuzzer EXPORT
+keyboard.held          EXPORT
+keyboard.pressed       EXPORT
 
  SECTION code
 
@@ -27,5 +29,11 @@ keyboard.read
         stb   keyboard.pressed ; Store new key for one main loop
 !       stb   keyboard.held    ; New key code was read
 @rts    rts
+
+keyboard.disableBuzzer
+        lda   map.STATUS
+        ora   #map.STATUS.CUTBUZZER
+        sta   map.STATUS
+        rts
 
  ENDSECTION

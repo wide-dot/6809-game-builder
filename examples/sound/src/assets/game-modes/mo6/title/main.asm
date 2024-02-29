@@ -26,6 +26,8 @@ init
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
         ;_gfxlock.init
 
+        jsr   keyboard.disableBuzzer
+
         _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 

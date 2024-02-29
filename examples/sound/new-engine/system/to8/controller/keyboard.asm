@@ -6,6 +6,7 @@
 ;
 ;*******************************************************************************
 
+keyboard.read          EXPORT
 keyboard.held    EXPORT
 keyboard.pressed EXPORT
 

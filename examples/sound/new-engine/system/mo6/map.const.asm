@@ -159,6 +159,8 @@ map.TIMERPT         equ $2061 ; routine irq timer
 map.IRQSEMAPHORE    equ $2063 ; irq semaphore
 map.IRQPT           equ $2064 ; routine irq
 map.FIRQPT          equ $2067 ; routine firq
+map.CHRPTR          equ $20FD ; 
+map.LATCLV          equ $2076 ; keyboard repeat latency
 map.CF74021.SYS1.R  equ $2081 ; reading value for map.CF74021.SYS1
 
 ; -----------------------------------------------------------------------------
