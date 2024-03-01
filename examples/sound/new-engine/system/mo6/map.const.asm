@@ -9,18 +9,29 @@
  IFNDEF map.const.asm
 map.const.asm equ 1
 
-; mc6846
-map.MC6846.CSR      equ $A7C0
-map.MC6846.CRC      equ $A7C1
-map.MC6846.DDRC     equ $A7C2
-map.MC6846.PRC      equ $A7C3 ; (bit0) set half ram page 0 (low or high) in video area ($0000-$1FFF)
-map.MC6846.CSR2     equ $A7C4
+; -----------------------------------------------------------------------------
+; memory map
+map.ram.VID_START  equ $0000
+map.ram.VID_END    equ $2000
+map.ram.SYS_START  equ $2000
+map.ram.SYS_END    equ $6000
+map.ram.DATA_START equ $6000
+map.ram.DATA_END   equ $A000
+map.ram.MON_START  equ $A000
+map.ram.MON_END    equ $B000
+map.ram.CART_START equ $B000
+map.ram.CART_END   equ $F000
+map.ram.MON2_START equ $F000
+map.ram.MON2_END   equ $0000
+
+; -----------------------------------------------------------------------------
+; devices
 
 ; mc6821 system
-map.MC6821.PRA      equ $A7C8
-map.MC6821.PRB      equ $A7C9
-map.MC6821.CRA      equ $A7CA
-map.MC6821.CRB      equ $A7CB
+map.MC6821.PRA      equ $A7C0
+map.MC6821.PRB      equ $A7C1
+map.MC6821.CRA      equ $A7C2
+map.MC6821.CRB      equ $A7C3
 
 ; mc6821 music and game
 map.MC6821.PRA1     equ $A7CC
@@ -45,13 +56,21 @@ map.THMFC01.CELL    equ $A7D7
 map.EF9369.D        equ $A7DA
 map.EF9369.A        equ $A7DB
 
-; cf74021 gate array page mode - (TO8D: EFG2021FN)
+; gate array page mode
 map.CF74021.LGAMOD  equ $A7DC
 map.CF74021.SYS2    equ $A7DD ; (bit0-3) set screen border color, (bit6-7) set onscreen video memory page
 map.CF74021.COM     equ $A7E4
 map.CF74021.DATA    equ $A7E5 ; (bit0-4) set ram page in data area ($6000-$9FFF)
 map.CF74021.CART    equ $A7E6 ; (bit0-4) set page in cartridge area ($B000-$EFFF), (bit5) set ram over cartridge, (bit6) enable write
 map.CF74021.SYS1    equ $A7E7 ; (bit4) set ram over data area
+
+; interface (RS232)
+map.SIOTRANSM       equ $A7E8
+map.SIORECEPT       equ $A7E8
+map.SIORESET        equ $A7E9
+map.SIOSTATUS       equ $A7E9
+map.SIOCMDE         equ $A7EA
+map.SIOCNTRL        equ $A7EB
 
 ; extension port
 map.EXTPORT         equ $A7
@@ -61,6 +80,7 @@ map.EF5860.TX       equ $A7F3 ; MIDI
 map.MEA8000.D       equ $A7FE ; Vocal synth
 map.MEA8000.A       equ $A7FF ; Vocal synth
 
+; -----------------------------------------------------------------------------
 ; ROM routines
 map.DKCONT          equ $A004 ; read sector
 map.DKBOOT          equ $A007 ; boot
@@ -146,6 +166,7 @@ map.JMP_MOUSEB      equ $80+map.JSR_MOUSEB ; Lecture des boutons de la souris
 map.JMP_MOUSE       equ $80+map.JSR_MOUSE  ; Lecture de la souris
 map.JMP_RSCO        equ $80+map.JSR_RSCO   ; Gestion de la RS232
 
+; -----------------------------------------------------------------------------
 ; system monitor registers
 map.REG.DP          equ $20   ; direct page for system monitor registers
 map.STATUS          equ $2019 ; status bitfield
@@ -183,4 +204,6 @@ map.STATUS.KEYREAD    equ %00000001
 
 map.DAC            equ map.MC6821.PRA2
 map.RND            equ map.MC6846.TMSB
+map.HALFPAGE       equ map.MC6821.PRA
+
     ENDC

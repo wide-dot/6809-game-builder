@@ -8,6 +8,22 @@
  IFNDEF map.const.asm
 map.const.asm equ 1
 
+; -----------------------------------------------------------------------------
+; memory map
+map.ram.CART_START equ $0000
+map.ram.CART_END   equ $4000
+map.ram.VID_START  equ $4000
+map.ram.VID_END    equ $6000
+map.ram.SYS_START  equ $6000
+map.ram.SYS_END    equ $A000
+map.ram.DATA_START equ $A000
+map.ram.DATA_END   equ $E000
+map.ram.MON_START  equ $E000
+map.ram.MON_END    equ $0000
+
+; -----------------------------------------------------------------------------
+; devices
+
 ; mc6846
 map.MC6846.CSR      equ $E7C0 ; (bit2) set mute
 map.MC6846.CRC      equ $E7C1
@@ -63,6 +79,7 @@ map.EF5860.TX       equ $E7F3 ; MIDI
 map.MEA8000.D       equ $E7FE ; Vocal synth
 map.MEA8000.A       equ $E7FF : Vocal synth
 
+; -----------------------------------------------------------------------------
 ; ROM routines
 map.DKCONT          equ $E004 ; read sector
 map.DKBOOT          equ $E007 ; boot
@@ -88,6 +105,7 @@ map.DKCO            equ $E82A ; read or write floppy disk routine
 ; ..
 map.IRQ.EXIT        equ $E830 ; to exit an irq
 
+; -----------------------------------------------------------------------------
 ; system monitor registers
 map.REG.DP          equ $60   ; direct page for system monitor registers
 map.STATUS          equ $6019 ; status bitfield
@@ -113,5 +131,6 @@ map.RAM_OVER_CART     equ %01100000
 
 map.DAC            equ map.MC6821.PRA2
 map.RND            equ map.MC6846.TMSB
+map.HALFPAGE       equ map.MC6846.PRC
 
     ENDC

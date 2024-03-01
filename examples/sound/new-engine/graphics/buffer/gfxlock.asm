@@ -1,19 +1,23 @@
 ;******************************************************************************
-; double buffering gfx write lock
+; Double buffering gfx write lock
 ; -----------------------------------------------------------------------------
 ;
-; Swap buffers with a 50hz irq, when beam is near VBL.
-; gfxlock.irq should be called by user irq routine.
+; Swap buffers with a 50hz irq.
+; Irq must be in sync with VBL to avoid palette change artifacts.
 ;
 ; To tell engine when gfx rendering begins or ends, the user uses macros :
 ; _gfxlock.init : should be called before irq starts
 ; _gfxlock.on   : should be called before entering rendering routines
-; _gfxlock.off : should be called as soon as rendering is over for a frame
+; _gfxlock.off  : should be called as soon as rendering is over for a frame
+; _gfxlock.loop : should be called just before the end of main loop
+; _gfxlock.swap : should be called at the start of the user 50Hz IRQ
 ;
 ; A wait routine will only runs if a second gfx rendering lock is set during
-; a single screen frame. User can set a back process routine during wait.
+; a single screen frame.
 ;
-; Irq must be in sync with VBL to avoid palette change artifacts.
+; User can set a back process routine during wait :
+; _gfxlock.backProcess.on  <routine_addr>
+; _gfxlock.backProcess.off
 ;
 ;******************************************************************************
  SECTION code
@@ -58,9 +62,9 @@ gfxlock.backBuffer.status equ   *-1
         andb  #%00000001               ; set bit 0 based on flip/flop
         orb   #%00000010               ; value should be 2 or 3
         stb   map.CF74021.DATA         ; mount working video buffer in RAM
-        ldb   map.MC6846.PRC
+        ldb   map.HALFPAGE
         eorb  #%00000001               ; swap half-page in $4000 $5FFF
-        stb   map.MC6846.PRC
+        stb   map.HALFPAGE
         
         inc   gfxlock.bufferSwap.count+1
         bne   >

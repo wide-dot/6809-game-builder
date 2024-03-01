@@ -25,7 +25,7 @@ init
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
         _irq.set50Hz              ; set irq to run every video frame, when spot is outside visible area
-        ;_gfxlock.init
+        _gfxlock.init
 
         _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
@@ -57,16 +57,18 @@ mainLoop
         _irq.on
 !
 
-        ;_gfxlock.on
+        _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
-        ;_gfxlock.off
+        _gfxlock.off
 
-        ;_gfxlock.loop
-        bra   mainLoop           ; infinite loop
+        _gfxlock.loop
+        jmp   mainLoop           ; infinite loop
 
 ; ------------------------------------------------------------------------------
 userIRQ
+        _gfxlock.swap
+
         _cart.setRam #page.ymm   ; mount object page
         _ymm.frame.play          ; play a music frame
 

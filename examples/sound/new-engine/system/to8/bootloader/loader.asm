@@ -10,14 +10,9 @@
 ; - directory management
 ; - multiple floppy management
 ;
-; TODO :
-; - gérer le cas des fichiers vides, mais qui ont un fichier de link associé
-;   ex: equates exportées
-;
-; - réfléchir aux points suivants :
-;   - gérer le fait qu'on puisse charger plusieurs instances d'un meme fichier à deux endroits différents en RAM, comment identifier celui qu'on "remove" dans le linkdata ? => addr en param in
-;   - ajouter un equate dans map.const.asm => end of RAM over ROM $4000 (TO8) ou $F000 (MO6) (utilisé dans load scene type 10 et 11)
-;   - mutualiser le code TO8 et MO6 => ce qui change c'est la routine switchpage => la sortir du loader permet de mutualiser
+; - TODO :
+;   - split this code in two part : common and specific (mo/to)
+;   - add unload link data routine
 ;
 ;*******************************************************************************
  SETDP $ff ; prevents lwasm from using direct address mode
@@ -298,7 +293,7 @@ loader.scene.apply.type10
         std   @size
         leay  d,u                ; Will the file fit the page ?
         puls  b                  ; Restore page id
-        cmpy  #$4000             ; Branch if data fits memory page
+        cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
         ldu   #0                 ; else move to next page
         incb
@@ -351,7 +346,7 @@ loader.scene.apply.type11
         leay  d,u                ; Will the file fit the page ?
         ldb   #0                 ; Restore page id
 @b1     equ   *-1
-        cmpy  #$4000             ; Branch if data fits memory page
+        cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
         ldu   #0                 ; else move to next page
         incb
@@ -658,7 +653,7 @@ messdiskId     equ *-1
 ; U: [destination - address]
 ;---------------------------------------
 switchpage
-        cmpu  #$A000              ; Skip if not data space
+        cmpu  #map.ram.DATA_START ; Skip if not data space
         blo   >
         lda   #$10
         ora   <map.CF74021.SYS1.R ; Set RAM
@@ -667,18 +662,18 @@ switchpage
         stb   >map.CF74021.DATA   ; Switch RAM page
         rts
 !
-        cmpu  #$6000              ; Skip if not resident space
+        cmpu  #map.ram.SYS_START  ; Skip if not resident space
         blo   >
         rts                       ; nothing to do ... it's resident memory
 !
-        cmpu  #$4000              ; Skip if not video space
+        cmpu  #map.ram.VID_START  ; Skip if not video space
         blo   >
         andb  #$01                ; Keep only half page A or B
         orb   >map.MC6846.PRC     ; Merge register value
         stb   >map.MC6846.PRC     ; Set desired half page in video space
         rts
 !
-        cmpu  #$E000              ; Skip if not valid address 
+        cmpu  #map.ram.MON_START  ; Skip if not valid address 
         bhs   >
         orb   #$60                ; Set RAM over cartridge space
         stb   >map.CF74021.CART   ; Switch RAM page

@@ -10,7 +10,7 @@ sounds.level1.ymm  EXTERNAL
 sounds.level1.vgc  EXTERNAL
 
  SECTION code
-
+        opt c
         INCLUDE "new-engine/pack/mo6/std.asm"
         INCLUDE "new-engine/pack/mo6/irq.asm"
         INCLUDE "new-engine/pack/ymm.asm"
@@ -24,7 +24,7 @@ init
         _glb.init                 ; clean dp variables
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
-        ;_gfxlock.init
+        _gfxlock.init
 
         jsr   keyboard.disableBuzzer
 
@@ -37,9 +37,14 @@ init
 
 ; ------------------------------------------------------------------------------
 mainLoop
-        jsr   keyboard.read
-        tst   keyboard.pressed
-        beq   >
+        ;jsr   keyboard.read
+        ;tst   keyboard.pressed
+        ;beq   >
+
+        ldb   #$68 ; ENTER
+        stb   $A7C1
+        lda   $A7C1
+        bmi   >
 
         _irq.off
         _cart.setRam  #page.vgc
@@ -58,16 +63,18 @@ mainLoop
         _irq.on
 !
 
-        ;_gfxlock.on
+        _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
-        ;_gfxlock.off
+        _gfxlock.off
 
-        ;_gfxlock.loop
-        bra   mainLoop           ; infinite loop
+        _gfxlock.loop
+        jmp   mainLoop           ; infinite loop
 
 ; ------------------------------------------------------------------------------
 userIRQ
+        _gfxlock.swap
+
         _cart.setRam #page.ymm   ; mount object page
         _ymm.frame.play          ; play a music frame
 

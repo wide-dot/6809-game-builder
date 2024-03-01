@@ -33,6 +33,10 @@ _gfxlock.loop MACRO
         std   gfxlock.frame.lastCount
  ENDM
 
+_gfxlock.swap MACRO
+        jsr   gfxlock.bufferSwap.check
+ ENDM
+
 _gfxlock.backProcess.on MACRO
         ; param 1 : routine address
         ldd   #\1
