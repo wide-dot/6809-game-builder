@@ -1,7 +1,0 @@
-                      (C:\Users\bhrou\gi):00001         map.YM2413.A EXPORT
-                      (C:\Users\bhrou\gi):00002         map.YM2413.D EXPORT
-                      (C:\Users\bhrou\gi):00003         
-                      (C:\Users\bhrou\gi):00004          SECTION _constant
-     A7FC             (C:\Users\bhrou\gi):00005         map.YM2413.A        equ $A7FC
-     A7FD             (C:\Users\bhrou\gi):00006         map.YM2413.D        equ $A7FD
-                      (C:\Users\bhrou\gi):00007          ENDSECTION

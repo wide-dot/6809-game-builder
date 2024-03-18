@@ -1,9 +1,0 @@
-Symbol: builder.lwasm.size.444072801361000 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0A68
-Symbol: builder.lwasm.size.444073174395700 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0000
-Symbol: builder.lwasm.size.444073348794200 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0000
-Symbol: builder.lwasm.size.main (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0337
-Symbol: builder.lwasm.size.ymm (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0400
-Symbol: loader.ADDRESS (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = A000
-Symbol: loader.PAGE (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = 0004
-Symbol: map.YM2413.A (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = E7FC
-Symbol: map.YM2413.D (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/to8/sound/\build\ym.2.const.obj) = E7FD
