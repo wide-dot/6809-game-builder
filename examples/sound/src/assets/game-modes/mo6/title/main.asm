@@ -1,5 +1,5 @@
-        INCLUDE "new-engine/sound/ymm.external.asm"
-        INCLUDE "new-engine/sound/vgc.external.asm"
+        INCLUDE "engine/sound/ymm.external.asm"
+        INCLUDE "engine/sound/vgc.external.asm"
 
 sn76489.init       EXTERNAL
 ym2413.init        EXTERNAL
@@ -11,10 +11,10 @@ sounds.level1.vgc  EXTERNAL
 
  SECTION code
         opt c
-        INCLUDE "new-engine/pack/mo6/std.asm"
-        INCLUDE "new-engine/pack/mo6/irq.asm"
-        INCLUDE "new-engine/pack/ymm.asm"
-        INCLUDE "new-engine/pack/vgc.asm"
+        INCLUDE "engine/pack/mo6/std.asm"
+        INCLUDE "engine/pack/mo6/irq.asm"
+        INCLUDE "engine/pack/ymm.asm"
+        INCLUDE "engine/pack/vgc.asm"
 
 page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
 page.vgc equ map.RAM_OVER_CART+7
@@ -24,7 +24,7 @@ init
         _glb.init                 ; clean dp variables
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
-        ; blackout palette here
+        _palette.update           ; update palette with the default black palette
         _gfxlock.init
 
         jsr   keyboard.disableBuzzer
@@ -78,6 +78,7 @@ mainLoop
 
 ; ------------------------------------------------------------------------------
 userIRQ
+        _palette.checkUpdate
         _gfxlock.swap
 
         _cart.setRam #page.ymm   ; mount object page
@@ -89,8 +90,9 @@ userIRQ
 
  ENDSECTION
 
-        INCLUDE "new-engine/global/glb.init.asm"
-        INCLUDE "new-engine/system/mo6/irq/irq.asm"
-        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.asm"
-        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
-        INCLUDE "new-engine/system/mo6/controller/keyboard.asm"
+        INCLUDE "engine/global/glb.init.asm"
+        INCLUDE "engine/system/mo6/irq/irq.asm"
+        INCLUDE "engine/system/to8/palette/palette.update.asm"
+        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
+        INCLUDE "engine/system/mo6/controller/keyboard.asm"

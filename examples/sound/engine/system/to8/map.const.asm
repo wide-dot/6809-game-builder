@@ -1,7 +1,28 @@
+;*******************************************************************************
 ; Thomson TO8 - Memory map
+; ------------------------------------------------------------------------------
+;
+; system addresses
+;*******************************************************************************
+
+ IFNDEF map.const.asm
+map.const.asm equ 1
 
 ; -----------------------------------------------------------------------------
-; system addresses
+; memory map
+map.ram.CART_START equ $0000
+map.ram.CART_END   equ $4000
+map.ram.VID_START  equ $4000
+map.ram.VID_END    equ $6000
+map.ram.SYS_START  equ $6000
+map.ram.SYS_END    equ $A000
+map.ram.DATA_START equ $A000
+map.ram.DATA_END   equ $E000
+map.ram.MON_START  equ $E000
+map.ram.MON_END    equ $0000
+
+; -----------------------------------------------------------------------------
+; devices
 
 ; mc6846
 map.MC6846.CSR      equ $E7C0 ; (bit2) set mute
@@ -55,28 +76,12 @@ map.EXTPORT         equ $E7
 map.IEEE488         equ $E7F0 ; to E7F7
 map.EF5860.CTRL     equ $E7F2 ; MIDI
 map.EF5860.TX       equ $E7F3 ; MIDI
- ifndef SOUND_CARD_PROTOTYPE
-map.YM2413.A        equ $E7FC
-map.YM2413.D        equ $E7FD
- ifndef SN76489_JUMPER_LOW
-map.SN76489.D       equ $E7F7
- else
-map.SN76489.D       equ $E7F6
- endc
- else
-map.YM2413.A        equ $E7FC
-map.YM2413.D        equ $E7FD
- ifndef SN76489_JUMPER_LOW
-map.SN76489.D       equ $E7FF
- else
-map.SN76489.D       equ $E7FE
- endc
- endc
-map.MEA8000.D       equ $E7FE
-map.MEA8000.A       equ $E7FF
+map.MEA8000.D       equ $E7FE ; Vocal synth
+map.MEA8000.A       equ $E7FF : Vocal synth
 
+; -----------------------------------------------------------------------------
 ; ROM routines
-map.DKCONT          equ $E004 ; TO:DKCO, MO:SWI $26
+map.DKCONT          equ $E004 ; read sector
 map.DKBOOT          equ $E007 ; boot
 map.DKFMT           equ $E00A ; format
 map.LECFA           equ $E00D ; read FAT
@@ -90,12 +95,17 @@ map.FINTR           equ $E022 ; transfert end
 map.QDDSTD          equ $E025 ; QDD std functions
 map.QDDSYS          equ $E028 ; QDD sys functions
 
-map.PUTC            equ $E803
-map.GETC            equ $E806
-map.KTST            equ $E809
+map.PUTC            equ $E803 ; Affichage d'un caractère
+map.GETC            equ $E806 ; Lecture du clavier
+map.KTST            equ $E809 ; Lecture rapide du clavier
+map.DRAW            equ $E80C ; Tracé d'un segment de droite
+map.PLOT            equ $E80F ; Allumage ou extinction d'un point
+; ...
 map.DKCO            equ $E82A ; read or write floppy disk routine
+; ..
 map.IRQ.EXIT        equ $E830 ; to exit an irq
 
+; -----------------------------------------------------------------------------
 ; system monitor registers
 map.REG.DP          equ $60   ; direct page for system monitor registers
 map.STATUS          equ $6019 ; status bitfield
@@ -114,10 +124,13 @@ map.CF74021.SYS1.R  equ $6081 ; reading value for map.CF74021.SYS1
 
 map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interrupt
 map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
-map.IRQ.ONE_FRAME     equ 312*64-1  ; one frame timer (lines*cycles_per_lines-1), timer launch at -1
+map.RAM_OVER_CART     equ %01100000
 
 ; -----------------------------------------------------------------------------
 ; mapping to generic names
 
 map.DAC            equ map.MC6821.PRA2
 map.RND            equ map.MC6846.TMSB
+map.HALFPAGE       equ map.MC6846.PRC
+
+    ENDC

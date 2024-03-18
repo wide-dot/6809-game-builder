@@ -1,5 +1,5 @@
-        INCLUDE "new-engine/sound/ymm.external.asm"
-        INCLUDE "new-engine/sound/vgc.external.asm"
+        INCLUDE "engine/sound/ymm.external.asm"
+        INCLUDE "engine/sound/vgc.external.asm"
 
 sn76489.init       EXTERNAL
 ym2413.init        EXTERNAL
@@ -11,10 +11,10 @@ sounds.level1.vgc  EXTERNAL
 
  SECTION code
 
-        INCLUDE "new-engine/pack/to8/std.asm"
-        INCLUDE "new-engine/pack/to8/irq.asm"
-        INCLUDE "new-engine/pack/ymm.asm"
-        INCLUDE "new-engine/pack/vgc.asm"
+        INCLUDE "engine/pack/to8/std.asm"
+        INCLUDE "engine/pack/to8/irq.asm"
+        INCLUDE "engine/pack/ymm.asm"
+        INCLUDE "engine/pack/vgc.asm"
 
 page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
 page.vgc equ map.RAM_OVER_CART+7 
@@ -27,7 +27,7 @@ init
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
         _irq.set50Hz              ; set irq to run every video frame, when spot is outside visible area
-        _palette.update
+        _palette.update           ; update palette with the default black palette
         _gfxlock.init
 
         _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
@@ -86,9 +86,9 @@ userIRQ
 
  ENDSECTION
 
-        INCLUDE "new-engine/global/glb.init.asm"
-        INCLUDE "new-engine/system/to8/irq/irq.asm"
-        INCLUDE "new-engine/system/to8/palette/palette.update.asm"
-        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.asm"
-        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
-        INCLUDE "new-engine/system/to8/controller/keyboard.asm"
+        INCLUDE "engine/global/glb.init.asm"
+        INCLUDE "engine/system/to8/irq/irq.asm"
+        INCLUDE "engine/system/to8/palette/palette.update.asm"
+        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
+        INCLUDE "engine/system/to8/controller/keyboard.asm"

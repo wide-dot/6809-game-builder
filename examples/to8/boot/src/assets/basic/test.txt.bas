@@ -1,4 +1,0 @@
-10 IF
-20 THEN
-30 ELSE 
- 	 012 	 IF THEN 	  

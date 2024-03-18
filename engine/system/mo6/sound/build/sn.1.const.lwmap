@@ -1,0 +1,9 @@
+Symbol: builder.lwasm.size.444370928824300 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0A68
+Symbol: builder.lwasm.size.444371301844700 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0000
+Symbol: builder.lwasm.size.444371473724500 (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0000
+Symbol: builder.lwasm.size.main (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0301
+Symbol: builder.lwasm.size.ym.2.const (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0000
+Symbol: builder.lwasm.size.ymm (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0400
+Symbol: loader.ADDRESS (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 6000
+Symbol: loader.PAGE (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = 0004
+Symbol: map.SN76489.D (C:/Users/bhrou/git/6809-game-builder/examples/sound/engine/system/mo6/sound/\build\sn.1.const.obj) = A7F6

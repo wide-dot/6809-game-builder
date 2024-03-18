@@ -1,26 +1,28 @@
 
-; Reset SN76489 sound chip to a default (silent) state
+; Init SN76489 sound chip to a default (silent) state
 ; ----------------------------------------------------
 
- IFNDEF sn76489.reset
-sn76489.reset
+sn76489.init EXPORT
+
+map.SN76489.D EXTERNAL
+
+ SECTION code
+
+sn76489.init
         lda   #$9F
-        sta   SN76489.D
-vgc_port_01 equ *-1
+        sta   map.SN76489.D
         nop
         nop
         lda   #$BF
-        sta   SN76489.D  
-vgc_port_02 equ *-1  
+        sta   map.SN76489.D
         nop
         nop
         lda   #$DF
-        sta   SN76489.D
-vgc_port_03 equ *-1
+        sta   map.SN76489.D
         nop
         nop
         lda   #$FF
-        sta   SN76489.D  
-vgc_port_04 equ *-1
-	rts
- ENDC
+        sta   map.SN76489.D
+	    rts
+
+ ENDSECTION

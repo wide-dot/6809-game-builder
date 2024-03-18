@@ -1,7 +1,0 @@
-*.fd
-*.sd
-*.sap
-*.hfe
-**/dist/
-**/build/
-**/gen/
