@@ -19,12 +19,15 @@ sounds.level1.vgc  EXTERNAL
 page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
 page.vgc equ map.RAM_OVER_CART+7 
 
+ opt c,ct
+
 ; ------------------------------------------------------------------------------
 init
         _glb.init                 ; clean dp variables
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
         _irq.set50Hz              ; set irq to run every video frame, when spot is outside visible area
+        _palette.update
         _gfxlock.init
 
         _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
@@ -33,6 +36,10 @@ init
         _cart.setRam  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
+
+        _gfxmode.setBM16
+        _gfxlock.memset #$0000    ; init video buffers
+        _gfxlock.memset #$0000
 
 ; ------------------------------------------------------------------------------
 mainLoop
@@ -67,6 +74,7 @@ mainLoop
 
 ; ------------------------------------------------------------------------------
 userIRQ
+        _palette.checkUpdate
         _gfxlock.swap
 
         _cart.setRam #page.ymm   ; mount object page
@@ -80,5 +88,7 @@ userIRQ
 
         INCLUDE "new-engine/global/glb.init.asm"
         INCLUDE "new-engine/system/to8/irq/irq.asm"
-        INCLUDE "new-engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "new-engine/system/to8/palette/palette.update.asm"
+        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.asm"
+        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "new-engine/system/to8/controller/keyboard.asm"

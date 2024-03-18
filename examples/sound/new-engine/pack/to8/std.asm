@@ -4,3 +4,6 @@
         INCLUDE "new-engine/global/glb.macro.asm"
         INCLUDE "new-engine/system/to8/ram/ram.macro.asm"
         INCLUDE "new-engine/system/to8/bootloader/loader.macro.asm"
+        INCLUDE "new-engine/system/thomson/graphics/mode/gfxmode.macro.asm"
+        INCLUDE "new-engine/system/to8/palette/palette.const.asm"
+        INCLUDE "new-engine/system/to8/palette/palette.macro.asm"

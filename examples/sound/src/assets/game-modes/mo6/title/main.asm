@@ -24,6 +24,7 @@ init
         _glb.init                 ; clean dp variables
         _irq.init                 ; set irq manager routine
         _irq.setRoutine #userIRQ  ; set user routine called by irq manager
+        ; blackout palette here
         _gfxlock.init
 
         jsr   keyboard.disableBuzzer
@@ -34,6 +35,10 @@ init
         _cart.setRam  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
+
+        _gfxmode.setBM16
+        _gfxlock.memset #$0000    ; init video buffers
+        _gfxlock.memset #$0000
 
 ; ------------------------------------------------------------------------------
 mainLoop
@@ -86,5 +91,6 @@ userIRQ
 
         INCLUDE "new-engine/global/glb.init.asm"
         INCLUDE "new-engine/system/mo6/irq/irq.asm"
-        INCLUDE "new-engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.asm"
+        INCLUDE "new-engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "new-engine/system/mo6/controller/keyboard.asm"

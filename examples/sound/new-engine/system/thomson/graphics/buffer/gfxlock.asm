@@ -20,6 +20,19 @@
 ; _gfxlock.backProcess.off
 ;
 ;******************************************************************************
+gfxlock.init                EXPORT
+gfxlock.on                  EXPORT
+gfxlock.status              EXPORT
+gfxlock.loop                EXPORT
+gfxlock.bufferSwap.check    EXPORT
+
+gfxlock.backProcess.routine EXPORT
+gfxlock.backProcess.status  EXPORT
+gfxlock.frameDrop.count_w   EXPORT
+gfxlock.frameDrop.count     EXPORT
+gfxlock.frame.count         EXPORT
+gfxlock.frame.lastCount     EXPORT
+
  SECTION code
 
 ; =============================================================================
@@ -85,12 +98,38 @@ gfxlock.backProcess.routine equ *-2
         beq   @loop                     ; loop until irq make a swap
 !       rts
 
-; -------------------------------------------------
-
 gfxlock.screenBorder.update
         andb  #$0F
         orb   #%10000000
         stb   gfxlock.screenBorder.color
         rts
 
-ENDSECTION
+gfxlock.init
+        jsr   gfxlock.bufferSwap.do
+        lda   #-1
+        sta   gfxlock.status
+        lda   gfxlock.backBuffer.status ; init backBuffer.id based on backBuffer.status
+        anda  #%00000001
+        sta   gfxlock.backBuffer.id     ; id is 0 or 1
+        rts
+
+gfxlock.on
+        lda   gfxlock.status
+        bne   >
+        jsr   gfxlock.bufferSwap.wait  ; wait if second gfx frame is reached
+!       lda   #1
+        sta   gfxlock.status
+        rts
+
+gfxlock.loop
+        lda   gfxlock.backBuffer.id    ; switch id at the end of gfxlock
+        eora  #%00000001
+        sta   gfxlock.backBuffer.id
+        ldd   gfxlock.frame.count
+        subd  gfxlock.frame.lastCount
+        stb   gfxlock.frameDrop.count  ; store the number of elapsed 50Hz frames since last main game loop
+        ldd   gfxlock.frame.count
+        std   gfxlock.frame.lastCount
+        rts
+
+ ENDSECTION

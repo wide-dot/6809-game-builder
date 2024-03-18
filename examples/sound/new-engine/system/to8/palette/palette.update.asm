@@ -6,24 +6,28 @@
 ; input REG : none
 ; reset REG : [d] [x] [y]
 ; ---------------------------------------------------------------------------
+; Code is unrolled to limit artefacts on screen if called in visible area
+; ---------------------------------------------------------------------------
 
-palette.update  EXPORT
-palette.status  EXPORT
-palette.current EXPORT
-palette.buffer  EXPORT
+palette.checkUpdate EXPORT
+palette.update      EXPORT
+palette.status      EXPORT
+palette.current     EXPORT
+palette.buffer      EXPORT
 
  SECTION code
 
 palette.status  fcb   palette.REFRESH_OFF
 palette.current fdb   palette.buffer
-palette.buffer  fill  0,$20
+palette.buffer  fill  -1,$20
 
-palette.update
+palette.checkUpdate
         tst   palette.status
-        beq   >                        ; update only if state is ready
+        bne   >                        ; update only if state is ready
         rts
+palette.update
 !       pshs  dp
-        ldd   #map.REG.DP              ; implicit load of [a]=0
+        ldd   #map.EXTPORT             ; implicit load of [a]=0
         tfr   b,dp  
         ldx   palette.current
         sta   <map.EF9369.A            ; color index 0
@@ -75,7 +79,8 @@ palette.update
         ldd   30,x
         sta   <map.EF9369.D
         stb   <map.EF9369.D
-        com   palette.status
+        lda   #palette.REFRESH_OFF
+        sta   palette.status
         puls dp,pc
 
  ENDSECTION
