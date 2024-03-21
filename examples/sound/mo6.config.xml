@@ -64,7 +64,7 @@
 
                 <direntry name="engine.system.mo6.sound.sn.const" loadtimelink="LINK">
                     <lwasm>
-                        <asm filename="engine/system/mo6/sound/sn.1.const.asm"/>
+                        <asm filename="engine/system/mo6/sound/sn.2.const.asm"/>
                     </lwasm>
                 </direntry>
 
