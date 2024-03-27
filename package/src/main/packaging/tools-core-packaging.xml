@@ -31,5 +31,10 @@
 			<directory>${project.parent.basedir}/repo/com/wide-dot/vgm2vgc/0.0.1</directory>
 			<outputDirectory>./plugins/vgm2vgc</outputDirectory>
 		</fileSet>
+		<fileSet>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/pcm/0.0.1</directory>
+			<outputDirectory>./plugins/pcm</outputDirectory>
+		</fileSet>
+
 	</fileSets>
 </assembly>

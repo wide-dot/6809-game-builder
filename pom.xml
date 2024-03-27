@@ -109,6 +109,7 @@
 		<module>./toolbox/graphics/gfxcomp</module>
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/graphics/png2pal</module>
+	    <module>./toolbox/audio/pcm</module>
 		<module>./toolbox/audio/smid</module>
 		<module>./toolbox/audio/vgm2ymm</module>
 		<module>./toolbox/audio/vgm2vgc</module>
