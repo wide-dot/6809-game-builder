@@ -42,3 +42,25 @@ _gfxlock.memset MACRO
         _gfxlock.off
         _gfxlock.loop
  ENDM
+
+_gfxlock.halfPage.swap.on MACRO
+        lda   #0
+        sta   gfxlock.halfPage.swap.auto
+ ENDM
+
+_gfxlock.halfPage.swap.off MACRO
+        lda   #1
+        sta   gfxlock.halfPage.swap.auto
+ ENDM
+
+_gfxlock.halfPage.set0 MACRO
+        lda   map.HALFPAGE
+        anda  #%11111110
+        sta   map.HALFPAGE
+ ENDM
+
+_gfxlock.halfPage.set1 MACRO
+        lda   map.HALFPAGE
+        ora   #%00000001
+        sta   map.HALFPAGE
+ ENDM

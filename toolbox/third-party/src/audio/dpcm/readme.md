@@ -6,20 +6,23 @@
 # pcm2dpcm
 ## Description
 
-pcm2dpcm is a tool from ValleyBell's SMPS research pack
+pcm2dpcm and dpcm2pcm are tools from ValleyBell's SMPS research pack
 
-## Features
+## pcm2dpcm Features
 * lossy audio compression
 * convert pcm absolute values (8bits) into differential values (4bits)
 * 4bit values are indexes to 8bit values (@DACDecodeTbl in the player assembly code)
 
-## Create RAW audio
+## Create RAW audio for pcm2dpcm
 
 Input file must be prepared before conversion.
 
 - open your audio file in audacity (or any audio editing tool)
 - set Project Rate (Hz) to 8000 or 16000
 - export the file by doing : File > Export > Export audio > Save as type : other uncompressed files > Header : RAW (header-less) > Encoding : Unsigned 8-bit PCM
+
+If your audio file is already a dpcm data, first uncompress by using this command :
+dpcm2pcm -dpcmdata "0x00 0x01 0x02 0x04 0x08 0x10 0x20 0x40 -0x80 -0x01 -0x02 -0x04 -0x08 -0x10 -0x20 -0x40" DAC_06-2.bin
 
 ## Usage
 (for Windows users, add .exe to the tool name)

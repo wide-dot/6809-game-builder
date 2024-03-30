@@ -77,7 +77,21 @@ map.IEEE488         equ $E7F0 ; to E7F7
 map.EF5860.CTRL     equ $E7F2 ; MIDI
 map.EF5860.TX       equ $E7F3 ; MIDI
 map.MEA8000.D       equ $E7FE ; Vocal synth
-map.MEA8000.A       equ $E7FF : Vocal synth
+map.MEA8000.A       equ $E7FF ; Vocal synth
+
+; Musique PLUS Extension
+map.MPLUS.EXT3      equ $E7F0 ; $E7F1 ; Extension 3
+map.MPLUS.TIMER     equ $E7F4 ; $E7F5 ; MPlus Timer
+map.MPLUS.CTRL      equ $E7F6 ; MPlus Ctrl.
+                              ; Bit 7: R- TI    - READY pin
+                              ; Bit 6: RW TI    - clock disable (silent audio)
+                              ; Bit 5: -------- - unused bit
+                              ; Bit 4: RW Timer - IRQ select    (0=FIRQ, 1=IRQ)
+                              ; Bit 3: RW Timer - (F)IRQ enable
+                              ; Bit 2: RW Timer - clock select (0=1Mhz, 1=3.579545Mhz)
+                              ; Bit 1: RW Timer - enable countdown of counter
+                              ; Bit 0: -W Timer - reset timer (0=do nothing, 1=reload period to counter)
+map.MPLUS.EXT4      equ $E7F8 ; $E7FB ; Extension 4
 
 ; -----------------------------------------------------------------------------
 ; ROM routines

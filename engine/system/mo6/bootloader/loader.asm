@@ -678,9 +678,11 @@ switchpage
 !
         cmpu  #map.ram.CART_END   ; Skip if not cart space
         bhs   >
-        andb  #$01                ; Keep only half page A or B
-        orb   >map.MC6821.PRA     ; Merge register value
-        stb   >map.MC6821.PRA     ; Set desired half page in video space
+        lda   >map.MC6846.PRC     ; Merge register value
+        lsra                      ; Get rid of actual half page (bit0)
+        rorb                      ; Keep only half page 0 or 1 in CC
+        rola                      ; apply actual register
+        sta   >map.MC6846.PRC     ; Set desired half page in video space
         rts
 !       bra   *                   ; error trap
 

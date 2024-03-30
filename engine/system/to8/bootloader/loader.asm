@@ -649,8 +649,8 @@ messdiskId     equ *-1
 ;---------------------------------------
 ; Switch page
 ;
-; B: [destination - page number]
-; U: [destination - address]
+; input  REG : [B] destination - page number
+;              [U] destination - address
 ;---------------------------------------
 switchpage
         cmpu  #map.ram.DATA_START ; Skip if not data space
@@ -668,9 +668,11 @@ switchpage
 !
         cmpu  #map.ram.VID_START  ; Skip if not video space
         blo   >
-        andb  #$01                ; Keep only half page A or B
-        orb   >map.MC6846.PRC     ; Merge register value
-        stb   >map.MC6846.PRC     ; Set desired half page in video space
+        lda   >map.MC6846.PRC     ; Merge register value
+        lsra                      ; Get rid of actual half page (bit0)
+        rorb                      ; Keep only half page 0 or 1 in CC
+        rola                      ; apply actual register
+        sta   >map.MC6846.PRC     ; Set desired half page in video space
         rts
 !
         cmpu  #map.ram.MON_START  ; Skip if not valid address 

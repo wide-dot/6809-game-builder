@@ -21,12 +21,16 @@ public class Pcm {
 		
 		System.out.println("Convert 8bit sample to 6bit ...");
 		byte[] outData = new byte[data.length];
-	    for (int i=0; i<data.length; i++) {
+		int i;
+	    for (i=0; i<data.length; i++) {
         	outData[i] = (byte) ((data[i] & 0xff) >> 2);
         }
 	    
+	    // end marker
+	    outData[i-1] = (byte) ((outData[i-1] & 0xff) | 0x80);
+	    
 	    // todo : do not keep identical samples at the end of file
-	    // todo : always set output to x20 (centered wave signal)
+	    // todo : always set final output to x00 (centered wave signal)
 	    
 		return outData;
 	}

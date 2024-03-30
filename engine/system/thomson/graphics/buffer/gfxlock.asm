@@ -51,6 +51,8 @@ gfxlock.frameDrop.count    fcb   0 ; elapsed 50Hz frames since last main loop
 gfxlock.frame.count        fdb   0 ; elapsed 50Hz frames since init
 gfxlock.frame.lastCount    fdb   0 ; elapsed 50Hz frames at last main loop
 
+gfxlock.halfPage.swap.auto fdb   0 ; status of half page autoswap
+
 ; =============================================================================
 ; routines
 ; =============================================================================
@@ -75,10 +77,12 @@ gfxlock.backBuffer.status equ   *-1
         andb  #%00000001               ; set bit 0 based on flip/flop
         orb   #%00000010               ; value should be 2 or 3
         stb   map.CF74021.DATA         ; mount working video buffer in RAM
+        ldb   gfxlock.halfPage.swap.auto
+        bne   >
         ldb   map.HALFPAGE
         eorb  #%00000001               ; swap half-page in $4000 $5FFF
         stb   map.HALFPAGE
-        
+!
         inc   gfxlock.bufferSwap.count+1
         bne   >
         inc   gfxlock.bufferSwap.count
