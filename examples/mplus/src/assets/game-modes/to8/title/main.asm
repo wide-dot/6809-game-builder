@@ -11,26 +11,27 @@ samples.clap EXTERNAL
 ; ------------------------------------------------------------------------------
 init
         _glb.init                  ; clean dp variables
-        _irq.init                  ; set irq manager routine
-        _irq.setRoutine #userIRQ   ; set user routine called by irq manager
-        _irq.set50Hz               ; set irq to run every video frame, when spot is outside visible area
+        ;_irq.init                  ; set irq manager routine
+        ;_irq.setRoutine #userIRQ   ; set user routine called by irq manager
+        ;_irq.set50Hz               ; set irq to run every video frame, when spot is outside visible area
         _palette.update            ; update palette with the default black palette
         _gfxlock.halfPage.swap.off ; do not auto swap halp page in sync with double buffering
         _gfxlock.halfPage.set0     ; set the visible half page
-        _gfxlock.init              ; init double buffering
+        ;_gfxlock.init              ; init double buffering
+
+        ldd   #$fb3f  ! Mute by CRA to
+        anda  $e7cf   ! avoid sound when
+        sta   $e7cf   ! $e7cd written
+        stb   $e7cd   ! Full sound line
+        ora   #$04    ! Disable mute by
+        sta   $e7cf   ! CRA and sound
 
         _firq.pcm.init             ; bind pcm firq routine
-        _irq.on                    ; enable main 50Hz irq
+        ;_irq.on                    ; enable main 50Hz irq
 
-        _gfxmode.setBM16           ; set video mode to 160x200 16 colors
-        _gfxlock.memset #$0000     ; init video buffers to uniform color
-        _gfxlock.memset #$0000
-
-; ------------------------------------------------------------------------------
-mainLoop
-        jsr   keyboard.read
-        tst   keyboard.pressed
-        beq   >
+        ;_gfxmode.setBM16           ; set video mode to 160x200 16 colors
+        ;_gfxlock.memset #$0000     ; init video buffers to uniform color
+        ;_gfxlock.memset #$0000
 
         ; load sample data location and duration
         lda   #2
@@ -51,13 +52,15 @@ mainLoop
 
         ; enable sample output by firq
         _firq.pcm.play sample.current.address,sample.current.duration
-!
-        _gfxlock.on
+
+; ------------------------------------------------------------------------------
+mainLoop
+        ;_gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
-        _gfxlock.off
+        ;_gfxlock.off
 
-        _gfxlock.loop
+        ;_gfxlock.loop
         jmp   mainLoop             ; infinite loop
 
 ; ------------------------------------------------------------------------------
@@ -134,5 +137,4 @@ samples.duration
         INCLUDE "engine/system/to8/palette/palette.update.asm"
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
-        INCLUDE "engine/system/to8/controller/keyboard.asm"
         INCLUDE "engine/sound/firq.pcm.asm"

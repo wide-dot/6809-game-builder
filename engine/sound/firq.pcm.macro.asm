@@ -8,7 +8,8 @@ _firq.pcm.play MACRO
         ldd   \1
         std   firq.pcm.sample
         ldd   \2
-        std   map.MPLUS.TIMER
+        sta   map.MPLUS.TIMER
+        stb   map.MPLUS.TIMER+1
         lda   map.MPLUS.CTRL
         anda  #%11101111
                              ; unset Bit 4: RW Timer - IRQ select (0=FIRQ, 1=IRQ)
