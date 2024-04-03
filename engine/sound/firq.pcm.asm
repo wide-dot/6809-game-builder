@@ -9,6 +9,7 @@
 ; Total cycles : 56 (63 each 256 bytes read)
 ; ------------------------------------------------------------------------------
 
+firq.pcm.sample      EXPORT
 firq.pcm.sample.play EXPORT
 
  SECTION code
@@ -20,14 +21,16 @@ firq.pcm.sample.play
         lda   >$0000                   ; [5]  read sample byte
 firq.pcm.sample equ *-2
         sta   map.DAC                  ; [5]  send byte to DAC
-        bpl   >                        ; [3]  skip if no end marker
-        lda   #$40                     ; --- [3] inactivate firq
-        ora   ,s                       ; --- [-] by updating
-        sta   ,s                       ; --- [-] cc register in stack
-!       inc   firq.pcm.sample+1        ; [7]  move to next sample
-        bne   >                        ; [3]  skip if no LSB rollover
-        inc   firq.pcm.sample          ; --- [7]  move to next sample
-!       lda   #0                       ; [2]  restore register value
+        bpl   @move                    ; [3]  skip if no end marker
+            lda   #$40                     ; --- [2] inactivate firq
+            ora   ,s                       ; --- [4] by updating
+            sta   ,s                       ; --- [4] cc register in stack
+            bra   @exit                    ; --- [3] do not make any move in buffer
+@move
+        inc   firq.pcm.sample+1        ; [7]  move to next sample (LSB)
+        bne   @exit                    ; [3]  skip if no LSB rollover
+            inc   firq.pcm.sample          ; --- [7]  move to next sample (MSB)
+@exit   lda   #0                       ; [2]  restore register value
 @a      equ   *-1
         rti                            ; [6]  RTI (equivalent to puls pc,cc)
 

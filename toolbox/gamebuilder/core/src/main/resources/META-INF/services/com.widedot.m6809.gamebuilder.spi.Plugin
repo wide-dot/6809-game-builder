@@ -13,3 +13,4 @@ com.widedot.m6809.gamebuilder.plugin.label.impl.FilePlugin
 com.widedot.m6809.gamebuilder.plugin.lwasm.impl.ObjectPlugin
 com.widedot.m6809.gamebuilder.plugin.sap.impl.MediaPlugin
 com.widedot.m6809.gamebuilder.plugin.sd.impl.MediaPlugin
+com.widedot.m6809.gamebuilder.plugin.includebin.impl.FilePlugin

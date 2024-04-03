@@ -30,12 +30,49 @@
 
                 <!-- Title - sample data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.samples.clap" loadtimelink="LINK">
+                <direntry name="dummyfile"/>
+                <direntry name="assets.samples" loadtimelink="LINK">
                     <lwasm>
-                        <label name="samples.clap"/>
+                        <label name="samples.kick"   /><includebin filename="src/assets/samples/1-kick.6bit.bin"    />
+                        <label name="samples.snare"  /><includebin filename="src/assets/samples/2-snare.6bit.bin"   />
+                        <label name="samples.clap"   /><includebin filename="src/assets/samples/3-clap.6bit.bin"    />
+                        <label name="samples.scratch"/><includebin filename="src/assets/samples/4-scratch.6bit.bin" />
+                        <label name="samples.timpani"/><includebin filename="src/assets/samples/5-timpani.6bit.bin" />
+                        <label name="samples.tom"    /><includebin filename="src/assets/samples/6-tom.6bit.bin"     />
+                        <label name="samples.bongo"  /><includebin filename="src/assets/samples/7-bongo.6bit.bin"   />
                     </lwasm>
-                    <bin filename="src/assets/samples/3-clap.6bit.bin"/>
                 </direntry>
+
+<!-- as an example, the previous direntry may have been written like that :
+
+                <direntry name="assets.samples" loadtimelink="LINK">
+                    <lwasm>
+                        <asm xml:space="preserve">samples.kick EXPORT</asm>
+                        <asm xml:space="preserve">samples.snare EXPORT</asm>
+                        <asm xml:space="preserve">samples.clap EXPORT</asm>
+                        <asm xml:space="preserve">samples.scratch EXPORT</asm>
+                        <asm xml:space="preserve">samples.timpani EXPORT</asm>
+                        <asm xml:space="preserve">samples.tom EXPORT</asm>
+                        <asm xml:space="preserve">samples.bongo EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm xml:space="preserve">samples.kick</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/1-kick.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.snare</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/2-snare.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.clap</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/3-clap.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.scratch</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/4-scratch.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.timpani</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/5-timpani.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.timpani</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/6-tom.6bit.bin"</asm>
+                        <asm xml:space="preserve">samples.tom</asm>
+                        <asm xml:space="preserve"> INCLUDEBIN "src/assets/samples/7-bongo.6bit.bin"</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+-->
 
                 <!-- Scenes -->
                 <!-- ******************************************************* -->

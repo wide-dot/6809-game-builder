@@ -1,4 +1,10 @@
-samples.clap EXTERNAL
+samples.kick    EXTERNAL
+samples.snare   EXTERNAL
+samples.clap    EXTERNAL
+samples.scratch EXTERNAL
+samples.timpani EXTERNAL
+samples.tom     EXTERNAL
+samples.bongo   EXTERNAL
 
  SECTION code
 
@@ -10,14 +16,15 @@ samples.clap EXTERNAL
 
 ; ------------------------------------------------------------------------------
 init
-        _glb.init                  ; clean dp variables
-        ;_irq.init                  ; set irq manager routine
-        ;_irq.setRoutine #userIRQ   ; set user routine called by irq manager
-        ;_irq.set50Hz               ; set irq to run every video frame, when spot is outside visible area
-        _palette.update            ; update palette with the default black palette
-        _gfxlock.halfPage.swap.off ; do not auto swap halp page in sync with double buffering
-        _gfxlock.halfPage.set0     ; set the visible half page
-        ;_gfxlock.init              ; init double buffering
+        _glb.init                         ; clean dp variables
+        _irq.init                         ; set irq manager routine
+        _irq.setRoutine #userIRQ          ; set user routine called by irq manager
+        _irq.set50Hz                      ; set irq to run every video frame, when spot is outside visible area
+        _palette.update                   ; update palette with the default black palette
+        _cart.setRam #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
+        _gfxlock.halfPage.swap.off        ; do not auto swap halp page in sync with double buffering
+        _gfxlock.halfPage.set0            ; set the visible half page (sample data)
+        _gfxlock.init                     ; init double buffering
 
         ldd   #$fb3f  ! Mute by CRA to
         anda  $e7cf   ! avoid sound when
@@ -27,40 +34,46 @@ init
         sta   $e7cf   ! CRA and sound
 
         _firq.pcm.init             ; bind pcm firq routine
-        ;_irq.on                    ; enable main 50Hz irq
+        _irq.on                    ; enable main 50Hz irq
 
-        ;_gfxmode.setBM16           ; set video mode to 160x200 16 colors
-        ;_gfxlock.memset #$0000     ; init video buffers to uniform color
-        ;_gfxlock.memset #$0000
+        _gfxmode.setBM16           ; set video mode to 160x200 16 colors
+        _gfxlock.memset #$0000     ; init video buffers to uniform color
+        _gfxlock.memset #$0000
+
+; ------------------------------------------------------------------------------
+mainLoop
+        jsr   keyboard.read
+        ldb   keyboard.pressed
+        beq   >
 
         ; load sample data location and duration
-        lda   #2
-        sta   sample.current.id
+        subb  #scancode.A
+        cmpb  #17
+        bhs   >
+        stb   sample.current.id
 
         ldx   #samples.duration
-        asla
-        ldx   a,x
+        aslb
+        ldx   b,x
         stx   sample.current.duration
 
-        lda   sample.current.id
+        ldb   sample.current.id
         ldx   #samples.id
-        lda   a,x
+        ldb   b,x
         ldx   #samples.address
-        asla
-        ldx   a,x
+        aslb
+        ldx   b,x
         stx   sample.current.address
 
         ; enable sample output by firq
         _firq.pcm.play sample.current.address,sample.current.duration
-
-; ------------------------------------------------------------------------------
-mainLoop
-        ;_gfxlock.on
+!
+        _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
-        ;_gfxlock.off
+        _gfxlock.off
 
-        ;_gfxlock.loop
+        _gfxlock.loop
         jmp   mainLoop             ; infinite loop
 
 ; ------------------------------------------------------------------------------
@@ -81,7 +94,7 @@ sample.current.address
         fdb   0
 
 sample.current.duration
-        fcb   0
+        fdb   0
 
 samples.id
         fcb   0 ; Kick
@@ -103,13 +116,13 @@ samples.id
         fcb   6 ; Low-Bongo
 
 samples.address
-        fdb   0
-        fdb   0
+        fdb   samples.kick
+        fdb   samples.snare
         fdb   samples.clap
-        fdb   0
-        fdb   0
-        fdb   0
-        fdb   0
+        fdb   samples.scratch
+        fdb   samples.timpani
+        fdb   samples.tom
+        fdb   samples.bongo
 
 samples.duration
         fdb   443 ;  8080 hz - Kick           
@@ -138,3 +151,4 @@ samples.duration
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "engine/sound/firq.pcm.asm"
+        INCLUDE "engine/system/to8/controller/keyboard.asm"
