@@ -35,13 +35,14 @@ init
         _gfxlock.memset #$0000            ; init video buffers to uniform color
         _gfxlock.memset #$0000
 
+        jsr   dac.enable
         jsr   joypad.md6.init
 
 ; ------------------------------------------------------------------------------
-mainLoop
+main.loop
         jsr   joypad.md6.read
         ldd   joypad.md6.pressed.fire
-        beq   >
+        beq   main.gfx
 
         bita  #joypad.md6.x.A
         beq   >
@@ -83,14 +84,15 @@ mainLoop
 
         ; enable sample output by firq
         _firq.pcm.play sample.current.address,sample.current.duration
-!
+
+main.gfx
         _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
         _gfxlock.off
 
         _gfxlock.loop
-        jmp   mainLoop             ; infinite loop
+        jmp   main.loop
 
 ; ------------------------------------------------------------------------------
 userIRQ
@@ -138,3 +140,4 @@ samples.address
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "engine/sound/firq.pcm.asm"
         INCLUDE "engine/system/to8/controller/joypad.md6.dac.asm"
+        INCLUDE "engine/system/thomson/sound/dac.asm"

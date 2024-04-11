@@ -34,30 +34,23 @@ joypad.md6.pressed.fireExt fcb   0
 joypad.md6.init
 
         ; configure MC6821 to be able to read joypads (0&1) direction
-        lda   map.MC6821.CRA1      ; read Control Register A (CRA)
-        anda  #$FB                 ; unset bit 2 
+        ldd   #$FB00
+        anda  map.MC6821.CRA1      ; unset bit 2 to Control Register A (CRA)
         sta   map.MC6821.CRA1      ; select Data Direction Register A (DDRA)
-        clrb                       ; unset all bits
-        stb   map.MC6821.PRA1      ; Peripherial Interface A (PIA) lines set as input
+        stb   map.MC6821.PRA1      ; Peripherial Interface A (PIA) lines set as input, unset all bits
         ora   #$04                 ; set b2
         sta   map.MC6821.CRA1      ; select Peripherial Interface A (PIA) Register
-
-        ; configure MC6821 to be able to read joypads (0&1) buttons
-        lda   map.MC6821.CRA2      ; read Control Register B (CRB)
-        anda  #$FB                 ; unset bit 2 
-        sta   map.MC6821.CRA2      ; select Data Direction Register B (DDRB)
-        ldb   #$0C                 ; set bit 2 (pin7 ctrl 0) and 3 (pin7 ctrl 1), warning : DAC bits set as output
-        stb   map.MC6821.PRA2      ; Peripherial Interface B (PIB) lines set as input
-        ora   #$04                 ; set b2
-        sta   map.MC6821.CRA2      ; select Peripherial Interface B (PIB) Register
         rts
 
 joypad.md6.read
 
-        ; mute DAC
-        lda   map.MC6846.CSR
-        ora   #%00000100
-        sta   map.MC6846.CSR
+        ; DAC disable, select joypad
+        ldd   #$fb0c                   ; ! Mute by CRA to
+        anda  map.MC6821.CRA2          ; ! avoid sound when
+        sta   map.MC6821.CRA2          ; ! $e7cd is written
+        stb   map.MC6821.PRA2          ; Peripherial Interface B (PIB) lines set as input
+        ora   #$04                     ; set b2
+        sta   map.MC6821.CRA2          ; select Peripherial Interface B (PIB) Register
 
         lda   #$0C                     ; PB2=1 (pin7 joypad port 0) PB3=1 (pin7 joypad port 1)
         sta   map.MC6821.PRA2          ; set line select to HI
@@ -83,6 +76,14 @@ joypad.md6.read
         lsrb                           ; implicit init of bit 7 and bit6 to 0
         orb   joypad.md6.state.fire    ; merge bits (A with B)
         stb   joypad.md6.state.fire    ; Store BBAA____
+
+        ; DAC enable
+        ldd    #$fb3f                  ; ! Mute by CRA to
+        anda   map.MC6821.CRA2         ; ! avoid sound when
+        sta    map.MC6821.CRA2         ; ! $e7cd written
+        stb    map.MC6821.PRA2         ; Full sound line
+        ora    #$04                    ; ! Disable mute by
+        sta    map.MC6821.CRA2         ; ! CRA and sound
 
         ; process fire
         ldd   joypad.md6.held.fire

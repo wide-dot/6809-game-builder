@@ -85,14 +85,14 @@ joypad.md6.read
         stb   joypad.md6.state.fire    ; Store BBAA____
 
         ; process fire
-        ldd   joypad.held
-        eora  joypad.state.fire        ; Toggle off buttons that were previously being held
-        eorb  joypad.state.fireExt
-        anda  joypad.state.fire
-        andb  joypad.state.fireExt
-        std   joypad.pressed.fire      ; Store only new pressed buttons
-        ldd   joypad.state.fire
-        std   joypad.held.fire         ; Store current held state
+        ldd   joypad.md6.held.fire
+        eora  joypad.md6.state.fire    ; Toggle off buttons that were previously being held
+        eorb  joypad.md6.state.fireExt
+        anda  joypad.md6.state.fire
+        andb  joypad.md6.state.fireExt
+        std   joypad.md6.pressed.fire  ; Store only new pressed buttons
+        ldd   joypad.md6.state.fire
+        std   joypad.md6.held.fire     ; Store current held state
 
         ; process dpad
         lda   joypad.md6.held.dpad
