@@ -64,3 +64,8 @@ _gfxlock.halfPage.set1 MACRO
         ora   #%00000001
         sta   map.HALFPAGE
  ENDM
+
+_gfxlock.screenBorder.update MACRO
+        ldb   \1
+        jsr   gfxlock.screenBorder.update
+ ENDM

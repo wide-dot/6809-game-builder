@@ -129,8 +129,10 @@ map.DK.SEC          equ $604C ; sector
 map.DK.TRK          equ $604A ; $604B ; track
 map.DK.STA          equ $604E ; return status
 map.DK.BUF          equ $604F ; $6050 ; data write location
-map.FIRQPT          equ $6023 ; routine firq
-map.TIMERPT         equ $6027 ; routine irq timer
+map.IRQPT           equ $6021 ; $6022 ; routine - irq
+map.FIRQPT          equ $6023 ; $6024 ; routine - firq
+map.TIMERPT         equ $6027 ; $6028 ; routine - irq timer
+map.CONFIG          equ $6074 ; péripherial flags, bit 6 (6821 Extension jeux et musique)
 map.CF74021.SYS1.R  equ $6081 ; reading value for map.CF74021.SYS1
 
 ; -----------------------------------------------------------------------------
