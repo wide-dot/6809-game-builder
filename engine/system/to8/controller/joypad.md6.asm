@@ -6,13 +6,15 @@
 ;
 ; wide-dot - Benoit Rousseau
 ; 26/09/2023 : Init
-; 25/02/2024 : Moved to obj
 ;*******************************************************************************
 
+joypad.md6.init            EXPORT
 joypad.md6.read            EXPORT
+joypad.md6.held            EXPORT
 joypad.md6.held.dpad       EXPORT
 joypad.md6.held.fire       EXPORT
 joypad.md6.held.fireExt    EXPORT
+joypad.md6.pressed         EXPORT
 joypad.md6.pressed.dpad    EXPORT
 joypad.md6.pressed.fire    EXPORT
 joypad.md6.pressed.fireExt EXPORT
@@ -23,10 +25,12 @@ joypad.md6.state.dpad      fcb   0
 joypad.md6.state.fire      fcb   0
 joypad.md6.state.fireExt   fcb   0
 
+joypad.md6.held
 joypad.md6.held.dpad       fcb   0
 joypad.md6.held.fire       fcb   0
 joypad.md6.held.fireExt    fcb   0
 
+joypad.md6.pressed
 joypad.md6.pressed.dpad    fcb   0
 joypad.md6.pressed.fire    fcb   0
 joypad.md6.pressed.fireExt fcb   0
@@ -53,20 +57,14 @@ joypad.md6.init
         rts
 
 joypad.md6.read
-
-        ; mute DAC
-        lda   map.MC6846.CSR
-        ora   #%00000100
-        sta   map.MC6846.CSR
-
         lda   #$0C                     ; PB2=1 (pin7 joypad port 0) PB3=1 (pin7 joypad port 1)
         sta   map.MC6821.PRA2          ; set line select to HI
         ldd   map.MC6821.PRA1          ; read data : E7CC:Right1|Left1|Down1|Up1|Right0|Left0|Down0|Up0 - E7CD:B1|B0|_|_|_|_|_|_
         coma                           ; reverse bits to get 0:released 1:pressed
         comb
         andb  #%11000000               ; filter B only
-        std   joypad.md6.state.dpad
-        clrb
+        std   joypad.md6.state.dpad    ; and joypad.md6.state.fire
+        ldd   #$0C00
         stb   map.MC6821.PRA2          ; set line select to LO
         sta   map.MC6821.PRA2          ; set line select to HI
         stb   map.MC6821.PRA2          ; set line select to LO
@@ -74,6 +72,7 @@ joypad.md6.read
         stb   map.MC6821.PRA2          ; set line select to LO
         ldb   map.MC6821.PRA2          ; read data : E7CD:A1|A0|_|_|_|_|_|_
         comb                           ; reverse bits to get 0:released 1:pressed
+        andb  #%11000000               ; filter A only
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0
         coma                           ; reverse bits to get 0:released 1:pressed

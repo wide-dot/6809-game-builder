@@ -6,13 +6,15 @@
 ;
 ; wide-dot - Benoit Rousseau
 ; 26/09/2023 : Init
-; 25/02/2024 : Moved to obj
 ;*******************************************************************************
 
+joypad.md6.init            EXPORT
 joypad.md6.read            EXPORT
+joypad.md6.held            EXPORT
 joypad.md6.held.dpad       EXPORT
 joypad.md6.held.fire       EXPORT
 joypad.md6.held.fireExt    EXPORT
+joypad.md6.pressed         EXPORT
 joypad.md6.pressed.dpad    EXPORT
 joypad.md6.pressed.fire    EXPORT
 joypad.md6.pressed.fireExt EXPORT
@@ -23,10 +25,12 @@ joypad.md6.state.dpad      fcb   0
 joypad.md6.state.fire      fcb   0
 joypad.md6.state.fireExt   fcb   0
 
+joypad.md6.held
 joypad.md6.held.dpad       fcb   0
 joypad.md6.held.fire       fcb   0
 joypad.md6.held.fireExt    fcb   0
 
+joypad.md6.pressed
 joypad.md6.pressed.dpad    fcb   0
 joypad.md6.pressed.fire    fcb   0
 joypad.md6.pressed.fireExt fcb   0
@@ -40,14 +44,20 @@ joypad.md6.init
         stb   map.MC6821.PRA1      ; Peripherial Interface A (PIA) lines set as input, unset all bits
         ora   #$04                 ; set b2
         sta   map.MC6821.CRA1      ; select Peripherial Interface A (PIA) Register
+
         rts
 
 joypad.md6.read
 
-        ; DAC disable, select joypad
-        ldd   #$fb0c                   ; ! Mute by CRA to
-        anda  map.MC6821.CRA2          ; ! avoid sound when
-        sta   map.MC6821.CRA2          ; ! $e7cd is written
+        ; disable timer firq
+        lda   map.MPLUS.CTRL           ; load ctrl register
+        anda  #%11110111               ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
+        sta   map.MPLUS.CTRL           ; disable timer firq
+
+        ; partial DAC disable, select joypad
+        ldd   #$FB0C                   ; $0C: set bit 2 (pin7 ctrl 0) and 3 (pin7 ctrl 1), warning : Those DAC bits are set as output
+        anda  map.MC6821.CRA2          ; unset bit 2 to Control Register B (CRB)
+        sta   map.MC6821.CRA2          ; select Data Direction Register B (DDRB)
         stb   map.MC6821.PRA2          ; Peripherial Interface B (PIB) lines set as input
         ora   #$04                     ; set b2
         sta   map.MC6821.CRA2          ; select Peripherial Interface B (PIB) Register
@@ -58,8 +68,8 @@ joypad.md6.read
         coma                           ; reverse bits to get 0:released 1:pressed
         comb
         andb  #%11000000               ; filter B only
-        std   joypad.md6.state.dpad
-        clrb
+        std   joypad.md6.state.dpad    ; and joypad.md6.state.fire
+        ldd   #$0C00
         stb   map.MC6821.PRA2          ; set line select to LO
         sta   map.MC6821.PRA2          ; set line select to HI
         stb   map.MC6821.PRA2          ; set line select to LO
@@ -67,6 +77,7 @@ joypad.md6.read
         stb   map.MC6821.PRA2          ; set line select to LO
         ldb   map.MC6821.PRA2          ; read data : E7CD:A1|A0|_|_|_|_|_|_
         comb                           ; reverse bits to get 0:released 1:pressed
+        andb  #%11000000               ; filter A only
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0
         coma                           ; reverse bits to get 0:released 1:pressed
@@ -78,12 +89,17 @@ joypad.md6.read
         stb   joypad.md6.state.fire    ; Store BBAA____
 
         ; DAC enable
-        ldd    #$fb3f                  ; ! Mute by CRA to
-        anda   map.MC6821.CRA2         ; ! avoid sound when
-        sta    map.MC6821.CRA2         ; ! $e7cd written
-        stb    map.MC6821.PRA2         ; Full sound line
-        ora    #$04                    ; ! Disable mute by
-        sta    map.MC6821.CRA2         ; ! CRA and sound
+        ldd   #$FB3F                   ; ! Mute by CRA to
+        anda  map.MC6821.CRA2          ; ! avoid sound when
+        sta   map.MC6821.CRA2          ; ! $e7cd written
+        stb   map.MC6821.PRA2          ; Full sound line
+        ora   #$04                     ; ! Disable mute by
+        sta   map.MC6821.CRA2          ; ! CRA and sound
+
+        ; enable timer firq
+        lda   map.MPLUS.CTRL           ; load ctrl register
+        ora   #%00001000               ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
+        sta   map.MPLUS.CTRL           ; disable timer firq
 
         ; process fire
         ldd   joypad.md6.held.fire

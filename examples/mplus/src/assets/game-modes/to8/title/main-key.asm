@@ -26,19 +26,14 @@ init
         _gfxlock.halfPage.set0            ; set the visible half page (sample data)
         _gfxlock.init                     ; init double buffering
 
-        ldd   #$fb3f  ! Mute by CRA to
-        anda  $e7cf   ! avoid sound when
-        sta   $e7cf   ! $e7cd written
-        stb   $e7cd   ! Full sound line
-        ora   #$04    ! Disable mute by
-        sta   $e7cf   ! CRA and sound
-
         _firq.pcm.init             ; bind pcm firq routine
         _irq.on                    ; enable main 50Hz irq
 
         _gfxmode.setBM16           ; set video mode to 160x200 16 colors
         _gfxlock.memset #$0000     ; init video buffers to uniform color
         _gfxlock.memset #$0000
+
+        jsr   dac.enable
 
 ; ------------------------------------------------------------------------------
 mainLoop
@@ -156,3 +151,4 @@ samples.address
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "engine/sound/firq.pcm.asm"
         INCLUDE "engine/system/to8/controller/keyboard.asm"
+        INCLUDE "engine/system/thomson/sound/dac.asm"

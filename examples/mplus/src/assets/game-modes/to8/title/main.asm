@@ -36,6 +36,7 @@ init
         _gfxlock.memset #$0000
 
         jsr   dac.enable
+        jsr   dac.unmute
         jsr   joypad.md6.init
 
 ; ------------------------------------------------------------------------------
@@ -44,32 +45,28 @@ main.loop
         ldd   joypad.md6.pressed.fire
         beq   main.gfx
 
-        bita  #joypad.md6.x.A
-        beq   >
-        lda   #0
-        bra   @exit
-!       bita  #joypad.md6.x.B
-        beq   >
         lda   #2
-        bra   @exit
-!       bitb  #joypad.md6.x.Z
-        beq   >
-        lda   #4
-        bra   @exit
-!       bitb  #joypad.md6.x.Y
-        beq   >
-        lda   #6
-        bra   @exit
-!       bitb  #joypad.md6.x.X
-        beq   >
-        lda   #8
-        bra   @exit
-!       ; joypad.md6.x.MODE
-        lda   #10
-@exit
+        bitb  #joypad.md6.x.Z
+        bne   @end
+        adda  #2
+        bitb  #joypad.md6.x.Y
+        bne   @end
+        adda  #2
+        bitb  #joypad.md6.x.X
+        bne   @end
+        adda  #2
+        bitb  #joypad.md6.x.MODE
+        bne   @end
+        adda  #2
+        ldb   joypad.md6.pressed.fire
+        bitb  #joypad.md6.x.A
+        bne   @end
+        adda  #2                          ; joypad.md6.x.B
+@end
 
         ; load sample data location and duration
-        sta   sample.current.id
+        sta   sample.current.id           ; id 0 means "no sound"
+        suba  #2                          ; and black screen border
 
         ldx   #samples.duration
         ldx   a,x
@@ -86,6 +83,17 @@ main.loop
         _firq.pcm.play sample.current.address,sample.current.duration
 
 main.gfx
+
+        ; disable screen border if sample ended
+        lda   map.MPLUS.CTRL              ; load ctrl register
+        bita  #%00001000                  ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
+        bne   >                           ; Sample/FIRQ is still running
+        lda   map.MC6846.CSR
+        ora   #%00000100
+        sta   map.MC6846.CSR              ; mute dac
+        _gfxlock.screenBorder.update #0
+!
+
         _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering
         ; ...
@@ -140,4 +148,5 @@ samples.address
         INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
         INCLUDE "engine/sound/firq.pcm.asm"
         INCLUDE "engine/system/to8/controller/joypad.md6.dac.asm"
-        INCLUDE "engine/system/thomson/sound/dac.asm"
+        INCLUDE "engine/system/thomson/sound/dac.enable.asm"
+        INCLUDE "engine/system/to8/sound/dac.unmute.asm"

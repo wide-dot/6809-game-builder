@@ -6,7 +6,6 @@
 ;
 ; wide-dot - Benoit Rousseau
 ; 26/09/2023 : Init
-; 25/02/2024 : Moved to obj
 ;*******************************************************************************
 
 joypad.md6.read            EXPORT
@@ -66,13 +65,14 @@ joypad.md6.read
         comb
         andb  #%11000000               ; filter B only
         std   joypad.md6.state.dpad
-        clrb
+        ldd   #$0C00
         stb   map.MC6821.PRA2          ; set line select to LO
         sta   map.MC6821.PRA2          ; set line select to HI
         stb   map.MC6821.PRA2          ; set line select to LO
         sta   map.MC6821.PRA2          ; set line select to HI
         stb   map.MC6821.PRA2          ; set line select to LO
         ldb   map.MC6821.PRA2          ; read data : E7CD:A1|A0|_|_|_|_|_|_
+        andb  #%11000000               ; filter A only
         comb                           ; reverse bits to get 0:released 1:pressed
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0

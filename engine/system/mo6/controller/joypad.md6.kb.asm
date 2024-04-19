@@ -46,23 +46,23 @@ joypad.md6.kb.read
         jsr   joypad.md6.kb.map
         bra   @loop
 !       
-        ; process dpad
-        lda   joypad.md6.kb.held.dpad
-        eora  joypad.md6.kb.state.dpad    ; Toggle off buttons that were previously being held
-        anda  joypad.md6.kb.state.dpad
-        sta   joypad.md6.kb.pressed.dpad  ; Store only new pressed pads
-        lda   joypad.md6.kb.state.dpad
-        sta   joypad.md6.kb.held.dpad     ; Store current held state
-
         ; process fire
-        ldd   joypad.md6.kb.held
-        eora  joypad.md6.kb.state.fire    ; Toggle off buttons that were previously being held
-        eorb  joypad.md6.kb.state.fireExt
-        anda  joypad.md6.kb.state.fire
-        andb  joypad.md6.kb.state.fireExt
-        std   joypad.md6.kb.pressed.fire  ; Store only new pressed buttons
-        ldd   joypad.md6.kb.state.fire
-        std   joypad.md6.kb.held.fire     ; Store current held state
+        ldd   joypad.md6.held.fire
+        eora  joypad.md6.state.fire    ; Toggle off buttons that were previously being held
+        eorb  joypad.md6.state.fireExt
+        anda  joypad.md6.state.fire
+        andb  joypad.md6.state.fireExt
+        std   joypad.md6.pressed.fire  ; Store only new pressed buttons
+        ldd   joypad.md6.state.fire
+        std   joypad.md6.held.fire     ; Store current held state
+
+        ; process dpad
+        lda   joypad.md6.held.dpad
+        eora  joypad.md6.state.dpad    ; Toggle off buttons that were previously being held
+        anda  joypad.md6.state.dpad
+        sta   joypad.md6.pressed.dpad  ; Store only new pressed pads
+        lda   joypad.md6.state.dpad
+        sta   joypad.md6.held.dpad     ; Store current held state
         rts
 
 joypad.md6.kb.map
