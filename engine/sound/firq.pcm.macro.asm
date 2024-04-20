@@ -4,7 +4,6 @@ _firq.pcm.init MACRO
  ENDM
 
 _firq.pcm.play MACRO
-        orcc  #$40           ; deactivate FIRQ
         ldd   \1
         std   firq.pcm.sample
         ldd   \2

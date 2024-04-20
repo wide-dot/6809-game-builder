@@ -49,8 +49,8 @@
    IFGE loader.ADDRESS-$4000      ; Skip if not video space
         ldb   #loader.PAGE        ; Load RAM page
         andb  #$01                ; Keep only half page A or B
-        orb   map.MC6846.PRC      ; Merge register value
-        stb   map.MC6846.PRC      ; Set desired half page in video space
+        orb   >map.HALFPAGE       ; Merge register value
+        stb   >map.HALFPAGE       ; Set desired half page in video space
    ELSE
         ldb   #loader.PAGE        ; Load RAM page
         orb   #$60                ; Set RAM over cartridge space

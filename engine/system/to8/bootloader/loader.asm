@@ -668,11 +668,11 @@ switchpage
 !
         cmpu  #map.ram.VID_START  ; Skip if not video space
         blo   >
-        lda   >map.MC6846.PRC     ; Merge register value
+        lda   >map.HALFPAGE       ; Merge register value
         lsra                      ; Get rid of actual half page (bit0)
         rorb                      ; Keep only half page 0 or 1 in CC
         rola                      ; apply actual register
-        sta   >map.MC6846.PRC     ; Set desired half page in video space
+        sta   >map.HALFPAGE       ; Set desired half page in video space
         rts
 !
         cmpu  #map.ram.MON_START  ; Skip if not valid address 

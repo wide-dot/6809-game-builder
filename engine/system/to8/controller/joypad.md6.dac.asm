@@ -48,13 +48,9 @@ joypad.md6.init
         rts
 
 joypad.md6.read
+        orcc  #%01000000               ; mask firq
 
-        ; disable timer firq
-        lda   map.MPLUS.CTRL           ; load ctrl register
-        anda  #%11110111               ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
-        sta   map.MPLUS.CTRL           ; disable timer firq
-
-        ; partial DAC disable, select joypad
+        ; select joypad input instead of DAC output
         ldd   #$FB0C                   ; $0C: set bit 2 (pin7 ctrl 0) and 3 (pin7 ctrl 1), warning : Those DAC bits are set as output
         anda  map.MC6821.CRA2          ; unset bit 2 to Control Register B (CRB)
         sta   map.MC6821.CRA2          ; select Data Direction Register B (DDRB)
@@ -80,6 +76,7 @@ joypad.md6.read
         andb  #%11000000               ; filter A only
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0
+        clr   map.MC6821.PRA2          ; set line select to LO (next line select will be cycle 0)
         coma                           ; reverse bits to get 0:released 1:pressed
         sta   joypad.md6.state.fireExt
 
@@ -88,18 +85,14 @@ joypad.md6.read
         orb   joypad.md6.state.fire    ; merge bits (A with B)
         stb   joypad.md6.state.fire    ; Store BBAA____
 
-        ; DAC enable
+        ; select DAC output instead of joypad input
         ldd   #$FB3F                   ; ! Mute by CRA to
         anda  map.MC6821.CRA2          ; ! avoid sound when
         sta   map.MC6821.CRA2          ; ! $e7cd written
         stb   map.MC6821.PRA2          ; Full sound line
         ora   #$04                     ; ! Disable mute by
         sta   map.MC6821.CRA2          ; ! CRA and sound
-
-        ; enable timer firq
-        lda   map.MPLUS.CTRL           ; load ctrl register
-        ora   #%00001000               ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
-        sta   map.MPLUS.CTRL           ; disable timer firq
+        andcc #%10111111               ; unmask firq
 
         ; process fire
         ldd   joypad.md6.held.fire

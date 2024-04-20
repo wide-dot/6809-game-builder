@@ -217,7 +217,7 @@ map.STATUS.KEYREAD    equ %00000001
 ; mapping to generic names
 
 map.DAC            equ map.MC6821.PRA2
-map.RND            equ map.MC6846.TMSB
+; map.RND            equ map.MC6846.TMSB find a register for random !
 map.HALFPAGE       equ map.MC6821.PRA
 
     ENDC

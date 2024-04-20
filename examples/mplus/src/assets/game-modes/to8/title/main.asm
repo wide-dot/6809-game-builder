@@ -35,38 +35,74 @@ init
         _gfxlock.memset #$0000            ; init video buffers to uniform color
         _gfxlock.memset #$0000
 
+        jsr   dac.mute
         jsr   dac.enable
-        jsr   dac.unmute
         jsr   joypad.md6.init
 
 ; ------------------------------------------------------------------------------
 main.loop
         jsr   joypad.md6.read
-        ldd   joypad.md6.pressed.fire
-        beq   main.gfx
+        jsr   checkSampleRequest
 
-        lda   #2
-        bitb  #joypad.md6.x.Z
+        _gfxlock.on
+        ; ... all writes to gfx buffer should be placed here for double buffering
+        _gfxlock.off
+
+        _gfxlock.loop
+        jmp   main.loop
+
+; ------------------------------------------------------------------------------
+userIRQ
+        _palette.checkUpdate
+        _gfxlock.swap
+        ; ... enter user code here
+        rts
+
+; ------------------------------------------------------------------------------
+
+checkSampleRequest
+        lda   #1
+        ldb   joypad.md6.pressed.dpad
+        beq   >
+        bitb  #joypad.md6.x.UP
         bne   @end
-        adda  #2
-        bitb  #joypad.md6.x.Y
+        inca
+        bitb  #joypad.md6.x.DOWN
         bne   @end
-        adda  #2
-        bitb  #joypad.md6.x.X
+        inca
+        bitb  #joypad.md6.x.LEFT
         bne   @end
-        adda  #2
-        bitb  #joypad.md6.x.MODE
+        inca
+        bitb  #joypad.md6.x.RIGHT
         bne   @end
-        adda  #2
+        inca
+!
         ldb   joypad.md6.pressed.fire
+        beq   >
         bitb  #joypad.md6.x.A
         bne   @end
-        adda  #2                          ; joypad.md6.x.B
+        inca
+        bitb  #joypad.md6.x.B
+        bne   @end
+        inca
+!
+        ldb   joypad.md6.pressed.fireExt
+        beq   @end
+        bitb  #joypad.md6.x.X
+        bne   @end
+        inca
+        bitb  #joypad.md6.x.Y
+        bne   @end
+        inca
+        bitb  #joypad.md6.x.Z
+        bne   @end
+        inca  ; joypad.md6.x.MODE
 @end
 
         ; load sample data location and duration
-        sta   sample.current.id           ; id 0 means "no sound"
-        suba  #2                          ; and black screen border
+        sta   sample.current.id           ; id 0 means
+        deca                              ; "no sound"
+        lsla                              ; and black screen border
 
         ldx   #samples.duration
         ldx   a,x
@@ -80,37 +116,16 @@ main.loop
         _gfxlock.screenBorder.update sample.current.id
 
         ; enable sample output by firq
+        jsr   dac.unmute
         _firq.pcm.play sample.current.address,sample.current.duration
 
-main.gfx
-
         ; disable screen border if sample ended
-        lda   map.MPLUS.CTRL              ; load ctrl register
+!       lda   map.MPLUS.CTRL              ; load ctrl register
         bita  #%00001000                  ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
         bne   >                           ; Sample/FIRQ is still running
-        lda   map.MC6846.CSR
-        ora   #%00000100
-        sta   map.MC6846.CSR              ; mute dac
+        jsr   dac.mute
         _gfxlock.screenBorder.update #0
-!
-
-        _gfxlock.on
-        ; all writes to gfx buffer should be placed here for double buffering
-        ; ...
-        _gfxlock.off
-
-        _gfxlock.loop
-        jmp   main.loop
-
-; ------------------------------------------------------------------------------
-userIRQ
-        _palette.checkUpdate
-        _gfxlock.swap
-
-        ; enter user code here
-        ; ...
-
-        rts
+!       rts
 
 ; ------------------------------------------------------------------------------
 
@@ -124,9 +139,14 @@ samples.duration
         fdb   443 ;  8080 hz - Kick           
         fdb   222 ; 16124 hz - Snare 
         fdb   222 ; 16124 hz - Clap
-        fdb   378 ;  9470 hz - Hi-Timpani 
-        fdb   274 ; 13064 hz - Floor-Tom      
-        fdb   287 ; 12472 hz - Mid-Bongo 
+        fdb   222 ; 16124 hz - Hi-Tom
+        fdb   248 ; 14434 hz - Hi-Bongo       
+        fdb   378 ;  9470 hz - Low-Bongo
+        fdb   508 ;  7046 hz - Low-Timpani    
+        fdb   417 ;  8584 hz - Mid-Timpani    
+        fdb   378 ;  9470 hz - Hi-Timpani     
+        fdb   248 ; 14434 hz - Scratch        
+
 
 sample.current.address
         fdb   0
@@ -135,9 +155,13 @@ samples.address
         fdb   samples.kick
         fdb   samples.snare
         fdb   samples.clap
-        fdb   samples.timpani
         fdb   samples.tom
         fdb   samples.bongo      
+        fdb   samples.bongo      
+        fdb   samples.timpani
+        fdb   samples.timpani
+        fdb   samples.timpani
+        fdb   samples.scratch
 
  ENDSECTION
 
@@ -149,4 +173,4 @@ samples.address
         INCLUDE "engine/sound/firq.pcm.asm"
         INCLUDE "engine/system/to8/controller/joypad.md6.dac.asm"
         INCLUDE "engine/system/thomson/sound/dac.enable.asm"
-        INCLUDE "engine/system/to8/sound/dac.unmute.asm"
+        INCLUDE "engine/system/to8/sound/dac.mute.asm"

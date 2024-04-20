@@ -41,8 +41,8 @@
    ELSE
         ldb   #loader.PAGE        ; Load RAM page
         andb  #$01                ; Keep only half page A or B
-        orb   >map.MC6846.PRC     ; Merge register value
-        stb   >map.MC6846.PRC     ; Set desired half page in video space
+        orb   >map.HALFPAGE       ; Merge register value
+        stb   >map.HALFPAGE       ; Set desired half page in video space
    ENDC
   ENDC
  ENDC

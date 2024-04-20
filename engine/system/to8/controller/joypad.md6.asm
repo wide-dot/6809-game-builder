@@ -75,6 +75,7 @@ joypad.md6.read
         andb  #%11000000               ; filter A only
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0
+        clr   map.MC6821.PRA2          ; set line select to LO (next line select will be cycle 0)
         coma                           ; reverse bits to get 0:released 1:pressed
         sta   joypad.md6.state.fireExt
 

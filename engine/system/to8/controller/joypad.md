@@ -56,6 +56,8 @@
     pin 9 : C/Start
 
 #### Line select sequence
+WARNING : cycle is reset if no update detected on TH line under 1.5 ms (1500 cycles of 6809 cpu)
+
     Cycle  TH out  TR in  TL in   D3 in  D2 in  D1 in  D0 in
     1      HI      C      B       Right  Left   Down   Up
     2      LO      Start  A       0      0      Down   Up
