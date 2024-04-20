@@ -65,67 +65,65 @@ checkSampleRequest
         ldb   joypad.md6.pressed.dpad
         beq   >
         bitb  #joypad.md6.x.UP
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.DOWN
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.LEFT
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.RIGHT
-        bne   @end
+        bne   @fire
         inca
 !
         ldb   joypad.md6.pressed.fire
         beq   >
         bitb  #joypad.md6.x.A
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.B
-        bne   @end
+        bne   @fire
         inca
 !
         ldb   joypad.md6.pressed.fireExt
-        beq   @end
+        beq   @nofire
         bitb  #joypad.md6.x.X
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.Y
-        bne   @end
+        bne   @fire
         inca
         bitb  #joypad.md6.x.Z
-        bne   @end
+        bne   @fire
         inca  ; joypad.md6.x.MODE
-@end
-
+@fire
         ; load sample data location and duration
         sta   sample.current.id           ; id 0 means
         deca                              ; "no sound"
         lsla                              ; and black screen border
-
         ldx   #samples.duration
         ldx   a,x
         stx   sample.current.duration
-
         ldx   #samples.address
         ldx   a,x
         stx   sample.current.address
-
+        ;
         ; change border color based on sampleid - for debug purpose onbly
         _gfxlock.screenBorder.update sample.current.id
-
+        ;
         ; enable sample output by firq
         jsr   dac.unmute
         _firq.pcm.play sample.current.address,sample.current.duration
-
+@nofire
         ; disable screen border if sample ended
-!       lda   map.MPLUS.CTRL              ; load ctrl register
+        lda   map.MPLUS.CTRL              ; load ctrl register
         bita  #%00001000                  ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
-        bne   >                           ; Sample/FIRQ is still running
+        bne   @rts                        ; Sample/FIRQ is still running
         jsr   dac.mute
         _gfxlock.screenBorder.update #0
-!       rts
+@rts    
+        rts
 
 ; ------------------------------------------------------------------------------
 

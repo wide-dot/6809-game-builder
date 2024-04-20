@@ -7,4 +7,4 @@
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
         INCLUDE "engine/system/to8/palette/palette.const.asm"
         INCLUDE "engine/system/to8/palette/palette.macro.asm"
-        INCLUDE "engine/system/to8/controller/scancode.const.asm"
+        INCLUDE "engine/system/to8/controller/ascii.const.asm"

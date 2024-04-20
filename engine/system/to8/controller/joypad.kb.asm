@@ -51,19 +51,19 @@ joypad.kb.read
 
 joypad.kb.map
         lda   joypad.kb.state.dpad
-        cmpb  #scancode.LEFT
+        cmpb  #ascii.LEFT
         bne   >
         ora   #joypad.x.LEFT
         bra   @save
-!       cmpb  #scancode.RIGHT
+!       cmpb  #ascii.RIGHT
         bne   >
         ora   #joypad.x.RIGHT
         bra   @save
-!       cmpb  #scancode.DOWN
+!       cmpb  #ascii.DOWN
         bne   >
         ora   #joypad.x.DOWN
         bra   @save
-!       cmpb  #scancode.UP
+!       cmpb  #ascii.UP
         bne   >
         ora   #joypad.x.UP
 @save   sta   joypad.kb.state.dpad
@@ -71,11 +71,11 @@ joypad.kb.map
 !
 
         lda   joypad.kb.state.fire
-!       cmpb  #scancode.X
+!       cmpb  #ascii.X
         bne   >
         ora   #joypad.x.A
         bra   @save
-!       cmpb  #scancode.C
+!       cmpb  #ascii.C
         bne   >
         ora   #joypad.x.B
 @save   sta   joypad.kb.state.fire

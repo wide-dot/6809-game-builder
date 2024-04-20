@@ -18,7 +18,6 @@
 
                 <define symbol="loader.PAGE" value="4"/>
                 <define symbol="loader.ADDRESS" value="$A000"/>
-                <define symbol="keyboard.MASK_MPLUS_FIRQ"/>
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->

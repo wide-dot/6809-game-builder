@@ -65,19 +65,19 @@ joypad.md6.kb.read
 
 joypad.md6.kb.map
         lda   joypad.md6.kb.state.dpad
-        cmpb  #scancode.LEFT
+        cmpb  #ascii.LEFT
         bne   >
         ora   #joypad.md6.x.LEFT
         bra   @save
-!       cmpb  #scancode.RIGHT
+!       cmpb  #ascii.RIGHT
         bne   >
         ora   #joypad.md6.x.RIGHT
         bra   @save
-!       cmpb  #scancode.DOWN
+!       cmpb  #ascii.DOWN
         bne   >
         ora   #joypad.md6.x.DOWN
         bra   @save
-!       cmpb  #scancode.UP
+!       cmpb  #ascii.UP
         bne   >
         ora   #joypad.md6.x.UP
 @save   sta   joypad.md6.kb.state.dpad
@@ -85,11 +85,11 @@ joypad.md6.kb.map
 !
 
         lda   joypad.md6.kb.state.fire
-!       cmpb  #scancode.X
+!       cmpb  #ascii.X
         bne   >
         ora   #joypad.md6.x.A
         bra   @save
-!       cmpb  #scancode.C
+!       cmpb  #ascii.C
         bne   >
         ora   #joypad.md6.x.B
 @save   sta   joypad.md6.kb.state.fire
@@ -97,19 +97,19 @@ joypad.md6.kb.map
 !
 
         lda   joypad.md6.kb.state.fireExt
-!       cmpb  #scancode.V
+!       cmpb  #ascii.V
         bne   >
         ora   #joypad.md6.x.MODE
         bra   @save
-!       cmpb  #scancode.S
+!       cmpb  #ascii.S
         bne   >
         ora   #joypad.md6.x.X
         bra   @save
-!       cmpb  #scancode.D
+!       cmpb  #ascii.D
         bne   >
         ora   #joypad.md6.x.Y
         bra   @save
-!       cmpb  #scancode.F
+!       cmpb  #ascii.F
         bne   >
         ora   #joypad.md6.x.Z
 @save   sta   joypad.md6.kb.state.fireExt

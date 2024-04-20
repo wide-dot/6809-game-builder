@@ -39,16 +39,16 @@ joypad.md6.init
 
         ; configure MC6821 to be able to read joypads (0&1) direction
         ldd   #$FB00
-        anda  map.MC6821.CRA1      ; unset bit 2 to Control Register A (CRA)
-        sta   map.MC6821.CRA1      ; select Data Direction Register A (DDRA)
-        stb   map.MC6821.PRA1      ; Peripherial Interface A (PIA) lines set as input, unset all bits
-        ora   #$04                 ; set b2
-        sta   map.MC6821.CRA1      ; select Peripherial Interface A (PIA) Register
+        anda  map.MC6821.CRA1          ; unset bit 2 to Control Register A (CRA)
+        sta   map.MC6821.CRA1          ; select Data Direction Register A (DDRA)
+        stb   map.MC6821.PRA1          ; Peripherial Interface A (PIA) lines set as input, unset all bits
+        ora   #$04                     ; set b2
+        sta   map.MC6821.CRA1          ; select Peripherial Interface A (PIA) Register
 
         rts
 
 joypad.md6.read
-        orcc  #%01000000               ; mask firq
+        orcc  #%01010000               ; mask firq
 
         ; select joypad input instead of DAC output
         ldd   #$FB0C                   ; $0C: set bit 2 (pin7 ctrl 0) and 3 (pin7 ctrl 1), warning : Those DAC bits are set as output
@@ -58,8 +58,6 @@ joypad.md6.read
         ora   #$04                     ; set b2
         sta   map.MC6821.CRA2          ; select Peripherial Interface B (PIB) Register
 
-        lda   #$0C                     ; PB2=1 (pin7 joypad port 0) PB3=1 (pin7 joypad port 1)
-        sta   map.MC6821.PRA2          ; set line select to HI
         ldd   map.MC6821.PRA1          ; read data : E7CC:Right1|Left1|Down1|Up1|Right0|Left0|Down0|Up0 - E7CD:B1|B0|_|_|_|_|_|_
         coma                           ; reverse bits to get 0:released 1:pressed
         comb
@@ -76,7 +74,6 @@ joypad.md6.read
         andb  #%11000000               ; filter A only
         sta   map.MC6821.PRA2          ; set line select to HI
         lda   map.MC6821.PRA1          ; read data : E7CC:Mode1|X1|Y1|Z1|Mode0|X0|Y0|Z0
-        clr   map.MC6821.PRA2          ; set line select to LO (next line select will be cycle 0)
         coma                           ; reverse bits to get 0:released 1:pressed
         sta   joypad.md6.state.fireExt
 
@@ -92,7 +89,7 @@ joypad.md6.read
         stb   map.MC6821.PRA2          ; Full sound line
         ora   #$04                     ; ! Disable mute by
         sta   map.MC6821.CRA2          ; ! CRA and sound
-        andcc #%10111111               ; unmask firq
+        andcc #%10101111               ; unmask firq
 
         ; process fire
         ldd   joypad.md6.held.fire
