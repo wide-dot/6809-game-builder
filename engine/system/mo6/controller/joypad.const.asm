@@ -4,6 +4,7 @@
 ; joypad.held.dpad
 ; joypad.pressed.dpad
 
+joypad.md6.x.DPAD  equ   %11111111
 joypad.x.UP    equ   %00010001 
 joypad.x.DOWN  equ   %00100010 
 joypad.x.LEFT  equ   %01000100 

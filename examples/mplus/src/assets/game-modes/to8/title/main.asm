@@ -75,8 +75,7 @@ checkSampleRequest
         inca
         bitb  #joypad.md6.x.RIGHT
         bne   @fire
-        inca
-!
+!       lda   #5
         ldb   joypad.md6.pressed.fire
         beq   >
         bitb  #joypad.md6.x.A
@@ -84,8 +83,7 @@ checkSampleRequest
         inca
         bitb  #joypad.md6.x.B
         bne   @fire
-        inca
-!
+!       lda   #7
         ldb   joypad.md6.pressed.fireExt
         beq   @nofire
         bitb  #joypad.md6.x.X
@@ -121,7 +119,8 @@ checkSampleRequest
         bita  #%00001000                  ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
         bne   @rts                        ; Sample/FIRQ is still running
         jsr   dac.mute
-        _gfxlock.screenBorder.update #0
+        clr   sample.current.id
+        _gfxlock.screenBorder.update sample.current.id
 @rts    
         rts
 

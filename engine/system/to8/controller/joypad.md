@@ -56,7 +56,7 @@
     pin 9 : C/Start
 
 #### Line select sequence
-WARNING : cycle is reset if no update detected on TH line under 1.5 ms (1500 cycles of 6809 cpu)
+WARNING : current cycle id is reset to cycle 1 every 20ms
 
     Cycle  TH out  TR in  TL in   D3 in  D2 in  D1 in  D0 in
     1      HI      C      B       Right  Left   Down   Up
@@ -66,4 +66,4 @@ WARNING : cycle is reset if no update detected on TH line under 1.5 ms (1500 cyc
     5      HI      C      B       Right  Left   Down   Up
     6      LO      Start  A       0      0      0      0
     7      HI      C      B       Mode   X      Y      Z
-    8      LO      Start  A       ---    ---    ---    ---
+    8      LO      Start  A       1      1      1      1

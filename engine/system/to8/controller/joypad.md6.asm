@@ -46,7 +46,7 @@ joypad.md6.init
         ora   #$04                 ; set b2
         sta   map.MC6821.CRA1      ; select Peripherial Interface A (PIA) Register
 
-        ; configure MC6821 to be able to read joypads (0&1) buttons
+        ; configure MC6821 to be able to read joypads (0&1) A and B buttons
         lda   map.MC6821.CRA2      ; read Control Register B (CRB)
         anda  #$FB                 ; unset bit 2 
         sta   map.MC6821.CRA2      ; select Data Direction Register B (DDRB)
@@ -57,6 +57,17 @@ joypad.md6.init
         rts
 
 joypad.md6.read
+        ; this routine must be called every 20ms or more
+        ; otherwise a sync should be made with gamepad cycles
+        ldd   #$000C                   ; b is already set to $0C
+@loop   stb   map.MC6821.PRA2          ; set line select to HI
+        sta   map.MC6821.PRA2          ; set line select to LO
+        tst   map.MC6821.PRA1
+        bne   @loop
+        stb   map.MC6821.PRA2          ; set line select to HI
+        sta   map.MC6821.PRA2          ; set line select to LO
+        stb   map.MC6821.PRA2          ; set line select to HI
+
         ldd   map.MC6821.PRA1          ; read data : E7CC:Right1|Left1|Down1|Up1|Right0|Left0|Down0|Up0 - E7CD:B1|B0|_|_|_|_|_|_
         coma                           ; reverse bits to get 0:released 1:pressed
         comb
