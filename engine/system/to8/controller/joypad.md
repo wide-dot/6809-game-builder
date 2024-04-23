@@ -57,6 +57,8 @@
 
 #### Line select sequence
 WARNING : current cycle id is reset to cycle 1 every 20ms
+6 button gamepad can be detected by testing TDLR to ON (0) on cycle 6
+3 button gamepad can be detected by testing LR to ON (0) on cycle 2,4,6
 
     Cycle  TH out  TR in  TL in   D3 in  D2 in  D1 in  D0 in
     1      HI      C      B       Right  Left   Down   Up

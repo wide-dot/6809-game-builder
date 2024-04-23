@@ -1,5 +1,14 @@
 ; masks for variables : 
 ; ---------------------
+; joypad.0.type
+; joypad.1.type
+
+joypad.type.JPD  equ 0
+joypad.type.MD3  equ 1
+joypad.type.MD6  equ 2
+
+; masks for variables : 
+; ---------------------
 ; joypad.state.dpad
 ; joypad.held.dpad
 ; joypad.pressed.dpad
