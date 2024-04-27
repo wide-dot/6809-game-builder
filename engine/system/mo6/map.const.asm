@@ -84,14 +84,17 @@ map.MEA8000.A       equ $A7FF ; Vocal synth
 map.MPLUS.EXT3      equ $A7F0 ; $E7F1 ; Extension 3
 map.MPLUS.TIMER     equ $A7F4 ; $E7F5 ; MPlus Timer
 map.MPLUS.CTRL      equ $A7F6 ; MPlus Ctrl.
-                              ; Bit 7: R- TI    - READY pin
-                              ; Bit 6: RW TI    - clock disable (silent audio)
-                              ; Bit 5: -------- - unused bit
-                              ; Bit 4: RW Timer - IRQ select    (0=FIRQ, 1=IRQ)
-                              ; Bit 3: RW Timer - (F)IRQ enable
-                              ; Bit 2: RW Timer - clock select (0=1Mhz, 1=3.579545Mhz)
-                              ; Bit 1: RW Timer - enable countdown of counter
-                              ; Bit 0: -W Timer - reset timer (0=do nothing, 1=reload period to counter)
+                              ; Control/status register
+                              ;   Bit 7: R- Timer - INT requested by timer (0=NO, 1=YES)
+                              ;          -W Timer - reset timer (0=do nothing, 1=reload period to counter)
+                              ;   Bit 6: -------  - Unused
+                              ;   Bit 5: -------  - Unused
+                              ;   Bit 4: RW Timer - INT select (0=IRQ, 1=FIRQ)
+                              ;   Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
+                              ;   Bit 2: RW Timer - clock select (0=1Mhz, 1=3.579545Mhz)
+                              ;   Bit 1: RW Timer - enable countdown of timer (0=OFF, 1=ON)
+                              ;   Bit 0: RW TI    - TI clock disable (0=enabled, 1=disabled)
+                              ;   Note: Timer F/IRQ ack by CPU is done by reading this control register
 map.MPLUS.EXT4      equ $A7F8 ; $E7FB ; Extension 4
 
 ; -----------------------------------------------------------------------------

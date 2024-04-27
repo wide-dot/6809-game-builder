@@ -35,10 +35,19 @@ _gfxlock.backProcess.off MACRO
  ENDM
 
 _gfxlock.memset MACRO
-        ; param 1 : 4bit palette index repeated 4x in a 16bit word
         _gfxlock.on
         ldx   \1
         jsr   gfxlock.memset
+        _gfxlock.off
+        _gfxlock.loop
+ ENDM
+
+_gfxlock.memset2 MACRO
+        _gfxlock.on
+        ldx   \1
+        jsr   gfxlock.text.memset
+        ldx   \2
+        jsr   gfxlock.color.memset
         _gfxlock.off
         _gfxlock.loop
  ENDM

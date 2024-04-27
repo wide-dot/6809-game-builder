@@ -51,7 +51,8 @@ glb_timer_frame               equ glb_timer-1
 glb_Page                      equ glb_timer_frame-1
 dp_engine                     equ glb_Page-30  ; engine routines tmp var space
 dp_extreg                     equ dp_engine-28 ; extra register space (user and engine common)
-dp                            equ $9F00        ; user space (149 bytes max)
+glb.DP                        equ $9F00        ; user space (149 bytes max)
+dp                            equ glb.DP
 glb_system_stack              equ dp
 
 ; ------------------------------------------------------------------------------

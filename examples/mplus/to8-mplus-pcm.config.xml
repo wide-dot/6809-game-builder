@@ -110,10 +110,10 @@
                 </cksumfd640>
             </data>
 
-            <fd  filename="to8.fd"/>
-            <sd  filename="to8.sd"/>
-            <sap filename="to8.sap"/>
-            <hfe filename="to8.hfe"/>
+            <fd  filename="to8-mplus-pcm.fd"/>
+            <sd  filename="to8-mplus-pcm.sd"/>
+            <sap filename="to8-mplus-pcm.sap"/>
+            <hfe filename="to8-mplus-pcm.hfe"/>
         </floppydisk>
     </target>
 </configuration>

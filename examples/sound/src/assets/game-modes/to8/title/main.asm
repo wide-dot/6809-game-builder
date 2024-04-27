@@ -11,8 +11,8 @@ sounds.level1.vgc  EXTERNAL
 
  SECTION code
 
-        INCLUDE "engine/pack/to8/std.asm"
-        INCLUDE "engine/pack/to8/irq.asm"
+        INCLUDE "engine/system/to8/pack/std.asm"
+        INCLUDE "engine/system/to8/pack/irq.asm"
         INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/pack/vgc.asm"
 

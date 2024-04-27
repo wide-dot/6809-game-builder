@@ -82,14 +82,17 @@ map.MEA8000.A       equ $E7FF ; Vocal synth
 map.MPLUS.EXT3      equ $E7F0 ; $E7F1 ; Extension 3
 map.MPLUS.TIMER     equ $E7F4 ; $E7F5 ; MPlus Timer
 map.MPLUS.CTRL      equ $E7F6 ; MPlus Ctrl.
-                              ; Bit 7: R- TI    - READY pin
-                              ; Bit 6: RW TI    - clock disable (silent audio)
-                              ; Bit 5: -------- - unused bit
-                              ; Bit 4: RW Timer - IRQ select    (0=FIRQ, 1=IRQ)
-                              ; Bit 3: RW Timer - (F)IRQ enable
-                              ; Bit 2: RW Timer - clock select (0=1Mhz, 1=3.579545Mhz)
-                              ; Bit 1: RW Timer - enable countdown of counter
-                              ; Bit 0: -W Timer - reset timer (0=do nothing, 1=reload period to counter)
+                              ; Control/status register
+                              ;   Bit 7: R- Timer - INT requested by timer (0=NO, 1=YES)
+                              ;          -W Timer - reset timer (0=do nothing, 1=reload period to counter)
+                              ;   Bit 6: -------  - Unused
+                              ;   Bit 5: -------  - Unused
+                              ;   Bit 4: RW Timer - INT select (0=IRQ, 1=FIRQ)
+                              ;   Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
+                              ;   Bit 2: RW Timer - clock select (0=1Mhz, 1=3.579545Mhz)
+                              ;   Bit 1: RW Timer - enable countdown of timer (0=OFF, 1=ON)
+                              ;   Bit 0: RW TI    - TI clock disable (0=enabled, 1=disabled)
+                              ;   Note: Timer F/IRQ ack by CPU is done by reading this control register
 map.MPLUS.EXT4      equ $E7F8 ; $E7FB ; Extension 4
 
 ; -----------------------------------------------------------------------------
@@ -108,15 +111,16 @@ map.FINTR           equ $E022 ; transfert end
 map.QDDSTD          equ $E025 ; QDD std functions
 map.QDDSYS          equ $E028 ; QDD sys functions
 
-map.PUTC            equ $E803 ; Affichage d'un caractère
-map.GETC            equ $E806 ; Lecture du clavier
-map.KTST            equ $E809 ; Lecture rapide du clavier
-map.DRAW            equ $E80C ; Tracé d'un segment de droite
-map.PLOT            equ $E80F ; Allumage ou extinction d'un point
+map.PUTC            equ $E803 ; display a char
+map.GETC            equ $E806 ; read keyboard
+map.KTST            equ $E809 ; test keyboard
+map.DRAW            equ $E80C ; draw a line
+map.PLOT            equ $E80F ; draw a plot
 ; ...
 map.DKCO            equ $E82A ; read or write floppy disk routine
 ; ..
 map.IRQ.EXIT        equ $E830 ; to exit an irq
+map.SETP            equ $EC00 ; set color palette
 
 ; -----------------------------------------------------------------------------
 ; system monitor registers

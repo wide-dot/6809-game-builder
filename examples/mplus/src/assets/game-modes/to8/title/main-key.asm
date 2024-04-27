@@ -8,8 +8,8 @@ samples.bongo   EXTERNAL
 
  SECTION code
 
-        INCLUDE "engine/pack/to8/std.asm"
-        INCLUDE "engine/pack/to8/irq.asm"
+        INCLUDE "engine/system/to8/pack/std.asm"
+        INCLUDE "engine/system/to8/pack/irq.asm"
         INCLUDE "engine/pack/firq.asm"
 
  opt c,ct

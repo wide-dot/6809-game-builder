@@ -8,8 +8,8 @@ samples.bongo   EXTERNAL
 
  SECTION code
 
-        INCLUDE "engine/pack/to8/std.asm"
-        INCLUDE "engine/pack/to8/irq.asm"
+        INCLUDE "engine/system/to8/pack/std.asm"
+        INCLUDE "engine/system/to8/pack/irq.asm"
         INCLUDE "engine/pack/firq.asm"
 
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
@@ -32,8 +32,8 @@ init
         _irq.on                           ; enable main 50Hz irq
 
         _gfxmode.setBM16                  ; set video mode to 160x200 16 colors
-        _gfxlock.memset #$0000            ; init video buffers to uniform color
-        _gfxlock.memset #$0000
+        _gfxlock.memset #$0000            ; init video buffer 1 to uniform color
+        _gfxlock.memset #$0000            ; init video buffer 2 to uniform color
 
         jsr   dac.mute
         jsr   dac.enable

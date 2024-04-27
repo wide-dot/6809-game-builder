@@ -11,8 +11,8 @@ sounds.level1.vgc  EXTERNAL
 
  SECTION code
         opt c
-        INCLUDE "engine/pack/mo6/std.asm"
-        INCLUDE "engine/pack/mo6/irq.asm"
+        INCLUDE "engine/system/mo6/pack/std.asm"
+        INCLUDE "engine/system/mo6/pack/irq.asm"
         INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/pack/vgc.asm"
 
