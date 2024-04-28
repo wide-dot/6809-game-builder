@@ -30,8 +30,8 @@ main.loop
         ldb   #1 ; Clock 1MHz
 !       pshs  b
         _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
-        ;_main.test main.str.CYCLE,mplus.ut.timer.testCycle
-        ;_main.test main.str.RESET,mplus.ut.timer.testReset
+        _main.test main.str.CYCLE,mplus.ut.timer.testCycle
+        _main.test main.str.RESET,mplus.ut.timer.testReset
         ;_main.test main.str.IRQ,mplus.ut.timer.testIRQ
         ;_main.test main.str.FIRQ,mplus.ut.timer.testFIRQ
         puls  b

@@ -24,13 +24,15 @@ mplus.ut.testMEA8000         EXPORT
         ;   Note: Timer F/IRQ ack by CPU is done by reading this control register
 
 mplus.ut.timer.testRW
-        ldd   #$ABCD
+        ldd   #$1234
         std   map.MPLUS.TIMER
-        ldd   #%10000001 ; reload period to counter
-        std   map.MPLUS.CTRL
+        lda   #%10000001 ; reload period to counter
+        sta   map.MPLUS.CTRL
         ldd   map.MPLUS.TIMER
-        cmpd  #$ABCD
+        cmpd  #$1234
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
@@ -39,19 +41,21 @@ mplus.ut.timer.testRW
         rts
 
 mplus.ut.timer.testCountdown
-        ldd   #$7FFF
+        ldd   #$1000
         std   map.MPLUS.TIMER
         tst   2,s
         beq   @ThreeMHz
 @OneMHz lda   #%10000011 ; reload period to counter and start countdown
         sta   map.MPLUS.CTRL
-        nop
-        nop
-        anda  #%01111101 ; stop countdown
-        sta   map.MPLUS.CTRL
+        nop                  ; [2]
+        nop                  ; [2]
+        anda  #%01111101     ; [2] stop countdown
+        sta   map.MPLUS.CTRL ; [5]
         ldd   map.MPLUS.TIMER
-        cmpd  #$7F00
+        cmpd  #$1000-11
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
@@ -61,13 +65,15 @@ mplus.ut.timer.testCountdown
 @ThreeMHz
         lda   #%10000111 ; reload period to counter and start countdown
         sta   map.MPLUS.CTRL
-        nop
-        nop
-        anda  #%01111101 ; stop countdown
-        sta   map.MPLUS.CTRL
+        nop                  ; [2]
+        nop                  ; [2]
+        anda  #%01111101     ; [2] stop countdown
+        sta   map.MPLUS.CTRL ; [5]
         ldd   map.MPLUS.TIMER
-        cmpd  #$7F00
+        cmpd  #$1000-39
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
@@ -95,6 +101,8 @@ mplus.ut.timer.testCycle
         ldd   map.MPLUS.TIMER
         cmpd  #$7F00
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
@@ -111,6 +119,8 @@ mplus.ut.timer.testCycle
         ldd   map.MPLUS.TIMER
         cmpd  #$7F00
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
@@ -119,18 +129,20 @@ mplus.ut.timer.testCycle
         rts
 
 mplus.ut.timer.testReset
-        ldd   #$1234
+        ldd   #$5678
         std   map.MPLUS.TIMER
         tst   2,s
         beq   @ThreeMHz
-@OneMHz ldd   #%10000001 ; reload period to counter
+@OneMHz lda   #%10000001 ; reload period to counter
         bra   >
 @ThreeMHz
-        ldd   #%10000101 ; reload period to counter
-!       std   map.MPLUS.CTRL
+        lda   #%10000101 ; reload period to counter
+!       sta   map.MPLUS.CTRL
         ldd   map.MPLUS.TIMER
-        cmpd  #$1234
+        cmpd  #$5678
         bne   >
+        jsr   monitor.printHex16
+        _monitor.putc #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 !       jsr   monitor.printHex16
