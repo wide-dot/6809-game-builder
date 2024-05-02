@@ -28,14 +28,15 @@ main.loop
 
         _monitor.print #main.str.1MHZ
         ldb   #1 ; Clock 1MHz
-!       pshs  b
-        _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
+        stb   clock.type
+!       _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
         _main.test main.str.CYCLE,mplus.ut.timer.testCycle
         _main.test main.str.RESET,mplus.ut.timer.testReset
         ;_main.test main.str.IRQ,mplus.ut.timer.testIRQ
+        ;_main.test main.str.IM_IRQ,mplus.ut.timer.testImIRQ
         ;_main.test main.str.FIRQ,mplus.ut.timer.testFIRQ
-        puls  b
-        decb  ; Clock 3.58MHz
+        ;_main.test main.str.IM_FIRQ,mplus.ut.timer.testImFIRQ
+        dec   clock.type ; Clock 3.58MHz
         bne   >
         _monitor.print #main.str.3MHZ
         bra   <
@@ -63,6 +64,8 @@ main.test
 @endif  _monitor.print #main.str.CRLF
         rts
 
+clock.type fcb 0
+
 ; ----- DATA -------------------------------------------------------------------
 main.str.HEADER     fcc "Musique PLUS - Factory test"
                     _monitor.chr.CRLF
@@ -81,7 +84,9 @@ main.str.COUNTDOWN  fcs "- Countdown ........ "
 main.str.CYCLE      fcs "- Cycle ............ "
 main.str.RESET      fcs "- Reset ............ "
 main.str.IRQ        fcs "- IRQ .............. "
+main.str.IM_IRQ     fcs "- Immediate IRQ .... "
 main.str.FIRQ       fcs "- FIRQ ............. "
+main.str.IM_FIRQ    fcs "- Immediate FIRQ ... "
 main.str.PLAYING    _monitor.chr.CRLF
                     fcc "Play: "
                     _monitor.str.CRLF
