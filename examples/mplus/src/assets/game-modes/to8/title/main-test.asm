@@ -23,13 +23,11 @@ main.loop
         _monitor.print #main.str.HEADER
 
         ; Timer test
-        _monitor.print #main.str.TIMER
-        _main.test main.str.WR,mplus.ut.timer.testRW
-
         _monitor.print #main.str.1MHZ
         ldb   #1 ; Clock 1MHz
         stb   clock.type
-!       _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
+!       _main.test main.str.WR,mplus.ut.timer.testRW
+        _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
         _main.test main.str.CYCLE,mplus.ut.timer.testCycle
         _main.test main.str.RESET,mplus.ut.timer.testReset
         ;_main.test main.str.IRQ,mplus.ut.timer.testIRQ
@@ -49,7 +47,7 @@ main.loop
         ;_main.test main.str.YM,mplus.ut.testYM2413
         ;_main.test main.str.MIDI,mplus.ut.testMIDI
         ;_main.test main.str.MEA,mplus.ut.testMEA8000
-        _monitor.setp #1,#$0000,#$0080
+        ;_monitor.setp #1,#$0000,#$0080 ; green
         bra   *
 
 main.test
@@ -59,7 +57,7 @@ main.test
         _monitor.print #main.str.OK
         bra   @endif
 @else   _monitor.print #main.str.KO
-        _monitor.setp #1,#$0000,#$0008
+        _monitor.setp #1,#$0000,#$0008 ; red
         ;bra   *
 @endif  _monitor.print #main.str.CRLF
         rts
@@ -73,11 +71,9 @@ main.str.HEADER     fcc "Musique PLUS - Factory test"
                     _monitor.chr.CRLF
 main.str.CRLF
                     _monitor.str.CRLF
-main.str.TIMER      fcc "Timer:"
+main.str.1MHZ       fcc "Timer 1MHz:"
                     _monitor.str.CRLF
-main.str.1MHZ       fcc "1MHz"
-                    _monitor.str.CRLF
-main.str.3MHZ       fcc "3MHz:"
+main.str.3MHZ       fcc "Timer 3MHz:"
                     _monitor.str.CRLF
 main.str.WR         fcs "- Write and Read ... "
 main.str.COUNTDOWN  fcs "- Countdown ........ "
