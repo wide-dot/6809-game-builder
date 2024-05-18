@@ -46,9 +46,9 @@ mplus.ut.timer.testCountdown
         std   map.MPLUS.TIMER
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%10000011 ; reload period to counter and start countdown
+@OneMHz lda   #%10000011 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
-        nop                  ; [2] -1 for reload time
+        nop                  ; [2] -1 for reset time
         nop                  ; [2]
         anda  #%01111101     ; [2]
         sta   map.MPLUS.CTRL ; [5]
@@ -58,19 +58,17 @@ mplus.ut.timer.testCountdown
         jmp   mplus.ut.timer.returnOK
 !       jmp   mplus.ut.timer.returnKO
 @ThreeMHz
-        lda   #%10000111 ; reload period to counter and start countdown
+        lda   #%10000111 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
-        nop                  ; [2] -1 for reload time
+        nop                  ; [2] -1 for reset time
         nop                  ; [2]
         anda  #%01111101     ; [2]
         sta   map.MPLUS.CTRL ; [5]
         ldd   map.MPLUS.TIMER
-        cmpd  #$0FD9
+        cmpd  #$0FDA
         bne   >
 @ok     jmp   mplus.ut.timer.returnOK
-!       cmpd  #$0FDA
-        beq   @ok
-        cmpd  #$0FDB
+!       cmpd  #$0FDB
         beq   @ok
         jmp   mplus.ut.timer.returnKO
 
@@ -79,7 +77,7 @@ mplus.ut.timer.testCycle
         std   map.MPLUS.TIMER
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%10000011 ; reload period to counter and start countdown
+@OneMHz lda   #%10000011 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
         nop   ; -1 for reset time
         nop
@@ -102,12 +100,12 @@ mplus.ut.timer.testCycle
         nop
         nop
         anda  #%00111101 ; stop countdown
-        sta   map.MPLUS.CTRL ; 38 cycles @3.57, loose 1 cycle when start or reload counter
+        sta   map.MPLUS.CTRL ; 39.375 cycles @3.57, loose 1 cycle when reset or reload counter
         ldd   map.MPLUS.TIMER
-        cmpd  #$000B
+        cmpd  #$000C ; 
         bne   >
 @ok     jmp   mplus.ut.timer.returnOK
-!       cmpd  #$000C
+!       cmpd  #$000D
         beq   @ok
         jmp   mplus.ut.timer.returnKO
 
