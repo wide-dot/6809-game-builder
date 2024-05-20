@@ -31,9 +31,7 @@ main.loop
         _main.test main.str.CYCLE,mplus.ut.timer.testCycle
         _main.test main.str.RESET,mplus.ut.timer.testReset
         ;_main.test main.str.IRQ,mplus.ut.timer.testIRQ
-        ;_main.test main.str.IM_IRQ,mplus.ut.timer.testImIRQ
-        ;_main.test main.str.FIRQ,mplus.ut.timer.testFIRQ
-        ;_main.test main.str.IM_FIRQ,mplus.ut.timer.testImFIRQ
+        _main.test main.str.FIRQ,mplus.ut.timer.testFIRQ
         dec   clock.type ; Clock 3.58MHz
         bne   >
         _monitor.print #main.str.3MHZ
@@ -80,9 +78,7 @@ main.str.COUNTDOWN  fcs "- Countdown ........ "
 main.str.CYCLE      fcs "- Cycle ............ "
 main.str.RESET      fcs "- Reset ............ "
 main.str.IRQ        fcs "- IRQ .............. "
-main.str.IM_IRQ     fcs "- Immediate IRQ .... "
 main.str.FIRQ       fcs "- FIRQ ............. "
-main.str.IM_FIRQ    fcs "- Immediate FIRQ ... "
 main.str.PLAYING    _monitor.chr.CRLF
                     fcc "Play: "
                     _monitor.str.CRLF
