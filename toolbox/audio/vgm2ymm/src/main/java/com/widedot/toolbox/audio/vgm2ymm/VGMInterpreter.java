@@ -79,6 +79,7 @@ public class VGMInterpreter {
 	public boolean run() throws IOException {		
 		boolean endFrame = false;
 		int waitTime = 0;
+		int code = 0;
 		
 		while (!endFrame) {
 
@@ -87,7 +88,7 @@ public class VGMInterpreter {
 				fireLoopPointHit();
 			}
 
-			switch (this.input.read()) {
+			switch (code = this.input.read()) {
 			case 0x4F: // Game Gear PSG stereo
 				this.input.skip(1L);
 				continue;
@@ -119,9 +120,20 @@ public class VGMInterpreter {
 				fireWriteEnd();				
 				return false;
 			case 0x67: // data block
-				continue;				
+				continue;		
+			case 0x70: case 0x71: case 0x72: case 0x73: case 0x74: case 0x75: case 0x76: case 0x77: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E: case 0x7F:
+                // Wait n+1 samples, n can range from 0 to 15
+				waitTime = (code & 0xf) + 1;
+				cumulatedSamples += waitTime;
+           		endFrame = true;
+				continue;
 			case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F:
+                // YM2612 port 0 address 2A write from the data bank
+				// then Wait n samples, n can range from 0 to 15
 				this.input.skip(1L);
+				waitTime = (code & 0xf);
+				cumulatedSamples += waitTime;
+           		endFrame = true;
 				continue;
 			case 0x90: // DAC Stream Control Write - Setup Stream Control
 				this.input.skip(4L);
@@ -158,7 +170,7 @@ public class VGMInterpreter {
 			} 
 			
 			this.input.close();
-			throw new IOException("Unknown VGM command encountered at " + Integer.toHexString(this.input.getPosition() - 1) + ": " + Integer.toHexString(i));
+			throw new IOException("Unknown VGM command encountered at x" + Integer.toHexString(this.input.getPosition() - 1) + ": x" + Integer.toHexString(code));
 		}
 		
 		return true;

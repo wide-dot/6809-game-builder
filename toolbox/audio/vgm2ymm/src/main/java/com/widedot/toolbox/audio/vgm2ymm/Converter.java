@@ -103,6 +103,7 @@ public class Converter {
 			}
 		}
 		
+		log.debug("Output: {}", outFileName);
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
 		VGMInterpreter vGMInterpreter = new VGMInterpreter(file, drum);
 

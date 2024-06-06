@@ -20,7 +20,7 @@ ymm.frame.play EXPORT
         INCLUDE "engine/sound/ymm.const.asm"
 
  SECTION code
-
+ymm.org equ *
         INCLUDE "engine/6809/macros.asm"
 
 ymm.data             fdb   0             ; address of song data
@@ -51,6 +51,7 @@ ymm.play
         rts
 
 ymm.obj.play
+        pshs  u                        ; needed by RunObjects
         jsr   irq.off
         stb   ymm.loop
         sty   ymm.callback
@@ -64,7 +65,7 @@ ymm.obj.play
         leax  2,x
         jsr   ymm.decompress
         _ym2413.init
-        rts
+        puls  u,pc
 
 ; ------------------------------------------------------------------------------
 ; ymm.frame.play - processes a music frame (VInt)
@@ -281,7 +282,12 @@ ymm.frame.resume   com @flip
 @stackContext equ *
 
 @buffersize equ  512
-          align  @buffersize
+@addr equ *
+; !!! WARNING !!! buffer must be placed at absolute addr > buffer size
+; if buffer is 512 bytes, buffer should be placed >= $0200
+ iflt (@addr-ymm.org)-@buffersize
+        fill 0,@buffersize-(@addr-ymm.org)
+ endc
 ymm.buffer
           fill 0,@buffersize
 ymm.buffer.end

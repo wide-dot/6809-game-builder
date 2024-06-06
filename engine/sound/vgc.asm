@@ -60,6 +60,7 @@ vgc.play
         rts
 
 vgc.obj.play
+        pshs  u                        ; needed by RunObjects
         jsr   irq.off
         sta   vgc.data.page
         stb   vgc.loop
@@ -70,7 +71,7 @@ vgc.obj.play
         leax  2,x
         jsr   vgc_stream_mount         ; Prepare the data for streaming (passed in X)
         _sn76489.init
-        rts
+        puls  u,pc
 
 ;-------------------------------------------
 ; vgc.frame.play
@@ -316,7 +317,7 @@ vgc_update_register2
         lda   #0                      ; load stream id
 @LoadA  equ   *-1
         jsr   vgc_get_register_data 
-	    stb   <map.SN76489.D
+        stb   <map.SN76489.D
 vgc_port_06 equ *-1
         rts
 
