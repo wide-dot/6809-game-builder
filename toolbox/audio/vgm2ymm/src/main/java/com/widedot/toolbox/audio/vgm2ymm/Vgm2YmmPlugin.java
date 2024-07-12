@@ -103,66 +103,78 @@ public class Vgm2YmmPlugin {
 			}
 		}
 		
-		log.debug("Output: {}", outFileName);
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
-		VGMInterpreter vGMInterpreter = new VGMInterpreter(file, drum);
-
-		int[] paramArrayOfint = vGMInterpreter.getArrayOfInt();
 		
-		byte[] intro = null;
-		if (vGMInterpreter.loopMarkerHit > 0) {
-			intro = new byte[vGMInterpreter.loopMarkerHit+1]; // make room for end marker
-			int b;
-			for (b = 0; b < vGMInterpreter.loopMarkerHit; b++)
-				intro[b] = (byte)paramArrayOfint[b];
-			intro[b] = 0x39;
-		}
+		// skip processing if input file is older than output file
+		long inputLastModified = file.lastModified();
+		long outputLastModified = (new File(outFileName)).lastModified();
 		
-		byte[] loop = null;
-		if (vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit > 0) {
-			loop = new byte[vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit];
-			int i = 0;
-			for (int b = vGMInterpreter.loopMarkerHit; b < vGMInterpreter.getLastIndex(); b++)
-				loop[i++] = (byte)paramArrayOfint[b];
-		}
+		if (inputLastModified > outputLastModified) {
 		
-		if (codec.equals(CODEC_ZX0)) {
+			log.debug("Generating: {}", outFileName);
+			VGMInterpreter vGMInterpreter = new VGMInterpreter(file, drum);
+	
+			int[] paramArrayOfint = vGMInterpreter.getArrayOfInt();
+			
+			byte[] intro = null;
+			if (vGMInterpreter.loopMarkerHit > 0) {
+				intro = new byte[vGMInterpreter.loopMarkerHit+1]; // make room for end marker
+				int b;
+				for (b = 0; b < vGMInterpreter.loopMarkerHit; b++)
+					intro[b] = (byte)paramArrayOfint[b];
+				intro[b] = 0x39;
+			}
+			
+			byte[] loop = null;
+			if (vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit > 0) {
+				loop = new byte[vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit];
+				int i = 0;
+				for (int b = vGMInterpreter.loopMarkerHit; b < vGMInterpreter.getLastIndex(); b++)
+					loop[i++] = (byte)paramArrayOfint[b];
+			}
+			
+			if (codec.equals(CODEC_ZX0)) {
+				if (intro != null) {
+					log.debug("Compress intro data with zx0.");
+					int originalSize = intro.length;
+					int[] delta = { 0 };			
+					intro = new Compressor().compress(new Optimizer().optimize(intro, 0, MAX_OFFSET_YMM, 8, false), intro, 0, false, false, delta);
+					log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, intro.length, delta[0]);
+				}
+				
+				if (loop != null) {
+					log.debug("Compress loop data with zx0.");
+					int originalSize = loop.length;
+					int[] delta = { 0 };			
+					loop = new Compressor().compress(new Optimizer().optimize(loop, 0, MAX_OFFSET_YMM, 8, false), loop, 0, false, false, delta);
+					log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, loop.length, delta[0]);
+				}
+			}
+	
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			if (intro != null) {
-				log.debug("Compress intro data with zx0.");
-				int originalSize = intro.length;
-				int[] delta = { 0 };			
-				intro = new Compressor().compress(new Optimizer().optimize(intro, 0, MAX_OFFSET_YMM, 8, false), intro, 0, false, false, delta);
-				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, intro.length, delta[0]);
+				outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
+				outputStream.write((intro.length+2) & 0xff);
+				outputStream.write(intro);
+			} else {
+				outputStream.write(0);
+				outputStream.write(2);
 			}
 			
 			if (loop != null) {
-				log.debug("Compress loop data with zx0.");
-				int originalSize = loop.length;
-				int[] delta = { 0 };			
-				loop = new Compressor().compress(new Optimizer().optimize(loop, 0, MAX_OFFSET_YMM, 8, false), loop, 0, false, false, delta);
-				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, loop.length, delta[0]);
+				outputStream.write(loop);
 			}
-		}
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		if (intro != null) {
-			outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
-			outputStream.write((intro.length+2) & 0xff);
-			outputStream.write(intro);
+			
+			OutputStream fileStream = new FileOutputStream(outFileName);
+			outputStream.writeTo(fileStream);
+			outputStream.close();
+			
+			return outputStream.toByteArray();
+			
 		} else {
-			outputStream.write(0);
-			outputStream.write(2);
+			log.debug("Build cache for {}", outFileName);
+			return Files.readAllBytes(Paths.get(outFileName));
 		}
-		
-		if (loop != null) {
-			outputStream.write(loop);
-		}
-		
-		OutputStream fileStream = new FileOutputStream(outFileName);
-		outputStream.writeTo(fileStream);
-		outputStream.close();
-		
-		return outputStream.toByteArray();
 	}
 	
 }

@@ -93,61 +93,74 @@ public class Vgm2VgcPlugin {
 
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
 		
-		// Keep SN76489 data only
-		VGMInterpreter vgm = new VGMInterpreter(file);
-		byte[] intro = vgm.getIntroData();
-		byte[] loop = vgm.getLoopData();
-
-		if (intro != null) {
-			ByteArrayOutputStream tmpOS = new ByteArrayOutputStream();
-			tmpOS.write(vgm.getIntroHeader());
-			tmpOS.write(intro);
-			
-			String tmpFileName = file.getAbsolutePath() + ".sn76489.intro.vgm";
-			OutputStream fileStream = new FileOutputStream(tmpFileName);
-			tmpOS.writeTo(fileStream);
-			tmpOS.close();
-			
-			// Convert vgm to vgc
-			runPythonScript(tmpFileName, outFileName);
-			intro = Files.readAllBytes(Paths.get(outFileName));
-		}
+		// skip processing if input file is older than output file
+		long inputLastModified = file.lastModified();
+		long outputLastModified = (new File(outFileName)).lastModified();
 		
-		if (loop != null) {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			outputStream.write(vgm.getLoopHeader());
-			outputStream.write(vgm.getCache());
-			outputStream.write(loop);
+		if (inputLastModified > outputLastModified) {
+		
+			log.debug("Generating: {}", outFileName);
 			
-			String tmpFileName = file.getAbsolutePath() + ".sn76489.loop.vgm";
-			OutputStream fileStream = new FileOutputStream(tmpFileName);
+			// Keep SN76489 data only
+			VGMInterpreter vgm = new VGMInterpreter(file);
+			byte[] intro = vgm.getIntroData();
+			byte[] loop = vgm.getLoopData();
+	
+			if (intro != null) {
+				ByteArrayOutputStream tmpOS = new ByteArrayOutputStream();
+				tmpOS.write(vgm.getIntroHeader());
+				tmpOS.write(intro);
+				
+				String tmpFileName = file.getAbsolutePath() + ".sn76489.intro.vgm";
+				OutputStream fileStream = new FileOutputStream(tmpFileName);
+				tmpOS.writeTo(fileStream);
+				tmpOS.close();
+				
+				// Convert vgm to vgc
+				runPythonScript(tmpFileName, outFileName);
+				intro = Files.readAllBytes(Paths.get(outFileName));
+			}
+			
+			if (loop != null) {
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				outputStream.write(vgm.getLoopHeader());
+				outputStream.write(vgm.getCache());
+				outputStream.write(loop);
+				
+				String tmpFileName = file.getAbsolutePath() + ".sn76489.loop.vgm";
+				OutputStream fileStream = new FileOutputStream(tmpFileName);
+				outputStream.writeTo(fileStream);
+				outputStream.close();
+				
+				// Convert vgm to vgc
+				runPythonScript(tmpFileName, outFileName);
+				loop = Files.readAllBytes(Paths.get(outFileName));
+			}
+	
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			if (intro != null) {
+				outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
+				outputStream.write((intro.length+2) & 0xff);
+				outputStream.write(intro);
+			} else {
+				outputStream.write(0);
+				outputStream.write(2);
+			}
+			
+			if (loop != null) {
+				outputStream.write(loop);
+			}
+			
+			OutputStream fileStream = new FileOutputStream(outFileName);
 			outputStream.writeTo(fileStream);
 			outputStream.close();
 			
-			// Convert vgm to vgc
-			runPythonScript(tmpFileName, outFileName);
-			loop = Files.readAllBytes(Paths.get(outFileName));
-		}
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		if (intro != null) {
-			outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
-			outputStream.write((intro.length+2) & 0xff);
-			outputStream.write(intro);
+			return outputStream.toByteArray();
+			
 		} else {
-			outputStream.write(0);
-			outputStream.write(2);
+			log.debug("Build cache for {}", outFileName);
+			return Files.readAllBytes(Paths.get(outFileName));
 		}
-		
-		if (loop != null) {
-			outputStream.write(loop);
-		}
-		
-		OutputStream fileStream = new FileOutputStream(outFileName);
-		outputStream.writeTo(fileStream);
-		outputStream.close();
-		
-		return outputStream.toByteArray();
 	}
 
 	public static void runPythonScript(String inFileName, String outFileName) throws Exception {
