@@ -24,7 +24,7 @@ init
         _irq.set50Hz                      ; set irq to run every video frame, when spot is outside visible area
         ;_palette.update                  ; update palette with the default black palette
         _cart.setRam #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
-        _gfxlock.halfPage.swap.off        ; do not auto swap halp page in sync with double buffering
+        _gfxlock.halfPage.swap.off        ; do not auto swap half page in sync with double buffering
         _gfxlock.halfPage.set0            ; set the visible half page (sample data)
         _gfxlock.init                     ; init double buffering
 
@@ -46,6 +46,10 @@ main.loop
 
         _gfxlock.on
         ; ... all writes to gfx buffer should be placed here for double buffering
+        ; simulate real game loop timings @20fps
+        ldx   #(1000000/20)/8          ; (cycle per second/frames)/loop cycles
+!       leax  -1,x                     ; [5]
+        bne   <                        ; [3]
         _gfxlock.off
 
         _gfxlock.loop
@@ -115,9 +119,8 @@ checkSampleRequest
         _firq.pcm.play sample.current.address,sample.current.duration
 @nofire
         ; disable screen border if sample ended
-        lda   map.MPLUS.CTRL              ; load ctrl register
-        bita  #%00001000                  ; Bit 3: RW Timer - (F)IRQ enable (0=NO, 1=YES)
-        bne   @rts                        ; Sample/FIRQ is still running
+        lda   [firq.pcm.sample]           ; if pcm reading is not over
+        bpl   @rts                        ; continue
         jsr   dac.mute
         clr   sample.current.id
         _gfxlock.screenBorder.update sample.current.id
@@ -133,7 +136,7 @@ sample.current.duration
         fdb   0
 
 samples.duration
-        fdb   443 ;  8080 hz - Kick           
+        fdb   443 ;  8080 hz - Kick        
         fdb   222 ; 16124 hz - Snare 
         fdb   222 ; 16124 hz - Clap
         fdb   222 ; 16124 hz - Hi-Tom

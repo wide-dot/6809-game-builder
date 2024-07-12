@@ -10,7 +10,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.toolbox.graphics.png2pal.Binary;
-import com.widedot.toolbox.graphics.png2pal.Converter;
+import com.widedot.toolbox.graphics.png2pal.Png2PalPlugin;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +22,7 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  
 	  //read input xml
 	  String symbol = Attribute.getStringOpt(node, defaults, "symbol", "png2pal.symbol");
-	  String mode = Attribute.getString(node, defaults, "mode", "png2pal.mode", Converter.OBJ);
+	  String mode = Attribute.getString(node, defaults, "mode", "png2pal.mode", Png2PalPlugin.OBJ);
 	  Integer colors = Attribute.getInteger(node, defaults, "colors", "png2pal.colors", 16);
 	  Integer offset = Attribute.getInteger(node, defaults, "offset", "png2pal.offset", 1);
 	  String profile = Attribute.getString(node, defaults, "profile", "png2pal.profile", "to");
@@ -39,7 +39,7 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  if (gensource != null) gensource = path + File.separator + gensource;
 	  
 	  Binary bin = new Binary();
-	  bin.bytes = Converter.run(symbol, mode, colors, offset, profile, filename, gensource);
+	  bin.bytes = Png2PalPlugin.run(symbol, mode, colors, offset, profile, filename, gensource);
 	  return bin;
   }
 }

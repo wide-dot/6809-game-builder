@@ -24,7 +24,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class LwasmPlugin {
 	public static Object getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
 		
 		log.debug("Processing lwasm ...");

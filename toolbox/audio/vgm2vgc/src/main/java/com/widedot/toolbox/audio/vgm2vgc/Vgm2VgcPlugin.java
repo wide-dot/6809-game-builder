@@ -22,7 +22,7 @@ import com.widedot.m6809.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Converter {
+public class Vgm2VgcPlugin {
 
 	public static String INPUT_EXT1 = ".vgm";
 	public static String INPUT_EXT2 = ".vgz";
@@ -165,11 +165,11 @@ public class Converter {
 			engine.setContext(context);
 			
 			// add jar path to jython sys path
-			String jarPath = Converter.class.getProtectionDomain().getCodeSource().getLocation().getPath().toString();
+			String jarPath = Vgm2VgcPlugin.class.getProtectionDomain().getCodeSource().getLocation().getPath().toString();
 			engine.eval("import sys; sys.path.insert(0, \"" + jarPath + "/vgmpacker" + "\")");
 			
 			// load script
-			InputStreamReader script = new InputStreamReader(Converter.class.getResource("/vgmpacker/vgmpacker.py").openStream());
+			InputStreamReader script = new InputStreamReader(Vgm2VgcPlugin.class.getResource("/vgmpacker/vgmpacker.py").openStream());
 			engine.eval(script);
 			script.close();
 			

@@ -31,9 +31,9 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run() {
 			try {
-				Converter.filename = filename;
-				Converter.genbinary = genbinary; 
-				Converter.run();
+				Vgm2VgcPlugin.filename = filename;
+				Vgm2VgcPlugin.genbinary = genbinary; 
+				Vgm2VgcPlugin.run();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

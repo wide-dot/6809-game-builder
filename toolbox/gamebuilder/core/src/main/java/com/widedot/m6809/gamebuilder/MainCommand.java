@@ -59,6 +59,7 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run() {
 		try {
+			long startTime = System.currentTimeMillis();
 			Startup.showSplash();
 
 			// check verbose mode
@@ -101,8 +102,10 @@ public class MainCommand implements Runnable {
 					}
 				}
 			}
-
-			log.info("Done.");
+			
+			long endTime = System.currentTimeMillis();
+			double duration = (endTime - startTime) / 1000.0;
+			log.info("Build done in {}s", duration);
 		} catch (Exception e) {
 			log.error(ExceptionUtils.getStackTrace(e));
 		}

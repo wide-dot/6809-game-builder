@@ -19,7 +19,7 @@ import com.widedot.m6809.util.OSValidator;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class HfePlugin {
 	
 	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	
@@ -55,7 +55,13 @@ public class Processor {
 				));
 		
 		log.debug("Command: {}", command);
-		Process p = new ProcessBuilder(command).inheritIO().start();
+		
+		ProcessBuilder pb = new ProcessBuilder(command);
+		if(log.isDebugEnabled()){
+			pb.inheritIO();
+		}
+		Process p = pb.start();
+		
 		if (p.waitFor() != 0) {
 			throw new Exception ("HXCFE error !");
 		}	

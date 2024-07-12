@@ -32,10 +32,10 @@ public class MainCommand implements Runnable {
 	public void run()
 	{
 		try {
-			Converter.filename = filename;
-			Converter.genbinary = genbinary; 
-			Converter.downscale8To6Bit = downscale8To6Bit;
-			Converter.run();
+			PcmPlugin.filename = filename;
+			PcmPlugin.genbinary = genbinary; 
+			PcmPlugin.downscale8To6Bit = downscale8To6Bit;
+			PcmPlugin.run();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

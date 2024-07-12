@@ -125,10 +125,7 @@ joypad.md6.read
         rts
 
 joypad.md6.sync
-        ; do not loop infinitly to handle when no gamepad is plugged
         ; test for 3btn gamepad
-        bitb  map.MC6821.PRA1
-        beq   @md6
         sta   map.MC6821.PRA2          ; set line select to HI
         clr   map.MC6821.PRA2          ; set line select to LO
         bitb  map.MC6821.PRA1

@@ -13,7 +13,7 @@ public class MainCommand implements Runnable {
 
 	@Option(names = { "-m",
 	"--mode" }, description = "Conversion mode (obj (default), dat, bin)")
-	private String mode = Converter.OBJ;
+	private String mode = Png2PalPlugin.OBJ;
 	
 	@Option(names = { "-p",
 	"--profile" }, description = "Color profile (to (default))")
@@ -43,7 +43,7 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run() {
 			try {
-				Converter.run(symbol, mode, colors, offset, profile, filename, gensource);
+				Png2PalPlugin.run(symbol, mode, colors, offset, profile, filename, gensource);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

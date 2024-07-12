@@ -18,7 +18,7 @@ import com.widedot.m6809.util.color.LAB;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Converter {
+public class Png2PalPlugin {
 	
 	public static String ASM_EXT = ".asm";
 	public static String BIN_EXT = ".bin";
@@ -93,15 +93,15 @@ public class Converter {
 	     switch (mode) {
          case OBJ:
      		 if (symbol == null) symbol = FileUtil.removeExtension(file.getName());
-        	 result = Converter.genObject(symbol, mode, colors, offset, colorModel).getBytes();
+        	 result = Png2PalPlugin.genObject(symbol, mode, colors, offset, colorModel).getBytes();
         	 ext = ASM_EXT;
              break;
          case DAT:
-        	 result = Converter.genData(symbol, mode, colors, offset, colorModel).getBytes();
+        	 result = Png2PalPlugin.genData(symbol, mode, colors, offset, colorModel).getBytes();
         	 ext = ASM_EXT;
              break;
          case BIN:
-        	 result = Converter.genBinary(symbol, mode, colors, offset, colorModel);
+        	 result = Png2PalPlugin.genBinary(symbol, mode, colors, offset, colorModel);
         	 ext = BIN_EXT;
              break;
          default:

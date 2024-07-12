@@ -23,7 +23,7 @@ public class EmbeddedPluginLoader {
 	}
 
 	public void loadPlugins() {
-		log.info("Loading embeded plugins ...");
+		log.debug("Loading embeded plugins ...");
 		for (Plugin plugin : ServiceLoader.load(Plugin.class)) {
 			installPlugin(plugin);
 		}

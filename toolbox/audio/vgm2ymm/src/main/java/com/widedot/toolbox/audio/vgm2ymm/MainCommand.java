@@ -31,11 +31,11 @@ public class MainCommand implements Runnable {
 	@Override
 	public void run() {
 			try {
-				Converter.filename = filename;
-				Converter.genbinary = genbinary; 
-				Converter.codec = codec;
-				Converter.drumStr = drum;
-				Converter.run();
+				Vgm2YmmPlugin.filename = filename;
+				Vgm2YmmPlugin.genbinary = genbinary; 
+				Vgm2YmmPlugin.codec = codec;
+				Vgm2YmmPlugin.drumStr = drum;
+				Vgm2YmmPlugin.run();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -10,7 +10,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.toolbox.audio.vgm2ymm.Binary;
-import com.widedot.toolbox.audio.vgm2ymm.Converter;
+import com.widedot.toolbox.audio.vgm2ymm.Vgm2YmmPlugin;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +37,11 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  if (genbinary != null) genbinary = path + File.separator + genbinary;
 	  
 	  Binary bin = new Binary();
-		Converter.filename = filename;
-		Converter.genbinary = genbinary; 
-		Converter.codec = codec;
-		Converter.drumStr = drum;
-		bin.bytes = Converter.run();
+		Vgm2YmmPlugin.filename = filename;
+		Vgm2YmmPlugin.genbinary = genbinary; 
+		Vgm2YmmPlugin.codec = codec;
+		Vgm2YmmPlugin.drumStr = drum;
+		bin.bytes = Vgm2YmmPlugin.run();
 	return bin;
   }
 }

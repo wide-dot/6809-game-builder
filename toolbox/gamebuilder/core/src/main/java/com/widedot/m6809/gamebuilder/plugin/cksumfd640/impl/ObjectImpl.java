@@ -2,7 +2,7 @@ package com.widedot.m6809.gamebuilder.plugin.cksumfd640.impl;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.plugin.cksumfd640.Processor;
+import com.widedot.m6809.gamebuilder.plugin.cksumfd640.Cksumfd640Plugin;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
@@ -13,6 +13,6 @@ public class ObjectImpl implements ObjectPluginInterface {
   @Override
   public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
 	  
-	  return (ObjectDataInterface) Processor.getObject(node, path, defaults, defines);
+	  return (ObjectDataInterface) Cksumfd640Plugin.getObject(node, path, defaults, defines);
   }
 }

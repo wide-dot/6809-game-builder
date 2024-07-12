@@ -10,7 +10,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.toolbox.audio.pcm.Binary;
-import com.widedot.toolbox.audio.pcm.Converter;
+import com.widedot.toolbox.audio.pcm.PcmPlugin;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,10 +37,10 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  
 	Binary bin = new Binary();
 	  
-	Converter.filename = filename;
-	Converter.genbinary = genbinary; 
-	Converter.downscale8To6Bit = downscale8To6Bit;
-	bin.bytes = Converter.run();
+	PcmPlugin.filename = filename;
+	PcmPlugin.genbinary = genbinary; 
+	PcmPlugin.downscale8To6Bit = downscale8To6Bit;
+	bin.bytes = PcmPlugin.run();
 	return bin;
   }
 }

@@ -37,7 +37,7 @@ public class PluginLoader {
 	}
 
 	public void loadPlugins() {
-		log.info("Loading plugins ...");
+		log.debug("Loading plugins ...");
 		if (!pluginsDir.exists() || !pluginsDir.isDirectory()) {
 			log.debug("Skipping Plugin Loading. Plugin dir not found: " + pluginsDir);
 			return;
@@ -54,7 +54,7 @@ public class PluginLoader {
 	}
 
 	private void loadPlugin(final File pluginDir) {
-		log.info("Loading plugin: " + pluginDir);
+		log.debug("Loading plugin: " + pluginDir);
 		final URLClassLoader pluginClassLoader = createPluginClassLoader(pluginDir);
 		final ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 		try {

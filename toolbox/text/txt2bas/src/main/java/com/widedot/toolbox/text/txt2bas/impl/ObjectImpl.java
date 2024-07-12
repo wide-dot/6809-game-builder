@@ -11,7 +11,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.toolbox.text.txt2bas.Binary;
-import com.widedot.toolbox.text.txt2bas.Converter;
+import com.widedot.toolbox.text.txt2bas.Txt2BasPlugin;
 import com.widedot.toolbox.text.txt2bas.FileResourcesUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  File file = new File(path + File.separator + filename);
 	  HashMap<byte[], byte[]> tokenmap = FileResourcesUtils.getHashMap(tokenset+".def");
 	  Binary bin = new Binary();
-	  bin.bytes = Converter.getBasic(file, tokenmap);
+	  bin.bytes = Txt2BasPlugin.getBasic(file, tokenmap);
 	  return bin;
   }
 }

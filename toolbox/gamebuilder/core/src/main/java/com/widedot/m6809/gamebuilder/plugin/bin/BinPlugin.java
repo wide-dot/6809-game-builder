@@ -11,7 +11,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class BinPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, String path) throws Exception {
 		
 		log.debug("Processing bin ...");

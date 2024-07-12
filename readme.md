@@ -1,62 +1,53 @@
-# 6809-game-builder
-## Description
-The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolset and game engine for 6809 computers.
+[EN](/docs/lang/en/readme.md) | [FR](/docs/lang/fr/readme.md)
 
-**WARNING**: This is the next generation of the builder and game engine. However, this version is still under development and should not be used.
-Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine) instead.
+# 6809 Game Builder
+![](/docs/assets/images/banner.png)
+
+---
+
+## Description
+[wide-dot](https://www.wide-dot.com)'s 6809 game builder is a multiplatform toolset and assembly game framework for 6809 computers.
 
 [![CodeFactor](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder/badge?s=8289592f61057a9492abfadaf23c94fe1bb4e60b)](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e77ba840d36c43bf8c4e839bac1bde06)](https://www.codacy.com/gh/wide-dot/6809-game-builder/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wide-dot/6809-game-builder&amp;utm_campaign=Badge_Grade)
 
-### Currently supported computers
-
-- Thomson TO8
-- Thomson TO8D
-- Thomson TO9+
-
-### Candidates for future releases
-
-- Thomson MO5
-- Thomson MO6 / Olivetti Prodest PC128
-- Tandy Color Computer 3 (CoCo 3)
-
-### Demos
-
-![sonic2][sonic2] ![dott][dott] 
-
 ### Main features
+Many plugins and asm libraries are being migrated from the early version of this game builder ... more to come !
 
-#### Tools
+#### Plugin based builder
+- floppy disk image generator
+- custom file directory generator
+- lwasm assembler (raw, obj, ...)
+- zx0 encoder
+- sound converter (vgm, midi)
+- image converter (compilated, raw)
+- tilemap converter (stm)
 
-- generate compilated images from png files or tilesets
-- convert Tiled tmx tilemaps in asm data
-- convert pcm, vgm, midi, smps audio data
-- compress code and data
-- build bootable cartridge or floppy disk
-- color conversion
-
-#### Engine
+#### Framework
+##### file and data
 - boot loader
-- load time linker on files
-- zx0 compression on files
-- load code and data to RAM pages
-- link at load time
-- manage objects
-- manage collisions
-- display sprites by priority
-- animate sprites
-- display tilemaps (tile groups, animation, buffering, ...)
-- multiple software scroll engines
-- play audio with dpcm, svgm, smid, smps, psg, ymm, vgc audio formats
-- support ym2413 and sn76489 sound chips
-- play midi files (EF6850 ACIA)
+- zx0 file loader
+- load time file linker
+- file and scene loader
+- dynamic memory allocator
+##### gfx
+- optimized double buffering
+- palette manager
+##### sound
+- vgm player (YM2413, SN76489)
+- midi file player (EF6850)
+##### controllers
+- joystick and keyboard manager
+- six button megadrive control pad support (for Thomson)
 
-## Building the 6809-game-builder
 
-Download the latest release if you don't want to build the project.
+
+## Building the 6809 Game Builder
+
+Download the latest release if you want to skip this step !
 
 You need to have Java 8 (or newer) and Maven to be installed first.
 
-To produce the packager which contains all the tools and all their dependencies, including engine (asm) and tools (lwasm, etc.) :
+To produce the packager which contains all the tools and all their dependencies, including engine (asm) and plugins (lwasm, etc.) :
 
 ```bash
 $ mvn clean package
@@ -69,38 +60,10 @@ Then plateform distrubutions are generated in .\package\target :
 
 ## Documentation
 
-[unpack tools][unpack-tools]
-
-[setup a new project][project-setup]
-
-[build a project][project-build]
-
-[objects][objects]
-
-[sprites][sprites]
-
-[tilemaps][tilemaps]
-
-[audio][audio]
-
-
-## Toolbox
-
-[toolbox reference guide][toolbox-reference]
+- [project examples]()
+- [setup a new project]()
+- [builder plugin reference]()
+- [assembly framework reference]()
 
 ## Credits
-
-[third-party libraries and tools][credits]
-
-[6809-game-projects]: https://github.com/wide-dot/6809-game-projects
-[sonic2]: docs/demo.gif
-[dott]: docs/demo2.gif
-[unpack-tools]: docs/unpack-tools.md
-[project-setup]: docs/project-setup.md
-[project-build]: docs/project-build.md
-[objects]: docs/objects.md
-[sprites]: docs/sprites.md
-[tilemaps]: docs/tilemaps.md
-[audio]: docs/audio.md
-[toolbox-reference]: docs/toolbox.md
-[credits]: docs/credits.md
+- [third-party tools](docs/lang/en/credits.md)

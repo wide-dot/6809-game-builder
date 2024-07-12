@@ -14,7 +14,7 @@ import com.widedot.m6809.util.zx0.Optimizer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Converter {
+public class PcmPlugin {
 	
 	public static String filename;
 	public static String genbinary;

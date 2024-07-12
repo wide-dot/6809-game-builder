@@ -13,7 +13,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class AsmPlugin {
 	public static File getFile(ImmutableNode node, String path, Defaults defaults) throws Exception {
 	
 		log.debug("Processing asm ...");

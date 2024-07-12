@@ -1,12 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.direntry;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -24,14 +19,13 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
-import com.widedot.m6809.util.FileUtil;
 import com.widedot.m6809.util.zx0.Compressor;
 import com.widedot.m6809.util.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class DirEntryPlugin {
 	
 //	loader direntry for a file (8, 16 or 24 bytes):
 //  -----------------------------------------------------------------------------------------------
@@ -229,6 +223,8 @@ public class Processor {
 		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
 	    media.addDirEntry(new DirEntry(name, sizedDirentry));
 		
+	    String fLength = String.format("%5d", length);
+	    log.info("{} bytes | {}", fLength, name);	    
 		log.debug("End of processing direntry");
 	}
 	

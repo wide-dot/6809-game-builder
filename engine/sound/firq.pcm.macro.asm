@@ -23,3 +23,9 @@ _firq.pcm.play MACRO
                              ;         - TI clock enable will be effective only after the first write to TI data register
         sta   map.MPLUS.CTRL
  ENDM
+
+_firq.pcm.freezePlay MACRO
+        _firq.pcm.play \1,\2
+!       lda   [firq.pcm.sample]
+        bpl   <
+ ENDM

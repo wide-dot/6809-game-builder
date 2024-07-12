@@ -24,7 +24,7 @@ import com.widedot.m6809.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class DirectoryPlugin {
 	
 //	Directory Header (5 bytes)
 //  -----------------------------------------------------------------------------------------------

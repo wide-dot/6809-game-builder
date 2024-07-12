@@ -15,7 +15,7 @@ import com.widedot.m6809.util.zx0.Optimizer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Converter {
+public class Vgm2YmmPlugin {
 	
 	public static String CODEC_NONE = "none";
 	public static String CODEC_ZX0 = "zx0";

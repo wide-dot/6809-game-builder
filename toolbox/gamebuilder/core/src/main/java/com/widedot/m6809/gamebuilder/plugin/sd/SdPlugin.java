@@ -17,7 +17,7 @@ import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class SdPlugin {
 	
 	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
     	

@@ -1,7 +1,7 @@
 <configuration>
 
     <target name="assets">
-        <pcm filename="src/assets/samples" bit8to6="true"/>
+        <pcm filename="src/assets/sounds/samples" bit8to6="true"/>
     </target>
 
     <target name="fd">
@@ -26,6 +26,30 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main-test.asm"/>
                     </lwasm>
+                </direntry>
+
+                <!-- Test - sample data -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.sounds.samples" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="samples.timpani"/><includebin filename="src/assets/sounds/samples/5-timpani.6bit.bin" />
+                    </lwasm>
+                </direntry>
+
+                <!-- Test - sound data -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.sounds.ym" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="vgm.ym"/>
+                    </lwasm>
+                    <vgm2ymm filename="src/assets/sounds/vgm/ym2413.vgm" genbinary="src/assets/sounds/vgm/ym2413.ymm" codec="zx0"/>
+                </direntry>
+
+                <direntry name="assets.sounds.sn" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="vgm.sn"/>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/vgm/sn76489.vgm" genbinary="src/assets/sounds/vgm/sn76489.vgc"/>
                 </direntry>
 
                 <!-- Scenes -->

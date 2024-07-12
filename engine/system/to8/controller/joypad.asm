@@ -5,6 +5,8 @@
 ; - One byte with direction for joypad 0 and joypad 1
 ; - One byte with button for joypad 0 and joypad 1
 ;
+; This routine disable DAC
+;
 ; ------------------------------------------------------------------------------
 ;
 ; Result values: joypad.held, joypad.pressed

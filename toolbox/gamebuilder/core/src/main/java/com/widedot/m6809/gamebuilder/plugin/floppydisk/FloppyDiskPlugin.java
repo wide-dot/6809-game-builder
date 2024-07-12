@@ -18,7 +18,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Processor {
+public class FloppyDiskPlugin {
 	
 	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
     	
