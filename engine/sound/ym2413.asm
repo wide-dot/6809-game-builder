@@ -2,6 +2,8 @@
 ; Init YM2413 sound chip to a default (silent) state
 ; ----------------------------------------------------
 
+engine.sound.ym2413.asm equ 1
+
 ym2413.init EXPORT
 
 map.YM2413.A EXTERNAL

@@ -107,10 +107,12 @@ irq.syncScreenLine
 irq.manage
         sts   @stack                   ; backup system stack
         lds   #irq.systemStack         ; set tmp system stack for IRQ 
+ IFDEF gfxlock.frame.count
         inc   gfxlock.frame.count+1
         bne   >
         inc   gfxlock.frame.count
 !
+ ENDC
         tst   glb_Page                 ; test special mode (glb_Page==0)
         beq   @smode                   ; branch if rendering tiles - force RAM use instead of testing ROM or RAM
         _GetCartPageB

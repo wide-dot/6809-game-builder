@@ -1,4 +1,7 @@
 samples.timpani              EXTERNAL
+assets.sounds.ym             EXTERNAL
+assets.sounds.sn             EXTERNAL
+
 mplus.ut.timer.testRW        EXPORT
 mplus.ut.timer.testCountdown EXPORT
 mplus.ut.timer.testCycle     EXPORT
@@ -233,18 +236,48 @@ mplus.ut.KO2         fcs "int_timer_ack still at 1 after second read  -"
  ; testSN76489
  ; ----------------------------------------------------------------------------
 
+page.vgc equ map.RAM_OVER_CART+5
+
 mplus.ut.testSN76489
-        tst   clock.type
+        _irq.init
+        _irq.setRoutine #mplus.ut.testSN76489.irq
+        _irq.set50Hz
+
+        _vgc.obj.play #page.vgc,#assets.sounds.sn,#vgc.NO_LOOP,#mplus.ut.testSN76489.callback
+        _irq.on
+        bra   *
+
+mplus.ut.testSN76489.callback
+        _irq.off
         andcc #%11111110
+        rts
+
+mplus.ut.testSN76489.irq
+        _vgc.frame.play
         rts
 
  ; ----------------------------------------------------------------------------
  ; testYM2413
  ; ----------------------------------------------------------------------------
 
+page.ymm equ map.RAM_OVER_CART+5
+
 mplus.ut.testYM2413
-        tst   clock.type
+        _irq.init
+        _irq.setRoutine #mplus.ut.testYM2413.irq
+        _irq.set50Hz
+
+        _ymm.obj.play #page.ymm,#assets.sounds.ym,#ymm.NO_LOOP,#mplus.ut.testYM2413.callback
+        _irq.on
+        bra   *
+
+mplus.ut.testYM2413.callback
+        _irq.off
         andcc #%11111110
+        rts
+
+mplus.ut.testYM2413.irq
+        _ymm.frame.play
         rts
 
  ; ----------------------------------------------------------------------------

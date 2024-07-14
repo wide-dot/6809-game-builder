@@ -15,13 +15,23 @@ ymm.play       EXPORT
 ymm.obj.play   EXPORT
 ymm.frame.play EXPORT
 
+        IFNDEF  engine.sound.ym2413.macro.asm
         INCLUDE "engine/sound/ym2413.macro.asm"
+        ENDC
+
+        IFNDEF  engine.sound.ym2413.asm
         INCLUDE "engine/sound/ym2413.asm"
+        ENDC
+
+        IFNDEF  engine.sound.ymm.const.asm
         INCLUDE "engine/sound/ymm.const.asm"
+        ENDC
 
  SECTION code
 ymm.org equ *
+        IFNDEF engine.6809.macros.asm
         INCLUDE "engine/6809/macros.asm"
+        ENDC
 
 ymm.data             fdb   0             ; address of song data
 ymm.data.page        fcb   0             ; memory page of music data

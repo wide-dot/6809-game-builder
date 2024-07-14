@@ -8,6 +8,8 @@
 ; old naming convention, should be migrated
 ;*******************************************************************************
 
+engine.6809.macros.asm equ 1
+
 _ldd MACRO
         ldd   #((\1)*256)+\2
  ENDM

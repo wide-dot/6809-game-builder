@@ -3,7 +3,10 @@
 
 ; ----- FRAMEWORK MACRO / CONSTANT  --------------------------------------------
         INCLUDE "engine/system/to8/pack/std.asm"
+        INCLUDE "engine/system/to8/pack/irq.asm"
         INCLUDE "engine/system/thomson/pack/monitor.asm"
+        INCLUDE "engine/pack/ymm.asm"
+        INCLUDE "engine/pack/vgc.asm"
 
 ; ----- INITIALIZATION ---------------------------------------------------------
 main.init
@@ -90,5 +93,9 @@ main.str.KO         fcs "KO"
 
 ; ----- FRAMEWORK ASM CODE  ----------------------------------------------------
         INCLUDE "engine/global/glb.init.asm"
+        INCLUDE "engine/system/to8/irq/irq.asm"
         INCLUDE "engine/system/thomson/monitor/monitor.print.asm"
         INCLUDE "src/assets/mplus/mplus.ut.asm"
+        INCLUDE "engine/sound/ymm.asm"
+        INCLUDE "engine/sound/vgc.buffers.asm"
+        INCLUDE "engine/sound/vgc.asm"

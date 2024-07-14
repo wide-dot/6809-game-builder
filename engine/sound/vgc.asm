@@ -17,12 +17,18 @@ vgc.play       EXPORT
 vgc.obj.play   EXPORT
 vgc.frame.play EXPORT
 
+        IFNDEF  engine.sound.sn76489.macro.asm
         INCLUDE "engine/sound/sn76489.macro.asm"
+        ENDC
+
+        IFNDEF  engine.sound.sn76489.asm
         INCLUDE "engine/sound/sn76489.asm"
+        ENDC
 
  SECTION code
-
+        IFNDEF  engine.6809.macros.asm
         INCLUDE "engine/6809/macros.asm"
+        ENDC
 
 ;  vars without huffman
 VGM_VARS fill 0,4
