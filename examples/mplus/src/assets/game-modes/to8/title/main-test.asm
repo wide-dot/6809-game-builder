@@ -43,7 +43,7 @@ main.loop
         _monitor.print #main.str.PLAYING
         _main.test main.str.DAC,mplus.ut.testDAC
         _main.test main.str.SN,mplus.ut.testSN76489
-        ;_main.test main.str.YM,mplus.ut.testYM2413
+        _main.test main.str.YM,mplus.ut.testYM2413
         ;_main.test main.str.MIDI,mplus.ut.testMIDI
         ;_main.test main.str.MEA,mplus.ut.testMEA8000
         ;_monitor.setp #1,#$0000,#$0080 ; green
@@ -82,7 +82,7 @@ main.str.PLAYING    _monitor.chr.CRLF
                     fcc "Play: "
                     _monitor.str.CRLF
 main.str.DAC        fcs "- DAC (FIRQ) ....... "
-main.str.SN         fcs "- SN76489 (IRQ) .... "
+main.str.SN         fcs "- SN76489 .......... "
 main.str.YM         fcs "- YM2413 ........... "
 main.str.MIDI       fcs "- MIDI ............. "
 main.str.MEA        fcs "- MEA8000 .......... "

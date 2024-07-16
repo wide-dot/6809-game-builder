@@ -52,6 +52,14 @@
                         <vgm2vgc filename="src/assets/sounds/vgm/sn76489.vgm" genbinary="src/assets/sounds/vgm/sn76489.vgc"/>
                 </direntry>
 
+                <!-- Test - sound player dynamic port -->
+                <!-- ******************************************************* -->
+                <direntry name="engine.system.to8.sound.mplus.const" loadtimelink="LINK">
+                    <lwasm>
+                        <asm filename="engine/system/to8/sound/mplus.const.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.title" section="SCENE">

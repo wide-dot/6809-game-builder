@@ -1,6 +1,6 @@
 samples.timpani              EXTERNAL
-assets.sounds.ym             EXTERNAL
-assets.sounds.sn             EXTERNAL
+vgm.ym                       EXTERNAL
+vgm.sn                       EXTERNAL
 
 mplus.ut.timer.testRW        EXPORT
 mplus.ut.timer.testCountdown EXPORT
@@ -18,6 +18,7 @@ mplus.ut.testMEA8000         EXPORT
  SECTION code
 
         INCLUDE "engine/sound/firq.pcm.macro.asm"
+        INCLUDE "engine/sound/firq.pcm.const.asm"
 
  ; TIMER need a single clock cycle to load, reload or reset the period to counter.
  ; This single cycle is 1MHz or 3.579545Mhz, based on clock select.
@@ -43,10 +44,10 @@ mplus.ut.testMEA8000         EXPORT
 mplus.ut.timer.testRW
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%00000001     ; reset control register and set 1MHz clock
+@OneMHz lda   #%00000000     ; reset control register and set 1MHz clock
         bra   >
 @ThreeMHz
-        lda   #%00000101     ; reset control register and set 3.579545Mhz clock
+        lda   #%00000100     ; reset control register and set 3.579545Mhz clock
 !       sta   map.MPLUS.CTRL ; to no countdown
         ldd   #$0000
         std   map.MPLUS.TIMER ; clear any remaining values ...
@@ -67,7 +68,7 @@ mplus.ut.timer.testCountdown
         std   map.MPLUS.TIMER
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%10000011 ; reset counter to period and start countdown
+@OneMHz lda   #%10000010 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
         nop                  ; [2] -1 for reset time
         nop                  ; [2]
@@ -79,7 +80,7 @@ mplus.ut.timer.testCountdown
         jmp   mplus.ut.timer.returnOK
 !       jmp   mplus.ut.timer.returnKO
 @ThreeMHz
-        lda   #%10000111 ; reset counter to period and start countdown
+        lda   #%10000110 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
         nop                  ; [2] -1 for reset time
         nop                  ; [2]
@@ -102,7 +103,7 @@ mplus.ut.timer.testCycle
         std   map.MPLUS.TIMER
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%10000011 ; reset counter to period and start countdown
+@OneMHz lda   #%10000010 ; reset counter to period and start countdown
         sta   map.MPLUS.CTRL
         nop   ; -1 for reset time
         nop
@@ -120,7 +121,7 @@ mplus.ut.timer.testCycle
         jmp   mplus.ut.timer.returnOK
 !       jmp   mplus.ut.timer.returnKO
 @ThreeMHz
-        lda   #%10000111 ; reload period to counter and start countdown
+        lda   #%10000110 ; reload period to counter and start countdown
         sta   map.MPLUS.CTRL
         nop
         nop
@@ -143,10 +144,10 @@ mplus.ut.timer.testReset
         std   map.MPLUS.TIMER
         tst   clock.type
         beq   @ThreeMHz
-@OneMHz lda   #%10000011 ; reset counter to period and start countdown
+@OneMHz lda   #%10000010 ; reset counter to period and start countdown
         bra   >
 @ThreeMHz
-        lda   #%10000111 ; reset counter to period and start countdown
+        lda   #%10000110 ; reset counter to period and start countdown
 !       sta   map.MPLUS.CTRL
         nop
         nop
@@ -156,11 +157,11 @@ mplus.ut.timer.testReset
         nop
         nop
         nop
-        anda  #%00111101 ; stop countdown
+        anda  #%00111100 ; stop countdown
         ora   #%10000000 ; ask for a counter reset
         sta   map.MPLUS.CTRL
         ldd   map.MPLUS.TIMER
-        cmpd  #$DCBA
+        cmpd  #$DCBA ; TODO egalement DCBE ?
         bne   >
         jmp   mplus.ut.timer.returnOK
 !       jmp   mplus.ut.timer.returnKO
@@ -174,6 +175,7 @@ mplus.ut.state fcb 0
 mplus.ut.testDAC
         _cart.setRam #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
         _firq.pcm.init                    ; bind pcm firq routine
+        _irq.off
         jsr   dac.unmute
         jsr   dac.enable
         clr   mplus.ut.state
@@ -196,6 +198,11 @@ firq.pcm.sample.play
                                        ; [12] FIRQ (equivalent to pshs pc,cc | jmp $FFF6)
                                        ; [8]  ROM jmp to user address
         sta   @a                       ; [5]  backup register value
+        lda   map.MPLUS.CTRL           ; [5]  FIRQ acknowledge by reading ctrl register
+        bpl   @traperror1              ; [3]
+@trap   lda   map.MPLUS.CTRL           ; [5]  OK, 1 for int_timer_ack at first read
+        bmi   @traperror2              ; [3]  new test
+                                       ;      OK, 0 for int_timer_ack
         lda   >$0000                   ; [5]  read sample byte
 firq.pcm.sample equ *-2
         sta   map.DAC                  ; [5]  send byte to DAC
@@ -208,23 +215,18 @@ firq.pcm.sample equ *-2
         inc   firq.pcm.sample+1        ; [7]  move to next sample (LSB)
         bne   @exit                    ; [3]  skip if no LSB rollover
         inc   firq.pcm.sample          ; --- [7]  move to next sample (MSB)
-        lda   map.MPLUS.CTRL           ; [5]  FIRQ acknowledge by reading ctrl register
-        bpl   @traperror1
-@trap   lda   map.MPLUS.CTRL           ; OK, 1 for int_timer_ack at first read
-        bmi   @traperror2              ; new test
-                                       ; OK, 0 for int_timer_ack
 @exit   lda   #0                       ; [2]  restore register value
 @a      equ   *-1
         rti                            ; [6]  RTI (equivalent to puls pc,cc)
 @traperror1
         _monitor.print  #mplus.ut.KO1
-        lda   #-1
+        lda   #firq.pcm.END_MARKER
         sta   [firq.pcm.sample]
         sta   mplus.ut.state
         bra   @stop                    ; KO, 0 for int_timer_ack at first read
 @traperror2
         _monitor.print  #mplus.ut.KO2
-        lda   #-1
+        lda   #firq.pcm.END_MARKER
         sta   [firq.pcm.sample]
         sta   mplus.ut.state
         bra   @stop                    ; KO, 1 for int_timer_ack at second read
@@ -237,22 +239,36 @@ mplus.ut.KO2         fcs "int_timer_ack still at 1 after second read  -"
  ; ----------------------------------------------------------------------------
 
 page.vgc equ map.RAM_OVER_CART+5
+mplus.ut.testSN76489.lock fcb 0
 
 mplus.ut.testSN76489
         _irq.init
         _irq.setRoutine #mplus.ut.testSN76489.irq
         _irq.set50Hz
+        lda   map.MPLUS.CTRL
+        anda  #%11111110 ; TI clock enable
+        sta   map.MPLUS.CTRL
 
-        _vgc.obj.play #page.vgc,#assets.sounds.sn,#vgc.NO_LOOP,#mplus.ut.testSN76489.callback
+        _cart.setRam #page.vgc
+        _vgc.obj.play #page.vgc,#vgm.sn,#vgc.NO_LOOP,#mplus.ut.testSN76489.callback
         _irq.on
-        bra   *
-
-mplus.ut.testSN76489.callback
-        _irq.off
+!       lda   mplus.ut.testSN76489.lock
+        beq   <
+        _sn76489.init
+        lda   map.MPLUS.CTRL
+        ora   #%00000001 ; TI clock disable
+        sta   map.MPLUS.CTRL
         andcc #%11111110
         rts
 
+mplus.ut.testSN76489.callback
+        _irq.off
+        lda   #1
+        sta   mplus.ut.testSN76489.lock
+        rts
+
 mplus.ut.testSN76489.irq
+        _cart.setRam #page.vgc
         _vgc.frame.play
         rts
 
@@ -261,22 +277,30 @@ mplus.ut.testSN76489.irq
  ; ----------------------------------------------------------------------------
 
 page.ymm equ map.RAM_OVER_CART+5
+mplus.ut.testYM2413.lock fcb 0
 
 mplus.ut.testYM2413
         _irq.init
         _irq.setRoutine #mplus.ut.testYM2413.irq
         _irq.set50Hz
 
-        _ymm.obj.play #page.ymm,#assets.sounds.ym,#ymm.NO_LOOP,#mplus.ut.testYM2413.callback
+        _cart.setRam #page.ymm
+        _ymm.obj.play #page.ymm,#vgm.ym,#ymm.NO_LOOP,#mplus.ut.testYM2413.callback
         _irq.on
-        bra   *
-
-mplus.ut.testYM2413.callback
-        _irq.off
+!       lda   mplus.ut.testYM2413.lock
+        beq   <
+        _ym2413.init
         andcc #%11111110
         rts
 
+mplus.ut.testYM2413.callback
+        _irq.off
+        lda   #1
+        sta   mplus.ut.testYM2413.lock
+        rts
+
 mplus.ut.testYM2413.irq
+        _cart.setRam #page.ymm
         _ymm.frame.play
         rts
 
