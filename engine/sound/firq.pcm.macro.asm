@@ -8,8 +8,7 @@ _firq.pcm.play MACRO
         std   firq.pcm.sample
         ldd   \2
         std   map.MPLUS.TIMER
-        andcc #%10111111     ; unmask firq
-        lda   #%10011111
+        lda   #%10011110
                              ; Bit 7: R- Timer - INT requested by timer (0=NO, 1=YES)
                              ;        -W Timer - reset timer by reloading period to counter
                              ; Bit 6: -------  - Unused
@@ -22,6 +21,7 @@ _firq.pcm.play MACRO
                              ; Notes : - Timer F/IRQ ack by CPU is done by reading this control register
                              ;         - TI clock enable will be effective only after the first write to TI data register
         sta   map.MPLUS.CTRL
+        andcc #%10111111     ; unmask firq
  ENDM
 
 _firq.pcm.freezePlay MACRO

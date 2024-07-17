@@ -46,7 +46,7 @@ main.loop
         _main.test main.str.YM,mplus.ut.testYM2413
         ;_main.test main.str.MIDI,mplus.ut.testMIDI
         ;_main.test main.str.MEA,mplus.ut.testMEA8000
-        ;_monitor.setp #1,#$0000,#$0080 ; green
+        _monitor.setp #1,#$0000,#$0080 ; green
         bra   *
 
 main.test
@@ -57,7 +57,7 @@ main.test
         bra   @endif
 @else   _monitor.print #main.str.KO
         _monitor.setp #1,#$0000,#$0008 ; red
-        ;bra   *
+        bra   *
 @endif  _monitor.print #main.str.CRLF
         rts
 

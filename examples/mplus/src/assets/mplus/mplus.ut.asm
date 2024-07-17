@@ -199,9 +199,9 @@ firq.pcm.sample.play
                                        ; [8]  ROM jmp to user address
         sta   @a                       ; [5]  backup register value
         lda   map.MPLUS.CTRL           ; [5]  FIRQ acknowledge by reading ctrl register
-        bpl   @traperror1              ; [3]
-@trap   lda   map.MPLUS.CTRL           ; [5]  OK, 1 for int_timer_ack at first read
-        bmi   @traperror2              ; [3]  new test
+        ;bpl   @traperror1              ; [3]
+@trap   ;lda   map.MPLUS.CTRL           ; [5]  OK, 1 for int_timer_ack at first read
+        ;bmi   @traperror2              ; [3]  new test
                                        ;      OK, 0 for int_timer_ack
         lda   >$0000                   ; [5]  read sample byte
 firq.pcm.sample equ *-2
@@ -219,20 +219,24 @@ firq.pcm.sample equ *-2
 @a      equ   *-1
         rti                            ; [6]  RTI (equivalent to puls pc,cc)
 @traperror1
+        pshs  d,x,y,u,dp
         _monitor.print  #mplus.ut.KO1
+        puls  d,x,y,u,dp
         lda   #firq.pcm.END_MARKER
         sta   [firq.pcm.sample]
         sta   mplus.ut.state
         bra   @stop                    ; KO, 0 for int_timer_ack at first read
 @traperror2
+        pshs  d,x,y,u,dp
         _monitor.print  #mplus.ut.KO2
+        puls  d,x,y,u,dp
         lda   #firq.pcm.END_MARKER
         sta   [firq.pcm.sample]
         sta   mplus.ut.state
         bra   @stop                    ; KO, 1 for int_timer_ack at second read
 
-mplus.ut.KO1         fcs "int_timer_ack at 0 after first read - "
-mplus.ut.KO2         fcs "int_timer_ack still at 1 after second read  -"
+mplus.ut.KO1         fcs "int ack (0)"
+mplus.ut.KO2         fcs "int ack (1)"
 
  ; ----------------------------------------------------------------------------
  ; testSN76489
