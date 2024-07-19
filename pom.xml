@@ -22,6 +22,7 @@
 		<logback.version>1.5.3</logback.version>
 		<picocli.version>[4.7.5,)</picocli.version>		
 		<libtiled.version>[1.4.2,)</libtiled.version>
+		<json.version>[20240303,)</json.version>
 	</properties>
 
 	<dependencies>
@@ -71,6 +72,11 @@
 			<artifactId>libtiled</artifactId>
 			<version>${libtiled.version}</version>
 		</dependency>
+		<dependency>
+    		<groupId>org.json</groupId>
+    		<artifactId>json</artifactId>
+    		<version>${json.version}</version>
+		</dependency>		
 	</dependencies>
 
 	<build>
@@ -114,6 +120,7 @@
 		<module>./toolbox/audio/vgm2ymm</module>
 		<module>./toolbox/audio/vgm2vgc</module>
 		<module>./toolbox/text/txt2bas</module>
+		<module>./toolbox/text/phoneme</module>
 		<module>./toolbox/debug</module>
 		<module>./package</module>
 	</modules>

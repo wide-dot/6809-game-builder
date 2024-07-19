@@ -4,6 +4,10 @@
         <pcm filename="src/assets/sounds/samples" bit8to6="true"/>
     </target>
 
+    <target name="phoneme">
+        <phoneme filename="src/assets/sounds/text/demo.txt"/>
+    </target>
+
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
         <floppydisk model="fd640">
