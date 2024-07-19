@@ -1,23 +1,22 @@
 package com.widedot.toolbox.text.phoneme;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.json.JSONObject;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ public class PhonemePlugin {
 	public static HashSet<String> LANG = new HashSet<String>(Arrays.asList("fr"));
 	
     private static Map<String, String> exceptions;
-    private static Map<String, String> conversion;
+    private static List<Element> conversion;
 
 	public static byte[] convert(File file, String lang) throws Exception {
 
@@ -48,33 +47,38 @@ public class PhonemePlugin {
 		
         ArrayList<String> result = new ArrayList<>();
         String text = new String (Files.readAllBytes(file.toPath())).toLowerCase();
-        for (String word : text.split(" ")) {
-            String wordResult = "";
+        String lastResult = "notnull";
+        String wordResult = "";
+        for (String word : text.split("([\\s|(0-9)|•|—|–|\\-|,|?|!|^|\\r|’|°|“|”|\\.|«|»|…|\\\\|\\/|!|?|\\\"|\\[|\\]|\\(|\\)|\\]|<|>|=|+|%|$|&|#|;|*|:|}|{|`])")) {
+            lastResult = wordResult;
+            wordResult = "";
             if (exceptions.containsKey(word)) {
                 wordResult = exceptions.get(word);
             } else {
-                for (Map.Entry<String, String> entry : conversion.entrySet()) {
-                    if (word.matches(".*" + entry.getKey() + ".*")) {
-                        word = word.replaceFirst(entry.getKey(), "");
-                        wordResult += entry.getValue();
-                    }
-                }
+            	while (!word.equals("")) {
+	                for (Element entry : conversion) {
+	                	Matcher m = entry.p.matcher(word) ;  
+	                    if (m.find()) {
+	                        word = word.substring(m.end()-m.start());
+	                        wordResult += entry.value;
+	                        break;
+	                    }
+	                }
+            	}
             }
-            result.add(wordResult);
-            result.add(".");
-        }
-        if (!result.isEmpty() ) {
-        	result.remove(result.size()-1);
+            if (!(lastResult.equals("") && wordResult.equals(""))) {
+            	result.add(wordResult);
+            }
         }
 
-        System.out.println("/"+result.toString()+"/");
+        System.out.println(result.toString());
         
         byte[] bytes = new byte[10];
 		return bytes;
 	}
 
-    private static Map<String, String> parseCSV(String fileName) throws IOException {
-        Map<String, String> result = new HashMap<>();
+    private static List<Element> parseCSV(String fileName) throws IOException {
+        List<Element> result = new ArrayList<Element>();
         
         InputStream is = PhonemePlugin.class.getClassLoader().getResourceAsStream(fileName);
         
@@ -82,10 +86,7 @@ public class PhonemePlugin {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("#");
-                if (result.containsKey(parts[0])) {
-                	log.info("key: "+parts[0]+" already exists, value will be updated.");
-                }
-               	result.put(parts[0], (parts.length==1?"":parts[1]));
+               	result.add(new Element(parts[0], (parts.length==1?"":parts[1]), Pattern.compile(parts[0])));
             }
         }
         return result;
@@ -101,5 +102,5 @@ public class PhonemePlugin {
         }
         return result;
     }
-
+    
 }

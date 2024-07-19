@@ -1,0 +1,102 @@
+@import '../../styles/colors';
+@import '../../styles/variables';
+
+.container {
+  display: flex;
+  width: 100%;
+
+  @media screen and (max-width: 800px) {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+
+    padding: 0px 0px 20px 0px;
+  }
+}
+
+.title-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 500;
+  color: $offwhite;
+
+  @media screen and (min-width: 1000px) {
+    font-size: 42px;
+  }
+  @media screen and (max-width: 1000px) {
+    font-size: 38px;
+  }
+  @media screen and (max-width: 800px) {
+    font-size: 34px;
+  }
+  @media screen and (max-width: 600px) {
+    font-size: 30px;
+  }
+  @media screen and (max-width: 550px) {
+    font-size: 28px;
+  }
+  @media screen and (max-width: 500px) {
+    font-size: 26px;
+  }
+
+  transition: font-size 0.3s ease-in-out;
+}
+
+.header {
+  display: flex;
+  // align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+}
+
+.note {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 400;
+  color: $offwhite;
+}
+
+.email {
+  margin-left: 5px;
+  font-size: 18px;
+  font-weight: 300;
+  color: $offwhite;
+  border-bottom: 1.5px solid transparent;
+
+  transition: all 0.2s ease-in-out;
+}
+
+.email:hover {
+  border-bottom: 1.5px solid $white;
+}
+
+.language-select {
+  flex: 1;
+  margin-right: 5px;
+  margin-bottom: 10px;
+}
+
+.language-select h2 {
+  font-size: 20px;
+}
+
+.language-select select {
+  display: inline-block;
+  border: none;
+  border-bottom: 2px solid $darkgray;
+  background: none;
+
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0px 5px;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}

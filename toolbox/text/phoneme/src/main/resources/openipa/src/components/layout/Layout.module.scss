@@ -1,0 +1,15 @@
+@import '../../styles/variables';
+@import '../../styles/colors';
+
+.container {
+  min-height: 100vh;
+  display: flex;
+}
+
+.content-container {
+  margin-top: $navbar-height;
+  flex: 1;
+  background: $white;
+  display: flex;
+  flex-direction: column;
+}

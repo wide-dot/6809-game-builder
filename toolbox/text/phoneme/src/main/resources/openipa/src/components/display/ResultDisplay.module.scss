@@ -1,0 +1,141 @@
+@import '../../styles/colors';
+
+.display--light {
+  border-radius: 4px;
+  min-height: 500px; //320px;
+  width: 100%;
+  padding: 10px 20px 40px 20px;
+  text-align: left;
+
+  background: $white;
+  color: $darkgray;
+  border: 1px solid $gray;
+}
+
+.display--dark {
+  border-radius: 4px;
+  min-height: 400px; //320px;
+  width: 100%;
+  padding: 10px 20px 40px 20px;
+  text-align: left;
+
+  background: $darkgray;
+  color: $white;
+  border: 1px solid $gray;
+}
+
+.translated-text--light {
+  font-size: 15pt;
+  user-select: none;
+  color: $darkgray;
+  line-height: 0px;
+  font-style: italic;
+}
+
+.translated-text--dark {
+  font-size: 15pt;
+  user-select: none;
+  color: $white;
+  line-height: 0px;
+  font-style: italic;
+}
+
+.display-text--light {
+  font-size: 15pt;
+  user-select: none;
+  color: $darkgray;
+  line-height: 0px;
+}
+
+.display-text--dark {
+  font-size: 15pt;
+  user-select: none;
+  color: $white;
+  line-height: 0px;
+}
+
+.display-ipa--light {
+  font-size: 15pt;
+  user-select: none;
+  color: $darkgray;
+  line-height: 0px;
+  font-weight: 600;
+}
+
+.display-ipa--dark {
+  font-size: 15pt;
+  user-select: none;
+  color: $white;
+  line-height: 0px;
+  font-weight: 700;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 2px solid transparent;
+
+  @media screen and (max-width: 800px) {
+    position: initial;
+  }
+}
+
+.tooltip:hover,
+.tooltip--light:hover {
+  border-bottom: 2px solid $darkgray;
+}
+
+.tooltip--dark:hover {
+  border-bottom: 2px solid $white;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  position: absolute;
+  text-align: center;
+  user-select: none;
+  width: 300px;
+  font-size: 16px;
+
+  border-radius: 6px;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 10px;
+  margin-left: -125px;
+  padding: 20px;
+  box-shadow: 0px 5px 10px 5px rgba(0, 0, 0, 0.3);
+
+  @media screen and (max-width: 800px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    padding: 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0px 5px 10px 10px rgba(0, 0, 0, 0.3);
+    font-size: 18px;
+  }
+
+  z-index: 1;
+
+  background-color: $darkgray;
+  color: $white;
+}
+
+.tooltip--light .tooltip-text--light {
+  background-color: $darkgray;
+  color: $white;
+}
+
+.tooltip--dark .tooltip-text--dark {
+  background-color: $white;
+  color: $darkgray;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+}

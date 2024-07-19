@@ -1,0 +1,29 @@
+@import '../../styles/colors';
+@import '../../styles/variables';
+@import '../../styles/utils/mixins';
+
+.button {
+  margin: 10px;
+
+  height: 60px;
+  width: 170px;
+
+  font-size: 1.25rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @include respond-to('computer') {
+    width: 160px;
+  }
+  @include respond-to('tablet') {
+    width: 150px;
+    font-size: 1.15rem;
+  }
+  @include respond-to('phone') {
+    width: 140px;
+  }
+
+  @extend %link;
+}

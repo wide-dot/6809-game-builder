@@ -1,0 +1,71 @@
+{
+  "name": "openipa",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "serve": "pnpm build && pnpm start",
+    "script:texts": "ts-node ./scripts/addTextsToSupabase.ts",
+    "prepare": "husky install",
+    "test": "jest --noStackTrace ./src/tests",
+    "test:latin": "jest --noStackTrace ./src/tests/latin",
+    "test:french": "jest --noStackTrace ./src/tests/french",
+    "tsc:check": "pnpm tsc --noEmit"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@sendgrid/mail": "^7.7.0",
+    "@supabase/supabase-js": "2.38.0",
+    "autoprefixer": "^10.4.16",
+    "clsx": "^2.0.0",
+    "dayjs": "^1.11.10",
+    "dotenv": "^16.3.1",
+    "formik": "^2.4.5",
+    "jspdf": "^2.5.1",
+    "next": "13.5.4",
+    "octokit": "^3.1.1",
+    "postcss": "^8.4.31",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-dropdown": "^1.11.0",
+    "react-spinners": "^0.13.8",
+    "sass": "^1.69.0",
+    "sharp": "^0.32.6",
+    "tailwindcss": "^3.3.3",
+    "wikiapi": "^1.19.4",
+    "wretch": "^2.7.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.4.3"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.22.20",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.3",
+    "@types/react": "^18.2.25",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/parser": "^6.7.4",
+    "babel-jest": "^29.7.0",
+    "eslint": "8.51.0",
+    "eslint-config-next": "13.5.4",
+    "eslint-config-prettier": "^9.0.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.3",
+    "supabase": "^1.100.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "tsc-files": "^1.1.4",
+    "typescript": "^5.2.2"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx}": [
+      "pnpm lint",
+      "pnpm prettier --write"
+    ]
+  }
+}

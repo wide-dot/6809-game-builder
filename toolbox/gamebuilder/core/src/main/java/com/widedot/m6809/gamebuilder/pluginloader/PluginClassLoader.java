@@ -23,7 +23,8 @@ public class PluginClassLoader extends URLClassLoader {
 			"org.apache.commons.configuration2",
 			"org.slf4j",
 			"javax.script",
-			"org.json");
+			"org.json",
+			"com.caoccao.javet");
 
 	private final ClassLoader parentClassLoader;
 
