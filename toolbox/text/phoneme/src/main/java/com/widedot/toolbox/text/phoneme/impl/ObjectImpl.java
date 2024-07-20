@@ -32,7 +32,7 @@ public class ObjectImpl implements ObjectPluginInterface {
 	  
 	  File file = new File(path + File.separator + filename);
 	  Binary bin = new Binary();
-	  bin.bytes = PhonemePlugin.convert(file, lang);
+	  bin.bytes = PhonemePlugin.run(file, lang);
 	  return bin;
   }
 }

@@ -29,8 +29,19 @@ public class PhonemePlugin {
 	
     private static Map<String, String> exceptions;
     private static List<Element> conversion;
+    
+    public static byte[] run(File file, String lang) throws Exception {
 
-	public static byte[] convert(File file, String lang) throws Exception {
+    	String textIPA = convertToIPA(file, lang);
+    	System.out.println(textIPA);
+    	
+        byte[] bytes = new byte[10];
+		return bytes;
+    }
+    
+    
+
+	public static String convertToIPA(File file, String lang) throws Exception {
 
 		// control input parameters
 		if (!file.exists() || file.isDirectory()) {
@@ -47,34 +58,41 @@ public class PhonemePlugin {
 		
         ArrayList<String> result = new ArrayList<>();
         String text = new String (Files.readAllBytes(file.toPath())).toLowerCase();
-        String lastResult = "notnull";
         String wordResult = "";
-        for (String word : text.split("([\\s|(0-9)|•|—|–|\\-|,|?|!|^|\\r|’|°|“|”|\\.|«|»|…|\\\\|\\/|!|?|\\\"|\\[|\\]|\\(|\\)|\\]|<|>|=|+|%|$|&|#|;|*|:|}|{|`])")) {
-            lastResult = wordResult;
+        
+        for (String word : text.split("((?=\\s|\\.|\\,|\\;|\\?|\\!)|(?<=\\s|\\.|\\,|\\;|\\?|\\!))")) {
             wordResult = "";
+            
             if (exceptions.containsKey(word)) {
+            	
+            	// Use dictionnary
                 wordResult = exceptions.get(word);
+                
             } else {
+            	
+            	// Use regexp
             	while (!word.equals("")) {
+            		boolean found = false;
 	                for (Element entry : conversion) {
 	                	Matcher m = entry.p.matcher(word) ;  
 	                    if (m.find()) {
 	                        word = word.substring(m.end()-m.start());
 	                        wordResult += entry.value;
+	                        found = true;
 	                        break;
 	                    }
 	                }
+	                if (!found) {
+	                	word = word.substring(1); // skip unkown char
+	                }
             	}
             }
-            if (!(lastResult.equals("") && wordResult.equals(""))) {
+            if (!wordResult.equals("")) {
             	result.add(wordResult);
             }
         }
-
-        System.out.println(result.toString());
         
-        byte[] bytes = new byte[10];
-		return bytes;
+        return result.toString();
 	}
 
     private static List<Element> parseCSV(String fileName) throws IOException {

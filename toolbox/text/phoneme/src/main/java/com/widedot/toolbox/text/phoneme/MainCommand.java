@@ -67,6 +67,6 @@ public class MainCommand implements Runnable {
 	
 	private void convert(File file, String lang) throws Exception {
 		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+PhonemePlugin.FILE_EXT;
-		Files.write(Path.of(outFileName), PhonemePlugin.convert(file, lang));
+		Files.write(Path.of(outFileName), PhonemePlugin.run(file, lang));
 	}
 }
