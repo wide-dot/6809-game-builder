@@ -4,7 +4,7 @@
 .O            equ  3 ; ex. plateau
 .u            equ  4 ; ex. lune
 .ai           equ  5 ; ex. gai
-.et           equ  6 ; ex. ecole
+.et           equ  6 ; ex. école
 .eu           equ  7 ; ex. heureux
 .ou           equ  8 ; ex. loup
 .an           equ  9 ; ex. nathan
@@ -17,7 +17,7 @@
 .g            equ 16 ; ex. gai
 .j            equ 17 ; ex. joie
 .k            equ 18 ; ex. carte
-.l            equ 19 ; ex. lumiere
+.l            equ 19 ; ex. lumière
 .m            equ 20 ; ex. maman
 .n            equ 21 ; ex. navire
 .p            equ 22 ; ex. papa
