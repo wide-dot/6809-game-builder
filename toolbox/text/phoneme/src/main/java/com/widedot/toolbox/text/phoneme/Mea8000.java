@@ -14,6 +14,8 @@ public class Mea8000 {
 	public static List<Element> symbols;
 	static {
 		symbols = new ArrayList<>();
+		
+		// List is ordered, longer elements first
 
 		// Exceptions
 		// ----------
@@ -26,6 +28,7 @@ public class Mea8000 {
 
 		// Nasales
 		// -------
+		// warning : accuentuated char are two unicode long
 		symbols.add(new Element("^ɛ̃", "in")); // lapin
 		symbols.add(new Element("^ɑ̃", "an")); // nathan
 		symbols.add(new Element("^ɔ̃", "on")); // long
