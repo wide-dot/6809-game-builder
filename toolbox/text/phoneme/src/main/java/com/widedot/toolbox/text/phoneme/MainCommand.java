@@ -1,37 +1,26 @@
 package com.widedot.toolbox.text.phoneme;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-
-import com.widedot.m6809.util.FileUtil;
-
-import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "phoneme", description = "Convert UTF-8 text file (.txt) to basic langage files (.bas)")
-@Slf4j
+@Command(name = "phoneme", description = "Convert UTF-8 text file (.txt) to MEA8000 phonemes (.asm)")
+
 public class MainCommand implements Runnable {
 
-	@ArgGroup(exclusive = true, multiplicity = "1")
-	Exclusive exclusive;
+	public static final String IN_FILE_EXT = ".txt";
+	public static final String OUT_FILE_EXT = ".asm";
 
-	static class Exclusive {
-		@Option(names = { "-d",
-				"--dir" }, paramLabel = "Input directory", description = "Process all .txt files located in the input directory")
-		String inputDir;
+	@Option(names = { "-f", "--filename" }, required = true, description = "Process an " + IN_FILE_EXT
+			+ " input file, or all " + IN_FILE_EXT + " files in a directory and produce " + OUT_FILE_EXT + " files")
+	private String filename;
 
-		@Option(names = { "-f", "--file" }, paramLabel = "Input file", description = "Process a text input file")
-		String inputFile;
-	}
-
-	@Option(names = { "-t",
-			"--lang" }, paramLabel = "Language", description = "Language for text convertion")
+	@Option(names = { "-l", "--lang" }, description = "language code (default: fr)")
 	private String lang = "fr";
+
+	@Option(names = { "-g",
+			"--genbinary" }, description = "Output file name (default to filename with specific mode extension)")
+	private String genbinary;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -40,33 +29,13 @@ public class MainCommand implements Runnable {
 
 	@Override
 	public void run() {
-		
-		log.info("Convert ascii text file (.txt) to basic langage files (.bas)");
-		
 		try {
-			if (exclusive.inputFile != null) {
-				File txtFile = new File(exclusive.inputFile);
-				convert(txtFile, lang);
-			} else {
-				log.info("Process each .txt file of the directory: {}", exclusive.inputDir);
-				File dir = new File(exclusive.inputDir);
-				if (!dir.exists() || !dir.isDirectory()) {
-					log.error("Input directory does not exists !");
-				} else {
-					File[] files = dir.listFiles((d, name) -> name.endsWith(".txt"));
-					for (File txtFile : files) {
-						convert(txtFile, lang);
-					}
-				}
-			}
-			log.info("Conversion ended sucessfully.");
+			PhonemePlugin.filename = filename;
+			PhonemePlugin.genbinary = genbinary;
+			PhonemePlugin.lang = lang;
+			PhonemePlugin.run();
 		} catch (Exception e) {
 			e.printStackTrace();
-		}		
-	}
-	
-	private void convert(File file, String lang) throws Exception {
-		String outFileName = FileUtil.removeExtension(file.getAbsolutePath())+PhonemePlugin.FILE_EXT;
-		Files.write(Path.of(outFileName), PhonemePlugin.run(file, lang));
+		}
 	}
 }

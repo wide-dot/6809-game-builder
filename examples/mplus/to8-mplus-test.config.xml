@@ -5,7 +5,7 @@
     </target>
 
     <target name="phoneme">
-        <phoneme filename="src/assets/sounds/text/demo.txt"/>
+        <phoneme filename="src/assets/sounds/text/demo.txt" genbinary="src/assets/sounds/text/demo.asm"/>
     </target>
 
     <target name="fd">

@@ -1,7 +1,7 @@
 package com.widedot.toolbox.text.phoneme;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Mea8000 {
 
@@ -9,75 +9,76 @@ public class Mea8000 {
 	// ** Missing phoneme in asm table
 
 	public static String SYMBOL_PREFIX = ".";
-	private static Map<String, String> map;
+	public static String WORD_DELIMITER = "wordDelimiter";
+	public static String END_DELIMITER = "endDelimiter";
+	public static List<Element> symbols;
 	static {
-		map = new HashMap<>();
+		symbols = new ArrayList<>();
 
 		// Exceptions
 		// ----------
-		map.put("aj", "ail");  // travail
-		map.put("ɛj", "eil");  // vermeil
-		map.put("œj", "euil"); // deuil
-		map.put("jɛ", "ien");  // bien (accent nasal sur epsilon)
-		map.put("wa", "oi");   // joie
-		map.put("wɛ", "oin");  // point (accent nasal sur epsilon)
-
-		// Voyelles
-		// --------
-		map.put("i", "i");  // navire
-		map.put("e", "et"); // école
-		map.put("ɛ", "ai"); // gai
-		map.put("a", "a");  // papa
-		map.put("ɑ", "a");  // ** (A) pâte
-		map.put("ɔ", "o");  // bord
-		map.put("o", "O");  // plateau
-		map.put("u", "ou"); // loup
-		map.put("y", "u");  // lune
-		map.put("ø", "eu"); // heureux
-		map.put("œ", "eu"); // ** (EU) peur
-		map.put("ə", "e");  // le
+		symbols.add(new Element("^aj", "ail"));  // travail
+		symbols.add(new Element("^ɛj", "eil"));  // vermeil
+		symbols.add(new Element("^œj", "euil")); // deuil
+		symbols.add(new Element("^jɛ̃", "ien"));  // bien
+		symbols.add(new Element("^wa", "oi"));   // joie
+		symbols.add(new Element("^wɛ̃", "oin"));  // point
 
 		// Nasales
 		// -------
-		map.put("ɛ̃", "in"); // lapin
-		map.put("ɑ̃", "an"); // nathan
-		map.put("ɔ̃", "on"); // long
-		map.put("œ̃", "in"); // ** (un) brun
+		symbols.add(new Element("^ɛ̃", "in")); // lapin
+		symbols.add(new Element("^ɑ̃", "an")); // nathan
+		symbols.add(new Element("^ɔ̃", "on")); // long
+		symbols.add(new Element("^œ̃", "in")); // ** (un) brun
+		
+		// Voyelles
+		// --------
+		symbols.add(new Element("^i", "i"));  // navire
+		symbols.add(new Element("^e", "et")); // école
+		symbols.add(new Element("^ɛ", "ai")); // gai
+		symbols.add(new Element("^a", "a"));  // papa
+		symbols.add(new Element("^ɑ", "a"));  // ** (A) pâte
+		symbols.add(new Element("^ɔ", "o"));  // bord
+		symbols.add(new Element("^o", "O"));  // plateau
+		symbols.add(new Element("^u", "ou")); // loup
+		symbols.add(new Element("^y", "u"));  // lune
+		symbols.add(new Element("^ø", "eu")); // heureux
+		symbols.add(new Element("^œ", "eu")); // ** (EU) peur
+		symbols.add(new Element("^ə", "e"));  // le
 
 		// Semi-consonnes / Semi-voyelles
 		// ------------------------------
-		map.put("j", "i");  // ** (ye) yeux
-		map.put("w", "ou"); // ** (w) oui
-		map.put("µ", "u");  // ** (U) lui
+		symbols.add(new Element("^j", "i"));  // ** (ye) yeux
+		symbols.add(new Element("^w", "ou")); // ** (w) oui
+		symbols.add(new Element("^µ", "u"));  // ** (U) lui
 
 		// Consonnes
 		// ---------
-		map.put("p", "p");  // papa
-		map.put("t", "t");  // tomate
-		map.put("k", "k");  // carte
-		map.put("b", "b");  // boule
-		map.put("d", "d");  // domino
-		map.put("g", "g");  // gai
-		map.put("f", "f");  // fort
-		map.put("s", "S");  // sauce
-		map.put("ʃ", "ch"); // charme
-		map.put("v", "v");  // valise
-		map.put("z", "z");  // zoe
-		map.put("ʒ", "j");  // joie
-		map.put("l", "l");  // lumière
-		map.put("ʁ", "R");  // roule
-		map.put("r", "r");  // lourd
-		map.put("m", "m");  // maman
-		map.put("n", "n");  // navire
-		map.put("ɲ", "gn"); // agneau
+		symbols.add(new Element("^p", "p"));  // papa
+		symbols.add(new Element("^t", "t"));  // tomate
+		symbols.add(new Element("^k", "k"));  // carte
+		symbols.add(new Element("^b", "b"));  // boule
+		symbols.add(new Element("^d", "d"));  // domino
+		symbols.add(new Element("^g", "g"));  // gai
+		symbols.add(new Element("^f", "f"));  // fort
+		symbols.add(new Element("^s", "S"));  // sauce
+		symbols.add(new Element("^ʃ", "ch")); // charme
+		symbols.add(new Element("^v", "v"));  // valise
+		symbols.add(new Element("^z", "z"));  // zoe
+		symbols.add(new Element("^ʒ", "j"));  // joie
+		symbols.add(new Element("^l", "l"));  // lumière
+		symbols.add(new Element("^ʁ", "R"));  // roule
+		symbols.add(new Element("^r", "r"));  // lourd
+		symbols.add(new Element("^m", "m"));  // maman
+		symbols.add(new Element("^n", "n"));  // navire
+		symbols.add(new Element("^ɲ", "gn")); // agneau
 
 		// Ponctuation
 		// -----------
-		map.put(" ", "wordDelimiter");
-		map.put(".", "period");
-		map.put("?", "questionMark");
-		map.put("!", "exclamationMark");
-		map.put(",", "comma");
-		map.put(";", "semiColon");
+		symbols.add(new Element("^\\.", "period"));
+		symbols.add(new Element("^\\?", "questionMark"));
+		symbols.add(new Element("^\\!", "exclamationMark"));
+		symbols.add(new Element("^\\,", "comma"));
+		symbols.add(new Element("^\\;", "semiColon"));
 	}
 }

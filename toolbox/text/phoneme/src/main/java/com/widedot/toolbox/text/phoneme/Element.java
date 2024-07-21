@@ -7,9 +7,9 @@ public class Element {
 	public String value;
 	public Pattern p;
 	
-	public Element(String key, String value, Pattern p) {
+	public Element(String key, String value) {
 		this.key = key;
 		this.value = value;
-		this.p = p;
+		this.p = Pattern.compile(key);
 	}
 }

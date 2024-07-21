@@ -17,22 +17,32 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ObjectImpl implements ObjectPluginInterface {
 
-  @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
-	  
-	  //read input xml
-	  String filename = Attribute.getString(node, defaults, "filename", "phoneme.filename");
-	  String lang = Attribute.getString(node, defaults, "tokenset", "phoneme.lang", "fr");
+	@Override
+	public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines)
+			throws Exception {
 
-	  if (filename == null || filename.equals("")) {
-		  String m = "no filename provided for phoneme!";
-		  log.error(m);
-		  throw new Exception(m);
-	  }
-	  
-	  File file = new File(path + File.separator + filename);
-	  Binary bin = new Binary();
-	  bin.bytes = PhonemePlugin.run(file, lang);
-	  return bin;
-  }
+		// read input xml
+		String filename = Attribute.getStringOpt(node, defaults, "filename", "phoneme.filename");
+		String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "phoneme.genbinary");
+		String lang = Attribute.getString(node, defaults, "lang", "phoneme.lang", "fr");
+
+		if (filename == null || filename.equals("")) {
+			String m = "no filename provided for phoneme!";
+			log.error(m);
+			throw new Exception(m);
+		}
+
+		if (filename != null)
+			filename = path + File.separator + filename;
+		if (genbinary != null)
+			genbinary = path + File.separator + genbinary;
+
+		Binary bin = new Binary();
+
+		PhonemePlugin.filename = filename;
+		PhonemePlugin.genbinary = genbinary;
+		PhonemePlugin.lang = lang;
+		bin.bytes = PhonemePlugin.run();
+		return bin;
+	}
 }
