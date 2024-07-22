@@ -1,9 +1,19 @@
 ; phonemes 3.3 from "Parole et Micros" book
 ; index table is no more offsets, but absolute addresses
 ; padding values originally found after offset table are gone
-; phoneme header was: length(hi), length(lo), $3C, $3C
+; phoneme header was: length(hi), length(lo), pitch($3C), pitch($3C)
 ; new header is     : length(lo)
-; 
+; phoneme coded speech frame is 4 bytes long :
+; BW1:  2 bits
+; BW2:  2 bits
+; BW3:  2 bits
+; BW4:  2 bits
+; FM3:  3 bits
+; FM2:  5 bits
+; FM1:  5 bits
+; AMPL: 4 bits
+; FD:   2 bits
+; PI:   5 bits
 
  SECTION code
 
