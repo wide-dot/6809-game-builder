@@ -24,7 +24,7 @@ public class MeaEmulator {
             	snd.play(sound);
             }
             
-			ImGui.inputTextMultiline("##MEAinput", input, 400, 400);
+			ImGui.inputTextMultiline("##MEAinput", input, 600, 400);
 		}
 		ImGui.end();
 	}

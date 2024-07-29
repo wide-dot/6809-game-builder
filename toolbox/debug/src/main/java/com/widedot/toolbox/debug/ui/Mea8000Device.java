@@ -1,5 +1,6 @@
 package com.widedot.toolbox.debug.ui;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import javax.sound.sampled.AudioFormat;
@@ -212,25 +213,26 @@ public class Mea8000Device {
 	}
 
 	private void decodeFrame() {
-		int fd = (m_buf[3] >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
+		
+		int fd = (m_buf[3] & 0xff >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
 		int pi = pi_table[m_buf[3] & 0x1f] << fd;
 		m_noise = (m_buf[3] & 0x1f) == 16;
 		m_pitch = m_last_pitch + pi;
-		m_f[0].bw = bw_table[m_buf[0] >> 6];
-		m_f[1].bw = bw_table[(m_buf[0] >> 4) & 3];
-		m_f[2].bw = bw_table[(m_buf[0] >> 2) & 3];
-		m_f[3].bw = bw_table[m_buf[0] & 3];
+		m_f[0].bw = bw_table[m_buf[0] & 0xff >> 6];
+		m_f[1].bw = bw_table[(m_buf[0] & 0xff >> 4) & 3];
+		m_f[2].bw = bw_table[(m_buf[0] & 0xff >> 2) & 3];
+		m_f[3].bw = bw_table[m_buf[0] & 0xff & 3];
 		m_f[3].fm = fm4_table[0];
-		m_f[2].fm = fm3_table[m_buf[1] >> 5];
+		m_f[2].fm = fm3_table[m_buf[1] & 0xff >> 5];
 		m_f[1].fm = fm2_table[m_buf[1] & 0x1f];
-		m_f[0].fm = fm1_table[m_buf[2] >> 3];
-		m_ampl = ampl_table[((m_buf[2] & 7) << 1) | (m_buf[3] >> 7)];
+		m_f[0].fm = fm1_table[m_buf[2] & 0xff >> 3];
+		m_ampl = ampl_table[((m_buf[2] & 0xff & 7) << 1) | (m_buf[3] & 0xff >> 7)];
 		m_framelog = fd + 6 + 3; // 64 samples / ms
 		m_framelength = 1 << m_framelog;
 		m_bufpos = 0;
 
 		log.info(
-				"mea800_decode_frame: pitch={} noise={}  fm1={}Hz bw1={}Hz  fm2={}Hz bw2={}Hz  fm3={}Hz bw3={}Hz  fm4={}Hz bw4={}Hz  ampl={}g fd={}ms\n",
+				"mea800_decode_frame: pitch={}Hz noise={}  fm1={}Hz bw1={}Hz  fm2={}Hz bw2={}Hz  fm3={}Hz bw3={}Hz  fm4={}Hz bw4={}Hz  ampl={} fd={}ms",
 				m_pitch, m_noise, m_f[0].fm, m_f[0].bw, m_f[1].fm, m_f[1].bw, m_f[2].fm, m_f[2].bw, m_f[3].fm,
 				m_f[3].bw, m_ampl / 1000.0, 8 << fd);
 	}
@@ -249,13 +251,12 @@ public class Mea8000Device {
 	public byte[] compute(byte[] data) {
 		
 		int i = 0;
+		int j = 0;
 		
 		// first byte is a command
 		if (data.length > 0) {
 			write(1, data[i++]);
 		}
-		
-		audio_buffer = new byte[((data.length-1)/4)*m_framelength];
 		
 		// remaining bytes are data
 		while(i+3 < data.length) {
@@ -263,6 +264,12 @@ public class Mea8000Device {
 			write(0, data[i++]);
 			write(0, data[i++]);
 			write(0, data[i++]);
+			
+			if (audio_buffer == null) {
+				audio_buffer = new byte[m_framelength*2];
+			} else {
+				audio_buffer = Arrays.copyOf(audio_buffer, audio_buffer.length+m_framelength*2);
+			}
 			
 			while(m_framepos < m_framelength) {
 				int pos = m_framepos % SUPERSAMPLING;
@@ -275,30 +282,15 @@ public class Mea8000Device {
 					m_output = m_lastsample + ((pos * (m_sample - m_lastsample)) / SUPERSAMPLING);
 				}
 		
-				audio_buffer[i] = (byte) (m_output & 0xFF);
-				audio_buffer[i+1] = (byte) (m_output >> 8);
+				audio_buffer[j++] = (byte) (m_output & 0xFF);
+				audio_buffer[j++] = (byte) (m_output >> 8);
 				
 				m_framepos++;
 			}
 			
 			shiftFrame();
-			if (m_bufpos == 4) {
-				log.info("mea8000_timer_expire: new frame\n");
-				decodeFrame();
-				startFrame();
-			} else if (m_cont != 0) {
-				log.info("mea8000_timer_expire: repeat frame\n");
-				startFrame();
-			} else if (m_state == Mea8000State.STARTED) {
-				m_ampl = 0;
-				log.info("mea8000_timer_expire: fade frame\n");
-				startFrame();
-				m_state = Mea8000State.SLOWING;
-			} else if (m_state == Mea8000State.SLOWING) {
-				log.info("mea8000_timer_expire: stop frame\n");
-				stopFrame();
-			}
-
+			decodeFrame();
+			startFrame();
 		}
 		
 		return audio_buffer;
