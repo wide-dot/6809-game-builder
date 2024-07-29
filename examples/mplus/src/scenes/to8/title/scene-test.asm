@@ -7,7 +7,7 @@
         fdb   assets.gm.title          ; [file id]
 
         ; new subscene
-        fdb   $8000+4                  ; [type | nb files] (0: end marker)
+        fdb   $8000+5                  ; [type | nb files] (0: end marker)
 
         fcb   $05                      ; [destination - page id]
         fdb   $0000                    ; [destination - address] in half page
@@ -15,6 +15,7 @@
         fdb   assets.sounds.ym
         fdb   assets.sounds.sn
         fdb   engine.system.to8.sound.mplus.const
+        fdb   assets.lotr.txt
 
         ; end scenes
         fdb   0                        ; [type | nb files] (0: end marker)

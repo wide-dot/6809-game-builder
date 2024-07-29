@@ -1,6 +1,7 @@
 samples.timpani              EXTERNAL
 vgm.ym                       EXTERNAL
 vgm.sn                       EXTERNAL
+lotr.txt                     EXTERNAL
 
 mplus.ut.timer.testRW        EXPORT
 mplus.ut.timer.testCountdown EXPORT
@@ -322,8 +323,10 @@ mplus.ut.testMIDI
  ; ----------------------------------------------------------------------------
 
 mplus.ut.testMEA8000
-        tst   clock.type
-        andcc #%11111110
+        lda   #$38
+        ldx   #mea8000.phonemes
+        ldy   #lotr.txt
+        jsr   mea8000.read
         rts
 
  ; ----------------------------------------------------------------------------

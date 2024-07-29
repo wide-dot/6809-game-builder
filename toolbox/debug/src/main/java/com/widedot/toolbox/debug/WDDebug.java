@@ -24,6 +24,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_SPRITE_RENDER_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_MEA_WINDOW = new ImBoolean(false);
 	
     public WDDebug() {
     	launch(this);
@@ -61,6 +62,11 @@ public class WDDebug extends Application {
                 ImGui.menuItem("Smps driver", null, SHOW_IMGUI_SMPS_WINDOW);
                 ImGui.endMenu();
             }
+            if (ImGui.beginMenu("Tools"))
+            {
+                ImGui.menuItem("MEA8000", null, SHOW_IMGUI_MEA_WINDOW);
+                ImGui.endMenu();
+            }
 
             ImGui.endMainMenuBar();
             
@@ -68,6 +74,7 @@ public class WDDebug extends Application {
 
         // tools non related to process
         if (SHOW_IMGUI_FRAME_RENDER_WINDOW.get()) FrameRender.show(SHOW_IMGUI_FRAME_RENDER_WINDOW);
+        if (SHOW_IMGUI_MEA_WINDOW.get()) MeaEmulator.show(SHOW_IMGUI_MEA_WINDOW);
         
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);

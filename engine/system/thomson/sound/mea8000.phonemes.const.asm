@@ -38,3 +38,11 @@
 .s    equ 37 ; ex. histoire (s bref)
 .32ms equ 38
 .64ms equ 39
+
+.period          equ 39
+.questionMark    equ 39
+.exclamationMark equ 39
+.comma           equ 39
+.semiColon       equ 39
+.wordDelimiter   equ 39
+.endDelimiter    equ -1

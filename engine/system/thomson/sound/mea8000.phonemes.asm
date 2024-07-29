@@ -4,16 +4,17 @@
 ; phoneme header was: length(hi), length(lo), pitch($3C), pitch($3C)
 ; new header is     : length(lo)
 ; phoneme coded speech frame is 4 bytes long :
-; BW1:  2 bits
-; BW2:  2 bits
-; BW3:  2 bits
-; BW4:  2 bits
-; FM3:  3 bits
-; FM2:  5 bits
-; FM1:  5 bits
-; AMPL: 4 bits
-; FD:   2 bits
-; PI:   5 bits
+; 31-30 BW1  2bit Bandwidth of 1st formant (726,309,125,50 Hz)
+; 29-28 BW2  2bit Bandwidth of 2nd formant (726,309,125,50 Hz)
+; 27-26 BW3  2bit Bandwidth of 3rd formant (726,309,125,50 Hz)
+; 25-24 BW4  2bit Bandwidth of 4th formant (726,309,125,50 Hz)
+; N/A   FM4  0bit Resonance Frequency of 4th formant (3500 Hz) (fixed)
+; 23-21 FM3  3bit Resonance Frequency of 3rd formant (1179..3400 Hz)
+; 20-16 FM2  5bit Resonance Frequency of 2nd formant (440..3400 Hz)
+; 15-11 FM1  5bit Resonance Frequency of 1st formant (150..1047 Hz)
+; 10-7  AMPL 4bit Amplitude (volume) (0.000 .. 1.000) (nonlinear)
+; 6-5   FD   2bit Frame Duration (8,16,32,64 ms)
+; 4-0   PI   5bit Pitch Increment (signed, -15..+15 Hz per 8ms) (or -16=Noise)
 
  SECTION code
 

@@ -4,15 +4,28 @@ map.MEA8000.A EXTERNAL ; RCOM
  SECTION code
 
 ; read a list a phonemes
-; input: [Y] addr of a list (offsets to phonemes 3.3 table)
+; input: [A] tonality
+; input: [X] addr of phonemes 3.3 lookup
+; input: [Y] addr of txt to read
 mea8000.read
         pshs  d,x,y,u
-        lda   #$1A
-        sta   map.MEA8000.A ; MEA init to STOP-SLOW and REQ inactive
-        lda   #$3C
-        sta   map.MEA8000.D ; Default speech tonality (TODO set as parameter)
-        
-
-        pshs  d,x,y,u,pc
+        ldb   #$1A
+        stb   map.MEA8000.A ; MEA init to STOP-SLOW and REQ inactive
+        sta   map.MEA8000.D ; Default speech tonality
+@nextPhoneme
+        lda   ,y+
+        bpl   >
+        puls  d,x,y,u,pc
+!       lsla
+        ldu   a,x
+        lda   ,u+ ; nb of bytes for this phoneme
+@nextByte
+        ldb   ,u+
+!       tst   map.MEA8000.A ; pooling
+        bpl   <
+        stb   map.MEA8000.D
+        deca
+        beq   @nextPhoneme
+        bra   @nextByte
 
  ENDSECTION

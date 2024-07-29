@@ -4,11 +4,9 @@
         <pcm filename="src/assets/sounds/samples" bit8to6="true"/>
     </target>
 
-    <target name="phoneme">
-        <phoneme filename="src/assets/sounds/text/demo.txt" genbinary="src/assets/sounds/text/demo.asm"/>
-    </target>
-
     <target name="fd">
+        <phoneme filename="src/assets/sounds/text/demo.txt" genbinary="src/assets/sounds/text/demo.asm"/>
+
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
         <floppydisk model="fd640">
 
@@ -54,6 +52,18 @@
                         <label name="vgm.sn"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn76489.vgm" genbinary="src/assets/sounds/vgm/sn76489.vgc"/>
+                </direntry>
+
+                <!-- Test - mea8000 text data -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.lotr.txt" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="lotr.txt"/>
+                        <asm xml:space="preserve"> SECTION code</asm>
+                        <asm filename="src/assets/sounds/text/demo.asm"/>
+                        <asm filename="engine/system/thomson/sound/mea8000.phonemes.const.asm"/>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
                 </direntry>
 
                 <!-- Test - sound player dynamic port -->

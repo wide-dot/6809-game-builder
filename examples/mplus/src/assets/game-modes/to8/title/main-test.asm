@@ -23,29 +23,29 @@ _main.test MACRO
  ENDM
 
 main.loop
-        _monitor.print #main.str.HEADER
+        ;_monitor.print #main.str.HEADER
 
         ; Timer test
-        _monitor.print #main.str.1MHZ
-        ldb   #1 ; Clock 1MHz
-        stb   clock.type
-!       _main.test main.str.WR,mplus.ut.timer.testRW
-        _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
-        _main.test main.str.CYCLE,mplus.ut.timer.testCycle
-        _main.test main.str.RESET,mplus.ut.timer.testReset
-        dec   clock.type ; Clock 3.58MHz
-        bne   >
-        _monitor.print #main.str.3MHZ
-        bra   <
+        ;_monitor.print #main.str.1MHZ
+        ;ldb   #1 ; Clock 1MHz
+        ;stb   clock.type
+!       ;_main.test main.str.WR,mplus.ut.timer.testRW
+        ;_main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
+        ;_main.test main.str.CYCLE,mplus.ut.timer.testCycle
+        ;_main.test main.str.RESET,mplus.ut.timer.testReset
+        ;dec   clock.type ; Clock 3.58MHz
+        ;bne   >
+        ;_monitor.print #main.str.3MHZ
+        ;bra   <
 !
 
         ; Play test
-        _monitor.print #main.str.PLAYING
-        _main.test main.str.DAC,mplus.ut.testDAC
-        _main.test main.str.SN,mplus.ut.testSN76489
-        _main.test main.str.YM,mplus.ut.testYM2413
+        ;_monitor.print #main.str.PLAYING
+        ;_main.test main.str.DAC,mplus.ut.testDAC
+        ;_main.test main.str.SN,mplus.ut.testSN76489
+        ;_main.test main.str.YM,mplus.ut.testYM2413
         ;_main.test main.str.MIDI,mplus.ut.testMIDI
-        ;_main.test main.str.MEA,mplus.ut.testMEA8000
+        _main.test main.str.MEA,mplus.ut.testMEA8000
         _monitor.setp #1,#$0000,#$0080 ; green
         bra   *
 
@@ -101,3 +101,4 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/sound/vgc.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.const.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.asm"
+        INCLUDE "engine/system/thomson/sound/mea8000.asm"
