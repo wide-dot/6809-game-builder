@@ -123,7 +123,7 @@ public class Mea8000Device {
 			return (acceptByte() == true ? 1 : 0) << 7;
 
 		default:
-			log.error("mea8000_r invalid read offset {}\n", offset);
+			log.error("mea8000_r invalid read offset {}", offset);
 		}
 		return 0;
 	}
@@ -170,11 +170,11 @@ public class Mea8000Device {
 				stopFrame();
 			}
 
-			log.info("mea8000_w command {} stop={} cont={} roe={}\n", data, stop, m_cont, m_roe);
+			log.info("mea8000_w command {} stop={} cont={} roe={}", data, stop, m_cont, m_roe);
 			break;
 
 		default:
-			log.error("mea8000_w invalid write offset {}\n", offset);
+			log.error("mea8000_w invalid write offset {}", offset);
 		}
 	}
 
@@ -258,12 +258,23 @@ public class Mea8000Device {
 			write(1, data[i++]);
 		}
 		
+		// second byte is pitch
+		if (data.length > 0) {
+			write(0, data[i++]);
+		}
+		
 		// remaining bytes are data
 		while(i+3 < data.length) {
 			write(0, data[i++]);
 			write(0, data[i++]);
 			write(0, data[i++]);
 			write(0, data[i++]);
+
+			if (m_framepos > 0) {
+				shiftFrame();
+				decodeFrame();
+				startFrame();
+			}
 			
 			if (audio_buffer == null) {
 				audio_buffer = new byte[m_framelength*2];
@@ -287,10 +298,6 @@ public class Mea8000Device {
 				
 				m_framepos++;
 			}
-			
-			shiftFrame();
-			decodeFrame();
-			startFrame();
 		}
 		
 		return audio_buffer;
