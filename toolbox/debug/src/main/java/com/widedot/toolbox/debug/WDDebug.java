@@ -5,8 +5,10 @@ import com.sun.jna.platform.win32.Tlhelp32;
 import com.widedot.toolbox.debug.ui.*;
 
 import imgui.ImGui;
+import imgui.ImGuiIO;
 import imgui.app.Application;
 import imgui.app.Configuration;
+import imgui.flag.ImGuiBackendFlags;
 import imgui.type.ImBoolean;
 
 public class WDDebug extends Application {
@@ -38,6 +40,10 @@ public class WDDebug extends Application {
     @Override
     public void process() {
     	 	   	
+    	// move this to init instead of process
+        final ImGuiIO io = ImGui.getIO();
+        io.addBackendFlags(ImGuiBackendFlags.RendererHasVtxOffset);
+    	
     	// Menu Bar
         if (ImGui.beginMainMenuBar())
         {

@@ -82,10 +82,7 @@ public class Mea8000Device {
 	private static Random random = new Random();
 	
 	// Audio
-	private static int AUDIO_BUFFER_SIZE = 64*8*2; // audio buffer size for 8ms
     private static byte[] audio_buffer;
-    private static AudioFormat af;
-    private static SourceDataLine sdl;
 
 
 	// FType class to hold filter parameters
@@ -250,6 +247,11 @@ public class Mea8000Device {
 	
 	public byte[] compute(byte[] data) {
 		
+
+		// reinit buffer and phase
+		audio_buffer = new byte[0];
+		m_phi = 0;
+		
 		int i = 0;
 		int j = 0;
 		
@@ -276,11 +278,8 @@ public class Mea8000Device {
 				startFrame();
 			}
 			
-			if (audio_buffer == null) {
-				audio_buffer = new byte[m_framelength*2];
-			} else {
-				audio_buffer = Arrays.copyOf(audio_buffer, audio_buffer.length+m_framelength*2);
-			}
+			audio_buffer = Arrays.copyOf(audio_buffer, audio_buffer.length+m_framelength*2);
+
 			
 			while(m_framepos < m_framelength) {
 				int pos = m_framepos % SUPERSAMPLING;

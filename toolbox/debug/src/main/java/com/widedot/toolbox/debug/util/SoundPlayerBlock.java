@@ -19,7 +19,7 @@ public class SoundPlayerBlock {
 			sdl.open();
 		    sdl.start();
 		    
-		    sdl.write(audio_buffer, 0, audio_buffer.length);
+		    sdl.write(audio_buffer, 0, audio_buffer.length/2);
 			
 			sdl.stop();
 			sdl.flush();
