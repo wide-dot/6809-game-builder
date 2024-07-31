@@ -26,7 +26,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_SPRITE_RENDER_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
-    private static final ImBoolean SHOW_IMGUI_MEA_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_MEA_WINDOW = new ImBoolean(true);
 	
     public WDDebug() {
     	launch(this);
