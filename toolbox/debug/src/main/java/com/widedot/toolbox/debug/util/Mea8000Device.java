@@ -1,4 +1,4 @@
-package com.widedot.toolbox.debug.ui;
+package com.widedot.toolbox.debug.util;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -49,6 +49,9 @@ public class Mea8000Device {
 	private static final int[] ampl_table = { 0, 8, 11, 16, 22, 31, 44, 62, 88, 125, 177, 250, 354, 500, 707, 1000 };
 	private static final int[] pi_table   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
 
+	public  static final int BITDEPTH   = 16;
+	public  static final int SAMPLERATE = F0*SUPERSAMPLING;
+	
 	private enum Mea8000State {
 		STOPPED, // nothing to do, timer disabled
 		WAIT_FIRST, // received pitch, wait for first full frame, timer disabled

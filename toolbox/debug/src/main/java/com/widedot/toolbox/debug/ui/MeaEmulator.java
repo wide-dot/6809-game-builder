@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.widedot.toolbox.debug.util.HexUtils;
+import com.widedot.toolbox.debug.util.Mea8000Device;
 import com.widedot.toolbox.debug.util.SoundPlayerBlock;
 import com.widedot.toolbox.debug.util.WavFile;
 
@@ -27,6 +28,8 @@ public class MeaEmulator {
 		}
 	};
 	private static Map<String, String> selection = null;
+	
+	private static WavFile wavFile;
 
 	private static ImString input = new ImString(0x10000);
 	private static Mea8000Device mea = new Mea8000Device();
@@ -34,9 +37,9 @@ public class MeaEmulator {
 	private static byte[] data;
 	private static byte[] meaSound;
 	private static byte[] refSound;
-	private static Integer[] xmea = {};
+	private static Double[] xmea = {};
 	private static Integer[] ymea = {};
-	private static Integer[] xref = {};
+	private static Double[] xref = {};
 	private static Integer[] yref = {};
 
 	static {
@@ -61,6 +64,8 @@ public class MeaEmulator {
 		if (ImGui.begin("MEA8000 Emulator", showImGui)) {
 			try {
 
+				// LOAD FILE
+				// -------------------------------------------------------------
 				if (ImGui.button("Load")) {
 					ImGuiFileDialog.openModal("browse-key", "Choose File", ".wav", lastDirectory, callback, 250, 1, 42,
 							ImGuiFileDialogFlags.None);
@@ -79,7 +84,7 @@ public class MeaEmulator {
 					if (selection != null && !selection.isEmpty()) {
 
 						File file = new File(selection.values().stream().findFirst().get());
-						WavFile wavFile = WavFile.openWavFile(file);
+						wavFile = WavFile.openWavFile(file);
 
 						// Display information about the wav file
 						wavFile.display();
@@ -94,10 +99,12 @@ public class MeaEmulator {
 						int[] buffer = new int[(int) wavFile.getNumFrames()];
 						wavFile.readFrames(buffer, (int) wavFile.getNumFrames());
 						yref = Arrays.stream(buffer).boxed().toArray(Integer[]::new);
-						xref = new Integer[yref.length];
+						xref = new Double[yref.length];
+						double rate = 1.0/wavFile.getSampleRate();
 						for (int i = 0; i < yref.length; i++) {
-							xref[i] = i;
+							xref[i] = i*rate;
 						}
+						
 						ImPlot.fitNextPlotAxes();
 
 						// Close the wavFile
@@ -106,6 +113,8 @@ public class MeaEmulator {
 
 				}
 
+				// ENCODE
+				// -------------------------------------------------------------
 				ImGui.sameLine();
 				if (ImGui.button("Encode")) {
 					data = HexUtils.hexStringToByteArray(input.toString());
@@ -114,34 +123,41 @@ public class MeaEmulator {
 
 					int byteDepth = 2;
 					int scale = 8;
+					double rate = 1.0/Mea8000Device.SAMPLERATE;
 					int length = meaSound.length / (scale * byteDepth);
 
-					xmea = new Integer[length];
+					xmea = new Double[length];
 					ymea = new Integer[length];
 					int j = 0;
 
 					for (int i = 0; i < meaSound.length; i += scale * byteDepth) {
-						xmea[j] = j;
+						xmea[j] = j*rate*scale;
 						ymea[j] = (meaSound[i + 1] << 8) | (meaSound[i] & 0xff);
 						j++;
 					}
 					ImPlot.fitNextPlotAxes();
 				}
 
+				// PLAY REF
+				// -------------------------------------------------------------
 				if (refSound != null) {
 					ImGui.sameLine();
 					if (ImGui.button("Play ref.")) {
-						snd.play(refSound);
+						snd.play(refSound, (int) wavFile.getSampleRate(), 16);
 					}
 				}
 
+				// PLAY SYNTH
+				// -------------------------------------------------------------
 				if (meaSound != null) {
 					ImGui.sameLine();
 					if (ImGui.button("Play synth.")) {
-						snd.play(meaSound);
+						snd.play(meaSound, Mea8000Device.SAMPLERATE, Mea8000Device.BITDEPTH);
 					}
 				}
 
+				// PLOT
+				// -------------------------------------------------------------
 				ImGui.inputTextMultiline("##MEAinput", input, 600, 400);
 
 				if (ImPlot.beginPlot("Audio")) {

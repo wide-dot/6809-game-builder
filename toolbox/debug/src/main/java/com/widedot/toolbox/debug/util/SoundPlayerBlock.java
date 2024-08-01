@@ -4,20 +4,16 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.SourceDataLine;
 
-import com.widedot.toolbox.debug.ui.Mea8000Device;
-
 import lombok.extern.slf4j.Slf4j;
 
 public class SoundPlayerBlock {
 
-	public final static int SAMPLE_RATE = 64000; // Hz
-	public final static int BIT_DEPTH = 16;      // bits
-	
-	private AudioFormat af = new AudioFormat((float)SAMPLE_RATE, BIT_DEPTH, 1, true, false);	
+	private AudioFormat af;	
 	private SourceDataLine sdl;
 	
-	public void play (byte[] audioBuffer) {
+	public void play (byte[] audioBuffer, int sampleRate, int bitDepth) {
 	    try {		
+	    	af = new AudioFormat((float)sampleRate, bitDepth, 1, true, false);
 			sdl = AudioSystem.getSourceDataLine(af);
 			sdl.open();
 		    sdl.start();
