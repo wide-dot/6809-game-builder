@@ -96,13 +96,22 @@ public class MeaEmulator {
 						}
 
 						// Create a buffer
-						int[] buffer = new int[(int) wavFile.getNumFrames()];
-						wavFile.readFrames(buffer, (int) wavFile.getNumFrames());
-						yref = Arrays.stream(buffer).boxed().toArray(Integer[]::new);
-						xref = new Double[yref.length];
-						double rate = 1.0/wavFile.getSampleRate();
-						for (int i = 0; i < yref.length; i++) {
-							xref[i] = i*rate;
+						int numFrames = (int) wavFile.getNumFrames();
+						int[] buffer = new int[numFrames];
+						wavFile.readFrames(buffer, numFrames);
+						
+						int scale = 16;
+						double rate = scale * 1.0/wavFile.getSampleRate();
+						int length = numFrames / scale;
+
+						yref = new Integer[length];
+						xref = new Double[length];
+						int j = 0;
+						
+						for (int i = 0; i < numFrames; i += scale) {
+							xref[j] = j*rate;
+							yref[j] = buffer[i];
+							j++;
 						}
 						
 						ImPlot.fitNextPlotAxes();
@@ -122,8 +131,8 @@ public class MeaEmulator {
 					// meaSound = SineWave.createSinWaveBuffer(440,3000);
 
 					int byteDepth = 2;
-					int scale = 8;
-					double rate = 1.0/Mea8000Device.SAMPLERATE;
+					int scale = 16;
+					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
 					int length = meaSound.length / (scale * byteDepth);
 
 					xmea = new Double[length];
@@ -131,7 +140,7 @@ public class MeaEmulator {
 					int j = 0;
 
 					for (int i = 0; i < meaSound.length; i += scale * byteDepth) {
-						xmea[j] = j*rate*scale;
+						xmea[j] = j*rate;
 						ymea[j] = (meaSound[i + 1] << 8) | (meaSound[i] & 0xff);
 						j++;
 					}

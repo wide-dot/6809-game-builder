@@ -41,8 +41,8 @@ public class WDDebug extends Application {
     public void process() {
     	 	   	
     	// move this to init instead of process
-        //final ImGuiIO io = ImGui.getIO();
-        //io.addBackendFlags(ImGuiBackendFlags.RendererHasVtxOffset);
+        final ImGuiIO io = ImGui.getIO();
+        io.addBackendFlags(ImGuiBackendFlags.RendererHasVtxOffset);
     	
     	// Menu Bar
         if (ImGui.beginMainMenuBar())
