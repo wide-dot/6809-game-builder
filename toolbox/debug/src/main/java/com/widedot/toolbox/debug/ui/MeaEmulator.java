@@ -9,6 +9,10 @@ import com.widedot.toolbox.debug.util.Mea8000Device;
 import com.widedot.toolbox.debug.util.SoundPlayerBlock;
 import com.widedot.toolbox.debug.util.WavFile;
 
+import funkatronics.code.tactilewaves.dsp.FormantExtractor;
+import funkatronics.code.tactilewaves.dsp.PitchProcessor;
+import funkatronics.code.tactilewaves.dsp.WaveFrame;
+import funkatronics.code.tactilewaves.io.WaveFormat;
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;
 import imgui.extension.imguifiledialog.flag.ImGuiFileDialogFlags;
@@ -16,7 +20,9 @@ import imgui.extension.implot.ImPlot;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
 import imgui.type.ImString;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MeaEmulator {
 
 	// file dialog
@@ -37,6 +43,7 @@ public class MeaEmulator {
 	private static byte[] data;
 	private static byte[] meaSound;
 	private static byte[] refSound;
+	private static float[] refData;
 	private static Double[] xmea = {};
 	private static Integer[] ymea = {};
 	private static Double[] xref = {};
@@ -95,14 +102,14 @@ public class MeaEmulator {
 							throw new Exception("Wav file should be mono.");
 						}
 
-						// Create a buffer
+						// Create a buffer for plots and a buffer for wav playing
 						int numFrames = (int) wavFile.getNumFrames();
 						int[] buffer = new int[numFrames];
 						wavFile.readFrames(buffer, numFrames);
 						
 						int scale = 16;
 						double rate = scale * 1.0/wavFile.getSampleRate();
-						int length = numFrames / scale;
+						int length = (int) Math.ceil((double)numFrames / scale);
 
 						yref = new Integer[length];
 						xref = new Double[length];
@@ -115,6 +122,17 @@ public class MeaEmulator {
 						}
 						
 						ImPlot.fitNextPlotAxes();
+						
+						// Create a buffer for wav playing
+						j = 0;
+						refSound = new byte[numFrames * 2];
+						refData = new float[numFrames];
+						for (int i=0; i<numFrames; i++) {
+							refSound[j++] = (byte) (buffer[i] & 0xff);
+							refSound[j++] = (byte) ((buffer[i] >> 8) & 0xff);
+							refData[i] = (float) buffer[i];
+							
+						}
 
 						// Close the wavFile
 						wavFile.close();
@@ -122,10 +140,50 @@ public class MeaEmulator {
 
 				}
 
+				// PLAY REF
+				// -------------------------------------------------------------
+				if (refSound != null) {
+					ImGui.sameLine();
+					if (ImGui.button("Play ref.")) {
+						snd.play(refSound, (int) wavFile.getSampleRate(), 16);
+					}
+				}
+				
 				// ENCODE
 				// -------------------------------------------------------------
 				ImGui.sameLine();
 				if (ImGui.button("Encode")) {
+					
+					float samples8ms = (float) ((wavFile.getSampleRate()*8.0)/1000.0);
+					WaveFormat wFormat = new WaveFormat(WaveFormat.ENCODING_PCM_SIGNED, false, (int) wavFile.getSampleRate(), 16, 1);
+					
+					for (float i=samples8ms; i<refData.length; i+=samples8ms/16.0) {
+						WaveFrame wFrame = new WaveFrame(Arrays.copyOfRange(refData, 0, (int)i), wFormat);
+						PitchProcessor pp = new PitchProcessor();
+						pp.process(wFrame);
+						float pitch = (float) wFrame.getFeature("Pitch");
+						if (pitch > 0.0 && pitch < 512.0) {
+							log.info("WaveFrame: 0-{} Pitch: {}Hz", i, pitch);
+							break;
+						}
+						
+					}
+					
+					int frame = 0;
+					for (float i=0; i<refData.length; i+=samples8ms) {
+						WaveFrame wFrame = new WaveFrame(Arrays.copyOfRange(refData, (int)i, (int)(i+samples8ms)), wFormat);
+						FormantExtractor fe = new FormantExtractor(20);
+						fe.process(wFrame);
+						log.info("Frame: {} Formant Freq: {}", frame, wFrame.getFeature("Formants Frequency"));
+						log.info("Frame: {} Formant Band: {}", frame, wFrame.getFeature("Formants Bandwidth"));
+						frame++;
+					}
+				}
+				
+				// DECODE
+				// -------------------------------------------------------------
+				ImGui.sameLine();
+				if (ImGui.button("Decode")) {
 					data = HexUtils.hexStringToByteArray(input.toString());
 					meaSound = mea.compute(data);
 					// meaSound = SineWave.createSinWaveBuffer(440,3000);
@@ -133,7 +191,7 @@ public class MeaEmulator {
 					int byteDepth = 2;
 					int scale = 16;
 					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
-					int length = meaSound.length / (scale * byteDepth);
+					int length = (int) Math.ceil((double)meaSound.length / (scale * byteDepth));
 
 					xmea = new Double[length];
 					ymea = new Integer[length];
@@ -145,15 +203,6 @@ public class MeaEmulator {
 						j++;
 					}
 					ImPlot.fitNextPlotAxes();
-				}
-
-				// PLAY REF
-				// -------------------------------------------------------------
-				if (refSound != null) {
-					ImGui.sameLine();
-					if (ImGui.button("Play ref.")) {
-						snd.play(refSound, (int) wavFile.getSampleRate(), 16);
-					}
 				}
 
 				// PLAY SYNTH

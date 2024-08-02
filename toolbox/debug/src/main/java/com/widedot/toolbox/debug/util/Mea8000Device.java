@@ -66,6 +66,8 @@ public class Mea8000Device {
 	private static int m_bufpos;               // new byte to write in frame info buffer
 	private static int m_cont;                 // if no data 0=stop 1=repeat last frame
 	private static int m_roe;                  // enable req output, now unimplemented
+	private static int m_timecode;             // in ms
+	private static int m_frame;                // frame number
 	private static int m_framelength;          // in samples
 	private static int m_framepos;             // in samples
 	private static int m_framelog;             // log2 of framelength
@@ -133,13 +135,13 @@ public class Mea8000Device {
 		case 0:
 			if (m_state == Mea8000State.STOPPED) {
 				m_pitch = 2 * data;
-				log.info("mea8000_w pitch {}Hz", m_pitch);
+				log.debug("mea8000_w pitch {}Hz", m_pitch);
 				m_state = Mea8000State.WAIT_FIRST;
 				m_bufpos = 0;
 			} else if (m_bufpos == 4) {
-				log.info("mea8000_w data overflow ${}", String.format("%02x", data));
+				log.debug("mea8000_w data overflow ${}", String.format("%02x", data));
 			} else {
-				log.info("mea8000_w data ${} in frame pos {}", String.format("%02x", data), m_bufpos);
+				log.debug("mea8000_w data ${} in frame pos {}", String.format("%02x", data), m_bufpos);
 				m_buf[m_bufpos] = data;
 				m_bufpos++;
 				if (m_bufpos == 4 && m_state == Mea8000State.WAIT_FIRST) {
@@ -170,7 +172,7 @@ public class Mea8000Device {
 				stopFrame();
 			}
 
-			log.info("mea8000_w command {} stop={} cont={} roe={}", data, stop, m_cont, m_roe);
+			log.debug("mea8000_w command {} stop={} cont={} roe={}", data, stop, m_cont, m_roe);
 			break;
 
 		default:
@@ -214,27 +216,30 @@ public class Mea8000Device {
 
 	private void decodeFrame() {
 		
-		int fd = (m_buf[3] & 0xff >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
+		int fd = (m_buf[3] >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
 		int pi = pi_table[m_buf[3] & 0x1f] << fd;
 		m_noise = (m_buf[3] & 0x1f) == 16;
 		m_pitch = m_last_pitch + pi;
-		m_f[0].bw = bw_table[m_buf[0] & 0xff >> 6];
-		m_f[1].bw = bw_table[(m_buf[0] & 0xff >> 4) & 3];
-		m_f[2].bw = bw_table[(m_buf[0] & 0xff >> 2) & 3];
-		m_f[3].bw = bw_table[m_buf[0] & 0xff & 3];
+		m_f[0].bw = bw_table[(m_buf[0] & 0xff) >> 6];
+		m_f[1].bw = bw_table[(m_buf[0] >> 4) & 3];
+		m_f[2].bw = bw_table[(m_buf[0] >> 2) & 3];
+		m_f[3].bw = bw_table[m_buf[0] & 3];
 		m_f[3].fm = fm4_table[0];
-		m_f[2].fm = fm3_table[m_buf[1] & 0xff >> 5];
+		m_f[2].fm = fm3_table[(m_buf[1] & 0xff) >> 5];
 		m_f[1].fm = fm2_table[m_buf[1] & 0x1f];
-		m_f[0].fm = fm1_table[m_buf[2] & 0xff >> 3];
-		m_ampl = ampl_table[((m_buf[2] & 0xff & 7) << 1) | (m_buf[3] & 0xff >> 7)];
-		m_framelog = fd + 6 + 3; // 64 samples / ms
+		m_f[0].fm = fm1_table[(m_buf[2] & 0xff) >> 3];
+		m_ampl = ampl_table[((m_buf[2] & 7) << 1) | ((m_buf[3] & 0xff) >> 7)];
+		m_framelog = fd + 9; // 64 samples / ms
 		m_framelength = 1 << m_framelog;
 		m_bufpos = 0;
 
-		log.info(
-				"mea800_decode_frame: pitch={}Hz noise={}  fm1={}Hz bw1={}Hz  fm2={}Hz bw2={}Hz  fm3={}Hz bw3={}Hz  fm4={}Hz bw4={}Hz  ampl={} fd={}ms",
-				m_pitch, m_noise, m_f[0].fm, m_f[0].bw, m_f[1].fm, m_f[1].bw, m_f[2].fm, m_f[2].bw, m_f[3].fm,
+		log.debug(
+				"Decode_frame {} timestamp {}ms : pitch={}Hz noise={}  fm1={}Hz bw1={}Hz  fm2={}Hz bw2={}Hz  fm3={}Hz bw3={}Hz  fm4={}Hz bw4={}Hz  ampl={} fd={}ms",
+				m_frame, m_timecode, m_pitch, m_noise, m_f[0].fm, m_f[0].bw, m_f[1].fm, m_f[1].bw, m_f[2].fm, m_f[2].bw, m_f[3].fm,
 				m_f[3].bw, m_ampl / 1000.0, 8 << fd);
+		
+		m_frame++;
+		m_timecode += 8 << fd;
 	}
 
 	private void startFrame() {
@@ -254,26 +259,27 @@ public class Mea8000Device {
 		// reinit buffer and phase
 		audio_buffer = new byte[0];
 		m_phi = 0;
+		m_frame = 0;
 		
-		int i = 0;
-		int j = 0;
+		int curData = 0;
+		int curAudio = 0;
 		
 		// first byte is a command
 		if (data.length > 0) {
-			write(1, data[i++]);
+			write(1, data[curData++]);
 		}
 		
 		// second byte is pitch
 		if (data.length > 0) {
-			write(0, data[i++]);
+			write(0, data[curData++]);
 		}
 		
 		// remaining bytes are data
-		while(i+3 < data.length) {
-			write(0, data[i++]);
-			write(0, data[i++]);
-			write(0, data[i++]);
-			write(0, data[i++]);
+		while(curData+3 < data.length) {
+			write(0, data[curData++]);
+			write(0, data[curData++]);
+			write(0, data[curData++]);
+			write(0, data[curData++]);
 
 			if (m_framepos > 0) {
 				shiftFrame();
@@ -295,8 +301,8 @@ public class Mea8000Device {
 					m_output = m_lastsample + ((pos * (m_sample - m_lastsample)) / SUPERSAMPLING);
 				}
 		
-				audio_buffer[j++] = (byte) (m_output & 0xFF);
-				audio_buffer[j++] = (byte) (m_output >> 8);
+				audio_buffer[curAudio++] = (byte) (m_output & 0xFF);
+				audio_buffer[curAudio++] = (byte) (m_output >> 8);
 				
 				m_framepos++;
 			}

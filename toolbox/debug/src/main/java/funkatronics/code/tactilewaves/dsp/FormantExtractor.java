@@ -102,17 +102,28 @@ public class FormantExtractor implements WaveProcessor {
         double[][] formants = LPC.estimateFormants(x, mNumFormants, frame.getSampleRate());
         // Prune the formant list for valid formants
         List<Float> formList = new ArrayList<Float>();
+        List<Float> formBandList = new ArrayList<Float>();
+        
         for(int i = 0; i < formants.length; i++) {
-        	// Valid formants have frequency > 90 Hz and a bandwidth < 400 Hz
-            if(formants[i][0] > 90 && formants[i][1] < 400)
+        	// Valid formants
+            if(formants[i][0] > 90.0 && formants[i][0] < 4000.0 && formants[i][1] < 800.0) {
             	formList.add((float) formants[i][0]);
+            	formBandList.add((float) formants[i][1]);
+            }
         }
         // Copy list of formants back to a feature vector (float array)
 		float[] formFreqs = new float[formList.size()];
-        for(int i = 0; i < formFreqs.length; i++)
+        for(int i = 0; i < formList.size(); i++) {
         	formFreqs[i] = formList.get(i);
+        }
+        
+		float[] formBands = new float[formBandList.size()];
+        for(int i = 0; i < formBandList.size(); i++) {
+        	formBands[i] = formBandList.get(i);
+        }
         // Add the feature vector of valid formants to the frame
-        frame.addFeature("Formants", formFreqs);
+        frame.addFeature("Formants Frequency", formFreqs);
+        frame.addFeature("Formants Bandwidth", formBands);
         return true;
     }
 
