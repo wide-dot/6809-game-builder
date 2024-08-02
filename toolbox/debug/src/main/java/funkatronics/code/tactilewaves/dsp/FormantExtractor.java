@@ -106,7 +106,7 @@ public class FormantExtractor implements WaveProcessor {
         
         for(int i = 0; i < formants.length; i++) {
         	// Valid formants
-            if(formants[i][0] > 90.0 && formants[i][0] < 4000.0 && formants[i][1] < 800.0) {
+            if(formants[i][0] > 90.0 && formants[i][0] < 3600.0 && formants[i][1] < 1500.0) {
             	formList.add((float) formants[i][0]);
             	formBandList.add((float) formants[i][1]);
             }

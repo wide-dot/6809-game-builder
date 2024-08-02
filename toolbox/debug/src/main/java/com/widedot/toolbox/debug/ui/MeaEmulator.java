@@ -172,8 +172,20 @@ public class MeaEmulator {
 					int frame = 0;
 					for (float i=0; i<refData.length; i+=samples8ms) {
 						WaveFrame wFrame = new WaveFrame(Arrays.copyOfRange(refData, (int)i, (int)(i+samples8ms)), wFormat);
-						FormantExtractor fe = new FormantExtractor(20);
-						fe.process(wFrame);
+						FormantExtractor fe;
+						int f=4;
+						
+						do {
+							wFrame.removeFeature("Formants Frequency");
+							wFrame.removeFeature("Formants Bandwidth");
+							fe = new FormantExtractor(f);
+							fe.process(wFrame);
+							f++;
+						} while (((float[]) wFrame.getFeature("Formants Frequency")).length < 4 );
+
+						// keep 4 formants based on lowest bandwidth
+						// todo ...
+						
 						log.info("Frame: {} Formant Freq: {}", frame, wFrame.getFeature("Formants Frequency"));
 						log.info("Frame: {} Formant Band: {}", frame, wFrame.getFeature("Formants Bandwidth"));
 						frame++;
