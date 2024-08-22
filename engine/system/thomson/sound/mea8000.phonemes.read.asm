@@ -7,7 +7,7 @@ map.MEA8000.A EXTERNAL ; RCOM
 ; input: [A] tonality
 ; input: [X] addr of phonemes 3.3 lookup
 ; input: [Y] addr of txt to read
-mea8000.read
+mea8000.phonemes.read
         pshs  d,x,y,u
         ldb   #$1A
         stb   map.MEA8000.A ; MEA init to STOP-SLOW and REQ inactive

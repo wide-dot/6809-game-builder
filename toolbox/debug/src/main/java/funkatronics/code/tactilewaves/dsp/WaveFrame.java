@@ -144,6 +144,15 @@ public class WaveFrame {
     public int getSampleRate(){
         return mFormat.getSampleRate();
     }
+    
+    /**
+     * Get the bit depth of this {@code WaveFrame}
+     *
+     * @return the bit depth
+     */
+    public int getBitDepth(){
+        return mFormat.getBitDepth();
+    }
 
     /**
      * Get the length of this {@code WaveFrame}
@@ -221,6 +230,17 @@ public class WaveFrame {
      */
     public boolean isSilence(double silenceThreshold) {
         return dBSPL(mSamples) < silenceThreshold;
+    }
+    
+    /**
+     * Does this {@code WaveFRame} contain silence?
+     *
+     * @param silenceThreshold the energy threshold, below this value is silence
+     *
+     * @return true if the total energy of the audio frame is below the threshold
+     */
+    public double getDBSPL() {
+        return dBSPL(mSamples);
     }
 
     /**

@@ -1,7 +1,8 @@
 samples.timpani              EXTERNAL
 vgm.ym                       EXTERNAL
 vgm.sn                       EXTERNAL
-lotr.txt                     EXTERNAL
+;lotr.txt                     EXTERNAL
+harder.mea                   EXTERNAL
 
 mplus.ut.timer.testRW        EXPORT
 mplus.ut.timer.testCountdown EXPORT
@@ -322,11 +323,17 @@ mplus.ut.testMIDI
  ; testMEA8000
  ; ----------------------------------------------------------------------------
 
+; phonemes
+;mplus.ut.testMEA8000
+;        lda   #$38
+;        ldx   #mea8000.phonemes
+;        ldy   #lotr.txt
+;        jsr   mea8000.phonemes.read
+;        rts
+
 mplus.ut.testMEA8000
-        lda   #$38
-        ldx   #mea8000.phonemes
-        ldy   #lotr.txt
-        jsr   mea8000.read
+        ldx   #harder.mea
+        jsr   mea8000.digitalized.read
         rts
 
  ; ----------------------------------------------------------------------------

@@ -15,7 +15,7 @@
         fdb   assets.sounds.ym
         fdb   assets.sounds.sn
         fdb   engine.system.to8.sound.mplus.const
-        fdb   assets.lotr.txt
+        fdb   assets.harder.mea
 
         ; end scenes
         fdb   0                        ; [type | nb files] (0: end marker)

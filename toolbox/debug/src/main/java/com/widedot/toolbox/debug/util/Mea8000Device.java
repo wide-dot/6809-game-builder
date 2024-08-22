@@ -41,16 +41,20 @@ public class Mea8000Device {
 	private static final int NOISE_LEN = 8192;
 	private static final int F0 = (3840000 / 480); // digital filters work at 8 kHz
 	private static final int SUPERSAMPLING = 8; // filtered output is supersampled x 8
-	private static final int[] fm1_table  = { 150, 162, 174, 188, 202, 217, 233, 250, 267, 286, 305, 325, 346, 368, 391, 415, 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047 };
-	private static final int[] fm2_table  = { 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047, 1100, 1179, 1254, 1337, 1428, 1528, 1639, 1761, 1897, 2047, 2214, 2400, 2609, 2842, 3105, 3400 };
-	private static final int[] fm3_table  = { 1179, 1337, 1528, 1761, 2047, 2400, 2842, 3400 };
-	private static final int[] fm4_table  = { 3500 };
-	private static final int[] bw_table   = { 726, 309, 125, 50 };
-	private static final int[] ampl_table = { 0, 8, 11, 16, 22, 31, 44, 62, 88, 125, 177, 250, 354, 500, 707, 1000 };
-	private static final int[] pi_table   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
 
 	public  static final int BITDEPTH   = 16;
 	public  static final int SAMPLERATE = F0*SUPERSAMPLING;
+	
+	public  static final int[]   FM1_TABLE   = { 150, 162, 174, 188, 202, 217, 233, 250, 267, 286, 305, 325, 346, 368, 391, 415, 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047 };
+	public  static final int[]   FM2_TABLE   = { 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047, 1100, 1179, 1254, 1337, 1428, 1528, 1639, 1761, 1897, 2047, 2214, 2400, 2609, 2842, 3105, 3400 };
+	public  static final int[]   FM3_TABLE   = { 1179, 1337, 1528, 1761, 2047, 2400, 2842, 3400 };
+	public  static final int[]   FM4_TABLE   = { 3500 };
+	public  static final int[][] FM_TABLES   = {FM1_TABLE, FM2_TABLE, FM3_TABLE, FM4_TABLE};
+	public  static final int[]   BW_TABLE    = { 726, 309, 125, 50 };
+	public  static final int[]   AMPL_TABLE  = { 0, 8, 11, 16, 22, 31, 44, 62, 88, 125, 177, 250, 354, 500, 707, 1000 };
+	public  static final int[]   PITCH_TABLE = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
+	public  static final int     PITCH_NOISE = 0b10000;
+	public  static final int     PITCH_ZERO  = 0;
 	
 	private enum Mea8000State {
 		STOPPED, // nothing to do, timer disabled
@@ -134,7 +138,7 @@ public class Mea8000Device {
 		switch ((int) offset) {
 		case 0:
 			if (m_state == Mea8000State.STOPPED) {
-				m_pitch = 2 * data;
+				m_pitch = 2 * (data & 0xff);
 				log.debug("mea8000_w pitch {}Hz", m_pitch);
 				m_state = Mea8000State.WAIT_FIRST;
 				m_bufpos = 0;
@@ -217,18 +221,18 @@ public class Mea8000Device {
 	private void decodeFrame() {
 		
 		int fd = (m_buf[3] >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
-		int pi = pi_table[m_buf[3] & 0x1f] << fd;
+		int pi = PITCH_TABLE[m_buf[3] & 0x1f] << fd;
 		m_noise = (m_buf[3] & 0x1f) == 16;
 		m_pitch = m_last_pitch + pi;
-		m_f[0].bw = bw_table[(m_buf[0] & 0xff) >> 6];
-		m_f[1].bw = bw_table[(m_buf[0] >> 4) & 3];
-		m_f[2].bw = bw_table[(m_buf[0] >> 2) & 3];
-		m_f[3].bw = bw_table[m_buf[0] & 3];
-		m_f[3].fm = fm4_table[0];
-		m_f[2].fm = fm3_table[(m_buf[1] & 0xff) >> 5];
-		m_f[1].fm = fm2_table[m_buf[1] & 0x1f];
-		m_f[0].fm = fm1_table[(m_buf[2] & 0xff) >> 3];
-		m_ampl = ampl_table[((m_buf[2] & 7) << 1) | ((m_buf[3] & 0xff) >> 7)];
+		m_f[0].bw = BW_TABLE[(m_buf[0] & 0xff) >> 6];
+		m_f[1].bw = BW_TABLE[(m_buf[0] >> 4) & 3];
+		m_f[2].bw = BW_TABLE[(m_buf[0] >> 2) & 3];
+		m_f[3].bw = BW_TABLE[m_buf[0] & 3];
+		m_f[3].fm = FM4_TABLE[0];
+		m_f[2].fm = FM3_TABLE[(m_buf[1] & 0xff) >> 5];
+		m_f[1].fm = FM2_TABLE[m_buf[1] & 0x1f];
+		m_f[0].fm = FM1_TABLE[(m_buf[2] & 0xff) >> 3];
+		m_ampl = AMPL_TABLE[((m_buf[2] & 7) << 1) | ((m_buf[3] & 0xff) >> 7)];
 		m_framelog = fd + 9; // 64 samples / ms
 		m_framelength = 1 << m_framelog;
 		m_bufpos = 0;
@@ -264,12 +268,10 @@ public class Mea8000Device {
 		int curData = 0;
 		int curAudio = 0;
 		
-		// first byte is a command
-		if (data.length > 0) {
-			write(1, data[curData++]);
-		}
+		// default state
+		write(1,(byte) 0x1A);
 		
-		// second byte is pitch
+		// first byte is pitch
 		if (data.length > 0) {
 			write(0, data[curData++]);
 		}
@@ -280,6 +282,17 @@ public class Mea8000Device {
 			write(0, data[curData++]);
 			write(0, data[curData++]);
 			write(0, data[curData++]);
+			
+			// when ampl is 0, a stop command is send, and next byte is pitch
+			if ((data[curData-2] & 0b00000111) == 0 && (data[curData-1] & 0b10000000) == 0) {
+				// send a stop command
+				write(1,(byte) 0x1A);
+				
+				// next byte is pitch
+				if (curData < data.length) {
+					write(0, data[curData++]);
+				}
+			}
 
 			if (m_framepos > 0) {
 				shiftFrame();
