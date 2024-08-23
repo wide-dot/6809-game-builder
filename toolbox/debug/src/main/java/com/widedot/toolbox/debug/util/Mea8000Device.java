@@ -271,6 +271,9 @@ public class Mea8000Device {
 		// default state
 		write(1,(byte) 0x1A);
 		
+		// skip header
+		curData+=2;
+		
 		// first byte is pitch
 		if (data.length > 0) {
 			write(0, data[curData++]);

@@ -174,11 +174,11 @@ public class MeaEmulator {
 					WaveFrame wFrame;
 					FormantExtractor fe;
 					PitchProcessor pp = new PitchProcessor();
-					byte[] encodedData = new byte[0];
+					byte[] encodedData = new byte[2]; // 2 bytes for blank header
 					int frame, formants;
 					float maxAmpl, lastAmpl = 0;
 					float pitch, lastPitch = 0;
-					float amplThreshold = (float) Math.pow(2, (wFormat.getBitDepth()/2.0)*0.008); // minimal amplitude of 0.008 for MEA8000
+					float amplThreshold = (float) (Math.pow(2, (wFormat.getBitDepth()))/2.0*0.008); // minimal amplitude of 0.008 for MEA8000
 
 					frame = 0;
 					for (float i=0; i<refData.length; i+=sampleDuration) {
@@ -202,7 +202,7 @@ public class MeaEmulator {
 						
 						if (maxAmpl == 0) {
 							
-							wFrame.addFeature("Pitch", -1);
+							wFrame.addFeature("Pitch", (float)-1);
 							wFrame.addFeature("Formants Frequency", new float[0]);
 							wFrame.addFeature("Formants Bandwidth", new float[0]);
 							
@@ -238,8 +238,12 @@ public class MeaEmulator {
 						frame++;
 					}
 					
-					// add 4 null bytes (end marker)
+					// add end marker of 4 null bytes
 					encodedData = Arrays.copyOf(encodedData, encodedData.length+4);
+					
+					// update header with total length
+					encodedData[0] = (byte) ((encodedData.length & 0xff00) >> 8);
+					encodedData[1] = (byte) (encodedData.length & 0xff);
 					
 					input.set(DataUtil.bytesToHex(encodedData)+"\r\n");					
 					Files.write(Path.of(inputPathName+".mea"), encodedData);
@@ -387,7 +391,6 @@ public class MeaEmulator {
     			maxDelta = delta;
     		}
     	}
-        log.info("AMPLITUDE: {} {} {}", ampl, scaledAmpl, val);
         
     	frameData[2] = (byte) (frameData[2] | (byte) ((val >> 1) & 0b111));
     	frameData[3] = (byte) (frameData[3] | (byte) ((val & 0b1) << 7));
