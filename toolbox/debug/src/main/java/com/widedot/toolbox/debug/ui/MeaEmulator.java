@@ -58,8 +58,8 @@ public class MeaEmulator {
 		ImPlot.createContext();
 
 		// Bonjour !
-		input.set("3C\r\n"
-		        + "44 B6 28 10 C4 2F 32 B0 C5 AE 2B A0\r\n"
+		input.set("00 00 3C\r\n"
+		        + "44 B6 28 10" + " 3C " + "C4 2F 32 B0 C5 AE 2B A0\r\n"
 				+ "C4 B3 34 A0 55 AD 6E A2 5B AD 7E A4 5A A4 9E 26\r\n"
 				+ "59 A4 A6 2A 59 A5 9E AC 45 AC 96 A7 14 A8 7E A3\r\n"
 				+ "55 AE 66 A0 20 B0 56 BE 11 B3 56 B5 1A B3 56 36\r\n"
@@ -138,9 +138,10 @@ public class MeaEmulator {
 						ImPlot.fitNextPlotAxes();
 						
 						// Create a buffer for wav playing
+						int offset = (int) ((wavFile.getSampleRate()*8.0)/1000.0); // 8ms
 						j = 0;
 						refSound = new byte[numFrames * 2];
-						refData = new float[numFrames];
+						refData = new float[numFrames + offset];
 						for (int i=0; i<numFrames; i++) {
 							refSound[j++] = (byte) (buffer[i] & 0xff);
 							refSound[j++] = (byte) ((buffer[i] >> 8) & 0xff);
@@ -169,16 +170,16 @@ public class MeaEmulator {
 				if (ImGui.button("Encode")) {
 					
 					float sampleDuration = (float) ((wavFile.getSampleRate()*8.0)/1000.0); // 8ms
-					float sampleWindow = (float) ((wavFile.getSampleRate()*25.0)/1000.0);  // 25ms
+					float sampleWindow = (float) ((wavFile.getSampleRate()*24.0)/1000.0);  // 24ms
 					WaveFormat wFormat = new WaveFormat(WaveFormat.ENCODING_PCM_SIGNED, false, (int) wavFile.getSampleRate(), 16, 1);
 					WaveFrame wFrame;
 					FormantExtractor fe;
 					PitchProcessor pp = new PitchProcessor();
 					byte[] encodedData = new byte[2]; // 2 bytes for blank header
 					int frame, formants;
-					float maxAmpl, lastAmpl = 0;
+					float rms, lastRms = 0;
 					float pitch, lastPitch = 0;
-					float amplThreshold = (float) (Math.pow(2, (wFormat.getBitDepth()))/2.0*0.008); // minimal amplitude of 0.008 for MEA8000
+					float amplThreshold = 8; // minimal amplitude of 0.008 for MEA8000
 
 					frame = 0;
 					for (float i=0; i<refData.length; i+=sampleDuration) {
@@ -188,19 +189,31 @@ public class MeaEmulator {
 						wFrame.addFeature("Frame", frame);
 						
 						// find frame amplitude
-						maxAmpl = 0;
-						float[] x = Window.hamming(wFrame.getSamples());
-						for (int j = 0; j < x.length; j++) {
-							if (x[j] > maxAmpl) {
-								maxAmpl = x[j];
-							}
+						rms = 0;
+						//float[] x = Window.hamming(wFrame.getSamples());
+
+						float[] x = wFrame.getSamples();
+						for (int j = (int) sampleDuration; j < sampleDuration*2; j++) {
+							rms += x[j]*x[j];
 						}
-						if (maxAmpl < amplThreshold) {
-							maxAmpl = 0;
-						}
-						wFrame.addFeature("Amplitude", maxAmpl);
+						rms = (float) (Math.sqrt(rms/sampleDuration));
+						rms = (float) (rms / 32.768 / 2.0);
 						
-						if (maxAmpl == 0) {
+						//float[] x = wFrame.getSamples();
+						//for (int j = (int) (sampleDuration*1.5); j < (int) (sampleDuration*2.5); j++) {
+						//	if (Math.abs(x[j]) > rms) {
+						//		rms = Math.abs(x[j]);
+						//	}
+						//}
+						//rms = (float) (rms / 32.768);
+						
+						log.info("AMPLITUDE: {}", rms);
+						if (rms < amplThreshold) {
+							rms = 0;
+						}
+						wFrame.addFeature("Amplitude", rms);
+						
+						if (rms == 0) {
 							
 							wFrame.addFeature("Pitch", (float)-1);
 							wFrame.addFeature("Formants Frequency", new float[0]);
@@ -210,6 +223,12 @@ public class MeaEmulator {
 							
 							// find frame pitch
 							pp.process(wFrame);
+							
+							// TODO: make optional
+							if ((float) wFrame.getFeature("Pitch") == -1 && lastPitch >= 0) {
+								wFrame.removeFeature("Pitch");
+								wFrame.addFeature("Pitch", lastPitch);
+							}
 							
 							// search frame formants
 							// TODO: check against preset MEA8000 values, and select best match freq ONLY
@@ -224,7 +243,7 @@ public class MeaEmulator {
 						}
 						
 						// MEA8000 encoding
-						encodedData = encodeMEA8000Frame(encodedData, wFrame, lastPitch, lastAmpl);
+						encodedData = encodeMEA8000Frame(encodedData, wFrame, lastPitch, lastRms);
 						
 						// get a track of last known pitch, -1 value is noise/not found
 						pitch = (float) wFrame.getFeature("Pitch");
@@ -233,7 +252,7 @@ public class MeaEmulator {
 						}
 						
 						// get track of last amplitude, a silence will send a STOP
-						lastAmpl = (float) wFrame.getFeature("Amplitude");
+						lastRms = (float) wFrame.getFeature("Amplitude");
 						
 						frame++;
 					}
@@ -347,7 +366,7 @@ public class MeaEmulator {
 		}
 		
 		if (newPitch && pitch == -1) {
-			log.info("Frame: {} - First frame of new group has no pitch, default to 0Hz");
+			log.info("Frame: {} - First frame of new group has no pitch, default to 0Hz", frame);
 			pitch = 0;
 			wFrame.removeFeature("Pitch");
 			wFrame.addFeature("Pitch", pitch);
@@ -382,10 +401,8 @@ public class MeaEmulator {
         delta = 0;
         maxDelta = Integer.MAX_VALUE;
         
-        int scaledAmpl = (int) (ampl/(Math.pow(2, (wFrame.getBitDepth()))/2.0)*1000.0);
-        
     	for (int j = 0; j < Mea8000Device.AMPL_TABLE.length; j++) {
-    		delta = Math.abs(Mea8000Device.AMPL_TABLE[j] - scaledAmpl);
+    		delta = Math.abs(Mea8000Device.AMPL_TABLE[j] - (int)ampl);
     		if (delta < maxDelta) {
     			val = j;
     			maxDelta = delta;

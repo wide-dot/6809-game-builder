@@ -231,14 +231,7 @@ public class WaveFrame {
     public boolean isSilence(double silenceThreshold) {
         return dBSPL(mSamples) < silenceThreshold;
     }
-    
-    /**
-     * Does this {@code WaveFRame} contain silence?
-     *
-     * @param silenceThreshold the energy threshold, below this value is silence
-     *
-     * @return true if the total energy of the audio frame is below the threshold
-     */
+
     public double getDBSPL() {
         return dBSPL(mSamples);
     }

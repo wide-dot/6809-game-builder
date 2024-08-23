@@ -3,9 +3,6 @@ package com.widedot.toolbox.debug.util;
 import java.util.Arrays;
 import java.util.Random;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.SourceDataLine;
-
 import lombok.extern.slf4j.Slf4j;
 
 //license:BSD-3-Clause
@@ -145,7 +142,6 @@ public class Mea8000Device {
 			} else if (m_bufpos == 4) {
 				log.debug("mea8000_w data overflow ${}", String.format("%02x", data));
 			} else {
-				log.debug("mea8000_w data ${} in frame pos {}", String.format("%02x", data), m_bufpos);
 				m_buf[m_bufpos] = data;
 				m_bufpos++;
 				if (m_bufpos == 4 && m_state == Mea8000State.WAIT_FIRST) {
@@ -261,9 +257,29 @@ public class Mea8000Device {
 		
 
 		// reinit buffer and phase
-		audio_buffer = new byte[0];
-		m_phi = 0;
-		m_frame = 0;
+		audio_buffer = new byte[0];		
+		m_output = 0;
+		m_state = Mea8000State.STOPPED; // current state
+		m_bufpos = 0;               // new byte to write in frame info buffer
+		m_cont = 0;                 // if no data 0=stop 1=repeat last frame
+		m_roe = 0;                  // enable req output, now unimplemented
+		m_timecode = 0;             // in ms
+		m_frame = 0;                // frame number
+		m_framelength = 0;          // in samples
+		m_framepos = 0;             // in samples
+		m_framelog = 0;             // log2 of framelength
+		m_lastsample = 0;           // output samples are interpolated
+		m_sample = 0;               // output samples are interpolated
+		m_phi = 0;                  // absolute phase for frequency / noise generator
+		m_last_ampl = 0;            // amplitude * 1000
+		m_ampl = 0;
+		m_last_pitch = 0;           // pitch of sawtooth signal, in Hz
+		m_pitch = 0;
+		m_noise = false;
+		
+		for (int i = 0; i < m_f.length; i++) {
+			m_f[i] = new FType();
+		}
 		
 		int curData = 0;
 		int curAudio = 0;
@@ -277,25 +293,21 @@ public class Mea8000Device {
 		// first byte is pitch
 		if (data.length > 0) {
 			write(0, data[curData++]);
+			log.debug("PITCH " + Integer.toHexString(data[curData-1] & 0xff));
 		}
 		
 		// remaining bytes are data
 		while(curData+3 < data.length) {
+			
 			write(0, data[curData++]);
 			write(0, data[curData++]);
 			write(0, data[curData++]);
 			write(0, data[curData++]);
 			
-			// when ampl is 0, a stop command is send, and next byte is pitch
-			if ((data[curData-2] & 0b00000111) == 0 && (data[curData-1] & 0b10000000) == 0) {
-				// send a stop command
-				write(1,(byte) 0x1A);
-				
-				// next byte is pitch
-				if (curData < data.length) {
-					write(0, data[curData++]);
-				}
-			}
+			log.debug(Integer.toHexString(data[curData-4] & 0xff) + " "
+					+Integer.toHexString(data[curData-3] & 0xff) + " "
+					+Integer.toHexString(data[curData-2] & 0xff) + " "
+					+Integer.toHexString(data[curData-1] & 0xff) + " ");
 
 			if (m_framepos > 0) {
 				shiftFrame();
@@ -321,6 +333,27 @@ public class Mea8000Device {
 				audio_buffer[curAudio++] = (byte) (m_output >> 8);
 				
 				m_framepos++;
+			}
+			
+			// when ampl is 0, a stop command is send, and next byte is pitch
+			if ((data[curData-2] & 0b00000111) == 0 && (data[curData-1] & 0b10000000) == 0) {
+				
+				// send a stop command
+				write(1,(byte) 0x1A);
+				log.debug("STOP COMMAND");
+				
+				// reinit chip
+				for (int i = 0; i < m_f.length; i++) {
+					m_f[i] = new FType();
+				}
+				
+				// next byte is pitch
+				if (curData < data.length) {
+					write(0, data[curData++]);
+					log.debug("PITCH " + Integer.toHexString(data[curData-1] & 0xff));
+				} else {
+					break;
+				}
 			}
 		}
 		
