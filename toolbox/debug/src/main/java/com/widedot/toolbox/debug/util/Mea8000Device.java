@@ -145,12 +145,14 @@ public class Mea8000Device {
 				m_buf[m_bufpos] = data;
 				m_bufpos++;
 				if (m_bufpos == 4 && m_state == Mea8000State.WAIT_FIRST) {
+					// fade-in first frame
 					int oldPitch = m_pitch;
 					m_last_pitch = oldPitch;
 					decodeFrame();
 					shiftFrame();
 					m_last_pitch = oldPitch;
-					m_ampl = 0;
+					// m_ampl = 0; // this is a bug in MAME, by doing this, fade in is inverted
+					m_last_ampl = 0; // fixed code
 					startFrame();
 					m_state = Mea8000State.STARTED;
 				}
@@ -183,23 +185,25 @@ public class Mea8000Device {
 	private int computeSample() {
 		int out;
 		int ampl = interp(m_last_ampl, m_ampl);
-
+		
 		if (m_noise) {
 			out = noiseGen();
 		} else {
 			out = freqGen();
 		}
 
-		out *= ampl / 32;
+		out = (out*ampl)/32; // fixed code here, bug in MAME, all ampl values <= 32 will lead to out = 0 !
 
-		for (int i = 0; i < 4; i++) {
-			out = filterStep(i, out);
-		}
+		//for (int i = 0; i < 4; i++) {
+		//	out = filterStep(i, out);
+		//}
 
 		if (out > 32767) {
+			log.info("sample out of range: {}", out);
 			out = 32767;
 		}
 		if (out < -32767) {
+			log.info("sample out of range: {}", out);
 			out = -32767;
 		}
 		return out;
@@ -310,7 +314,7 @@ public class Mea8000Device {
 					+Integer.toHexString(data[curData-1] & 0xff) + " ");
 
 			if (m_framepos > 0) {
-				shiftFrame();
+				shiftFrame(); // save old values for interpolation
 				decodeFrame();
 				startFrame();
 			}

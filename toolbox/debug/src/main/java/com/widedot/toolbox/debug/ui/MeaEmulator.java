@@ -279,7 +279,8 @@ public class MeaEmulator {
 					// meaSound = SineWave.createSinWaveBuffer(440,3000);
 
 					int byteDepth = 2;
-					int scale = 16;
+					//int scale = 16;
+					int scale = 1;
 					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
 					int length = (int) Math.ceil((double)meaSound.length / (scale * byteDepth));
 
