@@ -111,7 +111,7 @@ public class Mea8000Device {
 			double f = (double) i / F0;
 			m_cos_table[i] = 2.0 * Math.cos(2.0 * Math.PI * f) * QUANT;
 			m_exp_table[i] = Math.exp(-Math.PI * f) * QUANT;
-			m_exp2_table[i] = Math.exp(-2 * Math.PI * f) * QUANT;
+			m_exp2_table[i] = Math.exp(-2.0 * Math.PI * f) * QUANT;
 		}
 		
 		for (int i = 0; i < m_noise_table.length; i++) {
@@ -151,7 +151,7 @@ public class Mea8000Device {
 					decodeFrame();
 					shiftFrame();
 					m_last_pitch = oldPitch;
-					// m_ampl = 0; // this is a bug in MAME, by doing this, fade in is inverted
+					// m_ampl = 0; // this is a bug in MAME, by doing this, "fade in" is inverted
 					m_last_ampl = 0; // fixed code
 					startFrame();
 					m_state = Mea8000State.STARTED;
@@ -194,9 +194,9 @@ public class Mea8000Device {
 
 		out = (out*ampl)/32; // fixed code here, bug in MAME, all ampl values <= 32 will lead to out = 0 !
 
-		//for (int i = 0; i < 4; i++) {
-		//	out = filterStep(i, out);
-		//}
+		for (int i = 0; i < 4; i++) {
+			out = filterStep(i, out);
+		}
 
 		if (out > 32767) {
 			log.info("sample out of range: {}", out);
@@ -373,12 +373,12 @@ public class Mea8000Device {
 		return org + (((dst - org) * m_framepos) >> m_framelog);
 	}
 
-	private int filterStep(int i, int input) {
+	private int filterStep(int i, int input) {		
 		int fm = interp(m_f[i].last_fm, m_f[i].fm);
 		int bw = interp(m_f[i].last_bw, m_f[i].bw);
 		int b = (int) (m_cos_table[fm] * m_exp_table[bw] / QUANT);
 		int c = (int) m_exp2_table[bw];
-		int nextOutput = input + (b * m_f[i].output - c * m_f[i].last_output) / (int) QUANT;
+		int nextOutput = input + (b * m_f[i].output - c * m_f[i].last_output) / QUANT;
 		m_f[i].last_output = m_f[i].output;
 		m_f[i].output = nextOutput;
 		return nextOutput;

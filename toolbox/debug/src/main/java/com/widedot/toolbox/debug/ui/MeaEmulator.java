@@ -58,7 +58,7 @@ public class MeaEmulator {
 		ImPlot.createContext();
 
 		// Bonjour !
-		input.set("00 00 3C\r\n"
+		input.set("00 B8 3C\r\n"
 		        + "44 B6 28 10" + " 3C " + "C4 2F 32 B0 C5 AE 2B A0\r\n"
 				+ "C4 B3 34 A0 55 AD 6E A2 5B AD 7E A4 5A A4 9E 26\r\n"
 				+ "59 A4 A6 2A 59 A5 9E AC 45 AC 96 A7 14 A8 7E A3\r\n"
@@ -192,20 +192,20 @@ public class MeaEmulator {
 						rms = 0;
 						//float[] x = Window.hamming(wFrame.getSamples());
 
-						float[] x = wFrame.getSamples();
-						for (int j = (int) sampleDuration; j < sampleDuration*2; j++) {
-							rms += x[j]*x[j];
-						}
-						rms = (float) (Math.sqrt(rms/sampleDuration));
-						rms = (float) (rms / 32.768 / 2.0);
-						
 						//float[] x = wFrame.getSamples();
-						//for (int j = (int) (sampleDuration*1.5); j < (int) (sampleDuration*2.5); j++) {
-						//	if (Math.abs(x[j]) > rms) {
-						//		rms = Math.abs(x[j]);
-						//	}
+						//for (int j = (int) sampleDuration; j < sampleDuration*2; j++) {
+						//	rms += x[j]*x[j];
 						//}
-						//rms = (float) (rms / 32.768);
+						//rms = (float) (Math.sqrt(rms/sampleDuration));
+						//rms = (float) (rms / 32.768 / 2.0);
+						
+						float[] x = wFrame.getSamples();
+						for (int j = (int) (sampleDuration*0.5); j < (int) (sampleDuration*1.0); j++) {
+							if (Math.abs(x[j]) > rms) {
+								rms = Math.abs(x[j]);
+							}
+						}
+						rms = (float) (rms * 0.5 / 32.768); // TODO: replace mult by QUANT
 						
 						log.info("AMPLITUDE: {}", rms);
 						if (rms < amplThreshold) {
@@ -279,8 +279,7 @@ public class MeaEmulator {
 					// meaSound = SineWave.createSinWaveBuffer(440,3000);
 
 					int byteDepth = 2;
-					//int scale = 16;
-					int scale = 1;
+					int scale = 16;
 					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
 					int length = (int) Math.ceil((double)meaSound.length / (scale * byteDepth));
 

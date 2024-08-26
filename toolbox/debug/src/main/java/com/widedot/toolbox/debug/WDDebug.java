@@ -80,7 +80,7 @@ public class WDDebug extends Application {
 
         // tools non related to process
         if (SHOW_IMGUI_FRAME_RENDER_WINDOW.get()) FrameRender.show(SHOW_IMGUI_FRAME_RENDER_WINDOW);
-        if (SHOW_IMGUI_MEA_WINDOW.get()) MeaEmulator.show(SHOW_IMGUI_MEA_WINDOW);
+        if (SHOW_IMGUI_MEA_WINDOW.get()) MeaEmulator2.show(SHOW_IMGUI_MEA_WINDOW);
         
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
