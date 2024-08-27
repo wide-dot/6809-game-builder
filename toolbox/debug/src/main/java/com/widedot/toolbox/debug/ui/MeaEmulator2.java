@@ -46,7 +46,7 @@ public class MeaEmulator2 {
 	private static String inputPathName;
 	private static byte[] audioRef;
 	private static float[] audioRefFloat;
-	private static byte[] audioSynth;
+	private static int[] audioSynth;
 
 	// text input
 	private static ImString input = new ImString(0x10000);
@@ -55,7 +55,7 @@ public class MeaEmulator2 {
 	private static Mea8000Device mea = new Mea8000Device();
 	
 	// plot data
-	private static int plotFrameStart = 1;
+	private static int plotFrameStart = 0;
 	private static int plotFrameWindow = 8;
 	private static int totalframes = 0;
 	private static Double[] xref = {};
@@ -102,6 +102,7 @@ public class MeaEmulator2 {
 						final AudioFormat audioFormat = new AudioFormat(SAMPLE_RATE, BYTES_PER_SAMPLE * 8, 1, true, true);
 					    audioISRef = AudioSystem.getAudioInputStream(audioFormat, audioISRef);
 					    audioRef = audioISRef.readAllBytes();
+					    audioSynth = new int[audioRef.length/BYTES_PER_SAMPLE];
 					    totalframes = (int) Math.ceil((audioRef.length/2)/SAMPLE_FRAME);
 						audioRefFloat = new float[audioRef.length/2];
 						int j = 0;
@@ -110,8 +111,8 @@ public class MeaEmulator2 {
 						}
 						
 						// refresh plots
-						plotFrameStart=1;
-						refreshPlots(plotFrameStart, plotFrameWindow);
+						plotFrameStart=0;
+						refreshPlotsRef(plotFrameStart, plotFrameWindow);
 						ImPlot.fitNextPlotAxes();
 					}
 
@@ -140,7 +141,8 @@ public class MeaEmulator2 {
 
 					frame = 1;
 					MeaFrame lastFrame = new MeaFrame();
-					for (float i=0; i<audioRef.length; i+=SAMPLE_FRAME) {
+					//for (float i=0; i<audioRef.length; i+=SAMPLE_FRAME) {
+					for (float i=0; i<8; i+=SAMPLE_FRAME) {
 						 
 						// process audio with a window
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (int)i, (int)(i+SAMPLE_WINDOW)), wFormat);
@@ -166,18 +168,40 @@ public class MeaEmulator2 {
 						MeaFrame curFrame = new MeaFrame();
 						fitMeaFilters (curFrame, formFreqs, formBands);
 						curFrame.pitch = (int) ((float) wFrame.getFeature("Pitch"));
+						curFrame.i_ampl = 11;
+						curFrame.ampl = AMPL_TABLE[11];
 						
 						if (frame == 1) {
 							// fade in first frame
+							lastFrame.fd = 0;
+							lastFrame.phi = 0;
+							lastFrame.pitch = curFrame.pitch;
+							lastFrame.i_ampl = 0;
+							lastFrame.ampl = AMPL_TABLE[0];
+							lastFrame.i_pi = 0;
+							lastFrame.pi = PI_TABLE[0];
+							
 							for (int j=0; j<4; j++) {
+								lastFrame.output[j] = 0;
+								lastFrame.last_output[j] = 0;
 								lastFrame.fm[j] = curFrame.fm[j];
+								lastFrame.i_fm[j] = curFrame.i_fm[j];
 								lastFrame.bw[j] = curFrame.bw[j];
-								lastFrame.pitch = curFrame.pitch;
+								lastFrame.i_bw[j] = curFrame.i_bw[j];
 							}
 						}
 						
-						getMeaAudioFrame(lastFrame, curFrame);
+						int[] out = getMeaAudioFrame(lastFrame, curFrame);
 						lastFrame = curFrame;
+						
+						// update sample audio frame in global wave Synth
+						int j=plotFrameStart*SAMPLE_FRAME;
+						for (int k = 0; k < out.length; k++) {
+							audioSynth[j++] = out[k];
+						}
+						
+						refreshPlotsMea(plotFrameStart, plotFrameWindow);
+						ImPlot.fitNextPlotAxes();
 						
 						
 						// set data codes to textinput
@@ -234,7 +258,7 @@ public class MeaEmulator2 {
 				if (audioSynth != null) {
 					ImGui.sameLine();
 					if (ImGui.button("Play synth.")) {
-						playAudio(audioSynth);
+						//playAudio(audioSynth);
 					}
 				}
 
@@ -246,24 +270,26 @@ public class MeaEmulator2 {
 						if (plotFrameStart<0) {
 							plotFrameStart=0;
 						}
-						refreshPlots(plotFrameStart, plotFrameWindow);
+						refreshPlotsRef(plotFrameStart, plotFrameWindow);
+						refreshPlotsMea(plotFrameStart, plotFrameWindow);
 					}
 					ImGui.sameLine();
 					
 					if (ImGui.button(">")) {
 						plotFrameStart++;
-						if (plotFrameStart>totalframes) {
-							plotFrameStart=totalframes;
+						if (plotFrameStart>=totalframes) {
+							plotFrameStart=totalframes-1;
 						}
-						refreshPlots(plotFrameStart, plotFrameWindow);
+						refreshPlotsRef(plotFrameStart, plotFrameWindow);
+						refreshPlotsMea(plotFrameStart, plotFrameWindow);
 					}
 				
 					ImGui.sameLine();
-					ImGui.labelText("##PlotFrames", "Frames: "+plotFrameStart+"-"+((plotFrameStart+plotFrameWindow-1)<totalframes?(plotFrameStart+plotFrameWindow-1):totalframes)+"/"+(totalframes));
+					ImGui.labelText("##PlotFrames", "Frames: "+(plotFrameStart+1)+"-"+((plotFrameStart+plotFrameWindow)<totalframes?(plotFrameStart+plotFrameWindow):totalframes)+"/"+(totalframes));
 				}
 				
 				if (ImPlot.beginPlot("Audio")) {
-					//ImPlot.plotLine("MEA8000", xmea, ymea);
+					ImPlot.plotLine("MEA8000", xmea, ymea);
 					ImPlot.plotLine("Reference", xref, yref);
 					ImPlot.endPlot();
 				}
@@ -273,7 +299,7 @@ public class MeaEmulator2 {
 				ImGui.inputTextMultiline("##MEAinput", input, 1900, 400);
 				
 			} catch (Exception e) {
-				System.err.println(e);
+				e.printStackTrace();
 			}
 		}
 
@@ -304,7 +330,7 @@ public class MeaEmulator2 {
 		}
 	}
 	
-	private static void refreshPlots(int frameStart, int windowLength) {
+	private static void refreshPlotsRef(int frameStart, int windowLength) {
 		
 		double rate = 1.0/SAMPLE_RATE;
 		
@@ -323,6 +349,30 @@ public class MeaEmulator2 {
 			xref = Arrays.copyOf(xref, j);
 			yref = Arrays.copyOf(yref, j);
 		}
+	}
+	
+	private static void refreshPlotsMea(int frameStart, int windowLength) {
+		
+		double rate = 1.0/SAMPLE_RATE;
+		
+		if (audioSynth != null) {
+			xmea = new Double[windowLength*SAMPLE_FRAME];
+			ymea = new Integer[windowLength*SAMPLE_FRAME];
+			
+			int j = 0;
+			for (int i = frameStart*SAMPLE_FRAME; i < (frameStart+windowLength)*SAMPLE_FRAME; i++) {
+				if (i >= 0 && i < audioSynth.length) {
+					xmea[j] = j*rate;
+					ymea[j] = audioSynth[i];
+					j++;
+				}
+			}
+			if (j < windowLength*SAMPLE_FRAME) {
+				xmea = Arrays.copyOf(xmea, j);
+				ymea = Arrays.copyOf(ymea, j);
+			}
+		}
+		
 		ImPlot.fitNextPlotAxes();
 	}
 		
@@ -336,10 +386,10 @@ public class MeaEmulator2 {
 	private static final int[]   FM2_TABLE   = { 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047, 1100, 1179, 1254, 1337, 1428, 1528, 1639, 1761, 1897, 2047, 2214, 2400, 2609, 2842, 3105, 3400 };
 	private static final int[]   FM3_TABLE   = { 1179, 1337, 1528, 1761, 2047, 2400, 2842, 3400 };
 	private static final int[][] FM_TABLES   = {FM1_TABLE, FM2_TABLE, FM3_TABLE};
-	private static final int[]   FM4         = { 3500 };
+	private static final int     FM4         = 3500;
 	private static final int[]   BW_TABLE    = { 726, 309, 125, 50 };
 	private static final int[]   AMPL_TABLE  = { 0, 8, 11, 16, 22, 31, 44, 62, 88, 125, 177, 250, 354, 500, 707, 1000 };
-	private static final int[]   PITCH_TABLE = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
+	private static final int[]   PI_TABLE    = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
 	private static final int     NOISE_INDEX = 16;
     private static final int[]   m_audio     = new int[QUANT];
 	
@@ -366,18 +416,26 @@ public class MeaEmulator2 {
 		int   fd; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
 		int   phi;
 		int   pitch;
+		int[] output;
+		int[] last_output;
+		
 		int   pi;
 		int   ampl;
 		int[] fm;
 		int[] bw;
-		int[] output;
-		int[] last_output;
+		
+		int   i_pi;
+		int   i_ampl;
+		int[] i_fm;
+		int[] i_bw;
 		
 		MeaFrame () {
-			fm = new int[4];
-			bw = new int[4];
 			output = new int[4];
 			last_output = new int[4];
+			fm = new int[4];
+			bw = new int[4];
+			i_fm = new int[4];
+			i_bw = new int[4];
 		}
 	}
 	
@@ -396,11 +454,12 @@ public class MeaEmulator2 {
         // match preset values, and set indexes
         for(int i = 0; i < 4; i++) {
             maxDelta = Integer.MAX_VALUE;
-        	for (int j = 0; j < Mea8000Device.BW_TABLE.length; j++) {
-        		delta = Math.abs((int) formBands[i] - Mea8000Device.BW_TABLE[j]);
+        	for (int j = 0; j < BW_TABLE.length; j++) {
+        		delta = Math.abs((int) formBands[i] - BW_TABLE[j]);
         		if (delta < maxDelta) {
         			maxDelta = delta;
-        			curFrame.bw[i] = j;
+        			curFrame.i_bw[i] = j;
+        			curFrame.bw[i] = BW_TABLE[j];
         		} else {
         			break;
         		}
@@ -418,24 +477,26 @@ public class MeaEmulator2 {
         // match preset values, and set indexes
         for(int i = 0; i < 3; i++) {
             maxDelta = Integer.MAX_VALUE;
-        	for (int j = 0; j < Mea8000Device.FM_TABLES[i].length; j++) {
-        		delta = Math.abs((int) formFreqs[i] - Mea8000Device.FM_TABLES[i][j]);
+        	for (int j = 0; j < FM_TABLES[i].length; j++) {
+        		delta = Math.abs((int) formFreqs[i] - FM_TABLES[i][j]);
         		if (delta < maxDelta) {
         			maxDelta = delta;
-        			curFrame.fm[i] = j;
+        			curFrame.i_fm[i] = j;
+        			curFrame.fm[i] = FM_TABLES[i][j];
         		} else {
         			break;
         		}
         	}
         	
         }
-        curFrame.fm[3] = 0;		
+        curFrame.i_fm[3] = 0;	
+        curFrame.fm[3] = FM4;	
 	}
 	
 	public static int[] getMeaAudioFrame(MeaFrame lastFrame, MeaFrame curFrame) {
 
 		boolean m_noise = (curFrame.pi == NOISE_INDEX);
-		curFrame.pitch = lastFrame.pitch + (PITCH_TABLE[curFrame.pi] << curFrame.fd);
+		curFrame.pitch = lastFrame.pitch + (PI_TABLE   [curFrame.pi] << curFrame.fd);
 		curFrame.phi = lastFrame.phi;
 		curFrame.output = lastFrame.output;
 		curFrame.last_output = lastFrame.last_output;
