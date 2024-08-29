@@ -171,8 +171,8 @@ public class MeaEmulator2 {
 
 					frame = 1;
 					MeaFrame lastFrame = new MeaFrame();
-					//for (float i=0; i<audioRef.length; i+=SAMPLE_FRAME) {
-					for (int i=0; i<8*SAMPLE_FRAME; i+=SAMPLE_FRAME) {
+					for (int i=0; i<80*SAMPLE_FRAME; i+=SAMPLE_FRAME) {
+					//for (int i=0; i<8*SAMPLE_FRAME; i+=SAMPLE_FRAME) {
 						 
 						// process audio with a window
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, i, i+SAMPLE_WINDOW), wFormat);
@@ -253,8 +253,8 @@ public class MeaEmulator2 {
 							}
 						}
 
-						log.info("Last Frame: {} Amplitude: {}", frame-1, lastFrame.i_ampl);
-						log.info("Frame: {} Amplitude: {}", frame, bestAmpl);
+						//log.info("Last Frame: {} Amplitude: {}", frame-1, lastFrame.i_ampl);
+						//log.info("Frame: {} Amplitude: {}", frame, bestAmpl);
 						curFrame.i_ampl = bestAmpl;
 						curFrame.ampl = AMPL_TABLE[bestAmpl];
 						out = getMeaAudioFrame(lastFrame, curFrame);
