@@ -2,6 +2,7 @@ package com.widedot.toolbox.debug.ui;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 
 import com.widedot.toolbox.debug.DataUtil;
+import com.widedot.toolbox.debug.util.Mea8000Device;
 
 import funkatronics.code.tactilewaves.dsp.FormantExtractor;
 import funkatronics.code.tactilewaves.dsp.PitchProcessor;
@@ -69,7 +71,7 @@ public class MeaEmulator2 {
 	private static final int BYTES_PER_SAMPLE = 2;
 	private static final int SAMPLE_RATE = 64000;
 	private static final int SAMPLE_FRAME = (SAMPLE_RATE*8)/1000; // TODO make a parameter 8, 16, 32, 64
-	private static final int SAMPLE_WINDOW = SAMPLE_FRAME*4;
+	private static final int SAMPLE_WINDOW = SAMPLE_FRAME*2;
 	
 	static {
 		ImPlot.createContext();
@@ -147,7 +149,6 @@ public class MeaEmulator2 {
 					WaveFrame wFrame;
 					FormantExtractor fe;
 					PitchProcessor pp = new PitchProcessor();
-					byte[] encodedData = new byte[2]; // 2 bytes for blank header
 					int formants;
 					float startPitch = -1;
 					
@@ -241,6 +242,7 @@ public class MeaEmulator2 {
 					}
 					
 					setAmplFirstPass();
+					writeMeaData();
 					
 					// convert audio for playing
 					int j = 0;
@@ -249,17 +251,6 @@ public class MeaEmulator2 {
 						audioSynth[j++] = (byte) (audioSynthInt[i] >> 8);
 						audioSynth[j++] = (byte) (audioSynthInt[i] & 0xff);
 					}
-					
-					// add end marker of 4 null bytes
-					// TODO also copy last freq, bw, ... for a perfect fade out
-					encodedData = Arrays.copyOf(encodedData, encodedData.length+4);
-					
-					// update header with total length
-					encodedData[0] = (byte) ((encodedData.length & 0xff00) >> 8);
-					encodedData[1] = (byte) (encodedData.length & 0xff);
-					
-					input.set(DataUtil.bytesToHex(encodedData)+"\r\n");					
-					Files.write(Path.of(inputPathName+".mea"), encodedData);
 					
 					log.info("Encoding done !");
 				}
@@ -343,13 +334,63 @@ public class MeaEmulator2 {
 
 	}
 	
+	private static void writeMeaData() {
+		
+		byte[] encodedData = new byte[0xFFFFFF];
+		int pos = 2;
+		
+		// set header pitch
+		encodedData[pos++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
+		
+		for (int frame=1; frame<meaFrames.size(); frame++) {
+			
+        	// set bandwidths
+	        for(int i = 0; i < 4; i++) {
+	        	encodedData[pos] = (byte) (encodedData[pos] | (byte) (meaFrames.get(frame).i_bw[i] << (6-i*2)));
+	        }
+	        
+	        // set frequencies
+    		encodedData[pos+2] = (byte) (encodedData[pos+2] | (byte) ((meaFrames.get(frame).i_fm[0] & 0b11111) << 3));
+    		encodedData[pos+1] = (byte) (encodedData[pos+1] | (byte) (meaFrames.get(frame).i_fm[1] & 0b11111));
+    		encodedData[pos+1] = (byte) (encodedData[pos+1] | (byte) ((meaFrames.get(frame).i_fm[2] & 0b111) << 5));
+	    	
+	    	// set amplitude
+	    	encodedData[pos+2] = (byte) (encodedData[pos+2] | (byte) ((meaFrames.get(frame).i_ampl >> 1) & 0b111));
+	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) ((meaFrames.get(frame).i_ampl & 0b1) << 7));
+			
+	    	// set pitch increment
+	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
+	    	
+	    	pos += 4;
+	    	
+	    	if (meaFrames.get(frame).i_ampl == 0 && frame+1<meaFrames.size()) {
+	    		encodedData[pos++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
+	    	}
+		}
+		
+		// update header with total length
+		encodedData[0] = (byte) ((pos & 0xff00) >> 8);
+		encodedData[1] = (byte) (pos & 0xff);
+		
+		byte[] finalData = Arrays.copyOf(encodedData, pos);
+		
+		input.set(DataUtil.bytesToHex(finalData)+"\r\n");		
+		
+		try {
+			Files.write(Path.of(inputPathName+".mea"), finalData);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+	}
+	
 	private static void setAmplFirstPass() {
 		
 		log.info("Find frames amplitude ...");
 
 		int[] out;
 		MeaFrame FrameA, FrameB, FrameC;
-		int amplCLimit = AMPL_TABLE.length;
+		int amplBLimit, amplCLimit;
 		
 		for (int frame = 1; frame < meaFrames.size()-1; frame+=2) {
 			
@@ -358,11 +399,22 @@ public class MeaEmulator2 {
 			int bestAmplB = 0, bestAmplC = 0;
 			double lowestDelta = Double.MAX_VALUE;
 			
-			if(frame+1 == meaFrames.size()-1) {
-				amplCLimit = 1;
-			} // no else here, as zeroing is made only last frame
+			// in case of new Pitch, previous frame is faded to 0
+			if(meaFrames.get(frame+1).newPitch) {
+				amplBLimit = 1;
+			} else {
+				amplBLimit = AMPL_TABLE.length;
+			}
 			
-			for (int amplB=0; amplB<AMPL_TABLE.length; amplB++) {				
+			// in case of new Pitch, previous frame is faded to 0
+			// last frame is also faded to 0
+			if((frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) || frame+1 == meaFrames.size()-1) {
+				amplCLimit = 1;
+			} else {
+				amplCLimit = AMPL_TABLE.length;
+			}
+			
+			for (int amplB=0; amplB<amplBLimit; amplB++) {				
 				for (int amplC=0; amplC<amplCLimit; amplC++) {
 				
 					// process frame group
@@ -650,9 +702,6 @@ public class MeaEmulator2 {
 	}
 	
 	public static void setMeaPitch(MeaFrame curFrame, float pitch, MeaFrame lastFrame) {
-		
-		// todo : la valeur de pi doit tenir compte de la taille de frame
-		// << curFrame.fd
 		
 		if (pitch == -1) {
 			curFrame.pitch = lastFrame.pitch;
