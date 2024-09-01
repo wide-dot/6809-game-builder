@@ -346,14 +346,15 @@ public class Mea8000Device {
 				write(1,(byte) 0x1A);
 				log.debug("STOP COMMAND");
 				
-				// reinit chip
-				for (int i = 0; i < m_f.length; i++) {
-					m_f[i] = new FType();
-				}
-				
 				// next byte is pitch
 				if (curData < data.length) {
 					write(0, data[curData++]);
+					
+					// reinit chip
+					shiftFrame();
+					m_last_ampl = 0; // fixed code
+					m_last_pitch = m_pitch;
+					
 					log.debug("PITCH " + Integer.toHexString(data[curData-1] & 0xff));
 				} else {
 					break;

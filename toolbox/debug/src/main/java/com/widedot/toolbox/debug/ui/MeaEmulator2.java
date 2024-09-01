@@ -55,6 +55,7 @@ public class MeaEmulator2 {
 	private static MeaFrame firstFrame = new MeaFrame();
 	private static byte[] audioSynth;
 	private static int[] audioSynthInt;
+	private static byte[] audioSynthManual;
 	
 	// text input
 	private static ImString input = new ImString(0x10000);
@@ -65,8 +66,10 @@ public class MeaEmulator2 {
 	private static int totalframes = 0;
 	private static Double[] xref = {};
 	private static Integer[] yref = {};
-	private static Double[] xmea = {};
-	private static Integer[] ymea = {};
+	private static Double[] xmeaAuto = {};
+	private static Integer[] ymeaAuto = {};
+	private static Double[] xmeaManual = {};
+	private static Integer[] ymeaManual = {};
 	
 	private static final int BYTES_PER_SAMPLE = 2;
 	private static final int SAMPLE_RATE = 64000;
@@ -126,7 +129,6 @@ public class MeaEmulator2 {
 						// refresh plots
 						plotFrameStart=0;
 						refreshPlotsRef(plotFrameStart, plotFrameWindow);
-						ImPlot.fitNextPlotAxes();
 					}
 
 				}
@@ -161,7 +163,7 @@ public class MeaEmulator2 {
 						// find frame pitch
 						pp.process(wFrame);
 						startPitch = (float) wFrame.getFeature("Pitch");
-						if (startPitch != -1) {
+						if (startPitch > 0 && startPitch < 512) {
 							break;
 						}
 					}
@@ -185,9 +187,9 @@ public class MeaEmulator2 {
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW), wFormat);
 
 						// first frame is a special case
-						// init starting parmaeters
+						// init starting parameters
 						if (frame == 1) {
-							firstFrame.pitch = (int) startPitch;
+							firstFrame.pitch = ((int)(startPitch + 1.0) / 2) * 2;
 							firstFrame.phi = 0;
 						}
 						
@@ -207,7 +209,8 @@ public class MeaEmulator2 {
 						// map parameters to mea presets
 						float[] formFreqs = (float[]) wFrame.getFeature("Formants Frequency");
 						float[] formBands = (float[]) wFrame.getFeature("Formants Bandwidth");
-						float pitch = (float) wFrame.getFeature("Pitch");
+						
+						Float pitch = (float) wFrame.getFeature("Pitch");
 						
 //						log.debug("Frame: {} - Pitch: {}Hz Formant Freq: {} Formant Band: {}",
 //								frame,
@@ -242,7 +245,7 @@ public class MeaEmulator2 {
 					}
 					
 					setAmplFirstPass();
-					writeMeaData();
+					writeMeaData();		
 					
 					// convert audio for playing
 					int j = 0;
@@ -298,7 +301,8 @@ public class MeaEmulator2 {
 							plotFrameStart=0;
 						}
 						refreshPlotsRef(plotFrameStart, plotFrameWindow);
-						refreshPlotsMea(plotFrameStart, plotFrameWindow);
+						refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
+						refreshPlotsMeaManual(plotFrameStart, plotFrameWindow);
 					}
 					ImGui.sameLine();
 					
@@ -308,7 +312,8 @@ public class MeaEmulator2 {
 							plotFrameStart=totalframes-plotFrameWindow;
 						}
 						refreshPlotsRef(plotFrameStart, plotFrameWindow);
-						refreshPlotsMea(plotFrameStart, plotFrameWindow);
+						refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
+						refreshPlotsMeaManual(plotFrameStart, plotFrameWindow);
 					}
 				
 					ImGui.sameLine();
@@ -316,8 +321,9 @@ public class MeaEmulator2 {
 				}
 				
 				if (ImPlot.beginPlot("Audio")) {
-					ImPlot.plotLine("MEA8000", xmea, ymea);
 					ImPlot.plotLine("Reference", xref, yref);
+					ImPlot.plotLine("MEA8000 Auto", xmeaAuto, ymeaAuto);
+					ImPlot.plotLine("MEA8000 Manual", xmeaManual, ymeaManual);
 					ImPlot.endPlot();
 				}
 				
@@ -334,13 +340,14 @@ public class MeaEmulator2 {
 
 	}
 	
-	private static void writeMeaData() {
+	private static byte[] writeMeaData() {
 		
 		byte[] encodedData = new byte[0xFFFFFF];
 		int pos = 2;
 		
 		// set header pitch
 		encodedData[pos++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
+		input.set("Pitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
 		
 		for (int frame=1; frame<meaFrames.size(); frame++) {
 			
@@ -361,27 +368,30 @@ public class MeaEmulator2 {
 	    	// set pitch increment
 	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
 	    	
+    		input.set(input.get() + frame + ": " + DataUtil.bytesToHex(encodedData, pos, 4) + "\r\n");
+	    	
 	    	pos += 4;
 	    	
 	    	if (meaFrames.get(frame).i_ampl == 0 && frame+1<meaFrames.size()) {
 	    		encodedData[pos++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
+	    		input.set(input.get() + "\r\nPitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
 	    	}
 		}
 		
 		// update header with total length
 		encodedData[0] = (byte) ((pos & 0xff00) >> 8);
 		encodedData[1] = (byte) (pos & 0xff);
+		input.set("Length: " + DataUtil.bytesToHex(encodedData, 0, 2) + "\r\n\r\n" + input.get() + "\r\n");	
 		
-		byte[] finalData = Arrays.copyOf(encodedData, pos);
-		
-		input.set(DataUtil.bytesToHex(finalData)+"\r\n");		
+		byte[] finalData = Arrays.copyOf(encodedData, pos);	
 		
 		try {
 			Files.write(Path.of(inputPathName+".mea"), finalData);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-        
+		
+		return finalData;        
 	}
 	
 	private static void setAmplFirstPass() {
@@ -422,10 +432,16 @@ public class MeaEmulator2 {
 					FrameA = new MeaFrame(meaFrames.get(frame-1));
 					
 					FrameB = new MeaFrame(meaFrames.get(frame));
+					if(meaFrames.get(frame+1).newPitch) {
+						FrameB.copyFilters(meaFrames.get(frame+1));
+					}
 					FrameB.i_ampl = amplB;
 					FrameB.ampl = AMPL_TABLE[amplB];
 					
 					FrameC = new MeaFrame(meaFrames.get(frame+1));
+					if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
+						FrameC.copyFilters(meaFrames.get(frame+2));
+					}
 					FrameC.i_ampl = amplC;
 					FrameC.ampl = AMPL_TABLE[amplC];
 									
@@ -447,9 +463,15 @@ public class MeaEmulator2 {
 			MeaFrame curFrame = meaFrames.get(frame);
 			MeaFrame nextFrame = meaFrames.get(frame+1);
 			
+			if(meaFrames.get(frame+1).newPitch) {
+				curFrame.copyFilters(meaFrames.get(frame+1));
+			}
 			curFrame.i_ampl = bestAmplB;
 			curFrame.ampl = AMPL_TABLE[bestAmplB];
 			
+			if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
+				nextFrame.copyFilters(meaFrames.get(frame+2));
+			}
 			nextFrame.i_ampl = bestAmplC;
 			nextFrame.ampl = AMPL_TABLE[bestAmplC];
 			
@@ -463,8 +485,7 @@ public class MeaEmulator2 {
 
 		}
 		
-		refreshPlotsMea(plotFrameStart, plotFrameWindow);
-		ImPlot.fitNextPlotAxes();
+		refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
 	}
 	
 	private static void updateSynthWave(int frame, int frameLength, int[] data) {
@@ -529,29 +550,58 @@ public class MeaEmulator2 {
 		
 		int j = 0;
 		for (int i = frameStart*SAMPLE_FRAME*BYTES_PER_SAMPLE; i < (frameStart+windowLength)*SAMPLE_FRAME*BYTES_PER_SAMPLE; i += BYTES_PER_SAMPLE) {
-			if (i < audioRef.length-1) {
 				xref[j] = j*rate;
-				yref[j] = (audioRef[i] << 8) | (audioRef[i+1] & 0xff);
+				if (i < audioRef.length-1) {
+					yref[j] = (audioRef[i] << 8) | (audioRef[i+1] & 0xff);
+				} else {
+					yref[j] = 0;
+				}
 				j++;
-			}
 		}
+		
+		ImPlot.fitNextPlotAxes();
 	}
 	
-	private static void refreshPlotsMea(int frameStart, int windowLength) {
+	private static void refreshPlotsMeaAuto(int frameStart, int windowLength) {
 		
 		double rate = 1.0/SAMPLE_RATE;
 		
 		if (audioSynthInt != null) {
-			xmea = new Double[windowLength*SAMPLE_FRAME];
-			ymea = new Integer[windowLength*SAMPLE_FRAME];
+			xmeaAuto = new Double[windowLength*SAMPLE_FRAME];
+			ymeaAuto = new Integer[windowLength*SAMPLE_FRAME];
 			
 			int j = 0;
 			for (int i = frameStart*SAMPLE_FRAME; i < (frameStart+windowLength)*SAMPLE_FRAME; i++) {
+				xmeaAuto[j] = j*rate;
 				if (i < audioSynthInt.length) {
-					xmea[j] = j*rate;
-					ymea[j] = audioSynthInt[i];
-					j++;
+					ymeaAuto[j] = audioSynthInt[i];
+				} else {
+					ymeaAuto[j] = 0;
 				}
+				j++;
+			}
+		}
+		
+		ImPlot.fitNextPlotAxes();
+	}
+	
+	private static void refreshPlotsMeaManual(int frameStart, int windowLength) {
+		
+		double rate = 1.0/SAMPLE_RATE;
+		
+		if (audioSynthManual != null) {
+			xmeaManual = new Double[windowLength*SAMPLE_FRAME];
+			ymeaManual = new Integer[windowLength*SAMPLE_FRAME];
+			
+			int j = 0;
+			for (int i = frameStart*SAMPLE_FRAME*BYTES_PER_SAMPLE; i < (frameStart+windowLength)*SAMPLE_FRAME*BYTES_PER_SAMPLE; i += BYTES_PER_SAMPLE) {
+				xmeaManual[j] = j*rate;
+				if (i < audioSynthManual.length-1) {
+					ymeaManual[j] =  (audioSynthManual[i+1] << 8) | (audioSynthManual[i] & 0xff);
+				} else {
+					ymeaManual[j] = 0;
+				}
+				j++;
 			}
 		}
 		
@@ -640,6 +690,13 @@ public class MeaEmulator2 {
 			this.i_bw = Arrays.copyOf(src.i_bw, src.i_bw.length);
 			
 		}
+		
+		public void copyFilters(MeaFrame src) {
+			this.fm = Arrays.copyOf(src.fm, src.fm.length);
+			this.bw = Arrays.copyOf(src.bw, src.bw.length);
+			this.i_fm = Arrays.copyOf(src.i_fm, src.i_fm.length);
+			this.i_bw = Arrays.copyOf(src.i_bw, src.i_bw.length);
+		}
 	}
 	
 	public static void setMeaFilters(MeaFrame curFrame, float[] formFreqs, float[] formBands) {
@@ -711,6 +768,7 @@ public class MeaEmulator2 {
 			int pi = (curFrame.pitch - lastFrame.pitch) >> curFrame.fd; 
 			if (pi < -15 || pi > 15) {
 				curFrame.newPitch = true;
+				curFrame.pitch = (curFrame.pitch / 2) * 2; // round by two the starting pitch
 			} else {
 				curFrame.newPitch = false;
 				curFrame.i_pi = (pi & 0x1f);
