@@ -24,10 +24,13 @@ import funkatronics.code.tactilewaves.dsp.FormantExtractor;
 import funkatronics.code.tactilewaves.dsp.PitchProcessor;
 import funkatronics.code.tactilewaves.dsp.WaveFrame;
 import funkatronics.code.tactilewaves.io.WaveFormat;
+import imgui.ImColor;
+import imgui.ImVec4;
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;
 import imgui.extension.imguifiledialog.flag.ImGuiFileDialogFlags;
 import imgui.extension.implot.ImPlot;
+import imgui.flag.ImGuiCol;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
 import imgui.type.ImString;
@@ -61,16 +64,19 @@ public class MeaEmulator2 {
 	private static ImString intxtData = new ImString(0x10000);
 	
 	// parameters input
+	private static int[] p_phi   = new int[1];
 	private static int[] p_pitch = new int[1];
 	private static int[] p_fm1   = new int[1];				
 	private static int[] p_fm2   = new int[1];
 	private static int[] p_fm3   = new int[1];
+	private static int[] p_fm4   = new int[1];
 	private static int[] p_bw1   = new int[1];				
 	private static int[] p_bw2   = new int[1];
 	private static int[] p_bw3   = new int[1];
 	private static int[] p_bw4   = new int[1];
 	private static int[] p_ampl  = new int[1];
 	private static int[] p_pi    = new int[1];
+	private static int[] p_fd    = new int[1];
 	
 	// plot data
 	private static int plotFrameStart = 0;
@@ -341,22 +347,48 @@ public class MeaEmulator2 {
 				
 				// MEA FRAMES DATA
 				// -------------------------------------------------------------
-				ImGui.inputTextMultiline("##MEAinput", intxtData, 120, 300);
+				ImGui.inputTextMultiline("##MEAinput", intxtData, 120, 512);
+				ImGui.sameLine();
+				ImGui.dummy(80.0f, 0.0f);
 				ImGui.sameLine();
 				
-				ImGui.vSliderInt("##fm1", 60, 300, p_fm1, 0, FM1_TABLE.length-1, FM1_TABLE[p_fm1[0]]+"Hz");
+				ImGui.vSliderInt("##phi", 80, 512, p_phi, 0, F0, "%d");
 				ImGui.sameLine();
-				ImGui.vSliderInt("##bw1", 40, 300, p_bw1, 0, BW_TABLE.length-1, BW_TABLE[p_bw1[0]]+"Hz");
+				ImGui.dummy(80.0f, 0.0f);
 				ImGui.sameLine();
-				ImGui.vSliderInt("##fm2", 60, 300, p_fm2, 0, FM2_TABLE.length-1, FM2_TABLE[p_fm2[0]]+"Hz");
+				
+				ImGui.vSliderInt("##pitch", 80, 512, p_pitch, 0, 255, (p_pitch[0]*2)+"Hz");
 				ImGui.sameLine();
-				ImGui.vSliderInt("##bw2", 40, 300, p_bw2, 0, BW_TABLE.length-1, BW_TABLE[p_bw2[0]]+"Hz");
+				ImGui.vSliderInt("##pi", 40, 512, p_pi, -15, 15, "%dHz");
 				ImGui.sameLine();
-				ImGui.vSliderInt("##fm3", 60, 300, p_fm3, 0, FM3_TABLE.length-1, FM3_TABLE[p_fm3[0]]+"Hz");
+				ImGui.dummy(80.0f, 0.0f);
 				ImGui.sameLine();
-				ImGui.vSliderInt("##bw3", 40, 300, p_bw3, 0, BW_TABLE.length-1, BW_TABLE[p_bw3[0]]+"Hz");
+				
+				ImGui.vSliderInt("##ampl", 80, 512, p_ampl, 0, AMPL_TABLE.length-1, (AMPL_TABLE[p_ampl[0]]/10.0)+"");
 				ImGui.sameLine();
-				ImGui.vSliderInt("##bw4", 40, 300, p_bw4, 0, BW_TABLE.length-1, BW_TABLE[p_bw4[0]]+"Hz");
+				ImGui.dummy(80.0f, 0.0f);
+				ImGui.sameLine();
+					           
+				ImGui.vSliderInt("##fm1", 80, 512, p_fm1, 0, FM1_TABLE.length-1, FM1_TABLE[p_fm1[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw1", 40, 512, p_bw1, 0, BW_TABLE.length-1, BW_TABLE[p_bw1[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##fm2", 80, 512, p_fm2, 0, FM2_TABLE.length-1, FM2_TABLE[p_fm2[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw2", 40, 512, p_bw2, 0, BW_TABLE.length-1, BW_TABLE[p_bw2[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##fm3", 80, 512, p_fm3, 0, FM3_TABLE.length-1, FM3_TABLE[p_fm3[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw3", 40, 512, p_bw3, 0, BW_TABLE.length-1, BW_TABLE[p_bw3[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##fm4", 80, 512, p_fm4, FM4, FM4, FM4+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw4", 40, 512, p_bw4, 0, BW_TABLE.length-1, BW_TABLE[p_bw4[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.dummy(80.0f, 0.0f);
+				ImGui.sameLine();
+				
+				ImGui.vSliderInt("##fd", 80, 512, p_fd, 0, FD_TABLE.length-1, FD_TABLE[p_fd[0]]+"ms");
 				
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -366,7 +398,7 @@ public class MeaEmulator2 {
 		ImGui.end();
 
 	}
-	
+
 	private static byte[] writeMeaData() {
 		
 		byte[] encodedData = new byte[0xFFFFFF];
@@ -650,6 +682,7 @@ public class MeaEmulator2 {
 	private static final int[]   AMPL_TABLE  = { 0, 8, 11, 16, 22, 31, 44, 62, 88, 125, 177, 250, 354, 500, 707, 1000 };
 	private static final int[]   PI_TABLE    = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1 };
 	private static final int     NOISE_INDEX = 16;
+	private static final int[]   FD_TABLE    = {8, 16, 32, 64};
     private static final int[]   m_audio     = new int[QUANT];
 	
 	private static double[] m_cos_table = new double[TABLE_LEN];
