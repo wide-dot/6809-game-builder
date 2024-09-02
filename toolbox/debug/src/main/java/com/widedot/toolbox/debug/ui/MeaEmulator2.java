@@ -58,7 +58,19 @@ public class MeaEmulator2 {
 	private static byte[] audioSynthManual;
 	
 	// text input
-	private static ImString input = new ImString(0x10000);
+	private static ImString intxtData = new ImString(0x10000);
+	
+	// parameters input
+	private static int[] p_pitch = new int[1];
+	private static int[] p_fm1   = new int[1];				
+	private static int[] p_fm2   = new int[1];
+	private static int[] p_fm3   = new int[1];
+	private static int[] p_bw1   = new int[1];				
+	private static int[] p_bw2   = new int[1];
+	private static int[] p_bw3   = new int[1];
+	private static int[] p_bw4   = new int[1];
+	private static int[] p_ampl  = new int[1];
+	private static int[] p_pi    = new int[1];
 	
 	// plot data
 	private static int plotFrameStart = 0;
@@ -329,7 +341,22 @@ public class MeaEmulator2 {
 				
 				// MEA FRAMES DATA
 				// -------------------------------------------------------------
-				ImGui.inputTextMultiline("##MEAinput", input, 1900, 400);
+				ImGui.inputTextMultiline("##MEAinput", intxtData, 120, 300);
+				ImGui.sameLine();
+				
+				ImGui.vSliderInt("##fm1", 60, 300, p_fm1, 0, FM1_TABLE.length-1, FM1_TABLE[p_fm1[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw1", 40, 300, p_bw1, 0, BW_TABLE.length-1, BW_TABLE[p_bw1[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##fm2", 60, 300, p_fm2, 0, FM2_TABLE.length-1, FM2_TABLE[p_fm2[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw2", 40, 300, p_bw2, 0, BW_TABLE.length-1, BW_TABLE[p_bw2[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##fm3", 60, 300, p_fm3, 0, FM3_TABLE.length-1, FM3_TABLE[p_fm3[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw3", 40, 300, p_bw3, 0, BW_TABLE.length-1, BW_TABLE[p_bw3[0]]+"Hz");
+				ImGui.sameLine();
+				ImGui.vSliderInt("##bw4", 40, 300, p_bw4, 0, BW_TABLE.length-1, BW_TABLE[p_bw4[0]]+"Hz");
 				
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -347,7 +374,7 @@ public class MeaEmulator2 {
 		
 		// set header pitch
 		encodedData[pos++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
-		input.set("Pitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
+		intxtData.set("Pitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
 		
 		for (int frame=1; frame<meaFrames.size(); frame++) {
 			
@@ -368,20 +395,20 @@ public class MeaEmulator2 {
 	    	// set pitch increment
 	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
 	    	
-    		input.set(input.get() + frame + ": " + DataUtil.bytesToHex(encodedData, pos, 4) + "\r\n");
+    		intxtData.set(intxtData.get() + frame + ": " + DataUtil.bytesToHex(encodedData, pos, 4) + "\r\n");
 	    	
 	    	pos += 4;
 	    	
 	    	if (meaFrames.get(frame).i_ampl == 0 && frame+1<meaFrames.size()) {
 	    		encodedData[pos++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
-	    		input.set(input.get() + "\r\nPitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
+	    		intxtData.set(intxtData.get() + "\r\nPitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
 	    	}
 		}
 		
 		// update header with total length
 		encodedData[0] = (byte) ((pos & 0xff00) >> 8);
 		encodedData[1] = (byte) (pos & 0xff);
-		input.set("Length: " + DataUtil.bytesToHex(encodedData, 0, 2) + "\r\n\r\n" + input.get() + "\r\n");	
+		intxtData.set("Length: " + DataUtil.bytesToHex(encodedData, 0, 2) + "\r\n\r\n" + intxtData.get() + "\r\n");	
 		
 		byte[] finalData = Arrays.copyOf(encodedData, pos);	
 		
