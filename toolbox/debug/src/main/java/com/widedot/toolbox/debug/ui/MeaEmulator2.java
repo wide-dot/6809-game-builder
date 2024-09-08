@@ -18,20 +18,15 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 
 import com.widedot.toolbox.debug.DataUtil;
-import com.widedot.toolbox.debug.util.Mea8000Device;
 
 import funkatronics.code.tactilewaves.dsp.FormantExtractor;
 import funkatronics.code.tactilewaves.dsp.PitchProcessor;
 import funkatronics.code.tactilewaves.dsp.WaveFrame;
 import funkatronics.code.tactilewaves.io.WaveFormat;
-import imgui.ImColor;
-import imgui.ImVec2;
-import imgui.ImVec4;
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;
 import imgui.extension.imguifiledialog.flag.ImGuiFileDialogFlags;
 import imgui.extension.implot.ImPlot;
-import imgui.flag.ImGuiCol;
 import imgui.internal.ImGui;
 import imgui.type.ImBoolean;
 import imgui.type.ImString;
@@ -61,24 +56,26 @@ public class MeaEmulator2 {
 	private static MeaFrame firstFrame = new MeaFrame();
 	private static byte[] audioSynth;
 	private static int[] audioSynthInt;
+	private static byte[] meaCodes = new byte[0xFFFFFF];
+	private static int meaCodesLen = 0;
 	
 	// text input
 	private static ImString intxtData = new ImString(0x10000);
 	
 	// parameters input
-	private static int[] p_phi   = new int[1];
-	private static int[] p_pitch = new int[1];
-	private static int[] p_fm1   = new int[1];				
-	private static int[] p_fm2   = new int[1];
-	private static int[] p_fm3   = new int[1];
-	private static int[] p_fm4   = new int[1];
-	private static int[] p_bw1   = new int[1];				
-	private static int[] p_bw2   = new int[1];
-	private static int[] p_bw3   = new int[1];
-	private static int[] p_bw4   = new int[1];
-	private static int[] p_ampl  = new int[1];
-	private static int[] p_fd    = new int[1];
-	private static boolean p_noise, p_newPitch;
+	private static int[] p_phi       = new int[1];
+	private static int[] p_pitch     = new int[1];
+	private static ImBoolean p_noise = new ImBoolean(false);
+	private static int[] p_fm2       = new int[1];
+	private static int[] p_fm1       = new int[1];				
+	private static int[] p_fm3       = new int[1];
+	private static int[] p_fm4       = new int[1];
+	private static int[] p_bw1       = new int[1];				
+	private static int[] p_bw2       = new int[1];
+	private static int[] p_bw3       = new int[1];
+	private static int[] p_bw4       = new int[1];
+	private static int[] p_ampl      = new int[1];
+	private static int[] p_fd        = new int[1];
 	
 	// plot data
 	private static int plotFrameStart = 0;
@@ -93,7 +90,8 @@ public class MeaEmulator2 {
 	private static final int BYTES_PER_SAMPLE = 2;
 	private static final int SAMPLE_RATE = 64000;
 	private static final int SAMPLE_FRAME = (SAMPLE_RATE*8)/1000; // TODO make a parameter 8, 16, 32, 64
-	private static final int SAMPLE_WINDOW = SAMPLE_FRAME*2;
+	private static final int SAMPLE_WINDOW_PITCH = SAMPLE_FRAME*4;
+	private static final int SAMPLE_WINDOW_FREQ = SAMPLE_FRAME*2;
 	
 	static {
 		ImPlot.createContext();
@@ -168,7 +166,7 @@ public class MeaEmulator2 {
 					for (int i=0; i<audioRefShifted.length; i+=SAMPLE_FRAME) {
 						 
 						// process audio with a window
-						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, i, i+SAMPLE_WINDOW), wFormat);
+						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, i, i+SAMPLE_WINDOW_PITCH), wFormat);
 				
 						// find frame pitch
 						pp.process(wFrame);
@@ -185,6 +183,7 @@ public class MeaEmulator2 {
 					}
 
 					// register starting parameters
+					meaFrames.clear();
 					meaFrames.add(firstFrame);
 					
 					// process all frames for pitch, freq and bandwidth
@@ -193,20 +192,21 @@ public class MeaEmulator2 {
 						 
 						log.info("Process frame: {}", frame);
 						
-						// process audio with a window
-						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW), wFormat);
-
-						// first frame is a special case
+							// first frame is a special case
 						// init starting parameters
 						if (frame == 1) {
-							firstFrame.pitch = ((int)(startPitch + 1.0) / 2) * 2;
+							firstFrame.pitch = (int) ((startPitch / 2) * 2);
 							firstFrame.phi = 0;
 						}
 						
-						// find frame pitch
+						// find frame pitc
+						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW_PITCH), wFormat);
 						pp.process(wFrame);
+						Float pitch = (float) wFrame.getFeature("Pitch");;
 						
 						// search frame formants
+						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW_FREQ), wFormat);
+						wFrame.addFeature("Pitch", pitch);;
 						formants=4;
 						do {
 							wFrame.removeFeature("Formants Frequency");
@@ -214,31 +214,22 @@ public class MeaEmulator2 {
 							fe = new FormantExtractor(formants);
 							fe.process(wFrame);
 							formants++;
-						} while (formants < 10 && ((float[]) wFrame.getFeature("Formants Frequency")).length < 4 );
+						} while (formants < 100 && ((float[]) wFrame.getFeature("Formants Frequency")).length < 4 );
 						
 						// map parameters to mea presets
 						float[] formFreqs = (float[]) wFrame.getFeature("Formants Frequency");
 						float[] formBands = (float[]) wFrame.getFeature("Formants Bandwidth");
 						
-						Float pitch = (float) wFrame.getFeature("Pitch");
+						log.info("found in {} tries, {} freqs", formants, formFreqs.length);
 						
-//						log.debug("Frame: {} - Pitch: {}Hz Formant Freq: {} Formant Band: {}",
-//								frame,
-//								pitch,
-//								formFreqs,
-//								formBands);
+					 pitch = (float) wFrame.getFeature("Pitch");
+						if (pitch <= 0 || pitch >= 512 ) {
+							pitch = (float) -1;
+						}
 						
 						MeaFrame curFrame = new MeaFrame();
-						setMeaFilters (curFrame, formFreqs, formBands);
+						setMeaFilters(curFrame, formFreqs, formBands);
 						setMeaPitch(curFrame, pitch, meaFrames.get(frame-1));
-						
-//						log.debug("Frame: {} - Mapped Formant Freq: {}, Formant Band: {} - Mapped Pitch: {}, i_pi: {}, newPitch: {}",
-//								frame,
-//								curFrame.fm,
-//								curFrame.bw,
-//								curFrame.pitch,
-//								curFrame.i_pi,
-//								curFrame.newPitch);
 						
 						// first frame is a special case
 						// init starting parmaeters
@@ -346,102 +337,108 @@ public class MeaEmulator2 {
 				plotFrameCurrent = plotFrameStart+1;
 				if (meaFrames.size()>plotFrameCurrent) {
 				
-				MeaFrame p_frame = meaFrames.get(plotFrameCurrent);	
-				p_phi[0] = audioRefShift;
-				p_pitch[0] = p_frame.pitch;
-				p_noise = p_frame.noise;
-				p_ampl[0] = p_frame.i_ampl;
-				p_fm1[0] = p_frame.i_fm[0];
-				p_bw1[0] = p_frame.i_bw[0];
-				p_fm2[0] = p_frame.i_fm[1];
-				p_bw2[0] = p_frame.i_bw[1];
-				p_fm3[0] = p_frame.i_fm[2];
-				p_bw3[0] = p_frame.i_bw[2];
-				p_fm4[0] = p_frame.i_fm[3];
-				p_bw4[0] = p_frame.i_bw[3];
-				
-				// TODO ajouter à l'IHM la possibilité de cocher décocher le noise
-				// permettre de sélectionner le pi ou un nouveau pitch
-				// permettre de parametrer le phi de départ
-				
-				// TODO a transformer en offset positif de la wave de référence
-				ImGui.vSliderInt("##phi", 80, 512, p_phi, 0, F0, "%d");
-				ImGui.sameLine();
-				ImGui.dummy(80.0f, 0.0f);
-				ImGui.sameLine();
-				
-				ImGui.vSliderInt("##pitch", 80, 512, p_pitch, 0, 510, p_pitch[0]+"Hz");
-				ImGui.sameLine();
-				ImGui.checkbox("noise", p_noise);
-				ImGui.sameLine();
-				ImGui.checkbox("new pitch", p_newPitch);
-				ImGui.sameLine();
-				ImGui.dummy(80.0f, 0.0f);
-				ImGui.sameLine();
-				
-				ImGui.vSliderInt("##ampl", 80, 512, p_ampl, 0, AMPL_TABLE.length-1, (AMPL_TABLE[p_ampl[0]]/10.0)+"");
-				ImGui.sameLine();
-				ImGui.dummy(80.0f, 0.0f);
-				ImGui.sameLine();
-					           
-				ImGui.vSliderInt("##fm1", 80, 512, p_fm1, 0, FM1_TABLE.length-1, FM1_TABLE[p_fm1[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##bw1", 40, 512, p_bw1, 0, BW_TABLE.length-1, BW_TABLE[p_bw1[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##fm2", 80, 512, p_fm2, 0, FM2_TABLE.length-1, FM2_TABLE[p_fm2[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##bw2", 40, 512, p_bw2, 0, BW_TABLE.length-1, BW_TABLE[p_bw2[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##fm3", 80, 512, p_fm3, 0, FM3_TABLE.length-1, FM3_TABLE[p_fm3[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##bw3", 40, 512, p_bw3, 0, BW_TABLE.length-1, BW_TABLE[p_bw3[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##fm4", 80, 512, p_fm4, FM4, FM4, FM4+"Hz");
-				ImGui.sameLine();
-				ImGui.vSliderInt("##bw4", 40, 512, p_bw4, 0, BW_TABLE.length-1, BW_TABLE[p_bw4[0]]+"Hz");
-				ImGui.sameLine();
-				ImGui.dummy(80.0f, 0.0f);
-				ImGui.sameLine();
-				
-				ImGui.vSliderInt("##fd", 80, 512, p_fd, 0, FD_TABLE.length-1, FD_TABLE[p_fd[0]]+"ms");
-				
-				if (p_phi[0] != audioRefShift) {
-					audioRefShift = p_phi[0];
-					shiftAudioRef();
-					refreshPlotsRef(plotFrameStart, plotFrameWindow);
-				}
-				
-				p_frame.pitch = p_pitch[0];
-				p_frame.noise = p_noise;
-				
-				setMeaPitch(p_frame, p_frame.pitch, meaFrames.get(plotFrameCurrent-1));
-				
-				p_frame.i_ampl = p_ampl[0];
-				p_frame.ampl = AMPL_TABLE[p_ampl[0]];
-				p_frame.i_fm[0] = p_fm1[0];
-				p_frame.i_bw[0] = p_bw1[0];
-				p_frame.i_fm[1] = p_fm2[0];
-				p_frame.i_bw[1] = p_bw2[0];
-				p_frame.i_fm[2] = p_fm3[0];
-				p_frame.i_bw[2] = p_bw3[0];
-				p_frame.i_fm[3] = p_fm4[0];
-				p_frame.i_bw[3] = p_bw4[0];
-				p_frame.fm[0] = FM1_TABLE[p_frame.i_fm[0]];
-				p_frame.bw[0] = BW_TABLE[p_frame.i_bw[0]];
-				p_frame.fm[1] = FM2_TABLE[p_frame.i_fm[1]];
-				p_frame.bw[1] = BW_TABLE[p_frame.i_bw[1]];
-				p_frame.fm[2] = FM3_TABLE[p_frame.i_fm[2]];
-				p_frame.bw[2] = BW_TABLE[p_frame.i_bw[2]];
-				p_frame.fm[3] = FM4;
-				p_frame.bw[3] = BW_TABLE[p_frame.i_bw[3]];
+					MeaFrame p_frame = meaFrames.get(plotFrameCurrent);	
+					p_phi[0] = audioRefShift;
+					p_pitch[0] = p_frame.pitch;
+					p_noise.set(p_frame.noise);
+					p_ampl[0] = p_frame.i_ampl;
+					p_fm1[0] = p_frame.i_fm[0];
+					p_bw1[0] = p_frame.i_bw[0];
+					p_fm2[0] = p_frame.i_fm[1];
+					p_bw2[0] = p_frame.i_bw[1];
+					p_fm3[0] = p_frame.i_fm[2];
+					p_bw3[0] = p_frame.i_bw[2];
+					p_fm4[0] = p_frame.i_fm[3];
+					p_bw4[0] = p_frame.i_bw[3];
+					
+					// TODO ajouter à l'IHM la possibilité de cocher décocher le noise
+					// permettre de sélectionner le pi ou un nouveau pitch
+					// permettre de parametrer le phi de départ
+					
+					// TODO a transformer en offset positif de la wave de référence
+					ImGui.vSliderInt("##phi", 80, 512, p_phi, 0, F0, "%d");
+					ImGui.sameLine();
+					ImGui.dummy(80.0f, 0.0f);
+					ImGui.sameLine();
+					
+					ImGui.vSliderInt("##pitch", 80, 512, p_pitch, 0, 510, p_pitch[0]+"Hz");
+					ImGui.sameLine();
+					
+					ImGui.beginGroup();
+					ImGui.text("pi: "+PI_TABLE[p_frame.i_pi]);
+					ImGui.checkbox("noise", p_noise);
+					ImGui.checkbox("new pitch", p_frame.newPitch);
+					ImGui.endGroup();
+					ImGui.sameLine();
+					ImGui.dummy(80.0f, 0.0f);
+					ImGui.sameLine();
+					
+					ImGui.vSliderInt("##ampl", 80, 512, p_ampl, 0, AMPL_TABLE.length-1, (AMPL_TABLE[p_ampl[0]]/10.0)+"");
+					ImGui.sameLine();
+					ImGui.dummy(80.0f, 0.0f);
+					ImGui.sameLine();
+						           
+					ImGui.vSliderInt("##fm1", 80, 512, p_fm1, 0, FM1_TABLE.length-1, FM1_TABLE[p_fm1[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##bw1", 40, 512, p_bw1, 0, BW_TABLE.length-1, BW_TABLE[p_bw1[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##fm2", 80, 512, p_fm2, 0, FM2_TABLE.length-1, FM2_TABLE[p_fm2[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##bw2", 40, 512, p_bw2, 0, BW_TABLE.length-1, BW_TABLE[p_bw2[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##fm3", 80, 512, p_fm3, 0, FM3_TABLE.length-1, FM3_TABLE[p_fm3[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##bw3", 40, 512, p_bw3, 0, BW_TABLE.length-1, BW_TABLE[p_bw3[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##fm4", 80, 512, p_fm4, FM4, FM4, FM4+"Hz");
+					ImGui.sameLine();
+					ImGui.vSliderInt("##bw4", 40, 512, p_bw4, 0, BW_TABLE.length-1, BW_TABLE[p_bw4[0]]+"Hz");
+					ImGui.sameLine();
+					ImGui.dummy(80.0f, 0.0f);
+					ImGui.sameLine();
+					
+					ImGui.vSliderInt("##fd", 80, 512, p_fd, 0, FD_TABLE.length-1, FD_TABLE[p_fd[0]]+"ms");
+					
+					if (p_phi[0] != audioRefShift) {
+						audioRefShift = p_phi[0];
+						shiftAudioRef();
+						refreshPlotsRef(plotFrameStart, plotFrameWindow);
+					}
+					
+					p_frame.pitch = p_pitch[0];
+					p_frame.noise = p_noise.get();
+					setMeaPitch(p_frame, p_frame.pitch, meaFrames.get(plotFrameCurrent-1));
+					
+					p_frame.i_ampl = p_ampl[0];
+					p_frame.ampl = AMPL_TABLE[p_ampl[0]];
+					p_frame.i_bckampl = p_frame.i_ampl;
+					p_frame.i_fm[0] = p_fm1[0];
+					p_frame.i_bw[0] = p_bw1[0];
+					p_frame.i_fm[1] = p_fm2[0];
+					p_frame.i_bw[1] = p_bw2[0];
+					p_frame.i_fm[2] = p_fm3[0];
+					p_frame.i_bw[2] = p_bw3[0];
+					p_frame.i_fm[3] = p_fm4[0];
+					p_frame.i_bw[3] = p_bw4[0];
+					p_frame.fm[0] = FM1_TABLE[p_frame.i_fm[0]];
+					p_frame.bw[0] = BW_TABLE[p_frame.i_bw[0]];
+					p_frame.fm[1] = FM2_TABLE[p_frame.i_fm[1]];
+					p_frame.bw[1] = BW_TABLE[p_frame.i_bw[1]];
+					p_frame.fm[2] = FM3_TABLE[p_frame.i_fm[2]];
+					p_frame.bw[2] = BW_TABLE[p_frame.i_bw[2]];
+					p_frame.fm[3] = FM4;
+					p_frame.bw[3] = BW_TABLE[p_frame.i_bw[3]];
+	
+					int[] out;
+					for (int frame=1; frame < totalframes; frame++) {
+						setMeaPitch(meaFrames.get(frame), meaFrames.get(frame).pitch, meaFrames.get(frame-1));
+						out = getMeaAudioFrame(meaFrames.get(frame-1), meaFrames.get(frame));
+						updateSynthWave(frame, SAMPLE_FRAME, out);
+					}
+					
+					refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
+					writeMeaData();
 
-				int[] out = getMeaAudioFrame(meaFrames.get(plotFrameCurrent-1), p_frame);
-				updateSynthWave(plotFrameCurrent, SAMPLE_FRAME, out);
-				refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
-				
-				out = getMeaAudioFrame(p_frame, meaFrames.get(plotFrameCurrent+1));
-				updateSynthWave(plotFrameCurrent+1, SAMPLE_FRAME, out);
-				refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
 				}
 				
 			} catch (Exception e) {
@@ -479,48 +476,52 @@ public class MeaEmulator2 {
 
 	private static byte[] writeMeaData() {
 		
-		byte[] encodedData = new byte[0xFFFFFF];
-		int pos = 2;
+		meaCodesLen = 2; 
 		
 		// set header pitch
-		encodedData[pos++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
-		intxtData.set("Pitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
+		meaCodes[meaCodesLen++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
+		intxtData.set("Pitch: " + DataUtil.byteToHex(meaCodes[meaCodesLen-1]) + "\r\n");
 		
 		for (int frame=1; frame<meaFrames.size(); frame++) {
 			
+			meaCodes[meaCodesLen] = 0;
+			meaCodes[meaCodesLen+1] = 0;
+			meaCodes[meaCodesLen+2] = 0;
+			meaCodes[meaCodesLen+3] = 0;
+			
         	// set bandwidths
 	        for(int i = 0; i < 4; i++) {
-	        	encodedData[pos] = (byte) (encodedData[pos] | (byte) (meaFrames.get(frame).i_bw[i] << (6-i*2)));
+	        	meaCodes[meaCodesLen] = (byte) (meaCodes[meaCodesLen] | (byte) (meaFrames.get(frame).i_bw[i] << (6-i*2)));
 	        }
 	        
 	        // set frequencies
-    		encodedData[pos+2] = (byte) (encodedData[pos+2] | (byte) ((meaFrames.get(frame).i_fm[0] & 0b11111) << 3));
-    		encodedData[pos+1] = (byte) (encodedData[pos+1] | (byte) (meaFrames.get(frame).i_fm[1] & 0b11111));
-    		encodedData[pos+1] = (byte) (encodedData[pos+1] | (byte) ((meaFrames.get(frame).i_fm[2] & 0b111) << 5));
+    		meaCodes[meaCodesLen+2] = (byte) (meaCodes[meaCodesLen+2] | (byte) ((meaFrames.get(frame).i_fm[0] & 0b11111) << 3));
+    		meaCodes[meaCodesLen+1] = (byte) (meaCodes[meaCodesLen+1] | (byte) (meaFrames.get(frame).i_fm[1] & 0b11111));
+    		meaCodes[meaCodesLen+1] = (byte) (meaCodes[meaCodesLen+1] | (byte) ((meaFrames.get(frame).i_fm[2] & 0b111) << 5));
 	    	
 	    	// set amplitude
-	    	encodedData[pos+2] = (byte) (encodedData[pos+2] | (byte) ((meaFrames.get(frame).i_ampl >> 1) & 0b111));
-	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) ((meaFrames.get(frame).i_ampl & 0b1) << 7));
+	    	meaCodes[meaCodesLen+2] = (byte) (meaCodes[meaCodesLen+2] | (byte) ((meaFrames.get(frame).i_ampl >> 1) & 0b111));
+	    	meaCodes[meaCodesLen+3] = (byte) (meaCodes[meaCodesLen+3] | (byte) ((meaFrames.get(frame).i_ampl & 0b1) << 7));
 			
 	    	// set pitch increment
-	    	encodedData[pos+3] = (byte) (encodedData[pos+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
+	    	meaCodes[meaCodesLen+3] = (byte) (meaCodes[meaCodesLen+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
 	    	
-    		intxtData.set(intxtData.get() + frame + ": " + DataUtil.bytesToHex(encodedData, pos, 4) + "\r\n");
+    		intxtData.set(intxtData.get() + frame + ": " + DataUtil.bytesToHex(meaCodes, meaCodesLen, 4) + "\r\n");
 	    	
-	    	pos += 4;
+	    	meaCodesLen += 4;
 	    	
 	    	if (meaFrames.get(frame).i_ampl == 0 && frame+1<meaFrames.size()) {
-	    		encodedData[pos++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
-	    		intxtData.set(intxtData.get() + "\r\nPitch: " + DataUtil.byteToHex(encodedData[pos-1]) + "\r\n");
+	    		meaCodes[meaCodesLen++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
+	    		intxtData.set(intxtData.get() + "\r\nPitch: " + DataUtil.byteToHex(meaCodes[meaCodesLen-1]) + "\r\n");
 	    	}
 		}
 		
 		// update header with total length
-		encodedData[0] = (byte) ((pos & 0xff00) >> 8);
-		encodedData[1] = (byte) (pos & 0xff);
-		intxtData.set("Length: " + DataUtil.bytesToHex(encodedData, 0, 2) + "\r\n\r\n" + intxtData.get() + "\r\n");	
+		meaCodes[0] = (byte) ((meaCodesLen & 0xff00) >> 8);
+		meaCodes[1] = (byte) (meaCodesLen & 0xff);
+		intxtData.set("Length: " + DataUtil.bytesToHex(meaCodes, 0, 2) + "\r\n\r\n" + intxtData.get() + "\r\n");	
 		
-		byte[] finalData = Arrays.copyOf(encodedData, pos);	
+		byte[] finalData = Arrays.copyOf(meaCodes, meaCodesLen);	
 		
 		try {
 			Files.write(Path.of(inputPathName+".mea"), finalData);
@@ -561,8 +562,8 @@ public class MeaEmulator2 {
 				amplCLimit = AMPL_TABLE.length;
 			}
 			
-			for (int amplB=0; amplB<amplBLimit; amplB++) {				
-				for (int amplC=0; amplC<amplCLimit; amplC++) {
+			for (int amplB=1; amplB<amplBLimit; amplB++) {				
+				for (int amplC=1; amplC<amplCLimit; amplC++) {
 				
 					// process frame group
 					// Ampl for Frame A is fixed by last frame or 0 at startup
@@ -604,13 +605,19 @@ public class MeaEmulator2 {
 				curFrame.copyFilters(meaFrames.get(frame+1));
 			}
 			curFrame.i_ampl = bestAmplB;
+			curFrame.i_bckampl = bestAmplB; 
 			curFrame.ampl = AMPL_TABLE[bestAmplB];
+			
+			setMeaPitch(curFrame, curFrame.pitch, prevFrame);
 			
 			if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
 				nextFrame.copyFilters(meaFrames.get(frame+2));
 			}
 			nextFrame.i_ampl = bestAmplC;
+			nextFrame.i_bckampl = bestAmplC;
 			nextFrame.ampl = AMPL_TABLE[bestAmplC];
+			
+			setMeaPitch(nextFrame, nextFrame.pitch, curFrame);
 			
 			log.info("Frame: {} prevAmpl: {} curAmpl: {} nextAmpl: {}", frame, prevFrame.i_ampl, curFrame.i_ampl, nextFrame.i_ampl);
 			
@@ -778,6 +785,8 @@ public class MeaEmulator2 {
 		int[]   i_fm;
 		int[]   i_bw;
 		
+		int     i_bckampl;
+		
 		MeaFrame () {
 			output = new int[4];
 			last_output = new int[4];
@@ -889,13 +898,16 @@ public class MeaEmulator2 {
 			int pi = (curFrame.pitch - lastFrame.pitch) >> curFrame.fd; 
 			if (pi < -15 || pi > 15) {
 				curFrame.newPitch = true;
-				curFrame.pitch = (curFrame.pitch / 2) * 2; // round by two the starting pitch
+				curFrame.pitch = (int) ((curFrame.pitch / 2) * 2); // round by two the starting pitch
 				curFrame.i_pi = 0;
+				lastFrame.i_ampl = 0;
+				lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
 			} else {
 				curFrame.newPitch = false;
 				curFrame.i_pi = (pi & 0x1f);
+				lastFrame.i_ampl = lastFrame.i_bckampl;
+				lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
 			}
-			curFrame.noise = false;
 		}
 	}
 	

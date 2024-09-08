@@ -4,7 +4,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "vgm2vgc", description = "Convert one or more .vgm files to .ymm binary data", sortOptions = false)
+@Command(name = "vgm2vgc", description = "Convert one or more .vgm files to .vgc binary data", sortOptions = false)
 public class MainCommand implements Runnable {
 
 	@Option(names = { "-f",
