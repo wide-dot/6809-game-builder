@@ -86,12 +86,43 @@ public class MeaEmulator2 {
 	private static Integer[] yref = {};
 	private static Double[] xmeaAuto = {};
 	private static Integer[] ymeaAuto = {};
+	private static Double[] xtest1 = {};
+	private static Integer[] ytest1 = {};
+	private static Double[] xtest2 = {};
+	private static Integer[] ytest2 = {};
+	private static Double[] xtest3 = {};
+	private static Integer[] ytest3 = {};
+	private static Double[] xtest11 = {};
+	private static Integer[] ytest11 = {};
+	private static Double[] xtest12 = {};
+	private static Integer[] ytest12 = {};
+	private static Double[] xtest13 = {};
+	private static Integer[] ytest13 = {};
 	
 	private static final int BYTES_PER_SAMPLE = 2;
 	private static final int SAMPLE_RATE = 64000;
 	private static final int SAMPLE_FRAME = (SAMPLE_RATE*8)/1000; // TODO make a parameter 8, 16, 32, 64
 	private static final int SAMPLE_WINDOW_PITCH = SAMPLE_FRAME*4;
 	private static final int SAMPLE_WINDOW_FREQ = SAMPLE_FRAME*2;
+	
+	// Bonjour !
+	private static final byte[] bonjour = new byte[]{
+			//(byte) 0x00, (byte) 0xB8,
+			(byte) 0x3C,
+			(byte) 0x44, (byte) 0xB6, (byte) 0x28, (byte) 0x10,
+			(byte) 0x3C,
+			(byte) 0xC4, (byte) 0x2F, (byte) 0x32, (byte) 0xB0, (byte) 0xC5, (byte) 0xAE, (byte) 0x2B, (byte) 0xA0,
+			(byte) 0xC4, (byte) 0xB3, (byte) 0x34, (byte) 0xA0, (byte) 0x55, (byte) 0xAD, (byte) 0x6E, (byte) 0xA2, (byte) 0x5B, (byte) 0xAD, (byte) 0x7E, (byte) 0xA4, (byte) 0x5A, (byte) 0xA4, (byte) 0x9E, (byte) 0x26,
+			(byte) 0x59, (byte) 0xA4, (byte) 0xA6, (byte) 0x2A, (byte) 0x59, (byte) 0xA5, (byte) 0x9E, (byte) 0xAC, (byte) 0x45, (byte) 0xAC, (byte) 0x96, (byte) 0xA7, (byte) 0x14, (byte) 0xA8, (byte) 0x7E, (byte) 0xA3,
+			(byte) 0x55, (byte) 0xAE, (byte) 0x66, (byte) 0xA0, (byte) 0x20, (byte) 0xB0, (byte) 0x56, (byte) 0xBE, (byte) 0x11, (byte) 0xB3, (byte) 0x56, (byte) 0xB5, (byte) 0x1A, (byte) 0xB3, (byte) 0x56, (byte) 0x36,
+			(byte) 0x45, (byte) 0xB5, (byte) 0x56, (byte) 0x30, (byte) 0x45, (byte) 0xB7, (byte) 0x57, (byte) 0x30, (byte) 0x05, (byte) 0xB6, (byte) 0x57, (byte) 0x30, (byte) 0x15, (byte) 0xB3, (byte) 0x56, (byte) 0xB1,
+			(byte) 0x58, (byte) 0xB4, (byte) 0x5E, (byte) 0x31, (byte) 0x54, (byte) 0xB2, (byte) 0x5E, (byte) 0x3D, (byte) 0x96, (byte) 0x91, (byte) 0x65, (byte) 0xBD, (byte) 0x96, (byte) 0xB0, (byte) 0x55, (byte) 0x3C,
+			(byte) 0x97, (byte) 0xB0, (byte) 0x55, (byte) 0x3E, (byte) 0x9A, (byte) 0xAF, (byte) 0x4C, (byte) 0xBF, (byte) 0x9A, (byte) 0xAE, (byte) 0x4C, (byte) 0x3F, (byte) 0xA6, (byte) 0xAD, (byte) 0x44, (byte) 0x3E,
+			(byte) 0xA5, (byte) 0xAC, (byte) 0x4B, (byte) 0xA0, (byte) 0x95, (byte) 0xAE, (byte) 0x4B, (byte) 0x30, (byte) 0x95, (byte) 0xAD, (byte) 0x4B, (byte) 0x30, (byte) 0x91, (byte) 0xAE, (byte) 0x53, (byte) 0x30,
+			(byte) 0x50, (byte) 0xAC, (byte) 0x53, (byte) 0x30, (byte) 0x80, (byte) 0xAF, (byte) 0x53, (byte) 0x20, (byte) 0xD8, (byte) 0xAE, (byte) 0x5B, (byte) 0x20, (byte) 0xA6, (byte) 0xAE, (byte) 0x5B, (byte) 0xA0,
+			(byte) 0x69, (byte) 0xAF, (byte) 0x63, (byte) 0xA0, (byte) 0xAD, (byte) 0xAE, (byte) 0x7C, (byte) 0x20, (byte) 0x69, (byte) 0xAE, (byte) 0x84, (byte) 0xA0, (byte) 0x24, (byte) 0xAD, (byte) 0xD4, (byte) 0xB0,
+			(byte) 0x51, (byte) 0xB0, (byte) 0xF4, (byte) 0x30, (byte) 0x32, (byte) 0x90, (byte) 0xC4, (byte) 0x30, (byte) 0x70, (byte) 0xB1, (byte) 0xC4, (byte) 0xB0, (byte) 0x64, (byte) 0xB3, (byte) 0xB4, (byte) 0xB0,
+			(byte) 0x62, (byte) 0xB3, (byte) 0x8B, (byte) 0xB0, (byte) 0x62, (byte) 0xB3, (byte) 0x88, (byte) 0x30};
 	
 	static {
 		ImPlot.createContext();
@@ -192,7 +223,7 @@ public class MeaEmulator2 {
 						 
 						log.info("Process frame: {}", frame);
 						
-							// first frame is a special case
+						// first frame is a special case
 						// init starting parameters
 						if (frame == 1) {
 							firstFrame.pitch = (int) ((startPitch / 2) * 2);
@@ -202,25 +233,46 @@ public class MeaEmulator2 {
 						// find frame pitc
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW_PITCH), wFormat);
 						pp.process(wFrame);
-						Float pitch = (float) wFrame.getFeature("Pitch");;
+						Float pitch = (float) wFrame.getFeature("Pitch");
 						
 						// search frame formants
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW_FREQ), wFormat);
 						wFrame.addFeature("Pitch", pitch);;
 						formants=4;
+						int bestFormants = formants;
+						int maxLength = 0;
+						int retFormants = 0;
+						
 						do {
 							wFrame.removeFeature("Formants Frequency");
 							wFrame.removeFeature("Formants Bandwidth");
 							fe = new FormantExtractor(formants);
 							fe.process(wFrame);
+							
+							retFormants = ((float[]) wFrame.getFeature("Formants Frequency")).length;
+							
+							if (retFormants >= maxLength && retFormants < 5) {
+								bestFormants = formants;
+								maxLength = retFormants;
+							}
+							
+//							if (frame == 12) {
+//								log.info("Try formants: {} {} {}", formants, (float[]) wFrame.getFeature("Formants Frequency"), (float[]) wFrame.getFeature("Formants Bandwidth"));
+//							}
+							
 							formants++;
-						} while (formants < 100 && ((float[]) wFrame.getFeature("Formants Frequency")).length < 4 );
+						} while (formants < 100 && retFormants < 5);
+						
+						wFrame.removeFeature("Formants Frequency");
+						wFrame.removeFeature("Formants Bandwidth");
+						fe = new FormantExtractor(bestFormants);
+						fe.process(wFrame);
 						
 						// map parameters to mea presets
 						float[] formFreqs = (float[]) wFrame.getFeature("Formants Frequency");
 						float[] formBands = (float[]) wFrame.getFeature("Formants Bandwidth");
 						
-						log.info("found in {} tries, {} freqs", formants, formFreqs.length);
+						log.info("Selected formants: {} {} {}", bestFormants, (float[]) wFrame.getFeature("Formants Frequency"), (float[]) wFrame.getFeature("Formants Bandwidth"));
 						
 					 pitch = (float) wFrame.getFeature("Pitch");
 						if (pitch <= 0 || pitch >= 512 ) {
@@ -245,7 +297,8 @@ public class MeaEmulator2 {
 						meaFrames.add(curFrame);
 					}
 					
-					setAmplFirstPass();
+					//setAmplFirstPass();
+					bruteForce();
 					writeMeaData();		
 					
 					log.info("Encoding done !");
@@ -255,25 +308,66 @@ public class MeaEmulator2 {
 				// -------------------------------------------------------------
 				ImGui.sameLine();
 				if (ImGui.button("Decode")) {
-//					data = HexUtils.hexStringToByteArray(input.toString());
-//					meaSound = mea.compute(data);
-//					// meaSound = SineWave.createSinWaveBuffer(440,3000);
-//
-//					int byteDepth = 2;
-//					int scale = 16;
-//					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
-//					int length = (int) Math.ceil((double)meaSound.length / (scale * byteDepth));
-//
-//					xmea = new Double[length];
-//					ymea = new Integer[length];
-//					int j = 0;
-//
-//					for (int i = 0; i < meaSound.length; i += scale * byteDepth) {
-//						xmea[j] = j*rate;
-//						ymea[j] = (meaSound[i + 1] << 8) | (meaSound[i] & 0xff);
-//						j++;
-//					}
-//					ImPlot.fitNextPlotAxes();
+
+					ArrayList<MeaFrame> frames = new ArrayList<MeaFrame>();
+					int i=0;
+					int pitch=0;
+					int i_ampl=0;
+					while (i<bonjour.length) {
+						if (i_ampl==0) pitch=bonjour[i++] * 2;
+						frames.add(decodeFrame(bonjour, i, pitch));
+						i_ampl = frames.get(frames.size()-1).i_ampl;
+						pitch = frames.get(frames.size()-1).pitch;
+						i += 4;
+					}
+					
+					xtest1 = new Double[frames.size()];
+					ytest1 = new Integer[frames.size()];
+
+					for (int j = 0; j < frames.size(); j++) {
+						xtest1[j] = (double) j*2;
+						ytest1[j] = frames.get(j).fm[0];
+					}
+					
+					xtest2 = new Double[frames.size()];
+					ytest2 = new Integer[frames.size()];
+
+					for (int j = 0; j < frames.size(); j++) {
+						xtest2[j] = (double) j*2;
+						ytest2[j] = frames.get(j).fm[1];
+					}
+					
+					xtest3 = new Double[frames.size()];
+					ytest3 = new Integer[frames.size()];
+
+					for (int j = 0; j < frames.size(); j++) {
+						xtest3[j] = (double) j*2;
+						ytest3[j] = frames.get(j).fm[2];
+					}
+					
+					xtest11 = new Double[meaFrames.size()];
+					ytest11 = new Integer[meaFrames.size()];
+
+					for (int j = 0; j < meaFrames.size(); j++) {
+						xtest11[j] = (double) j;
+						ytest11[j] = meaFrames.get(j).fm[0];
+					}
+					
+					xtest12 = new Double[meaFrames.size()];
+					ytest12 = new Integer[meaFrames.size()];
+
+					for (int j = 0; j < meaFrames.size(); j++) {
+						xtest12[j] = (double) j;
+						ytest12[j] = meaFrames.get(j).fm[1];
+					}
+					
+					xtest13 = new Double[meaFrames.size()];
+					ytest13 = new Integer[meaFrames.size()];
+
+					for (int j = 0; j < meaFrames.size(); j++) {
+						xtest13[j] = (double) j;
+						ytest13[j] = meaFrames.get(j).fm[2];
+					}
 				}
 
 				// PLAY SYNTH
@@ -323,6 +417,17 @@ public class MeaEmulator2 {
 				if (ImPlot.beginPlot("Audio")) {
 					ImPlot.plotLine("Reference", xref, yref);
 					ImPlot.plotLine("MEA8000 Auto", xmeaAuto, ymeaAuto);
+					ImPlot.endPlot();
+				}
+				
+				ImPlot.fitNextPlotAxes();
+				if (ImPlot.beginPlot("Encoded data")) {
+					ImPlot.plotLine("REF FM1", xtest1, ytest1);
+					ImPlot.plotLine("REF FM2", xtest2, ytest2);
+					ImPlot.plotLine("REF FM3", xtest3, ytest3);
+					ImPlot.plotLine("SYNTH FM1", xtest11, ytest11);
+					ImPlot.plotLine("SYNTH FM2", xtest12, ytest12);
+					ImPlot.plotLine("SYNTH FM3", xtest13, ytest13);
 					ImPlot.endPlot();
 				}
 				
@@ -448,6 +553,37 @@ public class MeaEmulator2 {
 
 		ImGui.end();
 
+	}
+	
+	private static MeaFrame decodeFrame(byte[] data, int pos, int pitch) {
+		
+		MeaFrame frame = new MeaFrame();
+		
+		frame.fd = (data[pos+3] >> 5) & 3; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
+		frame.pitch = pitch + (PI_TABLE[data[pos+3] & 0x1f] << frame.fd);
+		frame.noise = (data[pos+3] & 0x1f) == 16;
+		
+		frame.i_bw[0] = (data[pos] & 0xff) >> 6;
+		frame.i_bw[1] = (data[pos] >> 4) & 3;
+		frame.i_bw[2] = (data[pos] >> 2) & 3;
+		frame.i_bw[3] = data[pos] & 3;
+		frame.bw[0] = BW_TABLE[frame.i_bw[0]];
+		frame.bw[1] = BW_TABLE[frame.i_bw[1]];
+		frame.bw[2] = BW_TABLE[frame.i_bw[2]];
+		frame.bw[3] = BW_TABLE[frame.i_bw[3]];
+		
+		frame.i_fm[0] = (data[pos+2] & 0xff) >> 3;
+		frame.i_fm[1] = data[pos+1] & 0x1f;
+		frame.i_fm[2] = (data[pos+1] & 0xff) >> 5;
+		frame.fm[0] = FM1_TABLE[frame.i_fm[0]];
+		frame.fm[1] = FM2_TABLE[frame.i_fm[1]];
+		frame.fm[2] = FM3_TABLE[frame.i_fm[2]];
+		frame.fm[3] = FM4;
+		
+		frame.i_ampl = ((data[pos+2] & 7) << 1) | ((data[pos+3] & 0xff) >> 7);
+		frame.ampl = AMPL_TABLE[frame.i_ampl];
+		
+		return frame;
 	}
 	
 	private static void shiftAudioRef() {
@@ -584,15 +720,115 @@ public class MeaEmulator2 {
 					FrameC.ampl = AMPL_TABLE[amplC];
 									
 					out = getMeaAudioFrame(FrameA, FrameB);
-					double deltaAB = getWaveDelta(audioRefInt, (frame-1)*SAMPLE_FRAME, SAMPLE_FRAME, out);
+					double deltaAB = getRMS(audioRefInt, (frame-1)*SAMPLE_FRAME, SAMPLE_FRAME, out);
 					out = getMeaAudioFrame(FrameB, FrameC);
-					double deltaBC = getWaveDelta(audioRefInt, frame*SAMPLE_FRAME, SAMPLE_FRAME, out);
+					double deltaBC = getRMS(audioRefInt, frame*SAMPLE_FRAME, SAMPLE_FRAME, out);
 					
 					if (deltaAB+deltaBC < lowestDelta) {
 						lowestDelta = deltaAB+deltaBC;
 						bestAmplB = amplB;
 						bestAmplC = amplC;
-						log.info("Frame: {} AmplB: {} DeltaAB: {} AmplC: {} DeltaBC: {}", frame, amplB, deltaAB, amplC, deltaBC);
+						//log.info("Frame: {} AmplB: {} DeltaAB: {} AmplC: {} DeltaBC: {}", frame, amplB, deltaAB, amplC, deltaBC);
+					}
+				}
+			}
+	
+			MeaFrame prevFrame = meaFrames.get(frame-1);
+			MeaFrame curFrame = meaFrames.get(frame);
+			MeaFrame nextFrame = meaFrames.get(frame+1);
+			
+			if(meaFrames.get(frame+1).newPitch) {
+				curFrame.copyFilters(meaFrames.get(frame+1));
+			}
+			curFrame.i_ampl = bestAmplB;
+			curFrame.i_bckampl = bestAmplB; 
+			curFrame.ampl = AMPL_TABLE[bestAmplB];
+			
+			setMeaPitch(curFrame, curFrame.pitch, prevFrame);
+			
+			if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
+				nextFrame.copyFilters(meaFrames.get(frame+2));
+			}
+			nextFrame.i_ampl = bestAmplC;
+			nextFrame.i_bckampl = bestAmplC;
+			nextFrame.ampl = AMPL_TABLE[bestAmplC];
+			
+			setMeaPitch(nextFrame, nextFrame.pitch, curFrame);
+			
+			log.info("Frame: {} prevAmpl: {} curAmpl: {} nextAmpl: {}", frame, prevFrame.i_ampl, curFrame.i_ampl, nextFrame.i_ampl);
+			
+			out = getMeaAudioFrame(prevFrame, curFrame);
+			updateSynthWave(frame, SAMPLE_FRAME, out);
+			
+			out = getMeaAudioFrame(curFrame, nextFrame);
+			updateSynthWave(frame+1, SAMPLE_FRAME, out);
+
+		}
+		
+		refreshPlotsMeaAuto(plotFrameStart, plotFrameWindow);
+	}
+	
+	private static void bruteForce() {
+		
+		log.info("Brute force ...");
+
+		int[] out;
+		MeaFrame FrameA, FrameB, FrameC;
+		int amplBLimit, amplCLimit;
+		
+		for (int frame = 1; frame < meaFrames.size()-1; frame+=2) {
+			
+			log.info("Process frame: {}", frame);
+			
+			int bestAmplB = 0, bestAmplC = 0;
+			double lowestDelta = Double.MAX_VALUE;
+			
+			// in case of new Pitch, previous frame is faded to 0
+			if(meaFrames.get(frame+1).newPitch) {
+				amplBLimit = 1;
+			} else {
+				amplBLimit = AMPL_TABLE.length;
+			}
+			
+			// in case of new Pitch, previous frame is faded to 0
+			// last frame is also faded to 0
+			if((frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) || frame+1 == meaFrames.size()-1) {
+				amplCLimit = 1;
+			} else {
+				amplCLimit = AMPL_TABLE.length;
+			}
+			
+			for (int amplB=0; amplB<amplBLimit; amplB++) {				
+				for (int amplC=0; amplC<amplCLimit; amplC++) {
+				
+					// process frame group
+					// Ampl for Frame A is fixed by last frame or 0 at startup
+					FrameA = new MeaFrame(meaFrames.get(frame-1));
+					
+					FrameB = new MeaFrame(meaFrames.get(frame));
+					if(meaFrames.get(frame+1).newPitch) {
+						FrameB.copyFilters(meaFrames.get(frame+1));
+					}
+					FrameB.i_ampl = amplB;
+					FrameB.ampl = AMPL_TABLE[amplB];
+					
+					FrameC = new MeaFrame(meaFrames.get(frame+1));
+					if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
+						FrameC.copyFilters(meaFrames.get(frame+2));
+					}
+					FrameC.i_ampl = amplC;
+					FrameC.ampl = AMPL_TABLE[amplC];
+									
+					out = getMeaAudioFrame(FrameA, FrameB);
+					double deltaAB = getDelta(audioRefInt, (frame-1)*SAMPLE_FRAME, SAMPLE_FRAME, out);
+					out = getMeaAudioFrame(FrameB, FrameC);
+					double deltaBC = getDelta(audioRefInt, frame*SAMPLE_FRAME, SAMPLE_FRAME, out);
+					
+					if (deltaAB+deltaBC < lowestDelta) {
+						lowestDelta = deltaAB+deltaBC;
+						bestAmplB = amplB;
+						bestAmplC = amplC;
+						//log.info("Frame: {} AmplB: {} DeltaAB: {} AmplC: {} DeltaBC: {}", frame, amplB, deltaAB, amplC, deltaBC);
 					}
 				}
 			}
@@ -642,7 +878,7 @@ public class MeaEmulator2 {
 		}
 	}
 	
-	private static double getWaveDelta(int[] ref, int start, int length, int[] frame) {
+	private static double getRMS(int[] ref, int start, int length, int[] frame) {
 		long delta = 0;
 		long rmsRef = 0;
 		long rmsFrame = 0;
@@ -658,6 +894,17 @@ public class MeaEmulator2 {
 		rmsFrame = (long) Math.sqrt(rmsFrame/frame.length);
 		
 		delta = Math.abs(rmsFrame - rmsRef);
+		
+		return delta;
+	}
+	
+	private static double getDelta(int[] ref, int start, int length, int[] frame) {
+		long delta = 0;
+		int j=0;
+		
+		for (int i = start; i < start+length; i++) {
+			delta += Math.abs(ref[i]-frame[j++]);
+		}
 		
 		return delta;
 	}
