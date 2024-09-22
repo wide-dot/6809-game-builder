@@ -26,9 +26,10 @@ import com.widedot.toolbox.debug.Symbols;
 	    private static HashMap<String, ImBoolean> openedDialogs = new HashMap<String, ImBoolean>();
 	    
 	    private static String lastDirectory = ".";
+	    
 	    private static ImGuiFileDialogPaneFun callback = new ImGuiFileDialogPaneFun() {
 	        @Override
-	        public void paneFun(String filter, long userDatas, boolean canContinue) {
+	        public void accept(String filter, long userDatas, boolean canContinue) {
 	            ImGui.text("Filter: " + filter);
 	        }
 	    };

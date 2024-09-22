@@ -120,7 +120,7 @@ public class MemoryWatch {
    	   	} else {
    	   		// if no symbol filtering, use manual address
    	   	   	ImGui.setNextItemWidth(120);
-   	   	   	ImGui.inputScalar(label+"##"+we+"Lbl", Data.imType.get(we.type), we.value, 1, 1, Data.format.get(we.type), Data.imFlags.get(we.type));   	   		
+   	   	   	ImGui.inputScalar(label+"##"+we+"Lbl", Data.imType.get(we.type), we.value, 1, 1, Data.format.get(we.type), Data.imFlags.get(we.type));
    	   	}
 	}
 }

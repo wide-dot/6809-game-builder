@@ -3,6 +3,7 @@ package com.widedot.toolbox.debug;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Tlhelp32;
 import com.widedot.toolbox.debug.ui.*;
+import com.widedot.toolbox.mea8000.ui.MeaMainDialog;
 
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -80,7 +81,7 @@ public class WDDebug extends Application {
 
         // tools non related to process
         if (SHOW_IMGUI_FRAME_RENDER_WINDOW.get()) FrameRender.show(SHOW_IMGUI_FRAME_RENDER_WINDOW);
-        if (SHOW_IMGUI_MEA_WINDOW.get()) MeaEmulator2.show(SHOW_IMGUI_MEA_WINDOW);
+        if (SHOW_IMGUI_MEA_WINDOW.get()) MeaMainDialog.show(SHOW_IMGUI_MEA_WINDOW);
         
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);

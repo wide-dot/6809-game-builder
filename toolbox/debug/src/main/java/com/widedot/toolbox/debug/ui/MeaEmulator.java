@@ -31,12 +31,13 @@ public class MeaEmulator {
 
 	// file dialog
 	private static String lastDirectory = ".";
-	private static ImGuiFileDialogPaneFun callback = new ImGuiFileDialogPaneFun() {
-		@Override
-		public void paneFun(String filter, long userDatas, boolean canContinue) {
-			ImGui.text("Filter: " + filter);
-		}
-	};
+    private static ImGuiFileDialogPaneFun callback = new ImGuiFileDialogPaneFun() {
+        @Override
+        public void accept(String filter, long userDatas, boolean canContinue) {
+            ImGui.text("Filter: " + filter);
+        }
+    };
+
 	private static Map<String, String> selection = null;
 	
 	private static String inputPathName;
@@ -49,10 +50,10 @@ public class MeaEmulator {
 	private static byte[] meaSound;
 	private static byte[] refSound;
 	private static float[] refData;
-	private static Double[] xmea = {};
-	private static Integer[] ymea = {};
-	private static Double[] xref = {};
-	private static Integer[] yref = {};
+	private static double[] xmea = {};
+	private static double[] ymea = {};
+	private static double[] xref = {};
+	private static double[] yref = {};
 	
 	static {
 		ImPlot.createContext();
@@ -125,8 +126,8 @@ public class MeaEmulator {
 						double rate = scale * 1.0/wavFile.getSampleRate();
 						int length = (int) Math.ceil((double)numFrames / scale);
 
-						yref = new Integer[length];
-						xref = new Double[length];
+						yref = new double[length];
+						xref = new double[length];
 						int j = 0;
 						
 						for (int i = 0; i < numFrames; i += scale) {
@@ -135,7 +136,7 @@ public class MeaEmulator {
 							j++;
 						}
 						
-						ImPlot.fitNextPlotAxes();
+						ImPlot.setNextAxesToFit();
 						
 						// Create a buffer for wav playing
 						int offset = (int) ((wavFile.getSampleRate()*8.0)/1000.0); // 8ms
@@ -283,8 +284,8 @@ public class MeaEmulator {
 					double rate = scale * 1.0/Mea8000Device.SAMPLERATE;
 					int length = (int) Math.ceil((double)meaSound.length / (scale * byteDepth));
 
-					xmea = new Double[length];
-					ymea = new Integer[length];
+					xmea = new double[length];
+					ymea = new double[length];
 					int j = 0;
 
 					for (int i = 0; i < meaSound.length; i += scale * byteDepth) {
@@ -292,7 +293,7 @@ public class MeaEmulator {
 						ymea[j] = (meaSound[i + 1] << 8) | (meaSound[i] & 0xff);
 						j++;
 					}
-					ImPlot.fitNextPlotAxes();
+					ImPlot.setNextAxesToFit();
 				}
 
 				// PLAY SYNTH
