@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.widedot.toolbox.mea8000.AudioLoader;
 import com.widedot.toolbox.mea8000.SampleData;
+import com.widedot.toolbox.mea8000.dsp.Formants;
 
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;
@@ -27,7 +28,7 @@ public class MeaMainDialog {
 	private static Map<String, String> selection = null;
 	private static String inputPathName = null;
 	
-	private static byte[] audioIn = null;
+	private static float[] audioIn = null;
 
 	public static String show(ImBoolean showImGui) {
 
@@ -54,14 +55,16 @@ public class MeaMainDialog {
 					
 					inputPathName = selection.values().stream().findFirst().get();
 					log.debug("Selected file: {}", inputPathName);
-					audioIn = AudioLoader.load(inputPathName);
+					audioIn = AudioLoader.loadf(inputPathName);
+					Formants.compute(audioIn);
+					AudioSpectrum.compute(Formants.formants, Formants.length);
 				}
 
 			}
 			
 			// Audio Spectrum
 			if (ImGui.button("Sample Data")) {
-				AudioSpectrum.compute(SampleData.fm, SampleData.bw);
+				AudioSpectrum.compute(SampleData.p, SampleData.n, SampleData.ampl, SampleData.fm, SampleData.bw);
 			}
 			AudioSpectrum.show(new ImBoolean(true));
 		}

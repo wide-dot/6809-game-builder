@@ -3,6 +3,8 @@ package com.widedot.toolbox.mea8000;
 import java.util.ArrayList;
 
 public class SampleData {
+	
+	// TODO User should load this data from .mea file
 
 	// sample data of "Bonjour" from "Parole et Micros (Cédric/Nathan)"
 	private static final byte[] bonjour = new byte[]{
@@ -25,6 +27,9 @@ public class SampleData {
 	
 	public static double[][] fm;
 	public static double[][] bw;
+	public static double[]   p;
+	public static boolean[]  n;
+	public static double[]   ampl;
 	
 	private SampleData() {};
 	
@@ -43,11 +48,37 @@ public class SampleData {
 		
 		int nbFrames = frames.size();
 		
+		// pitch
+		p = new double[nbFrames];
+		
+		for (int j=0; j<nbFrames; j++) {
+			p[j] = frames.get(j).pitch;
+		}
+		
+		// noise
+		n = new boolean[nbFrames];
+		
+		for (int j=0; j<nbFrames; j++) {
+			n[j] = frames.get(j).noise;
+		}
+		
+		// ampl
+		ampl = new double[nbFrames];
+		
+		for (int j=0; j<nbFrames; j++) {
+			if (frames.get(j).ampl == 0) {
+				ampl[j] = 0;
+			} else {
+				ampl[j] = 0.10+frames.get(j).ampl/2000.0;
+			}
+		}
+		
+		// freq/bandwidth
 		fm = new double[4][nbFrames];
 		bw = new double[4][nbFrames];
 		
-		for (int j = 0; j < nbFrames; j++) {
-			for (int f = 0; f < 4; f++) {
+		for (int f = 0; f < 4; f++) {
+			for (int j = 0; j < nbFrames; j++) {
 				fm[f][j] = frames.get(j).fm[f];
 				bw[f][j] = frames.get(j).bw[f];
 			}

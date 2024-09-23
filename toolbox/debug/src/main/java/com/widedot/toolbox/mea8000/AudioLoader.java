@@ -20,14 +20,12 @@ public class AudioLoader {
 	public static final int CHANNELS = 1;
 	public static final boolean SIGNED = true;
 	public static final boolean BIG_ENDIAN = true;
-	
-	private static byte[] audio = null;
 
 	private AudioLoader() {};
 	
 	public static byte[] load(String pathName) {
 		
-		audio = null;
+		byte[] audio = null;
 		
 		try {
 			
@@ -49,5 +47,18 @@ public class AudioLoader {
 		}
 		
 		return audio;
+	}
+	
+	public static float[] loadf(String pathName) {
+
+		byte[] audio = load(pathName);
+		float[] audiof = new float[audio.length/2];
+		int j = 0;
+		for (int i = 0; i < audio.length; i += SAMPLE_SIZE_IN_BYTES) {
+			audiof[j] = (audio[i] << 8) | (audio[i+1] & 0xff);
+			j++;
+		}
+		
+		return audiof;
 	}
 }
