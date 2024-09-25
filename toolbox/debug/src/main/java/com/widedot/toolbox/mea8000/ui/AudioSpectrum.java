@@ -3,7 +3,7 @@ package com.widedot.toolbox.mea8000.ui;
 import java.util.List;
 import java.util.Map;
 
-import com.widedot.toolbox.mea8000.dsp.Formants;
+import com.widedot.toolbox.mea8000.Mea8000Decoder;
 
 import imgui.ImVec2;
 import imgui.extension.implot.ImPlot;
@@ -31,8 +31,9 @@ public class AudioSpectrum {
 	public static double[] yn;
 	
 	// formant plots
-	public static double[] xf;
-	public static double[] yf;
+	public static double[][] xf;
+	public static double[][] yf;
+	public static int[] flen;
 	
 	static {
 		ImPlot.createContext();
@@ -53,8 +54,8 @@ public class AudioSpectrum {
 					ya1[1] = 4000;
 					ya2[0] = 0;
 					ya2[1] = 0;
-					xa[0] = i-0.5;
-					xa[1] = i+0.5;
+					xa[0] = (i*2)-1; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
+					xa[1] = (i*2)+1; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
 					ImPlot.pushStyleVar(ImPlotStyleVar.FillAlpha, (float)ampl[i]);
 					ImPlot.plotShaded("Amplitude", xa, ya1, ya2, xa.length);
 					ImPlot.popStyleVar();
@@ -72,7 +73,10 @@ public class AudioSpectrum {
 			}
 			
 			if (xf != null) {
-				ImPlot.plotScatter("Formants", xf, yf, xf.length);
+				ImPlot.plotScatter("Fmt BW0", xf[0], yf[0], xf[0].length);
+				ImPlot.plotScatter("Fmt BW1", xf[1], yf[1], xf[1].length);
+				ImPlot.plotScatter("Fmt BW2", xf[2], yf[2], xf[2].length);
+				ImPlot.plotScatter("Fmt BW3", xf[3], yf[3], xf[3].length);
 			}
 
 			ImPlot.endPlot();
@@ -95,7 +99,7 @@ public class AudioSpectrum {
 			xs = new double[fm[0].length];
 			
 			for (int x=0; x<fm[0].length; x++) {
-				xs[x] = (double) x;
+				xs[x] = (double) x*2; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
 			}
 			
 			// set y axis values for pitch
@@ -119,7 +123,7 @@ public class AudioSpectrum {
 			int j=0;
 			for (int i=0; i<n.length; i++) {
 				if (n[i]) {
-					xn[j] = i;
+					xn[j] = i*2; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
 					yn[j] = p[i];
 					j++;
 				}
@@ -162,16 +166,52 @@ public class AudioSpectrum {
 		ImPlot.setNextAxesToFit();
 	}
 	
-	public static void compute(Map<Double, List<double[]>> formants, int length) {
+	public static void compute(Map<Double, List<double[]>> formants) {
 		
-		xf = new double[length];
-		yf = new double[length];
-		int i = 0;
+		// compute length for array allocation
+		flen = new int[4];
+		for (int i=0; i<4; i++) {
+			flen[i]=0;
+		}
+		
 		for(Map.Entry<Double, List<double[]>> entry : formants.entrySet()) {
 			for (double[] d : entry.getValue()) {
-				xf[i] = entry.getKey();
-				yf[i] = d[0];
-				i++;
+				if (d[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
+					flen[0]++;
+				} else if (d[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
+					flen[1]++;
+				} else if (d[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
+					flen[2]++;
+				} else {
+					flen[3]++;
+				}
+			}
+		}
+
+		xf = new double[flen.length][];
+		yf = new double[flen.length][];		
+		
+		for (int i=0; i<flen.length; i++) {
+			xf[i] = new double[flen[i]];
+			yf[i] = new double[flen[i]];
+		}
+
+		int[] i = new int[flen.length];
+		for(Map.Entry<Double, List<double[]>> entry : formants.entrySet()) {
+			for (double[] d : entry.getValue()) {
+				if (d[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
+					xf[0][i[0]] = entry.getKey();
+					yf[0][i[0]++] = d[0];
+				} else if (d[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
+					xf[1][i[1]] = entry.getKey();
+					yf[1][i[1]++] = d[0];
+				} else if (d[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
+					xf[2][i[2]] = entry.getKey();
+					yf[2][i[2]++] = d[0];
+				} else {
+					xf[3][i[3]] = entry.getKey();
+					yf[3][i[3]++] = d[0];
+				}
 			}
 		}
 		
