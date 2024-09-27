@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.widedot.toolbox.mea8000.Mea8000Decoder;
+import com.widedot.toolbox.mea8000.dsp.Formants;
 
 import imgui.ImVec2;
 import imgui.extension.implot.ImPlot;
@@ -33,7 +34,6 @@ public class AudioSpectrum {
 	// formant plots
 	public static double[][] xf;
 	public static double[][] yf;
-	public static int[] flen;
 	
 	static {
 		ImPlot.createContext();
@@ -166,55 +166,10 @@ public class AudioSpectrum {
 		ImPlot.setNextAxesToFit();
 	}
 	
-	public static void compute(Map<Double, List<double[]>> formants) {
-		
-		// compute length for array allocation
-		flen = new int[4];
-		for (int i=0; i<4; i++) {
-			flen[i]=0;
-		}
-		
-		for(Map.Entry<Double, List<double[]>> entry : formants.entrySet()) {
-			for (double[] d : entry.getValue()) {
-				if (d[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
-					flen[0]++;
-				} else if (d[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
-					flen[1]++;
-				} else if (d[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
-					flen[2]++;
-				} else {
-					flen[3]++;
-				}
-			}
-		}
-
-		xf = new double[flen.length][];
-		yf = new double[flen.length][];		
-		
-		for (int i=0; i<flen.length; i++) {
-			xf[i] = new double[flen[i]];
-			yf[i] = new double[flen[i]];
-		}
-
-		int[] i = new int[flen.length];
-		for(Map.Entry<Double, List<double[]>> entry : formants.entrySet()) {
-			for (double[] d : entry.getValue()) {
-				if (d[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
-					xf[0][i[0]] = entry.getKey();
-					yf[0][i[0]++] = d[0];
-				} else if (d[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
-					xf[1][i[1]] = entry.getKey();
-					yf[1][i[1]++] = d[0];
-				} else if (d[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
-					xf[2][i[2]] = entry.getKey();
-					yf[2][i[2]++] = d[0];
-				} else {
-					xf[3][i[3]] = entry.getKey();
-					yf[3][i[3]++] = d[0];
-				}
-			}
-		}
-		
+	public static void compute(double[][] xf, double[][] yf) {
+		AudioSpectrum.xf = xf;
+		AudioSpectrum.yf = yf;
 		ImPlot.setNextAxesToFit();
 	}
+	
 }

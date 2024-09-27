@@ -31,6 +31,8 @@ public class SampleData {
 	public static boolean[]  n;
 	public static double[]   ampl;
 	
+	// TODO : add a fd array for variable frame duration => and upsample to 8ms frame
+	
 	private SampleData() {};
 	
 	static {

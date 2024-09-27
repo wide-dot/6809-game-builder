@@ -57,7 +57,7 @@ public class MeaMainDialog {
 					log.debug("Selected file: {}", inputPathName);
 					audioIn = AudioLoader.loadf(inputPathName);
 					Formants.compute(audioIn);
-					AudioSpectrum.compute(Formants.formants);
+					AudioSpectrum.compute(Formants.xf, Formants.yf);
 				}
 
 			}
