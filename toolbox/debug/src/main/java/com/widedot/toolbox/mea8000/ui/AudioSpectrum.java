@@ -32,8 +32,10 @@ public class AudioSpectrum {
 	public static double[] yn;
 	
 	// formant plots
-	public static double[][] xf;
-	public static double[][] yf;
+	public static List<double[]> xf;
+	public static List<double[]> yf;
+	public static List<double[]> xfc;
+	public static List<double[]> yfc;
 	
 	static {
 		ImPlot.createContext();
@@ -73,10 +75,19 @@ public class AudioSpectrum {
 			}
 			
 			if (xf != null) {
-				ImPlot.plotScatter("Fmt BW0", xf[0], yf[0], xf[0].length);
-				ImPlot.plotScatter("Fmt BW1", xf[1], yf[1], xf[1].length);
-				ImPlot.plotScatter("Fmt BW2", xf[2], yf[2], xf[2].length);
-				ImPlot.plotScatter("Fmt BW3", xf[3], yf[3], xf[3].length);
+				int i=0;
+				for (double[] x : xf) {
+					ImPlot.plotScatter("Cluster "+i, x, yf.get(i++), x.length);
+				}
+			}
+			
+			if (xfc != null) {
+				int i=0;
+				for (double[] x : xfc) {
+					if (x.length > 0) {
+						ImPlot.plotLine("Curve "+i, x, yfc.get(i++), x.length);
+					}
+				}
 			}
 
 			ImPlot.endPlot();
@@ -166,9 +177,11 @@ public class AudioSpectrum {
 		ImPlot.setNextAxesToFit();
 	}
 	
-	public static void compute(double[][] xf, double[][] yf) {
+	public static void compute(List<double[]> xf, List<double[]> yf, List<double[]> xfc, List<double[]> yfc) {
 		AudioSpectrum.xf = xf;
 		AudioSpectrum.yf = yf;
+		AudioSpectrum.xfc = xfc;
+		AudioSpectrum.yfc = yfc;
 		ImPlot.setNextAxesToFit();
 	}
 	

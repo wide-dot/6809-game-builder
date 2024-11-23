@@ -33,10 +33,11 @@
 		    <version>3.6.1</version>
 		</dependency>
 		<dependency>
-      		<groupId>com.github.haifengl</groupId>
-      		<artifactId>smile-core</artifactId>
-      		<version>3.1.1</version>
-    	</dependency>
+		    <groupId>org.tribuo</groupId>
+		    <artifactId>tribuo-all</artifactId>
+		    <version>4.3.1</version>
+		    <type>pom</type>
+		</dependency>
 	</dependencies>
 
 	<properties>
