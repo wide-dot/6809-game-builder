@@ -57,8 +57,9 @@ public class Formants {
 	// FM4
 	// (>=3450), 3500, (<=4000)
 	
-	private static double[] freqRangeAvg = new double[] {400.0, 1250.0, 2500.0, 3500.0};
-	private static double[] freqRangeAmpl = new double[] {400.0, 750.0, 500.0, 0.0};
+	private static double[] freqRangeAvg = new double[] {400.0,  1250.0, 2500.0, 3500.0};
+	private static double[] freqRangeMin = new double[] {  0.0,   427.5, 1139.5, 3450.0};
+	private static double[] freqRangeMax = new double[] {1073.5, 3450.0, 3450.0, 4000.0};
 	private static double[] freqRange = new double[] {427.5, 1073.5, 1139.5, 3450, Double.MAX_VALUE}; // FM1, FM1+FM2, FM2, FM2+FM3, FM4
 	private static boolean[][] synthRange = new boolean[][] {
 		new boolean[]{true,  false, false, false}, 
@@ -138,15 +139,15 @@ public class Formants {
 		public void computePolynomialSplineFunction(int synth, double weightParameter, double speed, int smoothRange) {
 
 			// TODO: Add as param
-        	double rail=1.0;
-        	double railRange=175;
-        	int railAhead=10;
+        	double rail=10.0;
+        	double railRange=300;
+        	int railAhead=15;
         	//----------
         	
 			double InitialTargetValue = freqRangeAvg[synth];
 			double targetValue = InitialTargetValue;
-			double mintargetValue = targetValue-freqRangeAmpl[synth];
-			double maxtargetValue = targetValue+freqRangeAmpl[synth];
+			double mintargetValue = freqRangeMin[synth];
+			double maxtargetValue = freqRangeMax[synth];
 			
 	        // Flatten input and aggregate points
 			// Ignore first list, it contains noise detected by clustering
@@ -185,10 +186,13 @@ public class Formants {
 	        	// TODO : arreter le go back et faire une sous boucle ...
 	        	// ça evitera la merde en fin de parcours ...
 	        	// s'assurer avec le Zero.wav qu'on a un complément linéaire si pas de points en fin de signal
+	        	// parcourir avec une boucle de 1 en 1 pour gérer les cas vides
+	        	// virer l'interpolation spline et voir avec quoi remplacer ...
 	        	
 	        	if (point[0] > startX+railAhead) {
 	            	
-		            log.info("synth:{} frame:{} track:{} {} next:{} {}", synth, currentX, weightSum1, weightedSum1 / weightSum1, weightSum2, weightedSum2 / weightSum2);
+		            log.info("synth:{} Frame:{} track:{} {} next:{} {}", synth, startX, weightSum1, weightedSum1 / weightSum1, weightSum2, weightedSum2 / weightSum2);
+		            double lastCurrentY = currentY;
 		            currentY = 0;
 		            double d = 0;
 		            if (weightSum1 > 0.01) {
@@ -199,23 +203,23 @@ public class Formants {
 		            	currentY += (weightedSum2 / weightSum2)*rail;
 		            	d+=rail;
 		            }
-		            currentY = currentY / d;
-	            	
-	            	if (currentY > 0) {
-		                xList.add(startX);
-		                yList.add(currentY);
+		            
+	            	if (d > 0) {
+	            		currentY = currentY / d;
 		    	        targetValue = Math.min(Math.max(targetValue+(currentY-targetValue)*speed, mintargetValue), maxtargetValue);
 	            	} else {
-	            		// if no computed value, return slowly to initial target
-	            		targetValue = Math.min(Math.max(InitialTargetValue+(currentY-InitialTargetValue)*speed, mintargetValue), maxtargetValue);
-	            	}
+	            		// if no computed value, return slowly to initial target   
+	            		currentY = Math.min(Math.max(lastCurrentY+(InitialTargetValue-lastCurrentY)*speed, mintargetValue), maxtargetValue);
+	            		targetValue = currentY;   
+	            	}         	
+	                xList.add(startX);
+	                yList.add(currentY);
 		    	        
 	                // Reset for the new x value
 	                p = nextP; // go back in the for loop
 		        	point = points.get(p);
 	                startX = point[0];
 		        	currentX = point[0];
-	                log.info("go back:{} p:{}", startX, p);
 	                weightedSum1 = 0;
 	                weightSum1 = 0;
 	                weightedSum2 = 0;
@@ -246,7 +250,7 @@ public class Formants {
             	currentY += (weightedSum2 / weightSum2)*rail;
             	d+=rail;
             }
-            currentY = currentY / d;
+            if (d>0) currentY = currentY / d;
         	
         	if (currentY == 0) currentY = InitialTargetValue;
             xList.add(startX);
@@ -363,7 +367,7 @@ public class Formants {
 		// compute clustering of each tracks
         for (int synth=0; synth<4; synth++) {
         	tracks[synth].compute();
-        	tracks[synth].computePolynomialSplineFunction(synth, 0.01, 0.001, 0);
+        	tracks[synth].computePolynomialSplineFunction(synth, 0.1, 0.1, 0);
         }
         
         computePlots(frame);
