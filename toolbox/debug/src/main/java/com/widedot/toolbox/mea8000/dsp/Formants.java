@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.tribuo.Example;
 import org.tribuo.MutableDataset;
 import org.tribuo.clustering.ClusterID;
@@ -56,12 +54,15 @@ public class Formants {
 	//
 	// FM4
 	// (>=3450), 3500, (<=4000)
-	
-	private static double[] freqRangeAvg = new double[] {400.0,  1250.0, 2500.0, 3500.0};
-	private static double[] freqRangeMin = new double[] {  0.0,   427.5, 1139.5, 3450.0};
-	private static double[] freqRangeMax = new double[] {1073.5, 3450.0, 3450.0, 4000.0};
-	private static double[] freqRange = new double[] {427.5, 1073.5, 1139.5, 3450, Double.MAX_VALUE}; // FM1, FM1+FM2, FM2, FM2+FM3, FM4
-	private static boolean[][] synthRange = new boolean[][] {
+		
+	public static final double[][] FM_TABLE = {{ 150.0, 162.0, 174.0, 188.0, 202.0, 217.0, 233.0, 250.0, 267.0, 286.0, 305.0, 325.0, 346.0, 368.0, 391.0, 415.0, 440.0, 466.0, 494.0, 523.0, 554.0, 587.0, 622.0, 659.0, 698.0, 740.0, 784.0, 830.0, 880.0, 932.0, 988.0, 1047 },
+									    	  { 440.0, 466.0, 494.0, 523.0, 554.0, 587.0, 622.0, 659.0, 698.0, 740.0, 784.0, 830.0, 880.0, 932.0, 988.0, 1047.0, 1100.0, 1179.0, 1254.0, 1337.0, 1428.0, 1528.0, 1639.0, 1761.0, 1897.0, 2047.0, 2214.0, 2400.0, 2609.0, 2842.0, 3105.0, 3400 },
+											  { 1179.0, 1337.0, 1528.0, 1761.0, 2047.0, 2400.0, 2842.0, 3400 },
+											  { 3500 }};
+	private static double[] FREQ_RANGE_MIN  = {  0.0,   427.5, 1139.5, 3450.0};
+	private static double[] FREQ_RANGE_MAX  = {1073.5, 3450.0, 3450.0, 4000.0};
+	private static double[] FREQ_RANGE      = {427.5, 1073.5, 1139.5, 3450, Double.MAX_VALUE}; // FM1, FM1+FM2, FM2, FM2+FM3, FM4
+	private static boolean[][] SYNTH_RANGE  = {
 		new boolean[]{true,  false, false, false}, 
 		new boolean[]{true,  true,  false, false}, 
 		new boolean[]{false, true,  false, false}, 
@@ -81,13 +82,23 @@ public class Formants {
 	public static List<double[]> yCurves;
 	
 	public static class SynthTrack {
+
+		// formants data structure
+		// -----------------------
+		// the parent List have one element per frame (even if empty)
+		// the child List hold all valid formants for a frame
+		// a formant is an array of double with : [0]=frame, [1]=frequency, [2]=bandwidth
 		public List<List<double[]>> formants;
+		
+		// Clustering is obsolete now I think ... 
 		public List<List<Integer>> labels;
 		public HashSet<Integer> labelsSet;
 		public HashMap<Integer, Integer> labelsSize;
-		
-		public PolynomialSplineFunction spline;
 		public int nbFormants;
+		
+		public List<double[]> audio = new ArrayList<>(); // hold all possible audio versions for a synth based on different mean values.
+		public int audioId = 0; // best index in audio table
+		public List<Integer> nbAccuratePoints = new ArrayList<>(); // number of frames where curve is close to cluster points
 		
 		public SynthTrack() {
 			formants = new ArrayList<>();
@@ -95,7 +106,7 @@ public class Formants {
 			labelsSize = new HashMap<Integer, Integer>();
 		}
 	
-		public void compute() {
+		public void computeClustering() {
 			
 			labels.clear();
 			
@@ -136,143 +147,117 @@ public class Formants {
 			}
 		}
 		
-		public void computePolynomialSplineFunction(int synth, double weightParameter, double speed, int smoothRange) {
+		public void computeAudioSynth(int synth, double weightParameter, double speed, int smoothRange) {
 
 			// TODO: Add as param
-        	double rail=10.0;
-        	double railRange=300;
-        	int railAhead=15;
+        	double railScale=0.5;
+        	double railRange=600;
+        	int railAhead=50;
         	//----------
         	
-			double InitialTargetValue = freqRangeAvg[synth];
-			double targetValue = InitialTargetValue;
-			double mintargetValue = freqRangeMin[synth];
-			double maxtargetValue = freqRangeMax[synth];
-			
-	        // Flatten input and aggregate points
-			// Ignore first list, it contains noise detected by clustering
-	        List<double[]> points = new ArrayList<>();
-	        for (int l = 1; l < formants.size(); l++) {
-	            points.addAll(formants.get(l));
-	        }
-	        
-	        // Sort points by x-value
-	        points.sort(Comparator.comparingDouble(a -> a[0]));
-
-	        // Weighted averaging of y-values for each x
-	        List<Double> xList = new ArrayList<>();
-	        List<Double> yList = new ArrayList<>();
-
-	        double startX = points.get(0)[0];
-	        double currentX = 0;
-	        double currentY = InitialTargetValue;
-	        double weightedSum1 = 0;
-	        double weightSum1 = 0;
-	        double weightedSum2 = 0;
-	        double weightSum2 = 0;
-
-	        int nextP = 0;
-	        boolean nextFound = false;
-	        double[] point;
-	        for (int p = 0; p < points.size(); p++) {
-	        	point = points.get(p);
-	        	currentX = point[0];
-	        	
-	        	if (!nextFound && point[0] != startX) {
-	        		nextP = p;
-	        		nextFound = true;
-	        	}
-	        	
-	        	// TODO : arreter le go back et faire une sous boucle ...
-	        	// ça evitera la merde en fin de parcours ...
-	        	// s'assurer avec le Zero.wav qu'on a un complément linéaire si pas de points en fin de signal
-	        	// parcourir avec une boucle de 1 en 1 pour gérer les cas vides
-	        	// virer l'interpolation spline et voir avec quoi remplacer ...
-	        	
-	        	if (point[0] > startX+railAhead) {
-	            	
-		            log.info("synth:{} Frame:{} track:{} {} next:{} {}", synth, startX, weightSum1, weightedSum1 / weightSum1, weightSum2, weightedSum2 / weightSum2);
-		            double lastCurrentY = currentY;
-		            currentY = 0;
+        	// process all solutions with different starting points
+        	for (int s = 0; s < FM_TABLE[synth].length; s++) {
+        		
+				int totalFrames = formants.size();
+				int counterAccuratePoints = 0;
+				double InitialTargetValue = FM_TABLE[synth][s];
+				double mintargetValue = FREQ_RANGE_MIN[synth];
+				double maxtargetValue = FREQ_RANGE_MAX[synth];
+				double targetValue = InitialTargetValue;
+		        double currentY = InitialTargetValue;
+				double lastKnownY = InitialTargetValue;
+				double direction = 0;
+				//log.info("best start point: {}", nearestY);
+		        
+		        // Weighted averaging of y-values for each frame
+		        List<Double> yList = new ArrayList<>();
+				for (int frame = 0; frame < totalFrames; frame++) {
+					
+			        double weightedSum1 = 0;
+			        double weightSum1 = 0;
+			        double weightedSum2 = 0;
+			        double weightSum2 = 0;
+	
+		            // Tracking based on floating target value for this synth
+			        List<double[]> points = formants.get(frame);
+			        for (int i = 0; i < points.size(); i++) {
+			        	double freq = points.get(i)[1];
+			        	double weight = Math.exp(-weightParameter * Math.abs(freq - (targetValue+InitialTargetValue)/2.0));
+			        	//double weight = Math.exp(-weightParameter * Math.abs(freq - (targetValue + direction)));
+			            weightedSum1 += freq * weight;
+			            weightSum1 += weight;
+			        }
+	
+					// Tracking based on averaging of forward frequency values
+					for (int forwardFrame = frame; forwardFrame < Math.min(frame+railAhead, totalFrames); forwardFrame++) {
+						points = formants.get(forwardFrame);
+						for (int i = 0; i < points.size(); i++) {
+							double freq = points.get(i)[1];
+				            if (Math.abs(points.get(i)[1]-currentY) < railRange) {
+					            double weight = (1.0/Math.pow(forwardFrame-frame+1, 2.0))/Math.pow((Math.abs(freq-currentY)+1), 1.5);
+					            weightedSum2 += freq * weight;
+					            weightSum2 += weight;
+				            }
+						}
+					}
+	
+					// Compute final tracking
+					// ----------------------
 		            double d = 0;
-		            if (weightSum1 > 0.01) {
+		            currentY = 0;
+		            
+		            // ignore tracking methods with unsignificant values
+		            if (weightSum1 > 0.05) {
 		            	currentY += (weightedSum1 / weightSum1);
 		            	d++;
 		            }
-		            if (weightSum2 > 0.01) {
-		            	currentY += (weightedSum2 / weightSum2)*rail;
-		            	d+=rail;
+		            if (weightSum2 > 0.00001) {
+		            	currentY += (weightedSum2 / weightSum2)*railScale;
+		            	d+=railScale;
 		            }
 		            
 	            	if (d > 0) {
+	            		// apply tacking
 	            		currentY = currentY / d;
-		    	        targetValue = Math.min(Math.max(targetValue+(currentY-targetValue)*speed, mintargetValue), maxtargetValue);
+		    	        //targetValue = Math.min(Math.max(currentY+(targetValue-currentY)*speed, mintargetValue), maxtargetValue);
+	            		targetValue = currentY;
 	            	} else {
-	            		// if no computed value, return slowly to initial target   
-	            		currentY = Math.min(Math.max(lastCurrentY+(InitialTargetValue-lastCurrentY)*speed, mintargetValue), maxtargetValue);
+	            		// if no computed value for tracking, return slowly to synth mean   
+	            		currentY = Math.min(Math.max(lastKnownY+(InitialTargetValue-lastKnownY)*speed, mintargetValue), maxtargetValue);
 	            		targetValue = currentY;   
 	            	}         	
-	                xList.add(startX);
+	            	
+//	            	if (synth == 1 && s == 26) {
+//	            		log.info("synth:{} frame:{} y:{} track1:{} {} track2:{} {}", synth, frame, currentY, weightSum1, weightedSum1 / weightSum1, weightSum2, weightedSum2 / weightSum2);
+//	            	}
+	            	
+	            	// compute accuracy
+			        points = formants.get(frame);
+			        double dist = 0;
+			        double bestDist = Double.MAX_VALUE;
+			        for (int i = 0; i < points.size(); i++) {
+			        	dist = Math.abs(points.get(i)[1]-currentY);
+			            if (dist < bestDist) {
+			            	bestDist = dist;
+			            }
+			        }
+			        if (bestDist < 80) {
+			        	counterAccuratePoints++;
+			        }
+	            	
 	                yList.add(currentY);
-		    	        
-	                // Reset for the new x value
-	                p = nextP; // go back in the for loop
-		        	point = points.get(p);
-	                startX = point[0];
-		        	currentX = point[0];
-	                weightedSum1 = 0;
-	                weightSum1 = 0;
-	                weightedSum2 = 0;
-	                weightSum2 = 0;
-	                nextFound = false;
-	            }
-	            
-	            if (Math.abs(point[1]-currentY) < railRange) {
-		            double weight = (1.0/(currentX-startX+1))/Math.abs(point[1]-currentY);
-		            weightedSum2 += point[1] * weight;
-		            weightSum2 += weight;
-	            }
-	            if (!nextFound) {
-		            double weight = Math.exp(-weightParameter * Math.abs(point[1] - targetValue));
-		            weightedSum1 += point[1] * weight;
-		            weightSum1 += weight;
-	            }
-	        }
-	        
-	        // Finalize the last point
-            currentY = 0;
-            double d = 0;
-            if (weightSum1 > 0.01) {
-            	currentY += (weightedSum1 / weightSum1);
-            	d++;
-            }
-            if (weightSum2 > 0.01) {
-            	currentY += (weightedSum2 / weightSum2)*rail;
-            	d+=rail;
-            }
-            if (d>0) currentY = currentY / d;
-        	
-        	if (currentY == 0) currentY = InitialTargetValue;
-            xList.add(startX);
-            yList.add(currentY);
-	        
-	        List<Double> smoothedYList = applySmoothing(yList, smoothRange);
-
-	        // Convert to arrays
-	        double[] x = xList.stream().mapToDouble(Double::doubleValue).toArray();
-	        double[] y = smoothedYList.stream().mapToDouble(Double::doubleValue).toArray();
-
-	        // Create the spline
-	        SplineInterpolator interpolator = new SplineInterpolator();
-	        spline = interpolator.interpolate(x, y);
+	                direction = currentY-lastKnownY;
+	    	        lastKnownY = currentY;
+				}
+		        
+		        List<Double> smoothedYList = applySmoothing(yList, smoothRange);
+	
+		        // Convert to arrays
+				audio.add(smoothedYList.stream().mapToDouble(Double::doubleValue).toArray());
+				nbAccuratePoints.add(counterAccuratePoints);
+			}
 	    }
 
-	    // Calculate weight based on distance to the target value with a parameter
-	    private static double calculateWeight(double y, double target, double parameter) {
-	        // Example weight: Exponential decay
-	        return Math.exp(-parameter * Math.abs(y - target));
-	    }
-	    
 	    // Apply simple moving average smoothing to the weighted values
 	    private static List<Double> applySmoothing(List<Double> data, int windowSize) {
 	        List<Double> smoothedData = new ArrayList<>();
@@ -311,7 +296,7 @@ public class Formants {
         }
 		
 		// process all frames for pitch, freq and bandwidth
-        double frame = 0;
+        int frame = 0;
 		for (int s=0; s<audioIn.length; s+=SAMPLE_FRAME) {
 			
 			// find frame pitch
@@ -330,7 +315,7 @@ public class Formants {
 	        double[] el;
 	        
 	        // process a sound frame
-			for (int nodes=22; nodes<=32; nodes++) {
+			for (int nodes=28; nodes<=32; nodes++) {
 				
 		    	// get list of formant (frequency, bandwidth) pairs
 		        double[][] f = LPC.estimateFormants(x, nodes, SAMPLE_RATE);
@@ -366,23 +351,63 @@ public class Formants {
 		
 		// compute clustering of each tracks
         for (int synth=0; synth<4; synth++) {
-        	tracks[synth].compute();
-        	tracks[synth].computePolynomialSplineFunction(synth, 0.1, 0.1, 0);
+        	tracks[synth].computeClustering();
+        	tracks[synth].computeAudioSynth(synth, 0.01, 0.1, 0);
+        	
         }
         
-        computePlots(frame);
+        findBestCurves();
+        computePlots();
 	}
 		
 	private static boolean[] getSynthRange(double f) {
 		int i = 0;
-		while (i < freqRange.length && f >= freqRange[i]) {
+		while (i < FREQ_RANGE.length && f >= FREQ_RANGE[i]) {
 			i++;
 		}
-		return synthRange[i];
+		return SYNTH_RANGE[i];
 	}
 	
-	public static void computePlots(double nbFrames) {
+	public static void findBestCurves() {
+		
+		// find synth curves with minimal overlapping
+		// TODO : find best path quality based on track weight
+		
+		int bestScore = -1;
+		for (int t0 = 0; t0 < tracks[0].audio.size(); t0++) {
+			for (int t1 = 0; t1 < tracks[1].audio.size(); t1++) {
+				for (int t2 = 0; t2 < tracks[2].audio.size(); t2++) {
+					int score = 0;
+					int nbFrames = tracks[0].audio.get(tracks[0].audioId).length; // all length are equals take the first
+					for (int x = 0; x < nbFrames; x++) {
+						if (Math.abs(tracks[0].audio.get(t0)[x] - tracks[1].audio.get(t1)[x]) < 80.0) score++;
+						if (Math.abs(tracks[0].audio.get(t0)[x] - tracks[2].audio.get(t2)[x]) < 80.0) score++;
+						if (Math.abs(tracks[1].audio.get(t1)[x] - tracks[2].audio.get(t2)[x]) < 80.0) score++;
+					}
+					
+					int totalAccPts = tracks[0].nbAccuratePoints.get(t0) + tracks[1].nbAccuratePoints.get(t1) + tracks[2].nbAccuratePoints.get(t2);
+					
+					if (totalAccPts-score > bestScore) {
+						bestScore = totalAccPts-score;
+						tracks[0].audioId = t0;
+						tracks[1].audioId = t1;
+						tracks[2].audioId = t2;
+					}
+					
+					//log.info("({}, {}, {}): {} Total Acc Pts {}", FM_TABLE[0][t0], FM_TABLE[1][t1], FM_TABLE[2][t2], score, totalAccPts);
+				}
+			}
+		}
+		
+//		tracks[0].audioId = 4;
+//		tracks[1].audioId = 26;
+//		tracks[2].audioId = 6;
+		log.info("Best score ({}, {}, {}): {}", FM_TABLE[0][tracks[0].audioId], FM_TABLE[1][tracks[1].audioId], FM_TABLE[2][tracks[2].audioId], bestScore);
+	}
+	
+	public static void computePlots() {
 
+		// process formant plots
 		for (int t = 0; t < tracks.length; t++) {
 			double start = Double.MAX_VALUE;
 			double len = 0;
@@ -417,278 +442,15 @@ public class Formants {
 			}
 		}
 		
+		// process synth curves
 		for (int t = 0; t < tracks.length; t++) {
-			
-			double[] xfd = new double[(int)nbFrames];
-			xCurves.add(xfd);
-			double[] yfd = new double[(int)nbFrames];
-			yCurves.add(yfd);
-			
-			boolean firstFound = false;
-			double lastValue = freqRangeAvg[t]; // average value will be used if all values are undefined
-			for (int i=0; i < xfd.length; i++) {
-				
-				xfd[i] = i;
-				if (tracks[t].spline.isValidPoint(i)) {
-					
-					lastValue = tracks[t].spline.value(i);
-					yfd[i] = lastValue;
-
-					// init starting values if undefined
-					if (!firstFound) {
-						firstFound = true;
-						for (int j=i-1; j >= 0; j--) {
-							yfd[j] = lastValue;
-						}
-					}
-				} else {
-					// init ending values if undefined
-					yfd[i] = lastValue;
-				}
-			}
+			int nbFrames = tracks[t].audio.get(tracks[t].audioId).length;
+			double[] xf = new double[nbFrames];
+			for (int x = 0; x < nbFrames; x++) xf[x] = x;
+			xCurves.add(xf);
+			yCurves.add(tracks[t].audio.get(tracks[t].audioId));
 		}
 		
 		ImPlot.setNextAxesToFit();
 	}
-	
-	
-//	public static void computePlots(List<List<double[]>> formants) {
-//		
-//		// compute length for array allocation
-//		// formant plots
-//		int[] fl = new int[4];
-//		for (int i=0; i<4; i++) {
-//			fl[i]=0;
-//		}
-//		
-//		for(List<double[]> entry : formants) {
-//			for (double[] f : entry) {
-//				if (f[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
-//					fl[0]++;
-//				} else if (f[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
-//					fl[1]++;
-//				} else if (f[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
-//					fl[2]++;
-//				} else {
-//					fl[3]++;
-//				}
-//			}
-//		}
-//
-//		xf = new double[fl.length][];
-//		yf = new double[fl.length][];		
-//		
-//		for (int i=0; i<fl.length; i++) {
-//			xf[i] = new double[fl[i]];
-//			yf[i] = new double[fl[i]];
-//		}
-//
-//		int[] i = new int[fl.length];
-//		double frame = 0;
-//		for(List<double[]> entry : formants) {
-//			for (double[] f : entry) {
-//				if (f[1] < (Mea8000Decoder.BW_TABLE[3]+Mea8000Decoder.BW_TABLE[2])/2) {
-//					xf[0][i[0]] = frame;
-//					yf[0][i[0]++] = f[0];
-//				} else if (f[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
-//					xf[1][i[1]] = frame;
-//					yf[1][i[1]++] = f[0];
-//				} else if (f[1] < (Mea8000Decoder.BW_TABLE[1]+Mea8000Decoder.BW_TABLE[0])/2) {
-//					xf[2][i[2]] = frame;
-//					yf[2][i[2]++] = f[0];
-//				} else {
-//					xf[3][i[3]] = frame;
-//					yf[3][i[3]++] = f[0];
-//				}
-//			}
-//			frame++;
-//		}
-//		
-//		ImPlot.setNextAxesToFit();
-//	}
-//	
-//	public static class FormantTrack {
-//		Map<Integer, double[]> f; // [0]: fm, [1]: bw
-//		int firstFrame;
-//		int lastFrame;
-//		int trackSize;
-//		Double minF;
-//		Double maxF;
-//		boolean[] usedSynths;
-//		int synth;
-//		
-//		public FormantTrack() {
-//			f = new HashMap<>();
-//			firstFrame = 0;
-//			lastFrame = 0;
-//			trackSize = 0;
-//			minF = Double.MAX_VALUE;
-//			maxF = Double.MIN_VALUE;
-//			usedSynths = new boolean[]{true, true, true, true};
-//			synth = -1;
-//		}
-//	}
-//
-//public static void computeTracks() {
-//	
-//	int framesGap = 5;
-//	int frame = 0;
-//	
-//	for(List<double[]> entry : formants) {
-//		for (double[] f : entry) {
-//
-//			// only process formants with narrow bw
-//			if (f[1] < (Mea8000Decoder.BW_TABLE[2]+Mea8000Decoder.BW_TABLE[1])/2) {
-//				
-//				// try to add formants to existing tracks
-//				int i = 0;
-//				int bestIndex = -1;
-//				double bestDistance = Double.MAX_VALUE;
-//				for (FormantTrack ct : currentTracks) {
-//					if (ct.lastFrame < frame && frame-ct.lastFrame <= framesGap) {
-//						
-//						double distance = Math.abs(f[0] - ct.f.get(ct.lastFrame)[0]); // use freq distance as a coef
-//						//distance = distance * (1/f[1]); // use BW as a coef
-//						//distance = distance * (1/(frame - ct.lastFrame)); // use frame distance as a coef
-//						
-//						if (distance < bestDistance) { // by ommiting the equal sign, a priority is made to lower freq. formants
-//							bestIndex = i;
-//							bestDistance = distance;
-//						}
-//					}
-//					i++;
-//				}
-//
-//				int curSynthRangeId = findSynthRangeId(f[0]);
-//				
-//				if (bestIndex != -1) {
-//					
-//					FormantTrack ft = currentTracks.get(bestIndex);
-//					
-//					// check if track stays in the same synth 
-//					boolean commonSynthId = false;
-//					boolean[] commonSynthIds = new boolean[]{false, false, false, false};
-//
-//					for (int j = 0; j < ft.usedSynths.length; j++) {
-//						if (ft.usedSynths[j] == true && ft.usedSynths[j] == synthRange[curSynthRangeId][j]) {
-//							commonSynthId = true;
-//							commonSynthIds[j] = true;
-//						}
-//					}
-//					
-//					if (commonSynthId) {
-//						// register formant to nearest current track on existing track
-//						ft = currentTracks.get(bestIndex);
-//						ft.f.put(frame, new double[] {f[0], f[1]});
-//						ft.lastFrame = frame;
-//						ft.trackSize = ft.lastFrame-ft.firstFrame+1;
-//						ft.usedSynths = commonSynthIds;
-//						log.info("track:{} frame:{} range:{} fq:{}", bestIndex, frame, commonSynthIds, f[0]);
-//					} else {
-//						bestIndex = -1;
-//					}
-//				}
-//				
-//				if (bestIndex == -1) {
-//					// create new track if formant is too far or if a frequency range is crossed
-//					FormantTrack ft = new FormantTrack();
-//					ft.f.put(frame, new double[] {f[0], f[1]});
-//					ft.firstFrame = frame;
-//					ft.lastFrame = frame;
-//					ft.trackSize = 1;
-//					ft.usedSynths = synthRange[curSynthRangeId];
-//					currentTracks.add(ft);
-//					log.info("new track:{} frame:{} fq:{}", currentTracks.size()-1, frame, f[0]);
-//				}
-//			}				
-//		}
-//		
-//		// close ended tracks for the current frame
-//		// by moving thoses to completed track list
-//		for (int i = 0; i < currentTracks.size(); i++)
-//		{
-//			FormantTrack ft = currentTracks.get(i);
-//			if (frame-ft.lastFrame > framesGap) {
-//				for (int s=0; s < 4; s++) {
-//					if (ft.usedSynths[s]) {
-//						synthTracks.get(s).add(ft);
-//					}
-//				}
-//				completedTracks.add(ft);
-//			}
-//		}
-//		
-//		for (int i = 0; i < completedTracks.size(); i++)
-//		{
-//			FormantTrack ft = completedTracks.get(i);
-//			if (currentTracks.contains(ft)) {
-//				currentTracks.remove(ft);
-//			}
-//		}
-//		
-//		
-//		frame++;
-//	}
-//	
-//	// close latest tracks
-//	for (int i = 0; i < currentTracks.size(); i++)
-//	{
-//		FormantTrack ft = currentTracks.get(i);
-//		for (int s=0; s < 4; s++) {
-//			if (ft.usedSynths[s]) {
-//				synthTracks.get(s).add(ft);
-//			}
-//		}
-//		completedTracks.add(ft);
-//	}
-//	currentTracks.clear();
-//}
-//
-//public static void filterSynths(List<FormantTrack> completedTracks) {
-//	
-//	int[][] slots = new int[4][formants.size()];
-//	int longestTrack, selectedSynthId;
-//	
-//	do {
-//		longestTrack = -1;
-//		selectedSynthId = -1;
-//		int maxSize = 0;
-//		
-//		for (int i = 0; i < completedTracks.size(); i++)
-//		{
-//			FormantTrack ft = completedTracks.get(i);
-//			if (ft.synth == -1) {			
-//				for (int k=0; k < ft.usedSynths.length; k++) {
-//					if (ft.usedSynths[k]) {
-//						
-//						// check if range is not already occupied	
-//						boolean occupied = false;
-//						for (int j = ft.firstFrame; j <= ft.lastFrame; j++) {
-//							if (slots[k][j] > 0) {
-//								occupied = true;
-//								break;
-//							}
-//						}
-//						if (!occupied && ft.trackSize >= maxSize) {
-//							longestTrack = i;
-//							selectedSynthId = k;
-//							maxSize = ft.trackSize;
-//							break;
-//						}
-//					}
-//				}
-//			}
-//		}
-//
-//		// keep longest track
-//		if (longestTrack != -1) {
-//			FormantTrack ft = completedTracks.get(longestTrack);
-//			ft.synth = selectedSynthId;
-//			for (int j = ft.firstFrame; j <= ft.lastFrame; j++) {
-//				slots[ft.synth][j]++;
-//			}
-//		}
-//		
-//	} while (longestTrack != -1);
-//}
 }
