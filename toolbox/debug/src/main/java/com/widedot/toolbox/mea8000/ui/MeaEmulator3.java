@@ -1,4 +1,4 @@
-package com.widedot.toolbox.debug.ui;
+package com.widedot.toolbox.mea8000.ui;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -22,6 +23,9 @@ import com.widedot.toolbox.debug.DataUtil;
 import funkatronics.code.tactilewaves.dsp.FormantExtractor;
 import funkatronics.code.tactilewaves.dsp.PitchProcessor;
 import funkatronics.code.tactilewaves.dsp.WaveFrame;
+import funkatronics.code.tactilewaves.dsp.toolbox.Filter;
+import funkatronics.code.tactilewaves.dsp.toolbox.LPC;
+import funkatronics.code.tactilewaves.dsp.toolbox.Window;
 import funkatronics.code.tactilewaves.io.WaveFormat;
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;
@@ -33,7 +37,7 @@ import imgui.type.ImString;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MeaEmulator2 {
+public class MeaEmulator3 {
 
 	// file dialog
 	private static String lastDirectory = ".";
@@ -99,6 +103,12 @@ public class MeaEmulator2 {
 	private static double[] ytest12 = {};
 	private static double[] xtest13 = {};
 	private static double[] ytest13 = {};
+	private static double[] xtest14 = {};
+	private static double[] ytest14 = {};
+	private static int plot1=0;
+	private static int plot2=0;
+	private static int plot3=0;
+	private static int plot4=0;
 	
 	private static final int BYTES_PER_SAMPLE = 2;
 	private static final int SAMPLE_RATE = 64000;
@@ -191,7 +201,7 @@ public class MeaEmulator2 {
 					WaveFrame wFrame;
 					FormantExtractor fe;
 					PitchProcessor pp = new PitchProcessor();
-					int formants;
+					int nbFormants;
 					float startPitch = -1;
 					
 					// search forward for a starting pitch value
@@ -220,6 +230,18 @@ public class MeaEmulator2 {
 					
 					// process all frames for pitch, freq and bandwidth
 					log.info("Find frames pitch, frequencies and bandwidths ...");
+					xtest11 = new double[2000];
+					ytest11 = new double[2000];
+					xtest12 = new double[2000];
+					ytest12 = new double[2000];
+					xtest13 = new double[2000];
+					ytest13 = new double[2000];
+					xtest14 = new double[2000];
+					ytest14 = new double[2000];
+			        plot1 = 0;
+			        plot2 = 0;
+			        plot3 = 0;
+			        plot4 = 0;
 					for (int frame=1; frame<totalframes; frame++) {
 						 
 						log.info("Process frame: {}", frame);
@@ -238,42 +260,57 @@ public class MeaEmulator2 {
 						
 						// search frame formants
 						wFrame = new WaveFrame(Arrays.copyOfRange(audioRefFloat, (frame-1)*SAMPLE_FRAME, (frame-1)*SAMPLE_FRAME+SAMPLE_WINDOW_FREQ), wFormat);
-						wFrame.addFeature("Pitch", pitch);;
-						formants=4;
-						int bestFormants = formants;
-						int maxLength = 0;
-						int retFormants = 0;
+						wFrame.addFeature("Pitch", pitch);
+						float[] formFreqs = new float[0];
+						float[] formBands = new float[0];
+				        List<Float> formList = new ArrayList<Float>();
+				        List<Float> formBandList = new ArrayList<Float>();
 						
-						do {
-							wFrame.removeFeature("Formants Frequency");
-							wFrame.removeFeature("Formants Bandwidth");
-							fe = new FormantExtractor(formants);
-							fe.process(wFrame);
-							
-							retFormants = ((float[]) wFrame.getFeature("Formants Frequency")).length;
-							
-							if (retFormants >= maxLength && retFormants < 5) {
-								bestFormants = formants;
-								maxLength = retFormants;
-							}
-							
-//							if (frame == 12) {
-//								log.info("Try formants: {} {} {}", formants, (float[]) wFrame.getFeature("Formants Frequency"), (float[]) wFrame.getFeature("Formants Bandwidth"));
-//							}
-							
-							formants++;
-						} while (formants < 100 && retFormants < 5);
+						// Window
+						float[] x = Window.hamming(wFrame.getSamples());
 						
-						wFrame.removeFeature("Formants Frequency");
-						wFrame.removeFeature("Formants Bandwidth");
-						fe = new FormantExtractor(bestFormants);
-						fe.process(wFrame);
+						// Pre-Emphasis filtering
+						x = Filter.preEmphasis(x);
 						
-						// map parameters to mea presets
-						float[] formFreqs = (float[]) wFrame.getFeature("Formants Frequency");
-						float[] formBands = (float[]) wFrame.getFeature("Formants Bandwidth");
+				    	// Get list of formant (frequency, bandwidth) pairs
+				        double[][] formants = LPC.estimateFormants(x, 30, wFrame.getSampleRate());
+				        
+				        for(int i = 0; i < formants.length; i++) {
+				        	// Valid formants
+				            if(formants[i][0] > 140 && formants[i][0] < 3600.0 && formants[i][1] < 800.0) {
+				            	formList.add((float) formants[i][0]);
+				            	formBandList.add((float) formants[i][1]);  
+				            	if ((float) formants[i][1]<(50+125)/2) {
+								xtest11[plot1] = (double) frame;
+								ytest11[plot1++] = (double) formants[i][0];
+								} else 				            	if ((float) formants[i][1]<(125+309)/2) {
+									xtest12[plot2] = (double) frame;
+									ytest12[plot2++] = (double) formants[i][0];
+									} else 				            	if ((float) formants[i][1]<(309+726)/2) {
+										xtest13[plot3] = (double) frame;
+										ytest13[plot3++] = (double) formants[i][0];
+										}
+									else {
+										xtest14[plot4] = (double) frame;
+										ytest14[plot4++] = (double) formants[i][0];
+										}
+				            	
+					        }
+				            	
+				        }
+							
+				        // Copy list of formants back to a feature vector (float array)
+						formFreqs = new float[formList.size()];
+				        for(int i = 0; i < formList.size(); i++) {
+				        	formFreqs[i] = formList.get(i);
+				        }
+				        
+						formBands = new float[formBandList.size()];
+				        for(int i = 0; i < formBandList.size(); i++) {
+				        	formBands[i] = formBandList.get(i);
+				        }
 						
-						log.info("Selected formants: {} {} {}", bestFormants, (float[]) wFrame.getFeature("Formants Frequency"), (float[]) wFrame.getFeature("Formants Bandwidth"));
+						log.info("Formants: {} {}", formFreqs, formBands);
 						
 					 pitch = (float) wFrame.getFeature("Pitch");
 						if (pitch <= 0 || pitch >= 512 ) {
@@ -346,29 +383,29 @@ public class MeaEmulator2 {
 						ytest3[j] = frames.get(j).fm[2];
 					}
 					
-					xtest11 = new double[meaFrames.size()];
-					ytest11 = new double[meaFrames.size()];
+//					xtest11 = new Double[meaFrames.size()];
+//					ytest11 = new Integer[meaFrames.size()];
 
-					for (int j = 0; j < meaFrames.size(); j++) {
-						xtest11[j] = (double) j;
-						ytest11[j] = meaFrames.get(j).fm[0];
-					}
+//					for (int j = 0; j < meaFrames.size(); j++) {
+//						xtest11[j] = (double) j;
+//						ytest11[j] = meaFrames.get(j).fm[0];
+//					}
 					
-					xtest12 = new double[meaFrames.size()];
-					ytest12 = new double[meaFrames.size()];
+//					xtest12 = new Double[meaFrames.size()];
+//					ytest12 = new Integer[meaFrames.size()];
 
-					for (int j = 0; j < meaFrames.size(); j++) {
-						xtest12[j] = (double) j;
-						ytest12[j] = meaFrames.get(j).fm[1];
-					}
+//					for (int j = 0; j < meaFrames.size(); j++) {
+//						xtest12[j] = (double) j;
+//						ytest12[j] = meaFrames.get(j).fm[1];
+//					}
 					
-					xtest13 = new double[meaFrames.size()];
-					ytest13 = new double[meaFrames.size()];
+//					xtest13 = new Double[meaFrames.size()];
+//					ytest13 = new Integer[meaFrames.size()];
 
-					for (int j = 0; j < meaFrames.size(); j++) {
-						xtest13[j] = (double) j;
-						ytest13[j] = meaFrames.get(j).fm[2];
-					}
+//					for (int j = 0; j < meaFrames.size(); j++) {
+//						xtest13[j] = (double) j;
+//						ytest13[j] = meaFrames.get(j).fm[2];
+//					}
 				}
 
 				// PLAY SYNTH
@@ -426,9 +463,13 @@ public class MeaEmulator2 {
 					ImPlot.plotLine("REF FM1", xtest1, ytest1);
 					ImPlot.plotLine("REF FM2", xtest2, ytest2);
 					ImPlot.plotLine("REF FM3", xtest3, ytest3);
-					ImPlot.plotLine("SYNTH FM1", xtest11, ytest11);
-					ImPlot.plotLine("SYNTH FM2", xtest12, ytest12);
-					ImPlot.plotLine("SYNTH FM3", xtest13, ytest13);
+					ImPlot.plotScatter("BW1", xtest11, ytest11, plot1);
+					ImPlot.plotScatter("BW2", xtest12, ytest12, plot2);
+					ImPlot.plotScatter("BW3", xtest13, ytest13, plot3);
+					ImPlot.plotScatter("BW4", xtest14, ytest14, plot4);
+					//ImPlot.plotLine("SYNTH FM1", xtest11, ytest11);
+					//ImPlot.plotLine("SYNTH FM2", xtest12, ytest12);
+					//ImPlot.plotLine("SYNTH FM3", xtest13, ytest13);
 					ImPlot.endPlot();
 				}
 				

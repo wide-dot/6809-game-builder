@@ -1,4 +1,4 @@
-package com.widedot.toolbox.debug.ui;
+package com.widedot.toolbox.mea8000.ui;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -15,7 +15,6 @@ import com.widedot.toolbox.debug.util.WavFile;
 import funkatronics.code.tactilewaves.dsp.FormantExtractor;
 import funkatronics.code.tactilewaves.dsp.PitchProcessor;
 import funkatronics.code.tactilewaves.dsp.WaveFrame;
-import funkatronics.code.tactilewaves.dsp.toolbox.Window;
 import funkatronics.code.tactilewaves.io.WaveFormat;
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
 import imgui.extension.imguifiledialog.callback.ImGuiFileDialogPaneFun;

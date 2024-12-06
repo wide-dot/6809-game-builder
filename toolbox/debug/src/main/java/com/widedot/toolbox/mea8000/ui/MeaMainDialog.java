@@ -67,6 +67,12 @@ public class MeaMainDialog {
 				AudioSpectrum.compute(SampleData.p, SampleData.n, SampleData.ampl, SampleData.fm, SampleData.bw);
 			}
 			AudioSpectrum.show(new ImBoolean(true));
+			
+			// Play Synth Audio
+			if (ImGui.button("Play Synth.")) {
+				AudioSpectrum.compute(SampleData.p, SampleData.n, SampleData.ampl, SampleData.fm, SampleData.bw);
+			}
+			AudioSpectrum.show(new ImBoolean(true));
 		}
 
 		ImGui.end();
