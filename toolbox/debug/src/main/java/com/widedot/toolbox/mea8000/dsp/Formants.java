@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Formants {
 
 	private static final int SAMPLE_SIZE_IN_BYTES = 2;
+	private static final int SAMPLE_SIZE_IN_BITS = 8*SAMPLE_SIZE_IN_BYTES;
 	private static final int SAMPLE_RATE = 64000;
 
 	private static final int SAMPLE_1MS = SAMPLE_RATE/1000;
@@ -370,8 +371,7 @@ public class Formants {
 
 		findBestCurves();
 		computePlots();
-		encodeFrequencies();
-		encodeAmplitude(audioIn);
+		encodeFrequencies(audioIn);
 		writeMeaData("./out.mea");
 	}
 
@@ -469,7 +469,7 @@ public class Formants {
 		ImPlot.setNextAxesToFit();
 	}
 
-	private static void encodeFrequencies() {
+	private static void encodeFrequencies(float[] audioIn) {
 
 		MeaFrame firstFrame = new MeaFrame();
 		
@@ -477,7 +477,7 @@ public class Formants {
 		meaFrames.clear();
 		meaFrames.add(firstFrame);
 
-		log.info("Pitch list: {}", pitches.toString());
+		//log.info("Pitch list: {}", pitches.toString());
 		
 		// search for initial pitch
 		float startPitch = -1;
@@ -486,7 +486,7 @@ public class Formants {
 			if (startPitch != -1.0) break;
 		}
 		pitches.set(0, startPitch);
-		log.info("Start pitch: {}", startPitch);
+		//log.info("Start pitch: {}", startPitch);
 		
 		// interpolate pitches when no values (-1)
 		int pitchAPos=0, pitchBPos;
@@ -510,7 +510,7 @@ public class Formants {
 			
 			pitchAPos = pitchBPos;
 		}
-		log.info("Interpolated pitch list: {}", pitches.toString());		
+		//log.info("Interpolated pitch list: {}", pitches.toString());		
 		
 		// first frame is a special case
 		// init starting parameters
@@ -526,109 +526,10 @@ public class Formants {
 		
 			setMeaFilters(curFrame, tracks);
 			setMeaPitch(curFrame, pitches.get(frame), meaFrames.get(frame)); // previous frame is meaFrames.get(frame) because of firstFrame
+			setMeaAmpl(curFrame, tracks, audioIn);
 
 			meaFrames.add(curFrame);
 		}
-	}
-
-	private static void encodeAmplitude(float[] audioIn) {
-	
-		int[] out;
-		MeaFrame FrameA, FrameB, FrameC;
-		int amplBLimit, amplCLimit;
-	
-		for (int frame = 1; frame < meaFrames.size()-1; frame+=2) {
-	
-			log.info("Process frame: {}", frame);
-	
-			int bestAmplB = 0, bestAmplC = 0;
-			double lowestDelta = Double.MAX_VALUE;
-	
-			// in case of new Pitch, previous frame is faded to 0
-			if(meaFrames.get(frame+1).newPitch) {
-				amplBLimit = 1;
-			} else {
-				amplBLimit = AMPL_TABLE.length;
-			}
-	
-			// in case of new Pitch, previous frame is faded to 0
-			// last frame is also faded to 0
-			if((frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) || frame+1 == meaFrames.size()-1) {
-				amplCLimit = 1;
-			} else {
-				amplCLimit = AMPL_TABLE.length;
-			}
-	
-			for (int amplB=0; amplB<amplBLimit; amplB++) {				
-				for (int amplC=0; amplC<amplCLimit; amplC++) {
-	
-					// process frame group
-					// Ampl for Frame A is fixed by last frame or 0 at startup
-					FrameA = new MeaFrame(meaFrames.get(frame-1));
-	
-					FrameB = new MeaFrame(meaFrames.get(frame));
-					if(meaFrames.get(frame+1).newPitch) {
-						FrameB.copyFilters(meaFrames.get(frame+1));
-					}
-					FrameB.i_ampl = amplB;
-					FrameB.ampl = AMPL_TABLE[amplB];
-	
-					FrameC = new MeaFrame(meaFrames.get(frame+1));
-					if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
-						FrameC.copyFilters(meaFrames.get(frame+2));
-					}
-					FrameC.i_ampl = amplC;
-					FrameC.ampl = AMPL_TABLE[amplC];
-	
-					out = getMeaAudioFrame(FrameA, FrameB);
-					double deltaAB = getDelta(audioIn, (frame-1)*SAMPLE_FRAME, SAMPLE_FRAME, out);
-					out = getMeaAudioFrame(FrameB, FrameC);
-					double deltaBC = getDelta(audioIn, frame*SAMPLE_FRAME, SAMPLE_FRAME, out);
-	
-					if (deltaAB+deltaBC < lowestDelta) {
-						lowestDelta = deltaAB+deltaBC;
-						bestAmplB = amplB;
-						bestAmplC = amplC;
-						//log.info("Frame: {} AmplB: {} DeltaAB: {} AmplC: {} DeltaBC: {}", frame, amplB, deltaAB, amplC, deltaBC);
-					}
-				}
-			}
-	
-			MeaFrame prevFrame = meaFrames.get(frame-1);
-			MeaFrame curFrame = meaFrames.get(frame);
-			MeaFrame nextFrame = meaFrames.get(frame+1);
-	
-			if(meaFrames.get(frame+1).newPitch) {
-				curFrame.copyFilters(meaFrames.get(frame+1));
-			}
-			curFrame.i_ampl = bestAmplB;
-			curFrame.i_bckampl = bestAmplB; 
-			curFrame.ampl = AMPL_TABLE[bestAmplB];
-	
-			setMeaPitch(curFrame, curFrame.pitch, prevFrame);
-	
-			if(frame+2 < meaFrames.size() && meaFrames.get(frame+2).newPitch) {
-				nextFrame.copyFilters(meaFrames.get(frame+2));
-			}
-			nextFrame.i_ampl = bestAmplC;
-			nextFrame.i_bckampl = bestAmplC;
-			nextFrame.ampl = AMPL_TABLE[bestAmplC];
-	
-			setMeaPitch(nextFrame, nextFrame.pitch, curFrame);
-	
-			log.info("Frame: {} prevAmpl: {} curAmpl: {} nextAmpl: {}", frame, prevFrame.i_ampl, curFrame.i_ampl, nextFrame.i_ampl);
-		}
-	}
-	
-	private static double getDelta(float[] ref, int start, int length, int[] frame) {
-		long delta = 0;
-		int j=0;
-		
-		for (int i = start; i < start+length; i++) {
-			delta += Math.abs(ref[i]-frame[j++]);
-		}
-		
-		return delta;
 	}
 
 	private static final int QUANT = 512; // samples for 8ms at 64kHz
@@ -726,6 +627,55 @@ public class Formants {
 			this.i_fm = Arrays.copyOf(src.i_fm, src.i_fm.length);
 			this.i_bw = Arrays.copyOf(src.i_bw, src.i_bw.length);
 		}
+	}
+	
+
+	private static void setMeaAmpl(MeaFrame curFrame, SynthTrack[] tracks, float[] audioIn) {
+		
+		// match preset values, and set indexes
+		int delta, maxDelta;
+		maxDelta = Integer.MAX_VALUE;
+		
+		double rms = (int) (getRMS(audioIn, (curFrame.pos)*SAMPLE_FRAME, SAMPLE_FRAME)*1000);
+		double peak = (int) (calculatePeakLevel(audioIn, (curFrame.pos)*SAMPLE_FRAME, SAMPLE_FRAME)*1000);
+		int val = (int) ((rms + peak) / 2);
+
+		for (int i = 0; i < AMPL_TABLE.length; i++) {
+			delta = Math.abs(val - AMPL_TABLE[i]);
+			if (delta < maxDelta) {
+				maxDelta = delta;
+				curFrame.i_ampl = i;
+				curFrame.ampl = AMPL_TABLE[i];
+			} else {
+				break;
+			}
+		}
+	}
+	
+	private static double getRMS(float[] ref, int start, int length) {
+		
+		double rmsRef = 0;
+		for (int i = start; i < start+length; i++) {
+			if (i < ref.length) {
+				double normalizedSample = ref[i] / (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1));
+				rmsRef += normalizedSample*normalizedSample;
+			}
+		}
+		
+		return Math.sqrt(rmsRef/length);
+	}
+	
+	private static double calculatePeakLevel(float[] ref, int start, int length) {
+	    double max = 0.0;
+	    for (int i = start; i < start+length; i++) {
+	    	if (i < ref.length) {
+		        double normalizedSample = Math.abs(ref[i] / (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1)));
+		        if (normalizedSample > max) {
+		            max = normalizedSample;
+		        }
+	    	}
+	    }
+	    return max;
 	}
 	
 	public static void setMeaFilters(MeaFrame curFrame, SynthTrack[] tracks) {

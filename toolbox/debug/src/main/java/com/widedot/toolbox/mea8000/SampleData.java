@@ -2,6 +2,9 @@ package com.widedot.toolbox.mea8000;
 
 import java.util.ArrayList;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class SampleData {
 	
 	// TODO User should load this data from .mea file
@@ -56,6 +59,7 @@ public class SampleData {
 		for (int j=0; j<nbFrames; j++) {
 			p[j] = frames.get(j).pitch;
 		}
+		log.info("ref pitch: {}", p);
 		
 		// noise
 		n = new boolean[nbFrames];
@@ -63,17 +67,22 @@ public class SampleData {
 		for (int j=0; j<nbFrames; j++) {
 			n[j] = frames.get(j).noise;
 		}
+		log.info("ref noise: {}", n);
 		
 		// ampl
 		ampl = new double[nbFrames];
+		double[] amplp = new double[nbFrames];
 		
 		for (int j=0; j<nbFrames; j++) {
 			if (frames.get(j).ampl == 0) {
 				ampl[j] = 0;
 			} else {
 				ampl[j] = 0.10+frames.get(j).ampl/2000.0;
+				amplp[j] = frames.get(j).ampl;
 			}
 		}
+		
+		log.info("ref ampl: {}", amplp);
 		
 		// freq/bandwidth
 		fm = new double[4][nbFrames];
@@ -84,6 +93,9 @@ public class SampleData {
 				fm[f][j] = frames.get(j).fm[f];
 				bw[f][j] = frames.get(j).bw[f];
 			}
+			log.info("ref fw{}: {}", f, fm[f]);
+			log.info("ref bw{}: {}", f, bw[f]);
 		}
+		
 	}
 }
