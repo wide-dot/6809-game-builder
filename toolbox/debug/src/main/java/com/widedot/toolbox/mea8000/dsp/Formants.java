@@ -21,6 +21,8 @@ import org.tribuo.impl.ArrayExample;
 import org.tribuo.provenance.SimpleDataSourceProvenance;
 
 import com.widedot.toolbox.debug.DataUtil;
+import com.widedot.toolbox.mea8000.MeaContainer;
+import com.widedot.toolbox.mea8000.MeaFrame;
 
 import funkatronics.code.tactilewaves.dsp.toolbox.Filter;
 import funkatronics.code.tactilewaves.dsp.toolbox.LPC;
@@ -85,7 +87,7 @@ public class Formants {
 	public static List<double[]> yCurves;
 	
 	// MEA encoding
-	private static ArrayList<MeaFrame> meaFrames = new ArrayList<MeaFrame>();
+	private static ArrayList<ArrayList<MeaFrame>> meaFrames = new ArrayList<ArrayList<MeaFrame>>();
 	private static byte[] meaCodes = new byte[0xFFFFFF];
 	private static int meaCodesLen = 0;
 
@@ -313,7 +315,11 @@ public class Formants {
 		for (int s=0; s<audioIn.length; s+=SAMPLE_FRAME) {
 
 			// find frame pitch
-			pitches.add(YIN.estimatePitch(Arrays.copyOfRange(audioIn, s, s+SAMPLE_WINDOW_PITCH), SAMPLE_RATE));
+			float val = YIN.estimatePitch(Arrays.copyOfRange(audioIn, s, s+SAMPLE_WINDOW_PITCH), SAMPLE_RATE);
+			if (val < PITCH_MIN || val > PITCH_MAX) {
+				val = -1;
+			}
+			pitches.add(val);
 
 			// window
 			float[] x = Window.hamming(Arrays.copyOfRange(audioIn, s, s+SAMPLE_WINDOW_FREQ));
@@ -371,7 +377,7 @@ public class Formants {
 
 		findBestCurves();
 		computePlots();
-		encodeFrequencies(audioIn);
+		encodeMea(audioIn);
 		writeMeaData("./out.mea");
 	}
 
@@ -469,13 +475,12 @@ public class Formants {
 		ImPlot.setNextAxesToFit();
 	}
 
-	private static void encodeFrequencies(float[] audioIn) {
+	private static void encodeMea(float[] audioIn) {
 
 		MeaFrame firstFrame = new MeaFrame();
 		
 		// register starting parameters
 		meaFrames.clear();
-		meaFrames.add(firstFrame);
 
 		//log.info("Pitch list: {}", pitches.toString());
 		
@@ -519,16 +524,32 @@ public class Formants {
 		firstFrame.pitch = (int) ((startPitch / 2) * 2);
 		setMeaFilters(firstFrame, tracks);
 		
+		int chunk = 0;
+		meaFrames.add(new ArrayList<MeaFrame>());
+		meaFrames.get(chunk).add(firstFrame);
+		MeaFrame curFrame, lastFrame = firstFrame;
 		for (int frame = 0; frame < pitches.size(); frame++) {
 			
-			MeaFrame curFrame = new MeaFrame();
+			curFrame = new MeaFrame();
 			curFrame.pos = frame;
 		
 			setMeaFilters(curFrame, tracks);
-			setMeaPitch(curFrame, pitches.get(frame), meaFrames.get(frame)); // previous frame is meaFrames.get(frame) because of firstFrame
 			setMeaAmpl(curFrame, tracks, audioIn);
-
-			meaFrames.add(curFrame);
+			boolean result = setMeaPitch(pitches.get(frame), curFrame, lastFrame);
+			
+			// Split stream if pitch increment is too large
+			if (!result) {
+				chunk++;
+				meaFrames.add(new ArrayList<MeaFrame>());
+				firstFrame = new MeaFrame(lastFrame);
+				firstFrame.pos = 0;
+				firstFrame.phi = 0;
+				firstFrame.ampl = 0;
+				firstFrame.i_ampl = 0;
+				meaFrames.get(chunk).add(lastFrame);
+			}
+			meaFrames.get(chunk).add(curFrame);
+			lastFrame = curFrame;
 		}
 	}
 
@@ -537,6 +558,8 @@ public class Formants {
 	private static final int NOISE_LEN = 8192;
 	private static final int F0 = (3840000 / 480); // digital filters work at 8 kHz
 	private static final int SUPERSAMPLING = 8; // filtered output is supersampled x 8
+	private static final float PITCH_MAX = 510;
+	private static final float PITCH_MIN = 1;
 	
 	private static final int[]   FM1_TABLE   = { 150, 162, 174, 188, 202, 217, 233, 250, 267, 286, 305, 325, 346, 368, 391, 415, 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047 };
 	private static final int[]   FM2_TABLE   = { 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 830, 880, 932, 988, 1047, 1100, 1179, 1254, 1337, 1428, 1528, 1639, 1761, 1897, 2047, 2214, 2400, 2609, 2842, 3105, 3400 };
@@ -568,67 +591,6 @@ public class Formants {
 			m_noise_table[i] = (random.nextInt(2 * (int) QUANT)) - (int) QUANT;
 		}
 	}
-	
-	private static class MeaFrame {
-		int     pos;
-		
-		int     fd; // 0=8ms, 1=16ms, 2=32ms, 3=64ms
-		int     phi;
-		int     pitch;
-		int[]   output;
-		int[]   last_output;
-		int     sample;
-		boolean newPitch;
-		boolean noise;
-	
-		int     ampl;
-		int[]   fm;
-		int[]   bw;
-	
-		int     i_pi;
-		int     i_ampl;
-		int[]   i_fm;
-		int[]   i_bw;
-	
-		int     i_bckampl;
-	
-		MeaFrame () {
-			output = new int[4];
-			last_output = new int[4];
-			fm = new int[4];
-			bw = new int[4];
-			i_fm = new int[4];
-			i_bw = new int[4];
-		}
-	
-		MeaFrame(MeaFrame src) {
-			this.fd = src.fd;
-			this.phi = src.phi;
-			this.pitch = src.pitch;
-			this.output = Arrays.copyOf(src.output, src.output.length);
-			this.last_output = Arrays.copyOf(src.last_output, src.last_output.length);
-			this.sample = src.sample;
-			this.newPitch = src.newPitch;
-	
-			this.ampl = src.ampl;
-			this.fm = Arrays.copyOf(src.fm, src.fm.length);
-			this.bw = Arrays.copyOf(src.bw, src.bw.length);
-	
-			this.i_pi = src.i_pi;
-			this.i_ampl = src.i_ampl;
-			this.i_fm = Arrays.copyOf(src.i_fm, src.i_fm.length);
-			this.i_bw = Arrays.copyOf(src.i_bw, src.i_bw.length);
-	
-		}
-	
-		public void copyFilters(MeaFrame src) {
-			this.fm = Arrays.copyOf(src.fm, src.fm.length);
-			this.bw = Arrays.copyOf(src.bw, src.bw.length);
-			this.i_fm = Arrays.copyOf(src.i_fm, src.i_fm.length);
-			this.i_bw = Arrays.copyOf(src.i_bw, src.i_bw.length);
-		}
-	}
-	
 
 	private static void setMeaAmpl(MeaFrame curFrame, SynthTrack[] tracks, float[] audioIn) {
 		
@@ -689,7 +651,7 @@ public class Formants {
 		for(int i = 0; i < 4; i++) {
 			maxDelta = Integer.MAX_VALUE;
 			int val = (int) tracks[i].confidence.get(tracks[i].audioId)[curFrame.pos];
-			val = val * BW_TABLE[0];
+			val = val * BW_TABLE[2];
 			for (int j = 0; j < BW_TABLE.length; j++) {
 				delta = Math.abs(val - BW_TABLE[j]);
 				if (delta < maxDelta) {
@@ -724,167 +686,122 @@ public class Formants {
 		curFrame.fm[3] = FM4;	
 	}
 	
-	public static void setMeaPitch(MeaFrame curFrame, float pitch, MeaFrame lastFrame) {
+	public static boolean setMeaPitch(float pitch, MeaFrame curFrame, MeaFrame lastFrame) {
 	
 		if (curFrame.noise || pitch == -1) {
 			curFrame.pitch = lastFrame.pitch;
 			curFrame.noise = true;
 			curFrame.i_pi = NOISE_INDEX;
+			return true;
 		} else {
 			curFrame.pitch = (int) pitch;
 			int pi = (curFrame.pitch - lastFrame.pitch) >> curFrame.fd; 
-				if (pi < -15 || pi > 15) {
-					curFrame.newPitch = true;
-					curFrame.pitch = (int) ((curFrame.pitch / 2) * 2); // round by two the starting pitch
-					curFrame.i_pi = 0;
-					lastFrame.i_ampl = 0;
-					lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
-				} else {
-					curFrame.newPitch = false;
-					curFrame.i_pi = (pi & 0x1f);
-					lastFrame.i_ampl = lastFrame.i_bckampl;
-					lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
-				}
-		}
-	}
-	
-	public static int[] getMeaAudioFrame(MeaFrame lastFrame, MeaFrame curFrame) {
-	
-		int m_framelog = curFrame.fd + 9; // 64 samples / ms
-		int m_framelength = 1 << m_framelog;
-		int m_framepos = 0;
-		int m_audiopos = 0;
-		int m_lastsample = 0;
-		int m_samplingPos = 0;
-		int fm, bw, b, c;
-	
-		//log.info("ENTREE {} {} {} {}", lastFrame.last_output, lastFrame.output, curFrame.last_output, curFrame.output);
-		//log.info("ENTREE {} {} {} {}", lastFrame.fm, lastFrame.bw, curFrame.fm, curFrame.bw);
-	
-		if (curFrame.noise) { 
-			curFrame.i_pi = NOISE_INDEX;
-		}
-		curFrame.phi = lastFrame.phi;
-		curFrame.sample = lastFrame.sample;
-		for (int i=0; i<4; i++) {
-			curFrame.output[i] = lastFrame.output[i];
-			curFrame.last_output[i] = lastFrame.last_output[i];
-		}
-	
-		while(m_framepos < m_framelength) {
-			m_samplingPos = m_framepos % SUPERSAMPLING;
-			if (m_samplingPos == 0) {
-				m_lastsample = curFrame.sample;
-	
-				// audio source
-				// -------------------------------------------------------------
-				if (curFrame.noise) {
-					// noise gen
-					curFrame.phi = (curFrame.phi + 1) % NOISE_LEN;
-					curFrame.sample = m_noise_table[curFrame.phi];
-				} else {
-					// freq gen
-					int pitch = lastFrame.pitch + (((curFrame.pitch - lastFrame.pitch) * m_framepos) >> m_framelog);
-					curFrame.phi = (curFrame.phi + pitch) % F0;
-					curFrame.sample = ((curFrame.phi % F0) * QUANT * 2) / F0 - QUANT;
-				}
-	
-				// amplitude
-				// -------------------------------------------------------------
-				curFrame.sample = (curFrame.sample * (lastFrame.ampl + (((curFrame.ampl - lastFrame.ampl) * m_framepos) >> m_framelog)))/32;
-	
-				// filter
-				// -------------------------------------------------------------
-				for (int i = 0; i < 4; i++) {
-					fm = lastFrame.fm[i] + (((curFrame.fm[i] - lastFrame.fm[i]) * m_framepos) >> m_framelog);
-					bw = lastFrame.bw[i] + (((curFrame.bw[i] - lastFrame.bw[i]) * m_framepos) >> m_framelog);
-	
-					b = (int) (m_cos_table[fm] * m_exp_table[bw] / QUANT);
-					c = (int) m_exp2_table[bw];
-	
-					curFrame.sample = curFrame.sample + (b * curFrame.output[i] - c * curFrame.last_output[i]) / QUANT;
-	
-					curFrame.last_output[i] = curFrame.output[i];
-					curFrame.output[i] = curFrame.sample;
-				}
-	
-				if (curFrame.sample >  32767) curFrame.sample =  32767;
-				if (curFrame.sample < -32768) curFrame.sample = -32768;
-	
-				m_audio[m_audiopos++] = m_lastsample;
-			} else {
-				m_audio[m_audiopos++] = m_lastsample + ((m_samplingPos * (curFrame.sample - m_lastsample)) / SUPERSAMPLING);
+			if (pi >= PI_TABLE[17] && pi <= PI_TABLE[15]) {
+				curFrame.i_pi = (pi & 0x1f);
+				lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
+				return true;
 			}
-			m_framepos++;
+			if (true) { // TODO option for one Chunk mode
+				int pitchDelta = Math.max(Math.min(pi, PI_TABLE[15]), PI_TABLE[17]);
+				curFrame.pitch = lastFrame.pitch + pitchDelta;
+				curFrame.i_pi = (pitchDelta & 0x1f);
+				lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
+				return true;
+			}
 		}
-	
-		//log.info("SORTIE {} {} {} {}", lastFrame.last_output, lastFrame.output, curFrame.last_output, curFrame.output);
-	
-	
-		return m_audio;
+		
+		// new Chunk
+		return false;
 	}
 	
 	private static byte[] writeMeaData(String inputPathName) {
 		
-		//ImString intxtData = new ImString(0x10000);
-		meaCodesLen = 2; 
+		ArrayList<byte[]> dataList = new ArrayList<byte[]>();
 		
-		// set header pitch
-		meaCodes[meaCodesLen++] = (byte) ((meaFrames.get(0).pitch/2) & 0xff);
-		String line = "Pitch: " + DataUtil.byteToHex(meaCodes[meaCodesLen-1]) + "\r\n";
-		
-		for (int frame=1; frame<meaFrames.size(); frame++) {
+		for (ArrayList<MeaFrame> meaChunk : meaFrames) {
+			MeaContainer meaDebug = new MeaContainer();
+			meaDebug.frames = meaChunk;
+			meaDebug.compute();
 			
-			meaCodes[meaCodesLen] = 0;
-			meaCodes[meaCodesLen+1] = 0;
-			meaCodes[meaCodesLen+2] = 0;
-			meaCodes[meaCodesLen+3] = 0;
+			//ImString intxtData = new ImString(0x10000);
+			int pos = 3; 
 			
-        	// set bandwidths
-	        for(int i = 0; i < 4; i++) {
-	        	meaCodes[meaCodesLen] = (byte) (meaCodes[meaCodesLen] | (byte) (meaFrames.get(frame).i_bw[i] << (6-i*2)));
-	        }
-	        
-	        // set frequencies
-    		meaCodes[meaCodesLen+2] = (byte) (meaCodes[meaCodesLen+2] | (byte) ((meaFrames.get(frame).i_fm[0] & 0b11111) << 3));
-    		meaCodes[meaCodesLen+1] = (byte) (meaCodes[meaCodesLen+1] | (byte) (meaFrames.get(frame).i_fm[1] & 0b11111));
-    		meaCodes[meaCodesLen+1] = (byte) (meaCodes[meaCodesLen+1] | (byte) ((meaFrames.get(frame).i_fm[2] & 0b111) << 5));
-	    	
-	    	// set amplitude
-	    	meaCodes[meaCodesLen+2] = (byte) (meaCodes[meaCodesLen+2] | (byte) ((meaFrames.get(frame).i_ampl >> 1) & 0b111));
-	    	meaCodes[meaCodesLen+3] = (byte) (meaCodes[meaCodesLen+3] | (byte) ((meaFrames.get(frame).i_ampl & 0b1) << 7));
+			// set header pitch
+			meaCodes[pos++] = (byte) ((meaChunk.get(0).pitch/2) & 0xff);
+			String line = "Header pitch: " + DataUtil.byteToHex(meaCodes[pos-1]) + "\r\n";
 			
-	    	// set pitch increment
-	    	meaCodes[meaCodesLen+3] = (byte) (meaCodes[meaCodesLen+3] | (byte) (meaFrames.get(frame).i_pi & 0b11111));
-	    	
-	    	line += frame + ": " + DataUtil.bytesToHex(meaCodes, meaCodesLen, 4) + "\r\n";
-	    	
-	    	meaCodesLen += 4;
-	    	
-	    	if (meaFrames.get(frame).i_ampl == 0 && frame+1<meaFrames.size()) {
-	    		meaCodes[meaCodesLen++] = (byte) ((meaFrames.get(frame+1).pitch/2) & 0xff);
-	    		line += "\r\nPitch: " + DataUtil.byteToHex(meaCodes[meaCodesLen-1]) + "\r\n";
-	    	}
+			for (int frame=1; frame<meaChunk.size(); frame++) {
+				
+				meaCodes[pos] = 0;
+				meaCodes[pos+1] = 0;
+				meaCodes[pos+2] = 0;
+				meaCodes[pos+3] = 0;
+				
+	        	// set bandwidths
+		        for(int i = 0; i < 4; i++) {
+		        	meaCodes[pos] = (byte) (meaCodes[pos] | (byte) (meaChunk.get(frame).i_bw[i] << (6-i*2)));
+		        }
+		        
+		        // set frequencies
+	    		meaCodes[pos+2] = (byte) (meaCodes[pos+2] | (byte) ((meaChunk.get(frame).i_fm[0] & 0b11111) << 3));
+	    		meaCodes[pos+1] = (byte) (meaCodes[pos+1] | (byte) (meaChunk.get(frame).i_fm[1] & 0b11111));
+	    		meaCodes[pos+1] = (byte) (meaCodes[pos+1] | (byte) ((meaChunk.get(frame).i_fm[2] & 0b111) << 5));
+		    	
+		    	// set amplitude
+		    	meaCodes[pos+2] = (byte) (meaCodes[pos+2] | (byte) ((meaChunk.get(frame).i_ampl >> 1) & 0b111));
+		    	meaCodes[pos+3] = (byte) (meaCodes[pos+3] | (byte) ((meaChunk.get(frame).i_ampl & 0b1) << 7));
+				
+		    	// set pitch increment
+		    	meaCodes[pos+3] = (byte) (meaCodes[pos+3] | (byte) (meaChunk.get(frame).i_pi & 0b11111));
+		    	
+		    	line += frame + ": " + DataUtil.bytesToHex(meaCodes, pos, 4) + "\r\n";
+		    	
+		    	pos += 4;
+			}
+			
+			// update header with total length
+			meaCodes[0] = (byte) ((pos & 0xff00) >> 8);
+			meaCodes[1] = (byte) (pos & 0xff);
+			meaCodes[2] = (byte) 0;
+			line = "Length: " + DataUtil.bytesToHex(meaCodes, 0, 2) + "\r\n\r\n" + line + "\r\n";
+			//intxtData.set(line);	
+			log.info("{}", line);
+			
+			meaCodesLen = pos;
+			dataList.add(Arrays.copyOf(meaCodes, meaCodesLen));	
 		}
 		
-		// update header with total length
-		meaCodes[0] = (byte) ((meaCodesLen & 0xff00) >> 8);
-		meaCodes[1] = (byte) (meaCodesLen & 0xff);
-		line = "Length: " + DataUtil.bytesToHex(meaCodes, 0, 2) + "\r\n\r\n" + line + "\r\n";
-		//intxtData.set(line);	
-		//log.info("{}", line);
-		
-		byte[] finalData = Arrays.copyOf(meaCodes, meaCodesLen);	
+		byte[] result = convertToByteArray(dataList);
 		
 		try {
 			Path path = Path.of(inputPathName);
-			Files.write(path, finalData);
+			Files.write(path, result);
 			log.info("output file: {}", path.toAbsolutePath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		return finalData;        
+		return result;        
 	}
+	
+    public static byte[] convertToByteArray(ArrayList<byte[]> byteArrayList) {
+        // Calculate total size
+        int totalSize = 0;
+        for (byte[] array : byteArrayList) {
+            totalSize += array.length;
+        }
+
+        // Create a new byte array
+        byte[] result = new byte[totalSize];
+
+        // Copy data from each byte[] into the result array
+        int currentIndex = 0;
+        for (byte[] array : byteArrayList) {
+            System.arraycopy(array, 0, result, currentIndex, array.length);
+            currentIndex += array.length;
+        }
+
+        return result;
+    }
 
 }

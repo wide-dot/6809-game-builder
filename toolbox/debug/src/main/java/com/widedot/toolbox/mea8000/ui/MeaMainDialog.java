@@ -1,9 +1,12 @@
 package com.widedot.toolbox.mea8000.ui;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import com.widedot.toolbox.mea8000.AudioLoader;
-import com.widedot.toolbox.mea8000.SampleData;
+import com.widedot.toolbox.mea8000.AudioPlayer;
+import com.widedot.toolbox.mea8000.MeaContainer;
+import com.widedot.toolbox.mea8000.MeaLoader;
 import com.widedot.toolbox.mea8000.dsp.Formants;
 
 import imgui.extension.imguifiledialog.ImGuiFileDialog;
@@ -36,14 +39,13 @@ public class MeaMainDialog {
 		
 		if (ImGui.begin("MEA8000", showImGui)) {
 				
-			// File dialog
-			if (ImGui.button("Load")) {
-				ImGuiFileDialog.openModal("browse-key", "Choose File", ".wav", lastDirectory, callback, 250, 1, 42,
-						ImGuiFileDialogFlags.None);
+			// WAV File dialog
+			if (ImGui.button("Load .wav")) {
+				ImGuiFileDialog.openModal("wav-file", "Choose File", ".wav", lastDirectory, callback, 250, 1, 42, ImGuiFileDialogFlags.None);
 			}
 			ImGui.sameLine();
 
-			if (ImGuiFileDialog.display("browse-key", ImGuiFileDialogFlags.None, 200, 400, 800, 600)) {
+			if (ImGuiFileDialog.display("wav-file", ImGuiFileDialogFlags.None, 200, 400, 800, 600)) {
 				if (ImGuiFileDialog.isOk()) {
 					selection = ImGuiFileDialog.getSelection();
 					lastDirectory = ImGuiFileDialog.getCurrentPath()+"/";
@@ -54,7 +56,7 @@ public class MeaMainDialog {
 				if (selection != null && !selection.isEmpty()) {
 					
 					inputPathName = selection.values().stream().findFirst().get();
-					log.debug("Selected file: {}", inputPathName);
+					log.debug("Selected wav file: {}", inputPathName);
 					audioIn = AudioLoader.loadf(inputPathName);
 					Formants.compute(audioIn);
 					AudioSpectrum.compute(Formants.xf, Formants.yf, Formants.xCurves, Formants.yCurves);
@@ -62,16 +64,43 @@ public class MeaMainDialog {
 
 			}
 			
-			// Audio Spectrum
-			if (ImGui.button("Sample Data")) {
-				AudioSpectrum.compute(SampleData.p, SampleData.n, SampleData.ampl, SampleData.fm, SampleData.bw);
+			// Play WAV Audio
+			if (ImGui.button("Play")) {
+				AudioPlayer.playAudio(audioIn);
 			}
-			AudioSpectrum.show(new ImBoolean(true));
 			
-			// Play Synth Audio
-			if (ImGui.button("Play Synth.")) {
-				AudioSpectrum.compute(SampleData.p, SampleData.n, SampleData.ampl, SampleData.fm, SampleData.bw);
+			// MEA File dialog
+			if (ImGui.button("Load .mea")) {
+				ImGuiFileDialog.openModal("mea-file", "Choose File", ".mea", lastDirectory, callback, 250, 1, 42, ImGuiFileDialogFlags.None);
 			}
+			ImGui.sameLine();
+			
+			if (ImGuiFileDialog.display("mea-file", ImGuiFileDialogFlags.None, 200, 400, 800, 600)) {
+				if (ImGuiFileDialog.isOk()) {
+					selection = ImGuiFileDialog.getSelection();
+					lastDirectory = ImGuiFileDialog.getCurrentPath()+"/";
+				}
+				ImGuiFileDialog.close();
+
+				// Open the mea file specified as the first argument
+				if (selection != null && !selection.isEmpty()) {
+					
+					inputPathName = selection.values().stream().findFirst().get();
+					log.debug("Selected mea file: {}", inputPathName);
+					ArrayList<MeaContainer> meaContainers = MeaLoader.load(inputPathName);
+					for (MeaContainer meaContainer: meaContainers) {
+						AudioSpectrum.compute(meaContainer);
+						break; // TODO change to handle display of chunks collection instead of just first element
+					}
+				}
+
+			}
+			
+			// Play MEA Audio
+			if (ImGui.button("Play")) {
+				//
+			}
+			
 			AudioSpectrum.show(new ImBoolean(true));
 		}
 

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.widedot.toolbox.mea8000.Mea8000Decoder;
+import com.widedot.toolbox.mea8000.MeaContainer;
 import com.widedot.toolbox.mea8000.dsp.Formants;
 
 import imgui.ImVec2;
@@ -95,35 +96,35 @@ public class AudioSpectrum {
 
 	}
 	
-	public static void compute(double[] p, boolean[] n, double[] a, double[][] fm, double[][] bw) {
+	public static void compute(MeaContainer meaContainer) {
 		
-		if (fm != null && fm[0] != null) {
+		if (meaContainer.fm != null && meaContainer.fm[0] != null) {
 			
 			// set y axis values for ampl
-			ampl = new double[a.length];
+			ampl = new double[meaContainer.amplDisplay.length];
 			
-			for (int i=0; i<a.length; i++) {
-				ampl[i] = a[i];
+			for (int i=0; i<meaContainer.amplDisplay.length; i++) {
+				ampl[i] = meaContainer.amplDisplay[i];
 			}
 			
 			// set x axis values
-			xs = new double[fm[0].length];
+			xs = new double[meaContainer.fm[0].length];
 			
-			for (int x=0; x<fm[0].length; x++) {
+			for (int x=0; x<meaContainer.fm[0].length; x++) {
 				xs[x] = (double) x*2; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
 			}
 			
 			// set y axis values for pitch
-			yp = new double[p.length];
+			yp = new double[meaContainer.p.length];
 			
-			for (int i=0; i<p.length; i++) {
-				yp[i] = p[i];
+			for (int i=0; i<meaContainer.p.length; i++) {
+				yp[i] = meaContainer.p[i];
 			}
 			
 			// set x and y axis values for noise (displayed as point on pitch line)
 			int noiseLength = 0;
-			for (int i=0; i<n.length; i++) {
-				if (n[i]) {
+			for (int i=0; i<meaContainer.n.length; i++) {
+				if (meaContainer.n[i]) {
 					noiseLength++;
 				}
 			}
@@ -132,42 +133,42 @@ public class AudioSpectrum {
 			yn = new double[noiseLength];
 			
 			int j=0;
-			for (int i=0; i<n.length; i++) {
-				if (n[i]) {
+			for (int i=0; i<meaContainer.n.length; i++) {
+				if (meaContainer.n[i]) {
 					xn[j] = i*2; // todo: *2 to be replaced by FD(1:8ms, 2:16ms, ...)
-					yn[j] = p[i];
+					yn[j] = meaContainer.p[i];
 					j++;
 				}
 			}
 			
-			for (int i=0; i<p.length; i++) {
-				yp[i] = p[i];
+			for (int i=0; i<meaContainer.p.length; i++) {
+				yp[i] = meaContainer.p[i];
 			}
 		
 			// set y axis values for each freq modulator
 			double delta;
-			yfm = new double[fm.length][]; 
-			ybw1 = new double[fm.length][];
-			ybw2 = new double[fm.length][];
+			yfm = new double[meaContainer.fm.length][]; 
+			ybw1 = new double[meaContainer.fm.length][];
+			ybw2 = new double[meaContainer.fm.length][];
 			
-			for (int f=0; f<fm.length; f++) {
-				if (fm[f] != null) {
+			for (int f=0; f<meaContainer.fm.length; f++) {
+				if (meaContainer.fm[f] != null) {
 
-					yfm[f] = new double[fm[f].length]; 
-					ybw1[f] = new double[fm[f].length];
-					ybw2[f] = new double[fm[f].length];
+					yfm[f] = new double[meaContainer.fm[f].length]; 
+					ybw1[f] = new double[meaContainer.fm[f].length];
+					ybw2[f] = new double[meaContainer.fm[f].length];
 					
-					for (int i=0; i<fm[f].length; i++) {
-						yfm[f][i] = fm[f][i];
+					for (int i=0; i<meaContainer.fm[f].length; i++) {
+						yfm[f][i] = meaContainer.fm[f][i];
 						
-						if (bw != null && bw[f] != null && i < bw[f].length) {
-							delta = bw[f][i]/2;
+						if (meaContainer.bw != null && meaContainer.bw[f] != null && i < meaContainer.bw[f].length) {
+							delta = meaContainer.bw[f][i]/2;
 						} else {
 							delta = 0;
 						}
 						
-						ybw1[f][i] = fm[f][i] + delta;
-						ybw2[f][i] = fm[f][i] - delta;
+						ybw1[f][i] = meaContainer.fm[f][i] + delta;
+						ybw2[f][i] = meaContainer.fm[f][i] - delta;
 					}
 				}
 				
