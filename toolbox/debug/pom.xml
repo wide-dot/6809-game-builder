@@ -27,11 +27,13 @@
     		<artifactId>lwjgl</artifactId>
     		<version>3.3.1</version>
 		</dependency>
+<!-- 
 		<dependency>
 		    <groupId>org.tribuo</groupId>
 		    <artifactId>tribuo-clustering-hdbscan</artifactId>
 		    <version>4.3.1</version>
 		</dependency>
+-->
 	</dependencies>
 
 	<properties>

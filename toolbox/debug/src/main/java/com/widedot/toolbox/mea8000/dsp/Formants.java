@@ -10,15 +10,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-import org.tribuo.Example;
-import org.tribuo.MutableDataset;
-import org.tribuo.clustering.ClusterID;
-import org.tribuo.clustering.ClusteringFactory;
-import org.tribuo.clustering.hdbscan.HdbscanModel;
-import org.tribuo.clustering.hdbscan.HdbscanTrainer;
-import org.tribuo.datasource.ListDataSource;
-import org.tribuo.impl.ArrayExample;
-import org.tribuo.provenance.SimpleDataSourceProvenance;
+//import org.tribuo.Example;
+//import org.tribuo.MutableDataset;
+//import org.tribuo.clustering.ClusterID;
+//import org.tribuo.clustering.ClusteringFactory;
+//import org.tribuo.clustering.hdbscan.HdbscanModel;
+//import org.tribuo.clustering.hdbscan.HdbscanTrainer;
+//import org.tribuo.datasource.ListDataSource;
+//import org.tribuo.impl.ArrayExample;
+//import org.tribuo.provenance.SimpleDataSourceProvenance;
 
 import com.widedot.toolbox.debug.DataUtil;
 import com.widedot.toolbox.mea8000.MeaContainer;
@@ -116,46 +116,46 @@ public class Formants {
 			labelsSize = new HashMap<Integer, Integer>();
 		}
 
-		public void computeClustering() {
-
-			labels.clear();
-
-			String[] featureNames = new String[]{"frame", "frequency", "bandwith"};
-			List<Example<ClusterID>> data = new ArrayList<>();
-			nbFormants=0;
-			for (List<double[]> formantFrame : formants) {
-				for (double[] formant : formantFrame) {
-					data.add(new ArrayExample<ClusterID>(new ClusterID(nbFormants), featureNames, formant));
-					nbFormants++;
-				}
-			}
-
-			var datasource = new ListDataSource<ClusterID>(data, new ClusteringFactory(), new SimpleDataSourceProvenance("Formants", new ClusteringFactory()));
-			var dataset = new MutableDataset<ClusterID>(datasource);
-
-			var trainer = new HdbscanTrainer(30);
-			var model = trainer.train(dataset);
-			var clusterLabels = ((HdbscanModel) model).getClusterLabels();
-			labelsSet = new HashSet<>(clusterLabels);
-			System.out.println(labelsSet);
-
-			int i = 0;
-			for (List<double[]> formantFrame : formants) {
-				List<Integer> labelFrame = new ArrayList<Integer>();
-				labels.add(labelFrame);
-				for (int j=0; j<formantFrame.size(); j++) {
-					labelFrame.add(clusterLabels.get(i));
-					Integer count = labelsSize.get(clusterLabels.get(i));
-					if (count == null) {
-						count = 1;
-					} else {
-						count++;
-					}
-					labelsSize.put(clusterLabels.get(i), count);
-					i++;
-				}
-			}
-		}
+//		public void computeClustering() {
+//
+//			labels.clear();
+//
+//			String[] featureNames = new String[]{"frame", "frequency", "bandwith"};
+//			List<Example<ClusterID>> data = new ArrayList<>();
+//			nbFormants=0;
+//			for (List<double[]> formantFrame : formants) {
+//				for (double[] formant : formantFrame) {
+//					data.add(new ArrayExample<ClusterID>(new ClusterID(nbFormants), featureNames, formant));
+//					nbFormants++;
+//				}
+//			}
+//
+//			var datasource = new ListDataSource<ClusterID>(data, new ClusteringFactory(), new SimpleDataSourceProvenance("Formants", new ClusteringFactory()));
+//			var dataset = new MutableDataset<ClusterID>(datasource);
+//
+//			var trainer = new HdbscanTrainer(30);
+//			var model = trainer.train(dataset);
+//			var clusterLabels = ((HdbscanModel) model).getClusterLabels();
+//			labelsSet = new HashSet<>(clusterLabels);
+//			System.out.println(labelsSet);
+//
+//			int i = 0;
+//			for (List<double[]> formantFrame : formants) {
+//				List<Integer> labelFrame = new ArrayList<Integer>();
+//				labels.add(labelFrame);
+//				for (int j=0; j<formantFrame.size(); j++) {
+//					labelFrame.add(clusterLabels.get(i));
+//					Integer count = labelsSize.get(clusterLabels.get(i));
+//					if (count == null) {
+//						count = 1;
+//					} else {
+//						count++;
+//					}
+//					labelsSize.put(clusterLabels.get(i), count);
+//					i++;
+//				}
+//			}
+//		}
 
 		public void computeAudioSynth(int synth, double weightParameter, double speed, int smoothRange) {
 
@@ -369,7 +369,7 @@ public class Formants {
 
 		// compute clustering of each tracks
 		for (int synth=0; synth<4; synth++) {
-			tracks[synth].computeClustering();
+			//tracks[synth].computeClustering();
 			tracks[synth].computeAudioSynth(synth, 0.01, 0.1, 0);
 
 		}
