@@ -3,6 +3,7 @@ package com.widedot.toolbox.mea8000.ui;
 import java.util.ArrayList;
 import java.util.Map;
 
+import com.widedot.toolbox.debug.util.Mea8000Device;
 import com.widedot.toolbox.mea8000.AudioLoader;
 import com.widedot.toolbox.mea8000.AudioPlayer;
 import com.widedot.toolbox.mea8000.MeaContainer;
@@ -43,7 +44,6 @@ public class MeaMainDialog {
 			if (ImGui.button("Load .wav")) {
 				ImGuiFileDialog.openModal("wav-file", "Choose File", ".wav", lastDirectory, callback, 250, 1, 42, ImGuiFileDialogFlags.None);
 			}
-			ImGui.sameLine();
 
 			if (ImGuiFileDialog.display("wav-file", ImGuiFileDialogFlags.None, 200, 400, 800, 600)) {
 				if (ImGuiFileDialog.isOk()) {
@@ -65,15 +65,17 @@ public class MeaMainDialog {
 			}
 			
 			// Play WAV Audio
-			if (ImGui.button("Play")) {
-				AudioPlayer.playAudio(audioIn);
+			if (audioIn != null) {
+				ImGui.sameLine();
+				if (ImGui.button("Play wav")) {
+					AudioPlayer.playAudio(audioIn);
+				}
 			}
 			
 			// MEA File dialog
 			if (ImGui.button("Load .mea")) {
 				ImGuiFileDialog.openModal("mea-file", "Choose File", ".mea", lastDirectory, callback, 250, 1, 42, ImGuiFileDialogFlags.None);
 			}
-			ImGui.sameLine();
 			
 			if (ImGuiFileDialog.display("mea-file", ImGuiFileDialogFlags.None, 200, 400, 800, 600)) {
 				if (ImGuiFileDialog.isOk()) {
@@ -87,7 +89,8 @@ public class MeaMainDialog {
 					
 					inputPathName = selection.values().stream().findFirst().get();
 					log.debug("Selected mea file: {}", inputPathName);
-					ArrayList<MeaContainer> meaContainers = MeaLoader.load(inputPathName);
+					Formants.meaCodes = MeaLoader.loadBytes(inputPathName);
+					ArrayList<MeaContainer> meaContainers = MeaLoader.load(Formants.meaCodes);
 					for (MeaContainer meaContainer: meaContainers) {
 						AudioSpectrum.compute(meaContainer);
 						break; // TODO change to handle display of chunks collection instead of just first element
@@ -97,8 +100,13 @@ public class MeaMainDialog {
 			}
 			
 			// Play MEA Audio
-			if (ImGui.button("Play")) {
-				//
+			if (Formants.meaCodes != null) {
+				ImGui.sameLine();
+				if (ImGui.button("Play mea")) {
+					Mea8000Device mea = new Mea8000Device();
+					byte[] audioMea = mea.compute(Formants.meaCodes);
+					AudioPlayer.playAudio(audioMea);
+				}
 			}
 			
 			AudioSpectrum.show(new ImBoolean(true));

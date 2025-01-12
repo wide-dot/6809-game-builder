@@ -10,14 +10,15 @@ import imgui.type.ImBoolean;
 
 public class CollisionBox {
 
-	private static final int COLOR_WHITE = 0x88FFFFFF;
+	private static final int COLOR_WHITE = 0xFFFFFFFF;
+	private static final int COLOR_BLACK = 0xFF000000;
 	private static final int COLOR_GREY = 0x88AAAAAA;
-	private static final int COLOR_RED = 0x880000FF;
-	private static final int COLOR_ORANGE = 0x8842ADF5;
-	private static final int COLOR_PURPLE = 0x88FF00FF;
-	private static final int COLOR_GREEN = 0x8800FF00;
-	private static final int COLOR_BLUE = 0x88FF0000;	
-	private static final int COLOR_LBLUE = 0x88FFEF0F;
+	private static final int COLOR_RED = 0x280000FF;
+	private static final int COLOR_ORANGE = 0x2842ADF5;
+	private static final int COLOR_PURPLE = 0x28FF00FF;
+	private static final int COLOR_GREEN = 0x2800FF00;
+	private static final int COLOR_BLUE = 0x28FF0000;	
+	private static final int COLOR_LBLUE = 0x28FFEF0F;
 	
 	private static int xscale = 4;
 	private static int yscale = 2;
@@ -33,6 +34,8 @@ public class CollisionBox {
 	private static ImVec2 vMin;
 	
 	public static ImBoolean workingChk = new ImBoolean(true);
+	public static ImBoolean addressChk = new ImBoolean(true);
+	public static ImBoolean potentialChk = new ImBoolean(true);
 	public static VideoBufferImage image = new VideoBufferImage(XRES, YRES);
 	
 	public static void show(ImBoolean showImGui) {
@@ -43,6 +46,11 @@ public class CollisionBox {
 			vMin.y += ImGui.getWindowPos().y+25;
 			
 	   	 	ImGui.checkbox("visible buffer##workingChk", workingChk);
+	   	 	ImGui.sameLine();
+	   	 	ImGui.checkbox("address##addressChk", addressChk);
+	   	 	ImGui.sameLine();
+	   	 	ImGui.checkbox("potential##potentialChk", potentialChk);
+	   	 	
 	   	 	ImGui.text("Page: "+image.getPage(workingChk));
 			ImGui.getWindowDrawList().addRectFilled(vMin.x, vMin.y, vMin.x+xscale*VRES, vMin.y+yscale*VRES, COLOR_GREY);
 			int x1 = (int) vMin.x+xscale*xoffset;
@@ -59,7 +67,7 @@ public class CollisionBox {
 			displayList("AABB_list_bonus", COLOR_PURPLE);
 			displayList("AABB_list_forcepod", COLOR_ORANGE);
 			displayList("AABB_list_foefire", COLOR_RED);
-	   	 	
+			displayList("AABB_list_supernova", COLOR_RED);
     	    ImGui.end();
         }
 	}
@@ -83,11 +91,28 @@ public class CollisionBox {
 			cx = Emulator.get(hitbox+3, 1);
 			cy = Emulator.get(hitbox+4, 1);
 			prev = Emulator.get(hitbox+5, 2);
-			
+
+            ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx)-1, yscale*yoffset+vMin.y+yscale*(cy-ry)-1,
+                    xscale*xoffset+vMin.x+xscale*(cx+rx+1)+1, yscale*yoffset+vMin.y+yscale*(cy+ry+1)+1, COLOR_BLACK);
+            
             ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry),
-            		                          xscale*xoffset+vMin.x+xscale*(cx+rx+1), yscale*yoffset+vMin.y+yscale*(cy+ry+1), color);
-            ImGui.getWindowDrawList().addText(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-10),
-            								  COLOR_WHITE, Integer.toHexString(next)+" p:"+p);
+            		                          xscale*xoffset+vMin.x+xscale*(cx+rx+1), yscale*yoffset+vMin.y+yscale*(cy+ry+1), COLOR_WHITE);
+            
+            ImGui.getWindowDrawList().addRect(xscale*xoffset+vMin.x+xscale*(cx-rx)+1, yscale*yoffset+vMin.y+yscale*(cy-ry)+1,
+                    xscale*xoffset+vMin.x+xscale*(cx+rx+1)-1, yscale*yoffset+vMin.y+yscale*(cy+ry+1)-1, COLOR_WHITE);
+			
+            ImGui.getWindowDrawList().addRectFilled(xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry),
+                    xscale*xoffset+vMin.x+xscale*(cx+rx+1), yscale*yoffset+vMin.y+yscale*(cy+ry+1), color);
+            
+            if (addressChk.get()) {
+            	ImGui.getWindowDrawList().addText(ImGui.getFont(), 16, xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-20),
+            										COLOR_WHITE, Integer.toHexString(next));
+            }
+            
+            if (potentialChk.get()) {
+            	ImGui.getWindowDrawList().addText(ImGui.getFont(), 16, xscale*xoffset+vMin.x+xscale*(cx-rx), yscale*yoffset+vMin.y+yscale*(cy-ry-10),
+            										COLOR_WHITE, ""+p);
+            }
             
 			next = Emulator.get(hitbox+7, 2);
             

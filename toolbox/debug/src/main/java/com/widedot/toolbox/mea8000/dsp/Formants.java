@@ -88,8 +88,7 @@ public class Formants {
 	
 	// MEA encoding
 	private static ArrayList<ArrayList<MeaFrame>> meaFrames = new ArrayList<ArrayList<MeaFrame>>();
-	private static byte[] meaCodes = new byte[0xFFFFFF];
-	private static int meaCodesLen = 0;
+	public static byte[] meaCodes;
 
 	public static class SynthTrack {
 
@@ -701,7 +700,7 @@ public class Formants {
 				lastFrame.ampl = AMPL_TABLE[lastFrame.i_ampl];
 				return true;
 			}
-			if (true) { // TODO option for one Chunk mode
+			if (false) { // TODO option for one Chunk mode
 				int pitchDelta = Math.max(Math.min(pi, PI_TABLE[15]), PI_TABLE[17]);
 				curFrame.pitch = lastFrame.pitch + pitchDelta;
 				curFrame.i_pi = (pitchDelta & 0x1f);
@@ -717,6 +716,7 @@ public class Formants {
 	private static byte[] writeMeaData(String inputPathName) {
 		
 		ArrayList<byte[]> dataList = new ArrayList<byte[]>();
+		meaCodes = new byte[0xFFFFFF];
 		
 		for (ArrayList<MeaFrame> meaChunk : meaFrames) {
 			MeaContainer meaDebug = new MeaContainer();
@@ -767,21 +767,20 @@ public class Formants {
 			//intxtData.set(line);	
 			log.info("{}", line);
 			
-			meaCodesLen = pos;
-			dataList.add(Arrays.copyOf(meaCodes, meaCodesLen));	
+			dataList.add(Arrays.copyOf(meaCodes, pos));	
 		}
 		
-		byte[] result = convertToByteArray(dataList);
+		meaCodes = convertToByteArray(dataList);
 		
 		try {
 			Path path = Path.of(inputPathName);
-			Files.write(path, result);
+			Files.write(path, meaCodes);
 			log.info("output file: {}", path.toAbsolutePath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		return result;        
+		return meaCodes;        
 	}
 	
     public static byte[] convertToByteArray(ArrayList<byte[]> byteArrayList) {

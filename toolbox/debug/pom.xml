@@ -15,7 +15,7 @@
         <dependency>
             <groupId>io.github.spair</groupId>
             <artifactId>imgui-java-app</artifactId>
-            <version>1.87.4</version>
+            <version>1.87.7</version>
         </dependency>
         <dependency>
 		    <groupId>net.java.dev.jna</groupId>
@@ -29,9 +29,8 @@
 		</dependency>
 		<dependency>
 		    <groupId>org.tribuo</groupId>
-		    <artifactId>tribuo-all</artifactId>
+		    <artifactId>tribuo-clustering-hdbscan</artifactId>
 		    <version>4.3.1</version>
-		    <type>pom</type>
 		</dependency>
 	</dependencies>
 

@@ -8,16 +8,19 @@
 	<packaging>pom</packaging>
 
 	<properties>
+		<java.version>23</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.compiler.release>11</maven.compiler.release>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
+		<maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+		<maven.compiler.proc>full</maven.compiler.proc>
 		<commons-lang.version>[3.12.0,)</commons-lang.version>
 		<commons-beanutils.version>[1.9.4,)</commons-beanutils.version>
 		<commons-configuration2.version>[2.10.1,)</commons-configuration2.version>
 		<commons-io.version>[2.15.1,)</commons-io.version>
-		<lombok.version>[1.18.30,)</lombok.version>
+		<lombok.version>[1.18.36,)</lombok.version>
 		<zip4j-io.version>[2.11.5,)</zip4j-io.version>
 		<logback.version>1.5.3</logback.version>
 		<picocli.version>[4.7.5,)</picocli.version>		
@@ -103,6 +106,15 @@
 				  </filesets>
 				</configuration>
 			  </plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>${maven-compiler-plugin.version}</version>
+					<configuration>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
+					</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

@@ -80,6 +80,8 @@
 									<id>${project.artifactId}</id>
 								</program>
 							</programs>
+		    				<repositoryLayout>flat</repositoryLayout>
+		    				<useWildcardClassPath>true</useWildcardClassPath>
 						</configuration>
 					</execution>
 					<execution>
@@ -101,6 +103,8 @@
 									<id>${project.artifactId}</id>
 								</program>
 							</programs>
+		    				<repositoryLayout>flat</repositoryLayout>
+		    				<useWildcardClassPath>true</useWildcardClassPath>
 						</configuration>
 					</execution>
 				</executions>
