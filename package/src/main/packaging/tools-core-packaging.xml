@@ -28,6 +28,10 @@
 			<outputDirectory>./plugins/vgm2ymm</outputDirectory>
 		</fileSet>
 		<fileSet>
+			<directory>${project.parent.basedir}/repo/com/wide-dot/vgm2sfx/0.0.1</directory>
+			<outputDirectory>./plugins/vgm2sfx</outputDirectory>
+		</fileSet>
+		<fileSet>
 			<directory>${project.parent.basedir}/repo/com/wide-dot/vgm2vgc/0.0.1</directory>
 			<outputDirectory>./plugins/vgm2vgc</outputDirectory>
 		</fileSet>

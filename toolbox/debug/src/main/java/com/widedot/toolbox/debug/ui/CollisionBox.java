@@ -63,6 +63,7 @@ public class CollisionBox {
 			
 			displayList("AABB_list_friend", COLOR_GREEN);
 			displayList("AABB_list_ennemy", COLOR_BLUE);
+			displayList("AABB_list_ennemy_unkillable", COLOR_BLUE);
 			displayList("AABB_list_player", COLOR_LBLUE);
 			displayList("AABB_list_bonus", COLOR_PURPLE);
 			displayList("AABB_list_forcepod", COLOR_ORANGE);
@@ -74,6 +75,8 @@ public class CollisionBox {
 	
 	private static void displayList(String list, int color) {
     	String listFirst = Symbols.symbols.get(list);
+    	if (listFirst == null) return;
+    	
    	 	Long curAdr = Emulator.getAbsoluteAddress(1, listFirst);
    	 	if (curAdr==null) {return;}
    	 	Integer next = Emulator.get(curAdr, 2);

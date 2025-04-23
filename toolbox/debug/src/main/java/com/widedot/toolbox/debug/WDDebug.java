@@ -28,6 +28,7 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_OJECT_SLOTS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEA_WINDOW = new ImBoolean(false);
+    private static final ImBoolean SHOW_IMGUI_PALETTE_WINDOW = new ImBoolean(false);
 	
     public WDDebug() {
     	launch(this);
@@ -72,6 +73,7 @@ public class WDDebug extends Application {
             if (ImGui.beginMenu("Tools"))
             {
                 ImGui.menuItem("MEA8000", null, SHOW_IMGUI_MEA_WINDOW);
+                ImGui.menuItem("Palette", null, SHOW_IMGUI_PALETTE_WINDOW);
                 ImGui.endMenu();
             }
 
@@ -82,6 +84,7 @@ public class WDDebug extends Application {
         // tools non related to process
         if (SHOW_IMGUI_FRAME_RENDER_WINDOW.get()) FrameRender.show(SHOW_IMGUI_FRAME_RENDER_WINDOW);
         if (SHOW_IMGUI_MEA_WINDOW.get()) MeaMainDialog.show(SHOW_IMGUI_MEA_WINDOW);
+        if (SHOW_IMGUI_PALETTE_WINDOW.get()) Palette.show(SHOW_IMGUI_PALETTE_WINDOW);
         
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
@@ -111,6 +114,7 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_COLLISION_WINDOW.get()) CollisionBox.show(SHOW_IMGUI_COLLISION_WINDOW);
         if (SHOW_IMGUI_SPRITE_RENDER_WINDOW.get()) SpriteRender.show(SHOW_IMGUI_SPRITE_RENDER_WINDOW);
         if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);
+        if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
         if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
         
         ImGui.text(String.format("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui.getIO().getFramerate(), ImGui.getIO().getFramerate()));

@@ -6,6 +6,8 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
@@ -105,12 +107,16 @@ public class ImageMap {
 	}
 	
 	public void WriteTileSet(File file) throws Exception {
+    	if (!file.exists())
+    		Files.createDirectories(Paths.get(file.getAbsolutePath()));
 		ImageIO.write(tileset, "png", file);
 		String properties = (tileset.getHeight()/tileHeight)+",1,"+(tileset.getHeight()/tileHeight);
 		log.info("properties for: "+file.getName()+" "+properties);
 	}
 	
 	public void WriteMap(File file, int fileMaxSize, Integer bitDepth) throws Exception {
+    	if (!file.exists())
+    		Files.createDirectories(Paths.get(file.getAbsolutePath()));		
 		int readIdx = 0;
 		int writeIdx = 0;
 		int fileId = 0;

@@ -1,4 +1,4 @@
-package com.widedot.toolbox.audio.vgm2ymm.old;
+package com.widedot.toolbox.audio.vgm2sfx;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -103,7 +103,7 @@ public class VGMInputStream extends InputStream {
 	public boolean isLoopPoint() {
 		return (this.pos == this.offsetLoop);
 	}
-
+	
 	public int getPosition() {
 		return this.pos;
 	}

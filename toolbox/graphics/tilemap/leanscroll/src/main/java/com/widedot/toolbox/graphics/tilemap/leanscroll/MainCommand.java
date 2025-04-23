@@ -2,6 +2,9 @@ package com.widedot.toolbox.graphics.tilemap.leanscroll;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import javax.imageio.ImageIO;
 
 import lombok.extern.slf4j.Slf4j;
@@ -210,16 +213,29 @@ public class MainCommand implements Runnable {
 			
 	        // saves full map render image
 	        if (outImage != null) {
-	        	ImageIO.write(tm.image, "png", new File(outImage));
+	        	File file = new File(outImage);
+	        	if (!file.exists())
+	        		Files.createDirectories(Paths.get(file.getAbsolutePath()));
+	        	ImageIO.write(tm.image, "png", file);
 	        }
 	        
 	        BufferedImage ImageCommon = null;
 	        
 	        if (depLean != null) {
 	        	LeanScroll ls = new LeanScroll(new Png(tm.image), depLean.scrollStep, depLean.scrollNbSteps, depLean.multiDir, depLean.interlace);
-	        	if (depLean.outLeanImage != null) ImageIO.write(ls.lean, "png", new File(depLean.outLeanImage));      	
+	        	if (depLean.outLeanImage != null) {
+	        		File file = new File(depLean.outLeanImage);
+		        	if (!file.exists())
+		        		Files.createDirectories(Paths.get(file.getAbsolutePath()));
+		        	ImageIO.write(ls.lean, "png", file);      	
+	        	}
 	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, ls.leanCommon.getWidth(), ls.leanCommon.getHeight()};}
-	        	if (depLean.outLeanImageCommon != null) ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommon));
+	        	if (depLean.outLeanImageCommon != null) {
+	        		File file = new File(depLean.outLeanImageCommon);
+		        	if (!file.exists())
+		        		Files.createDirectories(Paths.get(file.getAbsolutePath()));
+	        		ImageIO.write(ls.leanCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", file);
+	        	}
 	        	tm.image = ls.lean;
 	        	ImageCommon = ls.leanCommon;
 	        }
@@ -239,11 +255,21 @@ public class MainCommand implements Runnable {
         	BufferedImage shiftedImage = ImageTransform.shift(tm.image, 1, 0);
         	
 	        if (depLean != null) {
-	        	if (depLean.outLeanImageShift != null) ImageIO.write(shiftedImage, "png", new File(depLean.outLeanImageShift));
+	        	if (depLean.outLeanImageShift != null) {
+	        		File file = new File(depLean.outLeanImageShift);
+		        	if (!file.exists())
+		        		Files.createDirectories(Paths.get(file.getAbsolutePath()));
+	        		ImageIO.write(shiftedImage, "png", file);
+	        	}
 	        	
 	        	BufferedImage shiftedImageCommon = ImageTransform.shift(ImageCommon, 1, 0);
 	        	if (depLean.crop == null) {depLean.crop = new int[] {0, 0, shiftedImageCommon.getWidth(), shiftedImageCommon.getHeight()};}
-	        	if (depLean.outLeanImageCommonShift != null) ImageIO.write(shiftedImageCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", new File(depLean.outLeanImageCommonShift));
+	        	if (depLean.outLeanImageCommonShift != null)  {
+	        		File file = new File(depLean.outLeanImageCommonShift);
+		        	if (!file.exists())
+		        		Files.createDirectories(Paths.get(file.getAbsolutePath()));
+		        	ImageIO.write(shiftedImageCommon.getSubimage(depLean.crop[0], depLean.crop[1], depLean.crop[2], depLean.crop[3]), "png", file);
+	        	}
 	        }
 	        
 	        // saves tileset and map

@@ -130,6 +130,7 @@
 	    <module>./toolbox/audio/pcm</module>
 		<module>./toolbox/audio/smid</module>
 		<module>./toolbox/audio/vgm2ymm</module>
+		<module>./toolbox/audio/vgm2sfx</module>
 		<module>./toolbox/audio/vgm2vgc</module>
 		<module>./toolbox/text/txt2bas</module>
 		<module>./toolbox/text/phoneme</module>
