@@ -23,29 +23,24 @@ _main.test MACRO
  ENDM
 
 main.loop
-        ;_monitor.print #main.str.HEADER
+        _monitor.print #main.str.HEADER
 
         ; Timer test
-        ;_monitor.print #main.str.1MHZ
-        ;ldb   #1 ; Clock 1MHz
-        ;stb   clock.type
-!       ;_main.test main.str.WR,mplus.ut.timer.testRW
-        ;_main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
-        ;_main.test main.str.CYCLE,mplus.ut.timer.testCycle
-        ;_main.test main.str.RESET,mplus.ut.timer.testReset
-        ;dec   clock.type ; Clock 3.58MHz
-        ;bne   >
-        ;_monitor.print #main.str.3MHZ
-        ;bra   <
-!
+        _monitor.print #main.str.1MHZ
+        ldb   #1 ; Clock 1MHz
+        stb   clock.type
+        _main.test main.str.WR,mplus.ut.timer.testRW
+        _main.test main.str.COUNTDOWN,mplus.ut.timer.testCountdown
+        _main.test main.str.CYCLE,mplus.ut.timer.testCycle
+        _main.test main.str.RESET,mplus.ut.timer.testReset
 
         ; Play test
-        ;_monitor.print #main.str.PLAYING
-        ;_main.test main.str.DAC,mplus.ut.testDAC
-        ;_main.test main.str.SN,mplus.ut.testSN76489
-        ;_main.test main.str.YM,mplus.ut.testYM2413
-        ;_main.test main.str.MIDI,mplus.ut.testMIDI
+        _monitor.print #main.str.PLAYING
+        _main.test main.str.DAC,mplus.ut.testDAC
+        _main.test main.str.SN,mplus.ut.testSN76489
+        _main.test main.str.YM,mplus.ut.testYM2413
         _main.test main.str.MEA,mplus.ut.testMEA8000
+        _main.test main.str.MIDI,mplus.ut.testMIDI
         _monitor.setp #1,#$0000,#$0080 ; green
         bra   *
 
@@ -72,20 +67,20 @@ main.str.CRLF
                     _monitor.str.CRLF
 main.str.1MHZ       fcc "Timer 1MHz:"
                     _monitor.str.CRLF
-main.str.3MHZ       fcc "Timer 3MHz:"
-                    _monitor.str.CRLF
 main.str.WR         fcs "- Write and Read ... "
 main.str.COUNTDOWN  fcs "- Countdown ........ "
 main.str.CYCLE      fcs "- Cycle ............ "
 main.str.RESET      fcs "- Reset ............ "
 main.str.PLAYING    _monitor.chr.CRLF
-                    fcc "Play: "
+                    fcc "Play:"
                     _monitor.str.CRLF
 main.str.DAC        fcs "- DAC (FIRQ) ....... "
 main.str.SN         fcs "- SN76489 .......... "
 main.str.YM         fcs "- YM2413 ........... "
-main.str.MIDI       fcs "- MIDI ............. "
 main.str.MEA        fcs "- MEA8000 .......... "
+main.str.MIDI       _monitor.chr.CRLF
+                    fcc "MIDI:"
+                    _monitor.str.CRLF
 main.str.OK         fcs "OK"
 main.str.KO         fcs "KO"
 
@@ -99,7 +94,7 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/sound/ymm.asm"
         INCLUDE "engine/sound/vgc.buffers.asm"
         INCLUDE "engine/sound/vgc.asm"
-        ;INCLUDE "engine/system/thomson/sound/mea8000.phonemes.const.asm"
-        ;INCLUDE "engine/system/thomson/sound/mea8000.phonemes.asm"
-        ;INCLUDE "engine/system/thomson/sound/mea8000.phonemes.read.asm"
-        INCLUDE "engine/system/thomson/sound/mea8000.digitalized.read.asm"
+        INCLUDE "engine/system/thomson/sound/mea8000.phonemes.const.asm"
+        INCLUDE "engine/system/thomson/sound/mea8000.phonemes.asm"
+        INCLUDE "engine/system/thomson/sound/mea8000.phonemes.read.asm"
+        ;INCLUDE "engine/system/thomson/sound/mea8000.digitalized.read.asm"

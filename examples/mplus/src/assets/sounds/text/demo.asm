@@ -1,13 +1,18 @@
-	fcb .m
-	fcb .u
+	fcb .S
+	fcb .eu
 	fcb .S
 	fcb .i
-	fcb .k
 	fcb .wordDelimiter
-	fcb .p
-	fcb .l
-	fcb .u
+	fcb .comma
+	fcb .wordDelimiter
+	fcb .et
+	fcb .t
+	fcb .in
+	fcb .wordDelimiter
+	fcb .comma
+	fcb .wordDelimiter
+	fcb .t
+	fcb .ai
 	fcb .S
-	fcb .wordDelimiter
-	fcb .exclamationMark
+	fcb .t
 	fcb .endDelimiter

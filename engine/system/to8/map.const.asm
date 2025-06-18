@@ -73,8 +73,9 @@ map.CF74021.SYS1    equ $E7E7 ; (bit4) set ram over data area
 ; extension port
 map.EXTPORT         equ $E7
 map.IEEE488         equ $E7F0 ; to E7F7
-map.EF5860.CTRL     equ $E7F2 ; MIDI
-map.EF5860.TX       equ $E7F3 ; MIDI
+map.EF6850.CTRL     equ $E7F2 ; MIDI
+map.EF6850.TX       equ $E7F3 ; MIDI
+map.EF6850.RX       equ $E7F3 ; MIDI
 map.MEA8000.D       equ $E7FE ; Vocal synth
 map.MEA8000.A       equ $E7FF ; Vocal synth
 
@@ -141,8 +142,57 @@ map.CF74021.SYS1.R  equ $6081 ; reading value for map.CF74021.SYS1
 ; -----------------------------------------------------------------------------
 ; constants
 
-map.EF5860.TX_IRQ_ON  equ %00110101 ; 8bits, no parity check, stop 1, tx interrupt
-map.EF5860.TX_IRQ_OFF equ %00010101 ; 8bits, no parity check, stop 1, no interrupt
+; EF6850 ACIA Control Register (Write)
+; Bits 7-0: CR7 CR6 CR5 CR4 CR3 CR2 CR1 CR0
+; CR7    : Receive Interrupt Enable
+; CR6-CR5: Transmitter Control
+;          00 = RTS=low, TX INT disabled
+;          01 = RTS=low, TX INT enabled
+;          10 = RTS=high, TX INT disabled
+;          11 = RTS=low, Transmit Break, TX INT disabled
+; CR4-CR2: Word Select
+;          000 = 7E2 (7 bits + Even Parity + 2 Stop Bits)
+;          001 = 7O2 (7 bits + Odd Parity + 2 Stop Bits)
+;          010 = 7E1 (7 bits + Even Parity + 1 Stop Bit)
+;          011 = 7O1 (7 bits + Odd Parity + 1 Stop Bit)
+;          100 = 8N2 (8 bits + No Parity + 2 Stop Bits)
+;          101 = 8N1 (8 bits + No Parity + 1 Stop Bit)
+;          110 = 8E1 (8 bits + Even Parity + 1 Stop Bit)
+;          111 = 8O1 (8 bits + Odd Parity + 1 Stop Bit)
+; CR1-CR0: Clock Divide Select
+;          00 = ÷1
+;          01 = ÷16
+;          10 = ÷64
+;          11 = Master Reset
+
+; EF6850 ACIA Status Register (Read)
+; Bits 7-0: IRQ PARITY OVERRUN FRAMING CTS DCD TDRE RDRF
+; IRQ    : Interrupt Request (1=interrupt)
+; PARITY : Parity Error (1=error)
+; OVERRUN: Receiver Overrun (1=error)
+; FRAMING: Framing Error (1=error)
+; CTS    : Clear To Send (1=clear to send)
+; DCD    : Data Carrier Detect (1=carrier present)
+; TDRE   : Transmit Data Register Empty (1=empty)
+; RDRF   : Receive Data Register Full (1=full)
+
+; Control Register masks for MIDI (31250 bauds)
+map.EF6850.MIDI       equ %00010101 ; ÷16 (CR1-0=01), 8N1 (CR4-2=101), No TX/RX INT (CR7=0,CR6-5=00)
+map.EF6850.TX_ON      equ %00100000 ; CR6-5=01 (RTS=low, TX INT enabled)
+map.EF6850.TX_OFF     equ %00000000 ; CR6-5=00 (RTS=low, TX INT disabled)
+map.EF6850.RX_ON      equ %10000000 ; CR7=1 (RX INT enabled)
+map.EF6850.RX_OFF     equ %00000000 ; CR7=0 (RX INT disabled)
+
+; Status Register masks
+map.EF6850.STAT_IRQ   equ %10000000 ; IRQ requested
+map.EF6850.STAT_PE    equ %01000000 ; Parity error
+map.EF6850.STAT_OVRN  equ %00100000 ; Overrun error
+map.EF6850.STAT_FE    equ %00010000 ; Framing error
+map.EF6850.STAT_CTS   equ %00001000 ; Clear to send
+map.EF6850.STAT_DCD   equ %00000100 ; Data carrier detect
+map.EF6850.STAT_TDRE  equ %00000010 ; TX data register empty
+map.EF6850.STAT_RDRF  equ %00000001 ; RX data register full
+
 map.RAM_OVER_CART     equ %01100000
 
 ; -----------------------------------------------------------------------------

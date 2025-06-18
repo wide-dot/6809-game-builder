@@ -27,6 +27,9 @@ public class VGMInterpreter {
 	public boolean[] ymupd = new boolean[0x39];
 	public int[][] stat = new int[256][256];
 	public String asm = ""; 
+	public String asmData = "";
+	public String asmDelay = "";
+	public String asmComment = "";
 	
 
 	public VGMInterpreter(File paramFile) throws IOException {
@@ -193,6 +196,12 @@ public class VGMInterpreter {
 		}
 		
 		fireWriteDelay();
+		if (!asmData.equals("")) {
+			asm += asmData + "," + asmDelay + " ;" + asmComment + "\n";
+		}
+		if (!asmDelay.equals("0")) {
+			asm += '\n';
+		}
 		
 		arrayOfInt[s++] = cmd;
 		arrayOfInt[s++] = data;
@@ -202,17 +211,20 @@ public class VGMInterpreter {
 		stat[cmd][data] = stat[cmd][data]+1;
 		
 		// filter command
+		int channel = -1;
+		asmComment = "";
 		if (cmd >= 0x10 && cmd <= 0x38) {
-			int channel = cmd >> 4;
+			channel = cmd & 0b00001111;
+			asmComment = String.format(" ch:%d", channel);
 			cmd = cmd & 0b11110000;
 		}
 		
-		asm += String.format("        fcb     $%02X,$%02X,", cmd, data);
+		asmData = String.format("        fcb     $%02X,$%02X", cmd, data);
 	}
 	
 	public void fireWriteDelay() {
 		int offset = 0x39;
-		String asmDelay = "0\n";
+		asmDelay = "0";
     	cumulatedFrames += cumulatedSamples/SAMPLES_PER_FRAME_PAL;
     	cumulatedSamples = cumulatedSamples%SAMPLES_PER_FRAME_PAL; // saves remaining value
 		
@@ -225,10 +237,8 @@ public class VGMInterpreter {
 				cumulatedFrames = 0;
 			}
 			log.debug(String.format("%04X: %02X    [WAIT: %d frame(s)]", s-1, arrayOfInt[s-1], arrayOfInt[s-1]-offset));
-			asmDelay = String.format("%d\n\n", arrayOfInt[s-1]-offset);
+			asmDelay = String.format("%d", arrayOfInt[s-1]-offset);
 		}
-		
-		asm += asmDelay;
 	}
 	
 	public void fireWriteEnd() {

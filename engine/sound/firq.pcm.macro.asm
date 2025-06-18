@@ -8,7 +8,11 @@ _firq.pcm.play MACRO
         std   firq.pcm.sample
         ldd   \2
         std   map.MPLUS.TIMER
-        lda   #%10011110
+ IFEQ \3
+        lda   #%10011010     ; 1MHz clock (bit 2 = 0)
+ ELSE
+        lda   #%10011110     ; 3.579545MHz clock (bit 2 = 1)
+ ENDC
                              ; Bit 7: R- Timer - INT requested by timer (0=NO, 1=YES)
                              ;        -W Timer - reset timer by reloading period to counter
                              ; Bit 6: -------  - Unused
@@ -24,8 +28,8 @@ _firq.pcm.play MACRO
         andcc #%10111111     ; unmask firq
  ENDM
 
-_firq.pcm.freezePlay MACRO
-        _firq.pcm.play \1,\2
+_firq.pcm.blockingPlay MACRO
+        _firq.pcm.play \1,\2,\3
 !       lda   [firq.pcm.sample]
         bpl   <
  ENDM

@@ -56,7 +56,7 @@
 
                 <!-- Test - mea8000 data -->
                 <!-- ******************************************************* -->
-<!--
+
                 <direntry name="assets.lotr.txt" loadtimelink="LINK">
                     <lwasm>
                         <label name="lotr.txt"/>
@@ -66,7 +66,7 @@
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
                 </direntry>
--->
+
                 <direntry name="assets.harder.mea" loadtimelink="LINK">
                     <lwasm>
                         <label name="harder.mea"/>

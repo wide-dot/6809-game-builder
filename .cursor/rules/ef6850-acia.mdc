@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+---
+description: EF6850 ACIA Validation Rules for 6809 Assembly
+alwaysApply: true
+---
+
+# EF6850 ACIA Validation Rules
+
+# Control Register (CR) validation
+rule "EF6850 Control Register Format" {
+  # Match any binary value assignment to map.EF6850 constants
+  matches {
+    pattern = "map\\.EF6850\\.[A-Z_]+\\s+equ\\s+%[01]{8}"
+    files = ["**/*.asm"]
+  }
+  
+  # Validate CR bits according to MC6850 spec
+  validate {
+    # CR1-CR0: Clock Divide Select
+    clock_div = bits[1:0]
+    assert clock_div in ["00", "01", "10", "11"]
+    
+    # CR4-CR2: Word Select
+    word_select = bits[4:2]
+    assert word_select in ["000", "001", "010", "011", "100", "101", "110", "111"]
+    
+    # CR6-CR5: Transmitter Control
+    tx_control = bits[6:5]
+    assert tx_control in ["00", "01", "10", "11"]
+    
+    # CR7: Receive Interrupt Enable
+    rx_int = bits[7]
+    assert rx_int in ["0", "1"]
+  }
+}
+
+# MIDI Configuration validation
+rule "EF6850 MIDI Configuration" {
+  matches {
+    pattern = "map\\.EF6850\\.MIDI\\s+equ\\s+%[01]{8}"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # For MIDI we need:
+    # - Clock divide ÷16 (CR1-0 = 01) for 62500 bauds with 1MHz clock
+    # - 8N1 format (CR4-2 = 101)
+    assert bits[1:0] == "01" # ÷16 clock
+    assert bits[4:2] == "101" # 8N1 format
+  }
+}
+
+# Status Register validation
+rule "EF6850 Status Register Masks" {
+  matches {
+    pattern = "map\\.EF6850\\.STAT_[A-Z]+\\s+equ\\s+%[01]{8}"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Each status bit should be a power of 2
+    assert bits.count("1") == 1
+    
+    # Validate specific status bits
+    if name.endswith("IRQ")   { assert bits == "10000000" }
+    if name.endswith("PE")    { assert bits == "01000000" }
+    if name.endswith("OVRN")  { assert bits == "00100000" }
+    if name.endswith("FE")    { assert bits == "00010000" }
+    if name.endswith("CTS")   { assert bits == "00001000" }
+    if name.endswith("DCD")   { assert bits == "00000100" }
+    if name.endswith("TDRE")  { assert bits == "00000010" }
+    if name.endswith("RDRF")  { assert bits == "00000001" }
+  }
+}

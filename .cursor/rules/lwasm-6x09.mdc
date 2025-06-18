@@ -1,0 +1,1533 @@
+---
+description: LWASM 6x09 Assembly Rules - LWTOOLS 4.24 comprehensive coverage
+alwaysApply: true
+---
+
+# LWASM 6x09 Assembly Rules - LWTOOLS 4.24
+# Generated from: LW Tool Chain HTML Documentation (LWTOOLS 4.24)
+# Documentation Date: 2009-2021 William Astle and LWTools contributors
+# Rules Version: Complete coverage based on official documentation
+#
+# This file contains comprehensive Cursor rules for LWASM (LWTOOLS 4.24)
+# covering all features, directives, pragmas, and behaviors documented
+# in the official LW Tool Chain manual.
+
+# LWTOOLS Version Compatibility
+rule "LWTOOLS Version" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # These rules are specific to LWTOOLS 4.24
+    assert lwtools_version == "4.24"
+    
+    # Some features available since specific versions
+    version_requirements = {
+      "line_numbers": "2.6",
+      "boolean_operators": "2.5", 
+      "force_dp_external": "2.4",
+      "os9_modules": "2.5",
+      "os9_data_code_streams": "4.5",
+      "6800compat": "4.11",
+      "forwardrefmax_default": "4.14",
+      "operandsizewarning": "4.16",
+      "ascii_hex_output": "4.10",
+      "srec_output": "4.10",
+      "ihex_output": "4.10",
+      "lwlink_srec": "4.11"
+    }
+    
+    # Check version compatibility for features used
+    assert check_version_requirements
+  }
+}
+
+# Source Format Rules
+rule "Source Line Format" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.@$?]+)?\\s*([A-Z]+)?(\\s+[^;\\s]+)?(\\s*;.*)?$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Symbol must not have preceding whitespace if present
+    if symbol_present {
+      assert line.startsWith(symbol)
+    }
+    
+    # Opcode must be separated by whitespace
+    if opcode_present && symbol_present {
+      assert whitespace_between_symbol_opcode
+    }
+    
+    # First whitespace separates operand from comment
+    assert no_whitespace_in_operand_except_strings
+  }
+}
+
+# Symbol Definition Rules
+rule "Symbol Names" {
+  matches {
+    pattern = "[a-zA-Z0-9_.$@?]+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Must start with letter, dot, or underscore
+    assert symbol.matches("^[a-zA-Z._].*")
+    
+    # Local symbols contain ? or @
+    if symbol.contains("?") || symbol.contains("@") {
+      mark_as_local_symbol = true
+    }
+    
+    # $ makes symbol local (except OS9 target)
+    if symbol.contains("$") && !target_is_os9 {
+      mark_as_local_symbol = true
+    }
+  }
+}
+
+# Local Symbol Scope Rules
+rule "Local Symbol Scope Barriers" {
+  matches {
+    pattern = "^\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Blank lines act as local symbol scope barriers
+    assert creates_local_scope_barrier
+    
+    # Local symbols before blank line not visible after
+    assert local_symbols_before_not_visible_after
+    
+    # Local symbols after blank line not visible before
+    assert local_symbols_after_not_visible_before
+    
+    # Each included file gets its own scope
+    assert include_files_have_own_scope
+    
+    # Macros have their own local scope
+    assert macros_have_own_scope
+    
+    # Local symbols restricted to block of code where defined
+    assert restricted_to_code_block
+  }
+}
+
+# Local Symbol Reference Validation
+rule "Local Symbol References" {
+  matches {
+    pattern = "[a-zA-Z0-9_.$@?]*[@?][a-zA-Z0-9_.$@?]*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Local symbol must be in same scope
+    assert within_same_local_scope
+    
+    # Cannot cross blank line barriers
+    assert cannot_cross_blank_lines
+    
+    # Cannot cross include file boundaries
+    assert cannot_cross_include_boundaries
+    
+    # Cannot cross macro boundaries
+    assert cannot_cross_macro_boundaries
+    
+    # Cannot be used as macro argument (will look in macro scope)
+    warn_if_used_as_macro_parameter
+  }
+}
+
+# Number Format Rules
+rule "Number Formats" {
+  matches {
+    pattern = "(%[01]+[bB]?|@[0-7]+[qQoO]?|\\$[0-9A-Fa-f]+|0[xX][0-9A-Fa-f]+|[0-9A-Fa-f]+[hH]|&?[0-9]+)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Binary: % prefix or b/B suffix
+    if starts_with("%") {
+      assert contains_only("[01]")
+    }
+    
+    # Octal: @ prefix or Q/q/O/o suffix
+    if starts_with("@") {
+      assert contains_only("[0-7]")
+    }
+    
+    # Hex: $ or 0x/0X prefix or H suffix
+    if starts_with("$") || starts_with("0x") || starts_with("0X") || ends_with("H") {
+      assert contains_only("[0-9A-Fa-f]")
+    }
+    
+    # Decimal: & prefix optional
+    if starts_with("&") || is_plain_decimal {
+      assert contains_only("[0-9]")
+    }
+    
+    # Constants starting with letter need prefix
+    if starts_with_letter && !has_valid_prefix {
+      error "Constants starting with letter must have prefix (0, $, etc.)"
+    }
+  }
+}
+
+# Character Constants
+rule "Character Constants" {
+  matches {
+    pattern = "('[^']|\"[^\"]{2})"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Single quote for one character
+    if starts_with("'") {
+      assert length == 2
+    }
+    
+    # Double quote for two characters
+    if starts_with("\"") {
+      assert length == 3
+    }
+  }
+}
+
+# Data Directives
+rule "Data Directives" {
+  matches {
+    pattern = "\\s*(FCB|FDB|FQB|FCC|FCN|FCS|ZMB|ZMD|ZMQ|RMB|RMD|RMQ|INCLUDEBIN|FILL|\\.DB|\\.DW|\\.QUAD|\\.ASCII|\\.ASCIZ|\\.ASCIS|\\.STR|\\.STRZ|\\.STRS|\\.BYTE|\\.WORD|\\.4BYTE|\\.BLKB|\\.DS|\\.RS)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # FCB/FDB/FQB take comma-separated expressions
+    if directive in ["FCB", "FDB", "FQB", ".DB", ".DW", ".QUAD", ".BYTE", ".WORD", ".4BYTE"] {
+      assert operand.matches(".*[,\\s]*.*")
+    }
+    
+    # String directives need delimiter
+    if directive in ["FCC", "FCN", "FCS", ".ASCII", ".ASCIZ", ".ASCIS", ".STR", ".STRZ", ".STRS"] {
+      assert first_char_is_delimiter
+      assert last_char_matches_first_char
+      assert no_delimiter_inside_string
+    }
+    
+    # Reserve directives need single expression
+    if directive in ["ZMB", "ZMD", "ZMQ", "RMB", "RMD", "RMQ", ".BLKB", ".DS", ".RS"] {
+      assert single_expression_operand
+      assert no_forward_references
+    }
+    
+    # INCLUDEBIN format
+    if directive == "INCLUDEBIN" {
+      assert operand.matches("filename(,start(,length)?)?")
+    }
+    
+    # FILL format
+    if directive == "FILL" {
+      assert operand.matches("byte,size")
+    }
+  }
+}
+
+# Address Definition Directives
+rule "Address Definition" {
+  matches {
+    pattern = "\\s*(ORG|REORG|EQU|SET|SETDP|ALIGN)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # ORG needs fully resolvable address
+    if directive == "ORG" {
+      assert no_forward_references
+      assert no_external_references
+      assert not_in_section_for_object_target
+    }
+    
+    # REORG has no operand
+    if directive == "REORG" {
+      assert no_operand
+    }
+    
+    # EQU defines symbol value
+    if directive == "EQU" {
+      assert symbol_on_line
+      assert expression_operand
+    }
+    
+    # SET allows redefinition
+    if directive == "SET" {
+      assert symbol_on_line
+      assert expression_operand
+      allow_redefinition = true
+    }
+    
+    # SETDP informs assembler of DP value
+    if directive == "SETDP" {
+      assert fully_resolved_first_pass
+      assert no_effect_in_object_target
+    }
+    
+    # ALIGN with optional fill value
+    if directive == "ALIGN" {
+      assert operand.matches("expr(,value)?")
+      assert alignment_resolved_first_pass
+    }
+  }
+}
+
+# Conditional Assembly
+rule "Conditional Directives" {
+  matches {
+    pattern = "\\s*(IFEQ|IFNE|IF|IFGT|IFGE|IFLT|IFLE|IFDEF|IFNDEF|IFPRAGMA|ELSE|ENDC)\\s*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # All conditionals must be bracketed
+    assert properly_nested
+    assert ends_with_endc
+    
+    # Expression conditionals
+    if directive in ["IFEQ", "IFNE", "IF", "IFGT", "IFGE", "IFLT", "IFLE"] {
+      assert expression_operand
+      assert resolves_to_constant_first_pass
+    }
+    
+    # Symbol conditionals
+    if directive in ["IFDEF", "IFNDEF"] {
+      assert symbol_operand
+    }
+    
+    # Pragma conditional
+    if directive == "IFPRAGMA" {
+      assert pragma_name_operand
+    }
+    
+    # ELSE and ENDC have no operands
+    if directive in ["ELSE", "ENDC"] {
+      assert no_operand
+    }
+    
+    # Evaluated only on first pass
+    assert first_pass_only_evaluation
+  }
+}
+
+# OS9 Target Directives
+rule "OS9 Directives" {
+  matches {
+    pattern = "\\s*(OS9|MOD|EMOD)\\s*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # OS9 system call
+    if directive == "OS9" {
+      assert expression_operand
+    }
+    
+    # MOD module header
+    if directive == "MOD" {
+      assert operand.matches("size,name,type,flags,execoff,datasize")
+    }
+    
+    # EMOD module end
+    if directive == "EMOD" {
+      assert no_operand
+      assert generates_crc
+    }
+  }
+}
+
+# Miscellaneous Directives
+rule "Miscellaneous Directives" {
+  matches {
+    pattern = "\\s*(INCLUDE|USE|END|ERROR|WARNING|\\.MODULE)\\s*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # INCLUDE/USE file inclusion
+    if directive in ["INCLUDE", "USE"] {
+      assert filename_operand
+      if filename.contains(" ") {
+        assert quoted_filename
+      }
+      assert search_path_logic
+    }
+    
+    # END stops assembly
+    if directive == "END" {
+      if target == "decb" {
+        allow optional_execution_address
+      } else {
+        assert no_operand
+      }
+    }
+    
+    # ERROR/WARNING custom messages
+    if directive in ["ERROR", "WARNING"] {
+      assert rest_of_line_is_message
+    }
+    
+    # .MODULE for module name
+    if directive == ".MODULE" {
+      assert string_operand
+      assert ignored_most_targets
+    }
+  }
+}
+
+# Macro Definition
+rule "Macro Definition" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+MACRO(\\s+NOEXPAND)?\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert macro_name_is_symbol
+    assert not_already_defined
+    assert not_within_macro
+    
+    if contains("NOEXPAND") {
+      assert no_expansion_in_listing
+    }
+    
+    # Must end with ENDM
+    assert ends_with_endm
+    
+    # Parameters referenced as \1-\9 or \{num}
+    assert parameter_references_valid
+    
+    # \* expands to all parameters
+    assert star_expansion_valid
+    
+    # Recursive expansion supported
+    assert recursive_expansion_ok
+    
+    # Local symbol context per expansion
+    assert local_symbol_context
+    
+    # First pass only definition
+    assert first_pass_definition_only
+  }
+}
+
+rule "Macro End" {
+  matches {
+    pattern = "\\s*ENDM\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert within_macro_definition
+    assert ends_current_macro
+  }
+}
+
+# Structure Definition
+rule "Structure Definition" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+STRUCT\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert structure_name_is_symbol
+    assert not_already_defined
+    assert ends_with_endstruct
+    
+    # Only reservation pseudo ops permitted
+    assert only_reservation_ops_inside
+    
+    # Creates symbols for fields
+    assert creates_field_symbols
+    assert creates_sizeof_symbol
+  }
+}
+
+rule "Structure End" {
+  matches {
+    pattern = "\\s*(ENDSTRUCT|ENDS)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert within_structure_definition
+    assert ends_current_structure
+    
+    # ENDSTRUCT preferred over ENDS
+    if directive == "ENDSTRUCT" {
+      mark_as_preferred
+    }
+  }
+}
+
+# Structure Field Reference
+rule "Structure Field Reference" {
+  matches {
+    pattern = "([a-zA-Z0-9_.]+)\\.([a-zA-Z0-9_.]+)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Left side is structure or variable name
+    assert left_side_is_structure_or_variable
+    
+    # Right side is field name
+    assert right_side_is_field_name
+    
+    # Creates appropriate symbol
+    assert resolves_to_offset_or_address
+  }
+}
+
+# Special sizeof reference
+rule "Sizeof Reference" {
+  matches {
+    pattern = "sizeof\\{([a-zA-Z0-9_.]+)\\}"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert target_is_structure_or_variable
+    assert resolves_to_size
+  }
+}
+
+# Section Directives
+rule "Section Definition" {
+  matches {
+    pattern = "\\s*(SECTION|SECT|\\.AREA)\\s+([a-zA-Z0-9_.]+)(,([a-zA-Z0-9_!,]+))?\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert section_name_valid
+    
+    # Flags validation
+    if flags_present {
+      assert flags.matches("(bss|!bss|constant|!constant)(,(bss|!bss|constant|!constant))*")
+    }
+    
+    # BSS section assumptions
+    if section_name.toLowerCase() in ["bss", ".bss"] {
+      assume_bss_unless_negated
+    }
+    
+    # Constant section assumptions  
+    if section_name.toLowerCase() in ["_constants", "_constant"] {
+      assume_constant_unless_negated
+    }
+    
+    # BSS sections cannot generate output
+    if is_bss_section {
+      assert no_output_generating_statements
+    }
+    
+    # Constant sections restrictions
+    if is_constant_section {
+      assert symbols_are_absolute
+      assert no_complex_expressions
+      assert multiple_instances_start_at_zero
+    }
+    
+    # Implicitly ends previous section
+    assert can_implicitly_end_previous
+  }
+}
+
+rule "Section End" {
+  matches {
+    pattern = "\\s*(ENDSECTION|ENDSECT)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert within_section
+    assert ends_current_section
+    assert assembly_outside_sections_after
+    
+    # ENDSECTION preferred
+    if directive == "ENDSECTION" {
+      mark_as_preferred
+    }
+  }
+}
+
+# External/Export Directives
+rule "External References" {
+  matches {
+    pattern = "\\s*([a-zA-Z0-9_.]+)\\s+(EXTERN|EXTERNAL|IMPORT)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert symbol_name_valid
+    assert external_target_only
+    assert resolved_first_pass
+    assert valid_anywhere_in_file
+    
+    # Optional if undefextern pragma active
+    if undefextern_pragma_active {
+      mark_as_optional
+    }
+  }
+}
+
+rule "Export Definitions" {
+  matches {
+    pattern = "\\s*(([a-zA-Z0-9_.]+)\\s+(EXPORT|\\.GLOBL)|(EXPORT|\\.GLOBL)\\s+([a-zA-Z0-9_.]+))\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert symbol_name_valid
+    assert external_target_only
+    assert valid_anywhere_in_file
+    
+    # Symbol can be on statement or operand
+    if symbol_on_statement && symbol_in_operand {
+      assert statement_symbol_takes_precedence
+    }
+  }
+}
+
+rule "External Dependencies" {
+  matches {
+    pattern = "\\s*([a-zA-Z0-9_.]+)\\s+EXTDEP\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert symbol_name_valid
+    assert forces_external_dependency
+    assert even_if_not_referenced
+  }
+}
+
+# Pragma Directives
+rule "Pragma Directives" {
+  matches {
+    pattern = "\\s*(\\*?)PRAGMA(PUSH|POP)?\\s+([a-zA-Z0-9_,]+)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # * prefix makes it non-error on unrecognized
+    if starts_with("*") {
+      assert no_error_on_unrecognized
+      assert ignored_by_other_assemblers
+    }
+    
+    # PRAGMAPUSH/PRAGMAPOP
+    if contains("PUSH") {
+      assert saves_pragma_state
+      assert no_errors_for_any_reason
+    }
+    
+    if contains("POP") {
+      assert restores_pragma_state
+      assert no_errors_for_any_reason
+    }
+    
+    # Comma-separated pragma list
+    assert pragma_list_comma_separated
+    
+    # Case insensitive
+    assert case_insensitive_pragmas
+    
+    # Positive/negative versions
+    assert supports_no_prefix_negation
+  }
+}
+
+# Valid Pragma Names
+rule "Pragma Names" {
+  matches {
+    pattern = "(no)?(6800compat|6809|6309|6809conv|6309conv|index0tonone|cescapes|importundefexport|undefextern|export|dollarlocal|dollarnotlocal|pcaspcr|shadow|nolist|nolistcode|autobranchlength|nosymbolcase|symbolnocase|condundefzero|forwardrefmax|operandsizewarning|qrts|m80ext|testmode|emuext)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert valid_pragma_name
+    
+    # Specific pragma validations based on documentation
+    if pragma == "6800compat" {
+      enables_6800_compatibility_instructions
+    }
+    
+    if pragma == "6309conv" {
+      enables_convenience_6309_instructions
+    }
+    
+    if pragma == "autobranchlength" {
+      enables_automatic_branch_sizing
+      assert use_pragma_directive_recommended
+    }
+    
+    if pragma == "forwardrefmax" {
+      disables_forward_reference_optimization
+      assert default_since_4_14
+    }
+    
+    # ... additional pragma-specific validations
+  }
+}
+
+# Addressing Mode Specifiers
+rule "Addressing Mode Specifiers" {
+  matches {
+    pattern = "[#<>*]"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # # for immediate mode
+    if specifier == "#" {
+      assert immediate_mode
+    }
+    
+    # < for forced 8-bit
+    if specifier == "<" {
+      assert forced_8bit_mode
+    }
+    
+    # > for forced 16-bit  
+    if specifier == ">" {
+      assert forced_16bit_mode
+    }
+    
+    # * for base page (non-standard)
+    if specifier == "*" {
+      assert base_page_addressing
+      warn "Non-standard addressing mode specifier"
+    }
+  }
+}
+
+# 6309 Instructions (when enabled)
+rule "6309 Instructions" {
+  matches {
+    pattern = "\\s*(TFM|COPY|COPY-|COPY\\+|IMP|EXP|IMPLODE|EXPAND|TFRP|TFRM|TFRS|TFRR)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert requires_6309_mode
+    
+    # TFM variations
+    if instruction == "TFM" {
+      assert most_accepted_form
+    }
+    
+    # Synonym validation
+    if instruction == "COPY+" {
+      assert synonym_for_copy
+    }
+    
+    if instruction == "IMPLODE" {
+      assert synonym_for_imp
+    }
+    
+    if instruction == "EXPAND" {
+      assert synonym_for_exp
+    }
+  }
+}
+
+# Convenience Instructions
+rule "Convenience Instructions" {
+  matches {
+    pattern = "\\s*(ASRD|CLRD|COMD|LSLD|LSRD|NEGD|TSTD|ASRQ|CLRQ|COMQ|LSLE|LSLF|LSLQ|LSRQ|NEGE|NEGF|NEGW|NEGQ|TSTQ)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # 6809 convenience instructions
+    if instruction in ["ASRD", "CLRD", "COMD", "LSLD", "LSRD", "NEGD", "TSTD"] {
+      assert requires_6809conv_pragma
+      
+      # Special case for TSTD
+      if instruction == "TSTD" {
+        assert assembles_as_std_minus2_s
+      }
+    }
+    
+    # 6309 convenience instructions  
+    if instruction in ["ASRQ", "CLRQ", "COMQ", "LSLE", "LSLF", "LSLQ", "LSRQ", "NEGE", "NEGF", "NEGW", "NEGQ", "TSTQ"] {
+      assert requires_6309conv_pragma
+    }
+    
+    # Work in both modes
+    assert works_in_target_mode
+  }
+}
+
+# Cycle Count Pragmas
+rule "Cycle Count Options" {
+  matches {
+    pattern = "\\s*(OPT|PRAGMA)\\s+(c|cd|ct|cc)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # OPT keyword compatibility
+    if directive == "OPT" {
+      assert compatibility_with_other_assemblers
+    }
+    
+    if option == "c" {
+      enables_basic_cycle_counts
+    }
+    
+    if option == "cd" {
+      enables_detailed_cycle_counts
+    }
+    
+    if option == "ct" {
+      enables_running_subtotal
+    }
+    
+    if option == "cc" {
+      clears_running_subtotal
+    }
+    
+    # 6309 vs 6809 display format
+    assert brackets_for_6809_parens_for_6309
+    assert variable_cycles_show_plus_question
+  }
+}
+
+# Comment Formats
+rule "Comment Formats" {
+  matches {
+    pattern = "(;.*|\\*.*|#.*)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # ; and * are standard comment characters
+    if starts_with(";") || starts_with("*") {
+      assert standard_comment
+    }
+    
+    # # for C preprocessor compatibility
+    if starts_with("#") && at_line_start {
+      assert c_preprocessor_compatibility
+      warn "Should not be used as general comment character"
+    }
+    
+    # Mandatory for symbol-only lines
+    if line_has_only_symbol {
+      assert comment_character_mandatory
+    }
+  }
+}
+
+# Line Number Support
+rule "Line Numbers" {
+  matches {
+    pattern = "^[0-9]+\\s.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert line_starts_with_digit
+    assert line_number_only_digits
+    assert followed_by_single_space_or_eol
+    assert supported_since_2_6
+  }
+}
+
+# Expression Operators
+rule "Expression Operators" {
+  matches {
+    pattern = "[+\\-*/%&|^~()&&||]"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Basic binary operators
+    if operator in ["+", "-", "*", "/", "%"] {
+      assert basic_arithmetic
+    }
+    
+    # Bitwise operators
+    if operator in ["|", "&", "^", "~"] {
+      assert bitwise_operations
+      assert lower_precedence_than_arithmetic
+    }
+    
+    # Unary operators
+    if operator in ["-", "^", "~", "+"] {
+      assert unary_operations_supported
+      assert higher_precedence_than_binary
+    }
+    
+    # Boolean operators (since 2.5)
+    if operator in ["&&", "||"] {
+      assert boolean_operations
+      assert returns_0_or_1
+      assert lowest_precedence
+      assert since_version_2_5
+    }
+    
+    # Parentheses for precedence
+    if operator in ["(", ")"] {
+      assert precedence_override
+    }
+    
+    # Standard precedence rules
+    assert standard_operator_precedence
+  }
+}
+
+# Special Test Mode Pragma
+rule "Test Mode Comments" {
+  matches {
+    pattern = ";\\.[0-9a-fA-F]+(,E:[0-9]+)?"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert requires_testmode_pragma
+    assert hex_bytes_expected_output
+    
+    if contains("E:") {
+      assert error_number_expected
+      assert error_ignored_assembly_continues
+    }
+    
+    assert internal_testing_purposes_only
+  }
+}
+
+# Emulator Extensions
+rule "Emulator Instructions" {
+  matches {
+    pattern = "\\s*(BREAK|LOG)\\s*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert requires_emuext_pragma
+    assert compatible_emulators_only
+    
+    if instruction == "BREAK" {
+      assert breaks_into_debugger
+    }
+    
+    if instruction == "LOG" {
+      assert printf_style_output
+      assert debug_window_output
+    }
+  }
+}
+
+# File Termination
+rule "End of File Handling" {
+  matches {
+    pattern = "\\s*END\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    assert stops_assembly_immediately
+    
+    # Different behavior in m80ext mode
+    if m80ext_pragma_active && in_include_file {
+      assert stops_current_include_only
+    } else {
+      assert terminates_all_assembly
+    }
+    
+    # DECB target execution address
+    if target == "decb" && has_operand {
+      assert sets_execution_address
+    }
+  }
+}
+
+# Object File Target Restrictions
+rule "Object File Target Mode" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Source lines that cause output must be inside sections
+    if target == "obj" && generates_output {
+      assert must_be_inside_section
+    }
+    
+    # Directives that don't generate output can be outside sections
+    if target == "obj" && !generates_output {
+      allow_outside_sections = true
+    }
+    
+    # ORG makes no sense within a section for object target
+    if target == "obj" && directive == "ORG" && inside_section {
+      error "ORG not permitted within sections for object target"
+    }
+    
+    # External references default to 16-bit addressing
+    if target == "obj" && is_external_reference {
+      assert defaults_to_16bit_addressing
+    }
+    
+    # Cross-section references treated as external
+    if target == "obj" && is_cross_section_reference {
+      assert treated_as_external
+    }
+  }
+}
+
+# Direct Page Force for External References
+rule "Direct Page External References" {
+  matches {
+    pattern = "<.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Since LWASM 2.4, can force DP for external refs
+    if is_external_reference && forced_direct_page {
+      assert since_version_2_4
+      warn "Care must be taken - no byte overflow checking"
+    }
+    
+    # 8-bit immediate mode with external refs
+    if is_external_reference && immediate_8bit_mode {
+      assert uses_low_order_8bits_only
+      warn "No byte overflow flagged"
+    }
+  }
+}
+
+# Case Sensitivity Rules
+rule "Case Sensitivity" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Opcodes are not case sensitive
+    assert opcodes_case_insensitive
+    
+    # Register names are not case sensitive
+    assert register_names_case_insensitive
+    
+    # Symbols are case sensitive (unless nosymbolcase pragma)
+    if !nosymbolcase_pragma {
+      assert symbols_case_sensitive
+    }
+    
+    # Numbers are not case sensitive
+    assert numbers_case_insensitive
+    
+    # Pragmas are not case sensitive
+    assert pragmas_case_insensitive
+  }
+}
+
+# Line Termination Support
+rule "Line Termination" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # LWASM handles multiple line termination formats
+    assert supports_cr_termination
+    assert supports_lf_termination
+    assert supports_crlf_termination
+    assert supports_lfcr_termination
+    
+    # Cross-platform compatibility
+    assert cross_platform_assembly
+  }
+}
+
+# Symbol Length Restrictions
+rule "Symbol Length" {
+  matches {
+    pattern = "[a-zA-Z0-9_.$@?]+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Symbols have no length restriction
+    assert no_length_restriction
+    
+    # Can contain letters, numbers, dots, dollars, underscores
+    assert valid_symbol_characters
+  }
+}
+
+# Special Star Symbol
+rule "Current Address Symbol" {
+  matches {
+    pattern = "\\*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # * represents starting address of current source line
+    assert represents_current_address
+    assert usable_in_expressions
+    
+    # Also used for base page addressing (non-standard)
+    if used_as_addressing_mode {
+      warn "Non-standard addressing mode - may not be in future versions"
+    }
+  }
+}
+
+# Macro Parameter Rules
+rule "Macro Parameters" {
+  matches {
+    pattern = "(\\\\[1-9]|\\\\\\{[0-9]+\\}|\\\\\\*)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Parameter references \1-\9
+    if matches("\\\\[1-9]") {
+      assert valid_parameter_reference
+    }
+    
+    # Braced parameter references \{num}
+    if matches("\\\\\\{[0-9]+\\}") {
+      assert valid_braced_parameter_reference
+    }
+    
+    # All parameters expansion \*
+    if matches("\\\\\\*") {
+      assert expands_to_all_parameters
+    }
+    
+    # Non-existent parameters become empty string
+    assert nonexistent_becomes_empty
+    
+    # Expanded everywhere on line (including comments)
+    assert expanded_everywhere_on_line
+    
+    # No comma or whitespace in parameters
+    assert no_comma_or_whitespace_in_params
+  }
+}
+
+# Macro Expansion Context
+rule "Macro Expansion" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Recursive expansion supported
+    assert recursive_expansion_ok
+    
+    # Can lead to infinite loops
+    warn_if_infinite_loop_possible
+    
+    # Each expansion has own local symbol context
+    assert own_local_symbol_context
+    
+    # Not inherited by called macros
+    assert not_inherited_by_called_macros
+    
+    # Not inherited from instantiation context
+    assert not_inherited_from_instantiation
+    
+    # Local symbol as macro parameter problematic
+    if local_symbol_as_parameter {
+      warn "Will look up in macro context, not enclosing context"
+    }
+  }
+}
+
+# Global Macro Namespace
+rule "Macro Namespace" {
+  matches {
+    pattern = ".*MACRO.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # All macros are global
+    assert global_macro_namespace
+    
+    # Cannot define macro local to symbol context
+    assert cannot_define_local_macro
+    
+    # Separate namespace from symbols
+    assert separate_namespace_from_symbols
+    
+    # Can have symbol with same name as macro
+    assert symbol_macro_name_collision_ok
+    
+    # Must be defined before use
+    assert define_before_use
+  }
+}
+
+# OS9 Module Special Behaviors
+rule "OS9 Module Data/Code Addresses" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Between MOD and EMOD
+    if between_mod_and_emod {
+      # RMB/RMD/RMQ move data address only
+      if directive in ["RMB", "RMD", "RMQ"] {
+        assert moves_data_address_only
+        assert leaves_code_address_unmodified
+      }
+      
+      # ORG sets data address only
+      if directive == "ORG" {
+        assert sets_data_address_only
+        assert not_code_address
+      }
+    }
+    
+    # Outside module body
+    if !between_mod_and_emod {
+      # Both addresses move equally
+      if directive in ["RMB", "RMD", "RMQ"] {
+        assert moves_both_addresses_equally
+      }
+      
+      # ORG sets both addresses
+      if directive == "ORG" {
+        assert sets_both_addresses
+      }
+    }
+    
+    # MOD resets both addresses to 0
+    if directive == "MOD" {
+      assert resets_both_addresses_to_zero
+    }
+    
+    # Directives after EMOD may have different results
+    if after_emod {
+      warn "May have different results than other assemblers"
+    }
+  }
+}
+
+# OS9Defs File Warning
+rule "OS9 Definitions" {
+  matches {
+    pattern = ".*ifp1.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # LWASM doesn't provide OS9Defs
+    assert lwasm_no_os9defs_provided
+    
+    # ifp1 around OS9Defs inclusion discouraged
+    if around_os9defs_inclusion {
+      warn "ifp1 around OS9Defs inclusion is discouraged - pointless and can cause problems"
+    }
+    
+    # LWASM reads each file exactly once
+    assert reads_each_file_once
+    assert no_benefit_to_ifp1_restriction
+  }
+}
+
+# IFP1/IFP2 Deprecation
+rule "Deprecated Conditionals" {
+  matches {
+    pattern = "\\s*(IFP1|IFP2)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # IFP1/IFP2 have no utility in LWASM
+    assert no_utility_in_lwasm
+    
+    # Cannot be implemented meaningfully since LWASM 3.0
+    assert cannot_implement_meaningfully
+    
+    # Will throw warning and be ignored
+    assert throws_warning_and_ignored
+    
+    # Never will be equivalent
+    assert never_will_be_equivalent
+    
+    warn "IFP1/IFP2 not supported - use alternatives"
+  }
+}
+
+# INCLUDEBIN Path Rules
+rule "INCLUDEBIN Path Handling" {
+  matches {
+    pattern = "\\s*INCLUDEBIN\\s+.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Absolute path detection
+    if filename.startsWith("/") {
+      assert taken_as_absolute
+    } else {
+      assert search_current_then_path
+    }
+    
+    # Windows drive letter detection issue
+    if platform == "windows" && has_drive_letter {
+      warn "Absolute path detection with drive letters may not work correctly"
+    }
+    
+    # Non-absolute inclusion works on Windows
+    if platform == "windows" && !is_absolute {
+      assert works_correctly
+    }
+    
+    # Start parameter can be negative (from end)
+    if has_start_parameter && start_parameter < 0 {
+      assert from_end_of_file
+    }
+    
+    # Length parameter optional
+    if !has_length_parameter {
+      assert reads_to_end
+    }
+  }
+}
+
+# ALIGN Directive Padding
+rule "ALIGN Padding" {
+  matches {
+    pattern = "\\s*ALIGN\\s+.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Default padding is $00
+    if !has_value_parameter {
+      assert default_padding_00
+      assert intended_for_data_blocks
+    }
+    
+    # Not suitable for middle of code unless specified
+    if in_code_section && !has_value_parameter {
+      warn "Default $00 padding not suitable in middle of code"
+    }
+    
+    # Low order 8 bits of value used as fill
+    if has_value_parameter {
+      assert uses_low_order_8bits
+    }
+    
+    # Value can have forward references for second pass
+    if value_has_forward_references {
+      assert allowed_if_resolves_second_pass
+    }
+  }
+}
+
+# REORG Compatibility
+rule "REORG Directive" {
+  matches {
+    pattern = "\\s*REORG\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Primarily for MACRO-80c compatibility
+    assert macro_80c_compatibility
+    
+    # Consider alternatives in modern code
+    warn "Consider using alternatives in modern code"
+    
+    # Sets address to value before previous ORG
+    assert sets_to_previous_org_value
+  }
+}
+
+# Symbol Dump Behavior
+rule "Symbol Dump Output" {
+  matches {
+    pattern = ".*--symbol-dump.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Global symbols only
+    assert global_symbols_only
+    assert local_symbols_not_included
+    
+    # Incomplete symbols defined as zero with comment
+    if symbol_incomplete {
+      assert defined_as_zero_with_comment
+    }
+    
+    # SET symbols listed using SET
+    if defined_with_set {
+      assert listed_using_set
+    }
+    
+    # Multiple SET definitions - undefined order
+    if multiple_set_definitions {
+      assert dump_order_undefined
+    }
+  }
+}
+
+# Tab Handling in Listings
+rule "Tab Expansion" {
+  matches {
+    pattern = ".*--tabs.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # --tabs=0 disables expansion
+    if tabs_value == 0 {
+      assert disables_tab_expansion
+    }
+    
+    # --tabs=8 is default
+    if tabs_value == 8 {
+      assert is_default_setting
+    }
+    
+    # Only affects listing files
+    assert only_affects_listings
+  }
+}
+
+# m80ext Pragma Special Behaviors
+rule "MACRO-80c Compatibility" {
+  matches {
+    pattern = ".*m80ext.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Works with qrts pragma
+    assert works_with_qrts
+    
+    # For vintage TRS-80 Color Computer apps
+    assert for_vintage_trs80_apps
+    
+    # Goal: identical binaries from unmodified source
+    assert goal_identical_binaries
+    
+    # END behavior changes in include files
+    if in_include_file && directive == "END" {
+      assert stops_current_include_only
+      assert matches_original_motorola_assembler
+    }
+    
+    # ASCII single quote extended to 16-bit
+    if loading_ascii_single_quote_16bit {
+      assert extended_to_16bit_registers
+      warn "Use double quote for modern code"
+    }
+    
+    # FCC extended with FCB-like behavior
+    if directive == "FCC" && has_bytes_after_delimiter {
+      assert fcb_like_behavior_after_delimiter
+    }
+  }
+}
+
+# ?RTS Special Branch Target
+rule "RTS Branch Target" {
+  matches {
+    pattern = "\\?RTS"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Requires qrts pragma
+    assert requires_qrts_pragma
+    
+    # MACRO-80c assembler compatibility
+    assert macro_80c_compatibility
+    
+    # Searches backward for RTS
+    assert searches_backward_for_rts
+    
+    # If not found, inverts branch and inserts RTS
+    if rts_not_found_backward {
+      assert inverts_branch_logic
+      assert inserts_rts_after_branch
+    }
+    
+    # Example: BMI becomes BPL *+1 followed by RTS
+    assert example_bmi_becomes_bpl_plus1_rts
+  }
+}
+
+# Expression Postfix Representation (Object Files)
+rule "Object File Expressions" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.obj", "**/*.o"]
+  }
+  
+  validate {
+    # Expressions in postfix notation
+    assert postfix_notation
+    
+    # Binary operators: both operands precede operator
+    assert binary_operands_precede_operator
+    
+    # Unary operators: single operand precedes operator
+    assert unary_operand_precedes_operator
+    
+    # Term types defined in table 6-1
+    assert term_types_as_per_table
+    
+    # Operator numbers defined in table 6-2
+    assert operator_numbers_as_per_table
+  }
+}
+
+# Listing File Symbol Control
+rule "Listing Symbol Control" {
+  matches {
+    pattern = ".*--symbols.*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # --symbols includes symbol table in listing
+    if option == "--symbols" {
+      assert includes_symbol_table
+      assert requires_listing_generation
+    }
+    
+    # --symbols-nolocals omits local labels
+    if option == "--symbols-nolocals" {
+      assert omits_local_labels
+      assert includes_global_symbols_only
+    }
+    
+    # No effect unless listing being generated
+    assert no_effect_without_listing
+  }
+} 
