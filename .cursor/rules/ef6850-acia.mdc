@@ -1,12 +1,12 @@
 ---
-description: 
+description: implementation de l'extension Midi a base de EF6850 pour ordinateurs Thomson
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 
 ---
 description: EF6850 ACIA Validation Rules for 6809 Assembly
-alwaysApply: true
+alwaysApply: false
 ---
 
 # EF6850 ACIA Validation Rules

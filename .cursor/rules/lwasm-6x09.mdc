@@ -1,5 +1,10 @@
 ---
 description: LWASM 6x09 Assembly Rules - LWTOOLS 4.24 comprehensive coverage
+globs: 
+alwaysApply: true
+---
+---
+description: LWASM 6x09 Assembly Rules - LWTOOLS 4.24 comprehensive coverage
 alwaysApply: true
 ---
 
@@ -410,6 +415,9 @@ rule "Macro Definition" {
     
     # \* expands to all parameters
     assert star_expansion_valid
+    
+    # \# for parameter count is NOT supported
+    assert no_parameter_count_syntax
     
     # Recursive expansion supported
     assert recursive_expansion_ok
@@ -1130,6 +1138,51 @@ rule "Macro Parameters" {
   }
 }
 
+# Invalid Macro Parameter Syntax
+rule "Invalid Macro Parameter Count Reference" {
+  matches {
+    pattern = "\\\\#"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # \# is not supported in LWASM for parameter count
+    error "\\# is not supported in LWASM - use IFNE \\1, IFNE \\2, etc. to test parameter presence"
+    
+    # Suggest alternatives
+    suggest_alternative = "Use conditional tests like IFNE \\1, IFNE \\2, IFNE \\3 to check parameter presence"
+    suggest_alternative = "Or create separate macros for different parameter counts"
+    suggest_alternative = "LWASM only supports \\1-\\9, \\{num}, and \\* for macro parameters"
+  }
+}
+
+# Invalid Macro Parameter References
+rule "Invalid Macro Parameter References" {
+  matches {
+    pattern = "\\\\[^1-9*{}]|\\\\[0]"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Invalid parameter reference syntax
+    error "Invalid macro parameter reference - LWASM supports \\1-\\9, \\{num}, and \\*"
+    
+    # Common mistakes
+    if matches("\\\\0") {
+      error "\\0 is not valid - macro parameters start at \\1"
+    }
+    
+    if matches("\\\\[a-zA-Z]") {
+      error "Alphabetic parameter references not supported - use \\1-\\9 or \\{num}"
+    }
+    
+    # Correct syntax examples
+    suggest_alternative = "Use \\1, \\2, ..., \\9 for parameters 1-9"
+    suggest_alternative = "Use \\{10}, \\{11}, etc. for parameters 10 and above"
+    suggest_alternative = "Use \\* to expand all parameters"
+  }
+}
+
 # Macro Expansion Context
 rule "Macro Expansion" {
   matches {
@@ -1182,6 +1235,32 @@ rule "Macro Namespace" {
     
     # Must be defined before use
     assert define_before_use
+  }
+}
+
+# Macro Parameter Count Testing
+rule "Macro Parameter Presence Testing" {
+  matches {
+    pattern = "\\s*(IFEQ|IFNE)\\s+\\\\[1-9]"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Correct way to test parameter presence
+    assert correct_parameter_testing_syntax
+    
+    # IFNE \1 tests if parameter 1 is non-empty
+    if matches("IFNE\\s+\\\\[1-9]") {
+      assert tests_parameter_presence
+    }
+    
+    # IFEQ \1 tests if parameter 1 is empty/zero
+    if matches("IFEQ\\s+\\\\[1-9]") {
+      assert tests_parameter_absence
+    }
+    
+    # This is the recommended way instead of \#
+    recommend_for_parameter_counting = true
   }
 }
 
@@ -1529,5 +1608,153 @@ rule "Listing Symbol Control" {
     
     # No effect unless listing being generated
     assert no_effect_without_listing
+  }
+}
+
+# Undocumented Macro Features - BLOCKED
+rule "Undocumented Macro Unique Label Generation" {
+  matches {
+    pattern = "\\\\@"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # \@ is not documented in LWASM for unique label generation
+    error "\\@ is not documented in LWASM for unique label generation"
+    error "Use proper local labels with @ prefix/suffix instead"
+    
+    # Suggest alternatives
+    suggest_alternative = "Use local labels with @ at start: @local_label"
+    suggest_alternative = "Use local labels with @ at end in macros: local_label@"
+    suggest_alternative = "Define end labels with 'equ *': done@ equ *"
+    
+    # This is an undocumented feature that should not be used
+    assert undocumented_feature_blocked
+  }
+}
+
+# Local Label Conventions in Normal Code
+rule "Local Labels in Normal Code" {
+  matches {
+    pattern = "^@[a-zA-Z0-9_]+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Local labels in normal code should start with @
+    assert starts_with_at_symbol
+    assert proper_local_label_format
+    
+    # Must be within same local scope (no blank lines crossed)
+    assert within_local_scope
+    
+    # Cannot cross include file boundaries
+    assert cannot_cross_include_boundaries
+    
+    # Preferred format for normal code
+    mark_as_preferred_normal_code_format = true
+  }
+}
+
+# Local Label Conventions in Macros
+rule "Local Labels in Macros" {
+  matches {
+    pattern = "^[a-zA-Z0-9_]+@"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Local labels in macros should end with @
+    assert ends_with_at_symbol
+    assert proper_macro_local_label_format
+    
+    # Must be within macro definition
+    if !within_macro_definition {
+      warn "Labels ending with @ should only be used within macros"
+      suggest_alternative = "Use @label_name format for normal code local labels"
+    }
+    
+    # Each macro expansion gets its own local symbol context
+    assert own_local_symbol_context_per_expansion
+    
+    # Preferred format for macro code
+    mark_as_preferred_macro_format = true
+  }
+}
+
+# Macro End Label Definition
+rule "Macro End Label Declaration" {
+  matches {
+    pattern = "^[a-zA-Z0-9_]+@\\s+equ\\s+\\*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # End labels in macros should be declared with "equ *"
+    assert proper_end_label_declaration
+    assert uses_current_address_symbol
+    
+    # Must be within macro definition
+    if !within_macro_definition {
+      warn "End label with @ should be in macro context"
+    }
+    
+    # This creates a proper label at current address
+    assert creates_label_at_current_address
+    
+    # Recommended pattern for macro end labels
+    mark_as_recommended_pattern = true
+    
+    # Example: done@ equ *
+    example_usage = "done@ equ *"
+    example_usage = "exit@ equ *"
+    example_usage = "complete@ equ *"
+  }
+}
+
+# Invalid Local Label Usage
+rule "Invalid Local Label Patterns" {
+  matches {
+    pattern = "^[a-zA-Z0-9_]*@[a-zA-Z0-9_]+@"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Multiple @ symbols in label names are not recommended
+    error "Multiple @ symbols in label names are not recommended"
+    error "Use either @label (normal code) or label@ (macros)"
+    
+    # Suggest proper format
+    suggest_alternative = "For normal code: @local_label"
+    suggest_alternative = "For macros: local_label@"
+    suggest_alternative = "For macro end labels: done@ equ *"
+  }
+}
+
+# Local Label Reference Validation
+rule "Local Label References" {
+  matches {
+    pattern = "(bra|beq|bne|bcc|bcs|bvc|bvs|bpl|bmi|bgt|bge|blt|ble|bhi|bls)\\s+(@[a-zA-Z0-9_]+|[a-zA-Z0-9_]+@)"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Branch to local label
+    assert valid_local_label_reference
+    
+    # Must be in same local scope
+    assert target_in_same_scope
+    
+    # Cannot cross scope barriers
+    assert cannot_cross_scope_barriers
+    
+    # Format should match context (macro vs normal code)
+    if within_macro_definition && starts_with_at {
+      warn "Consider using label@ format in macros instead of @label"
+    }
+    
+    if !within_macro_definition && ends_with_at {
+      warn "Consider using @label format in normal code instead of label@"
+    }
   }
 } 

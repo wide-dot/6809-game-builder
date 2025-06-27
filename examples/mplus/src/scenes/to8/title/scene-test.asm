@@ -7,15 +7,16 @@
         fdb   assets.gm.title          ; [file id]
 
         ; new subscene
-        fdb   $8000+5                  ; [type | nb files] (0: end marker)
+        fdb   $8000+6                  ; [type | nb files] (0: end marker)
 
         fcb   $05                      ; [destination - page id]
         fdb   $0000                    ; [destination - address] in half page
         fdb   assets.sounds.samples    ; [file id]
         fdb   assets.sounds.ym
         fdb   assets.sounds.sn
-        fdb   engine.system.to8.sound.mplus.const
-        fdb   assets.lotr.txt
+        fdb   assets.sounds.sn.noise
+        fdb   engine.system.to8.sound.mplus.const ; why loaded page 6 ?
+        fdb   assets.lotr.txt                     ; why loaded page 7 ?
 
         ; end scenes
         fdb   0                        ; [type | nb files] (0: end marker)

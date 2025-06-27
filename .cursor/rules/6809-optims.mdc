@@ -1,0 +1,535 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Règles d'optimisation de code assembleur 6809
+
+Ce fichier contient les règles d'optimisation pour le code assembleur Motorola 6809, basées sur l'optimiseur ugBASIC par S.Devulder.
+
+## Concepts généraux d'optimisation 6809
+
+### Principe des optimisations peephole
+Les optimisations "peephole" analysent des séquences de 1 à 4 instructions consécutives pour les remplacer par des séquences plus efficaces. L'optimiseur effectue plusieurs passes pour créer un effet d'avalanche où les optimisations locales créent de nouvelles opportunités d'optimisation.
+
+### Types d'optimisations supportées
+1. **Optimisations de patterns de base** : Simplification de séquences d'instructions
+2. **Analyse de flux de données** : Détection des registres à zéro, variables mortes
+3. **Relocalisation de variables** : Direct page et inlining
+4. **Suppression de code mort** : Variables non lues, instructions redondantes
+
+## Règles d'optimisation des patterns de base
+
+### Élimination d'instructions redondantes
+
+```assembly
+; Pattern: Instructions de chargement/stockage redondantes
+STx addr
+LDx addr
+; -> Suppression du LDx (sauf si registre modifié entre)
+```
+
+```assembly
+; Pattern: Chargements de registres identiques
+LDB #value
+LDB #value2
+; -> LDB #value2 (le premier est inutile)
+```
+
+```assembly
+; Pattern: Stockages redondants
+STx addr
+STx addr
+; -> STx addr (suppression du deuxième)
+```
+
+### Optimisations arithmétiques
+
+```assembly
+; Pattern: Chargement de zéro
+LDA #$00
+; -> CLRA
+
+LDB #$00
+; -> CLRB
+```
+
+```assembly
+; Pattern: Addition de constantes consécutives
+LDD #value1
+ADDD #value2
+; -> LDD #(value1+value2)
+```
+
+```assembly
+; Pattern: XOR avec $FF
+EORA #$FF
+; -> COMA
+
+EORB #$FF
+; -> COMB
+```
+
+### Combinaisons LDA/LDB en LDD
+
+```assembly
+; Pattern: Chargement de registres A et B séparés
+LDA #value_high
+LDB #value_low
+; -> LDD #((value_high&255)*256+(value_low&255))
+```
+
+### Optimisations de comparaisons
+
+```assembly
+; Pattern: Comparaison avec zéro après instruction qui positionne les flags
+LDx addr    ; ou toute instruction qui modifie les flags du registre x
+CMPx #$00
+; -> Suppression du CMPx (les flags sont déjà positionnés)
+```
+
+### Instructions de comparaison inexistantes sur 6809
+
+```assembly
+; ERREUR: Ces instructions n'existent PAS sur le 6809
+CMPA B      ; N'EXISTE PAS - Comparaison A avec B
+CMPB A      ; N'EXISTE PAS - Comparaison B avec A
+
+; CORRECTIONS possibles:
+; Option 1: Utiliser PSHS/CMPA/PULS
+CMPA B      ; -> PSHS B, CMPA ,S+
+CMPB A      ; -> PSHS A, CMPB ,S+
+
+; Option 2: Utiliser une variable temporaire
+CMPA B      ; -> STB temp, CMPA temp
+CMPB A      ; -> STA temp, CMPB temp
+
+; Option 3: Utiliser SUBD si comparaison A,B pour égalité seulement
+CMPA B      ; -> PSHS A, SUBB ,S+, TSTB (pour test d'égalité Z flag)
+
+; Option 4: Réorganiser le code pour éviter la comparaison
+; Souvent la meilleure solution est de restructurer l'algorithme
+```
+
+**Instructions de comparaison valides sur 6809:**
+- `CMPA #immediate` - Compare A avec valeur immédiate
+- `CMPA addr` - Compare A avec contenu mémoire
+- `CMPB #immediate` - Compare B avec valeur immédiate  
+- `CMPB addr` - Compare B avec contenu mémoire
+- `CMPD #immediate` - Compare D avec valeur immédiate 16-bit
+- `CMPD addr` - Compare D avec contenu mémoire 16-bit
+- `CMPX #immediate` - Compare X avec valeur immédiate 16-bit
+- `CMPX addr` - Compare X avec contenu mémoire 16-bit
+- `CMPY #immediate` - Compare Y avec valeur immédiate 16-bit
+- `CMPY addr` - Compare Y avec contenu mémoire 16-bit
+- `CMPS #immediate` - Compare S avec valeur immédiate 16-bit
+- `CMPS addr` - Compare S avec contenu mémoire 16-bit
+- `CMPU #immediate` - Compare U avec valeur immédiate 16-bit
+- `CMPU addr` - Compare U avec contenu mémoire 16-bit
+
+**Techniques alternatives pour comparer A et B:**
+```assembly
+; Technique 1: Stack-based (3 cycles, 2 bytes stack usage)
+PSHS B          ; [6] Push B sur stack
+CMPA ,S+        ; [6] Compare A avec top of stack et pop
+
+; Technique 2: Memory-based (si variable temporaire disponible)
+STB temp        ; [4] Store B en mémoire
+CMPA temp       ; [4] Compare A avec mémoire
+
+; Technique 3: Arithmetic-based (pour test d'égalité seulement)
+PSHS A          ; [6] Save A
+SUBB ,S+        ; [6] B = B - A, positionne flags
+TSTB            ; [2] Test result (Z=1 si A=B)
+
+; Technique 4: Using D register (si A,B peuvent être traités comme D)
+SUBD #0         ; [4] Test si D=0 (A=0 et B=0)
+```
+
+## Règles d'optimisation avec registres A/B = 0
+
+### Quand A = 0
+
+```assembly
+; Si A contient 0 :
+CLRA          ; -> Suppression (déjà à 0)
+LDA #$FF      ; -> DECA
+LDA #$01      ; -> INCA
+TFR A,B       ; -> CLRB (et B devient 0)
+LDD #$00xx    ; -> LDB #$xx
+```
+
+### Quand B = 0
+
+```assembly
+; Si B contient 0 :
+CLRB          ; -> Suppression (déjà à 0)
+LDB #$FF      ; -> DECB
+LDB #$01      ; -> INCB
+TFR B,A       ; -> CLRA (et A devient 0)
+LDD #$xx00    ; -> LDA #$xx
+```
+
+### Quand D = 0 (A=0 et B=0)
+
+```assembly
+; Si D contient 0 :
+ADDD addr     ; -> LDD addr
+```
+
+## Règles d'optimisation de variables et mémoire
+
+### Variables temporaires (_Ttmp)
+
+```assembly
+; Pattern: Variable temporaire pour multiplication par 1
+LDB #$01
+LDX addr
+JSR CPUMATHMUL16BITTO32
+; -> LDD addr
+;    LDX #0
+```
+
+```assembly
+; Pattern: Variable temporaire pour comparaison
+LDD value
+STD _Ttmpx
+CLRB
+LDX addr2
+CMPX _Ttmpx
+; -> LDX addr2
+;    CMPX value (si _Ttmpx non utilisée ailleurs)
+```
+
+### Optimisations STD/LDD
+
+```assembly
+; Pattern: STD suivi de TFR D,X
+LDD addr1
+STD addr2
+TFR D,X
+; -> LDX addr1
+;    STX addr2
+```
+
+```assembly
+; Pattern: STD suivi de LDB +1
+STD addr
+LDB addr+1
+; -> Suppression du LDB (B contient déjà la valeur)
+```
+
+### Réorganisation des instructions
+
+```assembly
+; Pattern: Déplacement des opérations sur B après A
+LDB addr    ; ou STB addr
+; instruction qui modifie A sans utiliser addr
+; -> Échange des deux instructions si possible
+```
+
+## Règles de direct page et inlining
+
+### Variables éligibles au direct page
+- Variables fréquemment accédées (nb_read + nb_write élevé)
+- Taille <= 4 octets
+- Amélioration des performances : accès direct page plus rapide
+
+```assembly
+; Pattern: Accès normal vers direct page
+LDx addr
+; -> LDx <addr (si addr relocalisée en direct page)
+```
+
+### Variables éligibles à l'inlining
+- Variables utilisées peu de fois
+- Taille <= 2 octets
+- Rentabilité : coût d'inlining < coût d'accès mémoire
+
+```assembly
+; Pattern: Inlining de variable
+LDx addr
+; -> LDx #value (valeur inlinée dans le code)
+;    addr equ *-size (définition au point d'usage)
+```
+
+## Règles spécifiques au 6809
+
+### Instructions de branches conditionnelles
+
+```assembly
+; Pattern: Optimisation de boucles avec décrémentation
+Bxx label
+DECB
+TSTB
+IF
+LBEQ label2
+ELSE
+BEQ label3
+ENDIF
+; -> Bxx_inverse label (inversion de condition si possible)
+```
+
+### Utilisation d'ABX pour l'arithmétique
+
+```assembly
+; Pattern: Addition avec ABX
+CLRA
+LDB value
+STD temp
+LDD addr
+ADDD temp
+STD result
+; -> LDX addr
+;    LDB value
+;    ABX
+;    STX result
+```
+
+### Instructions indexed
+
+```assembly
+; Pattern: Accès indirect via variable temporaire
+STD _Ttmpx
+LDy [_Ttmpx]
+; -> TFR D,X
+;    LDy ,X (si _Ttmpx non utilisée ailleurs)
+```
+
+## Règles de détection de variables mortes
+
+### Variables non lues (dead variables)
+
+```assembly
+; Pattern: Variable stockée mais jamais lue
+STx addr
+; (aucune lecture de addr par la suite)
+; -> Suppression de l'instruction
+```
+
+### Variables temporaires inutilisées
+
+```assembly
+; Pattern: Chargement dans variable temporaire inutile
+LDx #value
+STx _Ttmpx
+; (aucune utilisation de _Ttmpx)
+; -> Suppression des deux instructions
+```
+
+## Optimisations de performance spécifiques
+
+### Éviter les redondances de flags
+
+```assembly
+; Pattern: TST redondant après instruction positionnant les flags
+LDx addr    ; Instruction qui positionne déjà les flags pour x
+TSTx
+; -> Suppression du TSTx
+```
+
+### Préservation des flags CC - Règle critique
+
+```assembly
+; ERREUR CRITIQUE: Instruction modifiant les flags entre chargement et test
+LDA ,Y+     ; Charge A et positionne les flags N,Z selon la valeur
+STY addr    ; ERREUR: STY modifie les flags N,Z selon l'adresse stockée
+BPL label   ; BPL teste les flags modifiés par STY, pas par LDA !
+
+; CORRECTION: Déplacer l'instruction qui modifie les flags APRÈS le test
+LDA ,Y+     ; Charge A et positionne les flags N,Z selon la valeur  
+BPL label   ; Test des flags corrects (basés sur la valeur de A)
+STY addr    ; Maintenant STY peut modifier les flags sans impact
+```
+
+**Instructions qui modifient les flags CC (à éviter entre chargement et test):**
+- `STx addr` - Stockage (modifie N,Z selon l'adresse stockée)
+- `CLRx` - Clear (positionne Z=1, N=0)
+- `INCx`, `DECx` - Incrémentation/décrémentation (modifie N,Z,V)
+- `ADDx #value` - Arithmetic (modifie N,Z,V,C)
+- `TFR A,B` - Transfert (modifie N,Z selon la valeur transférée)
+- `LDx addr2` - Chargement d'un autre registre (modifie ses flags)
+
+**Pattern dangereux typique:**
+```assembly
+; AVANT (incorrect):
+LDA ,Y+     ; Charge et positionne flags
+STY ptr     ; ERREUR: Écrase les flags de LDA
+BPL positive ; Teste les flags de STY au lieu de LDA !
+
+; APRÈS (correct):
+LDA ,Y+     ; Charge et positionne flags
+BPL positive ; Teste immédiatement
+STY ptr     ; Stockage après le test
+```
+
+**Exceptions sûres (n'affectent pas les flags CC):**
+- `PSHS`, `PULS` - Stack operations (préservent tous les flags)
+- `JSR`, `BSR` - Appels de sous-routines (préservent les flags)
+- Commentaires et labels
+- Directives assembleur
+
+### Optimisations Bank Read/Write
+
+```assembly
+; Pattern: Combinaison Bank Read/Write
+JSR BANKREAD1
+INC addr
+LDB #value
+LDY addr2
+LDX #addr
+JSR BANKWRITE1
+; -> Optimisation en BANKREADWRITE1 si addr identiques
+```
+
+## Heuristiques de sécurité
+
+Certaines optimisations sont marquées comme "unsafe" car elles utilisent des heuristiques :
+- Suppression de variables temporaires présumées mortes
+- Réorganisation d'instructions avec analyse de dépendances limitée
+- Inlining agressif de variables
+
+Le flag `ALLOW_UNSAFE` contrôle ces optimisations risquées.
+
+## Métriques d'optimisation
+
+L'optimiseur mesure :
+- Nombre de changements par passe
+- Variables déplacées en direct page
+- Variables inlinées
+- Variables non lues supprimées
+- Lignes d'assembleur supprimées
+
+## Instructions spéciales 6309
+
+Quand le pragma 6309 est activé :
+- Instructions TFM (Transfer Memory)
+- Instructions de commodité (ASRD, CLRD, etc.)
+- Instructions étendues 6309
+
+## Patterns de code auto-modifiant
+
+Le 6809 permet le code auto-modifiant. L'optimiseur peut inliner des variables directement dans le code pour créer des optimisations avancées.
+
+## Patterns d'optimisation courants
+
+### Séquences Store/Load/Store
+
+```assembly
+; Pattern 1: STx/LDx/STy même adresse
+STx addr1
+LDx addr1
+STy addr2
+; -> STx addr1, STy addr2 (suppression du LDx si x=y)
+```
+
+### Optimisations de transferts
+
+```assembly
+; Pattern: STD/LDX même adresse
+STD addr
+LDX addr
+; -> STD addr, TFR D,X
+```
+
+### Optimisations arithmétiques avancées
+
+```assembly
+; Pattern: Séquence LDD/STD/LDD/ADDD/STD
+LDD #$0000
+STD addr1
+LDB addr2
+ADDD addr1
+STD addr1
+; -> CLRA, LDB addr2, STD addr1
+```
+
+### Factorisation de constantes
+
+```assembly
+; Pattern: Addition/soustraction de constantes
+LDD value1
+ADDD #const1
+STD temp
+LDD temp
+ADDD #const2
+; -> LDD value1, ADDD #(const1+const2)
+```
+
+## Variables et scope
+
+### Variables éligibles à l'optimisation
+- Variables temporaires `_Ttmp*`
+- Variables globales fréquemment utilisées
+- Variables locales avec portée limitée
+
+### Variables à éviter d'optimiser
+- Variables système (`BASE_SEGMENT`, `$FFxx`)
+- Variables avec accès banked
+- Labels et points d'entrée de fonctions
+
+## Règles de réorganisation de code
+
+### Déplacement d'instructions B après A
+
+```assembly
+; Si instruction B n'utilise pas le résultat de A:
+LDB addr1     ; Peut être déplacé après
+LDA addr2     ; Cette instruction
+; -> LDA addr2, LDB addr1
+```
+
+### Déplacement d'instructions D avant X
+
+```assembly
+; Si instruction D n'utilise pas X:
+LDX addr1     ; Peut être déplacé après
+LDD addr2     ; Cette instruction
+; -> LDD addr2, LDX addr1
+```
+
+## Optimisations de boucles
+
+### Détection de patterns de boucles
+
+```assembly
+; Pattern: Décrémentation avec test
+DECB
+TSTB
+Bxx label
+; -> DECB, Bxx label (suppression du TSTB si possible)
+```
+
+### Optimisations de compteurs
+
+```assembly
+; Pattern: Incrémentation/décrémentation avec comparaison immédiate
+INCB
+CMPB #$ff
+; -> INCB, Txx (utilisation directe des flags si possible)
+```
+
+## Règles de détection de redondances
+
+### Instructions identiques consécutives
+
+```assembly
+; Pattern: Instructions identiques
+LDx value
+LDx value
+; -> LDx value (suppression de la deuxième)
+```
+
+### Clear redondants
+
+```assembly
+; Pattern: Clear après instruction qui clear déjà
+LDx #$00
+CLRx
+; -> CLRx (suppression du LDx)
+```
+
+## Conclusion
+
+Ces règles permettent d'optimiser significativement le code 6809 généré par un compilateur, avec des gains typiques de 20-40% en taille et vitesse selon la nature du code source. L'optimiseur fonctionne par passes multiples pour maximiser les effets de synergie entre optimisations.
+

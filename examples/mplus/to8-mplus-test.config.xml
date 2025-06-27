@@ -10,8 +10,8 @@
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
         <floppydisk model="fd640">
 
-            <section name="SCENE" track="0" face="1" sector="16"/>
-            <section name="DATA"  track="1" face="0" sector="1"/>
+            <section name="SCENE" track="1" face="0" sector="2"/>
+            <section name="DATA"  track="1" face="0" sector="3"/>
 
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section"      value="DATA"/>
@@ -33,7 +33,7 @@
                 <!-- Test - sample data -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.sounds.samples" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/sounds/samples/5-timpani.6bit.asm">
                         <label name="samples.timpani"/><includebin filename="src/assets/sounds/samples/5-timpani.6bit.bin" />
                     </lwasm>
                 </direntry>
@@ -41,24 +41,31 @@
                 <!-- Test - sound data -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.sounds.ym" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/sounds/vgm/ym-sweet.ymm">
                         <label name="vgm.ym"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/vgm/ym2413.vgm" genbinary="src/assets/sounds/vgm/ym2413.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/vgm/ym-sweet.vgm" genbinary="src/assets/sounds/vgm/ym-sweet.ymm" codec="zx0"/>
                 </direntry>
 
                 <direntry name="assets.sounds.sn" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/sounds/vgm/sn-melody.vgc">
                         <label name="vgm.sn"/>
                     </lwasm>
-                        <vgm2vgc filename="src/assets/sounds/vgm/sn76489.vgm" genbinary="src/assets/sounds/vgm/sn76489.vgc"/>
+                        <vgm2vgc filename="src/assets/sounds/vgm/sn-melody.vgm" genbinary="src/assets/sounds/vgm/sn-melody.vgc"/>
+                </direntry>
+
+                <direntry name="assets.sounds.sn.noise" loadtimelink="LINK">
+                    <lwasm gensource="gen/assets/sounds/vgm/sn-noise.vgc">
+                        <label name="vgm.sn.noise"/>
+                    </lwasm>
+                        <vgm2vgc filename="src/assets/sounds/vgm/sn-noise.vgm" genbinary="src/assets/sounds/vgm/sn-noise.vgc"/>
                 </direntry>
 
                 <!-- Test - mea8000 data -->
                 <!-- ******************************************************* -->
 
                 <direntry name="assets.lotr.txt" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/assets/sounds/text/demo.asm">
                         <label name="lotr.txt"/>
                         <asm xml:space="preserve"> SECTION code</asm>
                         <asm filename="src/assets/sounds/text/demo.asm"/>
@@ -67,17 +74,10 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="assets.harder.mea" loadtimelink="LINK">
-                    <lwasm>
-                        <label name="harder.mea"/>
-                        <includebin filename="src/assets/sounds/mea/harder.mea"/>
-                    </lwasm>
-                </direntry>
-
                 <!-- Test - sound player dynamic port -->
                 <!-- ******************************************************* -->
                 <direntry name="engine.system.to8.sound.mplus.const" loadtimelink="LINK">
-                    <lwasm>
+                    <lwasm gensource="gen/system/to8/sound/mplus.const.asm">
                         <asm filename="engine/system/to8/sound/mplus.const.asm"/>
                     </lwasm>
                 </direntry>
@@ -112,7 +112,7 @@
 
             <data section="BOOT" maxsize="0x100">   
                 <cksumfd640>
-                    <lwasm format="raw">
+                    <lwasm format="raw" gensource="gen/system/to8/bootloader/boot.asm">
                         <asm filename="engine/system/to8/bootloader/boot.asm"/>
                     </lwasm>
                 </cksumfd640>

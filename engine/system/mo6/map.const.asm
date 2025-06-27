@@ -255,6 +255,22 @@ map.EF6850.STAT_DCD   equ %00000100 ; Data carrier detect
 map.EF6850.STAT_TDRE  equ %00000010 ; TX data register empty
 map.EF6850.STAT_RDRF  equ %00000001 ; RX data register full
 
+; MEA8000 Control Register values
+map.MEA8000.STOP_SLOW      equ $1A ; Recommended configuration (ROE=0, polling mode)
+map.MEA8000.STOP_IMMEDIATE equ $10 ; Immediate stop only
+map.MEA8000.INTERRUPT_MODE equ $1B ; External interrupt mode (ROE=1)
+map.MEA8000.CONTINUOUS     equ $1E ; Continuous operation (STOP=0, CONT_E=1, CONT=1, ROE_E=1, ROE=0)
+
+; MEA8000 Control Register bit masks
+map.MEA8000.STOP_BIT       equ %00010000 ; Bit 4: STOP (0=normal, 1=stop)
+map.MEA8000.CONT_E_BIT     equ %00001000 ; Bit 3: CONT_E (enable CONT bit)
+map.MEA8000.CONT_BIT       equ %00000100 ; Bit 2: CONT (frame repeat)
+map.MEA8000.ROE_E_BIT      equ %00000010 ; Bit 1: ROE_E (enable ROE bit)
+map.MEA8000.ROE_BIT        equ %00000001 ; Bit 0: ROE (0=internal REQ, 1=external REQ)
+
+; MEA8000 Status Register bit masks
+map.MEA8000.REQ_BIT        equ %10000000 ; Bit 7: REQ (0=busy, 1=ready)
+
 map.RAM_OVER_CART     equ %01100000
 map.STATUS.MINUSCULE  equ %10000000
 map.STATUS.SCROLL     equ %01000000

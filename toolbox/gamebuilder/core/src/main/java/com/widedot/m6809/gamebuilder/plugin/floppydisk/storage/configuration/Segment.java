@@ -6,7 +6,9 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 public class Segment {
 
 	public int faces;
+	public int facesSize;
 	public int tracks;
+	public int tracksSize;
 	public int sectors;
 	public int sectorSize;
 	
@@ -31,5 +33,8 @@ public class Segment {
 		if (sectorSize == -1) {
 			throw new Exception("sectorSize is missing for segment");
 		}	
+
+		facesSize = faces * tracks * sectors * sectorSize;
+		tracksSize = tracks * sectors * sectorSize;
 	}
 }

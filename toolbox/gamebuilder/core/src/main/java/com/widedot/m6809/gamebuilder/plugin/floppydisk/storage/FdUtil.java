@@ -46,7 +46,8 @@ public class FdUtil implements MediaDataInterface{
 		while(srcIdx < srcData.length) {
 
 			if (dataMask[dstIdx]) {
-				String m = "Section already in use ! (" + s.getString() + ")";
+				String m = String.format("Section '%s' try to use an already occupied sector at track %d, face %d, sector %d to write %d bytes",
+						                s.getString(), s.track, s.face, s.sector, srcData.length);
 				log.error(m);
 				throw new Exception(m);
 			}
@@ -157,12 +158,21 @@ public class FdUtil implements MediaDataInterface{
             if (!dataMask[freePos]) break; 
         }
         
+		if (freePos == end) {
+			String m = String.format("Section '%s' try to use an already full sector at track %d, face %d, sector %d to write %d bytes",
+					                s.getString(), s.track, s.face, s.sector, srcData.length);
+			log.error(m);
+			throw new Exception(m);
+		}
+
         // write to sector
         int i = freePos;
         while ((i < end) && (srcIdx < srcData.length)) {
         	
+			// check if sector is already occupied, (some bytes were unoccupied, but the end of sector contains data)
 			if (dataMask[i]) {
-				String m = "Section already in use ! (" + s.getString() + ")";;
+				String m = String.format("Section '%s' try to use an already occupied sector at track %d, face %d, sector %d to write %d bytes",
+						                s.getString(), s.track, s.face, s.sector, srcData.length);
 				log.error(m);
 				throw new Exception(m);
 			}

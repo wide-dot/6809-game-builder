@@ -1,0 +1,767 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Wide-Dot Project Rules
+
+## Language and Documentation Standards
+
+### English Comments Rule
+rule "English Comments Only" {
+  matches {
+    pattern = ";.*|\\*.*|#.*"
+    files = ["**/*.asm", "**/*.java", "**/*.c", "**/*.h", "**/*.md", "**/*.xml"]
+  }
+  
+  validate {
+    # All comments must be written in English
+    assert comment_is_in_english
+    error_if_not_english = "All comments must be written in English for project consistency and international collaboration"
+    
+    # Exception for French technical terms that are standard in Thomson/TO8/MO6 context
+    allow_french_technical_terms = [
+      "BASIC", "MEMO7", "MONITEUR", "CRAYON", "PALETTE", 
+      "PUNTO", "LIGNE", "CERCLE", "COULEUR"
+    ]
+    
+    # Use proper English grammar and spelling
+    assert proper_english_grammar
+    assert proper_english_spelling
+    
+    # Avoid machine translation artifacts
+    warn_if_machine_translation_detected
+    
+    # Use technical English terminology
+    prefer_technical_terminology = true
+    
+    # Examples of good English comments
+    good_examples = [
+      "; Initialize the sound chip registers",
+      "; Wait for vertical blanking interrupt", 
+      "; Load PCM sample data into buffer",
+      "; Configure Thomson MO6 memory mapping",
+      "// Process VGM sound data",
+      "<!-- English documentation for XML configurations -->"
+    ]
+    
+    # Examples to avoid
+    avoid_examples = [
+      "; Initialiser les registres du chip son",
+      "; Attendre l'interruption de synchronisation verticale",
+      "; Charger les données PCM dans le buffer"
+    ]
+  }
+}
+
+### Documentation Standards
+rule "Documentation Language" {
+  matches {
+    pattern = ".*\\.(md|txt|rst|adoc)$"
+    files = ["**/*.md", "**/*.txt", "**/*.rst", "**/*.adoc"]
+  }
+  
+  validate {
+    # All documentation must be in English
+    assert documentation_is_in_english
+    
+    # Use clear, concise technical writing
+    assert clear_technical_writing
+    
+    # Include code examples with English comments
+    assert code_examples_have_english_comments
+    
+    # Proper markdown formatting
+    assert proper_markdown_formatting
+  }
+}
+
+## Code Quality Standards
+
+### Macro Naming Conventions
+rule "Macro Naming Conventions" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+MACRO(\\s+NOEXPAND)?\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Macro names must begin with underscore
+    assert macro_name.startsWith("_")
+    error_if_not_starts_with_underscore = "Macro names must begin with an underscore (e.g., _macroName)"
+    
+    # Macro names must end with a verb in camelCase
+    assert macro_name.matches(".*[a-z][A-Z][a-zA-Z]*$")
+    error_if_not_ends_with_camel_case_verb = "Macro names must end with a verb in camelCase (e.g., checkAndWait, processData, initializeMemory)"
+    
+    # Valid naming pattern: _module.submodule.function.action
+    # Example: _mea8000.phonemes.read.irq.checkAndWait
+    assert macro_name.matches("^_[a-zA-Z0-9_.]*[a-z][A-Z][a-zA-Z]*$")
+    
+    # Suggested naming structure
+    suggest_naming_pattern = "_module.submodule.component.functionVerb"
+    suggest_examples = [
+      "_mea8000.phonemes.read.irq.checkAndWait",
+      "_sound.buffer.pcm.loadData", 
+      "_graphics.sprite.animation.updateFrame",
+      "_memory.malloc.heap.allocateBlock"
+    ]
+    
+    # Common verbs for macro endings
+    recommend_verb_endings = [
+      "init", "setup", "configure", "enable", "disable",
+      "start", "stop", "pause", "resume", "reset",
+      "load", "save", "read", "write", "copy", "move",
+      "check", "test", "validate", "verify", "compare",
+      "process", "handle", "execute", "run", "call",
+      "update", "refresh", "sync", "clear", "flush",
+      "allocate", "free", "reserve", "release",
+      "lock", "unlock", "wait", "signal", "trigger"
+    ]
+  }
+}
+
+### Routine Naming Conventions
+rule "Routine Naming Conventions" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Routine names must use camelCase and end with a verb
+    assert routine_name.matches(".*[a-z][A-Z][a-zA-Z]*$")
+    error_if_not_camel_case_verb = "Routine names must be in camelCase and end with a verb (e.g., initializeSound, readPhoneme, waitForIrq)"
+    
+    # Routine names should be hierarchical with dot notation
+    assert routine_name.matches("^[a-zA-Z0-9_.]*[a-z][A-Z][a-zA-Z]*$")
+    error_if_not_hierarchical = "Use hierarchical naming with dots (e.g., mea8000.phonemes.readAsync, sound.pcm.startPlayback)"
+    
+    # Routine names must not start with underscore (reserved for macros)
+    assert !routine_name.startsWith("_")
+    error_if_starts_with_underscore = "Routine names must not start with underscore (reserved for macros)"
+    
+    # Suggested naming structure
+    suggest_naming_pattern = "module.submodule.component.actionVerb"
+    suggest_examples = [
+      "mea8000.phonemes.startReading",
+      "mea8000.phonemes.stopSynthesis", 
+      "mea8000.phonemes.checkActive",
+      "mea8000.phonemes.waitComplete",
+      "sound.pcm.initializeBuffer",
+      "graphics.sprite.updateAnimation",
+      "memory.heap.allocateBlock"
+    ]
+    
+    # Common verbs for routine endings
+    recommend_verb_endings = [
+      "initialize", "setup", "configure", "enable", "disable",
+      "start", "stop", "pause", "resume", "reset",
+      "load", "save", "read", "write", "copy", "move",
+      "check", "test", "validate", "verify", "compare", 
+      "process", "handle", "execute", "run", "call",
+      "update", "refresh", "sync", "clear", "flush",
+      "allocate", "free", "reserve", "release",
+      "lock", "unlock", "wait", "signal", "trigger",
+      "get", "set", "find", "search", "calculate",
+      "convert", "transform", "encode", "decode"
+    ]
+  }
+}
+
+### Variable Naming Conventions  
+rule "Variable Naming Conventions" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+(FCB|FDB|FQB|RMB|RMD|RMQ|EQU|SET)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Variable names must use camelCase and be nouns (not verbs)
+    assert variable_name.matches("^[a-z][a-zA-Z0-9_.]*$")
+    error_if_not_camel_case_noun = "Variable names must be in camelCase starting with lowercase and be descriptive nouns (e.g., phoneticBuffer, irqVector, soundState)"
+    
+    # Variable names should be hierarchical with dot notation
+    assert variable_name.matches("^[a-zA-Z0-9_.]*$")
+    error_if_not_hierarchical = "Use hierarchical naming with dots (e.g., mea8000.irq.phoneticBuffer, sound.pcm.currentSample)"
+    
+    # Variable names must not start with underscore (reserved for macros)
+    assert !variable_name.startsWith("_")
+    error_if_starts_with_underscore = "Variable names must not start with underscore (reserved for macros)"
+    
+    # Variable names must not end with verbs
+    assert !variable_name.matches(".*[a-z][A-Z][a-zA-Z]*$")
+    error_if_ends_with_verb = "Variable names must be nouns, not verbs (e.g., use 'irqHandler' not 'handleIrq')"
+    
+    # Suggested naming structure
+    suggest_naming_pattern = "module.submodule.descriptiveNoun"
+    suggest_examples = [
+      "mea8000.irq.phonemePointer",
+      "mea8000.irq.textPointer",
+      "mea8000.irq.phoneticData", 
+      "mea8000.irq.byteCounter",
+      "mea8000.irq.currentState",
+      "mea8000.irq.previousVector",
+      "mea8000.irq.activeFlag",
+      "sound.pcm.bufferSize",
+      "graphics.sprite.frameCount"
+    ]
+    
+    # Common noun patterns for variables
+    recommend_noun_patterns = [
+      "pointer", "address", "buffer", "data", "counter", "index",
+      "size", "length", "width", "height", "offset", "mask",
+      "flag", "state", "status", "mode", "type", "format",
+      "vector", "handler", "callback", "timer", "delay",
+      "threshold", "limit", "boundary", "range", "value",
+      "configuration", "settings", "parameters", "options"
+    ]
+  }
+}
+
+### Constant Naming Conventions
+rule "Constant Naming Conventions" {
+  matches {
+    pattern = "^([A-Z][A-Z0-9_]+)\\s+EQU\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Constants must be in UPPER_CASE snake_case with underscores
+    assert constant_name.matches("^[A-Z][A-Z0-9_]*$")
+    error_if_not_upper_snake_case = "Constants must be in UPPER_CASE snake_case with underscores (e.g., MEA8000_IRQ_STATE_IDLE)"
+    
+    # Must start with uppercase letter
+    assert constant_name.matches("^[A-Z].*")
+    error_if_not_starts_with_uppercase = "Constants must start with an uppercase letter"
+    
+    # Use underscores to separate words (snake_case)
+    assert constant_name.contains("_") || constant_name.matches("^[A-Z]+$")
+    error_if_no_underscores = "Use underscores to separate words in constants (snake_case style)"
+    
+    # No lowercase letters allowed
+    assert !constant_name.matches(".*[a-z].*")
+    error_if_contains_lowercase = "Constants must be entirely UPPERCASE - no lowercase letters allowed"
+    
+    # No consecutive underscores
+    assert !constant_name.contains("__")
+    error_if_consecutive_underscores = "Avoid consecutive underscores in constant names"
+    
+    # No trailing or leading underscores
+    assert !constant_name.startsWith("_") && !constant_name.endsWith("_")
+    error_if_leading_trailing_underscore = "Constants should not start or end with underscores"
+    
+    # Constants should be hierarchical with underscores
+    assert constant_name.matches("^[A-Z][A-Z0-9_]*$")
+    error_if_not_hierarchical = "Use hierarchical naming with underscores (e.g., MEA8000_IRQ_STATE_ACTIVE)"
+    
+    # Suggested naming structure
+    suggest_naming_pattern = "MODULE_SUBMODULE_CONSTANT_NAME"
+    suggest_examples = [
+      "MEA8000_IRQ_STATE_IDLE",
+      "MEA8000_IRQ_STATE_INIT", 
+      "MEA8000_IRQ_STATE_PHONEME",
+      "MEA8000_IRQ_STATE_FINISHED",
+      "SOUND_PCM_BUFFER_SIZE",
+      "GRAPHICS_SPRITE_MAX_FRAMES",
+      "MEMORY_HEAP_MAX_BLOCKS",
+      "CONTROLLER_BUTTON_PRESS_MASK"
+    ]
+    
+    # Examples of correct UPPER_CASE snake_case
+    good_examples = [
+      "MAX_BUFFER_SIZE",
+      "DEFAULT_SAMPLE_RATE", 
+      "IRQ_VECTOR_ADDRESS",
+      "SCREEN_WIDTH_PIXELS",
+      "MEMORY_MAP_BASE_ADDR"
+    ]
+    
+    # Examples to avoid
+    bad_examples = [
+      "maxBufferSize",        # camelCase not allowed
+      "Max_Buffer_Size",      # Mixed case not allowed
+      "MAX_BUFFER_SIZE_",     # Trailing underscore
+      "_MAX_BUFFER_SIZE",     # Leading underscore
+      "MAX__BUFFER__SIZE",    # Consecutive underscores
+      "max_buffer_size"       # All lowercase not allowed
+    ]
+  }
+}
+
+### Assembly Code Standards
+rule "Assembly Code Quality" {
+  matches {
+    pattern = ".*\\.asm$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Follow LWASM 6x09 standards (already covered by lwasm-6x09.mdc)
+    assert follows_lwasm_standards
+    
+    # Proper indentation and formatting
+    assert proper_indentation
+    assert consistent_formatting
+    
+    # Meaningful symbol names in English
+    assert symbol_names_in_english
+    assert meaningful_symbol_names
+    
+    # Header comments for each file
+    assert file_header_comment_present
+    assert header_comment_in_english
+    
+    # Function/macro documentation
+    assert function_documentation_present
+    assert function_documentation_in_english
+  }
+}
+
+### Java Code Standards
+rule "Java Code Quality" {
+  matches {
+    pattern = ".*\\.java$"
+    files = ["**/*.java"]
+  }
+  
+  validate {
+    # All comments and documentation in English
+    assert comments_in_english
+    assert javadoc_in_english
+    
+    # Variable and method names in English
+    assert variable_names_in_english
+    assert method_names_in_english
+    assert class_names_in_english
+    
+    # Proper JavaDoc format
+    assert proper_javadoc_format
+    
+    # Exception messages in English
+    assert exception_messages_in_english
+  }
+}
+
+## Project-Specific Standards
+
+### Thomson Computer Compatibility
+rule "Thomson Computer Standards" {
+  matches {
+    pattern = ".*"
+    files = ["**/to8/**", "**/mo6/**", "**/thomson/**"]
+  }
+  
+  validate {
+    # Comments explaining Thomson-specific features must be in English
+    assert thomson_features_explained_in_english
+    
+    # Technical terms can reference French manuals but explanations in English
+    assert technical_references_explained_in_english
+    
+    # Memory map documentation in English
+    assert memory_map_documentation_in_english
+    
+    # Register descriptions in English
+    assert register_descriptions_in_english
+  }
+}
+
+### Sound Engine Standards
+rule "Sound Engine Documentation" {
+  matches {
+    pattern = ".*"
+    files = ["**/sound/**", "**/audio/**"]
+  }
+  
+  validate {
+    # All sound-related comments in English
+    assert sound_comments_in_english
+    
+    # PCM, VGM, and other format explanations in English
+    assert format_explanations_in_english
+    
+    # Frequency and timing calculations explained in English
+    assert calculations_explained_in_english
+  }
+}
+
+## Configuration and Build Standards
+
+### XML Configuration
+rule "XML Configuration Standards" {
+  matches {
+    pattern = ".*\\.xml$"
+    files = ["**/*.xml"]
+  }
+  
+  validate {
+    # XML comments in English
+    assert xml_comments_in_english
+    
+    # Attribute descriptions in English
+    assert attribute_descriptions_in_english
+    
+    # Configuration documentation in English
+    assert configuration_docs_in_english
+  }
+}
+
+### Build System Standards
+rule "Build System Documentation" {
+  matches {
+    pattern = ".*\\.(pom\\.xml|gradle|make|sh|bat|cmd)$"
+    files = ["**/pom.xml", "**/*.gradle", "**/Makefile", "**/*.sh", "**/*.bat", "**/*.cmd"]
+  }
+  
+  validate {
+    # Build comments and documentation in English
+    assert build_comments_in_english
+    
+    # Error messages in English
+    assert error_messages_in_english
+    
+    # Build instructions in English
+    assert build_instructions_in_english
+  }
+}
+
+## Internationalization Considerations
+
+### Allowed Non-English Content
+rule "Allowed Non-English Content" {
+  matches {
+    pattern = ".*"
+    files = ["**/*"]
+  }
+  
+  validate {
+    # Game content and assets can be in multiple languages
+    if file_path.contains("assets") && file_path.contains("text") {
+      allow_multiple_languages = true
+    }
+    
+    # User-facing messages can be localized
+    if file_path.contains("messages") || file_path.contains("i18n") {
+      allow_localization = true
+    }
+    
+    # Historic references to French documentation are acceptable if cited
+    if is_historic_reference_with_citation {
+      allow_french_references = true
+    }
+    
+    # But all code comments and technical documentation must be English
+    assert technical_content_always_english
+  }
+}
+
+## Local Symbol Scope Management
+
+### Local Symbol Scope Preservation
+rule "Local Symbol Scope Preservation" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Use comment lines instead of blank lines to preserve local symbol scope
+    assert use_comment_lines_instead_of_blank_lines
+    
+    # Local symbols (@symbol) cannot cross blank line barriers
+    assert local_symbols_cannot_cross_blank_lines
+    
+    # Recommended: Use comment separators for visual separation
+    recommend_comment_separators = [
+      "; ----------------------------------------------------------------------------",
+      "; Local data",
+      "; Implementation details",
+      "; Internal functions",
+      "; Private variables"
+    ]
+    
+    # Bad practice: blank lines that break local symbol scope
+    warn_if_blank_lines_separate_local_symbols
+    
+    # Good practice: comment lines preserve scope while maintaining readability
+    assert comment_lines_preserve_scope
+  }
+}
+
+### Comment Line Spacing Standards
+rule "Comment Line Spacing Standards" {
+  matches {
+    pattern = ".*"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Use comment lines for visual separation instead of blank lines
+    assert comment_lines_for_visual_separation
+    
+    # Standard comment separator patterns
+    standard_separators = [
+      "; ============================================================================",
+      "; ----------------------------------------------------------------------------",
+      "; Local variables and data",
+      "; Implementation functions",
+      "; Internal subroutines"
+    ]
+    
+    # Maintain consistent indentation with comment separators
+    assert consistent_indentation_with_comments
+    
+    # Use descriptive comments for function sections
+    assert descriptive_section_comments
+  }
+}
+
+### Local Symbol Naming and Scope
+rule "Local Symbol Best Practices" {
+  matches {
+    pattern = "@[a-zA-Z0-9_]+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Local symbols should be close to their usage
+    assert local_symbols_close_to_usage
+    
+    # Avoid crossing blank line barriers
+    assert avoid_blank_line_scope_barriers
+    
+    # Use meaningful names even for local symbols
+    assert meaningful_local_symbol_names
+    
+    # Document local symbol purpose when not obvious
+    suggest_documentation_for_complex_locals
+    
+    # Example patterns for local symbols
+    good_local_patterns = [
+      "@loop", "@exit", "@done", "@skip", "@next", 
+      "@error", "@retry", "@found", "@continue",
+      "@buffer", "@temp", "@counter", "@index"
+    ]
+  }
+}
+
+## Enforcement and Quality Assurance
+
+### Comment Quality Checks
+rule "Comment Quality Assurance" {
+  matches {
+    pattern = ";.*|\\*.*|#.*|//.*|/\\*.*\\*/"
+    files = ["**/*"]
+  }
+  
+  validate {
+    # Comments should be helpful and informative
+    assert comments_are_informative
+    
+    # Avoid obvious comments
+    warn_if_obvious_comment
+    
+    # Use proper English punctuation
+    assert proper_punctuation
+    
+    # Spell check English words
+    assert spell_check_english
+    
+    # Consistent commenting style
+    assert consistent_commenting_style
+  }
+}
+
+### Review Guidelines
+rule "Code Review Guidelines" {
+  matches {
+    pattern = ".*"
+    files = ["**/*"]
+  }
+  
+  validate {
+    # Code reviewers should check for English comments
+    assert reviewers_check_english_comments
+    
+    # Suggest improvements for non-English content
+    assert suggest_english_improvements
+    
+    # Maintain project language consistency
+    assert maintain_language_consistency
+  }
+}
+
+### File-Based Naming Conventions
+rule "File-Based Routine Naming" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+):\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Routine names must be prefixed by the filename (without .asm extension)
+    assert routine_name.startsWith(filename_without_extension)
+    error_if_not_prefixed_by_filename = "Routine names must be prefixed by filename (e.g., file 'mea8000.phonemes.read.irq.asm' should have routines like 'mea8000.phonemes.read.irq.startReading')"
+    
+    # Filename prefix followed by dot and camelCase verb
+    assert routine_name.matches("^" + filename_without_extension + "\\.[a-z][A-Z][a-zA-Z]*$")
+    error_if_not_filename_dot_verb = "Routine names must follow pattern: filename.verbAction (e.g., 'mea8000.phonemes.read.irq.startReading')"
+    
+    # Examples based on filename
+    suggest_examples_by_filename = {
+      "mea8000.phonemes.read.irq.asm": [
+        "mea8000.phonemes.read.irq.startReading",
+        "mea8000.phonemes.read.irq.stopReading", 
+        "mea8000.phonemes.read.irq.checkActive",
+        "mea8000.phonemes.read.irq.waitComplete"
+      ],
+      "sound.pcm.buffer.asm": [
+        "sound.pcm.buffer.initialize",
+        "sound.pcm.buffer.loadData",
+        "sound.pcm.buffer.clearBuffer"
+      ]
+    }
+  }
+}
+
+rule "File-Based Variable Naming" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+(FCB|FDB|FQB|RMB|RMD|RMQ|EQU|SET)\\s+"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Variable names must be prefixed by the filename (without .asm extension)
+    assert variable_name.startsWith(filename_without_extension)
+    error_if_not_prefixed_by_filename = "Variable names must be prefixed by filename (e.g., file 'mea8000.phonemes.read.irq.asm' should have variables like 'mea8000.phonemes.read.irq.phoneticBuffer')"
+    
+    # Filename prefix followed by dot and camelCase noun
+    assert variable_name.matches("^" + filename_without_extension + "\\.[a-z][a-zA-Z0-9_.]*$")
+    error_if_not_filename_dot_noun = "Variable names must follow pattern: filename.nounDescription (e.g., 'mea8000.phonemes.read.irq.phoneticBuffer')"
+    
+    # Must be nouns, not verbs
+    assert !variable_name.matches(".*[a-z][A-Z][a-zA-Z]*$")
+    error_if_ends_with_verb = "Variable names must be nouns, not verbs"
+    
+    # Examples based on filename
+    suggest_examples_by_filename = {
+      "mea8000.phonemes.read.irq.asm": [
+        "mea8000.phonemes.read.irq.phonemePointer",
+        "mea8000.phonemes.read.irq.textPointer",
+        "mea8000.phonemes.read.irq.currentState",
+        "mea8000.phonemes.read.irq.activeFlag"
+      ],
+      "sound.pcm.buffer.asm": [
+        "sound.pcm.buffer.dataPointer",
+        "sound.pcm.buffer.bufferSize",
+        "sound.pcm.buffer.currentIndex"
+      ]
+    }
+  }
+}
+
+rule "File-Based Macro Naming" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+MACRO(\\s+NOEXPAND)?\\s*$"
+    files = ["**/*.macro.asm"]
+  }
+  
+  validate {
+    # Macro names must be prefixed by the filename (without .macro.asm extension)
+    assert macro_name.startsWith("_" + filename_without_macro_extension)
+    error_if_not_prefixed_by_filename = "Macro names must be prefixed by filename (e.g., file 'mea8000.phonemes.read.irq.macro.asm' should have macros like '_mea8000.phonemes.read.irq.startReading')"
+    
+    # Underscore + filename prefix followed by dot and camelCase verb
+    assert macro_name.matches("^_" + filename_without_macro_extension + "\\.[a-z][A-Z][a-zA-Z]*$")
+    error_if_not_underscore_filename_dot_verb = "Macro names must follow pattern: _filename.verbAction (e.g., '_mea8000.phonemes.read.irq.startReading')"
+    
+    # Examples based on filename
+    suggest_examples_by_filename = {
+      "mea8000.phonemes.read.irq.macro.asm": [
+        "_mea8000.phonemes.read.irq.startReading",
+        "_mea8000.phonemes.read.irq.stopReading", 
+        "_mea8000.phonemes.read.irq.checkActive",
+        "_mea8000.phonemes.read.irq.waitComplete"
+      ],
+      "sound.pcm.buffer.macro.asm": [
+        "_sound.pcm.buffer.initialize",
+        "_sound.pcm.buffer.loadData",
+        "_sound.pcm.buffer.clearBuffer"
+      ]
+    }
+  }
+}
+
+### Macro File Organization
+rule "Macro File Organization" {
+  matches {
+    pattern = ".*\\.macro\\.asm$"
+    files = ["**/*.macro.asm"]
+  }
+  
+  validate {
+    # Macro files must end with .macro.asm
+    assert filename.endsWith(".macro.asm")
+    error_if_not_macro_extension = "Macro files must end with .macro.asm extension"
+    
+    # Must have corresponding .asm file with same base name
+    corresponding_asm_file = filename.replace(".macro.asm", ".asm")
+    assert file_exists(corresponding_asm_file)
+    error_if_no_corresponding_asm = "Macro file must have corresponding .asm file with same base name (e.g., 'module.macro.asm' requires 'module.asm')"
+    
+    # Should only contain MACRO definitions and related code
+    assert file_contains_only_macros_and_comments
+    error_if_contains_non_macro_code = "Macro files should only contain MACRO definitions, comments, and INCLUDE statements"
+    
+    # Examples of proper macro file organization
+    suggest_proper_organization = {
+      "Structure": [
+        "mea8000.phonemes.read.irq.asm - contains routines and variables",
+        "mea8000.phonemes.read.irq.macro.asm - contains macros that call routines from .asm file"
+      ],
+      "Naming": [
+        "File: sound.pcm.buffer.asm",
+        "Macro file: sound.pcm.buffer.macro.asm", 
+        "Routines: sound.pcm.buffer.initialize, sound.pcm.buffer.loadData",
+        "Macros: _sound.pcm.buffer.initialize, _sound.pcm.buffer.loadData"
+      ]
+    }
+  }
+}
+
+rule "Macro File Separation" {
+  matches {
+    pattern = "^([a-zA-Z0-9_.]+)\\s+MACRO(\\s+NOEXPAND)?\\s*$"
+    files = ["**/*.asm"]
+  }
+  
+  validate {
+    # Macros should not be defined in regular .asm files
+    assert false
+    error_macro_in_regular_asm = "Macros must be defined in separate .macro.asm files, not in regular .asm files"
+    
+    # Suggest proper file organization
+    suggest_move_to_macro_file = "Move this macro to a corresponding .macro.asm file (e.g., if this is 'module.asm', create 'module.macro.asm')"
+    
+    # Exception for very simple, single-use macros
+    allow_exception_for_simple_macros = false  # Strict rule - no exceptions
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

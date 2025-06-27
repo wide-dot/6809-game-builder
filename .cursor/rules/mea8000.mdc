@@ -1,0 +1,399 @@
+---
+description: implementation de l'extension synthèse vocale a base de MEA8000 pour ordinateurs Thomson
+globs: 
+alwaysApply: false
+---
+
+---
+description: MEA8000 Speech Synthesizer Development Rules for Thomson TO8/MO6 Systems
+globs: ["**/*.asm", "**/*.md", "**/*.mdc"]
+alwaysApply: false
+---
+
+# MEA8000 Speech Synthesizer Rules for Thomson TO8/MO6
+
+@context {
+  "type": "hardware_interface",
+  "platform": "thomson_to8_mo6", 
+  "chip": "MEA8000",
+  "clock_frequency": "4MHz",
+  "dac_output": "8_bits_64khz",
+  "documentation": "engine/system/thomson/sound/mea8000.md"
+}
+
+## Hardware Memory Map and Addresses
+
+@memory_map {
+  "data_register": {
+    "address": "$E7FE",
+    "constant": "map.MEA8000.D",
+    "function": "DONN - Data input (A0=0)",
+    "access": "write_only_with_req_check"
+  },
+  "command_status_register": {
+    "address": "$E7FF", 
+    "constant": "map.MEA8000.A",
+    "function": "RCOM - Command/Status (A0=1)",
+    "access": "read_write"
+  }
+}
+
+## Required Control Commands
+
+@control_commands {
+  "stop_slow": {
+    "value": "$1A",
+    "binary": "00011010",
+    "description": "Recommended configuration with ROE enabled",
+    "bits": {
+      "bit_4": "STOP=0 (normal operation)",
+      "bit_3": "CONT_E=1 (enable CONT bit)",
+      "bit_2": "CONT=0 (no frame repeat)",
+      "bit_1": "ROE_E=1 (enable ROE bit)", 
+      "bit_0": "ROE=0 (internal REQ for polling)"
+    }
+  },
+  "stop_immediate": {
+    "value": "$10",
+    "binary": "00010000", 
+    "description": "Immediate stop only",
+    "usage": "emergency_stop_only"
+  },
+  "interrupt_mode": {
+    "value": "$1B",
+    "binary": "00011011",
+    "description": "External interrupt mode",
+    "bits": {
+      "bit_0": "ROE=1 (external REQ output for interrupts)"
+    }
+  }
+}
+
+## Hardware Interface Validation Rules
+
+### REQ Polling Pattern (Mandatory)
+
+When writing to MEA8000 data register:
+- **ALWAYS** check REQ bit before sending data
+- Use pattern: `TST map.MEA8000.A; BPL wait_loop`
+- REQ bit (bit 7) = 0 means busy, = 1 means ready
+- Never send data without REQ=1 confirmation
+
+### DAC Integration Requirement
+
+For Thomson TO8/MO6 systems:
+- **MUST** call `BSR dac.enable` before synthesis
+- **MUST** call `BSR dac.disable` after synthesis
+- MEA8000 requires active DAC for audio output
+
+### Standard 4-Step Procedure
+
+@standard_procedure [
+  {
+    "step": 1,
+    "action": "initialization",
+    "command": "Send STOP command ($1A)",
+    "purpose": "Configure MEA8000 for operation"
+  },
+  {
+    "step": 2, 
+    "action": "base_pitch",
+    "command": "Send initial frequency (1 byte)",
+    "purpose": "Set fundamental frequency (standard: $3C)"
+  },
+  {
+    "step": 3,
+    "action": "frame_loop", 
+    "command": "Wait REQ=1, send 4-byte frames",
+    "purpose": "Transmit synthesis data"
+  },
+  {
+    "step": 4,
+    "action": "finalization",
+    "command": "Silent frame (00 00 00 00) + STOP",
+    "purpose": "Clean synthesis termination"
+  }
+]
+
+## Frame Format (32-bit, 4 bytes)
+
+@frame_structure {
+  "byte_1": {
+    "bits_7_6": "FD - Frame duration (8,16,32,64 ms)",
+    "bits_5_1": "PI - Pitch increment (-15..+15 Hz/8ms or noise)",
+    "bits_0_3": "AMPL - Amplitude (0..1000, non-linear)"
+  },
+  "byte_2": {
+    "bits_7_3": "FM1 - Formant 1 frequency (150..1047 Hz)",
+    "bits_2_1": "BW1 - Bandwidth formant 1 (726,309,125,50 Hz)"
+  },
+  "byte_3": {
+    "bits_7_3": "FM2 - Formant 2 frequency (440..3400 Hz)", 
+    "bits_2_1": "BW2 - Bandwidth formant 2 (726,309,125,50 Hz)"
+  },
+  "byte_4": {
+    "bits_7_5": "FM3 - Formant 3 frequency (1179..3400 Hz)",
+    "bits_4_3": "BW3 - Bandwidth formant 3 (726,309,125,50 Hz)",
+    "bits_2_1": "BW4 - Bandwidth formant 4 (automatic)"
+  },
+  "constants": {
+    "fm4_fixed": "3500 Hz (non-programmable)",
+    "bw4_calculated": "Automatically determined by chip"
+  }
+}
+
+## Frequency Conversion Tables (Clock: 4MHz/3.84MHz)
+
+@conversion_tables {
+  "formant_1": {
+    "bits": 5,
+    "range": "150-1047 Hz",
+    "values": [150,162,174,188,202,217,233,250,267,286,305,325,346,368,391,415,440,466,494,523,554,587,622,659,698,740,784,830,880,932,988,1047]
+  },
+  "formant_2": {
+    "bits": 5,
+    "range": "440-3400 Hz", 
+    "values": [440,466,494,523,554,587,622,659,698,740,784,830,880,932,988,1047,1100,1179,1254,1337,1428,1528,1639,1761,1897,2047,2214,2400,2609,2842,3105,3400]
+  },
+  "formant_3": {
+    "bits": 3,
+    "range": "1179-3400 Hz",
+    "values": [1179,1337,1528,1761,2047,2400,2842,3400]
+  },
+  "bandwidth": {
+    "bits": 2,
+    "values": [726,309,125,50],
+    "unit": "Hz"
+  },
+  "amplitude": {
+    "bits": 4,
+    "values": [0,8,11,16,22,31,44,62,88,125,177,250,354,500,707,1000],
+    "characteristic": "non_linear"
+  },
+  "pitch_increment": {
+    "bits": 5,
+    "values": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1],
+    "special": "Index 16 = noise mode"
+  },
+  "frame_duration": {
+    "bits": 2,
+    "values": [8,16,32,64],
+    "unit": "milliseconds"
+  }
+}
+
+## Synthesis Methods
+
+### 1. Phoneme-Based Synthesis
+
+@phoneme_system {
+  "language": "french",
+  "phonemes_count": 40,
+  "constants": {
+    "vowels": [".a", ".e", ".i", ".o", ".u", ".eu", ".ou", ".an", ".in", ".on", ".un"],
+    "consonants": [".b", ".p", ".d", ".t", ".g", ".k", ".v", ".f", ".z", ".s", ".j", ".ch", ".r", ".l", ".m", ".n"],
+    "special": [".wordDelimiter", ".endDelimiter"]
+  },
+  "usage": {
+    "function": "mea8000.phonemes.read",
+    "input_a": "tonality (standard: $3C)",
+    "input_x": "phoneme table address",
+    "input_y": "phonetic text pointer"
+  },
+  "text_format": [
+    "Sequence of phoneme constants",
+    ".wordDelimiter for word pauses",
+    ".endDelimiter (-1) for end"
+  ]
+}
+
+### 2. Digitalized Frame Synthesis
+
+@digitalized_synthesis {
+  "function": "mea8000.digitalized.read",
+  "format": "length + pitch + frames",
+  "structure": {
+    "byte_1": "Frame count (length)",
+    "byte_2": "Base pitch frequency",
+    "bytes_3_n": "4-byte frames sequence"
+  },
+  "advantages": [
+    "Direct control over all parameters",
+    "Custom speech patterns",
+    "Non-French phonetics support"
+  ]
+}
+
+## Synchronization Modes
+
+### Mode Polling (Recommended)
+
+@polling_mode {
+  "configuration": {
+    "command": "$1A",
+    "roe_e": 1,
+    "roe": 0,
+    "description": "Internal REQ for CPU polling"
+  },
+  "implementation": "TST map.MEA8000.A; BPL wait_loop",
+  "advantages": ["Simple", "Stable", "Compatible"],
+  "disadvantages": ["CPU intensive", "Blocks processor"],
+  "recommended_for": ["Simple applications", "Demo programs", "Educational code"]
+}
+
+### Mode Interruption (Advanced)
+
+@interrupt_mode {
+  "configuration": {
+    "command": "$1B", 
+    "roe_e": 1,
+    "roe": 1,
+    "description": "External REQ for interrupt generation"
+  },
+  "requirements": [
+    "FIRQ/IRQ vector management",
+    "Context preservation (PSHS/PULS)",
+    "Interrupt service routine"
+  ],
+  "advantages": ["Frees CPU", "Enables multitasking"],
+  "disadvantages": ["Complex", "Hardware dependent"],
+  "recommended_for": ["Professional applications", "Multitasking systems", "Background synthesis"]
+}
+
+## Required Thomson Integration
+
+@thomson_requirements {
+  "includes": [
+    "engine/system/thomson/sound/dac.enable.asm",
+    "engine/system/thomson/sound/mea8000.digitalized.read.asm",
+    "engine/system/thomson/sound/mea8000.phonemes.read.asm", 
+    "engine/system/thomson/sound/mea8000.phonemes.asm",
+    "engine/system/thomson/sound/mea8000.phonemes.const.asm"
+  ],
+  "external_symbols": [
+    "map.MEA8000.D", "map.MEA8000.A",
+    "dac.enable", "dac.disable",
+    "mea8000.phonemes", "mea8000.phonemes.read",
+    "mea8000.digitalized.read"
+  ],
+  "system_integration": {
+    "dac_control": "Mandatory for audio output",
+    "interrupt_vectors": "Optional for advanced mode",
+    "memory_map": "TO8: $E7FE/$E7FF, MO6: same addresses"
+  }
+}
+
+## Development Guidelines
+
+@development_guidelines [
+  {
+    "rule": "Always check REQ before sending data",
+    "pattern": "TST map.MEA8000.A; BPL wait",
+    "severity": "error"
+  },
+  {
+    "rule": "Initial pitch mandatory before frames",
+    "reason": "MEA8000 requires base frequency setup",
+    "severity": "error"
+  },
+  {
+    "rule": "Activate Thomson DAC before synthesis", 
+    "pattern": "BSR dac.enable",
+    "severity": "error"
+  },
+  {
+    "rule": "Frame amplitude=0 triggers automatic STOP",
+    "usage": "Natural synthesis termination",
+    "severity": "info"
+  },
+  {
+    "rule": "Value $1A recommended for initialization",
+    "alternative": "$10 for immediate stop only",
+    "severity": "warning"
+  },
+  {
+    "rule": "Phonemes optimized for French language",
+    "alternative": "Use digitalized mode for other languages",
+    "severity": "info"
+  },
+  {
+    "rule": "FM4 fixed at 3500 Hz (non-programmable)",
+    "impact": "Cannot be modified in frame data",
+    "severity": "info"
+  }
+]
+
+## Code Examples and Macros
+
+### Standard Utility Macros
+
+```assembly
+; Wait for MEA8000 ready
+MEA8000_WAIT    MACRO
+                TST     map.MEA8000.A
+                BPL     MEA8000_WAIT
+                ENDM
+
+; Send data with automatic wait  
+MEA8000_SEND    MACRO   data
+                MEA8000_WAIT
+                LDA     #data
+                STA     map.MEA8000.D
+                ENDM
+
+; Complete initialization
+MEA8000_INIT    MACRO   pitch
+                MEA8000_SEND $1A        ; Stop/configure
+                MEA8000_SEND pitch      ; Base frequency
+                ENDM
+
+; Send complete 4-byte frame
+MEA8000_FRAME   MACRO   b1,b2,b3,b4
+                MEA8000_SEND b1
+                MEA8000_SEND b2
+                MEA8000_SEND b3
+                MEA8000_SEND b4
+                ENDM
+```
+
+### Error Conditions and Debug
+
+@error_conditions [
+  {
+    "symptom": "REQ timeout",
+    "cause": "Hardware not responding",
+    "solution": "Check connections and power"
+  },
+  {
+    "symptom": "No audio output", 
+    "cause": "DAC not enabled",
+    "solution": "Call dac.enable before synthesis"
+  },
+  {
+    "symptom": "Distorted sound",
+    "cause": "Wrong frame format", 
+    "solution": "Verify 32-bit frame structure"
+  },
+  {
+    "symptom": "Synthesis stops unexpectedly",
+    "cause": "Amplitude=0 frame sent",
+    "solution": "Use amplitude > 0 or intentional stop"
+  }
+]
+
+## Performance Specifications
+
+@performance {
+  "internal_frequency": "4 MHz (external oscillator)",
+  "dac_sampling": "8 bits @ 64 kHz",
+  "cpu_cycles": "Minimum 3 cycles between bytes", 
+  "max_throughput": "~32 KB/s (REQ limited)",
+  "frame_timing": "8-64 ms per frame",
+  "synthesis_quality": "Professional speech synthesis"
+}
+
+@version "1.0.0"
+@last_updated "2024-12-28"
+@documentation_reference "engine/system/thomson/sound/mea8000.md"
+
+

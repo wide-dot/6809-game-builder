@@ -86,6 +86,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.file.decompress      ; OK
         jmp   >loader.file.linkData.load   ; OK
         jmp   >loader.file.linkData.unload ; TODO
+        jmp   >loader.file.getPage         ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -864,6 +865,40 @@ loader.file.linkData.unload
         ; decrement nb of occupied slots
         ; reallocate if total slots - occupied slots = 8
         rts
+
+
+;---------------------------------------
+; loader.file.getPage
+;
+; input  REG : [X] file id
+; output REG : [B] page id (or $FF if not found)
+;---------------------------------------
+; Get the page ID where a file is loaded
+; by searching through loaded files with link data
+;---------------------------------------
+loader.file.getPage
+        pshs  x,y
+        ldy   >loader.file.linkDataIdx
+        beq   @notfound                       ; branch if no link data exists
+        ldd   linkData.header.occupiedSlots,y
+        beq   @notfound                       ; branch if no files loaded
+        leay  sizeof{linkData.header},y
+        std   @counter
+@loop
+        cmpx  linkData.entry.fileId,y         ; compare file IDs
+        beq   @found
+        leay  sizeof{linkData.entry},y        ; move to next entry
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   @loop
+@notfound
+        ldb   #$FF                            ; return $FF if not found
+        puls  x,y,pc
+@found
+        ldb   linkData.entry.filePage,y       ; return the page ID
+        puls  x,y,pc
 
 
 ;---------------------------------------
