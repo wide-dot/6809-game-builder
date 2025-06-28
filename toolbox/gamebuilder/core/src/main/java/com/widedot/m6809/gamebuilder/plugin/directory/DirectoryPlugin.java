@@ -1,10 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugin.directory;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -15,6 +13,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
@@ -137,6 +136,26 @@ public class DirectoryPlugin {
 			genbinary = path + File.separator + genbinary;
 			Files.createDirectories(Paths.get(FileUtil.getDir(genbinary)));
 			Files.write(Paths.get(genbinary), bin);
+			
+			// write directory entries info to text file
+			String textFile = genbinary + ".txt";
+			FileWriter textWriter = new FileWriter(textFile);
+			textWriter.write("Directory Entries Information" + System.lineSeparator());
+			textWriter.write("=============================" + System.lineSeparator());
+			textWriter.write("Directory ID: " + id + System.lineSeparator());
+			textWriter.write("Directory structure size: " + size + " bytes" + System.lineSeparator());
+			textWriter.write("Directory storage - Number of sectors to load: " + (byte) (Math.ceil(size/256.0)) + System.lineSeparator());
+			textWriter.write(System.lineSeparator());
+			
+			int entryIndex = 0;
+			for (DirEntry entry : media.getDirEntries()) {
+				textWriter.write(System.lineSeparator());
+				textWriter.write("=== Entry " + entryIndex + " ===" + System.lineSeparator());
+				textWriter.write(DirEntryDecoder.analyzeEntry(entry));
+				textWriter.write(System.lineSeparator());
+				entryIndex++;
+			}
+			textWriter.close();
 		}
 		
 		log.debug("End of processing directory");

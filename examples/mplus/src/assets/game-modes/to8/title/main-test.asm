@@ -41,6 +41,7 @@ main.loop
         _main.test main.str.SN,sn76489.ut.testSN76489
         _main.test main.str.SN.noise,sn76489.ut.testSN76489
         _main.test main.str.YM,ym2413.ut.testYM2413
+        _main.test main.str.YM.rythm,ym2413.ut.testYM2413
         _main.test main.str.MEA,mea8000.ut.testMEA8000
         
         ; MIDI test
@@ -100,6 +101,7 @@ main.str.DAC        fcs "- DAC (FIRQ) ....... "
 main.str.SN         fcs "- SN76489 .......... "
 main.str.SN.noise   fcs "- SN76489 Noise .... "
 main.str.YM         fcs "- YM2413 ........... "
+main.str.YM.rythm   fcs "- YM2413 Rythm ..... "
 main.str.MEA        fcs "- MEA8000 .......... "
 main.str.MIDI       _monitor.chr.CRLF
                     fcc "MIDI:"
@@ -133,4 +135,3 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.const.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.read.asm"
-        ;INCLUDE "engine/system/thomson/sound/mea8000.digitalized.read.asm"

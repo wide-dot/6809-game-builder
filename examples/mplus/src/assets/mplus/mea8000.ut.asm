@@ -10,7 +10,7 @@ mea8000.ut.detectMEA8000     EXPORT
  ; testMEA8000
  ; ----------------------------------------------------------------------------
 
-page.mea equ map.RAM_OVER_CART+7
+page.mea equ map.RAM_OVER_CART+8
 
 ; phonemes
 mea8000.ut.testMEA8000
@@ -27,7 +27,7 @@ mea8000.ut.testMEA8000
         lda   #$3C
         ldx   #mea8000.phonemes
         ldy   #lotr.txt
-        jsr mea8000.phonemes.read
+        jsr   mea8000.phonemes.read
         andcc #%11111110 ; OK
         rts
 
@@ -37,12 +37,12 @@ mea8000.ut.testMEA8000
 
 mea8000.ut.testMEA8000.440Hz
         ; Test MEA8000 presence before running test
-        ;jsr   mea8000.ut.detectMEA8000
-        ;bcc   @mea8000Present           ; Carry clear = MEA8000 detected
+        jsr   mea8000.ut.detectMEA8000
+        bcc   @mea8000Present           ; Carry clear = MEA8000 detected
         ; MEA8000 not present - display message and skip test
-        ;_monitor.print #mea8000.ut.notDetected
-        ;andcc #%11111110 ; OK
-        ;rts
+        _monitor.print #mea8000.ut.notDetected
+        andcc #%11111110 ; OK
+        rts
 @mea8000Present
         ; Display message to user
         _monitor.print #mea8000.ut.mea440Hz.pressKey

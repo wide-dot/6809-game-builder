@@ -224,7 +224,7 @@ public class DirEntryPlugin {
 	    media.addDirEntry(new DirEntry(name, sizedDirentry));
 		
 	    String fLength = String.format("%5d", length);
-	    log.info("{} bytes | {}", fLength, name);	    
+	    log.info("file {} | {} bytes", name, fLength);
 		log.debug("End of processing direntry");
 	}
 	

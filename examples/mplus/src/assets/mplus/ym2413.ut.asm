@@ -1,4 +1,5 @@
 vgm.ym                       EXTERNAL
+vgm.ym.rythm                 EXTERNAL
 
 ym2413.ut.testYM2413         EXPORT
 ym2413.ut.testYM2413.440Hz   EXPORT
@@ -10,6 +11,7 @@ ym2413.ut.testYM2413.440Hz   EXPORT
  ; ----------------------------------------------------------------------------
 
 page.ymm equ map.RAM_OVER_CART+5
+page.ymm.rythm equ map.RAM_OVER_CART+6
 ym2413.ut.testYM2413.lock fcb 0
 
 ym2413.ut.testYM2413
@@ -18,8 +20,13 @@ ym2413.ut.testYM2413
         _irq.set50Hz
 
         _cart.setRam #page.ymm
-        _ymm.obj.play #page.ymm,#vgm.ym,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
-        _irq.on
+        lda   ym2413.ut.testYM2413.lock
+        beq   >
+        clr   ym2413.ut.testYM2413.lock
+        _ymm.obj.play #page.ymm,#vgm.ym.rythm,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
+        bra   @on
+!       _ymm.obj.play #page.ymm,#vgm.ym,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
+@on     _irq.on
 !       lda   ym2413.ut.testYM2413.lock
         beq   <
         _ym2413.init
