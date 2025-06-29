@@ -1,5 +1,10 @@
-vgm.sn                       EXTERNAL
-vgm.sn.noise                 EXTERNAL
+; data address
+sounds.sn                       EXTERNAL
+sounds.sn.noise                 EXTERNAL
+
+; memory page based on file id
+assets.sounds.sn$PAGE        EXTERNAL
+assets.sounds.sn.noise$PAGE  EXTERNAL
 
 sn76489.ut.testSN76489       EXPORT
 sn76489.ut.testSN76489.440Hz EXPORT
@@ -10,27 +15,34 @@ sn76489.ut.testSN76489.440Hz EXPORT
  ; testSN76489
  ; ----------------------------------------------------------------------------
 
-page.vgc equ map.RAM_OVER_CART+5
 sn76489.ut.testSN76489.lock fcb 0
 
 sn76489.ut.testSN76489
         _irq.init
+
+        ; select vgm to play
+        tst   sn76489.ut.testSN76489.lock
+        beq   >
+        clr   sn76489.ut.testSN76489.lock
+        _irq.setRoutine #sn76489.ut.testSN76489.noise.irq
+        _vgc.obj.play #assets.sounds.sn.noise$PAGE,#sounds.sn.noise,#vgc.NO_LOOP,#sn76489.ut.testSN76489.callback
+        bra   @on
+!       
         _irq.setRoutine #sn76489.ut.testSN76489.irq
+        _vgc.obj.play #assets.sounds.sn$PAGE,#sounds.sn,#vgc.NO_LOOP,#sn76489.ut.testSN76489.callback
+@on     
+        ; start irq
         _irq.set50Hz
         lda   map.MPLUS.CTRL
         anda  #%11111110 ; TI clock enable
         sta   map.MPLUS.CTRL
+        _irq.on
 
-        _cart.setRam #page.vgc
-        lda   sn76489.ut.testSN76489.lock
-        beq   >
-        clr   sn76489.ut.testSN76489.lock
-        _vgc.obj.play #page.vgc,#vgm.sn.noise,#vgc.NO_LOOP,#sn76489.ut.testSN76489.callback
-        bra   @on
-!       _vgc.obj.play #page.vgc,#vgm.sn,#vgc.NO_LOOP,#sn76489.ut.testSN76489.callback
-@on     _irq.on
+        ; blocking code until callback is called
 !       lda   sn76489.ut.testSN76489.lock
         beq   <
+
+        ; reinit state
         _sn76489.init
         lda   map.MPLUS.CTRL
         ora   #%00000001 ; TI clock disable
@@ -45,7 +57,12 @@ sn76489.ut.testSN76489.callback
         rts
 
 sn76489.ut.testSN76489.irq
-        _cart.setRam #page.vgc
+        _cart.setRam #assets.sounds.sn$PAGE
+        _vgc.frame.play
+        rts
+
+sn76489.ut.testSN76489.noise.irq
+        _cart.setRam #assets.sounds.sn.noise$PAGE
         _vgc.frame.play
         rts
 

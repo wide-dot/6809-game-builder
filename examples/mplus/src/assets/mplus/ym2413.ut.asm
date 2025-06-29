@@ -19,7 +19,6 @@ ym2413.ut.testYM2413
         _irq.setRoutine #ym2413.ut.testYM2413.irq
         _irq.set50Hz
 
-        _cart.setRam #page.ymm
         lda   ym2413.ut.testYM2413.lock
         beq   >
         clr   ym2413.ut.testYM2413.lock

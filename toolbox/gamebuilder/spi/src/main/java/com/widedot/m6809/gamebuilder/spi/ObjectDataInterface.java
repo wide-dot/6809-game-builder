@@ -14,4 +14,6 @@ public interface ObjectDataInterface {
 	List<byte[]> getExtern8() throws Exception;
 
 	List<byte[]> getExtern16() throws Exception;
+	
+	List<byte[]> getExternPage() throws Exception;
 }

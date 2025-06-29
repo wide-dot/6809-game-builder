@@ -37,6 +37,13 @@ import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 //		03 0110 :    0002           ; [nb of elements]
 //		             0001 FFF4 0002 ; [offset to write location] [PLUS operand] [symbol id] - example : extern ( I16=-12 ES=Obj_Index_Address OP=PLUS ) @ 0001
 //		             003E 0000 0003 ;                                                                   extern ( ES=ymm.music.processFrame ) @ 003E
+//
+// custom link data :
+//		             
+//		- extern memory page (8bit) ; link to extern 8 bit variables that store memory page by file id
+//		             
+//		03 0122 :    0001           ; [nb of elements]
+//		             0014 0000 0001 ; [offset to write location] [PLUS operand] [file id] - example : extern 8bit ( FLAGS=01 ES=music.stage1$PAGE ) @ 0014
 
 public class LinkData {
 	
@@ -46,6 +53,7 @@ public class LinkData {
 	private List<byte[]> intern;
 	private List<byte[]> extern8;
 	private List<byte[]> extern16;
+	private List<byte[]> externPage;
 	
 	public LinkData() {
 		exportAbs = new ArrayList<byte[]>();
@@ -53,6 +61,7 @@ public class LinkData {
 		intern = new ArrayList<byte[]>();
 		extern8 = new ArrayList<byte[]>();
 		extern16 = new ArrayList<byte[]>();
+		externPage = new ArrayList<byte[]>();
 	}
 	
 	public void add(ObjectDataInterface obj) throws Exception {
@@ -61,6 +70,7 @@ public class LinkData {
 		intern.addAll(obj.getIntern());
 		extern8.addAll(obj.getExtern8());
 		extern16.addAll(obj.getExtern16());
+		externPage.addAll(obj.getExternPage());
 	}
 	
 	public void process() {
@@ -68,7 +78,8 @@ public class LinkData {
 						2 + 4 * exportRel.size() +
 						2 + 4 * intern.size() +
 						2 + 6 * extern8.size() +
-						2 + 6 * extern16.size();
+						2 + 6 * extern16.size() +
+						2 + 6 * externPage.size();
 		
 		data = new byte[length];
 		int i = 0;
@@ -102,6 +113,12 @@ public class LinkData {
 		byte[] flatExtern16 = extern16.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
 		System.arraycopy(flatExtern16, 0, data, i, flatExtern16.length);
 		i += flatExtern16.length;
+		
+		data[i++] = (byte) ((externPage.size() & 0xff00) >> 8);
+		data[i++] = (byte) (externPage.size() & 0xff);
+		byte[] flatExternPage = externPage.stream().collect(() -> new ByteArrayOutputStream(), (b, e) -> b.write(e, 0, e.length), (a, b) -> {}).toByteArray();
+		System.arraycopy(flatExternPage, 0, data, i, flatExternPage.length);
+		i += flatExternPage.length;
 	}
 	
 }

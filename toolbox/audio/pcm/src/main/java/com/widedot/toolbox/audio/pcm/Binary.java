@@ -43,4 +43,9 @@ public class Binary implements ObjectDataInterface {
 		return new ArrayList<byte[]>();
 	}
 
+	@Override
+	public List<byte[]> getExternPage() throws Exception {
+		return new ArrayList<byte[]>();
+	}
+
 }

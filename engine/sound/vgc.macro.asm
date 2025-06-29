@@ -1,5 +1,6 @@
 _vgc.obj.play MACRO
         lda   \1       ; vgc.data.page
+        ora   #map.RAM_OVER_CART
     	ldx   \2       ; vgc.data
         ldb   \3       ; vgc.loop
         ldy   \4       ; vgc.callback

@@ -45,4 +45,9 @@ public class LwRaw implements ObjectDataInterface{
 	public List<byte[]> getExtern16() throws Exception {
 		return new ArrayList<byte[]>();
 	}
+
+	@Override
+	public List<byte[]> getExternPage() throws Exception {
+		return new ArrayList<byte[]>();
+	}
 }

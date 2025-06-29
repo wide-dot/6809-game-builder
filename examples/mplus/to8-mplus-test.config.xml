@@ -51,18 +51,19 @@
                     <lwasm gensource="gen/assets/sounds/vgm/ym-rythm.ymm">
                         <label name="vgm.ym.rythm"/>
                     </lwasm>
+                    <vgm2ymm filename="src/assets/sounds/vgm/ym-rythm.vgm" genbinary="src/assets/sounds/vgm/ym-rythm.ymm" codec="zx0"/>
                 </direntry>
 
                 <direntry name="assets.sounds.sn" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-melody.vgc">
-                        <label name="vgm.sn"/>
+                        <label name="sounds.sn" page="true"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-melody.vgm" genbinary="src/assets/sounds/vgm/sn-melody.vgc"/>
                 </direntry>
 
                 <direntry name="assets.sounds.sn.noise" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-noise.vgc">
-                        <label name="vgm.sn.noise"/>
+                        <label name="sounds.sn.noise"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-noise.vgm" genbinary="src/assets/sounds/vgm/sn-noise.vgc"/>
                 </direntry>

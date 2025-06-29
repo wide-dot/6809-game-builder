@@ -86,7 +86,6 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.file.decompress      ; OK
         jmp   >loader.file.linkData.load   ; OK
         jmp   >loader.file.linkData.unload ; TODO
-        jmp   >loader.file.getPage         ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -563,7 +562,7 @@ ld7     clra                      ; file is not empty
 tfrxua
         ldb   ,x+                 ; Read data
         stb   ,u+                 ; Write data
-        deca                      ; Until las
+        deca                      ; Until last
         bne   tfrxua              ; data reached
 return  rts
 
@@ -678,7 +677,7 @@ switchpage
 !
         cmpu  #map.ram.MON_START  ; Skip if not valid address 
         bhs   >
-        orb   #$60                ; Set RAM over cartridge space
+        orb   #map.RAM_OVER_CART  ; Set RAM over cartridge space
         stb   >map.CF74021.CART   ; Switch RAM page
         rts
 !       bra   *                   ; error trap
@@ -868,40 +867,6 @@ loader.file.linkData.unload
 
 
 ;---------------------------------------
-; loader.file.getPage
-;
-; input  REG : [X] file id
-; output REG : [B] page id (or $FF if not found)
-;---------------------------------------
-; Get the page ID where a file is loaded
-; by searching through loaded files with link data
-;---------------------------------------
-loader.file.getPage
-        pshs  x,y
-        ldy   >loader.file.linkDataIdx
-        beq   @notfound                       ; branch if no link data exists
-        ldd   linkData.header.occupiedSlots,y
-        beq   @notfound                       ; branch if no files loaded
-        leay  sizeof{linkData.header},y
-        std   @counter
-@loop
-        cmpx  linkData.entry.fileId,y         ; compare file IDs
-        beq   @found
-        leay  sizeof{linkData.entry},y        ; move to next entry
-        ldd   #0
-@counter equ *-2
-        subd  #1
-        std   @counter
-        bne   @loop
-@notfound
-        ldb   #$FF                            ; return $FF if not found
-        puls  x,y,pc
-@found
-        ldb   linkData.entry.filePage,y       ; return the page ID
-        puls  x,y,pc
-
-
-;---------------------------------------
 ; loader.file.link
 ;
 ;---------------------------------------
@@ -944,6 +909,12 @@ operand rmb types.WORD            ; PLUS operand
 symbol  rmb types.WORD            ; symbol id
         ENDSTRUCT
 
+linkData.content.externPg  STRUCT ; link to extern file page - custom code that does not exists in lwobj format
+offset  rmb types.WORD            ; offset to symbol
+operand rmb types.WORD            ; PLUS operand
+fileId  rmb types.WORD            ; file id
+        ENDSTRUCT
+
 loader.file.link
         pshs  d,x,y,u
         ; parse each file of loader.file.linkDataIdx
@@ -966,6 +937,7 @@ loader.file.link
         jsr   linkData.content.intern.skip
         jsr   loader.file.extern8.link
         jsr   loader.file.extern16.link
+        jsr   loader.file.externPg.link
         leax  sizeof{linkData.entry},x        ; move to next file
         ldd   #0
 @counter equ *-2
@@ -1105,7 +1077,81 @@ loader.file.extern16.link
         bne   <                                 ; check if more elements to process
         puls  d,x,u,pc
 
+;---------------------------------------
+; loader.file.externPg.link
+;
+; input  REG : [B] destination - page number
+; input  REG : [U] destination - address
+; input  REG : [Y] position in link data
+; output REG : [Y] position in link data
+;---------------------------------------
+; resolve external file page symbols
+;---------------------------------------
+loader.file.externPg.link
+        pshs  d,x,u
 
+        ; parse all EXTERNPG symbols
+        ldd   linkData.content.header.size,y
+        leay  sizeof{linkData.content.header},y
+        std   @counter
+        bne   >
+        puls  d,x,u,pc
+!
+        ; find symbol by searching in all file's linkData 
+        ldd   linkData.content.externPg.fileId,y
+        std   linkData.currentSymbol
+        jsr   loader.fileId.search
+        addd  linkData.content.externPg.operand,y ; add external symbol value to plus operand
+        ldx   linkData.content.externPg.offset,y  ; load offset to symbol reference
+        stx   @addr
+        stb   1234,u                              ; update address
+@addr   equ   *-2
+        leay  sizeof{linkData.content.externPg},y ; move to next symbol
+        ldd   #0
+@counter equ *-2
+        subd  #1
+        std   @counter
+        bne   <                                 ; check if more elements to process
+        puls  d,x,u,pc
+
+
+;---------------------------------------
+; loader.fileId.search
+;
+; input  REG : [D] file id
+; output REG : [B] page id (or $FF if not found)
+;---------------------------------------
+; Get the page ID where a file is loaded
+; by searching through loaded files with link data
+;---------------------------------------
+loader.fileId.search
+        pshs  x,y
+        ldy   >loader.file.linkDataIdx
+        beq   @notfound                       ; branch if no link data exists
+        ldx   linkData.header.occupiedSlots,y
+        beq   @notfound                       ; branch if no files loaded
+        leay  sizeof{linkData.header},y
+@loop
+        cmpd  linkData.entry.fileId,y         ; compare file IDs
+        beq   @found
+        leay  sizeof{linkData.entry},y        ; move to next entry
+        leax  -1,x
+        bne   @loop
+@notfound
+        ldb   #$FF                            ; return $FF if not found
+        puls  x,y,pc
+@found
+        ldb   linkData.entry.filePage,y       ; return the page ID
+        puls  x,y,pc
+
+
+;---------------------------------------
+; linkData.symbol.search
+;
+; input  REG : [D] symbol id
+; output REG : [D] symbol value
+;---------------------------------------
+; search for a symbol in all file's linkData
 linkData.symbol.search
         pshs  y,u
         ; parse each file of loader.file.linkDataIdx

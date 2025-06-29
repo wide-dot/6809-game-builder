@@ -30,6 +30,7 @@ public class LwObject implements ObjectDataInterface{
 
 	public Path path;
 	public List<LWSection> secLst;
+	private LwMap lwMap; // Cache for the associated .lwmap file
 	public static byte[] MAGIC_NUMBER = {0x4C, 0x57, 0x4F, 0x42, 0x4A, 0x31, 0x36, 0x00};
 	public static String[] opernames = {
 			"?",
@@ -408,6 +409,24 @@ public class LwObject implements ObjectDataInterface{
 		}
 	}
 
+	/**
+	 * Get the associated LwMap file for this object file
+	 * @return LwMap instance or null if the map file doesn't exist
+	 */
+	private LwMap getLwMap() {
+		if (lwMap == null) {
+			try {
+				// Convert .o file path to .lwmap path
+				String mapFilename = path.toString().replaceAll("\\.obj$", ".lwmap");
+				lwMap = new LwMap(mapFilename);
+			} catch (Exception e) {
+				log.debug("Could not load LwMap file for {}: {}", path, e.getMessage());
+				// Return null lwMap - will be handled gracefully
+			}
+		}
+		return lwMap;
+	}
+
 	@SuppressWarnings("unchecked")
 	public boolean loadCache(String fileName) {
 		
@@ -639,6 +658,9 @@ public class LwObject implements ObjectDataInterface{
 						}
 						
 						if (skip) continue;
+						
+						// Exclude symbols ending with "$PAGE"
+						if (sym.endsWith("$PAGE")) continue;
 					
 						int symid = LinkSymbols.add(sym);
 						
@@ -729,4 +751,93 @@ public class LwObject implements ObjectDataInterface{
 		
 		return extern16;
 	}	
+
+	private List<byte[]> externPage;
+	
+	@Override
+	public List<byte[]> getExternPage() throws Exception {
+		
+		if (externPage == null) {
+			externPage = new ArrayList<byte[]>();
+			for (LWSection section : secLst) {
+				for (Reloc reloc : section.incompletes) {
+					
+					if (reloc.flags == 1) {
+						int value = 0;
+						int oper = 0;
+						String sym = "";
+						boolean skip = false;
+						
+						// max one operator, only one PLUS is allowed
+						LWExprStackNode node = reloc.expr.head;
+						while (node != null) {
+							switch (node.term.term_type) {
+								case LWExprTerm.LW_TERM_INT:
+									value = node.term.value;
+									break;
+
+								case LWExprTerm.LW_TERM_SYM:
+									sym = node.term.symbol;
+									if (node.term.value == 1) {
+										skip = true; // internal symbol
+									}
+									break;
+
+								case LWExprTerm.LW_TERM_OPER:
+									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
+										oper++;
+									} else {
+										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
+									}
+									break;
+									
+								default :
+									throw new Exception ("unexpected term type: " + node.term.term_type);
+							}
+							node = node.next;
+						}
+						
+						if (oper>1) {
+							throw new Exception ("multiple PLUS operator is not supported");
+						}
+						
+						if (skip) continue;
+						
+						// Only include symbols ending with "$PAGE"
+						if (!sym.endsWith("$PAGE")) continue;
+					
+						// Extract the file identifier from the .lwmap file
+						String fileIdentifier = sym.substring(0, sym.length() - 5); // Remove "$PAGE" suffix
+						
+						LwMap map = getLwMap();
+						if (map == null) {
+							throw new Exception("Could not load .lwmap file for file ID lookup of symbol: " + fileIdentifier);
+						}
+						
+						Integer symbolValue = map.getSymbolValue(fileIdentifier);
+						if (symbolValue == null) {
+							throw new Exception("File ID not found in .lwmap for symbol: " + fileIdentifier);
+						}
+						
+						int fileId = symbolValue;
+						log.debug("Found file ID for '{}': {}", fileIdentifier, fileId);
+						
+						byte[] val = new byte[6];
+						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
+						val[1] = (byte) (reloc.offset & 0xff);
+						val[2] = (byte) ((value & 0xff00) >> 8);
+						val[3] = (byte) (value & 0xff);
+						val[4] = (byte) ((fileId & 0xff00) >> 8);
+						val[5] = (byte) (fileId & 0xff);
+						
+						log.debug("EXTERNPAGE: {}:{} {}", sym, fileId, ByteUtil.bytesToHex(val));
+						externPage.add(val);
+					}
+				}
+			}
+		}
+		
+		return externPage;
+	}
+
 }
