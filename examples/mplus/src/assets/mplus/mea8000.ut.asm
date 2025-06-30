@@ -23,7 +23,7 @@ mea8000.ut.testMEA8000
         rts
 @mea8000Present
         _monitor.print #mea8000.ut.detected
-        _cart.setRam #page.mea
+        _ram.cart.set #page.mea
         lda   #$3C
         ldx   #mea8000.phonemes
         ldy   #lotr.txt
@@ -49,9 +49,8 @@ mea8000.ut.testMEA8000.440Hz
 
         ; Flush keyboard buffer to prevent immediate termination
 @flushKeyboard
-        jsr   map.KTST                 ; Test if a key is in buffer
+        _monitor.jsr.ktst
         bcc   @keyboardFlushed         ; No key, buffer is empty
-        jsr   map.GETC                 ; Read and discard the key
         bra   @flushKeyboard           ; Check for more keys
 @keyboardFlushed
 
@@ -73,11 +72,9 @@ mea8000.ut.testMEA8000.440Hz
         ldd   #$87E0
         sta   map.MEA8000.D
         stb   map.MEA8000.D
-        jsr   map.KTST                  ; Test if a key is pressed
+        _monitor.jsr.ktst                 ; Test if a key is pressed
         bcc   <
-
-        ; Clear the keyboard buffer by reading the key
-        jsr   map.GETC                  ; Read and discard the pressed key
+        _monitor.jsr.getc                 ; Read and discard the pressed key
 
         ; Stop MEA8000 with STOP command
         ldb   #map.MEA8000.STOP_IMMEDIATE

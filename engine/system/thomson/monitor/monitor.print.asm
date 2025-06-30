@@ -7,10 +7,10 @@ monitor.print EXPORT
 monitor.print
 !       ldb   ,x+
         bmi   @lastC
-        jsr   map.PUTC
+        _monitor.jsr.putc
         bra   <
 @lastC  andb  #%01111111
-        jmp   map.PUTC                 ; print last char and return
+        _monitor.jmp.putc
 
 monitor.printHex8
         bsr   >
@@ -22,7 +22,7 @@ monitor.printHex8
         adca  #$40
         daa
         exg   a,b
-        jmp   map.PUTC
+        _monitor.jmp.putc
 
 monitor.printHex16
         pshs  b

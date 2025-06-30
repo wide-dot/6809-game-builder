@@ -133,7 +133,7 @@ ef6850.ut.testMIDI
 @readOK ldb   map.EF6850.RX
         pshs  b
         jsr   monitor.printHex8
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         puls  b
         rts
 
@@ -166,7 +166,7 @@ ef6850.ut.midi.firqHandler
         inc   ef6850.ut.midi.rxCount
         pshs  b
         jsr   monitor.printHex8
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         puls  b
         bra   @exit
         ;
@@ -220,12 +220,12 @@ ef6850.ut.detectEF6850
  ; ----------------------------------------------------------------------------
 
 ef6850.ut.returnOK
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 
 ef6850.ut.returnKO
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         orcc  #%00000001 ; KO
         rts
 

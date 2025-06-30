@@ -29,10 +29,10 @@ init
 
         jsr   keyboard.disableBuzzer
 
-        _cart.setRam  #page.ymm   ; mount ram page that contains player and sound data
+        _ram.cart.set  #page.ymm   ; mount ram page that contains player and sound data
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
-        _cart.setRam  #page.vgc
+        _ram.cart.set  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
 
@@ -47,23 +47,23 @@ mainLoop
         ;beq   >
 
         ldb   #$68 ; ENTER
-        stb   $A7C1
-        lda   $A7C1
+        stb   map.MC6821.PRB
+        lda   map.MC6821.PRB
         bmi   >
 
         _irq.off
-        _cart.setRam  #page.vgc
+        _ram.cart.set  #page.vgc
         _sn76489.init
-        _cart.setRam  #page.ymm
+        _ram.cart.set  #page.ymm
         _ym2413.init
 
-        _data.setRam #loader.PAGE ; load a new song from disk 
+        _ram.data.set #loader.PAGE ; load a new song from disk 
         _loader.scene.load #scenes.level1
 
-        _cart.setRam  #page.ymm
+        _ram.cart.set  #page.ymm
         _ymm.obj.play #page.ymm,#sounds.level1.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
 
-        _cart.setRam  #page.vgc
+        _ram.cart.set  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.level1.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         _irq.on
 !
@@ -81,10 +81,10 @@ userIRQ
         _palette.checkUpdate
         _gfxlock.swap
 
-        _cart.setRam #page.ymm   ; mount object page
+        _ram.cart.set #page.ymm   ; mount object page
         _ymm.frame.play          ; play a music frame
 
-        _cart.setRam #page.vgc   ; mount object page
+        _ram.cart.set #page.vgc   ; mount object page
         _vgc.frame.play          ; play a music frame
         rts
 

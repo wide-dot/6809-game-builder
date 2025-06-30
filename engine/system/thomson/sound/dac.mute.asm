@@ -9,15 +9,15 @@ dac.unmute            EXPORT
 ; no need to set thoses bits at runtime
 
 dac.mute
-        lda   map.MC6846.PCR
-        ora   #%00001000
-        sta   map.MC6846.PCR
+        lda   map.DAC_MUTE
+        ora   #map.bit.DAC_MUTE
+        sta   map.DAC_MUTE
         rts
 
 dac.unmute
-        lda   map.MC6846.PCR
-        anda  #%11110111
-        sta   map.MC6846.PCR
+        lda   map.DAC_MUTE
+        anda  #^map.bit.DAC_MUTE
+        sta   map.DAC_MUTE
         rts
 
  ENDSECTION

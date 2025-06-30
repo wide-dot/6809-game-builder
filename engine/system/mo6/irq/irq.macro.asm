@@ -8,6 +8,11 @@ _irq.setRoutine MACRO
         std   irq.userRoutine
  ENDM
 
+_irq.set50Hz MACRO
+        ; dummy macro for code compatibility
+        ; factory set to 50hz
+ ENDM
+
 _irq.on MACRO
         jsr   irq.on
  ENDM

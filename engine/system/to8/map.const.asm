@@ -127,7 +127,6 @@ map.SETP            equ $EC00 ; set color palette
 ; system monitor registers
 map.REG.DP          equ $60   ; direct page for system monitor registers
 map.STATUS          equ $6019 ; status bitfield
-map.STATUS.IRQ      equ %00100000 ; IRQ custom timer routine enabled
 map.DK.OPC          equ $6048 ; operation
 map.DK.DRV          equ $6049 ; drive
 map.DK.SEC          equ $604C ; sector
@@ -210,6 +209,19 @@ map.MEA8000.ROE_BIT        equ %00000001 ; Bit 0: ROE (0=internal REQ, 1=externa
 ; MEA8000 Status Register bit masks
 map.MEA8000.REQ_BIT        equ %10000000 ; Bit 7: REQ (0=busy, 1=ready)
 
+; STATUS bit masks
+map.STATUS.MINUSCULE  equ %10000000
+map.STATUS.SCROLL     equ %01000000
+map.STATUS.IRQ        equ %00100000
+map.STATUS.GFXFORM    equ %00010000
+map.STATUS.GFXBACK    equ %00001000
+map.STATUS.CURSOR     equ %00000100
+map.STATUS.GETC       equ %00000010
+map.STATUS.GETC_SS2   equ %00000001
+
+; MC6846.PCR bit masks
+map.MC6846.PCR.DAC_MUTE  equ %00001000
+
 map.RAM_OVER_CART     equ %01100000
 
 ; -----------------------------------------------------------------------------
@@ -218,5 +230,7 @@ map.RAM_OVER_CART     equ %01100000
 map.DAC            equ map.MC6821.PRA2
 map.RND            equ map.MC6846.TMSB
 map.HALFPAGE       equ map.MC6846.PDR
+map.DAC_MUTE       equ map.MC6846.PCR
+map.bit.DAC_MUTE   equ map.MC6846.PCR.DAC_MUTE
 
     ENDC

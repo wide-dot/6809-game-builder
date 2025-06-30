@@ -77,6 +77,7 @@ map.EXTPORT         equ $A7
 map.IEEE488         equ $A7F0 ; to A7F7
 map.EF6850.CTRL     equ $A7F2 ; MIDI
 map.EF6850.TX       equ $A7F3 ; MIDI
+map.EF6850.RX       equ $A7F3 ; MIDI
 map.MEA8000.D       equ $A7FE ; Vocal synth
 map.MEA8000.A       equ $A7FF ; Vocal synth
 
@@ -271,7 +272,7 @@ map.MEA8000.ROE_BIT        equ %00000001 ; Bit 0: ROE (0=internal REQ, 1=externa
 ; MEA8000 Status Register bit masks
 map.MEA8000.REQ_BIT        equ %10000000 ; Bit 7: REQ (0=busy, 1=ready)
 
-map.RAM_OVER_CART     equ %01100000
+; STATUS bit masks
 map.STATUS.MINUSCULE  equ %10000000
 map.STATUS.SCROLL     equ %01000000
 map.STATUS.QWERTY     equ %00100000
@@ -281,11 +282,25 @@ map.STATUS.CURSOR     equ %00000100
 map.STATUS.KEYREPEAT  equ %00000010
 map.STATUS.KEYREAD    equ %00000001
 
+; MC6821.PRA bit masks
+map.MC6821.PRA.HALFPAGE  equ %00000001
+map.MC6821.PRA.PEN_BTN   equ %00000010
+map.MC6821.PRA.DAC_MUTE  equ %00000100
+map.MC6821.PRA.KEYB_LN8  equ %00001000
+map.MC6821.PRA.SHIFTLOCK equ %00010000
+map.MC6821.PRA.ROM_BANK  equ %00100000
+map.MC6821.PRA.K7_WRITE  equ %01000000
+map.MC6821.PRA.K7_READ   equ %10000000
+
+map.RAM_OVER_CART     equ %01100000
+
 ; -----------------------------------------------------------------------------
 ; mapping to generic names
 
 map.DAC            equ map.MC6821.PRA2
 ; map.RND            equ map.MC6846.TMSB find a register for random !
 map.HALFPAGE       equ map.MC6821.PRA
+map.DAC_MUTE       equ map.MC6821.PRA
+map.bit.DAC_MUTE   equ map.MC6821.PRA.DAC_MUTE
 
     ENDC

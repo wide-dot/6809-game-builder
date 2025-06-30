@@ -4,7 +4,7 @@ dac.ut.testDAC               EXPORT
 dac.ut.testDAC.440Hz         EXPORT
 
         INCLUDE "engine/system/thomson/sound/dac.enable.asm"
-        INCLUDE "engine/system/to8/sound/dac.mute.asm"
+        INCLUDE "engine/system/thomson/sound/dac.mute.asm"
 
  SECTION code
 
@@ -18,10 +18,10 @@ dac.ut.testDAC.440Hz         EXPORT
 dac.ut.state fcb 0
 
 dac.ut.testDAC
-        _cart.setRam #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
+        _ram.cart.set #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
         _firq.pcm.init                    ; bind pcm firq routine
         _irq.off
-        jsr   dac.unmute
+        ;jsr   dac.unmute
         jsr   dac.enable
         clr   dac.ut.state
 
@@ -105,14 +105,14 @@ dac.ut.dac.testFailed
 dac.ut.testDAC.440Hz
         ; Flush keyboard buffer to prevent immediate termination
 @flushKeyboard
-        jsr   map.KTST                 ; Test if a key is in buffer
+        _monitor.jsr.ktst                  ; Test if a key is in buffer
         bcc   @keyboardFlushed         ; No key, buffer is empty
-        jsr   map.GETC                 ; Read and discard the key
+        _monitor.jsr.getc                  ; Read and discard the key
         bra   @flushKeyboard           ; Check for more keys
 @keyboardFlushed
 
         ; Enable the Thomson TO8 DAC
-        jsr   dac.unmute
+        ;jsr   dac.unmute
         jsr   dac.enable
         
         ; Calculate timing for 440Hz square wave

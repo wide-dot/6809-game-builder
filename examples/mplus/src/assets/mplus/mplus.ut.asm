@@ -116,14 +116,14 @@ mplus.ut.timer.testReset
 mplus.ut.timer.returnOK
         jsr   monitor.printHex16
 mplus.ut.returnOK
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         andcc #%11111110 ; OK
         rts
 
 mplus.ut.timer.returnKO
         jsr   monitor.printHex16
 mplus.ut.returnKO
-        _monitor.putc #ascii.SPACE
+        _monitor.jsr.putc.invoke #ascii.SPACE
         orcc  #%00000001 ; KO
         rts
 

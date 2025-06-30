@@ -2,16 +2,20 @@
  opt c,ct
 
 ; ----- FRAMEWORK MACRO / CONSTANT  --------------------------------------------
-        INCLUDE "engine/system/to8/pack/std.asm"
-        INCLUDE "engine/system/to8/pack/irq.asm"
+        INCLUDE "engine/system/mo6/pack/std.asm"
+        INCLUDE "engine/system/mo6/pack/irq.asm"
         INCLUDE "engine/system/thomson/pack/monitor.asm"
-        INCLUDE "engine/system/to8/monitor/monitor.macro.asm"
+        INCLUDE "engine/system/mo6/monitor/monitor.macro.asm"
         INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/pack/vgc.asm"
 
 ; ----- INITIALIZATION ---------------------------------------------------------
 main.init
         _glb.init
+        ; MO6: disable buzzer
+        lda   map.STATUS
+        ora   #map.STATUS.CUTBUZZER
+        sta   map.STATUS
         _monitor.jsr.setp.invoke #1,#$0000,#$0888
         _monitor.console.set80C
 
@@ -123,8 +127,8 @@ main.str.KO         fcs "KO"
 ; ----- FRAMEWORK HARDWARE SPECIFIC ASM CODE
 ; if irq is declared after framework code, we will have unapplied irq.on/off at runtime link
 ; looks like a bug ? TODO: investiguate
-        INCLUDE "engine/system/to8/irq/irq.asm"
-        INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "engine/system/mo6/irq/irq.asm"
+        INCLUDE "engine/system/mo6/map.const.asm"
         INCLUDE "engine/system/thomson/controller/ascii.const.asm"
 
 ; ----- FRAMEWORK ASM CODE  ----------------------------------------------------

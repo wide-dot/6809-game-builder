@@ -1,9 +1,10 @@
-_cart.setRam MACRO 
+_ram.cart.set MACRO 
         lda   \1
+        ora   #map.RAM_OVER_CART
         sta   map.CF74021.CART      ; Set RAM over catridge space, switch RAM page
  ENDM
 
-_data.setRam MACRO 
+_ram.data.set MACRO 
         lda   #$10
         ora   map.CF74021.SYS1.R ; Set RAM
         sta   map.CF74021.SYS1.R ; over data

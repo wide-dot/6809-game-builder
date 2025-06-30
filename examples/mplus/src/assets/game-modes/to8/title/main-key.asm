@@ -21,7 +21,7 @@ init
         _irq.setRoutine #userIRQ          ; set user routine called by irq manager
         _irq.set50Hz                      ; set irq to run every video frame, when spot is outside visible area
         ;_palette.update                   ; update palette with the default black palette
-        _cart.setRam #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
+        _ram.cart.set #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
         _gfxlock.halfPage.swap.off        ; do not auto swap halp page in sync with double buffering
         _gfxlock.halfPage.set0            ; set the visible half page (sample data)
         _gfxlock.init                     ; init double buffering

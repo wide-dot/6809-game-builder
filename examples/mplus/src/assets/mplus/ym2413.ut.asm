@@ -1,5 +1,9 @@
-vgm.ym                       EXTERNAL
-vgm.ym.rythm                 EXTERNAL
+sounds.ym                       EXTERNAL
+sounds.ym.rythm                 EXTERNAL
+
+; memory page based on file id
+assets.sounds.ym$PAGE           EXTERNAL
+assets.sounds.ym.rythm$PAGE     EXTERNAL
 
 ym2413.ut.testYM2413         EXPORT
 ym2413.ut.testYM2413.440Hz   EXPORT
@@ -10,24 +14,31 @@ ym2413.ut.testYM2413.440Hz   EXPORT
  ; testYM2413
  ; ----------------------------------------------------------------------------
 
-page.ymm equ map.RAM_OVER_CART+5
-page.ymm.rythm equ map.RAM_OVER_CART+6
 ym2413.ut.testYM2413.lock fcb 0
 
 ym2413.ut.testYM2413
         _irq.init
-        _irq.setRoutine #ym2413.ut.testYM2413.irq
-        _irq.set50Hz
 
-        lda   ym2413.ut.testYM2413.lock
+        ; select vgm to play
+        tst   ym2413.ut.testYM2413.lock
         beq   >
         clr   ym2413.ut.testYM2413.lock
-        _ymm.obj.play #page.ymm,#vgm.ym.rythm,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
+        _irq.setRoutine #ym2413.ut.testYM2413.irq
+        _ymm.obj.play #assets.sounds.ym.rythm$PAGE,#sounds.ym.rythm,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
         bra   @on
-!       _ymm.obj.play #page.ymm,#vgm.ym,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
-@on     _irq.on
+!       
+        _irq.setRoutine #ym2413.ut.testYM2413.irq
+        _ymm.obj.play #assets.sounds.ym$PAGE,#sounds.ym,#ymm.NO_LOOP,#ym2413.ut.testYM2413.callback
+@on     
+        ; start irq
+        _irq.set50Hz
+        _irq.on
+
+        ; blocking code until callback is called
 !       lda   ym2413.ut.testYM2413.lock
         beq   <
+
+        ; reinit state
         _ym2413.init
         andcc #%11111110
         rts
@@ -39,7 +50,12 @@ ym2413.ut.testYM2413.callback
         rts
 
 ym2413.ut.testYM2413.irq
-        _cart.setRam #page.ymm
+        _ram.cart.set #assets.sounds.ym$PAGE
+        _ymm.frame.play
+        rts
+
+ym2413.ut.testYM2413.rythm.irq
+        _ram.cart.set #assets.sounds.ym.rythm$PAGE
         _ymm.frame.play
         rts
 
@@ -53,9 +69,9 @@ ym2413.ut.testYM2413.440Hz
         
         ; Flush keyboard buffer to prevent immediate termination
 @flushKeyboard
-        jsr   map.KTST                 ; Test if a key is in buffer
+        _monitor.jsr.ktst                  ; Test if a key is in buffer
         bcc   @keyboardFlushed         ; No key, buffer is empty
-        jsr   map.GETC                 ; Read and discard the key
+        _monitor.jsr.getc                  ; Read and discard the key
         bra   @flushKeyboard           ; Check for more keys
 @keyboardFlushed
         
@@ -101,11 +117,9 @@ ym2413.ut.testYM2413.440Hz
         ; Display message to user
         _monitor.print #ym2413.ut.440Hz.pressKey
 @waitForKey
-        jsr   map.KTST                 ; Test if a key is pressed
+        _monitor.jsr.ktst                 ; Test if a key is pressed
         bcc   @waitForKey              ; No key pressed, continue waiting
-        
-        ; Clear the keyboard buffer by reading the key
-        jsr   map.GETC                 ; Read and discard the pressed key
+        _monitor.jsr.getc                 ; Read and discard the pressed key
         
         ; Turn off the note (key off)
         lda   #$20                     ; Register $20 = channel 0 F-Number high + octave + key

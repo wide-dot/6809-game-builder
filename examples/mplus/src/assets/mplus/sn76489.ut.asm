@@ -57,12 +57,12 @@ sn76489.ut.testSN76489.callback
         rts
 
 sn76489.ut.testSN76489.irq
-        _cart.setRam #assets.sounds.sn$PAGE
+        _ram.cart.set #assets.sounds.sn$PAGE
         _vgc.frame.play
         rts
 
 sn76489.ut.testSN76489.noise.irq
-        _cart.setRam #assets.sounds.sn.noise$PAGE
+        _ram.cart.set #assets.sounds.sn.noise$PAGE
         _vgc.frame.play
         rts
 
@@ -73,9 +73,9 @@ sn76489.ut.testSN76489.noise.irq
 sn76489.ut.testSN76489.440Hz
         ; Flush keyboard buffer to prevent immediate termination
 @flushKeyboard
-        jsr   map.KTST                 ; Test if a key is in buffer
+        _monitor.jsr.ktst
         bcc   @keyboardFlushed         ; No key, buffer is empty
-        jsr   map.GETC                 ; Read and discard the key
+        _monitor.jsr.getc                  ; Read and discard the key
         bra   @flushKeyboard           ; Check for more keys
 @keyboardFlushed
 
@@ -111,11 +111,9 @@ sn76489.ut.testSN76489.440Hz
         ; Display message to user
         _monitor.print #sn76489.ut.440Hz.pressKey
 @waitForKey
-        jsr   map.KTST                 ; Test if a key is pressed
+        _monitor.jsr.ktst                  ; Test if a key is pressed
         bcc   @waitForKey              ; No key pressed, continue waiting
-        
-        ; Clear the keyboard buffer by reading the key
-        jsr   map.GETC                 ; Read and discard the pressed key
+        _monitor.jsr.getc                  ; Read and discard the pressed key
         
         ; Silence Channel 0 by setting maximum attenuation
         lda   #$9F                     ; Channel 0 maximum attenuation (silent)
