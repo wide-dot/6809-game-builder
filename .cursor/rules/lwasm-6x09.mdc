@@ -1,7 +1,6 @@
 ---
-description: LWASM 6x09 Assembly Rules - LWTOOLS 4.24 comprehensive coverage
-globs: 
-alwaysApply: true
+globs: *.asm
+alwaysApply: false
 ---
 ---
 description: LWASM 6x09 Assembly Rules - LWTOOLS 4.24 comprehensive coverage

@@ -1,6 +1,5 @@
 _vgc.obj.play MACRO
-        lda   \1       ; vgc.data.page
-        ora   #map.RAM_OVER_CART
+        _ram.cart.set \1 ; this macro should use register A
     	ldx   \2       ; vgc.data
         ldb   \3       ; vgc.loop
         ldy   \4       ; vgc.callback
@@ -8,5 +7,6 @@ _vgc.obj.play MACRO
  ENDM
 
 _vgc.frame.play MACRO
+        _ram.cart.set \1
         jsr   vgc.frame.play
  ENDM

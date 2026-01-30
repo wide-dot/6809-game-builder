@@ -27,7 +27,7 @@ init
         _palette.update           ; update palette with the default black palette
         _gfxlock.init
 
-        jsr   keyboard.disableBuzzer
+        _keyboard.fast.disableBuzzer
 
         _ram.cart.set  #page.ymm   ; mount ram page that contains player and sound data
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
@@ -80,12 +80,8 @@ mainLoop
 userIRQ
         _palette.checkUpdate
         _gfxlock.swap
-
-        _ram.cart.set #page.ymm   ; mount object page
-        _ymm.frame.play          ; play a music frame
-
-        _ram.cart.set #page.vgc   ; mount object page
-        _vgc.frame.play          ; play a music frame
+        _ymm.frame.play #page.ymm
+        _vgc.frame.play #page.vgc
         rts
 
  ENDSECTION

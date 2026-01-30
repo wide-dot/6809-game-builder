@@ -23,6 +23,7 @@ public class Vgm2YmmPlugin {
 	public static String INPUT_EXT2 = ".vgz";
 	public static String BIN_EXT = ".ymm";
 	public static int MAX_OFFSET_YMM = 512;
+	public static int MAX_OUTPUT_SIZE = 16384; // Maximum output size in bytes
 	
 	public static String filename;
 	public static String genbinary;
@@ -165,6 +166,15 @@ public class Vgm2YmmPlugin {
 				outputStream.write(loop);
 			}
 			
+			// Check if the final output size exceeds the maximum allowed size
+			int finalOutputSize = outputStream.size();
+			if (finalOutputSize > MAX_OUTPUT_SIZE) {
+				String errorMsg = String.format("Compressed output size (%d bytes) exceeds maximum allowed size (%d bytes) for file: %s", 
+					finalOutputSize, MAX_OUTPUT_SIZE, file.getName());
+				log.error(errorMsg);
+				throw new IOException(errorMsg);
+			}
+						
 			OutputStream fileStream = new FileOutputStream(outFileName);
 			outputStream.writeTo(fileStream);
 			outputStream.close();

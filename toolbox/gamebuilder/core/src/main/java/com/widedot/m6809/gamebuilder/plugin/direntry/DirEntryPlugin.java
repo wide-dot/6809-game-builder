@@ -189,30 +189,42 @@ public class DirEntryPlugin {
 		// write file to media
 	    byte[] dataDiskLocation = media.cwrite(section, bin);
 	    
+		// process link data first to determine if we actually have link data
+		boolean hasLinkData = false;
+		LinkData linkdata = null;
+		byte[] linkDiskLocation = null;
+		
+		if (loadtimelink) {
+			// aggregate all link data
+			linkdata = new LinkData();
+			for (ObjectDataInterface obj : objects) {
+				linkdata.add(obj);
+			}
+			linkdata.process();
+			
+			// only create link block if there is actual link data
+			if (linkdata.data.length > 0) {
+				linkDiskLocation = media.cwrite(linkSection, linkdata.data);
+				hasLinkData = true;
+			}
+		}
+		
 		// build direntry data
 	    int i = 0;
 		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
-		if (loadtimelink) direntry[i] = (byte) (direntry[i] | 0b01000000);
-		direntry[i] = (byte) (direntry[i] | (((length-1) >> 8) & 0b00111111)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
+		if (hasLinkData)  direntry[i] = (byte) (direntry[i] | 0b01000000);
+		int encodedLength = (length-1) & 0x3fff;
+		direntry[i] = (byte) (direntry[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
 		
-		direntry[i++] = (byte) (direntry[i] | ((length-1) & 0xff)); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
+		direntry[i++] = (byte) (direntry[i] | (encodedLength & 0xff)); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
 		
 		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
 		i += 6;
 		
 		if (compress) i += 8;
 		
-		if (loadtimelink) {
-			
-			// aggregate all link data
-			LinkData linkdata = new LinkData();
-			for (ObjectDataInterface obj : objects) {
-				linkdata.add(obj);
-			}
-			linkdata.process();
-		    byte[] linkDiskLocation = media.cwrite(linkSection, linkdata.data);
-		    
+		if (hasLinkData) {
 			direntry[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
 			direntry[i++] = (byte)(linkdata.data.length & 0xff);
 			

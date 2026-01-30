@@ -1,5 +1,5 @@
 ;*******************************************************************************
-; Read keyboard scan code
+; Read keyboard ascii code
 ;
 ;
 ; ------------------------------------------------------------------------------
@@ -16,9 +16,8 @@ keyboard.held    fcb   0
 keyboard.pressed fcb   0
 
 keyboard.read
-        clrb
-        stb   keyboard.pressed
-        lda   $map.MC6821.PRA
+        clr   keyboard.pressed
+        lda   map.MC6821.PRA
         lsra                   ; Was a key pressed ?
         bcc   >                ; No exit
         jsr   map.GETC         ; Read new key code in b

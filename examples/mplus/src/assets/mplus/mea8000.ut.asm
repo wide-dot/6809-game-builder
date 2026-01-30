@@ -1,4 +1,5 @@
-lotr.txt                     EXTERNAL
+sounds.mea8000               EXTERNAL
+assets.sounds.mea8000$PAGE   EXTERNAL
 
 mea8000.ut.testMEA8000       EXPORT
 mea8000.ut.testMEA8000.440Hz EXPORT
@@ -9,8 +10,6 @@ mea8000.ut.detectMEA8000     EXPORT
  ; ----------------------------------------------------------------------------
  ; testMEA8000
  ; ----------------------------------------------------------------------------
-
-page.mea equ map.RAM_OVER_CART+8
 
 ; phonemes
 mea8000.ut.testMEA8000
@@ -23,10 +22,10 @@ mea8000.ut.testMEA8000
         rts
 @mea8000Present
         _monitor.print #mea8000.ut.detected
-        _ram.cart.set #page.mea
+        _ram.cart.set #assets.sounds.mea8000$PAGE
         lda   #$3C
         ldx   #mea8000.phonemes
-        ldy   #lotr.txt
+        ldy   #sounds.mea8000
         jsr   mea8000.phonemes.read
         andcc #%11111110 ; OK
         rts
@@ -41,24 +40,17 @@ mea8000.ut.testMEA8000.440Hz
         bcc   @mea8000Present           ; Carry clear = MEA8000 detected
         ; MEA8000 not present - display message and skip test
         _monitor.print #mea8000.ut.notDetected
+        _monitor.print #main.str.CRLF
         andcc #%11111110 ; OK
         rts
 @mea8000Present
         ; Display message to user
         _monitor.print #mea8000.ut.mea440Hz.pressKey
-
-        ; Flush keyboard buffer to prevent immediate termination
-@flushKeyboard
-        _monitor.jsr.ktst
-        bcc   @keyboardFlushed         ; No key, buffer is empty
-        bra   @flushKeyboard           ; Check for more keys
-@keyboardFlushed
-
+        _time.ms.wait #500
+        
         ; Initialize MEA8000
         ldb   #map.MEA8000.STOP_SLOW
         stb   map.MEA8000.A
-!       tst   map.MEA8000.A
-        bpl   <
         lda   #$DC ; pitch 440Hz
         sta   map.MEA8000.D
         
@@ -72,9 +64,13 @@ mea8000.ut.testMEA8000.440Hz
         ldd   #$87E0
         sta   map.MEA8000.D
         stb   map.MEA8000.D
-        _monitor.jsr.ktst                 ; Test if a key is pressed
-        bcc   <
-        _monitor.jsr.getc                 ; Read and discard the pressed key
+ IFDEF TO8
+        _keyboard.fast.check
+ ENDC
+ IFDEF MO6
+        _keyboard.fast.check #scancode.ENTER
+ ENDC
+        beq   <
 
         ; Stop MEA8000 with STOP command
         ldb   #map.MEA8000.STOP_IMMEDIATE
@@ -120,7 +116,7 @@ mea8000.ut.notDetected fcs "MEA8000 UNDETECTED "
 mea8000.ut.detected fcs "DETECTED "
 
 ; MEA8000 test messages
-mea8000.ut.mea440Hz.pressKey fcc "Playing MEA8000 sustained vowel (440Hz) - Press any key to stop..."
+mea8000.ut.mea440Hz.pressKey fcc "Playing MEA8000 sustained vowel (440Hz) - press enter to stop..."
                              _monitor.str.CRLF
 
  ENDSECTION 

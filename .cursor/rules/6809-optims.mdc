@@ -1,6 +1,5 @@
 ---
-description: 
-globs: 
+globs: *.asm
 alwaysApply: false
 ---
 # Règles d'optimisation de code assembleur 6809
@@ -529,7 +528,123 @@ CLRx
 ; -> CLRx (suppression du LDx)
 ```
 
+## Optimisations avancées de dispatch
+
+### Tables d'adresses pour dispatch rapide
+
+```assembly
+; Pattern: Dispatch par comparaisons multiples
+CMPA #$01
+BEQ handler1
+CMPA #$02
+BEQ handler2
+CMPA #$03
+BEQ handler3
+; -> Remplacer par table d'adresses
+```
+
+```assembly
+; Optimisation: Table d'adresses avec saut indirect
+CMPA #max_value                         ; Test de range unique
+BHI unknown_handler
+DECA                                    ; Convert to 0-based
+LSLA                                    ; * 2 pour adresses 16-bit
+LDX #addr_table
+JMP [A,X]                               ; Saut indirect via table
+
+addr_table
+        FDB handler1
+        FDB handler2
+        FDB handler3
+```
+
+**Avantages:**
+- Temps constant O(1) vs O(n) pour comparaisons
+- Un seul test de range vs multiples comparaisons
+- Extensibilité facile pour nouveaux cas
+- Exploitation optimale du mode d'adressage indexé indirect 6809
+
+**Coût:** 2*N bytes pour N handlers (très acceptable)
+
+### Optimisation de boucles avec compteurs
+
+```assembly
+; Pattern: Boucle avec registre Y comme compteur
+LDY #count
+loop:
+    ; traitement
+    LEAY -1,Y
+    BNE loop
+; -> Optimiser avec registre B
+```
+
+```assembly
+; Optimisation: Utiliser B comme compteur
+LDB #count
+loop:
+    ; traitement
+    DECB                                ; Plus rapide que LEAY -1,Y
+    BNE loop
+```
+
+**Gain:** DECB (2 cycles) vs LEAY -1,Y (5+ cycles)
+
+### Réutilisation de valeurs de registres
+
+```assembly
+; Pattern: Rechargement inutile de valeurs
+STB addr1
+LDB #same_value
+STB addr2
+; -> Réutiliser la valeur déjà en B
+```
+
+```assembly
+; Optimisation: Réutilisation directe
+STB addr1
+STB addr2                               ; Réutilise la valeur de B
+```
+
+### Optimisation avec le registre D (16-bit)
+
+```assembly
+; Pattern: Comparaisons multiples d'octets consécutifs
+LDA addr
+CMPA #'M'
+BNE invalid
+LDA addr+1
+CMPA #'U'
+BNE invalid
+LDA addr+2
+CMPA #'B'
+BNE invalid
+LDA addr+3
+CMPA #'8'
+BNE invalid
+; -> Utiliser le registre D pour traiter 2 octets à la fois
+```
+
+```assembly
+; Optimisation: Comparaisons 16-bit avec registre D
+LDD addr                                ; Charge 2 octets en une fois
+CMPD #'M'*256+'U'                       ; Compare "MU" en 16-bit
+BNE invalid
+LDD addr+2                              ; Charge les 2 octets suivants
+CMPD #'B'*256+'8'                       ; Compare "B8" en 16-bit
+BNE invalid
+```
+
+**Avantages:**
+- Division par 2 du nombre d'instructions de chargement
+- Division par 2 du nombre de comparaisons
+- Exploitation native des capacités 16-bit du 6809
+- Gain de 50% en cycles et en taille de code
+
+**Applicable pour:** Validation de signatures, comparaisons de chaînes courtes, checksums
+
 ## Conclusion
 
 Ces règles permettent d'optimiser significativement le code 6809 généré par un compilateur, avec des gains typiques de 20-40% en taille et vitesse selon la nature du code source. L'optimiseur fonctionne par passes multiples pour maximiser les effets de synergie entre optimisations.
+
+Les optimisations de dispatch par table d'adresses sont particulièrement efficaces pour les machines d'état, interpréteurs, et gestionnaires de commandes, exploitant pleinement les capacités d'adressage avancées du 6809.
 

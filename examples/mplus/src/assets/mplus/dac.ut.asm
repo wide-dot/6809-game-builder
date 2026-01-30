@@ -1,4 +1,5 @@
 samples.timpani              EXTERNAL
+assets.sounds.samples$PAGE   EXTERNAL
 
 dac.ut.testDAC               EXPORT
 dac.ut.testDAC.440Hz         EXPORT
@@ -18,10 +19,10 @@ dac.ut.testDAC.440Hz         EXPORT
 dac.ut.state fcb 0
 
 dac.ut.testDAC
-        _ram.cart.set #map.RAM_OVER_CART+5 ; set ram over cartridge space (sample data)
-        _firq.pcm.init                    ; bind pcm firq routine
+        _ram.cart.set #assets.sounds.samples$PAGE
+        _firq.pcm.init
         _irq.off
-        ;jsr   dac.unmute
+        jsr   dac.unmute
         jsr   dac.enable
         clr   dac.ut.state
 
@@ -103,16 +104,8 @@ dac.ut.dac.testFailed
  ; ----------------------------------------------------------------------------
 
 dac.ut.testDAC.440Hz
-        ; Flush keyboard buffer to prevent immediate termination
-@flushKeyboard
-        _monitor.jsr.ktst                  ; Test if a key is in buffer
-        bcc   @keyboardFlushed         ; No key, buffer is empty
-        _monitor.jsr.getc                  ; Read and discard the key
-        bra   @flushKeyboard           ; Check for more keys
-@keyboardFlushed
-
         ; Enable the Thomson TO8 DAC
-        ;jsr   dac.unmute
+        jsr   dac.unmute
         jsr   dac.enable
         
         ; Calculate timing for 440Hz square wave

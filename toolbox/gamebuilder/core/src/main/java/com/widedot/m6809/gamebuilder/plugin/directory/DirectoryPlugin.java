@@ -150,7 +150,7 @@ public class DirectoryPlugin {
 			int entryIndex = 0;
 			for (DirEntry entry : media.getDirEntries()) {
 				textWriter.write(System.lineSeparator());
-				textWriter.write("=== Entry " + entryIndex + " ===" + System.lineSeparator());
+				textWriter.write("=== Entry " + entryIndex + " [" + entry.name + "] ===" + System.lineSeparator());
 				textWriter.write(DirEntryDecoder.analyzeEntry(entry));
 				textWriter.write(System.lineSeparator());
 				entryIndex++;

@@ -23,7 +23,7 @@
         cmpa  >$fff0              ; Check machine code
         bhs   err                 ; Error if not TO+
 
-; Check computer memory
+; Check computer memory extension
         IFDEF boot.CHECK_MEMORY_EXT
         ldx   #mess2              ; Error message
         lda   #$10
@@ -68,6 +68,7 @@
         std   <map.DK.OPC        ; Read/Head 0
         ldu   #blist             ; Interleave list
         ldx   #mess3             ; Error message
+        incb                     ; first sector is the boot sector
 boot2   lda   b,u                ; Get sector
         sta   <map.DK.SEC        ; number
         jsr   >map.DKCONT        ; Load sector
@@ -76,10 +77,27 @@ boot2   lda   b,u                ; Get sector
         bcs   err                ; Skip if error
 boot3   inc   <map.DK.BUF        ; Move sector ptr
         incb                     ; Sector+1
-        dec   >secnbr            ; Next
+        cmpb  #$10               ; Check if we need to switch face
+        bne   >                  ; If not, read next sector
+        inc   <map.DK.DRV        ; Switch face
+        clrb                     ; reset sector
+!       dec   >secnbr            ; next
         bne   boot2              ; sector
         lds   #$9F00             ; Set system stack
         jmp   >loader.ADDRESS
+
+; Error messages
+mess1   fcs   "Only for TO8/8D/9+"
+
+        IFGT *-$6278
+        ERROR "boot code part 1 is too large !"
+        ENDC
+
+        align $6278
+@magicNumber
+        fcn   "BASIC2"
+        fcb   $00                               ; checksum (set at build stage)
+secnbr  fcb   (builder.lwasm.size.loader/256)+1 ; number of sectors to read
 
 ; Display error message
 err     leau  <mess0,pcr         ; Location
@@ -99,18 +117,6 @@ err3    tfr   dp,a               ; Read DP
         swi                      ; Display for MO
         fcb   $82                ; Display for MO
 
-        IFGT *-$6278
-        ERROR "boot code part 1 is too large !"
-        ENDC
-
-        align $6278
-@magicNumber
-        fcn   "BASIC2"
-        fcb   $00                               ; checksum (set at build stage)
-secnbr  fcb   (builder.lwasm.size.loader/256)+1 ; number of sectors to read
-
-; Error messages
-mess1   fcs   "Only for TO8/8D/9+"
 mess2   fcs   "Requires 256Ko ext."
 mess3   fcs   "     I/O|Error"
 
@@ -123,7 +129,7 @@ mess0   fcb   $1f,$21,$21
         fcb   $1f,$4c,$4b+$80    ; locate for MO
 
 ; Interleave table
-blist   fcb   $0f,$0d,$0b        ; first value is omitted ($01 : boot sector)
+blist   fcb   $01,$0f,$0d,$0b
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a

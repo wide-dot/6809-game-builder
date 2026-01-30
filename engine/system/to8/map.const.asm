@@ -26,7 +26,7 @@ map.ram.MON_END    equ $0000
 
 ; mc6846
 map.MC6846.CSR      equ $E7C0
-map.MC6846.PCR      equ $E7C1 ; (bit3) 0=unmute 1=mute
+map.MC6846.PCR      equ $E7C1 ; (bit5) 0=ready 1=done MC6804 (keyboard), (bit3) 0=unmute 1=mute
 map.MC6846.DDR      equ $E7C2
 map.MC6846.PDR      equ $E7C3 ; (bit0) set half ram page 0 (low or high) in video area ($4000-$5FFF)
 map.MC6846.TCR      equ $E7C5 ; irq timer ctrl
@@ -34,7 +34,7 @@ map.MC6846.TMSB     equ $E7C6 ; irq timer MSB
 map.MC6846.TLSB     equ $E7C7 ; irq timer LSB
 
 ; mc6821 system
-map.MC6821.PRA      equ $E7C8
+map.MC6821.PRA      equ $E7C8 ; (bit0) KTST
 map.MC6821.PRB      equ $E7C9
 map.MC6821.CRA      equ $E7CA
 map.MC6821.CRB      equ $E7CB

@@ -291,14 +291,12 @@ ymm.frame.resume   com @flip
           fill 0,32
 @stackContext equ *
 
-@buffersize equ  512
-@addr equ *
-; !!! WARNING !!! buffer must be placed at absolute addr > buffer size
+; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+; WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+; buffer must be placed at absolute addr > buffer size
 ; if buffer is 512 bytes, buffer should be placed >= $0200
- iflt (@addr-ymm.org)-@buffersize
-        fill 0,@buffersize-(@addr-ymm.org)
- endc
+; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ymm.buffer
-          fill 0,@buffersize
+          fill 0,512
 ymm.buffer.end
  ENDSECTION

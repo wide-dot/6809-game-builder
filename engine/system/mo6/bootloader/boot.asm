@@ -56,6 +56,7 @@
         std   <map.DK.OPC        ; Read/Head 0
         ldu   #blist             ; Interleave list
         ldx   #mess3             ; Error message
+        incb                     ; first sector is the boot sector
 boot2   lda   b,u                ; Get sector
         sta   <map.DK.SEC        ; number
         jsr   >map.DKCONT        ; Load sector
@@ -64,7 +65,11 @@ boot2   lda   b,u                ; Get sector
         bcs   err                ; Skip if error
 boot3   inc   <map.DK.BUF        ; Move sector ptr
         incb                     ; Sector+1
-        dec   >secnbr            ; Next
+        cmpb  #$10               ; Check if we need to switch face
+        bne   >                  ; If not, read next sector
+        inc   <map.DK.DRV        ; Switch face
+        clrb                     ; reset sector
+!       dec   >secnbr            ; next
         bne   boot2              ; sector
         lds   #$5F00             ; Set system stack
         jmp   >loader.ADDRESS
@@ -111,7 +116,7 @@ mess0   fcb   $1f,$21,$21
         fcb   $1f,$4c,$4b+$80    ; locate for MO
 
 ; Interleave table
-blist   fcb   $0f,$0d,$0b        ; first value is omitted ($01 : boot sector)
+blist   fcb   $01,$0f,$0d,$0b
         fcb   $09,$07,$05,$03
         fcb   $08,$06,$04,$02
         fcb   $10,$0e,$0c,$0a

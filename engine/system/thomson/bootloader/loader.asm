@@ -70,6 +70,13 @@ address  rmb types.WORD   ; [0000 000] [0000 000]    - [dest address]
 fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         ENDSTRUCT
 
+; directory disk location constants
+; should be consistent with storage.xml
+; ---------------------------------
+DIR_DEFAULT_FACE    EQU   $01    ; Default face/drive for directory
+DIR_DEFAULT_TRACK   EQU   $00    ; Default track for directory  
+DIR_DEFAULT_SECTOR  EQU   $02-1  ; Default sector for directory (from 0 to 15)
+
         org   loader.ADDRESS
         jmp   >loader.scene.loadDefault    ; OK
         jmp   >loader.scene.load           ; OK
@@ -80,6 +87,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.file.decompress      ; OK
         jmp   >loader.file.linkData.load   ; OK
         jmp   >loader.file.linkData.unload ; TODO
+        jmp   >loader.file.getPageID       ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -281,10 +289,16 @@ loader.scene.apply.type10
         pshs  b,y                ; Save page id [b] and current scene data cursor [y]
 ;
         jsr   loader.dir.getFile
-        ldd   dir.entry.sizeu,y   ; Read file data size
+        ldd   dir.entry.sizea,y  ; check empty file flag
+        cmpd  #$ff00
+        bne   @notEmpty
+        clra                     ; b is already set to 0
+        bra   >
+@notEmpty
+        ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111         ; File size is stored in 14 bits
         addd  #1                 ; File size is stored as size-1
-        std   @size
+!       std   @size
         leay  d,u                ; Will the file fit the page ?
         puls  b                  ; Restore page id
         cmpy  #map.ram.CART_END  ; Branch if data fits memory page
@@ -303,7 +317,6 @@ loader.scene.apply.type10
         leau  $1234,u
 @size   equ   *-2
         puls  y
-;
         ldx   loader.scene.fileCount
         leax  -1,x
         stx   loader.scene.fileCount
@@ -333,10 +346,16 @@ loader.scene.apply.type11
 ;
         jsr   loader.dir.getFile
         sty   @y
-        ldd   dir.entry.sizeu,y   ; Read file data size
+        ldd   dir.entry.sizea,y  ; check empty file flag
+        cmpd  #$ff00
+        bne   @notEmpty
+        clra                     ; b is already set to 0
+        bra   >
+@notEmpty
+        ldd   dir.entry.sizeu,y  ; Read file data size
         anda  #%00111111         ; File size is stored in 14 bits
         addd  #1                 ; File size is stored as size-1
-        std   @size
+!       std   @size
         leay  d,u                ; Will the file fit the page ?
         ldb   #0                 ; Restore page id
 @b1     equ   *-1
@@ -396,8 +415,8 @@ loader.dir.load
         ldd   #ptsec
         std   >loader.dir
 ; set default dir location on disk
-        ldb   #$01                ; D: [face]
-        ldx   #$0000              ; X: [track] [sector]
+        ldb   #DIR_DEFAULT_FACE   ; D: [face]
+        ldx   #DIR_DEFAULT_TRACK*256+DIR_DEFAULT_SECTOR ; X: [track] [sector]
 ; read first directory sector
         lda   >diskId
         cmpa  #10                 ; This version handle the display of disk id range 0-9
@@ -409,7 +428,7 @@ loader.dir.load
         stb   <map.DK.DRV         ; Set directory location
         tfr   x,d                 ; on floppy disk
         sta   <map.DK.TRK+1       ; B is loaded with sector id
-        ldy   >loader.dir    ; Loading address for
+        ldy   >loader.dir         ; Loading address for
         sty   <map.DK.BUF         ; directory data
         lda   #$02                ; Read code
         sta   <map.DK.OPC         ; operation
@@ -489,7 +508,6 @@ loader.dir.load
 loader.file.load
         pshs  dp,d,x,y,u
         jsr   ram.set
-* Prepare loading
         jsr   loader.dir.getFile
         ldd   dir.entry.sizea,y   ; check empty file flag
         cmpd  #$ff00
@@ -503,7 +521,7 @@ loader.file.load
 
 
 ;---------------------------------------
-; loader.file.loadByDir
+; loader.file.loadByPtr
 ;
 ; input  REG : [Y] ptr to file directory
 ; input  REG : [B] destination - page number
@@ -512,7 +530,7 @@ loader.file.load
 ; Load a file from disk to RAM
 ; by ptr to file directory
 ;---------------------------------------
-loader.file.loadByDir
+loader.file.loadByPtr
         pshs  dp,d,x,y,u
 !       lda   #map.REG.DP
         tfr   a,dp                ; Set DP
@@ -622,13 +640,13 @@ loader.file.decompress
         jsr   ram.set
         jsr   loader.dir.getFile
         ldb   dir.entry.bitfld,y  ; test if compression flag
-        bpl   @rts               ; no, exit
+        bpl   @rts                ; no, exit
         ldd   dir.entry.coffset,y ; get offset to write data
-        leax  d,u                ; set x to start of compressed data
+        leax  d,u                 ; set x to start of compressed data
         pshs  y
-        jsr   >zx0_decompress    ; decompress and set u to end of decompressed data
+        jsr   >zx0_decompress     ; decompress and set u to end of decompressed data
         puls  y
-        lda   #6                 ; copy last 6 bytes
+        lda   #6                  ; copy last 6 bytes
         leax  dir.entry.cdataz,y  ; set read ptr
         jsr   tfrxua
 @rts    puls  d,x,y,u,pc
@@ -636,7 +654,6 @@ loader.file.decompress
  INCLUDE "engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
  
-
 ;---------------------------------------
 ; Display messages
 ;
@@ -748,7 +765,7 @@ loader.file.linkData.load
 ;
         ; load link data file
         ldb   #loader.PAGE
-        jsr   loader.file.loadByDir
+        jsr   loader.file.loadByPtr
 ;
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
@@ -1062,7 +1079,7 @@ loader.file.externPg.link
         ; find symbol by searching in all file's linkData 
         ldd   linkData.content.externPg.fileId,y
         std   linkData.currentSymbol
-        jsr   loader.fileId.search
+        jsr   loader.file.getPageID
         addd  linkData.content.externPg.operand,y ; add external symbol value to plus operand
         ldx   linkData.content.externPg.offset,y  ; load offset to symbol reference
         stx   @addr
@@ -1078,7 +1095,7 @@ loader.file.externPg.link
 
 
 ;---------------------------------------
-; loader.fileId.search
+; loader.file.getPageID
 ;
 ; input  REG : [D] file id
 ; output REG : [B] page id (or $FF if not found)
@@ -1086,7 +1103,7 @@ loader.file.externPg.link
 ; Get the page ID where a file is loaded
 ; by searching through loaded files with link data
 ;---------------------------------------
-loader.fileId.search
+loader.file.getPageID
         pshs  x,y
         ldy   >loader.file.linkDataIdx
         beq   @notfound                       ; branch if no link data exists

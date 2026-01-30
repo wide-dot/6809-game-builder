@@ -10,6 +10,26 @@ ym2413.ut.testYM2413.440Hz   EXPORT
 
   SECTION code
 
+; Custom instrument 0 parameters
+ym2413.ut.instrument0.params
+        fcb   $31,$21,$2D,$13,$A0,$70,$00,$00
+
+; Configure custom instrument 0
+ym2413.ut.setInstrument0
+        ldx   #ym2413.ut.instrument0.params
+        clrb                            ; Start with register 0
+!       stb   map.YM2413.A
+        nop
+        nop
+        lda   ,x+                       ; Load parameter value and increment X
+        sta   map.YM2413.D
+        nop
+        nop
+        incb
+        cmpb  #8                        ; Check if we've done all 8 registers
+        bne   <
+        rts
+
  ; ----------------------------------------------------------------------------
  ; testYM2413
  ; ----------------------------------------------------------------------------
@@ -50,13 +70,11 @@ ym2413.ut.testYM2413.callback
         rts
 
 ym2413.ut.testYM2413.irq
-        _ram.cart.set #assets.sounds.ym$PAGE
-        _ymm.frame.play
+        _ymm.frame.play #assets.sounds.ym$PAGE
         rts
 
 ym2413.ut.testYM2413.rythm.irq
-        _ram.cart.set #assets.sounds.ym.rythm$PAGE
-        _ymm.frame.play
+        _ymm.frame.play #assets.sounds.ym.rythm$PAGE
         rts
 
  ; ----------------------------------------------------------------------------
@@ -67,13 +85,8 @@ ym2413.ut.testYM2413.440Hz
         ; Initialize YM2413 to silent state
         _ym2413.init
         
-        ; Flush keyboard buffer to prevent immediate termination
-@flushKeyboard
-        _monitor.jsr.ktst                  ; Test if a key is in buffer
-        bcc   @keyboardFlushed         ; No key, buffer is empty
-        _monitor.jsr.getc                  ; Read and discard the key
-        bra   @flushKeyboard           ; Check for more keys
-@keyboardFlushed
+        ; Configure custom instrument 0
+        jsr   ym2413.ut.setInstrument0
         
         ; Configure YM2413 for 440Hz on channel 0
         ; YM2413 frequency formula: freq = (fMaster / 72) * fNumber / 2^(19-octave)
@@ -81,12 +94,12 @@ ym2413.ut.testYM2413.440Hz
         ; For 440Hz at octave 4: fNumber = 440 * 2^(19-4) / (3579545 / 72)
         ; fNumber = 440 * 32768 / 49715.9 = 290 (decimal) = $0122 (hex)
         
-        ; Set instrument on channel 0 (use built-in instrument 8 - organ, clear tone)
+        ; Set instrument on channel 0 (use custom instrument 0, max volume)
         lda   #$30                     ; Register $30 = channel 0 instrument/volume
         sta   map.YM2413.A
         nop                            ; Wait cycles between register writes
         nop
-        lda   #$80                     ; Instrument 8 (Organ) + maximum volume (0)
+        lda   #$00                     ; Instrument 0 (custom) + maximum volume (0)
         sta   map.YM2413.D
         nop
         nop
@@ -116,11 +129,15 @@ ym2413.ut.testYM2413.440Hz
         ; Wait for any key press to stop the 440Hz tone
         ; Display message to user
         _monitor.print #ym2413.ut.440Hz.pressKey
-@waitForKey
-        _monitor.jsr.ktst                 ; Test if a key is pressed
-        bcc   @waitForKey              ; No key pressed, continue waiting
-        _monitor.jsr.getc                 ; Read and discard the pressed key
-        
+
+        _time.ms.wait #500
+ IFDEF TO8
+        _keyboard.fast.waitKey
+ ENDC
+ IFDEF MO6
+        _keyboard.fast.waitKey #scancode.ENTER
+ ENDC
+
         ; Turn off the note (key off)
         lda   #$20                     ; Register $20 = channel 0 F-Number high + octave + key
         sta   map.YM2413.A
@@ -138,6 +155,6 @@ ym2413.ut.testYM2413.440Hz
         rts
 
 ; YM2413 test messages
-ym2413.ut.440Hz.pressKey fcc "Playing YM2413 440Hz - Press any key to stop..."
+ym2413.ut.440Hz.pressKey fcc "Playing YM2413 440Hz - press enter to stop..."
                          _monitor.str.CRLF
  ENDSECTION 

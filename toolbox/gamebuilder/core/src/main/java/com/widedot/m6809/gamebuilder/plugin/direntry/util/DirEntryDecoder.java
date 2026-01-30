@@ -1,5 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.direntry.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 
 /**
@@ -13,6 +15,7 @@ import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
  * - Optional compression block (8 bytes): offset and delta bytes
  * - Optional load time linker block (8 bytes): linker location data
  */
+@Slf4j
 public class DirEntryDecoder {
     
     /**
@@ -83,7 +86,7 @@ public class DirEntryDecoder {
         // Decode main structure (8 bytes)
         decoded.compressed = (data[idx] & 0x80) != 0;
         decoded.loadTimeLinker = (data[idx] & 0x40) != 0;
-        decoded.uncompressedSize = (((data[idx] & 0x3F) << 8) | (data[idx + 1] & 0xFF)) + 1;
+        decoded.uncompressedSize = ((((data[idx] & 0xFF) << 8) | (data[idx + 1] & 0xFF)) + 1) & 0x3fff;
         idx += 2;
         
         decoded.track = (data[idx] >> 1) & 0x7F;

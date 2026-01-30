@@ -12,10 +12,17 @@ import imgui.app.Configuration;
 import imgui.flag.ImGuiBackendFlags;
 import imgui.type.ImBoolean;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class WDDebug extends Application {
 	
 	public static int curPid = 0;
 	public static Tlhelp32.MODULEENTRY32W module;
+	
+	// Memory page configuration
+	private static final int MIN_PAGE = 4;
+	private static final int MAX_PAGE = 31;
 	
 	// Dialog display status
     private static final ImBoolean SHOW_IMGUI_FILE_DIALOG_WINDOW = new ImBoolean(false);
@@ -29,6 +36,18 @@ public class WDDebug extends Application {
     private static final ImBoolean SHOW_IMGUI_SMPS_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_MEA_WINDOW = new ImBoolean(false);
     private static final ImBoolean SHOW_IMGUI_PALETTE_WINDOW = new ImBoolean(false);
+    
+    // Memory page windows
+    private static final Map<Integer, ImBoolean> pageWindowStates = new HashMap<>();
+    private static final Map<Integer, MemoryPageEditor> pageEditors = new HashMap<>();
+    
+    static {
+    	// Initialize page windows
+    	for (int page = MIN_PAGE; page <= MAX_PAGE; page++) {
+    		pageWindowStates.put(page, new ImBoolean(false));
+    		pageEditors.put(page, new MemoryPageEditor(page));
+    	}
+    }
 	
     public WDDebug() {
     	launch(this);
@@ -59,6 +78,16 @@ public class WDDebug extends Application {
                 ImGui.menuItem("Edit", null, SHOW_IMGUI_MEMORY_EDITOR_WINDOW);
                 ImGui.menuItem("Watch", null, SHOW_IMGUI_MEMORY_WATCH_WINDOW);
                 ImGui.menuItem("Tlsf", null, SHOW_IMGUI_TLSF_WINDOW);
+                
+                if (ImGui.beginMenu("Page"))
+                {
+                	for (int page = MIN_PAGE; page <= MAX_PAGE; page++) {
+                		String pageLabel = String.format("Page %d ($%04X)", page, 0x10000 + ((page - 4) * 0x4000));
+                		ImGui.menuItem(pageLabel, null, pageWindowStates.get(page));
+                	}
+                	ImGui.endMenu();
+                }
+                
                 ImGui.endMenu();
             }
             if (ImGui.beginMenu("Engine"))
@@ -116,6 +145,13 @@ public class WDDebug extends Application {
         if (SHOW_IMGUI_OJECT_SLOTS_WINDOW.get()) ObjectSlots.show(SHOW_IMGUI_OJECT_SLOTS_WINDOW);
         if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
         if (SHOW_IMGUI_SMPS_WINDOW.get()) SmpsDriver.show(SHOW_IMGUI_SMPS_WINDOW);
+        
+        // Display memory page windows
+        for (int page = MIN_PAGE; page <= MAX_PAGE; page++) {
+        	if (pageWindowStates.get(page).get()) {
+        		pageEditors.get(page).show(pageWindowStates.get(page));
+        	}
+        }
         
         ImGui.text(String.format("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui.getIO().getFramerate(), ImGui.getIO().getFramerate()));
     }

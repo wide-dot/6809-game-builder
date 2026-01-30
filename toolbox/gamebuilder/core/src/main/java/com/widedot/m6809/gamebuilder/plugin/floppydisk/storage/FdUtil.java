@@ -40,22 +40,41 @@ public class FdUtil implements MediaDataInterface{
 		}
 		
 		int dstIdx = getIndex(s.face, s.track, s.sector);
-		
+		log.debug("write sector - section: {}, track: {}, face: {}, sector: {}, remaining bytes: {}",
+				s.name,
+				s.track,
+				s.face,
+				s.sector,
+				srcData.length);
+
 		//write sectors
 		int srcIdx = 0;
 		while(srcIdx < srcData.length) {
 
 			if (dataMask[dstIdx]) {
-				String m = String.format("Section '%s' try to use an already occupied sector at track %d, face %d, sector %d to write %d bytes",
-						                s.getString(), s.track, s.face, s.sector, srcData.length);
+				String m = String.format("Section '%s' try to use an already occupied sector at track %d, face %d, sector %d to write remaining %d bytes",
+						                s.getString(), s.track, s.face, s.sector, srcData.length-srcIdx);
 				log.error(m);
 				throw new Exception(m);
 			}
 			
             data[dstIdx] = srcData[srcIdx++];
             dataMask[dstIdx++] = true;
-			 
-			if (srcIdx%storage.segment.sectorSize == 0) nextSector(s);
+             
+			if (srcIdx%storage.segment.sectorSize == 0) {
+				nextSector(s);
+				// important : dstIdx is not continuous in the data array, so we need to recalculate it
+				dstIdx = getIndex(s.face, s.track, s.sector);
+
+				if (srcIdx < srcData.length) {
+					log.debug("write sector - section: {}, track: {}, face: {}, sector: {}, remaining bytes: {}",
+					s.name,
+					s.track,
+					s.face,
+					s.sector,
+					srcData.length-srcIdx);
+				}
+			}
 		}
 
     }
@@ -80,7 +99,7 @@ public class FdUtil implements MediaDataInterface{
 			log.error(m);
 			throw new Exception(m);
 		}
-		
+
 		// write sectors
 		int pos = 0;
 		boolean first = true;
@@ -118,7 +137,7 @@ public class FdUtil implements MediaDataInterface{
 			first = false;
 		}
 		
-        log.debug("write - section: {}, track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
+        log.debug("direntry - section: {}, track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
         		location,
         		(direntry[0] >> 1) & 0xff,
 				direntry[0] & 0x1,
@@ -152,6 +171,13 @@ public class FdUtil implements MediaDataInterface{
         int end = start + storage.segment.sectorSize;
         int nbBytes = 0;
         
+		log.debug("write sector - section: {}, track: {}, face: {}, sector: {}, remaining bytes: {}",
+				s.name,
+				s.track,
+				s.face,
+				s.sector,
+				srcData.length-srcIdx);
+
         // search for free space inside the sector
         int freePos;
         for (freePos = start; freePos < end; freePos++) {

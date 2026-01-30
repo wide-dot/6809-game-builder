@@ -57,13 +57,11 @@ sn76489.ut.testSN76489.callback
         rts
 
 sn76489.ut.testSN76489.irq
-        _ram.cart.set #assets.sounds.sn$PAGE
-        _vgc.frame.play
+        _vgc.frame.play #assets.sounds.sn$PAGE
         rts
 
 sn76489.ut.testSN76489.noise.irq
-        _ram.cart.set #assets.sounds.sn.noise$PAGE
-        _vgc.frame.play
+        _vgc.frame.play #assets.sounds.sn.noise$PAGE
         rts
 
  ; ----------------------------------------------------------------------------
@@ -71,17 +69,12 @@ sn76489.ut.testSN76489.noise.irq
  ; ----------------------------------------------------------------------------
 
 sn76489.ut.testSN76489.440Hz
-        ; Flush keyboard buffer to prevent immediate termination
-@flushKeyboard
-        _monitor.jsr.ktst
-        bcc   @keyboardFlushed         ; No key, buffer is empty
-        _monitor.jsr.getc                  ; Read and discard the key
-        bra   @flushKeyboard           ; Check for more keys
-@keyboardFlushed
-
         ; Initialize SN76489 to silent state
         _sn76489.init
-        
+        lda   map.MPLUS.CTRL
+        anda  #%11111110 ; TI clock enable
+        sta   map.MPLUS.CTRL
+
         ; Calculate frequency value for 440Hz
         ; SN76489 frequency = clock / (32 * freq_value)
         ; For 3.579545MHz clock: freq_value = 3579545 / (32 * 440) = 254 (decimal) = $00FE (hex)
@@ -110,10 +103,14 @@ sn76489.ut.testSN76489.440Hz
         ; Wait for any key press to stop the 440Hz tone
         ; Display message to user
         _monitor.print #sn76489.ut.440Hz.pressKey
-@waitForKey
-        _monitor.jsr.ktst                  ; Test if a key is pressed
-        bcc   @waitForKey              ; No key pressed, continue waiting
-        _monitor.jsr.getc                  ; Read and discard the pressed key
+
+        _time.ms.wait #500
+ IFDEF TO8
+        _keyboard.fast.waitKey
+ ENDC
+ IFDEF MO6
+        _keyboard.fast.waitKey #scancode.ENTER
+ ENDC
         
         ; Silence Channel 0 by setting maximum attenuation
         lda   #$9F                     ; Channel 0 maximum attenuation (silent)
@@ -121,11 +118,14 @@ sn76489.ut.testSN76489.440Hz
         nop                            ; Timing delay for SN76489
         nop
         
+        lda   map.MPLUS.CTRL
+        ora   #%00000001 ; TI clock disable
+        sta   map.MPLUS.CTRL
         andcc #%11111110               ; Clear carry flag (OK status)
         rts
 
 ; SN76489 test messages
-sn76489.ut.440Hz.pressKey fcc "Playing SN76489 440Hz - Press any key to stop..."
+sn76489.ut.440Hz.pressKey fcc "Playing SN76489 440Hz - press enter to stop..."
                           _monitor.str.CRLF
 
  ENDSECTION 

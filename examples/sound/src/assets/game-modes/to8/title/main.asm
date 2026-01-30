@@ -76,12 +76,8 @@ mainLoop
 userIRQ
         _palette.checkUpdate
         _gfxlock.swap
-
-        _ram.cart.set #page.ymm   ; mount object page
-        _ymm.frame.play          ; play a music frame
-
-        _ram.cart.set #page.vgc   ; mount object page
-        _vgc.frame.play          ; play a music frame
+        _ymm.frame.play #page.ymm
+        _vgc.frame.play #page.vgc
         rts
 
  ENDSECTION
