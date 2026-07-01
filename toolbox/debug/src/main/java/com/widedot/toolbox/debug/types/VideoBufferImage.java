@@ -35,12 +35,32 @@ public class VideoBufferImage {
 	
 	public int get(ImBoolean workingChk) {
 		int curPage = getPage(workingChk);
-		Memory ramB = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000, 8000);
-		Memory ramA = OS.readMemory(Emulator.process, Emulator.ramAddress+curPage*0x4000+0x2000, 8000);
-		
-		Memory color4bit = OS.readMemory(Emulator.process, Emulator.x7daAddress, 0x20);
-		for (int c=0; c < 0x20; c = c + 2) {
-			color[c/2] = 0xFF000000 | (ThomsonRGB[(color4bit.getByte(c) & 0x0f)] << 16) | (ThomsonRGB[(color4bit.getByte(c) & 0xf0) >> 4] << 8) | ThomsonRGB[color4bit.getByte(c+1) & 0x0f];
+		Memory ramB = OS.readMemory(Emulator.ramAddress+curPage*0x4000, 8000);
+		Memory ramA = OS.readMemory(Emulator.ramAddress+curPage*0x4000+0x2000, 8000);
+
+		// The palette location and byte layout depend on the DCMOTO build; both are
+		// resolved at hook time by Emulator.searchPaletteAddress (see Emulator).
+		if (Emulator.paletteFormat == Emulator.PAL_BGRX) {
+			// 16 colours x 4 bytes: B, G, R, 00 (already-decoded 8-bit RGB).
+			Memory pal = OS.readMemory(Emulator.paletteAddress, 16 * 4);
+			for (int k = 0; k < 16; k++) {
+				int b = pal.getByte(k*4)   & 0xff;
+				int g = pal.getByte(k*4+1) & 0xff;
+				int r = pal.getByte(k*4+2) & 0xff;
+				color[k] = 0xFF000000 | (r << 16) | (g << 8) | b;
+			}
+		} else if (Emulator.paletteFormat == Emulator.PAL_NIBBLE) {
+			// 16 colours x 2 bytes: even = (green<<4)|red, odd low nibble = blue.
+			Memory color4bit = OS.readMemory(Emulator.paletteAddress, 0x20);
+			for (int c=0; c < 0x20; c = c + 2) {
+				color[c/2] = 0xFF000000 | (ThomsonRGB[(color4bit.getByte(c) & 0x0f)] << 16) | (ThomsonRGB[(color4bit.getByte(c) & 0xf0) >> 4] << 8) | ThomsonRGB[color4bit.getByte(c+1) & 0x0f];
+			}
+		} else {
+			// PAL_NONE: palette not located yet -> grayscale ramp so shapes stay visible
+			for (int k = 0; k < 16; k++) {
+				int g = k * 17;
+				color[k] = 0xFF000000 | (g << 16) | (g << 8) | g;
+			}
 		}
 		
 		int j = 0;

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Required so the JVM may call task_for_pid() on the emulator process
+         (same entitlement lldb/debugserver use). Only needed when the target
+         is NOT reachable without it; on many setups a same-user Wine process
+         is already accessible. Sign the bundled runtime's java binary with:
+           codesign -f -s - --entitlements entitlements.mac.plist <path-to-java>
+    -->
+    <key>com.apple.security.cs.debugger</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>

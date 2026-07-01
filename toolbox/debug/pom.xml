@@ -11,6 +11,29 @@
 	<artifactId>wddebug</artifactId>
 	<packaging>jar</packaging>
 
+	<!-- Force every LWJGL artifact (core + all platform natives) transitively
+	     pulled by imgui-java-app to ${lwjgl.version}, so java and native code
+	     stay on the same version. -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><version>${lwjgl.version}</version></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><version>${lwjgl.version}</version><classifier>natives-linux</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><version>${lwjgl.version}</version><classifier>natives-windows</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><version>${lwjgl.version}</version><classifier>natives-macos</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><version>${lwjgl.version}</version><classifier>natives-macos-arm64</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-glfw</artifactId><version>${lwjgl.version}</version></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-glfw</artifactId><version>${lwjgl.version}</version><classifier>natives-linux</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-glfw</artifactId><version>${lwjgl.version}</version><classifier>natives-windows</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-glfw</artifactId><version>${lwjgl.version}</version><classifier>natives-macos</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-glfw</artifactId><version>${lwjgl.version}</version><classifier>natives-macos-arm64</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><version>${lwjgl.version}</version></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><version>${lwjgl.version}</version><classifier>natives-linux</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><version>${lwjgl.version}</version><classifier>natives-windows</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><version>${lwjgl.version}</version><classifier>natives-macos</classifier></dependency>
+			<dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><version>${lwjgl.version}</version><classifier>natives-macos-arm64</classifier></dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
         <dependency>
             <groupId>io.github.spair</groupId>
@@ -33,6 +56,10 @@
 
 	<properties>
 		<main-class>com.widedot.toolbox.debug.MainCommand</main-class>
+		<!-- 3.3.6 declares the JNI version used by Java 21+/25, silencing the
+		     "Unsupported JNI version detected" warning from the 3.3.4 pulled
+		     transitively by imgui-java-app. Binary-compatible with imgui-java 1.88. -->
+		<lwjgl.version>3.3.6</lwjgl.version>
 	</properties>
 
 	<build>
@@ -50,7 +77,10 @@
 						<phase>package</phase>
 						<configuration>
 							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
-							<binFolder>/bin/unix</binFolder>
+							<!-- Must stay directly under assembleDirectory: the generated
+							     launcher derives BASEDIR as its parent dir, and REPO as
+							     BASEDIR/repo. A nested folder (bin/unix) broke that path. -->
+							<binFolder>/bin</binFolder>
 							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>
@@ -70,8 +100,8 @@
 						</goals>
 						<phase>package</phase>
 						<configuration>
-							<assembleDirectory>${project.parent.basedir}</assembleDirectory>							
-							<binFolder>/bin/windows</binFolder>
+							<assembleDirectory>${project.parent.basedir}</assembleDirectory>
+							<binFolder>/bin</binFolder>
 							<repositoryName>repo</repositoryName>							
 							<programs>
 								<program>

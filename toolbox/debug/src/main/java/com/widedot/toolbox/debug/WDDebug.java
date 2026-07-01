@@ -1,7 +1,5 @@
 package com.widedot.toolbox.debug;
 
-import com.sun.jna.Pointer;
-import com.sun.jna.platform.win32.Tlhelp32;
 import com.widedot.toolbox.debug.ui.*;
 import com.widedot.toolbox.mea8000.ui.MeaMainDialog;
 
@@ -18,8 +16,8 @@ import java.util.Map;
 public class WDDebug extends Application {
 	
 	public static int curPid = 0;
-	public static Tlhelp32.MODULEENTRY32W module;
-	
+	private static boolean attached = false;
+
 	// Memory page configuration
 	private static final int MIN_PAGE = 4;
 	private static final int MAX_PAGE = 31;
@@ -118,23 +116,36 @@ public class WDDebug extends Application {
         // Listening to emulator process
    		Emulator.pid = OS.getProcessId(Emulator.processName);
     	if (Emulator.pid == 0) {
-       		ImGui.text("Waiting for process <"+Emulator.processName+"*.exe>.");
+       		ImGui.text("Waiting for emulator process <"+Emulator.processName+">.");
+    		attached = false;
     		return;
     	}
-    	// automatic hook
-    	if (curPid != Emulator.pid || module == null || Emulator.ramAddress == 0) {
-    		ImGui.text("Set DCMOTO mode to TO8 and make a hard reboot.");
+    	// (re)attach when the target process changes
+    	if (curPid != Emulator.pid) {
     		curPid = Emulator.pid;
-        	Emulator.process = OS.openProcess(OS.PROCESS_VM_READ|OS.PROCESS_VM_OPERATION, Emulator.pid);
-    		module = OS.getModule(Emulator.pid, Emulator.processName);
-    		if (module != null) {
-	           	Emulator.baseAddress = Pointer.nativeValue(module.modBaseAddr);
-	           	Emulator.baseSize = module.modBaseSize.intValue();
-	    		Emulator.searchRamAddress();
-	        	if (Emulator.ramAddress == 0) return;
+    		Emulator.ramAddress = 0;
+    		Emulator.paletteAddress = 0;
+    		attached = OS.openProcess(Emulator.pid);
+    	}
+    	if (!attached) {
+    		ImGui.text("Cannot attach to process "+Emulator.pid+".");
+    		return;
+    	}
+    	// locate the emulated RAM once the TO8 boot screen is up
+    	if (Emulator.ramAddress == 0) {
+    		ImGui.text("Set DCMOTO to TO8 mode and make a hard reboot.");
+    		Emulator.searchRamAddress();
+    		if (Emulator.ramAddress == 0) return;
+    	}
+    	// locate the palette by scanning for the TO8 system palette (do it on the
+    	// boot / home screen, before loading a game that overrides the palette)
+    	if (Emulator.paletteAddress == 0) {
+    		Emulator.searchPaletteAddress();
+    		if (Emulator.paletteAddress == 0) {
+    			ImGui.text("Palette not located: show the TO8 home screen (system palette).");
     		}
     	}
-    	
+
         // Display active dialog boxes
         if (SHOW_IMGUI_FILE_DIALOG_WINDOW.get()) MemoryMap.show(SHOW_IMGUI_FILE_DIALOG_WINDOW);
         if (SHOW_IMGUI_MEMORY_EDITOR_WINDOW.get()) MemoryEditor.show(SHOW_IMGUI_MEMORY_EDITOR_WINDOW);

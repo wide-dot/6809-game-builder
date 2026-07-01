@@ -27,7 +27,7 @@ public class MemoryPageEditor {
 	public void show(ImBoolean showImGui) {
 		if (ImGui.begin("Memory Page " + pageNumber, showImGui)) {
 			int pageAddress = BASE_ADDRESS + ((pageNumber - 4) * PAGE_SIZE);
-	       	hexBuffer = OS.readMemory(Emulator.process, Emulator.ramAddress + pageAddress, PAGE_SIZE).getByteBuffer(0, PAGE_SIZE);
+	       	hexBuffer = OS.readMemory(Emulator.ramAddress + pageAddress, PAGE_SIZE).getByteBuffer(0, PAGE_SIZE);
 	       	mem_edit.drawWindow("Memory Page " + pageNumber,  MemoryUtil.memAddress(hexBuffer), hexBuffer.capacity(), pageAddress);
 	       	System.gc();
    		    ImGui.end();

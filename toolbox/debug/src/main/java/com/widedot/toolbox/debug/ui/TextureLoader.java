@@ -7,8 +7,8 @@ import static org.lwjgl.opengl.GL12.GL_BGRA;
 
 public class TextureLoader {
 
-	public static int textureID;
-	
+	public int textureID;
+
 	public TextureLoader() {
 		textureID = glGenTextures();
 		
@@ -24,8 +24,15 @@ public class TextureLoader {
 	}
 	
     public int loadTexture(int[] pixels, int width, int height) {
-        //Send texel data to OpenGL
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+        // Bind our texture before uploading: ImGui binds its own textures each
+        // frame, so without this the upload would target the wrong texture.
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        // Send texel data to OpenGL. internalFormat must be a base/sized format
+        // (GL_RGBA8): GL_BGRA is only valid as the pixel-data 'format', not as
+        // internalFormat. Windows drivers tolerate GL_BGRA there, but the strict
+        // macOS Core profile rejects it (GL_INVALID_ENUM) and nothing renders.
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 
         //Return the texture ID so we can bind it later again
         return textureID;
