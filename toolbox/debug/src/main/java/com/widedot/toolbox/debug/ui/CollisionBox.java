@@ -22,7 +22,7 @@ public class CollisionBox {
 	private static final int COLOR_TERRAIN_BACKGROUND = 0x800000FF; // Semi-transparent red (ABGR: alpha=0x80, blue=0x00, green=0x00, red=0xFF)
 	private static final int COLOR_TERRAIN_FOREGROUND = 0x8000A5FF; // Semi-transparent orange (ABGR: alpha=0x80, blue=0x00, green=0xA5, red=0xFF)
 	private static final int COLOR_TERRAIN_EMPTY = 0x40FFFFFF; // Semi-transparent white for empty tiles (ABGR format)
-	
+
 	private static int xscale = 4;
 	private static int yscale = 2;
 	
@@ -150,6 +150,54 @@ public class CollisionBox {
    	 	} while (next != 0);
 	}
 	
+	/**
+	 * Background-only collision-map read offset, expressed in 3px collision tiles,
+	 * applied by the game while the boss advances so the background silhouette keeps
+	 * tracking the moving boss. Mirrors the engine's terrainCollision.loadMap, which
+	 * shifts the map column right by terrainCollision.bgByteOff whole map-bytes
+	 * (8 collision tiles each) plus terrainCollision.bgBitShift sub-byte tiles (0..7).
+	 *
+	 * Both variables are unsigned bytes and only non-zero on the R-Type boss stage.
+	 * Returns 0 when the symbols are absent (any other project) so the debugger never
+	 * crashes on a build that lacks the terrainCollision boss-follow offset.
+	 */
+	private static int readBgAdvanceTiles() {
+		Integer byteOff = readByteVar("terrainCollision.bgByteOff");
+		Integer bitShift = readByteVar("terrainCollision.bgBitShift");
+		if (byteOff == null || bitShift == null) return 0;
+		return byteOff * 8 + bitShift;
+	}
+
+	/** Read a single unsigned byte variable by symbol name; null if the symbol is unknown. */
+	private static Integer readByteVar(String name) {
+		String symbol = Symbols.symbols.get(name);
+		if (symbol == null) return null;
+
+		Long addr = Emulator.getAbsoluteAddress(1, symbol);
+		if (addr == null) return null;
+
+		return Emulator.get(addr, 1);
+	}
+
+	private static boolean readTerrainTileSolid(int mapPtr, int pageNum, int mapRow,
+			int collisionTileX, int mapWidthBytes, int tilesPerByte) {
+		if (collisionTileX < 0) return false;
+
+		int byteX = collisionTileX / tilesPerByte;
+		int bit = collisionTileX % tilesPerByte;
+		if (byteX < 0 || byteX >= mapWidthBytes) return false;
+
+		int byteOffset = (mapRow * mapWidthBytes) + byteX;
+		Long byteAddr = Emulator.getAbsoluteAddress(pageNum, mapPtr + byteOffset);
+		if (byteAddr == null) return false;
+
+		Integer mapByte = Emulator.get(byteAddr, 1);
+		if (mapByte == null) return false;
+
+		int bitMask = 0x80 >> bit;
+		return (mapByte & bitMask) != 0;
+	}
+
 	private static void displayTerrain(int mapOffset, int terrainColor) {
 		// Get terrainCollision.main.page to determine the page for the map
 		String pageSymbol = Symbols.symbols.get("terrainCollision.main.page");
@@ -175,10 +223,6 @@ public class CollisionBox {
 		// mapOffset: 0 for background, 2 for foreground
 		Integer mapPtr = Emulator.get(mapsAddr + mapOffset, 2);
 		if (mapPtr == null || mapPtr == 0) return;
-		
-		// Get the actual map address using the same page (both are on the same page)
-		Long mapAddr = Emulator.getAbsoluteAddress(pageNum, mapPtr);
-		if (mapAddr == null) return;
 		
 		// Get camera scroll position
 		String cameraSymbol = Symbols.symbols.get("glb_camera_x_pos");
@@ -310,7 +354,12 @@ public class CollisionBox {
 		// Number of visible rows (limited by viewport and map height)
 		int visibleRows = Math.min(visibleCollisionTilesY, MAP_HEIGHT_ROWS - startCollisionTileY);
 		if (visibleRows < 0) visibleRows = 0;
-		
+
+		// Background layer only: shift the collision-map read column right by the boss
+		// advance (in collision tiles), exactly like the engine's terrainCollision.loadMap.
+		// The tile is still drawn at its normal on-screen position. 0 for foreground.
+		int bgAdvanceTiles = (mapOffset == 0) ? readBgAdvanceTiles() : 0;
+
 		// Read map data and render tiles
 		for (int row = 0; row < visibleRows; row++) {
 			int mapRow = startCollisionTileY + row;
@@ -320,23 +369,10 @@ public class CollisionBox {
 				// Skip negative byte indices
 				if (byteX < 0) continue;
 				
-				// Calculate byte offset in map (logical address)
-				int byteOffset = (mapRow * MAP_WIDTH_BYTES) + byteX;
-				
-				// Calculate logical address and convert to physical address
-				// We need to recalculate the address considering half-page boundaries
-				int logicalAddr = mapPtr + byteOffset;
-				Long byteAddr = Emulator.getAbsoluteAddress(pageNum, logicalAddr);
-				if (byteAddr == null || byteAddr == 0) continue;
-				
-				// Read the byte
-				Integer mapByte = Emulator.get(byteAddr, 1);
-				if (mapByte == null) continue;
-				
 				// Process each bit in the byte
 				int startBit = (byteX == startByteX) ? startBitOffset : 0;
 				for (int bit = startBit; bit < TILES_PER_BYTE; bit++) {
-					// Calculate collision tile position in map
+					// Screen/world collision tile (where we draw on screen)
 					int collisionTileX = byteX * TILES_PER_BYTE + bit;
 					
 					// Check if within visible viewport area
@@ -356,30 +392,21 @@ public class CollisionBox {
 					int screenPixelY = worldPixelY;
 					
 					// Apply viewport offset for screen positioning
-					// screenPixelX and screenPixelY are relative to camera
-					// We need to add viewport offset to position on screen
 					int displayX = screenPixelX + viewportOffsetX;
 					int displayY = screenPixelY + viewportOffsetY;
-					
+
 					// Only draw if visible on screen
-					if (displayX >= -COLLISION_TILE_WIDTH * 2 && displayX < XRES && 
+					if (displayX >= -COLLISION_TILE_WIDTH * 2 && displayX < XRES &&
 					    displayY >= 0 && displayY < YRES) {
-						
-						// Draw 3x6 pixel rectangle
-						// Collision tile is 3px wide, but displayed as 6px due to rectangular pixels
-						// So we double the width when drawing
+
 						int drawX1 = (int)(xscale * xoffset + vMin.x + xscale * displayX);
 						int drawY1 = (int)(yscale * yoffset + vMin.y + yscale * displayY);
 						int drawX2 = drawX1 + xscale * COLLISION_TILE_WIDTH;
 						int drawY2 = drawY1 + yscale * COLLISION_TILE_HEIGHT;
-						
-						// Check if the bit is set (bits are from MSB to LSB: $80, $40, $20, $10, $08, $04, $02, $01)
-						int bitMask = 0x80 >> bit;
-						if ((mapByte & bitMask) != 0) {
-							// Draw collision tile (color depends on background/foreground)
+
+						if (readTerrainTileSolid(mapPtr, pageNum, mapRow, collisionTileX + bgAdvanceTiles, MAP_WIDTH_BYTES, TILES_PER_BYTE)) {
 							ImGui.getWindowDrawList().addRectFilled(drawX1, drawY1, drawX2, drawY2, terrainColor);
 						}
-						// No longer drawing empty tiles here - use grid checkbox instead
 					}
 					
 					// Stop if we've gone past the visible area
@@ -509,17 +536,16 @@ public class CollisionBox {
 				// Apply viewport offset
 				int displayX = screenPixelX + viewportOffsetX;
 				int displayY = screenPixelY + viewportOffsetY;
-				
+
 				// Only draw if visible on screen
-				if (displayX >= -COLLISION_TILE_WIDTH * 2 && displayX < XRES && 
+				if (displayX >= -COLLISION_TILE_WIDTH * 2 && displayX < XRES &&
 				    displayY >= 0 && displayY < YRES) {
-					
-					// Draw grid rectangle (outline only)
+
 					int drawX1 = (int)(xscale * xoffset + vMin.x + xscale * displayX);
 					int drawY1 = (int)(yscale * yoffset + vMin.y + yscale * displayY);
 					int drawX2 = drawX1 + xscale * COLLISION_TILE_WIDTH;
 					int drawY2 = drawY1 + yscale * COLLISION_TILE_HEIGHT;
-					
+
 					ImGui.getWindowDrawList().addRect(drawX1, drawY1, drawX2, drawY2, COLOR_TERRAIN_EMPTY);
 				}
 			}
