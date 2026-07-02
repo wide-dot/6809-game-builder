@@ -42,18 +42,12 @@ public class Emulator {
 	//                bytes = already-decoded 8-bit RGB stored as B,G,R,00. Used as-is.
 	//
 	// ---------------------------------------------------------------------------
-	// NOTE FOR A FUTURE CLAUDE-CODE SESSION (to verify/fix under Windows):
-	//   PAL_NIBBLE_PATTERN below is DERIVED (reverse of ThomsonRGB) from the 16
-	//   system-palette RGB colours read out of the PAL_BGRX table on macOS/Wine.
-	//   It is NOT verified against a real nibble-format DCMOTO. To capture the
-	//   AUTHORITATIVE bytes on an old / Windows DCMOTO:
-	//     1. Boot DCMOTO to the TO8 home screen (system palette active).
-	//     2. Find ramAddress via the boot-logo scan (searchRamAddress), then read
-	//        the 32 bytes at ramAddress + 0x805C0 (the legacy x7da location).
-	//     3. Those 32 bytes ARE the real PAL_NIBBLE system palette -> replace
-	//        PAL_NIBBLE_PATTERN with them. If the odd-byte high nibble (M bit) is
-	//        set, keep PAL_NIBBLE_MASK (0x0F on odd bytes); otherwise the mask can
-	//        become null (exact match).
+	// VERIFIED under Windows (dcmoto_20250515, 2026-07-02): searchPaletteAddress()
+	//   found the system palette as PAL_NIBBLE at the legacy ram+0x805C0. The 32
+	//   captured bytes confirmed PAL_NIBBLE_PATTERN exactly on the even bytes and
+	//   the blue low-nibble; the odd-byte HIGH nibble is the M/marking bit (=1 on
+	//   colours, 0 for black), which PAL_NIBBLE_MASK correctly masks out. Pattern
+	//   below now holds the authoritative captured bytes; keep the mask.
 	//   Reference system colours (R,G,B 8-bit), in palette index order 0..15:
 	//     000000 FF0000 00FF00 FFFF00 0000FF FF00FF 00FFFF EBFAFA
 	//     C2FAFA DB8F8F 8FDB8F DBDB8F 007A9E DB8FDB CCFAE3 E3C200
@@ -71,10 +65,11 @@ public class Emulator {
 		(byte)0x9E,(byte)0x7A,0x00,0x00, (byte)0xDB,(byte)0x8F,(byte)0xDB,0x00, (byte)0xE3,(byte)0xFA,(byte)0xCC,0x00, 0x00,(byte)0xC2,(byte)0xE3,0x00
 	};
 
-	// PAL_NIBBLE: DERIVED - verify on Windows (see note above). even=(G<<4)|R, odd low nibble=B.
+	// PAL_NIBBLE: VERIFIED from dcmoto_20250515 memory (ram+0x805C0). even=(G<<4)|R,
+	// odd = (M<<4)|B (M/marking bit = 1 on colours, 0 for black; masked out below).
 	public static final byte[] PAL_NIBBLE_PATTERN = {
-		0x00,0x00, 0x0F,0x00, (byte)0xF0,0x00, (byte)0xFF,0x00, 0x00,0x0F, 0x0F,0x0F, (byte)0xF0,0x0F, (byte)0xEC,0x0E,
-		(byte)0xE7,0x0E, 0x3A,0x03, (byte)0xA3,0x03, (byte)0xAA,0x03, 0x20,0x04, 0x3A,0x0A, (byte)0xE8,0x0B, 0x7B,0x00
+		0x00,0x00, 0x0F,0x10, (byte)0xF0,0x10, (byte)0xFF,0x10, 0x00,0x1F, 0x0F,0x1F, (byte)0xF0,0x1F, (byte)0xEC,0x1E,
+		(byte)0xE7,0x1E, 0x3A,0x13, (byte)0xA3,0x13, (byte)0xAA,0x13, 0x20,0x14, 0x3A,0x1A, (byte)0xE8,0x1B, 0x7B,0x10
 	};
 	// mask: even byte full (green/red), odd byte low nibble only (blue; ignore M/marking bit)
 	public static final byte[] PAL_NIBBLE_MASK = {

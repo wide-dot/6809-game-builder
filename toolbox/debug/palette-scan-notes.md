@@ -21,16 +21,19 @@ The scan tries `PAL_BGRX` first, then `PAL_NIBBLE` (masked). Whichever matches
 sets `Emulator.paletteAddress` + `Emulator.paletteFormat`; `VideoBufferImage`
 decodes accordingly.
 
-## ⚠️ The nibble signature is DERIVED — verify it under Windows
+## ✅ The nibble signature is now VERIFIED under Windows
 
-`PAL_NIBBLE_PATTERN` was **derived** by reversing `ThomsonRGB` on the 16 system
-colours read out of the `PAL_BGRX` table on macOS/Wine. It has **not** been
-verified against a real nibble-format DCMOTO. The `PAL_NIBBLE_MASK` masks the
-odd-byte high nibble (marking bit) to absorb that uncertainty, but the even bytes
-and the medium colours (indices 8–15) could still differ from what an old DCMOTO
-actually stores.
+`PAL_NIBBLE_PATTERN` was originally **derived** by reversing `ThomsonRGB` on the
+16 system colours read out of the `PAL_BGRX` table on macOS/Wine. On **2026-07-02**
+it was verified against a real nibble-format DCMOTO (`dcmoto_20250515`, Windows):
+`searchPaletteAddress()` found the system palette as `PAL_NIBBLE` at the legacy
+`ram+0x805C0`, and the 32 captured bytes matched the pattern **exactly** on the
+even bytes and on the blue low-nibble. The only difference was the odd-byte **high
+nibble (M/marking bit)**, which is `1` on colours (`0` for black) — exactly what
+`PAL_NIBBLE_MASK` masks out. `PAL_NIBBLE_PATTERN` now holds those authoritative
+bytes; the mask is still required.
 
-### How to capture the authoritative nibble string (on Windows / old DCMOTO)
+### How to (re)capture the authoritative nibble string (on Windows / old DCMOTO)
 
 1. Boot DCMOTO to the **TO8 home screen** (system palette active).
 2. Let wddebug find `ramAddress` via the boot-logo scan (`searchRamAddress`).
