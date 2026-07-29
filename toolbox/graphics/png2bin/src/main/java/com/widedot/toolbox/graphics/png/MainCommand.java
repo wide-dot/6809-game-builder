@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 import com.widedot.m6809.util.FileUtil;
+import com.widedot.toolbox.graphics.engine.HorizontalScroll;
 import com.widedot.toolbox.graphics.engine.VerticalScroll;
 import com.widedot.toolbox.graphics.engine.VerticalScrollTile;
 
@@ -65,10 +66,16 @@ public class MainCommand implements Runnable {
 	   	
 	   	@Option(names = { "-vst", "--vertical-scroll-tile" }, paramLabel = "Vertical Scroll Tile", description = "Output tile data for Vertical Scroll")
 	   	private boolean vscrollTile = false;
+
+	   	@Option(names = { "-hs", "--horizontal-scroll" }, paramLabel = "Horizontal Scroll Buffer", description = "Output code buffer for Horizontal Scroll (looping 160px band)")
+	   	private boolean hscroll = false;
     }
     
 	@Option(names = { "-slc", "--shiftLeftColors" }, paramLabel = "Shift left colors", description = "Shift colors indexes to the left by one position")
     private boolean shiftLeftColors = false;
+
+	@Option(names = { "-hsc", "--horizontal-scroll-color" }, paramLabel = "Horizontal Scroll guard color", description = "Guard line color for Horizontal Scroll (4 bit pixel value 0-15, after color mapping)")
+    private int hscrollGuardColor = 0;
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
@@ -151,6 +158,10 @@ public class MainCommand implements Runnable {
 		} else if (exclusiveOutput.vscrollTile) {
 			for (String file : files) {
 				new VerticalScrollTile(file);
+			}
+		} else if (exclusiveOutput.hscroll) {
+			for (String file : files) {
+				new HorizontalScroll(file, hscrollGuardColor);
 			}
 		}
 
