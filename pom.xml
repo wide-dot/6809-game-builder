@@ -26,9 +26,16 @@
 		<picocli.version>[4.7.5,)</picocli.version>		
 		<libtiled.version>[1.4.2,)</libtiled.version>
 		<json.version>[20240303,)</json.version>
+		<junit.version>5.11.4</junit.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
@@ -90,6 +97,11 @@
 				<configuration>
 					<skipAssembly>true</skipAssembly>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
 			</plugin>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>

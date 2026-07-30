@@ -2,6 +2,8 @@ package com.widedot.m6809.gamebuilder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
@@ -26,7 +28,7 @@ import com.widedot.m6809.util.FileUtil;
 
 @Command(name = "gamebuilder", description = "6809 game builder")
 @Slf4j
-public class MainCommand implements Runnable {
+public class MainCommand implements Callable<Integer> {
 	
     @ArgGroup(exclusive = true, multiplicity = "1")
     Exclusive exclusive;
@@ -52,12 +54,13 @@ public class MainCommand implements Runnable {
     private boolean clean = false;
 
 	public static void main(String[] args) {
-		CommandLine cmdLine = new CommandLine(new MainCommand());
-		cmdLine.execute(args);
+		// the exit code must reflect the build outcome : a broken build has to
+		// fail the shell command, the Makefile or the CI job that invoked it
+		System.exit(new CommandLine(new MainCommand()).execute(args));
 	}
 
 	@Override
-	public void run() {
+	public Integer call() {
 		try {
 			long startTime = System.currentTimeMillis();
 			Startup.showSplash();
@@ -106,33 +109,35 @@ public class MainCommand implements Runnable {
 			long endTime = System.currentTimeMillis();
 			double duration = (endTime - startTime) / 1000.0;
 			log.info("Build done in {}s", duration);
+			return 0;
 		} catch (Exception e) {
 			log.error(ExceptionUtils.getStackTrace(e));
+			return 1;
 		}
 	}
 	
-	private void extract(String dir) {
-		try {
-			if (Startup.createProjectDirectory(dir)) {
-				Startup.extractResource("/engine.zip", false);
-			}
-		} catch (IOException e) {
-			log.error(ExceptionUtils.getStackTrace(e));
+	private void extract(String dir) throws IOException {
+		if (Startup.createProjectDirectory(dir)) {
+			Startup.extractResource("/engine.zip", false);
 		}
 	}
 	
 	private void processDir(File dir, String[] targets) throws Exception {
-		if (dir.isDirectory()) {
-			log.info("Processing directory: {}", dir.getName());
-			for (File file : dir.listFiles())
-			{
-			   if (FilenameUtils.getExtension(file.getName()).equals("xml"))
-			   {
-				   processFile(file, targets);
-			   }
+		if (!dir.isDirectory()) {
+			throw new Exception("Directory: " + dir.getPath() + " does not exists !");
+		}
+		log.info("Processing directory: {}", dir.getName());
+		File[] files = dir.listFiles();
+		if (files == null) {
+			throw new Exception("Directory: " + dir.getPath() + " cannot be read !");
+		}
+		// sort : the file system order is not stable across machines, and the
+		// build result depends on the processing order (link symbol ids)
+		Arrays.sort(files);
+		for (File file : files) {
+			if (FilenameUtils.getExtension(file.getName()).equals("xml")) {
+				processFile(file, targets);
 			}
-		} else {
-			log.error("Directory: {} does not exists !", dir.getName());
 		}
 	}
 	
@@ -141,8 +146,7 @@ public class MainCommand implements Runnable {
 		log.info("Processing file: {}", file.getName());
 
 		if (!file.exists() || file.isDirectory()) {
-			log.error("File: {} does not exists !", file.getName());
-			return;
+			throw new Exception("File: " + file.getPath() + " does not exists !");
 		}
 		
 		// Get absolute directory of configuration file. Will be used as the base directory
@@ -151,8 +155,7 @@ public class MainCommand implements Runnable {
 	    
 	    // clean build files
 		if (clean) {
-			//LwAssembler.clean(path);
-			return;
+			throw new Exception("The --clean option is not implemented yet.");
 		}
 		
 	    // parse the xml
@@ -170,8 +173,7 @@ public class MainCommand implements Runnable {
 		}
 		catch (ConfigurationException cex)
 		{
-			log.error("Error reading xml configuration file.");
-			log.error(ExceptionUtils.getStackTrace(cex));
+			throw new Exception("Error reading xml configuration file: " + file.getPath(), cex);
 		}
 	}	
 }

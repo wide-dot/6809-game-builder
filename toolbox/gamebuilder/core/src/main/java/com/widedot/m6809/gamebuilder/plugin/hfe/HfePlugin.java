@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.hfe;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,11 +61,21 @@ public class HfePlugin {
 		if(log.isDebugEnabled()){
 			pb.inheritIO();
 		}
-		Process p = pb.start();
-		
-		if (p.waitFor() != 0) {
-			throw new Exception ("HXCFE error !");
-		}	
+
+		Process p;
+		try {
+			p = pb.start();
+		} catch (IOException e) {
+			// hxcfe is not shipped for every platform (no macOS build today) :
+			// say so plainly instead of surfacing a bare "Cannot run program"
+			throw new Exception(hxcfe + " was not found in the PATH. It is needed to produce "
+					+ absFilename + " ; install it or drop the <hfe/> output from the configuration.", e);
+		}
+
+		int rc = p.waitFor();
+		if (rc != 0) {
+			throw new Exception(hxcfe + " failed with exit code " + rc + " on " + tmpoutputFile);
+		}
 		
         Files.deleteIfExists(tmpoutputFile);
         

@@ -38,7 +38,7 @@ public class FdPlugin {
             Files.createFile(outputFile);
             Files.write(outputFile, media.getInterleavedData());
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Exception("Cannot write " + absFilename, e);
         }
 		
 		log.debug("End of processing fd");

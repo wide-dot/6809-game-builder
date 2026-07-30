@@ -53,7 +53,7 @@ public class SdPlugin {
             Files.createFile(outputFile);
             Files.write(outputFile, sdBytes);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Exception("Cannot write " + absFilename, e);
         }
 		
 		log.debug("End of processing sd");

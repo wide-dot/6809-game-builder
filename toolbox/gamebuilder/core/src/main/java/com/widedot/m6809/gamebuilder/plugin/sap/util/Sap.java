@@ -85,6 +85,14 @@ public class Sap {
 		}
 	}
 
+	/**
+	 * @param drive drive index, 0 to NB_DRIVE-1
+	 * @return the encoded sap image of that drive, null if the drive is unused
+	 */
+	public byte[] getSapFile(int drive) {
+		return sapFile[drive];
+	}
+
 	private void setHeader(byte data[]) {
 		data[0] = (byte) type;
 		byte[] header = sapHeader.getBytes();
@@ -93,7 +101,7 @@ public class Sap {
 		}
 	}
 
-	public void write(String file) {
+	public void write(String file) throws Exception {
 		
 		String ext = FileUtil.getExtension(file).get();
 		String filebase = FileUtil.removeExtension(file);
@@ -119,7 +127,7 @@ public class Sap {
 					Files.createFile(outputFile);
 					Files.write(outputFile, sapFile[drive]);
 				} catch (IOException e) {
-					e.printStackTrace();
+					throw new Exception("Cannot write " + outputFile, e);
 				}
 			}
 		}
