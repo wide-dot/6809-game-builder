@@ -12,7 +12,7 @@
         <section name="BOOT"   track="0"  face="0" sector="1"/>
         <section name="LOADER" track="0"  face="0" sector="2"/> <!-- those values cannot be changed unless modifying read start in boot.asm, loader must be on track 0 because boot.asm doe not handle track change -->
         <section name="LINK"   track="0"  face="1" sector="9"/> <!-- should be adjusted, once the loader is ready -->
-        <section name="INDEX"  track="0"  face="1" sector="2"/> <!-- those values cannot be changed unless doing changes to loader.asm (default index location) -->
+        <section name="INDEX"  track="0"  face="1" sector="4"/> <!-- those values cannot be changed unless doing changes to loader.asm (default index location) -->
         <section name="FAT0"   track="20" face="0" sector="1"/>
         <section name="FAT1"   track="20" face="1" sector="1"/>
     </floppydisk>
@@ -24,7 +24,7 @@
         <section name="BOOT"   track="0"  face="0" sector="1"/>
         <section name="LOADER" track="0"  face="0" sector="2"/> <!-- those values cannot be changed unless modifying read start in boot.asm, loader must be on track 0 because boot.asm doe not handle track change -->
         <section name="LINK"   track="0"  face="1" sector="9"/> <!-- should be adjusted, once the loader is ready -->
-        <section name="INDEX"  track="0"  face="1" sector="2"/> <!-- those values cannot be changed unless doing changes to loader.asm (default index location) -->
+        <section name="INDEX"  track="0"  face="1" sector="4"/> <!-- those values cannot be changed unless doing changes to loader.asm (default index location) -->
         <section name="FAT0"   track="20" face="0" sector="1"/>
     </floppydisk>
     

@@ -74,7 +74,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
 ; ---------------------------------
 DIR_DEFAULT_FACE    EQU   $01    ; Default face/drive for directory
 DIR_DEFAULT_TRACK   EQU   $00    ; Default track for directory  
-DIR_DEFAULT_SECTOR  EQU   $02-1  ; Default sector for directory (from 0 to 15)
+DIR_DEFAULT_SECTOR  EQU   $04-1  ; Default sector for directory (from 0 to 15)
 
         org   loader.ADDRESS
         jmp   >loader.scene.loadDefault    ; OK
@@ -781,6 +781,16 @@ loader.file.linkData.load
         puls  u
         bra   @fill                           ; u is a ptr to the reused slot
 !
+        ; implicit unload : a different indexed file located at the very same
+        ; destination is being overwritten, remove it from the index so the
+        ; global re-link will not patch its stale offsets over the new binary
+        lda   1,s                             ; load file dest page
+        ldx   6,s                             ; load file dest addr
+        jsr   linkData.slot.findByDest
+        cmpu  #0
+        beq   >
+        jsr   linkData.slot.remove
+!
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
         bne   >
@@ -865,6 +875,24 @@ loader.file.linkData.unload
         stb   1,s
         puls  d,x,y,u,pc
 !
+        jsr   linkData.slot.remove
+        clrb                                  ; success
+        stb   1,s
+        puls  d,x,y,u,pc
+
+
+;---------------------------------------
+; linkData.slot.remove
+;
+; input  REG : [U] ptr to slot
+;---------------------------------------
+; remove a slot from the link data
+; index : free the link data buffer,
+; move the following slots one slot
+; ahead and decrement occupiedSlots
+;---------------------------------------
+linkData.slot.remove
+        pshs  d,x,u
         pshs  u                               ; free link data buffer
         ldu   linkData.entry.linkData,u
         jsr   tlsf.free
@@ -887,9 +915,7 @@ loader.file.linkData.unload
         sta   ,u+                             ; one slot ahead
         leax  -1,x
         bne   @loop
-@end    clrb                                  ; success
-        stb   1,s
-        puls  d,x,y,u,pc
+@end    puls  d,x,u,pc
 
 
 ;---------------------------------------
@@ -931,6 +957,35 @@ linkData.slot.find
 @loop   cmpa  linkData.entry.diskId,u
         bne   >
         cmpx  linkData.entry.fileId,u
+        beq   @found
+!       leau  sizeof{linkData.entry},u
+        leay  -1,y
+        bne   @loop
+@notfound
+        ldu   #0
+@found  puls  d,x,y,pc
+
+
+;---------------------------------------
+; linkData.slot.findByDest
+;
+; input  REG : [A] file dest page
+; input  REG : [X] file dest address
+; output REG : [U] ptr to slot ($0000 if not found)
+;---------------------------------------
+; search the link data index for a file
+; loaded at a given destination
+;---------------------------------------
+linkData.slot.findByDest
+        pshs  d,x,y
+        ldu   >loader.file.linkDataIdx
+        beq   @notfound
+        ldy   linkData.header.occupiedSlots,u
+        beq   @notfound
+        leau  sizeof{linkData.header},u
+@loop   cmpa  linkData.entry.filePage,u
+        bne   >
+        cmpx  linkData.entry.fileAddr,u
         beq   @found
 !       leau  sizeof{linkData.entry},u
         leay  -1,y

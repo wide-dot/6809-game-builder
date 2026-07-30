@@ -13,9 +13,10 @@
 ;   +5  : T5 scene "second" loaded : marker cc content @ cart page 6, $0800
 ;   +6  : T6 re-link after scene load : #marker.cc.begin
 ;   +7  : T7 loader.file.getPageID for cc
-;   +8  : T8 linkData.unload of bb : status, deindexed, not found twice
+;   +8  : T8 implicit unload : loading cc at bb's destination deindexed bb
 ;   +9  : T9 dedup : reloading scene "second" does not grow the index
-;   +10 : (word, info) value of #marker.cc.begin BEFORE scene "second"
+;   +10 : T10 explicit linkData.unload of aa : status, isLoaded, count drop
+;   +12 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
 ;   +15 : $00 running, $0D all tests passed, $E0+n : n test(s) failed
 ;
@@ -59,7 +60,7 @@ init
         ; info : marker.cc.begin before scene "second" is loaded
         ; (file cc is not loaded yet, symbol should have resolved to 0)
         ldx   #marker.cc.begin
-        stx   result+10
+        stx   result+12
 
         ; T1 : marker aa content (zx0 compressed file)
         _ram.cart.set #page.markers
@@ -132,22 +133,17 @@ init
 @res    equ   *-1
         jsr   test.next
 
-        ; T8 : linkData.unload of marker bb (its RAM was overwritten by cc) :
-        ; must succeed, deindex the file, and report not found on a 2nd call
+        ; T8 : implicit unload - loading cc at bb's destination (T5) must
+        ; have removed bb from the index ; an explicit unload of bb then
+        ; reports not found
         lda   #$01
         sta   @res8
-        _loader.file.linkData.unload #0,#data.marker.bb
-        tstb
-        beq   >                               ; first unload : success expected
-        ldb   #$FF
-        stb   @res8
-!       _loader.file.getPageID #data.marker.bb
-        cmpb  #$FF                            ; bb must not be indexed anymore
-        beq   >
+        _loader.file.isLoaded #data.marker.bb
+        beq   >                               ; eq : not loaded, as expected
         ldb   #$FF
         stb   @res8
 !       _loader.file.linkData.unload #0,#data.marker.bb
-        cmpb  #$FF                            ; second unload : not found expected
+        cmpb  #$FF                            ; not found expected
         beq   >
         ldb   #$FF
         stb   @res8
@@ -182,6 +178,31 @@ init
         stb   @res9
 !       lda   #0
 @res9   equ   *-1
+        jsr   test.next
+
+        ; T10 : explicit unload of marker aa : success, deindexed,
+        ; and the index count drops by one
+        lda   #$01
+        sta   @res10
+        _loader.file.linkData.count
+        std   test.t10.count
+        _loader.file.linkData.unload #0,#data.marker.aa
+        tstb
+        beq   >                               ; success expected
+        ldb   #$FF
+        stb   @res10
+!       _loader.file.isLoaded #data.marker.aa
+        beq   >                               ; eq : not loaded, as expected
+        ldb   #$FF
+        stb   @res10
+!       _loader.file.linkData.count
+        addd  #1
+        cmpd  test.t10.count                  ; count must have dropped by one
+        beq   >
+        ldb   #$FF
+        stb   @res10
+!       lda   #0
+@res10  equ   *-1
         jsr   test.next
 
         ; done : write final status
@@ -244,8 +265,9 @@ test.next
         inc   test.fails
 !       puls  b,x,pc
 
-test.idx      fcb 0
-test.fails    fcb 0
-test.t9.count fdb 0
+test.idx       fcb 0
+test.fails     fcb 0
+test.t9.count  fdb 0
+test.t10.count fdb 0
 
  ENDSECTION

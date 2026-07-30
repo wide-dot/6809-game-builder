@@ -49,7 +49,7 @@ MO5, Tandy CoCo 3.
 |---|---|---|
 | Builder Java (core/spi/util, plugins, parser LWOBJ16, floppydisk/fd/sap/hfe/sd) | `toolbox/gamebuilder/` | Le plus abouti du repo ; produit des images bootables |
 | Load-time linker (relocation intern/extern8/extern16/externPg au chargement) | plugin `direntry` + `loader.file.link` | Remplace le placement statique de la v1 |
-| Bootloader + loader + scene loader ASM (~1200 l.) | `engine/system/thomson/bootloader/loader.asm` | Chargement de scènes depuis disquette en cours de jeu, malloc de fichiers, décompression ZX0. Cycle de vie complété le 30/07/2026 : `linkData.unload`, dédup au rechargement et `linkData.count` implémentés et validés 9/9 par `examples/loader-ut` sous toje. Restent : « is loaded », unload implicite sur écrasement par un autre fichier, concept « group » du design (`docs/lang/en/dynamic-link-data.md`) — voir l'analyse détaillée plus bas. |
+| Bootloader + loader + scene loader ASM (~1200 l.) | `engine/system/thomson/bootloader/loader.asm` | Chargement de scènes depuis disquette en cours de jeu, malloc de fichiers, décompression ZX0. Cycle de vie complété le 30/07/2026 : `linkData.unload`, dédup au rechargement, unload implicite sur écrasement de destination, `linkData.count` et `isLoaded`, validés 10/10 par `examples/loader-ut` sous toje. Restent : recouvrement partiel (tailles non suivies), concept « group » du design (`docs/lang/en/dynamic-link-data.md`) — voir l'analyse détaillée plus bas. |
 | Allocateur TLSF 16 bits (+ realloc + UT embarqués) | `engine/memory/malloc/` | Nouveauté v2 (la v1 n'avait pas d'allocateur dynamique) |
 | ZX0 (compresseur Java + 3 décompresseurs 6809) | `toolbox/gamebuilder/util/zx0`, `engine/compression/zx0/` | |
 | Audio VGC (SN76489) + YMM (YM2413) + outils `vgm2vgc`/`vgm2ymm`/`vgm2sfx` | `engine/sound/`, `toolbox/audio/` | Démontré TO8 **et** MO6 (`examples/sound`) — R-Type v1 utilise exactement YMM + soundFX |
@@ -128,19 +128,28 @@ sous-scènes type `$8000`) : complets.
    fantôme quand on recharge un même fichier au même emplacement.
 3. Nouveau : `loader.file.linkData.count` (jump table index 30, D=nb de fichiers
    indexés) pour l'observabilité des tests et diagnostics.
+4. **Unload implicite** : enregistrer un fichier *différent* à la destination
+   exacte (page+adresse) d'un fichier indexé retire l'entrée périmée
+   (`linkData.slot.findByDest` + `linkData.slot.remove` factorisé) — le re-link
+   global ne peut plus patcher des offsets périmés sur le nouveau binaire. C'était
+   le dernier chemin de corruption du pattern courant (adresses fixes de scène,
+   ex. musiques title/level1 d'`examples/sound`).
+5. Macro `_loader.file.isLoaded` (`getPageID != $FF`, résultat dans CC).
+6. **Layout disque ajusté** : le loader ayant grossi (~4,1 Ko > 16 secteurs), la
+   section INDEX est passée du secteur 2 au secteur 4 en face 1
+   (`engine/config/storage.xml` fd640+fd320, couplé à `DIR_DEFAULT_SECTOR` dans
+   loader.asm) → ~768 octets de marge pour le loader. Les images produites avant
+   ce changement ont l'index à l'ancien emplacement (re-builder).
 
 **Ce qui manque encore** :
-1. **Re-link sur zones écrasées par un AUTRE fichier** : recharger un fichier
-   différent au même emplacement (ex. musique title puis level1 en page 6/$0400
-   dans `examples/sound`) laisse le slot de l'ancien dans l'index ; le re-link
-   final ré-applique ses fixups dans la zone qui contient le nouveau binaire.
-   Inoffensif tant que les fichiers écrasés n'ont pas d'externs à patcher (cas des
-   données musique) ; **corruption mémoire silencieuse** sinon. Discipline requise :
-   `linkData.unload` du fichier écrasé avant/après le chargement — à automatiser à
-   terme (unload implicite quand un load recouvre l'emplacement d'un slot ?).
-2. Pas de requête « is loaded » (trivial : `getPageID != $FF`). Pas de shrink de
-   l'index à l'unload (optionnel). Le design par **groups** (load/unload par group
-   id, paginated groups — `dynamic-link-data.md`) n'existe ni côté ASM ni côté builder.
+1. L'unload implicite ne couvre que la destination *exacte* : un chargement qui
+   recouvre **partiellement** la mémoire d'un fichier indexé (adresse différente)
+   laisse un slot périmé — les tailles ne sont pas suivies dans l'index. Discipline :
+   `linkData.unload` explicite dans ce cas (ou ajouter la taille au slot, au prix
+   d'un pas d'index ≠ 8).
+2. Pas de shrink de l'index à l'unload (optionnel). Le design par **groups**
+   (load/unload par group id, paginated groups — `dynamic-link-data.md`) n'existe
+   ni côté ASM ni côté builder.
 
 **Défauts annexes** : symbole non résolu = 0 silencieux par défaut (activer
 `loader.CHECK_UNRESOLVED_SYMBOLS` piège en `bra *`) ; `linkData.entry.diskId` écrit
@@ -148,16 +157,17 @@ mais jamais comparé (collision d'ids entre disquettes) ; boucles extern16 et
 symbol.search qui avancent avec `sizeof{}` d'une autre struct (même taille
 aujourd'hui, fragile).
 
-**Ordre de finition restant** : (1) `isLoaded` ; (2) décider d'un unload implicite
-sur écrasement d'emplacement ; (3) trancher le sort du concept « group » (par
-fichier + unload suffit probablement pour R-Type).
+**Ordre de finition restant** : (1) suivi des tailles dans l'index si l'on veut un
+unload implicite sur recouvrement partiel ; (2) trancher le sort du concept
+« group » (par fichier + unload suffit probablement pour R-Type).
 
 **Banc de test** : `examples/loader-ut` — game mode UT bootable qui exerce le
 loader (zx0 + cdataz, raw, extern16, getPageID, `scene.load` à chaud avec
-écrasement, re-link des références en avant, unload T8, dédup T9) et écrit ses
-résultats en `$9C00` (magic `$CA`, 9 slots de test, statut final `$0D`/`$E0+n`).
-Validé sous toje : 9/9 pass, structures internes de l'index vérifiées en mémoire
-(occupiedSlots, décalage de slots, réallocation des buffers).
+écrasement, re-link des références en avant, unload implicite T8, dédup T9,
+unload explicite + isLoaded + count T10) et écrit ses résultats en `$9C00`
+(magic `$CA`, 10 slots de test, statut final `$0D`/`$E0+n`). Validé sous toje :
+10/10 pass, structures internes de l'index vérifiées en mémoire (occupiedSlots,
+décalage de slots, réallocation des buffers).
 
 ## Reste à faire pour un R-Type minimal (niveau 1 + boss, parité v1)
 

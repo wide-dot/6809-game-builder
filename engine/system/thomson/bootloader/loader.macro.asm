@@ -19,3 +19,11 @@ _loader.file.linkData.unload MACRO
 _loader.file.linkData.count MACRO
         jsr   loader.ADDRESS+loader.file.linkData.count.IDX
  ENDM
+
+; sets CC : ne = file is loaded, eq = file is not loaded
+; (also returns page id in B, $ff if not loaded)
+_loader.file.isLoaded MACRO
+        ldd   \1
+        jsr   loader.ADDRESS+loader.file.getPageID.IDX
+        cmpb  #$ff
+ ENDM
