@@ -116,7 +116,7 @@ checkSampleRequest
         ;
         ; enable sample output by firq
         jsr   dac.unmute
-        _firq.pcm.play sample.current.address,sample.current.duration
+        _firq.pcm.play sample.current.address,sample.current.duration,firq.pcm.CLOCK_3MHZ
 @nofire
         ; disable screen border if sample ended
         lda   [firq.pcm.sample]           ; if pcm reading is not over
@@ -173,4 +173,4 @@ samples.address
         INCLUDE "engine/sound/firq.pcm.asm"
         INCLUDE "engine/system/to8/controller/joypad.md6.dac.asm"
         INCLUDE "engine/system/thomson/sound/dac.enable.asm"
-        INCLUDE "engine/system/to8/sound/dac.mute.asm"
+        INCLUDE "engine/system/thomson/sound/dac.mute.asm"

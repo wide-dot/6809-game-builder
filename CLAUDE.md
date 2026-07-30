@@ -45,10 +45,17 @@ MO5, Tandy CoCo 3.
   vers `/bin` de la distribution, où leur `BASEDIR` (un cran au-dessus du script)
   retombe bien sur la racine avec `repo/` et `plugins/` à côté.
 - Exemples de référence : `examples/sound` (le plus complet, TO8 + MO6 : boot, scènes,
-  double-buffer, musiques YMM+VGC ; build et exécution revalidés le 30/07/2026, y compris
-  le changement de scène à chaud), `examples/loader-ut` (banc de test du loader, 15/15),
+  double-buffer, musiques YMM+VGC), `examples/loader-ut` (banc de test du loader, 15/15),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
+- **État de validation au 30/07/2026** : les **8 configs** des exemples buildent
+  (`mplus/to8-mplus-test`, `mplus/to8-mplus-pcm`, `mplus/mo6-mplus-test`, `sound/to8`,
+  `sound/mo6`, `tlsf-ut/to8`, `tlsf-ut/mo6`, `loader-ut/to8`). Exécution vérifiée sous
+  toje pour toutes les images **TO8** (sound : changement de scène à chaud + données
+  musicales correctes en RAM ; mplus factory test : affiche son écran, les tests timer
+  sortent « KO » car toje n'émule pas la carte MPLUS ; mplus pcm : boucle principale ;
+  tlsf-ut et loader-ut : verts). Les images **MO6 ne sont validées qu'au build** — pas
+  d'émulateur MO6 disponible ici (toje est TO8 uniquement).
 - Assembleur : LWASM (LWTOOLS, binaires dans `toolbox/third-party/bin/<os>/`).
 - Debug : `toolbox/debug` (**wddebug**) — GUI ImGui qui s'attache à DCMOTO/Teo en cours
   d'exécution (Windows + macOS) et lit la RAM émulée en direct.

@@ -64,7 +64,7 @@ mainLoop
         _gfxlock.screenBorder.update sample.current.id
 
         ; enable sample output by firq
-        _firq.pcm.play sample.current.address,sample.current.duration
+        _firq.pcm.play sample.current.address,sample.current.duration,firq.pcm.CLOCK_3MHZ
 !
         _gfxlock.on
         ; all writes to gfx buffer should be placed here for double buffering

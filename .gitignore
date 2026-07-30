@@ -28,3 +28,4 @@ hs_err_pid*
 /repo/
 /.vscode/
 /engine/**/build/
+/imgui.ini

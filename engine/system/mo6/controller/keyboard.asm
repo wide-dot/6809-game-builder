@@ -7,7 +7,6 @@
 ;*******************************************************************************
 
 keyboard.read          EXPORT
-keyboard.fast.check    EXPORT
 keyboard.held          EXPORT
 keyboard.pressed       EXPORT
 
