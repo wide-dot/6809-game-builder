@@ -21,10 +21,14 @@
 ;         pool/index stability ($01 pass, $F1..$F5 first failing check)
 ;   +12 : T12 index growth : +6 export-only files (realloc beyond 8 slots),
 ;         symbol values resolved, mass unload ($01 pass, $F6..$F9)
-;   +14 : T11 progress : remaining stress iterations (0 when loop completed)
+;   +13 : T13 multi-sector directory : marker zz is the last INDEX entry,
+;         its dir entry lives in the 3rd directory sector ($FA/$FB)
+;   +14 : T14 index churn : 16 cycles of +22 export-only files (realloc
+;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
 ;   +15 : $00 running, $0D all tests passed, $E0+n : n test(s) failed
 ;   +16 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
+;   +18 : T11 progress : remaining stress iterations (1 when completed)
 ;
 ; each test slot : $00 not run, $01 pass, $FF fail
 ;*******************************************************************************
@@ -36,6 +40,9 @@ marker.dd.begin EXTERNAL
 marker.ee.begin EXTERNAL
 iface.a.VALUE   EXTERNAL
 iface.f.VALUE   EXTERNAL
+pad.a.VALUE     EXTERNAL
+pad.p.VALUE     EXTERNAL
+marker.zz.begin EXTERNAL
 gm.anchor       EXPORT
 
  SECTION code
@@ -56,6 +63,8 @@ addr.marker.bb   equ $0800
 addr.marker.cc   equ $0800
 addr.marker.hub  equ $0C00
 addr.variant     equ $1000
+addr.marker.zz   equ $1400
+marker.zz.SIZE   equ $0100
 STRESS.ITERS     equ 128
 
 init
@@ -241,7 +250,7 @@ init
         sta   stress.iter
 @sloop
         lda   stress.iter
-        sta   result+14                       ; progress, for the debugger
+        sta   result+18                       ; progress, for the debugger
         anda  #15
         bne   @swap
         _loader.file.linkData.unload #0,#data.marker.dd
@@ -376,6 +385,83 @@ init
 @res12  equ   *-1
         jsr   test.next
 
+        ; T13 : multi-sector directory - marker zz is the LAST directory
+        ; entry, so its dir entry lives in the 3rd INDEX sector
+        ;   $FA bad content, $FB not indexed at the marker page
+        lda   #$01
+        sta   @res13
+        _loader.scene.load #scenes.stress.zz
+        _ram.cart.set #page.markers
+        ldx   #addr.marker.zz
+        lda   #$5A
+        ldy   #marker.zz.SIZE-6
+        jsr   marker.check
+        cmpa  #$01
+        beq   >
+        lda   #$FA
+        bra   @fail13
+!       _loader.file.getPageID #data.marker.zz
+        cmpb  #page.markers
+        beq   @end13
+        lda   #$FB
+        bra   @fail13
+@fail13 sta   @res13
+@end13  lda   #0
+@res13  equ   *-1
+        jsr   test.next
+
+        ; T14 : index churn - 16 cycles of loading 22 export-only files
+        ; (iface + pad scenes ; first pass walks the realloc steps
+        ; 8->16->24->32) then mass-unloading them all
+        ;   $FC peak count wrong, $FD a pad value not resolved,
+        ;   $FE an unload failed or floor count wrong
+        lda   #$01
+        sta   @res14
+        _loader.file.linkData.count
+        std   test.t14.count                  ; floor : gm, cc, hub, variant, zz
+        lda   #16
+        sta   stress.iter                     ; reuse the T11 counter
+@t14loop
+        _loader.scene.load #scenes.stress.iface
+        _loader.scene.load #scenes.stress.pad
+        _loader.file.linkData.count
+        subd  #22
+        cmpd  test.t14.count
+        beq   >
+        lda   #$FC
+        lbra  @fail14
+!       ldd   #pad.a.VALUE
+        cmpd  #$0B01
+        bne   @f14b
+        ldd   #pad.p.VALUE
+        cmpd  #$0B10
+        beq   >
+@f14b   lda   #$FD
+        lbra  @fail14
+!       ldy   #test.t14.list                  ; mass unload : 6 ifaces + 16 pads
+@t14ul  ldx   ,y++
+        cmpx  #$FFFF
+        beq   @t14chk
+        ldb   #0
+        jsr   loader.ADDRESS+loader.file.linkData.unload.IDX
+        tstb
+        beq   @t14ul
+        lda   #$FE
+        lbra  @fail14
+@t14chk
+        _loader.file.linkData.count
+        cmpd  test.t14.count
+        beq   >
+        lda   #$FE
+        lbra  @fail14
+!       dec   stress.iter
+        lbne  @t14loop
+        bra   @end14
+@fail14 sta   @res14
+@end14  lda   #0
+@res14  equ   *-1
+        jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
@@ -445,6 +531,11 @@ test.fails     fcb 0
 test.t9.count  fdb 0
 test.t10.count fdb 0
 test.t12.count fdb 0
+test.t14.count fdb 0
+test.t14.list  fdb iface.a,iface.b,iface.c,iface.d,iface.e,iface.f
+               fdb pad.a,pad.b,pad.c,pad.d,pad.e,pad.f,pad.g,pad.h
+               fdb pad.i,pad.j,pad.k,pad.l,pad.m,pad.n,pad.o,pad.p
+               fdb $FFFF
 stress.iter    fcb 0
 stress.id      fcb 0
 stress.exp.dd  fdb 0

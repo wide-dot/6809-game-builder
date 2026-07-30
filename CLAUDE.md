@@ -179,8 +179,12 @@ unload explicite + isLoaded + count T10) et écrit ses résultats en `$9C00`
 (fixups extern vérifiés dans les données fraîches, flips de symboles dans le gm
 ET dans un fichier data stable, unload explicite tous les 16 cycles, le tout
 dans le pool de 4 Ko — toute fuite le ferait exploser) ; T12 = croissance de
-l'index au-delà de 8 slots (chemin realloc) + mass unload. Validé sous toje :
-12/12 pass, index vérifié en mémoire (realloc 8→16, relogement, slots intacts).
+l'index au-delà de 8 slots (chemin realloc) + mass unload ; T13 = répertoire
+INDEX de 3 secteurs (589 octets, la dernière entrée chargée et vérifiée) ; T14 =
+churn : 16 cycles de +22 fichiers export-only (chaîne de realloc 8→16→24→32 au
+premier passage) puis mass unload des 22. Le tout dans un pool volontairement
+réduit à $0E00 (3,5 Ko). Validé sous toje : 14/14 pass, index vérifié en mémoire
+(totalSlots=32, slots survivants intacts, dernière entrée du répertoire indexée).
 
 **Deux bugs attrapés par le stress test (corrigés le 30/07/2026)** :
 1. `loader.dir.load` : quand le répertoire dépasse 1 secteur, le buffer alloué

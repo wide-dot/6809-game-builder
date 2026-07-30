@@ -38,9 +38,16 @@ loader analysis in the repository `CLAUDE.md`).
 | +10 | T10 explicit `linkData.unload` of aa : success, `isLoaded` false, count drops by one |
 | +11 | T11 stress : 128 load/unload/relink cycles of the dd/ee variants over one destination — fresh extern fixups ($F1), content ($F2), symbol flips in the gm ($F3) and in the stable hub file ($F4), index steady at 4 ($F5) ; explicit unload every 16th cycle ; the whole loop must live within the 4 KB pool |
 | +12 | T12 index growth : +6 export-only files push the index past 8 slots (realloc), values resolved ($F7), mass unload ($F8), count restored ($F9) |
-| +14 | T11 progress : remaining iterations |
+| +13 | T13 multi-sector directory : marker zz is the LAST directory entry (3rd INDEX sector), loaded and verified ($FA content, $FB not indexed) |
+| +14 | T14 index churn : 16 cycles of +22 export-only files (first pass walks the realloc steps 8→16→24→32) then mass unload of all 22 ($FC peak count, $FD value, $FE unload/floor) |
 | +15 | `$00` running, `$0D` all passed, `$E0+n` n test(s) failed |
 | +16/+17 | info : `#marker.cc.begin` **before** the second scene load (expected `$0000` — unresolved symbols silently resolve to 0) |
+| +18 | T11 progress : remaining iterations |
+
+The whole bench runs inside a deliberately reduced memory pool
+(`loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $0E00`, 3.5 KB) holding a 3-sector
+directory, a 32-slot index at peak and all link data blobs — any alloc/free
+imbalance or fragmentation drift aborts the run.
 
 Each test slot : `$00` not run, `$01` pass, `$FF` fail.
 
