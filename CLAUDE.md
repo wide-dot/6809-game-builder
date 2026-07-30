@@ -21,18 +21,33 @@ MO5, Tandy CoCo 3.
 - Construire un jeu/une démo : `gamebuilder -f <config.xml> [-t <target>] [-v] [-c]`
   (config XML : cible → média (`floppydisk fd640/fd320/fd158`, `rom t2`) → sections →
   `direntry` avec codec `zx0` et `loadtimelink` → sorties `<fd/> <sd/> <sap/> <hfe/>`).
+- **Plugins de conversion** (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`, `pcm`, `png2pal`,
+  `phoneme`, `txt2bas`) : ce sont des modules Maven séparés dont le jar est déposé
+  dans **`plugins/<nom>/`** (pas dans `target/`) et chargé au runtime par
+  ServiceLoader. Un `mvn package` **à la racine** les produit tous les 7 ; un build
+  ciblé (`-pl toolbox/gamebuilder/core -am`) ne les inclut pas, d'où des
+  « Unknown Plugin: vgm2ymm » sur les projets qui les utilisent.
 - **Procédure validée sur macOS (07/2026)** : depuis le répertoire du projet/exemple,
-  `java -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml`.
+  `java -Dbasedir=<racine du repo> -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml`.
   Prérequis : (1) un lien `engine → ../../engine` dans le répertoire du projet (les
   chemins du config.xml sont relatifs au config, `engine/` est gitignoré dans les
   exemples) ; (2) un `lwasm` **>= 4.22** accessible sous le nom **`lwasm.exe`** dans le
   PATH — le nom est codé en dur dans `LwAssembler.java`, et les binaires macOS fournis
   (`toolbox/third-party/bin/macos`, lwtools 4.18) ne comprennent pas les labels locaux
   `@` dans les macros utilisés par l'engine (le binaire Windows est en 4.22). Compiler
-  lwtools 4.24 depuis les sources et symlinker en `lwasm.exe` fonctionne.
+  lwtools 4.24 depuis les sources et symlinker en `lwasm.exe` fonctionne ; (3)
+  **`-Dbasedir`** pointant sur la racine du repo dès qu'un plugin de conversion est
+  utilisé : le builder cherche les plugins dans `${basedir}/plugins`, et sans cette
+  propriété il les cherche dans le répertoire courant.
   Sorties dans `dist/` ; le `<hfe/>` échoue sur macOS (pas de `hxcfe`), l'omettre.
+- Les scripts `bin/unix/` et `bin/windows/` ne sont **pas faits pour être lancés depuis
+  les sources** : ce sont des zones de staging que les descripteurs `package/` mappent
+  vers `/bin` de la distribution, où leur `BASEDIR` (un cran au-dessus du script)
+  retombe bien sur la racine avec `repo/` et `plugins/` à côté.
 - Exemples de référence : `examples/sound` (le plus complet, TO8 + MO6 : boot, scènes,
-  double-buffer, musiques YMM+VGC), `examples/tlsf-ut` (tests unitaires TLSF sur machine),
+  double-buffer, musiques YMM+VGC ; build et exécution revalidés le 30/07/2026, y compris
+  le changement de scène à chaud), `examples/loader-ut` (banc de test du loader, 15/15),
+  `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
 - Assembleur : LWASM (LWTOOLS, binaires dans `toolbox/third-party/bin/<os>/`).
 - Debug : `toolbox/debug` (**wddebug**) — GUI ImGui qui s'attache à DCMOTO/Teo en cours
@@ -267,8 +282,6 @@ fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un obje
 
 ## Dettes / pièges connus
 
-- Lanceurs `bin/unix/6809-gamebuilder-core` : `BASEDIR` résolu un niveau trop haut
-  (cherche `bin/repo` au lieu de `repo/`) → ClassNotFound ; utiliser `java -cp "repo/*"`.
 - `LwAssembler.java` : nom `lwasm.exe` codé en dur (pas de détection d'OS) ; binaires
   lwtools macOS embarqués obsolètes (4.18 vs 4.22 Windows).
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
