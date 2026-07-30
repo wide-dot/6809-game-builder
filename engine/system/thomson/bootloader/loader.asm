@@ -12,7 +12,6 @@
 ;
 ; - TODO :
 ;   - split this code in two part : common and specific (mo/to)
-;   - add unload link data routine
 ;
 ;*******************************************************************************
 
@@ -86,8 +85,9 @@ DIR_DEFAULT_SECTOR  EQU   $02-1  ; Default sector for directory (from 0 to 15)
         jmp   >loader.file.malloc          ; OK
         jmp   >loader.file.decompress      ; OK
         jmp   >loader.file.linkData.load   ; OK
-        jmp   >loader.file.linkData.unload ; TODO
+        jmp   >loader.file.linkData.unload ; OK
         jmp   >loader.file.getPageID       ; OK
+        jmp   >loader.file.linkData.count  ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -767,6 +767,20 @@ loader.file.linkData.load
         ldb   #loader.PAGE
         jsr   loader.file.loadByPtr
 ;
+        ; dedup : if this disk/file is already indexed, reuse its slot
+        ; instead of appending a duplicate
+        ldx   >loader.dir
+        lda   dir.header.diskId,x
+        ldx   2,s                             ; load file id
+        jsr   linkData.slot.find
+        cmpu  #0
+        beq   >                               ; branch if file is not indexed yet
+        pshs  u                               ; free previous link data buffer
+        ldu   linkData.entry.linkData,u
+        jsr   tlsf.free
+        puls  u
+        bra   @fill                           ; u is a ptr to the reused slot
+!
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
         bne   >
@@ -805,6 +819,7 @@ loader.file.linkData.load
         _asld                                 ; mult by struct size
         addd  #types.WORD*2                   ; add header
         leau  d,u                             ; u is a ptr to slot
+@fill
         ldx   >loader.dir
         lda   dir.header.diskId,x             ; load disk id
         sta   linkData.entry.diskId,u
@@ -832,17 +847,97 @@ loader.file.linkData.load
 ;
 ; input  REG : [B] directory id
 ; input  REG : [X] file id
+; output REG : [B] $00 success, $ff file not found
 ;---------------------------------------
 ; remove load time link data from RAM
-; for a specified file
+; for a specified file :
+; free the link data buffer, move the
+; following slots one slot ahead and
+; decrement nb of occupied slots
 ;---------------------------------------
 loader.file.linkData.unload
-        ; TODO
-        ; search for dir/file id in loader.file.linkData
-        ; move following linkdata one slot ahead
-        ; decrement nb of occupied slots
-        ; reallocate if total slots - occupied slots = 8
-        rts
+        pshs  d,x,y,u
+        tfr   b,a                             ; a: disk id, x: file id
+        jsr   linkData.slot.find
+        cmpu  #0
+        bne   >
+        ldb   #$ff                            ; file is not indexed
+        stb   1,s
+        puls  d,x,y,u,pc
+!
+        pshs  u                               ; free link data buffer
+        ldu   linkData.entry.linkData,u
+        jsr   tlsf.free
+        puls  u
+        ldx   >loader.file.linkDataIdx        ; remove one slot
+        ldd   linkData.header.occupiedSlots,x
+        subd  #1
+        std   linkData.header.occupiedSlots,x
+        _asld
+        _asld
+        _asld                                 ; mult by struct size
+        addd  #sizeof{linkData.header}
+        leax  d,x                             ; x: ptr to end of valid slots after removal
+        tfr   x,d
+        pshs  u
+        subd  ,s++                            ; d: nb of bytes to move down
+        beq   @end                            ; branch if removed slot was the last one
+        tfr   d,x                             ; x: byte counter
+@loop   lda   sizeof{linkData.entry},u        ; move following slots
+        sta   ,u+                             ; one slot ahead
+        leax  -1,x
+        bne   @loop
+@end    clrb                                  ; success
+        stb   1,s
+        puls  d,x,y,u,pc
+
+
+;---------------------------------------
+; loader.file.linkData.count
+;
+; output REG : [D] nb of files in the
+;                  link data index
+;---------------------------------------
+; get the number of files registered in
+; the load time link data index
+;---------------------------------------
+loader.file.linkData.count
+        ldd   >loader.file.linkDataIdx
+        beq   @rts                            ; branch if link data has never been created
+        pshs  x
+        tfr   d,x
+        ldd   linkData.header.occupiedSlots,x
+        puls  x
+@rts    rts
+
+
+;---------------------------------------
+; linkData.slot.find
+;
+; input  REG : [A] disk id
+; input  REG : [X] file id
+; output REG : [U] ptr to slot ($0000 if not found)
+;---------------------------------------
+; search the link data index for a
+; loaded disk/file
+;---------------------------------------
+linkData.slot.find
+        pshs  d,x,y
+        ldu   >loader.file.linkDataIdx
+        beq   @notfound
+        ldy   linkData.header.occupiedSlots,u
+        beq   @notfound
+        leau  sizeof{linkData.header},u
+@loop   cmpa  linkData.entry.diskId,u
+        bne   >
+        cmpx  linkData.entry.fileId,u
+        beq   @found
+!       leau  sizeof{linkData.entry},u
+        leay  -1,y
+        bne   @loop
+@notfound
+        ldu   #0
+@found  puls  d,x,y,pc
 
 
 ;---------------------------------------

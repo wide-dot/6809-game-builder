@@ -14,7 +14,7 @@ tlsf.ut
         jsr   tlsf.ut.random
         rts
 
-        INCLUDE   "engine\math\random.asm"
+        INCLUDE   "engine/math/random.asm"
 
 tlsf.ut.init
         ldd   #tlsf.err.return
