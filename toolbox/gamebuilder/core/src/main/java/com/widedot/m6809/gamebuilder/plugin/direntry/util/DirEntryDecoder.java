@@ -86,7 +86,9 @@ public class DirEntryDecoder {
         // Decode main structure (8 bytes)
         decoded.compressed = (data[idx] & 0x80) != 0;
         decoded.loadTimeLinker = (data[idx] & 0x40) != 0;
-        decoded.uncompressedSize = ((((data[idx] & 0xFF) << 8) | (data[idx + 1] & 0xFF)) + 1) & 0x3fff;
+        // mask the flag bits off first, then undo the size-1 encoding : masking
+        // after the increment reports 0 for a full size entry
+        decoded.uncompressedSize = ((((data[idx] & 0xFF) << 8) | (data[idx + 1] & 0xFF)) & 0x3fff) + 1;
         idx += 2;
         
         decoded.track = (data[idx] >> 1) & 0x7F;

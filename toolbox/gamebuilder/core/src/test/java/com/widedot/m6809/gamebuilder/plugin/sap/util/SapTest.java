@@ -24,6 +24,31 @@ class SapTest {
 	}
 
 	@Test
+	@DisplayName("format 2 geometry follows the same rule as format 1")
+	void format2Geometry() {
+		// 40 tracks of 16 sectors of (6 + 128) bytes
+		assertEquals((6 + 128) * 16, SapType.trackSize[2]);
+		assertEquals(66 + 40 * SapType.trackSize[2], SapType.driveSize[2]);
+		assertEquals(2144, SapType.trackSize[2]);
+		assertEquals(85826, SapType.driveSize[2]);
+	}
+
+	@Test
+	@DisplayName("a drive is detected from the raw image stride, not the sap one")
+	void driveDetectionUsesRawStride() throws Exception {
+		int rawDriveSize = SapType.nbTracks[1] * Sap.NB_SECT * SapType.sectorSize[1];
+		byte[] image = new byte[4 * rawDriveSize];
+		// mark drive 1 only, at its very first byte
+		image[rawDriveSize] = 0x01;
+
+		Sap sap = new Sap(image, Sap.SAP_FORMAT1);
+
+		assertNull(sap.getSapFile(0), "drive 0 is empty");
+		assertNotNull(sap.getSapFile(1), "drive 1 holds data");
+		assertNull(sap.getSapFile(2), "drive 2 is empty");
+	}
+
+	@Test
 	@DisplayName("the drive stride used to slice data matches the geometry")
 	void driveStrideIsConsistent() {
 		// Sector slices the raw image with nbTracks * NB_SECT * sectorSize ;

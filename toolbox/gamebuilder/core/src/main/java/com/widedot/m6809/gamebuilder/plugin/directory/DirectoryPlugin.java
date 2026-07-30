@@ -124,6 +124,12 @@ public class DirectoryPlugin {
 			size += entry.data.length;
 		}
 		
+		// the header stores the directory length as a sector count on one byte
+		int nsector = (int) Math.ceil(size/256.0);
+		if (nsector > 255) {
+			throw new Exception("Directory holds " + nsector + " sectors, only 255 can be described");
+		}
+
 		// set header data 
 		byte[] bin = new byte[size];
 		int i = 0;
@@ -131,7 +137,7 @@ public class DirectoryPlugin {
 		bin[i++] = 'D';
 		bin[i++] = 'X';
 		bin[i++] = id.byteValue();
-		bin[i++] = (byte) (Math.ceil(size/256.0));
+		bin[i++] = (byte) nsector;
 		bin[i++] = (byte) ((baseId >> 8) & 0xff);
 		bin[i++] = (byte) (baseId & 0xff);
 		

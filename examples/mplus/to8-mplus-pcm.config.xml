@@ -31,7 +31,12 @@
                 <!-- Title - sample data -->
                 <!-- ******************************************************* -->
                 <direntry name="dummyfile"/>
-                <direntry name="assets.samples" loadtimelink="LINK">
+                <!-- 24 KB on purpose : the scene loads it at page 5/$0000 and it
+                     spills past the cartridge window into video RAM up to $5FFF.
+                     maxsize is raised above the 16 KB a directory entry can
+                     describe : the stored size wraps, which is harmless here
+                     because the scene gives an explicit destination. -->
+                <direntry name="assets.samples" maxsize="0x6000" loadtimelink="LINK">
                     <lwasm>
                         <label name="samples.kick"   /><includebin filename="src/assets/sounds/samples/1-kick.6bit.bin"    />
                         <label name="samples.snare"  /><includebin filename="src/assets/sounds/samples/2-snare.6bit.bin"   />

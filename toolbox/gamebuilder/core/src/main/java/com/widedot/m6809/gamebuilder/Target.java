@@ -63,7 +63,6 @@ public class Target {
 	
 	private void processTargets(List<ImmutableNode> targetNodes) throws Exception {
 		
-		LinkSymbols.clear();
 		defaults = new Defaults();
 		defines = new Defines();
 		
@@ -72,9 +71,11 @@ public class Target {
 			String targetName = (String) node.getAttributes().get("name");
 			log.info("Processing target {}", targetName);
 
-			// file ids are global to a target : restart the numbering so two
-			// targets of the same game (fd, t2, ...) get identical ids
+			// ids are global to a target : restart the numbering so that two
+			// targets of the same game (fd, t2, ...) get identical ids, and so
+			// that building "-t fd" alone or "-t sd,fd" yields the same image
 			FileIds.clear();
+			LinkSymbols.clear();
 
 	   		// instanciate plugins
 			DefaultFactory defaultFactory;
@@ -107,6 +108,7 @@ public class Target {
 			// clear target local definitions
 			defaults.values.clear();
 			defines.values.clear();
+			defines.newValues.clear();
     	}
 	}
 }

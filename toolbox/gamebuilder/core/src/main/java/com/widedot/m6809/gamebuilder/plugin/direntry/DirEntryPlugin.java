@@ -20,12 +20,26 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import com.widedot.m6809.util.zx0.Compressor;
+import com.widedot.m6809.util.zx0.Main;
 import com.widedot.m6809.util.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DirEntryPlugin {
+
+	/** a directory entry stores the file size minus one on 14 bits */
+	public static final int MAX_FILE_SIZE = 0x4000;
+
+	/** the loader copies back exactly 6 uncompressed tail bytes (dir.entry.cdataz) */
+	public static final int ZX0_DELTA = 6;
+
+	/**
+	 * zx0 optimizer threads. Entries are at most 16 KB, well below the point
+	 * where the fan out pays for its synchronisation.
+	 */
+	private static final int ZX0_THREADS = 1;
+
 	
 //	loader direntry for a file (8, 16 or 24 bytes):
 //  -----------------------------------------------------------------------------------------------
@@ -71,7 +85,9 @@ public class DirEntryPlugin {
 		String codec = Attribute.getStringOpt(node, defaults, "codec", "direntry.codec");
 		String linkSection = Attribute.getStringOpt(node, defaults, "loadtimelink", "direntry.linksection");
 		boolean loadtimelink = (linkSection!=null?true:false);
-		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "directory.maxsize", Integer.MAX_VALUE);
+		// the file size is stored on 14 bits in the directory entry, a bigger
+		// file cannot be described whatever the configuration asks for
+		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "direntry.maxsize", MAX_FILE_SIZE);
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
@@ -123,6 +139,19 @@ public class DirEntryPlugin {
 			log.error(m);
 			throw new Exception(m);
 	    }
+
+	    if (length > MAX_FILE_SIZE) {
+			// the size field is 14 bits wide : it wraps. Loading still works for
+			// scenes that give an explicit destination, because that path is
+			// driven by the sector counts, but anything reading the size back
+			// (loader.file.malloc, adjacent placement in scene types 10 and 11)
+			// will see a truncated value. Raising maxsize is how a project says
+			// it knows and accepts that.
+			log.warn("{}: size {} exceeds the {} bytes a directory entry can describe,"
+					+ " the stored size wraps to {}. Only load this file at an explicit"
+					+ " destination and never through loader.file.malloc.",
+					name, length, MAX_FILE_SIZE, ((length-1) & 0x3fff) + 1);
+	    }
 		
 		byte[] bin = new byte[length];
 		
@@ -137,6 +166,10 @@ public class DirEntryPlugin {
 		// apply codec
 		boolean compress = false;
 	    int maxdelta = Integer.parseInt(Settings.values.get("direntry.zx0.delta"));
+	    if (maxdelta != ZX0_DELTA) {
+			throw new Exception("direntry.zx0.delta must be " + ZX0_DELTA
+					+ ", the loader copies back a fixed size tail (dir.entry.cdataz)");
+	    }
 		if (codec != null) {
 			
 			if (codec.equals(ZX0)) {
@@ -151,7 +184,11 @@ public class DirEntryPlugin {
 					System.arraycopy(bin, 0, sbin, 0, sbin.length);
 					
 					// compress the shortened data
-					byte[] cbin = new Compressor().compress(new Optimizer().optimize(sbin, 0, maxsize, 8, false), bin, 0, false, false, delta);
+					// 3rd argument is the zx0 search window, not a size cap : it must
+					// stay the format constant the 6809 decompressor expects
+					byte[] cbin = new Compressor().compress(
+							new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
+							bin, 0, false, false, delta);
 					log.debug("Original size: {}+{}, Packed size: {}, Delta: {}", bin.length-maxdelta, maxdelta, cbin.length, delta[0]);
 					
 					// automatic selection of compressed or uncompressed data
@@ -217,7 +254,7 @@ public class DirEntryPlugin {
 		direntry[i] = (byte) (direntry[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
 		
-		direntry[i++] = (byte) (direntry[i] | (encodedLength & 0xff)); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
+		direntry[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
 		
 		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
 		i += 6;

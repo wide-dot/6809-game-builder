@@ -105,6 +105,9 @@ public class FdUtil implements MediaDataInterface{
 		boolean first = true;
 		
         //build directory entry
+        if (s.track > 0x7f) {
+        	throw new Exception("Track " + s.track + " cannot be encoded in a directory entry (7 bit field)");
+        }
         byte[] direntry = new byte[6];
 		direntry[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
 		direntry[1] = (byte) (s.sector - 1);									// start sector nb
@@ -130,6 +133,9 @@ public class FdUtil implements MediaDataInterface{
 				direntry[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
 			}
 			
+			if ((direntry[4] & 0xff) == 0xff) {
+				throw new Exception("File at track " + s.track + " exceeds the 255 sectors a directory entry can describe");
+			}
 			direntry[4]++;		 		// inc nb sectors
 			
 			pos += v[1];				// moves ahead in source data 
@@ -231,11 +237,15 @@ public class FdUtil implements MediaDataInterface{
     }
     
     public int getIndex(Section section) {
-        return (section.face * 327680) + (section.track * 4096) + ((section.sector - 1) * 256);
+        return getIndex(section.face, section.track, section.sector);
     }
     
     public int getIndex(int face, int track, int sector) {
-        return (face * 327680) + (track * 4096) + ((sector - 1) * 256);
+        // derived from the declared geometry : hardcoding 80/16/256 silently
+        // wrote at the wrong offset for any other floppy model
+        int trackSize = storage.segment.sectors * storage.segment.sectorSize;
+        int faceSize = storage.segment.tracks * trackSize;
+        return (face * faceSize) + (track * trackSize) + ((sector - 1) * storage.segment.sectorSize);
     }
 
     private void interleave() {

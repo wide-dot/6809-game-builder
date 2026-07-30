@@ -39,12 +39,16 @@ public class Sap {
 			throw new Exception("SAP type can only be 1 or 2.");
 		
 		// check used data range in order to produce only the number of necessary sap files
+		// the stride is the raw drive size, the same one Sector slices with :
+		// driveSize includes the sap header and the per sector metadata, which
+		// do not exist in the source image
+		int rawDriveSize = SapType.nbTracks[type] * NB_SECT * SapType.sectorSize[type];
 		for (int drive = 0; drive < NB_DRIVE; drive++) {
-			for (int i = 0; i < SapType.driveSize[type]; i++) {
-				if ((drive*SapType.driveSize[type])+i >= data.length) {
+			for (int i = 0; i < rawDriveSize; i++) {
+				if ((drive*rawDriveSize)+i >= data.length) {
 					break;
 				}
-				if (data[(drive*SapType.driveSize[type])+i] != 0) {
+				if (data[(drive*rawDriveSize)+i] != 0) {
 					usedDrive[drive] = true;
 					break;
 				}
@@ -106,19 +110,24 @@ public class Sap {
 		String ext = FileUtil.getExtension(file).get();
 		String filebase = FileUtil.removeExtension(file);
 		
+		int usedDriveCount = 0;
+		for (int drive = 0; drive < NB_DRIVE; drive++) {
+			if (sapFile[drive] != null) usedDriveCount++;
+		}
+
 		for (int drive = 0; drive < NB_DRIVE; drive++) {
 			if (sapFile[drive] != null) {
 				
 				Path outputFile;
-				if (sapFile[1] == null) {
+				if (usedDriveCount == 1) {
 					
 					// only one drive, don't use file numbering
-					FileUtil.getExtension(file);
 					outputFile = Paths.get(file);
 					
 				} else {
 					
-					FileUtil.getExtension(file);
+					// number every file : testing a single drive slot would make
+					// two non contiguous drives write to the same name
 					outputFile = Paths.get(filebase + "_" + drive + "." + ext);
 				}
 				

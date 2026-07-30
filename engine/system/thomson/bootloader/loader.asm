@@ -51,7 +51,7 @@ cdataz   rmb types.BYTE*6 ; [0000 0000]             - [last 6 bytes of uncompres
 
 ; dir.entry linker structure
 ; -------------------------
-lsize    rmb types.BYTE   ; [0000 0000] [0000 0000] - [linker data size]
+lsize    rmb types.WORD   ; [0000 0000] [0000 0000] - [linker data size]
 ltrack   rmb types.BYTE   ; [0000 000]              - [track 0-128]
                           ; [0]                     - [face 0-1]
 lsector  rmb types.BYTE   ; [0000 0000]             - [sector 0-255]
