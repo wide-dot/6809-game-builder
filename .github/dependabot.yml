@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # Java dependencies. Versions are pinned in the root pom on purpose, so that
+  # a build is reproducible ; Dependabot is what proposes the moves.
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # one PR for the whole commons family, they move together
+      apache-commons:
+        patterns:
+          - "org.apache.commons:*"
+          - "commons-*:*"
+      test-tooling:
+        patterns:
+          - "org.junit*:*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

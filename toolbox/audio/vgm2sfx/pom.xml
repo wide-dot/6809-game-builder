@@ -34,7 +34,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.3.1</version>
 				<configuration>
 					<outputDirectory>../../../plugins/vgm2sfx</outputDirectory>
 				</configuration>
@@ -42,7 +41,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<version>2.1.0</version>
 				<executions>
 					<execution>
 						<id>assemble-linux</id>

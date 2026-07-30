@@ -8,7 +8,9 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<java.version>23</java.version>
+		<!-- release wins over source/target : the project really compiles for 11,
+		     which is what the CI uses -->
+		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.compiler.release>11</maven.compiler.release>
@@ -16,16 +18,17 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
 		<maven.compiler.proc>full</maven.compiler.proc>
-		<commons-lang.version>[3.12.0,)</commons-lang.version>
-		<commons-beanutils.version>[1.9.4,)</commons-beanutils.version>
-		<commons-configuration2.version>[2.10.1,)</commons-configuration2.version>
-		<commons-io.version>[2.15.1,)</commons-io.version>
-		<lombok.version>[1.18.36,)</lombok.version>
-		<zip4j-io.version>[2.11.5,)</zip4j-io.version>
-		<logback.version>1.5.3</logback.version>
-		<picocli.version>[4.7.5,)</picocli.version>		
-		<libtiled.version>[1.4.2,)</libtiled.version>
-		<json.version>[20240303,)</json.version>
+		<commons-lang.version>3.20.0</commons-lang.version>
+		<commons-beanutils.version>1.11.0</commons-beanutils.version>
+		<commons-configuration2.version>2.15.1</commons-configuration2.version>
+		<commons-io.version>2.22.0</commons-io.version>
+		<!-- lombok must match the JDK running the build : 1.18.36 does not
+		     support JDK 21+ and fails with an ExceptionInInitializerError -->
+		<lombok.version>1.18.46</lombok.version>
+		<zip4j-io.version>2.11.6</zip4j-io.version>
+		<logback.version>1.5.19</logback.version>
+		<picocli.version>4.7.7</picocli.version>
+		<json.version>20260719</json.version>
 		<junit.version>5.11.4</junit.version>
 	</properties>
 
@@ -78,11 +81,6 @@
 			<version>${picocli.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.mapeditor</groupId>
-			<artifactId>libtiled</artifactId>
-			<version>${libtiled.version}</version>
-		</dependency>
-		<dependency>
     		<groupId>org.json</groupId>
     		<artifactId>json</artifactId>
     		<version>${json.version}</version>
@@ -90,6 +88,32 @@
 	</dependencies>
 
 	<build>
+		<pluginManagement>
+			<!-- versions of the plugins each module repeats ; the modules keep
+			     their own configuration but no longer pin a version -->
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.4.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>appassembler-maven-plugin</artifactId>
+					<version>2.1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>com.akathist.maven.plugins.launch4j</groupId>
+					<artifactId>launch4j-maven-plugin</artifactId>
+					<version>2.5.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>3.5.0</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -108,6 +132,24 @@
 				<version>3.3.2</version>
 				<configuration>
 				  <filesets>
+					<!-- appassembler and the jar plugin write outside target/ :
+					     without these, stale jars of previous versions pile up
+					     in repo/ and end up on the classpath alongside the new
+					     ones -->
+					<fileset>
+					  <directory>repo</directory>
+					  <includes>
+						<include>**/*</include>
+					  </includes>
+					  <followSymlinks>false</followSymlinks>
+					</fileset>
+					<fileset>
+					  <directory>plugins</directory>
+					  <includes>
+						<include>**/*</include>
+					  </includes>
+					  <followSymlinks>false</followSymlinks>
+					</fileset>
 					<fileset>
 					  <directory>bin</directory>
 					  <includes>

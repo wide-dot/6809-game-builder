@@ -41,5 +41,11 @@
 			<destName>tools-linux.zip</destName>
 			<outputDirectory>/</outputDirectory>
 		</file>
+		<file>
+			<source>${project.build.directory}/${project.build.finalName}-tools-linux-arm-packaging.zip
+			</source>
+			<destName>tools-linux-arm.zip</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
 	</files>
 </assembly>

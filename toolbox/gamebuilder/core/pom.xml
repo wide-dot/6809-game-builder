@@ -59,7 +59,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<version>2.1.0</version>
 				<executions>
 					<execution>
 						<id>assemble-linux</id>
