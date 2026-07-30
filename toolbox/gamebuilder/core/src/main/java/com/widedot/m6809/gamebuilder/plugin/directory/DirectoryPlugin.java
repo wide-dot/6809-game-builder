@@ -14,6 +14,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
+import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -70,15 +71,7 @@ public class DirectoryPlugin {
 				String codec = Attribute.getStringOpt(child, defaults, "codec", "direntry.codec");
 				String linkSection = Attribute.getStringOpt(child, defaults, "loadtimelink", "direntry.linksection");
 
-				direntryId++;
-				
-				if (codec != null) {
-					direntryId++;
-				}
-				
-				if (linkSection != null) {
-					direntryId++;
-				}
+				direntryId += DirEntryPlugin.blockCount(codec, linkSection);
 			}
 		}
 		writer.close();
@@ -120,8 +113,19 @@ public class DirectoryPlugin {
 		
 		// compute directory size 
 		int size = 7;
+		int emittedBlocks = 0;
 		for (DirEntry entry : media.getDirEntries()) {
 			size += entry.data.length;
+			emittedBlocks += entry.data.length / DirEntryPlugin.BLOCK_SIZE;
+		}
+
+		// the ids handed out above are indexes into this very table : if the two
+		// ever disagree, every file after the divergence is read at the wrong
+		// offset by loader.dir.getFile
+		int reservedBlocks = direntryId - baseId;
+		if (emittedBlocks != reservedBlocks) {
+			throw new Exception("Directory " + id + " emitted " + emittedBlocks
+					+ " entry blocks while " + reservedBlocks + " file ids were reserved");
 		}
 		
 		// the header stores the directory length as a sector count on one byte

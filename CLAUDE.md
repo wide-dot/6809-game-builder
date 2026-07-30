@@ -123,6 +123,45 @@ vues wddebug orphelines :
   de jeu. À décider : reproduire ce pipeline en plugins SPI, ou faire porter ce rôle
   au load-time linker + conventions.
 
+## Revue Java & campagne de correction (30/07/2026)
+
+Revue complète en trois passes : `docs/lang/fr/revue-java-2026-07.md` (15 défauts
+avec fichier:ligne, dépendances, testabilité, plan par phases). Les 4 phases ont
+été exécutées ; à chaque étape les images des 8 configs d'exemples ont été
+comparées **octet par octet** avec les précédentes, et `loader-ut` rejoué sous toje.
+
+- **Phase 0** — le build ne mentait plus : `MainCommand` en `Callable<Integer>`,
+  erreurs d'écriture propagées, JUnit + surefire, 22 tests sur les fonctions pures
+  (SAP, checksum fd640, cascade Attribute). Un build cassé sort désormais en
+  exit ≠ 0. *Effet de bord assumé : les configs déclarant `<hfe/>` échouent sur
+  macOS faute de `hxcfe` — elles échouaient déjà, en silence.*
+- **Phase 1** — bugs de format : garde-fou 16 Ko réactivé (il lisait la mauvaise
+  clé de defaults et n'a **jamais** servi), SAP format 2 invalide (`*` au lieu de
+  `+`), détection des drives SAP décalée, `FdUtil.getIndex` dérivé de la géométrie
+  déclarée, fenêtre zx0 découplée de `maxsize`, bornes explicites (piste 7 bits,
+  255 secteurs), et reproductibilité par target (`LinkSymbols` remis à zéro comme
+  `FileIds` : `-t fd` et `-t sd,fd` donnent enfin la même image).
+- **Phase 3** — hygiène : `openipa` (appli Next.js vendorisée de 8,8 Mo) sortie
+  des resources et ses deux manifestes JS retirés — c'était l'origine du gros des
+  alertes Dependabot ; jar phoneme 7,2 Mo → 815 Ko. Versions toutes figées,
+  logback 1.5.19, `dependabot.yml`, jython déplacé vers son seul consommateur,
+  3 modules morts supprimés avec `libtiled`, `pluginManagement` racine, et
+  `mvn clean` qui nettoie enfin `repo/` et `plugins/` (des jars périmés s'y
+  empilaient et cassaient le classpath).
+- **Phase 2** — verrous d'évolution : source unique du calcul de taille d'entrée
+  avec assertion croisée (ids réservés == blocs émis), `evalReloc()` factorisée
+  dans `LwObject` (4 émetteurs, ~70 lignes en moins, et 4 bugs corrigés dont une
+  relocation 8 bits appliquée en 16 bits), unicité des exports vérifiée au build,
+  et surtout **rebasage des offsets multi-section et multi-objet** : un direntry
+  peut enfin contenir plusieurs membres porteurs de link data. C'est le
+  déverrouillage concret du modèle « group » (validé par T16).
+
+Reste ouvert, par ordre de valeur : `BuildContext` pour supprimer l'état statique
+(ouvre parallélisation et tests d'intégration), dé-boilerplate SPI (~400 lignes),
+tri alphabétique des ids de symboles (prérequis des interfaces de groups),
+packaging en zip par plateforme, réécriture de `vgmpacker` en Java (supprime
+47 Mo de Jython).
+
 ## Analyse détaillée : loader — cycle de vie incomplet (juillet 2026)
 
 Source : `engine/system/thomson/bootloader/loader.asm`. Le **chemin de chargement**

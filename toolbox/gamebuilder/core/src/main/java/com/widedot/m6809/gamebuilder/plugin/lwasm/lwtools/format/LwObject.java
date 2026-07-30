@@ -499,7 +499,7 @@ public class LwObject implements ObjectDataInterface{
 				if (section.flags == LWSection.SECTION_CONST) {
 					for (Symbol symbol : section.exportedsyms) {
 						
-						int symid = LinkSymbols.add(symbol.sym);
+						int symid = LinkSymbols.export(symbol.sym, path.getFileName().toString());
 						
 						byte[] val = new byte[4];
 						val[0] = (byte) ((symid & 0xff00) >> 8);
@@ -525,15 +525,17 @@ public class LwObject implements ObjectDataInterface{
 			exportRel = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
 				if (section.flags != LWSection.SECTION_CONST) {
+					int base = sectionBase(section);
 					for (Symbol symbol : section.exportedsyms) {
 						
-						int symid = LinkSymbols.add(symbol.sym);
+						int symid = LinkSymbols.export(symbol.sym, path.getFileName().toString());
+						int offset = base + symbol.offset;
 						
 						byte[] val = new byte[4];
 						val[0] = (byte) ((symid & 0xff00) >> 8);
 						val[1] = (byte) (symid & 0xff);
-						val[2] = (byte) ((symbol.offset & 0xff00) >> 8);
-						val[3] = (byte) (symbol.offset & 0xff);
+						val[2] = (byte) ((offset & 0xff00) >> 8);
+						val[3] = (byte) (offset & 0xff);
 						
 						log.debug("EXPORTREL: {}:{} {}", symbol.sym, symid, ByteUtil.bytesToHex(val));
 						
@@ -545,60 +547,114 @@ public class LwObject implements ObjectDataInterface{
 		return exportRel;
 	}
 
+	/**
+	 * Result of evaluating the expression attached to an incomplete reference.
+	 * lwasm folds these into a single symbol plus a constant, which is all the
+	 * 6809 loader knows how to apply.
+	 */
+	private static class RelocValue {
+		int value;        // the PLUS constant
+		String symbol;    // "" when the expression carries no symbol
+		boolean internal; // resolved inside this object, not by the loader
+	}
+
+	/**
+	 * Evaluates one incomplete reference. Shared by the four emitters so that
+	 * they cannot drift apart in what they accept: a single symbol, a single
+	 * constant and at most one PLUS.
+	 */
+	/**
+	 * Offset of a section inside the binary returned by getBytes(), which
+	 * concatenates them in this order. Relocation and symbol offsets are
+	 * section relative, so they must be shifted by this base : without it a
+	 * second code-bearing section relocates at the wrong place.
+	 */
+	private int sectionBase(LWSection target) {
+		int base = 0;
+		for (LWSection section : secLst) {
+			if (section == target) return base;
+			base += section.code.length;
+		}
+		return base;
+	}
+
+	private RelocValue evalReloc(Reloc reloc) throws Exception {
+		RelocValue r = new RelocValue();
+		r.symbol = "";
+
+		int opers = 0, ints = 0, syms = 0;
+
+		LWExprStackNode node = reloc.expr.head;
+		while (node != null) {
+			switch (node.term.term_type) {
+				case LWExprTerm.LW_TERM_INT:
+					if (++ints > 1) {
+						throw new Exception("expression with several constants is not supported"
+								+ " at offset " + reloc.offset);
+					}
+					r.value = node.term.value;
+					break;
+
+				case LWExprTerm.LW_TERM_SYM:
+					if (++syms > 1) {
+						throw new Exception("expression with several symbols is not supported"
+								+ " at offset " + reloc.offset + " (second one is "
+								+ node.term.symbol + ")");
+					}
+					r.symbol = node.term.symbol == null ? "" : node.term.symbol;
+					// value 1 marks a symbol of this object, 0 an imported one
+					r.internal = (node.term.value == 1);
+					break;
+
+				case LWExprTerm.LW_TERM_OPER:
+					// check the operator before using it as an index, an unknown
+					// one used to throw ArrayIndexOutOfBounds instead of saying so
+					if (node.term.value < 0 || node.term.value > numopers) {
+						throw new Exception("unknown operator " + node.term.value
+								+ " at offset " + reloc.offset);
+					}
+					if (node.term.value != LWExprTerm.LW_OPER_PLUS) {
+						throw new Exception("unsupported operator type: " + opernames[node.term.value]);
+					}
+					if (++opers > 1) {
+						throw new Exception("multiple PLUS operator is not supported");
+					}
+					break;
+
+				default:
+					throw new Exception("unexpected term type: " + node.term.term_type);
+			}
+			node = node.next;
+		}
+
+		return r;
+	}
+
 	private List<byte[]> intern;
-	
+
 	@Override
 	public List<byte[]> getIntern() throws Exception {
 
 		if (intern == null) {
 			intern = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
+				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
-					
-					int value = 0;
-					int oper = 0;
-					boolean skip = false;
-					
-					// max one operator, only one PLUS is allowed
-					LWExprStackNode node = reloc.expr.head;
-					while (node != null) {
-						switch (node.term.term_type) {
-							case LWExprTerm.LW_TERM_INT:
-								value = node.term.value;
-								break;
 
-							case LWExprTerm.LW_TERM_SYM:
-								if (node.term.value == 0) {
-									skip = true; // external symbol
-								}
-								break;
+					// only 16 bit relocations : an 8 bit one emitted here would
+					// be applied as a word by the loader and clobber the next byte
+					if (reloc.flags != 0) continue;
 
-							case LWExprTerm.LW_TERM_OPER:
-								if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
-									oper++;
-								} else {
-									throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
-								}
-								break;
-								
-							default :
-								throw new Exception ("unexpected term type: " + node.term.term_type);
-						}
-						node = node.next;
-					}
-					
-					if (oper>1) {
-						throw new Exception ("multiple PLUS operator is not supported");
-					}
-					
-					if (skip) continue;
-				
+					RelocValue r = evalReloc(reloc);
+					if (!r.internal && !r.symbol.isEmpty()) continue; // imported, not ours
+
+					int offset = base + reloc.offset;
 					byte[] val = new byte[4];
-					val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
-					val[1] = (byte) (reloc.offset & 0xff);
-					val[2] = (byte) ((value & 0xff00) >> 8);
-					val[3] = (byte) (value & 0xff);
-				
+					val[0] = (byte) ((offset & 0xff00) >> 8);
+					val[1] = (byte) (offset & 0xff);
+					val[2] = (byte) ((r.value & 0xff00) >> 8);
+					val[3] = (byte) (r.value & 0xff);
+
 					log.debug("INTERN   : {}", ByteUtil.bytesToHex(val));
 					intern.add(val);
 				}
@@ -612,73 +668,37 @@ public class LwObject implements ObjectDataInterface{
 
 	@Override
 	public List<byte[]> getExtern8() throws Exception {
-		
+
 		if (extern8 == null) {
 			extern8 = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
+				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
-					
-					if (reloc.flags == 1) {
-						int value = 0;
-						int oper = 0;
-						String sym = "";
-						boolean skip = false;
-						
-						// max one operator, only one PLUS is allowed
-						LWExprStackNode node = reloc.expr.head;
-						while (node != null) {
-							switch (node.term.term_type) {
-								case LWExprTerm.LW_TERM_INT:
-									value = node.term.value;
-									break;
 
-								case LWExprTerm.LW_TERM_SYM:
-									sym = node.term.symbol;
-									if (node.term.value == 1) {
-										skip = true; // internal symbol
-									}
-									break;
+					if (reloc.flags != 1) continue; // 8 bit relocations only
 
-								case LWExprTerm.LW_TERM_OPER:
-									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
-										oper++;
-									} else {
-										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
-									}
-									break;
-									
-								default :
-									throw new Exception ("unexpected term type: " + node.term.term_type);
-							}
-							node = node.next;
-						}
-						
-						if (oper>1) {
-							throw new Exception ("multiple PLUS operator is not supported");
-						}
-						
-						if (skip) continue;
-						
-						// Exclude symbols ending with "$PAGE"
-						if (sym.endsWith("$PAGE")) continue;
-					
-						int symid = LinkSymbols.add(sym);
-						
-						byte[] val = new byte[6];
-						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
-						val[1] = (byte) (reloc.offset & 0xff);
-						val[2] = (byte) ((value & 0xff00) >> 8);
-						val[3] = (byte) (value & 0xff);
-						val[4] = (byte) ((symid & 0xff00) >> 8);
-						val[5] = (byte) (symid & 0xff);
-						
-						log.debug("EXTERN8  : {}:{} {}", sym, symid, ByteUtil.bytesToHex(val));
-						extern8.add(val);
-					}
+					RelocValue r = evalReloc(reloc);
+					if (r.internal) continue;                 // resolved locally
+					if (r.symbol.isEmpty()) continue;         // nothing to import
+					if (r.symbol.endsWith("$PAGE")) continue; // handled as a page reference
+
+					int symid = LinkSymbols.add(r.symbol);
+
+					int offset = base + reloc.offset;
+					byte[] val = new byte[6];
+					val[0] = (byte) ((offset & 0xff00) >> 8);
+					val[1] = (byte) (offset & 0xff);
+					val[2] = (byte) ((r.value & 0xff00) >> 8);
+					val[3] = (byte) (r.value & 0xff);
+					val[4] = (byte) ((symid & 0xff00) >> 8);
+					val[5] = (byte) (symid & 0xff);
+
+					log.debug("EXTERN8  : {}:{} {}", r.symbol, symid, ByteUtil.bytesToHex(val));
+					extern8.add(val);
 				}
 			}
 		}
-		
+
 		return extern8;
 	}
 
@@ -686,69 +706,43 @@ public class LwObject implements ObjectDataInterface{
 	
 	@Override
 	public List<byte[]> getExtern16() throws Exception {
+
 		if (extern16 == null) {
 			extern16 = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
+				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
 
-					if (reloc.flags == 0) {
-						int value = 0;
-						int oper = 0;
-						String sym = "";
-						boolean skip = false;
-						
-						// max one operator, only one PLUS is allowed
-						LWExprStackNode node = reloc.expr.head;
-						while (node != null) {
-							switch (node.term.term_type) {
-								case LWExprTerm.LW_TERM_INT:
-									value = node.term.value;
-									break;
+					if (reloc.flags != 0) continue; // 16 bit relocations only
 
-								case LWExprTerm.LW_TERM_SYM:
-									sym = node.term.symbol;
-									if (node.term.value == 1) {
-										skip = true; // internal symbol
-									}
-									break;
-
-								case LWExprTerm.LW_TERM_OPER:
-									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
-										oper++;
-									} else {
-										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
-									}
-									break;
-									
-								default :
-									throw new Exception ("unexpected term type: " + node.term.term_type);
-							}
-							node = node.next;
-						}
-						
-						if (oper>1) {
-							throw new Exception ("multiple PLUS operator is not supported");
-						}
-						
-						if (skip) continue;
-					
-						int symid = LinkSymbols.add(sym);
-						
-						byte[] val = new byte[6];
-						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
-						val[1] = (byte) (reloc.offset & 0xff);
-						val[2] = (byte) ((value & 0xff00) >> 8);
-						val[3] = (byte) (value & 0xff);
-						val[4] = (byte) ((symid & 0xff00) >> 8);
-						val[5] = (byte) (symid & 0xff);
-						
-						log.debug("EXTERN16 : {}:{} {}", sym, symid, ByteUtil.bytesToHex(val));
-						extern16.add(val);
+					RelocValue r = evalReloc(reloc);
+					if (r.internal) continue;                 // resolved locally
+					if (r.symbol.isEmpty()) continue;         // nothing to import
+					// a 16 bit reference to xxx$PAGE has no exporter : it used to
+					// be emitted here and silently resolved to 0 at load time
+					if (r.symbol.endsWith("$PAGE")) {
+						throw new Exception("symbol " + r.symbol + " is a page reference,"
+								+ " it can only be used as an 8 bit operand (offset "
+								+ reloc.offset + ")");
 					}
+
+					int symid = LinkSymbols.add(r.symbol);
+
+					int offset = base + reloc.offset;
+					byte[] val = new byte[6];
+					val[0] = (byte) ((offset & 0xff00) >> 8);
+					val[1] = (byte) (offset & 0xff);
+					val[2] = (byte) ((r.value & 0xff00) >> 8);
+					val[3] = (byte) (r.value & 0xff);
+					val[4] = (byte) ((symid & 0xff00) >> 8);
+					val[5] = (byte) (symid & 0xff);
+
+					log.debug("EXTERN16 : {}:{} {}", r.symbol, symid, ByteUtil.bytesToHex(val));
+					extern16.add(val);
 				}
 			}
 		}
-		
+
 		return extern16;
 	}	
 
@@ -756,87 +750,50 @@ public class LwObject implements ObjectDataInterface{
 	
 	@Override
 	public List<byte[]> getExternPage() throws Exception {
-		
+
 		if (externPage == null) {
 			externPage = new ArrayList<byte[]>();
 			for (LWSection section : secLst) {
+				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
-					
-					if (reloc.flags == 1) {
-						int value = 0;
-						int oper = 0;
-						String sym = "";
-						boolean skip = false;
-						
-						// max one operator, only one PLUS is allowed
-						LWExprStackNode node = reloc.expr.head;
-						while (node != null) {
-							switch (node.term.term_type) {
-								case LWExprTerm.LW_TERM_INT:
-									value = node.term.value;
-									break;
 
-								case LWExprTerm.LW_TERM_SYM:
-									sym = node.term.symbol;
-									if (node.term.value == 1) {
-										skip = true; // internal symbol
-									}
-									break;
+					if (reloc.flags != 1) continue; // 8 bit operand holds a page
 
-								case LWExprTerm.LW_TERM_OPER:
-									if (node.term.value == LWExprTerm.LW_OPER_PLUS) {
-										oper++;
-									} else {
-										throw new Exception ("unsupported operator type: " + opernames[node.term.value]);
-									}
-									break;
-									
-								default :
-									throw new Exception ("unexpected term type: " + node.term.term_type);
-							}
-							node = node.next;
-						}
-						
-						if (oper>1) {
-							throw new Exception ("multiple PLUS operator is not supported");
-						}
-						
-						if (skip) continue;
-						
-						// Only include symbols ending with "$PAGE"
-						if (!sym.endsWith("$PAGE")) continue;
-					
-						// Extract the file identifier from the .lwmap file
-						String fileIdentifier = sym.substring(0, sym.length() - 5); // Remove "$PAGE" suffix
-						
-						LwMap map = getLwMap();
-						if (map == null) {
-							throw new Exception("Could not load .lwmap file for file ID lookup of symbol: " + fileIdentifier);
-						}
-						
-						Integer symbolValue = map.getSymbolValue(fileIdentifier);
-						if (symbolValue == null) {
-							throw new Exception("File ID not found in .lwmap for symbol: " + fileIdentifier);
-						}
-						
-						int fileId = symbolValue;
-						log.debug("Found file ID for '{}': {}", fileIdentifier, fileId);
-						
-						byte[] val = new byte[6];
-						val[0] = (byte) ((reloc.offset & 0xff00) >> 8);
-						val[1] = (byte) (reloc.offset & 0xff);
-						val[2] = (byte) ((value & 0xff00) >> 8);
-						val[3] = (byte) (value & 0xff);
-						val[4] = (byte) ((fileId & 0xff00) >> 8);
-						val[5] = (byte) (fileId & 0xff);
-						
-						log.debug("EXTERNPAGE: {}:{} {}", sym, fileId, ByteUtil.bytesToHex(val));
-						externPage.add(val);
+					RelocValue r = evalReloc(reloc);
+					if (r.internal) continue;
+					if (!r.symbol.endsWith("$PAGE")) continue;
+
+					// Extract the file identifier from the .lwmap file
+					String fileIdentifier = r.symbol.substring(0, r.symbol.length() - 5);
+
+					LwMap map = getLwMap();
+					if (map == null) {
+						throw new Exception("Could not load .lwmap file for file ID lookup of symbol: " + fileIdentifier);
 					}
+
+					Integer symbolValue = map.getSymbolValue(fileIdentifier);
+					if (symbolValue == null) {
+						throw new Exception("File ID not found in .lwmap for symbol: " + fileIdentifier);
+					}
+
+					int fileId = symbolValue;
+					log.debug("Found file ID for '{}': {}", fileIdentifier, fileId);
+
+					int offset = base + reloc.offset;
+					byte[] val = new byte[6];
+					val[0] = (byte) ((offset & 0xff00) >> 8);
+					val[1] = (byte) (offset & 0xff);
+					val[2] = (byte) ((r.value & 0xff00) >> 8);
+					val[3] = (byte) (r.value & 0xff);
+					val[4] = (byte) ((fileId & 0xff00) >> 8);
+					val[5] = (byte) (fileId & 0xff);
+
+					log.debug("EXTERNPAGE: {}:{} {}", r.symbol, fileId, ByteUtil.bytesToHex(val));
+					externPage.add(val);
 				}
 			}
 		}
-		
+
 		return externPage;
 	}
 

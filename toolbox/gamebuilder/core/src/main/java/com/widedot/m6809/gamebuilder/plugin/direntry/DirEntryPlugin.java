@@ -31,6 +31,22 @@ public class DirEntryPlugin {
 	/** a directory entry stores the file size minus one on 14 bits */
 	public static final int MAX_FILE_SIZE = 0x4000;
 
+	/** size of one directory entry block ; a file id is an index of those */
+	public static final int BLOCK_SIZE = 8;
+
+	/**
+	 * Number of blocks an entry occupies, hence how many file ids it consumes.
+	 * DirectoryPlugin reserves ids from the configuration before the entries
+	 * exist, and this plugin emits them : both must agree exactly or every
+	 * file id after the divergence points at the wrong entry at runtime.
+	 *
+	 * @param codec       the direntry codec attribute, null when uncompressed
+	 * @param linkSection the loadtimelink attribute, null when not linked
+	 */
+	public static int blockCount(String codec, String linkSection) {
+		return 1 + (codec != null ? 1 : 0) + (linkSection != null ? 1 : 0);
+	}
+
 	/** the loader copies back exactly 6 uncompressed tail bytes (dir.entry.cdataz) */
 	public static final int ZX0_DELTA = 6;
 
@@ -234,8 +250,10 @@ public class DirEntryPlugin {
 		if (loadtimelink) {
 			// aggregate all link data
 			linkdata = new LinkData();
+			int linkBase = 0;
 			for (ObjectDataInterface obj : objects) {
-				linkdata.add(obj);
+				linkdata.add(obj, linkBase);
+				linkBase += obj.getBytes().length;
 			}
 			linkdata.process();
 			
@@ -269,6 +287,13 @@ public class DirEntryPlugin {
 			i += 6;
 		}
 			
+		int expected = blockCount(codec, linkSection) * BLOCK_SIZE;
+		if (i != expected) {
+			throw new Exception(name + ": emitted a " + i + " byte directory entry while "
+					+ expected + " bytes were reserved for it. File ids are indexes into"
+					+ " the directory, so every following file would be misread.");
+		}
+
 		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
 	    media.addDirEntry(new DirEntry(name, sizedDirentry));
 		

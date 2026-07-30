@@ -64,13 +64,52 @@ public class LinkData {
 		externPage = new ArrayList<byte[]>();
 	}
 	
-	public void add(ObjectDataInterface obj) throws Exception {
+	/**
+	 * Appends the link data of one object.
+	 *
+	 * A direntry may hold several objects, whose binaries are concatenated in
+	 * the order they are added. Offsets produced by an object are relative to
+	 * that object, so everything but the absolute exports has to be shifted by
+	 * the total size of the objects added before it. Without this, only a first
+	 * object bearing exports relocates correctly, which is what kept a group
+	 * limited to a single meaningful member.
+	 *
+	 * @param obj  object to append
+	 * @param base size of the objects already added
+	 */
+	public void add(ObjectDataInterface obj, int base) throws Exception {
+		// absolute exports carry a value, not a position : never shifted
 		exportAbs.addAll(obj.getExportAbs());
-		exportRel.addAll(obj.getExportRel());
-		intern.addAll(obj.getIntern());
-		extern8.addAll(obj.getExtern8());
-		extern16.addAll(obj.getExtern16());
-		externPage.addAll(obj.getExternPage());
+
+		exportRel.addAll(shift(obj.getExportRel(), base, 2));
+		intern.addAll(shift(obj.getIntern(), base, 0));
+		extern8.addAll(shift(obj.getExtern8(), base, 0));
+		extern16.addAll(shift(obj.getExtern16(), base, 0));
+		externPage.addAll(shift(obj.getExternPage(), base, 0));
+	}
+
+	public void add(ObjectDataInterface obj) throws Exception {
+		add(obj, 0);
+	}
+
+	/**
+	 * Adds base to the big endian word at position pos of every entry.
+	 */
+	private static List<byte[]> shift(List<byte[]> entries, int base, int pos) throws Exception {
+		if (base == 0) return entries;
+
+		List<byte[]> out = new ArrayList<byte[]>(entries.size());
+		for (byte[] e : entries) {
+			byte[] c = e.clone();
+			int v = (((c[pos] & 0xff) << 8) | (c[pos+1] & 0xff)) + base;
+			if (v > 0xffff) {
+				throw new Exception("link data offset " + v + " does not fit 16 bits");
+			}
+			c[pos]   = (byte) ((v & 0xff00) >> 8);
+			c[pos+1] = (byte) (v & 0xff);
+			out.add(c);
+		}
+		return out;
 	}
 	
 	public void process() {

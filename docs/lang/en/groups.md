@@ -14,6 +14,10 @@ the media side of the original design asked for :
 
 - lwasm concatenates the members' `code` sections in declaration order into
   one binary ("on concatène les fichiers d'un group avant compilation") ;
+- several *objects* can be combined too (an `<lwasm>` next to a `<bin>`, a
+  `<vgm2ymm>`…), their link data offsets being shifted by the size of what
+  precedes them. This used to be wrong, which limited a group to a single
+  member carrying exports ; `examples/loader-ut` T16 now pins it ;
 - the direntry codec (zx0) compresses the whole group as one stream ;
 - the members' link data is emitted merged, relative to the group base — the
   runtime never needs to know the members ;
@@ -121,7 +125,9 @@ adding a disk qualifier to the link data format.
   once content is layered ;
 - paginated groups (automatic splitting of oversized groups, per-page
   `builder.pageOffset.*` equates) and RAM-map packing tools ;
-- group interfaces / multiple instances (identical sorted export lists) ;
+- group interfaces / multiple instances : needs link symbol ids assigned in
+  alphabetical order rather than first-appearance order, which needs a
+  collect pass before any emission ;
 - size tracking in the index (partial-overlap detection) ;
 - index shrink on unload ;
 - GUI replacing manual XML configuration (long-term goal).

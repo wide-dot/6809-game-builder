@@ -27,6 +27,9 @@
 ;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
 ;   +15 : T15 multi-disk : switch to disk 1, load from it, cross-disk link
 ;         both ways, disk 0 files still linked, switch back ($EA..$EE)
+;   +16 : T16 multi object group : an asm member concatenated after a 256
+;         byte blob in one direntry, its export and its relocation must both
+;         be shifted by the size of what precedes it ($E1..$E3)
 ;
 ;   +24 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
@@ -50,6 +53,7 @@ pad.a.VALUE     EXTERNAL
 pad.p.VALUE     EXTERNAL
 marker.zz.begin EXTERNAL
 marker.d1.begin EXTERNAL
+marker.grp.begin EXTERNAL
 gm.anchor       EXPORT
 
  SECTION code
@@ -72,6 +76,10 @@ addr.marker.hub  equ $0C00
 addr.variant     equ $1000
 addr.marker.zz   equ $1400
 marker.zz.SIZE   equ $0100
+addr.group       equ $1C00
+addr.group.asm   equ addr.group+256   ; the asm member starts after the blob
+marker.grp.SIZE  equ $0100
+marker.grp.ID    equ $6B
 addr.marker.d1   equ $1800
 marker.d1.SIZE   equ $0200
 marker.d1.ID     equ $1D
@@ -567,6 +575,41 @@ init
 @fail15 sta   @res15
 @end15  lda   #0
 @res15  equ   *-1
+        jsr   test.next
+
+        ; T16 : multi object group. The direntry holds a 256 byte blob then an
+        ; asm member ; the member's exported label and its extern fixup are
+        ; emitted relative to the member, so both must land 256 bytes in.
+        ;   $E1 blob not loaded where expected
+        ;   $E2 exported symbol not shifted by the preceding object
+        ;   $E3 relocation inside the member not shifted, or content wrong
+        lda   #$01
+        sta   @res16
+        _loader.scene.load #scenes.group
+        _ram.cart.set #page.markers
+        lda   >addr.group
+        cmpa  #$77
+        beq   >
+        lda   #$E1
+        lbra  @fail16
+!       ldx   #marker.grp.begin
+        cmpx  #addr.group.asm
+        beq   >
+        lda   #$E2
+        lbra  @fail16
+!       ldd   >addr.group.asm                 ; extern fixup written in the member
+        cmpd  #gm.anchor
+        bne   @f16c
+        ldx   #addr.group.asm+2
+        lda   #marker.grp.ID
+        ldy   #marker.grp.SIZE-8
+        jsr   marker.check
+        cmpa  #$01
+        beq   @end16
+@f16c   lda   #$E3
+@fail16 sta   @res16
+@end16  lda   #0
+@res16  equ   *-1
         jsr   test.next
 
         ; done : write final status

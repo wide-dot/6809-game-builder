@@ -318,6 +318,19 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Multi object group : a raw 256 byte blob followed by an asm
+                     member. Both live in one direntry, so the asm member's
+                     export and relocation offsets have to be shifted by 256.
+                     This is the case that used to silently produce wrong link
+                     data, and the reason a group could only hold one member
+                     that mattered. -->
+                <direntry name="data.group.multi" loadtimelink="LINK">
+                    <bin filename="src/assets/markers/prefix-256.bin"/>
+                    <lwasm gensource="gen/markers/marker-grp.asm">
+                        <asm filename="src/assets/markers/marker-grp.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.main" section="SCENE">
@@ -352,6 +365,13 @@
                     <lwasm format="raw" gensource="gen/scenes/stress-ee.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/to8/stress-ee/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.group" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/group.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/group/scene.asm"/>
                     </lwasm>
                 </direntry>
 
