@@ -49,7 +49,7 @@ MO5, Tandy CoCo 3.
 |---|---|---|
 | Builder Java (core/spi/util, plugins, parser LWOBJ16, floppydisk/fd/sap/hfe/sd) | `toolbox/gamebuilder/` | Le plus abouti du repo ; produit des images bootables |
 | Load-time linker (relocation intern/extern8/extern16/externPg au chargement) | plugin `direntry` + `loader.file.link` | Remplace le placement statique de la v1 |
-| Bootloader + loader + scene loader ASM (~1200 l.) | `engine/system/thomson/bootloader/loader.asm` | Chargement de scènes depuis disquette en cours de jeu, malloc de fichiers, décompression ZX0. Cycle de vie complété le 30/07/2026 : `linkData.unload`, dédup au rechargement, unload implicite sur écrasement de destination, `linkData.count` et `isLoaded`, validés 10/10 par `examples/loader-ut` sous toje. Restent : recouvrement partiel (tailles non suivies), concept « group » du design (`docs/lang/en/dynamic-link-data.md`) — voir l'analyse détaillée plus bas. |
+| Bootloader + loader + scene loader ASM (~1200 l.) | `engine/system/thomson/bootloader/loader.asm` | Chargement de scènes depuis disquette en cours de jeu, malloc de fichiers, décompression ZX0. Cycle de vie complété le 30/07/2026 : `linkData.unload`, dédup au rechargement, unload implicite sur écrasement de destination, `linkData.count` et `isLoaded`. Multi-disquette validé (liens croisés dans les deux sens). Validé **15/15** par `examples/loader-ut` sous toje, qui a fait remonter 4 bugs dont 2 dormants depuis l'origine. Restent : recouvrement partiel (tailles non suivies), identité de fichier ambiguë entre disquettes pour `getPageID`/`externPg` — voir l'analyse détaillée plus bas. |
 | Allocateur TLSF 16 bits (+ realloc + UT embarqués) | `engine/memory/malloc/` | Nouveauté v2 (la v1 n'avait pas d'allocateur dynamique) |
 | ZX0 (compresseur Java + 3 décompresseurs 6809) | `toolbox/gamebuilder/util/zx0`, `engine/compression/zx0/` | |
 | Audio VGC (SN76489) + YMM (YM2413) + outils `vgm2vgc`/`vgm2ymm`/`vgm2sfx` | `engine/sound/`, `toolbox/audio/` | Démontré TO8 **et** MO6 (`examples/sound`) — R-Type v1 utilise exactement YMM + soundFX |
@@ -183,10 +183,16 @@ l'index au-delà de 8 slots (chemin realloc) + mass unload ; T13 = répertoire
 INDEX de 3 secteurs (589 octets, la dernière entrée chargée et vérifiée) ; T14 =
 churn : 16 cycles de +22 fichiers export-only (chaîne de realloc 8→16→24→32 au
 premier passage) puis mass unload des 22. Le tout dans un pool volontairement
-réduit à $0E00 (3,5 Ko). Validé sous toje : 14/14 pass, index vérifié en mémoire
-(totalSlots=32, slots survivants intacts, dernière entrée du répertoire indexée).
+réduit à $0E00 (3,5 Ko) ; T15 = **multi-disquette** : bascule vers la disquette 1
+(prompt « Insert disk 1 » vérifié à l'écran, montage à chaud sous toje), chargement
+d'un fichier depuis la disquette 1, liens croisés vérifiés **dans les deux sens**
+(export du game mode disquette 0 patché dans les données disquette 1, export
+disquette 1 résolu dans le game mode disquette 0), liens des fichiers disquette 0
+préservés, puis retour à la disquette 0. Validé sous toje : **15/15 pass**, index
+vérifié en mémoire (totalSlots=32, cohabitation de [disk 0][file 0] et
+[disk 1][file 0], dernière entrée du répertoire indexée).
 
-**Deux bugs attrapés par le stress test (corrigés le 30/07/2026)** :
+**Quatre bugs attrapés par le stress test (corrigés le 30/07/2026)** :
 1. `loader.dir.load` : quand le répertoire dépasse 1 secteur, le buffer alloué
    n'était jamais écrit dans `map.DK.BUF` → les secteurs 2+ étaient lus sur les
    variables puis le code du loader (`ptsec+256` = $A127+). Bug dormant depuis
@@ -196,6 +202,27 @@ réduit à $0E00 (3,5 Ko). Validé sous toje : 14/14 pass, index vérifié en m�
    introduite avec l'implicite lui-même, qui cassait silencieusement le pattern
    `ym.const`+`sn.const` d'`examples/sound`. Convention actée : les fichiers
    vides ($ff00) sont exempts de l'éviction par destination.
+3. `loader.dir.load` gardait l'index de secteur dans B à travers sa boucle de
+   retry, mais le prompt « Insert disk » appelle le moniteur (PUTC/KTST) qui
+   détruit B : la sauvegarde auto-modifiante stockait $30 (dernier caractère du
+   message). La première lecture de répertoire multi-secteurs après un changement
+   de disquette partait alors sur un index d'entrelacement aberrant → erreur d'E/S
+   fatale. Il fallait **à la fois** un prompt de changement de disquette **et** un
+   répertoire > 1 secteur pour le déclencher. Corrigé : B rechargé depuis
+   `DIR_DEFAULT_SECTOR`.
+4. `linkData.symbol.search` excluait « le fichier en cours de résolution » en ne
+   comparant que le fileId. La numérotation des fichiers repart à 0 sur chaque
+   disquette : un fichier de même numéro sur une autre disquette était donc
+   ignoré et **tous ses symboles exportés devenaient invisibles** — les liens
+   inter-disquettes se résolvaient silencieusement à 0. Corrigé par l'ajout de
+   `linkData.currentDisk` (identité = [diskId][fileId]).
+
+**Limitation connue** : `getPageID` (donc `isLoaded` et les relocations
+`externPg`) ne compare que le fileId → ambigu quand deux disquettes sont indexées
+simultanément, et le format des link data n'a pas de place pour qualifier le
+disque dans une référence `externPg`. Correctif le moins cher : côté builder,
+numéroter les fichiers globalement (continuer la numérotation d'un répertoire à
+l'autre) au lieu de repartir de 0 à chaque disquette.
 
 ## Reste à faire pour un R-Type minimal (niveau 1 + boss, parité v1)
 

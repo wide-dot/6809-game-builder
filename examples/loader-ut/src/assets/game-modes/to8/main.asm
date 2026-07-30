@@ -25,10 +25,16 @@
 ;         its dir entry lives in the 3rd directory sector ($FA/$FB)
 ;   +14 : T14 index churn : 16 cycles of +22 export-only files (realloc
 ;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
-;   +15 : $00 running, $0D all tests passed, $E0+n : n test(s) failed
-;   +16 : (word, info) value of #marker.cc.begin BEFORE scene "second"
+;   +15 : T15 multi-disk : switch to disk 1, load from it, cross-disk link
+;         both ways, disk 0 files still linked, switch back ($EA..$EE)
+;
+;   +24 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
-;   +18 : T11 progress : remaining stress iterations (1 when completed)
+;   +26 : T11 progress : remaining stress iterations (1 when completed)
+;   +27 : T15 disk handshake, for the operator/emulator :
+;         $D1 waiting for disk 1, $D2 disk 1 loaded,
+;         $D3 waiting for disk 0, $D4 back on disk 0
+;   +31 : $00 running, $0D all tests passed, $E0+n : n test(s) failed
 ;
 ; each test slot : $00 not run, $01 pass, $FF fail
 ;*******************************************************************************
@@ -43,6 +49,7 @@ iface.f.VALUE   EXTERNAL
 pad.a.VALUE     EXTERNAL
 pad.p.VALUE     EXTERNAL
 marker.zz.begin EXTERNAL
+marker.d1.begin EXTERNAL
 gm.anchor       EXPORT
 
  SECTION code
@@ -65,12 +72,15 @@ addr.marker.hub  equ $0C00
 addr.variant     equ $1000
 addr.marker.zz   equ $1400
 marker.zz.SIZE   equ $0100
+addr.marker.d1   equ $1800
+marker.d1.SIZE   equ $0200
+marker.d1.ID     equ $1D
 STRESS.ITERS     equ 128
 
 init
         ; clear result table and set magic
         ldx   #result
-        ldb   #24
+        ldb   #32
 !       clr   ,x+
         decb
         bne   <
@@ -83,7 +93,7 @@ init
         ; info : marker.cc.begin before scene "second" is loaded
         ; (file cc is not loaded yet, symbol should have resolved to 0)
         ldx   #marker.cc.begin
-        stx   result+16
+        stx   result+24
 
         ; T1 : marker aa content (zx0 compressed file)
         _ram.cart.set #page.markers
@@ -250,7 +260,7 @@ init
         sta   stress.iter
 @sloop
         lda   stress.iter
-        sta   result+18                       ; progress, for the debugger
+        sta   result+26                       ; progress, for the debugger
         anda  #15
         bne   @swap
         _loader.file.linkData.unload #0,#data.marker.dd
@@ -462,13 +472,88 @@ init
 @res14  equ   *-1
         jsr   test.next
 
+        ; T15 : multi-disk - switch to disk 1, load a file from it, check
+        ; cross-disk linking in both directions, then switch back to disk 0.
+        ; result+27 is the handshake byte : the operator (or the emulator
+        ; driver) mounts the requested disk and presses a key when it sees
+        ; $D1 / $D3 — the loader itself is blocked in its "Insert disk"
+        ; prompt at that point
+        ;   $EA disk 1 marker content or inbound extern fixup
+        ;   $EB cross-disk symbol not resolved in the running game mode
+        ;   $EC a disk 0 file lost its links after the disk change
+        ;   $ED index count wrong
+        ;   $EE disk 0 unusable after switching back
+        lda   #$01
+        sta   @res15
+        _loader.file.linkData.count
+        std   test.t15.count
+        lda   #$D1
+        sta   result+27                       ; ask for disk 1
+        _loader.dir.load #1
+        lda   #$D2
+        sta   result+27                       ; disk 1 directory is loaded
+        _loader.scene.load #d1.scenes.main
+        _ram.cart.set #page.markers
+        ; inbound cross-disk fixup : gm.anchor (disk 0) patched into disk 1 data
+        ldd   >addr.marker.d1
+        cmpd  #gm.anchor
+        bne   @f15a
+        ldx   #addr.marker.d1+2
+        lda   #marker.d1.ID
+        ldy   #marker.d1.SIZE-8
+        jsr   marker.check
+        cmpa  #$01
+        beq   >
+@f15a   lda   #$EA
+        lbra  @fail15
+!       ; outbound cross-disk symbol : disk 1 export used by the disk 0 gm
+        ldx   #marker.d1.begin
+        cmpx  #addr.marker.d1
+        beq   >
+        lda   #$EB
+        lbra  @fail15
+!       ; disk 0 files must keep their links across the disk change
+        ldd   >addr.marker.hub+4
+        cmpd  #gm.anchor
+        bne   @f15c
+        ldx   #marker.zz.begin
+        cmpx  #addr.marker.zz
+        beq   >
+@f15c   lda   #$EC
+        lbra  @fail15
+!       _loader.file.linkData.count
+        subd  #1
+        cmpd  test.t15.count
+        beq   >
+        lda   #$ED
+        lbra  @fail15
+!       ; back to disk 0 : the directory must be usable again
+        lda   #$D3
+        sta   result+27                       ; ask for disk 0
+        _loader.dir.load #0
+        lda   #$D4
+        sta   result+27                       ; disk 0 directory is loaded
+        _loader.scene.load #scenes.stress.zz
+        _ram.cart.set #page.markers
+        ldx   #addr.marker.zz
+        lda   #$5A
+        ldy   #marker.zz.SIZE-6
+        jsr   marker.check
+        cmpa  #$01
+        beq   @end15
+        lda   #$EE
+@fail15 sta   @res15
+@end15  lda   #0
+@res15  equ   *-1
+        jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
         beq   >
         addb  #result.DONE_KO
         tfr   b,a
-!       sta   result+15
+!       sta   result+31
 done    bra   done
 
 ; exported anchor : a non-zero resident address, referenced as an extern
@@ -532,6 +617,7 @@ test.t9.count  fdb 0
 test.t10.count fdb 0
 test.t12.count fdb 0
 test.t14.count fdb 0
+test.t15.count fdb 0
 test.t14.list  fdb iface.a,iface.b,iface.c,iface.d,iface.e,iface.f
                fdb pad.a,pad.b,pad.c,pad.d,pad.e,pad.f,pad.g,pad.h
                fdb pad.i,pad.j,pad.k,pad.l,pad.m,pad.n,pad.o,pad.p

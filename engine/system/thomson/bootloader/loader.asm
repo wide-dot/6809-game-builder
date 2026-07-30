@@ -108,6 +108,8 @@ loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 loader.scene.routine    fdb   0
 loader.scene.fileCount  fdb   0
 linkData.currentFile    fdb   0
+linkData.currentDisk    fcb   0 ; file ids are per disk : a file is only
+                                ; fully identified by [disk id][file id]
 linkData.currentSymbol  fdb   0
 
 ; memory utils
@@ -461,15 +463,15 @@ loader.dir.load
         lda   dir.header.nsector,y ; init nb sectors to read      
         sta   >nsect
 ; allocate memory
-        stb   @b
-        clrb
+        clrb                      ; D = nb of sectors * 256
         jsr   tlsf.malloc
         stu   >loader.dir
         stu   <map.DK.BUF         ; Next sectors will be read into the new
                                   ; buffer (BUF MSB is pre-incremented by the
                                   ; read loop, first sector is copied later)
-        ldb   #0
-@b      equ   *-1
+        ldb   #DIR_DEFAULT_SECTOR ; Set sector index : B cannot be carried over
+                                  ; from the first read, the monitor routines
+                                  ; used by the "insert disk" prompt clobber it
         ldu   #sclist
         ldx   #messIO             ; Error message
         bra   @next
@@ -1066,6 +1068,8 @@ loader.file.link
         ; set RAM page to make file visible
         ldd   linkData.entry.fileId,x
         std   linkData.currentFile
+        lda   linkData.entry.diskId,x
+        sta   linkData.currentDisk
         ldb   linkData.entry.filePage,x
         ldu   linkData.entry.fileAddr,x
         jsr   ram.set
@@ -1299,9 +1303,16 @@ linkData.symbol.search
         leax  sizeof{linkData.header},x
 @fileLoop
         ; exclude from search the current file being resolved
+        ; a file is identified by [disk id][file id] : file numbering restarts
+        ; at 0 on each disk, so comparing the file id alone would wrongly skip
+        ; a same-numbered file of another disk and lose its exported symbols
         ldd   linkData.entry.fileId,x
         cmpd  linkData.currentFile
+        bne   >
+        lda   linkData.entry.diskId,x
+        cmpa  linkData.currentDisk
         beq   @nextFile
+!
 ;
         ; set RAM page to make file visible
         ldu   linkData.entry.fileAddr,x

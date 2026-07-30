@@ -5,6 +5,12 @@ _loader.scene.load MACRO
         jsr   loader.ADDRESS+loader.scene.load.IDX
  ENDM
 
+; prompts the user for a disk change if the mounted disk is not the one asked
+_loader.dir.load MACRO
+        lda   \1
+        jsr   loader.ADDRESS+loader.dir.load.IDX
+ ENDM
+
 _loader.file.getPageID MACRO
         ldd   \1
         jsr   loader.ADDRESS+loader.file.getPageID.IDX

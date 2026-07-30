@@ -4,9 +4,9 @@ Test harness for `engine/system/thomson/bootloader/loader.asm`. It boots a
 minimal game mode that exercises the loader and writes its results to a fixed
 RAM table, readable from an emulator or debugger (toje, wddebug, DCMOTO).
 
-This is the base for implementing and testing the **missing loader features**
-(`loader.file.linkData.unload`, reload dedup, `isLoaded` query — see the
-loader analysis in the repository `CLAUDE.md`).
+It covers the whole loader lifecycle : load, decompress, load-time link,
+reload, unload, index growth, multi-sector directories and multi-disk
+operation — see the loader analysis in the repository `CLAUDE.md`.
 
 ## Layout
 
@@ -40,9 +40,11 @@ loader analysis in the repository `CLAUDE.md`).
 | +12 | T12 index growth : +6 export-only files push the index past 8 slots (realloc), values resolved ($F7), mass unload ($F8), count restored ($F9) |
 | +13 | T13 multi-sector directory : marker zz is the LAST directory entry (3rd INDEX sector), loaded and verified ($FA content, $FB not indexed) |
 | +14 | T14 index churn : 16 cycles of +22 export-only files (first pass walks the realloc steps 8→16→24→32) then mass unload of all 22 ($FC peak count, $FD value, $FE unload/floor) |
-| +15 | `$00` running, `$0D` all passed, `$E0+n` n test(s) failed |
-| +16/+17 | info : `#marker.cc.begin` **before** the second scene load (expected `$0000` — unresolved symbols silently resolve to 0) |
-| +18 | T11 progress : remaining iterations |
+| +15 | T15 multi-disk : switch to disk 1, load a file from it, cross-disk links checked both ways, disk 0 files still linked, then switch back ($EA content/inbound fixup, $EB outbound symbol, $EC disk 0 links lost, $ED count, $EE disk 0 unusable) |
+| +24/+25 | info : `#marker.cc.begin` before the second scene load |
+| +26 | T11 progress : remaining iterations |
+| +27 | T15 disk handshake : `$D1` waiting for disk 1, `$D2` disk 1 loaded, `$D3` waiting for disk 0, `$D4` back on disk 0 |
+| +31 | final status |
 
 The whole bench runs inside a deliberately reduced memory pool
 (`loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $0E00`, 3.5 KB) holding a 3-sector
@@ -66,7 +68,8 @@ java -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.
 ```
 
 Boot `dist/to8.fd` on a TO8 (press `B` at the monitor menu), let it run a few
-seconds, then read 16 bytes at `$9C00`.
+seconds, then read 32 bytes at `$9C00`. T1..T14 complete on their own ; T15
+needs the disk swaps described below.
 
 ## Covered loader lifecycle features
 
@@ -90,6 +93,22 @@ Convention : export-only files (empty binary, link data only) are loaded at
 the (0,0) pseudo-destination ; several of them share it, so they are exempt
 from destination-based implicit unload.
 
+## Running the multi-disk test (T15)
+
+T15 needs a second floppy image and an operator (or emulator driver) to swap
+disks. Poll the handshake byte at `$9C1B` : on `$D1` mount `dist/to8-disk1.fd`
+and press a key, on `$D3` mount `dist/to8.fd` back and press a key. The loader
+is blocked in its own "Insert disk N" prompt meanwhile.
+
+Disk 1 is declared **first** in `to8.config.xml` on purpose : the builder
+writes each directory's `entries.asm` in a pre-pass, so disk 1 file ids are
+already known when the disk 0 game mode is assembled — that is what makes
+cross-disk scene and file references possible.
+
+Note that `d1.marker` is file id 0 on disk 1 while the game mode is file id 0
+on disk 0 : the collision is deliberate, it checks that the loader identifies
+a file by `[disk id][file id]` and not by file id alone.
+
 ## Bugs caught by the stress additions
 
 - `loader.dir.load` never stored the malloc'd buffer into `map.DK.BUF` when
@@ -100,3 +119,24 @@ from destination-based implicit unload.
   index one after the other (they all share destination (0,0)) — a
   regression introduced with the implicit unload itself, now fixed by the
   empty-file exemption above.
+- `loader.dir.load` carried the sector index in B across its retry loop,
+  but the "insert disk" prompt calls the monitor (PUTC/KTST) which clobbers
+  B : the self-modifying save/restore ended up storing `$30`, the last
+  character of the message. The first multi-sector directory read after a
+  disk change then used a bogus interleave index and died on a fatal I/O
+  error. Needed *both* a disk-change prompt and a directory larger than one
+  sector to show up. Now the index is reloaded from `DIR_DEFAULT_SECTOR`.
+- `linkData.symbol.search` excluded "the file being resolved" by comparing
+  the file id alone. File numbering restarts at 0 on every disk, so a
+  same-numbered file of another disk was wrongly skipped and all its
+  exported symbols became invisible : cross-disk links silently resolved to
+  0. Fixed by qualifying the exclusion with `linkData.currentDisk`.
+
+## Known limitation : file identity across disks
+
+`loader.file.getPageID` — and therefore `_loader.file.isLoaded` and
+`externPg` relocations — still match on the file id alone, so they are
+ambiguous when two disks are indexed at once. The link data format has no
+room for a disk qualifier in an `externPg` reference either. The cheap fix
+is on the builder side : allocate file ids globally (continue the numbering
+across directories) instead of restarting at 0 for each disk.

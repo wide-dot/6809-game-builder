@@ -70,6 +70,7 @@ Use-case mapping :
 | reload without duplicate | dedup in `linkData.load` |
 | replacement at same destination | implicit unload (`linkData.slot.findByDest`) |
 | observability | `loader.file.linkData.count` |
+| multi-disk | `loader.dir.load` (prompts for the disk), slots keyed by `[disk id][file id]`, cross-disk symbol resolution |
 
 Invariants after any load/unload (validated by `examples/loader-ut`,
 including a 128-cycle swap/relink stress inside the 4 KB pool) :
@@ -78,7 +79,15 @@ including a 128-cycle swap/relink stress inside the 4 KB pool) :
    destination ;
 2. no two slots share the same (diskId, fileId) ;
 3. no two slots of *non-empty* groups share the same destination ;
-4. the global re-link only patches memory belonging to live groups.
+4. the global re-link only patches memory belonging to live groups ;
+5. groups coming from different disks coexist in the index and link to each
+   other — a group is identified by `[disk id][file id]`, since file
+   numbering restarts at 0 on each disk.
+
+Caveat : `getPageID` (hence `isLoaded` and `externPg` relocations) still
+matches on the file id alone and is ambiguous when two disks are indexed at
+once ; allocating file ids globally across directories on the builder side
+would remove the ambiguity for good.
 
 ## 4. Authoring rules and conventions
 

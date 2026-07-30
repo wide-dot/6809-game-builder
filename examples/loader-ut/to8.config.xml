@@ -1,6 +1,44 @@
 <configuration>
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+
+        <!-- ================================================================ -->
+        <!-- DISK 1 : declared FIRST on purpose — the builder writes each     -->
+        <!-- directory's entries.asm in a pre-pass, so disk 1 file ids are    -->
+        <!-- already known when the disk 0 game mode is assembled (this is    -->
+        <!-- what makes cross-disk scene/file references possible)            -->
+        <!-- ================================================================ -->
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="1" section="INDEX" genbinary="gen/directories/disk1/directory.bin" gensymbols="gen/directories/disk1/entries.asm">
+                <default name="direntry.section"      value="DATA"/>
+                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="lwasm.format"          value="obj"/>
+
+                <direntry name="d1.marker" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/markers/marker-d1.asm">
+                        <asm filename="src/assets/markers/marker-d1.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="d1.scenes.main" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/d1-main.asm">
+                        <asm filename="gen/directories/disk1/entries.asm"/>
+                        <asm filename="src/scenes/to8/d1-main/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+            </directory>
+
+            <fd  filename="to8-disk1.fd"/>
+        </floppydisk>
+
+        <!-- ================================================================ -->
+        <!-- DISK 0 : boot disk                                               -->
+        <!-- ================================================================ -->
         <floppydisk model="fd640">
 
             <section name="SCENE" track="0" face="1" sector="16"/>
@@ -19,6 +57,7 @@
                 <direntry name="assets.gm.loaderut" codec="zx0" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/disk1/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main.asm"/>
                     </lwasm>
                 </direntry>
