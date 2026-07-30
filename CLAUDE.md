@@ -157,9 +157,18 @@ mais jamais comparé (collision d'ids entre disquettes) ; boucles extern16 et
 symbol.search qui avancent avec `sizeof{}` d'une autre struct (même taille
 aujourd'hui, fragile).
 
-**Ordre de finition restant** : (1) suivi des tailles dans l'index si l'on veut un
-unload implicite sur recouvrement partiel ; (2) trancher le sort du concept
-« group » (par fichier + unload suffit probablement pour R-Type).
+**Concept « group » : tranché le 30/07/2026** — spec minimale rédigée dans
+`docs/lang/en/groups.md`. Décision clé : un group n'est PAS une nouvelle entité
+média/runtime, **c'est un direntry multi-asm** (lwasm concatène les sections, le
+codec compresse le flux entier, les link data sont émises fusionnées, le nom du
+direntry sert d'alias) ; le cycle de vie par fichier déjà implémenté (isLoaded,
+unload, dédup, count) EST le cycle de vie par group. La seule pièce à coder est
+**`loader.scene.loadDelta`** (jump table index 33) : converger la RAM vers une
+scène cible — passe d'unload des slots absents de la cible, skip des groups déjà
+chargés à la même destination, re-link global. C'est l'équivalent v2 du delta-reload
+du `RAMLoaderManager` v1 entre game modes. Tests prévus T11–T13 dans loader-ut.
+Différés : élément `<group>` builder, paginated groups + outils de découpage,
+interfaces/instances, suivi des tailles (recouvrement partiel), shrink d'index.
 
 **Banc de test** : `examples/loader-ut` — game mode UT bootable qui exerce le
 loader (zx0 + cdataz, raw, extern16, getPageID, `scene.load` à chaud avec
