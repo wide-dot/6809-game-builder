@@ -217,12 +217,16 @@ vérifié en mémoire (totalSlots=32, cohabitation de [disk 0][file 0] et
    inter-disquettes se résolvaient silencieusement à 0. Corrigé par l'ajout de
    `linkData.currentDisk` (identité = [diskId][fileId]).
 
-**Limitation connue** : `getPageID` (donc `isLoaded` et les relocations
-`externPg`) ne compare que le fileId → ambigu quand deux disquettes sont indexées
-simultanément, et le format des link data n'a pas de place pour qualifier le
-disque dans une référence `externPg`. Correctif le moins cher : côté builder,
-numéroter les fichiers globalement (continuer la numérotation d'un répertoire à
-l'autre) au lieu de repartir de 0 à chaque disquette.
+5. **Ids de fichiers globaux** (corrigé dans la foulée) : `getPageID` — donc
+   `isLoaded` et les relocations `externPg` — ne compare que le fileId, et le
+   format des link data n'a pas de place pour qualifier le disque. Plutôt que de
+   changer le format, la numérotation est devenue **globale à un target** côté
+   builder (`spi/globals/FileIds`, remise à zéro par target dans `Target.java`) :
+   chaque répertoire continue la numérotation du précédent et enregistre l'id de
+   sa première entrée dans son en-tête (`dir.header.baseId`, en-tête 5 → 7 octets).
+   `loader.dir.getFile` soustrait cette base pour retrouver l'index local — le
+   file id reste un simple index, au prix d'un `subd` (~7 cycles). Un fichier est
+   désormais identifié par son id seul, sans ambiguïté entre disquettes.
 
 ## Reste à faire pour un R-Type minimal (niveau 1 + boss, parité v1)
 

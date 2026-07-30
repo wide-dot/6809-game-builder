@@ -21,7 +21,13 @@ dir.header STRUCT
 tag     rmb types.BYTE*3 ; [I] [D] [X]
 diskId  rmb types.BYTE   ; [0000 0000]              - [disk id 0-255]
 nsector rmb types.BYTE   ; [0000 0000]              - [nb of sectors for direntries]
+baseId  rmb types.WORD   ; [0000 0000] [0000 0000]  - [global file id of the first entry]
         ENDSTRUCT
+; file ids are allocated continuously across every directory of a game, so a
+; file is fully identified by its id alone (getPageID, externPg relocations
+; and symbol lookups have no disk qualifier to rely on). Each directory
+; records the id of its first entry, which the loader subtracts to get back
+; an entry index inside the directory currently in memory.
 
 ; dir.entry main structure
 ; -----------------------
@@ -708,8 +714,9 @@ messloc fcb   $1f,$21,$21
 ;---------------------------------------
 loader.dir.getFile
         ldy   >loader.dir
-        leay  sizeof{dir.header},y 
         tfr   x,d
+        subd  dir.header.baseId,y ; Global file id to entry index
+        leay  sizeof{dir.header},y
         _lsld      ; Scale file id
         _lsld      ; to dir entry size
         _lsld

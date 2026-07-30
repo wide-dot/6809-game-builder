@@ -512,6 +512,28 @@ init
         beq   >
         lda   #$EB
         lbra  @fail15
+!       ; file identity across disks : file ids are allocated globally by the
+        ; builder, so getPageID tells the disk 1 file apart from the disk 0
+        ; game mode (with per-disk numbering both were file id 0 and the
+        ; disk 1 file resolved to the game mode's page)
+        lda   #$01
+        sta   @res15b
+        _loader.file.getPageID #d1.marker
+        cmpb  #page.markers
+        beq   >
+        ldb   #$FF
+        stb   @res15b
+!       _loader.file.getPageID #assets.gm.loaderut
+        cmpb  #1
+        beq   >
+        ldb   #$FF
+        stb   @res15b
+!       lda   #0
+@res15b equ   *-1
+        cmpa  #$01
+        beq   >
+        lda   #$EF
+        lbra  @fail15
 !       ; disk 0 files must keep their links across the disk change
         ldd   >addr.marker.hub+4
         cmpd  #gm.anchor

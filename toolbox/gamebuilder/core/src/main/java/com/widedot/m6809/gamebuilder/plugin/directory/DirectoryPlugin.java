@@ -13,6 +13,7 @@ import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -25,11 +26,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DirectoryPlugin {
 	
-//	Directory Header (5 bytes)
+//	Directory Header (7 bytes)
 //  -----------------------------------------------------------------------------------------------
 //	[I] [D] [X] : [tag]
 //	[0000 0000] : [disk id 0-255]
 //	[0000 0000] : [nb of sectors to load for this index]
+//	[0000 0000] [0000 0000] : [global file id of the first entry of this directory]
+//	                          file ids are allocated continuously across all the
+//	                          directories of a target, so that a file is identified
+//	                          by its id alone at runtime ; the loader subtracts this
+//	                          base to get the entry index inside this directory
 	
 //	Directory content
 //  -----------------------------------------------------------------------------------------------
@@ -50,7 +56,10 @@ public class DirectoryPlugin {
 		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
 		FileWriter writer = new FileWriter(gensymbols);
 
-		int direntryId = 0;
+		// file ids are global to the target : keep numbering where the
+		// previous directory left off, and record the base in the header
+		int baseId = FileIds.peek();
+		int direntryId = baseId;
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 			if (plugin.equals("direntry")) {
@@ -73,6 +82,8 @@ public class DirectoryPlugin {
 			}
 		}
 		writer.close();
+		FileIds.next = direntryId;
+		log.debug("directory {} : file ids {} to {}", id, baseId, direntryId-1);
 	    
    		// instanciate plugins
 		DefaultFactory defaultFactory;
@@ -108,7 +119,7 @@ public class DirectoryPlugin {
     	}
 		
 		// compute directory size 
-		int size = 5;
+		int size = 7;
 		for (DirEntry entry : media.getDirEntries()) {
 			size += entry.data.length;
 		}
@@ -121,6 +132,8 @@ public class DirectoryPlugin {
 		bin[i++] = 'X';
 		bin[i++] = id.byteValue();
 		bin[i++] = (byte) (Math.ceil(size/256.0));
+		bin[i++] = (byte) ((baseId >> 8) & 0xff);
+		bin[i++] = (byte) (baseId & 0xff);
 		
 		// set each direntry data
 		for (DirEntry entry : media.getDirEntries()) {
@@ -143,6 +156,7 @@ public class DirectoryPlugin {
 			textWriter.write("Directory Entries Information" + System.lineSeparator());
 			textWriter.write("=============================" + System.lineSeparator());
 			textWriter.write("Directory ID: " + id + System.lineSeparator());
+			textWriter.write("Base file ID: " + baseId + System.lineSeparator());
 			textWriter.write("Directory structure size: " + size + " bytes" + System.lineSeparator());
 			textWriter.write("Directory storage - Number of sectors to load: " + (byte) (Math.ceil(size/256.0)) + System.lineSeparator());
 			textWriter.write(System.lineSeparator());

@@ -14,6 +14,7 @@ import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,10 @@ public class Target {
     	{
 			String targetName = (String) node.getAttributes().get("name");
 			log.info("Processing target {}", targetName);
+
+			// file ids are global to a target : restart the numbering so two
+			// targets of the same game (fd, t2, ...) get identical ids
+			FileIds.clear();
 
 	   		// instanciate plugins
 			DefaultFactory defaultFactory;

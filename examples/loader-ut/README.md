@@ -105,9 +105,8 @@ writes each directory's `entries.asm` in a pre-pass, so disk 1 file ids are
 already known when the disk 0 game mode is assembled — that is what makes
 cross-disk scene and file references possible.
 
-Note that `d1.marker` is file id 0 on disk 1 while the game mode is file id 0
-on disk 0 : the collision is deliberate, it checks that the loader identifies
-a file by `[disk id][file id]` and not by file id alone.
+Disk 1 is also what pins the global file id allocation : it owns ids 0..3 and
+disk 0 continues at 4..76 (see below).
 
 ## Bugs caught by the stress additions
 
@@ -132,11 +131,14 @@ a file by `[disk id][file id]` and not by file id alone.
   exported symbols became invisible : cross-disk links silently resolved to
   0. Fixed by qualifying the exclusion with `linkData.currentDisk`.
 
-## Known limitation : file identity across disks
+## File identity across disks
 
-`loader.file.getPageID` — and therefore `_loader.file.isLoaded` and
-`externPg` relocations — still match on the file id alone, so they are
-ambiguous when two disks are indexed at once. The link data format has no
-room for a disk qualifier in an `externPg` reference either. The cheap fix
-is on the builder side : allocate file ids globally (continue the numbering
-across directories) instead of restarting at 0 for each disk.
+`loader.file.getPageID`, `_loader.file.isLoaded` and `externPg` relocations
+match on the file id alone. Rather than adding a disk qualifier to the link
+data format, the builder now allocates file ids **globally across all the
+directories of a target** and each directory header carries the id of its
+first entry (`dir.header.baseId`), which `loader.dir.getFile` subtracts to
+get the entry index. In this bench disk 1 owns ids 0..3 and disk 0 continues
+at 4..76, so no two indexed files can ever share an id. T15 checks it
+directly : `getPageID` must return page 6 for the disk 1 marker and page 1
+for the disk 0 game mode.

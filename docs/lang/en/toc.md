@@ -1,7 +1,13 @@
-Header (4 bytes)
+Header (7 bytes)
 [I] [D] [X] : [tag]
 [0000 0000] : [disk id 0-255]
 [0000 0000] : [nb of sectors to load for this index]
+[0000 0000] [0000 0000] : [global file id of the first entry of this directory]
+
+file ids are allocated continuously across every directory of a target, so that
+a file is identified by its id alone at runtime (getPageID, externPg
+relocations, symbol lookups) ; loader.dir.getFile subtracts this base to get
+the entry index inside the directory currently in memory.
 
 loader data entry for a file (7, 14 or 21 bytes):
 

@@ -84,10 +84,12 @@ including a 128-cycle swap/relink stress inside the 4 KB pool) :
    other — a group is identified by `[disk id][file id]`, since file
    numbering restarts at 0 on each disk.
 
-Caveat : `getPageID` (hence `isLoaded` and `externPg` relocations) still
-matches on the file id alone and is ambiguous when two disks are indexed at
-once ; allocating file ids globally across directories on the builder side
-would remove the ambiguity for good.
+File ids are allocated **globally across all the directories of a target**
+(builder side), and each directory records the id of its first entry in its
+header, which the loader subtracts to get an entry index. A file is therefore
+identified by its id alone — `getPageID`, `isLoaded` and `externPg`
+relocations stay unambiguous when several disks are indexed at once, without
+adding a disk qualifier to the link data format.
 
 ## 4. Authoring rules and conventions
 
