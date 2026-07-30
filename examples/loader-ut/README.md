@@ -36,8 +36,11 @@ loader analysis in the repository `CLAUDE.md`).
 | +8 | T8 implicit unload : loading cc at bb's destination deindexed bb (`isLoaded` false, explicit unload reports not found) |
 | +9 | T9 dedup : reloading scene "second" keeps `linkData.count` stable, cc content and link intact |
 | +10 | T10 explicit `linkData.unload` of aa : success, `isLoaded` false, count drops by one |
-| +12/+13 | info : `#marker.cc.begin` **before** the second scene load (expected `$0000` — unresolved symbols silently resolve to 0) |
+| +11 | T11 stress : 128 load/unload/relink cycles of the dd/ee variants over one destination — fresh extern fixups ($F1), content ($F2), symbol flips in the gm ($F3) and in the stable hub file ($F4), index steady at 4 ($F5) ; explicit unload every 16th cycle ; the whole loop must live within the 4 KB pool |
+| +12 | T12 index growth : +6 export-only files push the index past 8 slots (realloc), values resolved ($F7), mass unload ($F8), count restored ($F9) |
+| +14 | T11 progress : remaining iterations |
 | +15 | `$00` running, `$0D` all passed, `$E0+n` n test(s) failed |
+| +16/+17 | info : `#marker.cc.begin` **before** the second scene load (expected `$0000` — unresolved symbols silently resolve to 0) |
 
 Each test slot : `$00` not run, `$01` pass, `$FF` fail.
 
@@ -76,5 +79,17 @@ loading a file that *partially overlaps* an indexed file's memory (different
 start address) still leaves a stale entry — sizes are not tracked in the
 index. Use explicit `linkData.unload` in that case.
 
-Possible next steps : index shrink on unload (optional), group-level
-load/unload (see `dynamic-link-data.md`).
+Convention : export-only files (empty binary, link data only) are loaded at
+the (0,0) pseudo-destination ; several of them share it, so they are exempt
+from destination-based implicit unload.
+
+## Bugs caught by the stress additions
+
+- `loader.dir.load` never stored the malloc'd buffer into `map.DK.BUF` when
+  the directory spans more than one sector : sector 2+ was read over the
+  loader's own variables and code at `ptsec+256`. Dormant since the origin —
+  no previous project had a directory larger than one sector.
+- the destination-based implicit unload evicted export-only files from the
+  index one after the other (they all share destination (0,0)) — a
+  regression introduced with the implicit unload itself, now fixed by the
+  empty-file exemption above.

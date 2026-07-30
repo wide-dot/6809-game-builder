@@ -465,7 +465,9 @@ loader.dir.load
         clrb
         jsr   tlsf.malloc
         stu   >loader.dir
-        leay  256,u               ; First sector will be copied later
+        stu   <map.DK.BUF         ; Next sectors will be read into the new
+                                  ; buffer (BUF MSB is pre-incremented by the
+                                  ; read loop, first sector is copied later)
         ldb   #0
 @b      equ   *-1
         ldu   #sclist
@@ -781,6 +783,13 @@ loader.file.linkData.load
         puls  u
         bra   @fill                           ; u is a ptr to the reused slot
 !
+        ; empty (export-only) files have no RAM footprint : several of them
+        ; legitimately share the (0,0) pseudo-destination, never evict by dest
+        ldx   2,s                             ; load file id
+        jsr   loader.dir.getFile
+        ldd   dir.entry.sizea,y
+        cmpd  #$ff00
+        beq   @index                          ; branch if file is empty
         ; implicit unload : a different indexed file located at the very same
         ; destination is being overwritten, remove it from the index so the
         ; global re-link will not patch its stale offsets over the new binary
@@ -788,9 +797,9 @@ loader.file.linkData.load
         ldx   6,s                             ; load file dest addr
         jsr   linkData.slot.findByDest
         cmpu  #0
-        beq   >
+        beq   @index
         jsr   linkData.slot.remove
-!
+@index
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
         bne   >

@@ -174,9 +174,24 @@ interfaces/instances, suivi des tailles (recouvrement partiel), shrink d'index.
 loader (zx0 + cdataz, raw, extern16, getPageID, `scene.load` à chaud avec
 écrasement, re-link des références en avant, unload implicite T8, dédup T9,
 unload explicite + isLoaded + count T10) et écrit ses résultats en `$9C00`
-(magic `$CA`, 10 slots de test, statut final `$0D`/`$E0+n`). Validé sous toje :
-10/10 pass, structures internes de l'index vérifiées en mémoire (occupiedSlots,
-décalage de slots, réallocation des buffers).
+(magic `$CA`, statut final `$0D`/`$E0+n`). **Stress test (30/07/2026)** : T11 =
+128 cycles load/unload/re-link de deux variantes sur la même destination
+(fixups extern vérifiés dans les données fraîches, flips de symboles dans le gm
+ET dans un fichier data stable, unload explicite tous les 16 cycles, le tout
+dans le pool de 4 Ko — toute fuite le ferait exploser) ; T12 = croissance de
+l'index au-delà de 8 slots (chemin realloc) + mass unload. Validé sous toje :
+12/12 pass, index vérifié en mémoire (realloc 8→16, relogement, slots intacts).
+
+**Deux bugs attrapés par le stress test (corrigés le 30/07/2026)** :
+1. `loader.dir.load` : quand le répertoire dépasse 1 secteur, le buffer alloué
+   n'était jamais écrit dans `map.DK.BUF` → les secteurs 2+ étaient lus sur les
+   variables puis le code du loader (`ptsec+256` = $A127+). Bug dormant depuis
+   l'origine — aucun projet n'avait de répertoire > 1 secteur (~30 entrées).
+2. L'unload implicite par destination évinçait les fichiers export-only les uns
+   après les autres (ils partagent tous la pseudo-destination (0,0)) — régression
+   introduite avec l'implicite lui-même, qui cassait silencieusement le pattern
+   `ym.const`+`sn.const` d'`examples/sound`. Convention actée : les fichiers
+   vides ($ff00) sont exempts de l'éviction par destination.
 
 ## Reste à faire pour un R-Type minimal (niveau 1 + boss, parité v1)
 

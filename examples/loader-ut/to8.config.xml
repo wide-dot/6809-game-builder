@@ -46,6 +46,83 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Stress test files                                       -->
+                <!-- hub    : stable, holds extern refs re-patched at link   -->
+                <!-- dd/ee  : variants swapped at the same destination       -->
+                <!-- iface.*: export-only files (index growth / realloc)     -->
+                <!-- ******************************************************* -->
+                <direntry name="data.marker.hub" loadtimelink="LINK">
+                    <lwasm gensource="gen/markers/marker-hub.asm">
+                        <asm filename="src/assets/markers/marker-hub.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="data.marker.dd" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/markers/marker-dd.asm">
+                        <asm filename="src/assets/markers/marker-dd.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="data.marker.ee" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/markers/marker-ee.asm">
+                        <asm filename="src/assets/markers/marker-ee.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.a" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/a.asm">
+                        <asm xml:space="preserve">iface.a.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.a.VALUE equ $0A01</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.b" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/b.asm">
+                        <asm xml:space="preserve">iface.b.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.b.VALUE equ $0A02</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.c" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/c.asm">
+                        <asm xml:space="preserve">iface.c.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.c.VALUE equ $0A03</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.d" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/d.asm">
+                        <asm xml:space="preserve">iface.d.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.d.VALUE equ $0A04</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.e" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/e.asm">
+                        <asm xml:space="preserve">iface.e.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.e.VALUE equ $0A05</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="iface.f" loadtimelink="LINK">
+                    <lwasm gensource="gen/iface/f.asm">
+                        <asm xml:space="preserve">iface.f.VALUE EXPORT</asm>
+                        <asm xml:space="preserve"> SECTION _constant</asm>
+                        <asm xml:space="preserve">iface.f.VALUE equ $0A06</asm>
+                        <asm xml:space="preserve"> ENDSECTION</asm>
+                    </lwasm>
+                </direntry>
+
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <direntry name="scenes.main" section="SCENE">
@@ -59,6 +136,34 @@
                     <lwasm format="raw" gensource="gen/scenes/second.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/scenes/to8/second/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.stress.hub" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/stress-hub.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/stress-hub/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.stress.dd" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/stress-dd.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/stress-dd/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.stress.ee" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/stress-ee.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/stress-ee/scene.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="scenes.stress.iface" section="SCENE">
+                    <lwasm format="raw" gensource="gen/scenes/stress-iface.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/scenes/to8/stress-iface/scene.asm"/>
                     </lwasm>
                 </direntry>
 
