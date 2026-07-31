@@ -32,6 +32,18 @@ description: Mode opératoire de la migration de l'engine ASM v1 (thomson-to8-ga
 - **Conservé v2 (requis par le builder ou sans équivalent v1)** : bootloader
   + loader + scènes, TLSF (+ UT), décompresseurs ZX0, storage.xml, support
   MO6, MPLUS/MEA8000. Ces fichiers gardent leurs chemins et noms v2.
+- **Conservé v2 sous surveillance (« KEPT-V2 », arbitré le 31/07/2026)** :
+  les homonymes dont la forme v2 est retenue parce qu'elle est v2-native —
+  players ymm/vgc (+const/macro/packs), sn76489, ym2413 (EXPORT/load-time
+  link, ports dynamiques), les 3 décompresseurs zx0 (intégration
+  loader/cdataz). Chacun a une ligne de manifest `KEPT-V2:` pointant son
+  original v1 avec le commit courant : drift-check ALERTE quand la v1
+  bouge, la résync est un examen manuel (pas un re-import aveugle).
+- **Base v2 des cibles v2-only** : irq/glb.init/palette/gfxlock/packs v2
+  restent vivants pour MO6 et pour le banc MPLUS (matériel v2-only, gm
+  partagé TO8/MO6, features gfxlock v2-spécifiques halfPage/memset) —
+  les exemples mplus restent donc INTÉGRALEMENT en dialecte v2. La dérive
+  côté v1 de ces bases est déjà couverte par les lignes d'import.
 - **Parqué** (`parked/`) : les doublons v2 d'un fichier v1 (gfxlock v2,
   irq/palette/joypad renommés, glb.const/glb.init, ymm/vgc si divergents) et
   les exemples pré-migration.

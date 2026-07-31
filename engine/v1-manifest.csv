@@ -13,3 +13,14 @@ engine/ram/BankSwitch.asm,engine/ram/BankSwitch.asm,f873642ee58b8c6d294d174a68d1
 engine/ram/ClearDataMemory.asm,engine/ram/ClearDataMemory.asm,44f78add41b5dc2813f87f7b92361e3e55742e79,2026-07-31,
 engine/math/RandomNumber.asm,engine/math/RandomNumber.asm,736d8370c22d8608160c91cdeefe5fe9247c217c,2026-07-31,
 engine/system/to8/memory-map.equ,engine/system/to8/memory-map.equ,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,
+engine/sound/ymm.asm,engine/objects/sound/ymm/ymm.asm,2eae7b21fb37d59ebb974b955dba2598933690d9,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/sound/ymm.const.asm,engine/objects/sound/ymm/ymm.const.asm,9929431cc9117fbbabe4e98a31fd16716e1ec2a5,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/sound/ymm.macro.asm,engine/objects/sound/ymm/ymm.macro.asm,9929431cc9117fbbabe4e98a31fd16716e1ec2a5,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/sound/vgc.asm,engine/objects/sound/vgc/vgc.asm,e169e3967dfbd78d55dffd2f0b88b513cacd4db0,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/pack/ymm.asm,engine/objects/sound/ymm/ymm.asm,2eae7b21fb37d59ebb974b955dba2598933690d9,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/pack/vgc.asm,engine/objects/sound/vgc/vgc.asm,e169e3967dfbd78d55dffd2f0b88b513cacd4db0,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/sound/sn76489.asm,engine/sound/sn76489.asm,33894e62154c7a1ed8a6edb304d003a9a33d7d71,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/sound/ym2413.asm,engine/sound/ym2413.asm,33894e62154c7a1ed8a6edb304d003a9a33d7d71,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
+engine/compression/zx0/zx0_6809_mega.asm,engine/compression/zx0/zx0_6809_mega.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,KEPT-V2: v2-adapted decompressor (loader/cdataz integration) ; watch v1 - manual resync
+engine/compression/zx0/zx0_6809_mega_back.asm,engine/compression/zx0/zx0_6809_mega_back.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,KEPT-V2: v2-adapted decompressor (loader/cdataz integration) ; watch v1 - manual resync
+engine/compression/zx0/zx0_6809_turbo.asm,engine/compression/zx0/zx0_6809_turbo.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,KEPT-V2: v2-adapted decompressor (loader/cdataz integration) ; watch v1 - manual resync

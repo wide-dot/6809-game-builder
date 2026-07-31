@@ -14,7 +14,7 @@ tlsf.ut
         jsr   tlsf.ut.random
         rts
 
-        INCLUDE   "engine/math/random.asm"
+        INCLUDE   "engine/math/RandomNumber.asm"
 
 tlsf.ut.init
         ldd   #tlsf.err.return
@@ -354,10 +354,10 @@ tlsf.ut.random
         ldd   #tlsf.ut.random.free
         std   tlsf.err.callback        ; routine to call when tlsf raise an error
 
-        jsr   random.init
+        jsr   InitRNG
 
 tlsf.ut.random.malloc
-!       jsr   random.get
+!       jsr   RandomNumber
         clra
         andb  #%11111110
         ldx   #allocRefs
@@ -365,7 +365,7 @@ tlsf.ut.random.malloc
         bne   tlsf.ut.random.free.switch
 tlsf.ut.random.malloc.switch
         std   @d
-        jsr   random.get
+        jsr   RandomNumber
         anda  #%00000011
         andb  #%11111111
         addd  #1
@@ -389,7 +389,7 @@ tlsf.ut.random.free
         beq   >
         bra   *
 !       clr   tlsf.err
-        jsr   random.get
+        jsr   RandomNumber
         clra
         andb  #%11111110
         ldx   #allocRefs

@@ -43,9 +43,21 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         CHECK_UNRESOLVED_SYMBOLS incompatible avec les références en avant
         (title importe les sons level1) — ne l'activer que sur des bancs
         sans forward refs.
-  - [ ] M2 (suite) — migrer mplus/tlsf là où ils touchent la base dupliquée ;
-        arbitrer les homonymes restants (zx0, sn76489, ym2413, players
-        ymm/vgc).
+  - [x] M2 (suite) — arbitrages rendus le 31/07 (détail dans la skill) :
+        (1) tlsf.ut basculé sur `RandomNumber.asm` v1 (identique modulo
+        labels, prouvé par diff) et `engine/math/random.asm` v2 supprimé —
+        8 images inchangées octet pour octet ; (2) **mplus reste
+        intégralement en dialecte v2** : banc pour matériel v2-only (carte
+        MPLUS), gm partagé TO8/MO6, features gfxlock v2-spécifiques
+        (halfPage/memset) absentes du gfxlock v1 — la base v2
+        (irq/glb.init/palette/gfxlock/packs) reste vivante pour MO6 et
+        mplus, la dérive du côté v1 est déjà surveillée par les lignes
+        d'import du manifest ; (3) homonymes son/zx0 (players ymm/vgc,
+        sn76489, ym2413, packs, 3 décompresseurs zx0) : **KEPT-V2** —
+        formes v2-natives (EXPORT/link, ports dynamiques, intégration
+        loader) ; 11 lignes ajoutées au manifest avec leur commit v1
+        courant pour que drift-check alerte quand la v1 bouge (résync
+        manuel à évaluer).
   - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
         banc générateur vs générateur (mêmes PNG, diff des .bin)
   - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc
