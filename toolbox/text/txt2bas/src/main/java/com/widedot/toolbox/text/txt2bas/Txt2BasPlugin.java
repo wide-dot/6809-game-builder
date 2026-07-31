@@ -1,5 +1,11 @@
 package com.widedot.toolbox.text.txt2bas;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -153,4 +159,25 @@ public class Txt2BasPlugin {
 		return true;
 	}
 
+
+	/**
+	 * Handler for the <txt2bas> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	  
+	  //read input xml
+	  String filename = Attribute.getString(node, ctx.defaults, "filename", "txt2bas.filename");
+	  String tokenset = Attribute.getString(node, ctx.defaults, "tokenset", "txt2bas.tokenset", "to");
+
+	  if (filename == null || filename.equals("")) {
+		  String m = "no filename provided for txt2bas!";
+		  log.error(m);
+		  throw new Exception(m);
+	  }
+	  
+	  File file = new File(ctx.path + File.separator + filename);
+	  HashMap<byte[], byte[]> tokenmap = FileResourcesUtils.getHashMap(tokenset+".def");
+			byte[] data = Txt2BasPlugin.getBasic(file, tokenmap);
+	  return new Binary(data);
+	}
 }

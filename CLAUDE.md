@@ -170,8 +170,31 @@ ce qui était impossible avant (les ids de symboles fuyaient d'une config à
 l'autre). Ça débloque aussi la parallélisation de lwasm et les tests
 d'intégration. Images des 8 configs inchangées octet pour octet, loader-ut 16/16.
 
-Reste ouvert, par ordre de valeur : dé-boilerplate SPI (~400 lignes),
-tri alphabétique des ids de symboles (prérequis des interfaces de groups),
+**Mécanisme de plugins supprimé (31/07/2026)** : le builder chargeait ses
+fonctionnalités par `ServiceLoader` + `URLClassLoader`, avec 47 classes de
+fabriques et 16 fichiers `META-INF/services` — une architecture d'extension
+dynamique alors que **tout est dans le même dépôt et le même réacteur Maven**,
+et que le SPI n'a jamais été publié (un tiers devait déjà cloner et builder le
+projet). Ce que ça coûtait : des pannes silencieuses (une faute de frappe dans un
+fichier de service ou un jar non reconstruit donnait « Unknown Plugin » très loin
+de la cause — vécu deux fois cette session), et une liste `SHARED_PACKAGES` en dur
+dans le cœur où traînait `com.caoccao.javet`, un moteur JS qu'aucun pom ne déclare.
+
+Remplacé par `core/Handlers.java` : **une ligne par fonctionnalité**, vérifiée par
+le compilateur (`MEDIA.put("directory", DirectoryPlugin::run)`). Les convertisseurs
+deviennent des dépendances Maven normales du cœur et exposent un `getObject`
+statique. Bilan : **−2 400 lignes**, 89 fichiers supprimés, et `-Dbasedir` n'est
+plus nécessaire. Ajouter une fonctionnalité = écrire la classe + une ligne
+d'enregistrement.
+
+Si le chargement dynamique redevenait un objectif, le registre est précisément le
+point d'ancrage où brancher un loader — il faudrait d'abord publier le SPI et le
+versionner, ce qui n'a jamais été fait.
+
+Reste ouvert, par ordre de valeur : **contrat d'attributs déclaré et validé**
+(namespace dérivé du nom du handler, attribut inconnu rejeté, message citant le
+fichier et l'élément XML — c'est la source d'erreur la plus coûteuse, cf. le
+garde-fou 16 Ko qui n'a jamais fonctionné), tri alphabétique des ids de symboles,
 packaging en zip par plateforme.
 
 **Packer VGC porté en Java (31/07/2026)** : `vgmpacker` (LZ4 + parser VGM) tournait

@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.Handlers;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -11,10 +12,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.LwAssembler;
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.FileFactory;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
@@ -25,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class LwasmPlugin {
-	public static Object getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 		
 		log.debug("Processing lwasm ...");
 		
@@ -35,10 +33,6 @@ public class LwasmPlugin {
 		
 		List<File> files = new ArrayList<File>();
 		
-   		// instanciate plugins
-		DefaultFactory defaultFactory;
-		FileFactory fileFactory;
-		
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
 		BuildContext localCtx = ctx.child();
@@ -46,24 +40,21 @@ public class LwasmPlugin {
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
-			defaultFactory = Plugins.getDefaultFactory(plugin);
-			fileFactory = Plugins.getFileFactory(plugin);
+			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
+			FilePluginInterface fileHandler = Handlers.getFile(plugin);
 		    
-	        if (defaultFactory == null && fileFactory == null) {
-	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        if (defaultHandler == null && fileHandler == null) {
+	        	throw new Exception("Element <" + plugin + "> is not valid here");
 	        }
 		    
-	        if (defaultFactory != null) {
-			    final DefaultPluginInterface processor = defaultFactory.build();
-			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, localCtx);
+	        if (defaultHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    defaultHandler.run(child, localCtx);
 			    ctx.publish(localCtx);
 	        }
 	        
-	        if (fileFactory != null) {
-			    final FilePluginInterface processor = fileFactory.build();
-			    log.debug("Running plugin: {}", fileFactory.name());
-			    files.add(processor.getFile(child, localCtx));
+	        if (fileHandler != null) {
+			    files.add(fileHandler.getFile(child, localCtx));
 			    ctx.publish(localCtx);
 	        }
 		}

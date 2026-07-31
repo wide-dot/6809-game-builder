@@ -1,5 +1,11 @@
 package com.widedot.toolbox.text.phoneme;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -274,4 +280,32 @@ public class PhonemePlugin {
         return result;
     }
     
+
+	/**
+	 * Handler for the <phoneme> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+
+		// read input xml
+		String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "phoneme.filename");
+		String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "phoneme.genbinary");
+		String lang = Attribute.getString(node, ctx.defaults, "lang", "phoneme.lang", "fr");
+
+		if (filename == null || filename.equals("")) {
+			String m = "no filename provided for phoneme!";
+			log.error(m);
+			throw new Exception(m);
+		}
+
+		if (filename != null)
+			filename = ctx.path + File.separator + filename;
+		if (genbinary != null)
+			genbinary = ctx.path + File.separator + genbinary;
+
+		PhonemePlugin.filename = filename;
+		PhonemePlugin.genbinary = genbinary;
+		PhonemePlugin.lang = lang;
+		byte[] data = PhonemePlugin.run();
+		return new Binary(data);
+	}
 }

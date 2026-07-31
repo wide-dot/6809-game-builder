@@ -1,5 +1,11 @@
 package com.widedot.toolbox.audio.vgm2vgc;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -168,4 +174,31 @@ public class Vgm2VgcPlugin {
 		}
 	}
 
+
+	/**
+	 * Handler for the <vgm2vgc> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	  
+	//read input xml
+	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2vgc.filename");
+	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2vgc.genbinary");
+
+
+	if ((filename == null || filename.equals(""))) {
+		String m = "An input filename should be provided for vgm2vgc!";
+		log.error(m);
+		throw new Exception(m);
+	}
+	  
+	if (filename != null) filename = ctx.path + File.separator + filename;
+	if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
+	  
+	
+	  
+	Vgm2VgcPlugin.filename = filename;
+	Vgm2VgcPlugin.genbinary = genbinary; 
+			byte[] data = Vgm2VgcPlugin.run();
+	return new Binary(data);
+	}
 }

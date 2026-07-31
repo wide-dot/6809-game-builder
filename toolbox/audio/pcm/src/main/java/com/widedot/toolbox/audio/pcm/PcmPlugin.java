@@ -1,5 +1,11 @@
 package com.widedot.toolbox.audio.pcm;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -108,4 +114,33 @@ public class PcmPlugin {
 		}
 	}
 	
+
+	/**
+	 * Handler for the <pcm> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	  
+	//read input xml
+	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "pcm.filename");
+	boolean downscale8To6Bit = Attribute.getBoolean(node, ctx.defaults, "bit8to6", "pcm.bit8to6", false);
+	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "pcm.genbinary");
+
+
+	if ((filename == null || filename.equals(""))) {
+		String m = "An input filename should be provided for pcm!";
+		log.error(m);
+		throw new Exception(m);
+	}
+	  
+	if (filename != null) filename = ctx.path + File.separator + filename;
+	if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
+	  
+	
+	  
+	PcmPlugin.filename = filename;
+	PcmPlugin.genbinary = genbinary; 
+	PcmPlugin.downscale8To6Bit = downscale8To6Bit;
+			byte[] data = PcmPlugin.run();
+	return new Binary(data);
+	}
 }

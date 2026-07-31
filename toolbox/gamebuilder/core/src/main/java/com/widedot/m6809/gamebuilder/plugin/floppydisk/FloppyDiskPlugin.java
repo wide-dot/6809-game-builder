@@ -1,16 +1,14 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.Handlers;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storages;
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
@@ -36,10 +34,6 @@ public class FloppyDiskPlugin {
 		// Instanciate the floppy disk image
 		FdUtil mediaData = new FdUtil(storage);
 		
-   		// instanciate plugins
-		DefaultFactory defaultFactory;
-		MediaFactory mediaFactory;
-		
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
 		BuildContext localCtx = ctx.child();
@@ -54,24 +48,22 @@ public class FloppyDiskPlugin {
 	    		continue;
 	    	}
 	    	
-			defaultFactory = Plugins.getDefaultFactory(plugin);
-			mediaFactory = Plugins.getMediaFactory(plugin);
+			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
+			MediaPluginInterface mediaHandler = Handlers.getMedia(plugin);
 		    
-	        if (defaultFactory == null && mediaFactory == null) {
-	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        if (defaultHandler == null && mediaHandler == null) {
+	        	throw new Exception("Element <" + plugin + "> is not valid here");
 	        }
 		    
-	        if (defaultFactory != null) {
-			    final DefaultPluginInterface processor = defaultFactory.build();
-			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, localCtx);
+	        if (defaultHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    defaultHandler.run(child, localCtx);
 				ctx.publish(localCtx);
 	        }
 	        
-	        if (mediaFactory != null) {
-			    final MediaPluginInterface processor = mediaFactory.build();
-			    log.debug("Running plugin: {}", mediaFactory.name());
-			    processor.run(child, localCtx, mediaData);
+	        if (mediaHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    mediaHandler.run(child, localCtx, mediaData);
 			    ctx.publish(localCtx);
 	        }
     	}

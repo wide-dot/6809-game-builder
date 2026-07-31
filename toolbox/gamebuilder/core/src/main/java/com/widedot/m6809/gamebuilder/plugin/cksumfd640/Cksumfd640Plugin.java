@@ -1,13 +1,11 @@
 package com.widedot.m6809.gamebuilder.plugin.cksumfd640;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.Handlers;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
-import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
@@ -17,14 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Cksumfd640Plugin {
 	
-	public static Object getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
     	
 		log.debug("Processing cksumfd640 ...");
 		ObjectDataInterface obj = null;
-
-   		// instanciate plugins
-		DefaultFactory defaultFactory;
-		ObjectFactory objectFactory;
 		
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
@@ -33,24 +27,21 @@ public class Cksumfd640Plugin {
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 				
-			defaultFactory = Plugins.getDefaultFactory(plugin);
-			objectFactory = Plugins.getObjectFactory(plugin);
+			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
+			ObjectPluginInterface objectHandler = Handlers.getObject(plugin);
 		    
-	        if (defaultFactory == null && objectFactory == null) {
-	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        if (defaultHandler == null && objectHandler == null) {
+	        	throw new Exception("Element <" + plugin + "> is not valid here");
 	        }
 		    
-	        if (defaultFactory != null) {
-			    final DefaultPluginInterface processor = defaultFactory.build();
-			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, localCtx);
+	        if (defaultHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    defaultHandler.run(child, localCtx);
 			    ctx.publish(localCtx);
 	        }
 	        
-	        if (objectFactory != null) {
-			    final ObjectPluginInterface processor = objectFactory.build();
-			    log.debug("Running plugin: {}", objectFactory.name());
-			    obj = processor.getObject(child, localCtx);
+	        if (objectHandler != null) {
+			    obj = objectHandler.getObject(child, localCtx);
 			    ctx.publish(localCtx);
 			    
 			    checksum(obj.getBytes());

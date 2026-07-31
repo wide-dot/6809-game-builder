@@ -8,10 +8,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 
 import lombok.extern.slf4j.Slf4j;
@@ -67,31 +64,25 @@ public class Target {
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
 			ctx.resetTarget();
-
-	   		// instanciate plugins
-			DefaultFactory defaultFactory;
-			ObjectFactory objectFactory;
 			
 			for (ImmutableNode child : node.getChildren()) {
 				String plugin = child.getNodeName();
 			
-				defaultFactory = Plugins.getDefaultFactory(plugin);
-				objectFactory = Plugins.getObjectFactory(plugin);
+				DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
+				ObjectPluginInterface objectHandler = Handlers.getObject(plugin);
 			    
-		        if (defaultFactory == null && objectFactory == null) {
-		        	throw new Exception("Unknown Plugin: " + plugin);   	
+		        if (defaultHandler == null && objectHandler == null) {
+		        	throw new Exception("Element <" + plugin + "> is not valid here");
 		        }
 			    
-		        if (defaultFactory != null) {
-				    final DefaultPluginInterface processor = defaultFactory.build();
-				    log.debug("Running plugin: {}", defaultFactory.name());
-				    processor.run(child, ctx);
+		        if (defaultHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+				    defaultHandler.run(child, ctx);
 		        }
 		        
-		        if (objectFactory != null) {
-				    final ObjectPluginInterface processor = objectFactory.build();
-				    log.debug("Running plugin: {}", objectFactory.name());
-				    processor.getObject(child, ctx);
+		        if (objectHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+				    objectHandler.getObject(child, ctx);
 		        }
 			}
 			log.info("End of processing target {}", targetName);

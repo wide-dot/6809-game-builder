@@ -19,9 +19,6 @@ import picocli.CommandLine.Option;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
-import com.widedot.m6809.gamebuilder.pluginloader.EmbeddedPluginLoader;
-import com.widedot.m6809.gamebuilder.pluginloader.PluginLoader;
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -80,22 +77,6 @@ public class MainCommand implements Callable<Integer> {
 			if (exclusive.extractDir != null) {		// MODE 1 : extract assembly engine
 				extract(exclusive.extractDir);
 			} else {								// MODE 2 : run the builder
-				// load external plugins
-				// basedir is set by launch script of maven exec plugin
-				// it is null when running from eclipse
-				String pluginsPath = "";
-				if (System.getProperty("basedir") != null) {
-					pluginsPath = System.getProperty("basedir") + File.separator;
-				}
-				pluginsPath += "plugins";
-			    PluginLoader externalPlugins = new PluginLoader(new File(pluginsPath));
-			    externalPlugins.loadPlugins();
-
-				// load embeded plugins
-			    EmbeddedPluginLoader embeddedPlugins = new EmbeddedPluginLoader();
-			    embeddedPlugins.loadPlugins();
-
-			    Plugins.register(externalPlugins, embeddedPlugins);
 			    
 				// load properties
 				Settings settings = new Settings(FileResourcesUtils.getHashMap("settings.properties"));

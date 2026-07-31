@@ -16,6 +16,43 @@
 	</properties>
 
   <dependencies>
+    <!-- asset converters, registered in Handlers -->
+    <dependency>
+      <artifactId>vgm2ymm</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>vgm2vgc</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>vgm2sfx</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>pcm</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>png2pal</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>txt2bas</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>phoneme</artifactId>
+      <groupId>com.wide-dot</groupId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <artifactId>6809-gamebuilder-spi</artifactId>
       <groupId>com.wide-dot</groupId>

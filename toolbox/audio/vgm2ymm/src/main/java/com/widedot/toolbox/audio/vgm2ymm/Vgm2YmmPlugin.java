@@ -1,5 +1,11 @@
 package com.widedot.toolbox.audio.vgm2ymm;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -187,4 +193,34 @@ public class Vgm2YmmPlugin {
 		}
 	}
 	
+
+	/**
+	 * Handler for the <vgm2ymm> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	  
+	  //read input xml
+	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2ymm.filename");
+	  String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2ymm.genbinary");
+	  String codec = Attribute.getStringOpt(node, ctx.defaults, "codec", "vgm2ymm.codec");
+	  String drum = Attribute.getStringOpt(node, ctx.defaults, "dac2drum", "vgm2ymm.dac2drum");
+
+
+	  if ((filename == null || filename.equals(""))) {
+		  String m = "An input filename should be provided for vgm2ymm!";
+		  log.error(m);
+		  throw new Exception(m);
+	  }
+	  
+	  if (filename != null) filename = ctx.path + File.separator + filename;
+	  if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
+	  
+	  
+		Vgm2YmmPlugin.filename = filename;
+		Vgm2YmmPlugin.genbinary = genbinary; 
+		Vgm2YmmPlugin.codec = codec;
+		Vgm2YmmPlugin.drumStr = drum;
+			byte[] data = Vgm2YmmPlugin.run();
+	return new Binary(data);
+	}
 }

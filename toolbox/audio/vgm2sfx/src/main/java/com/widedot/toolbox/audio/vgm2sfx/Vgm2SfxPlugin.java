@@ -1,5 +1,11 @@
 package com.widedot.toolbox.audio.vgm2sfx;
 
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.Binary;
+import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -107,4 +113,29 @@ public class Vgm2SfxPlugin {
 		}
 	}
 	
+
+	/**
+	 * Handler for the <vgm2sfx> element, registered by the builder.
+	 */
+	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
+	  
+	  //read input xml
+	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2sfx.filename");
+	  String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "vgm2sfx.gensource");
+
+	  if ((filename == null || filename.equals(""))) {
+		  String m = "An input filename should be provided for vgm2sfx!";
+		  log.error(m);
+		  throw new Exception(m);
+	  }
+	  
+	  if (filename != null) filename = ctx.path + File.separator + filename;
+	  if (gensource != null) gensource = ctx.path + File.separator + gensource;
+	  
+	  
+	  	Vgm2SfxPlugin.filename = filename;
+	  	Vgm2SfxPlugin.gensource = gensource; 
+			byte[] data = Vgm2SfxPlugin.run();
+	return new Binary(data);
+	}
 }

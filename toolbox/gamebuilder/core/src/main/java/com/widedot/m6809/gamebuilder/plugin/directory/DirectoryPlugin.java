@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.directory;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.Handlers;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -8,8 +9,6 @@ import java.nio.file.Paths;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
-import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
@@ -19,7 +18,6 @@ import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
-import com.widedot.m6809.gamebuilder.spi.media.MediaFactory;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
 import com.widedot.m6809.util.FileUtil;
 
@@ -78,10 +76,6 @@ public class DirectoryPlugin {
 		writer.close();
 		ctx.fileIds.next = direntryId;
 		log.debug("directory {} : file ids {} to {}", id, baseId, direntryId-1);
-	    
-   		// instanciate plugins
-		DefaultFactory defaultFactory;
-		MediaFactory mediaFactory;
 		
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
@@ -90,24 +84,22 @@ public class DirectoryPlugin {
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 	    	
-			defaultFactory = Plugins.getDefaultFactory(plugin);
-			mediaFactory = Plugins.getMediaFactory(plugin);
+			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
+			MediaPluginInterface mediaHandler = Handlers.getMedia(plugin);
 		    
-	        if (defaultFactory == null && mediaFactory == null) {
-	        	throw new Exception("Unknown Plugin: " + plugin);   	
+	        if (defaultHandler == null && mediaHandler == null) {
+	        	throw new Exception("Element <" + plugin + "> is not valid here");
 	        }
 		    
-	        if (defaultFactory != null) {
-			    final DefaultPluginInterface processor = defaultFactory.build();
-			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, localCtx);
+	        if (defaultHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    defaultHandler.run(child, localCtx);
 				ctx.publish(localCtx);
 	        }
 	        
-	        if (mediaFactory != null) {
-			    final MediaPluginInterface processor = mediaFactory.build();
-			    log.debug("Running plugin: {}", mediaFactory.name());
-			    processor.run(child, localCtx, media);
+	        if (mediaHandler != null) {
+			    log.debug("Running handler: {}", plugin);
+			    mediaHandler.run(child, localCtx, media);
 			    ctx.publish(localCtx);
 	        }
     	}
