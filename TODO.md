@@ -91,9 +91,18 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         (la v1 écrivait `page+$60`) → opérande d'addition de la relocation.
         Pièges consignés dans la skill (point d'entrée en offset 0, `fill` RAM
         v1 → équates, coordonnées écran décalées, DisplaySprite par frame).
-  - [ ] M4 (suite) — banc runtime vs runtime : même scène buildée par les deux
-        chaînes, VRAM comparée sous toje ; palette du banc (couleurs par
-        défaut aujourd'hui) ; variantes miroir/décalage.
+  - [x] M4 (index) — le banc compare aussi **l'index imageset**, le contrat
+        que le runtime lit (`bench/checkindex.py`) : géométrie identique des
+        deux côtés, `nb_cell` conforme à l'écart de marge tracé (12 vs 16).
+        Il a immédiatement attrapé un **bug de portage** : le centrage
+        horizontal utilisait `x_Min-(width/2)` là où la v1 fait
+        `x_Min-((width-1)/2)` — un pixel de décalage sur tous les sprites, et
+        une incohérence interne (le calcul vertical, lui, était correct).
+        Corrigé, banc **11/11**.
+  - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
+        par les deux chaînes et VRAM comparée sous toje (nécessite un projet
+        de jeu v1 minimal) ; palette du banc (couleurs par défaut
+        aujourd'hui) ; variantes miroir/décalage.
   - [ ] M5 — docs (sprites.md, CLAUDE.md) ; renommage = phase finale
         post-migration des jeux (table docs/engine-naming.csv)
 

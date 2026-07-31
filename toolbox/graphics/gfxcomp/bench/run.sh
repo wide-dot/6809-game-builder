@@ -87,6 +87,16 @@ EOF
     geomN=$(cat "$OUT/$name"/v1_*/geometry.txt | sort -u | wc -l | tr -d ' ')
     [ "$geomN" = "1" ] || echo "WARN  $name : v1 geometry itself varies across runs"
 
+    # the imageset index is the contract the runtime reads : same geometry on
+    # both sides, and a cell count that follows the tracked margin deviation
+    if [ -f "$OUT/$name/v2/index.asm" ]; then
+        if python3 "$(dirname "$0")/checkindex.py" "$OUT/$name/v2/index.asm" "$name" "$geom1"; then
+            pass=$((pass+1))
+        else
+            fail=$((fail+1))
+        fi
+    fi
+
     for part in "" _erase; do
         v1part=$(echo "$part" | sed 's/_erase/_Erase/')
         v2asm="$OUT/$name/v2/${name}_${variant}${part}.asm"

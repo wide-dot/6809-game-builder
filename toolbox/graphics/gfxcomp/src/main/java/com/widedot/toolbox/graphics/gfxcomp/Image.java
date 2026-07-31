@@ -218,7 +218,7 @@ public class Image {
 				if (indexDest*2+page*2-(160*curLine) < x_Min) {
 					x_Min = indexDest*2+page*2-(160*curLine);
 					switch (position) {
-						case POSITION_CENTER_INT   : x1_offset = x_Min-(width/2); break;
+						case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 						case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 						case POSITION_3QTRC_INT    : x1_offset = 0; break;
 					}						
@@ -275,7 +275,7 @@ public class Image {
 					if (indexDest*2+page*2+1-(160*curLine) < x_Min) {
 						x_Min = indexDest*2+page*2+1-(160*curLine);
 						switch (position) {
-							case POSITION_CENTER_INT   : x1_offset = x_Min-(width/2); break;
+							case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 							case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 							case POSITION_3QTRC_INT    : x1_offset = 0; break;
 						}					
