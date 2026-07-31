@@ -10,18 +10,50 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 (rien — campagne scènes déclaratives close le 31/07/2026, voir « Fait »)
 
-## Backlog builder (ordre conseillé)
+## Backlog builder (inventaire du 31/07/2026, ordre conseillé)
+
+Fonctionnel :
 
 - [ ] **Tri alphabétique des ids de symboles de link** — les ids suivent l'ordre
-      de rencontre : réordonner un `<asm>` change toute l'image. Trier avant de
-      numéroter rend « image différente » = signal fiable. À faire *entre* deux
-      campagnes (renumérotation unique).
+      de rencontre (`LinkSymbols`, documenté dans la classe) : réordonner un
+      `<asm>` change toute l'image. Trier avant de numéroter rend « image
+      différente » = signal fiable, et c'est le prérequis des « interfaces /
+      instances de groups » (différé de groups.md). Renumérotation unique →
+      à faire *entre* deux campagnes. (S)
 - [ ] **storage.xml sur XmlLoader + specs** — `Storages.java` est le dernier
       consommateur de XMLConfiguration ; migration = erreurs fichier:ligne sur
-      les géométries disquette, un seul chemin de parsing.
+      les géométries disquette, un seul chemin de parsing. (S)
+- [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
+      cartouche n'existe dans le registre : la v2 ne produit que de la
+      disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile
+      MegaROM/MO5 à terme) ou corriger la doc en attendant. (M–L)
 - [ ] **Packaging zip distribuable** — assembly Maven : `repo/` + lanceurs
-      `bin/` + third-party par OS + XSD. À faire seulement si distribution à des
-      tiers visée.
+      `bin/` + third-party par OS + XSD. Seulement si distribution visée. (M)
+
+Robustesse / outillage :
+
+- [ ] **`lwasm.exe` codé en dur** (`LwAssembler.java:80`) — pas de détection
+      d'OS, et les binaires macOS embarqués (lwtools 4.18) sont trop vieux
+      (>= 4.22 requis). Piste : défaut par OS + attribut `processor` déjà
+      existant, et rafraîchir les binaires third-party. (S)
+- [ ] **Build d'image en CI** — la CI ne joue que les tests unitaires ;
+      installer lwtools sur le runner et builder une mini-config avec hash de
+      l'image mettrait la méthode d'identité binaire sous CI. (M)
+- [ ] **Parallélisation lwasm** — débloquée par BuildContext (état réentrant),
+      jamais exploitée ; gain de temps de build sur les configs à dizaines de
+      direntries. (M)
+- [ ] Warning « Duplicate filename » de LwAssembler (defines de taille par
+      basename de gensource) : mineur, à nettoyer à l'occasion. (S)
+
+Hygiène repo (hors Java mais vite fait) :
+
+- [ ] `data.asm` et `mub.o` orphelins à la racine ; liens cassés des readme
+      (cf. Dettes de CLAUDE.md). (S)
+
+En veille sur décision (31/07/2026) :
+
+- [ ] **Adresses de régions calculées façon overlay** (modele-regions §7) —
+      reprendre au portage R-Type.
 
 ## Différés loader (ne rouvrir que sur besoin réel)
 

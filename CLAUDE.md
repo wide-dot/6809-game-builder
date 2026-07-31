@@ -434,7 +434,8 @@ fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un obje
   objet LWOBJ16 issu de `mub.asm`), à déplacer/supprimer.
 - Liens cassés : `readme.md` racine (4 liens doc vides), `docs/lang/en/readme.md`
   (chemins de l'ancien layout), renvoi vers `docs/lang/fr/readme.md` inexistant.
-- Hors build Maven : `toolbox/audio/psg`, `toolbox/audio/smps`,
-  `toolbox/graphics/tilemap/tmx-animation-lean` (friche).
-- `pom.xml` : `maven.compiler.release=11` vs `java.version=23` (incohérence).
-- Binaires third-party inégaux selon l'OS : pas de `hxcfe` macOS, pas d'`exomizer` linux-arm.
+- Binaires third-party inégaux selon l'OS : pas de `hxcfe` macOS (les configs
+  déclarant `<hfe/>` sortent en erreur explicite), pas d'`exomizer` linux-arm ;
+  lwtools macOS embarqué en 4.18 alors que >= 4.22 est requis.
+- `rom t2` cité plus haut : aucun média cartouche n'existe dans le registre v2
+  (fd/sd/sap/hfe seulement) — à porter ou à retirer de la doc.
