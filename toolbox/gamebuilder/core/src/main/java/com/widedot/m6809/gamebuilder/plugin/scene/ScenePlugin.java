@@ -41,7 +41,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ScenePlugin {
 
 	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media,
-			String gensymbols, Set<String> directoryNames, List<SceneCheck> pending) throws Exception {
+			String gensymbols, Set<String> directoryNames, Map<String, int[]> idBlocks,
+			List<SceneCheck> pending) throws Exception {
 
 		log.debug("Processing scene ...");
 
@@ -133,7 +134,7 @@ public class ScenePlugin {
 		Files.createDirectories(Paths.get(FileUtil.getDir(tablePath)));
 		Files.write(Paths.get(tablePath),
 				SceneGenerator.generate(name, placed, new ArrayList<SceneGenerator.Bulk>(bulks.values()),
-						exportOnly).getBytes(StandardCharsets.UTF_8));
+						exportOnly, idBlocks).getBytes(StandardCharsets.UTF_8));
 
 		// hand the table to the regular direntry pipeline, wired exactly like
 		// the handwritten scenes : file id equates first, then the table

@@ -64,6 +64,10 @@ public class DirectoryPlugin {
 		int baseId = ctx.fileIds.peek();
 		int direntryId = baseId;
 		java.util.Set<String> directoryNames = new java.util.HashSet<String>();
+		// id and block count of every entry : lets the scene generator emit
+		// the compact %11 encoding when a list follows the id chain the
+		// loader walks (id += blocks)
+		java.util.Map<String, int[]> idBlocks = new java.util.HashMap<String, int[]>();
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 			if (plugin.equals("direntry") || plugin.equals("scene")) {
@@ -72,14 +76,17 @@ public class DirectoryPlugin {
 				writer.write(name + " equ " + direntryId + System.lineSeparator());
 				directoryNames.add(name);
 
+				int blocks;
 				if (plugin.equals("direntry")) {
 					String codec = Attribute.getStringOpt(child, ctx, "codec");
 					String linkSection = Attribute.getStringOpt(child, ctx, "loadtimelink");
-					direntryId += DirEntryPlugin.blockCount(codec, linkSection);
+					blocks = DirEntryPlugin.blockCount(codec, linkSection);
 				} else {
 					// a scene table is raw, uncompressed and carries no link data
-					direntryId += 1;
+					blocks = 1;
 				}
+				idBlocks.put(name, new int[] { direntryId, blocks });
+				direntryId += blocks;
 			}
 		}
 		writer.close();
@@ -101,7 +108,7 @@ public class DirectoryPlugin {
 			// file for the id equates and its name set for reference checks
 			if (plugin.equals("scene")) {
 				log.debug("Running handler: {}", plugin);
-				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames, pendingScenes);
+				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames, idBlocks, pendingScenes);
 				ctx.publish(localCtx);
 				continue;
 			}
