@@ -1,8 +1,9 @@
 # Le modèle des régions — doctrine d'organisation mémoire
 
-Statut : **document à valider — rien n'est engagé au-delà de ce qui est déjà
-livré** (phases A et C des scènes déclaratives). Les §7 à §9 décrivent des
-extensions proposées, pas du code existant.
+Statut : **doctrine validée et implémentée** (31/07/2026) — campagne close :
+vérifications par scène, régions `bulk`, encodage `%11` automatique, equates
+de layout. Seul le §7 (adresses calculées) reste en veille jusqu'au portage
+R-Type. Référence utilisateur : [`docs/lang/en/scenes.md`](../en/scenes.md).
 
 Ce document explique **comment décider du découpage mémoire d'un jeu** dans le
 builder v2, et pourquoi les règles sont ce qu'elles sont. Il complète
@@ -201,9 +202,8 @@ l'éviction par destination — sans quoi ils s'évinceraient les uns les autres
 *« 9 blocs de données son à charger à la suite dans la page 5 ; je ne veux pas
 maintenir 9 adresses qui changent à chaque ré-encodage d'un VGM. »*
 
-C'est `examples/mplus` (`to8-mplus-test`, `mo6-mplus-test`), aujourd'hui la
-seule scène du corpus restée manuscrite. **Extension proposée** — une région
-qui accueille une liste :
+C'est `examples/mplus` (`to8-mplus-test`, `mo6-mplus-test`), migré le
+31/07/2026 — une région `bulk` accueille une liste :
 
 ```xml
 <region name="sound.data" page="$05" address="$0000" size="$6000" bulk="true"/>
@@ -377,7 +377,7 @@ l'exécution).
 | plusieurs ressources qui vivent et meurent ensemble | **un direntry multi-membres** (group), une région |
 | une ressource chargée une fois pour toutes | une région ordinaire, référencée par la seule scène de boot |
 | des constantes / interfaces sans données | un `<load>` **sans destination** |
-| un lot de données jamais remplacé individuellement | une région `bulk` *(proposé)* |
+| un lot de données jamais remplacé individuellement | une région `bulk` |
 | une astuce de placement, pas une ressource | `page`/`address` bruts |
 | du contenu > 16 Ko | plusieurs groups, donc plusieurs régions |
 
@@ -474,7 +474,7 @@ Après (opt-in, une région à adresse explicite reste inchangée) :
 Ce serait une étape **distincte et postérieure** à la phase B : elle change les
 adresses, donc les images.
 
-## 8. Extension proposée : exporter les régions en equates
+## 8. Extension : exporter les régions en equates — FAIT (31/07/2026, attribut `gensymbols` sur `<layout>`)
 
 Le game mode d'`examples/sound` contient :
 

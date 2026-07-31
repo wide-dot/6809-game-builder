@@ -8,27 +8,7 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 ## En cours
 
-- [ ] **Scènes/régions déclaratives** — plan et syntaxe :
-      [`docs/lang/fr/scenes-declaratives-2026-07.md`](docs/lang/fr/scenes-declaratives-2026-07.md) ;
-      doctrine d'organisation mémoire (invariant, cas d'usage, exemples de
-      conf) : [`docs/lang/fr/modele-regions-2026-07.md`](docs/lang/fr/modele-regions-2026-07.md)
-      — **en attente de validation, ne rien lancer avant**
-  - [x] Phase A — éléments `<layout>`/`<region>`/`<scene>`/`<load>` + générateur
-        de tables (31/07/2026 : pilote `examples/sound` TO8 migré, images
-        identiques octet pour octet, validé sous toje — title vérifié en RAM,
-        changement de scène à chaud vers level1, loader-ut rejoué 16/16)
-  - [x] Phase C — migration complète (31/07/2026, faite avant B sur décision) :
-        15 des 17 tables migrées — loader-ut (10), sound MO6 (2), tlsf-ut (2),
-        mplus-pcm (1) ; 8 images identiques octet pour octet même après
-        reconstruction complète ; loader-ut 16/16 sous toje ; tables
-        manuscrites supprimées. Restent manuscrites : les 2 scènes mplus-test
-        (empilage runtime sur fichiers avec données — cf. §12 du plan)
-  - [ ] Phase B — vérifications au build, **locales à une scène** (budgets,
-        écritures internes disjointes, export-only, `bulk`) ; pas de contrôle
-        de chevauchement global ni de flag `permanent` (retiré le 31/07,
-        cf. modele-regions §1) ; migration des 2 scènes mplus-test via
-        région `bulk`
-  - [ ] Phase D — docs (groups.md, scenes.md, XSD régénéré, CLAUDE.md)
+(rien — campagne scènes déclaratives close le 31/07/2026, voir « Fait »)
 
 ## Backlog builder (ordre conseillé)
 
@@ -67,6 +47,25 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 ## Fait (juillet 2026)
 
+- [x] **Scènes/régions déclaratives** — campagne complète (31/07/2026).
+      Docs : doctrine [`modele-regions-2026-07.md`](docs/lang/fr/modele-regions-2026-07.md),
+      plan [`scenes-declaratives-2026-07.md`](docs/lang/fr/scenes-declaratives-2026-07.md),
+      référence [`docs/lang/en/scenes.md`](docs/lang/en/scenes.md).
+  - [x] Phase A — éléments `<layout>`/`<region>`/`<scene>`/`<load>` +
+        générateur de tables (pilote sound TO8, identité binaire, toje)
+  - [x] Phase C — 17/17 tables du corpus migrées (loader-ut ×10, sound ×4,
+        tlsf-ut ×2, mplus ×3), identité binaire, tables manuscrites supprimées
+  - [x] Phase B — vérifications locales à une scène (budgets, écritures
+        disjointes, export-only, somme `bulk`) ; doctrine « le builder vérifie
+        une composition, pas les enchaînements » ; `permanent` retiré ;
+        régions `bulk` (listes empilées, remplacées en bloc)
+  - [x] Encodage `%11` automatique quand les ids se suivent (pad 37→7 octets,
+        iface 17→7 ; repli silencieux `%10` si la chaîne se brise) — validé
+        par exécution : loader-ut 16/16, sound RAM + swap à chaud
+  - [x] Equates de layout (`<layout gensymbols>` → `<région>.page/.address`)
+  - [x] Phase D — groups.md aligné, scenes.md écrit, XSD/CLAUDE.md à jour.
+      Différé (en veille jusqu'au portage R-Type) : adresses de régions
+      calculées façon overlay (modele-regions §7).
 - [x] CLAUDE.md initial : état des lieux v1/v2 + roadmap R-Type
 - [x] Cycle de vie loader complet (unload, dédup, implicite, count, isLoaded)
       + stress test 16/16 sous toje (multi-secteurs, multi-disquette, ids

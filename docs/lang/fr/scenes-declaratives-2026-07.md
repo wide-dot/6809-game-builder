@@ -1,9 +1,12 @@
 # Scènes et régions déclaratives — plan de conception (juillet 2026)
 
-Statut : **phases A et C réalisées le 31/07/2026** (éléments + générateur ;
-15 des 17 tables du corpus migrées, identité binaire prouvée, loader-ut 16/16
-sous toje). Reste la phase B (vérifications) et D (docs). Décisions au §10,
-**limite découverte à la migration au §12**. Suivi : `TODO.md` à la racine.
+Statut : **campagne close le 31/07/2026** — phases A, B, C, D réalisées, plus
+l'encodage `%11` automatique et les equates de layout. Corpus 17/17
+déclaratif. La doctrine finale (composition vs enchaînements, `bulk`) vit dans
+[`modele-regions-2026-07.md`](modele-regions-2026-07.md), la référence
+utilisateur dans [`docs/lang/en/scenes.md`](../en/scenes.md). Ce document
+reste le journal de conception ; certains paragraphes (§7.3, §12) décrivent
+des positions intermédiaires depuis révisées.
 
 ## 1. Objectif
 

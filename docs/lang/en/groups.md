@@ -52,6 +52,14 @@ re-link then re-resolves cross-layer references (e.g. resident code
 referencing the current variant's exports — symbols of unloaded variants
 resolve to 0, symbols of the loaded one to their real address).
 
+Since July 2026 scenes and regions are **declared in the configuration file**
+and the tables are generated — see [scenes.md](scenes.md). The core rule the
+declarative layer is built on : the loader evicts on an exact destination
+match, so **the region, not the file, is the unit of replacement**. The
+builder verifies each scene as one self-coherent composition (budgets,
+disjoint writes, export-only coherence) ; sequencing compositions belongs to
+the game code, so regions may overlap freely across scenes.
+
 Use-case mapping :
 
 - *R-Type* : resident (engine, player, force pod, HUD, soundFX) + common
@@ -107,9 +115,10 @@ adding a disk qualifier to the link data format.
   are loaded at the (0,0) pseudo-destination ; several of them share it and
   they are exempt from destination-based implicit unload ;
 - variants of a region must share exact destinations — the implicit unload
-  only matches identical (page, address). A variant loaded at a *different*
-  address partially overlapping a live group is not detected (sizes are not
-  tracked) : this is an authoring error ;
+  only matches identical (page, address) ; declaring the destination once in
+  a `<region>` makes this structural. A load partially overlapping a *live*
+  group at a different address is not detected at run time (sizes are not
+  tracked) : unload explicitly before recomposing overlapping memory ;
 - unresolved symbols silently resolve to 0 (define
   `loader.CHECK_UNRESOLVED_SYMBOLS` to trap instead) — forward references
   across regions rely on this and converge at the next scene load ;
@@ -118,11 +127,11 @@ adding a disk qualifier to the link data format.
 
 ## 5. Deferred
 
-- **build-time verifier** : check that all variants of a region fit it, that
-  regions do not overlap other layers, and that no variant covers live
-  resident code. Declarative region descriptions would live in the config ;
-  this replaces the "placement optimizer" idea — no flow graph is needed
-  once content is layered ;
+- ~~build-time verifier~~ : **done (July 2026)** as the declarative scene
+  layer — regions in the config, per-scene checks (budgets, disjoint writes,
+  export-only coherence). Cross-scene overlap is deliberately *not* checked :
+  compositions are heterogeneous by nature and sequencing them is the game
+  code's business ;
 - paginated groups (automatic splitting of oversized groups, per-page
   `builder.pageOffset.*` equates) and RAM-map packing tools ;
 - group interfaces / multiple instances : needs link symbol ids assigned in
