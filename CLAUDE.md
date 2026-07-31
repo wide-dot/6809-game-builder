@@ -213,8 +213,10 @@ de réévaluation écrits). Réalisé en trois couches :
    règles par conteneur restent au build).
 
 Reste ouvert, par ordre de valeur : scènes/régions déclaratives (générer les
-tables de scène, vérifier les régions — cf. groups.md), migration de storage.xml
-vers le même loader, tri alphabétique des ids de symboles, packaging en zip.
+tables de scène, vérifier les régions — cf. groups.md ; plan détaillé et
+syntaxe : `docs/lang/fr/scenes-declaratives-2026-07.md`), migration de
+storage.xml vers le même loader, tri alphabétique des ids de symboles,
+packaging en zip. **Suivi d'avancement : `TODO.md` à la racine.**
 
 **Packer VGC porté en Java (31/07/2026)** : `vgmpacker` (LZ4 + parser VGM) tournait
 sous un interpréteur **Jython 2.7 embarqué**, soit 47 Mo de dépendance et un runtime
