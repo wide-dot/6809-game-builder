@@ -645,6 +645,9 @@
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
       </xs:choice>
+      <xs:attribute name="gensymbols" type="xs:string">
+        <xs:annotation><xs:documentation>generated file of &lt;region&gt;.page / &lt;region&gt;.address equates, for the game code to include</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

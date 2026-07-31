@@ -6,7 +6,7 @@
         <!-- A region is where scenes hand memory over to one another :    -->
         <!-- same destination, so the loader implicitly unloads the        -->
         <!-- previous content. Sizes are byte budgets.                     -->
-        <layout>
+        <layout gensymbols="gen/layout.asm">
             <region name="gamemode"   page="$01" address="$6100" size="$1F00"/>
             <region name="ymm.player" page="$06" address="$0000" size="$0400"/>
             <region name="ymm.data"   page="$06" address="$0400" size="$3C00"/>

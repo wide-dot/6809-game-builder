@@ -94,7 +94,8 @@ public final class Handlers {
 		spec(element("cksumfd640").doc("applies the fd640 boot sector checksum to its content"));
 
 		// declarative scenes
-		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into"));
+		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
+			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include"));
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.req("page", INT, "destination page id")
