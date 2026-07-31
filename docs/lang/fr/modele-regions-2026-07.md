@@ -37,6 +37,34 @@ d'échange**. La question à se poser en déclarant un layout n'est donc pas
 
 Autant de réponses, autant de régions.
 
+### Ce que le builder vérifie — et ce qu'il ne vérifie pas (décision 31/07)
+
+On compose des briques **réutilisables** et de tailles **hétérogènes** — c'est
+le but même du link dynamique. Chaque composition a donc sa propre carte
+mémoire, et le code du jeu enchaîne les compositions dans un ordre que le
+builder ne voit pas.
+
+La ligne de partage est donc :
+
+- **le builder vérifie une composition** (une scène) : pas d'écritures qui se
+  chevauchent en son sein, budgets respectés, cohérence des fichiers vides ;
+- **les enchaînements appartiennent au code** : deux régions peuvent se
+  chevaucher, deux scènes peuvent utiliser la même page différemment — c'est à
+  l'auteur de décharger ce qu'il faut avant de charger par-dessus (`unload`,
+  `isLoaded`). Aucun contrôle global de chevauchement n'est imposé au build :
+  ce serait exiger une carte mémoire unique pour tout le jeu, le placement
+  statique de la v1 qu'on cherche justement à quitter.
+
+Seule exception : une région `permanent` déclare un contenu vivant du boot à
+la fin — un chargement qui la recouvre est donc faux dans **toutes** les
+séquences possibles, et c'est le seul contrôle inter-scènes qui ne présume
+rien de l'ordre.
+
+« Même adresse = éviction automatique » n'est pas une loi imposée : c'est **le
+motif qui ne coûte rien**. Deux ressources qui se relaient à la même adresse
+n'ont besoin d'aucun unload ; à des adresses différentes, l'unload explicite
+est le prix de la liberté.
+
 ### Pourquoi « unload » ne suffit pas
 
 Le mot induit en erreur. `loader.file.linkData.unload` (indexé par
@@ -218,11 +246,10 @@ Concrètement :
   région : les membres survivants peuvent voir leur mémoire recouverte alors
   que leur slot les déclare toujours là → le relink global écrit dedans.
 
-D'où la règle proposée : **une région `bulk` a un contenu unique sur tout le
-target** (vérifié au build). C'est exactement le besoin de `mplus-test`, chargé
-une fois au boot. Si un projet veut un jour échanger des listes, le builder a
-tout pour l'autoriser sous contrôle (il connaît les deux dispositions et toutes
-les tailles) — mais on ne le construit pas avant d'en avoir besoin.
+La vérification est locale à la scène : la somme des tailles tient dans le
+budget de la région. Deux scènes peuvent mettre des listes différentes dans la
+même région `bulk` — c'est une composition différente, et l'enchaînement
+appartient au code (décharger l'ancienne liste avant si nécessaire).
 
 **Si tu veux remplacer une ressource individuellement, elle doit avoir sa
 propre région.** Il n'y a pas de contournement.
@@ -342,16 +369,23 @@ Déjà actif (phase A) :
 4. `region` **et** `page`/`address` sur le même `<load>` ;
 5. attributs inconnus ou mal typés, via le contrat d'attributs général.
 
-Proposé (phase B) :
+Proposé (phase B) — **tout est local à une scène**, sauf `permanent` :
 
-6. taille **décompressée** de chaque variante ≤ `size` de sa région ;
-7. non-chevauchement des régions entre elles ;
+6. taille **décompressée** de chaque fichier ≤ `size` de sa région ;
+7. dans une même scène, deux chargements ne s'écrivent pas l'un sur l'autre
+   (destinations explicites, régions, et destinations calculées d'un lot
+   `bulk` comprises) ;
 8. cohérence export-only : `<load>` sans destination ⇔ fichier vide, dans les
    deux sens ;
-9. `permanent` : un seul direntry par région marquée, sur tout le target ;
-10. `bulk` : contenu unique, et somme des tailles ≤ `size` ;
-11. avertissement : destination brute recouvrant une région déclarée ;
-12. avertissement : scène mélangeant des fichiers de plusieurs disquettes.
+9. `permanent` : un seul direntry par région marquée sur tout le target, et
+   **aucun chargement d'aucune scène ne la recouvre** (contenu vivant en
+   permanence : un recouvrement est faux quel que soit l'ordre d'exécution) ;
+10. `bulk` : somme des tailles de la liste ≤ `size` ;
+11. avertissement : scène mélangeant des fichiers de plusieurs disquettes.
+
+**Pas de contrôle de chevauchement entre régions ni entre scènes** (décision
+31/07, cf. §1) : les compositions sont hétérogènes par nature, l'ordre des
+chargements appartient au code.
 
 ---
 
@@ -451,11 +485,13 @@ calculées, le code jeu **doit** les recevoir du builder.
 - **L'empilage runtime authorable hors `bulk`** : les destinations dériveraient
   avec les tailles, et une région dont l'adresse bouge n'est plus un point
   d'échange.
-- **Le recouvrement partiel** (charger à une adresse qui chevauche
-  partiellement un fichier vivant) : les tailles ne sont pas suivies dans
-  l'index, l'éviction ne se déclenche pas, le relink écrit dans les données du
-  nouveau. Le modèle des régions le rend inatteignable *par construction* tant
-  qu'on passe par des régions — d'où l'insistance sur l'échappatoire brute.
+- **Le recouvrement partiel d'un fichier encore lié** reste LE danger runtime :
+  les tailles ne sont pas suivies dans l'index, l'éviction ne se déclenche que
+  sur adresse exacte, et le relink écrirait dans les données du nouveau. Ce
+  n'est pas au build de l'empêcher (il ne connaît pas les séquences) : c'est la
+  discipline `unload` avant de charger par-dessus à une autre adresse. Le filet
+  automatique, si un jeu en a besoin un jour, est le suivi des tailles dans
+  l'index côté loader (éviction par plage — différé).
 - **`loadDelta`** (calcul runtime du différentiel) : abandonné, cf.
   `groups.md`. Le différentiel est de l'authoring.
 
@@ -463,9 +499,11 @@ calculées, le code jeu **doit** les recevoir du builder.
 
 ## 10. Points à valider
 
-1. L'invariant et la formule « la région est l'unité de remplacement » :
-   à remonter en tête de `groups.md` ?
-2. `bulk` — le nom (vs `pack`, `sequence`) et la règle « contenu unique ».
-3. Le périmètre de la phase B : les vérifications 6 à 12 du §5.
-4. Les extensions §7 (adresses calculées) et §8 (equates de région) : à
+1. La ligne de partage « le builder vérifie une composition, pas les
+   enchaînements » (actée le 31/07 en discussion — confirmée ici ?).
+2. L'exception `permanent` : chevauchement = erreur (seul contrôle
+   inter-scènes qui ne présume rien de l'ordre) — à garder ou à retirer ?
+3. `bulk` — le nom (vs `pack`, `sequence`).
+4. Le périmètre de la phase B : les vérifications 6 à 11 du §5.
+5. Les extensions §7 (adresses calculées) et §8 (equates de région) : à
    planifier, ou à laisser en veille jusqu'au portage R-Type ?

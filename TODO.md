@@ -23,10 +23,11 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         reconstruction complète ; loader-ut 16/16 sous toje ; tables
         manuscrites supprimées. Restent manuscrites : les 2 scènes mplus-test
         (empilage runtime sur fichiers avec données — cf. §12 du plan)
-  - [ ] Phase B — vérifications au build (tailles vs budgets, chevauchements,
-        export-only, `permanent`, multi-disquette) + **décision à prendre** sur
-        l'empilage runtime : `<stack region>` gardé par `permanent` (option 2
-        recommandée au §12) ou statu quo
+  - [ ] Phase B — vérifications au build, **locales à une scène** (budgets,
+        écritures internes disjointes, export-only, `bulk`) + exception
+        `permanent` ; pas de contrôle de chevauchement global (décision
+        31/07, cf. modele-regions §1) ; migration des 2 scènes mplus-test
+        via région `bulk`
   - [ ] Phase D — docs (groups.md, scenes.md, XSD régénéré, CLAUDE.md)
 
 ## Backlog builder (ordre conseillé)
