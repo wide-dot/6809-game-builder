@@ -8,7 +8,20 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 ## En cours
 
-(rien — campagne scènes déclaratives close le 31/07/2026, voir « Fait »)
+- [ ] **Sprites compilés** (étape 1 de la roadmap R-Type) — état des lieux :
+      [`docs/lang/fr/sprites-etat-2026-07.md`](docs/lang/fr/sprites-etat-2026-07.md)
+      — **plan S0–S4 en attente de validation**
+  - [x] État des lieux croisé v1/v2 (31/07/2026) : runtime v1 délimité
+        (7 fichiers, ~1 400 l.), contrats vérifiés (registres, cellules,
+        VRAM, imageset), 10 écarts relevés dont 4 bloquants dans gfxcomp et
+        un écart de marge de cellule 16 (v1) vs 12 (v2)
+  - [ ] S0 — remise en état de gfxcomp (marge 16, main-class, Handlers,
+        index imageset, chemin d'include)
+  - [ ] S1 — gfxlock parité timing (frame.count, frameDrop.max,
+        frame.gameCount)
+  - [ ] S2 — portage du runtime (7 fichiers, noms v1 pour wddebug)
+  - [ ] S3 — banc examples/sprites (scène déclarative, résultats $9C00, toje)
+  - [ ] S4 — docs (sprites.md, CLAUDE.md)
 
 ## Backlog builder (inventaire du 31/07/2026, ordre conseillé)
 
