@@ -945,9 +945,6 @@
       <xs:attribute name="size" type="int6809">
         <xs:annotation><xs:documentation>byte budget, checked against the loaded entry</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="permanent" type="xs:boolean">
-        <xs:annotation><xs:documentation>single content : only one direntry may ever target this region</xs:documentation></xs:annotation>
-      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

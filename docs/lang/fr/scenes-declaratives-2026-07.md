@@ -88,9 +88,9 @@ sur `direntry` — l'élément `<section>` reste la déclaration de zone du méd
   <!-- Les tailles sont des budgets (vérifiés en phase B).         -->
   <layout>
     <region name="gamemode"   page="$01" address="$6100" size="$1F00"/>
-    <region name="ymm.player" page="$06" address="$0000" size="$0400" permanent="true"/>
+    <region name="ymm.player" page="$06" address="$0000" size="$0400"/>
     <region name="ymm.data"   page="$06" address="$0400" size="$3C00"/>
-    <region name="vgc.player" page="$07" address="$0000" size="$0A80" permanent="true"/>
+    <region name="vgc.player" page="$07" address="$0000" size="$0A80"/>
     <region name="vgc.data"   page="$07" address="$0A80" size="$3580"/>
   </layout>
 
@@ -308,12 +308,11 @@ octet pour octet, loader-ut sous toje, JUnit, CI).
 
 1. **`<layout>` conteneur** sous `<target>` : validé.
 2. **`<load>`** comme élément enfant de `<scene>` : validé.
-3. **Flag « chargée une fois »** : validé, nom retenu : **`permanent`**
-   (« resident » rejeté — collision avec la notion de page résidente).
-   Sémantique : une région marquée n'accepte qu'**un seul direntry** sur tout
-   le target — plusieurs scènes peuvent le recharger (la dédup gère), mais y
-   charger un fichier *différent* est une erreur de build. L'attribut est
-   accepté dès la phase A ; sa vérification arrive avec la phase B.
+3. **Flag « chargée une fois »** : envisagé (`permanent`, après rejet de
+   « resident »), implémenté en phase A, puis **RETIRÉ le 31/07** avec la
+   doctrine « le builder vérifie une composition, pas les enchaînements »
+   (cf. `modele-regions-2026-07.md` §1) : le builder ne fige pas des
+   intentions de durée de vie qu'il ne peut pas vérifier.
 
 ## 11. Réflexion : phases de jeu, régions multiples, overlays
 

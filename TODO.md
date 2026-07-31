@@ -24,10 +24,10 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         manuscrites supprimées. Restent manuscrites : les 2 scènes mplus-test
         (empilage runtime sur fichiers avec données — cf. §12 du plan)
   - [ ] Phase B — vérifications au build, **locales à une scène** (budgets,
-        écritures internes disjointes, export-only, `bulk`) + exception
-        `permanent` ; pas de contrôle de chevauchement global (décision
-        31/07, cf. modele-regions §1) ; migration des 2 scènes mplus-test
-        via région `bulk`
+        écritures internes disjointes, export-only, `bulk`) ; pas de contrôle
+        de chevauchement global ni de flag `permanent` (retiré le 31/07,
+        cf. modele-regions §1) ; migration des 2 scènes mplus-test via
+        région `bulk`
   - [ ] Phase D — docs (groups.md, scenes.md, XSD régénéré, CLAUDE.md)
 
 ## Backlog builder (ordre conseillé)

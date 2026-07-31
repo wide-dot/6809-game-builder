@@ -23,15 +23,12 @@ public class Regions {
 		public final int address;
 		/** byte budget checked against the loaded entry, null means unchecked */
 		public final Integer size;
-		/** single content : only one direntry may ever target this region */
-		public final boolean permanent;
 
-		public Region(String name, int page, int address, Integer size, boolean permanent) {
+		public Region(String name, int page, int address, Integer size) {
 			this.name = name;
 			this.page = page;
 			this.address = address;
 			this.size = size;
-			this.permanent = permanent;
 		}
 	}
 

@@ -99,8 +99,7 @@ public final class Handlers {
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.req("page", INT, "destination page id")
 			.req("address", INT, "destination address")
-			.opt("size", INT, "byte budget, checked against the loaded entry")
-			.opt("permanent", BOOL, "single content : only one direntry may ever target this region"));
+			.opt("size", INT, "byte budget, checked against the loaded entry"));
 		spec(element("scene").doc("generated scene table, one loadable directory entry")
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("section", STRING, "section receiving the table")

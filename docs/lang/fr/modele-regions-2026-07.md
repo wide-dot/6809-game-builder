@@ -55,11 +55,6 @@ La ligne de partage est donc :
   ce serait exiger une carte mémoire unique pour tout le jeu, le placement
   statique de la v1 qu'on cherche justement à quitter.
 
-Seule exception : une région `permanent` déclare un contenu vivant du boot à
-la fin — un chargement qui la recouvre est donc faux dans **toutes** les
-séquences possibles, et c'est le seul contrôle inter-scènes qui ne présume
-rien de l'ordre.
-
 « Même adresse = éviction automatique » n'est pas une loi imposée : c'est **le
 motif qui ne coûte rien**. Deux ressources qui se relaient à la même adresse
 n'ont besoin d'aucun unload ; à des adresses différentes, l'unload explicite
@@ -135,19 +130,18 @@ variantes** (ici `level1.ymm`, 4032 octets), pas la première déclarée.
 
 *« Le player YMM est chargé au boot et ne bouge plus. »*
 
-Même déclaration, plus un drapeau d'intention :
+Pas de mécanisme dédié : c'est une région comme les autres, que seule la scène
+de boot référence.
 
 ```xml
-<region name="ymm.player" page="$06" address="$0000" size="$0400" permanent="true"/>
-<region name="vgc.player" page="$07" address="$0000" size="$0A80" permanent="true"/>
+<region name="ymm.player" page="$06" address="$0000" size="$0400"/>
+<region name="vgc.player" page="$07" address="$0000" size="$0A80"/>
 ```
 
-`permanent` signifie : **un seul direntry peut viser cette région sur tout le
-target**. Plusieurs scènes ont le droit de le (re)charger — la dédup par file id
-s'en occupe — mais y charger un fichier *différent* est une erreur de build.
-
-Ça ne change rien au runtime ; ça transforme un écrasement accidentel du player
-en message `fichier:ligne`.
+(Un attribut `permanent` avait été envisagé pour verrouiller ce cas au build ;
+retiré le 31/07 : même logique que pour le chevauchement — le builder ne
+connaît pas les séquences, il n'a pas à figer des intentions de durée de vie.
+La convention de nommage et la revue de la config suffisent.)
 
 ### UC3 — Plusieurs fichiers à une même destination
 
@@ -302,28 +296,40 @@ T15/T16 de `loader-ut`).
 
 ### UC8 — Cible R-Type (illustratif, à confirmer au portage)
 
-Application des couches de `groups.md` au jeu visé :
+Application des couches de `groups.md` au jeu visé — avec les libertés du
+modèle : deux découpages **différents de la même page** (le title voit la
+page $04 comme un logo plein écran, le jeu la voit comme map + ennemis), et un
+lot `bulk` pour les effets sonores.
 
 ```xml
 <layout>
-  <!-- résident : chargé au boot, jamais remplacé -->
-  <region name="engine"      page="$01" address="$6100" size="$1F00" permanent="true"/>
-  <region name="sound.player" page="$06" address="$0000" size="$0400" permanent="true"/>
+  <!-- chargés au boot, plus jamais touchés : des régions ordinaires,
+       que seule la scène de boot référence -->
+  <region name="engine"       page="$01" address="$6100" size="$1F00"/>
+  <region name="sound.player" page="$06" address="$0000" size="$0400"/>
 
   <!-- commun à toute une partie : rechargé au changement de famille d'état -->
   <region name="player.sprites" page="$02" address="$0000" size="$2000"/>
   <region name="hud"            page="$02" address="$2000" size="$0800"/>
 
-  <!-- points d'échange par niveau : title, level1, level2... s'y relaient -->
-  <region name="level.tiles"  page="$03" address="$0000" size="$4000"/>
-  <region name="level.map"    page="$04" address="$0000" size="$4000"/>
-  <region name="level.enemies" page="$05" address="$0000" size="$3000"/>
-  <region name="level.music"  page="$06" address="$0400" size="$3C00"/>
+  <!-- points d'échange par niveau : level1, level2... s'y relaient -->
+  <region name="level.tiles"   page="$03" address="$0000" size="$4000"/>
+  <region name="level.map"     page="$04" address="$0000" size="$2800"/>
+  <region name="level.enemies" page="$04" address="$2800" size="$1800"/>
+  <region name="level.music"   page="$06" address="$0400" size="$3C00"/>
+
+  <!-- la MÊME page $04, vue autrement par l'écran-titre : les régions
+       peuvent se chevaucher, ce sont deux compositions différentes.
+       Le code décharge l'une avant de charger l'autre. -->
+  <region name="title.logo"    page="$04" address="$0000" size="$4000"/>
+
+  <!-- lot bulk : liste placée à la suite, remplacée en bloc (proposé) -->
+  <region name="sfx"           page="$05" address="$0000" size="$2000" bulk="true"/>
 </layout>
 
 <scene name="scenes.title" section="SCENE">
-  <load name="group.gm.title"   region="engine"/>
-  <load name="group.title.gfx"  region="level.tiles"/>
+  <load name="group.gm.title"    region="engine"/>
+  <load name="group.title.logo"  region="title.logo"/>
   <load name="group.title.music" region="level.music"/>
 </scene>
 
@@ -333,14 +339,33 @@ Application des couches de `groups.md` au jeu visé :
   <load name="group.level1.map"     region="level.map"/>
   <load name="group.level1.enemies" region="level.enemies"/>
   <load name="group.level1.music"   region="level.music"/>
+  <!-- bulk : n loads, adresses calculées par le builder, budget vérifié -->
+  <load name="sfx.shot"    region="sfx"/>
+  <load name="sfx.boom"    region="sfx"/>
+  <load name="sfx.powerup" region="sfx"/>
+  <!-- interfaces : link data seule -->
+  <load name="engine.system.to8.sound.ym.const"/>
 </scene>
 ```
 
+Côté code, la transition title → level1 s'écrit :
+
+```
+        _loader.file.linkData.unload #0,#group.title.logo  ; la page $04 change de découpage
+        ldx   #scenes.level1
+        jsr   loader.scene.load
+```
+
+`level.music` n'a pas besoin d'unload : title et level1 s'y relaient à la même
+adresse — c'est le motif qui ne coûte rien. `title.logo` en a besoin : la même
+mémoire est recomposée autrement.
+
 Ce qu'on lit tout de suite dans cette déclaration, et qu'aucune table
-manuscrite ne montrait : **ce qui est stable, ce qui est commun, et ce qui
-s'échange** — plus le budget de chaque point d'échange, qui devient une
-contrainte de production (« le niveau 3 dépasse `level.tiles` de 300 octets »
-au build, pas à l'exécution).
+manuscrite ne montrait : **ce qui est stable, ce qui est commun, ce qui
+s'échange, et où deux compositions se partagent la même mémoire** — plus le
+budget de chaque point d'échange, qui devient une contrainte de production
+(« le niveau 3 dépasse `level.tiles` de 300 octets » au build, pas à
+l'exécution).
 
 ---
 
@@ -350,7 +375,7 @@ au build, pas à l'exécution).
 |---|---|
 | une ressource que je remplace par une autre | **une région dédiée**, une variante par scène |
 | plusieurs ressources qui vivent et meurent ensemble | **un direntry multi-membres** (group), une région |
-| une ressource chargée une fois pour toutes | une région `permanent` |
+| une ressource chargée une fois pour toutes | une région ordinaire, référencée par la seule scène de boot |
 | des constantes / interfaces sans données | un `<load>` **sans destination** |
 | un lot de données jamais remplacé individuellement | une région `bulk` *(proposé)* |
 | une astuce de placement, pas une ressource | `page`/`address` bruts |
@@ -369,7 +394,7 @@ Déjà actif (phase A) :
 4. `region` **et** `page`/`address` sur le même `<load>` ;
 5. attributs inconnus ou mal typés, via le contrat d'attributs général.
 
-Proposé (phase B) — **tout est local à une scène**, sauf `permanent` :
+Proposé (phase B) — **tout est local à une scène** :
 
 6. taille **décompressée** de chaque fichier ≤ `size` de sa région ;
 7. dans une même scène, deux chargements ne s'écrivent pas l'un sur l'autre
@@ -377,11 +402,8 @@ Proposé (phase B) — **tout est local à une scène**, sauf `permanent` :
    `bulk` comprises) ;
 8. cohérence export-only : `<load>` sans destination ⇔ fichier vide, dans les
    deux sens ;
-9. `permanent` : un seul direntry par région marquée sur tout le target, et
-   **aucun chargement d'aucune scène ne la recouvre** (contenu vivant en
-   permanence : un recouvrement est faux quel que soit l'ordre d'exécution) ;
-10. `bulk` : somme des tailles de la liste ≤ `size` ;
-11. avertissement : scène mélangeant des fichiers de plusieurs disquettes.
+9. `bulk` : somme des tailles de la liste ≤ `size` ;
+10. avertissement : scène mélangeant des fichiers de plusieurs disquettes.
 
 **Pas de contrôle de chevauchement entre régions ni entre scènes** (décision
 31/07, cf. §1) : les compositions sont hétérogènes par nature, l'ordre des
@@ -500,10 +522,9 @@ calculées, le code jeu **doit** les recevoir du builder.
 ## 10. Points à valider
 
 1. La ligne de partage « le builder vérifie une composition, pas les
-   enchaînements » (actée le 31/07 en discussion — confirmée ici ?).
-2. L'exception `permanent` : chevauchement = erreur (seul contrôle
-   inter-scènes qui ne présume rien de l'ordre) — à garder ou à retirer ?
-3. `bulk` — le nom (vs `pack`, `sequence`).
-4. Le périmètre de la phase B : les vérifications 6 à 11 du §5.
-5. Les extensions §7 (adresses calculées) et §8 (equates de région) : à
+   enchaînements » — actée le 31/07, `permanent` retiré dans la foulée
+   (même logique : le builder ne fige pas des intentions de durée de vie).
+2. `bulk` — le nom (vs `pack`, `sequence`).
+3. Le périmètre de la phase B : les vérifications 6 à 10 du §5.
+4. Les extensions §7 (adresses calculées) et §8 (equates de région) : à
    planifier, ou à laisser en veille jusqu'au portage R-Type ?
