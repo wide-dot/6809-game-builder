@@ -16,6 +16,7 @@ import com.widedot.m6809.gamebuilder.plugin.floppydisk.FloppyDiskPlugin;
 import com.widedot.m6809.gamebuilder.plugin.hfe.HfePlugin;
 import com.widedot.m6809.gamebuilder.plugin.includebin.IncludeBinPlugin;
 import com.widedot.m6809.gamebuilder.plugin.label.LabelPlugin;
+import com.widedot.m6809.gamebuilder.plugin.layout.LayoutPlugin;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.LwasmPlugin;
 import com.widedot.m6809.gamebuilder.plugin.sap.SapPlugin;
 import com.widedot.m6809.gamebuilder.plugin.sd.SdPlugin;
@@ -92,6 +93,24 @@ public final class Handlers {
 			.opt("maxsize", INT, "maximum size"));
 		spec(element("cksumfd640").doc("applies the fd640 boot sector checksum to its content"));
 
+		// declarative scenes
+		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into"));
+		spec(element("region").doc("fixed destination shared by every scene that targets it")
+			.req("name", STRING, "region name, referenced by <load region=...>")
+			.req("page", INT, "destination page id")
+			.req("address", INT, "destination address")
+			.opt("size", INT, "byte budget, checked against the loaded entry")
+			.opt("permanent", BOOL, "single content : only one direntry may ever target this region"));
+		spec(element("scene").doc("generated scene table, one loadable directory entry")
+			.req("name", STRING, "unique alias, becomes the file id equate")
+			.opt("section", STRING, "section receiving the table")
+			.opt("gensource", STRING, "generated table source, defaults to gen/scenes/<name>.asm"));
+		spec(element("load").doc("one file loaded by the scene ; no destination means link data only")
+			.req("name", STRING, "direntry or scene to load")
+			.opt("region", STRING, "destination region of the layout")
+			.opt("page", INT, "raw destination page, needs address")
+			.opt("address", INT, "raw destination address, needs page"));
+
 		// configuration handlers
 		spec(element("default").doc("scoped default for an attribute, key is <element>.<attribute>")
 			.req("name", STRING, "target attribute, as <element>.<attribute>")
@@ -163,6 +182,7 @@ public final class Handlers {
 		DEFAULTS.put("default", DefaultPlugin::run);
 		DEFAULTS.put("define", DefinePlugin::run);
 		DEFAULTS.put("floppydisk", FloppyDiskPlugin::run);
+		DEFAULTS.put("layout", LayoutPlugin::run);
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);

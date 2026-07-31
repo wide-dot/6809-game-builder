@@ -212,11 +212,24 @@ de réévaluation écrits). Réalisé en trois couches :
    même source de vérité (attributs stricts et typés, contenu permissif — les
    règles par conteneur restent au build).
 
-Reste ouvert, par ordre de valeur : scènes/régions déclaratives (générer les
-tables de scène, vérifier les régions — cf. groups.md ; plan détaillé et
-syntaxe : `docs/lang/fr/scenes-declaratives-2026-07.md`), migration de
-storage.xml vers le même loader, tri alphabétique des ids de symboles,
-packaging en zip. **Suivi d'avancement : `TODO.md` à la racine.**
+**Scènes/régions déclaratives — phase A réalisée (31/07/2026)** : plan complet
+dans `docs/lang/fr/scenes-declaratives-2026-07.md`. Nouveaux éléments
+`<layout>`/`<region>` (carte mémoire du target, portée par le contexte) et
+`<scene>`/`<load>` (la table asm est **générée** — `SceneGenerator` +
+`ScenePlugin` — puis passe par le pipeline direntry standard ; les types de
+blocs %01/%10 sont choisis par le générateur, jamais authorés). Une région =
+une destination fixe partagée par toutes les scènes qui la ciblent, flag
+`permanent` pour le contenu à chargement unique. Contrôles actifs dès la
+génération : référence inconnue, région inconnue ou chargée deux fois,
+destination région+brute. Pilote : les 2 scènes d'`examples/sound` TO8
+migrées, images **identiques octet pour octet**, validé sous toje (musique
+title vérifiée en RAM, changement de scène à chaud vers level1, loader-ut
+16/16). Phases restantes : B (vérifications tailles/chevauchements/permanent),
+C (migration loader-ut + sound MO6), D (docs).
+
+Reste ouvert côté builder : phases B–D ci-dessus, migration de storage.xml
+vers le même loader, tri alphabétique des ids de symboles, packaging en zip.
+**Suivi d'avancement : `TODO.md` à la racine.**
 
 **Packer VGC porté en Java (31/07/2026)** : `vgmpacker` (LZ4 + parser VGM) tournait
 sous un interpréteur **Jython 2.7 embarqué**, soit 47 Mo de dépendance et un runtime

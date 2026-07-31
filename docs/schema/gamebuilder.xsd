@@ -26,11 +26,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -64,11 +68,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -101,11 +109,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -135,11 +147,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -169,11 +185,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -209,11 +229,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -249,11 +273,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -289,11 +317,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -335,11 +367,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -384,11 +420,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -421,11 +461,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -461,11 +505,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -498,11 +546,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -535,11 +587,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -550,6 +606,94 @@
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>exported symbol</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- memory layout of the target : the fixed regions scenes load into -->
+  <xs:element name="layout">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- one file loaded by the scene ; no destination means link data only -->
+  <xs:element name="load">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>direntry or scene to load</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="region" type="xs:string">
+        <xs:annotation><xs:documentation>destination region of the layout</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="page" type="int6809">
+        <xs:annotation><xs:documentation>raw destination page, needs address</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="address" type="int6809">
+        <xs:annotation><xs:documentation>raw destination address, needs page</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -572,11 +716,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -615,11 +763,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -658,11 +810,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -701,11 +857,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -738,6 +898,59 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- fixed destination shared by every scene that targets it -->
+  <xs:element name="region">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>region name, referenced by &lt;load region=...&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="page" type="int6809" use="required">
+        <xs:annotation><xs:documentation>destination page id</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="address" type="int6809" use="required">
+        <xs:annotation><xs:documentation>destination address</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="size" type="int6809">
+        <xs:annotation><xs:documentation>byte budget, checked against the loaded entry</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="permanent" type="xs:boolean">
+        <xs:annotation><xs:documentation>single content : only one direntry may ever target this region</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- write the image as .sap file(s), one per used drive -->
   <xs:element name="sap">
     <xs:complexType>
@@ -756,11 +969,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -774,6 +991,53 @@
       </xs:attribute>
       <xs:attribute name="format" type="int6809">
         <xs:annotation><xs:documentation>SAP format, 1 (default) or 2</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- generated scene table, one loadable directory entry -->
+  <xs:element name="scene">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>section receiving the table</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>generated table source, defaults to gen/scenes/&lt;name&gt;.asm</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -796,11 +1060,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -833,11 +1101,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -879,11 +1151,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -916,11 +1192,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -956,11 +1236,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -996,11 +1280,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
@@ -1036,11 +1324,15 @@
         <xs:element ref="hfe"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
         <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>

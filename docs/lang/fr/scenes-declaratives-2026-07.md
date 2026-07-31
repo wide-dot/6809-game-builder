@@ -1,8 +1,8 @@
 # Scènes et régions déclaratives — plan de conception (juillet 2026)
 
-Statut : **conception — rien d'implémenté**. Décisions du 31/07 consignées
-au §10 (reste à choisir : le nom du flag de région à chargement unique).
-Suivi : `TODO.md` à la racine.
+Statut : **phase A réalisée le 31/07/2026** (éléments + générateur, pilote
+`examples/sound` TO8 migré, identité binaire prouvée, validé sous toje).
+Décisions au §10. Suivi : `TODO.md` à la racine.
 
 ## 1. Objectif
 
@@ -74,48 +74,45 @@ Constats vérifiés dans `loader.asm` et sur le corpus (`examples/loader-ut`,
 
 ### 4.1 Exemple réaliste : `examples/sound` TO8 (title + level1)
 
-Version actuelle : deux tables manuscrites de 24 et 8 lignes, adresses en dur.
-Version déclarative :
+Version d'origine : deux tables manuscrites de 24 et 8 lignes, adresses en dur.
+Version déclarative (celle du pilote migré ; `section` est un attribut, comme
+sur `direntry` — l'élément `<section>` reste la déclaration de zone du média) :
 
 ```xml
 <target name="fd">
 
-  <!-- La carte mémoire : les couches du jeu, déclarées une fois.       -->
-  <!-- Les tailles sont des budgets : le build vérifie que chaque       -->
-  <!-- variante tient dedans.                                          -->
+  <!-- La carte mémoire : les couches du jeu, déclarées une fois.  -->
+  <!-- Les tailles sont des budgets (vérifiés en phase B).         -->
   <layout>
-    <region name="gamemode"   page="1" address="$6100" size="$1F00"/>
-    <region name="ymm.player" page="6" address="$0000" size="$0400"/>
-    <region name="ymm.data"   page="6" address="$0400" size="$3C00"/>
-    <region name="vgc.player" page="7" address="$0000" size="$0A80"/>
-    <region name="vgc.data"   page="7" address="$0A80" size="$3580"/>
+    <region name="gamemode"   page="$01" address="$6100" size="$1F00"/>
+    <region name="ymm.player" page="$06" address="$0000" size="$0400" permanent="true"/>
+    <region name="ymm.data"   page="$06" address="$0400" size="$3C00"/>
+    <region name="vgc.player" page="$07" address="$0000" size="$0A80" permanent="true"/>
+    <region name="vgc.data"   page="$07" address="$0A80" size="$3580"/>
   </layout>
 
   <floppydisk model="fd640">
-    <directory>
-      <section name="SCENE">
+    <directory id="0" ...>
+      <!-- ... les direntries de données, déclarés comme aujourd'hui ... -->
 
-        <scene name="scenes.title">
-          <load name="assets.gm.title"         region="gamemode"/>
-          <load name="engine.object.sound.ymm" region="ymm.player"/>
-          <load name="engine.object.sound.vgc" region="vgc.player"/>
-          <load name="assets.sounds.title.ymm" region="ymm.data"/>
-          <load name="assets.sounds.title.vgc" region="vgc.data"/>
-          <!-- link data seule (fichiers export-only) : pas de région -->
-          <load name="engine.system.to8.sound.ym.const"/>
-          <load name="engine.system.to8.sound.sn.const"/>
-        </scene>
+      <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
+        <load name="assets.gm.title"         region="gamemode"/>
+        <load name="engine.object.sound.ymm" region="ymm.player"/>
+        <load name="engine.object.sound.vgc" region="vgc.player"/>
+        <load name="assets.sounds.title.ymm" region="ymm.data"/>
+        <load name="assets.sounds.title.vgc" region="vgc.data"/>
+        <!-- link data seule (fichiers export-only) : pas de région -->
+        <load name="engine.system.to8.sound.ym.const"/>
+        <load name="engine.system.to8.sound.sn.const"/>
+      </scene>
 
-        <!-- Le « différentiel authoring » du modèle couches/régions :     -->
-        <!-- level1 ne recharge que ce qui change. Même région = même      -->
-        <!-- destination que title → éviction implicite propre, garantie.  -->
-        <scene name="scenes.level1">
-          <load name="assets.gm.level1"         region="gamemode"/>
-          <load name="assets.sounds.level1.ymm" region="ymm.data"/>
-        </scene>
-
-      </section>
-      <!-- ... les direntries de données restent déclarés comme aujourd'hui -->
+      <!-- Le « différentiel authoring » du modèle couches/régions :  -->
+      <!-- level1 ne recharge que ce qui change. Même région = même   -->
+      <!-- destination que title → éviction implicite garantie.       -->
+      <scene name="scenes.level1" section="SCENE" gensource="gen/scenes/level1.asm">
+        <load name="assets.sounds.level1.ymm" region="ymm.data"/>
+        <load name="assets.sounds.level1.vgc" region="vgc.data"/>
+      </scene>
     </directory>
   </floppydisk>
 </target>
@@ -263,12 +260,16 @@ construction, la destination est celle de la région.
 
 ## 8. Plan d'exécution
 
-- **Phase A — génération** (le cœur). Specs des 4 éléments ; générateur de
-  table (`SceneGenerator`, pur : déclarations → texte asm, testable
-  unitairement) ; plugin `<scene>` qui écrit `gen/scenes/<nom>.asm` et délègue
-  au pipeline direntry. Pilote : les 2 scènes d'`examples/sound` TO8 migrées,
-  **image identique octet pour octet**, exécution vérifiée sous toje
-  (changement de scène à chaud title→level1).
+- **Phase A — génération** (le cœur). ✅ **Faite le 31/07/2026.** Specs des
+  4 éléments ; `SceneGenerator` (pur, testé unitairement) ; `ScenePlugin`
+  écrit `gen/scenes/<nom>.table.asm` et délègue au pipeline direntry
+  (`LayoutPlugin` porte les régions dans le contexte, `DirectoryPlugin`
+  réserve les ids des scènes et fournit gensymbols + les noms du répertoire).
+  Trois contrôles actifs dès la génération : référence inconnue, région
+  inconnue/en double, destination région+brute. Pilote : les 2 scènes
+  d'`examples/sound` TO8 migrées, **images identiques octet pour octet**,
+  validé sous toje (title vérifié en RAM, changement de scène à chaud vers
+  level1 vérifié en RAM, loader-ut rejoué 16/16).
 - **Phase B — vérifications.** Les 9 contrôles du §6 (génération + passe
   finale) ; tests JUnit sur corpus de configs volontairement cassées (région
   inconnue, chevauchement, budget dépassé, export-only avec région, deux
@@ -296,14 +297,12 @@ octet pour octet, loader-ut sous toje, JUnit, CI).
 
 1. **`<layout>` conteneur** sous `<target>` : validé.
 2. **`<load>`** comme élément enfant de `<scene>` : validé.
-3. **Flag « chargée une fois »** : validé sur le principe, mais pas le mot
-   `resident` (collision avec la notion de page résidente). Sémantique retenue :
-   une région marquée n'accepte qu'**un seul direntry** sur tout le target —
-   plusieurs scènes peuvent le recharger (la dédup gère), mais y charger un
-   fichier *différent* est une erreur de build. Le flag documente l'intention
-   et transforme un écrasement accidentel du player en erreur fichier:ligne.
-   Nom à choisir : `permanent` (recommandé — dit la durée de vie),
-   `pinned` (épinglée), `locked`, `once`.
+3. **Flag « chargée une fois »** : validé, nom retenu : **`permanent`**
+   (« resident » rejeté — collision avec la notion de page résidente).
+   Sémantique : une région marquée n'accepte qu'**un seul direntry** sur tout
+   le target — plusieurs scènes peuvent le recharger (la dédup gère), mais y
+   charger un fichier *différent* est une erreur de build. L'attribut est
+   accepté dès la phase A ; sa vérification arrive avec la phase B.
 
 ## 11. Réflexion : phases de jeu, régions multiples, overlays
 

@@ -16,6 +16,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
+import com.widedot.m6809.gamebuilder.plugin.scene.ScenePlugin;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
@@ -50,27 +51,33 @@ public class DirectoryPlugin {
 		String section = Attribute.getString(node, ctx, "section");
 		String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
 	    String gensymbols = Attribute.getString(node, ctx, "gensymbols");
-			
+
 		// generate symbols file
-		gensymbols = ctx.path + File.separator + gensymbols;
-		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
-		FileWriter writer = new FileWriter(gensymbols);
+		String gensymbolsPath = ctx.path + File.separator + gensymbols;
+		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbolsPath)));
+		FileWriter writer = new FileWriter(gensymbolsPath);
 
 		// file ids are global to the target : keep numbering where the
 		// previous directory left off, and record the base in the header
 		int baseId = ctx.fileIds.peek();
 		int direntryId = baseId;
+		java.util.Set<String> directoryNames = new java.util.HashSet<String>();
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
-			if (plugin.equals("direntry")) {
-				
+			if (plugin.equals("direntry") || plugin.equals("scene")) {
+
 				String name = Attribute.getString(child, ctx, "name");
 				writer.write(name + " equ " + direntryId + System.lineSeparator());
-				
-				String codec = Attribute.getStringOpt(child, ctx, "codec");
-				String linkSection = Attribute.getStringOpt(child, ctx, "loadtimelink");
+				directoryNames.add(name);
 
-				direntryId += DirEntryPlugin.blockCount(codec, linkSection);
+				if (plugin.equals("direntry")) {
+					String codec = Attribute.getStringOpt(child, ctx, "codec");
+					String linkSection = Attribute.getStringOpt(child, ctx, "loadtimelink");
+					direntryId += DirEntryPlugin.blockCount(codec, linkSection);
+				} else {
+					// a scene table is raw, uncompressed and carries no link data
+					direntryId += 1;
+				}
 			}
 		}
 		writer.close();
@@ -83,10 +90,19 @@ public class DirectoryPlugin {
 
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
-	    	
+
+			// scenes live inside a directory only : they need its gensymbols
+			// file for the id equates and its name set for reference checks
+			if (plugin.equals("scene")) {
+				log.debug("Running handler: {}", plugin);
+				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames);
+				ctx.publish(localCtx);
+				continue;
+			}
+
 			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);
 			MediaPluginInterface mediaHandler = Handlers.getMedia(plugin);
-		    
+
 	        if (defaultHandler == null && mediaHandler == null) {
 	        	throw new Exception("Element <" + plugin + "> is not valid here");
 	        }

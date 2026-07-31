@@ -6,6 +6,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
+import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 /**
  * Everything a plugin needs to run: where the build is rooted, its settings,
@@ -38,6 +39,9 @@ public class BuildContext {
 	/** file id allocator, shared across a target */
 	public final FileIds fileIds;
 
+	/** memory layout declared by the target, referenced by scene loads */
+	public final Regions regions;
+
 	/** inherited attribute defaults, scoped to this container */
 	public final Defaults defaults;
 
@@ -49,16 +53,17 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
-			FileIds fileIds, Defaults defaults, Defines defines) {
+			FileIds fileIds, Regions regions, Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
 		this.sources = sources;
 		this.linkSymbols = linkSymbols;
 		this.fileIds = fileIds;
+		this.regions = regions;
 		this.defaults = defaults;
 		this.defines = defines;
 	}
@@ -68,7 +73,7 @@ public class BuildContext {
 	 *         everything else shared
 	 */
 	public BuildContext child() {
-		return new BuildContext(path, settings, sources, linkSymbols, fileIds,
+		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
 
@@ -84,6 +89,7 @@ public class BuildContext {
 	public void resetTarget() {
 		fileIds.clear();
 		linkSymbols.clear();
+		regions.clear();
 		defaults.values.clear();
 		defines.values.clear();
 		defines.newValues.clear();

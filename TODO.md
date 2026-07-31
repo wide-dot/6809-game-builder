@@ -10,10 +10,12 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 - [ ] **Scènes/régions déclaratives** — plan détaillé et syntaxe :
       [`docs/lang/fr/scenes-declaratives-2026-07.md`](docs/lang/fr/scenes-declaratives-2026-07.md)
-  - [ ] Phase A — éléments `<layout>`/`<region>`/`<scene>`/`<file>` + générateur
-        de tables (pilote : `examples/sound` TO8, identité binaire)
-  - [ ] Phase B — vérifications au build (existence, tailles, chevauchements,
-        export-only, multi-disquette)
+  - [x] Phase A — éléments `<layout>`/`<region>`/`<scene>`/`<load>` + générateur
+        de tables (31/07/2026 : pilote `examples/sound` TO8 migré, images
+        identiques octet pour octet, validé sous toje — title vérifié en RAM,
+        changement de scène à chaud vers level1, loader-ut rejoué 16/16)
+  - [ ] Phase B — vérifications au build (tailles vs budgets, chevauchements,
+        export-only, `permanent`, multi-disquette)
   - [ ] Phase C — migration complète (loader-ut ×10 scènes, sound MO6),
         suppression des tables manuscrites, toje 16/16
   - [ ] Phase D — docs (groups.md, scenes.md, XSD régénéré, CLAUDE.md)
