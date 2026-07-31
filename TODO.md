@@ -29,13 +29,23 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         0 silencieux = jsr $0000 → pont d'export dans le gm
         (`irq.off equ IrqOff` + EXPORT, zéro octet). Validé : title joue
         (ymm+vgc chargés, coroutines OK, frame.count +97/100 trames).
-        RESTE : le déclencheur clavier du swap ne répond pas sous toje
-        (ni ReadKeyboard v1/moniteur, ni keyboard v2 — piste : état
-        keyboard.held=$F5 constant, pressed jamais posé ; comparer
-        instruction par instruction avec l'image de référence où le même
-        type_keys(32) fonctionne). Puis : re-valider swap ymm ET vgc
-        (leçon : nos checks RAM ne lisaient que la partie ymm), mplus/tlsf,
-        et déviations au manifest.
+        Déclencheur : hook de banc ajouté ($9C00 poké par le harnais,
+        convention loader-ut) + KTEST matériel pour machine réelle (le
+        clavier moniteur est hors-jeu sous notre régime IRQ). RESTE — LE
+        SWAP CHARGE À VIDE : scene.load(22=scenes.level1) s'exécute
+        entièrement (X=$16 ✓, entrée direntry RAM parfaite s15-logique →
+        s10-physique via la map soft du loader, arrangement IDENTIQUE à la
+        référence qui fonctionne) mais loader.file.load ne dépose PAS les
+        14 octets de la table à sa destination pool ($B158 = résidu de
+        link data) → scene.apply lit type=%00 → no-op. POINT DE REPRISE
+        EXACT : breakpoint $A80D (jsr loader.file.load de la table dans
+        scene.load), tracer pas à pas OÙ file.load écrit — suspects : état
+        map.DK.* / buffer disque après le 1er swap, interaction IrqOff v1
+        (STATUS $20) avec DKCONT, dédup/état du pool au 2e swap (tester
+        aussi un swap UNIQUE après boot propre). Leçons déjà consignées :
+        vérifier les DEUX players en RAM (fenêtre cart forcée par
+        write_memory $E7E6), activer loader.CHECK_UNRESOLVED_SYMBOLS dans
+        les bancs.
   - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
         banc générateur vs générateur (mêmes PNG, diff des .bin)
   - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc

@@ -72,9 +72,25 @@ init
 
 ; ------------------------------------------------------------------------------
 mainLoop
-        jsr   keyboard.read       ; kept-v2 keyboard (PIA direct — the v1
-        tst   keyboard.pressed    ; monitor KTST path needs the monitor irq)
-        beq   >
+        ; bench hook (loader-ut convention) : the test harness pokes $9C00
+        ; to request the scene swap — hardware-independent under emulation
+        tst   $9C00
+        beq   @noPoke
+        clr   $9C00
+        bra   @doSwap
+@noPoke
+        ; real-machine trigger, R-Type style : KTEST hardware bit
+        ; (PIA $E7C8 bit 0 = a key is down), edge-detected
+        lda   map.MC6821.PRA
+        lsra
+        bcs   @keyDown
+        clr   keydown             ; key released : re-arm the trigger
+        bra   >
+@keyDown
+        tst   keydown
+        bne   >                   ; still held : one swap per press
+        inc   keydown
+@doSwap
 
         jsr   IrqOff
         _ram.cart.set  #page.vgc
@@ -102,6 +118,8 @@ mainLoop
         jmp   mainLoop           ; infinite loop
 
 ; ------------------------------------------------------------------------------
+keydown fcb   0                       ; bench trigger edge state
+
 userIRQ
         jsr   PalUpdateNow              ; self-skips when PalRefresh is 0
         jsr   gfxlock.bufferSwap.check
@@ -119,6 +137,3 @@ userIRQ
         INCLUDE "engine/ram/ClearDataMemory.asm"
 
  ENDSECTION
-
-        ; kept-v2 modules carry their own SECTION blocks
-        INCLUDE "engine/system/to8/controller/keyboard.asm"
