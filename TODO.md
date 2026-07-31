@@ -103,8 +103,14 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut
         aujourd'hui) ; variantes miroir/décalage.
-  - [ ] M5 — docs (sprites.md, CLAUDE.md) ; renommage = phase finale
-        post-migration des jeux (table docs/engine-naming.csv)
+  - [x] M5 (docs) — [`docs/lang/en/sprites.md`](docs/lang/en/sprites.md) écrit
+        (pipeline, élément `<gfxcomp>`, format d'index et contrat `$PAGE`,
+        ordre de frame, ce qu'un game mode doit fournir, repère de
+        coordonnées, parité v1 et ses deux régimes) ; CLAUDE.md à jour ;
+        liens de `docs/lang/en/readme.md` réparés (ils pointaient encore sur
+        l'ancien layout `docs/`).
+  - [ ] M5 (suite) — renommage = phase finale post-migration des jeux
+        (table docs/engine-naming.csv)
 
 ## Backlog builder (inventaire du 31/07/2026, ordre conseillé)
 

@@ -78,7 +78,8 @@ MO5, Tandy CoCo 3.
 | Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) | `engine/system/thomson/graphics/buffer/` | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
 | Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
-| Outils graphiques : `gfxcomp` (sprites/images compilés), `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | **Substantiels mais sans consommateur runtime** — les outils précèdent l'ASM |
+| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Doc : [`sprites.md`](docs/lang/en/sprites.md) |
+| Autres outils graphiques : `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | Substantiels mais sans consommateur runtime |
 | wddebug | `toolbox/debug/` | Très actif ; ses vues sprites/collisions/objets débuggent les structures v1 en attendant la v2 |
 
 ### 🚧 En cours / écrit mais non branché
@@ -95,15 +96,14 @@ MO5, Tandy CoCo 3.
 
 ### ❌ Absent du runtime ASM (tout reste à migrer depuis la v1)
 
-Aucun code — seulement des équates réservées dans `glb.const.asm` (caméra, sprites,
-alphaTiles), des docs vides (`docs/lang/en/{objects,sprites,tilemaps,audio}.md`) et les
-vues wddebug orphelines :
+Les sprites compilés sont sortis de cette liste le 01/08/2026 (runtime importé,
+banc validé, `docs/lang/en/sprites.md` écrit). Pour le reste : pas de code, seulement
+des équates réservées dans `glb.const.asm` (caméra, alphaTiles), des docs vides
+(`docs/lang/en/{objects,tilemaps,audio}.md`) et les vues wddebug orphelines :
 
-- **Object manager** (v1 : `object-management/RunObjects.asm`, `Obj_Run` + macros,
-  slots/liste chaînée, montage de page par objet `Obj_Index_Page`/`Obj_Index_Address`)
-- **Sprites compilés** — runtime (v1 : `graphics/sprite/sprite-background-erase-ext-pack.asm` :
-  `DrawSprites`/`EraseSprites`/`CheckSpritesRefresh`/`BgBufferAlloc`) ; le générateur
-  côté outil existe déjà (`gfxcomp`, encoders `draw`/`bdraw` = ND*/NB*)
+- **Object manager** : `RunObjects.asm` est importé (dépendance du runtime sprites),
+  mais `Obj_Run` + macros, les slots/la liste chaînée et le pipeline d'objets côté
+  builder restent à faire — un game mode écrit encore ses tables d'index à la main
 - **Animation** (v1 : `AnimateSpriteSync.asm`, `moveByScript.asm`)
 - **Tilemap + scrolling** (v1 : `horizontal-scroll/scroll-map-buffered-even.asm` —
   scroll 1 px sur tilemap pré-bufferisée pointant des tiles compilées ; la v2 a le
@@ -142,6 +142,16 @@ Validation : méthode standard + **double banc** (générateur vs générateur s
 mêmes PNG ; runtime vs runtime sous toje avec checksums comparés).
 **Mode opératoire complet : `.claude/skills/v1-migration/SKILL.md`.**
 Inventaire de dérive : `docs/lang/fr/migration-inventaire-2026-07.md`.
+
+**Avancement (01/08/2026)** : M0/M1 (cadre, inventaire, parking) et M2 (base commune
++ pilote `sound/to8` + arbitrages) clos ; M3 (gfxcomp opérationnel + banc
+générateur-vs-générateur) et M4 (runtime sprites 1:1 + banc `examples/sprites`) clos.
+23 fichiers v1 importés, 3 écarts tracés (marge d'erase 16→12, deux `setdp`
+neutralisés) et 11 fichiers « KEPT-V2 » sous surveillance drift-check. Le double banc
+a payé trois fois : il a fait tomber le parking du lecteur par le moniteur (loader
+durci), trois défauts silencieux de l'index imageset, et un centrage horizontal
+décalé d'un pixel présent depuis le portage. Reste M4-suite (banc runtime vs runtime
+« plein », variantes) et M5-suite (renommage, phase finale).
 
 ## Revue Java & campagne de correction (30/07/2026)
 
@@ -418,9 +428,11 @@ SFX YM2413 sous IRQ, LoadGameMode, et ~149 objets de jeu côté projet.
 
 Ordre de migration suggéré (dépendances croissantes) :
 
-1. **Sprites compilés runtime** (`DrawSprites`/`EraseSprites`/`BgBufferAlloc`) — brancher
-   sur les sorties de `gfxcomp` ; c'est le contrat le plus fort de la v1 (les PNG
-   deviennent du code, pas des données). Valider avec un exemple type `examples/sprites`.
+1. ~~**Sprites compilés runtime**~~ **FAIT (01/08/2026)** — `DrawSprites`/`EraseSprites`/
+   `CheckSpritesRefresh`/`BgBufferAlloc` importés 1:1, branchés sur `gfxcomp` via
+   l'élément `<gfxcomp>` et l'index imageset, validés par `examples/sprites` sous toje.
+   Reste au portage R-Type : variantes miroir/décalage à l'échelle, palette, et le banc
+   runtime-vs-runtime « plein » (même scène des deux côtés, VRAM comparée).
 2. **Object manager** (`RunObjects`, slots, montage de page par objet) + `ObjectDp`,
    `ObjectMoveSync`. Le modèle mémoire v1 (résident + objets montés en pages cartouche)
    est structurant : R-Type déporte même sa passe de collision et son end-stage dans
@@ -452,8 +464,9 @@ fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un obje
 - `examples/timing/` + `docs/lang/fr/timing.md` : API `wait.*` inexistante.
 - `data.asm` et `mub.o` à la racine : artefacts orphelins (table clavier extraite de ROM ;
   objet LWOBJ16 issu de `mub.asm`), à déplacer/supprimer.
-- Liens cassés : `readme.md` racine (4 liens doc vides), `docs/lang/en/readme.md`
-  (chemins de l'ancien layout), renvoi vers `docs/lang/fr/readme.md` inexistant.
+- Liens cassés : `readme.md` racine (4 liens doc vides), renvoi vers
+  `docs/lang/fr/readme.md` inexistant. (`docs/lang/en/readme.md` corrigé le
+  01/08/2026 : ses cibles pointaient encore sur l'ancien layout `docs/`.)
 - Binaires third-party inégaux selon l'OS : pas de `hxcfe` macOS (les configs
   déclarant `<hfe/>` sortent en erreur explicite), pas d'`exomizer` linux-arm ;
   lwtools macOS embarqué en 4.18 alors que >= 4.22 est requis.
