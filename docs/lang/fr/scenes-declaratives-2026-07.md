@@ -1,6 +1,7 @@
 # Scènes et régions déclaratives — plan de conception (juillet 2026)
 
-Statut : **conception validée à discuter — rien d'implémenté**.
+Statut : **conception — rien d'implémenté**. Décisions du 31/07 consignées
+au §10 (reste à choisir : le nom du flag de région à chargement unique).
 Suivi : `TODO.md` à la racine.
 
 ## 1. Objectif
@@ -63,9 +64,11 @@ Constats vérifiés dans `loader.asm` et sur le corpus (`examples/loader-ut`,
    toutes les variantes d'une région atterrissent à la même adresse → l'unload
    implicite fonctionne toujours, le trou du recouvrement partiel est
    inatteignable par construction.
-4. **Le générateur n'émet que ce que le corpus utilise** : blocs `%01` pour les
-   fichiers placés, un bloc `%10` à (0,0) pour l'export-only. Pas de `%11`,
-   pas d'empilage runtime authorable (voir pièges §7.3).
+4. **Les types de blocs ne sont jamais authorés : le générateur choisit.**
+   Les trois types restent dans le loader (inchangé) mais n'apparaissent pas
+   dans la syntaxe — voir §5. L'empilage runtime de fichiers *non vides* reste
+   inexprimable (voir pièges §7.3) : ce n'est pas un type qu'on cache, c'est
+   une sémantique de placement qu'on exclut.
 
 ## 4. Syntaxe proposée
 
@@ -93,22 +96,22 @@ Version déclarative :
       <section name="SCENE">
 
         <scene name="scenes.title">
-          <file name="assets.gm.title"         region="gamemode"/>
-          <file name="engine.object.sound.ymm" region="ymm.player"/>
-          <file name="engine.object.sound.vgc" region="vgc.player"/>
-          <file name="assets.sounds.title.ymm" region="ymm.data"/>
-          <file name="assets.sounds.title.vgc" region="vgc.data"/>
+          <load name="assets.gm.title"         region="gamemode"/>
+          <load name="engine.object.sound.ymm" region="ymm.player"/>
+          <load name="engine.object.sound.vgc" region="vgc.player"/>
+          <load name="assets.sounds.title.ymm" region="ymm.data"/>
+          <load name="assets.sounds.title.vgc" region="vgc.data"/>
           <!-- link data seule (fichiers export-only) : pas de région -->
-          <file name="engine.system.to8.sound.ym.const"/>
-          <file name="engine.system.to8.sound.sn.const"/>
+          <load name="engine.system.to8.sound.ym.const"/>
+          <load name="engine.system.to8.sound.sn.const"/>
         </scene>
 
         <!-- Le « différentiel authoring » du modèle couches/régions :     -->
         <!-- level1 ne recharge que ce qui change. Même région = même      -->
         <!-- destination que title → éviction implicite propre, garantie.  -->
         <scene name="scenes.level1">
-          <file name="assets.gm.level1"         region="gamemode"/>
-          <file name="assets.sounds.level1.ymm" region="ymm.data"/>
+          <load name="assets.gm.level1"         region="gamemode"/>
+          <load name="assets.sounds.level1.ymm" region="ymm.data"/>
         </scene>
 
       </section>
@@ -126,11 +129,11 @@ un bloc `$4000+5` avec les cinq triplets aux adresses des régions, puis un bloc
 
 ```xml
 <scene name="d1.scenes.main">
-  <file name="d1.marker" region="stress.d1"/>
+  <load name="d1.marker" region="stress.d1"/>
 </scene>
 ```
 
-Rien de spécial : une scène vit sur sa disquette, ses `<file>` référencent
+Rien de spécial : une scène vit sur sa disquette, ses `<load>` référencent
 n'importe quel direntry du target (les ids sont globaux). Le générateur émet
 dans le prélude les equates de **tous les fichiers référencés**, y compris
 ceux d'autres disquettes — ce que les tables manuscrites ne peuvent pas faire
@@ -141,7 +144,7 @@ plusieurs disquettes (prompts « Insert disk » en plein chargement).
 
 ```xml
 <scene name="scenes.debug">
-  <file name="data.marker.zz" page="$06" address="$1000"/>
+  <load name="data.marker.zz" page="$06" address="$1000"/>
 </scene>
 ```
 
@@ -152,11 +155,11 @@ collision qu'on veut voir).
 
 ### 4.4 Ce qui n'est PAS authorable
 
-- Deux `<file>` avec région dans la même région d'une même scène : **erreur**.
+- Deux `<load>` avec région dans la même région d'une même scène : **erreur**.
   Le multi-parties = un direntry multi-asm (group).
 - L'empilage runtime (`%10`/`%11`) pour des fichiers non vides : non exposé
   (voir §7.3).
-- `region` + `page`/`address` sur le même `<file>` : erreur (l'un ou l'autre).
+- `region` + `page`/`address` sur le même `<load>` : erreur (l'un ou l'autre).
 
 ## 5. Sémantique de génération
 
@@ -166,11 +169,22 @@ collision qu'on veut voir).
   écrivant d'abord la table dans `gen/scenes/`. On réutilise tel quel le
   pipeline direntry existant (ids, prélude, écriture disquette) — le
   générateur ne fait *que* produire le fichier asm.
-- Ordre des entrées = ordre des `<file>` dans le XML. Les `<file>` avec
+- Ordre des entrées = ordre des `<load>` dans le XML. Les `<load>` avec
   destination (région ou brute) forment le bloc `%01` ; les export-only sont
   regroupés, dans leur ordre d'apparition, en un bloc `%10` à (0,0) émis après.
   C'est exactement la structure du corpus (nécessaire à l'identité binaire).
-- Le nom du `<file>` est le nom du direntry référencé ; le nom de la scène
+- **Sélection automatique du type de bloc.** Le choix `%01`/`%10` ci-dessus est
+  déjà une sélection automatique : destination explicite → `%01`, export-only →
+  `%10` (2 octets/fichier au lieu de 5 — écrire (0,0) n fois n'a pas de sens).
+  Optimisation ultérieure (post-migration) : émettre `%11` quand les fichiers
+  d'un lot export-only ont des ids qui forment exactement la chaîne que le
+  loader parcourt (id suivant = id + 1 + flag compressé + flag linké — le
+  builder numérote précisément ainsi les direntries déclarés à la suite).
+  Gain : un bloc de 7 octets fixes au lieu de 5+2n (les 16 `pad.*` du stress
+  test : 37 → 7 octets). Vérifié à chaque build, repli silencieux sur `%10` si
+  la chaîne se brise (réordonnancement du config). Sémantiquement identique ;
+  activée seulement après la migration, car elle change les octets des tables.
+- Le nom du `<load>` est le nom du direntry référencé ; le nom de la scène
   devient lui-même un file id utilisable (charger une scène par
   `ldx #scenes.level1` + `jsr loader.scene.load`, comme aujourd'hui).
 
@@ -179,11 +193,11 @@ collision qu'on veut voir).
 À la génération (positions fichier:ligne via SourceMap, toutes les erreurs
 d'un coup, comme le Validator) :
 
-1. Chaque `<file name>` référence un direntry existant du target.
-2. `<file>` sans région ⇔ direntry export-only (aucune donnée), dans les deux
+1. Chaque `<load name>` référence un direntry existant du target.
+2. `<load>` sans région ⇔ direntry export-only (aucune donnée), dans les deux
    sens : un fichier avec données sans destination est une erreur, un fichier
    vide avec région aussi.
-3. Une seule `<file>` par région et par scène.
+3. Une seule `<load>` par région et par scène.
 4. `region` inconnue, `region`+`page` simultanés : erreurs.
 5. Non-chevauchement des régions entre elles (même page).
 6. Nom de scène/direntry = symbole lwasm valide.
@@ -236,7 +250,7 @@ construction, la destination est celle de la région.
    l'index local : à tester explicitement dans loader-ut (une scène disque 0
    référençant un fichier disque 1).
 8. **Nouveau vocabulaire = nouveau contrat.** `<layout>`, `<region>`,
-   `<scene>`, `<file>` entrent dans les specs (`Handlers`), le Validator les
+   `<scene>`, `<load>` entrent dans les specs (`Handlers`), le Validator les
    couvre automatiquement, et le XSD doit être **régénéré et commité**
    (`-x docs/schema/gamebuilder.xsd`) — sinon les éditeurs signaleront les
    nouveaux éléments comme invalides.
@@ -244,10 +258,8 @@ construction, la destination est celle de la région.
    projet : rien ne change, mais vérifier pendant la migration qu'il pointe
    toujours le bon id (les ids ne bougent pas si l'ordre de déclaration ne
    bouge pas — cf. piège 2).
-10. **Nom d'élément `<file>`.** Pas de collision dans les specs actuelles
-    (aucun élément `file` n'existe), mais le mot est générique — à trancher :
-    `<file>` (court, contexte clair) ou `<load>` (explicite). Proposition :
-    `<file>`.
+10. **Nom d'élément.** Tranché le 31/07/2026 : `<load>` (explicite — la ligne
+    dit ce qu'elle fait — et sans collision dans les specs actuelles).
 
 ## 8. Plan d'exécution
 
@@ -280,13 +292,55 @@ octet pour octet, loader-ut sous toje, JUnit, CI).
   `ldx #scenes.x` / `jsr loader.scene.load`).
 - Le GUI d'édition : plus tard, sur cette base.
 
-## 10. Questions ouvertes (à trancher avant la phase A)
+## 10. Décisions (31/07/2026)
 
-1. `<layout>` conteneur sous `<target>` (proposé) ou `<region>` directement
-   sous `<target>` ? Le conteneur groupe visuellement et pourrait porter plus
-   tard des attributs communs.
-2. Nom de l'élément enfant : `<file>` (proposé) ou `<load>` ?
-3. Les régions « joueur » (`ymm.player`…) chargées une fois et jamais
-   re-swappées : les déclarer comme régions ordinaires (proposé — la
-   vérification de chevauchement protège le résident gratuitement) ou marquer
-   `resident="true"` pour interdire leur réutilisation par d'autres scènes ?
+1. **`<layout>` conteneur** sous `<target>` : validé.
+2. **`<load>`** comme élément enfant de `<scene>` : validé.
+3. **Flag « chargée une fois »** : validé sur le principe, mais pas le mot
+   `resident` (collision avec la notion de page résidente). Sémantique retenue :
+   une région marquée n'accepte qu'**un seul direntry** sur tout le target —
+   plusieurs scènes peuvent le recharger (la dédup gère), mais y charger un
+   fichier *différent* est une erreur de build. Le flag documente l'intention
+   et transforme un écrasement accidentel du player en erreur fichier:ligne.
+   Nom à choisir : `permanent` (recommandé — dit la durée de vie),
+   `pinned` (épinglée), `locked`, `once`.
+
+## 11. Réflexion : phases de jeu, régions multiples, overlays
+
+Le doute soulevé (« on a plusieurs phases — title, stages — le flag est-il
+pertinent ? ») touche le vrai sujet : **le cycle de vie des régions à travers
+les phases**.
+
+**Le cas nominal : un layout partagé, des régions réutilisées.** C'est le
+pattern d'`examples/sound` (title et level1 se passent le relais dans
+`gamemode` et `ymm.data`) et c'est le seul qui soit *gratuit* : même
+destination → éviction implicite propre, aucune gestion. La doctrine par
+défaut est donc : **les phases partagent le layout, et une région est
+précisément le point de passage entre phases**. Dans ce monde, la plupart des
+régions sont multi-variantes par nature, et le flag « chargée une fois » ne
+concerne que les briques moteur chargées au boot (players, tables) — peu de
+régions, mais le flag y est utile justement parce que tout le reste bouge.
+
+**Le cas divergent : des phases aux cartes mémoire différentes** (le title
+utilise la page 6 pour un logo plein écran, le jeu y met la tilemap). Deux
+régions qui se chevauchent seraient alors *légitimes* — mais notre contrôle
+de non-chevauchement les rejette, et surtout **le loader ne suit pas** : les
+slots de link data de la phase sortante restent indexés à leurs anciennes
+destinations ; au premier relink global, ils patchent la mémoire réutilisée →
+corruption différée. Changer de carte mémoire exige donc un **unload explicite
+de la phase sortante**, aujourd'hui fichier par fichier.
+
+Deux extensions cohérentes, **différées** jusqu'au besoin réel (le portage
+R-Type le dira) :
+
+- *Côté builder* : des groupes d'exclusion — `<region ... overlay="title"/>` —
+  deux régions d'overlays différents peuvent se chevaucher, deux régions du
+  même overlay non. Le vocabulaire classique des linkers pour exactement ce
+  problème.
+- *Côté loader* (petit ajout ASM, à chiffrer) : `linkData.unloadAll` (ou un
+  unload par plage de pages) pour rendre la transition de phase sûre en un
+  appel, au lieu de n appels `linkData.unload`. Ajouté aux différés loader
+  dans `TODO.md`.
+
+En attendant, la phase A s'en tient au layout unique et au non-chevauchement
+strict : c'est le modèle sûr, et il couvre le corpus entier.

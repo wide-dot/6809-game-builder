@@ -36,6 +36,9 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 - [ ] Suivi des tailles dans l'index (recouvrement partiel → slot périmé ;
       discipline actuelle : `linkData.unload` explicite)
 - [ ] Paginated groups + outils de découpage
+- [ ] `linkData.unloadAll` (ou unload par plage de pages) — sécuriser en un
+      appel les transitions de phase à cartes mémoire différentes (overlays,
+      cf. plan scènes déclaratives §11)
 
 ## Runtime engine — roadmap R-Type (détail dans CLAUDE.md)
 
