@@ -3,6 +3,7 @@ package com.widedot.m6809.gamebuilder.spi;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
+import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 
@@ -28,6 +29,9 @@ public class BuildContext {
 
 	public final Settings settings;
 
+	/** source positions of the configuration tree, for error messages */
+	public final SourceMap sources;
+
 	/** link symbol ids and export ownership, shared across a target */
 	public final LinkSymbols linkSymbols;
 
@@ -41,13 +45,18 @@ public class BuildContext {
 	public final Defines defines;
 
 	public BuildContext(String path, Settings settings) {
-		this(path, settings, new LinkSymbols(), new FileIds(), new Defaults(), new Defines());
+		this(path, settings, new SourceMap("<memory>"));
 	}
 
-	private BuildContext(String path, Settings settings, LinkSymbols linkSymbols, FileIds fileIds,
-			Defaults defaults, Defines defines) {
+	public BuildContext(String path, Settings settings, SourceMap sources) {
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Defaults(), new Defines());
+	}
+
+	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
+			FileIds fileIds, Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
+		this.sources = sources;
 		this.linkSymbols = linkSymbols;
 		this.fileIds = fileIds;
 		this.defaults = defaults;
@@ -59,7 +68,7 @@ public class BuildContext {
 	 *         everything else shared
 	 */
 	public BuildContext child() {
-		return new BuildContext(path, settings, linkSymbols, fileIds,
+		return new BuildContext(path, settings, sources, linkSymbols, fileIds,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
 

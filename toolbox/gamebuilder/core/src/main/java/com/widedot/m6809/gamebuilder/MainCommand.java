@@ -5,9 +5,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -17,6 +14,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import com.widedot.m6809.gamebuilder.config.XmlLoader;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.util.FileResourcesUtils;
@@ -144,23 +142,16 @@ public class MainCommand implements Callable<Integer> {
 			throw new Exception("The --clean option is not implemented yet.");
 		}
 		
-	    // parse the xml
-		Configurations configs = new Configurations();
-		try
-		{
-		    XMLConfiguration config = configs.xml(file);
-		    // one context per configuration file : nothing leaks between builds
-		    Target target = new Target(new BuildContext(path, settings));
-		    
-		    if (targets!=null && targets.length>0) {
-		    	target.processTargetSelection(config, targets);
-		    } else {
-		    	target.processAllTargets(config);
-		    }
-		}
-		catch (ConfigurationException cex)
-		{
-			throw new Exception("Error reading xml configuration file: " + file.getPath(), cex);
+	    // parse the xml, keeping source positions for error messages
+		XmlLoader.Result config = XmlLoader.load(file);
+
+		// one context per configuration file : nothing leaks between builds
+		Target target = new Target(new BuildContext(path, settings, config.sources));
+
+		if (targets!=null && targets.length>0) {
+			target.processTargetSelection(config.root, targets);
+		} else {
+			target.processAllTargets(config.root);
 		}
 	}	
 }

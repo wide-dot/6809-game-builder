@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
@@ -22,28 +21,34 @@ public class Target {
 		this.ctx = ctx;
 	}
 	
-	public void processTargetSelection(HierarchicalConfiguration<ImmutableNode> node, String[] targets) throws Exception {
+	public void processTargetSelection(ImmutableNode root, String[] targets) throws Exception {
 		log.info("Processing targets: {}", Arrays.toString(targets));
-		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>(); 
-		List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target");
-		for(HierarchicalConfiguration<ImmutableNode> target : targetNodes) {
+		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>();
+		for (ImmutableNode target : root.getChildren()) {
+			if (!"target".equals(target.getNodeName())) {
+				continue;
+			}
+			String name = (String) target.getAttributes().get("name");
 			for (int i = 0; i < targets.length; i++) {
-				String name = target.getString("[@name]", null);
-				if (name.equals(targets[i])) {
-					nodesToProcess.add(target.getNodeModel().getNodeHandler().getRootNode());
+				if (targets[i].equals(name)) {
+					nodesToProcess.add(target);
 				}
 			}
 		}
-		
+		if (nodesToProcess.isEmpty()) {
+			throw new Exception("None of the requested targets " + Arrays.toString(targets)
+					+ " exists in the configuration file");
+		}
 		processTargets(nodesToProcess);
 	}
     
-	public void processAllTargets(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
+	public void processAllTargets(ImmutableNode root) throws Exception {
 		log.info("Processing all targets in configuration file.");
-		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>(); 
-		List<HierarchicalConfiguration<ImmutableNode>> targetNodes = node.configurationsAt("target");
-		for(HierarchicalConfiguration<ImmutableNode> target : targetNodes) {
-			nodesToProcess.add(target.getNodeModel().getNodeHandler().getRootNode());
+		List<ImmutableNode> nodesToProcess = new ArrayList<ImmutableNode>();
+		for (ImmutableNode target : root.getChildren()) {
+			if ("target".equals(target.getNodeName())) {
+				nodesToProcess.add(target);
+			}
 		}
 		if (nodesToProcess.isEmpty()) {
 			String m = "No target found !";
