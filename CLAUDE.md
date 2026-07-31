@@ -191,11 +191,30 @@ Si le chargement dynamique redevenait un objectif, le registre est précisément
 point d'ancrage où brancher un loader — il faudrait d'abord publier le SPI et le
 versionner, ce qui n'a jamais été fait.
 
-Reste ouvert, par ordre de valeur : **contrat d'attributs déclaré et validé**
-(namespace dérivé du nom du handler, attribut inconnu rejeté, message citant le
-fichier et l'élément XML — c'est la source d'erreur la plus coûteuse, cf. le
-garde-fou 16 Ko qui n'a jamais fonctionné), tri alphabétique des ids de symboles,
-packaging en zip par plateforme.
+**Contrat d'attributs (31/07/2026)** — analyses préalables dans
+`docs/lang/fr/analyse-config-2026-07.md` (XML vs YAML : XML conservé, la douleur
+était dans le décodage) et `analyse-dsl-2026-07.md` (DSL externe décliné, critères
+de réévaluation écrits). Réalisé en trois couches :
+1. **Loader StAX** (`config/XmlLoader`) remplaçant XMLConfiguration : mêmes arbres
+   (prouvé bit à bit sur les images), positions fichier:ligne conservées
+   (`SourceMap` dans le contexte), xml:space=preserve hérité, DTD/entités refusées,
+   plus d'interpolation `${}` surprise.
+2. **Specs déclarées** (`spi/schema/ElementSpec`) : les 24 éléments du format sont
+   déclarés sur leur enregistrement dans `Handlers` (types STRING/INT/BOOL, requis,
+   doc). `config/Validator` passe sur l'arbre entier avant exécution : attribut
+   inconnu rejeté avec position et candidats, types vérifiés, clés de `<default>`
+   validées contre les specs. L'API `Attribute` à clé dérivée rend la divergence de
+   namespace inexprimable ; `Values.parseInt` accepte `$`/`0x`/décimal (fini le
+   piège octal de `Integer.decode`). Première exécution sur le corpus réel : un
+   attribut mort (`page="true"` sur `<label>`, jamais lu) détecté et purgé.
+3. **XSD généré** (`config/SchemaGenerator`, option `-x`, fichier commité dans
+   `docs/schema/gamebuilder.xsd`) : validation + autocomplétion éditeur depuis la
+   même source de vérité (attributs stricts et typés, contenu permissif — les
+   règles par conteneur restent au build).
+
+Reste ouvert, par ordre de valeur : scènes/régions déclaratives (générer les
+tables de scène, vérifier les régions — cf. groups.md), migration de storage.xml
+vers le même loader, tri alphabétique des ids de symboles, packaging en zip.
 
 **Packer VGC porté en Java (31/07/2026)** : `vgmpacker` (LZ4 + parser VGM) tournait
 sous un interpréteur **Jython 2.7 embarqué**, soit 47 Mo de dépendance et un runtime

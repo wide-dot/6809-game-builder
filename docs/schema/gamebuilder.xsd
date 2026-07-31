@@ -1,0 +1,1067 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated from the element specs in Handlers.java ; do not edit. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="int6809">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="-?([0-9]+|0[xX][0-9a-fA-F]+|\$[0-9a-fA-F]+)"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- assembly source unit : a file, or inline text -->
+  <xs:element name="asm">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>source file ; omit when using inline text</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="skip"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- raw binary file inserted as is -->
+  <xs:element name="bin">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>input file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- applies the fd640 boot sector checksum to its content -->
+  <xs:element name="cksumfd640">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- configuration file root -->
+  <xs:element name="configuration">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- raw data written to a section, outside the directory -->
+  <xs:element name="data">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="section" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>section receiving the data</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>maximum size</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- scoped default for an attribute, key is <element>.<attribute> -->
+  <xs:element name="default">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>target attribute, as &lt;element&gt;.&lt;attribute&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>default value</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- assembler define passed to lwasm -->
+  <xs:element name="define">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="symbol" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>symbol name</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="xs:string">
+        <xs:annotation><xs:documentation>value, defaults to 1</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- file directory written to the media -->
+  <xs:element name="directory">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="id" type="int6809" use="required">
+        <xs:annotation><xs:documentation>disk id, matched by the loader at run time</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>section receiving the directory</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensymbols" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated file of &lt;name&gt; equ &lt;file id&gt; equates</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genbinary" type="xs:string">
+        <xs:annotation><xs:documentation>debug copy of the directory binary</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- one loadable file of the directory -->
+  <xs:element name="direntry">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>zx0 : compress the whole entry as one stream</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="loadtimelink" type="xs:string">
+        <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>maximum entry size ; past 16384 the stored size wraps, see the warning</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>section receiving the entry</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- write the interleaved image as a .fd file -->
+  <xs:element name="fd">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- build a floppy disk image -->
+  <xs:element name="floppydisk">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="model" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>disk model declared in the storage file (fd640, fd320, fd158)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="storage" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>path of the storage geometry file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- write the image as a .hfe file, needs hxcfe in the PATH -->
+  <xs:element name="hfe">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- binary included through a generated INCLUDEBIN -->
+  <xs:element name="includebin">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>binary file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- exported label with no content, used as an interface -->
+  <xs:element name="label">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>exported symbol</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- assemble source units into one object -->
+  <xs:element name="lwasm">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="format" type="xs:string">
+        <xs:annotation><xs:documentation>obj (linkable) or raw</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>generated concatenated source, also names the build artifacts</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="processor" type="xs:string">
+        <xs:annotation><xs:documentation>assembler executable name</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert PCM samples -->
+  <xs:element name="pcm">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input file or directory</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genbinary" type="xs:string">
+        <xs:annotation><xs:documentation>generated binary</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="bit8to6" type="xs:boolean">
+        <xs:annotation><xs:documentation>convert 8 bit samples to the 6 bit DAC</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert text to MEA8000 phonemes -->
+  <xs:element name="phoneme">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input text file</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genbinary" type="xs:string">
+        <xs:annotation><xs:documentation>generated binary</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="lang" type="xs:string">
+        <xs:annotation><xs:documentation>language, defaults to fr</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- extract a palette from a PNG -->
+  <xs:element name="png2pal">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input .png</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>generated source file</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="symbol" type="xs:string">
+        <xs:annotation><xs:documentation>generated symbol name</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="colors" type="int6809">
+        <xs:annotation><xs:documentation>number of colors</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="offset" type="int6809">
+        <xs:annotation><xs:documentation>first color index</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mode" type="xs:string">
+        <xs:annotation><xs:documentation>output mode</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="profile" type="xs:string">
+        <xs:annotation><xs:documentation>color profile</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- write the image as .sap file(s), one per used drive -->
+  <xs:element name="sap">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="format" type="int6809">
+        <xs:annotation><xs:documentation>SAP format, 1 (default) or 2</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- write the image for SDDRIVE as a .sd file -->
+  <xs:element name="sd">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- named area of the media -->
+  <xs:element name="section">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>section name, referenced by direntry/data</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="track" type="int6809" use="required">
+        <xs:annotation><xs:documentation>first track</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="face" type="int6809" use="required">
+        <xs:annotation><xs:documentation>face 0 or 1</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="sector" type="int6809" use="required">
+        <xs:annotation><xs:documentation>first sector, 1 based</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a build target, selectable with -t -->
+  <xs:element name="target">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>target name</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- tokenize a BASIC text file -->
+  <xs:element name="txt2bas">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>input text file</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="tokenset" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>BASIC token set</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert a VGM file to sound effects source -->
+  <xs:element name="vgm2sfx">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input .vgm file</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>generated source file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert a VGM file to the SN76489 vgc stream -->
+  <xs:element name="vgm2vgc">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input .vgm file or directory</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genbinary" type="xs:string">
+        <xs:annotation><xs:documentation>generated .vgc file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert a VGM file to the YM2413 ymm stream -->
+  <xs:element name="vgm2ymm">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>input .vgm file or directory</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genbinary" type="xs:string">
+        <xs:annotation><xs:documentation>generated .ymm file</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>zx0 : compress the stream</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="dac2drum" type="xs:string">
+        <xs:annotation><xs:documentation>map DAC samples to drums</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -41,6 +41,9 @@ public class MainCommand implements Callable<Integer> {
             
             @Option(names = { "-e", "--extract" }, paramLabel = "Extract directory", description = "Directory to extract assembly engine.")
             String extractDir;
+
+            @Option(names = { "-x", "--xsd" }, paramLabel = "Schema file", description = "Write the XML schema of the configuration format and exit.")
+            String xsdFile;
     }
 	
     @Option(names = { "-t", "--target"}, paramLabel = "Targets", description = "Comma separated targets in configuration file.")
@@ -73,7 +76,12 @@ public class MainCommand implements Callable<Integer> {
 				root.setLevel(ch.qos.logback.classic.Level.INFO);
 			}
 
-			if (exclusive.extractDir != null) {		// MODE 1 : extract assembly engine
+			if (exclusive.xsdFile != null) {		// write the configuration schema
+				java.nio.file.Files.write(java.nio.file.Paths.get(exclusive.xsdFile),
+						com.widedot.m6809.gamebuilder.config.SchemaGenerator.generate()
+								.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+				log.info("Schema written to {}", exclusive.xsdFile);
+			} else if (exclusive.extractDir != null) {		// MODE 1 : extract assembly engine
 				extract(exclusive.extractDir);
 			} else {								// MODE 2 : run the builder
 			    
