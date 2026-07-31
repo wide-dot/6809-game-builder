@@ -8,8 +8,11 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 ## En cours
 
-- [ ] **Scènes/régions déclaratives** — plan détaillé et syntaxe :
-      [`docs/lang/fr/scenes-declaratives-2026-07.md`](docs/lang/fr/scenes-declaratives-2026-07.md)
+- [ ] **Scènes/régions déclaratives** — plan et syntaxe :
+      [`docs/lang/fr/scenes-declaratives-2026-07.md`](docs/lang/fr/scenes-declaratives-2026-07.md) ;
+      doctrine d'organisation mémoire (invariant, cas d'usage, exemples de
+      conf) : [`docs/lang/fr/modele-regions-2026-07.md`](docs/lang/fr/modele-regions-2026-07.md)
+      — **en attente de validation, ne rien lancer avant**
   - [x] Phase A — éléments `<layout>`/`<region>`/`<scene>`/`<load>` + générateur
         de tables (31/07/2026 : pilote `examples/sound` TO8 migré, images
         identiques octet pour octet, validé sous toje — title vérifié en RAM,
