@@ -15,8 +15,9 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         (7 fichiers, ~1 400 l.), contrats vérifiés (registres, cellules,
         VRAM, imageset), 10 écarts relevés dont 4 bloquants dans gfxcomp et
         un écart de marge de cellule 16 (v1) vs 12 (v2)
-  - [ ] S0 — remise en état de gfxcomp (marge 16, main-class, Handlers,
-        index imageset, chemin d'include)
+  - [ ] S0 — remise en état de gfxcomp (main-class, Handlers, index
+        imageset, chemin d'include ; marge 12 confirmée — c'est le runtime
+        porté qui s'adaptera)
   - [ ] S1 — gfxlock parité timing (frame.count, frameDrop.max,
         frame.gameCount)
   - [ ] S2 — portage du runtime (7 fichiers, noms v1 pour wddebug)

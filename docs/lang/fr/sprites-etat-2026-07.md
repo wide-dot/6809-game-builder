@@ -115,7 +115,7 @@ priorité.
 
 | # | Écart | Où | Gravité |
 |---|---|---|---|
-| 1 | **Marge de cellule : v1 = 16** (12 IRQ + 4 appels sous-routine, `BuildDisk.java:527` + `subd #16` runtime) **vs gfxcomp v2 = 12** (`AssemblyGenerator.java:124-126`) → nb_cell sous-évalué, débordement de cellule possible | outil v2 | **bloquant, silencieux** |
+| 1 | Marge de cellule : v1 = 16, v2 = 12. **Tranché le 31/07 : 12 est correct en v2** — l'IRQ v2 bascule S vers son buffer interne dès la première instruction, seul le push matériel (12 octets) touche la pile utilisateur ; les +4 de la v1 couvraient des appels faits avant la bascule. C'est donc le runtime porté qui passera de `subd #16` à `subd #12`, et la règle devient un invariant d'IRQ à documenter : *aucun handler ne touche la pile utilisateur au-delà du push matériel*. | runtime à porter | décision prise |
 | 2 | main-class du pom gfxcomp erroné (`compiled.MainCommand` au lieu de `gfxcomp.MainCommand`) → CLI inutilisable | gfxcomp/pom.xml:23 | bloquant, trivial |
 | 3 | gfxcomp non enregistré dans `Handlers` → inutilisable depuis config.xml | Handlers.java | bloquant pour l'intégration |
 | 4 | **Index imageset structurellement vide** : clés `"BN0"` vs lookups `"bdraw_none_shift0"` (`Image.java:107` vs `ImageSet.java:94+`) | gfxcomp | bloquant |
@@ -166,8 +166,8 @@ priorité.
   CLAUDE.md, TODO.
 
 Décisions à valider avant de lancer :
-1. Marge de cellule : aligner sur **16** (valeur v1, conservatrice) — outil et
-   runtime ensemble.
+1. ~~Marge de cellule~~ tranché : **12** (contrat IRQ v2, gfxcomp déjà
+   correct) ; le runtime porté s'adapte.
 2. Conserver les **noms de symboles v1** (CamelCase `DrawSprites`,
    `rsv_buffer_0`…) pour la compat wddebug et le diff facile avec la v1,
    quitte à déroger à la convention `module.routine` v2.
