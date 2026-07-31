@@ -11,14 +11,26 @@ public class LinkSymbols {
 	/**
 	 * symbol -> file that exports it.
 	 *
-	 * Note on ids: they are handed out in order of first appearance. That is
-	 * deterministic as long as the build walks its inputs in a fixed order,
-	 * which it now does. Sorting them alphabetically, as the original design
-	 * notes ask, is only required for group interfaces (several groups sharing
-	 * one export list and therefore one set of indexes) and is deferred with
-	 * that feature ; it would need a collect pass before any emission.
+	 * Note on ids: within one pass they are handed out in order of first
+	 * appearance, but the build runs a discovery pass first and preseeds this
+	 * table with the full symbol set sorted alphabetically (see Target). Ids
+	 * therefore depend on the symbol NAMES only : reordering sources or
+	 * members no longer renumbers everything, which keeps binary comparison a
+	 * meaningful signal and is the prerequisite of group interfaces.
 	 */
 	private final HashMap<String, String> exporters = new HashMap<String, String>();
+
+	/**
+	 * Assigns ids 0..n-1 to the given symbols, in list order. Called with the
+	 * alphabetically sorted symbol set collected by the discovery pass ;
+	 * symbols first seen after this (a config error path) get the next free
+	 * ids in appearance order.
+	 */
+	public void preseed(java.util.List<String> symbols) {
+		for (String sym : symbols) {
+			ids.put(sym, ids.size());
+		}
+	}
 	
 	public int add(String sym) throws Exception {
 		

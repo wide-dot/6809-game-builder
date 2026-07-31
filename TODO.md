@@ -14,15 +14,15 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 Fonctionnel :
 
-- [ ] **Tri alphabétique des ids de symboles de link** — les ids suivent l'ordre
-      de rencontre (`LinkSymbols`, documenté dans la classe) : réordonner un
-      `<asm>` change toute l'image. Trier avant de numéroter rend « image
-      différente » = signal fiable, et c'est le prérequis des « interfaces /
-      instances de groups » (différé de groups.md). Renumérotation unique →
-      à faire *entre* deux campagnes. (S)
-- [ ] **storage.xml sur XmlLoader + specs** — `Storages.java` est le dernier
-      consommateur de XMLConfiguration ; migration = erreurs fichier:ligne sur
-      les géométries disquette, un seul chemin de parsing. (S)
+- [x] **Tri alphabétique des ids de symboles de link** (31/07/2026) — passe de
+      découverte par target puis réémission avec ids préseedés triés : les ids
+      ne dépendent plus que des NOMS. Renumérotation unique effectuée, validée
+      par exécution (loader-ut 16/16, sound RAM + swap). Prérequis des
+      « interfaces de groups » désormais en place.
+- [x] **storage.xml sur XmlLoader** (31/07/2026) — plus aucun consommateur
+      XMLConfiguration ; erreurs fichier:ligne sur les géométries ; bug
+      dormant `sectorperblock` corrigé (clé cassée → 0 silencieux, champ non
+      consommé). Identité binaire prouvée.
 - [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
       cartouche n'existe dans le registre : la v2 ne produit que de la
       disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile
