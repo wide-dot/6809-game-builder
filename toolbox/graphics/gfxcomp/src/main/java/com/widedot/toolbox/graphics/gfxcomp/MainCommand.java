@@ -2,6 +2,7 @@ package com.widedot.toolbox.graphics.gfxcomp;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -26,7 +27,7 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
 
 @Command(name = "gfxcomp", description = "6809 compile / compress graphics")
 @Slf4j
-public class MainCommand implements Runnable {
+public class MainCommand implements Callable<Integer> {
 
 	@Option(names = { "-f", "--file" }, paramLabel = "configuration file", description = "list of images to process")
 	String configurationFile;
@@ -35,12 +36,11 @@ public class MainCommand implements Runnable {
     private boolean verbose = false;
 
 	public static void main(String[] args) {
-		CommandLine cmdLine = new CommandLine(new MainCommand());
-		cmdLine.execute(args);
+		System.exit(new CommandLine(new MainCommand()).execute(args));
 	}
 
 	@Override
-	public void run() {
+	public Integer call() {
 		
 		// verbose mode
 	    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
@@ -52,21 +52,26 @@ public class MainCommand implements Runnable {
 		
 		log.info("6809 compiled graphics generator");
 
-		if (configurationFile != null) {
-			log.info("Process {}", configurationFile);
-
-			File paramFile = new File(configurationFile);
-			if (!paramFile.exists() || paramFile.isDirectory()) {
-				log.error("Input file "+configurationFile+" does not exists !");
-			} else {
-				try {
-					gfxcomp(paramFile);
-					log.info("Done.");
-				} catch (Exception e) {
-					log.error(ExceptionUtils.getStackTrace(e));
-				}
-			}
+		if (configurationFile == null) {
+			log.error("No configuration file given, see --help.");
+			return 1;
 		}
+
+		log.info("Process {}", configurationFile);
+		File paramFile = new File(configurationFile);
+		if (!paramFile.exists() || paramFile.isDirectory()) {
+			log.error("Input file "+configurationFile+" does not exists !");
+			return 1;
+		}
+
+		try {
+			gfxcomp(paramFile);
+		} catch (Exception e) {
+			log.error(ExceptionUtils.getStackTrace(e));
+			return 1;
+		}
+		log.info("Done.");
+		return 0;
 	}
 
     private String path;	
@@ -107,15 +112,14 @@ public class MainCommand implements Runnable {
 		    	getMemoryInfo(process.configurationAt("memory"));
 			    
 			    // process images in imageset, will generate an imageset index and produce compiled images
-    			imagesetGenerator = new ImageSet(imagesetType);
+			    // one generator per imageset : they each own their images and their index file
 			    List<HierarchicalConfiguration<ImmutableNode>> imagesetFields = process.configurationsAt("imageset");
 		    	for(HierarchicalConfiguration<ImmutableNode> imageset : imagesetFields)
-		    	{			    
+		    	{
 		    		imagesetType = imageset.getInteger("[@type]", null);
 		    		imagesetFile = path+imageset.getString("[@fileOut]");
+	    			imagesetGenerator = new ImageSet(imagesetType);
 		    		parseImages(imageset);
-		    	}
-		    	if (imagesetFields.size() != 0 && imagesetFile != null) {
 		    		imagesetGenerator.generate(imagesetFile);
 		    	}
 		    	
@@ -127,8 +131,7 @@ public class MainCommand implements Runnable {
 		}
 		catch (ConfigurationException cex)
 		{
-			log.error("Error reading xml configuration file.");
-			log.error(ExceptionUtils.getStackTrace(cex));
+			throw new Exception("Error reading xml configuration file " + paramFile, cex);
 		}
 	}
 

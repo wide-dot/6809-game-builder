@@ -21,9 +21,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -63,9 +66,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -104,9 +110,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -142,9 +151,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -180,9 +192,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -224,9 +239,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -268,9 +286,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -312,9 +333,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -362,9 +386,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -402,6 +429,59 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- one compiled rendering of an image -->
+  <xs:element name="encoder">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string">
+        <xs:annotation><xs:documentation>draw, bdraw, rle or zx0</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mirror" type="xs:string">
+        <xs:annotation><xs:documentation>none, x, y or xy</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="shift" type="int6809">
+        <xs:annotation><xs:documentation>pre shift in pixels</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="position" type="xs:string">
+        <xs:annotation><xs:documentation>center, top-left or 3qtr-center</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- write the interleaved image as a .fd file -->
   <xs:element name="fd">
     <xs:complexType>
@@ -415,9 +495,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -456,9 +539,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -487,6 +573,68 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- compile PNGs into 6809 drawing code, as one source unit -->
+  <xs:element name="gfxcomp">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="gendir" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>directory receiving the compiled images</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated source unit of INCLUDE lines</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genindex" type="xs:string">
+        <xs:annotation><xs:documentation>generated imageset index ; omit for images with no index</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linearbits" type="int6809">
+        <xs:annotation><xs:documentation>video memory linear bits</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planarbits" type="int6809">
+        <xs:annotation><xs:documentation>video memory planar bits</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linebytes" type="int6809">
+        <xs:annotation><xs:documentation>video memory bytes per line</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="nbplanes" type="int6809">
+        <xs:annotation><xs:documentation>video memory planes</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- write the image as a .hfe file, needs hxcfe in the PATH -->
   <xs:element name="hfe">
     <xs:complexType>
@@ -500,9 +648,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -528,6 +679,56 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- one PNG of a gfxcomp unit -->
+  <xs:element name="image">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>image name, prefix of the generated symbols</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>input .png, 8 bit indexed, colour 0 transparent</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="index" type="int6809">
+        <xs:annotation><xs:documentation>index in the imageset, emitted as idx_&lt;name&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- binary included through a generated INCLUDEBIN -->
   <xs:element name="includebin">
     <xs:complexType>
@@ -541,9 +742,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -582,9 +786,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -623,9 +830,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -664,9 +874,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -714,9 +927,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -761,9 +977,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -808,9 +1027,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -855,9 +1077,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -914,9 +1139,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -967,9 +1195,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1011,9 +1242,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1058,9 +1292,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1099,9 +1336,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1149,9 +1389,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1190,9 +1433,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1234,9 +1480,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1278,9 +1527,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
@@ -1322,9 +1574,12 @@
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
         <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>

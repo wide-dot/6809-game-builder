@@ -58,8 +58,25 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         loader) ; 11 lignes ajoutées au manifest avec leur commit v1
         courant pour que drift-check alerte quand la v1 bouge (résync
         manuel à évaluer).
-  - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
-        banc générateur vs générateur (mêmes PNG, diff des .bin)
+  - [x] M3 — gfxcomp opérationnel + banc générateur vs générateur (01/08).
+        Corrigé : main-class du pom, **index imageset structurellement vide**
+        (clés `BN0` côté Image vs `bdraw_none_shift0` côté lookups → source
+        unique `Image.variantKey`, forme v1 `NB0` conservée), erreurs avalées
+        (PNG manquant = NPE plus loin ; CLI en `Callable<Integer>` comme le
+        builder), un générateur d'index par `<imageset>` (les multiples se
+        écrasaient). `<gfxcomp>` enregistré dans `Handlers` comme FilePlugin
+        de `<lwasm>` : il compile les PNG, écrit un `EXTERNAL` par `pge_*`
+        (résolus au load-time link — la v1 les plaçait au build) et exporte
+        `set_/idx_/adr_*`. Banc `toolbox/graphics/gfxcomp/bench/run.sh`
+        (harnais qui pilote les encodeurs v1 hors projet de jeu) : **7/7**,
+        code v1 et v2 **binairement identiques** quand la recherche est
+        exhaustive ; au-delà les DEUX générateurs tirent au sort
+        (`new Random()` non graîné — la v1 diffère d'elle-même : 543 vs 544
+        octets sur shell_3), donc le critère devient « aussi bon que le
+        meilleur tirage v1 + 1 % ». Écart 5 (INCLUDE v1) résolu par M2 : le
+        chemin `engine/constants.asm` existe désormais à l'identique.
+        Nouvel exemple `examples/sprites` (PNG → code compilé → direntry →
+        scène) validé sous toje : $CA 01 01.
   - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc
         examples/sprites + banc runtime vs runtime (VRAM comparée sous toje)
   - [ ] M5 — docs (sprites.md, CLAUDE.md) ; renommage = phase finale

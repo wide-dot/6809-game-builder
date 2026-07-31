@@ -43,6 +43,18 @@ public class Image {
 	
 	public static final String[] typeLabel = new String[]{"D", "B", "R", "Z"};
 
+	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
+	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
+	// keys the imageset lookups, so both must derive it from here.
+	public static String variantKey(String encoderType, String encoderMirror, String encoderShift) {
+		return variantKey(typeId.get(encoderType), Mirror.getId(encoderMirror),
+		                  Integer.parseInt(encoderShift.substring(Shift.PREFIX.length())));
+	}
+
+	public static String variantKey(int encoderType, int encoderMirror, int encoderShift) {
+		return Mirror.label[encoderMirror] + typeLabel[encoderType] + encoderShift;
+	}
+
 	// center types
 	public static final String POSITION_CENTER   = "center";
 	public static final String POSITION_TOP_LEFT = "top-left";
@@ -95,16 +107,19 @@ public class Image {
 	
 	public Integer index;
 	
-	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) {
-		try {
-			image = ImageIO.read(new File(imageFile));
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) throws Exception {
+			File file = new File(imageFile);
+			if (!file.isFile()) {
+				throw new Exception("image file " + imageFile + " does not exist");
+			}
+			image = ImageIO.read(file);
 			name = imageName;
 			type = typeId.get(encoderType);
 			mirror = Mirror.getId(encoderMirror);
 			shift = encoderShift;
 			position = positionId.get(encoderPosition);
 			
-			variant = typeLabel[type]+Mirror.label[mirror]+shift;
+			variant = variantKey(type, mirror, shift);
 			width = image.getWidth();
 			height = image.getHeight();
 			colorModel = image.getColorModel();
@@ -115,19 +130,13 @@ public class Image {
 			nb_cell = null;
 
 			// process images
-			if (pixelSize == 8) {
-				image = Mirror.transform(image, mirror);
-				image = Shift.transform(image, shift);
-				prepareImages();
-			} else {
-				log.info("unsupported file format for " + imageFile + " ,pixel size:  " + pixelSize + " (should be 8).");
-				throw new Exception ("png file format error.");
+			if (pixelSize != 8) {
+				throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
+				                    + pixelSize + " (should be 8).");
 			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println(e);
-		}
+			image = Mirror.transform(image, mirror);
+			image = Shift.transform(image, shift);
+			prepareImages();
 	}
 	
 	// TODO - create n method as transformers

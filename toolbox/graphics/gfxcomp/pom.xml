@@ -17,10 +17,15 @@
 			<artifactId>6809-gamebuilder-util</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.wide-dot</groupId>
+			<artifactId>6809-gamebuilder-spi</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<properties>
-		<main-class>com.widedot.toolbox.graphics.compiled.MainCommand</main-class>
+		<main-class>com.widedot.toolbox.graphics.gfxcomp.MainCommand</main-class>
 	</properties>
 
 	<build>

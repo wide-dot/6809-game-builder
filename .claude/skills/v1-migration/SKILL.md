@@ -105,6 +105,11 @@ Rattrapage : re-diff fichier par fichier, ré-import, mise à jour du manifest.
   quand STATUS bit $20 est clair) parque le lecteur → DK.OPC:=1 → DKCONT
   « réussit » sans lire. Le loader réassert OPC=2 avant chaque DKCONT
   (durci le 31/07) — ne jamais retirer ce garde-fou.
+- **Sous toje, remonter la disquette après CHAQUE rebuild** : `mount_disk`
+  fige le contenu au moment du montage. Un `reset` seul rejoue l'ANCIENNE
+  image et on débogue un binaire périmé (vécu : le gm exécutait la version
+  précédente de son code). Symptôme : les octets lus en RAM ne correspondent
+  pas au .lst courant.
 - **Sous toje** : le prompt « Insert disk » est infranchissable au clavier
   (scan clavier sous IRQ, masquées à ce moment) → run jusqu'à `bcc` de
   `info` ($ACD5 dans loader-ut, re-dériver du .lst) puis PC:=rts suivant.

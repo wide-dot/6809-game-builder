@@ -144,6 +144,23 @@ public final class Handlers {
 			.req("name", STRING, "exported symbol"));
 		spec(element("includebin").doc("binary included through a generated INCLUDEBIN")
 			.req("filename", STRING, "binary file"));
+		spec(element("gfxcomp").doc("compile PNGs into 6809 drawing code, as one source unit")
+			.req("gendir", STRING, "directory receiving the compiled images")
+			.req("gensource", STRING, "generated source unit of INCLUDE lines")
+			.opt("genindex", STRING, "generated imageset index ; omit for images with no index")
+			.opt("linearbits", INT, "video memory linear bits")
+			.opt("planarbits", INT, "video memory planar bits")
+			.opt("linebytes", INT, "video memory bytes per line")
+			.opt("nbplanes", INT, "video memory planes"));
+		spec(element("image").doc("one PNG of a gfxcomp unit")
+			.req("name", STRING, "image name, prefix of the generated symbols")
+			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
+			.opt("index", INT, "index in the imageset, emitted as idx_<name>"));
+		spec(element("encoder").doc("one compiled rendering of an image")
+			.opt("name", STRING, "draw, bdraw, rle or zx0")
+			.opt("mirror", STRING, "none, x, y or xy")
+			.opt("shift", INT, "pre shift in pixels")
+			.opt("position", STRING, "center, top-left or 3qtr-center"));
 
 		// asset converters
 		spec(element("vgm2ymm").doc("convert a VGM file to the YM2413 ymm stream")
@@ -205,6 +222,7 @@ public final class Handlers {
 		FILES.put("asm", AsmPlugin::getFile);
 		FILES.put("label", LabelPlugin::getFile);
 		FILES.put("includebin", IncludeBinPlugin::getFile);
+		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
 
 		// asset converters
 		OBJECTS.put("vgm2ymm", com.widedot.toolbox.audio.vgm2ymm.Vgm2YmmPlugin::getObject);
