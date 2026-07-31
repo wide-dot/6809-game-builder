@@ -6,15 +6,16 @@ import java.util.List;
  * Renders a scene table in the format loader.scene.apply consumes.
  *
  * The block types are never authored, the generator selects them : loads with
- * a destination become one type %01 block of explicit [page][address][file id]
- * triplets, export-only loads (link data only, no destination) are grouped
- * into one type %10 block at (0,0) — 2 bytes per file instead of 5. This is
- * exactly the structure of the handwritten tables it replaces, which is what
- * makes the migration provable byte for byte.
+ * their own destination become one type %01 block of explicit
+ * [page][address][file id] triplets ; the loads of a bulk region become one
+ * type %10 block (base destination + ids, laid out one after the other by the
+ * loader) ; export-only loads (link data only) are grouped into one type %10
+ * block at (0,0). This is exactly the structure of the handwritten tables it
+ * replaces, which is what made the migration provable byte for byte.
  */
 public final class SceneGenerator {
 
-	/** a load with a resolved destination */
+	/** a load with a resolved destination of its own */
 	public static class Placed {
 		public final int page;
 		public final int address;
@@ -27,13 +28,27 @@ public final class SceneGenerator {
 		}
 	}
 
+	/** the loads of one bulk region : a base destination and an ordered list */
+	public static class Bulk {
+		public final int page;
+		public final int address;
+		public final List<String> symbols;
+
+		public Bulk(int page, int address, List<String> symbols) {
+			this.page = page;
+			this.address = address;
+			this.symbols = symbols;
+		}
+	}
+
 	/** the type field keeps 14 bits for the file count */
 	public static final int MAX_FILES = 0x3FFF;
 
 	private SceneGenerator() {
 	}
 
-	public static String generate(String sceneName, List<Placed> placed, List<String> exportOnly) throws Exception {
+	public static String generate(String sceneName, List<Placed> placed, List<Bulk> bulks,
+			List<String> exportOnly) throws Exception {
 
 		if (placed.size() > MAX_FILES || exportOnly.size() > MAX_FILES) {
 			throw new Exception("scene " + sceneName + " holds more than " + MAX_FILES + " files in one block");
@@ -51,6 +66,21 @@ public final class SceneGenerator {
 				out.append("        fdb   ").append(load.symbol).append('\n');
 				out.append('\n');
 			}
+		}
+
+		for (Bulk bulk : bulks) {
+			if (bulk.symbols.size() > MAX_FILES) {
+				throw new Exception("scene " + sceneName + " holds more than " + MAX_FILES + " files in one block");
+			}
+			out.append("        ; bulk region : files laid out one after the other\n");
+			out.append("        fdb   $8000+").append(bulk.symbols.size())
+			   .append("                  ; [type | nb files]\n\n");
+			out.append(String.format("        fcb   $%02X                      ; [destination - page id]%n", bulk.page));
+			out.append(String.format("        fdb   $%04X                    ; [destination - address]%n", bulk.address));
+			for (String symbol : bulk.symbols) {
+				out.append("        fdb   ").append(symbol).append('\n');
+			}
+			out.append('\n');
 		}
 
 		if (!exportOnly.isEmpty()) {

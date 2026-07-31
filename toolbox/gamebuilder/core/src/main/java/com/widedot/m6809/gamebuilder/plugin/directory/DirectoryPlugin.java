@@ -16,6 +16,8 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
+import com.widedot.m6809.gamebuilder.plugin.scene.SceneCheck;
+import com.widedot.m6809.gamebuilder.plugin.scene.SceneChecks;
 import com.widedot.m6809.gamebuilder.plugin.scene.ScenePlugin;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
@@ -88,6 +90,10 @@ public class DirectoryPlugin {
 		// nested containers get their own defaults and defines
 		BuildContext localCtx = ctx.child();
 
+		// what each scene declared, verified once all the entries are built
+		// and the uncompressed sizes are known
+		java.util.List<SceneCheck> pendingScenes = new java.util.ArrayList<SceneCheck>();
+
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
@@ -95,7 +101,7 @@ public class DirectoryPlugin {
 			// file for the id equates and its name set for reference checks
 			if (plugin.equals("scene")) {
 				log.debug("Running handler: {}", plugin);
-				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames);
+				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames, pendingScenes);
 				ctx.publish(localCtx);
 				continue;
 			}
@@ -120,7 +126,22 @@ public class DirectoryPlugin {
 	        }
     	}
 		
-		// compute directory size 
+		// every entry is built : verify what the scenes declared against the
+		// real sizes. Checks are local to one scene — one composition must be
+		// coherent in itself ; sequencing compositions belongs to the game
+		// code, so nothing is checked across scenes.
+		if (!pendingScenes.isEmpty()) {
+			java.util.Map<String, Integer> sizes = new java.util.HashMap<String, Integer>();
+			for (DirEntry entry : media.getDirEntries()) {
+				sizes.put(entry.name, entry.length);
+			}
+			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes);
+			if (!sceneErrors.isEmpty()) {
+				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
+			}
+		}
+
+		// compute directory size
 		int size = 7;
 		int emittedBlocks = 0;
 		for (DirEntry entry : media.getDirEntries()) {

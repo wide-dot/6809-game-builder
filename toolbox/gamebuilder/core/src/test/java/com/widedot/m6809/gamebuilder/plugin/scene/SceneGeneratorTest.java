@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.widedot.m6809.gamebuilder.plugin.scene.SceneGenerator.Bulk;
 import com.widedot.m6809.gamebuilder.plugin.scene.SceneGenerator.Placed;
 
 class SceneGeneratorTest {
@@ -19,7 +20,7 @@ class SceneGeneratorTest {
 		List<Placed> placed = Arrays.asList(
 				new Placed(0x01, 0x6100, "assets.gm.title"),
 				new Placed(0x06, 0x0400, "assets.sounds.title.ymm"));
-		String table = SceneGenerator.generate("s", placed, Collections.emptyList());
+		String table = SceneGenerator.generate("s", placed, Collections.emptyList(), Collections.emptyList());
 
 		assertTrue(table.contains("fdb   $4000+2"), table);
 		assertTrue(table.contains("fcb   $01"), table);
@@ -34,7 +35,7 @@ class SceneGeneratorTest {
 	@Test
 	@DisplayName("export-only loads become one type %10 block at (0,0)")
 	void exportOnlyBlock() throws Exception {
-		String table = SceneGenerator.generate("s", Collections.emptyList(),
+		String table = SceneGenerator.generate("s", Collections.emptyList(), Collections.emptyList(),
 				Arrays.asList("ym.const", "sn.const"));
 
 		assertTrue(table.contains("fdb   $8000+2"), table);
@@ -49,6 +50,7 @@ class SceneGeneratorTest {
 	void blockOrder() throws Exception {
 		String table = SceneGenerator.generate("s",
 				Arrays.asList(new Placed(0x01, 0x6100, "gm")),
+				Collections.emptyList(),
 				Arrays.asList("ym.const"));
 
 		int placedAt = table.indexOf("$4000+1");
@@ -60,9 +62,27 @@ class SceneGeneratorTest {
 	}
 
 	@Test
+	@DisplayName("a bulk region becomes one %10 block at its own base")
+	void bulkBlock() throws Exception {
+		String table = SceneGenerator.generate("s",
+				Arrays.asList(new Placed(0x01, 0x6300, "gm")),
+				Arrays.asList(new Bulk(0x05, 0x0000, Arrays.asList("samples", "sn", "ym"))),
+				Collections.emptyList());
+
+		assertTrue(table.contains("fdb   $4000+1"), table);
+		assertTrue(table.contains("fdb   $8000+3"), table);
+		assertTrue(table.contains("fcb   $05"), table);
+		assertTrue(table.contains("fdb   $0000"), table);
+		assertTrue(table.contains("fdb   samples"), table);
+		int placedAt = table.indexOf("$4000+1");
+		int bulkAt = table.indexOf("$8000+3");
+		assertTrue(placedAt < bulkAt, "placed block first, then bulk: " + table);
+	}
+
+	@Test
 	@DisplayName("an empty scene still carries the end marker")
 	void emptyScene() throws Exception {
-		String table = SceneGenerator.generate("s", Collections.emptyList(), Collections.emptyList());
+		String table = SceneGenerator.generate("s", Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 		assertTrue(table.contains("fdb   0 "), table);
 		assertFalse(table.contains("$4000"), table);
 		assertFalse(table.contains("$8000"), table);

@@ -23,12 +23,19 @@ public class Regions {
 		public final int address;
 		/** byte budget checked against the loaded entry, null means unchecked */
 		public final Integer size;
+		/**
+		 * bulk : the region takes a whole list of loads per scene, laid out
+		 * one after the other at run time. Members give up individual
+		 * replaceability — the list is the unit of replacement.
+		 */
+		public final boolean bulk;
 
-		public Region(String name, int page, int address, Integer size) {
+		public Region(String name, int page, int address, Integer size, boolean bulk) {
 			this.name = name;
 			this.page = page;
 			this.address = address;
 			this.size = size;
+			this.bulk = bulk;
 		}
 	}
 

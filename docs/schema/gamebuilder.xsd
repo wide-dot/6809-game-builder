@@ -945,6 +945,9 @@
       <xs:attribute name="size" type="int6809">
         <xs:annotation><xs:documentation>byte budget, checked against the loaded entry</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="bulk" type="xs:boolean">
+        <xs:annotation><xs:documentation>the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

@@ -286,7 +286,7 @@ public class DirEntryPlugin {
 		}
 
 		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
-	    media.addDirEntry(new DirEntry(name, sizedDirentry));
+	    media.addDirEntry(new DirEntry(name, sizedDirentry, length));
 		
 	    String fLength = String.format("%5d", length);
 	    log.info("file {} | {} bytes", name, fLength);

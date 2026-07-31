@@ -29,13 +29,15 @@ public class LayoutPlugin {
 			int page = Attribute.getInteger(child, ctx, "page");
 			int address = Attribute.getInteger(child, ctx, "address");
 			Integer size = Attribute.getIntegerOpt(child, ctx, "size");
+			boolean bulk = Attribute.getBoolean(child, ctx, "bulk", false);
 
 			try {
-				ctx.regions.put(new Regions.Region(name, page, address, size));
+				ctx.regions.put(new Regions.Region(name, page, address, size, bulk));
 			} catch (Exception e) {
 				throw new Exception(ctx.sources.locate(child) + ": " + e.getMessage());
 			}
-			log.debug("region {} : page {} address {} size {}", name, page, address, size);
+			log.debug("region {} : page {} address {} size {}{}", name, page, address, size,
+					bulk ? " bulk" : "");
 		}
 
 		log.debug("End of processing layout");
