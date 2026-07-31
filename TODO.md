@@ -77,8 +77,23 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         chemin `engine/constants.asm` existe désormais à l'identique.
         Nouvel exemple `examples/sprites` (PNG → code compilé → direntry →
         scène) validé sous toje : $CA 01 01.
-  - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc
-        examples/sprites + banc runtime vs runtime (VRAM comparée sous toje)
+  - [x] M4 (runtime) — sprites 1:1 : les 7 fichiers du pack
+        `background-erase-ext` + `RunObjects.asm` importés (manifest, 2 écarts
+        tracés : marge d'erase 16→12, setdp neutralisé). **Le banc
+        `examples/sprites` dessine** sous toje (01/08) : $CA 01 01 01 01,
+        compteur de frames qui avance, tête de liste de cellules libres STABLE
+        (allocation/libération équilibrées, pas de fuite), sprite visible à
+        l'écran. Trois défauts du port v2 de l'index imageset corrigés au
+        passage : adresses émises en `fcb` (tronquées à 8 bits — la v1
+        découpait la valeur elle-même) → `fdb` ; page par image inventée
+        (`pge_*`) → **le vrai contrat v2 est `<direntry>$PAGE`** (externPg,
+        une seule page par unité compilée) ; bits fenêtre cartouche absents
+        (la v1 écrivait `page+$60`) → opérande d'addition de la relocation.
+        Pièges consignés dans la skill (point d'entrée en offset 0, `fill` RAM
+        v1 → équates, coordonnées écran décalées, DisplaySprite par frame).
+  - [ ] M4 (suite) — banc runtime vs runtime : même scène buildée par les deux
+        chaînes, VRAM comparée sous toje ; palette du banc (couleurs par
+        défaut aujourd'hui) ; variantes miroir/décalage.
   - [ ] M5 — docs (sprites.md, CLAUDE.md) ; renommage = phase finale
         post-migration des jeux (table docs/engine-naming.csv)
 

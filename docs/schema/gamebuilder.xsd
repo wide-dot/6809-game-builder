@@ -620,6 +620,9 @@
       <xs:attribute name="genindex" type="xs:string">
         <xs:annotation><xs:documentation>generated imageset index ; omit for images with no index</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="file" type="xs:string">
+        <xs:annotation><xs:documentation>direntry name the images end up in ; the index reads their page from &lt;file&gt;$PAGE, required with genindex</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="linearbits" type="int6809">
         <xs:annotation><xs:documentation>video memory linear bits</xs:documentation></xs:annotation>
       </xs:attribute>

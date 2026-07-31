@@ -1,15 +1,21 @@
 ;*******************************************************************************
-; Compiled sprites — toolchain bench (M3)
+; Compiled sprites — bench
 ;
-; What this proves : PNGs go through gfxcomp inside a <lwasm> unit, land in a
-; direntry of their own, and the game mode reaches their imageset index through
-; the load time linker. Drawing them is the next step (M4, once the v1 sprite
-; runtime is imported) ; for now the game mode only checks that the index is
-; there and reports what it read at $9C00, the loader-ut convention:
+; Walks the whole path : PNG compiled by gfxcomp, loaded as a direntry of its
+; own, reached through the imageset index resolved by the load time linker,
+; then drawn by the v1 sprite runtime imported 1:1.
 ;
-;   +0 : magic $CA once the game mode runs
-;   +1 : $01 when the shell imageset index reads back as expected
-;   +2 : $01 when the launcher imageset index reads back as expected
+; Frame order is r-type's (game-mode/01/main.asm) :
+;   RunObjects / CheckSpritesRefresh / gfxlock.on / EraseSprites /
+;   UnsetDisplayPriority / DrawSprites / gfxlock.off / gfxlock.loop
+;
+; Results at $9C00, loader-ut convention :
+;   +0 : $CA once the game mode runs
+;   +1 : $01 the shell imageset index reads back as expected
+;   +2 : $01 the launcher imageset index reads back as expected
+;   +3 : $01 the sprite reached the screen buffer
+;   +4 : $01 a background cell was allocated for it
+;   +5 : frame counter, so a stuck main loop is visible
 ;*******************************************************************************
 
 set_shell    EXTERNAL
@@ -35,9 +41,17 @@ irq.off equ   IrqOff
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
-page.sprites equ map.RAM_OVER_CART+6   ; sprites region, as declared in <layout>
+        ; the memory layout of this target, generated from <layout>
+        INCLUDE "gen/layout.asm"
+
+        ; object sizing and RAM placement, the game's to declare (equates only)
+        INCLUDE "src/assets/game-modes/to8/main/ram_data.asm"
 
  opt c,ct
+
+        ; the scene loads this file at the game mode region address and jumps
+        ; to its first byte : main has to be the first thing emitted, so every
+        ; table lives after the code
 
 main
         jsr   InitGlobals
@@ -47,24 +61,25 @@ main
         jsr   IrqSet50Hz
         jsr   PalUpdateNow
         _gfxlock.init
+        jsr   InitDrawSprites              ; camera offsets, required
 
-        lda   #$CA                 ; the game mode is running
+        lda   #$CA                         ; the game mode is running
         sta   $9C00
 
         ; the compiled sprites live in a page mapped over the cartridge
         ; window, so mount it before reading anything of theirs
-        _ram.cart.set #page.sprites
+        _ram.cart.set #sprites.page
 
         ; imageset header : [n][x][y][xy] sub set offsets, then x_size,
         ; y_size, center_offset. A missing mirror falls back to an existing
         ; one, so every offset is non zero as soon as one variant exists.
         ldx   #set_shell
-        lda   ,x                   ; unmirrored sub set offset
+        lda   ,x                           ; unmirrored sub set offset
         beq   @shellko
-        lda   4,x                  ; x_size
+        lda   4,x                          ; x_size
         cmpa  #11
         bne   @shellko
-        lda   5,x                  ; y_size
+        lda   5,x                          ; y_size
         cmpa  #21
         bne   @shellko
         lda   #$01
@@ -84,20 +99,90 @@ main
         sta   $9C02
 @launcherko
 
+        ; one object, the shell sprite, near the middle of the screen.
+        ; render_flags leaves render_playfieldcoord unset, so the engine takes
+        ; the position as screen coordinates and never looks at x_pos/y_pos ;
+        ; a scrolling game sets that flag and gives playfield coordinates.
+        ldu   #sprite1
+        lda   #1                           ; id 1, the entry of the object indexes
+        sta   id,u
+        ; screen coordinates are offset so that positions just off screen stay
+        ; representable in a byte : the visible area is screen_left..right by
+        ; screen_top..bottom, and a sprite is dropped as out of range as soon
+        ; as its bounding box leaves it
+        lda   #screen_left+70              ; x_pixel
+        sta   x_pixel,u
+        lda   #screen_top+90               ; y_pixel
+        sta   y_pixel,u
+        ldx   #set_shell
+        stx   image_set,u
+        lda   #2                           ; priority 2 : a moving sprite, front
+        sta   priority,u
+
+        ldx   #sprite1                     ; register it in the run list
+        stx   object_list_first
+
 mainLoop
+        jsr   RunObjects
+        jsr   CheckSpritesRefresh
+
         _gfxlock.on
+        jsr   EraseSprites
+        jsr   UnsetDisplayPriority
+        jsr   DrawSprites
         _gfxlock.off
+
+        inc   $9C05                        ; the main loop is alive
+
+        ldu   #sprite1
+
+        ; the runtime decided to draw : in range and display flag set
+        lda   rsv_render_flags,u
+        bita  #rsv_render_outofrange_mask
+        bne   @notdrawn
+        bita  #rsv_render_displaysprite_mask
+        beq   @notdrawn
+        lda   #$01
+        sta   $9C03
+@notdrawn
+
+        ; a drawn sprite owns a background cell until the next erase pass
+        ldd   rsv_bgdata_0,u
+        bne   @cell
+        ldd   rsv_bgdata_1,u
+        beq   @nocell
+@cell   lda   #$01
+        sta   $9C04
+@nocell
+
+        ; head of the free cell list of buffer 0 : allocate and free must
+        ; balance out, so a leak shows up here as a drift frame after frame
+        ldd   Lst_FreeCellFirstEntry_0
+        std   $9C06
         _gfxlock.loop
-        bra   mainLoop
+        lbra  mainLoop                     ; the loop body outgrew a short branch
+
+; the object's run routine, reached through Obj_Index_Address with u on the
+; OST. The bench sprite does not move, but DisplaySprite still has to run
+; every frame : it registers the object in the priority structure of the
+; buffer being drawn, and there is one structure per buffer.
+ObjectRun
+        jsr   DisplaySprite
+        rts
 
 userIRQ
         jsr   PalUpdateNow
         jsr   gfxlock.bufferSwap.check
         rts
 
+        ; object indexes : emitted data, hence placed after the entry point
+        INCLUDE "src/assets/game-modes/to8/main/obj_index.asm"
+
         INCLUDE "engine/InitGlobals.asm"
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/object-management/RunObjects.asm"
+        INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
 
  ENDSECTION

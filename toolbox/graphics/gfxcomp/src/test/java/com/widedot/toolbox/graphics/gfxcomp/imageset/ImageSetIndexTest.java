@@ -52,7 +52,7 @@ public class ImageSetIndexTest {
 		assertEquals("NB0", image.getVariant());
 		assertEquals("hero_NB0", image.getFullName());
 
-		ImageSet set = new ImageSet(0);
+		ImageSet set = new ImageSet(0, "assets.sprites");
 		set.addImage(image);
 		Path index = dir.resolve("index.asm");
 		set.generate(index.toString());
@@ -61,8 +61,13 @@ public class ImageSetIndexTest {
 		assertTrue(asm.contains("idx_hero equ 3"), asm);
 		assertTrue(asm.contains("set_hero"), asm);
 		assertTrue(asm.contains("adr_hero_NB0"), asm);
-		assertTrue(asm.contains("pge_hero_NB0"), asm);
 		assertTrue(asm.contains("adr_hero_NB0_erase"), asm);
+
+		// the page is a relocation on the file, with the cartridge window bits,
+		// and the addresses are words : an fcb would keep their low byte only
+		assertTrue(asm.contains("assets.sprites$PAGE EXTERNAL"), asm);
+		assertTrue(asm.contains("fcb   assets.sprites$PAGE+$60"), asm);
+		assertTrue(asm.contains("fdb   adr_hero_NB0"), asm);
 
 		// the sub set offset of the unmirrored variant, right after the header
 		assertTrue(asm.contains("$07"), asm);

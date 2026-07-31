@@ -148,6 +148,7 @@ public final class Handlers {
 			.req("gendir", STRING, "directory receiving the compiled images")
 			.req("gensource", STRING, "generated source unit of INCLUDE lines")
 			.opt("genindex", STRING, "generated imageset index ; omit for images with no index")
+			.opt("file", STRING, "direntry name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")

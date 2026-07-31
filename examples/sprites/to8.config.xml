@@ -36,8 +36,10 @@
                 <!-- ******************************************************* -->
                 <direntry name="assets.sprites" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/sprites/sprites.asm">
+                        <!-- entries.asm brings the file id equates the index needs -->
+                        <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp gendir="gen/assets/sprites" gensource="gen/assets/sprites/includes.asm"
-                                 genindex="gen/assets/sprites/index.asm">
+                                 genindex="gen/assets/sprites/index.asm" file="assets.sprites">
                             <image name="shell" filename="src/assets/sprites/shell_0.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                             </image>

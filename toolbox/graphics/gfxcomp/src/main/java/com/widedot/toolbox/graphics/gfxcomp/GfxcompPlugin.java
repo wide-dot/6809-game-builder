@@ -37,13 +37,18 @@ public class GfxcompPlugin {
 		String gendir = ctx.path + File.separator + Attribute.getString(node, ctx, "gendir");
 		String gensource = ctx.path + File.separator + Attribute.getString(node, ctx, "gensource");
 		String genindex = Attribute.getStringOpt(node, ctx, "genindex");
+		String file = Attribute.getStringOpt(node, ctx, "file");
 
 		VideoMemory.memoryLinearBits = Attribute.getInteger(node, ctx, "linearbits", 4);
 		VideoMemory.memoryPlanarBits = Attribute.getInteger(node, ctx, "planarbits", 8);
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
 
-		ImageSet imageset = genindex == null ? null : new ImageSet(0);
+		if (genindex != null && file == null) {
+			throw new Exception("<gfxcomp genindex> also needs file, the direntry name the images "
+			                  + "end up in : the index references their page through <file>$PAGE");
+		}
+		ImageSet imageset = genindex == null ? null : new ImageSet(0, file);
 		List<String> generated = new ArrayList<>();
 
 		for (ImmutableNode child : node.getChildren()) {

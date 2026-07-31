@@ -17,8 +17,16 @@ public class ImageSet {
 	private AsmSourceCode asm;
 	private HashMap<String,HashMap<String,Image>> images; // a map of images grouped by type and name 
 	
+	/** name of the direntry the images end up in, or null outside a build */
+	private String file;
+
 	public ImageSet(Integer type) {
+		this(type, null);
+	}
+
+	public ImageSet(Integer type, String file) {
 		// type is unimplemented for now
+		this.file = file;
 		images = new HashMap<String,HashMap<String,Image>>();
 	}
 	
@@ -40,17 +48,14 @@ public class ImageSet {
 		List<String> line = new ArrayList<String>();
 
 		// The page an image ends up in is only known once it is loaded, so the
-		// index references it through a symbol the load time linker resolves
-		// (externPg). v1 had no such step : its builder placed the pages itself
-		// and patched the value in.
-		asm.addCommentLine("page ids, resolved at load time");
-		for (Entry<String, HashMap<String, Image>> imgEntry : images.entrySet()) {
-			for (Image img : imgEntry.getValue().values()) {
-				asm.add("pge_" + img.getFullName() + " EXTERNAL");
-				if (img.nb_cell != null) {
-					asm.add("pge_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE + " EXTERNAL");
-				}
-			}
+		// index references it through a relocation the load time linker fills
+		// in (externPg) : an 8 bit external named <direntry>$PAGE, resolved to
+		// the page holding that file. v1 had no such step — its builder placed
+		// the pages itself and patched the value in. Every image of an imageset
+		// is compiled into the same unit, hence the same file and one symbol.
+		if (file != null) {
+			asm.addCommentLine("page of the file holding this code, resolved at load time");
+			asm.add(file + "$PAGE EXTERNAL");
 		}
 
 		// what the rest of the game links against : an index per image, and the
@@ -385,19 +390,39 @@ public class ImageSet {
 		return;
 	}
 	
+	/**
+	 * One mapping frame : the page of the drawing code then its address, and
+	 * the same pair for the erase code plus its cell count.
+	 *
+	 * The address is a symbol, so it has to be emitted as a word — an fcb
+	 * would keep its low byte only. v1 had the value in hand and split it into
+	 * two bytes itself.
+	 */
 	private void addImgSymbol(Image img, List<String> line) {
-		if (img != null) {
-			line.add("pge_"+img.getFullName());
-			line.add("adr_"+img.getFullName());
-		
-			if (img.nb_cell != null) {
-				line.add("pge_"+img.getFullName()+AssemblyGenerator.ERASE_SUFFIXE);
-				line.add("adr_"+img.getFullName()+AssemblyGenerator.ERASE_SUFFIXE);
-				line.add(String.format("$%1$02X", img.nb_cell)); // unsigned value
-			}
+		if (img == null) {
+			return;
 		}
+		flush(line);                       // close the row of bytes in progress
+		asm.addFcb(new String[]{pageSymbol()});
+		asm.addFdb(new String[]{"adr_"+img.getFullName()});
+
+		if (img.nb_cell != null) {
+			asm.addFcb(new String[]{pageSymbol()});
+			asm.addFdb(new String[]{"adr_"+img.getFullName()+AssemblyGenerator.ERASE_SUFFIXE});
+			asm.addFcb(new String[]{String.format("$%1$02X", img.nb_cell)}); // unsigned value
+		}
+		asm.flush();
 	}
 	
+	/**
+	 * The runtime feeds this byte straight to the cartridge window register, so
+	 * it carries the RAM over cartridge bits, exactly as v1 wrote page + $60.
+	 * The load time linker adds the resolved page to that constant operand.
+	 */
+	private String pageSymbol() {
+		return file == null ? "$00" : file + "$PAGE+$60";
+	}
+
 	private void flush(List<String> line) {
 		String[] result = line.toArray(new String[0]);
 		if (asm != null) {

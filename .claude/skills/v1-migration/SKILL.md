@@ -105,6 +105,28 @@ Rattrapage : re-diff fichier par fichier, ré-import, mise à jour du manifest.
   quand STATUS bit $20 est clair) parque le lecteur → DK.OPC:=1 → DKCONT
   « réussit » sans lire. Le loader réassert OPC=2 avant chaque DKCONT
   (durci le 31/07) — ne jamais retirer ce garde-fou.
+- **Un game mode v2 commence par son point d'entrée** : la scène charge le
+  direntry à l'adresse de sa région et saute sur le PREMIER octet. Tout ce
+  qui émet des octets (tables, index d'objets) doit venir APRÈS le code
+  d'entrée. Vérifier `Symbol: main = 0000` dans le .lwmap.
+- **Les `fill` de RAM v1 ne se transposent pas** : en v1 les tables d'objets
+  sont émises dans une section ORG'ée sur `dp` ; un direntry v2 est
+  relogeable, donc les emplacements RAM deviennent des ÉQUATES (aucun octet
+  émis) et le pool d'objets va à une adresse fixe choisie par le jeu.
+- **Pages dans les tables : valeur de registre, pas numéro** — `_SetCartPageA`
+  écrit son octet tel quel dans `$E7E6`, il faut donc `map.RAM_OVER_CART+page`
+  (la v1 écrivait `page+$60`). Pour les données générées, la page vient du
+  linker : symbole `<nom de direntry>$PAGE` (relocation externPg 8 bits, avec
+  opérande d'addition — d'où `...$PAGE+$60`), et l'unité doit inclure
+  `entries.asm` pour que l'équate d'id de fichier existe.
+- **Coordonnées écran décalées** : `x_pixel`/`y_pixel` vivent dans
+  `screen_left..screen_right` × `screen_top..screen_bottom` (48..207 × 28..227),
+  pas en 0..159/0..199 — un sprite posé à 40 est « hors écran » et
+  silencieusement non dessiné (flag `rsv_render_outofrange`). Sans le flag
+  `render_playfieldcoord`, l'engine ignore `x_pos`/`y_pos`.
+- **`DisplaySprite` s'appelle à CHAQUE frame** (depuis la routine de l'objet) :
+  il inscrit l'objet dans la structure de priorité du buffer courant, et il y
+  en a une par buffer.
 - **Sous toje, remonter la disquette après CHAQUE rebuild** : `mount_disk`
   fige le contenu au moment du montage. Un `reset` seul rejoue l'ANCIENNE
   image et on débogue un binaire périmé (vécu : le gm exécutait la version
