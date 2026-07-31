@@ -8,21 +8,27 @@ sous toje (16/16), tests JUnit verts, CI master verte.
 
 ## En cours
 
-- [ ] **Sprites compilés** (étape 1 de la roadmap R-Type) — état des lieux :
+- [ ] **Migration engine v1 → v2 + sprites compilés** — stratégie actée le
+      31/07/2026 : import ASM v1 **en 1:1** (la v1 reste la référence
+      opérationnelle, pas de gel — traçage par commit), builder migré en
+      **capacité**, renommage différé en phase finale. Mode opératoire :
+      [`.claude/skills/v1-migration/SKILL.md`](.claude/skills/v1-migration/SKILL.md) ;
+      état des lieux sprites :
       [`docs/lang/fr/sprites-etat-2026-07.md`](docs/lang/fr/sprites-etat-2026-07.md)
-      — **plan S0–S4 en attente de validation**
-  - [x] État des lieux croisé v1/v2 (31/07/2026) : runtime v1 délimité
-        (7 fichiers, ~1 400 l.), contrats vérifiés (registres, cellules,
-        VRAM, imageset), 10 écarts relevés dont 4 bloquants dans gfxcomp et
-        un écart de marge de cellule 16 (v1) vs 12 (v2)
-  - [ ] S0 — remise en état de gfxcomp (main-class, Handlers, index
-        imageset, chemin d'include ; marge 12 confirmée — c'est le runtime
-        porté qui s'adaptera)
-  - [ ] S1 — gfxlock parité timing (frame.count, frameDrop.max,
-        frame.gameCount)
-  - [ ] S2 — portage du runtime (7 fichiers, noms v1 pour wddebug)
-  - [ ] S3 — banc examples/sprites (scène déclarative, résultats $9C00, toje)
-  - [ ] S4 — docs (sprites.md, CLAUDE.md)
+  - [x] M0 — mode opératoire (skill v1-migration : import + manifest,
+        politique d'écarts tracés, drift-check.sh, double banc)
+  - [x] M1 — inventaire de dérive (478 v1 / 131 v2 / 30 homonymes tous
+        divergents — [`migration-inventaire-2026-07.md`](docs/lang/fr/migration-inventaire-2026-07.md)) ;
+        partition actée ; engine + exemples v2 parqués dans `parked/`
+  - [ ] M2 — base commune : import 1:1 (constants, macros, gfxlock, irq,
+        palette, contrôleurs v1), migration des exemples au dialecte v1
+        (pilote sound/to8), re-validation complète
+  - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
+        banc générateur vs générateur (mêmes PNG, diff des .bin)
+  - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc
+        examples/sprites + banc runtime vs runtime (VRAM comparée sous toje)
+  - [ ] M5 — docs (sprites.md, CLAUDE.md) ; renommage = phase finale
+        post-migration des jeux (table docs/engine-naming.csv)
 
 ## Backlog builder (inventaire du 31/07/2026, ordre conseillé)
 

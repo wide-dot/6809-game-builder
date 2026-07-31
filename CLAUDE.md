@@ -123,6 +123,26 @@ vues wddebug orphelines :
   de jeu. À décider : reproduire ce pipeline en plugins SPI, ou faire porter ce rôle
   au load-time linker + conventions.
 
+## Migration engine v1 → v2 (stratégie actée le 31/07/2026)
+
+La v1 (`thomson-to8-game-engine`) reste la **référence opérationnelle** et ne
+peut pas être gelée. L'ASM v1 est repris **en 1:1** (iso-syntaxe, mêmes noms
+et chemins — le diff contre v1 reste trivial, la resynchronisation mécanique),
+tracé fichier par fichier avec son commit v1 dans `engine/v1-manifest.csv`
+(dérive détectée par `.claude/skills/v1-migration/drift-check.sh`). Tout écart
+volontaire au 1:1 est consigné (manifest + `; V2-DEVIATION:` dans le code).
+Le builder migre en **capacité** (idiome v2 : config.xml/scènes/linker). Le
+**renommage** (`docs/engine-naming.csv`) et les évolutions non essentielles
+sont différés en phase finale, après migration des jeux désignés par l'auteur.
+L'engine v2 pré-migration et les exemples pré-migration sont figés dans
+`parked/` (référence, ne pas modifier ni builder) ; les exemples migrés
+reprennent leur place dans `examples/`. Les parties sans équivalent v1
+(bootloader/loader/scènes, TLSF, MO6, MPLUS…) restent v2 telles quelles.
+Validation : méthode standard + **double banc** (générateur vs générateur sur
+mêmes PNG ; runtime vs runtime sous toje avec checksums comparés).
+**Mode opératoire complet : `.claude/skills/v1-migration/SKILL.md`.**
+Inventaire de dérive : `docs/lang/fr/migration-inventaire-2026-07.md`.
+
 ## Revue Java & campagne de correction (30/07/2026)
 
 Revue complète en trois passes : `docs/lang/fr/revue-java-2026-07.md` (15 défauts

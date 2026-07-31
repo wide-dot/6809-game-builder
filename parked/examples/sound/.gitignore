@@ -1,0 +1,10 @@
+*.fd
+*.sd
+*.sap
+*.hfe
+**/dist/
+**/build/
+**/gen/
+**/engine/
+engine
+*.sn76489.*.vgm

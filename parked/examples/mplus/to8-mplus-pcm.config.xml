@@ -1,0 +1,101 @@
+<configuration>
+
+    <target name="assets">
+        <pcm filename="src/assets/sounds/samples" bit8to6="true"/>
+    </target>
+
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+
+        <layout>
+            <region name="gamemode" page="$01" address="$6100" size="$1F00"/>
+            <region name="samples"  page="$05" address="$0000" size="$6000"/>
+        </layout>
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="direntry.section"      value="DATA"/>
+                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="lwasm.format"          value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- Title - game mode -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/assets/game-modes/to8/title/main.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Title - sample data -->
+                <!-- ******************************************************* -->
+                <direntry name="dummyfile"/>
+                <!-- 24 KB on purpose : the scene loads it at page 5/$0000 and it
+                     spills past the cartridge window into video RAM up to $5FFF.
+                     maxsize is raised above the 16 KB a directory entry can
+                     describe : the stored size wraps, which is harmless here
+                     because the scene gives an explicit destination. -->
+                <direntry name="assets.samples" maxsize="0x6000" loadtimelink="LINK">
+                    <lwasm>
+                        <label name="samples.kick"   /><includebin filename="src/assets/sounds/samples/1-kick.6bit.bin"    />
+                        <label name="samples.snare"  /><includebin filename="src/assets/sounds/samples/2-snare.6bit.bin"   />
+                        <label name="samples.clap"   /><includebin filename="src/assets/sounds/samples/3-clap.6bit.bin"    />
+                        <label name="samples.scratch"/><includebin filename="src/assets/sounds/samples/4-scratch.6bit.bin" />
+                        <label name="samples.timpani"/><includebin filename="src/assets/sounds/samples/5-timpani.6bit.bin" />
+                        <label name="samples.tom"    /><includebin filename="src/assets/sounds/samples/6-tom.6bit.bin"     />
+                        <label name="samples.bongo"  /><includebin filename="src/assets/sounds/samples/7-bongo.6bit.bin"   />
+                    </lwasm>
+                </direntry>
+
+                <!-- Scenes -->
+                <!-- ******************************************************* -->
+                <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
+                    <load name="assets.gm.title" region="gamemode"/>
+                    <!-- raw destination : loaded at a half page boundary only to
+                         make the loader switch page before the samples, which
+                         then span 24 KB from $0000 -->
+                    <load name="dummyfile" page="$00" address="$4000"/>
+                    <load name="assets.samples" region="samples"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.title</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">   
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8-mplus-pcm.fd"/>
+            <sd  filename="to8-mplus-pcm.sd"/>
+            <sap filename="to8-mplus-pcm.sap"/>
+            <hfe filename="to8-mplus-pcm.hfe"/>
+        </floppydisk>
+    </target>
+</configuration>
+
