@@ -7,27 +7,22 @@ import java.util.List;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
-import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
-import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
-import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
-import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Target {
 	
-	public String path;
-	public Defaults defaults;
-	public Defines defines;
-	
-	public Target(String path) throws Exception {
-		this.path = path;
+	private final BuildContext ctx;
+
+	public Target(BuildContext ctx) throws Exception {
+		this.ctx = ctx;
 	}
 	
 	public void processTargetSelection(HierarchicalConfiguration<ImmutableNode> node, String[] targets) throws Exception {
@@ -63,19 +58,15 @@ public class Target {
 	
 	private void processTargets(List<ImmutableNode> targetNodes) throws Exception {
 		
-		defaults = new Defaults();
-		defines = new Defines();
-		
     	for(ImmutableNode node : targetNodes)
     	{
 			String targetName = (String) node.getAttributes().get("name");
 			log.info("Processing target {}", targetName);
 
-			// ids are global to a target : restart the numbering so that two
+			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
-			FileIds.clear();
-			LinkSymbols.clear();
+			ctx.resetTarget();
 
 	   		// instanciate plugins
 			DefaultFactory defaultFactory;
@@ -94,21 +85,17 @@ public class Target {
 		        if (defaultFactory != null) {
 				    final DefaultPluginInterface processor = defaultFactory.build();
 				    log.debug("Running plugin: {}", defaultFactory.name());
-				    processor.run(child, path, defaults, defines);
+				    processor.run(child, ctx);
 		        }
 		        
 		        if (objectFactory != null) {
 				    final ObjectPluginInterface processor = objectFactory.build();
 				    log.debug("Running plugin: {}", objectFactory.name());
-				    processor.getObject(child, path, defaults, defines);
+				    processor.getObject(child, ctx);
 		        }
 			}
 			log.info("End of processing target {}", targetName);
 			
-			// clear target local definitions
-			defaults.values.clear();
-			defines.values.clear();
-			defines.newValues.clear();
     	}
 	}
 }

@@ -156,8 +156,21 @@ comparées **octet par octet** avec les précédentes, et `loader-ut` rejoué so
   peut enfin contenir plusieurs membres porteurs de link data. C'est le
   déverrouillage concret du modèle « group » (validé par T16).
 
-Reste ouvert, par ordre de valeur : `BuildContext` pour supprimer l'état statique
-(ouvre parallélisation et tests d'intégration), dé-boilerplate SPI (~400 lignes),
+**`BuildContext` (31/07/2026)** : l'état de build n'est plus statique. Un objet
+`spi/BuildContext` porte le chemin racine, les settings, la table de symboles de
+link, l'allocateur d'ids et les defaults/defines *scopés* (`child()` pour un
+conteneur imbriqué, `publish()` au retour). Les 4 interfaces SPI passent de
+`(node, path, defaults, defines)` à `(node, ctx)` — 39 fichiers touchés, dont les
+7 plugins de conversion. `Settings` devient une instance dans `spi/configuration`,
+`LinkSymbols` et `FileIds` deviennent des instances. Seul reste statique le
+*registre* de plugins (`Plugins`), chargé une fois par JVM et jamais muté : ce
+n'est pas de l'état de build. Effet mesuré : **deux configurations traitées dans
+une seule JVM produisent désormais des images identiques à des builds isolés**,
+ce qui était impossible avant (les ids de symboles fuyaient d'une config à
+l'autre). Ça débloque aussi la parallélisation de lwasm et les tests
+d'intégration. Images des 8 configs inchangées octet pour octet, loader-ut 16/16.
+
+Reste ouvert, par ordre de valeur : dé-boilerplate SPI (~400 lignes),
 tri alphabétique des ids de symboles (prérequis des interfaces de groups),
 packaging en zip par plateforme.
 

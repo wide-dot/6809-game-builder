@@ -54,7 +54,10 @@ public class LwObject implements ObjectDataInterface{
 	private int cc;
 	private static final int numopers = 13;
 	
-	public LwObject(String filename) throws Exception {
+	private final LinkSymbols linkSymbols;
+
+	public LwObject(String filename, LinkSymbols linkSymbols) throws Exception {
+		this.linkSymbols = linkSymbols;
 		
 		path = Paths.get(filename);
 		
@@ -499,7 +502,7 @@ public class LwObject implements ObjectDataInterface{
 				if (section.flags == LWSection.SECTION_CONST) {
 					for (Symbol symbol : section.exportedsyms) {
 						
-						int symid = LinkSymbols.export(symbol.sym, path.getFileName().toString());
+						int symid = linkSymbols.export(symbol.sym, path.getFileName().toString());
 						
 						byte[] val = new byte[4];
 						val[0] = (byte) ((symid & 0xff00) >> 8);
@@ -528,7 +531,7 @@ public class LwObject implements ObjectDataInterface{
 					int base = sectionBase(section);
 					for (Symbol symbol : section.exportedsyms) {
 						
-						int symid = LinkSymbols.export(symbol.sym, path.getFileName().toString());
+						int symid = linkSymbols.export(symbol.sym, path.getFileName().toString());
 						int offset = base + symbol.offset;
 						
 						byte[] val = new byte[4];
@@ -682,7 +685,7 @@ public class LwObject implements ObjectDataInterface{
 					if (r.symbol.isEmpty()) continue;         // nothing to import
 					if (r.symbol.endsWith("$PAGE")) continue; // handled as a page reference
 
-					int symid = LinkSymbols.add(r.symbol);
+					int symid = linkSymbols.add(r.symbol);
 
 					int offset = base + reloc.offset;
 					byte[] val = new byte[6];
@@ -726,7 +729,7 @@ public class LwObject implements ObjectDataInterface{
 								+ reloc.offset + ")");
 					}
 
-					int symid = LinkSymbols.add(r.symbol);
+					int symid = linkSymbols.add(r.symbol);
 
 					int offset = base + reloc.offset;
 					byte[] val = new byte[6];

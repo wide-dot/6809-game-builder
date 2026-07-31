@@ -1,6 +1,7 @@
 package com.widedot.toolbox.audio.vgm2vgc.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
@@ -18,11 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	//read input xml
-	String filename = Attribute.getStringOpt(node, defaults, "filename", "vgm2vgc.filename");
-	String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "vgm2vgc.genbinary");
+	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2vgc.filename");
+	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2vgc.genbinary");
 
 
 	if ((filename == null || filename.equals(""))) {
@@ -31,8 +32,8 @@ public class ObjectImpl implements ObjectPluginInterface {
 		throw new Exception(m);
 	}
 	  
-	if (filename != null) filename = path + File.separator + filename;
-	if (genbinary != null) genbinary = path + File.separator + genbinary;
+	if (filename != null) filename = ctx.path + File.separator + filename;
+	if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
 	  
 	Binary bin = new Binary();
 	  

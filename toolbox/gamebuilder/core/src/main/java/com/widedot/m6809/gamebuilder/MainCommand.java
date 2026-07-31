@@ -17,8 +17,11 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.pluginloader.EmbeddedPluginLoader;
 import com.widedot.m6809.gamebuilder.pluginloader.PluginLoader;
+import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.util.FileResourcesUtils;
 import com.widedot.m6809.util.FileUtil;
 
@@ -85,23 +88,25 @@ public class MainCommand implements Callable<Integer> {
 					pluginsPath = System.getProperty("basedir") + File.separator;
 				}
 				pluginsPath += "plugins";
-			    Settings.pluginLoader = new PluginLoader(new File(pluginsPath));
-			    Settings.pluginLoader.loadPlugins();
+			    PluginLoader externalPlugins = new PluginLoader(new File(pluginsPath));
+			    externalPlugins.loadPlugins();
 
 				// load embeded plugins
-			    Settings.embededPluginLoader = new EmbeddedPluginLoader();
-			    Settings.embededPluginLoader.loadPlugins();
+			    EmbeddedPluginLoader embeddedPlugins = new EmbeddedPluginLoader();
+			    embeddedPlugins.loadPlugins();
+
+			    Plugins.register(externalPlugins, embeddedPlugins);
 			    
 				// load properties
-				Settings.values = FileResourcesUtils.getHashMap("settings.properties");
-				
-				if (Settings.isValid()) {
+				Settings settings = new Settings(FileResourcesUtils.getHashMap("settings.properties"));
+
+				if (settings.isValid()) {
 					// process targets of a conf file or all conf files in a dir
 					String[] targets = (target!=null?target.split(","):null);				
 					if (exclusive.confFile != null) {
-						processFile(new File(exclusive.confFile), targets);
+						processFile(new File(exclusive.confFile), targets, settings);
 					} else if (exclusive.confDir != null) {
-						processDir(new File(exclusive.confDir), targets);
+						processDir(new File(exclusive.confDir), targets, settings);
 					}
 				}
 			}
@@ -122,7 +127,7 @@ public class MainCommand implements Callable<Integer> {
 		}
 	}
 	
-	private void processDir(File dir, String[] targets) throws Exception {
+	private void processDir(File dir, String[] targets, Settings settings) throws Exception {
 		if (!dir.isDirectory()) {
 			throw new Exception("Directory: " + dir.getPath() + " does not exists !");
 		}
@@ -136,12 +141,12 @@ public class MainCommand implements Callable<Integer> {
 		Arrays.sort(files);
 		for (File file : files) {
 			if (FilenameUtils.getExtension(file.getName()).equals("xml")) {
-				processFile(file, targets);
+				processFile(file, targets, settings);
 			}
 		}
 	}
 	
-	private void processFile(File file, String[] targets) throws Exception{
+	private void processFile(File file, String[] targets, Settings settings) throws Exception{
 		
 		log.info("Processing file: {}", file.getName());
 
@@ -163,7 +168,8 @@ public class MainCommand implements Callable<Integer> {
 		try
 		{
 		    XMLConfiguration config = configs.xml(file);
-		    Target target = new Target(path);
+		    // one context per configuration file : nothing leaks between builds
+		    Target target = new Target(new BuildContext(path, settings));
 		    
 		    if (targets!=null && targets.length>0) {
 		    	target.processTargetSelection(config, targets);

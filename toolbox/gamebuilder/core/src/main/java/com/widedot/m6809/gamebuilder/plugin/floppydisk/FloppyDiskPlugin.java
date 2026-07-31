@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.FdUtil;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
@@ -20,13 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FloppyDiskPlugin {
 	
-	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static void run(ImmutableNode node, BuildContext ctx) throws Exception {
     	
 		log.debug("Processing floppydisk ...");
 		
-		String model = Attribute.getString(node, defaults, "model", "floppydisk.model");
-		String storageFilename = Attribute.getString(node, defaults, "storage", "floppydisk.storage");
-		storageFilename = path + storageFilename;
+		String model = Attribute.getString(node, ctx.defaults, "model", "floppydisk.model");
+		String storageFilename = Attribute.getString(node, ctx.defaults, "storage", "floppydisk.storage");
+		storageFilename = ctx.path + storageFilename;
 		
 		// load storage definitions from external file
 		Storages storages = new Storages(storageFilename);
@@ -40,15 +41,15 @@ public class FloppyDiskPlugin {
 		MediaFactory mediaFactory;
 		
 		// instanciate local definitions
-		Defaults localDefaults = new Defaults(defaults.values);
-		Defines localDefines = new Defines(defines.values);
+		// nested containers get their own defaults and defines
+		BuildContext localCtx = ctx.child();
 
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 
 			// non plugins
 			if (plugin.equals("section")) {	
-	    		Section section = new Section(child, defaults);
+	    		Section section = new Section(child, ctx.defaults);
 	    		storage.sections.put(section.name, section);
 	    		continue;
 	    	}
@@ -63,15 +64,15 @@ public class FloppyDiskPlugin {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, localDefaults, localDefines);
-				defines.publish(localDefines);
+			    processor.run(child, localCtx);
+				ctx.publish(localCtx);
 	        }
 	        
 	        if (mediaFactory != null) {
 			    final MediaPluginInterface processor = mediaFactory.build();
 			    log.debug("Running plugin: {}", mediaFactory.name());
-			    processor.run(child, path, localDefaults, localDefines, mediaData);
-			    defines.publish(localDefines);
+			    processor.run(child, localCtx, mediaData);
+			    ctx.publish(localCtx);
 	        }
     	}
 		

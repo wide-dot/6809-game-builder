@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.format;
 
 import java.io.IOException;
+import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -12,7 +13,8 @@ public class LwRaw implements ObjectDataInterface{
 
 	public byte[] bin;
 	
-	public LwRaw(String filename) throws IOException {
+	/** linkSymbols is unused here, raw objects carry no link data */
+	public LwRaw(String filename, LinkSymbols linkSymbols) throws IOException {
 		bin = Files.readAllBytes(Paths.get(filename));
 	}
 

@@ -1,6 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
+import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.file.DirectoryStream;
@@ -15,9 +17,8 @@ import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 
-import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
-import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.util.Constants;
 import com.widedot.m6809.util.FileUtil;
 
@@ -52,10 +53,10 @@ public class LwAssembler
 		}
 	};
 	
-	public static ObjectDataInterface assemble(String asmFile, String rootPath, Defines defines, String format, String processor) throws Exception {
+	public static ObjectDataInterface assemble(String asmFile, String rootPath, BuildContext ctx, String format, String processor) throws Exception {
 		
 		Path path = Paths.get(asmFile).toAbsolutePath().normalize();
-		String buildDir = FileUtil.getDir(asmFile) + File.separator +Settings.values.get("build.dir") + File.separator;
+		String buildDir = FileUtil.getDir(asmFile) + File.separator +ctx.settings.get("build.dir") + File.separator;
 		String asmBasename = FileUtil.removeExtension(FileUtil.getBasename(asmFile));
 		String binFilename = buildDir + asmBasename + "." + format;
 		String lstFilename = buildDir + asmBasename + "." + LST;
@@ -87,7 +88,7 @@ public class LwAssembler
 				   "--map=" + mapFilename
 				   ));
 		
-		for (Entry<String, String> define : defines.values.entrySet()) {
+		for (Entry<String, String> define : ctx.defines.values.entrySet()) {
 			String val = define.getValue();
 			if (val.startsWith("$")) {
 				command.add("--define="+define.getKey()+"="+Integer.parseInt(val.substring(1),16));
@@ -104,41 +105,41 @@ public class LwAssembler
 		}
         
         Class<?> clazz = Class.forName(formatClass.get(format));
-        Constructor<?> ctor = clazz.getConstructor(String.class);
-        ObjectDataInterface object = (ObjectDataInterface) ctor.newInstance(new Object[] { binFilename });
+        Constructor<?> ctor = clazz.getConstructor(String.class, LinkSymbols.class);
+        ObjectDataInterface object = (ObjectDataInterface) ctor.newInstance(new Object[] { binFilename, ctx.linkSymbols });
         
-        // export builder defines
+        // export builder ctx.defines
         String defineKey = Constants.BUILDER_DEFINE_PREFIX + "lwasm.size." + asmBasename;
         String binLength = Integer.toString(object.getBytes().length);
         
-        if (defines.values.containsKey(defineKey)) {
+        if (ctx.defines.values.containsKey(defineKey)) {
         	log.warn("Duplicate filename: <" + asmBasename + ">. Builder will overwrite the define: <" + defineKey + ">. Use gensource attribute on lwasm element to set an alias");
         }
 
-        defines.newValues.put(defineKey, binLength);
+        ctx.defines.newValues.put(defineKey, binLength);
         log.debug("generate define : {} {}", defineKey,  binLength);
         
         // add a file tag in the build directory
-        File tag = new File(buildDir+Settings.values.get("build.dir.tag"));
+        File tag = new File(buildDir+ctx.settings.get("build.dir.tag"));
         tag.createNewFile();
         
 		return object;
 	}
 	
-	public static void clean(String path) throws IOException {
-		log.info("Clean build directories ...");	   
-	    deleteDirectoryRecursion(Paths.get(path));
+	public static void clean(String path, Settings settings) throws IOException {
+		log.info("Clean build directories ...");
+	    deleteDirectoryRecursion(Paths.get(path), settings.get("build.dir"), settings.get("build.dir.tag"));
 	    log.info("Clean ended.");
 	}
 	
-	public static void deleteDirectoryRecursion(Path path) throws IOException {
+	public static void deleteDirectoryRecursion(Path path, String buildDirName, String buildDirTag) throws IOException {
 		if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
 			
 			// only delete the directory that ends with the expected name
-			if (path.getFileName().toString().equals(Settings.values.get("build.dir"))) {
+			if (path.getFileName().toString().equals(buildDirName)) {
 				
 				// to ensure that the directory is a one created by the builder, a file tag is controlled
-				File tag = new File(path.toString()+File.separator+Settings.values.get("build.dir.tag"));
+				File tag = new File(path.toString()+File.separator+buildDirTag);
 				if (tag.isFile()) {
 					log.debug("delete: {}", path.toString());
 					FileUtils.deleteDirectory(path.toFile());
@@ -149,7 +150,7 @@ public class LwAssembler
 			} else {
 				try (DirectoryStream<Path> entries = Files.newDirectoryStream(path)) {
 					for (Path entry : entries) {
-						deleteDirectoryRecursion(entry);
+						deleteDirectoryRecursion(entry, buildDirName, buildDirTag);
 					}
 				}
 			}

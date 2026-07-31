@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.lwasm;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -9,7 +10,6 @@ import java.util.List;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 
-import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.LwAssembler;
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
@@ -25,13 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class LwasmPlugin {
-	public static Object getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static Object getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 		
 		log.debug("Processing lwasm ...");
 		
-		String format = Attribute.getString(node, defaults, "format", "lwasm.format", LwAssembler.RAW);
-		String gensource = Attribute.getStringOpt(node, defaults, "gensource", "lwasm.gensource");
-		String lwasmProcessor = Attribute.getString(node, defaults, "processor", "lwasm.processor", "6809");
+		String format = Attribute.getString(node, ctx.defaults, "format", "lwasm.format", LwAssembler.RAW);
+		String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "lwasm.gensource");
+		String lwasmProcessor = Attribute.getString(node, ctx.defaults, "processor", "lwasm.processor", "6809");
 		
 		List<File> files = new ArrayList<File>();
 		
@@ -40,8 +40,8 @@ public class LwasmPlugin {
 		FileFactory fileFactory;
 		
 		// instanciate local definitions
-		Defaults localDefaults = new Defaults(defaults.values);
-		Defines localDefines = new Defines(defines.values);
+		// nested containers get their own defaults and defines
+		BuildContext localCtx = ctx.child();
 				
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
@@ -56,15 +56,15 @@ public class LwasmPlugin {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, localDefaults, localDefines);
-			    defines.publish(localDefines);
+			    processor.run(child, localCtx);
+			    ctx.publish(localCtx);
 	        }
 	        
 	        if (fileFactory != null) {
 			    final FilePluginInterface processor = fileFactory.build();
 			    log.debug("Running plugin: {}", fileFactory.name());
-			    files.add(processor.getFile(child, path, localDefaults, localDefines));
-			    defines.publish(localDefines);
+			    files.add(processor.getFile(child, localCtx));
+			    ctx.publish(localCtx);
 	        }
 		}
 
@@ -81,7 +81,7 @@ public class LwasmPlugin {
 		
 		// set default generated source filename if specified
 		if (gensource != null) {
-			asmFilename = path + File.separator + gensource;
+			asmFilename = ctx.path + File.separator + gensource;
 			asmFile = concat(files, asmFilename);
 			
 		} else {
@@ -93,14 +93,14 @@ public class LwasmPlugin {
 				asmFile = files.get(0);
 			} else {
 				// multiple files, use temp file with timestamp name 
-				asmFilename = path + File.separator + Settings.values.get("generate.unnamedFiles.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
+				asmFilename = ctx.path + File.separator + ctx.settings.get("generate.unnamedFiles.dir") + File.separator + String.valueOf(java.lang.System.nanoTime()) + ".asm";
 				asmFile = concat(files, asmFilename);
 			}
 		}
 
 		// assemble		
-		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), path, localDefines, format, lwasmProcessor);
-		defines.publish(localDefines);
+		ObjectDataInterface obj = LwAssembler.assemble(asmFile.getAbsolutePath(), ctx.path, localCtx, format, lwasmProcessor);
+		ctx.publish(localCtx);
 		log.debug("End of processing lwasm");
 		
 		return obj;

@@ -1,12 +1,12 @@
 package com.widedot.m6809.gamebuilder.plugin.direntry;
 
 import java.util.ArrayList;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.Settings;
 import com.widedot.m6809.gamebuilder.plugin.direntry.format.LinkData;
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.ObjectFactory;
@@ -92,18 +92,18 @@ public class DirEntryPlugin {
 	
 	public static final String ZX0 = "zx0";
 	
-	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
+	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing direntry ...");
 		
-		String name = Attribute.getString(node, defaults, "name", "direntry.name");
-		String section = Attribute.getString(node, defaults, "section", "direntry.section");
-		String codec = Attribute.getStringOpt(node, defaults, "codec", "direntry.codec");
-		String linkSection = Attribute.getStringOpt(node, defaults, "loadtimelink", "direntry.linksection");
+		String name = Attribute.getString(node, ctx.defaults, "name", "direntry.name");
+		String section = Attribute.getString(node, ctx.defaults, "section", "direntry.section");
+		String codec = Attribute.getStringOpt(node, ctx.defaults, "codec", "direntry.codec");
+		String linkSection = Attribute.getStringOpt(node, ctx.defaults, "loadtimelink", "direntry.linksection");
 		boolean loadtimelink = (linkSection!=null?true:false);
 		// the file size is stored on 14 bits in the directory entry, a bigger
 		// file cannot be described whatever the configuration asks for
-		int maxsize = Attribute.getInteger(node, defaults, "maxsize", "direntry.maxsize", MAX_FILE_SIZE);
+		int maxsize = Attribute.getInteger(node, ctx.defaults, "maxsize", "direntry.maxsize", MAX_FILE_SIZE);
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();
@@ -113,8 +113,8 @@ public class DirEntryPlugin {
 		ObjectFactory objectFactory;
 		
 		// instanciate local definitions
-		Defaults localDefaults = new Defaults(defaults.values);
-		Defines localDefines = new Defines(defines.values);
+		// nested containers get their own defaults and defines
+		BuildContext localCtx = ctx.child();
 		
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
@@ -129,15 +129,15 @@ public class DirEntryPlugin {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, localDefaults, localDefines);
-			    defines.publish(localDefines);
+			    processor.run(child, localCtx);
+			    ctx.publish(localCtx);
 	        }
 	        
 	        if (objectFactory != null) {
 			    final ObjectPluginInterface processor = objectFactory.build();
 			    log.debug("Running plugin: {}", objectFactory.name());
-			    objects.add(processor.getObject(child, path, localDefaults, localDefines));
-			    defines.publish(localDefines);
+			    objects.add(processor.getObject(child, localCtx));
+			    ctx.publish(localCtx);
 	        }
     	}
 
@@ -158,7 +158,7 @@ public class DirEntryPlugin {
 
 	    if (length > MAX_FILE_SIZE) {
 			// the size field is 14 bits wide : it wraps. Loading still works for
-			// scenes that give an explicit destination, because that path is
+			// scenes that give an explicit destination, because that ctx.path is
 			// driven by the sector counts, but anything reading the size back
 			// (loader.file.malloc, adjacent placement in scene types 10 and 11)
 			// will see a truncated value. Raising maxsize is how a project says
@@ -181,7 +181,7 @@ public class DirEntryPlugin {
 		
 		// apply codec
 		boolean compress = false;
-	    int maxdelta = Integer.parseInt(Settings.values.get("direntry.zx0.delta"));
+	    int maxdelta = Integer.parseInt(ctx.settings.get("direntry.zx0.delta"));
 	    if (maxdelta != ZX0_DELTA) {
 			throw new Exception("direntry.zx0.delta must be " + ZX0_DELTA
 					+ ", the loader copies back a fixed size tail (dir.entry.cdataz)");

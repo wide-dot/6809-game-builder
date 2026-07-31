@@ -1,6 +1,7 @@
 package com.widedot.toolbox.audio.pcm.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
@@ -18,12 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	//read input xml
-	String filename = Attribute.getStringOpt(node, defaults, "filename", "pcm.filename");
-	boolean downscale8To6Bit = Attribute.getBoolean(node, defaults, "bit8to6", "pcm.bit8to6", false);
-	String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "pcm.genbinary");
+	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "pcm.filename");
+	boolean downscale8To6Bit = Attribute.getBoolean(node, ctx.defaults, "bit8to6", "pcm.bit8to6", false);
+	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "pcm.genbinary");
 
 
 	if ((filename == null || filename.equals(""))) {
@@ -32,8 +33,8 @@ public class ObjectImpl implements ObjectPluginInterface {
 		throw new Exception(m);
 	}
 	  
-	if (filename != null) filename = path + File.separator + filename;
-	if (genbinary != null) genbinary = path + File.separator + genbinary;
+	if (filename != null) filename = ctx.path + File.separator + filename;
+	if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
 	  
 	Binary bin = new Binary();
 	  

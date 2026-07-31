@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.directory;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -43,39 +44,39 @@ public class DirectoryPlugin {
 //  ...         : direntries
 
 	
-	public static void run(ImmutableNode node, String path, Defaults defaults, Defines defines, MediaDataInterface media) throws Exception {
+	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media) throws Exception {
     	
 		log.debug("Processing directory ...");
 
-		Integer id = Attribute.getInteger(node, defaults, "id", "directory.id");
-		String section = Attribute.getString(node, defaults, "section", "directory.section");
-		String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "directory.genbinary");
-	    String gensymbols = Attribute.getString(node, defaults, "gensymbols", "direntry.gensymbols");
+		Integer id = Attribute.getInteger(node, ctx.defaults, "id", "directory.id");
+		String section = Attribute.getString(node, ctx.defaults, "section", "directory.section");
+		String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "directory.genbinary");
+	    String gensymbols = Attribute.getString(node, ctx.defaults, "gensymbols", "direntry.gensymbols");
 			
 		// generate symbols file
-		gensymbols = path + File.separator + gensymbols;
+		gensymbols = ctx.path + File.separator + gensymbols;
 		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbols)));
 		FileWriter writer = new FileWriter(gensymbols);
 
 		// file ids are global to the target : keep numbering where the
 		// previous directory left off, and record the base in the header
-		int baseId = FileIds.peek();
+		int baseId = ctx.fileIds.peek();
 		int direntryId = baseId;
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 			if (plugin.equals("direntry")) {
 				
-				String name = Attribute.getString(child, defaults, "name", "direntry.name");
+				String name = Attribute.getString(child, ctx.defaults, "name", "direntry.name");
 				writer.write(name + " equ " + direntryId + System.lineSeparator());
 				
-				String codec = Attribute.getStringOpt(child, defaults, "codec", "direntry.codec");
-				String linkSection = Attribute.getStringOpt(child, defaults, "loadtimelink", "direntry.linksection");
+				String codec = Attribute.getStringOpt(child, ctx.defaults, "codec", "direntry.codec");
+				String linkSection = Attribute.getStringOpt(child, ctx.defaults, "loadtimelink", "direntry.linksection");
 
 				direntryId += DirEntryPlugin.blockCount(codec, linkSection);
 			}
 		}
 		writer.close();
-		FileIds.next = direntryId;
+		ctx.fileIds.next = direntryId;
 		log.debug("directory {} : file ids {} to {}", id, baseId, direntryId-1);
 	    
    		// instanciate plugins
@@ -83,8 +84,8 @@ public class DirectoryPlugin {
 		MediaFactory mediaFactory;
 		
 		// instanciate local definitions
-		Defaults localDefaults = new Defaults(defaults.values);
-		Defines localDefines = new Defines(defines.values);
+		// nested containers get their own defaults and defines
+		BuildContext localCtx = ctx.child();
 
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
@@ -99,15 +100,15 @@ public class DirectoryPlugin {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, localDefaults, localDefines);
-				defines.publish(localDefines);
+			    processor.run(child, localCtx);
+				ctx.publish(localCtx);
 	        }
 	        
 	        if (mediaFactory != null) {
 			    final MediaPluginInterface processor = mediaFactory.build();
 			    log.debug("Running plugin: {}", mediaFactory.name());
-			    processor.run(child, path, localDefaults, localDefines, media);
-			    defines.publish(localDefines);
+			    processor.run(child, localCtx, media);
+			    ctx.publish(localCtx);
 	        }
     	}
 		
@@ -156,7 +157,7 @@ public class DirectoryPlugin {
 		
 		// write whole directory to debug file
 		if (genbinary != null) {
-			genbinary = path + File.separator + genbinary;
+			genbinary = ctx.path + File.separator + genbinary;
 			Files.createDirectories(Paths.get(FileUtil.getDir(genbinary)));
 			Files.write(Paths.get(genbinary), bin);
 			

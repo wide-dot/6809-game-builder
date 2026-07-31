@@ -1,6 +1,7 @@
 package com.widedot.toolbox.audio.vgm2sfx.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
@@ -18,11 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getStringOpt(node, defaults, "filename", "vgm2sfx.filename");
-	  String gensource = Attribute.getStringOpt(node, defaults, "gensource", "vgm2sfx.gensource");
+	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2sfx.filename");
+	  String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "vgm2sfx.gensource");
 
 	  if ((filename == null || filename.equals(""))) {
 		  String m = "An input filename should be provided for vgm2sfx!";
@@ -30,8 +31,8 @@ public class ObjectImpl implements ObjectPluginInterface {
 		  throw new Exception(m);
 	  }
 	  
-	  if (filename != null) filename = path + File.separator + filename;
-	  if (gensource != null) gensource = path + File.separator + gensource;
+	  if (filename != null) filename = ctx.path + File.separator + filename;
+	  if (gensource != null) gensource = ctx.path + File.separator + gensource;
 	  
 	  Binary bin = new Binary();
 	  	Vgm2SfxPlugin.filename = filename;

@@ -1,6 +1,7 @@
 package com.widedot.m6809.gamebuilder.plugin.cksumfd640;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import com.widedot.m6809.gamebuilder.pluginloader.Plugins;
 import com.widedot.m6809.gamebuilder.spi.DefaultFactory;
@@ -16,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Cksumfd640Plugin {
 	
-	public static Object getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+	public static Object getObject(ImmutableNode node, BuildContext ctx) throws Exception {
     	
 		log.debug("Processing cksumfd640 ...");
 		ObjectDataInterface obj = null;
@@ -26,8 +27,8 @@ public class Cksumfd640Plugin {
 		ObjectFactory objectFactory;
 		
 		// instanciate local definitions
-		Defaults localDefaults = new Defaults(defaults.values);
-		Defines localDefines = new Defines(defines.values);
+		// nested containers get their own defaults and defines
+		BuildContext localCtx = ctx.child();
 		
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
@@ -42,15 +43,15 @@ public class Cksumfd640Plugin {
 	        if (defaultFactory != null) {
 			    final DefaultPluginInterface processor = defaultFactory.build();
 			    log.debug("Running plugin: {}", defaultFactory.name());
-			    processor.run(child, path, localDefaults, localDefines);
-			    defines.publish(localDefines);
+			    processor.run(child, localCtx);
+			    ctx.publish(localCtx);
 	        }
 	        
 	        if (objectFactory != null) {
 			    final ObjectPluginInterface processor = objectFactory.build();
 			    log.debug("Running plugin: {}", objectFactory.name());
-			    obj = processor.getObject(child, path, localDefaults, localDefines);
-			    defines.publish(localDefines);
+			    obj = processor.getObject(child, localCtx);
+			    ctx.publish(localCtx);
 			    
 			    checksum(obj.getBytes());
 	        }

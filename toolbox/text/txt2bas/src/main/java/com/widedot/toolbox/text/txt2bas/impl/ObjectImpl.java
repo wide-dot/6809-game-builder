@@ -1,6 +1,7 @@
 package com.widedot.toolbox.text.txt2bas.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import java.util.HashMap;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -20,11 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getString(node, defaults, "filename", "txt2bas.filename");
-	  String tokenset = Attribute.getString(node, defaults, "tokenset", "txt2bas.tokenset", "to");
+	  String filename = Attribute.getString(node, ctx.defaults, "filename", "txt2bas.filename");
+	  String tokenset = Attribute.getString(node, ctx.defaults, "tokenset", "txt2bas.tokenset", "to");
 
 	  if (filename == null || filename.equals("")) {
 		  String m = "no filename provided for txt2bas!";
@@ -32,7 +33,7 @@ public class ObjectImpl implements ObjectPluginInterface {
 		  throw new Exception(m);
 	  }
 	  
-	  File file = new File(path + File.separator + filename);
+	  File file = new File(ctx.path + File.separator + filename);
 	  HashMap<byte[], byte[]> tokenmap = FileResourcesUtils.getHashMap(tokenset+".def");
 	  Binary bin = new Binary();
 	  bin.bytes = Txt2BasPlugin.getBasic(file, tokenmap);

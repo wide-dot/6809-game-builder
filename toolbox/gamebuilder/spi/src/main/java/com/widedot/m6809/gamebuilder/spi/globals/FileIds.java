@@ -15,23 +15,23 @@ package com.widedot.m6809.gamebuilder.spi.globals;
  */
 public class FileIds {
 
-	public static int next = 0;
+	public int next = 0;
 
 	/**
 	 * @return the id allocated to the next directory entry, and reserve it
 	 */
-	public static int allocate() {
+	public int allocate() {
 		return next++;
 	}
 
 	/**
 	 * @return the id that will be allocated next, without reserving it
 	 */
-	public static int peek() {
+	public int peek() {
 		return next;
 	}
 
-	public static void clear() {
+	public void clear() {
 		next = 0;
 	}
 }

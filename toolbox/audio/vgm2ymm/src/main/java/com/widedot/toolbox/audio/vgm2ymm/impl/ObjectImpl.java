@@ -1,6 +1,7 @@
 package com.widedot.toolbox.audio.vgm2ymm.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
@@ -18,13 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
   @Override
-  public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines) throws Exception {
+  public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getStringOpt(node, defaults, "filename", "vgm2ymm.filename");
-	  String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "vgm2ymm.genbinary");
-	  String codec = Attribute.getStringOpt(node, defaults, "codec", "vgm2ymm.codec");
-	  String drum = Attribute.getStringOpt(node, defaults, "dac2drum", "vgm2ymm.dac2drum");
+	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2ymm.filename");
+	  String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2ymm.genbinary");
+	  String codec = Attribute.getStringOpt(node, ctx.defaults, "codec", "vgm2ymm.codec");
+	  String drum = Attribute.getStringOpt(node, ctx.defaults, "dac2drum", "vgm2ymm.dac2drum");
 
 
 	  if ((filename == null || filename.equals(""))) {
@@ -33,8 +34,8 @@ public class ObjectImpl implements ObjectPluginInterface {
 		  throw new Exception(m);
 	  }
 	  
-	  if (filename != null) filename = path + File.separator + filename;
-	  if (genbinary != null) genbinary = path + File.separator + genbinary;
+	  if (filename != null) filename = ctx.path + File.separator + filename;
+	  if (genbinary != null) genbinary = ctx.path + File.separator + genbinary;
 	  
 	  Binary bin = new Binary();
 		Vgm2YmmPlugin.filename = filename;

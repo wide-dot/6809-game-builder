@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class LinkSymbols {
-	public static HashMap<String, Integer> ids = new HashMap<String, Integer>();
+	public final HashMap<String, Integer> ids = new HashMap<String, Integer>();
 
 	/**
 	 * symbol -> file that exports it.
@@ -18,27 +18,27 @@ public class LinkSymbols {
 	 * one export list and therefore one set of indexes) and is deferred with
 	 * that feature ; it would need a collect pass before any emission.
 	 */
-	private static HashMap<String, String> exporters = new HashMap<String, String>();
+	private final HashMap<String, String> exporters = new HashMap<String, String>();
 	
-	public static int add(String sym) throws Exception {
+	public int add(String sym) throws Exception {
 		
 		int nbSymbols;
 		
 		// assign a global key to this symbol
-	    if (!LinkSymbols.ids.containsKey(sym)) {
+	    if (!ids.containsKey(sym)) {
 	    	
-	    	nbSymbols = LinkSymbols.ids.size();
+	    	nbSymbols = ids.size();
 	    	if (nbSymbols==0x10000) {
 				String m = "Too many exported symbols ! limited to " + nbSymbols;
 				log.error(m);
 				throw new Exception(m);
 	    	}
 	    	
-	    	LinkSymbols.ids.put(sym, nbSymbols);
+	    	ids.put(sym, nbSymbols);
 	        //log.debug("link id for symbol {} : {} (new id)", sym, nbSymbols);
 	    } else {
-	    	nbSymbols = LinkSymbols.ids.get(sym);
-	    	//log.debug("link id for symbol {} : {} (existing id)", sym, LinkSymbols.ids.get(sym));
+	    	nbSymbols = ids.get(sym);
+	    	//log.debug("link id for symbol {} : {} (existing id)", sym, ids.get(sym));
 	    }
 	    
 	    return nbSymbols;
@@ -55,7 +55,7 @@ public class LinkSymbols {
 	 * @param sym   exported symbol
 	 * @param owner file that exports it, used for the error message
 	 */
-	public static int export(String sym, String owner) throws Exception {
+	public int export(String sym, String owner) throws Exception {
 		String previous = exporters.put(sym, owner);
 		if (previous != null && !previous.equals(owner)) {
 			String m = "symbol " + sym + " is exported by both " + previous + " and " + owner
@@ -67,7 +67,7 @@ public class LinkSymbols {
 		return add(sym);
 	}
 
-	public static void clear() {
+	public void clear() {
 		ids.clear();
 		exporters.clear();
 	}

@@ -1,6 +1,7 @@
 package com.widedot.toolbox.text.phoneme.impl;
 
 import java.io.File;
+import com.widedot.m6809.gamebuilder.spi.BuildContext;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
@@ -18,13 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ObjectImpl implements ObjectPluginInterface {
 
 	@Override
-	public ObjectDataInterface getObject(ImmutableNode node, String path, Defaults defaults, Defines defines)
+	public ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx)
 			throws Exception {
 
 		// read input xml
-		String filename = Attribute.getStringOpt(node, defaults, "filename", "phoneme.filename");
-		String genbinary = Attribute.getStringOpt(node, defaults, "genbinary", "phoneme.genbinary");
-		String lang = Attribute.getString(node, defaults, "lang", "phoneme.lang", "fr");
+		String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "phoneme.filename");
+		String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "phoneme.genbinary");
+		String lang = Attribute.getString(node, ctx.defaults, "lang", "phoneme.lang", "fr");
 
 		if (filename == null || filename.equals("")) {
 			String m = "no filename provided for phoneme!";
@@ -33,9 +34,9 @@ public class ObjectImpl implements ObjectPluginInterface {
 		}
 
 		if (filename != null)
-			filename = path + File.separator + filename;
+			filename = ctx.path + File.separator + filename;
 		if (genbinary != null)
-			genbinary = path + File.separator + genbinary;
+			genbinary = ctx.path + File.separator + genbinary;
 
 		Binary bin = new Binary();
 
