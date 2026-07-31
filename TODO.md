@@ -14,10 +14,16 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         de tables (31/07/2026 : pilote `examples/sound` TO8 migré, images
         identiques octet pour octet, validé sous toje — title vérifié en RAM,
         changement de scène à chaud vers level1, loader-ut rejoué 16/16)
+  - [x] Phase C — migration complète (31/07/2026, faite avant B sur décision) :
+        15 des 17 tables migrées — loader-ut (10), sound MO6 (2), tlsf-ut (2),
+        mplus-pcm (1) ; 8 images identiques octet pour octet même après
+        reconstruction complète ; loader-ut 16/16 sous toje ; tables
+        manuscrites supprimées. Restent manuscrites : les 2 scènes mplus-test
+        (empilage runtime sur fichiers avec données — cf. §12 du plan)
   - [ ] Phase B — vérifications au build (tailles vs budgets, chevauchements,
-        export-only, `permanent`, multi-disquette)
-  - [ ] Phase C — migration complète (loader-ut ×10 scènes, sound MO6),
-        suppression des tables manuscrites, toje 16/16
+        export-only, `permanent`, multi-disquette) + **décision à prendre** sur
+        l'empilage runtime : `<stack region>` gardé par `permanent` (option 2
+        recommandée au §12) ou statu quo
   - [ ] Phase D — docs (groups.md, scenes.md, XSD régénéré, CLAUDE.md)
 
 ## Backlog builder (ordre conseillé)

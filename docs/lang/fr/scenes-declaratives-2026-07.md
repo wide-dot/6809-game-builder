@@ -1,8 +1,9 @@
 # Scènes et régions déclaratives — plan de conception (juillet 2026)
 
-Statut : **phase A réalisée le 31/07/2026** (éléments + générateur, pilote
-`examples/sound` TO8 migré, identité binaire prouvée, validé sous toje).
-Décisions au §10. Suivi : `TODO.md` à la racine.
+Statut : **phases A et C réalisées le 31/07/2026** (éléments + générateur ;
+15 des 17 tables du corpus migrées, identité binaire prouvée, loader-ut 16/16
+sous toje). Reste la phase B (vérifications) et D (docs). Décisions au §10,
+**limite découverte à la migration au §12**. Suivi : `TODO.md` à la racine.
 
 ## 1. Objectif
 
@@ -34,9 +35,11 @@ Constats vérifiés dans `loader.asm` et sur le corpus (`examples/loader-ut`,
     le type standard, utilisé partout pour les fichiers avec données ;
   - `%10` (`$8000+n`) : une destination de base + n file ids, empilés au
     runtime selon la taille de chaque fichier (avec débordement de page).
-    **Usage réel constaté : uniquement des lots de fichiers export-only à
-    (0,0)** (link data seule, taille nulle — ex. `ym.const`+`sn.const` de
-    sound, les 16 `pad.*` du stress test) ;
+    Usage majoritaire : des lots de fichiers export-only à (0,0) (link data
+    seule, taille nulle — ex. `ym.const`+`sn.const` de sound, les 16 `pad.*`
+    du stress test). **Correction du 31/07 : ce n'est PAS le seul usage** —
+    `examples/mplus` (to8/mo6-mplus-test) empile 9 fichiers *avec données*
+    (jusqu'à 6 Ko) à une destination réelle (page $05, $0000). Voir §12 ;
   - `%11` (`$C000+n`) : ids consécutifs auto-empilés — **jamais utilisé** dans
     le corpus.
 - **Le builder génère déjà un prélude d'equates** dans le `gensource` de chaque
@@ -125,17 +128,18 @@ un bloc `$4000+5` avec les cinq triplets aux adresses des régions, puis un bloc
 ### 4.2 Multi-disquette (`examples/loader-ut`, disque 1)
 
 ```xml
-<scene name="d1.scenes.main">
-  <load name="d1.marker" region="stress.d1"/>
+<scene name="d1.scenes.main" section="SCENE" gensource="gen/scenes/d1-main.asm">
+  <load name="d1.marker" region="disk1.marker"/>
 </scene>
 ```
 
-Rien de spécial : une scène vit sur sa disquette, ses `<load>` référencent
-n'importe quel direntry du target (les ids sont globaux). Le générateur émet
-dans le prélude les equates de **tous les fichiers référencés**, y compris
-ceux d'autres disquettes — ce que les tables manuscrites ne peuvent pas faire
-aujourd'hui. Un *warning* signale une scène qui mélange des fichiers de
-plusieurs disquettes (prompts « Insert disk » en plein chargement).
+Une scène vit sur sa disquette et le `<layout>` est déclaré au niveau du
+target, donc partagé par toutes les disquettes — `disk1.marker` est une région
+comme les autres. **État réel après la phase C** : les `<load>` sont résolus
+contre les noms du répertoire courant, donc une scène référence les fichiers de
+sa propre disquette (c'est le cas de tout le corpus). Le prélude d'equates
+inter-disquettes reste une extension possible, non nécessaire aujourd'hui ; le
+warning « scène mélangeant plusieurs disquettes » est reporté en phase B.
 
 ### 4.3 Échappatoire : destination brute
 
@@ -228,9 +232,9 @@ construction, la destination est celle de la région.
    change d'un build à l'autre → destinations non fixes → l'unload implicite
    (destination exacte) ne retrouve plus les slots → link data périmées +
    relink global = corruption différée. C'est exactement le trou « recouvrement
-   partiel » documenté. → Non exposé dans la syntaxe. Si un vrai besoin
-   apparaît, il faudra d'abord le suivi des tailles dans l'index (différé
-   loader).
+   partiel » documenté. → Non exposé dans la syntaxe. **Mais le corpus s'en
+   sert** (§12) : la décision tient pour les scènes qu'on échange, pas pour
+   le chargement unique au boot.
 4. **Chargements hors scène invisibles.** Le jeu peut appeler
    `loader.file.load` directement ; les régions ne couvrent que le déclaré.
    → Limite documentée ; la discipline projet est de passer par les scènes.
@@ -240,12 +244,14 @@ construction, la destination est celle de la région.
    du loader est inchangé (aucune nouvelle contrainte).
 6. **TO8 vs MO6.** Les cartes mémoire diffèrent → `<layout>` est déclaré par
    target, pas de partage implicite entre configs.
-7. **Prélude inter-disquettes.** Les tables manuscrites ne peuvent référencer
-   que les fichiers de leur disquette (portée actuelle du prélude). Le
-   générateur émet les equates de tout fichier référencé — c'est un *plus*,
-   mais la valeur de l'equ doit être l'id **global** (base comprise), pas
-   l'index local : à tester explicitement dans loader-ut (une scène disque 0
-   référençant un fichier disque 1).
+7. **Prélude inter-disquettes.** ~~Le générateur émet les equates de tout
+   fichier référencé.~~ **Revu en phase C** : le générateur réutilise le
+   prélude du répertoire courant (le fichier `gensymbols`), donc la portée
+   reste celle d'aujourd'hui — une scène référence les fichiers de sa
+   disquette. Aucune scène du corpus n'en demande davantage, et s'en tenir là
+   a permis de prouver l'identité binaire sans toucher au câblage des equates.
+   L'extension (equates de tout fichier référencé, valeur = id **global**)
+   reste ouverte si un projet en a besoin.
 8. **Nouveau vocabulaire = nouveau contrat.** `<layout>`, `<region>`,
    `<scene>`, `<load>` entrent dans les specs (`Handlers`), le Validator les
    couvre automatiquement, et le XSD doit être **régénéré et commité**
@@ -274,10 +280,15 @@ construction, la destination est celle de la région.
   finale) ; tests JUnit sur corpus de configs volontairement cassées (région
   inconnue, chevauchement, budget dépassé, export-only avec région, deux
   fichiers même région…).
-- **Phase C — migration complète.** `loader-ut` (10 scènes, dont stress et
-  disque 1 — le banc le plus exigeant) et `sound` MO6 ; images identiques ;
-  toje 16/16 ; ajout d'un test de référence inter-disquettes dans une table
-  générée (piège 7) ; suppression des tables manuscrites.
+- **Phase C — migration complète.** ✅ **Faite le 31/07/2026** (avant la
+  phase B, sur décision : migrer d'abord donne de la matière réelle aux
+  vérifications). 15 tables migrées sur 17 : `loader-ut` (10, dont le stress
+  et la disquette 1), `sound` MO6 (2), `tlsf-ut` TO8+MO6 (2), `mplus-pcm` (1,
+  premier usage de la destination brute — le `dummyfile` qui force un
+  changement de page). Les 8 images **identiques octet pour octet**, y compris
+  après reconstruction complète avec `gen/` effacé ; `loader-ut` rejoué sous
+  toje : **16/16**, statut final $0D. Les 15 tables manuscrites sont
+  supprimées. Restent manuscrites : les 2 scènes `mplus-test` (§12).
 - **Phase D — documentation.** `groups.md` (lien modèle couches/régions ↔
   syntaxe), `docs/lang/en/scenes.md` (la doc vide existante), XSD régénéré,
   CLAUDE.md, TODO.md.
@@ -343,3 +354,41 @@ R-Type le dira) :
 
 En attendant, la phase A s'en tient au layout unique et au non-chevauchement
 strict : c'est le modèle sûr, et il couvre le corpus entier.
+
+## 12. Limite découverte à la migration (31/07/2026)
+
+Mon relevé initial (§2) affirmait que le corpus n'utilisait `%10` que pour des
+lots export-only à (0,0). **C'est faux** : `examples/mplus/to8-mplus-test` et
+`mo6-mplus-test` empilent 9 fichiers **avec données réelles** (5994, 1946, 807,
+293, 176, 113, 87, 18 octets, plus un export-only) à une destination réelle
+(page $05, adresse $0000). C'est exactement l'empilage runtime que la syntaxe
+n'expose pas — ces deux scènes restent donc manuscrites, sous la forme
+`<direntry>` + table à la main, qui fonctionne toujours.
+
+L'usage est légitime et lisible : « charge-moi ces 9 blocs de données son à la
+suite dans la page 5 », sans calculer les adresses à la main ni les recalculer
+quand un VGM change de taille. Et le danger que j'ai décrit ne se matérialise
+pas ici : cette scène est chargée **une seule fois au boot**
+(`loader.DEFAULT_SCENE_FILE_ID`), jamais échangée — donc pas de slot périmé, pas
+de relink sur une destination réutilisée.
+
+Le danger est réel pour une scène qu'on **échange** : les destinations dérivent
+avec les tailles, l'unload implicite (destination exacte) ne retrouve plus les
+slots. La distinction utile n'est donc pas « empilage = interdit » mais
+**« empilage = chargement unique »**.
+
+Trois options, à trancher (aucune n'est engagée) :
+
+1. **Statu quo** : ces deux scènes restent manuscrites. Coût : le corpus n'est
+   pas homogène, et la doc doit expliquer pourquoi.
+2. **Exposer l'empilage avec une garde** : un conteneur `<stack region="...">`
+   groupant des `<load>` sans destination propre, **refusé** si la région n'est
+   pas `permanent` (donc réservé au chargement unique, là où c'est sûr). C'est
+   l'option qui capture l'intention réelle et rend la règle vérifiable. La
+   destination de base vient de la région ; le générateur émet le bloc `%10`.
+3. **Suivre les tailles dans l'index côté loader** (différé loader) : lève la
+   contrainte à la racine, mais change le format de l'index (pas d'index ≠ 8)
+   et le coût runtime. Disproportionné pour ce besoin.
+
+Recommandation : **option 2**, en phase B — la garde `permanent` s'appuie sur un
+attribut qui existe déjà, et la vérification est exactement celle qui manque.

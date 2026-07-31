@@ -221,13 +221,30 @@ blocs %01/%10 sont choisis par le générateur, jamais authorés). Une région =
 une destination fixe partagée par toutes les scènes qui la ciblent, flag
 `permanent` pour le contenu à chargement unique. Contrôles actifs dès la
 génération : référence inconnue, région inconnue ou chargée deux fois,
-destination région+brute. Pilote : les 2 scènes d'`examples/sound` TO8
-migrées, images **identiques octet pour octet**, validé sous toje (musique
-title vérifiée en RAM, changement de scène à chaud vers level1, loader-ut
-16/16). Phases restantes : B (vérifications tailles/chevauchements/permanent),
-C (migration loader-ut + sound MO6), D (docs).
+destination région+brute. **Phase C faite dans la foulée** (migrer avant de
+vérifier donne de la matière réelle aux contrôles) : **15 des 17 tables du
+corpus sont déclaratives** — loader-ut (10, dont le stress et la disquette 1),
+sound TO8+MO6 (4), tlsf-ut TO8+MO6 (2), mplus-pcm (1, premier usage de la
+destination brute). Les 8 images restent **identiques octet pour octet**, y
+compris après reconstruction complète avec `gen/` effacé ; loader-ut rejoué
+sous toje **16/16** (statut $0D), sound TO8 vérifié en RAM avec changement de
+scène à chaud. Les 15 tables manuscrites sont supprimées.
 
-Reste ouvert côté builder : phases B–D ci-dessus, migration de storage.xml
+**Limite découverte à la migration** : mon relevé initial affirmait que le type
+de bloc `%10` ne servait qu'à des lots export-only à (0,0) — c'est faux. Les
+deux configs `mplus-test` empilent 9 fichiers **avec données** (jusqu'à 6 Ko) à
+une destination réelle. Cet empilage runtime n'est pas exposé par la syntaxe
+(les destinations dérivent avec les tailles, ce qui casserait l'unload
+implicite) : ces 2 scènes restent manuscrites. La distinction utile n'est pas
+« empilage interdit » mais « empilage = chargement unique » — elles sont
+chargées une seule fois au boot, jamais échangées. Trois options au §12 du plan,
+recommandation : un `<stack region>` gardé par l'attribut `permanent`, en
+phase B.
+
+Phases restantes : B (vérifications tailles/chevauchements/permanent + décision
+empilage), D (docs).
+
+Reste ouvert côté builder : phases B et D ci-dessus, migration de storage.xml
 vers le même loader, tri alphabétique des ids de symboles, packaging en zip.
 **Suivi d'avancement : `TODO.md` à la racine.**
 

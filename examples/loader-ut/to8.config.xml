@@ -3,6 +3,24 @@
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
 
         <!-- ================================================================ -->
+        <!-- Memory layout : every destination the bench loads into.          -->
+        <!-- marker.b and stress.swap are the swap points the stress test     -->
+        <!-- hammers : two files taking turns at one fixed destination, which  -->
+        <!-- is what makes the loader's implicit unload evict the previous    -->
+        <!-- content instead of leaving a stale link data slot behind.        -->
+        <!-- ================================================================ -->
+        <layout>
+            <region name="gamemode"     page="$01" address="$6100" size="$1F00"/>
+            <region name="marker.a"     page="$06" address="$0000" size="$0800"/>
+            <region name="marker.b"     page="$06" address="$0800" size="$0400"/>
+            <region name="stress.hub"   page="$06" address="$0C00" size="$0400"/>
+            <region name="stress.swap"  page="$06" address="$1000" size="$0400"/>
+            <region name="stress.zz"    page="$06" address="$1400" size="$0400"/>
+            <region name="disk1.marker" page="$06" address="$1800" size="$0400"/>
+            <region name="group"        page="$06" address="$1C00" size="$0400"/>
+        </layout>
+
+        <!-- ================================================================ -->
         <!-- DISK 1 : declared FIRST on purpose — the builder writes each     -->
         <!-- directory's entries.asm in a pre-pass, so disk 1 file ids are    -->
         <!-- already known when the disk 0 game mode is assembled (this is    -->
@@ -24,12 +42,10 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="d1.scenes.main" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/d1-main.asm">
-                        <asm filename="gen/directories/disk1/entries.asm"/>
-                        <asm filename="src/scenes/to8/d1-main/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- disk 1 scene : the disk 1 marker -->
+                <scene name="d1.scenes.main" section="SCENE" gensource="gen/scenes/d1-main.asm">
+                    <load name="d1.marker" region="disk1.marker"/>
+                </scene>
 
             </directory>
 
@@ -331,70 +347,75 @@
                     </lwasm>
                 </direntry>
 
-                <!-- Scenes -->
+                <!-- Scenes : tables generated from these declarations      -->
                 <!-- ******************************************************* -->
-                <direntry name="scenes.main" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/main.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/main/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- main scene : game mode + two marker files -->
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.loaderut" region="gamemode"/>
+                    <load name="data.marker.aa"     region="marker.a"/>
+                    <load name="data.marker.bb"     region="marker.b"/>
+                </scene>
 
-                <direntry name="scenes.second" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/second.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/second/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- second scene : marker cc takes over marker bb's region -->
+                <scene name="scenes.second" section="SCENE" gensource="gen/scenes/second.asm">
+                    <load name="data.marker.cc" region="marker.b"/>
+                </scene>
 
-                <direntry name="scenes.stress.hub" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-hub.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-hub/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- stress : stable hub file, holds refs re-patched at link -->
+                <scene name="scenes.stress.hub" section="SCENE" gensource="gen/scenes/stress-hub.asm">
+                    <load name="data.marker.hub" region="stress.hub"/>
+                </scene>
 
-                <direntry name="scenes.stress.dd" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-dd.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-dd/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- stress : dd and ee take turns on the swap region -->
+                <scene name="scenes.stress.dd" section="SCENE" gensource="gen/scenes/stress-dd.asm">
+                    <load name="data.marker.dd" region="stress.swap"/>
+                </scene>
 
-                <direntry name="scenes.stress.ee" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-ee.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-ee/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <scene name="scenes.stress.ee" section="SCENE" gensource="gen/scenes/stress-ee.asm">
+                    <load name="data.marker.ee" region="stress.swap"/>
+                </scene>
 
-                <direntry name="scenes.group" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/group.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/group/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- multi object group : blob + asm member, one direntry -->
+                <scene name="scenes.group" section="SCENE" gensource="gen/scenes/group.asm">
+                    <load name="data.group.multi" region="group"/>
+                </scene>
 
-                <direntry name="scenes.stress.pad" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-pad.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-pad/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- stress : 16 export-only padding files (link data only) -->
+                <!-- combined with scenes.stress.iface this pushes the index -->
+                <!-- through several realloc steps (8 -> 16 -> 24 -> 32)     -->
+                <scene name="scenes.stress.pad" section="SCENE" gensource="gen/scenes/stress-pad.asm">
+                    <load name="pad.a"/>
+                    <load name="pad.b"/>
+                    <load name="pad.c"/>
+                    <load name="pad.d"/>
+                    <load name="pad.e"/>
+                    <load name="pad.f"/>
+                    <load name="pad.g"/>
+                    <load name="pad.h"/>
+                    <load name="pad.i"/>
+                    <load name="pad.j"/>
+                    <load name="pad.k"/>
+                    <load name="pad.l"/>
+                    <load name="pad.m"/>
+                    <load name="pad.n"/>
+                    <load name="pad.o"/>
+                    <load name="pad.p"/>
+                </scene>
 
-                <direntry name="scenes.stress.zz" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-zz.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-zz/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- stress : marker zz, the last directory entry -->
+                <scene name="scenes.stress.zz" section="SCENE" gensource="gen/scenes/stress-zz.asm">
+                    <load name="data.marker.zz" region="stress.zz"/>
+                </scene>
 
-                <direntry name="scenes.stress.iface" section="SCENE">
-                    <lwasm format="raw" gensource="gen/scenes/stress-iface.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/scenes/to8/stress-iface/scene.asm"/>
-                    </lwasm>
-                </direntry>
+                <!-- stress : 6 export-only interface files (link data only) -->
+                <scene name="scenes.stress.iface" section="SCENE" gensource="gen/scenes/stress-iface.asm">
+                    <load name="iface.a"/>
+                    <load name="iface.b"/>
+                    <load name="iface.c"/>
+                    <load name="iface.d"/>
+                    <load name="iface.e"/>
+                    <load name="iface.f"/>
+                </scene>
 
             </directory>
 
