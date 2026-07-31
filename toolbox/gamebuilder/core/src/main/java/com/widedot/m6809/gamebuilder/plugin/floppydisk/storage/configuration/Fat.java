@@ -1,7 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 
 public class Fat {
 
@@ -11,37 +12,16 @@ public class Fat {
 	public Integer fatStart;
 	public Integer dirStart;
 	public Integer nDirEntries;
-	
-	public Fat (HierarchicalConfiguration<ImmutableNode> node) throws Exception {
 
-		sectorPerBlock = node.getInteger("[sectorperblock]", 0);
-		if (sectorPerBlock == null) {
-			throw new Exception("sectorperblock is missing for fat");
-		}
-		
-		nBlocks = node.getInteger("[@nblocks]", null);
-		if (nBlocks == null) {
-			throw new Exception("@nblocks is missing for fat");
-		}
-		
-		sectorSize = node.getInteger("[@sectorsize]", null);
-		if (sectorSize == null) {
-			throw new Exception("sectorsize is missing for fat");
-		}
-		
-		fatStart = node.getInteger("[@fatstart]", null);
-		if (fatStart == null) {
-			throw new Exception("fatstart is missing for fat");
-		}
-		
-		dirStart = node.getInteger("[@dirstart]", null);
-		if (dirStart == null) {
-			throw new Exception("dirstart is missing for fat");
-		}
-		
-		nDirEntries = node.getInteger("[@ndirentries]", null);
-		if (nDirEntries == null) {
-			throw new Exception("ndirentries is missing for fat");
-		}		
+	public Fat(ImmutableNode node, SourceMap sources) throws Exception {
+		// sectorperblock used to be read with a broken key ("[sectorperblock]",
+		// missing @) and silently came out as 0 ; nothing consumes the fat
+		// geometry yet, so reading it right changes no output
+		sectorPerBlock = NodeAttr.getInteger(node, sources, "sectorperblock");
+		nBlocks = NodeAttr.getInteger(node, sources, "nblocks");
+		sectorSize = NodeAttr.getInteger(node, sources, "sectorsize");
+		fatStart = NodeAttr.getInteger(node, sources, "fatstart");
+		dirStart = NodeAttr.getInteger(node, sources, "dirstart");
+		nDirEntries = NodeAttr.getInteger(node, sources, "ndirentries");
 	}
 }

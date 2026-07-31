@@ -1,7 +1,8 @@
 package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 
 public class Interleave {
 	public int hardskip;
@@ -10,10 +11,10 @@ public class Interleave {
 	public int[] hardMap;
 	public int[] softMap;
 	
-	public Interleave(HierarchicalConfiguration<ImmutableNode> node, int sectors) throws Exception {
-		hardskip = node.getInteger("[@hardskip]", 1);
-		softskip = node.getInteger("[@softskip]", 1);
-		softskew = node.getInteger("[@softskew]", 1);
+	public Interleave(ImmutableNode node, SourceMap sources, int sectors) throws Exception {
+		hardskip = NodeAttr.getInteger(node, sources, "hardskip", 1);
+		softskip = NodeAttr.getInteger(node, sources, "softskip", 1);
+		softskew = NodeAttr.getInteger(node, sources, "softskew", 1);
 		
 		// get interleaved map (as formatted on floppy disk)
 		int[] uninterleavedMap = getUninterleavedMap(sectors);
