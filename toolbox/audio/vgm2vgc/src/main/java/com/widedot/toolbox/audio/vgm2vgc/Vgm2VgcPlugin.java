@@ -3,26 +3,24 @@ package com.widedot.toolbox.audio.vgm2vgc;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import javax.script.ScriptEngineManager;
-import javax.script.SimpleScriptContext;
 
-import javax.script.ScriptEngine;
-import javax.script.Invocable;
-import javax.script.ScriptContext;
 
 import com.widedot.m6809.util.FileUtil;
 
+import com.widedot.toolbox.audio.vgm2vgc.pack.VgmPacker;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Vgm2VgcPlugin {
+
+	/** decoder buffer size ; below 256 the packer emits 8-bit LZ4 offsets */
+	private static final int PACK_BUFFER_SIZE = 255;
+
 
 	public static String INPUT_EXT1 = ".vgm";
 	public static String INPUT_EXT2 = ".vgz";
@@ -110,15 +108,19 @@ public class Vgm2VgcPlugin {
 				ByteArrayOutputStream tmpOS = new ByteArrayOutputStream();
 				tmpOS.write(vgm.getIntroHeader());
 				tmpOS.write(intro);
-				
+
 				String tmpFileName = file.getAbsolutePath() + ".sn76489.intro.vgm";
-				OutputStream fileStream = new FileOutputStream(tmpFileName);
-				tmpOS.writeTo(fileStream);
+				try (OutputStream fileStream = new FileOutputStream(tmpFileName)) {
+					tmpOS.writeTo(fileStream);
+				}
 				tmpOS.close();
-				
+
 				// Convert vgm to vgc
-				runPythonScript(tmpFileName, outFileName);
-				intro = Files.readAllBytes(Paths.get(outFileName));
+				intro = VgmPacker.pack(tmpFileName, PACK_BUFFER_SIZE, false);
+
+				// the temporary file carries a .vgm extension : left behind it would
+				// be picked up as an input by the next directory scan
+				Files.deleteIfExists(Paths.get(tmpFileName));
 			}
 			
 			if (loop != null) {
@@ -126,15 +128,17 @@ public class Vgm2VgcPlugin {
 				outputStream.write(vgm.getLoopHeader());
 				outputStream.write(vgm.getCache());
 				outputStream.write(loop);
-				
+
 				String tmpFileName = file.getAbsolutePath() + ".sn76489.loop.vgm";
-				OutputStream fileStream = new FileOutputStream(tmpFileName);
-				outputStream.writeTo(fileStream);
+				try (OutputStream fileStream = new FileOutputStream(tmpFileName)) {
+					outputStream.writeTo(fileStream);
+				}
 				outputStream.close();
-				
+
 				// Convert vgm to vgc
-				runPythonScript(tmpFileName, outFileName);
-				loop = Files.readAllBytes(Paths.get(outFileName));
+				loop = VgmPacker.pack(tmpFileName, PACK_BUFFER_SIZE, false);
+
+				Files.deleteIfExists(Paths.get(tmpFileName));
 			}
 	
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -151,10 +155,11 @@ public class Vgm2VgcPlugin {
 				outputStream.write(loop);
 			}
 			
-			OutputStream fileStream = new FileOutputStream(outFileName);
-			outputStream.writeTo(fileStream);
+			try (OutputStream fileStream = new FileOutputStream(outFileName)) {
+				outputStream.writeTo(fileStream);
+			}
 			outputStream.close();
-			
+
 			return outputStream.toByteArray();
 			
 		} else {
@@ -163,37 +168,4 @@ public class Vgm2VgcPlugin {
 		}
 	}
 
-	public static void runPythonScript(String inFileName, String outFileName) throws Exception {
-
-		StringWriter writer = new StringWriter();
-		
-		try {
-			ScriptEngineManager manager = new ScriptEngineManager();
-			ScriptContext context = new SimpleScriptContext();
-			ScriptEngine engine = manager.getEngineByName("python");
-		    Invocable inv = (Invocable) engine;
-			
-			// share a common context
-			context.setWriter(writer);
-			engine.setContext(context);
-			
-			// add jar path to jython sys path
-			String jarPath = Vgm2VgcPlugin.class.getProtectionDomain().getCodeSource().getLocation().getPath().toString();
-			engine.eval("import sys; sys.path.insert(0, \"" + jarPath + "/vgmpacker" + "\")");
-			
-			// load script
-			InputStreamReader script = new InputStreamReader(Vgm2VgcPlugin.class.getResource("/vgmpacker/vgmpacker.py").openStream());
-			engine.eval(script);
-			script.close();
-			
-			// instanciate an object
-			Object vgmPacker = engine.eval("VgmPacker()");
-			
-			// run the method
-		    inv.invokeMethod(vgmPacker, "process", inFileName, outFileName, 255, false);
-		    
-		} finally {
-			log.debug(writer.toString());
-		}
-	}	
 }

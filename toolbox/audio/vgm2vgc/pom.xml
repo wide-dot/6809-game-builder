@@ -12,12 +12,6 @@
 	<packaging>jar</packaging>
 	
 	<dependencies>
-		<!-- only this module runs the vgmpacker python scripts -->
-    	<dependency>
-		    <groupId>org.python</groupId>
-		    <artifactId>jython-standalone</artifactId>
-		    <version>2.7.4</version>
-		</dependency>
 		<dependency>
 			<artifactId>6809-gamebuilder-spi</artifactId>
 			<groupId>com.wide-dot</groupId>

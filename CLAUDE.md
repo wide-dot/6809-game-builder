@@ -159,8 +159,18 @@ comparées **octet par octet** avec les précédentes, et `loader-ut` rejoué so
 Reste ouvert, par ordre de valeur : `BuildContext` pour supprimer l'état statique
 (ouvre parallélisation et tests d'intégration), dé-boilerplate SPI (~400 lignes),
 tri alphabétique des ids de symboles (prérequis des interfaces de groups),
-packaging en zip par plateforme, réécriture de `vgmpacker` en Java (supprime
-47 Mo de Jython).
+packaging en zip par plateforme.
+
+**Packer VGC porté en Java (31/07/2026)** : `vgmpacker` (LZ4 + parser VGM) tournait
+sous un interpréteur **Jython 2.7 embarqué**, soit 47 Mo de dépendance et un runtime
+Python 2 mort depuis 2020, pour ~2000 lignes de Python. Porté en trois classes dans
+`toolbox/audio/vgm2vgc/.../pack/` (`VgmStream`, `Lz4Enc`, `VgmPacker`), validé **bit
+à bit** : les `.vgc` régénérés sont identiques à ceux produits par la chaîne Python,
+et chaque module a été comparé séparément à son original exécuté sous Jython
+(12 fichiers VGM pour le parser, 72 combinaisons entrées×réglages pour LZ4).
+`repo/` passe de 74 Mo à 21 Mo. Le mode huffman du packer d'origine n'est pas porté
+(jamais activé par cette chaîne, et le player 6809 n'a pas le décodeur correspondant) :
+il lève une erreur explicite.
 
 ## Analyse détaillée : loader — cycle de vie incomplet (juillet 2026)
 
