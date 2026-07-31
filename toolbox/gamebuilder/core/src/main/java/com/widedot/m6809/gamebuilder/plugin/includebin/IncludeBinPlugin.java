@@ -18,7 +18,7 @@ public class IncludeBinPlugin {
 		log.debug("Processing includebin ...");
 		
 		File file = null;
-		String binFile = Attribute.getString(node, ctx.defaults, "filename", "includebin.filename");
+		String binFile = Attribute.getString(node, ctx, "filename");
 		
 		String content = 	" SECTION code"  + System.lineSeparator() +
 							" INCLUDEBIN \"" + binFile + "\"" + System.lineSeparator() +

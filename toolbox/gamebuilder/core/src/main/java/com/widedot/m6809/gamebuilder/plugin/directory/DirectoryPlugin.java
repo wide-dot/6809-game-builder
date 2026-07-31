@@ -46,10 +46,10 @@ public class DirectoryPlugin {
     	
 		log.debug("Processing directory ...");
 
-		Integer id = Attribute.getInteger(node, ctx.defaults, "id", "directory.id");
-		String section = Attribute.getString(node, ctx.defaults, "section", "directory.section");
-		String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "directory.genbinary");
-	    String gensymbols = Attribute.getString(node, ctx.defaults, "gensymbols", "direntry.gensymbols");
+		Integer id = Attribute.getInteger(node, ctx, "id");
+		String section = Attribute.getString(node, ctx, "section");
+		String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
+	    String gensymbols = Attribute.getString(node, ctx, "gensymbols");
 			
 		// generate symbols file
 		gensymbols = ctx.path + File.separator + gensymbols;
@@ -64,11 +64,11 @@ public class DirectoryPlugin {
 			String plugin = child.getNodeName();
 			if (plugin.equals("direntry")) {
 				
-				String name = Attribute.getString(child, ctx.defaults, "name", "direntry.name");
+				String name = Attribute.getString(child, ctx, "name");
 				writer.write(name + " equ " + direntryId + System.lineSeparator());
 				
-				String codec = Attribute.getStringOpt(child, ctx.defaults, "codec", "direntry.codec");
-				String linkSection = Attribute.getStringOpt(child, ctx.defaults, "loadtimelink", "direntry.linksection");
+				String codec = Attribute.getStringOpt(child, ctx, "codec");
+				String linkSection = Attribute.getStringOpt(child, ctx, "loadtimelink");
 
 				direntryId += DirEntryPlugin.blockCount(codec, linkSection);
 			}

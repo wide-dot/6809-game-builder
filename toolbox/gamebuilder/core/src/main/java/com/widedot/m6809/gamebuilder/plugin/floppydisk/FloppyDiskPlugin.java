@@ -23,8 +23,8 @@ public class FloppyDiskPlugin {
     	
 		log.debug("Processing floppydisk ...");
 		
-		String model = Attribute.getString(node, ctx.defaults, "model", "floppydisk.model");
-		String storageFilename = Attribute.getString(node, ctx.defaults, "storage", "floppydisk.storage");
+		String model = Attribute.getString(node, ctx, "model");
+		String storageFilename = Attribute.getString(node, ctx, "storage");
 		storageFilename = ctx.path + storageFilename;
 		
 		// load storage definitions from external file

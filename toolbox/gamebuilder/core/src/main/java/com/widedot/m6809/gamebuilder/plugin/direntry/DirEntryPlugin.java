@@ -94,14 +94,14 @@ public class DirEntryPlugin {
     	
 		log.debug("Processing direntry ...");
 		
-		String name = Attribute.getString(node, ctx.defaults, "name", "direntry.name");
-		String section = Attribute.getString(node, ctx.defaults, "section", "direntry.section");
-		String codec = Attribute.getStringOpt(node, ctx.defaults, "codec", "direntry.codec");
-		String linkSection = Attribute.getStringOpt(node, ctx.defaults, "loadtimelink", "direntry.linksection");
+		String name = Attribute.getString(node, ctx, "name");
+		String section = Attribute.getString(node, ctx, "section");
+		String codec = Attribute.getStringOpt(node, ctx, "codec");
+		String linkSection = Attribute.getStringOpt(node, ctx, "loadtimelink");
 		boolean loadtimelink = (linkSection!=null?true:false);
 		// the file size is stored on 14 bits in the directory entry, a bigger
 		// file cannot be described whatever the configuration asks for
-		int maxsize = Attribute.getInteger(node, ctx.defaults, "maxsize", "direntry.maxsize", MAX_FILE_SIZE);
+		int maxsize = Attribute.getInteger(node, ctx, "maxsize", MAX_FILE_SIZE);
 		
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();

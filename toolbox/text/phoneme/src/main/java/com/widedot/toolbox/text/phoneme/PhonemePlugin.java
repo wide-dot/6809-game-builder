@@ -287,9 +287,9 @@ public class PhonemePlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		// read input xml
-		String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "phoneme.filename");
-		String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "phoneme.genbinary");
-		String lang = Attribute.getString(node, ctx.defaults, "lang", "phoneme.lang", "fr");
+		String filename = Attribute.getStringOpt(node, ctx, "filename");
+		String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
+		String lang = Attribute.getString(node, ctx, "lang", "fr");
 
 		if (filename == null || filename.equals("")) {
 			String m = "no filename provided for phoneme!";

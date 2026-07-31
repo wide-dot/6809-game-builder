@@ -20,8 +20,8 @@ public class SapPlugin {
     	
 		log.debug("Processing sap ...");
 		
-		String filename = Attribute.getString(node, ctx.defaults, "filename", "sap.filename");
-		Integer format = Attribute.getInteger(node, ctx.defaults, "format", "sap.format", Sap.SAP_FORMAT1);
+		String filename = Attribute.getString(node, ctx, "filename");
+		Integer format = Attribute.getInteger(node, ctx, "format", Sap.SAP_FORMAT1);
    		
 		// create destination directory
 		String dirname = ctx.path + File.separator + ctx.settings.get("dist.dir");

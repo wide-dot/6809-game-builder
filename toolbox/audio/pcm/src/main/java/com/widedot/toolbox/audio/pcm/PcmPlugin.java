@@ -121,9 +121,9 @@ public class PcmPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	//read input xml
-	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "pcm.filename");
-	boolean downscale8To6Bit = Attribute.getBoolean(node, ctx.defaults, "bit8to6", "pcm.bit8to6", false);
-	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "pcm.genbinary");
+	String filename = Attribute.getStringOpt(node, ctx, "filename");
+	boolean downscale8To6Bit = Attribute.getBoolean(node, ctx, "bit8to6", false);
+	String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
 
 
 	if ((filename == null || filename.equals(""))) {

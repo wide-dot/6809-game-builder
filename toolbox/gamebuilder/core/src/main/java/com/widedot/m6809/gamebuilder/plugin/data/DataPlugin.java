@@ -24,8 +24,8 @@ public class DataPlugin {
     	
 		log.debug("Processing data ...");
 		
-		String section = Attribute.getString(node, ctx.defaults, "section", "data.section");
-		int maxsize = Attribute.getInteger(node, ctx.defaults, "maxsize", "data.maxsize", Integer.MAX_VALUE);
+		String section = Attribute.getString(node, ctx, "section");
+		int maxsize = Attribute.getInteger(node, ctx, "maxsize", Integer.MAX_VALUE);
 
 		// binary data
 		List<ObjectDataInterface> objects = new ArrayList<ObjectDataInterface>();

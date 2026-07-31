@@ -17,7 +17,7 @@ public class DefinePlugin {
 		log.debug("Processing define ...");
 		
    		String symbol = (String) node.getAttributes().get("symbol");
-   		String value = Attribute.getString(node, ctx.defaults, "value", "ctx.defines.value", "1", true);
+   		String value = Attribute.getString(node, ctx, "value", "1");
    		ctx.defines.values.put(symbol, value);
    		log.debug("define symbol: {} value: {}", symbol, value);
 		

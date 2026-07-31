@@ -26,7 +26,7 @@ public class HfePlugin {
     	
 		log.debug("Processing hfe ...");
 		
-		String filename = Attribute.getString(node, ctx.defaults, "filename", "hfe.filename");
+		String filename = Attribute.getString(node, ctx, "filename");
 		
 		// create destination directory
 		String dirname = ctx.path + File.separator + ctx.settings.get("dist.dir");

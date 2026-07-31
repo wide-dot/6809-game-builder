@@ -23,7 +23,7 @@ public class SdPlugin {
     	
 		log.debug("Processing sd ...");
 		
-		String filename = Attribute.getString(node, ctx.defaults, "filename", "sd.filename");
+		String filename = Attribute.getString(node, ctx, "filename");
    		
    		// interleave data
 		byte[] data = media.getInterleavedData();

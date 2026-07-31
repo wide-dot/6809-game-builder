@@ -57,7 +57,7 @@
 
                 <direntry name="assets.sounds.sn" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-melody.vgc">
-                        <label name="sounds.sn" page="true"/>
+                        <label name="sounds.sn"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-melody.vgm" genbinary="src/assets/sounds/vgm/sn-melody.vgc"/>
                 </direntry>

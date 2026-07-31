@@ -120,8 +120,8 @@ public class Vgm2SfxPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2sfx.filename");
-	  String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "vgm2sfx.gensource");
+	  String filename = Attribute.getStringOpt(node, ctx, "filename");
+	  String gensource = Attribute.getStringOpt(node, ctx, "gensource");
 
 	  if ((filename == null || filename.equals(""))) {
 		  String m = "An input filename should be provided for vgm2sfx!";

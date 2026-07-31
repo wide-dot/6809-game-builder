@@ -181,8 +181,8 @@ public class Vgm2VgcPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	//read input xml
-	String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2vgc.filename");
-	String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2vgc.genbinary");
+	String filename = Attribute.getStringOpt(node, ctx, "filename");
+	String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
 
 
 	if ((filename == null || filename.equals(""))) {

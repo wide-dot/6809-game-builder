@@ -17,7 +17,7 @@ public class BinPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 		
 		log.debug("Processing bin ...");
-		String filename = ctx.path + File.separator + Attribute.getString(node, "filename", "bin.filename");
+		String filename = ctx.path + File.separator + Attribute.getString(node, ctx, "filename");
 		File file = new File(filename);
 		Binary bin = new Binary(Files.readAllBytes(file.toPath()));
 		

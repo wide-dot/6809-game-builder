@@ -23,6 +23,10 @@ import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.media.MediaPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.schema.ElementSpec;
+
+import static com.widedot.m6809.gamebuilder.spi.schema.ElementSpec.element;
+import static com.widedot.m6809.gamebuilder.spi.schema.ElementSpec.AttrType.*;
 
 /**
  * Everything the builder can find in a configuration file, mapped from the XML
@@ -51,6 +55,108 @@ public final class Handlers {
 
 	/** produces a file for a later stage to consume */
 	private static final Map<String, FilePluginInterface> FILES = new HashMap<>();
+
+	/** declared shape of every element, the attribute contract */
+	private static final Map<String, ElementSpec> SPECS = new HashMap<>();
+
+	private static void spec(ElementSpec s) {
+		SPECS.put(s.name, s);
+	}
+
+	static {
+		// structure
+		spec(element("configuration").doc("configuration file root"));
+		spec(element("target").doc("a build target, selectable with -t")
+			.req("name", STRING, "target name"));
+		spec(element("floppydisk").doc("build a floppy disk image")
+			.req("model", STRING, "disk model declared in the storage file (fd640, fd320, fd158)")
+			.req("storage", STRING, "path of the storage geometry file"));
+		spec(element("section").doc("named area of the media")
+			.req("name", STRING, "section name, referenced by direntry/data")
+			.req("track", INT, "first track")
+			.req("face", INT, "face 0 or 1")
+			.req("sector", INT, "first sector, 1 based"));
+		spec(element("directory").doc("file directory written to the media")
+			.req("id", INT, "disk id, matched by the loader at run time")
+			.req("section", STRING, "section receiving the directory")
+			.req("gensymbols", STRING, "generated file of <name> equ <file id> equates")
+			.opt("genbinary", STRING, "debug copy of the directory binary"));
+		spec(element("direntry").doc("one loadable file of the directory")
+			.req("name", STRING, "unique alias, becomes the file id equate")
+			.opt("codec", STRING, "zx0 : compress the whole entry as one stream")
+			.opt("loadtimelink", STRING, "emit load time link data into the given section")
+			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
+			.opt("section", STRING, "section receiving the entry"));
+		spec(element("data").doc("raw data written to a section, outside the directory")
+			.req("section", STRING, "section receiving the data")
+			.opt("maxsize", INT, "maximum size"));
+		spec(element("cksumfd640").doc("applies the fd640 boot sector checksum to its content"));
+
+		// configuration handlers
+		spec(element("default").doc("scoped default for an attribute, key is <element>.<attribute>")
+			.req("name", STRING, "target attribute, as <element>.<attribute>")
+			.req("value", STRING, "default value"));
+		spec(element("define").doc("assembler define passed to lwasm")
+			.req("symbol", STRING, "symbol name")
+			.opt("value", STRING, "value, defaults to 1"));
+
+		// outputs
+		spec(element("fd").doc("write the interleaved image as a .fd file")
+			.req("filename", STRING, "output file, relative to dist.dir"));
+		spec(element("sd").doc("write the image for SDDRIVE as a .sd file")
+			.req("filename", STRING, "output file, relative to dist.dir"));
+		spec(element("sap").doc("write the image as .sap file(s), one per used drive")
+			.req("filename", STRING, "output file, relative to dist.dir")
+			.opt("format", INT, "SAP format, 1 (default) or 2"));
+		spec(element("hfe").doc("write the image as a .hfe file, needs hxcfe in the PATH")
+			.req("filename", STRING, "output file, relative to dist.dir"));
+
+		// binary producers
+		spec(element("lwasm").doc("assemble source units into one object")
+			.opt("format", STRING, "obj (linkable) or raw")
+			.opt("gensource", STRING, "generated concatenated source, also names the build artifacts")
+			.opt("processor", STRING, "assembler executable name"));
+		spec(element("bin").doc("raw binary file inserted as is")
+			.req("filename", STRING, "input file"));
+		spec(element("asm").doc("assembly source unit : a file, or inline text").text()
+			.opt("filename", STRING, "source file ; omit when using inline text"));
+		spec(element("label").doc("exported label with no content, used as an interface")
+			.req("name", STRING, "exported symbol"));
+		spec(element("includebin").doc("binary included through a generated INCLUDEBIN")
+			.req("filename", STRING, "binary file"));
+
+		// asset converters
+		spec(element("vgm2ymm").doc("convert a VGM file to the YM2413 ymm stream")
+			.opt("filename", STRING, "input .vgm file or directory")
+			.opt("genbinary", STRING, "generated .ymm file")
+			.opt("codec", STRING, "zx0 : compress the stream")
+			.opt("dac2drum", STRING, "map DAC samples to drums"));
+		spec(element("vgm2vgc").doc("convert a VGM file to the SN76489 vgc stream")
+			.opt("filename", STRING, "input .vgm file or directory")
+			.opt("genbinary", STRING, "generated .vgc file"));
+		spec(element("vgm2sfx").doc("convert a VGM file to sound effects source")
+			.opt("filename", STRING, "input .vgm file")
+			.opt("gensource", STRING, "generated source file"));
+		spec(element("pcm").doc("convert PCM samples")
+			.opt("filename", STRING, "input file or directory")
+			.opt("genbinary", STRING, "generated binary")
+			.opt("bit8to6", BOOL, "convert 8 bit samples to the 6 bit DAC"));
+		spec(element("png2pal").doc("extract a palette from a PNG")
+			.opt("filename", STRING, "input .png")
+			.opt("gensource", STRING, "generated source file")
+			.opt("symbol", STRING, "generated symbol name")
+			.opt("colors", INT, "number of colors")
+			.opt("offset", INT, "first color index")
+			.opt("mode", STRING, "output mode")
+			.opt("profile", STRING, "color profile"));
+		spec(element("txt2bas").doc("tokenize a BASIC text file")
+			.req("filename", STRING, "input text file")
+			.req("tokenset", STRING, "BASIC token set"));
+		spec(element("phoneme").doc("convert text to MEA8000 phonemes")
+			.opt("filename", STRING, "input text file")
+			.opt("genbinary", STRING, "generated binary")
+			.opt("lang", STRING, "language, defaults to fr"));
+	}
 
 	static {
 		// configuration
@@ -106,6 +212,14 @@ public final class Handlers {
 
 	public static FilePluginInterface getFile(String name) {
 		return FILES.get(name);
+	}
+
+	public static ElementSpec spec(String name) {
+		return SPECS.get(name);
+	}
+
+	public static java.util.Collection<ElementSpec> specs() {
+		return SPECS.values();
 	}
 
 	/** @return true when the element name is handled at all */

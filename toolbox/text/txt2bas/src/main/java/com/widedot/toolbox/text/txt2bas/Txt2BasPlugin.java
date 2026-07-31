@@ -166,8 +166,8 @@ public class Txt2BasPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getString(node, ctx.defaults, "filename", "txt2bas.filename");
-	  String tokenset = Attribute.getString(node, ctx.defaults, "tokenset", "txt2bas.tokenset", "to");
+	  String filename = Attribute.getString(node, ctx, "filename");
+	  String tokenset = Attribute.getString(node, ctx, "tokenset", "to");
 
 	  if (filename == null || filename.equals("")) {
 		  String m = "no filename provided for txt2bas!";

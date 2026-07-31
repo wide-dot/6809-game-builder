@@ -27,9 +27,9 @@ public class LwasmPlugin {
 		
 		log.debug("Processing lwasm ...");
 		
-		String format = Attribute.getString(node, ctx.defaults, "format", "lwasm.format", LwAssembler.RAW);
-		String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "lwasm.gensource");
-		String lwasmProcessor = Attribute.getString(node, ctx.defaults, "processor", "lwasm.processor", "6809");
+		String format = Attribute.getString(node, ctx, "format", LwAssembler.RAW);
+		String gensource = Attribute.getStringOpt(node, ctx, "gensource");
+		String lwasmProcessor = Attribute.getString(node, ctx, "processor", "6809");
 		
 		List<File> files = new ArrayList<File>();
 		

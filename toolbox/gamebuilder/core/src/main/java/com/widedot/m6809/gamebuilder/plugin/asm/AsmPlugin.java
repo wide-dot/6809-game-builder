@@ -26,7 +26,7 @@ public class AsmPlugin {
 			file = new File(filename);
 			FileUtils.write(file, content, StandardCharsets.UTF_8, false);
 		} else {
-			filename = ctx.path + File.separator + Attribute.getString(node, ctx.defaults, "filename", "asm.filename");
+			filename = ctx.path + File.separator + Attribute.getString(node, ctx, "filename");
 			file = new File(filename);
 			if (!file.exists()) {
 				String s = "file: "+filename+" does not exists !";

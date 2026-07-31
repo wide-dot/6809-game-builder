@@ -200,10 +200,10 @@ public class Vgm2YmmPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "vgm2ymm.filename");
-	  String genbinary = Attribute.getStringOpt(node, ctx.defaults, "genbinary", "vgm2ymm.genbinary");
-	  String codec = Attribute.getStringOpt(node, ctx.defaults, "codec", "vgm2ymm.codec");
-	  String drum = Attribute.getStringOpt(node, ctx.defaults, "dac2drum", "vgm2ymm.dac2drum");
+	  String filename = Attribute.getStringOpt(node, ctx, "filename");
+	  String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
+	  String codec = Attribute.getStringOpt(node, ctx, "codec");
+	  String drum = Attribute.getStringOpt(node, ctx, "dac2drum");
 
 
 	  if ((filename == null || filename.equals(""))) {

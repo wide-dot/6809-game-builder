@@ -18,7 +18,7 @@ public class LabelPlugin {
 		log.debug("Processing label ...");
 		
 		File file = null;
-		String label = Attribute.getString(node, ctx.defaults, "name", "label.name");
+		String label = Attribute.getString(node, ctx, "name");
 		
 		String content = 	label + " EXPORT" + System.lineSeparator() +
 							" SECTION code"   + System.lineSeparator() +

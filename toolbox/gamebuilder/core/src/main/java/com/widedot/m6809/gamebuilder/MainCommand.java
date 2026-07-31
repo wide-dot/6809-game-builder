@@ -14,6 +14,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import com.widedot.m6809.gamebuilder.config.Validator;
 import com.widedot.m6809.gamebuilder.config.XmlLoader;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
@@ -144,6 +145,10 @@ public class MainCommand implements Callable<Integer> {
 		
 	    // parse the xml, keeping source positions for error messages
 		XmlLoader.Result config = XmlLoader.load(file);
+
+		// check the whole tree against the attribute contract before running :
+		// all the errors at once, each with its position
+		Validator.validate(config.root, config.sources);
 
 		// one context per configuration file : nothing leaks between builds
 		Target target = new Target(new BuildContext(path, settings, config.sources));

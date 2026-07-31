@@ -255,13 +255,13 @@ public class Png2PalPlugin {
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
-	  String symbol = Attribute.getStringOpt(node, ctx.defaults, "symbol", "png2pal.symbol");
-	  String mode = Attribute.getString(node, ctx.defaults, "mode", "png2pal.mode", Png2PalPlugin.OBJ);
-	  Integer colors = Attribute.getInteger(node, ctx.defaults, "colors", "png2pal.colors", 16);
-	  Integer offset = Attribute.getInteger(node, ctx.defaults, "offset", "png2pal.offset", 1);
-	  String profile = Attribute.getString(node, ctx.defaults, "profile", "png2pal.profile", "to");
-	  String filename = Attribute.getStringOpt(node, ctx.defaults, "filename", "png2pal.filename");
-	  String gensource = Attribute.getStringOpt(node, ctx.defaults, "gensource", "png2pal.gensource");
+	  String symbol = Attribute.getStringOpt(node, ctx, "symbol");
+	  String mode = Attribute.getString(node, ctx, "mode", Png2PalPlugin.OBJ);
+	  Integer colors = Attribute.getInteger(node, ctx, "colors", 16);
+	  Integer offset = Attribute.getInteger(node, ctx, "offset", 1);
+	  String profile = Attribute.getString(node, ctx, "profile", "to");
+	  String filename = Attribute.getStringOpt(node, ctx, "filename");
+	  String gensource = Attribute.getStringOpt(node, ctx, "gensource");
 
 	  if ((filename == null || filename.equals(""))) {
 		  String m = "An input filename should be provided for png2pal!";
