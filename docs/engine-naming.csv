@@ -1,0 +1,91 @@
+file,name,type,visibility,description,old file,old name
+graphics/buffer/gfxlock.asm,gfxlock.backBuffer.id,variable,public,back buffer id set to write operations (0 or 1),graphics/vbl/WaitVbl.asm,glb_Cur_Wrk_Screen_Id
+graphics/buffer/gfxlock.asm,gfxlock.backProcess.routine,variable,private,routine address for back process during wait time,n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.backProcess.status,variable,private,set if a back process routine is active during wait time,n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.bufferSwap.count,variable,public,buffer swap counter,graphics/vbl/WaitVbl.asm,glb_Main_runcount
+graphics/buffer/gfxlock.asm,gfxlock.bufferSwap.status,variable,private,lock during beam wait routine,n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.frame.count,variable,public,incremented in 50Hz IRQ,graphics/vbl/WaitVbl.asm,Vint_runcount
+graphics/buffer/gfxlock.asm,gfxlock.frame.lastCount,variable,private,used to compute duration,graphics/vbl/WaitVbl.asm,Vint_Last_runcount
+graphics/buffer/gfxlock.asm,gfxlock.frameDrop.count_w,variable,public,elapsed 50Hz frames since last main game loop,graphics/vbl/WaitVbl.asm,Vint_Main_runcount_w
+graphics/buffer/gfxlock.asm,gfxlock.frameDrop.count,variable,public,msb zero pad for drop,graphics/vbl/WaitVbl.asm,Vint_Main_runcount
+graphics/buffer/gfxlock.asm,gfxlock.status,variable,private,lock during gfx writes to video buffer,n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.screenBorder.color,variable,public,border color that is applied when buffer is swapped,graphics/vbl/WaitVbl.asm,glb_screen_border_color
+graphics/buffer/gfxlock.asm,gfxlock.bufferSwap.check,routine,public,routine that call swapBuffer (in a 50hz irq),n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.bufferSwap.do,routine,private,swap visible and back video buffer,n/a,n/a
+graphics/buffer/gfxlock.asm,gfxlock.bufferSwap.wait,routine,private,wait for beam to be outside of visible area,n/a,n/a
+graphics/buffer/gfxlock.asm,_gfxlock.backProcess.on,macro,public,set and activate a back process routine during wait time,n/a,n/a
+graphics/buffer/gfxlock.asm,_gfxlock.backProcess.off,macro,public,inactivate the back process routine during wait time,n/a,n/a
+graphics/buffer/gfxlock.macro.asm,_gfxlock.init,macro,public,init called before rendering anything on video buffer,n/a,n/a
+graphics/buffer/gfxlock.macro.asm,_gfxlock.off,macro,public,should be called when no more data is written to video buffer until next main loop,n/a,n/a
+graphics/buffer/gfxlock.macro.asm,_gfxlock.on,macro,public,should be called before any write to video buffer,n/a,n/a
+graphics/buffer/gfxlock.macro.asm,_gfxlock.loop,macro,public,should be called at the end of main loop,n/a,n/a
+system/to8/map.const.asm,map.CF74021.DATA,constant,public,gate array page mode (ram page in data area),system/to8/memory-map.equ,CF74021.DATA
+system/to8/map.const.asm,map.CF74021.SYS1,constant,public,gate array page mode (beam visibility),system/to8/memory-map.equ,CF74021.SYS1
+system/to8/map.const.asm,map.CF74021.SYS2,constant,public,gate array page mode (visible video ram page),system/to8/memory-map.equ,CF74021.SYS2
+system/to8/map.const.asm,map.IRQ.ONE_FRAME,constant,public,timer for one 50hz frame,system/to8/memory-map.equ,IRQ.ONEFRAME
+system/to8/map.const.asm,map.MC6846.PRC,constant,public,gate array page mode (ram page in video area),system/to8/memory-map.equ,MC6846.PRC
+/engine/6809/macros.asm,,,,TODO list macros,/engine/macros.asm,
+/engine/6809/types.const.asm,,,,TODO list constants,/engine/constants.asm,
+/engine/global/glb.init.asm,glb.init,routine,public,,/engine/InitGlobals.asm,InitGlobals
+/engine/system/to8/irq/irq.asm,irq.ONE_LINE,constant,public,,/engine/irq/Irq.asm,Irq_one_line
+/engine/system/to8/irq/irq.asm,irq.ONE_FRAME,constant,public,,/engine/irq/Irq.asm,Irq_one_frame
+/engine/system/to8/irq/irq.asm,irq.userRoutine,variable,public,,/engine/irq/Irq.asm,Irq_user_routine
+/engine/system/to8/irq/irq.asm,irq.init,routine,public,,/engine/irq/Irq.asm,IrqInit
+/engine/system/to8/irq/irq.asm,irq.set50Hz,routine,public,,/engine/irq/Irq.asm,IrqSet50Hz
+/engine/system/to8/irq/irq.asm,irq.on,routine,public,,/engine/irq/Irq.asm,IrqOn
+/engine/system/to8/irq/irq.asm,irq.on,routine,public,,/engine/irq/Irq.asm,IrqUnpause
+/engine/system/to8/irq/irq.asm,irq.off,routine,public,,/engine/irq/Irq.asm,IrqOff
+/engine/system/to8/irq/irq.asm,irq.off,routine,public,,/engine/irq/Irq.asm,IrqPause
+/engine/system/to8/irq/irq.asm,irq.syncScreenLine,routine,public,,/engine/irq/Irq.asm,IrqSync
+/engine/system/to8/irq/irq.asm,irq.manage,routine,private,,/engine/irq/Irq.asm,IrqManager
+/engine/system/to8/irq/irq.asm,irq.systemStack,variable,private,,/engine/irq/Irq.asm,Irq_sys_stack
+/engine/system/to8/palette/palette.update.asm,palette.update,routine,public,,/engine/palette/PalUpdateNow.asm,PalUpdateNow
+/engine/system/to8/palette/palette.update.asm,palette.status,variable,public,,/engine/palette/PalUpdateNow.asm,PalRefresh
+/engine/system/to8/palette/palette.update.asm,palette.current,variable,public,,/engine/palette/PalUpdateNow.asm,Pal_current
+/engine/system/to8/palette/palette.update.asm,palette.buffer,variable,public,,/engine/palette/PalUpdateNow.asm,Pal_buffer
+/engine/sound/ymm.asm,ymm.play,routine,public,this routine sets the music to play,/engine/sound/YM2413vgm.asm,YVGM_PlayMusic
+/engine/sound/ymm.asm,ymm.frame.play,routine,public,this routine should be called in user irq at 50hz rate,/engine/sound/YM2413vgm.asm,YVGM_MusicFrame
+/engine/system/thomson/controller/joypad.asm,joypad.read,routine,public,Read Joypads state and store result as Press and Help values,/engine/joypad/ReadJoypads.asm,ReadJoypads
+/engine/system/thomson/controller/joypad.asm,joypad.state,variable,public,,/engine/joypad/ReadJoypads.asm,Joypads_Read
+/engine/system/thomson/controller/joypad.asm,joypad.state.dpad,variable,public,,/engine/joypad/ReadJoypads.asm,Dpad_Read
+/engine/system/thomson/controller/joypad.asm,joypad.state.fire,variable,public,,/engine/joypad/ReadJoypads.asm,Fire_Read
+/engine/system/thomson/controller/joypad.asm,joypad.held,variable,public,,/engine/joypad/ReadJoypads.asm,Joypads_Held
+/engine/system/thomson/controller/joypad.asm,joypad.held.dpad,variable,public,,/engine/joypad/ReadJoypads.asm,Dpad_Held
+/engine/system/thomson/controller/joypad.asm,joypad.held.fire,variable,public,,/engine/joypad/ReadJoypads.asm,Fire_Held
+/engine/system/thomson/controller/joypad.asm,joypad.pressed,variable,public,,/engine/joypad/ReadJoypads.asm,Joypads_Press
+/engine/system/thomson/controller/joypad.asm,joypad.pressed.dpad,variable,public,,/engine/joypad/ReadJoypads.asm,Dpad_Press
+/engine/system/thomson/controller/joypad.asm,joypad.pressed.fire,variable,public,,/engine/joypad/ReadJoypads.asm,Fire_Press
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.UP,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_up_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.DOWN,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_down_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.LEFT,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_left_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.RIGHT,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_right_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.A,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_A_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.B,constant,public,,/engine/joypad/ReadJoypads.asm,c1_button_B_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.UP,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_up_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.MASK,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_down_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.LEFT,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_left_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.RIGHT,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_right_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.A,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_A_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.B,constant,public,,/engine/joypad/ReadJoypads.asm,c2_button_B_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.UP,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_up_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.DOWN,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_down_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.LEFT,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_left_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.RIGHT,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_right_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.A,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_A_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.x.B,constant,public,,/engine/joypad/ReadJoypads.asm,c_button_B_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.DPAD,constant,public,,/engine/joypad/ReadJoypads.asm,c1_dpad
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.DPAD,constant,public,,/engine/joypad/ReadJoypads.asm,c2_dpad
+/engine/system/thomson/controller/joypad.const.asm,joypad.0.FIRE,constant,public,,/engine/joypad/ReadJoypads.asm,c1_butn
+/engine/system/thomson/controller/joypad.const.asm,joypad.1.FIRE,constant,public,,/engine/joypad/ReadJoypads.asm,c2_butn
+/engine/system/thomson/controller/joypad.0.asm,joypad.0.held,variable,public,,/engine/joypad/ReadJoypads2.asm,Ctrl_1_Held
+/engine/system/thomson/controller/joypad.0.asm,joypad.0.pressed,variable,public,,/engine/joypad/ReadJoypads2.asm,Ctrl_1_Press
+/engine/system/thomson/controller/joypad.0.asm,joypad.0.read,routine,public,,/engine/joypad/ReadJoypads2.asm,ReadJoypads
+/engine/system/thomson/controller/joypad.1.asm,joypad.1.held,variable,public,,/engine/joypad/ReadJoypads2.asm,Ctrl_2_Held
+/engine/system/thomson/controller/joypad.1.asm,joypad.1.pressed,variable,public,,/engine/joypad/ReadJoypads2.asm,Ctrl_2_Press
+/engine/system/thomson/controller/joypad.1.asm,joypad.1.read,routine,public,,/engine/joypad/ReadJoypads2.asm,ReadJoypads
+/engine/system/thomson/controller/joypad.const.asm,joypad.UP,constant,public,,/engine/joypad/ReadJoypads2.asm,button_up_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.DOWN,constant,public,,/engine/joypad/ReadJoypads2.asm,button_down_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.LEFT,constant,public,,/engine/joypad/ReadJoypads2.asm,button_left_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.RIGHT,constant,public,,/engine/joypad/ReadJoypads2.asm,button_right_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.A,constant,public,,/engine/joypad/ReadJoypads2.asm,button_A_mask
+/engine/system/thomson/controller/joypad.const.asm,joypad.B,constant,public,,/engine/joypad/ReadJoypads2.asm,button_B_mask
