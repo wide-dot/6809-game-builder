@@ -77,6 +77,32 @@ Rattrapage : re-diff fichier par fichier, ré-import, mise à jour du manifest.
   cellules, compteurs) à adresse fixe → comparaison. La parité se prouve
   pendant la migration, pas après.
 
+## Pièges connus (appris sur le pilote sound/to8, 31/07/2026)
+
+- **setdp interdit en cible obj** : neutraliser la ligne (adressage étendu
+  toujours correct), marquer `; V2-DEVIATION:` + manifest. Les opérandes
+  forcés `<` explicites restent corrects.
+- **Fichiers v1 sans SECTION** : les inclure DANS la section du gm ; les
+  fichiers v2 conservés (qui portent leurs SECTIONs) après ENDSECTION.
+- **Pont irq.on/irq.off obligatoire** : les players v2 conservés résolvent
+  `irq.on`/`irq.off` au load-time link ; symbole absent = 0 silencieux =
+  `jsr $0000`. Dans un gm v1, exporter `irq.on equ IrqOn` / `irq.off equ
+  IrqOff` (zéro octet). Ordre v1 : armer les IRQ tôt (`IrqSet50Hz`), les
+  obj.play coupent (irq.off interne), **rallumer après le dernier obj.play**.
+- **Parking lecteur par le moniteur** : le handler timer par défaut (actif
+  quand STATUS bit $20 est clair) parque le lecteur → DK.OPC:=1 → DKCONT
+  « réussit » sans lire. Le loader réassert OPC=2 avant chaque DKCONT
+  (durci le 31/07) — ne jamais retirer ce garde-fou.
+- **Sous toje** : le prompt « Insert disk » est infranchissable au clavier
+  (scan clavier sous IRQ, masquées à ce moment) → run jusqu'à `bcc` de
+  `info` ($ACD5 dans loader-ut, re-dériver du .lst) puis PC:=rts suivant.
+  Adresses gm/loader changent À CHAQUE rebuild : re-grep .lwmap/.lst.
+  Lire une page cart : forcer la fenêtre via write_memory $E7E6.
+- **`loader.CHECK_UNRESOLVED_SYMBOLS`** : incompatible avec les références
+  en avant (design assumé : title importe les sons de level1, résolus à 0
+  puis corrigés au scene.load suivant). Ne l'activer que sur des bancs sans
+  forward refs.
+
 ## Exemples
 
 - Un exemple migré appelle le **dialecte v1** (`IrqInit`, `PalUpdateNow`,

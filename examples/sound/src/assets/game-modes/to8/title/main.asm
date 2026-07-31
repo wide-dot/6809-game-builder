@@ -44,6 +44,12 @@ init
         ldd   #userIRQ
         std   Irq_user_routine    ; user routine called by IrqManager (v1)
         jsr   IrqInit
+        jsr   IrqSet50Hz          ; arm + enable EARLY (v2 order) : with the
+                                  ; user hook active from here on, the
+                                  ; monitor's default timer handler never
+                                  ; runs (it would park the floppy drive,
+                                  ; leaving DK.OPC unusable) ; the players'
+                                  ; obj.play guard themselves with irq.off
         jsr   PalUpdateNow        ; apply the default black palette (PalRefresh=$FF at init)
         _gfxlock.init
 
@@ -52,11 +58,9 @@ init
 
         _ram.cart.set  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
-
-        ; v1 semantics : IrqSet50Hz enables interrupts itself (jsr IrqOn
-        ; inside) — arm the 50Hz timer only once the players are ready,
-        ; the user irq routine plays a music frame on every tick
-        jsr   IrqSet50Hz
+        jsr   IrqOn                ; the obj.play calls masked interrupts
+                                   ; (their internal irq.off) — re-enable
+                                   ; now that both players are primed
 
         lda   #$7B                 ; switch to 160x200x16c mode (v1 style)
         sta   CF74021.LGAMOD

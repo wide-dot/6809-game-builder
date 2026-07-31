@@ -20,32 +20,32 @@ sous toje (16/16), tests JUnit verts, CI master verte.
   - [x] M1 — inventaire de dérive (478 v1 / 131 v2 / 30 homonymes tous
         divergents — [`migration-inventaire-2026-07.md`](docs/lang/fr/migration-inventaire-2026-07.md)) ;
         partition actée ; engine + exemples v2 parqués dans `parked/`
-  - [ ] M2 — base commune : import 1:1 + pilote sound/to8 **EN COURS**
-        (31/07 soir). Fait : 14 fichiers v1 importés (manifest), gm title
-        réécrit en dialecte v1, build OK. Deux causes racines trouvées et
-        corrigées au débogage toje : (1) `IrqSet50Hz` v1 ACTIVE les IRQ
-        (jsr IrqOn interne) → armer APRÈS les obj.play ; (2) les players v2
-        conservés résolvent `irq.on`/`irq.off` au link — symbole absent =
-        0 silencieux = jsr $0000 → pont d'export dans le gm
-        (`irq.off equ IrqOff` + EXPORT, zéro octet). Validé : title joue
-        (ymm+vgc chargés, coroutines OK, frame.count +97/100 trames).
-        Déclencheur : hook de banc ajouté ($9C00 poké par le harnais,
-        convention loader-ut) + KTEST matériel pour machine réelle (le
-        clavier moniteur est hors-jeu sous notre régime IRQ). RESTE — LE
-        SWAP CHARGE À VIDE : scene.load(22=scenes.level1) s'exécute
-        entièrement (X=$16 ✓, entrée direntry RAM parfaite s15-logique →
-        s10-physique via la map soft du loader, arrangement IDENTIQUE à la
-        référence qui fonctionne) mais loader.file.load ne dépose PAS les
-        14 octets de la table à sa destination pool ($B158 = résidu de
-        link data) → scene.apply lit type=%00 → no-op. POINT DE REPRISE
-        EXACT : breakpoint $A80D (jsr loader.file.load de la table dans
-        scene.load), tracer pas à pas OÙ file.load écrit — suspects : état
-        map.DK.* / buffer disque après le 1er swap, interaction IrqOff v1
-        (STATUS $20) avec DKCONT, dédup/état du pool au 2e swap (tester
-        aussi un swap UNIQUE après boot propre). Leçons déjà consignées :
-        vérifier les DEUX players en RAM (fenêtre cart forcée par
-        write_memory $E7E6), activer loader.CHECK_UNRESOLVED_SYMBOLS dans
-        les bancs.
+  - [x] M2 (pilote) — base commune : 14 fichiers v1 importés 1:1 (manifest),
+        gm title sound/to8 réécrit en dialecte v1, **validé de bout en bout
+        sous toje le 31/07** : title joue (ymm+vgc), swap à chaud vers
+        level1 vérifié dans les DEUX pages (p6:$0400=ymm level1,
+        p7:$0A80=vgc level1, fenêtres cart forcées via $E7E6). Quatre
+        causes racines corrigées : (1) setdp interdit en cible obj →
+        neutralisé (V2-DEVIATION) ; (2) fichiers v1 sans SECTION → include
+        DANS la section du gm ; (3) les players v2 conservés résolvent
+        `irq.on`/`irq.off` au link, symbole absent = 0 silencieux =
+        jsr $0000 → pont d'export zéro octet dans le gm (`irq.off equ
+        IrqOff` + EXPORT) ; (4) **le swap chargeait à vide : le handler
+        timer par défaut du moniteur parque le lecteur (reset contrôleur,
+        DK.OPC:=1) → DKCONT « réussit » sans lire** → durcissement loader
+        (ldsec réassert OPC=2 avant chaque DKCONT) + armement IRQ tôt dans
+        le gm, rallumage final après les obj.play (ils coupent via
+        irq.off). Revalidation complète post-changement loader : 8 configs
+        rebuil­dées, loader-ut **16/16** ($0D), tlsf-ut vert, mplus test+pcm
+        conformes, JUnit 57/57, snapshots REF rafraîchis. Leçons dans la
+        skill : le prompt « Insert disk » est infranchissable au clavier
+        sous toje (scan IRQ masqué) → bypass PC $ACD5→$ACD7 ;
+        CHECK_UNRESOLVED_SYMBOLS incompatible avec les références en avant
+        (title importe les sons level1) — ne l'activer que sur des bancs
+        sans forward refs.
+  - [ ] M2 (suite) — migrer mplus/tlsf là où ils touchent la base dupliquée ;
+        arbitrer les homonymes restants (zx0, sn76489, ym2413, players
+        ymm/vgc).
   - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
         banc générateur vs générateur (mêmes PNG, diff des .bin)
   - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc

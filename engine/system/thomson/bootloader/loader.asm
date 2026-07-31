@@ -604,6 +604,15 @@ ldsec   equ   *
         ldb   b,x                 ; read sector number
         clr   <map.DK.TRK         ; init track msb (always 0)
         std   <map.DK.TRK+1       ; track/sector
+        ; the monitor's default timer handler parks the drive after an idle
+        ; delay by issuing a controller reset, which leaves DK.OPC at 1 ;
+        ; a DKCONT call then "succeeds" without reading anything. Reassert
+        ; the read operation on every call instead of trusting a persistent
+        ; state set once at boot.
+        pshs  b
+        ldb   #$02
+        stb   <map.DK.OPC         ; operation : read sector
+        puls  b
         jsr   >map.DKCONT         ; load sector
         bcc   ldsec1              ; skip if ok
         jsr   >map.DKCONT         ; reload sector
