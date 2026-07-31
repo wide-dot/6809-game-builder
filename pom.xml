@@ -101,6 +101,16 @@
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>appassembler-maven-plugin</artifactId>
 					<version>2.1.0</version>
+					<configuration>
+						<!-- repo/ is a single flat directory shared by every module,
+						     and the launch scripts put it on the classpath with a
+						     plain repo/* glob. A module left on the default nested
+						     layout has its own dependencies assembled where nothing
+						     looks for them: that is how jython silently dropped off
+						     the classpath when it stopped transiting through core. -->
+						<repositoryLayout>flat</repositoryLayout>
+						<useWildcardClassPath>true</useWildcardClassPath>
+					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>com.akathist.maven.plugins.launch4j</groupId>
