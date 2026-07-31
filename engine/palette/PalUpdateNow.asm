@@ -11,7 +11,7 @@ PalRefresh      fcb   $FF
 Pal_current     fdb   Pal_buffer
 Pal_buffer      fill  0,$20          
 
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)
 PalUpdateNow 
         tst   PalRefresh
         bne   @rts
@@ -72,4 +72,4 @@ PalUpdateNow
         puls dp,pc
 @rts    rts
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)

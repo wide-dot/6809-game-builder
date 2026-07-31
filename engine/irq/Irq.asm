@@ -119,7 +119,7 @@ IrqSync
         stx   MC6846.TMSB              ; spot is at the end of desired line
         rts  
 
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)
 IrqManager
         sts   @stack                   ; backup system stack
         lds   #Irq_sys_stack           ; set tmp system stack for IRQ 
@@ -155,4 +155,4 @@ IrqManager
         fill  0,32
 Irq_sys_stack
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)

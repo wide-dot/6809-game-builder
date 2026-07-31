@@ -233,4 +233,9 @@ map.HALFPAGE       equ map.MC6846.PDR
 map.DAC_MUTE       equ map.MC6846.PCR
 map.bit.DAC_MUTE   equ map.MC6846.PCR.DAC_MUTE
 
+; -----------------------------------------------------------------------------
+; v1 compatibility aliases : the 1:1 imported v1 engine files spell some
+; registers the v1 way (see .claude/skills/v1-migration/SKILL.md)
+map.MC6846.PRC     equ map.MC6846.PDR
+
     ENDC

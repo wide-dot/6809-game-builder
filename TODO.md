@@ -20,9 +20,22 @@ sous toje (16/16), tests JUnit verts, CI master verte.
   - [x] M1 — inventaire de dérive (478 v1 / 131 v2 / 30 homonymes tous
         divergents — [`migration-inventaire-2026-07.md`](docs/lang/fr/migration-inventaire-2026-07.md)) ;
         partition actée ; engine + exemples v2 parqués dans `parked/`
-  - [ ] M2 — base commune : import 1:1 (constants, macros, gfxlock, irq,
-        palette, contrôleurs v1), migration des exemples au dialecte v1
-        (pilote sound/to8), re-validation complète
+  - [ ] M2 — base commune : import 1:1 + pilote sound/to8 **EN COURS**
+        (31/07 soir). Fait : 14 fichiers v1 importés (manifest), gm title
+        réécrit en dialecte v1, build OK. Deux causes racines trouvées et
+        corrigées au débogage toje : (1) `IrqSet50Hz` v1 ACTIVE les IRQ
+        (jsr IrqOn interne) → armer APRÈS les obj.play ; (2) les players v2
+        conservés résolvent `irq.on`/`irq.off` au link — symbole absent =
+        0 silencieux = jsr $0000 → pont d'export dans le gm
+        (`irq.off equ IrqOff` + EXPORT, zéro octet). Validé : title joue
+        (ymm+vgc chargés, coroutines OK, frame.count +97/100 trames).
+        RESTE : le déclencheur clavier du swap ne répond pas sous toje
+        (ni ReadKeyboard v1/moniteur, ni keyboard v2 — piste : état
+        keyboard.held=$F5 constant, pressed jamais posé ; comparer
+        instruction par instruction avec l'image de référence où le même
+        type_keys(32) fonctionne). Puis : re-valider swap ymm ET vgc
+        (leçon : nos checks RAM ne lisaient que la partie ymm), mplus/tlsf,
+        et déviations au manifest.
   - [ ] M3 — gfxcomp opérationnel (main-class, Handlers, index imageset) +
         banc générateur vs générateur (mêmes PNG, diff des .bin)
   - [ ] M4 — sprites 1:1 (7 fichiers, écart marge #16→#12 tracé) + banc

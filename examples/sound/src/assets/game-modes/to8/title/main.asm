@@ -11,23 +11,40 @@ sounds.level1.vgc  EXTERNAL
 
  SECTION code
 
-        INCLUDE "engine/system/to8/pack/std.asm"
-        INCLUDE "engine/system/to8/pack/irq.asm"
+        ; v2 compatibility bridge : the kept-v2 sound players resolve
+        ; irq.on/irq.off at load time (an unresolved link symbol silently
+        ; becomes 0 — jsr $0000). The v1 dialect provides IrqOn/IrqOff ;
+        ; export them under the v2 names, zero bytes added.
+irq.on  EXPORT
+irq.on  equ   IrqOn
+irq.off EXPORT
+irq.off equ   IrqOff
+
+        ; v1 engine dialect (1:1 imported files)
+        INCLUDE "engine/system/to8/memory-map.equ"
+        INCLUDE "engine/constants.asm"
+        INCLUDE "engine/macros.asm"
+        INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
+
+        ; v2 kept features : loader/scenes, ram paging, sound players
+        INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
         INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/pack/vgc.asm"
 
 page.ymm equ map.RAM_OVER_CART+6  ; ram page that contains ymm player and sound data (as defined in scene file)
-page.vgc equ map.RAM_OVER_CART+7 
+page.vgc equ map.RAM_OVER_CART+7
 
  opt c,ct
 
 ; ------------------------------------------------------------------------------
 init
-        _glb.init                 ; clean dp variables
-        _irq.init                 ; set irq manager routine
-        _irq.setRoutine #userIRQ  ; set user routine called by irq manager
-        _irq.set50Hz              ; set irq to run every video frame, when spot is outside visible area
-        _palette.update           ; update palette with the default black palette
+        jsr   InitGlobals         ; clean dp variables (v1)
+        ldd   #userIRQ
+        std   Irq_user_routine    ; user routine called by IrqManager (v1)
+        jsr   IrqInit
+        jsr   PalUpdateNow        ; apply the default black palette (PalRefresh=$FF at init)
         _gfxlock.init
 
         _ram.cart.set  #page.ymm   ; mount ram page that contains player and sound data
@@ -35,25 +52,37 @@ init
 
         _ram.cart.set  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
-        _irq.on
 
-        _gfxmode.setBM16
-        _gfxlock.memset #$0000    ; init video buffers
-        _gfxlock.memset #$0000
+        ; v1 semantics : IrqSet50Hz enables interrupts itself (jsr IrqOn
+        ; inside) — arm the 50Hz timer only once the players are ready,
+        ; the user irq routine plays a music frame on every tick
+        jsr   IrqSet50Hz
+
+        lda   #$7B                 ; switch to 160x200x16c mode (v1 style)
+        sta   CF74021.LGAMOD
+
+        ldb   #%00000010           ; init video buffer page 2 (v1 style)
+        stb   map.CF74021.DATA
+        ldx   #0
+        jsr   ClearDataMem
+        ldb   #%00000011           ; init video buffer page 3
+        stb   map.CF74021.DATA
+        ldx   #0
+        jsr   ClearDataMem
 
 ; ------------------------------------------------------------------------------
 mainLoop
-        jsr   keyboard.read
-        tst   keyboard.pressed
+        jsr   keyboard.read       ; kept-v2 keyboard (PIA direct — the v1
+        tst   keyboard.pressed    ; monitor KTST path needs the monitor irq)
         beq   >
 
-        _irq.off
+        jsr   IrqOff
         _ram.cart.set  #page.vgc
         _sn76489.init
         _ram.cart.set  #page.ymm
         _ym2413.init
 
-        _ram.data.set #loader.PAGE ; load a new song from disk 
+        _ram.data.set #loader.PAGE ; load a new song from disk
         _loader.scene.load #scenes.level1
 
         _ram.cart.set  #page.ymm
@@ -61,7 +90,7 @@ mainLoop
 
         _ram.cart.set  #page.vgc
         _vgc.obj.play #page.vgc,#sounds.level1.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
-        _irq.on
+        jsr   IrqOn
 !
 
         _gfxlock.on
@@ -74,17 +103,22 @@ mainLoop
 
 ; ------------------------------------------------------------------------------
 userIRQ
-        _palette.checkUpdate
-        _gfxlock.swap
+        jsr   PalUpdateNow              ; self-skips when PalRefresh is 0
+        jsr   gfxlock.bufferSwap.check
         _ymm.frame.play #page.ymm
         _vgc.frame.play #page.vgc
         rts
 
+; ------------------------------------------------------------------------------
+        ; v1 engine routines (1:1) — v1 files carry no SECTION of their own
+        ; (raw build model), so they are included inside the code section
+        INCLUDE "engine/InitGlobals.asm"
+        INCLUDE "engine/irq/Irq.asm"
+        INCLUDE "engine/palette/PalUpdateNow.asm"
+        INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/ram/ClearDataMemory.asm"
+
  ENDSECTION
 
-        INCLUDE "engine/global/glb.init.asm"
-        INCLUDE "engine/system/to8/irq/irq.asm"
-        INCLUDE "engine/system/to8/palette/palette.update.asm"
-        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.asm"
-        INCLUDE "engine/system/thomson/graphics/buffer/gfxlock.memset.asm"
+        ; kept-v2 modules carry their own SECTION blocks
         INCLUDE "engine/system/to8/controller/keyboard.asm"
