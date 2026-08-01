@@ -82,7 +82,7 @@ public class MapRleEncoder extends Encoder{
 			//if (log.isDebugEnabled())
 				//log.debug(debug80Col(img.getSubImagePixels(imageNum, 1)));
 
-			if (!isPlane0Empty)
+			if (!isPlane1Empty)
 				spriteCode2	= encode(img.getSubImagePixels(1), img.getCoordinate());
 			
 		}
