@@ -90,8 +90,8 @@ zx0_decompress
 ; meaningless in a relocatable object, where * is relative to the section,
 ; which is what kept compiled sprites from ever reaching this decoder.
 ; What actually has to share a page is not the routine but the handful of self
-; modified bytes it reads through DP, delimited below by zx0_dp_first and
-; zx0_dp_last and checked by the builder, which knows the load address.
+; modified bytes it reads through DP, delimited below by zx0.pagespan.first and
+; zx0.pagespan.last and checked by the builder, which knows the load address.
 zx0_start
                    leay zx0_code,pcr   ; the page holding those bytes
                    tfr y,d             ; a = its high byte
@@ -191,10 +191,10 @@ zx0_rts            rts                 ; return
 ; is the only place that knows where the code lands, for a relocatable unit as
 ; well as a raw one. lwasm cannot: on a relocatable section it answers
 ; "Conditions must be constant on pass 1".
-zx0_dp_first       equ zx0_code+1
-zx0_dp_last        equ zx0_save_x+1
+zx0.pagespan.first       equ zx0_code+1
+zx0.pagespan.last        equ zx0_save_x+1
                    ifdef ZX0_ABSOLUTE
-                   ifne (zx0_dp_first/256)-(zx0_dp_last/256)
+                   ifne (zx0.pagespan.first/256)-(zx0.pagespan.last/256)
                    error "zx0_decompress : the bytes it reads through DP cross a page boundary"
                    endc
                    endc

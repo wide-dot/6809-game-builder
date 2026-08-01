@@ -11,7 +11,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprStack;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.lwtools.struct.LWExprStackNode;
@@ -572,6 +576,52 @@ public class LwObject implements ObjectDataInterface{
 	 * section relative, so they must be shifted by this base : without it a
 	 * second code-bearing section relocates at the wrong place.
 	 */
+	/** suffixes a unit uses to declare a range that must stay inside one page */
+	private static final String SPAN_FIRST = ".pagespan.first";
+	private static final String SPAN_LAST  = ".pagespan.last";
+
+	/**
+	 * Ranges this object declares as having to sit inside a single 256 byte
+	 * page, rebased from section relative to object relative — the caller adds
+	 * the address the file is loaded at.
+	 */
+	@Override
+	public Map<String, int[]> getPageSpans() throws Exception {
+		Map<String, Integer> first = new HashMap<String, Integer>();
+		Map<String, Integer> last = new HashMap<String, Integer>();
+
+		for (LWSection section : secLst) {
+			int base = sectionBase(section);
+			for (List<Symbol> syms : Arrays.asList(section.localsyms, section.exportedsyms)) {
+				for (Symbol sym : syms) {
+					if (sym.sym.endsWith(SPAN_FIRST)) {
+						first.put(sym.sym.substring(0, sym.sym.length() - SPAN_FIRST.length()),
+						          base + sym.offset);
+					} else if (sym.sym.endsWith(SPAN_LAST)) {
+						last.put(sym.sym.substring(0, sym.sym.length() - SPAN_LAST.length()),
+						         base + sym.offset);
+					}
+				}
+			}
+		}
+
+		Map<String, int[]> spans = new LinkedHashMap<String, int[]>();
+		for (Map.Entry<String, Integer> entry : first.entrySet()) {
+			Integer end = last.get(entry.getKey());
+			if (end == null) {
+				throw new Exception(entry.getKey() + SPAN_FIRST + " has no matching "
+				                  + entry.getKey() + SPAN_LAST);
+			}
+			spans.put(entry.getKey(), new int[] { entry.getValue(), end });
+		}
+		for (String tag : last.keySet()) {
+			if (!first.containsKey(tag)) {
+				throw new Exception(tag + SPAN_LAST + " has no matching " + tag + SPAN_FIRST);
+			}
+		}
+		return spans;
+	}
+
 	private int sectionBase(LWSection target) {
 		int base = 0;
 		for (LWSection section : secLst) {

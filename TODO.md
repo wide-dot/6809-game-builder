@@ -189,14 +189,15 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         octets ; il est rendu à son adresse historique ($BE50) et T14
         repasse. Validé : loader-ut **16/16** ($0D), sound TO8 avec swap à
         chaud, banc sprites, JUnit 53.
-  - [ ] M7 (suite) — **contrôle de page côté builder** pour le décompresseur
-        zx0 en unité relogeable. Prérequis que j'ai créé en retirant
-        l'alignement : lwasm ne peut évaluer la condition que sur des adresses
-        absolues, donc le loader (raw) est couvert mais une unité obj ne l'est
-        pas. Le builder a tout ce qu'il faut : adresse de région et offsets
-        `zx0_dp_first`/`zx0_dp_last` dans le `.lwmap`, et il fait déjà cette
-        classe de contrôle dans `SceneChecks`. À faire AVANT le premier sprite
-        compressé dessiné, sinon on réintroduit un piège silencieux.
+  - [x] M7 (suite) — **contrôle de page côté builder** fait. Capacité
+        générique plutôt que cas particulier zx0 : une unité déclare une plage
+        à ne pas couper en nommant deux symboles `<tag>.pagespan.first` et
+        `.last`, `LwObject` les extrait en les rebasant (les offsets du
+        `.lwmap` sont relatifs à la section, pas au fichier), `DirEntry` les
+        porte et `SceneChecks` les vérifie contre l'adresse de région — le
+        seul endroit qui la connaisse. Message avec fichier:ligne, adresses
+        réelles et action à faire. Prouvé de bout en bout : la même unité
+        passe à $6100 et échoue à $61C0, plus deux tests unitaires.
   - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut

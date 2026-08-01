@@ -135,9 +135,15 @@ public class DirEntryPlugin {
 		// init direntry
 		byte[] direntry = new byte[24];
 		
-		// merge all binaries
+		// merge all binaries, collecting the ranges each object needs kept inside
+		// one page ; their offsets shift with whatever precedes them in the file
 		int length = 0;
+		java.util.Map<String, int[]> pageSpans = new java.util.LinkedHashMap<String, int[]>();
 		for (ObjectDataInterface obj : objects) {
+			for (java.util.Map.Entry<String, int[]> span : obj.getPageSpans().entrySet()) {
+				pageSpans.put(span.getKey(),
+						new int[] { length + span.getValue()[0], length + span.getValue()[1] });
+			}
 			length += obj.getBytes().length;
 		}
 		
@@ -286,7 +292,7 @@ public class DirEntryPlugin {
 		}
 
 		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
-	    media.addDirEntry(new DirEntry(name, sizedDirentry, length));
+	    media.addDirEntry(new DirEntry(name, sizedDirentry, length, pageSpans));
 		
 	    String fLength = String.format("%5d", length);
 	    log.info("file {} | {} bytes", name, fLength);

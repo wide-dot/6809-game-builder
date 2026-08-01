@@ -29,6 +29,40 @@ class SceneChecksTest {
 		return m;
 	}
 
+	private Map<String, Map<String, int[]>> spans(String entry, int first, int last) {
+		Map<String, int[]> one = new HashMap<String, int[]>();
+		one.put("zx0", new int[] { first, last });
+		Map<String, Map<String, int[]>> m = new HashMap<String, Map<String, int[]>>();
+		m.put(entry, one);
+		return m;
+	}
+
+	@Test
+	@DisplayName("a range that must stay in one page is checked against the load address")
+	void pageSpan() {
+		// the decompressor reads a handful of its own bytes through the direct
+		// page, which carries only their low byte : offsets $4F..$5E land in one
+		// page at $6100, and across two at $61B0
+		List<SceneCheck> scene = Arrays.asList(scene("s",
+				new Load("gm", Kind.PLACED, 1, 0x6100, 0x1F00, "gamemode", "f:1")));
+		assertTrue(SceneChecks.verify(scene, sizes("gm", 896), spans("gm", 0x4F, 0x5E)).isEmpty());
+
+		List<SceneCheck> moved = Arrays.asList(scene("s",
+				new Load("gm", Kind.PLACED, 1, 0x61B0, 0x1F00, "gamemode", "f:1")));
+		List<String> errors = SceneChecks.verify(moved, sizes("gm", 896), spans("gm", 0x4F, 0x5E));
+		assertEquals(1, errors.size(), errors.toString());
+		assertTrue(errors.get(0).contains("page"), errors.get(0));
+		assertTrue(errors.get(0).contains("zx0"), errors.get(0));
+	}
+
+	@Test
+	@DisplayName("an entry with no declared range is left alone")
+	void noPageSpan() {
+		List<SceneCheck> scene = Arrays.asList(scene("s",
+				new Load("gm", Kind.PLACED, 1, 0x61B0, 0x1F00, "gamemode", "f:1")));
+		assertTrue(SceneChecks.verify(scene, sizes("gm", 896)).isEmpty());
+	}
+
 	@Test
 	@DisplayName("a coherent scene passes")
 	void coherent() {

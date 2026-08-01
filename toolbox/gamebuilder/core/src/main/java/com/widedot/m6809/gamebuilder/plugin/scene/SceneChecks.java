@@ -25,6 +25,18 @@ public final class SceneChecks {
 	 * @return the errors found, empty when all the scenes are coherent
 	 */
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes) {
+		return verify(scenes, sizes, java.util.Collections.<String, Map<String, int[]>>emptyMap());
+	}
+
+	/**
+	 * @param scenes    what each scene declared
+	 * @param sizes     uncompressed size of every directory entry, by name
+	 * @param pageSpans per entry, the ranges that must stay inside one 256 byte
+	 *                  page, as offsets in the file
+	 * @return the errors found, empty when all the scenes are coherent
+	 */
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans) {
 		List<String> errors = new ArrayList<String>();
 
 		for (SceneCheck scene : scenes) {
@@ -45,6 +57,25 @@ public final class SceneChecks {
 
 				switch (load.kind) {
 				case PLACED:
+					// Code that reads its own bytes through the direct page carries
+					// only their low byte, so those bytes must share the page the
+					// DP register holds. Where the file lands is decided here, and
+					// only here — the assembler never sees this address.
+					for (Map.Entry<String, int[]> span :
+							pageSpans.getOrDefault(load.name,
+									java.util.Collections.<String, int[]>emptyMap()).entrySet()) {
+						int from = load.address + span.getValue()[0];
+						int to = load.address + span.getValue()[1];
+						if ((from >> 8) != (to >> 8)) {
+							errors.add(load.where + ": scene " + scene.sceneName + ": '" + load.name
+									+ "' at $" + Integer.toHexString(load.address).toUpperCase()
+									+ " puts the '" + span.getKey() + "' range across a page"
+									+ " boundary ($" + Integer.toHexString(from).toUpperCase()
+									+ "..$" + Integer.toHexString(to).toUpperCase() + ")."
+									+ " That code reads those bytes through the direct page, which"
+									+ " cannot span two pages : move the region or the routine.");
+						}
+					}
 					if (load.budget != null && size > load.budget) {
 						errors.add(load.where + ": scene " + scene.sceneName + ": '" + load.name
 								+ "' is " + size + " bytes, over the " + load.budget

@@ -139,10 +139,15 @@ public class DirectoryPlugin {
 		// code, so nothing is checked across scenes.
 		if (!pendingScenes.isEmpty()) {
 			java.util.Map<String, Integer> sizes = new java.util.HashMap<String, Integer>();
+			java.util.Map<String, java.util.Map<String, int[]>> pageSpans =
+					new java.util.HashMap<String, java.util.Map<String, int[]>>();
 			for (DirEntry entry : media.getDirEntries()) {
 				sizes.put(entry.name, entry.length);
+				if (!entry.pageSpans.isEmpty()) {
+					pageSpans.put(entry.name, entry.pageSpans);
+				}
 			}
-			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes);
+			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans);
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}
