@@ -2,18 +2,13 @@
 # Generator vs generator : same PNG through the v1 java-generator and through
 # gfxcomp, both assembled with the same lwasm, binaries compared.
 #
-# Two regimes, because the encoders search for a register allocation:
-#
-#   - small sprites  the permutation space fits in maxTries, both generators
-#                    enumerate it exhaustively and the result is deterministic.
-#                    Verdict IDENTICAL is then a strict parity proof.
-#   - large sprites  the space does not fit, both fall back to a random walk
-#                    seeded from the clock (`new Random()`), so v1 does not even
-#                    reproduce itself: measured here at 543 vs 544 bytes for
-#                    shell_3 between two runs. Byte identity is unreachable by
-#                    construction ; what must hold is that gfxcomp lands in the
-#                    same solution band. The bench samples v1 several times and
-#                    checks that the gfxcomp size falls within that spread.
+# Both generators now seed their reordering search with the same constant, so
+# every case compares byte for byte. That was not always true: the search is
+# random past a node size, and while both were unseeded neither reproduced
+# itself — v1 gave 543 then 544 bytes on the same sprite. The two regimes below
+# are kept because they are what proves it: the bench measures whether v1 is
+# reproducible rather than assuming it, and only falls back to comparing sizes
+# if it is not. A FAIL there would mean the seeding regressed on one side.
 #
 # The v2 side deliberately drops ORG/SETDP (the load time linker relocates, and
 # setdp is rejected by the obj target) and renames the entry labels to the
@@ -31,6 +26,10 @@ V1JAR="$V1/java-generator/target/game-engine-0.0.1-SNAPSHOT-jar-with-dependencie
 GFXJAR="$ROOT/toolbox/graphics/gfxcomp/target/gfxcomp-0.0.1.jar"
 PNG_DIR="${PNG_DIR:-$V1/game-projects/r-type/objects}"
 SAMPLES="${SAMPLES:-3}"
+# Full exhaustive coverage : the threshold saturates at 9! = 362880, and this
+# is the value r-type configures. Do not raise it blindly — in the random
+# branch it is also the iteration count, so a huge value would hang the build.
+MAXTRIES="${MAXTRIES:-500000}"
 
 [ -f "$V1JAR" ] || { echo "build the v1 generator first: (cd $V1/java-generator && mvn package assembly:single)"; exit 1; }
 [ -f "$GFXJAR" ] || { echo "build gfxcomp first: mvn -pl toolbox/graphics/gfxcomp -am package"; exit 1; }
@@ -62,7 +61,7 @@ for case in $CASES; do
     while [ "$i" -le "$SAMPLES" ]; do
         mkdir -p "$OUT/$name/v1_$i/debug"
         (cd "$V1" && java -cp "$V1JAR:$OUT/work" V1Harness "$png" "$name" "$variant" \
-            "$OUT/$name/v1_$i" "$LWASM" 2>/dev/null | grep '^x1=' > "$OUT/$name/v1_$i/geometry.txt")
+            "$OUT/$name/v1_$i" "$LWASM" "$MAXTRIES" 2>/dev/null | grep '^x1=' > "$OUT/$name/v1_$i/geometry.txt")
         i=$((i+1))
     done
 
@@ -132,10 +131,11 @@ EOF
                 fail=$((fail+1))
             fi
         else
-            # Random search : comparing against the sampled spread would make the
-            # verdict depend on the draw. The question that matters is whether
-            # gfxcomp finds code as good as v1's, so the budget is v1's best
-            # sample plus 1% (at least 2 bytes, the granularity of one insn).
+            # v1 is not reproducing itself : its seeding regressed, or a new
+            # source of nondeterminism appeared. Byte comparison is meaningless
+            # then, so fall back to asking whether gfxcomp finds code as good as
+            # v1's best sample, within 1% (at least 2 bytes, one instruction).
+            echo "WARN  $name$part : v1 is not reproducible here, seeding regressed ?"
             tol=$((min / 100)); [ "$tol" -lt 2 ] && tol=2
             budget=$((min + tol))
             if [ "$v2size" -le "$budget" ]; then

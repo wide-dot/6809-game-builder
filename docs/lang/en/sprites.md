@@ -169,11 +169,11 @@ a leak would move.
 
 ## Reproducible builds
 
-Past a node size the search that orders instruction groups is random, and v1
-leaves its generator unseeded — the same PNG gives 542 bytes on one run and
-544 on the next. gfxcomp seeds it with one fixed constant, so a sprite's code
+Past a node size the search that orders instruction groups is random. Left
+unseeded it made the same PNG give 542 bytes on one run and 544 on the next.
+Both generators now seed it with the same fixed constant, so a sprite's code
 depends on its pixels alone : not on the machine, not on the image's name, not
-on where it sits in the build.
+on where it sits in the build, not on the run.
 
 That is a requirement, not a convenience. Region destinations are placed by
 hand, against budgets someone computed once ; a size that drifts between
@@ -195,12 +195,12 @@ The port is checked against the original generator, not against itself :
 `toolbox/graphics/gfxcomp/bench/run.sh` runs the same PNG through both chains,
 assembles both with the same lwasm and compares.
 
-Where the register allocation search is exhaustive, the two generators emit
-**byte identical** code. Past that size both fall back to an unseeded random
-walk, so v1 does not reproduce itself either — measured at 543 against 544
-bytes on the same sprite between two runs. The bench detects which regime it
-is in by sampling v1 several times, and in the stochastic one it requires
-gfxcomp to land within 1% of v1's best sample.
+The two generators emit **byte identical** code on every case of the bench,
+including the sprites large enough to reach the random branch — that is what
+seeding both sides with the same constant buys. The bench still measures
+whether v1 reproduces itself rather than assuming it, and falls back to
+comparing sizes within 1% if it does not : that path is now a regression
+detector for the seeding, not the normal outcome.
 
 `checkindex.py` extends the comparison to the index : geometry must match the
 v1 encoders exactly, and the cell count must follow the one deviation that is
