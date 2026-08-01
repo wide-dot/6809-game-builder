@@ -454,12 +454,13 @@ Ordre de migration suggéré (dépendances croissantes) :
    page par objet, l'auto-suppression et l'enfantement en cours de parcours. Doc :
    [`objects.md`](docs/lang/en/objects.md). Reste le **pipeline builder** (point 7),
    qui est ce qui fait qu'un game mode écrit encore ses index à la main.
-3. **Animation** — `AnimateSpriteSync` importé et exercé (banc `objects`, T13 :
-   à trames écoulées égales, même frame affichée quelle que soit la répartition).
-   `moveByScript` est **importé mais pas encore exercé**. Sémantique relevée au
-   passage : l'appel qui charge une animation consomme son frame-drop sur place,
-   là où la variante non synchronisée ne le fait pas — les deux ne se réduisent
-   donc pas l'une à l'autre, y compris à une trame.
+3. ~~**Animation**~~ **FAIT (01/08/2026)** — `AnimateSpriteSync` et `moveByScript`
+   importés et exercés (banc `objects` 15/15). Deux sémantiques relevées, toutes
+   deux contre-intuitives : l'appel qui *charge* une animation consomme son
+   frame-drop sur place là où la variante non synchronisée ne le fait pas (les
+   deux ne se réduisent donc pas l'une à l'autre, même à une trame) ; et l'octet
+   de fin de segment d'un script coûte sa propre trame, il ne fait pas partie des
+   commandes de déplacement. Doc : [`objects.md`](docs/lang/en/objects.md).
 4. **Scroll horizontal + tilemap** : soit porter `scroll-map-buffered-even/odd` (parité
    v1 garantie), soit finaliser la nouvelle génération `hscroll` (outil déjà au HEAD) —
    décision d'architecture à prendre avant de migrer les maps de R-Type.

@@ -109,6 +109,33 @@ frame apart between the two, permanently. Prime past the load before comparing
 regimes — the bench does, and only then is the compensation exact on the
 displayed frame.
 
+## Scripted movement
+
+`moveByScript` walks a script and turns it into movement. A script is a list of
+16 bit words — a segment address, `$F0xx` to set the number of move commands
+read per frame, `$0000` to end — and a segment is a list of bytes, each a
+bitfield:
+
+| bit | 7 | 6 | 5 | 4 | 3 | 2 |
+|---|---|---|---|---|---|---|
+| | change image | x negative | x moves | y positive | y moves | end of segment |
+
+The steps accumulate in `x_vel`/`y_vel`, are applied to the position at the end
+of the frame, and are then **cleared**: it is an accumulator, not a velocity.
+The four step sizes are equates the game defines (`moveByScript.POSXSTEP` and
+its three siblings), so the same script drives a slow enemy and a fast one.
+
+`runByFrameDrop` loops once per elapsed frame, like everything else here. Two
+things are easy to get wrong and are worth stating: the end-of-segment byte
+**costs its own frame** — it is not one of the move commands — and
+`moveByScript.anim.end` is set only when the script's `$0000` word is reached,
+which is the frame after that.
+
+`moveByScript.register` does keep state between calls, but in self modified
+operands rather than in the direct page. Its `initialize` reaches a script
+through a per-object lookup table; v2 can name the script directly, which is
+what its own comment says to expect, and what the bench does.
+
 ## The bench
 
 `examples/objects` exercises all of the above and writes its verdict to
@@ -116,10 +143,11 @@ displayed frame.
 itself mid-walk, or spawning a child mid-walk, leaves nothing on screen to
 look at, so the only way to assert it is to trace it and read the trace back.
 
-Thirteen checks, including both list edge cases, a paged object that reports a
+Fifteen checks, including both list edge cases, a paged object that reports a
 byte existing only in its own unit (so a missing mount cannot pass by
 accident, and neither can a stale one), the subpixel arithmetic of
-`ObjectMoveSync`, and the frame budget of `AnimateSpriteSync`.
+`ObjectMoveSync`, and the frame budget of `AnimateSpriteSync` and
+`moveByScript`.
 
 It earned its place on its first run: **`UnloadObject_x` did not work at
 all.** A missing branch target marker sent its "not the queued object" path

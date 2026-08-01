@@ -25,6 +25,8 @@
 ;   +12 : T12 RunPgSubRoutine runs in another page and restores the caller's
 ;   +13 : (byte) the parameter RunPgSubRoutine's callee echoed back
 ;   +14 : T13 AnimateSpriteSync spends elapsed frames, not calls
+;   +15 : T14 moveByScript walks a script and applies its steps
+;   +16 : T15 and it too spends elapsed frames, not calls
 ;   +31 : $00 running, $0D all passed, $E0+n : n test(s) failed
 ;*******************************************************************************
 
@@ -407,6 +409,81 @@ t12ko
 t13ko
 
 ; ---------------------------------------------------------------------------
+; T14 : moveByScript reads a script and turns it into movement. Each byte of a
+; segment is a bitfield — bit 5 moves on x, bit 6 makes it negative, bit 3 and
+; bit 4 do the same on y, bit 2 ends the segment — and anim_frame_duration is
+; how many of those bytes are consumed per frame.
+;
+; The steps land in x_vel/y_vel, are applied to the position at the end of the
+; frame, and are then cleared : it is an accumulator, not a velocity. So the
+; position tells the whole story and the bench reads it there.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t13a
+        jsr   bench.scriptReset
+        ldb   #1
+        jsr   moveByScript.runByB          ; one elapsed frame : one step
+        ldu   t13a
+        ldd   x_pos,u
+        cmpd  #$0101                       ; $0100 + one POSXSTEP
+        bne   t14ko
+        lda   x_sub,u
+        bne   t14ko
+        ldb   #1
+        jsr   moveByScript.runByB
+        ldb   #1
+        jsr   moveByScript.runByB
+        ldu   t13a
+        ldd   x_pos,u
+        cmpd  #$0103                       ; three steps in
+        bne   t14ko
+        lda   #$01
+        sta   result+15
+t14ko
+
+; ---------------------------------------------------------------------------
+; T15 : and it spends elapsed frames rather than calls, like everything else
+; whose timing r-type calibrated against the arcade. One call reporting three
+; dropped frames has to move exactly as far as three calls reporting one.
+;
+; A fourth frame then reads the end of segment byte, which sends the reader to
+; the next word of the script — the zero that ends it. moveByScript.anim.end is
+; how a script tells its caller it is over, and it costs its own frame : the
+; three move commands do not include it.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t13b
+        jsr   bench.scriptReset
+        lda   #3
+        sta   gfxlock.frameDrop.count
+        jsr   moveByScript.runByFrameDrop  ; one call, three elapsed frames
+        clr   gfxlock.frameDrop.count
+        ldu   t13b
+        ldd   x_pos,u
+        cmpd  #$0103                       ; same place as T14 reached in three
+        bne   t15ko
+        lda   x_sub,u
+        bne   t15ko
+        ldb   #1                           ; the fourth frame reads the end marker
+        jsr   moveByScript.runByB
+        lda   moveByScript.anim.end        ; the script announced its end
+        cmpa  #$01
+        bne   t15ko
+        ldu   t13b
+        ldd   x_pos,u
+        cmpd  #$0103                       ; and that frame moved nothing
+        bne   t15ko
+        lda   #$01
+        sta   result+16
+t15ko
+
+; ---------------------------------------------------------------------------
 ; verdict
 ; ---------------------------------------------------------------------------
         ldx   #result+1
@@ -420,7 +497,7 @@ verdict.loop
         incb
 verdict.next
         leax  1,x
-        cmpx  #result+15
+        cmpx  #result+17
         bne   verdict.loop
         tstb
         bne   verdict.failed
@@ -531,6 +608,34 @@ bench.animStepsPlain
         bne   <
         puls  u,pc
 
+; put the object on the bench script, at its first segment.
+; moveByScript.initialize would do this through a per object LUT ; v2 can name
+; the script directly, which is what its own comment says to expect.
+bench.scriptReset
+        ldd   #script.table
+        std   anim,u
+        ldd   #script.segment
+        std   sub_anim,u
+        lda   #1
+        sta   anim_frame_duration,u        ; one move command per frame
+        ldd   #$0100
+        std   x_pos,u
+        clr   x_sub,u
+        ldd   #$0200
+        std   y_pos,u
+        clr   y_sub,u
+        ldd   #0
+        std   x_vel,u
+        std   y_vel,u
+        ldd   #script.callback
+        std   moveByScript.callback
+        clr   moveByScript.anim.end
+        rts
+
+; moveByScript calls this once per elapsed frame, with the caller's page back
+script.callback
+        rts
+
 ; a = byte to append to the trace
 trace.put
         pshs  x
@@ -596,6 +701,18 @@ anim.table
            fdb   $3333
            fcb   $FF                       ; _resetAnim
 
+; The bench script : three steps along +x, then the end of segment marker,
+; then the end of script word. A byte is  img|xneg|xmov|ypos|ymov|endseg .
+script.segment
+           fcb   %00100000               ; x += POSXSTEP
+           fcb   %00100000
+           fcb   %00100000
+           fcb   %00000100               ; end of segment
+script.table
+           fdb   script.segment
+           fdb   $0000                   ; end of script...
+           fdb   script.table            ; ...and where to resume
+
 trace      equ   $9D00
 
 ;*******************************************************************************
@@ -649,8 +766,17 @@ Ani_Asd_Index
 ; engine
 ;*******************************************************************************
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        ; the four steps a script's move commands are worth. r-type uses
+        ; subpixel values ; the bench uses one whole pixel so the arithmetic
+        ; is the thing being read, not the fixed point.
+moveByScript.POSXSTEP equ $0100
+moveByScript.NEGXSTEP equ -$0100
+moveByScript.POSYSTEP equ $0100
+moveByScript.NEGYSTEP equ -$0100
+
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
+        INCLUDE "engine/graphics/animation/moveByScript.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectMoveSync.asm"
         INCLUDE "engine/object-management/ObjectDp.asm"
