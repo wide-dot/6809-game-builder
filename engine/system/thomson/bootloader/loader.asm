@@ -695,18 +695,21 @@ loader.file.decompress
         jsr   tfrxua
 @rts    puls  d,x,y,u,pc
 
-; Four bytes of the monitor page. The monitor's own system stack tops at $60CC
-; and grows down — "LDS #$60CC" at $FDD5 — so everything from $608B to $60CC is
-; stack, and no amount of "this byte did not change during a boot" proves a
-; byte down there is free : it only proves the stack did not get that deep on
-; that run. $60DD is above the top, so the stack cannot reach it by
-; construction. It is also never named by the monitor ROM, and a pattern
-; written there survives a full boot on floppy and on SDDrive.
-; $60E1..$60E4 is left as margin ; $60D6..$60D9 just below are the mouse
-; coordinates, written under interrupt when the pointer IRQ is on.
+; Four bytes of the monitor page, taken from the seven the monitor's music
+; note routine uses ($6031-$6037). The engine never plays a note through the
+; monitor, so those bytes have an owner that is provably never invoked — which
+; is a stronger claim than "nothing appears to use this address".
+;
+; Two other things make it safe. The monitor's system stack tops at $60CC and
+; grows down ("LDS #$60CC" at $FDD5), so $608B-$60CC is off limits ; $6031 is
+; well clear of it. And the four bytes hold nothing between calls — every read
+; in the decoder is preceded by a write on the same path — so only a write
+; *during* a call could hurt, which interrupts being masked here, and the
+; decoder calling nothing, rules out.
+;
 ; This is the loader's own four bytes : the game mode's copy of the decoder
 ; uses a different ZX0_DP, in a different page.
-ZX0_DP equ $60DD
+ZX0_DP equ $6031
  INCLUDE "engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
  
