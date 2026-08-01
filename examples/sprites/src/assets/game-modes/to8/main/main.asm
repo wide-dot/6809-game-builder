@@ -16,6 +16,8 @@
 ;   +3 : $01 the sprite reached the screen buffer
 ;   +4 : $01 a background cell was allocated for it
 ;   +5 : frame counter, so a stuck main loop is visible
+;   +6 : head of the free cell list, must hold still (no leak)
+;   +8 : $01 once the animation has been seen on both of its frames
 ;*******************************************************************************
 
 set_shell    EXTERNAL
@@ -118,6 +120,8 @@ main
         stx   image_set,u
         lda   #2                           ; priority 2 : a moving sprite, front
         sta   priority,u
+        ldd   #Ani_shell                   ; positive : a direct address
+        std   anim,u
 
         ldx   #sprite1                     ; register it in the run list
         stx   object_list_first
@@ -159,6 +163,26 @@ mainLoop
         ; balance out, so a leak shows up here as a drift frame after frame
         ldd   Lst_FreeCellFirstEntry_0
         std   $9C06
+
+        ; the animation has to reach both of its frames
+        ldd   image_set,u
+        cmpd  #set_shell
+        bne   @notframe0
+        lda   #$01
+        sta   @seen0+1
+@notframe0
+        cmpd  #set_launcher
+        bne   @notframe1
+        lda   #$01
+        sta   @seen1+1
+@notframe1
+@seen0  lda   #$00
+        beq   @animko
+@seen1  lda   #$00
+        beq   @animko
+        lda   #$01
+        sta   $9C08
+@animko
         _gfxlock.loop
         lbra  mainLoop                     ; the loop body outgrew a short branch
 
@@ -167,6 +191,7 @@ mainLoop
 ; every frame : it registers the object in the priority structure of the
 ; buffer being drawn, and there is one structure per buffer.
 ObjectRun
+        jsr   AnimateSprite
         jsr   DisplaySprite
         rts
 
@@ -182,6 +207,7 @@ userIRQ
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
 

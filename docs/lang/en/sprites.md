@@ -142,6 +142,26 @@ nothing draws without it.
 registers the object in the priority structure of the buffer being drawn, and
 there is one structure per buffer.
 
+### Animation
+
+`AnimateSprite` walks a table the game provides : a frame duration, then one
+imageset address per frame, then a marker — `$FF` restarts, and the flags from
+`$FA` up drive the other endings. It is v1's format, which its builder
+generated from the project properties ; v2 has no such generator yet, so the
+table is written by hand:
+
+```asm
+        fcb   8                 ; frames each image is held
+Ani_shell
+        fdb   set_shell
+        fdb   set_launcher
+        fcb   $FF               ; _resetAnim
+```
+
+`anim,u` points straight at the label when it is positive. A negative value is
+a signed offset into `Ani_Asd_Index`, a per object table of animations, which
+lets an object switch animation by index rather than by address.
+
 ### What a game mode has to provide
 
 The engine sizes nothing by itself. A game mode declares :
@@ -151,8 +171,10 @@ The engine sizes nothing by itself. A game mode declares :
 - the object status tables themselves, at fixed addresses. In a v2 game mode
   these are **equates**, not `fill` directives : the direntry is relocatable
   and its first byte is the entry point, so nothing but code belongs there ;
-- `Img_Page_Index`, `Obj_Index_Page`, `Obj_Index_Address` — per object id, the
-  page holding its imageset and the page and entry point of its code. v1
+- `Img_Page_Index`, `Obj_Index_Page`, `Obj_Index_Address`, and `Ani_Page_Index`
+  with `Ani_Asd_Index` once it animates — per object id, the page holding its
+  imageset, the page and entry point of its code, and the page of its
+  animation table. v1
   generated these during its placement pass ; v2 has no object pipeline yet,
   so a game mode writes them by hand for now. They hold **register values**,
   cartridge window bits included (`map.RAM_OVER_CART+<region>.page`).

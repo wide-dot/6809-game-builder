@@ -23,3 +23,23 @@ Obj_Index_Page
 Obj_Index_Address
         fdb   $0000
         fdb   ObjectRun                 ; run routine of the bench object
+
+* AnimateSprite mounts the page holding the animation table the same way, and
+* reads Ani_Asd_Index only when anim,u is negative — a signed offset into a
+* per object table of animations. The bench points anim,u straight at its
+* animation, so that path is never taken ; the symbol still has to resolve.
+Ani_Page_Index
+        fcb   $00
+        fcb   map.RAM_OVER_CART+gamemode.page  ; the table lives with the game mode
+
+Ani_Asd_Index
+        fdb   $0000
+        fdb   $0000
+
+* An animation is a frame duration, then one imageset address per frame, then
+* a marker. $FF restarts it — the format v1's builder generates.
+        fcb   8                          ; frames each image is held
+Ani_shell
+        fdb   set_shell
+        fdb   set_launcher
+        fcb   $FF                        ; _resetAnim

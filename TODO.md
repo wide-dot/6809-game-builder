@@ -129,6 +129,24 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         corrompu ; le portage de la version v1 reste à faire.
         `checkindex.py` compare maintenant `center_offset` (c'est son absence
         qui avait laissé vivre l'écart).
+  - [x] M5b — animation : `AnimateSprite.asm` + `constants-animation.equ` +
+        `WaitVBL.asm` importés 1:1 (manifest). Le banc `examples/sprites`
+        anime maintenant son objet entre deux imagesets et le vérifie sous
+        toje ($9C08=01 : les deux frames atteintes), tête de liste de
+        cellules stable sur 600 trames malgré l'alternance 3 cellules /
+        1 cellule. Format de table documenté dans sprites.md ; comme pour les
+        sprites, `Ani_Page_Index`/`Ani_Asd_Index` sont écrites à la main en
+        attendant le pipeline « jeu » du builder.
+  - [ ] M6 — migration `vgc-demo` (sujet choisi le 01/08 : même pack sprites
+        que v2, ses deux musiques ont déjà leur player, 2 objets, pas de
+        scroll ni collision ; c'est une des démos vitrines du readme).
+        **Remis en état côté v1** (il lui manquait `builder.parallel`, devenu
+        obligatoire — commit local dans le repo v1) : il construit et tourne
+        sous toje, ce qui donne la référence exécutable du banc runtime vs
+        runtime. Reste à faire côté v2 : générateur de tables d'animation
+        dans le builder (`<animation>`), palette depuis PNG (png2pal existe),
+        images plein écran ZX0, portage des deux objets et de leur dispatch
+        `routine,u`.
   - [ ] M4 (suite) — porter le pré-décalage `shift` façon v1 (après séparation
         des plans, sur la ligne remplie, avec bouclage, métadonnées de l'image
         non décalée) ; banc runtime vs runtime « plein » : même scène buildée
