@@ -421,7 +421,12 @@
 
             <!-- Boot loader -->
             <!-- *********************************************************** -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0E00"/>
+            <!-- A deliberately tight pool : T14 churns 22 files through the -->
+            <!-- index realloc chain in it. The figure is the size that puts  -->
+            <!-- the top of the pool at $BE50, where it has always been ; it  -->
+            <!-- moves when the loader's size does, since the pool follows the -->
+            <!-- loader in memory. -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0EE1"/>
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 

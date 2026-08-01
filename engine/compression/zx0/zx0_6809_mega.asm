@@ -84,16 +84,19 @@ zx0_decompress
                    std >zx0_offset+2
                    endc
 
-                   ifndef ZX0_DISABLE_ALIGN
-                   jmp   zx0_start
-                   align  (*/256)*256+256
-                   endc
-
-zx0_dp             equ */256
+; V2-DEVIATION: page alignment replaced by a program counter derived DP.
+; The original padded onto a 256 byte boundary — up to 255 bytes, 128 on
+; average — so that `zx0_dp equ */256` would hold the right page. That value is
+; meaningless in a relocatable object, where * is relative to the section,
+; which is what kept compiled sprites from ever reaching this decoder.
+; What actually has to share a page is not the routine but the handful of self
+; modified bytes it reads through DP, delimited below by zx0_dp_first and
+; zx0_dp_last and checked by the builder, which knows the load address.
 zx0_start
-                   ldd #($80*256)+zx0_dp  ; init bit stream and register DP
-                   tfr b,dp
-                   setdp zx0_dp
+                   leay zx0_code,pcr   ; the page holding those bytes
+                   tfr y,d             ; a = its high byte
+                   tfr a,dp            ; register DP = that page
+                   lda #$80            ; init bit stream
                    bra zx0_literals    ; start with literals
 
                    ifndef ZX0_DISABLE_SAVE_REGS
@@ -121,14 +124,14 @@ skip@              incb                ; elias = elias + 1
                    stb <zx0_code+2     ;  " "
                    bne zx0_copy        ;  " "
                    inc <zx0_code+1     ;  " "
-zx0_copy           stx <save_x@+1      ; save reg X
+zx0_copy           stx <zx0_save_x+1      ; save reg X
 zx0_code           ldx #$ffff          ; setup length
 zx0_offset         leay >$ffff,u       ; calculate offset address
 loop@              ldb ,y+             ; copy match
                    stb ,u+             ;  "    "
                    leax -1,x           ; decrement loop counter
                    bne loop@           ; loop until done
-save_x@            ldx #$ffff          ; restore reg X
+zx0_save_x         ldx #$ffff          ; restore reg X
                    lsla                ; get next bit
                    bcs zx0_new_offset  ; branch if next block is new offset
 
@@ -183,8 +186,15 @@ skip@              bcc loop@           ; no, loop again
 zx0_rts            rts                 ; return
 
 
-; safety check
-zx0_dp_end         equ */256
-                   ifne zx0_dp-zx0_dp_end
-                   error "zx0_decompress code crossed over DP memory space"
+; The bytes this routine reads through DP. They have to share one 256 byte
+; page, which the alignment used to guarantee and the builder now checks — it
+; is the only place that knows where the code lands, for a relocatable unit as
+; well as a raw one. lwasm cannot: on a relocatable section it answers
+; "Conditions must be constant on pass 1".
+zx0_dp_first       equ zx0_code+1
+zx0_dp_last        equ zx0_save_x+1
+                   ifdef ZX0_ABSOLUTE
+                   ifne (zx0_dp_first/256)-(zx0_dp_last/256)
+                   error "zx0_decompress : the bytes it reads through DP cross a page boundary"
+                   endc
                    endc

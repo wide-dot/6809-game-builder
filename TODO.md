@@ -174,6 +174,21 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         nettoyé (`ClearInterlacedDataMemory` importé) — le sprite s'affiche
         enfin avec ses couleurs. Piège consigné : la palette doit rester
         adressable, `PalUpdateNow` s'exécutant sous IRQ.
+  - [x] M7 (décompresseur relogeable) — l'alignement de page du décompresseur
+        zx0 est remplacé par un DP dérivé du **compteur de programme**
+        (`leay zx0_code,pcr / tfr y,d / tfr a,dp`). L'ancien `zx0_dp equ */256`
+        n'avait aucun sens en unité relogeable — c'est ce qui interdisait aux
+        sprites compressés d'atteindre ce décodeur. **241 octets récupérés**
+        (435 → 194). Ce qui doit partager une page n'est pas la routine mais
+        les quelques octets auto-modifiés qu'elle lit en DP : bornés par
+        `zx0_dp_first`/`zx0_dp_last`, 16 octets au lieu de 179. Contrôle
+        `ERROR` de lwasm quand ils sont à cheval — actif en absolu, lwasm
+        refusant l'expression sur une section relogeable (« Conditions must be
+        constant on pass 1 »). Effet de bord traité : le pool de loader-ut
+        suivait le loader en mémoire, donc son sommet avait bougé de 241
+        octets ; il est rendu à son adresse historique ($BE50) et T14
+        repasse. Validé : loader-ut **16/16** ($0D), sound TO8 avec swap à
+        chaud, banc sprites, JUnit 53.
   - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut
