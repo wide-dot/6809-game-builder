@@ -461,7 +461,19 @@ Ordre de migration suggéré (dépendances croissantes) :
    deux ne se réduisent donc pas l'une à l'autre, même à une trame) ; et l'octet
    de fin de segment d'un script coûte sa propre trame, il ne fait pas partie des
    commandes de déplacement. Doc : [`objects.md`](docs/lang/en/objects.md).
-4. **Scroll horizontal + tilemap** : porter `scroll-map-buffered-even/odd`. Il n'y a
+4. ~~**Scroll horizontal + tilemap**~~ **FAIT (01/08/2026)** — `scroll-map-buffered-even`
+   importé 1:1 et validé par `examples/tilescroll` sous toje (défilement mesuré à la
+   vitesse de R-Type, tuiles compilées par `gfxcomp`, deux cartes paire/impaire).
+   Découverte au passage, à retenir pour le point 7 : une carte dont chaque tuile est
+   un pointeur résolu au chargement produit **plusieurs kilo-octets de link data**
+   (5,3 Ko pour 24x8 tuiles), ce qui a obligé à donner une piste entière à la section
+   LINK et à tripler le pool mémoire. La v1 ne payait pas ça — ses cartes étaient
+   générées après placement, valeurs en dur. C'est un argument fort pour que le
+   pipeline builder fasse de même.
+
+   Reste : `scroll-map-buffered-odd` (variante non portée) et la migration des maps.
+
+   ~~Ancien texte~~ : porter `scroll-map-buffered-even/odd`. Il n'y a
    pas d'alternative à arbitrer — `hscroll` ne fait pas ce travail. C'est une bande de
    160 px qui **boucle sur elle-même**, compilée en tampon de code de taille fixe, sans
    notion de tuile et incapable de représenter une carte plus longue qu'elle (celle du
