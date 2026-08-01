@@ -112,7 +112,26 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         complets d'`examples/sprites` donnent la même image au bit près ;
         8 configs inchangées, banc 11/11, runtime toujours vert sous toje.
         `maxTries` ne remplace pas le grain (mesures dans sprites.md).
-  - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
+  - [x] M4 (audit du portage) — relecture méthodique de gfxcomp face au
+        générateur v1 (01/08). Corrigé : **table `center_offset` divergente**
+        (v2 rendait v1+1 pour `width%8` ∈ {0,1,4,6} — 615 des 758 sprites de
+        R-Type, dont nos deux sprites de banc ; le runtime s'en sert pour
+        choisir la variante décalée ET pour calculer l'adresse écran, donc
+        sprite à un pixel près ou invisible) ; garde de cache dégénérée des
+        encodeurs rle/zx0 (2e build dans le même répertoire = données vides) ;
+        erreur avalée dans l'encodeur `draw` (le garde-fou des 16 Ko
+        n'arrêtait plus le build) ; contrôles d'entrée v1 rétablis (indice de
+        couleur > 16, image > 160x200) ; `alpha` redevenu champ d'instance ;
+        import parasite. **`shift` refuse désormais de compiler** : le
+        pré-décalage est appliqué sur le PNG source par une AffineTransform
+        qui élargit l'image d'un pixel alors que la largeur est déjà capturée
+        — chaque ligne dérivait. Mieux vaut refuser que sortir un sprite
+        corrompu ; le portage de la version v1 reste à faire.
+        `checkindex.py` compare maintenant `center_offset` (c'est son absence
+        qui avait laissé vivre l'écart).
+  - [ ] M4 (suite) — porter le pré-décalage `shift` façon v1 (après séparation
+        des plans, sur la ligne remplie, avec bouclage, métadonnées de l'image
+        non décalée) ; banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut
         aujourd'hui) ; variantes miroir/décalage.

@@ -64,9 +64,12 @@ public class MapRleEncoder extends Encoder{
 		file.getParentFile().mkdirs();	
 		asmDFile = Paths.get(asmDrawFileName);
 
-		// Si l'option d'utilisation du cache est activée et qu'on trouve les fichiers .bin et .asm
-		// on passe la génération des données
-		if (!(Files.exists(asmDFile))) {
+		// v1 guarded this with its useCache option and, when the cache hit, kept
+		// the existing .asm untouched. The option is gone here but the guard
+		// stayed, while generateCode rewrites the file unconditionally : a
+		// second build into the same directory skipped the encoding and then
+		// overwrote the .asm with a prologue and no data. Always encode.
+		{
 
 			//log.debug("RAM 0 (val hex 0 à f par pixel, . Transparent):");
 			//if (log.isDebugEnabled())

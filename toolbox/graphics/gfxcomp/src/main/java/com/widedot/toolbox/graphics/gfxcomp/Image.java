@@ -134,8 +134,24 @@ public class Image {
 				throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
 				                    + pixelSize + " (should be 8).");
 			}
+			if (width > 160 || height > 200) {
+				throw new Exception(imageFile + " is " + width + "x" + height
+				                    + ", past the 160x200 screen : the plane rows would overrun.");
+			}
+			checkPixelRange(imageFile);
+
+			if (shift != 0) {
+				// v1 shifts after the plane split, on the padded 160 pixel line,
+				// with wrap around, and keeps the metadata of the unshifted
+				// image. Here the shift is an AffineTransform on the source,
+				// which returns an image one pixel wider while `width` above
+				// keeps the old value — every line then reads one pixel further
+				// off than the last. Refuse rather than emit a garbled sprite.
+				throw new Exception("shift " + shift + " on " + imageFile
+				                    + " : pre-shifted variants are not ported yet, see sprites.md");
+			}
+
 			image = Mirror.transform(image, mirror);
-			image = Shift.transform(image, shift);
 			prepareImages();
 	}
 	
@@ -148,6 +164,21 @@ public class Image {
 	// calcul des flags transparency, odd et even
 	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
 	
+	/**
+	 * Colour 0 is transparent and 1..16 are the palette, so anything above is a
+	 * mistake in the source image. v1 rejects it ; without the check the code
+	 * generator stores pixel-1 and the extra bits land in the next nibble.
+	 */
+	private void checkPixelRange(String imageFile) throws Exception {
+		DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
+		for (int i = 0; i < buffer.getSize(); i++) {
+			if ((byte) buffer.getElem(i) > 16) {
+				throw new Exception(imageFile + " holds colour index " + buffer.getElem(i)
+				                    + " : 0 is transparent and 1 to 16 are the palette.");
+			}
+		}
+	}
+
 	public void prepareImages() {
 		// sépare l'image en deux parties pour la RAM A et RAM B
 		// ajoute les pixels transparents pour constituer une image linéaire de largeur 2x80px
@@ -333,15 +364,26 @@ public class Image {
 		e.generateCode();
 	}
 	
+	/**
+	 * Sprite position correction from the image width, v1's table.
+	 *
+	 * The runtime reads this byte twice : CheckSpritesRefresh xors it with
+	 * x_pixel to pick between the unshifted and the 1 pixel shifted variant,
+	 * and DrawSprites subtracts it before turning the position into a screen
+	 * address. One off and the sprite lands a pixel away, or the mirror lookup
+	 * falls on a variant that was never compiled and the sprite disappears.
+	 *
+	 * Width 0 mod 8 gives -1, which is what v1 emits.
+	 */
 	public int getCenterOffset() {
 		switch (width % 8) {
-			case 0 : return 0;
-			case 1 : return 1;
+			case 0 : return -1;
+			case 1 : return 0;
 			case 2 : return 0;
 			case 3 : return 1;
-			case 4 : return 2;
+			case 4 : return 1;
 			case 5 : return 2;
-			case 6 : return 3;
+			case 6 : return 2;
 			case 7 : return 3;
 		}
 		return 0;

@@ -61,7 +61,12 @@ palette.
 | `rle`, `zx0` | compressed image data | not used by the drawing runtime |
 
 `mirror` is `none`, `x`, `y` or `xy` ; `shift` pre-shifts the image by whole
-pixels so odd positions cost nothing at run time. Each combination is a
+pixels so odd positions cost nothing at run time. **`shift` is refused for
+now**: v1 shifts after the plane split, on the padded 160 pixel line and with
+wrap around, keeping the unshifted image's metadata, while the port shifts the
+source PNG through an AffineTransform — which returns an image one pixel wider
+and leaves every scanline reading further off than the last. Rather than emit a
+garbled sprite the compiler stops; porting v1's version is what is missing. Each combination is a
 **variant**, named `<mirror><encoder><shift>` — `NB0` is unmirrored bdraw
 unshifted. That name, v1's, is what the generated symbols carry :
 `adr_shell_NB0`, `adr_shell_NB0_erase`.
@@ -76,7 +81,7 @@ idx_<name>              equ <index>     ; the id, also emitted as a byte
 set_<name>
         fcb  n, x, y, xy               ; offset of each mirror's sub set
         fcb  x_size, y_size            ; drawn area, transparent border trimmed
-        fcb  center_offset             ; 0 or 1, parity of the image centre
+        fcb  center_offset             ; width correction, see below
         ; then, per sub set, for each variant it holds :
         fcb  page                      ; cartridge window register value
         fdb  adr_<name>_<variant>      ; the drawing code
@@ -87,6 +92,14 @@ set_<name>
 
 A mirror with no variant of its own falls back to one that exists, so the four
 offsets are never zero once a single variant is compiled.
+
+`center_offset` is a correction derived from the image width, `-1` through `3`
+by `width % 8`. The runtime reads it twice — `CheckSpritesRefresh` xors it with
+`x_pixel` to choose between the unshifted and the 1 pixel shifted variant, and
+`DrawSprites` subtracts it before turning the position into a screen address —
+so one off puts the sprite a pixel away, or selects a variant that was never
+compiled and the sprite vanishes. The bench compares it against v1 for that
+reason.
 
 **The page is a relocation.** v1 placed pages during a global build pass and
 wrote the number in. v2 loads files into regions at run time, so the index

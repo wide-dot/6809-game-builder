@@ -52,7 +52,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 	public static final int _ODD_ALPHA = 2;
 	public static final int _EVEN_ALPHA = 3;
 	
-	private static boolean alpha = false;
+	private boolean alpha = false;   // per generator, not shared : v1 has it on the instance
 	
 	public SimpleAssemblyGenerator(Image img, String destDir, int alphaOption) throws Exception {
 		spriteCenterEven = (img.getCoordinate() % 2) == 0;
@@ -154,8 +154,10 @@ public class SimpleAssemblyGenerator extends Encoder{
 		} 
 		catch (Exception e)
 		{
-			e.printStackTrace(); 
-			System.out.println(e); 
+			// the page overflow check above is only worth having if it stops
+			// the build : an oversized routine would otherwise overrun its page
+			// at run time
+			throw new RuntimeException(e);
 		}
 	}
 

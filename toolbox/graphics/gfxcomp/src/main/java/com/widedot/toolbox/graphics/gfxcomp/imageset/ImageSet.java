@@ -287,7 +287,7 @@ public class ImageSet {
 			line.add(String.format("$%1$02X", xy_offset)); // unsigned value		
 			line.add(String.format("$%1$02X", x_size)); // unsigned value
 			line.add(String.format("$%1$02X", y_size)); // unsigned value
-			line.add(String.format("$%1$02X", center_offset)); // unsigned value
+			line.add(String.format("$%1$02X", center_offset & 0xFF)); // signed value // unsigned value
 			flush(line);
 			
 			if (nb0_offset+nd0_offset+nb1_offset+nd1_offset>0) {

@@ -53,13 +53,15 @@ public class V1Harness {
 			asm.compileCode("A000");
 			System.out.println("x1=" + asm.getX1_offset() + " y1=" + asm.getY1_offset()
 			                 + " xs=" + asm.getX_size() + " ys=" + asm.getY_size()
+			                 + " center=" + ss.center_offset
 			                 + " eraseData=" + asm.getEraseDataSize());
 		} else {
 			SimpleAssemblyGenerator asm = new SimpleAssemblyGenerator(ss, outDir, 0,
 			                                  SimpleAssemblyGenerator._NO_ALPHA);
 			asm.compileCode("A000");
 			System.out.println("x1=" + asm.getX1_offset() + " y1=" + asm.getY1_offset()
-			                 + " xs=" + asm.getX_size() + " ys=" + asm.getY_size());
+			                 + " xs=" + asm.getX_size() + " ys=" + asm.getY_size()
+			                 + " center=" + ss.center_offset);
 		}
 	}
 }

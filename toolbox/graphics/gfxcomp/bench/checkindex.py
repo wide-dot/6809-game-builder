@@ -39,16 +39,19 @@ def signed(field):
 
 index, name, geometry = sys.argv[1], sys.argv[2], sys.argv[3]
 v1 = dict(re.findall(r"(\w+)=(-?\d+)", geometry))
+
 text = open(index).read()
 
 header = bytes_of(rows(text, name)[0])
 subset = bytes_of(rows(text, name)[1])
 
-got = {"xs": val(header[4]), "ys": val(header[5]),
+got = {"xs": val(header[4]), "ys": val(header[5]), "center": signed(header[6]),
        "x1": signed(subset[4]), "y1": signed(subset[5])}
 
 bad = []
-for key in ("xs", "ys"):
+# center_offset drives both the shifted-variant lookup and the screen address,
+# and it is a per-width table : an easy place for a port to drift unnoticed
+for key in ("xs", "ys", "center"):
     if got[key] != int(v1[key]):
         bad.append(f"{key}: index {got[key]}, v1 {v1[key]}")
 

@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Random;
 
 import com.widedot.m6809.util.asm.Register;
-import com.widedot.toolbox.graphics.gfxcomp.encoder.bdraw.PatternCluster;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.draw.pattern.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
