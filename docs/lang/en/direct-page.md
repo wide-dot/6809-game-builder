@@ -7,7 +7,7 @@ pages are in play, and code that runs in both has to say which one it means.
 
 | page | who | what lives there |
 |---|---|---|
-| `$60` | the monitor, and the loader while it talks to it | disk registers (`DK.OPC` `$6048`, `DK.BUF` `$604F`…), `STATUS` `$6019`, IRQ vectors `$6023`/`$6027`, keyboard buffer `$6079`, `PTCLAV` `$60CD`, mouse coordinates `$60D6-$60D9` |
+| `$60` | the monitor, and the loader while it talks to it | disk registers (`DK.OPC` `$6048`, `DK.BUF` `$604F`…), `STATUS` `$6019`, IRQ vectors `$6023`/`$6027`, keyboard buffer `$6079`, **the monitor's system stack `$608B-$60CC`**, `PTCLAV` `$60CD`, mouse coordinates `$60D6-$60D9` |
 | `$9F` | the engine and the game | `glb_*` globals, `dp_extreg` (28 B), `dp_engine` (30 B), and the user space below them |
 
 ## The handover
@@ -61,7 +61,7 @@ inherit a page at all: the includer names a **full address** in `ZX0_DP`, and
 the routine sets DP from it and restores the caller's on exit.
 
 ```asm
-ZX0_DP  equ $609C                 ; bootloader : four bytes of the monitor page
+ZX0_DP  equ $60DD                 ; bootloader : four bytes of the monitor page
 ZX0_DP  equ dp_engine             ; game mode  : four bytes of the engine scratch
 ```
 
@@ -69,25 +69,35 @@ Ten cycles per call buys the removal of an entire class of question.
 
 ## Choosing bytes in the monitor page
 
-`$609C..$609F` was picked from three sources that had to agree:
+**Start with the stack.** The monitor sets `LDS #$60CC` at `$FDD5` and the
+stack grows down, so **`$608B-$60CC` is stack** and nothing below `$60CC` can
+be claimed. This is the part that measurement cannot tell you: a stack is
+never named by an instruction, so an operand scan is blind to it, and a byte
+that survives one boot only proves the stack did not get that deep *that
+time*. The boot-long diff below shows the page changing from `$60A8` to
+`$60CB` — that is not a buffer, it is how far the stack went.
 
+`$60DD..$60E0` was then picked where three sources agree:
+
+- **Above the stack top**, so no call depth can reach it.
 - **The monitor ROM**, disassembled (`toje/docs/rom-disasm`, monitor1 +
   monitor2): 147 of the 256 offsets appear as a direct or absolute operand.
-  `$609C..$60BC` appears nowhere.
-- **A boot-long diff**: the page captured at the monitor menu and again at the
+  `$60DD..$60E4` appears nowhere.
+- **A boot-long diff** — the page captured at the monitor menu and again at the
   game mode's first instruction, so boot, directory load and scene load are all
-  covered. 70 bytes change; none of them in that window. This is what catches
+  covered — and **a pattern test**: `D0 D1 D2 D3 D4 D5 D6 D7` written there
+  survives the whole boot, on floppy **and** on SDDrive. Together these catch
   writes made through a pointer, which the operand scan cannot see.
-- **A pattern test**: `DE AD BE EF 55 AA` written there survives the whole boot,
-  on floppy **and** on SDDrive.
 
-Documented owners nearby, deliberately avoided: `$6099` (SDdrive magic backup),
-`$60CD` (`PTCLAV`), `$60D6-$60D9` (mouse coordinates — written under interrupt
-when the pointer IRQ is enabled).
+Documented owners nearby, deliberately avoided: `$6099` (SDdrive magic backup,
+inside the stack anyway), `$60CD` (`PTCLAV`), `$60D6-$60D9` (mouse coordinates
+— written under interrupt when the pointer IRQ is enabled), `$60FE` (cold
+reset).
 
-"Free" here means *never named by the monitor ROM, and never written during a
-full boot and scene load on either medium*. It does not cover monitor services
-the engine never calls — tape, printer, returning to BASIC.
+"Free" here means *above the monitor stack, never named by the monitor ROM, and
+never written during a full boot and scene load on either medium*. It does not
+cover monitor services the engine never calls — tape, printer, returning to
+BASIC.
 
 ## Choosing bytes in the engine page
 
