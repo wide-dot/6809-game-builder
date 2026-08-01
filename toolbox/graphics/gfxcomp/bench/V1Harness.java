@@ -16,20 +16,27 @@ import fr.bento8.to8.image.SpriteSheet;
  * set here from the r-type configuration values. Everything else is the v1 code
  * path untouched: same SpriteSheet, same generator, same lwasm invocation.
  *
- * usage: V1Harness <png> <name> <variant> <outDir> <lwasm>
+ * usage: V1Harness <png> <name> <variant> <outDir> <lwasm> [maxTries]
  */
 public class V1Harness {
 
 	public static void main(String[] args) throws Exception {
 		String png = args[0], name = args[1], variant = args[2], outDir = args[3], lwasm = args[4];
+		int maxTries = args.length > 5 ? Integer.parseInt(args[5]) : 500000;
 
 		Files.createDirectories(Paths.get(outDir, "debug"));
 
 		BuildDisk.game = new Game();
 		BuildDisk.game.lwasm = lwasm;
 		BuildDisk.game.useCache = false;
-		// same search budget as gfxcomp hardcodes, and as r-type configures
-		BuildDisk.game.maxTries = 500000;
+		// Same search budget as gfxcomp hardcodes, and as r-type configures.
+		// Raising it does not buy determinism : the exhaustive/random decision
+		// compares the node's group count against a threshold derived from a
+		// factorial table that stops at 9!, so once maxTries reaches 362880 the
+		// threshold saturates and any node of 10 groups or more still takes the
+		// random branch. Measured on shell_3 : 542 vs 544 bytes at 500000, and
+		// 542 vs 541 at 100000000.
+		BuildDisk.game.maxTries = maxTries;
 		Game.generatedCodeDirName = outDir + "/";
 		Game.generatedCodeDirNameDebug = outDir + "/debug/";
 		Game.pragma = "--pragma=undefextern";
