@@ -372,6 +372,10 @@ which removes the constraint rather than checking it. Twelve accesses, so
 twelve bytes and about 6% of decompression time, and `bsr zx0_reload` had to
 become `lbsr` once the routine grew.
 
+Nothing in the routine touches DP any more, so it no longer saves it either:
+the upstream `ZX0_DISABLE_SAVE_REGS` option is gone with it, and CC — which
+`orcc` does modify whenever interrupts are being disabled — is always saved.
+
 That price lands where it is cheapest. The two callers are the bootloader,
 which decompresses while a scene loads and is in no hurry, and compiled sprite
 drawing, which is relocatable and so never had the fast path to lose. What it

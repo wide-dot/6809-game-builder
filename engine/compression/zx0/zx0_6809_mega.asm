@@ -59,22 +59,20 @@ done@              equ *
 ;     this option for one-time use of depacker for smaller code size.
 ;       ex. ZX0_ONE_TIME_USE equ 1
 ;
-;   ZX0_DISABLE_SAVE_REGS
-;     Defined variable to disable saving registers CC and DP. Enable
-;     this option for smaller code size and if calling program will take
-;     care of registers CC and DP.
-;       ex. ZX0_DISABLE_SAVE_REGS equ 1
-;
 ;   ZX0_DISABLE_DISABLING_INTERRUPTS
 ;     Defined variable to disable the disabling of interrupts. Enable
 ;     this option if interrupts are already disable or if IRQ and FIRQ
 ;     code won't mind register DP being changed.
 ;       ex. ZX0_DISABLE_DISABLING_INTERRUPTS
 ;
+; V2-DEVIATION: CC is saved unconditionally, and DP is not saved at all. The
+; original had a ZX0_DISABLE_SAVE_REGS option covering both ; it saved DP
+; because it changed DP, and this version never touches it. Nothing in the
+; tree ever set the option, so what it guarded was a choice between saving a
+; register that no longer needs saving and not saving one that does — CC is
+; modified by orcc below whenever interrupts are being disabled.
 zx0_decompress
-                   ifndef ZX0_DISABLE_SAVE_REGS
-                   pshs cc,dp          ; save registers
-                   endc
+                   pshs cc             ; save registers
 
                    ifndef ZX0_DISABLE_DISABLING_INTERRUPTS
                    orcc #$50           ; disable interrupts
@@ -108,11 +106,7 @@ zx0_start
                    lda #$80            ; init bit stream
                    bra zx0_literals    ; start with literals
 
-                   ifndef ZX0_DISABLE_SAVE_REGS
-zx0_eof            puls cc,dp,pc       ; restore registers and exit
-                   else
-zx0_eof            equ zx0_rts         ; just exit
-                   endc
+zx0_eof            puls cc,pc          ; restore registers and exit
 
 
 ; 1 - copy from new offset (repeat N bytes from new offset)
