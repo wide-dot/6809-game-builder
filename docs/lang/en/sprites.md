@@ -167,6 +167,28 @@ the save in reverse and releases the cells. Allocation and release balance out
 over a frame : the bench watches the head of the free cell list, which is what
 a leak would move.
 
+## Reproducible builds
+
+Past a node size the search that orders instruction groups is random, and v1
+leaves its generator unseeded — the same PNG gives 542 bytes on one run and
+544 on the next. gfxcomp seeds it with one fixed constant, so a sprite's code
+depends on its pixels alone : not on the machine, not on the image's name, not
+on where it sits in the build.
+
+That is a requirement, not a convenience. Region destinations are placed by
+hand, against budgets someone computed once ; a size that drifts between
+builds would eat into one of them silently. It is also what keeps the byte for
+byte image comparison usable as this repository's validation method now that
+generated sprite code is part of the corpus.
+
+The `maxTries` knob v1 exposes does not substitute for this. It sets the node
+size below which the search is exhaustive, capped by a factorial table that
+stops at 9!, so raising it past 362880 changes nothing — measured, 100 million
+tries still gives 542 against 541 bytes on two runs. Setting it to 0 does not
+help either : v1's `draw` loop would indeed stop swapping, but its `bdraw` loop
+was later changed to keep going "until a solution is found", which makes the
+first swap unconditional.
+
 ## Parity with v1
 
 The port is checked against the original generator, not against itself :

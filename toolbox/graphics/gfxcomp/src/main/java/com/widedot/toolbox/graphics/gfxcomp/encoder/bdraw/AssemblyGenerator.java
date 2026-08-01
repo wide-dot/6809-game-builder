@@ -374,5 +374,4 @@ public class AssemblyGenerator extends Encoder{
 	public int getY_size() {
 		return y_size;
 	}
-
 }

@@ -46,7 +46,24 @@ public class SolutionOptim{
 	List<Integer> regE = new ArrayList<Integer>(), regEBest = new ArrayList<Integer>();
 	List<Integer> offsetE = new ArrayList<Integer>(), offsetEBest = new ArrayList<Integer>();
 
+		/**
+	 * The search that reorders instruction groups is random past a node size,
+	 * so an unseeded generator makes every build emit different code — and
+	 * different sizes. Region destinations are placed by hand, so a size that
+	 * moves between builds would silently eat into a budget someone computed
+	 * once ; and this repository validates changes by comparing images byte
+	 * for byte. One fixed seed for everything : the generated code then depends
+	 * on the pixels alone, not on the image's name or its place in the build.
+	 *
+	 * v1 leaves it unseeded and does not reproduce itself either, which is why
+	 * the generator bench compares sizes rather than bytes past that node size.
+	 */
+	private static final long SEED = 0x6809L;
+
+	private final Random rand;
+
 	public SolutionOptim(Solution solution, byte[] data, int maxT) {
+		this.rand = new Random(SEED);
 		this.solution = solution;
 		this.data = data;
 		this.maxTries = (maxT<0?0:maxT);
@@ -276,7 +293,7 @@ public class SolutionOptim{
 		int score = 0, bestScore = Integer.MAX_VALUE;
 		int a=0, b=0;
 		int essais = maxTries;
-		Random rand = new Random();
+		// rand is a field now : seeded once, and its stream continues across nodes
 		while (!isOneValidSolution || essais-- > 0) {
 			
 			if (essais == -500000)

@@ -99,6 +99,19 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         `x_Min-((width-1)/2)` — un pixel de décalage sur tous les sprites, et
         une incohérence interne (le calcul vertical, lui, était correct).
         Corrigé, banc **11/11**.
+  - [x] M4 (reproductibilité) — le `Random` de gfxcomp est graîné par une
+        constante unique (01/08) : au-delà d'une certaine taille de nœud la
+        recherche d'ordre est aléatoire et la v1 ne se reproduit pas
+        elle-même (542 puis 544 octets sur le même sprite). Sans grain, une
+        image disque changeait à chaque build — inacceptable maintenant que
+        les destinations RAM sont placées à la main contre des budgets
+        calculés une fois, et incompatible avec la comparaison binaire qui
+        sert de méthode de validation au dépôt. Graine **unique** et non
+        dérivée du nom : le code d'un sprite ne dépend que de ses pixels,
+        renommer une image ne change pas sa taille. Vérifié : 3 builds
+        complets d'`examples/sprites` donnent la même image au bit près ;
+        8 configs inchangées, banc 11/11, runtime toujours vert sous toje.
+        `maxTries` ne remplace pas le grain (mesures dans sprites.md).
   - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut
