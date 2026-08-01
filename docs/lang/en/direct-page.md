@@ -97,12 +97,26 @@ written under interrupt when the pointer IRQ is on), `$60FE` (cold reset).
 
 ## Choosing bytes in the engine page
 
-`dp_engine` is a union, not an allocation: every routine that needs temporaries
-carves its own aliases from `dp_engine+0` and they all overlap. The rule is
-that only one of them is live at a time.
+**These bytes are scratch, not property.** Every routine that needs
+temporaries carves its own aliases from `dp_engine+0` and they all overlap on
+purpose. Nothing is reserved, and asking "who owns this byte" is the wrong
+question — the right one is "how long does a value in it have to live".
 
-`zx0` takes `dp_engine+0..+3`, which is safe because no user of that area keeps
-it across a compiled-sprite call — `CheckSpritesRefresh`'s three variables die
+Checked across the whole v1 engine: every alias of `dp_engine` and `dp_extreg`
+is written before it is read, inside the routine that uses it. The one
+exception is `moveByScript.callback`, which the *caller* sets before calling —
+a parameter, not storage. And `moveByScript.register`, which really does keep
+state between two entry points, keeps it in **self modified operands**
+(`anim.page.1`, `anim.addr`), not here. So no value in either area outlives
+the call that put it there.
+
+That makes the only hazard a nesting one: running a scratch user *inside*
+another one's lifetime, or under an interrupt that has its own. It is not a
+question of which routine was there first.
+
+`zx0` takes `dp_engine+0..+3` on that basis: it is called from inside
+`DrawSprites`, which passes nothing in the direct page and holds nothing
+there. No user of the area keeps it across a compiled-sprite call — `CheckSpritesRefresh`'s three variables die
 before `DrawSprites`, and `BuildSprites` rewrites `+0..+5` for every sprite,
 keeping only `+6`, `+7` and `+24` across its `jsr [_draw_routine]`.
 
