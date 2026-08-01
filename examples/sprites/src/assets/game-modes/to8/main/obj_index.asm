@@ -15,14 +15,17 @@
 Img_Page_Index
         fcb   $00                       ; id 0 : free slot
         fcb   map.RAM_OVER_CART+sprites.page   ; id 1 : the bench sprite
+        fcb   map.RAM_OVER_CART+sprites.page   ; id 2 : the compressed sprite
 
 Obj_Index_Page
         fcb   $00
         fcb   map.RAM_OVER_CART+gamemode.page  ; the object code is in the game mode
+        fcb   map.RAM_OVER_CART+gamemode.page
 
 Obj_Index_Address
         fdb   $0000
         fdb   ObjectRun                 ; run routine of the bench object
+        fdb   ObjectRunBall             ; run routine of the compressed sprite
 
 * AnimateSprite mounts the page holding the animation table the same way, and
 * reads Ani_Asd_Index only when anim,u is negative — a signed offset into a
@@ -34,8 +37,10 @@ Obj_Index_Address
 Ani_Page_Index
         fcb   $00
         fcb   map.RAM_OVER_CART+sprites.page
+        fcb   map.RAM_OVER_CART+sprites.page
 
 Ani_Asd_Index
+        fdb   $0000
         fdb   $0000
         fdb   $0000
 

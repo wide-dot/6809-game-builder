@@ -14,8 +14,12 @@ nb_dynamic_objects           equ 4
 nb_graphical_objects         equ 8   ; max 64 total
 ext_variables_size           equ 20  ; per dynamic object
 
-* the bench object, in the direct page user space
+* the bench objects. The first fits in the direct page user space ; a second
+* one would not (149 bytes for 117 each), so the overlay sprite borrows the
+* head of the dynamic pool — the bench never calls LoadObject, so the pool is
+* otherwise unused.
 sprite1                      equ dp
+sprite2                      equ Dynamic_Object_RAM
 
 * the dynamic object pool, right below the screen result area
 Dynamic_Object_RAM           equ $9800

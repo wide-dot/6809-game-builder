@@ -78,7 +78,7 @@ MO5, Tandy CoCo 3.
 | Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) | `engine/system/thomson/graphics/buffer/` | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
 | Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
-| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Doc : [`sprites.md`](docs/lang/en/sprites.md) |
+| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Doc : [`sprites.md`](docs/lang/en/sprites.md) |
 | Autres outils graphiques : `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | Substantiels mais sans consommateur runtime |
 | wddebug | `toolbox/debug/` | Très actif ; ses vues sprites/collisions/objets débuggent les structures v1 en attendant la v2 |
 
@@ -145,13 +145,21 @@ Inventaire de dérive : `docs/lang/fr/migration-inventaire-2026-07.md`.
 
 **Avancement (01/08/2026)** : M0/M1 (cadre, inventaire, parking) et M2 (base commune
 + pilote `sound/to8` + arbitrages) clos ; M3 (gfxcomp opérationnel + banc
-générateur-vs-générateur) et M4 (runtime sprites 1:1 + banc `examples/sprites`) clos.
-23 fichiers v1 importés, 3 écarts tracés (marge d'erase 16→12, deux `setdp`
-neutralisés) et 11 fichiers « KEPT-V2 » sous surveillance drift-check. Le double banc
-a payé trois fois : il a fait tomber le parking du lecteur par le moniteur (loader
-durci), trois défauts silencieux de l'index imageset, et un centrage horizontal
-décalé d'un pixel présent depuis le portage. Reste M4-suite (banc runtime vs runtime
-« plein », variantes) et M5-suite (renommage, phase finale).
+générateur-vs-générateur) et M4 (runtime sprites 1:1 + banc `examples/sprites`,
+images compressées incluses) clos.
+24 fichiers v1 importés, 5 écarts tracés (marge d'erase 16→12, trois `setdp`
+neutralisés, alignement du décompresseur zx0 supprimé) et 11 fichiers « KEPT-V2 »
+sous surveillance drift-check. Le double banc a payé trois fois : il a fait tomber le
+parking du lecteur par le moniteur (loader durci), trois défauts silencieux de l'index
+imageset, et un centrage horizontal décalé d'un pixel présent depuis le portage.
+Reste M4-suite (banc runtime vs runtime « plein », variantes) et M5-suite (renommage,
+phase finale).
+
+**Note sur le binaire du loader (01/08/2026)** : rendre le décompresseur indépendant
+de son adresse a fait grossir le loader de ~14 octets, donc **les 8 images d'exemples
+changent** — c'est le seul écart, confiné aux secteurs du loader (`to8-disk1.fd`, la
+seule image sans loader, est inchangée à l'octet près). `loader-ut` revalidé **16/16**
+(statut `$0D`) sous toje, échanges de disquettes compris.
 
 ## Revue Java & campagne de correction (30/07/2026)
 
@@ -431,6 +439,11 @@ Ordre de migration suggéré (dépendances croissantes) :
 1. ~~**Sprites compilés runtime**~~ **FAIT (01/08/2026)** — `DrawSprites`/`EraseSprites`/
    `CheckSpritesRefresh`/`BgBufferAlloc` importés 1:1, branchés sur `gfxcomp` via
    l'élément `<gfxcomp>` et l'index imageset, validés par `examples/sprites` sous toje.
+   Le chemin des **images compressées** est fermé le même jour : wrapper v1
+   `engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu indépendant de son
+   adresse de chargement, damier pleine largeur vérifié à l'écran. Contrainte découverte
+   et documentée : une image `rle`/`zx0` perd la transparence et écrase les lignes
+   entières qu'elle traverse — c'est un format de fond, pas de sprite.
    Reste au portage R-Type : variantes miroir/décalage à l'échelle, palette, et le banc
    runtime-vs-runtime « plein » (même scène des deux côtés, VRAM comparée).
 2. **Object manager** (`RunObjects`, slots, montage de page par objet) + `ObjectDp`,

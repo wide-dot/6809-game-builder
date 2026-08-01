@@ -21,7 +21,7 @@ engine/pack/ymm.asm,engine/objects/sound/ymm/ymm.asm,2eae7b21fb37d59ebb974b955db
 engine/pack/vgc.asm,engine/objects/sound/vgc/vgc.asm,e169e3967dfbd78d55dffd2f0b88b513cacd4db0,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
 engine/sound/sn76489.asm,engine/sound/sn76489.asm,33894e62154c7a1ed8a6edb304d003a9a33d7d71,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
 engine/sound/ym2413.asm,engine/sound/ym2413.asm,33894e62154c7a1ed8a6edb304d003a9a33d7d71,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
-engine/compression/zx0/zx0_6809_mega.asm,engine/compression/zx0/zx0_6809_mega.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,"KEPT-V2 + align replaced by a runtime DP from PC and a page check ; the assembly time page was unusable in a relocatable unit"
+engine/compression/zx0/zx0_6809_mega.asm,engine/compression/zx0/zx0_6809_mega.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,"KEPT-V2 + align dropped : the self modified bytes are reached extended instead of through DP, so the routine no longer constrains its own placement (+12 bytes, ~6% slower) ; bsr zx0_reload became lbsr"
 engine/compression/zx0/zx0_6809_mega_back.asm,engine/compression/zx0/zx0_6809_mega_back.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,KEPT-V2: v2-adapted decompressor (loader/cdataz integration) ; watch v1 - manual resync
 engine/compression/zx0/zx0_6809_turbo.asm,engine/compression/zx0/zx0_6809_turbo.asm,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,KEPT-V2: v2-adapted decompressor (loader/cdataz integration) ; watch v1 - manual resync
 engine/graphics/sprite/background-erase-mode/DisplaySprite.asm,engine/graphics/sprite/background-erase-mode/DisplaySprite.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-01,
@@ -37,3 +37,4 @@ engine/graphics/animation/AnimateSprite.asm,engine/graphics/animation/AnimateSpr
 engine/graphics/animation/constants-animation.equ,engine/graphics/animation/constants-animation.equ,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-01,
 engine/graphics/vbl/WaitVBL.asm,engine/graphics/vbl/WaitVBL.asm,1d3db8b7edf02f7a73b55bea8c3eeb0a7fd389f1,2026-08-01,
 engine/graphics/clear/ClearInterlacedDataMemory.asm,engine/graphics/clear/ClearInterlacedDataMemory.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-01,
+engine/graphics/codec/zx0_mega.asm,engine/graphics/codec/zx0_mega.asm,0b9c7a6af6621dc89d6e106bd0e1eef5a325966b,2026-08-01,"explicit < on the two glb loads (obj target forbids SETDP, which is what made them direct in v1) ; page fill and trailing setdp dropped, the decoder no longer needs aligning"

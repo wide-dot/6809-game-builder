@@ -55,9 +55,14 @@
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <!-- a compressed image : it answers to the draw slot,
-                                 which is what puts it in the index at all -->
-                            <image name="ball" filename="src/assets/sprites/ball.png" index="2">
+                            <!-- A compressed image. It answers to the draw slot,
+                                 which is what puts it in the index at all, and
+                                 it is full width on purpose : the zx0 encoder
+                                 drops transparency and emits a contiguous run
+                                 of the plane buffer, so decompression overwrites
+                                 whole lines. That makes it a background, not a
+                                 sprite. -->
+                            <image name="band" filename="src/assets/sprites/band.png" index="2">
                                 <encoder name="zx0" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>

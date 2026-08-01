@@ -67,6 +67,35 @@ with a letter of its own got compiled and then left out of the index entirely.
 One image therefore takes at most one of the three, and declaring two is an
 error rather than a silent drop.
 
+#### Compressed images are backgrounds, not sprites
+
+`rle` and `zx0` are not simply "smaller sprites". The encoder **discards
+transparency** — every pixel gets a colour, index 0 included — and emits one
+contiguous run of the plane buffer rather than per-line fragments. The
+decompressor writes that run straight to the screen with `stb ,u+`, so it
+covers **every byte of every line the image spans**, at the full 40 bytes per
+plane, whatever the image's own width.
+
+Declare them full width. A narrow compressed image assembles, links and draws
+without complaining, and quietly wipes the whole lines it sits on.
+
+A compressed image also has no erase routine, so the object carrying it must
+set `render_overlay_mask`. That flag does both halves of the job: it sends
+`CheckSpritesRefresh` to the `D` slot, the only one a compressed image is
+filed under, and it tells `EraseSprites` there is nothing to call. Its
+imageset entry is three bytes rather than seven for the same reason — the
+erase fields are simply absent, and nothing reads them.
+
+To draw one, the game mode has to include the decompressor before the sprite
+pack, which ends on `ifndef` stubs for the extended encoders :
+
+```asm
+        INCLUDE "engine/graphics/codec/zx0_mega.asm"
+        INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
+```
+
+A game with no compressed image leaves that line out and pays nothing.
+
 `mirror` is `none`, `x`, `y` or `xy` ; `shift` pre-shifts the image by whole
 pixels so odd positions cost nothing at run time — the runtime picks between
 the plain and the pre-shifted variant on the parity of the position, so both
@@ -251,6 +280,13 @@ the save in reverse and releases the cells. Allocation and release balance out
 over a frame : the bench watches the head of the free cell list, which is what
 a leak would move.
 
+An overlay sprite — a `draw` or compressed image — skips all of that. It is
+never backed up and never erased, so it stays on screen until something else
+paints over it. Note that `rsv_bgdata` is **not** a way to tell the two apart:
+`DrawSprites` stores whatever the draw routine left in U there for every
+sprite. The bit that decides is `rsv_prev_render_overlay_mask`, which is what
+`EraseSprites` itself reads.
+
 ## Two spaces, two kinds of transform
 
 An image goes through **mirror, then planing, then pre-shift**, and the order
@@ -319,3 +355,26 @@ only the hardware push reaches the user stack.
 
 That check earned its place on its first run, catching a one pixel error in
 the horizontal centring that had been in the port from the start.
+
+## The decompressor no longer cares where it lands
+
+`zx0_6809_mega.asm` used to pad itself onto a 256 byte boundary — up to 255
+wasted bytes — so that a handful of self modified bytes would share one page
+and could be reached through the direct page in two bytes each. That padding
+is meaningless in a relocatable object: `*` is relative to the section, and
+the page it names is not the page the code ends up in. It is the single reason
+compiled sprites could never use a compressed image.
+
+Deriving DP from the program counter at run time does work, but it only moves
+the problem: the bytes must still share a page, and nothing in a relocatable
+unit can promise that. The v2 decompressor reaches them **extended** instead,
+which removes the constraint rather than checking it. Twelve accesses, so
+twelve bytes and about 6% of decompression time, and `bsr zx0_reload` had to
+become `lbsr` once the routine grew.
+
+That price lands where it is cheapest. The two callers are the bootloader,
+which decompresses while a scene loads and is in no hurry, and compiled sprite
+drawing, which is relocatable and so never had the fast path to lose. What it
+buys is that neither can be broken by where it was placed — including the
+bootloader, whose own copy satisfied the constraint by luck and was checked by
+nothing.
