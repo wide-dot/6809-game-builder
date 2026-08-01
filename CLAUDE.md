@@ -505,6 +505,20 @@ mode lisait ses globales dans la page moniteur (un chargement de scène écrit
 le loader se bloque à sa première invite. Détail, cartographie de la page `$60`
 et méthode de choix des octets : [`direct-page.md`](docs/lang/en/direct-page.md).
 
+## Symboles inter-fichiers : exporter coûte au chargement (01/08/2026)
+
+Un export vaut 4 octets sur disque (identifiant numérique, le nom ne sort pas du
+build) mais le loader résout **chaque référence par une recherche linéaire** sur
+les exports de tous les fichiers chargés : le coût de liaison d'une scène est de
+l'ordre de `références × exports`. Mesuré : 883 096 instructions du boot au game
+mode pour `tilescroll` (768 références) contre 796 240 pour `sprites`, soit ~113
+instructions par référence. Règle : **n'exporter que ce qui franchit une frontière
+de direntry**. Un tableau de pointeurs vers une autre unité est la forme chère —
+ce que le builder place, le builder peut l'adresser en dur (argument pour le
+point 7). Et ne pas activer `undefextern` : v2 fait d'un symbole inconnu une
+erreur d'assemblage, là où v1 en faisait un externe résolu à zéro.
+Détail et mesures : [`symbols.md`](docs/lang/en/symbols.md).
+
 ## Art des exemples : tout est généré (01/08/2026)
 
 Aucun exemple n'embarque d'art authoré. Chaque image est produite par un script
