@@ -520,6 +520,16 @@ Ordre de migration suggéré (dépendances croissantes) :
    96×15/191, 60-75 % de vides). Doc : `tilemaps.md`. Reste : banc d'échange
    stage1↔stage2. Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
+   Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une
+   arborescence RÉORGANISÉE qui reflète la frontière de chargement :
+   `src/common/` (résident : player, weapons, pickups, hud, fx, flow, state,
+   lib), `src/enemies/` (bibliothèque, un ennemi = un dossier avec SES tirs),
+   `src/stages/NN/` (main+stage+wave+map+terrain+musique ; 02..08 données
+   seules), `src/title/`. Traçabilité : `games/r-type/v1-map.csv` (1308
+   fichiers, contenu byte-identique) ; non repris : .properties, .t2.asm,
+   mains 02..08, bancs v1, intermédiaires leanscroll. Sorties leanscroll
+   committées + invocations dans tools/ (décision auteur). Détail :
+   `games/r-type/readme.md`.
 8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
    les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.
 9. Garder l'API de compensation de frame-drop (`gfxlock.frameDrop.max`,
