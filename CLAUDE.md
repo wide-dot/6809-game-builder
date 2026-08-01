@@ -46,6 +46,8 @@ MO5, Tandy CoCo 3.
   retombe bien sur la racine avec `repo/` et `plugins/` à côté.
 - Exemples de référence : `examples/sound` (le plus complet, TO8 + MO6 : boot, scènes,
   double-buffer, musiques YMM+VGC), `examples/loader-ut` (banc de test du loader, 15/15),
+  `examples/sprites` (chaîne sprites compilés, 4 encodeurs), `examples/objects` (banc
+  object manager, 12/12 — sans affichage, résultats en `$9C00`),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
 - **État de validation au 30/07/2026** : les **8 configs** des exemples buildent
@@ -101,9 +103,9 @@ banc validé, `docs/lang/en/sprites.md` écrit). Pour le reste : pas de code, se
 des équates réservées dans `glb.const.asm` (caméra, alphaTiles), des docs vides
 (`docs/lang/en/{objects,tilemaps,audio}.md`) et les vues wddebug orphelines :
 
-- **Object manager** : `RunObjects.asm` est importé (dépendance du runtime sprites),
-  mais `Obj_Run` + macros, les slots/la liste chaînée et le pipeline d'objets côté
-  builder restent à faire — un game mode écrit encore ses tables d'index à la main
+- ~~**Object manager**~~ : fait le 01/08/2026 (runtime et helpers importés, banc
+  `examples/objects` 12/12). Reste le pipeline d'objets côté builder — un game mode
+  écrit encore ses tables d'index à la main
 - **Animation** (v1 : `AnimateSpriteSync.asm`, `moveByScript.asm`)
 - **Tilemap + scrolling** (v1 : `horizontal-scroll/scroll-map-buffered-even.asm` —
   scroll 1 px sur tilemap pré-bufferisée pointant des tiles compilées ; la v2 a le
@@ -147,7 +149,7 @@ Inventaire de dérive : `docs/lang/fr/migration-inventaire-2026-07.md`.
 + pilote `sound/to8` + arbitrages) clos ; M3 (gfxcomp opérationnel + banc
 générateur-vs-générateur) et M4 (runtime sprites 1:1 + banc `examples/sprites`,
 images compressées incluses) clos.
-24 fichiers v1 importés, 5 écarts tracés (marge d'erase 16→12, trois `setdp`
+29 fichiers v1 importés, 5 écarts tracés (marge d'erase 16→12, trois `setdp`
 neutralisés, alignement du décompresseur zx0 supprimé) et 11 fichiers « KEPT-V2 »
 sous surveillance drift-check. Le double banc a payé trois fois : il a fait tomber le
 parking du lecteur par le moniteur (loader durci), trois défauts silencieux de l'index
@@ -446,10 +448,12 @@ Ordre de migration suggéré (dépendances croissantes) :
    entières qu'elle traverse — c'est un format de fond, pas de sprite.
    Reste au portage R-Type : variantes miroir/décalage à l'échelle, palette, et le banc
    runtime-vs-runtime « plein » (même scène des deux côtés, VRAM comparée).
-2. **Object manager** (`RunObjects`, slots, montage de page par objet) + `ObjectDp`,
-   `ObjectMoveSync`. Le modèle mémoire v1 (résident + objets montés en pages cartouche)
-   est structurant : R-Type déporte même sa passe de collision et son end-stage dans
-   des objets montés pour libérer le résident.
+2. ~~**Object manager**~~ **FAIT (01/08/2026)** — `Obj_Run`(+macros), `ObjectDp`,
+   `ObjectMoveSync` et `RunPgSubRoutine` importés 1:1 à côté de `RunObjects` déjà en
+   place ; banc `examples/objects` (12 contrôles) validé sous toje, dont le montage de
+   page par objet, l'auto-suppression et l'enfantement en cours de parcours. Doc :
+   [`objects.md`](docs/lang/en/objects.md). Reste le **pipeline builder** (point 7),
+   qui est ce qui fait qu'un game mode écrit encore ses index à la main.
 3. **Animation** (`AnimateSpriteSync`, `moveByScript`).
 4. **Scroll horizontal + tilemap** : soit porter `scroll-map-buffered-even/odd` (parité
    v1 garantie), soit finaliser la nouvelle génération `hscroll` (outil déjà au HEAD) —
