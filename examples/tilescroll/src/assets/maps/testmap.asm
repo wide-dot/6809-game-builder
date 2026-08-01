@@ -11,6 +11,7 @@
 map.COLS  equ 24
 map.ROWS  equ 8
 
+ SECTION map.static
 map.even
         ; column 0
         fcb   assets.tiles$PAGE+$60
@@ -830,3 +831,4 @@ map.odd
         fdb   adr_tile1_ND1
         fcb   assets.tiles$PAGE+$60
         fdb   adr_tile1_ND1
+ ENDSECTION

@@ -1,6 +1,14 @@
 # Ne pas exporter ce que le builder sait déjà placer
 
-Étude, pas d'implémentation. Question posée : les tuiles d'une tilemap ne sont
+Étude suivie d'implémentation : le geste retenu (sections `*.static`) est en
+place — voir `symbols.md` §« The .static sections » pour la syntaxe et les
+mesures. Deux découvertes d'implémentation : les références internes
+**inter-sections** perdaient la base de la section nommée (trou préexistant,
+jamais exercé tant qu'une unité n'avait qu'une section de code), et lwasm
+écrit les sections dans un ordre qui n'est pas celui du source (la convention
+« l'entrée est le premier octet » impose que `code` mène le binaire).
+
+Question posée : les tuiles d'une tilemap ne sont
 jamais appelées nommément depuis du code — leurs références vivent dans une
 table générée. Pourquoi payer, en place et en CPU au chargement, un mécanisme
 de liaison conçu pour des symboles d'API ?

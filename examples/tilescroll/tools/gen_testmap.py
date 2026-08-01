@@ -45,6 +45,12 @@ hdr = f"""* ====================================================================
 map.COLS  equ {COLS}
 map.ROWS  equ {ROWS}
 """
+# The section suffix is the authoring gesture : every external reference in a
+# *.static section is resolved by the builder against the declared placement
+# of its provider, and emits no load-time link data. The build fails if a
+# provider is not provably at a single destination.
 open('src/assets/maps/testmap.asm','w').write(
-    hdr + "\n" + table('map.even', 'ND0') + "\n\n" + table('map.odd', 'ND1') + "\n")
+    hdr + "\n SECTION map.static\n"
+    + table('map.even', 'ND0') + "\n\n" + table('map.odd', 'ND1')
+    + "\n ENDSECTION\n")
 print(f"carte {COLS}x{ROWS} ecrite, {COLS*ROWS*3} octets par plan")

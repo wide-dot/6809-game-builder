@@ -135,14 +135,28 @@ public class DirEntryPlugin {
 		// init direntry
 		byte[] direntry = new byte[24];
 		
+		// resolve the *.static sections before anything reads the binaries :
+		// their references bake against providers built earlier, then emit no
+		// link data at all
+		for (ObjectDataInterface obj : objects) {
+			obj.bakeStatic(ctx.staticLink);
+		}
+		
 		// merge all binaries, collecting the ranges each object needs kept inside
-		// one page ; their offsets shift with whatever precedes them in the file
+		// one page ; their offsets shift with whatever precedes them in the file.
+		// Exports register for static resolution with the same shifted offsets,
+		// so a later unit's *.static section can name them.
 		int length = 0;
 		java.util.Map<String, int[]> pageSpans = new java.util.LinkedHashMap<String, int[]>();
 		for (ObjectDataInterface obj : objects) {
 			for (java.util.Map.Entry<String, int[]> span : obj.getPageSpans().entrySet()) {
 				pageSpans.put(span.getKey(),
 						new int[] { length + span.getValue()[0], length + span.getValue()[1] });
+			}
+			for (java.util.Map.Entry<String, int[]> export : obj.getExportOffsets().entrySet()) {
+				boolean absolute = export.getValue()[1] == 1;
+				int value = absolute ? export.getValue()[0] : length + export.getValue()[0];
+				ctx.staticLink.registerExport(export.getKey(), name, value, absolute);
 			}
 			length += obj.getBytes().length;
 		}

@@ -524,7 +524,15 @@ chargement — le builder qui les génère connaît le placement. Plan en phases
 (élagage des exports non importés, puis résolution statique contre les régions
 `PLACED` avec preuve par `SceneChecks`) :
 [`analyse-exports-tables-2026-08.md`](docs/lang/fr/analyse-exports-tables-2026-08.md).
-Rien d'implémenté à ce jour.
+**Implémenté (01/08/2026)** : sections `*.static` — le geste d'authoring encadre la
+table, le builder résout `extern16`/`externPg` contre les placements collectés par
+pré-parcours de la config, erreur sans repli si un fournisseur n'est pas à placement
+unique, fournisseur déclaré avant consommateur. Sur `tilescroll` : 768 références
+cuites, link data de la carte 4,6 Ko → 0, disque et pool revenus au standard,
+chargement 883k → 548k instructions. Au passage deux corrections du support
+multi-sections : base de section perdue par les interns inter-sections, et `code`
+mis en tête du binaire quel que soit l'ordre d'écriture de lwasm. L'élagage des
+exports non importés reste à faire.
 
 ## Art des exemples : tout est généré (01/08/2026)
 

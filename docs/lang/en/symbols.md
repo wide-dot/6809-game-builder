@@ -75,6 +75,49 @@ symbol is an assembly error, at the line that used it. Keep it that way.
 `sym EXPORT` or `EXPORT sym`. The generated code uses the first form
 consistently; there is no reason to mix.
 
+## The `.static` sections
+
+The answer to the bulk-table shape is implemented : a section whose name ends
+with `.static` asks the builder to resolve its external references itself,
+against the declared placement of their providers, and to emit **no link data
+for them**. The source does not change — same `EXTERNAL`, same `fdb` — the
+table is simply bracketed :
+
+```asm
+ SECTION map.static
+map.even
+        fcb   assets.tiles$PAGE+$60
+        fdb   adr_tile2_ND0
+ ENDSECTION
+```
+
+The rules :
+
+- `extern16` and `externPg` references bake when their provider is loaded at
+  **one single fixed destination** across every scene of the target (a region,
+  or a literal page and address). Placements are collected from the whole
+  configuration before the target runs, so scene declaration order does not
+  matter — but **the provider's direntry must be declared before its
+  consumer**, because a symbol's offset only exists once the provider is
+  assembled.
+- Anything else is a **build error** naming the section, offset, symbol and
+  cause. A `.static` section is a promise ; there is no silent fallback.
+- Internal references stay with the loader : the unit itself remains
+  relocatable, only its providers are pinned. A unit with interns still needs
+  `loadtimelink`.
+- Same-name sections merge across the source, and the section named `code`
+  always leads the unit's binary — the entry point convention — whatever
+  order lwasm wrote the object in.
+
+Measured on `examples/tilescroll` : 768 references baked, link data for the
+map 4.6 KB → 0, the disk back to its standard layout, the memory pool back to
+its normal size, and the load 883 096 → 547 790 instructions.
+
+What it cannot see : a game loading a file at a run-time computed address
+through the loader's API. The marker is the author's assertion that the
+referenced content is scene-placed only ; the builder verifies it against
+everything declared.
+
 ## Where this bites next
 
 The audit that prompted this note: across the examples, 1948 symbols are

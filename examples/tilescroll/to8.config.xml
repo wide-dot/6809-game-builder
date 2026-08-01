@@ -12,17 +12,13 @@
 
         <floppydisk model="fd640">
 
-            <!-- This example needs a disk layout of its own. The map holds one
-                 pointer per tile and every one of them is resolved at load time,
-                 so its link data is several kilobytes where the other examples
-                 have a few hundred bytes. LINK therefore gets a track of its own
-                 and DATA moves out of its way. A builder that baked the tile
-                 addresses in at placement time, as v1's did, would not pay this
-                 at all — it is the price of the load time linker doing the work
-                 instead, and it is worth seeing in an example. -->
+            <!-- The standard disk layout is enough : the map's 768 tile
+                 references live in a map.static section, so the builder bakes
+                 them against the declared regions and they emit no link data.
+                 Before that gesture this example needed a whole track for LINK
+                 and a tripled memory pool. -->
             <section name="SCENE" track="0" face="1" sector="16"/>
-            <section name="LINK"  track="1" face="0" sector="1"/>
-            <section name="DATA"  track="3" face="0" sector="1"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section" value="DATA"/>
@@ -32,19 +28,12 @@
                 <define symbol="loader.PAGE" value="4"/>
                 <define symbol="loader.ADDRESS" value="$A000"/>
 
-                <!-- Game mode : holds the scroll and the two maps -->
-                <!-- ******************************************************* -->
-                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK">
-                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/assets/game-modes/to8/main/main.asm"/>
-                        <png2pal symbol="Pal_tiles" filename="src/assets/tiles/tile3.png"/>
-                    </lwasm>
-                </direntry>
-
                 <!-- Compiled tiles. Each one twice : unshifted for the even   -->
                 <!-- map, one pixel pre-shifted for the odd one. That pair is  -->
                 <!-- what makes a 1 pixel scroll free at run time.             -->
+                <!-- Declared BEFORE the game mode : its map.static section    -->
+                <!-- bakes against these tiles, and a provider consumed        -->
+                <!-- statically must be built before its consumer.             -->
                 <!-- ******************************************************* -->
                 <direntry name="assets.tiles" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/tiles/tiles.asm">
@@ -71,6 +60,16 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Game mode : holds the scroll and the two maps -->
+                <!-- ******************************************************* -->
+                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/assets/game-modes/to8/main/main.asm"/>
+                        <png2pal symbol="Pal_tiles" filename="src/assets/tiles/tile3.png"/>
+                    </lwasm>
+                </direntry>
+
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main" region="gamemode"/>
                     <load name="assets.tiles"   region="tiles"/>
@@ -80,9 +79,7 @@
 
             <!-- Boot loader -->
             <!-- *********************************************************** -->
-            <!-- 12 Ko rather than the usual 4 : the loader allocates a buffer
-                 for a file's link data, and this map's is over 5 Ko on its own. -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$3000"/>
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
             <data section="LOADER">

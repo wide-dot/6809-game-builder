@@ -32,6 +32,25 @@ public interface ObjectDataInterface {
 		return Collections.emptyMap();
 	}
 
+	/**
+	 * Resolve the external references of the sections named {@code *.static}
+	 * against the declared placements, patching the binary in place — those
+	 * references then emit no link data at all. Objects without such a section
+	 * do nothing. Must be called before the binary is first read.
+	 */
+	default void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink) throws Exception {
+	}
+
+	/**
+	 * Exported symbols and where they live, for the static resolution
+	 * registry : symbol to {@code {value, absolute}}, absolute 1 meaning the
+	 * value stands alone (a constant), 0 that it is an offset inside this
+	 * object's binary.
+	 */
+	default Map<String, int[]> getExportOffsets() throws Exception {
+		return Collections.emptyMap();
+	}
+
 	default List<byte[]> getExportAbs() throws Exception {
 		return Collections.emptyList();
 	}

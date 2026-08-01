@@ -158,11 +158,6 @@ userIRQ
         jmp   PalUpdateNow
 
 ;*******************************************************************************
-; the map
-;*******************************************************************************
-        INCLUDE "src/assets/maps/testmap.asm"
-
-;*******************************************************************************
 ; engine
 ;*******************************************************************************
         INCLUDE "engine/InitGlobals.asm"
@@ -173,6 +168,12 @@ userIRQ
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
 
  ENDSECTION
+
+; The map brings its own section, map.static : its tile references are baked
+; by the builder against the tiles' declared region, so they cost nothing at
+; load time. The code above reaches map.even/map.odd across sections, which
+; stays an ordinary intern relocation.
+        INCLUDE "src/assets/maps/testmap.asm"
 
 ; a v2 module, which brings its own section
         INCLUDE "engine/system/to8/controller/joypad.asm"

@@ -7,6 +7,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
+import com.widedot.m6809.gamebuilder.spi.globals.StaticLink;
 
 /**
  * Everything a plugin needs to run: where the build is rooted, its settings,
@@ -42,6 +43,9 @@ public class BuildContext {
 	/** memory layout declared by the target, referenced by scene loads */
 	public final Regions regions;
 
+	/** build-time resolution registry for the sections named *.static */
+	public final StaticLink staticLink;
+
 	/** inherited attribute defaults, scoped to this container */
 	public final Defaults defaults;
 
@@ -53,17 +57,18 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
-			FileIds fileIds, Regions regions, Defaults defaults, Defines defines) {
+			FileIds fileIds, Regions regions, StaticLink staticLink, Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
 		this.sources = sources;
 		this.linkSymbols = linkSymbols;
 		this.fileIds = fileIds;
 		this.regions = regions;
+		this.staticLink = staticLink;
 		this.defaults = defaults;
 		this.defines = defines;
 	}
@@ -73,7 +78,7 @@ public class BuildContext {
 	 *         everything else shared
 	 */
 	public BuildContext child() {
-		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions,
+		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, staticLink,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
 
@@ -90,6 +95,7 @@ public class BuildContext {
 		fileIds.clear();
 		linkSymbols.clear();
 		regions.clear();
+		staticLink.clear();
 		defaults.values.clear();
 		defines.values.clear();
 		defines.newValues.clear();

@@ -73,6 +73,7 @@ public class Target {
 			// renumbers every image. An error here is left for the real pass
 			// to report, with whatever symbols were seen preseeded.
 			ctx.resetTarget();
+			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			try {
 				runTarget(node);
 			} catch (Exception e) {
@@ -86,6 +87,7 @@ public class Target {
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
 			ctx.resetTarget();
+			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			ctx.linkSymbols.preseed(symbols);
 
 			runTarget(node);

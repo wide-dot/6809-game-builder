@@ -84,6 +84,21 @@ public class LwObject implements ObjectDataInterface{
 			read_lwobj16v0();
 			//saveCache(fileName);
 		}
+
+		// lwasm writes sections to the object in its own order, not the
+		// source's — this unit's map.static section came out ahead of code.
+		// The build convention is that a unit's entry point is its first
+		// byte, and the section named "code" is where the dialect puts it :
+		// it leads, everything else follows in file order. Link data stays
+		// coherent by construction, every offset derives from this list.
+		List<LWSection> ordered = new ArrayList<LWSection>();
+		for (LWSection section : secLst) {
+			if ("code".equals(section.name)) ordered.add(section);
+		}
+		for (LWSection section : secLst) {
+			if (!"code".equals(section.name)) ordered.add(section);
+		}
+		secLst = ordered;
 	}
 	
 	public String string_cleanup(String sym) {
@@ -474,6 +489,79 @@ public class LwObject implements ObjectDataInterface{
         }
 	}
 
+	/** suffix a section uses to ask for build-time resolution of its externals */
+	private static final String STATIC_SUFFIX = ".static";
+
+	/** relocations resolved at build time : the link data getters skip them */
+	private final java.util.Set<Reloc> baked = new java.util.HashSet<Reloc>();
+
+	@Override
+	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink) throws Exception {
+
+		for (LWSection section : secLst) {
+			if (section.name == null || !section.name.endsWith(STATIC_SUFFIX)) {
+				continue;
+			}
+			// the concatenated binary is cached on first read — the assembler
+			// reads it once to publish the unit's size — so drop the cache :
+			// patching only changes bytes in place, never the length, and the
+			// next read rebuilds from the patched sections
+			bin = null;
+			int count = 0;
+			for (Reloc reloc : section.incompletes) {
+
+				RelocValue r = evalReloc(reloc);
+				// internal references stay with the loader : the unit itself is
+				// relocatable, only its *providers* are pinned
+				if (r.internal || r.symbol.isEmpty()) {
+					continue;
+				}
+
+				try {
+					if (reloc.flags == Reloc.RELOC_8BIT) {
+						if (!r.symbol.endsWith("$PAGE")) {
+							throw new Exception("8 bit reference to '" + r.symbol
+									+ "' : only $PAGE references resolve statically");
+						}
+						String direntry = r.symbol.substring(0, r.symbol.length() - 5);
+						int value = staticLink.resolvePage(direntry) + r.value;
+						section.code[reloc.offset] = (byte) (value & 0xff);
+					} else {
+						int value = staticLink.resolve(r.symbol) + r.value;
+						section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);
+						section.code[reloc.offset + 1] = (byte) (value & 0xff);
+					}
+				} catch (Exception e) {
+					throw new Exception(path.getFileName() + " section " + section.name
+							+ " offset " + reloc.offset + " : " + e.getMessage()
+							+ System.lineSeparator()
+							+ "A *.static section promises every external it holds resolves"
+							+ " against a declared, single placement ; there is no fallback"
+							+ " to load-time linking.");
+				}
+				baked.add(reloc);
+				count++;
+			}
+			if (count > 0) {
+				log.info("{} : {} references resolved statically in section '{}'",
+						path.getFileName(), count, section.name);
+			}
+		}
+	}
+
+	@Override
+	public Map<String, int[]> getExportOffsets() throws Exception {
+		Map<String, int[]> offsets = new LinkedHashMap<String, int[]>();
+		for (LWSection section : secLst) {
+			boolean absolute = (section.flags == LWSection.SECTION_CONST);
+			int base = absolute ? 0 : sectionBase(section);
+			for (Symbol symbol : section.exportedsyms) {
+				offsets.put(symbol.sym, new int[] { base + symbol.offset, absolute ? 1 : 0 });
+			}
+		}
+		return offsets;
+	}
+
 	@Override
 	public byte[] getBytes() throws Exception {
 
@@ -680,6 +768,34 @@ public class LwObject implements ObjectDataInterface{
 			node = node.next;
 		}
 
+		// An internal reference names the SECTION its target lives in, with a
+		// section relative offset : "( I16=18 IS=map.static PLUS )" means 18
+		// bytes into that section. Every consumer of this value shifts by the
+		// referencing section's base, so the referenced section's base has to
+		// be folded in here — invisible while units had a single code-bearing
+		// section (base 0), wrong the day one gained a second.
+		if (r.internal && !r.symbol.isEmpty()) {
+			// the term string carries lwasm's section marker byte (\x02) ahead
+			// of the name ; section headers store the name clean
+			String sectionName = r.symbol;
+			while (!sectionName.isEmpty() && sectionName.charAt(0) < 0x20) {
+				sectionName = sectionName.substring(1);
+			}
+			LWSection target = null;
+			for (LWSection candidate : secLst) {
+				if (sectionName.equals(candidate.name)) {
+					target = candidate;
+					break;
+				}
+			}
+			if (target == null) {
+				throw new Exception("internal reference to unknown section '" + sectionName
+						+ "' at offset " + reloc.offset);
+			}
+			r.value += sectionBase(target);
+			r.symbol = "";
+		}
+
 		return r;
 	}
 
@@ -728,6 +844,7 @@ public class LwObject implements ObjectDataInterface{
 				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
 
+					if (baked.contains(reloc)) continue; // resolved at build time
 					if (reloc.flags != 1) continue; // 8 bit relocations only
 
 					RelocValue r = evalReloc(reloc);
@@ -766,6 +883,7 @@ public class LwObject implements ObjectDataInterface{
 				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
 
+					if (baked.contains(reloc)) continue; // resolved at build time
 					if (reloc.flags != 0) continue; // 16 bit relocations only
 
 					RelocValue r = evalReloc(reloc);
@@ -810,6 +928,7 @@ public class LwObject implements ObjectDataInterface{
 				int base = sectionBase(section);
 				for (Reloc reloc : section.incompletes) {
 
+					if (baked.contains(reloc)) continue; // resolved at build time
 					if (reloc.flags != 1) continue; // 8 bit operand holds a page
 
 					RelocValue r = evalReloc(reloc);
