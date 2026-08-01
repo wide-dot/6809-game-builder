@@ -159,6 +159,10 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         Invariant « une variante décalée déclare la géométrie de la non
         décalée » verrouillé par test — c'est lui qui protège le x1/y1 partagé
         du groupe de miroir.
+  - [x] M4 (couverture du banc) — les quatre miroirs (N/X/Y/XY) et les deux
+        encodeurs ajoutés au banc : **30/30 byte-identiques**. Tous les
+        chemins de gfxcomp que le portage R-Type utilise sont désormais
+        comparés à la v1, aucun ne diverge.
   - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut

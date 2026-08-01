@@ -41,7 +41,11 @@ enemies/shell/images/shell_3.png:NB0
 test/ball/images/ball.png:ND0
 test/ball/images/ball.png:ND1
 test/launcher/images/launcher.png:NB0
-test/launcher/images/launcher.png:NB1}"
+test/launcher/images/launcher.png:NB1
+enemies/shell/images/shell_0.png:XB0
+enemies/shell/images/shell_0.png:YB0
+enemies/shell/images/shell_0.png:XYB0
+test/ball/images/ball.png:XD0}"
 
 rm -rf "$OUT"; mkdir -p "$OUT/work"
 javac -cp "$V1JAR" -d "$OUT/work" "$(dirname "$0")/V1Harness.java"
@@ -52,9 +56,17 @@ for case in $CASES; do
     [ -f "$png" ] || { echo "SKIP  $case (no such png)"; continue; }
     name=$(basename "$png" .png)
     work="$name-$variant"
-    enc=$(echo "$variant" | cut -c2)
-    case "$enc" in B) encoder=bdraw;; D) encoder=draw;; *) echo "unknown variant $variant"; exit 1;; esac
-    mirror=none; shift=$(echo "$variant" | cut -c3)
+    # <mirror><encoder><shift> : the mirror is N, X, Y or XY
+    case "$variant" in
+        XY*) mirror=xy; rest=${variant#XY};;
+        X*)  mirror=x;  rest=${variant#X};;
+        Y*)  mirror=y;  rest=${variant#Y};;
+        N*)  mirror=none; rest=${variant#N};;
+        *)   echo "unknown variant $variant"; exit 1;;
+    esac
+    enc=$(echo "$rest" | cut -c1)
+    case "$enc" in B) encoder=bdraw;; D) encoder=draw;; *) echo "unknown encoder in $variant"; exit 1;; esac
+    shift=$(echo "$rest" | cut -c2)
 
     mkdir -p "$OUT/$work/v2"
     # gfxcomp resolves image paths against the configuration file
