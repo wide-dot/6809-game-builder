@@ -21,6 +21,21 @@ public class LinkSymbols {
 	private final HashMap<String, String> exporters = new HashMap<String, String>();
 
 	/**
+	 * Symbols some unit actually references as EXTERNAL. Filled during the
+	 * discovery pass ; the real pass prunes the exports nobody is in.
+	 */
+	public final java.util.HashSet<String> imports = new java.util.HashSet<String>();
+
+	/**
+	 * The import set the discovery pass collected, when pruning is active for
+	 * this pass ; null means emit every export (the discovery pass itself).
+	 */
+	private java.util.Set<String> emittedExports = null;
+
+	/** exports the real pass left out of the link data, for the report */
+	public int pruned = 0;
+
+	/**
 	 * Assigns ids 0..n-1 to the given symbols, in list order. Called with the
 	 * alphabetically sorted symbol set collected by the discovery pass ;
 	 * symbols first seen after this (a config error path) get the next free
@@ -32,7 +47,28 @@ public class LinkSymbols {
 		}
 	}
 	
+	/** the discovery pass hands its import set over ; pruning starts here */
+	public void preseedImports(java.util.Set<String> imported) {
+		emittedExports = new java.util.HashSet<String>(imported);
+	}
+
+	/**
+	 * Whether an export earns its bytes in the link data. Everything does
+	 * until a discovery pass has said who is actually imported : the loader
+	 * resolves references by scanning export tables, so an export nobody
+	 * references is pure search overhead.
+	 */
+	public boolean isEmitted(String sym) {
+		return emittedExports == null || emittedExports.contains(sym);
+	}
+
+	/** a unit references sym as an external : id, and a seat at the table */
 	public int add(String sym) throws Exception {
+		imports.add(sym);
+		return idOf(sym);
+	}
+
+	private int idOf(String sym) throws Exception {
 		
 		int nbSymbols;
 		
@@ -76,11 +112,14 @@ public class LinkSymbols {
 			log.error(m);
 			throw new Exception(m);
 		}
-		return add(sym);
+		return idOf(sym);
 	}
 
 	public void clear() {
 		ids.clear();
 		exporters.clear();
+		imports.clear();
+		emittedExports = null;
+		pruned = 0;
 	}
 }

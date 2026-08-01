@@ -531,8 +531,14 @@ unique, fournisseur déclaré avant consommateur. Sur `tilescroll` : 768 référ
 cuites, link data de la carte 4,6 Ko → 0, disque et pool revenus au standard,
 chargement 883k → 548k instructions. Au passage deux corrections du support
 multi-sections : base de section perdue par les interns inter-sections, et `code`
-mis en tête du binaire quel que soit l'ordre d'écriture de lwasm. L'élagage des
-exports non importés reste à faire.
+mis en tête du binaire quel que soit l'ordre d'écriture de lwasm. **L'élagage des exports non importés est fait aussi** : la passe de découverte
+collecte les symboles réellement référencés en `EXTERNAL`, la passe réelle
+n'émet que ceux-là (unicité toujours vérifiée, y compris pour les élagués).
+Un symbole consommé uniquement en `.static` compte comme non importé — les
+deux mécanismes se composent : la link data de `tilescroll` ne contient plus
+ni exports ni externs, seulement des interns. Attention à la lecture des
+rapports : les configs `<hfe/>` avortent sur hxcfe **avant** la ligne de
+rapport d'élagage, mais élaguent quand même.
 
 ## Art des exemples : tout est généré (01/08/2026)
 

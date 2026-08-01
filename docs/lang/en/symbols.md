@@ -118,6 +118,29 @@ through the loader's API. The marker is the author's assertion that the
 referenced content is scene-placed only ; the builder verifies it against
 everything declared.
 
+## Export pruning
+
+The other half is implemented too : an export **nothing imports** is left out
+of the link data. The discovery pass the build already runs to stabilise
+symbol ids now also collects which symbols are referenced as `EXTERNAL` ; the
+real pass emits only those. There is nothing to author — dead exports simply
+stop costing their four bytes and, more importantly, stop being one more
+entry every resolution walks past.
+
+The uniqueness check still runs for pruned exports : two files exporting the
+same dead name is still an error. And a symbol consumed **only** through a
+`.static` section counts as unimported — the bake does not go through the
+loader — so the two mechanisms compound : `tilescroll`'s link data now
+carries no exports and no externals at all, only interns.
+
+What pruning does *not* do is shrink the corpus much on its own : most bulk
+exports turn out to be genuinely imported (a sample table importing 2667
+labels is the `.static` shape, not the dead-export shape), and units without
+`loadtimelink` never put their exports on disk in the first place. It removed
+19 dead exports from `loader-ut` and every export from the two `.static`
+consumers. Its real value is keeping the search tables honest as the corpus
+grows.
+
 ## Where this bites next
 
 The audit that prompted this note: across the examples, 1948 symbols are

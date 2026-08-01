@@ -594,7 +594,16 @@ public class LwObject implements ObjectDataInterface{
 				if (section.flags == LWSection.SECTION_CONST) {
 					for (Symbol symbol : section.exportedsyms) {
 						
+						// the uniqueness check runs for every export ; only the
+						// emission is skipped when nothing imports the symbol
+						// the uniqueness check runs for every export ; only the
+						// emission is skipped when nothing imports the symbol
 						int symid = linkSymbols.export(symbol.sym, path.getFileName().toString());
+						if (!linkSymbols.isEmitted(symbol.sym)) {
+							linkSymbols.pruned++;
+							log.debug("PRUNED   : {} (never imported)", symbol.sym);
+							continue;
+						}
 						
 						byte[] val = new byte[4];
 						val[0] = (byte) ((symid & 0xff00) >> 8);
@@ -623,7 +632,14 @@ public class LwObject implements ObjectDataInterface{
 					int base = sectionBase(section);
 					for (Symbol symbol : section.exportedsyms) {
 						
+						// the uniqueness check runs for every export ; only the
+						// emission is skipped when nothing imports the symbol
 						int symid = linkSymbols.export(symbol.sym, path.getFileName().toString());
+						if (!linkSymbols.isEmitted(symbol.sym)) {
+							linkSymbols.pruned++;
+							log.debug("PRUNED   : {} (never imported)", symbol.sym);
+							continue;
+						}
 						int offset = base + symbol.offset;
 						
 						byte[] val = new byte[4];

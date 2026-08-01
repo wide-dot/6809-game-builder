@@ -81,7 +81,10 @@ public class Target {
 			}
 			List<String> symbols = new ArrayList<String>(ctx.linkSymbols.ids.keySet());
 			java.util.Collections.sort(symbols);
-			log.info("{} link symbols discovered, ids assigned alphabetically", symbols.size());
+			java.util.Set<String> imported = new java.util.HashSet<String>(ctx.linkSymbols.imports);
+			log.info("{} link symbols discovered ({} imported), ids assigned alphabetically",
+					symbols.size(), imported.size());
+			log.debug("imported : {}", imported);
 
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
@@ -89,8 +92,12 @@ public class Target {
 			ctx.resetTarget();
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			ctx.linkSymbols.preseed(symbols);
+			ctx.linkSymbols.preseedImports(imported);
 
 			runTarget(node);
+			if (ctx.linkSymbols.pruned > 0) {
+				log.info("{} exports never imported, left out of the link data", ctx.linkSymbols.pruned);
+			}
 			log.info("End of processing target {}", targetName);
 
     	}
