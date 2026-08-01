@@ -125,6 +125,44 @@ identiques) au-dessus d'une couche commune, et le banc prouve :
 
 Si ce banc tient, la couture est prouvée avant qu'un vrai stage 2 existe.
 
+## La chaîne de fabrication d'un stage, retracée sur les niveaux 1 et 2
+
+Décision de l'auteur : ancrer le point 7 sur les stages 1 et 2 réels. La
+chaîne v1, remontée depuis les sources :
+
+1. **La map dessinée** : un seul PNG par stage (`objects/levels/NN/map/in.png`,
+   1584×180 pour le 1, 1152×180 pour le 2 — colonnes de 12 px, 15 rangées).
+2. **Le découpeur** : `leanscroll` — **déjà un outil v2**
+   (`toolbox/graphics/tilemap/leanscroll`, module Maven du dépôt), que la v1
+   invoque tel quel (`tool-command.txt`). Il sort : le tileset des tuiles
+   uniques (12×N vertical), le même **pré-décalé d'un pixel**, la map en
+   indexes 16 bits **transposée** (colonne-major, prête pour le scroll), et
+   l'image du viewport initial.
+3. **Les tuiles compilées** : par l'encodeur de sprites — les fichiers générés
+   s'appellent `Tls_lvl01_87_ND0.asm` : le nommage variante de gfxcomp. En v2,
+   `<gfxcomp>` avec `draw` shift 0/1 est donc **exactement** le chemin v1 ;
+   le banc tilescroll l'exerce déjà et le banc de parité générateur-vs-
+   générateur s'applique.
+4. **Le buffer de map** : indexes du .bin + adresses des tuiles compilées →
+   la table colonne-major `[page][adresse]` que consomme
+   `scroll-map-buffered-even`. C'est **le générateur à écrire** côté v2, en
+   section `.static` — la seule pièce nouvelle de la chaîne map.
+5. **La wave** : données asm écrites à la main
+   (`objects/levels/NN/object-wave/object-wave-data.asm`), format
+   `[timestamp:2][ObjID:1][subtype:2]` identique à ce qu'ObjectWave lit —
+   s'importe telle quelle, les `ObjID_*` venant des équates générées.
+6. **Le LevelInit** : mince, écrit à la main, stable entre stages (seuls les
+   noms et paramètres changent) — c'est le cœur du futur « main de stage ».
+7. **Le terrain** : PNG → bitmap 1 bit/tuile de 3 px (`level2_fc.bin` existe) ;
+   le convertisseur v1 est une classe du java-generator, petite, à porter ou
+   les .bin se reprennent tels quels dans un premier temps.
+
+Ordre d'implémentation qui en découle : (a) l'interface de stage + unicité
+par ensemble co-chargeable (le verrou builder) ; (b) le générateur du buffer
+de map, parité contre les données v1 des niveaux 1 et 2 ; (c) le banc
+d'échange stage1↔stage2 avec les vraies maps/waves des deux niveaux et des
+ennemis factices pour ceux qui manquent.
+
 ## Hors périmètre de cette analyse
 
 Les ~149 objets montés consomment les mêmes surfaces (les cinq tables, l'API

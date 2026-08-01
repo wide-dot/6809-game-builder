@@ -505,7 +505,13 @@ Ordre de migration suggéré (dépendances croissantes) :
    persistant, checkpoint sans disque). Les mains v1 02..08 sont des copies
    figées du 1, mais les DONNÉES par-stage existent en vrai : tilemaps 02..08,
    waves 01..08, collisions 1..3+ — les générateurs se conçoivent contre elles,
-   seule la découpe du résident est à l'aveugle. Analyse complète :
+   seule la découpe du résident est à l'aveugle. Ancrage décidé : **stages 1 et 2 réels**. Chaîne v1 retracée : in.png →
+   `leanscroll` (déjà un module v2 !) → tileset normal + pré-décalé + map
+   16 bits colonne-major → tuiles compilées par l'encodeur sprites (nommage
+   `_ND0` = gfxcomp) → buffer `[page][adresse]` (le générateur à écrire) ;
+   wave = asm importable tel quel ; terrain = PNG→bin (classe v1 petite).
+   Ordre : interface de stage → générateur de buffer (parité niveaux 1-2) →
+   banc d'échange stage1↔stage2. Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
 8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
    les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.
