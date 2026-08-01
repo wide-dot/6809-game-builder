@@ -58,7 +58,14 @@ palette.
 |---|---|---|
 | `bdraw` | background backup + draw, plus a matching erase routine | moving sprites |
 | `draw` | draw only | overlays, sprites whose background need not survive |
-| `rle`, `zx0` | compressed image data | not used by the drawing runtime |
+| `rle`, `zx0` | compressed image, decompressed to the screen | backgrounds, anything static and large |
+
+The three drawing encoders share one slot in the index. `draw`, `rle` and
+`zx0` all answer to the same variant letter, `D`, because the runtime calls
+them the same way and the index only ever looks up `B` and `D` — an encoder
+with a letter of its own got compiled and then left out of the index entirely.
+One image therefore takes at most one of the three, and declaring two is an
+error rather than a silent drop.
 
 `mirror` is `none`, `x`, `y` or `xy` ; `shift` pre-shifts the image by whole
 pixels so odd positions cost nothing at run time. **`shift` is refused for

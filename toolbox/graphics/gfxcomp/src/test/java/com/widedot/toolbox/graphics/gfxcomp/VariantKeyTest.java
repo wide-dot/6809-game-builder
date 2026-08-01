@@ -22,8 +22,10 @@ public class VariantKeyTest {
 		assertEquals("ND0", Image.variantKey(Image.TYPE_DRAW, Mirror.NONE, Shift.SHIFT_0));
 		assertEquals("XB1", Image.variantKey(Image.TYPE_BDRAW, Mirror.X, Shift.SHIFT_1));
 		assertEquals("XYD7", Image.variantKey(Image.TYPE_DRAW, Mirror.XY, Shift.SHIFT_7));
-		assertEquals("YR0", Image.variantKey(Image.TYPE_RLE, Mirror.Y, Shift.SHIFT_0));
-		assertEquals("NZ0", Image.variantKey(Image.TYPE_ZX0, Mirror.NONE, Shift.SHIFT_0));
+		// rle and zx0 answer to the draw letter, as they do in v1 : the index
+		// only ever looks up B and D, so a letter of their own hid them from it
+		assertEquals("YD0", Image.variantKey(Image.TYPE_RLE, Mirror.Y, Shift.SHIFT_0));
+		assertEquals("ND0", Image.variantKey(Image.TYPE_ZX0, Mirror.NONE, Shift.SHIFT_0));
 	}
 
 	@Test

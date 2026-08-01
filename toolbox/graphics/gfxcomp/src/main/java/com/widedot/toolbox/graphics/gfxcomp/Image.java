@@ -41,7 +41,15 @@ public class Image {
 		}
 	};
 	
-	public static final String[] typeLabel = new String[]{"D", "B", "R", "Z"};
+	/**
+	 * Letter each encoder contributes to a variant key.
+	 *
+	 * rle and zx0 answer to D, as they do in v1 : they produce a drawing
+	 * routine, the runtime calls them exactly like a draw variant, and the
+	 * imageset only ever looks up B and D. Giving them a letter of their own
+	 * compiled the image and then left it out of the index, unreachable.
+	 */
+	public static final String[] typeLabel = new String[]{"D", "B", "D", "D"};
 
 	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
 	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and

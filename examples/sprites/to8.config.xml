@@ -47,6 +47,11 @@
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
+                            <!-- a compressed image : it answers to the draw slot,
+                                 which is what puts it in the index at all -->
+                            <image name="ball" filename="src/assets/sprites/ball.png" index="2">
+                                <encoder name="zx0" mirror="none" shift="0"/>
+                            </image>
                         </gfxcomp>
                         <!-- the frame table AnimateSprite walks ; frames name
                              images, the element writes their imageset symbol -->

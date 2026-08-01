@@ -335,7 +335,8 @@ public class MapRleEncoder extends Encoder{
 	public List<String> getCodeFrameDrawHeader() {
 		List<String> asm = new ArrayList<String>();
 		asm.add("\tINCLUDE \"./engine/constants.asm\"");
-		asm.add("\tsetdp $FF");
+		// no setdp : the obj target rejects it, as it does in the draw and bdraw
+		// generators. Extended addressing stays correct.
 		asm.add("\topt   c,ct");		
 		asm.add("");		
 		asm.add("adr_" + name);

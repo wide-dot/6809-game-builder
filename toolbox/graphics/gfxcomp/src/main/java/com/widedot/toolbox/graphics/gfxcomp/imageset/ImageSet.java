@@ -30,13 +30,19 @@ public class ImageSet {
 		images = new HashMap<String,HashMap<String,Image>>();
 	}
 	
-	public void addImage(Image img) {
+	public void addImage(Image img) throws Exception {
 		HashMap<String,Image> imgTypes = images.get(img.getName());
 		if (imgTypes == null) {
 			imgTypes = new HashMap<String,Image>();
 			images.put(img.getName(), imgTypes);
 		}
-		imgTypes.put(img.getVariant(), img);		
+		// draw, rle and zx0 share the D slot, so two of them on one image would
+		// silently drop whichever was declared first
+		Image previous = imgTypes.put(img.getVariant(), img);
+		if (previous != null) {
+			throw new Exception("image " + img.getName() + " has two encoders on variant "
+			                    + img.getVariant() + " : only one can be indexed");
+		}
 	}
 	
 	public void generate(String fileName) throws Exception {
