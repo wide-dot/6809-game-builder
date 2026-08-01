@@ -30,16 +30,16 @@ public final class PlacementScan {
 	private PlacementScan() {
 	}
 
-	public static void run(ImmutableNode targetNode, BuildContext ctx) {
+	public static void run(ImmutableNode targetNode, BuildContext ctx) throws Exception {
 		// regions first : loads reference them by name
 		Map<String, int[]> regions = new LinkedHashMap<String, int[]>();     // name -> page, address
 		Map<String, Boolean> bulks = new LinkedHashMap<String, Boolean>();
-		collectRegions(targetNode, regions, bulks);
+		collectRegions(targetNode, ctx, regions, bulks);
 		collectLoads(targetNode, ctx, regions, bulks);
 	}
 
-	private static void collectRegions(ImmutableNode node, Map<String, int[]> regions,
-			Map<String, Boolean> bulks) {
+	private static void collectRegions(ImmutableNode node, BuildContext ctx,
+			Map<String, int[]> regions, Map<String, Boolean> bulks) throws Exception {
 		if ("layout".equals(node.getNodeName())) {
 			for (ImmutableNode region : node.getChildren()) {
 				if (!"region".equals(region.getNodeName())) {
@@ -53,10 +53,20 @@ public final class PlacementScan {
 				}
 				regions.put(name, new int[] { page, address });
 				bulks.put(name, Boolean.parseBoolean(raw(region, "bulk")));
+				if (Boolean.parseBoolean(raw(region, "interface"))) {
+					// an interface region promises its alternatives the same
+					// run-time face ; bulk members have no destination of
+					// their own so the promise cannot even be stated
+					if (Boolean.TRUE.equals(bulks.get(name))) {
+						throw new Exception("region '" + name
+								+ "' cannot be both bulk and interface");
+					}
+					ctx.staticLink.declareInterfaceRegion(name, page, address);
+				}
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectRegions(child, regions, bulks);
+			collectRegions(child, ctx, regions, bulks);
 		}
 	}
 

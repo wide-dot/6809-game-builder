@@ -36,6 +36,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -94,6 +95,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -141,6 +143,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -187,6 +190,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -230,6 +234,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -273,6 +278,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -322,6 +328,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -371,6 +378,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -420,6 +428,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -475,6 +484,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -533,6 +543,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -588,6 +599,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -634,6 +646,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -683,6 +696,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -729,6 +743,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -796,6 +811,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -842,6 +858,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -894,6 +911,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -940,6 +958,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -986,6 +1005,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1032,6 +1052,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1087,6 +1108,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1139,6 +1161,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1191,6 +1214,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1211,6 +1235,92 @@
       </xs:attribute>
       <xs:attribute name="lang" type="xs:string">
         <xs:annotation><xs:documentation>language, defaults to fr</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert an indexed PNG to video memory data, one plane per declaration -->
+  <xs:element name="png2bin">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>input .png</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string">
+        <xs:annotation><xs:documentation>where the generated binaries go, source tree if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="videomode" type="xs:string">
+        <xs:annotation><xs:documentation>t0, t1, t1s, t2, bm16, c2, c4, c16 — the pixel layout</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="buffer" type="xs:string">
+        <xs:annotation><xs:documentation>none, vscroll, vscrolltile, hscroll — engine buffer built on top</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="guardcolor" type="int6809">
+        <xs:annotation><xs:documentation>hscroll only : the colour the wrapped bytes are refilled with</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="plane" type="int6809">
+        <xs:annotation><xs:documentation>which memory plane this declaration yields</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="part" type="int6809">
+        <xs:annotation><xs:documentation>which part, when maxsize split the plane</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>split the plane beyond this size</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="shiftcolors" type="xs:boolean">
+        <xs:annotation><xs:documentation>index 0 is transparency and 1..16 are colours 0..15</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linearbits" type="int6809">
+        <xs:annotation><xs:documentation>instead of videomode : bits of a pixel held by one plane</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planarbits" type="int6809">
+        <xs:annotation><xs:documentation>instead of videomode : bits written before changing plane</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linebytes" type="int6809">
+        <xs:annotation><xs:documentation>instead of videomode : bytes per line, 0 to fit the image</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planes" type="int6809">
+        <xs:annotation><xs:documentation>instead of videomode : number of memory planes</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="pixeldepth" type="int6809">
+        <xs:annotation><xs:documentation>instead of videomode : bits per pixel</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1243,6 +1353,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1307,6 +1418,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1333,6 +1445,9 @@
       </xs:attribute>
       <xs:attribute name="bulk" type="xs:boolean">
         <xs:annotation><xs:documentation>the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="interface" type="xs:boolean">
+        <xs:annotation><xs:documentation>the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1365,6 +1480,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1414,6 +1530,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1466,6 +1583,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1512,6 +1630,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1567,6 +1686,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1613,6 +1733,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1662,6 +1783,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1711,6 +1833,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>
@@ -1760,6 +1883,7 @@
         <xs:element ref="lwasm"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
         <xs:element ref="sap"/>

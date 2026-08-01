@@ -141,6 +141,34 @@ labels is the `.static` shape, not the dead-export shape), and units without
 consumers. Its real value is keeping the search tables honest as the corpus
 grows.
 
+## Uniqueness per co-loadable set, and interface regions
+
+Export names must be unique — but the boundary of that rule is the set of
+direntries that can be **in memory together**, not the project. Two direntries
+every scene loads at the *same exact destination* (page + address) are
+mutually exclusive at run time : registering one evicts the other from the
+loader's index (the implicit unload by destination). The builder therefore
+lets them share export names, and rejects any other collision with the usual
+error. This is what makes swappable stages expressible at all : each stage
+exports `Obj_Index_Page`, its wave, its entry point — the same names, by
+design, because the engine's `EXTERNAL` references must find whichever stage
+is in.
+
+The stronger promise is opt-in, on the region :
+
+```xml
+<region name="stage" page="4" address="$A000" interface="true"/>
+```
+
+An `interface` region requires its alternatives to emit the **same export
+list** — compared post-prune, on what the link data actually carries — and
+forbids loading an alternative anywhere else. Without the attribute, nothing
+changes : a region hosting different content with different exports stays
+legal (the sound example swaps musics whose forward references resolve to
+zero until the next `scene.load` — a documented, working pattern). With it,
+the build fails the moment two stages stop being drop-in replacements, which
+is exactly the moment the engine would start reading zeros after a swap.
+
 ## Where this bites next
 
 The audit that prompted this note: across the examples, 1948 symbols are

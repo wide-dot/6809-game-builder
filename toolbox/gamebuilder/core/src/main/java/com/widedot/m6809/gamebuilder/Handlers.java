@@ -102,7 +102,8 @@ public final class Handlers {
 			.req("page", INT, "destination page id")
 			.req("address", INT, "destination address")
 			.opt("size", INT, "byte budget, checked against the loaded entry")
-			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole"));
+			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole")
+			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("scene").doc("generated scene table, one loadable directory entry")
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("section", STRING, "section receiving the table")

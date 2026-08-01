@@ -98,6 +98,9 @@ public class Target {
 			if (ctx.linkSymbols.pruned > 0) {
 				log.info("{} exports never imported, left out of the link data", ctx.linkSymbols.pruned);
 			}
+			// the promise made by interface="true" regions is checked against
+			// what the link data actually emits, so it holds post-prune
+			ctx.staticLink.checkInterfaces(ctx.linkSymbols.unitExports);
 			log.info("End of processing target {}", targetName);
 
     	}

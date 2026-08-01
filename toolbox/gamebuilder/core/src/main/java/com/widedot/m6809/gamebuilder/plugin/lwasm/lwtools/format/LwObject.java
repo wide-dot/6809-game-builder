@@ -596,8 +596,6 @@ public class LwObject implements ObjectDataInterface{
 						
 						// the uniqueness check runs for every export ; only the
 						// emission is skipped when nothing imports the symbol
-						// the uniqueness check runs for every export ; only the
-						// emission is skipped when nothing imports the symbol
 						int symid = linkSymbols.export(symbol.sym, path.getFileName().toString());
 						if (!linkSymbols.isEmitted(symbol.sym)) {
 							linkSymbols.pruned++;

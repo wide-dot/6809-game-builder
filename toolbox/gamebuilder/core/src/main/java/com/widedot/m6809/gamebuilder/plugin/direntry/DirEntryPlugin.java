@@ -95,6 +95,10 @@ public class DirEntryPlugin {
 		log.debug("Processing direntry ...");
 		
 		String name = Attribute.getString(node, ctx, "name");
+		// exports registered while this direntry builds belong to it : the
+		// direntry is the unit the loader loads and evicts, so it is the
+		// granularity of the export uniqueness rule
+		ctx.linkSymbols.beginUnit(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = Attribute.getStringOpt(node, ctx, "codec");
 		String linkSection = Attribute.getStringOpt(node, ctx, "loadtimelink");

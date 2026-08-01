@@ -88,7 +88,17 @@ défaut d'init de `scroll_max`, qui est une **variable** que le stage écrit
 `scroll_max` au LevelInit, et l'unité terrain (par-stage) porte son propre
 `map_width`.
 
-## Le verrou builder que ça révèle : l'interface de stage
+## Le verrou builder que ça révèle : l'interface de stage — IMPLÉMENTÉ (02/08)
+
+Réalisé : l'unicité des exports est vérifiée **par ensemble co-chargeable**
+(deux direntries que toutes les scènes chargent à la même destination exacte
+sont mutuellement exclusives au runtime — l'éviction par destination — et
+peuvent partager leurs noms), et l'attribut `interface="true"` sur une
+`<region>` exige des alternatives la même liste d'exports émise (comparée
+post-élagage) et leur interdit toute autre destination. Sans l'attribut, rien
+ne change — le pattern « musiques différentes, refs à 0 corrigées au load
+suivant » d'`examples/sound` reste légal. 9 tests JUnit, 12 configs
+byte-identiques. Doc : `symbols.md`. Texte d'origine :
 
 Chaque stage exporte les **mêmes noms** (les cinq tables, la wave, son
 entrée). Or l'unicité des exports est vérifiée globalement au target. C'est

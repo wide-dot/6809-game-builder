@@ -20,6 +20,35 @@ public class LinkSymbols {
 	 */
 	private final HashMap<String, String> exporters = new HashMap<String, String>();
 
+	/** symbol -> direntry whose link data carries the export, for the co-loadable rule */
+	private final HashMap<String, String> exporterUnits = new HashMap<String, String>();
+
+	/**
+	 * The direntry being built, set by the direntry plugin. Export ownership is
+	 * checked at the direntry granularity because that is the unit the loader
+	 * loads and evicts.
+	 */
+	private String currentUnit = null;
+
+	/**
+	 * The target's scene placements, wired by the build context. Two direntries
+	 * loaded at the same exact destination are mutually exclusive at run time —
+	 * registering one evicts the other from the loader's index (implicit unload
+	 * by destination) — so their exports may share names.
+	 */
+	public StaticLink placements = null;
+
+	/**
+	 * direntry -> sorted names of the exports its link data actually emits
+	 * (post-prune). This is the run-time face of a direntry, compared between
+	 * the alternatives of an interface region.
+	 */
+	public final HashMap<String, java.util.TreeSet<String>> unitExports = new HashMap<String, java.util.TreeSet<String>>();
+
+	public void beginUnit(String direntry) {
+		currentUnit = direntry;
+	}
+
 	/**
 	 * Symbols some unit actually references as EXTERNAL. Filled during the
 	 * discovery pass ; the real pass prunes the exports nobody is in.
@@ -104,20 +133,55 @@ public class LinkSymbols {
 	 * @param owner file that exports it, used for the error message
 	 */
 	public int export(String sym, String owner) throws Exception {
+		String previousUnit = exporterUnits.get(sym);
 		String previous = exporters.put(sym, owner);
-		if (previous != null && !previous.equals(owner)) {
-			String m = "symbol " + sym + " is exported by both " + previous + " and " + owner
-					+ " ; exported symbols must be unique across a project, the loader"
-					+ " resolves them by scanning loaded files and takes the first match";
-			log.error(m);
-			throw new Exception(m);
+		boolean sameOwner = previous == null
+				|| (previous.equals(owner) && java.util.Objects.equals(previousUnit, currentUnit));
+		if (!sameOwner) {
+			// uniqueness is required per co-loadable set, not per project : two
+			// direntries loaded at the same exact destination can never be in
+			// the loader's index together (registering one evicts the other),
+			// so the scan-first-match resolution stays unambiguous
+			boolean alternatives = previousUnit != null && currentUnit != null
+					&& !previousUnit.equals(currentUnit)
+					&& placements != null
+					&& placements.sameSingleDestination(previousUnit, currentUnit);
+			if (!alternatives) {
+				String m = "symbol " + sym + " is exported by both " + previous
+						+ unitTag(previousUnit) + " and " + owner + unitTag(currentUnit)
+						+ " ; exported symbols must be unique across the direntries that can"
+						+ " be loaded together — the loader resolves them by scanning loaded"
+						+ " files and takes the first match. Only direntries every scene loads"
+						+ " at the same exact destination may share names, being mutually"
+						+ " exclusive at run time";
+				log.error(m);
+				throw new Exception(m);
+			}
+			log.debug("symbol {} exported by both {} and {} : direntries at the same"
+					+ " destination, mutually exclusive at run time", sym, previousUnit, currentUnit);
+		}
+		exporterUnits.put(sym, currentUnit);
+		if (currentUnit != null && isEmitted(sym)) {
+			java.util.TreeSet<String> list = unitExports.get(currentUnit);
+			if (list == null) {
+				list = new java.util.TreeSet<String>();
+				unitExports.put(currentUnit, list);
+			}
+			list.add(sym);
 		}
 		return idOf(sym);
+	}
+
+	private static String unitTag(String unit) {
+		return unit == null ? "" : " (direntry " + unit + ")";
 	}
 
 	public void clear() {
 		ids.clear();
 		exporters.clear();
+		exporterUnits.clear();
+		unitExports.clear();
+		currentUnit = null;
 		imports.clear();
 		emittedExports = null;
 		pruned = 0;

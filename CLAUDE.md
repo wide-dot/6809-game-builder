@@ -498,9 +498,11 @@ Ordre de migration suggéré (dépendances croissantes) :
    `Img_Page_Index`, `Ani_Page_Index`, `Ani_Asd_Index` — le re-link global les
    repointe à chaque échange, mécanisme déjà validé), et 13 équates figées à
    l'assemblage (géométrie du pool à fixer pour le jeu ; `map_width` s'échappe
-   par la variable `scroll_max`). Verrou builder identifié : l'unicité des
-   exports doit devenir « par ensemble co-chargeable » + contrôle d'interface
-   entre stages interchangeables (le concept groups d'origine). Critère
+   par la variable `scroll_max`). Verrou builder FAIT (02/08) :
+   unicité des exports par ensemble co-chargeable (même destination exacte =
+   alternatives, noms partageables) + `interface="true"` sur `<region>` (même
+   liste d'exports émise post-élagage, pas d'autre destination) — opt-in,
+   les patterns existants inchangés, 12 configs byte-identiques. Critère
    d'acceptation : banc à deux stages synthétiques (échange, re-link, état
    persistant, checkpoint sans disque). Les mains v1 02..08 sont des copies
    figées du 1, mais les DONNÉES par-stage existent en vrai : tilemaps 02..08,

@@ -68,9 +68,23 @@ public class StaticLink {
 	/** direntry -> why it cannot be resolved statically */
 	private final Map<String, String> conflicts = new LinkedHashMap<String, String>();
 	private final Map<String, Export> exports = new LinkedHashMap<String, Export>();
+	/** interface region name -> its destination ; declared with interface="true" */
+	private final Map<String, int[]> interfaceRegions = new LinkedHashMap<String, int[]>();
+	/**
+	 * direntry -> every destination any scene gives it, kept even when they
+	 * conflict : the interface check must see a member that also loads
+	 * elsewhere, which the single-placement map forgets.
+	 */
+	private final Map<String, java.util.LinkedHashSet<String>> allDestinations = new LinkedHashMap<String, java.util.LinkedHashSet<String>>();
 
 	/** record where a scene loads a direntry ; a second, different destination turns into a conflict */
 	public void place(String direntry, int page, int address, String scene) {
+		java.util.LinkedHashSet<String> dests = allDestinations.get(direntry);
+		if (dests == null) {
+			dests = new java.util.LinkedHashSet<String>();
+			allDestinations.put(direntry, dests);
+		}
+		dests.add(destKey(page, address));
 		if (conflicts.containsKey(direntry)) {
 			return;
 		}
@@ -133,9 +147,74 @@ public class StaticLink {
 		return placement;
 	}
 
+	/**
+	 * Whether two direntries are alternatives : each one at a single known
+	 * destination, and the same one. Loading either evicts the other from the
+	 * loader's index, so they never coexist at run time.
+	 */
+	public boolean sameSingleDestination(String a, String b) {
+		Placement pa = placements.get(a);
+		Placement pb = placements.get(b);
+		return pa != null && pb != null && pa.page == pb.page && pa.address == pb.address;
+	}
+
+	/** a region whose alternatives promise the same run-time face */
+	public void declareInterfaceRegion(String name, int page, int address) {
+		interfaceRegions.put(name, new int[] { page, address });
+	}
+
+	/**
+	 * The interface check, run once the target is built : every direntry loaded
+	 * at an interface region must emit the same export list. The engine keeps
+	 * EXTERNAL references to those names across swaps — an alternative missing
+	 * one would leave them silently resolved to zero.
+	 *
+	 * @param unitExports direntry -> sorted names its link data emits, as
+	 *                    collected by the link symbol table during the build
+	 */
+	public void checkInterfaces(Map<String, java.util.TreeSet<String>> unitExports) throws Exception {
+		for (Map.Entry<String, int[]> region : interfaceRegions.entrySet()) {
+			String dest = destKey(region.getValue()[0], region.getValue()[1]);
+			String reference = null;
+			java.util.TreeSet<String> referenceList = null;
+			for (Map.Entry<String, java.util.LinkedHashSet<String>> entry : allDestinations.entrySet()) {
+				if (!entry.getValue().contains(dest)) {
+					continue;
+				}
+				if (entry.getValue().size() > 1) {
+					throw new Exception("region '" + region.getKey() + "' is an interface :"
+							+ " its alternatives are mutually exclusive by destination, but '"
+							+ entry.getKey() + "' is also loaded elsewhere ("
+							+ entry.getValue() + ") — it would coexist with them");
+				}
+				java.util.TreeSet<String> list = unitExports.get(entry.getKey());
+				if (list == null) {
+					list = new java.util.TreeSet<String>();
+				}
+				if (reference == null) {
+					reference = entry.getKey();
+					referenceList = list;
+					continue;
+				}
+				if (!referenceList.equals(list)) {
+					throw new Exception("region '" + region.getKey() + "' is an interface :"
+							+ " its alternatives must emit the same export list, but '"
+							+ reference + "' emits " + referenceList + " while '"
+							+ entry.getKey() + "' emits " + list);
+				}
+			}
+		}
+	}
+
+	private static String destKey(int page, int address) {
+		return String.format("page %d $%04X", page, address);
+	}
+
 	public void clear() {
 		placements.clear();
 		conflicts.clear();
 		exports.clear();
+		interfaceRegions.clear();
+		allDestinations.clear();
 	}
 }
