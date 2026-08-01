@@ -47,6 +47,22 @@ main
         ; band's bytes get read as that instead, which shreds it into columns.
         _gfxmode.setBM16
 
+        ; Blank both screen buffers. What boot leaves in video memory is noise,
+        ; and the band only covers the top 25 lines — the rest would show it.
+        ; The routine writes through the data window, so the page has to be
+        ; mounted there first, and it blasts through S, so interrupts are off.
+        jsr   IrqOff
+        _ram.data.set #2                   ; screen buffer 0
+        ldx   #$0000
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+        _ram.data.set #3                   ; screen buffer 1
+        ldx   #$0000
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+
         ; the band's own palette
         ldd   #Pal_band
         std   Pal_current
@@ -141,6 +157,7 @@ Obj_Index_Address
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
         INCLUDE "engine/graphics/tilemap/hscroll/hscroll.asm"
 
  ENDSECTION

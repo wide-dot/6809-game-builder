@@ -11,8 +11,8 @@
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +0 : $CA once the game mode runs
-;   +1 : $01 the shell imageset index reads back as expected
-;   +2 : $01 the launcher imageset index reads back as expected
+;   +1 : $01 the glyph imageset index reads back as expected
+;   +2 : $01 the marker imageset index reads back as expected
 ;   +3 : $01 the sprite reached the screen buffer
 ;   +4 : $01 a background cell was allocated for it
 ;   +5 : frame counter, so a stuck main loop is visible
@@ -26,10 +26,10 @@
 ; so it covers every byte of every line it spans. It is a background format.
 ;*******************************************************************************
 
-set_shell    EXTERNAL
-set_launcher EXTERNAL
+set_glyph    EXTERNAL
+set_marker EXTERNAL
 set_band     EXTERNAL
-Ani_shell    EXTERNAL
+Ani_glyph    EXTERNAL
 
  SECTION code
 
@@ -112,31 +112,31 @@ main
         ; imageset header : [n][x][y][xy] sub set offsets, then x_size,
         ; y_size, center_offset. A missing mirror falls back to an existing
         ; one, so every offset is non zero as soon as one variant exists.
-        ldx   #set_shell
+        ldx   #set_glyph
         lda   ,x                           ; unmirrored sub set offset
-        beq   @shellko
+        beq   @glyphko
         lda   4,x                          ; x_size
         cmpa  #11
-        bne   @shellko
+        bne   @glyphko
         lda   5,x                          ; y_size
-        cmpa  #21
-        bne   @shellko
+        cmpa  #23
+        bne   @glyphko
         lda   #$01
         sta   $9C01
-@shellko
+@glyphko
 
-        ldx   #set_launcher
+        ldx   #set_marker
         lda   ,x
-        beq   @launcherko
-        lda   4,x
-        cmpa  #2
-        bne   @launcherko
-        lda   5,x
-        cmpa  #2
-        bne   @launcherko
+        beq   @markerko
+        lda   4,x                          ; the generated sprites are fully
+        cmpa  #3                           ; opaque, so their bounding box is
+        bne   @markerko                    ; the image and the sizes are its
+        lda   5,x                          ; dimensions minus one
+        cmpa  #3
+        bne   @markerko
         lda   #$01
         sta   $9C02
-@launcherko
+@markerko
 
         ldx   #set_band
         lda   ,x                           ; unmirrored sub set offset
@@ -164,7 +164,7 @@ main
         sta   $9C09
 @bandsetko
 
-        ; one object, the shell sprite, near the middle of the screen.
+        ; one object, the animated sprite, near the middle of the screen.
         ; render_flags leaves render_playfieldcoord unset, so the engine takes
         ; the position as screen coordinates and never looks at x_pos/y_pos ;
         ; a scrolling game sets that flag and gives playfield coordinates.
@@ -179,11 +179,11 @@ main
         sta   x_pixel,u
         lda   #screen_top+90               ; y_pixel
         sta   y_pixel,u
-        ldx   #set_shell
+        ldx   #set_glyph
         stx   image_set,u
         lda   #2                           ; priority 2 : a moving sprite, front
         sta   priority,u
-        ldd   #Ani_shell                   ; positive : a direct address
+        ldd   #Ani_glyph                   ; positive : a direct address
         std   anim,u
 
         ; The compressed image. render_overlay_mask is what makes it work at
@@ -253,12 +253,12 @@ mainLoop
 
         ; the animation has to reach both of its frames
         ldd   image_set,u
-        cmpd  #set_shell
+        cmpd  #set_glyph
         bne   @notframe0
         lda   #$01
         sta   @seen0+1
 @notframe0
-        cmpd  #set_launcher
+        cmpd  #set_marker
         bne   @notframe1
         lda   #$01
         sta   @seen1+1

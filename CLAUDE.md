@@ -490,6 +490,16 @@ mode lisait ses globales dans la page moniteur (un chargement de scène écrit
 le loader se bloque à sa première invite. Détail, cartographie de la page `$60`
 et méthode de choix des octets : [`direct-page.md`](docs/lang/en/direct-page.md).
 
+## Art des exemples : tout est généré (01/08/2026)
+
+Aucun exemple n'embarque d'art authoré. Chaque image est produite par un script
+commité à côté d'elle (`examples/*/tools/gen_*.py`) et conçue comme une **mire**,
+pas comme un dessin : périodicité choisie pour que le raccord d'un défilement se
+vérifie, asymétrie choisie pour qu'un miroir ou un décalage d'un pixel donne une
+image visiblement fausse plutôt que plausible. Les sprites de test de
+`examples/sprites` (`glyph`, `marker`) et la bande de `examples/hscroll`
+remplacent des copies venues de R-Type et de `horizontal-band-scroll`.
+
 ## Piège vidéo : le mode n'est pas posé par défaut (01/08/2026)
 
 Un game mode qui dessine **doit** appeler `_gfxmode.setBM16` : la machine démarre

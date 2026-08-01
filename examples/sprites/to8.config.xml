@@ -33,7 +33,7 @@
                              mode's unit rather than the sprites page: the
                              runtime reads it through Pal_current under
                              interrupt, so it has to stay addressable. -->
-                        <png2pal symbol="Pal_sprites" filename="src/assets/sprites/shell_0.png"/>
+                        <png2pal symbol="Pal_sprites" filename="src/assets/sprites/glyph.png"/>
                     </lwasm>
                 </direntry>
 
@@ -45,13 +45,13 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp gendir="gen/assets/sprites" gensource="gen/assets/sprites/includes.asm"
                                  genindex="gen/assets/sprites/index.asm" file="assets.sprites">
-                            <image name="shell" filename="src/assets/sprites/shell_0.png" index="0">
+                            <image name="glyph" filename="src/assets/sprites/glyph.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <!-- the pre-shifted variant : the runtime picks
                                      between the two on the position's parity -->
                                 <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
-                            <image name="launcher" filename="src/assets/sprites/launcher.png" index="1">
+                            <image name="marker" filename="src/assets/sprites/marker.png" index="1">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
@@ -68,9 +68,9 @@
                         </gfxcomp>
                         <!-- the frame table AnimateSprite walks ; frames name
                              images, the element writes their imageset symbol -->
-                        <animation name="Ani_shell" duration="8">
-                            <frame image="shell"/>
-                            <frame image="launcher"/>
+                        <animation name="Ani_glyph" duration="8">
+                            <frame image="glyph"/>
+                            <frame image="marker"/>
                         </animation>
                     </lwasm>
                 </direntry>
