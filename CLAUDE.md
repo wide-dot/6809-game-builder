@@ -489,9 +489,23 @@ Ordre de migration suggéré (dépendances croissantes) :
    (horloge de jeu, retard porté par `wave_frame_drop`, marqueur de fin) ;
    AutoScroll + CheckCameraMove T18 (pas 8.8 à reste porté, arrêt à la borne,
    drapeau de redraw une fois par tampon). `examples/objects` passe à 18/18.
-7. **Pipeline builder « jeu »** : équivalent v2 des `.properties` v1 (objets, sprites,
-   animations, palettes, acts, index `.glb`, placement en pages) — ou adaptation du
-   projet R-Type au format config.xml + linker.
+7. **Pipeline builder « jeu »** — conception EN COURS (02/08/2026). Objectif acté
+   avec l'auteur : le commun (moteur résident, joueur/armes/HUD, état persistant)
+   chargé une fois, chaque stage ne charge que son main + map + wave + ennemis.
+   Frontière **mesurée** sur le niveau 1 (script, pas jugement) : 4 voies —
+   compile-time (15 macros + ~23 équates partagées), stage→moteur (41 labels
+   d'API), **moteur→stage = 5 tables seulement** (`Obj_Index_Page/Address`,
+   `Img_Page_Index`, `Ani_Page_Index`, `Ani_Asd_Index` — le re-link global les
+   repointe à chaque échange, mécanisme déjà validé), et 13 équates figées à
+   l'assemblage (géométrie du pool à fixer pour le jeu ; `map_width` s'échappe
+   par la variable `scroll_max`). Verrou builder identifié : l'unicité des
+   exports doit devenir « par ensemble co-chargeable » + contrôle d'interface
+   entre stages interchangeables (le concept groups d'origine). Critère
+   d'acceptation : banc à deux stages synthétiques (échange, re-link, état
+   persistant, checkpoint sans disque). Les mains v1 02..08 sont des copies
+   figées du 1 — seuls les LevelInit/collisions 01..04 sont des points de
+   données par-stage. Analyse complète :
+   [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
 8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
    les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.
 9. Garder l'API de compensation de frame-drop (`gfxlock.frameDrop.max`,
