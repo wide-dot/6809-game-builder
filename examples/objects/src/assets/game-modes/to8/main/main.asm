@@ -24,6 +24,7 @@
 ;   +11 : T11 ObjectDp_Clear wipes the user direct page and stops where it must
 ;   +12 : T12 RunPgSubRoutine runs in another page and restores the caller's
 ;   +13 : (byte) the parameter RunPgSubRoutine's callee echoed back
+;   +14 : T13 AnimateSpriteSync spends elapsed frames, not calls
 ;   +31 : $00 running, $0D all passed, $E0+n : n test(s) failed
 ;*******************************************************************************
 
@@ -349,17 +350,77 @@ t11ko
 t12ko
 
 ; ---------------------------------------------------------------------------
+; T13 : AnimateSpriteSync spends its budget in elapsed frames, not in calls.
+; Eight calls reporting one dropped frame each must land on the same displayed
+; frame as four calls reporting two — that is the point of the variant, and it
+; is what keeps r-type's waves and boss in step with the arcade timings they
+; were measured against.
+;
+; Both are primed with a drop of zero first. The call that loads an animation
+; is not comparable between the two regimes : it consumes its own frame drop
+; on the spot, so a regime reporting two starts one frame further along.
+;
+; The animation table is a fake : AnimateSprite stores a frame's value into
+; image_set,u and never dereferences it, so recognisable numbers say more here
+; than real imageset addresses would.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t13a
+        jsr   bench.animReset
+        clr   gfxlock.frameDrop.count
+        ldb   #1
+        jsr   bench.animSteps              ; prime : load the animation, consume nothing
+        lda   #1
+        sta   gfxlock.frameDrop.count
+        ldb   #8
+        jsr   bench.animSteps              ; 8 calls x 1 frame = 8 frames
+
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t13b
+        jsr   bench.animReset
+        clr   gfxlock.frameDrop.count
+        ldb   #1
+        jsr   bench.animSteps              ; same priming
+        lda   #2
+        sta   gfxlock.frameDrop.count
+        ldb   #4
+        jsr   bench.animSteps              ; 4 calls x 2 frames = 8 frames
+        clr   gfxlock.frameDrop.count
+
+        ldu   t13a
+        ldx   t13b
+        lda   anim_frame,u
+        cmpa  anim_frame,x
+        bne   t13ko
+        ldd   image_set,u
+        cmpd  image_set,x
+        bne   t13ko
+        cmpd  #$1111                       ; and it did leave the first frame
+        beq   t13ko
+        lda   #$01
+        sta   result+14
+t13ko
+
+; ---------------------------------------------------------------------------
 ; verdict
 ; ---------------------------------------------------------------------------
         ldx   #result+1
         clrb
 verdict.loop
-        lda   ,x+
+        cmpx  #result+13                   ; +13 carries a value, not a verdict
+        beq   verdict.next
+        lda   ,x
         cmpa  #$01
         beq   verdict.next
         incb
 verdict.next
-        cmpx  #result+13
+        leax  1,x
+        cmpx  #result+15
         bne   verdict.loop
         tstb
         bne   verdict.failed
@@ -436,6 +497,40 @@ bench.traceIs.ko
         lda   #$FF
         rts
 
+; put the object on the fake animation, at its first frame
+bench.animReset
+        ldd   #anim.table
+        std   anim,u
+        clr   anim_frame,u
+        clr   anim_frame_duration,u
+        clr   anim_flags,u
+        ldd   #0
+        std   prev_anim,u
+        std   image_set,u
+        rts
+
+; b = number of calls -> that many AnimateSpriteSync steps on u.
+; The counter lives in memory and u is reloaded every turn : AnimateSprite
+; uses B and Y freely, and says nothing about what it preserves.
+bench.animSteps
+        stb   bench.animN
+        pshs  u
+!       ldu   ,s
+        jsr   AnimateSpriteSync
+        dec   bench.animN
+        bne   <
+        puls  u,pc
+
+; b = number of calls -> that many AnimateSprite steps on u
+bench.animStepsPlain
+        stb   bench.animN
+        pshs  u
+!       ldu   ,s
+        jsr   AnimateSprite
+        dec   bench.animN
+        bne   <
+        puls  u,pc
+
 ; a = byte to append to the trace
 trace.put
         pshs  x
@@ -487,6 +582,20 @@ t8slot     fdb   0
 t9slot     fdb   0
 trace.ptr  fdb   trace
 
+bench.animN fcb  0
+t13a       fdb   0
+t13b       fdb   0
+
+; a fake animation : three frames of four elapsed frames each, then reset.
+; The duration byte sits before the label because AnimateSprite reads it at
+; -1,x. The frame values are never dereferenced, only stored into image_set.
+           fcb   4
+anim.table
+           fdb   $1111
+           fdb   $2222
+           fdb   $3333
+           fcb   $FF                       ; _resetAnim
+
 trace      equ   $9D00
 
 ;*******************************************************************************
@@ -517,10 +626,31 @@ Obj_Index_Address
         fdb   obj.parent
         fdb   obj.paged.run
 
+; AnimateSprite mounts the page holding the animation table the same way it
+; mounts an object's code, and reads Ani_Asd_Index only when anim,u is
+; negative — a signed offset into a per object table of animations. The bench
+; points anim,u straight at its table, so that path is never taken ; the
+; symbol still has to resolve.
+Ani_Page_Index
+        fcb   $00
+        fcb   map.RAM_OVER_CART+gamemode.page
+        fcb   map.RAM_OVER_CART+gamemode.page
+        fcb   map.RAM_OVER_CART+gamemode.page
+        fcb   map.RAM_OVER_CART+objects.page
+
+Ani_Asd_Index
+        fdb   $0000
+        fdb   $0000
+        fdb   $0000
+        fdb   $0000
+        fdb   $0000
+
 ;*******************************************************************************
 ; engine
 ;*******************************************************************************
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/graphics/animation/AnimateSprite.asm"
+        INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectMoveSync.asm"
         INCLUDE "engine/object-management/ObjectDp.asm"

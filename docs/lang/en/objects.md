@@ -96,6 +96,19 @@ are calibrated against the arcade original through this counter.
 `ObjectDp_Clear` wipes the user direct page up to `dp_extreg`, which it shares
 with the engine and therefore leaves alone.
 
+## Animation
+
+`AnimateSprite` advances one frame per call. `AnimateSpriteSync` advances by
+`gfxlock.frameDrop.count` instead, so a dropped frame is caught up rather than
+lost — the same coupling `ObjectMoveSync` has, and for the same reason.
+
+The two do **not** reduce to each other at a drop of one. The call that loads
+an animation consumes its own frame drop on the spot; the unsynchronised
+variant does not. So a sequence starting with an animation change lands one
+frame apart between the two, permanently. Prime past the load before comparing
+regimes — the bench does, and only then is the compensation exact on the
+displayed frame.
+
 ## The bench
 
 `examples/objects` exercises all of the above and writes its verdict to
@@ -103,10 +116,10 @@ with the engine and therefore leaves alone.
 itself mid-walk, or spawning a child mid-walk, leaves nothing on screen to
 look at, so the only way to assert it is to trace it and read the trace back.
 
-Twelve checks, including both list edge cases, a paged object that reports a
+Thirteen checks, including both list edge cases, a paged object that reports a
 byte existing only in its own unit (so a missing mount cannot pass by
-accident, and neither can a stale one), and the subpixel arithmetic of
-`ObjectMoveSync`.
+accident, and neither can a stale one), the subpixel arithmetic of
+`ObjectMoveSync`, and the frame budget of `AnimateSpriteSync`.
 
 It earned its place on its first run: **`UnloadObject_x` did not work at
 all.** A missing branch target marker sent its "not the queued object" path

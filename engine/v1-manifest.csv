@@ -43,3 +43,5 @@ engine/object-management/Obj_Run.asm,engine/object-management/Obj_Run.asm,bc2a61
 engine/object-management/ObjectDp.asm,engine/object-management/ObjectDp.asm,52d62c2aadb0fb157be58ab8abb0d7d9ef02046b,2026-08-01,
 engine/object-management/ObjectMoveSync.asm,engine/object-management/ObjectMoveSync.asm,81383f26717005dd33e49512bf0162bf12d15078,2026-08-01,
 engine/object-management/RunPgSubRoutine.asm,engine/object-management/RunPgSubRoutine.asm,c77850234b24ccd95bd2e810e81c8e6cec5b6e80,2026-08-01,
+engine/graphics/animation/AnimateSpriteSync.asm,engine/graphics/animation/AnimateSpriteSync.asm,7c4c3748cc54573908870f522dd84bda52108357,2026-08-01,
+engine/graphics/animation/moveByScript.asm,engine/graphics/animation/moveByScript.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-01,
