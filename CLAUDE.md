@@ -479,8 +479,16 @@ Ordre de migration suggéré (dépendances croissantes) :
    notion de tuile et incapable de représenter une carte plus longue qu'elle (celle du
    niveau 1 fait 1584 px). Les deux coexistent : `hscroll` pour un fond qui se répète
    (parallaxe, montagnes, ciel), le scroll tilemap pour le terrain jouable.
-5. **Collisions** AABB + terrain (bitmap, tables xOffset/yOffset/xMask, mode boss-follow).
-6. **ObjectWave** (spawner temporel) + **caméra/AutoScroll**.
+5. ~~**Collisions**~~ **FAIT (02/08/2026)** — AABB (`collision-list`/`collision-do`,
+   matrice de potentiel, chirurgie de liste) exercé dans `examples/objects` T16 ;
+   terrain (`terrainCollision` monté, forme r-type : lvlMapWidth + impl + maps +
+   bitmap) exercé dans `examples/tilescroll` (hit/miss/disabled/impact.x=80 dérivés
+   à la main). Couplage résident↔monté rendu explicite : 8 EXTERNAL/EXPORT là où
+   v1 le cachait derrière `undefextern`. Boss-follow non exercé (offsets à 0).
+6. ~~**ObjectWave + caméra/AutoScroll**~~ **FAIT (02/08/2026)** — vague T17
+   (horloge de jeu, retard porté par `wave_frame_drop`, marqueur de fin) ;
+   AutoScroll + CheckCameraMove T18 (pas 8.8 à reste porté, arrêt à la borne,
+   drapeau de redraw une fois par tampon). `examples/objects` passe à 18/18.
 7. **Pipeline builder « jeu »** : équivalent v2 des `.properties` v1 (objets, sprites,
    animations, palettes, acts, index `.glb`, placement en pages) — ou adaptation du
    projet R-Type au format config.xml + linker.

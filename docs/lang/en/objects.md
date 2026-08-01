@@ -136,6 +136,46 @@ operands rather than in the direct page. Its `initialize` reaches a script
 through a per-object lookup table; v2 can name the script directly, which is
 what its own comment says to expect, and what the bench does.
 
+## Collision
+
+Two systems, and they answer different questions.
+
+**AABB** (`engine/collision/`) answers "do these two boxes touch, and who
+wins". Boxes live in doubly linked lists — `Collision_AddAABB` and
+`Collision_RemoveAABB` are called by objects and stay resident, the
+`Collision_Do` pass is pure arithmetic and can live outside the resident page
+(r-type puts it in a mounted object). The potential byte drives the outcome :
+negative is invincible and never changes, 0 is disabled, 1..126 trade blows —
+the smaller potential is subtracted from the larger — and 127 is a weak box
+that dies on contact without harming.
+
+**Terrain** (`engine/objects/collision/`) answers "is this pixel inside the
+level, and where is the next wall". The implementation is a mounted unit in
+r-type's shape — `lvlMapWidth`, the engine include whose jump table must be
+the unit's first bytes, the maps table, the bitmap ; one bit per 3 pixel
+tile. The resident half (`terrainCollision.main.asm`) mounts the page per
+call. A sensor at x maps to column `(x-8)/24` and tile `((x-8)%24)/3`, and a
+scan reports a wall's left edge as `col*24 + tile*3 + 8`.
+
+One thing v2 makes explicit that v1 hid : the mounted code reads the resident
+sensors and boss-follow state directly. Under `undefextern` that coupling was
+invisible ; here the terrain unit declares eight `EXTERNAL`s and the game
+mode exports them, so the surface between the two halves is written down.
+
+## Waves and camera
+
+`ObjectWave` walks `[timestamp][id][subtype]` entries from a mounted page and
+spawns each one when `gfxlock.frame.gameCount` reaches its timestamp. A spawn
+that lands n frames late carries n in `wave_frame_drop`, which is how a wave
+stays in step with the arcade timeline across dropped frames. `subtype_w` is
+16 bits and overlaps `render_flags` : read it before setting them.
+
+`AutoScroll` moves the camera by an 8.8 step with a carried remainder, one of
+four directions, for a set number of frames, and disarms itself at the
+declared min or max. `CheckCameraMove` compares the camera against its last
+seen position — once per buffer — and raises `glb_camera_move` and the sprite
+refresh flag when it moved.
+
 ## The bench
 
 `examples/objects` exercises all of the above and writes its verdict to
@@ -143,7 +183,7 @@ what its own comment says to expect, and what the bench does.
 itself mid-walk, or spawning a child mid-walk, leaves nothing on screen to
 look at, so the only way to assert it is to trace it and read the trace back.
 
-Fifteen checks, including both list edge cases, a paged object that reports a
+Eighteen checks, including both list edge cases, a paged object that reports a
 byte existing only in its own unit (so a missing mount cannot pass by
 accident, and neither can a stale one), the subpixel arithmetic of
 `ObjectMoveSync`, and the frame budget of `AnimateSpriteSync` and

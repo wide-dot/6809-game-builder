@@ -8,6 +8,7 @@
         <layout gensymbols="gen/layout.asm">
             <region name="gamemode" page="$01" address="$6100" size="$1F00"/>
             <region name="tiles"    page="$06" address="$0000" size="$4000"/>
+            <region name="terrain"  page="$07" address="$0000" size="$2000"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -70,9 +71,20 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Terrain collision : the mounted unit, r-type's per level
+                     shape (impl + maps + bitmap). It follows the scroll through
+                     two link-resolved symbols of the game mode.              -->
+                <direntry name="assets.terrain" loadtimelink="LINK">
+                    <lwasm gensource="gen/assets/terrain/terrain.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/assets/terrain/terrain.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main" region="gamemode"/>
                     <load name="assets.tiles"   region="tiles"/>
+                    <load name="assets.terrain" region="terrain"/>
                 </scene>
 
             </directory>

@@ -15,6 +15,7 @@
 
 obj.paged.run   EXPORT
 obj.paged.sub   EXPORT
+wave.data       EXPORT
 
         INCLUDE "engine/constants.asm"
         INCLUDE "src/common/result.const.asm"
@@ -47,5 +48,19 @@ obj.paged.sub
         rts
 
 magic   fcb   $5A
+
+; ---------------------------------------------------------------------------
+; The wave of T17, read by ObjectWave through the mounted page :
+; [timestamp:2][object id:1][subtype:2], end marker $FFFF. Timestamps are
+; frames of the game clock (gfxlock.frame.gameCount).
+; ---------------------------------------------------------------------------
+wave.data
+        fdb   5
+        fcb   1                       ; objid.tracer
+        fdb   $1234
+        fdb   10
+        fcb   1
+        fdb   $5678
+        fdb   $FFFF
 
  ENDSECTION

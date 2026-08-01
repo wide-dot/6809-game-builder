@@ -20,6 +20,9 @@
 ;   +0 : $CA the game mode runs
 ;   +1 : frame counter, so a stall is visible
 ;   +2 : (word) glb_camera_x_pos, so the scroll can be read from memory
+;   +4 : $01 terrain : checkPosition hits the wall
+;   +5 : $01 terrain : misses in the open, and everywhere when disabled
+;   +6 : $01 terrain : the x scan reports the wall's left edge (80)
 ;*******************************************************************************
 
 adr_tile0_ND0 EXTERNAL
@@ -32,6 +35,20 @@ adr_tile3_ND0 EXTERNAL
 adr_tile3_ND1 EXTERNAL
 assets.tiles$PAGE EXTERNAL
 
+        ; the terrain unit follows the scroll through these
+scroll_tile_pos          EXPORT
+scroll_tile_pos_offset24 EXPORT
+
+        ; and reads its resident state through these
+terrainCollision.sensor.x   EXPORT
+terrainCollision.sensor.y   EXPORT
+terrainCollision.impact.x   EXPORT
+terrainCollision.disabled   EXPORT
+terrainCollision.bgFlag     EXPORT
+terrainCollision.bgByteOff  EXPORT
+terrainCollision.bgBitShift EXPORT
+terrainCollision.bgColTmp   EXPORT
+
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -39,6 +56,7 @@ assets.tiles$PAGE EXTERNAL
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
+        INCLUDE "engine/objects/collision/terrainCollision.macro.asm"
 
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
@@ -115,6 +133,58 @@ main
 
         jsr   InitScroll
 
+        ; terrain collision : point the resident wrappers at the mounted unit
+        _terrainCollision.init objid.terrain
+
+        ; --- the wall is at map column 3, tiles 24..26 of the row : solid
+        ; pixels 80..82 whatever y. Everything below derives from that. ---
+
+        ; a probe on the wall : column (80-8)/24 = 3, tile 0, mask $80
+        ldd   #80
+        std   terrainCollision.sensor.x
+        ldd   #40
+        std   terrainCollision.sensor.y
+        clrb                               ; map 0
+        jsr   terrainCollision.do
+        tstb
+        beq   @terr1ko
+        lda   #$01
+        sta   $9C04
+@terr1ko
+
+        ; a probe in the open, then the same wall probe with the terrain
+        ; disabled : both must miss
+        ldd   #40
+        std   terrainCollision.sensor.x
+        clrb
+        jsr   terrainCollision.do
+        tstb
+        bne   @terr2ko
+        inc   terrainCollision.disabled
+        ldd   #80
+        std   terrainCollision.sensor.x
+        clrb
+        jsr   terrainCollision.do
+        tstb
+        bne   @terr2ko
+        clr   terrainCollision.disabled
+        lda   #$01
+        sta   $9C05
+@terr2ko
+
+        ; the rightward scan from the open : first solid tile's left edge is
+        ; column 3, tile 0 -> 3*24 + 0*3 + 8 = 80
+        ldd   #16
+        std   terrainCollision.sensor.x
+        clrb
+        jsr   terrainCollision.xAxis.doRight
+        ldd   terrainCollision.impact.x
+        cmpd  #80
+        bne   @terr3ko
+        lda   #$01
+        sta   $9C06
+@terr3ko
+
         ldd   #userIRQ
         std   Irq_user_routine
         jsr   IrqInit
@@ -158,6 +228,20 @@ userIRQ
         jmp   PalUpdateNow
 
 ;*******************************************************************************
+; object index — where the terrain unit lives. Both values come from the
+; declared layout, so there is nothing here for the linker to resolve.
+;*******************************************************************************
+objid.terrain equ 1
+
+Obj_Index_Page
+        fcb   $00
+        fcb   map.RAM_OVER_CART+terrain.page
+
+Obj_Index_Address
+        fdb   $0000
+        fdb   terrain.address
+
+;*******************************************************************************
 ; engine
 ;*******************************************************************************
         INCLUDE "engine/InitGlobals.asm"
@@ -166,6 +250,7 @@ userIRQ
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/objects/collision/terrainCollision.main.asm"
 
  ENDSECTION
 

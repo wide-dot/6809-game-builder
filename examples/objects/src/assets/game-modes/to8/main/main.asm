@@ -27,6 +27,9 @@
 ;   +14 : T13 AnimateSpriteSync spends elapsed frames, not calls
 ;   +15 : T14 moveByScript walks a script and applies its steps
 ;   +16 : T15 and it too spends elapsed frames, not calls
+;   +17 : T16 AABB collision : the potential matrix, and the list surgery
+;   +18 : T17 ObjectWave spawns on the game clock, with frame drop carried
+;   +19 : T18 AutoScroll moves the camera in 8.8, stops at its limit
 ;   +31 : $00 running, $0D all passed, $E0+n : n test(s) failed
 ;*******************************************************************************
 
@@ -34,12 +37,14 @@
 ; never spells out where that page ended up
 obj.paged.run   EXTERNAL
 obj.paged.sub   EXTERNAL
+wave.data       EXTERNAL
 
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
+        INCLUDE "engine/collision/macros.asm"
 
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
@@ -484,6 +489,229 @@ t14ko
 t15ko
 
 ; ---------------------------------------------------------------------------
+; T16 : AABB collision. Two lists, boxes added by the object macros, one
+; detection pass, and the potential matrix does the arithmetic : a hit
+; subtracts the smaller potential from the larger, an invincible box (<0)
+; never changes, a weak box (127) dies on contact without harming.
+;
+; The boxes are bare memory here — no objects behind them — because the pass
+; only reads the AABB structs and the lists.
+; ---------------------------------------------------------------------------
+        ; two overlapping boxes, 10 vs 4 : the strong one wins with 6 left
+        ldu   #box1
+        jsr   bench.aabbReset
+        lda   #10
+        sta   AABB.p,u
+        ldu   #box2
+        jsr   bench.aabbReset
+        lda   #4
+        sta   AABB.p,u
+        ldu   #box1
+        _Collision_AddAABB 0,AABB_list_a
+        ldu   #box2
+        _Collision_AddAABB 0,AABB_list_b
+        _Collision_Do AABB_list_a,AABB_list_b
+        lda   box1+AABB.p
+        cmpa  #6
+        lbne  t16ko
+        lda   box2+AABB.p
+        lbne  t16ko
+
+        ; an invincible box (-1) clears the other and keeps its own value
+        ldu   #box1
+        jsr   bench.aabbReset
+        lda   #-1
+        sta   AABB.p,u
+        ldu   #box2
+        jsr   bench.aabbReset
+        lda   #50
+        sta   AABB.p,u
+        _Collision_Do AABB_list_a,AABB_list_b
+        lda   box1+AABB.p
+        cmpa  #-1
+        lbne  t16ko
+        lda   box2+AABB.p
+        lbne  t16ko
+
+        ; a weak box (127) dies on contact and does no harm
+        ldu   #box1
+        jsr   bench.aabbReset
+        lda   #20
+        sta   AABB.p,u
+        ldu   #box2
+        jsr   bench.aabbReset
+        lda   #127
+        sta   AABB.p,u
+        _Collision_Do AABB_list_a,AABB_list_b
+        lda   box1+AABB.p
+        cmpa  #20
+        lbne  t16ko
+        lda   box2+AABB.p
+        lbne  t16ko
+
+        ; boxes apart : nothing moves. cx is the centre, rx the half width —
+        ; centres 60 apart with half widths 5+5 cannot touch
+        ldu   #box1
+        jsr   bench.aabbReset
+        lda   #10
+        sta   AABB.p,u
+        ldu   #box2
+        jsr   bench.aabbReset
+        lda   #10
+        sta   AABB.p,u
+        lda   #100
+        sta   AABB.cx,u
+        _Collision_Do AABB_list_a,AABB_list_b
+        lda   box1+AABB.p
+        cmpa  #10
+        lbne  t16ko
+        lda   box2+AABB.p
+        cmpa  #10
+        lbne  t16ko
+
+        ; list surgery : three boxes in list a, remove the middle one, the
+        ; pass must still see the two others (they collide with box2)
+        ldu   #box1
+        jsr   bench.aabbReset
+        lda   #1
+        sta   AABB.p,u
+        ldu   #box3
+        jsr   bench.aabbReset
+        lda   #1
+        sta   AABB.p,u
+        ldu   #box4
+        jsr   bench.aabbReset
+        lda   #1
+        sta   AABB.p,u
+        ldu   #box3
+        _Collision_AddAABB 0,AABB_list_a
+        ldu   #box4
+        _Collision_AddAABB 0,AABB_list_a
+        ldu   #box3
+        _Collision_RemoveAABB 0,AABB_list_a
+        ldu   #box2
+        jsr   bench.aabbReset
+        lda   #100
+        sta   AABB.p,u
+        _Collision_Do AABB_list_a,AABB_list_b
+        lda   box2+AABB.p
+        cmpa  #98                          ; two hits of 1, not three
+        lbne  t16ko
+        lda   box3+AABB.p
+        cmpa  #1                           ; the removed box was not touched
+        lbne  t16ko
+        lda   #$01
+        sta   result+17
+t16ko
+
+; ---------------------------------------------------------------------------
+; T17 : ObjectWave reads its wave from a mounted page and spawns on the game
+; clock. Entries are [timestamp][id][subtype], end marker $FFFF. A spawn late
+; by n frames carries n in wave_frame_drop, which is how a wave stays in step
+; with the arcade timeline across dropped frames.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #map.RAM_OVER_CART+objects.page
+        sta   object_wave_data_page
+        ldd   #wave.data
+        std   object_wave_data_start
+        ldd   #0
+        std   gfxlock.frame.gameCount
+        jsr   ObjectWave_Init
+
+        ; clock at 4 : the t=5 entry must not fire yet
+        ldd   #4
+        std   gfxlock.frame.gameCount
+        jsr   ObjectWave
+        ldd   object_list_first
+        lbne  t17ko
+
+        ; clock at 5 : one spawn, on time (drop 0)
+        ldd   #5
+        std   gfxlock.frame.gameCount
+        jsr   ObjectWave
+        ldu   object_list_first
+        lbeq  t17ko
+        lda   id,u
+        cmpa  #objid.tracer
+        lbne  t17ko
+        ldd   subtype_w,u
+        cmpd  #$1234
+        lbne  t17ko
+        lda   wave_frame_drop,u
+        lbne  t17ko
+
+        ; clock jumps to 12 : the t=10 entry fires 2 frames late
+        ldd   #12
+        std   gfxlock.frame.gameCount
+        jsr   ObjectWave
+        ldu   object_list_first
+        ldu   run_object_next,u
+        lbeq  t17ko
+        ldd   subtype_w,u
+        cmpd  #$5678
+        lbne  t17ko
+        lda   wave_frame_drop,u
+        cmpa  #2
+        lbne  t17ko
+
+        ; and the end marker holds : a later clock spawns nothing more
+        ldd   #$4000
+        std   gfxlock.frame.gameCount
+        jsr   ObjectWave
+        ldu   object_list_first
+        ldu   run_object_next,u
+        ldu   run_object_next,u
+        lbne  t17ko
+        lda   #$01
+        sta   result+18
+t17ko
+        ldd   #0
+        std   gfxlock.frame.gameCount
+
+; ---------------------------------------------------------------------------
+; T18 : AutoScroll moves the camera by an 8.8 step with a carried remainder,
+; and stops itself at the declared limit. CheckCameraMove turns the move into
+; the tiles-need-redrawing flag, once per buffer.
+; ---------------------------------------------------------------------------
+        ldd   #$0100
+        std   glb_camera_x_pos
+        ldd   #$0000
+        std   glb_camera_x_min
+        ldd   #$0110
+        std   glb_camera_x_max
+        lda   #scroll_state_right
+        sta   glb_auto_scroll_state
+        ldd   #100
+        std   glb_auto_scroll_frames
+        ldd   #$0180                       ; 1.5 pixel per frame
+        std   glb_auto_scroll_step
+        jsr   AutoScroll                   ; +1 (remainder .5)
+        jsr   AutoScroll                   ; +2 (remainder 0)
+        ldd   glb_camera_x_pos
+        cmpd  #$0103
+        lbne  t18ko
+        ; sixteen more frames would pass the max : it must stop there
+!       jsr   AutoScroll
+        lda   glb_auto_scroll_state
+        bne   <
+        ldd   glb_camera_x_pos
+        cmpd  #$0110                       ; capped run leaves the camera at max
+        bhi   t18ko
+        ; the camera moved : CheckCameraMove must raise the redraw flag once
+        clr   gfxlock.backBuffer.id
+        jsr   CheckCameraMove
+        lda   glb_camera_move
+        cmpa  #1
+        lbne  t18ko
+        jsr   CheckCameraMove              ; same camera, same buffer : quiet
+        lda   glb_camera_move
+        lbne  t18ko
+        lda   #$01
+        sta   result+19
+t18ko
+
+; ---------------------------------------------------------------------------
 ; verdict
 ; ---------------------------------------------------------------------------
         ldx   #result+1
@@ -497,7 +725,7 @@ verdict.loop
         incb
 verdict.next
         leax  1,x
-        cmpx  #result+17
+        cmpx  #result+20
         bne   verdict.loop
         tstb
         bne   verdict.failed
@@ -636,6 +864,21 @@ bench.scriptReset
 script.callback
         rts
 
+; u = box -> zeroed, then given the shared geometry : centre (40,40), half
+; extents 5x5, links cleared. Tests override what they need.
+bench.aabbReset
+        ldd   #0
+        std   AABB.prev,u
+        std   AABB.next,u
+        sta   AABB.p,u
+        lda   #5
+        sta   AABB.rx,u
+        sta   AABB.ry,u
+        lda   #40
+        sta   AABB.cx,u
+        sta   AABB.cy,u
+        rts
+
 ; a = byte to append to the trace
 trace.put
         pshs  x
@@ -713,6 +956,14 @@ script.table
            fdb   $0000                   ; end of script...
            fdb   script.table            ; ...and where to resume
 
+; the AABB lists and boxes of T16. A list head is [first][last].
+AABB_list_a fdb   0,0
+AABB_list_b fdb   0,0
+box1        fill  0,sizeof{AABB}
+box2        fill  0,sizeof{AABB}
+box3        fill  0,sizeof{AABB}
+box4        fill  0,sizeof{AABB}
+
 trace      equ   $9D00
 
 ;*******************************************************************************
@@ -777,6 +1028,10 @@ moveByScript.NEGYSTEP equ -$0100
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
         INCLUDE "engine/graphics/animation/moveByScript.asm"
+        INCLUDE "engine/collision/collision.asm"
+        INCLUDE "engine/object-management/ObjectWave-subtype.asm"
+        INCLUDE "engine/graphics/camera/AutoScroll.asm"
+        INCLUDE "engine/graphics/camera/CheckCameraMove.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectMoveSync.asm"
         INCLUDE "engine/object-management/ObjectDp.asm"
