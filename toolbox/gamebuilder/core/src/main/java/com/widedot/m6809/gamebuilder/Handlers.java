@@ -166,7 +166,8 @@ public final class Handlers {
 		spec(element("image").doc("one PNG of a gfxcomp unit")
 			.req("name", STRING, "image name, prefix of the generated symbols")
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
-			.opt("index", INT, "index in the imageset, emitted as idx_<name>"));
+			.opt("index", INT, "index in the imageset, emitted as idx_<name>")
+			.opt("grid", STRING, "tile size <width>x<height> : the png is a tileset, sliced into tiles named <name>_<id> in reading order, each compiled with the declared encoders"));
 		spec(element("encoder").doc("one compiled rendering of an image")
 			.opt("name", STRING, "draw, bdraw, rle or zx0")
 			.opt("mirror", STRING, "none, x, y or xy")
@@ -234,6 +235,7 @@ public final class Handlers {
 		FILES.put("label", LabelPlugin::getFile);
 		FILES.put("includebin", IncludeBinPlugin::getFile);
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
+		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as direntry content
 		// a loadable 32 byte file
@@ -245,6 +247,15 @@ public final class Handlers {
 		OBJECTS.put("vgm2sfx", com.widedot.toolbox.audio.vgm2sfx.Vgm2SfxPlugin::getObject);
 		OBJECTS.put("pcm", com.widedot.toolbox.audio.pcm.PcmPlugin::getObject);
 		OBJECTS.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getObject);
+		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
+			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
+			.req("label", STRING, "label of the generated table")
+			.req("tiles", STRING, "tile symbol stem : entries reference adr_<tiles>_<id>_<variant>")
+			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
+			.req("file", STRING, "direntry holding the compiled tiles ; pages read from <file>$PAGE")
+			.req("gensource", STRING, "generated source file of the table")
+			.opt("section", STRING, "section of the table, map.static if omitted ; must end with .static")
+			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("png2bin").doc("convert an indexed PNG to video memory data, one plane per declaration")
 			.req("filename", STRING, "input .png")
 			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")

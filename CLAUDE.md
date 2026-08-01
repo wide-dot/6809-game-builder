@@ -512,8 +512,13 @@ Ordre de migration suggéré (dépendances croissantes) :
    16 bits colonne-major → tuiles compilées par l'encodeur sprites (nommage
    `_ND0` = gfxcomp) → buffer `[page][adresse]` (le générateur à écrire) ;
    wave = asm importable tel quel ; terrain = PNG→bin (classe v1 petite).
-   Ordre : interface de stage → générateur de buffer (parité niveaux 1-2) →
-   banc d'échange stage1↔stage2. Analyse complète :
+   Générateurs FAITS (02/08) : `grid` sur `<image>` gfxcomp (tranchage de
+   strip, exports générés) + élément `<tilemap>` (.bin leanscroll → table
+   .static, id 0 = 3 octets nuls, EXTERNALs auto-déclarés) —
+   `examples/tilescroll` converti à cette chaîne et revalidé sous toje ;
+   forme des données réelles confirmée (niv 1 : 132×15/245 tuiles, niv 2 :
+   96×15/191, 60-75 % de vides). Doc : `tilemaps.md`. Reste : banc d'échange
+   stage1↔stage2. Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
 8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
    les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.

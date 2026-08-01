@@ -39,21 +39,13 @@
                 <direntry name="assets.tiles" loadtimelink="LINK">
                     <lwasm gensource="gen/assets/tiles/tiles.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp gendir="gen/assets/tiles" gensource="gen/assets/tiles/includes.asm"
-                                 genindex="gen/assets/tiles/index.asm" file="assets.tiles">
-                            <image name="tile0" filename="src/assets/tiles/tile0.png" index="0">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="tile1" filename="src/assets/tiles/tile1.png" index="1">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="tile2" filename="src/assets/tiles/tile2.png" index="2">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="tile3" filename="src/assets/tiles/tile3.png" index="3">
+                        <!-- One sheet, sliced on the fly : tiles_0..tiles_4,   -->
+                        <!-- ids in reading order — the same file shape and     -->
+                        <!-- numbering leanscroll writes. Tile 0 is the poison  -->
+                        <!-- tile, reserved by the "index 0 draws nothing"      -->
+                        <!-- convention of <tilemap>.                           -->
+                        <gfxcomp gendir="gen/assets/tiles" gensource="gen/assets/tiles/includes.asm">
+                            <image name="tiles" filename="src/assets/tiles/tiles.png" grid="12x12">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
@@ -67,7 +59,17 @@
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
-                        <png2pal symbol="Pal_tiles" filename="src/assets/tiles/tile3.png"/>
+                        <png2pal symbol="Pal_tiles" filename="src/assets/tiles/tiles.png"/>
+                        <!-- The map tables, generated from the tile index map -->
+                        <!-- the same way v1 generated its buffers : each      -->
+                        <!-- index becomes page + address of a compiled tile,  -->
+                        <!-- baked at build time in the map.static section.    -->
+                        <tilemap map="src/assets/maps/map.bin" label="map.even"
+                                 tiles="tiles" variant="ND0" file="assets.tiles"
+                                 gensource="gen/assets/maps/map_even.asm"/>
+                        <tilemap map="src/assets/maps/map.bin" label="map.odd"
+                                 tiles="tiles" variant="ND1" file="assets.tiles"
+                                 gensource="gen/assets/maps/map_odd.asm"/>
                     </lwasm>
                 </direntry>
 

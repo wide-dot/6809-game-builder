@@ -44,6 +44,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -103,6 +104,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -151,6 +153,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -198,6 +201,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -242,6 +246,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -286,6 +291,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -336,6 +342,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -386,6 +393,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -436,6 +444,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -492,6 +501,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -551,6 +561,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -607,6 +618,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -654,6 +666,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -704,6 +717,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -751,6 +765,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -819,6 +834,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -866,6 +882,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -879,6 +896,9 @@
       </xs:attribute>
       <xs:attribute name="index" type="int6809">
         <xs:annotation><xs:documentation>index in the imageset, emitted as idx_&lt;name&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="grid" type="xs:string">
+        <xs:annotation><xs:documentation>tile size &lt;width&gt;x&lt;height&gt; : the png is a tileset, sliced into tiles named &lt;name&gt;_&lt;id&gt; in reading order, each compiled with the declared encoders</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -919,6 +939,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -966,6 +987,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1013,6 +1035,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1060,6 +1083,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1116,6 +1140,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1169,6 +1194,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1222,6 +1248,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1275,6 +1302,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1361,6 +1389,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1426,6 +1455,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1488,6 +1518,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1538,6 +1569,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1591,6 +1623,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1638,6 +1671,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1694,6 +1728,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1701,6 +1736,75 @@
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>target name</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- generate the page/address table of a tile index map, baked in a .static section -->
+  <xs:element name="tilemap">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="map" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>tile index .bin (leanscroll output), big endian, column major</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="label" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>label of the generated table</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="tiles" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>tile symbol stem : entries reference adr_&lt;tiles&gt;_&lt;id&gt;_&lt;variant&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="variant" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>compiled tile variant, ND0 for unshifted, ND1 for pre-shifted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="file" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>direntry holding the compiled tiles ; pages read from &lt;file&gt;$PAGE</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated source file of the table</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>section of the table, map.static if omitted ; must end with .static</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="bitdepth" type="int6809">
+        <xs:annotation><xs:documentation>bits per tile index in the map, 16 if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1741,6 +1845,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1791,6 +1896,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1841,6 +1947,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
@@ -1891,6 +1998,7 @@
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
         <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>

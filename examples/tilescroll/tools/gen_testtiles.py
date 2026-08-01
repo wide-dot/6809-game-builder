@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Generate the tile scroll example's tileset.
+"""Generate the tile scroll example's tileset, as one sheet.
 
-Not artwork : four 12x12 tiles built so that a wrong column, a wrong row or a
-missing one pixel shift is visible rather than plausible.
+Not artwork : a vertical strip of 12x12 tiles, the file shape leanscroll
+writes and gfxcomp's grid attribute slices. Tile ids follow reading order,
+top to bottom here.
 
-  tile0  flat, colour 1        — reads as a background
-  tile1  flat, colour 2        — the other background, so column parity shows
-  tile2  diagonal              — a shift or a mirror breaks the line across
+  tile 0  poison, solid colour 4 — index 0 means "draw nothing" to the
+          <tilemap> element (the v1 convention), so this tile must never
+          reach the screen ; a blue square showing up is a broken build
+  tile 1  flat, colour 1        — reads as a background
+  tile 2  flat, colour 8        — the other background, so column parity shows
+  tile 3  diagonal              — a shift or a mirror breaks the line across
                                  the tile boundary
-  tile3  framed with a corner  — asymmetric on both axes
+  tile 4  framed with a corner  — asymmetric on both axes
 """
 from PIL import Image
 
@@ -20,22 +24,30 @@ pal[0:3] = [204,0,255]
 for i,c in enumerate(rgb): pal[(i+1)*3:(i+1)*3+3] = list(c)
 
 S = 12
-def new(bg):
-    im = Image.new('P',(S,S),bg); im.putpalette(pal); return im
+sheet = Image.new('P', (S, S*5), 0)
+sheet.putpalette(pal)
+px = sheet.load()
 
-t = new(2); t.save('src/assets/tiles/tile0.png')          # colour 1, white
-t = new(9); t.save('src/assets/tiles/tile1.png')          # colour 8, grey
+def fill(t, colour):
+    for y in range(S):
+        for x in range(S):
+            px[x, t*S+y] = colour
 
-t = new(2); px = t.load()                                  # diagonal on white
-for i in range(S): px[i,i] = 3; px[S-1-i,i] = 5
-t.save('src/assets/tiles/tile2.png')
+fill(0, 5)                                                 # poison, blue
+fill(1, 2)                                                 # colour 1, white
+fill(2, 9)                                                 # colour 8, grey
 
-t = new(6); px = t.load()                                  # framed, one corner
+fill(3, 2)                                                 # diagonal on white
 for i in range(S):
-    px[i,0] = px[i,S-1] = px[0,i] = px[S-1,i] = 3
+    px[i, 3*S+i] = 3
+    px[S-1-i, 3*S+i] = 5
+
+fill(4, 6)                                                 # framed, one corner
+for i in range(S):
+    px[i, 4*S] = px[i, 4*S+S-1] = px[0, 4*S+i] = px[S-1, 4*S+i] = 3
 for y in range(1,4):
     for x in range(1,4):
-        if x+y < 5: px[x,y] = 1
-t.save('src/assets/tiles/tile3.png')
+        if x+y < 5: px[x, 4*S+y] = 1
 
-print("4 tuiles 12x12 ecrites")
+sheet.save('src/assets/tiles/tiles.png')
+print("tiles.png : strip de 5 tuiles 12x12 (0 = poison)")
