@@ -194,7 +194,7 @@ public final class Handlers {
 			.opt("symbol", STRING, "generated symbol name")
 			.opt("colors", INT, "number of colors")
 			.opt("offset", INT, "first color index")
-			.opt("mode", STRING, "output mode")
+			.opt("mode", STRING, "bin, and only as direntry content ; inside <lwasm> the table is always the exported form")
 			.opt("profile", STRING, "color profile"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")
@@ -234,6 +234,9 @@ public final class Handlers {
 		FILES.put("includebin", IncludeBinPlugin::getFile);
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
+		// also an object : inside <lwasm> a linkable table, as direntry content
+		// a loadable 32 byte file
+		FILES.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getFile);
 
 		// asset converters
 		OBJECTS.put("vgm2ymm", com.widedot.toolbox.audio.vgm2ymm.Vgm2YmmPlugin::getObject);

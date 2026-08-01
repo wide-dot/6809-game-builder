@@ -62,9 +62,32 @@ main
         std   Irq_user_routine
         jsr   IrqInit
         jsr   IrqSet50Hz
+
+        ; install the sprites' palette : Pal_current is a pointer, so there is
+        ; nothing to copy — clearing PalRefresh is what asks for the push
+        ldd   #Pal_sprites
+        std   Pal_current
+        clr   PalRefresh
         jsr   PalUpdateNow
         _gfxlock.init
         jsr   InitDrawSprites              ; camera offsets, required
+
+        ; Blank both screen buffers : what boot leaves in video memory is noise,
+        ; and it drowns the sprite the bench exists to show. The routine writes
+        ; through the data window, so the page has to be mounted there first,
+        ; and it blasts through S, so interrupts have to be off.
+        jsr   IrqOff
+        _ram.data.set #2                   ; screen buffer 0
+        ldx   #$0000                       ; colour 0, four pixels at a time
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+        _ram.data.set #3                   ; screen buffer 1
+        ldx   #$0000
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+        jsr   IrqOn
 
         lda   #$CA                         ; the game mode is running
         sta   $9C00
@@ -208,6 +231,7 @@ userIRQ
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
+        INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"

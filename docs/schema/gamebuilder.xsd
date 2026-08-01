@@ -1271,7 +1271,7 @@
         <xs:annotation><xs:documentation>first color index</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="mode" type="xs:string">
-        <xs:annotation><xs:documentation>output mode</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>bin, and only as direntry content ; inside &lt;lwasm&gt; the table is always the exported form</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation><xs:documentation>color profile</xs:documentation></xs:annotation>

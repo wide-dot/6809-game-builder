@@ -163,6 +163,17 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         encodeurs ajoutés au banc : **30/30 byte-identiques**. Tous les
         chemins de gfxcomp que le portage R-Type utilise sont désormais
         comparés à la v1, aucun ne diverge.
+  - [x] M6 (palette) — `<png2pal>` a maintenant ses deux chemins, validés avec
+        l'auteur : **FilePlugin** dans un `<lwasm>` (table liée, symbole
+        exporté) et **ObjectPlugin** en contenu de direntry (32 octets
+        chargeables, remplaçables par région). Ils coexistent parce que
+        `Pal_current` n'est qu'un pointeur. Le mode `obj` est retiré du chemin
+        objet : il y écrivait du texte assembleur sur la disquette, une
+        combinaison que rien n'utilisait et que personne n'aurait vue.
+        `examples/sprites` tourne avec la vraie palette de ses sprites, écran
+        nettoyé (`ClearInterlacedDataMemory` importé) — le sprite s'affiche
+        enfin avec ses couleurs. Piège consigné : la palette doit rester
+        adressable, `PalUpdateNow` s'exécutant sous IRQ.
   - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut

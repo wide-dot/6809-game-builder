@@ -29,6 +29,11 @@
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
+                        <!-- the sprites' own palette. It belongs to the game
+                             mode's unit rather than the sprites page: the
+                             runtime reads it through Pal_current under
+                             interrupt, so it has to stay addressable. -->
+                        <png2pal symbol="Pal_sprites" filename="src/assets/sprites/shell_0.png"/>
                     </lwasm>
                 </direntry>
 

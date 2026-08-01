@@ -195,6 +195,42 @@ The engine sizes nothing by itself. A game mode declares :
 `examples/sprites` is the smallest complete case : two PNGs, one object, the
 frame order above, and assertions at `$9C00`.
 
+### Palette
+
+The runtime reads the palette through a **pointer**, `Pal_current`, so nothing
+is copied — installing one is three instructions, v1's:
+
+```asm
+        ldd   #Pal_sprites
+        std   Pal_current
+        clr   PalRefresh          ; $FF nothing to do, 0 push it
+```
+
+`Pal_buffer` is not on that path: it is the scratch the fade object
+interpolates into, and it repoints `Pal_current` at itself while it works.
+
+`<png2pal>` produces the table two ways, and they coexist because
+`Pal_current` is only a pointer:
+
+```xml
+<!-- inside a <lwasm> unit : a linkable table, its label exported -->
+<png2pal symbol="Pal_sprites" filename="src/assets/sprites/shell_0.png"/>
+
+<!-- as direntry content : 32 loadable bytes, swappable per region -->
+<direntry name="assets.palettes.level1">
+    <png2pal mode="bin" filename="src/assets/level1/palette.png"/>
+</direntry>
+```
+
+`offset` defaults to 1 and that matters : colour 0 of a PNG is the transparent
+index, the drawing code stores `pixel - 1`, so palette entry 1 becomes hardware
+colour 0 and the chain lines up.
+
+**A palette reached through `Pal_current` has to sit in memory that is always
+addressable.** `PalUpdateNow` runs under interrupt, and it will read the
+pointer whatever page happens to be mounted — so generate it into the game
+mode's unit, or copy it into `Pal_buffer` while its page is up.
+
 ### Positions
 
 `x_pixel` / `y_pixel` are screen coordinates in a **shifted frame** :

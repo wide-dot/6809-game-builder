@@ -252,11 +252,25 @@ public class Png2PalPlugin {
 	/**
 	 * Handler for the <png2pal> element, registered by the builder.
 	 */
+	/**
+	 * Handler for &lt;png2pal&gt; used as the content of a direntry : the palette
+	 * becomes a loadable file of 32 bytes, and the game points Pal_current at
+	 * the region address it was loaded into.
+	 *
+	 * Only the binary form makes sense here. The source forms used to be
+	 * reachable through this path and would have written assembly text onto the
+	 * media ; inside a &lt;lwasm&gt; unit, use the element as a source instead.
+	 */
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 	  
 	  //read input xml
 	  String symbol = Attribute.getStringOpt(node, ctx, "symbol");
-	  String mode = Attribute.getString(node, ctx, "mode", Png2PalPlugin.OBJ);
+	  String mode = Attribute.getString(node, ctx, "mode", Png2PalPlugin.BIN);
+	  if (!Png2PalPlugin.BIN.equals(mode)) {
+		  throw new Exception("png2pal mode '" + mode + "' : a direntry holds data, not source. "
+		                    + "Put the element inside a <lwasm> unit to get a linkable table, "
+		                    + "or use mode bin here.");
+	  }
 	  Integer colors = Attribute.getInteger(node, ctx, "colors", 16);
 	  Integer offset = Attribute.getInteger(node, ctx, "offset", 1);
 	  String profile = Attribute.getString(node, ctx, "profile", "to");
@@ -273,5 +287,42 @@ public class Png2PalPlugin {
 	  if (gensource != null) gensource = ctx.path + File.separator + gensource;
 			byte[] data = Png2PalPlugin.run(symbol, mode, colors, offset, profile, filename, gensource);
 	  return new Binary(data);
+	}
+
+	/**
+	 * Handler for &lt;png2pal&gt; inside a &lt;lwasm&gt; unit : the palette is
+	 * assembled with the code that uses it and its label is exported, so the
+	 * load time linker resolves it like any other symbol.
+	 *
+	 * The runtime reads the table through the Pal_current pointer, and
+	 * PalUpdateNow runs under interrupt — so a palette reached that way has to
+	 * sit in memory that is always addressable. Generating it into the game
+	 * mode's own unit is the simple answer ; a palette living in a paged region
+	 * has to be copied into Pal_buffer while its page is mounted.
+	 */
+	public static File getFile(ImmutableNode node, BuildContext ctx) throws Exception {
+
+	  String symbol = Attribute.getStringOpt(node, ctx, "symbol");
+	  Integer colors = Attribute.getInteger(node, ctx, "colors", 16);
+	  Integer offset = Attribute.getInteger(node, ctx, "offset", 1);
+	  String profile = Attribute.getString(node, ctx, "profile", "to");
+	  String filename = Attribute.getStringOpt(node, ctx, "filename");
+	  String gensource = Attribute.getStringOpt(node, ctx, "gensource");
+
+	  if (filename == null || filename.equals("")) {
+		  throw new Exception("An input filename should be provided for png2pal!");
+	  }
+	  filename = ctx.path + File.separator + filename;
+
+	  if (gensource == null || gensource.equals("")) {
+		  gensource = ctx.settings.get("generate.unnamedFiles.dir") + File.separator
+		            + (symbol != null ? symbol : FileUtil.removeExtension(new File(filename).getName()))
+		            + ".palette.asm";
+	  }
+	  gensource = ctx.path + File.separator + gensource;
+
+	  // the exported form : one label the rest of the game can link against
+	  Png2PalPlugin.run(symbol, Png2PalPlugin.OBJ, colors, offset, profile, filename, gensource);
+	  return new File(gensource);
 	}
 }
