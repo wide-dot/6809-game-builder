@@ -147,9 +147,19 @@ sous toje (16/16), tests JUnit verts, CI master verte.
         dans le builder (`<animation>`), palette depuis PNG (png2pal existe),
         images plein écran ZX0, portage des deux objets et de leur dispatch
         `routine,u`.
-  - [ ] M4 (suite) — porter le pré-décalage `shift` façon v1 (après séparation
-        des plans, sur la ligne remplie, avec bouclage, métadonnées de l'image
-        non décalée) ; banc runtime vs runtime « plein » : même scène buildée
+  - [x] M4 (pré-décalage) — l'historique a montré que le portage fidèle avait
+        existé (`ed5f496`, 11/10/2022) et qu'il avait été emporté une semaine
+        plus tard par le refactor « generic img transformer », qui rangeait
+        miroir et décalage sous une interface unique typée sur BufferedImage.
+        Le miroir y tenait, le décalage non. Corrigé en séparant les deux
+        espaces dans le typage (`ImageTransform` / `PlaneTransform`) : un
+        transform d'écran ne compile plus sur une image source. Corps repris
+        du commit d'origine. Banc étendu aux variantes décalées : **19/19,
+        toutes byte-identiques** (shell_0 NB1 = 883 octets des deux côtés).
+        Invariant « une variante décalée déclare la géométrie de la non
+        décalée » verrouillé par test — c'est lui qui protège le x1/y1 partagé
+        du groupe de miroir.
+  - [ ] M4 (suite) — banc runtime vs runtime « plein » : même scène buildée
         par les deux chaînes et VRAM comparée sous toje (nécessite un projet
         de jeu v1 minimal) ; palette du banc (couleurs par défaut
         aujourd'hui) ; variantes miroir/décalage.

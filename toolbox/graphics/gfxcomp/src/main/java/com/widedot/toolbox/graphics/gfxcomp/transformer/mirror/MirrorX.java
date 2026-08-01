@@ -4,11 +4,12 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 
-import com.widedot.toolbox.graphics.gfxcomp.transformer.Transformer;
+import com.widedot.toolbox.graphics.gfxcomp.transformer.ImageTransform;
 
-public class MirrorX implements Transformer{
+public class MirrorX implements ImageTransform{
 
-	public BufferedImage process(BufferedImage image, Integer...integers) {
+	@Override
+	public BufferedImage apply(BufferedImage image) {
 		AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
 		tx.translate(-image.getWidth(null), 0);
 		AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);

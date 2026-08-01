@@ -73,6 +73,36 @@ public class ImageSetIndexTest {
 		assertTrue(asm.contains("$07"), asm);
 	}
 
+	/**
+	 * The imageset keeps one x1/y1 per mirror group, shared by every variant in
+	 * it, and lets a shifted variant write them. So a shift must not move the
+	 * geometry — which holds only because the planing measures it before the
+	 * planes are shifted. It is the invariant the pipeline order exists for.
+	 */
+	@Test
+	void aShiftedVariantDeclaresTheGeometryOfTheUnshiftedOne(@TempDir Path dir) throws Exception {
+		File png = sprite(dir, "hero");
+		Image flat = new Image("hero", 0, png.getAbsolutePath(),
+		                       Image.TYPE_BDRAW, Mirror.NONE, 0, Image.POSITION_CENTER);
+		Image shifted = new Image("hero", 0, png.getAbsolutePath(),
+		                          Image.TYPE_BDRAW, Mirror.NONE, 1, Image.POSITION_CENTER);
+
+		assertEquals("NB0", flat.getVariant());
+		assertEquals("NB1", shifted.getVariant());
+		assertEquals(flat.x1_offset, shifted.x1_offset, "x1_offset");
+		assertEquals(flat.y1_offset, shifted.y1_offset, "y1_offset");
+		assertEquals(flat.x_size, shifted.x_size, "x_size");
+		assertEquals(flat.y_size, shifted.y_size, "y_size");
+		assertEquals(flat.getCenterOffset(), shifted.getCenterOffset(), "center_offset");
+	}
+
+	@Test
+	void aWiderShiftIsRefused(@TempDir Path dir) throws Exception {
+		File png = sprite(dir, "hero");
+		assertThrows(Exception.class, () -> new Image("hero", 0, png.getAbsolutePath(),
+		                                              Image.TYPE_BDRAW, Mirror.NONE, 2, Image.POSITION_CENTER));
+	}
+
 	@Test
 	void aMissingImageFileIsAnError(@TempDir Path dir) {
 		assertThrows(Exception.class, () -> new Image("ghost", 0, dir.resolve("nope.png").toString(),

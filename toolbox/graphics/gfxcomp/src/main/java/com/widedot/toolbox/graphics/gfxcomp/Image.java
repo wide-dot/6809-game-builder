@@ -148,19 +148,15 @@ public class Image {
 			}
 			checkPixelRange(imageFile);
 
-			if (shift != 0) {
-				// v1 shifts after the plane split, on the padded 160 pixel line,
-				// with wrap around, and keeps the metadata of the unshifted
-				// image. Here the shift is an AffineTransform on the source,
-				// which returns an image one pixel wider while `width` above
-				// keeps the old value — every line then reads one pixel further
-				// off than the last. Refuse rather than emit a garbled sprite.
-				throw new Exception("shift " + shift + " on " + imageFile
-				                    + " : pre-shifted variants are not ported yet, see sprites.md");
-			}
-
+			// The pipeline, in the order the two spaces impose : the mirror is
+			// a source transform, the planing measures the geometry, and the
+			// pre-shift rewrites the planes. Running the shift last is what
+			// makes a shifted variant declare the geometry of the unshifted
+			// one, which the imageset needs — it keeps a single x1/y1 for the
+			// whole mirror group.
 			image = Mirror.transform(image, mirror);
 			prepareImages();
+			Shift.transform(pixels, data, height, shift);
 	}
 	
 	// TODO - create n method as transformers

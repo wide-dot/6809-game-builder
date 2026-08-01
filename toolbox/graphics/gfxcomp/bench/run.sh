@@ -36,9 +36,12 @@ MAXTRIES="${MAXTRIES:-500000}"
 
 # sprites of increasing size, one per encoder the runtime uses
 CASES="${CASES:-enemies/shell/images/shell_0.png:NB0
+enemies/shell/images/shell_0.png:NB1
 enemies/shell/images/shell_3.png:NB0
 test/ball/images/ball.png:ND0
-test/launcher/images/launcher.png:NB0}"
+test/ball/images/ball.png:ND1
+test/launcher/images/launcher.png:NB0
+test/launcher/images/launcher.png:NB1}"
 
 rm -rf "$OUT"; mkdir -p "$OUT/work"
 javac -cp "$V1JAR" -d "$OUT/work" "$(dirname "$0")/V1Harness.java"
@@ -48,24 +51,25 @@ for case in $CASES; do
     png="$PNG_DIR/${case%%:*}"; variant="${case##*:}"
     [ -f "$png" ] || { echo "SKIP  $case (no such png)"; continue; }
     name=$(basename "$png" .png)
+    work="$name-$variant"
     enc=$(echo "$variant" | cut -c2)
     case "$enc" in B) encoder=bdraw;; D) encoder=draw;; *) echo "unknown variant $variant"; exit 1;; esac
     mirror=none; shift=$(echo "$variant" | cut -c3)
 
-    mkdir -p "$OUT/$name/v2"
+    mkdir -p "$OUT/$work/v2"
     # gfxcomp resolves image paths against the configuration file
-    cp "$png" "$OUT/$name/$name.png"
+    cp "$png" "$OUT/$work/$name.png"
 
     # v1, sampled : the same generator run several times
     i=1
     while [ "$i" -le "$SAMPLES" ]; do
-        mkdir -p "$OUT/$name/v1_$i/debug"
+        mkdir -p "$OUT/$work/v1_$i/debug"
         (cd "$V1" && java -cp "$V1JAR:$OUT/work" V1Harness "$png" "$name" "$variant" \
-            "$OUT/$name/v1_$i" "$LWASM" "$MAXTRIES" 2>/dev/null | grep '^x1=' > "$OUT/$name/v1_$i/geometry.txt")
+            "$OUT/$work/v1_$i" "$LWASM" "$MAXTRIES" 2>/dev/null | grep '^x1=' > "$OUT/$work/v1_$i/geometry.txt")
         i=$((i+1))
     done
 
-    cat > "$OUT/$name/gfxcomp.xml" <<EOF
+    cat > "$OUT/$work/gfxcomp.xml" <<EOF
 <configuration>
     <process dirOut="v2">
         <memory linearBits="4" planarBits="8" lineBytes="40" nbPlanes="2"/>
@@ -77,19 +81,19 @@ for case in $CASES; do
     </process>
 </configuration>
 EOF
-    (cd "$OUT/$name" && java -cp "$ROOT/repo/*:$GFXJAR" \
+    (cd "$OUT/$work" && java -cp "$ROOT/repo/*:$GFXJAR" \
         com.widedot.toolbox.graphics.gfxcomp.MainCommand -f gfxcomp.xml >/dev/null 2>&1) \
         || { echo "FAIL  $name ($variant) : gfxcomp exited non zero"; fail=$((fail+1)); continue; }
 
     # the geometry must match whatever the search picked
-    geom1=$(cat "$OUT/$name/v1_1/geometry.txt")
-    geomN=$(cat "$OUT/$name"/v1_*/geometry.txt | sort -u | wc -l | tr -d ' ')
+    geom1=$(cat "$OUT/$work/v1_1/geometry.txt")
+    geomN=$(cat "$OUT/$work"/v1_*/geometry.txt | sort -u | wc -l | tr -d ' ')
     [ "$geomN" = "1" ] || echo "WARN  $name : v1 geometry itself varies across runs"
 
     # the imageset index is the contract the runtime reads : same geometry on
     # both sides, and a cell count that follows the tracked margin deviation
-    if [ -f "$OUT/$name/v2/index.asm" ]; then
-        if python3 "$(dirname "$0")/checkindex.py" "$OUT/$name/v2/index.asm" "$name" "$geom1"; then
+    if [ -f "$OUT/$work/v2/index.asm" ]; then
+        if python3 "$(dirname "$0")/checkindex.py" "$OUT/$work/v2/index.asm" "$name" "$geom1"; then
             pass=$((pass+1))
         else
             fail=$((fail+1))
@@ -98,36 +102,36 @@ EOF
 
     for part in "" _erase; do
         v1part=$(echo "$part" | sed 's/_erase/_Erase/')
-        v2asm="$OUT/$name/v2/${name}_${variant}${part}.asm"
-        [ -f "$OUT/$name/v1_1/${name}_0_${variant}${v1part}.asm" ] || continue
+        v2asm="$OUT/$work/v2/${name}_${variant}${part}.asm"
+        [ -f "$OUT/$work/v1_1/${name}_0_${variant}${v1part}.asm" ] || continue
         [ -f "$v2asm" ] || { echo "FAIL  $name$part : gfxcomp produced nothing"; fail=$((fail+1)); continue; }
 
         # same ORG as v1, then assemble with the same options
-        { echo '	ORG $A000'; cat "$v2asm"; } > "$OUT/$name/v2${part}_org.asm"
-        (cd "$V1" && "$LWASM" "$OUT/$name/v2${part}_org.asm" --output="$OUT/$name/v2${part}.bin" \
+        { echo '	ORG $A000'; cat "$v2asm"; } > "$OUT/$work/v2${part}_org.asm"
+        (cd "$V1" && "$LWASM" "$OUT/$work/v2${part}_org.asm" --output="$OUT/$work/v2${part}.bin" \
             --6809 --includedir=./ --raw --pragma=undefextern --includedir=. --includedir=../.. >/dev/null 2>&1)
-        v2size=$(wc -c < "$OUT/$name/v2${part}.bin" | tr -d ' ')
+        v2size=$(wc -c < "$OUT/$work/v2${part}.bin" | tr -d ' ')
 
         # is v1 reproducible on this sprite ?
         stable=1; min=; max=
         i=1
         while [ "$i" -le "$SAMPLES" ]; do
-            b="$OUT/$name/v1_$i/${name}_0_${variant}${v1part}.bin"
+            b="$OUT/$work/v1_$i/${name}_0_${variant}${v1part}.bin"
             s=$(wc -c < "$b" | tr -d ' ')
             [ -z "$min" ] && { min=$s; max=$s; }
             [ "$s" -lt "$min" ] && min=$s
             [ "$s" -gt "$max" ] && max=$s
-            cmp -s "$b" "$OUT/$name/v1_1/${name}_0_${variant}${v1part}.bin" || stable=0
+            cmp -s "$b" "$OUT/$work/v1_1/${name}_0_${variant}${v1part}.bin" || stable=0
             i=$((i+1))
         done
 
         if [ "$stable" = "1" ]; then
-            if cmp -s "$OUT/$name/v2${part}.bin" "$OUT/$name/v1_1/${name}_0_${variant}${v1part}.bin"; then
+            if cmp -s "$OUT/$work/v2${part}.bin" "$OUT/$work/v1_1/${name}_0_${variant}${v1part}.bin"; then
                 echo "PASS  $name$part ($variant) : IDENTICAL, $v2size bytes (v1 deterministic over $SAMPLES runs)"
                 pass=$((pass+1))
             else
                 echo "FAIL  $name$part ($variant) : v1 is deterministic here but gfxcomp differs"
-                diff "$OUT/$name/v1_1/${name}_0_${variant}${v1part}.asm" "$v2asm" | head -20
+                diff "$OUT/$work/v1_1/${name}_0_${variant}${v1part}.asm" "$v2asm" | head -20
                 fail=$((fail+1))
             fi
         else

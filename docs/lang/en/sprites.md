@@ -68,12 +68,9 @@ One image therefore takes at most one of the three, and declaring two is an
 error rather than a silent drop.
 
 `mirror` is `none`, `x`, `y` or `xy` ; `shift` pre-shifts the image by whole
-pixels so odd positions cost nothing at run time. **`shift` is refused for
-now**: v1 shifts after the plane split, on the padded 160 pixel line and with
-wrap around, keeping the unshifted image's metadata, while the port shifts the
-source PNG through an AffineTransform — which returns an image one pixel wider
-and leaves every scanline reading further off than the last. Rather than emit a
-garbled sprite the compiler stops; porting v1's version is what is missing. Each combination is a
+pixels so odd positions cost nothing at run time — the runtime picks between
+the plain and the pre-shifted variant on the parity of the position, so both
+are usually compiled together. Each combination is a
 **variant**, named `<mirror><encoder><shift>` — `NB0` is unmirrored bdraw
 unshifted. That name, v1's, is what the generated symbols carry :
 `adr_shell_NB0`, `adr_shell_NB0_erase`.
@@ -217,6 +214,31 @@ A `bdraw` sprite saves what it covers before drawing, into cells allocated by
 the save in reverse and releases the cells. Allocation and release balance out
 over a frame : the bench watches the head of the free cell list, which is what
 a leak would move.
+
+## Two spaces, two kinds of transform
+
+An image goes through **mirror, then planing, then pre-shift**, and the order
+is not a preference : the three steps do not live in the same space.
+
+The mirror is a source transform — pixels in, pixels out — and the planing that
+follows measures everything from its result. The pre-shift is a screen
+transform : the two planes hold the even and the odd pixels of a line, so
+moving the image across by one pixel means walking data out of one plane into
+the other with a carry into the next byte, and wrapping what leaves the line.
+It has no meaning on the source image.
+
+The code says so. `ImageTransform` and `PlaneTransform` are separate
+interfaces, typed by what they act on, so a screen transform cannot be applied
+to a BufferedImage — it does not compile. They were one interface once, typed
+over BufferedImage, and the pre-shift was written as a translate on the source
+because nothing said it could not be.
+
+The order also carries an invariant the imageset depends on: **a shifted
+variant declares the geometry of the unshifted one**. The index keeps a single
+x1/y1 per mirror group, shared by every variant in it, and lets the shifted one
+write them — so a shift that moved the bounding box would corrupt the group.
+Measuring during the planing, before the shift, makes that true by
+construction rather than by care. A test pins it.
 
 ## Reproducible builds
 

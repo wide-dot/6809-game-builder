@@ -3,7 +3,7 @@ package com.widedot.toolbox.graphics.gfxcomp.transformer.mirror;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
-import com.widedot.toolbox.graphics.gfxcomp.transformer.Transformer;
+import com.widedot.toolbox.graphics.gfxcomp.transformer.ImageTransform;
 
 public class Mirror {
 
@@ -34,10 +34,10 @@ public class Mirror {
 		return id.get(key);
 	}
 
-	private static final Transformer[] snippets = {new MirrorNone(), new MirrorX(), new MirrorY(), new MirrorXY()};
+	private static final ImageTransform[] snippets = {new MirrorNone(), new MirrorX(), new MirrorY(), new MirrorXY()};
 	
 	public static BufferedImage transform(BufferedImage image, Integer i) {
-		return snippets[i].process(image);
+		return snippets[i].apply(image);
 	}
 	
 }

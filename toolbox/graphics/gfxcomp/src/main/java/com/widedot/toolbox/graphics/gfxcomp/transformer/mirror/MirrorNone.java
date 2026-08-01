@@ -2,11 +2,12 @@ package com.widedot.toolbox.graphics.gfxcomp.transformer.mirror;
 
 import java.awt.image.BufferedImage;
 
-import com.widedot.toolbox.graphics.gfxcomp.transformer.Transformer;
+import com.widedot.toolbox.graphics.gfxcomp.transformer.ImageTransform;
 
-public class MirrorNone implements Transformer{
+public class MirrorNone implements ImageTransform{
 
-	public BufferedImage process(BufferedImage image, Integer...integers) {
+	@Override
+	public BufferedImage apply(BufferedImage image) {
 		return image;
 	}
 

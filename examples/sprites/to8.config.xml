@@ -42,6 +42,9 @@
                                  genindex="gen/assets/sprites/index.asm" file="assets.sprites">
                             <image name="shell" filename="src/assets/sprites/shell_0.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <!-- the pre-shifted variant : the runtime picks
+                                     between the two on the position's parity -->
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="launcher" filename="src/assets/sprites/launcher.png" index="1">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
