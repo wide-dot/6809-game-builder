@@ -38,8 +38,7 @@ loop@              lsla                ; get next bit
                    lsla                ; get next bit
                    bcc loop@           ; loop until done
                    bne done@           ; is bit stream empty? no, branch
-; a long branch : extended addressing put zx0_reload out of short reach
-                   lbsr zx0_reload     ; process rest of elias until done
+                   bsr zx0_reload      ; process rest of elias until done
 done@              equ *
                    endm
 
@@ -72,7 +71,7 @@ done@              equ *
 ; register that no longer needs saving and not saving one that does — CC is
 ; modified by orcc below whenever interrupts are being disabled.
 zx0_decompress
-                   pshs cc             ; save registers
+                   pshs cc,dp          ; save registers
 
                    ifndef ZX0_DISABLE_DISABLING_INTERRUPTS
                    orcc #$50           ; disable interrupts
@@ -83,37 +82,50 @@ zx0_decompress
                    std >zx0_offset+2
                    endc
 
-; V2-DEVIATION: the routine no longer reaches its self modified bytes through
-; the direct page, and so no longer cares where it is loaded.
+; V2-DEVIATION: the two length registers moved out of the code and into the
+; direct page ; the routine no longer constrains its own placement.
 ;
-; The original padded onto a 256 byte boundary — up to 255 bytes, 128 on
-; average — so that `zx0_dp equ */256` would name the page holding those bytes
-; and DP could address them in two. That value is meaningless in a relocatable
-; object, where * is relative to the section, which is what kept compiled
-; sprites from ever reaching this decoder.
+; The original padded onto a 256 byte boundary so that a handful of self
+; modified bytes would share one page and could be reached through DP in two
+; bytes each. That padding is meaningless in a relocatable object, where * is
+; relative to the section and names a page the code will not be at — which is
+; what kept compiled sprites from ever reaching this decoder.
 ;
-; Deriving DP from the program counter instead does work, but only moves the
-; constraint: the bytes still have to share one page, and nothing in a
-; relocatable unit can promise that. Reaching them extended removes the
-; constraint outright. It costs one byte and one cycle per access — twelve of
-; them, so 12 bytes and roughly 6% of decompression time.
+; The includer now says where those bytes live, through ZX0_DP — a full
+; address, page included. The routine sets DP from it and puts the caller's
+; back on exit, so it does not matter which direct page the caller was on.
+; That is not a detail : the bootloader runs on the monitor page at boot but
+; on the engine page when a game mode asks it to load a scene, and the same
+; code serves both. Each caller gets its own four bytes ; the loader and the
+; game mode never share one :
 ;
-; That price is paid where it is cheapest. The two callers are the bootloader,
-; which decompresses while a scene loads and is in no hurry, and compiled
-; sprite drawing, which is relocatable and had no fast path to lose. What it
-; buys is that neither one can ever be broken by where the linker put it.
+;   bootloader : ZX0_DP is $609C, in the monitor page
+;   game mode  : ZX0_DP is dp_engine, in the engine page
+;
+; zx0_offset is the exception and stays self modified. It computes Y = U +
+; a 16 bit offset, which on this CPU needs D — and A carries the bit stream
+; for the whole routine. Spilling and restoring it would cost more than the
+; addressing saves. Its two writes are extended, and extended reaches any
+; address, so that site constrains nothing either.
+                   ifndef ZX0_DP
+                   error "zx0_decompress : define ZX0_DP with four free bytes in the direct page the caller runs on, before including this file"
+                   endc
+zx0.len            equ ZX0_DP          ; word - match/literal length
+zx0.savex          equ ZX0_DP+2        ; word - caller's X across the copy loop
 zx0_start
+                   lda #ZX0_DP/256     ; the page ZX0_DP names, as a constant :
+                   tfr a,dp            ; no dependency on the caller's own DP
                    lda #$80            ; init bit stream
                    bra zx0_literals    ; start with literals
 
-zx0_eof            puls cc,pc          ; restore registers and exit
+zx0_eof            puls cc,dp,pc       ; restore registers and exit
 
 
 ; 1 - copy from new offset (repeat N bytes from new offset)
 zx0_new_offset     ldb #1              ; set elias = 1 (not necessary to set MSB)
                    zx0_get_1bit        ; obtain MSB offset
                    zx0_elias_bt        ;  "      "   "
-                   clr zx0_code+1      ; set MSB elias for below
+                   clr <zx0.len        ; set MSB elias for below
                    negb                ; adjust for negative offset (set carry for RORB below)
                    beq zx0_eof         ; eof? (length = 256) if so exit
                    rorb                ; last offset bit becomes first length bit
@@ -124,27 +136,27 @@ zx0_new_offset     ldb #1              ; set elias = 1 (not necessary to set MSB
                    ldb #1              ; set elias = 1
                    zx0_elias_bt        ; get elias but skip first bit
 skip@              incb                ; elias = elias + 1
-                   stb zx0_code+2      ;  " "
+                   stb <zx0.len+1      ;  " "
                    bne zx0_copy        ;  " "
-                   inc zx0_code+1      ;  " "
-zx0_copy           stx zx0_save_x+1    ; save reg X
-zx0_code           ldx #$ffff          ; setup length
+                   inc <zx0.len        ;  " "
+zx0_copy           stx <zx0.savex      ; save reg X
+                   ldx <zx0.len        ; setup length
 zx0_offset         leay >$ffff,u       ; calculate offset address
 loop@              ldb ,y+             ; copy match
                    stb ,u+             ;  "    "
                    leax -1,x           ; decrement loop counter
                    bne loop@           ; loop until done
-zx0_save_x         ldx #$ffff          ; restore reg X
+                   ldx <zx0.savex      ; restore reg X
                    lsla                ; get next bit
                    bcs zx0_new_offset  ; branch if next block is new offset
 
 ; 0 - literal (copy next N bytes from compressed data)
 zx0_literals       ldb #1              ; set elias = 1
-                   clr zx0_code+1      ;  "    "
+                   clr <zx0.len        ;  "    "
                    zx0_get_1bit        ; obtain length
                    zx0_elias_bt        ;  "      "
-                   stb zx0_code+2      ; save LSB elias
-                   ldy zx0_code+1      ; setup length
+                   stb <zx0.len+1      ; save LSB elias
+                   ldy <zx0.len        ; setup length
 loop@              ldb ,x+             ; copy literals
                    stb ,u+             ;  "    "
                    leay -1,y           ; decrement loop counter
@@ -154,10 +166,10 @@ loop@              ldb ,x+             ; copy literals
 
 ; 0 - copy from last offset (repeat N bytes from last offset)
                    ldb #1              ; set elias = 1
-                   clr zx0_code+1      ;  "    "
+                   clr <zx0.len        ;  "    "
                    zx0_get_1bit        ; obtain length
                    zx0_elias_bt        ;  "      "
-                   stb zx0_code+2      ; save LSB elias
+                   stb <zx0.len+1      ; save LSB elias
                    bra zx0_copy        ; go copy last offset block
 
 ; interlaced elias gamma coding
@@ -180,7 +192,7 @@ zx0_reload         lda ,x+             ; load another group of 8 bits
 ; long elias gamma coding
 loop@              lsla                ; get next bit
                    rolb                ; rotate bit into elias value
-                   rol zx0_code+1      ;  "      "   "    "     "
+                   rol <zx0.len        ;  "      "   "    "     "
                    lsla                ; is bit stream empty?
                    bne skip@           ; no, branch
                    lda ,x+             ; reload bit stream

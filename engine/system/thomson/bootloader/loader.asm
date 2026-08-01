@@ -149,6 +149,18 @@ loader.scene.loadDefault
         ldb   #loader.DEFAULT_SCENE_EXEC_PAGE
         ldu   #loader.DEFAULT_SCENE_EXEC_ADDR
         jsr   ram.set
+
+        ; Hand over to the game mode on the engine's terms, not the loader's.
+        ; The loader runs on the monitor's direct page ($60) because that is
+        ; where the disk registers live ; the engine's globals are reached
+        ; through DP too, from its own page, and every '<glb_...' in the
+        ; runtime assumes it. Without this switch a game mode reads and writes
+        ; its globals inside the monitor page, which works only for as long as
+        ; nothing else there moves — a scene load writes $60DC, which is
+        ; glb_camera_x_offset's offset.
+        lds   #glb_system_stack            ; the loader's stack ends here
+        lda   #dp/256
+        tfr   a,dp
         jmp   loader.DEFAULT_SCENE_EXEC_ADDR
 
 
@@ -410,7 +422,20 @@ loader.scene.apply.type11
 ;---------------------------------------
 ; Load directory entries
 ;---------------------------------------
+; The monitor's disk and display routines run on their own direct page. The
+; body below reads sectors and prints the "insert disk" prompt, and used to
+; get away with the caller's DP only because nothing ever set it to anything
+; else — loader.file.loadByPtr was the one place that did this properly.
 loader.dir.load
+        pshs  dp,a                ; caller's DP, and the disk id it passed
+        lda   #map.REG.DP
+        tfr   a,dp
+        puls  a                   ; the disk id back
+        jsr   loader.dir.load.do
+        puls  dp
+        rts
+
+loader.dir.load.do
         sta   >diskId             ; Save desired directory id for later check
         ldu   >loader.dir
         beq   >
@@ -670,6 +695,13 @@ loader.file.decompress
         jsr   tfrxua
 @rts    puls  d,x,y,u,pc
 
+; Four bytes of the monitor page, which is the direct page the loader runs on.
+; $609C..$609F is never named by the monitor ROM (monitor1 + monitor2), and a
+; distinctive pattern written there survives a full boot, directory load and
+; scene load, on floppy and on SDDrive alike. $60A0..$60A7 is left as margin.
+; This is the loader's own four bytes : the game mode's copy of the decoder
+; uses a different ZX0_DP, in a different page.
+ZX0_DP equ $609C
  INCLUDE "engine/compression/zx0/zx0_6809_mega.asm"
  SETDP $ff
  

@@ -372,9 +372,12 @@ which removes the constraint rather than checking it. Twelve accesses, so
 twelve bytes and about 6% of decompression time, and `bsr zx0_reload` had to
 become `lbsr` once the routine grew.
 
-Nothing in the routine touches DP any more, so it no longer saves it either:
-the upstream `ZX0_DISABLE_SAVE_REGS` option is gone with it, and CC — which
-`orcc` does modify whenever interrupts are being disabled — is always saved.
+The two length registers moved out of the code and into the direct page, named
+by `ZX0_DP` at the include site — see [direct-page.md](direct-page.md), which
+also explains why the routine sets DP itself rather than inheriting it.
+`zx0_offset` is the exception: it computes `Y = U + offset16`, which needs D,
+and A carries the bit stream, so it stays self modified with extended writes —
+extended reaches any address, so it constrains nothing either.
 
 That price lands where it is cheapest. The two callers are the bootloader,
 which decompresses while a scene loads and is in no hurry, and compiled sprite

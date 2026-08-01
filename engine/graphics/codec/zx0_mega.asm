@@ -21,10 +21,18 @@ zx0_6809_mega_wrap
 ; SETDP, so plain would assemble extended. Forcing direct emits v1's bytes.
 ;
 ; V2-DEVIATION: v1 padded to the next page here, because the decompressor read
-; its self modified bytes through a DP fixed at assembly time. It now derives
-; that page from the program counter, so it lands wherever it lands and the
-; builder checks the span. Dropped with it: the trailing 'setdp dp/256' that
-; only existed to undo the decompressor's own — there is no longer one to undo.
+; its self modified bytes through a DP fixed at assembly time. Those bytes now
+; live in the direct page the caller already runs on, named by ZX0_DP below,
+; so the padding is gone and so is the trailing 'setdp dp/256' that only
+; existed to undo the decompressor's own.
+
+; Four bytes of the engine's scratch. Every dp_engine user starts at +0, but
+; none of them keeps those bytes across a compiled sprite call : the ones that
+; call a draw routine (BuildSprites) rewrite them per sprite, and the sprite
+; pack this codec serves reaches its draw routine through the object, not
+; through DP. Games that hold a counter here across a draw — r-type's hud and
+; text do — must not draw a compressed image from that loop.
+ZX0_DP equ dp_engine
 
 ZX0_DISABLE_DISABLING_INTERRUPTS equ 1
         INCLUDE "./engine/compression/zx0/zx0_6809_mega.asm"

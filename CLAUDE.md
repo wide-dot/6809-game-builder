@@ -472,6 +472,18 @@ Ordre de migration suggéré (dépendances croissantes) :
 Non requis pour R-Type minimal : MUCOM88/YM2608, MPLUS, MEA8000, SMPS/PCM/DAC,
 fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un objet projet).
 
+## Page directe : contrat DP (01/08/2026)
+
+Deux pages en jeu — `$60` (moniteur, registres disque) et `$9F` (globales
+engine). Le loader démarre sur la première et bascule sur la seconde juste
+avant de lancer le game mode ; à l'inverse, ses points d'entrée appelés *depuis*
+un game mode reposent DP sur `$60` le temps de parler au moniteur. **Ces deux
+bascules manquaient et se masquaient mutuellement** : sans la première, un game
+mode lisait ses globales dans la page moniteur (un chargement de scène écrit
+`$60DC`, l'offset de `glb_camera_x_offset`) ; en corrigeant la première seule,
+le loader se bloque à sa première invite. Détail, cartographie de la page `$60`
+et méthode de choix des octets : [`direct-page.md`](docs/lang/en/direct-page.md).
+
 ## Dettes / pièges connus
 
 - `LwAssembler.java` : nom `lwasm.exe` codé en dur (pas de détection d'OS) ; binaires
