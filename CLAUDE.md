@@ -503,8 +503,9 @@ Ordre de migration suggéré (dépendances croissantes) :
    entre stages interchangeables (le concept groups d'origine). Critère
    d'acceptation : banc à deux stages synthétiques (échange, re-link, état
    persistant, checkpoint sans disque). Les mains v1 02..08 sont des copies
-   figées du 1 — seuls les LevelInit/collisions 01..04 sont des points de
-   données par-stage. Analyse complète :
+   figées du 1, mais les DONNÉES par-stage existent en vrai : tilemaps 02..08,
+   waves 01..08, collisions 1..3+ — les générateurs se conçoivent contre elles,
+   seule la découpe du résident est à l'aveugle. Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
 8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
    les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.

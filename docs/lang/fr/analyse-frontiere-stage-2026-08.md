@@ -6,14 +6,19 @@ et le moteur qu'il inclut. Objectif énoncé par l'auteur : garder en place les
 ressources communes à tous les stages, ne charger par stage que le main
 spécifique, la map, la wave et les ennemis.
 
-Contrainte assumée : **on conçoit à l'aveugle** — les game modes 02..08 de la
-v1 sont des copies figées du stage 1 à un instant t, sans spécialisation
-réelle. Les seuls points de données par-stage authentiques sont les
-`LevelInit` et les unités de collision des niveaux 01..04 (map, largeur,
-paramètres de scroll). Le reste se déduit du niveau 1 seul, et la parade est
-double : une frontière **réversible** (déplacer une routine d'un côté à
-l'autre = déplacer un include, relinker), et un **banc à deux stages
-synthétiques** comme critère d'acceptation avant tout vrai stage 2.
+Contrainte assumée, mais **circonscrite** : les *mains* des game modes 02..08
+sont des copies figées du stage 1 — c'est la structure résidente qu'on conçoit
+à l'aveugle. Les **données** par-stage, elles, existent en plusieurs
+exemplaires réels : tilemaps paire/impaire des niveaux 02..08
+(`objects/levels/NN/obj.asm` + `obj_s.asm`), waves des huit niveaux
+(`objects/levels/NN/object-wave/`), maps de collision des niveaux 1..3+, et
+les `LevelInit` (largeur, paramètres de scroll). Conséquence : les
+générateurs du pipeline — map, wave, terrain — se conçoivent contre 7-8
+instances réelles, pas à l'aveugle. L'aveugle ne porte que sur la découpe du
+résident, et sa parade est double : une frontière **réversible** (déplacer
+une routine d'un côté à l'autre = déplacer un include, relinker), et un
+**banc à deux stages synthétiques** comme critère d'acceptation avant tout
+vrai stage 2 jouable.
 
 ## Le principe qui rend la frontière trouvable
 
