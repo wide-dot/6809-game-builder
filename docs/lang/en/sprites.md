@@ -79,6 +79,13 @@ plane, whatever the image's own width.
 Declare them full width. A narrow compressed image assembles, links and draws
 without complaining, and quietly wipes the whole lines it sits on.
 
+That property is read from the encoder, not from a screenshot. An earlier
+version of this note leaned on how a narrow band *looked* on screen, and that
+evidence was worthless: the bench was not switching the machine into 160x200
+16 colours, so everything it drew was being read back as the boot mode,
+320x200 with two colours per 8 horizontal pixels. A game mode that draws has
+to call `_gfxmode.setBM16`.
+
 A compressed image also has no erase routine, so the object carrying it must
 set `render_overlay_mask`. That flag does both halves of the job: it sends
 `CheckSpritesRefresh` to the `D` slot, the only one a compressed image is

@@ -244,6 +244,22 @@ public final class Handlers {
 		OBJECTS.put("vgm2sfx", com.widedot.toolbox.audio.vgm2sfx.Vgm2SfxPlugin::getObject);
 		OBJECTS.put("pcm", com.widedot.toolbox.audio.pcm.PcmPlugin::getObject);
 		OBJECTS.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getObject);
+		spec(element("png2bin").doc("convert an indexed PNG to video memory data, one plane per declaration")
+			.req("filename", STRING, "input .png")
+			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")
+			.opt("videomode", STRING, "t0, t1, t1s, t2, bm16, c2, c4, c16 — the pixel layout")
+			.opt("buffer", STRING, "none, vscroll, vscrolltile, hscroll — engine buffer built on top")
+			.opt("guardcolor", INT, "hscroll only : the colour the wrapped bytes are refilled with")
+			.opt("plane", INT, "which memory plane this declaration yields")
+			.opt("part", INT, "which part, when maxsize split the plane")
+			.opt("maxsize", INT, "split the plane beyond this size")
+			.opt("shiftcolors", BOOL, "index 0 is transparency and 1..16 are colours 0..15")
+			.opt("linearbits", INT, "instead of videomode : bits of a pixel held by one plane")
+			.opt("planarbits", INT, "instead of videomode : bits written before changing plane")
+			.opt("linebytes", INT, "instead of videomode : bytes per line, 0 to fit the image")
+			.opt("planes", INT, "instead of videomode : number of memory planes")
+			.opt("pixeldepth", INT, "instead of videomode : bits per pixel"));
+		OBJECTS.put("png2bin", com.widedot.toolbox.graphics.png.Png2BinPlugin::getObject);
 		OBJECTS.put("txt2bas", com.widedot.toolbox.text.txt2bas.Txt2BasPlugin::getObject);
 		OBJECTS.put("phoneme", com.widedot.toolbox.text.phoneme.PhonemePlugin::getObject);
 	}

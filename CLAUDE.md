@@ -490,6 +490,15 @@ mode lisait ses globales dans la page moniteur (un chargement de scène écrit
 le loader se bloque à sa première invite. Détail, cartographie de la page `$60`
 et méthode de choix des octets : [`direct-page.md`](docs/lang/en/direct-page.md).
 
+## Piège vidéo : le mode n'est pas posé par défaut (01/08/2026)
+
+Un game mode qui dessine **doit** appeler `_gfxmode.setBM16` : la machine démarre
+en 320x200 avec deux couleurs par 8 pixels horizontaux, et lit les données BM16
+comme telles. Les bancs `sprites` et `hscroll` ne le faisaient pas — leurs
+témoins en `$9C00` étaient justes, mais tout jugement porté *à l'écran* l'était
+dans le mauvais mode. Corrigé dans les deux ; à vérifier en premier quand un
+rendu paraît haché en colonnes.
+
 ## Dettes / pièges connus
 
 - `LwAssembler.java` : nom `lwasm.exe` codé en dur (pas de détection d'OS) ; binaires

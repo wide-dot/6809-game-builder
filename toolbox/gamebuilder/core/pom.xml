@@ -48,6 +48,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.wide-dot</groupId>
+      <artifactId>png2bin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <artifactId>txt2bas</artifactId>
       <groupId>com.wide-dot</groupId>
       <version>${project.version}</version>

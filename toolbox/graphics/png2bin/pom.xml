@@ -13,6 +13,12 @@
 
 	<dependencies>
 		<dependency>
+			<artifactId>6809-gamebuilder-spi</artifactId>
+			<groupId>com.wide-dot</groupId>
+			<version>0.0.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.wide-dot</groupId>
 			<artifactId>6809-gamebuilder-util</artifactId>
 			<version>${project.version}</version>

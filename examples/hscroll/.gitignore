@@ -1,0 +1,8 @@
+*.fd
+*.sd
+*.sap
+*.hfe
+**/dist/
+**/gen/
+**/engine/
+engine

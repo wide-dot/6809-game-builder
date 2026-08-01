@@ -1,13 +1,6 @@
 package com.widedot.toolbox.graphics.png;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.util.ArrayList;
-
-import com.widedot.m6809.util.FileUtil;
-import com.widedot.toolbox.graphics.engine.HorizontalScroll;
-import com.widedot.toolbox.graphics.engine.VerticalScroll;
-import com.widedot.toolbox.graphics.engine.VerticalScrollTile;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -16,21 +9,23 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 /**
- * png to binary converter
- * - convert a indexed png image to binary in various graphical modes
+ * png to binary converter — the command line over {@link Png2Bin}.
+ *
+ * The conversion itself lives in Png2Bin, so the builder can ask for the same
+ * work through a &lt;png2bin&gt; element without going out to a process.
  */
 
 @Command(name = "png2bin",
-         description = "png to binary converter", 
-		 version="0.0.1", 
-		 sortOptions = false, 
+         description = "png to binary converter",
+		 version="0.0.1",
+		 sortOptions = false,
 		 mixinStandardHelpOptions = true)
 @Slf4j
 public class MainCommand implements Runnable {
-	
+
     @ArgGroup(exclusive = true, multiplicity = "1")
     ExclusiveInputType exclusiveInputType;
-    
+
     @ArgGroup(exclusive = true, multiplicity = "1")
     ExclusiveOutput exclusiveOutput;
 
@@ -56,21 +51,24 @@ public class MainCommand implements Runnable {
 
 	@Option(names = { "-pd", "--pixelDepth" }, required = true, paramLabel = "Pixel Depth", description = "Number of bits per pixel")
     private int pixelDepth;
-	
+
 	@Option(names = { "-oms", "--out-max-size" }, paramLabel = "Output file max size", description = "Output file maximum size, file will be splitted beyond this value")
 	private int fileMaxSize = Integer.MAX_VALUE;
-	
+
     static class ExclusiveOutput {
 	   	@Option(names = { "-vs", "--vertical-scroll" }, paramLabel = "Vertical Scroll Buffer", description = "Output data buffer for Vertical Scroll")
 	   	private boolean vscroll = false;
-	   	
+
 	   	@Option(names = { "-vst", "--vertical-scroll-tile" }, paramLabel = "Vertical Scroll Tile", description = "Output tile data for Vertical Scroll")
 	   	private boolean vscrollTile = false;
 
 	   	@Option(names = { "-hs", "--horizontal-scroll" }, paramLabel = "Horizontal Scroll Buffer", description = "Output code buffer for Horizontal Scroll (looping 160px band)")
 	   	private boolean hscroll = false;
+
+	   	@Option(names = { "-raw", "--raw" }, paramLabel = "Raw planes", description = "Output the plane binaries only, with no engine buffer on top")
+	   	private boolean raw = false;
     }
-    
+
 	@Option(names = { "-slc", "--shiftLeftColors" }, paramLabel = "Shift left colors", description = "Shift colors indexes to the left by one position")
     private boolean shiftLeftColors = false;
 
@@ -79,234 +77,43 @@ public class MainCommand implements Runnable {
 
 	public static void main(String[] args) {
 		CommandLine cmdLine = new CommandLine(new MainCommand());
-		cmdLine.execute(args);
+		System.exit(cmdLine.execute(args));
     }
 
-	// Thomson - MO/TO
-	// ---------------
-	//	mode t0  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t1  320x200x4  : -lb 1 -pb 1 -l 40 -p 2 -pd 2
-	//	mode t1s 320x200x4  : -lb 2 -pb 8 -l 40 -p 2 -pd 2
-	//	mode t2  640x200x1  : -lb 1 -pb 8 -l 40 -p 2 -pd 1
-	//	mode t3  160x200x16 : -lb 4 -pb 8 -l 40 -p 2 -pd 4
-	//	mode t4  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t5  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//	mode t6  320x200x1  : -lb 1 -pb 0 -l 40 -p 1 -pd 1
-	//
-	// Tandy - CoCo3
-	// -------------
-	//	mode c2  : -lb 1 -pb 0 -l 256 -p 1 -pd 1
-	//	mode c4  : -lb 2 -pb 0 -l 256 -p 1 -pd 2
-	//	mode c16 : -lb 4 -pb 0 -l 256 -p 1 -pd 4
-	
 	@Override
 	public void run()
 	{
 		log.info("png to binary converter");
 
-                if (exclusiveInputType.inputDir != null) {
-        		log.info("Process each png file of the directory {}", exclusiveInputType.inputDir);
+		Png2Bin.Buffer buffer = Png2Bin.Buffer.NONE;
+		if (exclusiveOutput.vscroll)          buffer = Png2Bin.Buffer.VSCROLL;
+		else if (exclusiveOutput.vscrollTile) buffer = Png2Bin.Buffer.VSCROLL_TILE;
+		else if (exclusiveOutput.hscroll)     buffer = Png2Bin.Buffer.HSCROLL;
 
-                        // process each png file of the directory		
-                        File dir = new File(exclusiveInputType.inputDir);
-                        if (!dir.exists() || !dir.isDirectory()) {
-                        	log.error("Input directory does not exists !");
-                        } else {	
-                        	File[] files = dir.listFiles((d, name) -> name.endsWith(".png"));
-                        	for (File pngFile : files) {
-                        		try {
-                        			pngConverter(pngFile, fileMaxSize);
-                        		} catch (Exception e) {
-                        			log.error("Error converting .png file");
-                        		}
-                        	}
-                        }
-                } else {
-                        log.info("Process {}", exclusiveInputType.inputFile);
+		Png2Bin png2bin = new Png2Bin(linearBits, planarBits, lineBytes, nbPlanes, pixelDepth,
+		                              fileMaxSize, shiftLeftColors, buffer, hscrollGuardColor);
 
-                        // process a single png file
-                        File pngFile = new File(exclusiveInputType.inputFile);
-                        if(!pngFile.exists() || pngFile.isDirectory()) { 
-                        	log.error("Input file does not exists !");
-                        } else {
-                        	try {
-                        		pngConverter(pngFile, fileMaxSize);
-                        	} catch (Exception e) {
-                    			log.error("Error converting .png file");
-                    		}
-                        }
-                }
-	}
-
-	private void pngConverter(File paramFile, int fileMaxSize) throws Exception {
-
-		Png png = new Png(paramFile);
-
-		byte image[] = resize(png); // resize image to a multiple of byte and planes of final image
-		if (image == null) return;
-		
-		if (shiftLeftColors) stripAlpha(image);
-
-		byte out[][] = convert(image, png.colorModel.getPixelSize(), png.height); // Convert source image to video memory data
-		
-		ArrayList<String> files = write(out, paramFile); // write output files by splitting if over memorypage size
-		
-		if (exclusiveOutput.vscroll) {
-			for (String file : files) {
-				new VerticalScroll(file);
+		File[] files;
+		if (exclusiveInputType.inputDir != null) {
+			log.info("Process each png file of the directory {}", exclusiveInputType.inputDir);
+			File dir = new File(exclusiveInputType.inputDir);
+			if (!dir.exists() || !dir.isDirectory()) {
+				throw new IllegalArgumentException("input directory does not exist: " + exclusiveInputType.inputDir);
 			}
-		} else if (exclusiveOutput.vscrollTile) {
-			for (String file : files) {
-				new VerticalScrollTile(file);
-			}
-		} else if (exclusiveOutput.hscroll) {
-			for (String file : files) {
-				new HorizontalScroll(file, hscrollGuardColor);
-			}
-		}
-
-	}
-
-	private void stripAlpha(byte image[]) {
-		for (int i=0; i < image.length; i++) {
-			if (image[i]!=0) image[i] = (byte) (((image[i] & 0xff)-1) & 0xff);
-		}
-		
-	}
-	
-	private byte[] resize(Png png) {
-		
-		byte image[];
-		int pixelSize = png.colorModel.getPixelSize();
-		int width = png.width;
-		int height = png.height;
-
-		// Compute the new size
-		// --------------------
-		
-		// if no memory line size is requested, fit the smallest size
-		if (lineBytes == 0) {
-			int pixelGroup = (nbPlanes*8)/pixelDepth;                     // compute number of pixels that match one byte on destination Memory Byte/Plan arrangement
-			width += (width%pixelGroup!=0?pixelGroup-width%pixelGroup:0); // compute new width
-			lineBytes = (width*pixelDepth)/8;                             // compute the width of destination data
-			
-		} else if ((lineBytes*nbPlanes)*(8/pixelDepth)>=width) {
-			
-			width = (lineBytes*nbPlanes)*(8/pixelDepth);                  // image is padded to specified memory size (typical use is a line of video memory for compilated sprite)
-
+			files = dir.listFiles((d, name) -> name.endsWith(".png"));
 		} else {
-			log.error("image width is too large for lineBytes setting of: "+lineBytes);
-			return null;		
+			log.info("Process {}", exclusiveInputType.inputFile);
+			files = new File[] { new File(exclusiveInputType.inputFile) };
 		}
-		
-		// Resize
-		// ------
-		
-		int dwidth = png.width/(8/pixelSize);
-		int nwidth = width/(8/pixelSize);
-		image = new byte[nwidth*height];
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < dwidth; x++) {
-				image[x+y*nwidth] = (byte) png.dataBuffer.getElem(x+y*dwidth);
-			}
-		}
-		
-		return image;
-	}
-	
-	private byte[][] convert(byte[] image, int pixelSize, int height) {
-		
-		byte out[][] = new byte[nbPlanes][];
-		
-		// allocate output planes
-		for (int p = 0; p < nbPlanes; p++) {
-			out[p] = new byte[(lineBytes*height)/nbPlanes];
-		}
-			
-		// init
-		int ibc = 0;                                // count bit in input byte
-		int curPxRShift = pixelSize;                // current shift in Pixel
-		int curSubPxRShift = pixelDepth-linearBits; // current shift in sub pixel (splitted by plane)
-		int outIdx[] = new int[nbPlanes];           // out byte index for each plane
-		int curBitsinByte[] = new int[nbPlanes];    // out bit index for each plane
-		int curBitsinPlane = 0;
-		int plane = 0;
-		int lbmask = 0;
-		
-		// setup bitmask for reading a pixel in each plane 
-		for (int i = 0; i < linearBits; i++) { // linear bits is the number of bits for a pixel in a plane
-			lbmask = (lbmask << 1) | 1;        // build the mask bit after bit
-		}
-		
-		// format data
-		int i=0;
-		while (i < image.length) {
 
-			// agregate pixels in a byte
-			out[plane][outIdx[plane]] = (byte) ( (out[plane][outIdx[plane]] << linearBits) | (( image[i] >> 8-curPxRShift+curSubPxRShift) & lbmask));
-			
-			// how curSubPxRShift works :
-			// -----------------------
-			// this var is used in conjunction with lbmask to read a part of a pixel that is (or not) splitted into planes
-			// Example :
-			// linearBits of 2, pixelDepth of 4 : start curSubPxRShift at pixelDepth-linearBits=2 (first shift)
-			// number of steps : pixelDepth/linearBits=2, step value is linearBits = 2
-			// so there will be 2 reads with those shifts : 2, 0
-
-			// part of pixel splitted by planes
-			curSubPxRShift -= linearBits;
-			if (curSubPxRShift < 0) {
-				curSubPxRShift = pixelDepth-linearBits;   // reset shift value (used to read a part of a pixel)
-				curPxRShift += pixelSize;                 // move to next pixel in input image
-			}
-			
-			// fetch byte when all bits are set	(taking planes in account)	
-			curBitsinByte[plane] += linearBits;
-			if (curBitsinByte[plane] == 8) {
-				outIdx[plane]++;                          // move index in output table for this plane
-				curBitsinByte[plane] = 0;
-			}
-
-			// move to next byte in input image
-			ibc += linearBits;
-			if (ibc == (8/pixelSize)*pixelDepth) {
-				i++;
-				ibc = 0;
-				curPxRShift = pixelSize;
-			}
-			
-			// plane change
-			curBitsinPlane += linearBits;
-			if (curBitsinPlane%planarBits == 0) {
-				plane++;
-				plane = plane%nbPlanes;
-				curBitsinPlane = 0;
+		for (File png : files) {
+			try {
+				png2bin.convert(png);
+			} catch (Exception e) {
+				// a failed conversion used to be logged and swallowed, which let a
+				// build carry on with a missing or stale binary
+				throw new RuntimeException("png2bin failed on " + png, e);
 			}
 		}
-		return out;
-	}
-	
-	private ArrayList<String> write(byte[][] out, File paramFile) throws Exception {
-		// split data into multiple files that are maximum fileMaxSize long
-		ArrayList<String> files = new ArrayList<String>();
-		for (int p = 0; p < nbPlanes; p++) {
-			int readIdx = 0;
-			int writeIdx = 0;
-			int fileId = 0;
-			while (readIdx < out[p].length) {
-				String filename = FileUtil.removeExtension(paramFile.toString()) + "." + p + "." + fileId + ".bin";
-				files.add(filename);
-				FileOutputStream fis = new FileOutputStream(new File(filename));
-				byte[] finalArray = new byte[(out[p].length-readIdx<fileMaxSize?out[p].length-readIdx:fileMaxSize)];
-				writeIdx = 0;
-				while (readIdx < out[p].length && writeIdx < fileMaxSize) {
-					finalArray[writeIdx++] = out[p][readIdx++];
-				}
-				fis.write(finalArray);
-				fis.close();
-				fileId++;
-			}
-		}
-		return files;
 	}
 }

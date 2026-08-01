@@ -45,6 +45,7 @@ irq.off equ   IrqOff
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
+        INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
 
         ; v2 kept features : loader/scenes, ram paging
         INCLUDE "engine/system/to8/map.const.asm"
@@ -65,6 +66,11 @@ irq.off equ   IrqOff
 
 main
         jsr   InitGlobals
+
+        ; 160x200 in 16 colours. Compiled sprites are that format ; without
+        ; this the machine stays in its boot mode, 320x200 with two colours
+        ; per 8 horizontal pixels, and reads their bytes as that instead.
+        _gfxmode.setBM16
         ldd   #userIRQ
         std   Irq_user_routine
         jsr   IrqInit
