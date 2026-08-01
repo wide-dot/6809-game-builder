@@ -28,18 +28,14 @@ Obj_Index_Address
 * reads Ani_Asd_Index only when anim,u is negative — a signed offset into a
 * per object table of animations. The bench points anim,u straight at its
 * animation, so that path is never taken ; the symbol still has to resolve.
+* The animation table is generated into the sprites direntry, next to the
+* imagesets it points at, so that is the page to mount. This index has to
+* follow wherever the build puts the table.
 Ani_Page_Index
         fcb   $00
-        fcb   map.RAM_OVER_CART+gamemode.page  ; the table lives with the game mode
+        fcb   map.RAM_OVER_CART+sprites.page
 
 Ani_Asd_Index
         fdb   $0000
         fdb   $0000
 
-* An animation is a frame duration, then one imageset address per frame, then
-* a marker. $FF restarts it — the format v1's builder generates.
-        fcb   8                          ; frames each image is held
-Ani_shell
-        fdb   set_shell
-        fdb   set_launcher
-        fcb   $FF                        ; _resetAnim

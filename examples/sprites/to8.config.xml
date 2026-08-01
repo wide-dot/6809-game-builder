@@ -48,6 +48,12 @@
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
+                        <!-- the frame table AnimateSprite walks ; frames name
+                             images, the element writes their imageset symbol -->
+                        <animation name="Ani_shell" duration="8">
+                            <frame image="shell"/>
+                            <frame image="launcher"/>
+                        </animation>
                     </lwasm>
                 </direntry>
 

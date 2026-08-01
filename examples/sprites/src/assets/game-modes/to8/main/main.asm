@@ -22,6 +22,7 @@
 
 set_shell    EXTERNAL
 set_launcher EXTERNAL
+Ani_shell    EXTERNAL
 
  SECTION code
 

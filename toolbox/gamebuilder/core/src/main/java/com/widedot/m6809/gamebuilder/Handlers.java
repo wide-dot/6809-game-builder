@@ -3,6 +3,7 @@ package com.widedot.m6809.gamebuilder;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.widedot.m6809.gamebuilder.plugin.animation.AnimationPlugin;
 import com.widedot.m6809.gamebuilder.plugin.asm.AsmPlugin;
 import com.widedot.m6809.gamebuilder.plugin.bin.BinPlugin;
 import com.widedot.m6809.gamebuilder.plugin.cksumfd640.Cksumfd640Plugin;
@@ -144,6 +145,14 @@ public final class Handlers {
 			.req("name", STRING, "exported symbol"));
 		spec(element("includebin").doc("binary included through a generated INCLUDEBIN")
 			.req("filename", STRING, "binary file"));
+		spec(element("animation").doc("frame table walked by AnimateSprite")
+			.req("name", STRING, "exported symbol, the address an object puts in anim")
+			.opt("duration", INT, "frames each image is held, 1 by default")
+			.opt("end", STRING, "reset (default), goback, goto, nextroutine, resetandsubroutine, nextsubroutine")
+			.opt("frames", INT, "frames to step back, with end=goback")
+			.opt("animation", STRING, "animation to continue with, with end=goto"));
+		spec(element("frame").doc("one frame of an animation")
+			.req("image", STRING, "image name ; the frame points at its imageset"));
 		spec(element("gfxcomp").doc("compile PNGs into 6809 drawing code, as one source unit")
 			.req("gendir", STRING, "directory receiving the compiled images")
 			.req("gensource", STRING, "generated source unit of INCLUDE lines")
@@ -224,6 +233,7 @@ public final class Handlers {
 		FILES.put("label", LabelPlugin::getFile);
 		FILES.put("includebin", IncludeBinPlugin::getFile);
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
+		FILES.put("animation", AnimationPlugin::getFile);
 
 		// asset converters
 		OBJECTS.put("vgm2ymm", com.widedot.toolbox.audio.vgm2ymm.Vgm2YmmPlugin::getObject);

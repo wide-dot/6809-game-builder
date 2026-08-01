@@ -8,10 +8,11 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <!-- assembly source unit : a file, or inline text -->
-  <xs:element name="asm">
-    <xs:complexType mixed="true">
+  <!-- frame table walked by AnimateSprite -->
+  <xs:element name="animation">
+    <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -24,6 +25,65 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>exported symbol, the address an object puts in anim</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="duration" type="int6809">
+        <xs:annotation><xs:documentation>frames each image is held, 1 by default</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="end" type="xs:string">
+        <xs:annotation><xs:documentation>reset (default), goback, goto, nextroutine, resetandsubroutine, nextsubroutine</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="frames" type="int6809">
+        <xs:annotation><xs:documentation>frames to step back, with end=goback</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="animation" type="xs:string">
+        <xs:annotation><xs:documentation>animation to continue with, with end=goto</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- assembly source unit : a file, or inline text -->
+  <xs:element name="asm">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -57,6 +117,7 @@
   <xs:element name="bin">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -69,6 +130,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -101,6 +163,7 @@
   <xs:element name="cksumfd640">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -113,6 +176,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -142,6 +206,7 @@
   <xs:element name="configuration">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -154,6 +219,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -183,6 +249,7 @@
   <xs:element name="data">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -195,6 +262,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -230,6 +298,7 @@
   <xs:element name="default">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -242,6 +311,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -277,6 +347,7 @@
   <xs:element name="define">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -289,6 +360,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -324,6 +396,7 @@
   <xs:element name="directory">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -336,6 +409,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -377,6 +451,7 @@
   <xs:element name="direntry">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -389,6 +464,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -433,6 +509,7 @@
   <xs:element name="encoder">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -445,6 +522,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -486,6 +564,7 @@
   <xs:element name="fd">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -498,6 +577,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -530,6 +610,7 @@
   <xs:element name="floppydisk">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -542,6 +623,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -573,10 +655,11 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- compile PNGs into 6809 drawing code, as one source unit -->
-  <xs:element name="gfxcomp">
+  <!-- one frame of an animation -->
+  <xs:element name="frame">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -589,6 +672,53 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="image" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>image name ; the frame points at its imageset</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- compile PNGs into 6809 drawing code, as one source unit -->
+  <xs:element name="gfxcomp">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -642,6 +772,7 @@
   <xs:element name="hfe">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -654,6 +785,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -686,6 +818,7 @@
   <xs:element name="image">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -698,6 +831,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -736,6 +870,7 @@
   <xs:element name="includebin">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -748,6 +883,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -780,6 +916,7 @@
   <xs:element name="label">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -792,6 +929,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -824,6 +962,7 @@
   <xs:element name="layout">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -836,6 +975,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -868,6 +1008,7 @@
   <xs:element name="load">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -880,6 +1021,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -921,6 +1063,7 @@
   <xs:element name="lwasm">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -933,6 +1076,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -971,6 +1115,7 @@
   <xs:element name="pcm">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -983,6 +1128,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1021,6 +1167,7 @@
   <xs:element name="phoneme">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1033,6 +1180,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1071,6 +1219,7 @@
   <xs:element name="png2pal">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1083,6 +1232,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1133,6 +1283,7 @@
   <xs:element name="region">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1145,6 +1296,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1189,6 +1341,7 @@
   <xs:element name="sap">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1201,6 +1354,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1236,6 +1390,7 @@
   <xs:element name="scene">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1248,6 +1403,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1286,6 +1442,7 @@
   <xs:element name="sd">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1298,6 +1455,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1330,6 +1488,7 @@
   <xs:element name="section">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1342,6 +1501,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1383,6 +1543,7 @@
   <xs:element name="target">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1395,6 +1556,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1427,6 +1589,7 @@
   <xs:element name="txt2bas">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1439,6 +1602,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1474,6 +1638,7 @@
   <xs:element name="vgm2sfx">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1486,6 +1651,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1521,6 +1687,7 @@
   <xs:element name="vgm2vgc">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1533,6 +1700,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
@@ -1568,6 +1736,7 @@
   <xs:element name="vgm2ymm">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
         <xs:element ref="cksumfd640"/>
@@ -1580,6 +1749,7 @@
         <xs:element ref="encoder"/>
         <xs:element ref="fd"/>
         <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>

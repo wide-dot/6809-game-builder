@@ -144,19 +144,28 @@ there is one structure per buffer.
 
 ### Animation
 
-`AnimateSprite` walks a table the game provides : a frame duration, then one
-imageset address per frame, then a marker — `$FF` restarts, and the flags from
-`$FA` up drive the other endings. It is v1's format, which its builder
-generated from the project properties ; v2 has no such generator yet, so the
-table is written by hand:
+`AnimateSprite` walks a table of a frame duration, one imageset address per
+frame, and an end marker. `<animation>` generates it, next to the images it
+points at :
 
-```asm
-        fcb   8                 ; frames each image is held
-Ani_shell
-        fdb   set_shell
-        fdb   set_launcher
-        fcb   $FF               ; _resetAnim
+```xml
+<animation name="Ani_shell" duration="8">
+    <frame image="shell"/>
+    <frame image="launcher"/>
+</animation>
 ```
+
+Frames name **images**, not symbols : the element writes `set_<image>` itself,
+so a game mode never spells out the generated naming. `end` picks the marker —
+`reset` (the default, start over), `goback` with `frames`, `goto` with
+`animation`, or `nextroutine` / `resetandsubroutine` / `nextsubroutine`, which
+hand control back to the object. The values are written out rather than the
+equates of `constants-animation.equ`, so the table assembles in whatever unit
+it lands in.
+
+Put it in the same `<lwasm>` unit as the `<gfxcomp>` whose images it uses, and
+point `Ani_Page_Index` at **that** direntry's region — the index has to follow
+wherever the build placed the table, which is not necessarily the game mode.
 
 `anim,u` points straight at the label when it is positive. A negative value is
 a signed offset into `Ani_Asd_Index`, a per object table of animations, which
