@@ -108,9 +108,9 @@ des équates réservées dans `glb.const.asm` (caméra, alphaTiles), des docs vi
   écrit encore ses tables d'index à la main
 - **Animation** (v1 : `AnimateSpriteSync.asm`, `moveByScript.asm`)
 - **Tilemap + scrolling** (v1 : `horizontal-scroll/scroll-map-buffered-even.asm` —
-  scroll 1 px sur tilemap pré-bufferisée pointant des tiles compilées ; la v2 a le
-  prototype nouvelle génération `hscroll` côté outil, cf. `png2bin -hs` au HEAD et le
-  banc `thomson-to8-game-engine/game-projects/horizontal-band-scroll`)
+  scroll 1 px sur tilemap pré-bufferisée pointant des tiles compilées). **À ne pas
+  confondre avec `hscroll`**, qui est fait et validé (`examples/hscroll`) mais répond à
+  un autre besoin : une bande de largeur fixe qui boucle, pour un fond répétitif.
 - **Collisions** (v1 : AABB `collision-list`/`collision-do` + collision terrain
   `terrainCollision` par map de bits)
 - **Caméra / AutoScroll** (v1 : `graphics/camera/AutoScroll.asm`, vitesse 8.8 sub-pixel)
@@ -461,9 +461,12 @@ Ordre de migration suggéré (dépendances croissantes) :
    deux ne se réduisent donc pas l'une à l'autre, même à une trame) ; et l'octet
    de fin de segment d'un script coûte sa propre trame, il ne fait pas partie des
    commandes de déplacement. Doc : [`objects.md`](docs/lang/en/objects.md).
-4. **Scroll horizontal + tilemap** : soit porter `scroll-map-buffered-even/odd` (parité
-   v1 garantie), soit finaliser la nouvelle génération `hscroll` (outil déjà au HEAD) —
-   décision d'architecture à prendre avant de migrer les maps de R-Type.
+4. **Scroll horizontal + tilemap** : porter `scroll-map-buffered-even/odd`. Il n'y a
+   pas d'alternative à arbitrer — `hscroll` ne fait pas ce travail. C'est une bande de
+   160 px qui **boucle sur elle-même**, compilée en tampon de code de taille fixe, sans
+   notion de tuile et incapable de représenter une carte plus longue qu'elle (celle du
+   niveau 1 fait 1584 px). Les deux coexistent : `hscroll` pour un fond qui se répète
+   (parallaxe, montagnes, ciel), le scroll tilemap pour le terrain jouable.
 5. **Collisions** AABB + terrain (bitmap, tables xOffset/yOffset/xMask, mode boss-follow).
 6. **ObjectWave** (spawner temporel) + **caméra/AutoScroll**.
 7. **Pipeline builder « jeu »** : équivalent v2 des `.properties` v1 (objets, sprites,
