@@ -518,6 +518,13 @@ ce que le builder place, le builder peut l'adresser en dur (argument pour le
 point 7). Et ne pas activer `undefextern` : v2 fait d'un symbole inconnu une
 erreur d'assemblage, là où v1 en faisait un externe résolu à zéro.
 Détail et mesures : [`symbols.md`](docs/lang/en/symbols.md).
+**Étude de fond (01/08/2026)** : les tables générées (carte de tuiles, index
+d'imageset, étiquettes d'échantillons) n'ont pas à passer par le linker de
+chargement — le builder qui les génère connaît le placement. Plan en phases
+(élagage des exports non importés, puis résolution statique contre les régions
+`PLACED` avec preuve par `SceneChecks`) :
+[`analyse-exports-tables-2026-08.md`](docs/lang/fr/analyse-exports-tables-2026-08.md).
+Rien d'implémenté à ce jour.
 
 ## Art des exemples : tout est généré (01/08/2026)
 
