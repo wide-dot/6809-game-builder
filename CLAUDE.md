@@ -147,6 +147,34 @@ mêmes PNG ; runtime vs runtime sous toje avec checksums comparés).
 **Mode opératoire complet : `.claude/skills/v1-migration/SKILL.md`.**
 Inventaire de dérive : `docs/lang/fr/migration-inventaire-2026-07.md`.
 
+### Recueil de cas — RÈGLE (02/08/2026)
+
+> **Tout cas de migration v1 → v2 résolu donne lieu à un fichier de
+> `docs/lang/en/migration/`, DANS LE COMMIT QUI LE RÉSOUT.** Le code qui en
+> porte la trace cite le fichier en commentaire. Un correctif de migration
+> sans son cas écrit est incomplet.
+
+Quatre artefacts se partagent la migration, un rôle chacun — n'en créer aucun
+cinquième :
+
+| Artefact | Rôle |
+|---|---|
+| `docs/migration-inventaire.csv` | le reste-à-faire |
+| `engine/v1-manifest.csv` | le registre par fichier (commit v1, écarts) |
+| `.claude/skills/v1-migration/SKILL.md` | la procédure (import, drift-check, validation) |
+| `docs/lang/en/migration/` | **le recueil de cas** — comment un idiome v1 devient v2 |
+
+Le manuel `docs/lang/en/*.md` décrit le modèle v2 pour qui n'a jamais vu la
+v1 ; un cas part toujours d'un idiome v1. Critère : si ça s'énonce sans citer
+la v1, c'est du manuel.
+
+Fichiers **nommés par le cas, jamais numérotés** — le nom est cité depuis le
+code, le manifest et les commits, il doit rester stable. L'ordre de lecture
+vit dans `docs/lang/en/migration/README.md` et nulle part ailleurs.
+
+Rédaction **en anglais** (comme `docs/lang/en/`) ; la version française sera
+faite en une passe à la fin.
+
 **Avancement (01/08/2026)** : M0/M1 (cadre, inventaire, parking) et M2 (base commune
 + pilote `sound/to8` + arbitrages) clos ; M3 (gfxcomp opérationnel + banc
 générateur-vs-générateur) et M4 (runtime sprites 1:1 + banc `examples/sprites`,
@@ -607,52 +635,36 @@ un game mode reposent DP sur `$60` le temps de parler au moniteur. **Ces deux
 bascules manquaient et se masquaient mutuellement** : sans la première, un game
 mode lisait ses globales dans la page moniteur (un chargement de scène écrit
 `$60DC`, l'offset de `glb_camera_x_offset`) ; en corrigeant la première seule,
-le loader se bloque à sa première invite. Détail, cartographie de la page `$60`
-et méthode de choix des octets : [`direct-page.md`](docs/lang/en/direct-page.md).
+le loader se bloque à sa première invite.
+Le contrat complet — les deux pages, la passation dans les deux sens, le code
+qui tourne sur les deux, et la méthode de choix des octets — est dans
+[`direct-page.md`](docs/lang/en/direct-page.md) ; cette section n'est qu'un
+renvoi et l'historique du correctif. Pas de cas de migration dédié : la v1
+n'avait pas de passation, le contrat v2 se lit directement dans le manuel.
 
 ## Symboles inter-fichiers : exporter coûte au chargement (01/08/2026)
 
-Un export vaut 4 octets sur disque (identifiant numérique, le nom ne sort pas du
-build) mais le loader résout **chaque référence par une recherche linéaire** sur
-les exports de tous les fichiers chargés : le coût de liaison d'une scène est de
-l'ordre de `références × exports`. Mesuré : 883 096 instructions du boot au game
-mode pour `tilescroll` (768 références) contre 796 240 pour `sprites`, soit ~113
-instructions par référence. Règle : **n'exporter que ce qui franchit une frontière
-de direntry**. Un tableau de pointeurs vers une autre unité est la forme chère —
-ce que le builder place, le builder peut l'adresser en dur (argument pour le
-point 7). Et ne pas activer `undefextern` : v2 fait d'un symbole inconnu une
-erreur d'assemblage, là où v1 en faisait un externe résolu à zéro.
-Détail et mesures : [`symbols.md`](docs/lang/en/symbols.md).
-**Étude de fond (01/08/2026)** : les tables générées (carte de tuiles, index
-d'imageset, étiquettes d'échantillons) n'ont pas à passer par le linker de
-chargement — le builder qui les génère connaît le placement. Plan en phases
-(élagage des exports non importés, puis résolution statique contre les régions
-`PLACED` avec preuve par `SceneChecks`) :
+Le loader résout **chaque référence par une recherche linéaire** sur les exports
+de tous les fichiers chargés : le coût de liaison d'une scène est de l'ordre de
+`références × exports`. Règle : **n'exporter que ce qui franchit une frontière
+de direntry** ; ce que le builder place, le builder peut l'adresser en dur
+(sections `*.static`). Ne pas activer `undefextern`.
+
+Le modèle, les trois mécanismes (`.static`, cuisson des interns, élagage des
+exports) et **toutes les mesures** vivent dans
+[`symbols.md`](docs/lang/en/symbols.md) — cette section n'en est qu'un renvoi,
+ne pas y redupliquer les chiffres. Le raisonnement qui y a mené :
 [`analyse-exports-tables-2026-08.md`](docs/lang/fr/analyse-exports-tables-2026-08.md).
-**Implémenté (01/08/2026)** : sections `*.static` — le geste d'authoring encadre la
-table, le builder résout `extern16`/`externPg` contre les placements collectés par
-pré-parcours de la config, erreur sans repli si un fournisseur n'est pas à placement
-unique, fournisseur déclaré avant consommateur. Sur `tilescroll` : 768 références
-cuites, link data de la carte 4,6 Ko → 0, disque et pool revenus au standard,
-chargement 883k → 548k instructions. Au passage deux corrections du support
-multi-sections : base de section perdue par les interns inter-sections, et `code`
-mis en tête du binaire quel que soit l'ordre d'écriture de lwasm. **L'élagage des exports non importés est fait aussi** : la passe de découverte
-collecte les symboles réellement référencés en `EXTERNAL`, la passe réelle
-n'émet que ceux-là (unicité toujours vérifiée, y compris pour les élagués).
-Un symbole consommé uniquement en `.static` compte comme non importé — les
-deux mécanismes se composent : la link data de `tilescroll` ne contient plus
-ni exports ni externs, seulement des interns. Attention à la lecture des
-rapports : les configs `<hfe/>` avortaient sur hxcfe **avant** la ligne de
-rapport d'élagage, tout en élaguant quand même (sans objet sur macOS depuis
-08/2026, où hxcfe est embarqué).
-**Les interns se cuisent aussi depuis le 02/08** : la valeur d'une référence
-interne est relative à l'endroit où l'unité est chargée, que le builder connaît
-pour une unité placée par une scène — c'est le principe de l'indexation des
-tuiles, un cran plus près. Sur les scripts d'animation de R-Type (~2900
-pointeurs vers eux-mêmes) : 8 Ko de données de lien ramenés à zéro, LINK qui
-retient une piste au lieu de trois, et le pool du loader qui redevient
-respirable. Piste écartée après mesure : les laisser non résolus ne marche pas,
-lwasm écrit des zéros aux sites de relocation.
+Côté migration : [`what-to-export.md`](docs/lang/en/migration/what-to-export.md).
+
+Deux corrections du support multi-sections faites au passage (01/08) : base de
+section perdue par les interns inter-sections, et `code` mis en tête du binaire
+quel que soit l'ordre d'écriture de lwasm — cette dernière est ce qui rend
+tenable l'entrée d'unité à l'offset zéro, cf.
+[`unit-entry-point.md`](docs/lang/en/migration/unit-entry-point.md).
+Piège de lecture des rapports, désormais sans objet sur macOS (hxcfe embarqué
+depuis 08/2026) : les configs `<hfe/>` avortaient sur hxcfe **avant** la ligne
+de rapport d'élagage, tout en élaguant quand même.
 
 ## Art des exemples : tout est généré (01/08/2026)
 
@@ -667,11 +679,12 @@ remplacent des copies venues de R-Type et de `horizontal-band-scroll`.
 ## Piège vidéo : le mode n'est pas posé par défaut (01/08/2026)
 
 Un game mode qui dessine **doit** appeler `_gfxmode.setBM16` : la machine démarre
-en 320x200 avec deux couleurs par 8 pixels horizontaux, et lit les données BM16
-comme telles. Les bancs `sprites` et `hscroll` ne le faisaient pas — leurs
-témoins en `$9C00` étaient justes, mais tout jugement porté *à l'écran* l'était
-dans le mauvais mode. Corrigé dans les deux ; à vérifier en premier quand un
-rendu paraît haché en colonnes.
+en 320x200 deux couleurs et lit les données BM16 comme telles. Les témoins
+mémoire restent justes pendant ce temps — seul le jugement porté *à l'écran* est
+faussé, d'où le temps perdu. À vérifier en premier quand un rendu paraît haché
+en colonnes.
+Cas de migration (la v1 écrivait `$E7DC` en direct) :
+[`video-mode.md`](docs/lang/en/migration/video-mode.md).
 
 ## Dettes / pièges connus
 
