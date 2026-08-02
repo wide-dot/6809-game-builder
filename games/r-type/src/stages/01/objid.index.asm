@@ -37,3 +37,68 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_dobkeratops
         fdb   stage.placeholder        ; ObjID_dobkeratops_jaw
         fdb   stage.placeholder        ; ObjID_dobkeratops_monster
+
+* Les scripts d'animation. Les vrais vivent dans un objet commun qui
+* n'est pas encore chargeable (8 Ko de donnees de lien) : en attendant,
+* la table est locale et vide — aucun objet ne s'anime encore.
+Ani_Page_Index
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+
+Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+
+Ani_Asd_none
+        fdb   0
+
+* La page des images de chaque objet. Tant que les ennemis ne sont pas
+* portes, le bouchon ne dessine rien et la valeur ne sert pas.
+Img_Page_Index
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page

@@ -15,6 +15,9 @@ STAGE_ID equ 2
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
+Ani_Page_Index    EXPORT
+Ani_Asd_Index     EXPORT
+Img_Page_Index    EXPORT
 
 ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
 ; residente des que le niveau est entier. Le scroll porte deja une page par

@@ -60,6 +60,26 @@ out.append('        fdb   0')
 for name in names:
     out.append(f'        fdb   stage.placeholder        ; {name}')
 out.append('')
+out.append('* Les scripts d\'animation. Les vrais vivent dans un objet commun qui')
+out.append('* n\'est pas encore chargeable (8 Ko de donnees de lien) : en attendant,')
+out.append('* la table est locale et vide — aucun objet ne s\'anime encore.')
+out.append('Ani_Page_Index')
+for _ in range(len(names) + 1):
+    out.append('        fcb   map.RAM_OVER_CART+stage.page')
+out.append('')
+out.append('Ani_Asd_Index')
+for _ in range(len(names) + 1):
+    out.append('        fdb   Ani_Asd_none')
+out.append('')
+out.append('Ani_Asd_none')
+out.append('        fdb   0')
+out.append('')
+out.append('* La page des images de chaque objet. Tant que les ennemis ne sont pas')
+out.append('* portes, le bouchon ne dessine rien et la valeur ne sert pas.')
+out.append('Img_Page_Index')
+for _ in range(len(names) + 1):
+    out.append('        fcb   map.RAM_OVER_CART+stage.page')
+out.append('')
 
 open(f'src/stages/{stage}/objid.index.asm', 'w').write('\n'.join(out))
 print(f'stage {stage} : {len(names)} identifiants — {", ".join(names)}')

@@ -23,6 +23,13 @@
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
             <!-- deja une page par plan de carte.                               -->
             <region name="maps"       page="$0E" address="$0000" size="$4000" interface="true"/>
+            <!-- Reservee aux scripts d'animation. Ils ne sont pas encore     -->
+            <!-- chargeables : leurs ~2900 references internes pesent 8 Ko de  -->
+            <!-- donnees de lien, soit les deux tiers du pool du loader, et    -->
+            <!-- l'echange de stage n'y survit pas. Il faut d'abord savoir     -->
+            <!-- cuire les interns d'un direntry a placement fixe, comme       -->
+            <!-- .static le fait deja pour les externes.                        -->
+            <region name="anim"       page="$0F" address="$0000" size="$4000"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -193,7 +200,11 @@
 
             <!-- Boot loader -->
             <!-- *********************************************************** -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <!-- Le pool porte les donnees de lien de tout ce qui est charge. Le    -->
+            <!-- moteur en pese 2,5 Ko a lui seul depuis qu'il embarque la chaine   -->
+            <!-- sprites, et un echange de stage alloue le nouveau avant de         -->
+            <!-- liberer l'ancien : 4 Ko ne suffisent plus.                          -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$2000"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
             <data section="LOADER">

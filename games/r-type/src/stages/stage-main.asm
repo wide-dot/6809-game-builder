@@ -92,6 +92,11 @@ stage.stateKept
         jsr   ObjectWave_Init              ; cale le pointeur de wave sur l'horloge
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
+        jsr   InitRNG
+
+        ; l'allocateur du tampon de fond, que le mode « background erase »
+        ; utilise pour rendre a chaque sprite ce qu'il a recouvert
+        jsr   BgBufferAlloc
 
         ldd   #stage.userIRQ
         std   Irq_user_routine
@@ -104,12 +109,17 @@ stage.stateKept
 
 ; L'ordre de la v1 : Scroll et ObjectWave hors du verrou, DrawTiles dedans.
 ; Seul le second touche l'écran.
+; L'ordre est celui de la v1 : effacer avant de repeindre les tuiles, dessiner
+; les sprites apres — sinon un sprite est recouvert par le decor de sa trame.
 stage.loop
         jsr   Scroll
         jsr   ObjectWave
         jsr   RunObjects
+        jsr   CheckSpritesRefresh
         _gfxlock.on
+        jsr   EraseSprites
         jsr   DrawTiles
+        jsr   DrawSprites
         _gfxlock.off
 
         inc   bench.frames

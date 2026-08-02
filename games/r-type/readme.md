@@ -81,6 +81,35 @@ Seule valeur du banc qui n'est pas celle du jeu : la vitesse de scroll,
 $0200 au lieu de $0030 — traverser le niveau 1 à la vitesse de r-type
 prendrait 7680 trames.
 
+## Le socle des ennemis
+
+Ce que le moteur résident porte désormais, et qu'aucun ennemi ne peut éviter :
+la chaîne **sprites** (`DisplaySprite`, `CheckSpritesRefresh`, `EraseSprites`,
+`DrawSprites`, `BgBufferAlloc`, `DeleteObject`), l'**animation**
+(`AnimateSprite`, `AnimateSpriteSync`, `moveByScript`), les **collisions AABB**
+et le RNG. La boucle de stage les appelle dans l'ordre de la v1 : effacer, puis
+les tuiles, puis les sprites.
+
+Les **cinq** tables de la frontière sont câblées — l'index d'objets, les deux
+index d'animation et l'index d'images — chaque stage exportant les siennes.
+
+Ce qui manque encore pour qu'un ennemi tourne :
+
+- **Les scripts d'animation communs** (`src/common/fx/animation/`) ne sont pas
+  chargeables. Ils portent ~2900 références internes, soit 8 Ko de données de
+  lien qui vivent dans le pool du loader tant que le fichier est indexé — les
+  deux tiers du pool, et l'échange de stage n'y survit pas. Il faut d'abord
+  savoir **cuire les interns d'un direntry à placement fixe**, comme `.static`
+  le fait déjà pour les références externes ; le gain serait de 8 Ko de pool et
+  d'autant sur disque. Piste vérifiée et écartée : les laisser non résolus ne
+  marche pas, lwasm écrit des zéros aux sites de relocation.
+- Le code des ennemis eux-mêmes, leurs images compilées, et le commun qu'ils
+  appellent (`AwardScore`, `tryFoeFire`, les presets de tir, l'explosion).
+
+À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
+mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
+part, et les vrais scripts sont l'objet commun.
+
 ## Traçabilité v1
 
 `v1-map.csv` : chaque fichier repris, chemin v1 → chemin v2, contenu
