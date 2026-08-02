@@ -98,6 +98,13 @@ glb_a3_b equ   dp_extreg+25
 glb_a4   equ   dp_extreg+26
 glb_a4_b equ   dp_extreg+27
 
+* V2-DEVIATION: Irq_one_frame et Irq_one_line viennent de irq/Irq.asm. La
+* periode d'IRQ est une constante du standard video (312 lignes x 64 cycles),
+* pas une adresse : une unite paginee qui arme l'IRQ doit la voir ici, a
+* l'assemblage.
+Irq_one_frame                 equ 312*64-1 ; one frame timer (lines*cycles_per_lines-1), timer launch at -1
+Irq_one_line                  equ 64
+
 * V2-DEVIATION: ces quatre equates viennent de moveByScript.asm.
 * Les registres de travail que moveByScript partage avec l'objet appelant.
 * Ils vivent ici, et non dans moveByScript.asm, parce qu'une unite paginee

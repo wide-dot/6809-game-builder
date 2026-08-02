@@ -48,9 +48,13 @@
 *
 * ---------------------------------------------------------------------------
 
-Irq_user_routine fdb 0                 ; user irq routine called by IrqManager 
-Irq_one_frame    equ 312*64-1          ; one frame timer (lines*cycles_per_lines-1), timer launch at -1
-Irq_one_line     equ 64
+Irq_user_routine fdb 0                 ; user irq routine called by IrqManager
+; V2-DEVIATION: Irq_one_frame et Irq_one_line sont definis dans
+; engine/constants.asm. Ce sont des CONSTANTES ABSOLUES, pas des adresses : une
+; unite paginee qui arme l'IRQ doit les voir a l'assemblage. Les faire passer
+; par la frontiere de lien les fait rebaser ($4DFF -> $AEFF, soit une periode
+; d'IRQ 2,24 fois trop longue).
+; Cas de migration : docs/lang/en/migration/equates-link-boundary.md
        
 IrqInit
         ldd   #IrqManager

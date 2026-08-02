@@ -60,7 +60,45 @@ So the two kinds of shared name need two different mechanisms:
 | What is shared | Mechanism | Why |
 |---|---|---|
 | a routine, a table — anything with an address *inside a unit* | `EXPORT` / `EXTERNAL`, resolved at load time | its address is only known once the unit is placed |
-| an absolute address — direct page, registers, fixed RAM | a header included by both sides, at assembly time | its address is a property of the machine, not of any unit |
+| an absolute address or constant — direct page, registers, fixed RAM, a timing value | a header included by both sides, at assembly time | its value is a property of the machine, not of any unit |
+
+## The criterion is not "label or equate"
+
+That distinction sounds like "routines go through the boundary, equates do not",
+and it is wrong. Auditing r-type's interface list found ten equates in it, and
+**nine were correct**:
+
+```asm
+PSR_Page                  equ *-1     ; a self-modified operand slot
+object_wave_data          equ *-2
+gfxlock.backBuffer.status equ *-1
+```
+
+An `equ *-N` names *an address inside the unit* — the operand byte of an
+instruction the caller patches. Those are section-relative and must be
+relocated, exactly like a label.
+
+The real test is **where the value comes from**:
+
+> If the value derives from `*`, the location counter, it belongs to a unit and
+> must cross the boundary. If it is an absolute address or a pure constant, it
+> belongs to the machine and must be shared at assembly time.
+
+The tenth one failed that test:
+
+```asm
+Irq_one_frame equ 312*64-1            ; 19967 — a property of the video standard
+```
+
+Passed through the boundary, the linker rebased `$4DFF` to `$AEFF`. The IRQ
+period became 2.24× too long, the 50 Hz clock ticked at 22 Hz, and **the whole
+game ran at half speed** — scroll, waves, animation, everything, in step with
+each other and therefore looking plausible rather than broken. It was reported
+as "the tick feels twice too slow", not as a bug in the interface list.
+
+That one is worth dwelling on: the two failures in this file — a callback that
+never arrived, and a clock at half rate — look nothing alike. Both are the same
+line of the same file.
 
 The engine's own `engine/constants.asm` is already included by both sides. That
 is the natural home, and it puts the equate next to the `glb_*` chain it
@@ -129,8 +167,30 @@ never again.
 
 [toje]: https://github.com/wide-dot/toje
 
+## Audit the whole list, once
+
+One instance means there are probably others: the same list was written in one
+sitting, by someone applying one idea. Extract every name in the interface and
+classify it — this took a few seconds and found the clock bug that had been
+mistaken for a performance problem:
+
+```bash
+for s in $(grep -o '_api [A-Za-z0-9_.]*' <interface file> | awk '{print $2}'); do
+  grep -rhn "^${s} *equ " engine/ | head -1
+done
+```
+
+Anything that comes back with an `equ` whose right-hand side does not mention
+`*` is a candidate. Read each one before removing it.
+
 ## Met in
 
-`games/r-type`, 2026-08-02. Cost two debugging sessions before it was found:
-the first established that the object initialised correctly and that something
-else corrupted `$9C00`, and stopped there.
+`games/r-type`, 2026-08-02, twice in the same file.
+
+`moveByScript.callback` cost two debugging sessions: the first established that
+the object initialised correctly and that something else corrupted `$9C00`, and
+stopped there.
+
+`Irq_one_frame` was found afterwards, by the audit above, prompted by a report
+that the game "felt twice too slow". Measured before and after on the engine's
+own 50 Hz counter, over 100 emulated frames: **45 ticks** before, **100** after.

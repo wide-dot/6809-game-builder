@@ -31,7 +31,11 @@ _api    macro
         _api IrqOff
         _api IrqSync
         _api Irq_user_routine
-        _api Irq_one_frame
+        ; Irq_one_frame N'EST PAS ici : c'est une constante absolue (312*64-1),
+        ; pas une adresse. La faire passer par le lien la faisait rebaser de
+        ; $4DFF a $AEFF, soit une periode d'IRQ 2,24 fois trop longue — le jeu
+        ; tournait a 22 Hz. Elle est partagee a l'assemblage par
+        ; engine/constants.asm.
 
         ; --- double buffer ---
         ;
