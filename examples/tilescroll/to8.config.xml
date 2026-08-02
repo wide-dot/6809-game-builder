@@ -65,10 +65,10 @@
                         <!-- index becomes page + address of a compiled tile,  -->
                         <!-- baked at build time in the map.static section.    -->
                         <tilemap map="src/assets/maps/map.bin" label="map.even"
-                                 tiles="tiles" variant="ND0" file="assets.tiles"
+                                 tiles="tiles" variant="ND0"
                                  gensource="gen/assets/maps/map_even.asm"/>
                         <tilemap map="src/assets/maps/map.bin" label="map.odd"
-                                 tiles="tiles" variant="ND1" file="assets.tiles"
+                                 tiles="tiles" variant="ND1"
                                  gensource="gen/assets/maps/map_odd.asm"/>
                     </lwasm>
                 </direntry>

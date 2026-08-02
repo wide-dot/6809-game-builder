@@ -91,16 +91,12 @@ de pages et un contenu ; il n'assigne jamais un élément à une page.**
 ## Ce que ça change pour les consommateurs
 
 `<tilemap>` cesse d'avoir un attribut `file` unique. Chaque entrée résout
-**son** symbole, donc **sa** page :
-
-```xml
-<tilemap map="..." label="map.even" tiles="tilesEven" variant="ND0"
-         from="stage1.tiles" gensource="..."/>
-```
-
-`from` nomme le pageset ; la page vient du placement du symbole, pas d'un
-`<file>$PAGE` commun. Le mécanisme `.static` est inchangé — c'est seulement la
-réponse de `StaticLink.resolvePage` qui devient par-symbole.
+**son** symbole, donc **sa** page. **Fait (02/08)** — et plus simple que prévu :
+aucun attribut de remplacement n'est nécessaire, le symbole se suffit. Le
+générateur demande `StaticLink.pageOf(symbole)` et écrit un **littéral**
+`fcb map.RAM_OVER_CART+6`, là où il émettait une référence `<file>$PAGE`. Une
+référence de moins par table, et la réponse devient juste par construction
+quand les tuiles sont réparties.
 
 Même bénéfice, gratuit, pour l'index d'imageset des sprites et pour le futur
 index d'objets : le jour où les 149 objets de R-Type dépassent une page, ils
@@ -118,10 +114,12 @@ entrent dans un pageset sans que leur table change de forme.
 
 ## Ordre d'implémentation
 
-1. `pages="N"` sur `<region>` : parsing, `Regions`, `PlacementScan`, et
-   `gensymbols` qui émet `<région>.pages`.
-2. `StaticLink` : le placement d'un symbole porte sa page propre ;
-   `resolvePage(symbole)` remplace `resolvePage(direntry)`.
+1. ~~`pages="N"` sur `<region>`~~ **FAIT (02/08)** : attribut déclaré et
+   contrôlé (bulk et multi-pages s'excluent), `gensymbols` émet
+   `<région>.pages` et `<région>.page.last`.
+2. ~~`StaticLink` par-symbole~~ **FAIT (02/08)** : `pageOf(symbole)` ajouté et
+   branché sur `<tilemap>`. Les 8 configs de référence restent identiques à
+   l'octet près, tilescroll revalidé sous toje.
 3. `<pageset>` : compilation par objet, mesure, premier ajustement, émission
    des direntries membres, enregistrement des placements.
 4. `<tilemap from=…>` et l'index d'imageset branchés sur la résolution

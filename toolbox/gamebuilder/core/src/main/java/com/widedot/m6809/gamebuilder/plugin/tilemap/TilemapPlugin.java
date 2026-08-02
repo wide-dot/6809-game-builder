@@ -43,7 +43,6 @@ public class TilemapPlugin {
 		String label = Attribute.getString(node, ctx, "label");
 		String tiles = Attribute.getString(node, ctx, "tiles");
 		String variant = Attribute.getString(node, ctx, "variant");
-		String file = Attribute.getString(node, ctx, "file");
 		String gensource = ctx.path + File.separator + Attribute.getString(node, ctx, "gensource");
 		String section = Attribute.getString(node, ctx, "section", "map.static");
 		int bitdepth = Attribute.getInteger(node, ctx, "bitdepth", 16);
@@ -84,7 +83,6 @@ public class TilemapPlugin {
 		// the generated file declares its own externals — a real tileset has
 		// hundreds of tiles, nobody hand-writes those. lwasm accepts the same
 		// symbol declared EXTERNAL by several files of a unit
-		source.append(file).append("$PAGE EXTERNAL").append(System.lineSeparator());
 		for (int id : used) {
 			source.append("adr_").append(tiles).append('_').append(id).append('_')
 					.append(variant).append(" EXTERNAL").append(System.lineSeparator());
@@ -100,10 +98,14 @@ public class TilemapPlugin {
 				empty++;
 				continue;
 			}
-			source.append("        fcb   ").append(file).append("$PAGE+$60")
-					.append(System.lineSeparator());
-			source.append("        fdb   adr_").append(tiles).append('_').append(ids[i])
-					.append('_').append(variant).append(System.lineSeparator());
+			// The page is asked per symbol, not once for the whole table : a
+			// tileset too big for one page is spread over several, and then
+			// two entries of the same map legitimately carry different pages.
+			// It also costs nothing at load time — a literal, not a reference.
+			String symbol = "adr_" + tiles + "_" + ids[i] + "_" + variant;
+			source.append("        fcb   map.RAM_OVER_CART+")
+					.append(ctx.staticLink.pageOf(symbol)).append(System.lineSeparator());
+			source.append("        fdb   ").append(symbol).append(System.lineSeparator());
 		}
 		source.append(" ENDSECTION").append(System.lineSeparator());
 

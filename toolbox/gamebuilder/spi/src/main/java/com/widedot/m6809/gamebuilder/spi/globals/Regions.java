@@ -29,13 +29,22 @@ public class Regions {
 		 * replaceability — the list is the unit of replacement.
 		 */
 		public final boolean bulk;
+		/**
+		 * How many consecutive pages the region spans, starting at page. One
+		 * for an ordinary region ; more makes room for a dataset no single
+		 * page can hold, which a pageset fills — the author declares the
+		 * budget, the builder decides what lands where.
+		 */
+		public final int pages;
 
-		public Region(String name, int page, int address, Integer size, boolean bulk) {
+		public Region(String name, int page, int address, Integer size, boolean bulk,
+				int pages) {
 			this.name = name;
 			this.page = page;
 			this.address = address;
 			this.size = size;
 			this.bulk = bulk;
+			this.pages = pages;
 		}
 	}
 

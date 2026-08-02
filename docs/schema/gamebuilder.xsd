@@ -1476,6 +1476,9 @@
       <xs:attribute name="bulk" type="xs:boolean">
         <xs:annotation><xs:documentation>the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="pages" type="int6809">
+        <xs:annotation><xs:documentation>consecutive pages the region spans from page, 1 if omitted ; more declares a budget for a dataset no single page holds</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="interface" type="xs:boolean">
         <xs:annotation><xs:documentation>the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else</xs:documentation></xs:annotation>
       </xs:attribute>
@@ -1793,9 +1796,6 @@
       </xs:attribute>
       <xs:attribute name="variant" type="xs:string" use="required">
         <xs:annotation><xs:documentation>compiled tile variant, ND0 for unshifted, ND1 for pre-shifted</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="file" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>direntry holding the compiled tiles ; pages read from &lt;file&gt;$PAGE</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="gensource" type="xs:string" use="required">
         <xs:annotation><xs:documentation>generated source file of the table</xs:documentation></xs:annotation>

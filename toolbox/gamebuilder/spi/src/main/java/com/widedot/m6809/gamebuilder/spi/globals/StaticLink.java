@@ -133,6 +133,24 @@ public class StaticLink {
 		return placementOf(direntry, direntry + "$PAGE").page;
 	}
 
+	/**
+	 * The page the object exporting this symbol was placed on.
+	 *
+	 * A generator that emits a page byte per entry — a tilemap, an object
+	 * index — asks here rather than baking one {@code <direntry>$PAGE} for the
+	 * whole table. For an ordinary direntry the answer is simply its region's
+	 * page ; for a member of a multi-page set it is the page that member
+	 * landed on, which is the whole point of the question.
+	 */
+	public int pageOf(String symbol) throws Exception {
+		Export export = exports.get(symbol);
+		if (export == null) {
+			throw new Exception("no direntry built so far exports '" + symbol
+					+ "' — a provider must be declared before the table that indexes it");
+		}
+		return placementOf(export.direntry, symbol).page;
+	}
+
 	private Placement placementOf(String direntry, String symbol) throws Exception {
 		String conflict = conflicts.get(direntry);
 		if (conflict != null) {

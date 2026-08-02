@@ -103,6 +103,7 @@ public final class Handlers {
 			.req("address", INT, "destination address")
 			.opt("size", INT, "byte budget, checked against the loaded entry")
 			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole")
+			.opt("pages", INT, "consecutive pages the region spans from page, 1 if omitted ; more declares a budget for a dataset no single page holds")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("scene").doc("generated scene table, one loadable directory entry")
 			.req("name", STRING, "unique alias, becomes the file id equate")
@@ -252,7 +253,6 @@ public final class Handlers {
 			.req("label", STRING, "label of the generated table")
 			.req("tiles", STRING, "tile symbol stem : entries reference adr_<tiles>_<id>_<variant>")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
-			.req("file", STRING, "direntry holding the compiled tiles ; pages read from <file>$PAGE")
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map.static if omitted ; must end with .static")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));

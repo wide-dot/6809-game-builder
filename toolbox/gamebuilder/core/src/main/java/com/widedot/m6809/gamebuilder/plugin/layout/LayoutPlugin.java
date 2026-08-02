@@ -32,13 +32,25 @@ public class LayoutPlugin {
 			int address = Attribute.getInteger(child, ctx, "address");
 			Integer size = Attribute.getIntegerOpt(child, ctx, "size");
 			boolean bulk = Attribute.getBoolean(child, ctx, "bulk", false);
+			int pages = Attribute.getInteger(child, ctx, "pages", 1);
+
+			if (pages < 1) {
+				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+						+ "' spans " + pages + " pages, which cannot be");
+			}
+			if (pages > 1 && bulk) {
+				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+						+ "' cannot be both bulk and multi-page : bulk members are laid out"
+						+ " one after the other at run time, which no page boundary survives");
+			}
 
 			try {
-				ctx.regions.put(new Regions.Region(name, page, address, size, bulk));
+				ctx.regions.put(new Regions.Region(name, page, address, size, bulk, pages));
 			} catch (Exception e) {
 				throw new Exception(ctx.sources.locate(child) + ": " + e.getMessage());
 			}
-			log.debug("region {} : page {} address {} size {}{}", name, page, address, size,
+			log.debug("region {} : page {}{} address {} size {}{}", name, page,
+					pages > 1 ? ".." + (page + pages - 1) : "", address, size,
 					bulk ? " bulk" : "");
 		}
 
@@ -55,6 +67,14 @@ public class LayoutPlugin {
 				   .append(System.lineSeparator());
 				out.append(region.name).append(".address equ $")
 				   .append(String.format("%04X", region.address)).append(System.lineSeparator());
+				if (region.pages > 1) {
+					// a multi-page region : the game may need to know how wide
+					// its budget is, and its last page
+					out.append(region.name).append(".pages equ ").append(region.pages)
+					   .append(System.lineSeparator());
+					out.append(region.name).append(".page.last equ ")
+					   .append(region.page + region.pages - 1).append(System.lineSeparator());
+				}
 			}
 			java.nio.file.Files.write(java.nio.file.Paths.get(path),
 					out.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
