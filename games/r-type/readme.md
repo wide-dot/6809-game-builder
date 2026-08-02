@@ -68,8 +68,9 @@ tables de carte dans une page à elles — la RAM résidente n'en a pas la place
 mais le scroll porte déjà une page par plan de carte. La caméra traverse les
 1440 px et l'art du milieu de niveau (tourelles, parois nervurées) s'affiche
 juste, ce qui n'arrive que si chaque tuile est lue sur la bonne des huit
-pages. Le stage 2 reste sur une tranche de 24 colonnes : ses données existent,
-mais rien n'exige encore le niveau entier.
+pages. **Le stage 2 est entier aussi** : 96 colonnes, 190 tuiles paires sur 3 pages
+et 229 impaires sur 4, 8 640 octets de tables. Les deux niveaux sont donc
+construits en entier, sur leurs vraies données.
 
 Seule valeur du banc qui n'est pas celle du jeu : la vitesse de scroll,
 $0200 au lieu de $0030 — traverser le niveau 1 à la vitesse de r-type

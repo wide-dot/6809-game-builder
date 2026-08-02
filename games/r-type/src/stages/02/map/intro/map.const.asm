@@ -1,5 +1,5 @@
 * ===========================================================================
-* Geometrie de la section — genere par tools/crop_stage.py 02 24 0
+* Geometrie de la section — genere par tools/crop_stage.py 02 96 0
 * ===========================================================================
-map.COLS  equ 24
+map.COLS  equ 96
 map.ROWS  equ 15
