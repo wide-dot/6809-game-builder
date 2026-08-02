@@ -168,7 +168,8 @@ public final class Handlers {
 			.req("name", STRING, "image name, prefix of the generated symbols")
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
 			.opt("index", INT, "index in the imageset, emitted as idx_<name>")
-			.opt("grid", STRING, "tile size <width>x<height> : the png is a tileset, sliced into tiles named <name>_<id> in reading order, each compiled with the declared encoders"));
+			.opt("grid", STRING, "tile size <width>x<height> : the png is a tileset, sliced into tiles named <name>_<id> in reading order, each compiled with the declared encoders")
+			.opt("range", STRING, "grid only : <first>-<last> tile ids this unit takes of the sheet, for a tileset too big for one page ; ids stay those of the sheet"));
 		spec(element("encoder").doc("one compiled rendering of an image")
 			.opt("name", STRING, "draw, bdraw, rle or zx0")
 			.opt("mirror", STRING, "none, x, y or xy")

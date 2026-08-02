@@ -900,6 +900,9 @@
       <xs:attribute name="grid" type="xs:string">
         <xs:annotation><xs:documentation>tile size &lt;width&gt;x&lt;height&gt; : the png is a tileset, sliced into tiles named &lt;name&gt;_&lt;id&gt; in reading order, each compiled with the declared encoders</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="range" type="xs:string">
+        <xs:annotation><xs:documentation>grid only : &lt;first&gt;-&lt;last&gt; tile ids this unit takes of the sheet, for a tileset too big for one page ; ids stay those of the sheet</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

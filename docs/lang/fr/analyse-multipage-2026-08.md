@@ -120,11 +120,20 @@ entrent dans un pageset sans que leur table change de forme.
 2. ~~`StaticLink` par-symbole~~ **FAIT (02/08)** : `pageOf(symbole)` ajouté et
    branché sur `<tilemap>`. Les 8 configs de référence restent identiques à
    l'octet près, tilescroll revalidé sous toje.
-3. `<pageset>` : compilation par objet, mesure, premier ajustement, émission
-   des direntries membres, enregistrement des placements.
-4. `<tilemap from=…>` et l'index d'imageset branchés sur la résolution
-   par-symbole.
-5. Banc : le niveau 1 **entier** (245 + 304 tuiles) à la place de la tranche de
+3. **La capacité, elle, est déjà là (02/08)** : `range="<premier>-<dernier>"`
+   sur une `<image grid=…>` fait qu'une unité ne prend qu'une tranche de la
+   feuille, les identifiants restant ceux de la feuille. Un tileset trop gros
+   se déclare donc en plusieurs direntries, chacun dans sa région, et la carte
+   résout la page de chaque tuile toute seule. **Prouvé sur machine** : le
+   tileset pair du stage 1 coupé en 0-10 (page $06) et 11-19 (page $09), la
+   carte porte bien deux pages différentes, l'art est intact et le banc
+   d'échange repasse 5/5. Ce qui manque à `<pageset>` n'est donc plus la
+   capacité mais l'ergonomie : choisir les coupes à la place de l'auteur.
+4. `<pageset>` : compilation par objet, mesure, premier ajustement, émission
+   des direntries membres, enregistrement des placements — l'auteur ne donne
+   plus que le budget de pages.
+5. L'index d'imageset branché sur la même résolution par-symbole.
+6. Banc : le niveau 1 **entier** (245 + 304 tuiles) à la place de la tranche de
    24 colonnes, et la carte complète qui défile — la preuve étant que les
    tuiles d'une même carte viennent de pages différentes.
 

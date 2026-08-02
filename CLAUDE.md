@@ -544,8 +544,15 @@ Ordre de migration suggéré (dépendances croissantes) :
    compile objet par objet, range en premier ajustement et émet un direntry
    par page ; le placement d'un symbole devient celui de son objet, pas de son
    direntry, et `.static` est inchangé. L'auteur déclare un budget de pages,
-   jamais l'affectation d'un élément à une page. Critère d'acceptation : le
-   niveau 1 entier qui défile, tuiles réparties sur plusieurs pages.
+   jamais l'affectation d'un élément à une page. **Étapes 1-2 FAITES**
+   (commit c8f076d) : `<region pages="N">` et `StaticLink.pageOf(symbole)`,
+   `<tilemap>` perd son attribut `file` et écrit un littéral de page par
+   entrée. **La capacité multi-pages est acquise** (commit suivant) via
+   `range="a-b"` sur `<image grid=…>` : un tileset trop gros se déclare en
+   plusieurs direntries, chacun dans sa région. Prouvé sur machine — tileset
+   pair du stage 1 coupé sur les pages $06 et $09, même carte portant deux
+   pages, art intact, banc d'échange 5/5. Reste `<pageset>` : l'ergonomie
+   (le builder choisit les coupes) et le niveau 1 entier.
    Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
    Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une

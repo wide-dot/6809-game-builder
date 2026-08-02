@@ -14,7 +14,8 @@
         <layout gensymbols="gen/layout.asm">
             <region name="common"     page="$01" address="$6100" size="$2200"/>
             <region name="stage"      page="$01" address="$8300" size="$1600" interface="true"/>
-            <region name="tiles.even" page="$06" address="$0000" size="$4000" interface="true"/>
+            <region name="tiles.even"  page="$06" address="$0000" size="$4000" interface="true"/>
+            <region name="tiles.even2" page="$09" address="$0000" size="$4000" interface="true"/>
             <region name="tiles.odd"  page="$08" address="$0000" size="$4000" interface="true"/>
         </layout>
 
@@ -56,7 +57,18 @@
                     <lwasm gensource="gen/stages/01/stage01-tiles-even.asm">
                         <gfxcomp gendir="gen/stages/01/tiles-even"
                                  gensource="gen/stages/01/tiles-even/includes.asm">
-                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
+                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12" range="0-10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="stage1.tiles.even2" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/01/stage01-tiles-even2.asm">
+                        <gfxcomp gendir="gen/stages/01/tiles-even2"
+                                 gensource="gen/stages/01/tiles-even2/includes.asm">
+                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12" range="11-19">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
@@ -132,15 +144,17 @@
                 <!-- ******************************************************** -->
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
-                    <load name="stage1.tiles.even" region="tiles.even"/>
-                    <load name="stage1.tiles.odd"  region="tiles.odd"/>
-                    <load name="stage1"            region="stage"/>
+                    <load name="stage1.tiles.even"  region="tiles.even"/>
+                    <load name="stage1.tiles.even2" region="tiles.even2"/>
+                    <load name="stage1.tiles.odd"   region="tiles.odd"/>
+                    <load name="stage1"             region="stage"/>
                 </scene>
 
                 <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
-                    <load name="stage1.tiles.even" region="tiles.even"/>
-                    <load name="stage1.tiles.odd"  region="tiles.odd"/>
-                    <load name="stage1"            region="stage"/>
+                    <load name="stage1.tiles.even"  region="tiles.even"/>
+                    <load name="stage1.tiles.even2" region="tiles.even2"/>
+                    <load name="stage1.tiles.odd"   region="tiles.odd"/>
+                    <load name="stage1"             region="stage"/>
                 </scene>
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">

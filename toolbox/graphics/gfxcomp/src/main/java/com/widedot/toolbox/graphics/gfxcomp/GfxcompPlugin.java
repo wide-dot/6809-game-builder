@@ -79,6 +79,7 @@ public class GfxcompPlugin {
 		String filename = ctx.path + File.separator + Attribute.getString(node, ctx, "filename");
 		Integer index = Attribute.getIntegerOpt(node, ctx, "index");
 		String grid = Attribute.getStringOpt(node, ctx, "grid");
+		String range = Attribute.getStringOpt(node, ctx, "range");
 
 		if (grid != null) {
 			// a tileset : the input is a sheet of grid-sized tiles, each one
@@ -90,11 +91,26 @@ public class GfxcompPlugin {
 				throw new Exception("image " + name + " : grid and index are exclusive, a"
 						+ " tileset is addressed by a <tilemap>, not by the imageset");
 			}
+			// A tileset bigger than a page is declared as several units, each
+			// taking a range of the same sheet ; the tile ids stay those of
+			// the sheet, so the map keeps naming them the same way and each
+			// entry resolves its own page. The slicing itself is done in full
+			// either way — it is cheap, and it keeps the ids independent of
+			// where the author put the cuts.
+			int[] bounds = parseRange(name, range);
 			List<String> files = new ArrayList<>();
 			for (String tile : slice(name, filename, grid, gendir)) {
 				String tileName = tile.substring(tile.lastIndexOf(File.separatorChar) + 1,
 						tile.length() - ".png".length());
+				int id = Integer.parseInt(tileName.substring(name.length() + 1));
+				if (id < bounds[0] || id > bounds[1]) {
+					continue;
+				}
 				files.addAll(encode(node, ctx, gendir, imageset, tileName, tile, null));
+			}
+			if (files.isEmpty()) {
+				throw new Exception("image " + name + " : range '" + range
+						+ "' selects no tile of the sheet");
 			}
 			// a tileset is consumed by name — a <tilemap> baking adr_ symbols
 			// against this direntry's placement — and has no imageset index to
@@ -113,6 +129,25 @@ public class GfxcompPlugin {
 			return files;
 		}
 		return encode(node, ctx, gendir, imageset, name, filename, index);
+	}
+
+	/** the inclusive tile id bounds a unit takes of its sheet ; everything by default */
+	private static int[] parseRange(String name, String range) throws Exception {
+		if (range == null) {
+			return new int[] { 0, Integer.MAX_VALUE };
+		}
+		String[] parts = range.split("-");
+		try {
+			int from = Integer.parseInt(parts[0].trim());
+			int to = parts.length == 1 ? from : Integer.parseInt(parts[1].trim());
+			if (parts.length > 2 || to < from) {
+				throw new NumberFormatException();
+			}
+			return new int[] { from, to };
+		} catch (NumberFormatException e) {
+			throw new Exception("image " + name + " : range must be <first>-<last> tile ids,"
+					+ " got '" + range + "'");
+		}
 	}
 
 	/** cut a sheet into grid-sized tile PNGs, returning their paths in id order */
