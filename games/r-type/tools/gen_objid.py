@@ -59,8 +59,8 @@ open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(equ_out))
 out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # Les ennemis portes vivent dans la page des ennemis et ont leur propre
 # point d'entree ; les autres identifiants visent encore le bouchon du stage.
-# ObjID_patapata vise encore le bouchon : l'unite de l'ennemi est construite
-# et chargee, mais l'executer plante — voir le readme.
+# ObjID_patapata reste au bouchon : l'objet s'initialise et tourne
+# correctement, mais quelque chose corrompt $9C00 ensuite — voir le readme.
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common')}
 
 out.append('Obj_Index_Page')

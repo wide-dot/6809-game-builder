@@ -100,8 +100,27 @@ et est chargée dans la région `enemies` (page $05) avec ses huit images
 compilées et leur index d'imageset. L'index d'objets du stage sait le désigner
 — il suffit de remettre `ObjID_patapata` dans `PORTED` de `tools/gen_objid.py`.
 
-**Mais l'exécuter plante** : le jeu part dans le moniteur peu après le premier
-spawn de la wave (horloge 504). Le banc tourne donc encore avec le bouchon.
+**Mais l'exécuter finit par corrompre la mémoire.** Ce que le pas-à-pas sous
+toje a établi, pour ne pas le refaire :
+
+- L'objet est **créé et initialisé correctement**. Son OST relu en mémoire est
+  sain : `id`=3, `priority`=6, `anim`/`sub_anim` renseignés, position cohérente
+  avec la caméra, `anim_frame_duration`=2 — donc `Init` est allé jusqu'au bout.
+- Le chemin d'appel est **juste** : `RunObjects` monte la page des ennemis et
+  saute à l'entrée de l'objet, qui appelle `Collision_AddAABB` puis
+  `moveByScript.initialize` aux bonnes adresses. Les externes résolus à `$0000`
+  ne sont pas une erreur : les deux unités sont chargées à l'adresse `$0000` et
+  leurs symboles sont à l'offset 0.
+- Le symptôme est ailleurs : **`$9C00` est écrasé** par un motif de 4 octets
+  répété, et les témoins du banc disparaissent avec. Le jeu part dans le
+  moniteur ensuite, ce qui est une conséquence, pas la cause.
+
+À savoir pour reprendre : le tampon de fond du mode « background erase » vit
+en **`$4000-$5FFF`** (`cell_start_adr`=$6000, 128 cellules de 64 octets dans
+`EraseSprites.asm`) — c'est-à-dire dans la zone écran, par convention v1. Rien
+ne dit encore que cette convention tienne avec la carte mémoire de ce banc.
+
+Le banc tourne donc encore avec le bouchon.
 
 Écarts marqués dans `obj.asm` (`; V2-DEVIATION:`) : le tir n'est pas porté
 (`tryFoeFire` vise le joueur, et la chaîne `createFoeFire`/`foefire`/
@@ -110,6 +129,9 @@ variables de tir. Les entrées d'imageset passent de `Img_<nom>` à `set_<nom>`,
 le nom que gfxcomp génère.
 
 Ce qui a déjà été corrigé en chemin, et qu'il ne faut pas rechercher :
+le **plafond de frame-drop** (`gfxlock.frameDrop.max`, que `_gfxlock.init`
+remet à zéro) et la **trame d'amorce** avant `InitScroll`, tous deux dans la
+chaîne d'init de la v1 ;
 `moveByScript` garde **deux** opérandes de page auto-modifiées, pas une, et le
 moteur a sa propre routine pour les poser — `moveByScript.register`, qui les
 lit dans l'index d'objets à l'identifiant de l'objet animation. Le stage

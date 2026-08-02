@@ -73,6 +73,13 @@ stage.stateKept
         std   scroll_vel
 
         jsr   stage.setup                  ; cartes, largeur, wave : le stage
+
+        ; une trame d'amorce avant le scroll, comme la v1 : le double tampon
+        ; bascule une fois et les objets deja inscrits tournent, de sorte que
+        ; InitScroll parte d'un etat coherent
+        jsr   gfxlock.bufferSwap.do
+        jsr   RunObjects
+
         jsr   InitScroll
 
         ; InitScroll cale le plafond caméra sur le map_width figé à l'assemblage
@@ -111,6 +118,14 @@ stage.stateKept
         ldx   #Irq_one_frame
         jsr   IrqSync
         _gfxlock.init
+        ; PLAFOND DE FRAME-DROP. _gfxlock.init le remet a zero — « pas de
+        ; plafond par defaut » — et sans lui la premiere iteration qui suit un
+        ; chargement de scene voit des centaines de trames ecoulees. Tout ce
+        ; qui avance « par frame drop » les consomme d'un coup :
+        ; moveByScript.runByFrameDrop sort alors par le bout de son script.
+        ; La v1 pose 8 ici, pour la trainee d'effacement des tuiles.
+        lda   #8
+        sta   gfxlock.frameDrop.max
         jsr   IrqOn
 
 ; L'ordre de la v1 : Scroll et ObjectWave hors du verrou, DrawTiles dedans.
