@@ -1,0 +1,182 @@
+;*******************************************************************************
+; The engine interface — one list, both sides
+;
+; The resident engine unit and every stage unit include this same file. The
+; engine defines ENGINE_RESIDENT before including it and gets EXPORT lines ;
+; a stage gets EXTERNAL lines for the same names. The two sides cannot drift,
+; because there is only one list.
+;
+; This is lane 2 of the stage boundary (see
+; docs/lang/fr/analyse-frontiere-stage-2026-08.md) : what a stage calls in the
+; engine. Lane 3 — the tables the engine reads back from the stage — is the
+; other direction and lives in stage-tables.asm.
+;
+; Adding a name here costs four bytes of link data in the engine's direntry and
+; a linear search per reference at load time, so the list stays deliberately
+; short : the engine offers mechanisms, the stage holds the policy.
+;*******************************************************************************
+
+_api    macro
+  ifdef ENGINE_RESIDENT
+\1 EXPORT
+  else
+\1 EXTERNAL
+  endif
+        endm
+
+        ; --- boot and frame ---
+        _api InitGlobals
+        _api IrqInit
+        _api IrqOn
+        _api IrqOff
+        _api IrqSync
+        _api Irq_user_routine
+        _api Irq_one_frame
+
+        ; --- double buffer ---
+        ;
+        ; La liste est longue pour une seule raison : _gfxlock.on/off/loop sont
+        ; des MACROS, donc elles s'assemblent dans le stage et y référencent
+        ; directement l'état du verrou. La voie compile-time et la voie de
+        ; liaison se rejoignent ici — une macro qui touche une variable du
+        ; moteur oblige à exporter cette variable. Les rendre routines
+        ; échangerait ces exports contre des appels ; le choix v1 (macros, pour
+        ; le coût par trame) est conservé tel quel.
+        _api gfxlock.bufferSwap.check
+        _api gfxlock.bufferSwap.do
+        _api gfxlock.bufferSwap.wait
+        _api gfxlock.status
+        _api gfxlock.backBuffer.id
+        _api gfxlock.backBuffer.status
+        _api gfxlock.backProcess.status
+        _api gfxlock.frame.count
+        _api gfxlock.frame.lastCount
+        _api gfxlock.frame.gameCount
+        _api gfxlock.frameDrop.count
+        _api gfxlock.frameDrop.count_w
+        _api gfxlock.frameDrop.max
+
+        ; --- palette ---
+        _api Pal_current
+        _api PalRefresh
+        _api PalUpdateNow
+
+        ; --- screen clear ---
+        _api ClearInterlacedEvenDataMemory
+        _api ClearInterlacedOddDataMemory
+
+        ; --- tilemap scroll : the routines, then the state a stage sets up ---
+        _api InitScroll
+        _api Scroll
+        _api DrawTiles
+        _api scroll_map_even
+        _api scroll_map_odd
+        _api scroll_map_page_even
+        _api scroll_map_page_odd
+        _api scroll_vp_h_tiles
+        _api scroll_vp_v_tiles
+        _api scroll_tile_width
+        _api scroll_tile_height
+        _api scroll_vp_x_pos
+        _api scroll_vp_y_pos
+        _api scroll_vel
+        _api scroll_max
+        _api scroll_tile_pos
+        _api scroll_tile_pos_offset24
+
+        ; --- object manager ---
+        _api InitStack
+        _api ManagedObjects_ClearAll
+        _api RunObjects
+        _api LoadObject_x
+        _api LoadObject_u
+        _api UnloadObject_u
+        _api Obj_Mount
+        _api Obj_Run
+        _api Obj_RunB
+        _api ObjectDp_Clear
+        _api ObjectMoveSync
+        _api RunPgSubRoutine
+        _api PSR_Page
+        _api PSR_Address
+        _api PSR_Param
+
+        ; --- enemy waves ---
+        _api ObjectWave
+        _api ObjectWave_Init
+        _api object_wave_data
+        _api object_wave_data_start
+        _api object_wave_data_page
+
+        ; --- terrain collision : the resident half, the stage mounts the map ---
+        _api terrainCollision.init.do
+        _api terrainCollision.do
+        _api terrainCollision.sensor.x
+        _api terrainCollision.sensor.y
+        _api terrainCollision.impact.x
+        _api terrainCollision.disabled
+        _api terrainCollision.bgFlag
+        _api terrainCollision.bgByteOff
+        _api terrainCollision.bgBitShift
+        _api terrainCollision.bgColTmp
+
+        ; --- sprites : ce qu'un objet de jeu appelle pour se montrer ---
+        _api DisplaySprite
+        _api DeleteObject
+        _api CheckSpritesRefresh
+        _api EraseSprites
+        _api DrawSprites
+        _api UnsetDisplayPriority
+        _api BgBufferAlloc
+        _api InitDrawSprites
+        _api AnimateSprite
+        _api AnimateSpriteSync
+
+        ; --- animation par script ---
+        _api moveByScript.initialize
+        _api moveByScript.runByB
+        _api moveByScript.runByFrameDrop
+        _api moveByScript.callback
+        _api moveByScript.anim.end
+        _api moveByScript.anim.loops
+        _api moveByScript.register
+
+        ; --- collisions AABB : les routines, puis les listes que le jeu
+        ; partage. Un objet s'inscrit dans l'une d'elles a sa creation ---
+        _api Collision_Do
+        _api Collision_AddAABB
+        _api Collision_RemoveAABB
+        ; _Collision_RemoveAABB est une macro : elle ecrit dans les operandes
+        ; auto-modifiees du moteur depuis la page de l'objet, donc ces trois
+        ; adresses traversent la frontiere — meme mecanique que gfxlock.
+        _api Collision_Remove_1
+        _api Collision_Remove_2
+        _api Collision_Remove_3
+        _api AABB_list_friend
+        _api AABB_list_ennemy
+        _api AABB_list_ennemy_unkillable
+        _api AABB_list_player
+        _api AABB_list_bonus
+
+        ; --- score, qui survit aux stages comme les vies ---
+        _api AwardScore
+        _api globals.score
+
+        ; --- alea ---
+        _api InitRNG
+        _api RandomNumber
+
+        ; --- controllers ---
+        _api joypad.init
+        _api joypad.read
+        _api joypad.held.dpad
+
+        ; --- state that outlives a stage : the engine holds it, so a stage
+        ; swap cannot take it with it ---
+        _api game.score
+        _api game.lives
+        _api game.stage
+
+        ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
+        ; l'écrasement de la région du stage qui l'appelle ---
+        _api game.stage.switch
