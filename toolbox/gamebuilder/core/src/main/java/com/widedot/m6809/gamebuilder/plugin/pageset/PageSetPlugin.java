@@ -129,6 +129,10 @@ public class PageSetPlugin {
 			// content may hold a *.static section, and the tables that index
 			// this set ask for each symbol's page as soon as it is exported
 			ctx.staticLink.place(memberName, page, region.address, "pageset " + name);
+			// the set occupies the region as a whole : another set targeting it
+			// replaces every member, so their items may share names even when
+			// the packing put a given item on different pages
+			ctx.staticLink.declareExclusive(memberName, regionName, name);
 
 			String source = gendir + File.separator + memberName + ".asm";
 			writeMemberSource(ctx, source, parts, content);
@@ -140,45 +144,79 @@ public class PageSetPlugin {
 		ctx.pageSets.declare(name, members);
 	}
 
+	/** parts per measuring assembly ; see measure() for why this is bounded */
+	private static final int MEASURE_BATCH = 32;
+
 	/**
-	 * Sizes of the parts, from a single assembly of the whole set.
+	 * Sizes of the parts, measured in batches.
 	 *
 	 * Sizes come from the distance between consecutive exported symbols, which
-	 * is exact here because each part contributes one. Reading offsets touches
-	 * no global state — in particular it registers no export, which would
-	 * collide with the real per-page entries built right after.
+	 * is exact because each part contributes one. Reading offsets touches no
+	 * global state — in particular it registers no export, which would collide
+	 * with the real per-page entries built right after.
+	 *
+	 * Batching is not an optimisation but a format limit : LWOBJ16 holds
+	 * offsets on 16 bits, so an object over 64 KB wraps and its symbol table
+	 * reads as noise. A whole tileset passes that ceiling easily — level 1's
+	 * pre-shifted plane assembles to 65533 bytes on its own. A batch that
+	 * still manages to exceed it is retried in halves, down to a single part,
+	 * which is also how a genuinely oversized part surfaces.
 	 */
 	private static int[] measure(String name, List<String[]> parts, BuildContext ctx, String gendir)
 			throws Exception {
 
-		String source = gendir + File.separator + name + ".measure.asm";
-		writeMemberSource(ctx, source, parts, null);
+		int[] sizes = new int[parts.size()];
+		int from = 0;
+		int batch = MEASURE_BATCH;
+		while (from < parts.size()) {
+			int to = Math.min(from + batch, parts.size());
+			try {
+				measureBatch(name, parts, from, to, ctx, gendir, sizes);
+				from = to;
+				batch = MEASURE_BATCH;
+			} catch (Exception e) {
+				if (to - from <= 1) {
+					throw e;
+				}
+				batch = (to - from) / 2;
+				log.debug("pageset {} : measuring batch too large to parse, retrying {} parts",
+						name, batch);
+			}
+		}
+		return sizes;
+	}
+
+	private static void measureBatch(String name, List<String[]> parts, int from, int to,
+			BuildContext ctx, String gendir, int[] sizes) throws Exception {
+
+		List<String[]> batch = parts.subList(from, to);
+		String source = gendir + File.separator + name + ".measure." + from + ".asm";
+		writeMemberSource(ctx, source, batch, null);
 
 		ObjectDataInterface object = LwasmPlugin.getObject(
-				member(name + ".measure", source, null, null, null).getChildren().get(0), ctx);
+				member(name + ".measure." + from, source, null, null, null).getChildren().get(0), ctx);
 		Map<String, int[]> offsets = object.getExportOffsets();
 		int total = object.getBytes().length;
 
-		int[] starts = new int[parts.size()];
-		for (int i = 0; i < parts.size(); i++) {
-			int[] at = offsets.get(parts.get(i)[1]);
+		int[] starts = new int[batch.size()];
+		for (int i = 0; i < batch.size(); i++) {
+			int[] at = offsets.get(batch.get(i)[1]);
 			if (at == null) {
-				throw new Exception("pageset '" + name + "' : part " + parts.get(i)[0]
-						+ " does not export '" + parts.get(i)[1] + "', so its size is unknown");
+				throw new Exception("pageset '" + name + "' : part " + batch.get(i)[0]
+						+ " does not export '" + batch.get(i)[1] + "', so its size is unknown");
 			}
 			starts[i] = at[0];
 		}
 
-		int[] sizes = new int[parts.size()];
-		for (int i = 0; i < parts.size(); i++) {
-			int end = i + 1 < parts.size() ? starts[i + 1] : total;
-			sizes[i] = end - starts[i];
-			if (sizes[i] <= 0) {
+		for (int i = 0; i < batch.size(); i++) {
+			int end = i + 1 < batch.size() ? starts[i + 1] : total;
+			sizes[from + i] = end - starts[i];
+			if (sizes[from + i] <= 0) {
 				throw new Exception("pageset '" + name + "' : parts are not laid out in"
-						+ " declaration order, '" + parts.get(i)[1] + "' measures " + sizes[i]);
+						+ " declaration order, '" + batch.get(i)[1] + "' measures "
+						+ sizes[from + i]);
 			}
 		}
-		return sizes;
 	}
 
 	/** the source of one member : its parts, and the exports they carry */

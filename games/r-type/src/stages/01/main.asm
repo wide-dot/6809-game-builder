@@ -15,6 +15,12 @@ STAGE_ID equ 1
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
 
+; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
+; residente des que le niveau est entier. Le scroll porte deja une page par
+; plan de carte, donc il suffit de les lui designer.
+map.even          EXTERNAL
+map.odd           EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
@@ -45,7 +51,7 @@ stage.setup
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+stage.page
+        lda   #map.RAM_OVER_CART+maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 

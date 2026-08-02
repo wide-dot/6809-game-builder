@@ -557,8 +557,15 @@ Ordre de migration suggéré (dépendances croissantes) :
    déclaré, les ids étant distribués avant construction). Vérifié sur
    l'ouverture du niveau 2 — celle qui échouait à 18 396 > 16 384 : 92+9
    tuiles sur $06/$07 et 76+40 sur $08/$09, page pleine à 16 347/16 384,
-   banc 5/5. Reste : le niveau 1 entier (les tables de carte devront sortir
-   de la région du stage).
+   banc 5/5. **Le niveau 1 ENTIER tourne** (02/08) : 132
+   colonnes, 244 + 303 tuiles rangées par pageset sur 3 et 5 pages, tables de
+   carte (11 880 o) dans leur propre page paginée — le scroll portait déjà une
+   page par plan. Caméra traversant les 1440 px, art du milieu de niveau juste,
+   banc 5/5. Deux trouvailles : une unité de mesure ne peut pas dépasser 64 Ko
+   (offsets LWOBJ16 sur 16 bits — le plan impair assemble à 65 533 o), d'où une
+   mesure par lots ; et deux pagesets d'une même région sont exclusifs *en tant
+   qu'ensembles*, pas par destination (une tuile donnée ne tombe pas sur la même
+   page dans les deux), d'où `StaticLink.declareExclusive`.
    Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
    Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une

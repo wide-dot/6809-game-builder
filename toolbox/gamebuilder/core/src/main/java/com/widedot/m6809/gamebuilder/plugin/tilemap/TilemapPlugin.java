@@ -87,6 +87,11 @@ public class TilemapPlugin {
 			source.append("adr_").append(tiles).append('_').append(id).append('_')
 					.append(variant).append(" EXTERNAL").append(System.lineSeparator());
 		}
+		// The table is exported : a map big enough to need its own page lives
+		// in a direntry of its own, and the game mode then reaches it by name.
+		// When it stays in the unit that uses it, the export costs nothing —
+		// nothing imports it, so pruning leaves it out of the link data.
+		source.append(label).append(" EXPORT").append(System.lineSeparator());
 		source.append(" SECTION ").append(section).append(System.lineSeparator());
 		source.append(label).append(System.lineSeparator());
 		int empty = 0;

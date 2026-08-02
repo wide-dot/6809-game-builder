@@ -62,13 +62,18 @@ moteur ; l'état persistant traverse l'échange ; le retour au stage 1
 fonctionne ; le checkpoint sans disque retrouve exactement la position de
 wave que la lecture normale avait atteinte.
 
-**Limite assumée** : une tranche de 24 colonnes par niveau, pas le niveau
-entier. Les tuiles compilées d'un niveau complet pèsent bien plus qu'une page
-de 16 Ko (245 et 304 tuiles pour le niveau 1), et le placement multi-pages —
-le bin-packing du pipeline v1 — n'existe pas encore côté v2. La fenêtre du
-niveau 2 est prise à la colonne 20 : son ouverture est sa partie la plus
-dense (100 tuiles distinctes contre 60 plus loin). Mesures et découpe :
-`tools/crop_stage.py`.
+**Le niveau 1 est entier** (02/08/2026) : 132 colonnes, 244 tuiles paires et
+303 impaires, rangées par `<pageset>` sur 3 et 5 pages, et 11 880 octets de
+tables de carte dans une page à elles — la RAM résidente n'en a pas la place,
+mais le scroll porte déjà une page par plan de carte. La caméra traverse les
+1440 px et l'art du milieu de niveau (tourelles, parois nervurées) s'affiche
+juste, ce qui n'arrive que si chaque tuile est lue sur la bonne des huit
+pages. Le stage 2 reste sur une tranche de 24 colonnes : ses données existent,
+mais rien n'exige encore le niveau entier.
+
+Seule valeur du banc qui n'est pas celle du jeu : la vitesse de scroll,
+$0200 au lieu de $0030 — traverser le niveau 1 à la vitesse de r-type
+prendrait 7680 trames.
 
 ## Traçabilité v1
 

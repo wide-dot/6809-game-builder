@@ -69,7 +69,7 @@ stage.stateKept
         sta   scroll_vp_x_pos
         lda   #11
         sta   scroll_vp_y_pos
-        ldd   #$0030                       ; 8.8 : la vitesse de scroll de r-type
+        ldd   #bench.SCROLL_VEL
         std   scroll_vel
 
         jsr   stage.setup                  ; cartes, largeur, wave : le stage

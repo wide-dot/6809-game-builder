@@ -165,12 +165,37 @@ public class StaticLink {
 		return placement;
 	}
 
+	/** direntry -> {exclusion group, owner within it} for pageset members */
+	private final Map<String, String[]> exclusive = new LinkedHashMap<String, String[]>();
+
 	/**
-	 * Whether two direntries are alternatives : each one at a single known
-	 * destination, and the same one. Loading either evicts the other from the
-	 * loader's index, so they never coexist at run time.
+	 * Records that a direntry is a member of a set that occupies a region as a
+	 * whole.
+	 *
+	 * A pageset's members are loaded and evicted together — a scene names the
+	 * set, never a member — so two sets targeting the same region are
+	 * alternatives however their packing turned out. Which page a given item
+	 * landed on differs between them, so destination alone cannot say it.
+	 *
+	 * @param group the region the sets compete for
+	 * @param owner the set this direntry belongs to ; members of the same set
+	 *              ARE loaded together, and stay subject to plain uniqueness
+	 */
+	public void declareExclusive(String direntry, String group, String owner) {
+		exclusive.put(direntry, new String[] { group, owner });
+	}
+
+	/**
+	 * Whether two direntries are alternatives, so never both in the loader's
+	 * index : either at the same single destination — loading one evicts the
+	 * other — or members of different sets competing for the same region.
 	 */
 	public boolean sameSingleDestination(String a, String b) {
+		String[] ea = exclusive.get(a);
+		String[] eb = exclusive.get(b);
+		if (ea != null && eb != null && ea[0].equals(eb[0]) && !ea[1].equals(eb[1])) {
+			return true;
+		}
 		Placement pa = placements.get(a);
 		Placement pb = placements.get(b);
 		return pa != null && pb != null && pa.page == pb.page && pa.address == pb.address;
@@ -234,5 +259,6 @@ public class StaticLink {
 		exports.clear();
 		interfaceRegions.clear();
 		allDestinations.clear();
+		exclusive.clear();
 	}
 }

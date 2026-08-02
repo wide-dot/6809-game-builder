@@ -7,9 +7,16 @@
 
 bench.MAGIC        equ $CA
 bench.SCORE        equ $1234        ; l'état semé au premier stage
-bench.STAGE_FRAMES equ 700          ; horloge de niveau : de quoi atteindre les
+bench.STAGE_FRAMES equ 800          ; horloge de niveau : de quoi atteindre les
                                     ; premiers horodatages reels des deux waves
-                                    ; (504 pour le niveau 1, 518 pour le 2)
+                                    ; (504 pour le niveau 1, 518 pour le 2) et
+                                    ; de traverser le niveau 1 en entier
+bench.SCROLL_VEL   equ $0200        ; 8.8 : 2 px par trame. La vitesse de r-type
+                                    ; est $0030, soit 3/16 de pixel — traverser
+                                    ; les 1440 px du niveau 1 y prendrait 7680
+                                    ; trames. Le banc accelere pour tenir dans
+                                    ; son budget ; c'est la SEULE valeur du banc
+                                    ; qui n'est pas celle du jeu.
 
 bench.magic        equ $9C00        ; $CA : la partie a démarré
 bench.stage        equ $9C01        ; le numéro du stage qui tourne
