@@ -39,7 +39,9 @@ MO5, Tandy CoCo 3.
   les sources versionnées dans `toolbox/third-party/src/asm/`** — voir son
   [readme](toolbox/third-party/src/asm/readme.md). Pour pointer ailleurs :
   `-Dlwasm.path=/chemin` ou la variable d'environnement `LWASM`.
-  Sorties dans `dist/` ; le `<hfe/>` échoue sur macOS (pas de `hxcfe`), l'omettre.
+  Sorties dans `dist/`. Le `<hfe/>` fonctionne sur macOS depuis 08/2026
+  (`hxcfe` 2.16.15.2 universel embarqué, sources dans
+  `toolbox/third-party/src/floppy/`).
 - Les scripts `bin/unix/` et `bin/windows/` ne sont **pas faits pour être lancés depuis
   les sources** : ce sont des zones de staging que les descripteurs `package/` mappent
   vers `/bin` de la distribution, où leur `BASEDIR` (un cran au-dessus du script)
@@ -173,8 +175,9 @@ comparées **octet par octet** avec les précédentes, et `loader-ut` rejoué so
 - **Phase 0** — le build ne mentait plus : `MainCommand` en `Callable<Integer>`,
   erreurs d'écriture propagées, JUnit + surefire, 22 tests sur les fonctions pures
   (SAP, checksum fd640, cascade Attribute). Un build cassé sort désormais en
-  exit ≠ 0. *Effet de bord assumé : les configs déclarant `<hfe/>` échouent sur
-  macOS faute de `hxcfe` — elles échouaient déjà, en silence.*
+  exit ≠ 0. *Effet de bord assumé à l'époque : les configs déclarant `<hfe/>`
+  échouaient sur macOS faute de `hxcfe` — elles échouaient déjà, en silence.
+  Levé en 08/2026 : le binaire macOS est embarqué.*
 - **Phase 1** — bugs de format : garde-fou 16 Ko réactivé (il lisait la mauvaise
   clé de defaults et n'a **jamais** servi), SAP format 2 invalide (`*` au lieu de
   `+`), détection des drives SAP décalée, `FdUtil.getIndex` dérivé de la géométrie
@@ -639,8 +642,9 @@ n'émet que ceux-là (unicité toujours vérifiée, y compris pour les élagués
 Un symbole consommé uniquement en `.static` compte comme non importé — les
 deux mécanismes se composent : la link data de `tilescroll` ne contient plus
 ni exports ni externs, seulement des interns. Attention à la lecture des
-rapports : les configs `<hfe/>` avortent sur hxcfe **avant** la ligne de
-rapport d'élagage, mais élaguent quand même.
+rapports : les configs `<hfe/>` avortaient sur hxcfe **avant** la ligne de
+rapport d'élagage, tout en élaguant quand même (sans objet sur macOS depuis
+08/2026, où hxcfe est embarqué).
 **Les interns se cuisent aussi depuis le 02/08** : la valeur d'une référence
 interne est relative à l'endroit où l'unité est chargée, que le builder connaît
 pour une unité placée par une scène — c'est le principe de l'indexation des
@@ -679,13 +683,14 @@ rendu paraît haché en colonnes.
 - Liens cassés : `readme.md` racine (4 liens doc vides), renvoi vers
   `docs/lang/fr/readme.md` inexistant. (`docs/lang/en/readme.md` corrigé le
   01/08/2026 : ses cibles pointaient encore sur l'ancien layout `docs/`.)
-- Binaires third-party inégaux selon l'OS : pas de `hxcfe` macOS (les configs
-  déclarant `<hfe/>` sortent en erreur explicite), pas d'`exomizer` linux-arm.
+- Binaires third-party inégaux selon l'OS : pas d'`exomizer` linux-arm, pas de
+  `hxcfe` linux (les configs déclarant `<hfe/>` y sortent en erreur explicite).
+  hxcfe : macOS en 2.16.15.2 (universel, reconstruit depuis les sources
+  versionnées dans `toolbox/third-party/src/floppy/`), Windows et linux-arm sur
+  binaire amont.
   lwtools : macOS en 4.25 (universel, reconstruit depuis les sources versionnées),
   Windows en 4.22, Linux et Linux-arm encore en 4.18 — à reconstruire sur ces
   plateformes le jour où l'occasion se présente (procédure dans
   `toolbox/third-party/src/asm/readme.md`).
-- `HfePlugin` invoque encore `hxcfe` par le PATH : il devrait passer par
-  `ThirdPartyTools.resolve` comme `LwAssembler` depuis 08/2026.
 - `rom t2` cité plus haut : aucun média cartouche n'existe dans le registre v2
   (fd/sd/sap/hfe seulement) — à porter ou à retirer de la doc.

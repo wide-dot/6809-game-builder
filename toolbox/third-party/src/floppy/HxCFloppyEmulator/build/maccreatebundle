@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+VERSION=`grep "define STR_FILE_VERSION2" version.h | cut -f2 -d\"`
+
+case "$1" in
+  HXCSOFT)
+	NAME="HxCFloppyEmulator"
+	DMGNAME="HxCFloppyEmulator"
+	INSTALL_PATH="HxCFloppyEmulator.app"
+	LIBS="libhxcfe.dylib libusbhxcfe.dylib"
+	GUI_EXEC="hxcfloppyemulator"
+	CLI_EXEC="hxcfe"
+	;;
+  DOSDISKBROWSER)
+	NAME="DosDiskBrowser"
+	DMGNAME="DosDiskBrowser"
+	INSTALL_PATH="DosDiskBrowser.app"
+	LIBS="libhxcfe.dylib"
+	GUI_EXEC="dosdiskbrowser"
+	CLI_EXEC=""
+	;;
+  *)
+	echo "Usage: $0 {HXCSOFT|DOSDISKBROWSER}"
+	exit 1
+	;;
+esac
+
+echo Creating App bundle : ${NAME}
+
+mkdir -p ${INSTALL_PATH}/Contents/{Resources,MacOS,Frameworks}
+
+echo APPLnone > ${INSTALL_PATH}/Contents/PkgInfo
+iconutil --convert icns --output ${INSTALL_PATH}/Contents/Resources/icons.icns ../HxCFloppyEmulator_software/sources/mac/icons/hxcfloppyemulator.iconset/
+install ${GUI_EXEC} ${CLI_EXEC} ${INSTALL_PATH}/Contents/MacOS
+install ${LIBS} ${INSTALL_PATH}/Contents/Frameworks
+
+cat << EOF > ${INSTALL_PATH}/Contents/info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist SYSTEM "file://localhost/System/Library/DTDs/PropertyList.dtd">
+<plist version="0.9">
+<dict>
+		<key>CFBundleIdentifier</key>
+		<string>com.hxc2001.${GUI_EXEC}</string>
+		<key>CFBundleName</key>
+		<string>${NAME}</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>CFBundleVersion</key>
+		<string>1</string>
+		<key>CFBundleShortVersionString</key>
+		<string>${VERSION}</string>
+		<key>CFBundleIconFile</key>
+		<string>icons.icns</string>
+		<key>CFBundleSignature</key>
+		<string>none</string>
+</dict>
+</plist>
+EOF
+
+if [ -n "${CLI_EXEC}" ]; then
+
+cat << EOF > ${INSTALL_PATH}/Contents/MacOS/README
+${CLI_EXEC} is the command line version of ${NAME}.
+It can run from here, or be installed to /usr/local/bin or any other convenient directory \
+in your PATH.
+It will look for its libraries (${LIBS}) in ../lib or ../Frameworks relative to the executable.
+
+To use SPS CapsLib / CAPSImage for IPF support, install it in one of \
+the following locations :
+- the same directory as libhxcfe.dylib
+- /Library/Frameworks
+- /usr/local/lib
+and make sure the SPSCAPS_LIB_NAME internal parameter is set to the correct name.
+EOF
+
+fi
+
+hdiutil create ${DMGNAME}.dmg -srcfolder ${INSTALL_PATH} -ov -volname ${DMGNAME}

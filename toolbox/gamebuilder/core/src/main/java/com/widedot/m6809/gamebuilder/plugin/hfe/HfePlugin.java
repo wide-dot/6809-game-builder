@@ -15,7 +15,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defaults;
 import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
-import com.widedot.m6809.util.OSValidator;
+import com.widedot.m6809.util.ThirdPartyTools;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,12 +42,7 @@ public class HfePlugin {
         Files.write(tmpoutputFile, media.getInterleavedData());
 
 	    // convert to hfe
-        String hxcfe;
-        if (OSValidator.IS_WINDOWS) {
-        	hxcfe = "hxcfe.exe";
-        } else {
-        	hxcfe = "hxcfe";
-        }
+        String hxcfe = ThirdPartyTools.resolve("hxcfe");
 		List<String> command = new ArrayList<String>(List.of(
 				hxcfe,
 				"-finput:"+tmpoutputFile,
@@ -66,10 +61,13 @@ public class HfePlugin {
 		try {
 			p = pb.start();
 		} catch (IOException e) {
-			// hxcfe is not shipped for every platform (no macOS build today) :
-			// say so plainly instead of surfacing a bare "Cannot run program"
-			throw new Exception(hxcfe + " was not found in the PATH. It is needed to produce "
-					+ absFilename + " ; install it or drop the <hfe/> output from the configuration.", e);
+			// hxcfe does not ship for every platform : say so plainly instead of
+			// surfacing a bare "Cannot run program"
+			throw new Exception(hxcfe + " could not be run. It ships with the build under"
+					+ " toolbox/third-party/bin/<os>/ for the platforms it was built for ;"
+					+ " pass -Dbasedir=<repository root> so it can be found, put it on the PATH,"
+					+ " point at it with -Dhxcfe.path=/full/path (or the HXCFE environment"
+					+ " variable), or drop the <hfe/> output from the configuration.", e);
 		}
 
 		int rc = p.waitFor();
