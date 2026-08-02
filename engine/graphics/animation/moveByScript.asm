@@ -18,10 +18,12 @@
 ; moveByScript.NEGYSTEP : negative y step
 ; moveByScript.POSYSTEP : positive y step
 
-moveByScript.callback       equ glb_a0     ; object routine that must be called each move step
-moveByScript.anim.speed     equ glb_d0     ; number of move steps by frame
-moveByScript.anim.end       equ glb_d0_b   ; boolean to inform object that script is over
-moveByScript.anim.loops     equ glb_d0_b+1 ; will run the routine n times to compensate frame drop
+; V2-DEVIATION: les quatre equates callback/.anim.speed/.anim.end/.anim.loops
+; sont deplacees dans engine/constants.asm, aupres des glb_* dont elles
+; derivent. Une unite paginee doit les voir A L'ASSEMBLAGE : ce sont des
+; adresses absolues de page directe, et les faire passer par la frontiere de
+; lien les fait rebaser par le linker ($9FA9 -> $00A9).
+; Cas de migration : docs/lang/en/migration/equates-link-boundary.md
 
 ; register animation data location to routine
 ; help to save some cycles in main loop

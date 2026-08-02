@@ -98,6 +98,20 @@ glb_a3_b equ   dp_extreg+25
 glb_a4   equ   dp_extreg+26
 glb_a4_b equ   dp_extreg+27
 
+* V2-DEVIATION: ces quatre equates viennent de moveByScript.asm.
+* Les registres de travail que moveByScript partage avec l'objet appelant.
+* Ils vivent ici, et non dans moveByScript.asm, parce qu'une unite paginee
+* doit les connaitre a l'assemblage : ce sont des ADRESSES ABSOLUES de page
+* directe, pas des etiquettes de code. Les faire franchir la frontiere de
+* lien (EXPORT/EXTERNAL) les ferait rebaser par le linker -- $9FA9 devient
+* $00A9, l'objet ecrit son callback dans sa propre page, et moveByScript
+* rappelle l'adresse $0000.
+* Cas de migration : docs/lang/en/migration/equates-link-boundary.md
+moveByScript.callback       equ glb_a0     ; object routine that must be called each move step
+moveByScript.anim.speed     equ glb_d0     ; number of move steps by frame
+moveByScript.anim.end       equ glb_d0_b   ; boolean to inform object that script is over
+moveByScript.anim.loops     equ glb_d0_b+1 ; will run the routine n times to compensate frame drop
+
 * ===========================================================================
 * Display Constants
 * ===========================================================================

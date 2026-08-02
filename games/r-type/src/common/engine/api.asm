@@ -133,12 +133,13 @@ _api    macro
         _api AnimateSpriteSync
 
         ; --- animation par script ---
+        ; Les routines seules franchissent la frontiere. callback, anim.end et
+        ; anim.loops sont des equates de page directe, pas des etiquettes : ils
+        ; sont partages a l'assemblage par engine/constants.asm (voie 1). Les
+        ; lister ici les faisait rebaser par le linker, $9FA9 -> $00A9.
         _api moveByScript.initialize
         _api moveByScript.runByB
         _api moveByScript.runByFrameDrop
-        _api moveByScript.callback
-        _api moveByScript.anim.end
-        _api moveByScript.anim.loops
         _api moveByScript.register
 
         ; --- collisions AABB : les routines, puis les listes que le jeu
