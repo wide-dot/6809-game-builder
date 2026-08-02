@@ -4,8 +4,8 @@ doc/arcade-combat-reference.md,doc/arcade-combat-reference.md
 doc/arcade-scoring-reference.md,doc/arcade-scoring-reference.md
 game-mode/00/main.asm,src/title/main.asm
 game-mode/00/ram_data.asm,src/title/ram_data.asm
-game-mode/01/main.asm,src/stages/01/main.asm
-game-mode/01/ram_data.asm,src/stages/01/ram_data.asm
+game-mode/01/main.asm,src/stages/01/v1-main.asm
+game-mode/01/ram_data.asm,src/stages/01/v1-ram_data.asm
 game-mode/01/images/pal-inside-black.png,src/stages/01/palette/pal-inside-black.png
 game-mode/01/images/pal-inside-blue.png,src/stages/01/palette/pal-inside-blue.png
 game-mode/01/images/pal-inside-grey.png,src/stages/01/palette/pal-inside-grey.png

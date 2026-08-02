@@ -1,0 +1,183 @@
+<configuration>
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+
+        <!-- La carte mémoire dit la frontière de chargement.                  -->
+        <!--                                                                   -->
+        <!-- 'common' est chargée une fois au boot et plus jamais : elle porte -->
+        <!-- le moteur et l'état qui doit survivre aux changements de stage.   -->
+        <!--                                                                   -->
+        <!-- 'stage' et les deux régions de tuiles sont déclarées interface :   -->
+        <!-- les unités qui s'y chargent sont des alternatives, mutuellement   -->
+        <!-- exclusives au runtime. Le builder les autorise donc à exporter    -->
+        <!-- les mêmes noms, et exige d'elles la même liste d'exports.         -->
+        <layout gensymbols="gen/layout.asm">
+            <region name="common"     page="$01" address="$6100" size="$2200"/>
+            <region name="stage"      page="$01" address="$8300" size="$1600" interface="true"/>
+            <region name="tiles.even" page="$06" address="$0000" size="$4000" interface="true"/>
+            <region name="tiles.odd"  page="$08" address="$0000" size="$4000" interface="true"/>
+        </layout>
+
+        <floppydisk model="fd640">
+
+            <!-- Le moteur, lui, a de vraies données de lien : son interface   -->
+            <!-- de stage. Les cartes n'en ont aucune (sections .static), donc  -->
+            <!-- une piste suffit largement à LINK.                             -->
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="LINK"  track="1" face="0" sector="1"/>
+            <section name="DATA"  track="2" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="direntry.section" value="DATA"/>
+                <default name="direntry.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- Le moteur résident                                        -->
+                <!-- ******************************************************** -->
+                <direntry name="common.engine" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/common/engine.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/engine/engine.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Stage 1 : tuiles d'abord, le stage ensuite.               -->
+                <!--                                                           -->
+                <!-- L'ordre compte. Les tables de carte du stage sont cuites   -->
+                <!-- au build contre le placement de SES tuiles : le           -->
+                <!-- fournisseur doit être déclaré avant son consommateur, et  -->
+                <!-- entre deux alternatives c'est la dernière déclarée qui     -->
+                <!-- fournit. D'où le groupement par stage plutôt que par type. -->
+                <!-- ******************************************************** -->
+                <direntry name="stage1.tiles.even" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/01/stage01-tiles-even.asm">
+                        <gfxcomp gendir="gen/stages/01/tiles-even"
+                                 gensource="gen/stages/01/tiles-even/includes.asm">
+                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="stage1.tiles.odd" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/01/stage01-tiles-odd.asm">
+                        <gfxcomp gendir="gen/stages/01/tiles-odd"
+                                 gensource="gen/stages/01/tiles-odd/includes.asm">
+                            <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="stage1" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/01/stage01-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/main.asm"/>
+                        <png2pal symbol="Pal_stage" filename="src/stages/01/map/intro/even.png"/>
+                        <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
+                                 tiles="tilesEven" variant="ND0" file="stage1.tiles.even"
+                                 gensource="gen/stages/01/map-even.asm"/>
+                        <tilemap map="src/stages/01/map/intro/odd.bin" label="map.odd"
+                                 tiles="tilesOdd" variant="ND0" file="stage1.tiles.odd"
+                                 gensource="gen/stages/01/map-odd.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
+                <!-- ******************************************************** -->
+                <direntry name="stage2.tiles.even" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/02/stage02-tiles-even.asm">
+                        <gfxcomp gendir="gen/stages/02/tiles-even"
+                                 gensource="gen/stages/02/tiles-even/includes.asm">
+                            <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="stage2.tiles.odd" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/02/stage02-tiles-odd.asm">
+                        <gfxcomp gendir="gen/stages/02/tiles-odd"
+                                 gensource="gen/stages/02/tiles-odd/includes.asm">
+                            <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="stage2" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/02/stage02-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/02/main.asm"/>
+                        <png2pal symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
+                                 tiles="tilesEven" variant="ND0" file="stage2.tiles.even"
+                                 gensource="gen/stages/02/map-even.asm"/>
+                        <tilemap map="src/stages/02/map/intro/odd.bin" label="map.odd"
+                                 tiles="tilesOdd" variant="ND0" file="stage2.tiles.odd"
+                                 gensource="gen/stages/02/map-odd.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Les scènes. Celle du boot charge le moteur ET le stage 1 ; -->
+                <!-- les deux autres ne rechargent que ce qui change, le        -->
+                <!-- moteur restant en place par simple absence de la liste.    -->
+                <!-- ******************************************************** -->
+                <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
+                    <load name="common.engine"     region="common"/>
+                    <load name="stage1.tiles.even" region="tiles.even"/>
+                    <load name="stage1.tiles.odd"  region="tiles.odd"/>
+                    <load name="stage1"            region="stage"/>
+                </scene>
+
+                <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
+                    <load name="stage1.tiles.even" region="tiles.even"/>
+                    <load name="stage1.tiles.odd"  region="tiles.odd"/>
+                    <load name="stage1"            region="stage"/>
+                </scene>
+
+                <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
+                    <load name="stage2.tiles.even" region="tiles.even"/>
+                    <load name="stage2.tiles.odd"  region="tiles.odd"/>
+                    <load name="stage2"            region="stage"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $8300</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.boot</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>

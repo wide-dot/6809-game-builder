@@ -34,6 +34,35 @@ src/
 └── title/         écran-titre (ex game-mode/00 + levels/00)
 ```
 
+## Le banc d'échange de stages
+
+Premier morceau construit sur cette arborescence, et critère d'acceptation du
+pipeline : deux stages réels échangés par `scene.load`, moteur résident intact.
+
+    to8.config.xml            régions common / stage / tiles.even / tiles.odd
+    src/common/engine/        l'unité résidente
+      api.asm                 L'INTERFACE — une seule liste, EXPORT côté moteur
+                              et EXTERNAL côté stage selon ENGINE_RESIDENT, donc
+                              les deux côtés ne peuvent pas dériver
+      stage-tables.asm        l'autre sens : les tables que le moteur relit
+    src/stages/stage-main.asm la boucle, partagée (les mains v1 02..08 l'étaient)
+    src/stages/NN/main.asm    ce qui distingue le stage : cartes, wave, index
+
+Données réelles : les cartes viennent de `in.png` des niveaux 1 et 2 via
+leanscroll, les waves sont celles de l'arcade avec leurs horodatages, les
+index d'objets sont générés depuis les identifiants que ces waves citent
+(16 pour le niveau 1, 2 pour le niveau 2). Les ennemis n'étant pas portés,
+toutes les entrées d'index pointent un objet bouchon — le chemin exercé, lui,
+est le vrai : wave → slot → identifiant → index du stage chargé → code.
+
+**Limite assumée** : une tranche de 24 colonnes par niveau, pas le niveau
+entier. Les tuiles compilées d'un niveau complet pèsent bien plus qu'une page
+de 16 Ko (245 et 304 tuiles pour le niveau 1), et le placement multi-pages —
+le bin-packing du pipeline v1 — n'existe pas encore côté v2. La fenêtre du
+niveau 2 est prise à la colonne 20 : son ouverture est sa partie la plus
+dense (100 tuiles distinctes contre 60 plus loin). Mesures et découpe :
+`tools/crop_stage.py`.
+
 ## Traçabilité v1
 
 `v1-map.csv` : chaque fichier repris, chemin v1 → chemin v2, contenu
