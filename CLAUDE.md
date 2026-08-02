@@ -517,8 +517,29 @@ Ordre de migration suggéré (dépendances croissantes) :
    .static, id 0 = 3 octets nuls, EXTERNALs auto-déclarés) —
    `examples/tilescroll` converti à cette chaîne et revalidé sous toje ;
    forme des données réelles confirmée (niv 1 : 132×15/245 tuiles, niv 2 :
-   96×15/191, 60-75 % de vides). Doc : `tilemaps.md`. Reste : banc d'échange
-   stage1↔stage2. Analyse complète :
+   96×15/191, 60-75 % de vides). Doc : `tilemaps.md`.
+   Banc d'échange stage1↔stage2 **CONSTRUIT** (02/08, commit ea32183) dans
+   `games/r-type/` : moteur résident + deux stages réels (cartes des niveaux
+   1-2 par leanscroll → `<gfxcomp grid>` → `<tilemap>`, waves de l'arcade,
+   index d'objets générés depuis les ObjID que ces waves citent), interface
+   en UN fichier (`api.asm`, EXPORT ou EXTERNAL selon `ENGINE_RESIDENT` —
+   dérive impossible entre les deux côtés). **Validation machine
+   incomplète** : le stage 1 a été vérifié sous toje sur ses vraies données
+   (magic $CA, caméra qui avance, 9 objets peuplés par la wave du niveau 1) ;
+   l'échange lui-même reste à valider — l'émulateur s'est bloqué après un
+   crash (PC figé sur le vecteur de reset, registres à zéro, `reset` sans
+   effet, plus aucune image ne boote : relancer toje). Vérifié statiquement
+   pour l'échange : la monte de page du loader est bien émise avant l'appel,
+   le moteur porte les deux tables en références externes, et les deux stages
+   exportent la même liste (contrôle du builder). Deux découvertes du banc :
+   l'horloge de niveau survit désormais à l'échange (le moteur est résident,
+   la v1 le rechargeait et la remettait à zéro gratuitement), et la page DATA
+   du loader doit être montée avant de l'appeler (le stage vient d'y effacer
+   ses tampons d'écran). Limite assumée et mesurée : une tranche de 24
+   colonnes par niveau, faute de placement multi-pages des tuiles (le
+   bin-packing du pipeline v1 n'est pas porté) — un niveau entier pèse 245 et
+   304 tuiles compilées, très au-delà d'une page de 16 Ko.
+   Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
    Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une
    arborescence RÉORGANISÉE qui reflète la frontière de chargement :
