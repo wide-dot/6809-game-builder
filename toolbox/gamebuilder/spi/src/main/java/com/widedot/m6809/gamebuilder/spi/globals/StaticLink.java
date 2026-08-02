@@ -128,6 +128,17 @@ public class StaticLink {
 		return placementOf(export.direntry, symbol).address + export.value;
 	}
 
+	/**
+	 * The address a direntry is loaded at.
+	 *
+	 * What an internal reference needs to be baked : a unit's own references
+	 * are relative to where it lands, and a scene-placed direntry lands
+	 * somewhere the builder already knows.
+	 */
+	public int addressOf(String direntry) throws Exception {
+		return placementOf(direntry, direntry).address;
+	}
+
 	/** the page a static reference to <direntry>$PAGE resolves to */
 	public int resolvePage(String direntry) throws Exception {
 		return placementOf(direntry, direntry + "$PAGE").page;

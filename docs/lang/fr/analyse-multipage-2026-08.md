@@ -134,6 +134,23 @@ l'ancien set et sa page du nouveau. Le banc l'a montré en direct — la wave du
 stage 2 ne se déclenchait plus. Un octet de remplissage suffit à ce qu'un
 membre inutilisé évince quand même.
 
+## Les références internes se cuisent aussi
+
+Même principe, un cran plus près : la valeur d'un intern est relative à
+l'endroit où son unité est chargée, et une unité placée par une scène est à
+un endroit que le builder connaît. Une section `.static` résout donc aussi ses
+propres références.
+
+Le gain se voit là où une table de pointeurs est grosse. Les scripts
+d'animation de R-Type sont ~2900 pointeurs vers eux-mêmes : 8 Ko de données
+de lien, qui occupent le pool du loader tant que le fichier est indexé — les
+deux tiers du pool, et l'échange de stage n'y survivait pas. Cuits, ils ne
+coûtent plus rien, ni sur disque ni dans le pool.
+
+Piste tentante et fausse, mesurée plutôt que supposée : les laisser non
+résolus puisque l'unité est chargée à l'adresse zéro. lwasm écrit des **zéros**
+aux sites de relocation, pas la valeur relative à la section.
+
 ## Ce qui est vérifié au build
 
 - débordement du budget de pages : erreur, avec le nombre de pages nécessaire ;

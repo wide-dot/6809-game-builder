@@ -496,7 +496,8 @@ public class LwObject implements ObjectDataInterface{
 	private final java.util.Set<Reloc> baked = new java.util.HashSet<Reloc>();
 
 	@Override
-	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink) throws Exception {
+	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,
+			String direntry, int base) throws Exception {
 
 		for (LWSection section : secLst) {
 			if (section.name == null || !section.name.endsWith(STATIC_SUFFIX)) {
@@ -511,9 +512,32 @@ public class LwObject implements ObjectDataInterface{
 			for (Reloc reloc : section.incompletes) {
 
 				RelocValue r = evalReloc(reloc);
-				// internal references stay with the loader : the unit itself is
-				// relocatable, only its *providers* are pinned
+
+				// An internal reference is the same problem as an external one,
+				// one step closer : the value is relative to where this unit
+				// lands, and a scene-placed direntry lands somewhere the builder
+				// knows. Baking it is what makes a big table of pointers — an
+				// animation script set, a tile map — cost nothing at load time
+				// instead of four bytes and a patch per entry.
 				if (r.internal || r.symbol.isEmpty()) {
+					if (reloc.flags != 0) {
+						continue;    // 8 bit interns are not emitted either
+					}
+					try {
+						int value = staticLink.addressOf(direntry) + base
+								+ sectionBase(section) + r.value;
+						section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);
+						section.code[reloc.offset + 1] = (byte) (value & 0xff);
+					} catch (Exception e) {
+						throw new Exception(path.getFileName() + " section " + section.name
+								+ " offset " + reloc.offset + " : " + e.getMessage()
+								+ System.lineSeparator()
+								+ "A *.static section resolves its own internal references"
+								+ " too, so the direntry holding it has to be at a declared,"
+								+ " single destination.");
+					}
+					baked.add(reloc);
+					count++;
 					continue;
 				}
 
@@ -523,8 +547,8 @@ public class LwObject implements ObjectDataInterface{
 							throw new Exception("8 bit reference to '" + r.symbol
 									+ "' : only $PAGE references resolve statically");
 						}
-						String direntry = r.symbol.substring(0, r.symbol.length() - 5);
-						int value = staticLink.resolvePage(direntry) + r.value;
+						String provider = r.symbol.substring(0, r.symbol.length() - 5);
+						int value = staticLink.resolvePage(provider) + r.value;
 						section.code[reloc.offset] = (byte) (value & 0xff);
 					} else {
 						int value = staticLink.resolve(r.symbol) + r.value;
@@ -827,6 +851,8 @@ public class LwObject implements ObjectDataInterface{
 					// only 16 bit relocations : an 8 bit one emitted here would
 					// be applied as a word by the loader and clobber the next byte
 					if (reloc.flags != 0) continue;
+
+					if (baked.contains(reloc)) continue; // resolved at build time
 
 					RelocValue r = evalReloc(reloc);
 					if (!r.internal && !r.symbol.isEmpty()) continue; // imported, not ours

@@ -118,6 +118,26 @@ through the loader's API. The marker is the author's assertion that the
 referenced content is scene-placed only ; the builder verifies it against
 everything declared.
 
+## The same for a unit's own references
+
+A `.static` section resolves its **internal** references too, and for the same
+reason : an intern's value is relative to where its unit lands, and a
+scene-placed direntry lands somewhere the builder already knows. Baking it
+costs nothing the build was not already doing.
+
+It matters exactly where a table of pointers is big. R-type's animation
+scripts are ~2900 pointers into themselves : 8 KB of link data, which lives in
+the loader's memory pool for as long as the file is indexed — two thirds of
+the pool, and a stage exchange did not survive it. Baked, they cost nothing on
+disk and nothing in the pool. It is the same principle as the tile map, one
+step closer to home : there, the builder knew where the *provider* was ; here
+it knows where the *unit itself* is.
+
+A tempting shortcut does not work, and was measured rather than assumed :
+leaving the interns unresolved because the unit loads at address zero. lwasm
+writes zeros at relocation sites, not the section-relative value, so the
+pointers would all read zero.
+
 ## Export pruning
 
 The other half is implemented too : an export **nothing imports** is left out

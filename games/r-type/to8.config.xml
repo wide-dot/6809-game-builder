@@ -23,12 +23,9 @@
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
             <!-- deja une page par plan de carte.                               -->
             <region name="maps"       page="$0E" address="$0000" size="$4000" interface="true"/>
-            <!-- Reservee aux scripts d'animation. Ils ne sont pas encore     -->
-            <!-- chargeables : leurs ~2900 references internes pesent 8 Ko de  -->
-            <!-- donnees de lien, soit les deux tiers du pool du loader, et    -->
-            <!-- l'echange de stage n'y survit pas. Il faut d'abord savoir     -->
-            <!-- cuire les interns d'un direntry a placement fixe, comme       -->
-            <!-- .static le fait deja pour les externes.                        -->
+            <!-- Les scripts d'animation : communs a tous les objets et a tous -->
+            <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
+            <!-- montant la page avant de lire.                                 -->
             <region name="anim"       page="$0F" address="$0000" size="$4000"/>
         </layout>
 
@@ -55,6 +52,15 @@
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Les scripts d'animation, communs. Section .static : leurs  -->
+                <!-- ~2900 pointeurs internes sont cuits au build contre le     -->
+                <!-- placement declare, donc zero donnee de lien.               -->
+                <direntry name="common.anim" codec="zx0" loadtimelink="LINK">
+                    <lwasm gensource="gen/common/anim.asm">
+                        <asm filename="src/common/fx/animation/anim.asm"/>
                     </lwasm>
                 </direntry>
 
@@ -176,6 +182,7 @@
                 <!-- ******************************************************** -->
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
+                    <load name="common.anim"       region="anim"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

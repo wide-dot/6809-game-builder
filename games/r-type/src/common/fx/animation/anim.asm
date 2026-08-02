@@ -10,11 +10,16 @@
 ; scripts eux-mêmes. Ani_Asd_common désigne la première entrée de l'index,
 ; qu'AnimateSprite déréférence deux fois — Ani_Asd_Index[id] donne l'adresse
 ; d'une entrée, et le mot qui s'y trouve est la LUT de l'objet.
+;
+; Section `.static` : ces ~2900 pointeurs se renvoient les uns aux autres, et
+; c'est exactement le cas de la carte de tuiles — le builder sait où l'unité
+; est chargée, donc il résout au build. Sans ça, 8 Ko de données de lien
+; occuperaient le pool du loader tant que le fichier est indexé.
 ;*******************************************************************************
 
 Ani_Asd_common EXPORT
 
- SECTION code
+ SECTION anim.static
 
 Ani_Asd_common
         INCLUDE "src/common/fx/animation/index.asm"

@@ -38,7 +38,8 @@ public interface ObjectDataInterface {
 	 * references then emit no link data at all. Objects without such a section
 	 * do nothing. Must be called before the binary is first read.
 	 */
-	default void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink) throws Exception {
+	default void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,
+			String direntry, int base) throws Exception {
 	}
 
 	/**

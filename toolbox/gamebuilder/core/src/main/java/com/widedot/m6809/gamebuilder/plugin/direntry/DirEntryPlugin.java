@@ -142,8 +142,14 @@ public class DirEntryPlugin {
 		// resolve the *.static sections before anything reads the binaries :
 		// their references bake against providers built earlier, then emit no
 		// link data at all
+		// the baking needs to know where each member sits inside the entry :
+		// an internal reference resolves against the entry's load address plus
+		// that offset. Reading the length before baking is safe — patching
+		// changes bytes in place, never the length.
+		int bakeBase = 0;
 		for (ObjectDataInterface obj : objects) {
-			obj.bakeStatic(ctx.staticLink);
+			obj.bakeStatic(ctx.staticLink, name, bakeBase);
+			bakeBase += obj.getBytes().length;
 		}
 		
 		// merge all binaries, collecting the ranges each object needs kept inside
