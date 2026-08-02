@@ -148,6 +148,14 @@ ennemie viennent de `src/stages/01/objid.const.asm`, donc elle est liée à la
 numérotation du stage 1 ; et le `render_flags` / la priorité que `Init` pose
 n'ont pas été confrontés à ce que `CheckSpritesRefresh` attend.
 
+Complété depuis (le résident portait moins que le main v1) : `Obj_Run` et ses
+macros — l'appel d'objet factorisé, par lequel un stage lance le joueur ou le
+HUD —, `ObjectDp` pour l'espace joueur en page directe, `ObjectMoveSync`, et
+`RunPgSubRoutine` dont dépend toute la chaîne de tir. Reste absent du résident,
+et **volontairement** : la musique (YMM, soundFX), les maths du boss
+(`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par `scene.load`) et
+`PalUpdateNowLean`.
+
 Ce qui manque encore pour qu'un ennemi tourne :
 
 - Le diagnostic du plantage ci-dessus.
@@ -157,6 +165,31 @@ Ce qui manque encore pour qu'un ennemi tourne :
 À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
 mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
 part, et les vrais scripts sont l'objet commun.
+
+## La carte de la zone résidente (page $01)
+
+```
+$6100  région common   moteur résident, 7 208 o sur $2200 déclarés
+$8300  région stage    stage courant, 656 o (st.1) sur $0D00 — échangeable
+$90B0  réservé         pool d'objets, 16 slots x 117 o
+$9C00  réservé         témoins du banc (propre au banc)
+$9E84  réservé         variables inter-main : score 24 bits, vies, difficulté…
+       (~111 o)        PILE SYSTÈME, croît vers le bas depuis $9F00
+$9F00  réservé         PAGE DIRECTE — et c'est là que vit l'OST DU JOUEUR
+         $9F00  espace utilisateur (149 o) : player1 equ dp, un OST de 117 o
+         $9F97  dp_extreg  registres étendus (28 o)
+         $9FB3  dp_engine  scratch moteur (30 o)
+         $9FD1  glb_Page, timers, caméra… jusqu'à glb_ram_end $9FF4
+```
+
+Le joueur ayant ses données en page directe, `ObjectDp_Clear` (remise à zéro
+de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#player1`
+est la forme d'appel qui l'anime. Les valeurs de la page directe sont la chaîne
+d'équates de `engine/constants.asm`, évaluée depuis `glb_ram_end = $A000-12`.
+
+Hors résident : `$4000-$5FFF` tampon de fond (page 0), vidéo montée en `$A000`
+alternant pages 2 et 3, loader page 4, ennemis page 5, tuiles pages 6-13,
+cartes page 14, scripts d'animation page 15.
 
 ## Les zones réservées
 
