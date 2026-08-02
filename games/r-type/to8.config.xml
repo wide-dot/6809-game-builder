@@ -176,7 +176,10 @@
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
-                        <png2pal symbol="Pal_stage" filename="src/stages/01/map/intro/even.png"/>
+                        <!-- La palette du JEU, pas celle des tuiles : c'est   -->
+                        <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
+                        <!-- Le PNG de carte n'en portait qu'un sous-ensemble. -->
+                        <png2pal symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
                     </lwasm>
                 </direntry>
 
