@@ -27,7 +27,10 @@ for line in open(src):
         if name not in names:
             names.append(name)
 
-out = [f"""* ===========================================================================
+# Les equates partent d'un cote (la wave en a besoin, et elle vit desormais
+# dans le comblement d'un pageset), les tables de l'autre (elles restent
+# residentes : RunObjects les lit sans monter de page).
+equ_out = [f"""* ===========================================================================
 * Objets du stage {stage} — genere par tools/gen_objid.py {stage}
 * ===========================================================================
 * Les {len(names)} identifiants que la wave reelle du niveau {stage} reference, et
@@ -39,11 +42,14 @@ out = [f"""* ===================================================================
 * bouchon tant que les ennemis ne sont pas portes ; le chemin exerce, lui,
 * est le vrai : wave -> LoadObject_u -> id -> RunObjects -> index -> code.
 """]
-out.append('')
+equ_out.append('')
 for i, name in enumerate(names, start=1):
-    out.append(f'{name:<28} equ {i}')
-out.append(f'objid.count                  equ {len(names)}')
-out.append('')
+    equ_out.append(f'{name:<28} equ {i}')
+equ_out.append(f'objid.count                  equ {len(names)}')
+equ_out.append('')
+open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(equ_out))
+
+out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
 for name in names:
@@ -55,5 +61,5 @@ for name in names:
     out.append(f'        fdb   stage.placeholder        ; {name}')
 out.append('')
 
-open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(out))
+open(f'src/stages/{stage}/objid.index.asm', 'w').write('\n'.join(out))
 print(f'stage {stage} : {len(names)} identifiants — {", ".join(names)}')

@@ -99,7 +99,11 @@ public final class Handlers {
 			.req("gendir", STRING, "directory receiving the generated member sources")
 			.opt("codec", STRING, "zx0 : compress each member as one stream")
 			.opt("loadtimelink", STRING, "emit load time link data into the given section")
-			.opt("section", STRING, "section receiving the members"));
+			.opt("section", STRING, "section receiving the members")
+			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds"));
+		spec(element("block").doc("one indivisible unit of a pageset, declared after the spread content so it fills what is left")
+			.req("name", STRING, "block name, used for the generated source")
+			.opt("symbol", STRING, "exported label placed at the start of the block, defaults to name"));
 		spec(element("data").doc("raw data written to a section, outside the directory")
 			.req("section", STRING, "section receiving the data")
 			.opt("maxsize", INT, "maximum size"));

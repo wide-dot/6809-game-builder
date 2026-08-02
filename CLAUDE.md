@@ -562,7 +562,14 @@ Ordre de migration suggéré (dépendances croissantes) :
    carte (11 880 o) dans leur propre page paginée — le scroll portait déjà une
    page par plan. Caméra traversant les 1440 px (borne atteinte), art du
    milieu de niveau juste, banc 5/5. **Le niveau 2 est entier aussi** :
-   96 colonnes, 190 tuiles paires sur 3 pages et 229 impaires sur 4. Deux trouvailles : une unité de mesure ne peut pas dépasser 64 Ko
+   96 colonnes, 190 tuiles paires sur 3 pages et 229 impaires sur 4.
+   **Comblement de queue** (décision auteur) : `<block>` dans un `<pageset>` —
+   indivisible, déclaré après le contenu réparti, il tombe dans ce qui reste,
+   et `gensymbols` écrit sa page en équate. Les waves des deux stages y logent
+   (pages 13 et 12). Défaut trouvé par là : un membre non rempli était un
+   fichier VIDE, donc exempté de l'éviction par destination — le membre du set
+   précédent survivait avec ses exports, adresse d'un set et page de l'autre ;
+   un octet de remplissage corrige. Deux trouvailles : une unité de mesure ne peut pas dépasser 64 Ko
    (offsets LWOBJ16 sur 16 bits — le plan impair assemble à 65 533 o), d'où une
    mesure par lots ; et deux pagesets d'une même région sont exclusifs *en tant
    qu'ensembles*, pas par destination (une tuile donnée ne tombe pas sur la même

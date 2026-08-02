@@ -102,6 +102,38 @@ Même bénéfice, gratuit, pour l'index d'imageset des sprites et pour le futur
 index d'objets : le jour où les 149 objets de R-Type dépassent une page, ils
 entrent dans un pageset sans que leur table change de forme.
 
+## Combler la queue : `<block>`
+
+Remarque de l'auteur, devenue mécanisme : **la dernière page d'un ensemble se
+comble avec des données du stage**, plutôt que de rester perdue et d'obliger à
+déclarer une région de plus. C'est la carte des ressources qu'on simplifie.
+
+```xml
+<pageset name="stage1.tiles.odd" region="tiles.odd" gendir="…"
+         gensymbols="gen/stages/01/pages.asm">
+    <gfxcomp>…</gfxcomp>
+    <block name="stage1.wave" symbol="stage.wave">
+        <asm filename="src/stages/01/objid.const.asm"/>
+        <asm filename="src/stages/01/wave.asm"/>
+    </block>
+</pageset>
+```
+
+Un `<block>` est **indivisible** et se déclare **après** le contenu réparti :
+il tombe donc dans ce qui reste. Sa page n'étant connue qu'après le rangement,
+`gensymbols` l'écrit en équate (`stage.wave.page equ 13`) — la wave est lue par
+page montée, le code a besoin de ce numéro. Sur les deux stages, la wave tombe
+page 13 et page 12 : deux pages différentes, chacune écrite pour son stage.
+
+**Un membre non rempli n'est jamais vide.** Le loader exempte les fichiers
+vides de l'éviction par destination — les fichiers export-only partagent tous
+la pseudo-destination (0,0) et s'évinceraient l'un l'autre. Un membre vide
+laisserait donc vivre celui du set précédent à cette page, exports compris,
+alors que les pages voisines ont changé : l'adresse d'un symbole viendrait de
+l'ancien set et sa page du nouveau. Le banc l'a montré en direct — la wave du
+stage 2 ne se déclenchait plus. Un octet de remplissage suffit à ce qu'un
+membre inutilisé évince quand même.
+
 ## Ce qui est vérifié au build
 
 - débordement du budget de pages : erreur, avec le nombre de pages nécessaire ;

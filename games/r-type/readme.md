@@ -72,6 +72,11 @@ pages. **Le stage 2 est entier aussi** : 96 colonnes, 190 tuiles paires sur 3 pa
 et 229 impaires sur 4, 8 640 octets de tables. Les deux niveaux sont donc
 construits en entier, sur leurs vraies données.
 
+La queue du dernier tileset de chaque stage ne se perd pas : sa **wave** la
+comble, dans un `<block>` du pageset. La wave est déjà lue par page montée,
+donc le code n'a rien à adapter — seule sa page, connue après rangement, est
+écrite en équate par le builder (`gen/stages/NN/pages.asm`).
+
 Seule valeur du banc qui n'est pas celle du jeu : la vitesse de scroll,
 $0200 au lieu de $0030 — traverser le niveau 1 à la vitesse de r-type
 prendrait 7680 trames.

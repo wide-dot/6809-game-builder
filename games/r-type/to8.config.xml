@@ -74,13 +74,21 @@
                 </pageset>
 
                 <pageset name="stage1.tiles.odd" region="tiles.odd"
-                         gendir="gen/stages/01/tiles-odd" loadtimelink="LINK">
+                         gendir="gen/stages/01/tiles-odd" loadtimelink="LINK"
+                         gensymbols="gen/stages/01/pages.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0"/>
                         </image>
                     </gfxcomp>
+                    <!-- La queue du dernier tileset ne se perd pas : la wave du -->
+                    <!-- stage la comble. Elle est deja lue par page montee      -->
+                    <!-- (object_wave_data_page), donc rien a adapter cote code. -->
+                    <block name="stage1.wave" symbol="stage.wave">
+                        <asm filename="src/stages/01/objid.const.asm"/>
+                        <asm filename="src/stages/01/wave.asm"/>
+                    </block>
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
@@ -117,13 +125,21 @@
                 </pageset>
 
                 <pageset name="stage2.tiles.odd" region="tiles.odd"
-                         gendir="gen/stages/02/tiles-odd" loadtimelink="LINK">
+                         gendir="gen/stages/02/tiles-odd" loadtimelink="LINK"
+                         gensymbols="gen/stages/02/pages.asm">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0"/>
                         </image>
                     </gfxcomp>
+                    <!-- La queue du dernier tileset ne se perd pas : la wave du -->
+                    <!-- stage la comble. Elle est deja lue par page montee      -->
+                    <!-- (object_wave_data_page), donc rien a adapter cote code. -->
+                    <block name="stage2.wave" symbol="stage.wave">
+                        <asm filename="src/stages/02/objid.const.asm"/>
+                        <asm filename="src/stages/02/wave.asm"/>
+                    </block>
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->

@@ -21,6 +21,10 @@ Obj_Index_Address EXPORT
 map.even          EXTERNAL
 map.odd           EXTERNAL
 
+; La wave vit dans le comblement du pageset des tuiles impaires : sa page est
+; celle que le rangement lui a donnee, et le builder l'ecrit en equate.
+stage.wave        EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
@@ -36,6 +40,7 @@ map.odd           EXTERNAL
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
+        INCLUDE "gen/stages/01/pages.asm"
         INCLUDE "src/stages/01/map/intro/map.const.asm"
 
  opt c,ct
@@ -58,7 +63,7 @@ stage.setup
         ldd   #stage.wave
         std   object_wave_data
         std   object_wave_data_start
-        lda   #map.RAM_OVER_CART+stage.page
+        lda   #map.RAM_OVER_CART+stage.wave.page
         sta   object_wave_data_page
         rts
 
@@ -110,9 +115,8 @@ stage1.idle   bra   stage1.idle
 ; L'index d'objets et la wave — les données réelles du niveau 1
 ;*******************************************************************************
         INCLUDE "src/stages/01/objid.const.asm"
+        INCLUDE "src/stages/01/objid.index.asm"
 
-stage.wave
-        INCLUDE "src/stages/01/wave.asm"
 
  ENDSECTION
 

@@ -14,13 +14,3 @@
 ObjID_pow                    equ 1
 ObjID_bossmusic              equ 2
 objid.count                  equ 2
-
-Obj_Index_Page
-        fcb   0                        ; id 0 : slot reserve, jamais execute
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
-
-Obj_Index_Address
-        fdb   0
-        fdb   stage.placeholder        ; ObjID_pow
-        fdb   stage.placeholder        ; ObjID_bossmusic
