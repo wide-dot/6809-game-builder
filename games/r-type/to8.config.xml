@@ -47,6 +47,10 @@
             <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
             <!-- protegee comme le reste.                                       -->
             <reserved name="objects.pool" page="$01" address="$90B0" size="$0750"/>
+            <!-- Les OST hors pool (palettefade) : un objet unique, vivant     -->
+            <!-- pour toute la partie, lance par _Obj_RunU sur l'adresse de     -->
+            <!-- son OST. Voir src/common/engine/ram.const.asm.                 -->
+            <reserved name="objects.static" page="$01" address="$9800" size="$0075"/>
             <reserved name="bench.wit"    page="$01" address="$9C00" size="$0284"/>
             <reserved name="globals"      page="$01" address="$9E84" size="$007C"/>
             <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
@@ -163,7 +167,7 @@
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
-                            <encoder name="draw" mirror="none" shift="0"/>
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
                 </pageset>
@@ -174,7 +178,7 @@
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
-                            <encoder name="draw" mirror="none" shift="0"/>
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
@@ -207,6 +211,8 @@
                         <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
                         <!-- Le PNG de carte n'en portait qu'un sous-ensemble. -->
                         <png2pal symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
+                        <!-- Le noir dont part le fondu d'ouverture. -->
+                        <png2pal symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                     </lwasm>
                 </direntry>
 
@@ -217,7 +223,7 @@
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
-                            <encoder name="draw" mirror="none" shift="0"/>
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
                 </pageset>
@@ -228,7 +234,7 @@
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
-                            <encoder name="draw" mirror="none" shift="0"/>
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
@@ -258,6 +264,8 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
                         <png2pal symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <!-- Le noir dont part le fondu d'ouverture. -->
+                        <png2pal symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                     </lwasm>
                 </direntry>
 

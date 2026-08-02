@@ -68,7 +68,8 @@ practice; this is a reading order, not a schedule.
 11. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
     the v1 habit of declaring it an object just to get it placed.
 12. [Generated draw code carries no absolute address](generated-code-addresses.md)
-13. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+13. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
+14. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
 
 ## Not cases, but next door
 
