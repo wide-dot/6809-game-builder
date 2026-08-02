@@ -523,15 +523,14 @@ Ordre de migration suggéré (dépendances croissantes) :
    1-2 par leanscroll → `<gfxcomp grid>` → `<tilemap>`, waves de l'arcade,
    index d'objets générés depuis les ObjID que ces waves citent), interface
    en UN fichier (`api.asm`, EXPORT ou EXTERNAL selon `ENGINE_RESIDENT` —
-   dérive impossible entre les deux côtés). **Validation machine
-   incomplète** : le stage 1 a été vérifié sous toje sur ses vraies données
-   (magic $CA, caméra qui avance, 9 objets peuplés par la wave du niveau 1) ;
-   l'échange lui-même reste à valider — l'émulateur s'est bloqué après un
-   crash (PC figé sur le vecteur de reset, registres à zéro, `reset` sans
-   effet, plus aucune image ne boote : relancer toje). Vérifié statiquement
-   pour l'échange : la monte de page du loader est bien émise avant l'appel,
-   le moteur porte les deux tables en références externes, et les deux stages
-   exportent la même liste (contrôle du builder). Deux découvertes du banc :
+   dérive impossible entre les deux côtés). **VALIDÉ 5/5 sous toje** (02/08) :
+   scénario complet stage1 → stage2 → stage1 joué de bout en bout — t1 le
+   stage 1 tourne sur sa vraie wave (9 objets peuplés), t2 le stage 2 tourne
+   sur SES données (son bouchon, atteint par son propre index : c'est la
+   preuve du re-link), t3 l'état persistant traverse l'échange, t4 le retour
+   au stage 1 fonctionne (échange réversible), t5 le checkpoint sans disque
+   recale la wave à l'identique. L'art réel du niveau 1 s'affiche.
+   Deux découvertes du banc :
    l'horloge de niveau survit désormais à l'échange (le moteur est résident,
    la v1 le rechargeait et la remettait à zéro gratuitement), et la page DATA
    du loader doit être montée avant de l'appeler (le stage vient d'y effacer

@@ -55,6 +55,13 @@ index d'objets sont générés depuis les identifiants que ces waves citent
 toutes les entrées d'index pointent un objet bouchon — le chemin exercé, lui,
 est le vrai : wave → slot → identifiant → index du stage chargé → code.
 
+**Résultat (02/08/2026)** : 5/5 sous toje, scénario complet joué —
+`$9C07..$9C0B` = `01 01 01 01 01`. Le stage 2 est atteint par son propre
+index d'objets, ce qui ne peut arriver que si le re-link a repointé le
+moteur ; l'état persistant traverse l'échange ; le retour au stage 1
+fonctionne ; le checkpoint sans disque retrouve exactement la position de
+wave que la lecture normale avait atteinte.
+
 **Limite assumée** : une tranche de 24 colonnes par niveau, pas le niveau
 entier. Les tuiles compilées d'un niveau complet pèsent bien plus qu'une page
 de 16 Ko (245 et 304 tuiles pour le niveau 1), et le placement multi-pages —
