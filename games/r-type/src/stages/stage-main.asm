@@ -164,10 +164,17 @@ stage.loop
         ldd   glb_camera_x_pos
         std   bench.camera
 
-        ; La main se passe sur l'horloge de niveau, pas sur un compteur de
-        ; tours : c'est la meme echelle que les horodatages de la wave.
-        ldd   gfxlock.frame.gameCount
-        cmpd  #bench.STAGE_FRAMES
+        ; La main se passe A LA FIN DE LA CARTE, comme dans le jeu. Scroll
+        ; borne la camera a scroll_max exactement (cap applique par tampon,
+        ; pour que les deux s'arretent au meme endroit), donc elle l'atteint
+        ; et s'y tient : le test se declenche pile.
+        ;
+        ; C'etait une horloge de niveau (800 trames), qu'il fallait recaler a
+        ; chaque changement de longueur de niveau ou de vitesse de scroll — et
+        ; qui, a la vitesse reelle du jeu, passait la main apres un dixieme du
+        ; niveau 1. La fin de carte s'adapte d'elle-meme aux deux.
+        ldd   glb_camera_x_pos
+        cmpd  scroll_max
         bhs   stage.handOver
 
         _gfxlock.loop

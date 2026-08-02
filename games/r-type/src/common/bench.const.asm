@@ -7,10 +7,11 @@
 
 bench.MAGIC        equ $CA
 bench.SCORE        equ $1234        ; l'état semé au premier stage
-bench.STAGE_FRAMES equ 800          ; horloge de niveau : de quoi atteindre les
-                                    ; premiers horodatages reels des deux waves
-                                    ; (504 pour le niveau 1, 518 pour le 2) et
-                                    ; de traverser le niveau 1 en entier
+* Plus d'horloge de niveau : le stage passe la main quand la CAMERA atteint
+* scroll_max, la fin de sa carte. Un compteur de trames demandait un recalage
+* a chaque changement de longueur de niveau ou de vitesse de scroll, et a la
+* vitesse reelle du jeu ses 800 trames ne couvraient qu'un dixieme du niveau 1
+* (qui en demande 7680). Voir stage-main.asm.
 bench.SCROLL_VEL   equ $0030        ; 8.8 : 3/16 de pixel par trame, la vitesse
                                     ; de r-type. Le banc tournait a $0200 pour
                                     ; traverser le niveau 1 en 800 trames au
