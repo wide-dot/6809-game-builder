@@ -48,6 +48,36 @@ public class Regions {
 		}
 	}
 
+	/**
+	 * A range the game occupies without ever loading anything into it : the
+	 * object pool, the inter-main globals, the stack, the direct page. The
+	 * builder cannot infer them — they are equates in the game's source — so
+	 * the layout declares them and nothing may be loaded on top.
+	 */
+	public static class Reserved {
+		public final String name;
+		public final int page;
+		public final int address;
+		public final int size;
+
+		public Reserved(String name, int page, int address, int size) {
+			this.name = name;
+			this.page = page;
+			this.address = address;
+			this.size = size;
+		}
+	}
+
+	private final java.util.List<Reserved> reserved = new java.util.ArrayList<Reserved>();
+
+	public void reserve(Reserved range) {
+		reserved.add(range);
+	}
+
+	public java.util.List<Reserved> reservedRanges() {
+		return reserved;
+	}
+
 	public void put(Region region) throws Exception {
 		if (regions.containsKey(region.name)) {
 			throw new Exception("region '" + region.name + "' is declared twice");
@@ -67,7 +97,12 @@ public class Regions {
 		return regions.keySet();
 	}
 
+	public void clearReserved() {
+		reserved.clear();
+	}
+
 	public void clear() {
+		reserved.clear();
 		regions.clear();
 	}
 }

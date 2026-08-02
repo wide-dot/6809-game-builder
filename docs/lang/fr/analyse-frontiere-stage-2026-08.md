@@ -173,6 +173,19 @@ de map, parité contre les données v1 des niveaux 1 et 2 ; (c) le banc
 d'échange stage1↔stage2 avec les vraies maps/waves des deux niveaux et des
 ennemis factices pour ceux qui manquent.
 
+## Zones réservées : la part de la carte que le builder ne peut pas deviner
+
+Une région dit où quelque chose est chargé. Mais un jeu occupe aussi de la
+mémoire **sans rien y charger** — pool d'objets, variables inter-main, pile,
+page directe — et ce sont des équates de son code, invisibles à la
+configuration. `<reserved>` les déclare, et le builder refuse alors toute
+région qui les recouvre, ainsi que deux régions qui se recouvrent.
+
+Le contrôle porte sur les **déclarations**, pas sur la taille chargée : une
+région posée sur le pool d'objets est fautive même si son contenu ne l'atteint
+pas encore. C'est ce qui distingue ce contrôle de celui, déjà présent, que
+`SceneChecks` fait sur les tailles réelles d'une composition.
+
 ## Hors périmètre de cette analyse
 
 Les ~149 objets montés consomment les mêmes surfaces (les cinq tables, l'API

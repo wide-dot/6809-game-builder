@@ -120,6 +120,11 @@ public final class Handlers {
 			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole")
 			.opt("pages", INT, "consecutive pages the region spans from page, 1 if omitted ; more declares a budget for a dataset no single page holds")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
+		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
+			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")
+			.req("page", INT, "page holding the range")
+			.req("address", INT, "first byte")
+			.req("size", INT, "length in bytes"));
 		spec(element("scene").doc("generated scene table, one loadable directory entry")
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("section", STRING, "section receiving the table")

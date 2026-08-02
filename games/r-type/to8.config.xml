@@ -13,7 +13,7 @@
         <!-- les mêmes noms, et exige d'elles la même liste d'exports.         -->
         <layout gensymbols="gen/layout.asm">
             <region name="common"     page="$01" address="$6100" size="$2200"/>
-            <region name="stage"      page="$01" address="$8300" size="$1600" interface="true"/>
+            <region name="stage"      page="$01" address="$8300" size="$0D00" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
             <region name="tiles.even" page="$06" address="$0000" size="$4000" pages="3" interface="true"/>
@@ -31,6 +31,19 @@
             <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
             <!-- d'imageset y lit la geometrie des sprites.                     -->
             <region name="enemies"    page="$05" address="$0000" size="$4000"/>
+
+            <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
+            <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
+            <!-- declare, et il refuse d'y faire atterrir quoi que ce soit.      -->
+            <!--                                                                -->
+            <!-- $9E84 est la limite haute d'un main : au-dessus vivent les     -->
+            <!-- variables inter-main, puis la pile, puis la page directe en    -->
+            <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
+            <!-- protegee comme le reste.                                       -->
+            <reserved name="objects.pool" page="$01" address="$90B0" size="$0750"/>
+            <reserved name="bench.wit"    page="$01" address="$9C00" size="$0284"/>
+            <reserved name="globals"      page="$01" address="$9E84" size="$007C"/>
+            <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
         </layout>
 
         <floppydisk model="fd640">

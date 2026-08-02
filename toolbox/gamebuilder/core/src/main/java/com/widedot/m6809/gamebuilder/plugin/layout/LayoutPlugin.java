@@ -22,9 +22,17 @@ public class LayoutPlugin {
 		String gensymbols = Attribute.getStringOpt(node, ctx, "gensymbols");
 
 		for (ImmutableNode child : node.getChildren()) {
+			if ("reserved".equals(child.getNodeName())) {
+				ctx.regions.reserve(new Regions.Reserved(
+						Attribute.getString(child, ctx, "name"),
+						Attribute.getInteger(child, ctx, "page"),
+						Attribute.getInteger(child, ctx, "address"),
+						Attribute.getInteger(child, ctx, "size")));
+				continue;
+			}
 			if (!"region".equals(child.getNodeName())) {
-				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains <region> elements, found <"
-						+ child.getNodeName() + ">");
+				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains <region>"
+						+ " and <reserved> elements, found <" + child.getNodeName() + ">");
 			}
 
 			String name = Attribute.getString(child, ctx, "name");
@@ -54,6 +62,53 @@ public class LayoutPlugin {
 					bulk ? " bulk" : "");
 		}
 
+		// A region is a promise about where things land ; a reserved range is
+		// a promise about where they must not. Both are declarations, so both
+		// are checked here — before anything is built, and whatever the size
+		// of what ends up being loaded. A region declared over the object pool
+		// is a latent fault even while its content stays small.
+		java.util.List<String> clashes = new java.util.ArrayList<String>();
+		java.util.List<Regions.Region> all = new java.util.ArrayList<Regions.Region>(ctx.regions.all());
+		for (int i = 0; i < all.size(); i++) {
+			Regions.Region a = all.get(i);
+			if (a.size == null) {
+				continue;
+			}
+			for (int j = i + 1; j < all.size(); j++) {
+				Regions.Region b = all.get(j);
+				if (b.size == null) {
+					continue;
+				}
+				for (int pa = a.page; pa < a.page + a.pages; pa++) {
+					for (int pb = b.page; pb < b.page + b.pages; pb++) {
+						if (pa == pb && a.address < b.address + b.size
+								&& b.address < a.address + a.size) {
+							clashes.add(String.format(
+									"regions '%s' [$%04X-$%04X] and '%s' [$%04X-$%04X] overlap on page %d",
+									a.name, a.address, a.address + a.size - 1,
+									b.name, b.address, b.address + b.size - 1, pa));
+						}
+					}
+				}
+			}
+			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
+				for (int pa = a.page; pa < a.page + a.pages; pa++) {
+					if (pa == r.page && a.address < r.address + r.size
+							&& r.address < a.address + a.size) {
+						clashes.add(String.format(
+								"region '%s' [$%04X-$%04X] runs into the reserved range '%s'"
+								+ " [$%04X-$%04X] on page %d",
+								a.name, a.address, a.address + a.size - 1,
+								r.name, r.address, r.address + r.size - 1, pa));
+					}
+				}
+			}
+		}
+		if (!clashes.isEmpty()) {
+			throw new Exception(ctx.sources.locate(node) + ": the memory layout overlaps itself:"
+					+ System.lineSeparator() + "  " + String.join(System.lineSeparator() + "  ", clashes));
+		}
+
 		// export the layout as equates : the game code includes this file
 		// instead of duplicating pages and addresses by hand ("as defined in
 		// scene file" comments are exactly the smell this removes)
@@ -62,6 +117,12 @@ public class LayoutPlugin {
 			java.nio.file.Files.createDirectories(
 					java.nio.file.Paths.get(com.widedot.m6809.util.FileUtil.getDir(path)));
 			StringBuilder out = new StringBuilder();
+			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
+				out.append(r.name).append(".address equ $")
+				   .append(String.format("%04X", r.address)).append(System.lineSeparator());
+				out.append(r.name).append(".size equ ").append(r.size)
+				   .append(System.lineSeparator());
+			}
 			for (Regions.Region region : ctx.regions.all()) {
 				out.append(region.name).append(".page equ ").append(region.page)
 				   .append(System.lineSeparator());

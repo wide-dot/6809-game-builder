@@ -115,10 +115,15 @@ toje a établi, pour ne pas le refaire :
   répété, et les témoins du banc disparaissent avec. Le jeu part dans le
   moniteur ensuite, ce qui est une conséquence, pas la cause.
 
-À savoir pour reprendre : le tampon de fond du mode « background erase » vit
-en **`$4000-$5FFF`** (`cell_start_adr`=$6000, 128 cellules de 64 octets dans
-`EraseSprites.asm`) — c'est-à-dire dans la zone écran, par convention v1. Rien
-ne dit encore que cette convention tienne avec la carte mémoire de ce banc.
+La carte mémoire, corrigée par l'auteur (je l'avais fausse) : `$4000-$5FFF`
+est le **tampon de sauvegarde de fond**, page 0 — pas la zone écran. La RAM
+résidente commence en `$6000`, page 1. La mémoire **vidéo** est montée en
+`$A000` et alterne les pages 2 et 3, dans la même fenêtre que le loader (page
+4), ce qui explique la monte de page avant tout appel au loader.
+
+Limite haute d'un main : **`$9E84`**. Au-dessus vivent les variables
+inter-main, puis la pile, puis la page directe en `$9F00`. Ces zones sont
+désormais **déclarées et vérifiées** — voir plus bas.
 
 Le banc tourne donc encore avec le bouchon.
 
@@ -152,6 +157,31 @@ Ce qui manque encore pour qu'un ennemi tourne :
 À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
 mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
 part, et les vrais scripts sont l'objet commun.
+
+## Les zones réservées
+
+Le builder vérifiait les chevauchements **entre chargements** d'une même
+scène, mais il ne connaît pas ce que le jeu occupe *sans* rien charger : le
+pool d'objets, les variables inter-main, la pile, la page directe. Ce sont des
+équates du code, invisibles à la configuration. On les déclare :
+
+```xml
+<reserved name="objects.pool" page="$01" address="$90B0" size="$0750"/>
+<reserved name="globals"      page="$01" address="$9E84" size="$007C"/>
+<reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
+```
+
+Aucune région ne peut plus y atterrir, et **le contrôle porte sur les
+déclarations**, pas sur la taille de ce qui est chargé : une région déclarée
+par-dessus le pool est une faute latente même tant que son contenu reste
+petit. Les régions sont aussi vérifiées entre elles.
+
+Ça a immédiatement attrapé un vrai défaut de ce banc : la région `stage`
+déclarée `$8300-$98FF` empiétait sur le pool d'objets `$90B0-$97FF`. Son
+contenu ne l'atteignait pas encore.
+
+`gensymbols` émet `<nom>.address` et `<nom>.size` pour chaque zone, donc le
+code peut s'y référer au lieu de redéclarer les mêmes adresses.
 
 ## Traçabilité v1
 

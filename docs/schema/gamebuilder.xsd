@@ -41,6 +41,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -103,6 +104,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -154,6 +156,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -204,6 +207,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -257,6 +261,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -304,6 +309,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -351,6 +357,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -404,6 +411,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -457,6 +465,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -510,6 +519,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -569,6 +579,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -631,6 +642,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -690,6 +702,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -740,6 +753,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -793,6 +807,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -843,6 +858,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -914,6 +930,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -964,6 +981,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1026,6 +1044,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1076,6 +1095,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1126,6 +1146,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1176,6 +1197,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1235,6 +1257,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1291,6 +1314,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1359,6 +1383,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1415,6 +1440,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1471,6 +1497,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1560,6 +1587,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1628,6 +1656,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1659,6 +1688,66 @@
       </xs:attribute>
       <xs:attribute name="interface" type="xs:boolean">
         <xs:annotation><xs:documentation>the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top -->
+  <xs:element name="reserved">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="block"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>range name, emitted as &lt;name&gt;.address / &lt;name&gt;.size equates</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="page" type="int6809" use="required">
+        <xs:annotation><xs:documentation>page holding the range</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="address" type="int6809" use="required">
+        <xs:annotation><xs:documentation>first byte</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="size" type="int6809" use="required">
+        <xs:annotation><xs:documentation>length in bytes</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1696,6 +1785,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1749,6 +1839,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1805,6 +1896,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1855,6 +1947,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1914,6 +2007,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -1964,6 +2058,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -2032,6 +2127,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -2085,6 +2181,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -2138,6 +2235,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
@@ -2191,6 +2289,7 @@
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
         <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
         <xs:element ref="sap"/>
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
