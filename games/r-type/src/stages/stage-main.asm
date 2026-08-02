@@ -279,6 +279,8 @@ stage.paletteFadeDone
 ; vaut toujours zero, mais le parametre est conserve pour le jour ou les
 ; checkpoints seront portes.
 ;
+; Cas de migration : docs/lang/en/migration/init-prescroll.md
+;
 ; A = position d'entree, en tuiles de collision (24 px)
 ;*******************************************************************************
 stage.preScroll

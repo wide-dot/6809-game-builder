@@ -65,11 +65,13 @@ practice; this is a reading order, not a schedule.
 9. [The video mode is not set for you](video-mode.md) — check this before
     judging anything on screen.
 10. [Screen coordinates are offset](screen-coordinates.md)
-11. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
+11. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
+    the one whose absence a screenshot will not reveal.
+12. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
     the v1 habit of declaring it an object just to get it placed.
-12. [Generated draw code carries no absolute address](generated-code-addresses.md)
-13. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
-14. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+13. [Generated draw code carries no absolute address](generated-code-addresses.md)
+14. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
+15. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
 
 ## Not cases, but next door
 
