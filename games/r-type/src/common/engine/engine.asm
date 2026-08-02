@@ -149,6 +149,10 @@ terrainCollision.init.do
         ; le lien, aucune operande auto-modifiee. C'est par la que passent les
         ; overlays (masque, hud) qui n'ont ni etat ni OST.
         INCLUDE "engine/system/paged-call.asm"
+        ; Le fondu de palette : un objet a part entiere (il a un OST et un
+        ; index de routine), mais RESIDENT — tout stage en a besoin a son
+        ; ouverture, et il ne pese que 180 lignes.
+        INCLUDE "engine/objects/palette/fade/fade.asm"
         INCLUDE "engine/math/RandomNumber.asm"
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"

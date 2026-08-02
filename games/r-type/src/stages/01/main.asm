@@ -50,6 +50,10 @@ adr_playfield_mask_ND0 EXTERNAL
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/object-management/Obj_Run.macro.asm"
+        ; Les offsets d'OST du fondu : le stage arme l'objet, le moteur le fait
+        ; tourner. Le fichier est garde par IFNDEF, donc inclus des deux cotes.
+        INCLUDE "engine/objects/palette/fade/fade.equ"
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"

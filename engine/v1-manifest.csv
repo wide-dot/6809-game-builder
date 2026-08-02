@@ -60,3 +60,5 @@ engine/graphics/camera/CheckCameraMove.asm,engine/graphics/camera/CheckCameraMov
 engine/objects/collision/terrainCollision.asm,engine/objects/collision/terrainCollision.asm,e7ae0968eec67087947e8e1e6bce8bd7bcc00f13,2026-08-02,
 engine/objects/collision/terrainCollision.macro.asm,engine/objects/collision/terrainCollision.macro.asm,02d61be6a82934cea092adcb9b55268bb7c40783,2026-08-02,
 engine/objects/collision/terrainCollision.main.asm,engine/objects/collision/terrainCollision.main.asm,a1fc1874f91263a71b323963f89803ed874c2c7b,2026-08-02,
+engine/objects/palette/fade/fade.asm,engine/objects/palette/fade/fade.asm,c1ebbd956d92eae791b49317f7bbc3cd888c4eac,2026-08-02,INCLUDE macros.asm retire (unite residente le porte deja)
+engine/objects/palette/fade/fade.equ,engine/objects/palette/fade/fade.equ,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-08-02,

@@ -27,3 +27,9 @@ ext_variables_size           equ 20  ; per dynamic object
 * result table at $9C00.
 Dynamic_Object_RAM           equ $9800-nb_dynamic_objects*object_size
 Dynamic_Object_RAM_End       equ $9800
+
+* Les OST HORS POOL : des objets uniques, vivants pour toute la partie, que le
+* jeu lance par _Obj_RunU avec l'adresse de leur OST. Ils ne passent pas par
+* l'allocateur — la v1 les declarait de meme dans le ram_data de son game mode.
+* Ils vivent juste au-dessus du pool, sous les temoins du banc en $9C00.
+palettefade                  equ Dynamic_Object_RAM_End

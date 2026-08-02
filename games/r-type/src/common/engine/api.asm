@@ -98,6 +98,9 @@ _api    macro
         _api Obj_Mount
         _api Obj_Run
         _api Obj_RunB
+        ; Le fondu de palette, resident : le stage le designe dans son index
+        ; d'objets, donc son adresse doit traverser le lien.
+        _api PaletteFade
         _api ObjectDp_Clear
         _api ObjectMoveSync
         _api RunPgSubRoutine

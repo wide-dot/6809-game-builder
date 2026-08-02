@@ -4,6 +4,7 @@ Obj_Index_Page
         fcb   0                        ; id 0 : slot reserve, jamais execute
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -25,6 +26,7 @@ Obj_Index_Address
         fdb   0
         fdb   Ani_Asd_common        ; ObjID_animation
         fdb   stage.placeholder        ; ObjID_explosion
+        fdb   PaletteFade        ; ObjID_fade
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
         fdb   stage.placeholder        ; ObjID_bink
@@ -65,8 +67,10 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -96,6 +100,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink

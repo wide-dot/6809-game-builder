@@ -23,7 +23,9 @@ names = []
 # pata-pata cite l'explosion en mourant. Ils sont numerotes avec les autres.
 # L'objet des scripts d'animation a lui aussi un identifiant : moveByScript
 # lit sa page et son adresse dans l'index, comme n'importe quel objet.
-names = ['ObjID_animation', 'ObjID_explosion']
+# ObjID_fade est resident (le fondu d'ouverture de chaque stage) : sa page est
+# celle du moteur, pas celle du stage.
+names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -62,6 +64,7 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # ObjID_patapata reste au bouchon : l'objet s'initialise et tourne
 # correctement, mais quelque chose corrompt $9C00 ensuite — voir le readme.
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
+          'ObjID_fade':      ('common', 'PaletteFade'),
           'ObjID_patapata': ('enemies', 'patapata.Object')}
 
 out.append('Obj_Index_Page')

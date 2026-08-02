@@ -40,7 +40,10 @@ stage.stateKept
         lda   #STAGE_ID
         sta   bench.stage
 
-        ldd   #Pal_stage
+        ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
+        ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
+        ; ca le niveau apparait d'un coup, et l'ecran de chargement se voit.
+        ldd   #Pal_black
         std   Pal_current
         clr   PalRefresh
         jsr   PalUpdateNow
@@ -111,6 +114,11 @@ stage.stateKept
         ; les structures de priorite du dessin de sprites, une par tampon
         jsr   InitDrawSprites
 
+        ; Le fondu d'ouverture : on part du noir pose plus haut et on monte
+        ; vers la palette du stage. L'objet est arme ici et tourne dans la
+        ; boucle ; il se met en veille tout seul une fois arrive.
+        jsr   stage.paletteFadeIn
+
         ldd   #stage.userIRQ
         std   Irq_user_routine
         jsr   IrqInit
@@ -135,6 +143,9 @@ stage.stateKept
 stage.loop
         jsr   Scroll
         jsr   ObjectWave
+        ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
+        ; son OST a lui, donc RunObjects ne le voit pas.
+        _Obj_RunU ObjID_fade,#palettefade
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         _gfxlock.on
@@ -175,7 +186,7 @@ stage.loop
         ; niveau 1. La fin de carte s'adapte d'elle-meme aux deux.
         ldd   glb_camera_x_pos
         cmpd  scroll_max
-        bhs   stage.handOver
+        lbhs  stage.handOver               ; long : handOver vit apres la boucle
 
         _gfxlock.loop
         lbra  stage.loop
@@ -195,4 +206,30 @@ stage.placeholder
         addd  #1
         std   bench.spawns
         jsr   UnloadObject_u
+        rts
+
+;*******************************************************************************
+; L'ouverture en fondu — la forme de la v1 (Palette_FadeIn du game mode 01)
+;
+; L'objet ne recoit pas la palette de depart : il lit Pal_current, donc c'est
+; a l'appelant d'avoir pose le noir avant. o_fade_wait est le nombre de trames
+; entre deux paliers de couleur ; la v1 monte en 4 et descend en 1.
+;*******************************************************************************
+stage.paletteFadeIn
+        ldu   #palettefade
+        ldx   #Pal_stage
+        lda   #4
+stage.paletteFadeCommon
+        clr   routine,u
+        stx   o_fade_dst,u
+        sta   o_fade_wait,u
+        ldd   Pal_current
+        std   o_fade_src,u
+        ldd   #0
+        std   o_fade_sleep,u
+        ldd   #stage.paletteFadeDone
+        std   o_fade_callback,u
+        rts
+
+stage.paletteFadeDone
         rts
