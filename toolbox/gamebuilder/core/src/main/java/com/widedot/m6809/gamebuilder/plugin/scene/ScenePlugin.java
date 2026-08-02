@@ -75,6 +75,30 @@ public class ScenePlugin {
 				continue;
 			}
 
+			// a pageset is one authored load and several entries : the members
+			// go to consecutive pages of the same region, so the scene simply
+			// places each one where the packing put it
+			List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member> members =
+					ctx.pageSets.get(loadName);
+			if (members != null) {
+				if (regionName == null) {
+					errors.add(where + ": scene " + name + ": load '" + loadName
+							+ "' is a pageset, which needs its region");
+					continue;
+				}
+				if (!usedRegions.add(regionName)) {
+					errors.add(where + ": scene " + name + ": region '" + regionName
+							+ "' is loaded twice");
+					continue;
+				}
+				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member : members) {
+					placed.add(new SceneGenerator.Placed(member.page, member.address, member.name));
+					check.loads.add(new SceneCheck.Load(member.name, SceneCheck.Kind.PLACED,
+							member.page, member.address, null, regionName, where));
+				}
+				continue;
+			}
+
 			if (regionName != null) {
 				if (page != null || address != null) {
 					errors.add(where + ": scene " + name + ": load '" + loadName

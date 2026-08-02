@@ -70,6 +70,30 @@ public class DirectoryPlugin {
 		java.util.Map<String, int[]> idBlocks = new java.util.HashMap<String, int[]>();
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
+			if (plugin.equals("pageset")) {
+				// a pageset becomes one entry per page of its region. The count
+				// comes from the declared budget, not from the packing : ids are
+				// handed out here, before anything is built
+				String name = Attribute.getString(child, ctx, "name");
+				String regionName = Attribute.getString(child, ctx, "region");
+				com.widedot.m6809.gamebuilder.spi.globals.Regions.Region region =
+						ctx.regions.get(regionName);
+				if (region == null) {
+					throw new Exception(ctx.sources.locate(child) + ": pageset '" + name
+							+ "' targets unknown region '" + regionName + "'");
+				}
+				int blocks = DirEntryPlugin.blockCount(Attribute.getStringOpt(child, ctx, "codec"),
+						Attribute.getStringOpt(child, ctx, "loadtimelink"));
+				for (String member : com.widedot.m6809.gamebuilder.spi.globals.PageSets
+						.memberNames(name, region.pages)) {
+					writer.write(member + " equ " + direntryId + System.lineSeparator());
+					directoryNames.add(member);
+					idBlocks.put(member, new int[] { direntryId, blocks });
+					direntryId += blocks;
+				}
+				directoryNames.add(name);
+				continue;
+			}
 			if (plugin.equals("direntry") || plugin.equals("scene")) {
 
 				String name = Attribute.getString(child, ctx, "name");

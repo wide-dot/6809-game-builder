@@ -58,6 +58,10 @@ public final class Handlers {
 	/** produces a file for a later stage to consume */
 	private static final Map<String, FilePluginInterface> FILES = new HashMap<>();
 
+	/** content that can name its parts, so a pageset can pack them into pages */
+	private static final Map<String, com.widedot.m6809.gamebuilder.spi.PartsPluginInterface> PARTS =
+			new HashMap<>();
+
 	/** declared shape of every element, the attribute contract */
 	private static final Map<String, ElementSpec> SPECS = new HashMap<>();
 
@@ -89,6 +93,13 @@ public final class Handlers {
 			.opt("loadtimelink", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
 			.opt("section", STRING, "section receiving the entry"));
+		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one direntry per page")
+			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
+			.req("region", STRING, "multi-page region receiving the set")
+			.req("gendir", STRING, "directory receiving the generated member sources")
+			.opt("codec", STRING, "zx0 : compress each member as one stream")
+			.opt("loadtimelink", STRING, "emit load time link data into the given section")
+			.opt("section", STRING, "section receiving the members"));
 		spec(element("data").doc("raw data written to a section, outside the directory")
 			.req("section", STRING, "section receiving the data")
 			.opt("maxsize", INT, "maximum size"));
@@ -218,6 +229,7 @@ public final class Handlers {
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
+		MEDIA.put("pageset", com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin::run);
 		MEDIA.put("direntry", DirEntryPlugin::run);
 		MEDIA.put("data", DataPlugin::run);
 
@@ -237,6 +249,7 @@ public final class Handlers {
 		FILES.put("label", LabelPlugin::getFile);
 		FILES.put("includebin", IncludeBinPlugin::getFile);
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
+		PARTS.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as direntry content
@@ -290,6 +303,10 @@ public final class Handlers {
 
 	public static MediaPluginInterface getMedia(String name) {
 		return MEDIA.get(name);
+	}
+
+	public static com.widedot.m6809.gamebuilder.spi.PartsPluginInterface getParts(String name) {
+		return PARTS.get(name);
 	}
 
 	public static FilePluginInterface getFile(String name) {

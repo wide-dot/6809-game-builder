@@ -14,9 +14,8 @@
         <layout gensymbols="gen/layout.asm">
             <region name="common"     page="$01" address="$6100" size="$2200"/>
             <region name="stage"      page="$01" address="$8300" size="$1600" interface="true"/>
-            <region name="tiles.even"  page="$06" address="$0000" size="$4000" interface="true"/>
-            <region name="tiles.even2" page="$09" address="$0000" size="$4000" interface="true"/>
-            <region name="tiles.odd"  page="$08" address="$0000" size="$4000" interface="true"/>
+            <region name="tiles.even" page="$06" address="$0000" size="$4000" pages="2" interface="true"/>
+            <region name="tiles.odd"  page="$08" address="$0000" size="$4000" pages="2" interface="true"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -53,38 +52,29 @@
                 <!-- entre deux alternatives c'est la dernière déclarée qui     -->
                 <!-- fournit. D'où le groupement par stage plutôt que par type. -->
                 <!-- ******************************************************** -->
-                <direntry name="stage1.tiles.even" loadtimelink="LINK">
-                    <lwasm gensource="gen/stages/01/stage01-tiles-even.asm">
-                        <gfxcomp gendir="gen/stages/01/tiles-even"
-                                 gensource="gen/stages/01/tiles-even/includes.asm">
-                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12" range="0-10">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
+                <!-- Le tileset pair ne rentre pas forcement dans une page :   -->
+                <!-- on declare un budget de pages et un contenu, le builder    -->
+                <!-- mesure, range et emet un direntry par page. L'auteur       -->
+                <!-- n'affecte jamais une tuile a une page.                     -->
+                <pageset name="stage1.tiles.even" region="tiles.even"
+                         gendir="gen/stages/01/tiles-even" loadtimelink="LINK">
+                    <gfxcomp gendir="gen/stages/01/tiles-even"
+                             gensource="gen/stages/01/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                </pageset>
 
-                <direntry name="stage1.tiles.even2" loadtimelink="LINK">
-                    <lwasm gensource="gen/stages/01/stage01-tiles-even2.asm">
-                        <gfxcomp gendir="gen/stages/01/tiles-even2"
-                                 gensource="gen/stages/01/tiles-even2/includes.asm">
-                            <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12" range="11-19">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
-
-                <direntry name="stage1.tiles.odd" loadtimelink="LINK">
-                    <lwasm gensource="gen/stages/01/stage01-tiles-odd.asm">
-                        <gfxcomp gendir="gen/stages/01/tiles-odd"
-                                 gensource="gen/stages/01/tiles-odd/includes.asm">
-                            <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
+                <pageset name="stage1.tiles.odd" region="tiles.odd"
+                         gendir="gen/stages/01/tiles-odd" loadtimelink="LINK">
+                    <gfxcomp gendir="gen/stages/01/tiles-odd"
+                             gensource="gen/stages/01/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                </pageset>
 
                 <direntry name="stage1" codec="zx0" loadtimelink="LINK">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
@@ -102,27 +92,25 @@
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
-                <direntry name="stage2.tiles.even" loadtimelink="LINK">
-                    <lwasm gensource="gen/stages/02/stage02-tiles-even.asm">
-                        <gfxcomp gendir="gen/stages/02/tiles-even"
-                                 gensource="gen/stages/02/tiles-even/includes.asm">
-                            <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
+                <pageset name="stage2.tiles.even" region="tiles.even"
+                         gendir="gen/stages/02/tiles-even" loadtimelink="LINK">
+                    <gfxcomp gendir="gen/stages/02/tiles-even"
+                             gensource="gen/stages/02/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                </pageset>
 
-                <direntry name="stage2.tiles.odd" loadtimelink="LINK">
-                    <lwasm gensource="gen/stages/02/stage02-tiles-odd.asm">
-                        <gfxcomp gendir="gen/stages/02/tiles-odd"
-                                 gensource="gen/stages/02/tiles-odd/includes.asm">
-                            <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
+                <pageset name="stage2.tiles.odd" region="tiles.odd"
+                         gendir="gen/stages/02/tiles-odd" loadtimelink="LINK">
+                    <gfxcomp gendir="gen/stages/02/tiles-odd"
+                             gensource="gen/stages/02/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                </pageset>
 
                 <direntry name="stage2" codec="zx0" loadtimelink="LINK">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
@@ -145,14 +133,12 @@
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
-                    <load name="stage1.tiles.even2" region="tiles.even2"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1"             region="stage"/>
                 </scene>
 
                 <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
                     <load name="stage1.tiles.even"  region="tiles.even"/>
-                    <load name="stage1.tiles.even2" region="tiles.even2"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1"             region="stage"/>
                 </scene>

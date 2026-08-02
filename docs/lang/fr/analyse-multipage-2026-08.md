@@ -129,10 +129,24 @@ entrent dans un pageset sans que leur table change de forme.
    carte porte bien deux pages différentes, l'art est intact et le banc
    d'échange repasse 5/5. Ce qui manque à `<pageset>` n'est donc plus la
    capacité mais l'ergonomie : choisir les coupes à la place de l'auteur.
-4. `<pageset>` : compilation par objet, mesure, premier ajustement, émission
-   des direntries membres, enregistrement des placements — l'auteur ne donne
-   plus que le budget de pages.
+4. ~~`<pageset>`~~ **FAIT (02/08)** : mesure par une seule assemblée de
+   l'ensemble (les tailles se lisent entre symboles exportés consécutifs, et
+   lire des offsets n'enregistre aucun export — sinon il entrerait en
+   collision avec les membres réels), premier ajustement en ordre de
+   déclaration, un direntry par page émis en réutilisant tout le pipeline
+   direntry (codec, link data, cuisson `.static`, contrôles de taille). Le
+   nombre de membres est le **budget déclaré**, pas le résultat du rangement :
+   les ids de fichiers sont distribués avant toute construction, donc il doit
+   se déduire de la seule configuration. Un budget non rempli laisse des
+   membres vides et le build le dit. La scène développe un `<load>` de pageset
+   en ses membres.
 5. L'index d'imageset branché sur la même résolution par-symbole.
+5b. Vérifié sur les vraies données : l'ouverture du niveau 2, qui échouait à
+   « data size 18396 is over maxsize: 16384 », se range en 92 + 9 tuiles sur
+   les pages $06/$07 (plan pair) et 76 + 40 sur $08/$09 (impair), la première
+   page remplie à 16 347 octets sur 16 384. Les cartes portent 168 entrées
+   page 6 et 9 page 7, 137 page 8 et 44 page 9. Banc d'échange 5/5.
+
 6. Banc : le niveau 1 **entier** (245 + 304 tuiles) à la place de la tranche de
    24 colonnes, et la carte complète qui défile — la preuve étant que les
    tuiles d'une même carte viennent de pages différentes.

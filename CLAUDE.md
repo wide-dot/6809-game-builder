@@ -551,8 +551,14 @@ Ordre de migration suggéré (dépendances croissantes) :
    `range="a-b"` sur `<image grid=…>` : un tileset trop gros se déclare en
    plusieurs direntries, chacun dans sa région. Prouvé sur machine — tileset
    pair du stage 1 coupé sur les pages $06 et $09, même carte portant deux
-   pages, art intact, banc d'échange 5/5. Reste `<pageset>` : l'ergonomie
-   (le builder choisit les coupes) et le niveau 1 entier.
+   pages, art intact, banc d'échange 5/5. **`<pageset>` FAIT** aussi : l'auteur déclare
+   un budget de pages et un contenu, le builder mesure, range en premier
+   ajustement et émet un direntry par page (nombre de membres = budget
+   déclaré, les ids étant distribués avant construction). Vérifié sur
+   l'ouverture du niveau 2 — celle qui échouait à 18 396 > 16 384 : 92+9
+   tuiles sur $06/$07 et 76+40 sur $08/$09, page pleine à 16 347/16 384,
+   banc 5/5. Reste : le niveau 1 entier (les tables de carte devront sortir
+   de la région du stage).
    Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
    Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une

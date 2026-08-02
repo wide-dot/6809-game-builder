@@ -32,6 +32,49 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GfxcompPlugin {
 
+	/**
+	 * The compiled parts, each with the symbol it defines — what a pageset
+	 * packs into pages.
+	 *
+	 * The unit of packing is one generated source, because that is the
+	 * granularity at which the builder can reassemble : cutting an already
+	 * assembled binary would split routines and lose relocations, while
+	 * regrouping sources cannot. Each entry is {path, symbol}.
+	 */
+	public static java.util.List<String[]> getParts(ImmutableNode node, BuildContext ctx)
+			throws Exception {
+
+		String gendir = ctx.path + File.separator + Attribute.getString(node, ctx, "gendir");
+		if (Attribute.getStringOpt(node, ctx, "genindex") != null) {
+			throw new Exception("<gfxcomp genindex> cannot be packed into pages : an imageset"
+					+ " index reads one page from <file>$PAGE for the whole set");
+		}
+
+		VideoMemory.memoryLinearBits = Attribute.getInteger(node, ctx, "linearbits", 4);
+		VideoMemory.memoryPlanarBits = Attribute.getInteger(node, ctx, "planarbits", 8);
+		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
+		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
+
+		java.util.List<String[]> parts = new ArrayList<>();
+		for (ImmutableNode child : node.getChildren()) {
+			if (!"image".equals(child.getNodeName())) {
+				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
+			}
+			for (String file : compile(child, ctx, gendir, null)) {
+				if (file.endsWith("_exports.asm")) {
+					continue; // the export block belongs with whichever part is emitted
+				}
+				String base = file.substring(file.lastIndexOf(File.separatorChar) + 1,
+						file.length() - ".asm".length());
+				parts.add(new String[] { file, "adr_" + base });
+			}
+		}
+		if (parts.isEmpty()) {
+			throw new Exception("no <image> to compile in <gfxcomp>");
+		}
+		return parts;
+	}
+
 	public static File getFile(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		String gendir = ctx.path + File.separator + Attribute.getString(node, ctx, "gendir");

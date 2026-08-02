@@ -6,6 +6,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
+import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 import com.widedot.m6809.gamebuilder.spi.globals.StaticLink;
 
@@ -46,6 +47,9 @@ public class BuildContext {
 	/** build-time resolution registry for the sections named *.static */
 	public final StaticLink staticLink;
 
+	/** datasets spread over the pages of a multi-page region, and their members */
+	public final PageSets pageSets;
+
 	/** inherited attribute defaults, scoped to this container */
 	public final Defaults defaults;
 
@@ -57,11 +61,12 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
-			FileIds fileIds, Regions regions, StaticLink staticLink, Defaults defaults, Defines defines) {
+			FileIds fileIds, Regions regions, StaticLink staticLink, PageSets pageSets,
+			Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
 		this.sources = sources;
@@ -69,6 +74,7 @@ public class BuildContext {
 		this.fileIds = fileIds;
 		this.regions = regions;
 		this.staticLink = staticLink;
+		this.pageSets = pageSets;
 		this.defaults = defaults;
 		this.defines = defines;
 		// export uniqueness is relaxed between direntries the scenes make
@@ -82,7 +88,7 @@ public class BuildContext {
 	 */
 	public BuildContext child() {
 		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, staticLink,
-				new Defaults(defaults.values), new Defines(defines.values));
+				pageSets, new Defaults(defaults.values), new Defines(defines.values));
 	}
 
 	/** Merges back what a child container declared. */
@@ -99,6 +105,7 @@ public class BuildContext {
 		linkSymbols.clear();
 		regions.clear();
 		staticLink.clear();
+		pageSets.clear();
 		defaults.values.clear();
 		defines.values.clear();
 		defines.newValues.clear();

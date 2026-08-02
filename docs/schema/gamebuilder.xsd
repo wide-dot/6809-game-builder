@@ -34,6 +34,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -94,6 +95,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -143,6 +145,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -191,6 +194,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -236,6 +240,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -281,6 +286,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -332,6 +338,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -383,6 +390,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -434,6 +442,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -491,6 +500,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -551,6 +561,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -608,6 +619,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -656,6 +668,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -707,6 +720,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -755,6 +769,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -824,6 +839,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -872,6 +888,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -932,6 +949,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -980,6 +998,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1028,6 +1047,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1076,6 +1096,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1133,6 +1154,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1157,6 +1179,70 @@
       </xs:attribute>
       <xs:attribute name="processor" type="xs:string">
         <xs:annotation><xs:documentation>assembler executable name</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a dataset spread over the pages of a multi-page region : the builder packs it and emits one direntry per page -->
+  <xs:element name="pageset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="direntry"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>set name ; members are &lt;name&gt;.0 .. &lt;name&gt;.&lt;pages-1&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="region" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>multi-page region receiving the set</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>directory receiving the generated member sources</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>zx0 : compress each member as one stream</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="loadtimelink" type="xs:string">
+        <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>section receiving the members</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1187,6 +1273,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1241,6 +1328,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1295,6 +1383,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1382,6 +1471,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1448,6 +1538,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1514,6 +1605,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1565,6 +1657,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1619,6 +1712,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1667,6 +1761,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1724,6 +1819,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1772,6 +1868,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1838,6 +1935,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1889,6 +1987,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1940,6 +2039,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1991,6 +2091,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
