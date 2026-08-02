@@ -61,7 +61,8 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # point d'entree ; les autres identifiants visent encore le bouchon du stage.
 # ObjID_patapata reste au bouchon : l'objet s'initialise et tourne
 # correctement, mais quelque chose corrompt $9C00 ensuite — voir le readme.
-PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common')}
+PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
+          'ObjID_patapata': ('enemies', 'patapata.Object')}
 
 out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
