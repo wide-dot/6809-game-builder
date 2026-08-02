@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.util.Constants;
+import com.widedot.m6809.util.ThirdPartyTools;
 import com.widedot.m6809.util.FileUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +78,8 @@ public class LwAssembler
 		del = new File (mapFilename);
 		del.delete();
 	
-		List<String> command = new ArrayList<String>(List.of("lwasm.exe",
+		String lwasm = ThirdPartyTools.resolve("lwasm");
+		List<String> command = new ArrayList<String>(List.of(lwasm,
 				   path.toString(),
 				   "--" + processor,
 				   "--format=" + format,
@@ -98,7 +100,15 @@ public class LwAssembler
 		}
 
 		log.debug("{}", command);
-		Process p = new ProcessBuilder(command).inheritIO().start();
+		Process p;
+		try {
+			p = new ProcessBuilder(command).inheritIO().start();
+		} catch (IOException e) {
+			throw new Exception(lwasm + " could not be run. The assembler ships with the"
+					+ " build under toolbox/third-party/bin/<os>/ ; pass -Dbasedir=<repository root>"
+					+ " so it can be found, put it on the PATH, or point at it with"
+					+ " -Dlwasm.path=/full/path (or the LWASM environment variable).", e);
+		}
 		int result = p.waitFor();
 		if (result != 0) {
 			throw new Exception("Build Aborted !");			

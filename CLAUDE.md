@@ -31,14 +31,14 @@ MO5, Tandy CoCo 3.
   `java -Dbasedir=<racine du repo> -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml`.
   Prérequis : (1) un lien `engine → ../../engine` dans le répertoire du projet (les
   chemins du config.xml sont relatifs au config, `engine/` est gitignoré dans les
-  exemples) ; (2) un `lwasm` **>= 4.22** accessible sous le nom **`lwasm.exe`** dans le
-  PATH — le nom est codé en dur dans `LwAssembler.java`, et les binaires macOS fournis
-  (`toolbox/third-party/bin/macos`, lwtools 4.18) ne comprennent pas les labels locaux
-  `@` dans les macros utilisés par l'engine (le binaire Windows est en 4.22). Compiler
-  lwtools 4.24 depuis les sources et symlinker en `lwasm.exe` fonctionne ; (3)
-  **`-Dbasedir`** pointant sur la racine du repo dès qu'un plugin de conversion est
-  utilisé : le builder cherche les plugins dans `${basedir}/plugins`, et sans cette
-  propriété il les cherche dans le répertoire courant.
+  exemples) ; (2) **`-Dbasedir`** pointant sur la racine du repo — le builder y
+  trouve l'assembleur (`toolbox/third-party/bin/<os>/`, résolu par
+  `ThirdPartyTools`) et, le cas échéant, les plugins de conversion.
+  **Aucun `lwasm` à installer et aucun shim `lwasm.exe` : depuis 08/2026 le
+  binaire macOS est un lwtools 4.25 universel (x86_64 + arm64) compilé depuis
+  les sources versionnées dans `toolbox/third-party/src/asm/`** — voir son
+  [readme](toolbox/third-party/src/asm/readme.md). Pour pointer ailleurs :
+  `-Dlwasm.path=/chemin` ou la variable d'environnement `LWASM`.
   Sorties dans `dist/` ; le `<hfe/>` échoue sur macOS (pas de `hxcfe`), l'omettre.
 - Les scripts `bin/unix/` et `bin/windows/` ne sont **pas faits pour être lancés depuis
   les sources** : ce sont des zones de staging que les descripteurs `package/` mappent
@@ -671,8 +671,6 @@ rendu paraît haché en colonnes.
 
 ## Dettes / pièges connus
 
-- `LwAssembler.java` : nom `lwasm.exe` codé en dur (pas de détection d'OS) ; binaires
-  lwtools macOS embarqués obsolètes (4.18 vs 4.22 Windows).
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
 - `engine/system/mo6/graphics/gfx.memset..asm` : double point dans le nom, orphelin.
 - `examples/timing/` + `docs/lang/fr/timing.md` : API `wait.*` inexistante.
@@ -682,7 +680,12 @@ rendu paraît haché en colonnes.
   `docs/lang/fr/readme.md` inexistant. (`docs/lang/en/readme.md` corrigé le
   01/08/2026 : ses cibles pointaient encore sur l'ancien layout `docs/`.)
 - Binaires third-party inégaux selon l'OS : pas de `hxcfe` macOS (les configs
-  déclarant `<hfe/>` sortent en erreur explicite), pas d'`exomizer` linux-arm ;
-  lwtools macOS embarqué en 4.18 alors que >= 4.22 est requis.
+  déclarant `<hfe/>` sortent en erreur explicite), pas d'`exomizer` linux-arm.
+  lwtools : macOS en 4.25 (universel, reconstruit depuis les sources versionnées),
+  Windows en 4.22, Linux et Linux-arm encore en 4.18 — à reconstruire sur ces
+  plateformes le jour où l'occasion se présente (procédure dans
+  `toolbox/third-party/src/asm/readme.md`).
+- `HfePlugin` invoque encore `hxcfe` par le PATH : il devrait passer par
+  `ThirdPartyTools.resolve` comme `LwAssembler` depuis 08/2026.
 - `rom t2` cité plus haut : aucun média cartouche n'existe dans le registre v2
   (fd/sd/sap/hfe seulement) — à porter ou à retirer de la doc.

@@ -1,0 +1,278 @@
+diff --git a/config.sub b/config.sub
+index 38f3d03..0122f2b 100755
+--- a/config.sub
++++ b/config.sub
+@@ -1205,7 +1205,7 @@ case $cpu-$vendor in
+ 			| loongarch32 | loongarch64 | loongarchx32 \
+ 			| m32c | m32r | m32rle \
+ 			| m5200 | m68000 | m680[012346]0 | m68360 | m683?2 | m68k \
+-			| m6811 | m68hc11 | m6812 | m68hc12 | m68hcs12x \
++			| m6809 | m6811 | m68hc11 | m6812 | m68hc12 | m68hcs12x \
+ 			| m88110 | m88k | maxq | mb | mcore | mep | metag \
+ 			| microblaze | microblazeel \
+ 			| mips | mipsbe | mipseb | mipsel | mipsle \
+@@ -1348,6 +1348,9 @@ case $os in
+ 	# First match some system type aliases that might get confused
+ 	# with valid system types.
+ 	# solaris* is a basic system type, with this one exception.
++	unknown)
++		os=none
++		;;
+ 	auroraux)
+ 		os=auroraux
+ 		;;
+@@ -1565,6 +1568,9 @@ case $cpu-$vendor in
+ 	pdp10-*)
+ 		os=tops20
+ 		;;
++	m6809-*)
++		os=none
++		;;
+ 	pdp11-*)
+ 		os=none
+ 		;;
+diff --git a/newlib/configure b/newlib/configure
+index ab31510..8bace59 100755
+--- a/newlib/configure
++++ b/newlib/configure
+@@ -709,6 +709,8 @@ HAVE_LIBC_MACHINE_M68K_FALSE
+ HAVE_LIBC_MACHINE_M68K_TRUE
+ HAVE_LIBC_MACHINE_M68HC11_FALSE
+ HAVE_LIBC_MACHINE_M68HC11_TRUE
++HAVE_LIBC_MACHINE_M6809_FALSE
++HAVE_LIBC_MACHINE_M6809_TRUE
+ HAVE_LIBC_MACHINE_M32R_FALSE
+ HAVE_LIBC_MACHINE_M32R_TRUE
+ HAVE_LIBC_MACHINE_M32C_FALSE
+@@ -5938,6 +5940,13 @@ fi
+ else
+   HAVE_LIBC_MACHINE_M32R_TRUE='#'
+   HAVE_LIBC_MACHINE_M32R_FALSE=
++fi
++ if test "${machine_dir}" = m6809; then
++  HAVE_LIBC_MACHINE_M6809_TRUE=
++  HAVE_LIBC_MACHINE_M6809_FALSE='#'
++else
++  HAVE_LIBC_MACHINE_M6809_TRUE='#'
++  HAVE_LIBC_MACHINE_M6809_FALSE=
+ fi
+  if test "${machine_dir}" = m68hc11; then
+   HAVE_LIBC_MACHINE_M68HC11_TRUE=
+@@ -7905,6 +7914,10 @@ if test -z "${HAVE_LIBC_MACHINE_M32R_TRUE}" && test -z "${HAVE_LIBC_MACHINE_M32R
+   as_fn_error $? "conditional \"HAVE_LIBC_MACHINE_M32R\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+ fi
++if test -z "${HAVE_LIBC_MACHINE_M6809_TRUE}" && test -z "${HAVE_LIBC_MACHINE_M6809_FALSE}"; then
++  as_fn_error $? "conditional \"HAVE_LIBC_MACHINE_M6809\" was never defined.
++Usually this means the macro was only invoked conditionally." "$LINENO" 5
++fi
+ if test -z "${HAVE_LIBC_MACHINE_M68HC11_TRUE}" && test -z "${HAVE_LIBC_MACHINE_M68HC11_FALSE}"; then
+   as_fn_error $? "conditional \"HAVE_LIBC_MACHINE_M68HC11\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+diff --git a/newlib/configure.host b/newlib/configure.host
+index 960cca2..dfbd763 100644
+--- a/newlib/configure.host
++++ b/newlib/configure.host
+@@ -223,6 +223,12 @@ case "${host_cpu}" in
+ 	machine_dir=m32r
+ 	;;
+ 
++  m6809)
++	machine_dir=m6809
++	newlib_cflags="-DPREFER_SIZE_OVER_SPEED -O1 -DSMALL_MEMORY -DMISSING_SYSCALL_NAMES"
++	CFLAGS="-g -O1"
++	;;
++
+   m68hc11|m6811|m68hc12|m6812)
+ 	machine_dir=m68hc11
+ 	newlib_cflags="-DPREFER_SIZE_OVER_SPEED -Os -mrelax"
+@@ -524,6 +530,9 @@ case "${host}" in
+ 	unix_dir=unix
+ 	;;
+ 
++  m6809-*-*)
++	;;
++
+   m68hc11-*-*|m6811-*-*|m6812-*-*|m68hc12-*-*)
+ 	;;
+ 
+@@ -761,6 +770,9 @@ newlib_cflags="${newlib_cflags} -DCLOCK_PROVIDED -DMALLOC_PROVIDED -DEXIT_PROVID
+ 	newlib_cflags="${newlib_cflags} -msdata=sdata"
+ 	syscall_dir=syscalls
+ 	;;
++  m6809-*-*)
++	newlib_cflags="${newlib_cflags} -DNO_EXEC -DABORT_PROVIDED -DSMALL_MEMORY -DMISSING_SYSCALL_NAMES -DHAVE_MMAP=0"
++	;;
+   m68hc11-*-*|m6811-*-*|m68hc12-*-*|m6812-*-*)
+ 	newlib_cflags="${newlib_cflags} -DNO_EXEC -DABORT_PROVIDED -DSMALL_MEMORY -DMISSING_SYSCALL_NAMES"
+ 	;;
+diff --git a/newlib/libc/acinclude.m4 b/newlib/libc/acinclude.m4
+index 52a6c57..9971250 100644
+--- a/newlib/libc/acinclude.m4
++++ b/newlib/libc/acinclude.m4
+@@ -50,7 +50,7 @@ m4_foreach_w([MACHINE], [
+   h8300 h8500 hppa
+   i386 i960 iq2000
+   lm32
+-  m32c m32r m68hc11 m68k m88k mep microblaze mips mn10200 mn10300 moxie msp430 mt
++  m32c m32r m6809 m68hc11 m68k m88k mep microblaze mips mn10200 mn10300 moxie msp430 mt
+   nds32 necv70 nios2 nvptx
+   or1k
+   powerpc pru
+diff --git a/newlib/libc/include/machine/_default_types.h b/newlib/libc/include/machine/_default_types.h
+index 6137493..f2b47a0 100644
+--- a/newlib/libc/include/machine/_default_types.h
++++ b/newlib/libc/include/machine/_default_types.h
+@@ -37,6 +37,61 @@
+ extern "C" {
+ #endif
+ 
++/*
++ * M6809: GCC 4.6 doesn't define __INT*_TYPE__ builtins.
++ * Provide explicit type definitions for this target.
++ *   char = 8 bits, int/short = 16 bits, long = 32 bits
++ *   long long = 32 bits (no 64-bit support)
++ *   pointers = 16 bits
++ */
++#if defined(__m6809__)
++
++typedef signed char __int8_t;
++typedef unsigned char __uint8_t;
++#define ___int8_t_defined 1
++
++typedef signed int __int16_t;
++typedef unsigned int __uint16_t;
++#define ___int16_t_defined 1
++
++typedef signed long __int32_t;
++typedef unsigned long __uint32_t;
++#define ___int32_t_defined 1
++
++/*
++ * m6809 long long is only 32 bits, so "64-bit" types are actually 32-bit.
++ * This is the best we can do; code using 64-bit arithmetic will not get
++ * true 64-bit range but at least the types will exist for compilation.
++ */
++typedef signed long __int64_t;
++typedef unsigned long __uint64_t;
++#define ___int64_t_defined 1
++
++typedef signed char __int_least8_t;
++typedef unsigned char __uint_least8_t;
++#define ___int_least8_t_defined 1
++
++typedef signed int __int_least16_t;
++typedef unsigned int __uint_least16_t;
++#define ___int_least16_t_defined 1
++
++typedef signed long __int_least32_t;
++typedef unsigned long __uint_least32_t;
++#define ___int_least32_t_defined 1
++
++typedef signed long __int_least64_t;
++typedef unsigned long __uint_least64_t;
++#define ___int_least64_t_defined 1
++
++typedef signed long __intmax_t;
++typedef unsigned long __uintmax_t;
++
++typedef signed int __intptr_t;
++typedef unsigned int __uintptr_t;
++#define ___intptr_t_defined 1
++
++#else /* !__m6809__ */
++
+ #ifdef __INT8_TYPE__
+ typedef __INT8_TYPE__ __int8_t;
+ #ifdef __UINT8_TYPE__
+@@ -243,6 +298,8 @@ typedef unsigned long __uintptr_t;
+ 
+ #undef __EXP
+ 
++#endif /* !__m6809__ */
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/newlib/libc/include/machine/ieeefp.h b/newlib/libc/include/machine/ieeefp.h
+index c5fafcf..a0d70d5 100644
+--- a/newlib/libc/include/machine/ieeefp.h
++++ b/newlib/libc/include/machine/ieeefp.h
+@@ -175,6 +175,11 @@
+ #endif
+ #endif
+ 
++#if defined(__m6809__)
++#define __IEEE_BIG_ENDIAN
++#define _DOUBLE_IS_32BITS
++#endif
++
+ #if defined (__H8300__) || defined (__H8300H__) || defined (__H8300S__) || defined (__H8500__) || defined (__H8300SX__)
+ #define __IEEE_BIG_ENDIAN
+ #define _FLOAT_ARG float
+diff --git a/newlib/libc/include/sys/_intsup.h b/newlib/libc/include/sys/_intsup.h
+index 993121b..eb441a3 100644
+--- a/newlib/libc/include/sys/_intsup.h
++++ b/newlib/libc/include/sys/_intsup.h
+@@ -19,6 +19,33 @@
+ #include <limits.h>
+ #endif
+ 
++/*
++ * M6809: GCC 4.6 doesn't provide __INT*_TYPE__ builtins, so we define
++ * the type mapping constants directly.
++ *   int8_t   = signed char       -> "hh"
++ *   int16_t  = signed int        -> ""    (int is 16-bit)
++ *   int32_t  = signed long       -> "l"
++ *   intptr_t = signed int        -> _INTPTR_EQ_INT
++ *   No 64-bit types.
++ */
++#if defined(__m6809__)
++#define _INTPTR_EQ_INT
++#define _INT32_EQ_LONG
++#define __INT8 "hh"
++#define __INT16
++#define __INT32 "l"
++/* no __INT64 — m6809 has no 64-bit type */
++#define __FAST8 "hh"
++#define __FAST16
++#define __FAST32 "l"
++/* no __FAST64 */
++#define __LEAST8 "hh"
++#define __LEAST16
++#define __LEAST32 "l"
++/* no __LEAST64 */
++
++#else /* !__m6809__ */
++
+ /* Determine how intptr_t and intN_t fastN_t and leastN_t are defined by gcc
+    for this target.  This is used to determine the correct printf() constant in
+    inttypes.h and other  constants in stdint.h.
+@@ -196,4 +223,6 @@
+ #pragma pop_macro("int")
+ #pragma pop_macro("long")
+ 
++#endif /* !__m6809__ */
++
+ #endif /* _SYS__INTSUP_H */
+diff --git a/newlib/libc/machine/Makefile.inc b/newlib/libc/machine/Makefile.inc
+index 162be4f..7828ca6 100644
+--- a/newlib/libc/machine/Makefile.inc
++++ b/newlib/libc/machine/Makefile.inc
+@@ -73,6 +73,9 @@ endif
+ if HAVE_LIBC_MACHINE_M32R
+ include %D%/m32r/Makefile.inc
+ endif
++if HAVE_LIBC_MACHINE_M6809
++include %D%/m6809/Makefile.inc
++endif
+ if HAVE_LIBC_MACHINE_M68HC11
+ include %D%/m68hc11/Makefile.inc
+ endif
+diff --git a/newlib/libc/machine/m6809/Makefile.inc b/newlib/libc/machine/m6809/Makefile.inc
+new file mode 100644
+index 0000000..0e940fb
+--- /dev/null
++++ b/newlib/libc/machine/m6809/Makefile.inc
+@@ -0,0 +1 @@
++## No machine-specific sources yet
