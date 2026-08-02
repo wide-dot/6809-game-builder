@@ -537,7 +537,15 @@ Ordre de migration suggéré (dépendances croissantes) :
    ses tampons d'écran). Limite assumée et mesurée : une tranche de 24
    colonnes par niveau, faute de placement multi-pages des tuiles (le
    bin-packing du pipeline v1 n'est pas porté) — un niveau entier pèse 245 et
-   304 tuiles compilées, très au-delà d'une page de 16 Ko.
+   304 tuiles compilées, très au-delà d'une page de 16 Ko. **Conception du
+   multi-pages écrite** (02/08) :
+   [`analyse-multipage-2026-08.md`](docs/lang/fr/analyse-multipage-2026-08.md)
+   — région à plusieurs pages (`<region pages="4">`) + élément `<pageset>` qui
+   compile objet par objet, range en premier ajustement et émet un direntry
+   par page ; le placement d'un symbole devient celui de son objet, pas de son
+   direntry, et `.static` est inchangé. L'auteur déclare un budget de pages,
+   jamais l'affectation d'un élément à une page. Critère d'acceptation : le
+   niveau 1 entier qui défile, tuiles réparties sur plusieurs pages.
    Analyse complète :
    [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
    Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une
