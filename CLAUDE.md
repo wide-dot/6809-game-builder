@@ -641,6 +641,14 @@ deux mécanismes se composent : la link data de `tilescroll` ne contient plus
 ni exports ni externs, seulement des interns. Attention à la lecture des
 rapports : les configs `<hfe/>` avortent sur hxcfe **avant** la ligne de
 rapport d'élagage, mais élaguent quand même.
+**Les interns se cuisent aussi depuis le 02/08** : la valeur d'une référence
+interne est relative à l'endroit où l'unité est chargée, que le builder connaît
+pour une unité placée par une scène — c'est le principe de l'indexation des
+tuiles, un cran plus près. Sur les scripts d'animation de R-Type (~2900
+pointeurs vers eux-mêmes) : 8 Ko de données de lien ramenés à zéro, LINK qui
+retient une piste au lieu de trois, et le pool du loader qui redevient
+respirable. Piste écartée après mesure : les laisser non résolus ne marche pas,
+lwasm écrit des zéros aux sites de relocation.
 
 ## Art des exemples : tout est généré (01/08/2026)
 

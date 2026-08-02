@@ -102,9 +102,9 @@ The rules :
   assembled.
 - Anything else is a **build error** naming the section, offset, symbol and
   cause. A `.static` section is a promise ; there is no silent fallback.
-- Internal references stay with the loader : the unit itself remains
-  relocatable, only its providers are pinned. A unit with interns still needs
-  `loadtimelink`.
+- Internal references bake as well — see the next section. A unit whose
+  `.static` sections hold all its references needs no `loadtimelink` block at
+  all.
 - Same-name sections merge across the source, and the section named `code`
   always leads the unit's binary — the entry point convention — whatever
   order lwasm wrote the object in.
