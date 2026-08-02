@@ -145,6 +145,10 @@ terrainCollision.init.do
         ; L'appel de sous-routine paginee, dont depend toute la chaine de tir
         ; (loadFirePreset, createFoeFire).
         INCLUDE "engine/object-management/RunPgSubRoutine.asm"
+        ; L'appel de routine paginee de la v2 : page en immediat, adresse par
+        ; le lien, aucune operande auto-modifiee. C'est par la que passent les
+        ; overlays (masque, hud) qui n'ont ni etat ni OST.
+        INCLUDE "engine/system/paged-call.asm"
         INCLUDE "engine/math/RandomNumber.asm"
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"

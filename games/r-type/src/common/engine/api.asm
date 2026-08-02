@@ -132,6 +132,9 @@ _api    macro
         _api AnimateSprite
         _api AnimateSpriteSync
 
+        ; --- appel d'une routine paginee (overlays sans etat) ---
+        _api paged.call
+
         ; --- animation par script ---
         ; Les routines seules franchissent la frontiere. callback, anim.end et
         ; anim.loops sont des equates de page directe, pas des etiquettes : ils

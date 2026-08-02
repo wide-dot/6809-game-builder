@@ -31,6 +31,12 @@
             <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
             <!-- d'imageset y lit la geometrie des sprites.                     -->
             <region name="enemies"    page="$05" address="$0000" size="$4000"/>
+            <!-- Les overlays : ce qui se peint PAR-DESSUS le jeu en fin de     -->
+            <!-- trame et n'a ni etat ni OST — le masque du champ de jeu        -->
+            <!-- aujourd'hui, le hud et les messages ensuite. Ils tournent tous -->
+            <!-- dans la meme phase, donc ils partagent une page : une seule    -->
+            <!-- montee par trame via paged.call.                               -->
+            <region name="overlay"    page="$10" address="$0000" size="$4000"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -114,6 +120,27 @@
                             </image>
                             <image name="patapata_7" filename="src/enemies/pata-pata/images/pata_7.png" index="7">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <!-- Les overlays. Le masque du champ de jeu : 160x200, il se  -->
+                <!-- peint par-dessus tout en fin de trame et couvre les       -->
+                <!-- bandes ou le scroll laisse ses artefacts. Aucun etat,     -->
+                <!-- aucun OST, une seule entree — donc pas un objet, mais une -->
+                <!-- routine appelee par paged.call. Declare AVANT le stage    -->
+                <!-- qui le consomme.                                          -->
+                <!-- ******************************************************** -->
+                <direntry name="common.overlay" loadtimelink="LINK">
+                    <lwasm gensource="gen/overlay/overlay.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/overlay"
+                                 gensource="gen/overlay/includes.asm"
+                                 genindex="gen/overlay/index.asm"
+                                 file="common.overlay">
+                            <image name="playfield_mask" filename="src/common/hud/mask/images/mask.png" index="0" >
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -242,6 +269,7 @@
                     <load name="common.engine"     region="common"/>
                     <load name="common.anim"       region="anim"/>
                     <load name="common.enemies"    region="enemies"/>
+                    <load name="common.overlay"    region="overlay"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

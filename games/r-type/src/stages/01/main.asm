@@ -33,6 +33,11 @@ patapata.Object   EXTERNAL
 ; propre page : moveByScript la lit par page montee.
 Ani_Asd_common    EXTERNAL
 
+; Le masque du champ de jeu, dans la page des overlays. Ce n'est pas un objet :
+; il n'a ni etat ni OST, sa page est une equate (overlay.page) et son adresse
+; ce symbole — paged.call suffit a l'atteindre.
+adr_playfield_mask_ND0 EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"

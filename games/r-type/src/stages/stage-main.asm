@@ -142,6 +142,22 @@ stage.loop
         jsr   UnsetDisplayPriority
         jsr   DrawTiles
         jsr   DrawSprites
+
+        ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
+        ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse
+        ; ses artefacts, donc il doit etre le dernier a peindre.
+        ;
+        ; Le sprite compile prend le plan FORME dans U et le plan COULEUR dans
+        ; glb_screen_location_1, puis avance de 8000 et empile vers le bas. Les
+        ; deux bases sont fixes : c'est la PAGE derriere la fenetre $A000-$DFFF
+        ; qui alterne au double tampon, pas l'adresse.
+        ldd   #$A000
+        std   <glb_screen_location_1
+        ldu   #$C000
+        lda   #map.RAM_OVER_CART+overlay.page
+        ldx   #adr_playfield_mask_ND0
+        jsr   paged.call
+
         _gfxlock.off
 
         inc   bench.frames
