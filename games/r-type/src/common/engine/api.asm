@@ -87,6 +87,16 @@ _api    macro
         _api scroll_max
         _api scroll_tile_pos
         _api scroll_tile_pos_offset24
+        ; L'etat interne du scroll, que le PRE-SCROLL d'ouverture pilote a la
+        ; main : il rembobine la camera et repeint le viewport colonne par
+        ; colonne. Ce sont des etiquettes de variables dans l'unite residente,
+        ; donc de vraies adresses — elles traversent le lien a bon droit.
+        _api scroll_tile_pos_offset
+        _api scroll_map_pos
+        _api buffer_x_pos
+        _api glb_camera_x_pos_old
+        _api tile_buffer
+        _api tile_buffer_page
 
         ; --- object manager ---
         _api InitStack
@@ -96,8 +106,12 @@ _api    macro
         _api LoadObject_u
         _api UnloadObject_u
         _api Obj_Mount
+        ; Obj_RunB N'EST PLUS AU CONTRAT : plus personne ne s'en sert. Il
+        ; portait une commande dans B parce qu'un objet ne s'atteignait que par
+        ; l'index ; en v2 une routine sans etat se vise par son symbole, via
+        ; paged.call, sans registre de commande ni table de routage — voir le
+        ; champ d'etoiles. Obj_Run reste : le fondu, lui, a bien un OST.
         _api Obj_Run
-        _api Obj_RunB
         ; Le fondu de palette, resident : le stage le designe dans son index
         ; d'objets, donc son adresse doit traverser le lien.
         _api PaletteFade

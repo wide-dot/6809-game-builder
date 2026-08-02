@@ -77,6 +77,12 @@ stage.stateKept
 
         jsr   stage.setup                  ; cartes, largeur, wave : le stage
 
+        ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
+        ; avant la trame d'amorce et InitScroll.
+        lda   #map.RAM_OVER_CART+overlay.page
+        ldx   #starfield.init
+        jsr   paged.call
+
         ; une trame d'amorce avant le scroll, comme la v1 : le double tampon
         ; bascule une fois et les objets deja inscrits tournent, de sorte que
         ; InitScroll parte d'un etat coherent
@@ -90,6 +96,13 @@ stage.stateKept
         ; porte que le boss de la v1 utilisait déjà pour figer la caméra.
         ldd   #map.COLS*12-144
         std   scroll_max
+
+        ; Le pre-scroll d'ouverture, juste apres InitScroll comme en v1 : il
+        ; repeint le viewport ENTIER dans les deux tampons, en rejouant le
+        ; defilement. C'est lui qui pose le ciel en nibble $F, sans quoi le
+        ; champ d'etoiles n'a rien ou dessiner. Position d'entree : le debut.
+        lda   #0
+        jsr   stage.preScroll
 
         ; L'horloge de niveau repart a zero. Les horodatages d'une wave sont
         ; ceux de l'arcade, comptes depuis le debut du stage — en v1 c'etait
@@ -152,7 +165,20 @@ stage.loop
         jsr   EraseSprites
         jsr   UnsetDisplayPriority
         jsr   DrawTiles
+
+        ; Les etoiles s'effacent ICI, entre les tuiles et les sprites : le fond
+        ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
+        ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
+        ; immobile puis remis en mouvement reinjecte des etoiles perimees.
+        lda   #map.RAM_OVER_CART+overlay.page
+        ldx   #starfield.erase
+        jsr   paged.call
+
         jsr   DrawSprites
+
+        lda   #map.RAM_OVER_CART+overlay.page
+        ldx   #starfield.draw
+        jsr   paged.call
 
         ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
         ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse
@@ -233,3 +259,81 @@ stage.paletteFadeCommon
 
 stage.paletteFadeDone
         rts
+
+;*******************************************************************************
+; Le PRE-SCROLL d'ouverture — porte de checkpoint.scroll (v1, global/checkpoint)
+;
+; Sans lui le viewport n'est jamais peint EN ENTIER : le premier DrawTiles ne
+; trace que les colonnes de la position courante, et la rangee verticale de
+; fond — celle qui porte le ciel en nibble $F — n'atteint pas l'ecran. Le champ
+; d'etoiles, dont tout le test tient sur « ce pixel vaut-il $F », ne dessine
+; alors rien du tout.
+;
+; Le principe est de REJOUER le defilement : on part d'un viewport large de zero
+; colonne, cale a droite, et on avance de 4 px vers la gauche en elargissant
+; d'une colonne tous les trois pas — dans LES DEUX tampons. Chaque colonne est
+; donc peinte a chacune de ses sous-positions, exactement comme si elle etait
+; entree par la droite.
+;
+; La v1 s'en sert aussi aux checkpoints, avec une position d'entree ; ici elle
+; vaut toujours zero, mais le parametre est conserve pour le jour ou les
+; checkpoints seront portes.
+;
+; A = position d'entree, en tuiles de collision (24 px)
+;*******************************************************************************
+stage.preScroll
+        sta   scroll_tile_pos              ; les tuiles de collision font 24 px
+        asla                               ; les tuiles tracees en font 12
+        sta   @a
+        ldb   scroll_vp_v_tiles
+        aslb
+        addb  scroll_vp_v_tiles            ; position x hauteur x 3 o (page, adresse)
+        mul
+        std   scroll_map_pos
+        lda   #0
+@a      equ   *-1
+        ldb   scroll_tile_width
+        mul
+        std   glb_camera_x_pos
+        std   glb_camera_x_pos_old
+        subd  #1
+        std   buffer_x_pos
+        std   buffer_x_pos+2
+
+        lda   scroll_vp_h_tiles            ; on emprunte les deux parametres de
+        ldb   scroll_vp_x_pos              ; viewport, rendus a la fin
+        std   @d
+        lda   #0
+        sta   scroll_vp_h_tiles
+        sta   scroll_tile_pos_offset
+        sta   scroll_tile_pos_offset24
+        lda   #8+144-4                     ; cale a droite du viewport
+        sta   scroll_vp_x_pos
+        lda   scroll_map_page_even
+        sta   tile_buffer_page
+        ldx   scroll_map_even
+        stx   tile_buffer
+@loop1
+        lda   #3
+        sta   @cpt
+        inc   scroll_vp_h_tiles
+@loop2
+        lda   #1
+        sta   glb_camera_move
+        jsr   DrawTiles
+        _SwitchScreenBuffer
+        jsr   DrawTiles
+        _SwitchScreenBuffer
+        lda   scroll_vp_x_pos
+        suba  #4
+        sta   scroll_vp_x_pos
+        dec   @cpt
+        bne   @loop2
+        cmpa  #4
+        bne   @loop1
+        ldd   #0
+@d      equ   *-2
+        sta   scroll_vp_h_tiles
+        stb   scroll_vp_x_pos
+        rts
+@cpt    fcb   0

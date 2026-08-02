@@ -139,6 +139,11 @@
                 <direntry name="common.overlay" loadtimelink="LINK">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <!-- Le champ d'etoiles : sans etat, 6 Ko de table       -->
+                        <!-- d'adresses VRAM precalculees, trois routines visees -->
+                        <!-- directement par paged.call. Il partage la page des  -->
+                        <!-- overlays : une seule montee pour toute la phase.    -->
+                        <asm filename="src/common/fx/starfield/starfield.asm"/>
                         <gfxcomp gendir="gen/overlay"
                                  gensource="gen/overlay/includes.asm"
                                  genindex="gen/overlay/index.asm"

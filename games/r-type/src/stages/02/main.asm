@@ -40,6 +40,12 @@ Ani_Asd_common    EXTERNAL
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
 
+; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
+; directement : pas d'ObjID, pas de commande en registre.
+starfield.init    EXTERNAL
+starfield.erase   EXTERNAL
+starfield.draw    EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
