@@ -89,14 +89,20 @@ stage.stateKept
         ldd   #0
         std   gfxlock.frame.gameCount
 
+        ; moveByScript garde la page et l'adresse de la table de scripts dans
+        ; des operandes auto-modifiees — il y en a DEUX pour la page, une par
+        ; routine qui monte. Le moteur a la routine qui les pose toutes : elle
+        ; les lit dans l'index d'objets, a l'identifiant de l'objet animation.
+        ldb   #objid.animation
+        jsr   moveByScript.register
+
         jsr   ObjectWave_Init              ; cale le pointeur de wave sur l'horloge
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
         jsr   InitRNG
 
-        ; l'allocateur du tampon de fond, que le mode « background erase »
-        ; utilise pour rendre a chaque sprite ce qu'il a recouvert
-        jsr   BgBufferAlloc
+        ; les structures de priorite du dessin de sprites, une par tampon
+        jsr   InitDrawSprites
 
         ldd   #stage.userIRQ
         std   Irq_user_routine
@@ -118,6 +124,7 @@ stage.loop
         jsr   CheckSpritesRefresh
         _gfxlock.on
         jsr   EraseSprites
+        jsr   UnsetDisplayPriority
         jsr   DrawTiles
         jsr   DrawSprites
         _gfxlock.off

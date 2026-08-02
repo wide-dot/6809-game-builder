@@ -19,6 +19,12 @@ stage = sys.argv[1]
 src = f'src/stages/{stage}/wave.asm'
 
 names = []
+# Quelques identifiants ne viennent pas de la wave mais du code des objets :
+# pata-pata cite l'explosion en mourant. Ils sont numerotes avec les autres.
+# L'objet des scripts d'animation a lui aussi un identifiant : moveByScript
+# lit sa page et son adresse dans l'index, comme n'importe quel objet.
+names = ['ObjID_animation', 'ObjID_explosion']
+
 for line in open(src):
     code = line.split(';')[0]
     if not re.match(r'\s+(fcb|fdb)\s', code):
@@ -46,19 +52,32 @@ equ_out.append('')
 for i, name in enumerate(names, start=1):
     equ_out.append(f'{name:<28} equ {i}')
 equ_out.append(f'objid.count                  equ {len(names)}')
+equ_out.append('objid.animation              equ ObjID_animation')
 equ_out.append('')
 open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(equ_out))
 
 out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
+# Les ennemis portes vivent dans la page des ennemis et ont leur propre
+# point d'entree ; les autres identifiants visent encore le bouchon du stage.
+# ObjID_patapata vise encore le bouchon : l'unite de l'ennemi est construite
+# et chargee, mais l'executer plante — voir le readme.
+PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common')}
+
 out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
 for name in names:
-    out.append(f'        fcb   map.RAM_OVER_CART+stage.page   ; {name}')
+    if name in PORTED:
+        out.append(f'        fcb   map.RAM_OVER_CART+{PORTED[name][0]}.page   ; {name}')
+    else:
+        out.append(f'        fcb   map.RAM_OVER_CART+stage.page   ; {name}')
 out.append('')
 out.append('Obj_Index_Address')
 out.append('        fdb   0')
 for name in names:
-    out.append(f'        fdb   stage.placeholder        ; {name}')
+    if name in PORTED:
+        out.append(f'        fdb   {PORTED[name][1]}        ; {name}')
+    else:
+        out.append(f'        fdb   stage.placeholder        ; {name}')
 out.append('')
 out.append('* Les scripts d\'animation. Les vrais vivent dans un objet commun qui')
 out.append('* n\'est pas encore chargeable (8 Ko de donnees de lien) : en attendant,')
@@ -77,8 +96,10 @@ out.append('')
 out.append('* La page des images de chaque objet. Tant que les ennemis ne sont pas')
 out.append('* portes, le bouchon ne dessine rien et la valeur ne sert pas.')
 out.append('Img_Page_Index')
-for _ in range(len(names) + 1):
-    out.append('        fcb   map.RAM_OVER_CART+stage.page')
+out.append('        fcb   map.RAM_OVER_CART+stage.page')
+for name in names:
+    page = PORTED[name][0] if name in PORTED else 'stage'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
 out.append('')
 
 open(f'src/stages/{stage}/objid.index.asm', 'w').write('\n'.join(out))

@@ -6,13 +6,8 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/enemies_properties.asm"
-        INCLUDE "./objects/animation/index.equ"
-        INCLUDE "./global/projectile.macro.asm"
-        INCLUDE "./objects/explosion/explosion.const.asm"
+; V2-DEVIATION: les INCLUDE de tete sont remontes dans enemy.asm, l'unite qui
+; enveloppe cet objet — ils sont communs a tout ennemi.
 
 AABB_0  equ ext_variables   ; AABB struct (9 bytes)
 imgIdx  equ ext_variables+9 ; random number (1 bytes)
@@ -40,9 +35,11 @@ Init
         clra
         std   y_pos,u
 
-        ; load fire preset
-        ldb   subtype_w+1,u
-        _loadFirePreset
+        ; V2-DEVIATION: meme raison que tryFoeFire plus bas — ce preset ne
+        ; renseigne que les variables de tir, que plus personne ne lit tant
+        ; que la chaine des projectiles n'est pas portee.
+        ;       ldb   subtype_w+1,u
+        ;       _loadFirePreset
 
         ; display priority
         ldb   #6
@@ -85,7 +82,10 @@ Live
 !       lda   moveByScript.anim.end
         bne   @delete
 ;
-        jsr   tryFoeFire
+;  V2-DEVIATION: le tir n'est pas porte. tryFoeFire vise le joueur
+;  (FoeFireTarget), et la chaine createFoeFire / foefire / setDirectionTo
+;  depend du vaisseau, qui n'existe pas encore cote v2.
+;       jsr   tryFoeFire
 ;
         lda   AABB_0+AABB.p,u
         beq   @destroy
@@ -129,15 +129,17 @@ endCheck
         clr   moveByScript.anim.loops  ; exit parent loop
 !       rts
 
+; V2-DEVIATION: la v1 nommait ses entrees d'imageset Img_<nom>, gfxcomp les
+; genere en set_<nom>. Seul le nom change, la table est la meme.
 ImageIndex
-        fdb   Img_patapata_0
-        fdb   Img_patapata_1
-        fdb   Img_patapata_2
-        fdb   Img_patapata_3
-        fdb   Img_patapata_4
-        fdb   Img_patapata_5
-        fdb   Img_patapata_6
-        fdb   Img_patapata_7
+        fdb   set_patapata_0
+        fdb   set_patapata_1
+        fdb   set_patapata_2
+        fdb   set_patapata_3
+        fdb   set_patapata_4
+        fdb   set_patapata_5
+        fdb   set_patapata_6
+        fdb   set_patapata_7
 
 PresetYIndex ; 0x18db0
-        INCLUDE "./global/preset/18db0_preset-y.asm"
+        INCLUDE "src/common/lib/presets/18db0_preset-y.asm"

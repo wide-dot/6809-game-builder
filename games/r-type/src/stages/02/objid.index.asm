@@ -2,11 +2,15 @@
 
 Obj_Index_Page
         fcb   0                        ; id 0 : slot reserve, jamais execute
+        fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Obj_Index_Address
         fdb   0
+        fdb   Ani_Asd_common        ; ObjID_animation
+        fdb   stage.placeholder        ; ObjID_explosion
         fdb   stage.placeholder        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
@@ -17,8 +21,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+stage.page
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -30,5 +38,7 @@ Ani_Asd_none
 * portes, le bouchon ne dessine rien et la valeur ne sert pas.
 Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
-        fcb   map.RAM_OVER_CART+stage.page
-        fcb   map.RAM_OVER_CART+stage.page
+        fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

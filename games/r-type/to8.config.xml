@@ -27,6 +27,10 @@
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
             <region name="anim"       page="$0F" address="$0000" size="$4000"/>
+            <!-- Les ennemis : code et images dans la meme page, comme en v1 —  -->
+            <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
+            <!-- d'imageset y lit la geometrie des sprites.                     -->
+            <region name="enemies"    page="$05" address="$0000" size="$4000"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -36,7 +40,7 @@
             <!-- une piste suffit largement à LINK.                             -->
             <section name="SCENE" track="0" face="1" sector="16"/>
             <section name="LINK"  track="1" face="0" sector="1"/>
-            <section name="DATA"  track="2" face="0" sector="1"/>
+            <section name="DATA"  track="3" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section" value="DATA"/>
@@ -61,6 +65,44 @@
                 <direntry name="common.anim" codec="zx0" loadtimelink="LINK">
                     <lwasm gensource="gen/common/anim.asm">
                         <asm filename="src/common/fx/animation/anim.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <!-- Les ennemis. Leurs images d'abord dans le meme direntry :   -->
+                <!-- l'index d'imageset resout leur page par <file>$PAGE.        -->
+                <direntry name="common.enemies" loadtimelink="LINK">
+                    <lwasm gensource="gen/enemies/enemies.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/pata-pata/enemy.asm"/>
+                        <gfxcomp gendir="gen/enemies/pata-pata"
+                                 gensource="gen/enemies/pata-pata/includes.asm"
+                                 genindex="gen/enemies/pata-pata/index.asm"
+                                 file="common.enemies">
+                            <image name="patapata_0" filename="src/enemies/pata-pata/images/pata_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_1" filename="src/enemies/pata-pata/images/pata_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_2" filename="src/enemies/pata-pata/images/pata_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_3" filename="src/enemies/pata-pata/images/pata_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_4" filename="src/enemies/pata-pata/images/pata_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_5" filename="src/enemies/pata-pata/images/pata_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_6" filename="src/enemies/pata-pata/images/pata_6.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="patapata_7" filename="src/enemies/pata-pata/images/pata_7.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
                     </lwasm>
                 </direntry>
 
@@ -183,6 +225,7 @@
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
                     <load name="common.anim"       region="anim"/>
+                    <load name="common.enemies"    region="enemies"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

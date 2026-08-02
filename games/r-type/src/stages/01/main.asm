@@ -27,6 +27,11 @@ map.odd           EXTERNAL
 ; La wave vit dans le comblement du pageset des tuiles impaires : sa page est
 ; celle que le rangement lui a donnee, et le builder l'ecrit en equate.
 stage.wave        EXTERNAL
+patapata.Object   EXTERNAL
+
+; La table des scripts d'animation, commune a tous les stages et dans sa
+; propre page : moveByScript la lit par page montee.
+Ani_Asd_common    EXTERNAL
 
  SECTION code
 

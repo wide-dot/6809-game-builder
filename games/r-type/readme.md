@@ -93,18 +93,39 @@ les tuiles, puis les sprites.
 Les **cinq** tables de la frontière sont câblées — l'index d'objets, les deux
 index d'animation et l'index d'images — chaque stage exportant les siennes.
 
+### Pata-pata : construit et chargé, pas encore exécutable
+
+L'unité de l'ennemi existe (`src/enemies/pata-pata/enemy.asm`), s'assemble,
+et est chargée dans la région `enemies` (page $05) avec ses huit images
+compilées et leur index d'imageset. L'index d'objets du stage sait le désigner
+— il suffit de remettre `ObjID_patapata` dans `PORTED` de `tools/gen_objid.py`.
+
+**Mais l'exécuter plante** : le jeu part dans le moniteur peu après le premier
+spawn de la wave (horloge 504). Le banc tourne donc encore avec le bouchon.
+
+Écarts marqués dans `obj.asm` (`; V2-DEVIATION:`) : le tir n'est pas porté
+(`tryFoeFire` vise le joueur, et la chaîne `createFoeFire`/`foefire`/
+`setDirectionTo` en dépend), ni `_loadFirePreset` qui ne renseigne que des
+variables de tir. Les entrées d'imageset passent de `Img_<nom>` à `set_<nom>`,
+le nom que gfxcomp génère.
+
+Ce qui a déjà été corrigé en chemin, et qu'il ne faut pas rechercher :
+`moveByScript` garde **deux** opérandes de page auto-modifiées, pas une, et le
+moteur a sa propre routine pour les poser — `moveByScript.register`, qui les
+lit dans l'index d'objets à l'identifiant de l'objet animation. Le stage
+l'appelle désormais. `InitDrawSprites` à l'init et `UnsetDisplayPriority` dans
+la boucle manquaient aussi, d'après le main v1.
+
+Pistes non explorées pour la suite : les identifiants d'objets de l'unité
+ennemie viennent de `src/stages/01/objid.const.asm`, donc elle est liée à la
+numérotation du stage 1 ; et le `render_flags` / la priorité que `Init` pose
+n'ont pas été confrontés à ce que `CheckSpritesRefresh` attend.
+
 Ce qui manque encore pour qu'un ennemi tourne :
 
-- **Les scripts d'animation communs** (`src/common/fx/animation/`) ne sont pas
-  chargeables. Ils portent ~2900 références internes, soit 8 Ko de données de
-  lien qui vivent dans le pool du loader tant que le fichier est indexé — les
-  deux tiers du pool, et l'échange de stage n'y survit pas. Il faut d'abord
-  savoir **cuire les interns d'un direntry à placement fixe**, comme `.static`
-  le fait déjà pour les références externes ; le gain serait de 8 Ko de pool et
-  d'autant sur disque. Piste vérifiée et écartée : les laisser non résolus ne
-  marche pas, lwasm écrit des zéros aux sites de relocation.
-- Le code des ennemis eux-mêmes, leurs images compilées, et le commun qu'ils
-  appellent (`AwardScore`, `tryFoeFire`, les presets de tir, l'explosion).
+- Le diagnostic du plantage ci-dessus.
+- Le reste des ennemis, et le commun que leur chaîne de tir appelle
+  (`createFoeFire`, `foefire`, `setDirectionTo`, l'explosion, le joueur).
 
 À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
 mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
