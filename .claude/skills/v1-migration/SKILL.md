@@ -58,6 +58,15 @@ description: Mode opératoire de la migration de l'engine ASM v1 (thomson-to8-ga
 3. Enregistrer la ligne dans **`engine/v1-manifest.csv`** :
    `v2_path,v1_path,v1_commit,imported_on,deviations`
    avec `v1_commit` = `git -C ../thomson-to8-game-engine log -1 --format=%H -- <v1_path>`.
+3bis. **La conf de la CIBLE fait foi — la lire est une étape obligatoire.**
+   Avant de déclarer images/objets d'une unité, ouvrir les `*.d7.properties`
+   v1 (cible disquette) de CET objet — pas le `.properties` générique, pas un
+   bloc v2 existant pris comme patron. Vécu deux fois en sens inverse : une
+   variante NB1 perdue (vaisseau), puis une inventée (pata-pata) en lisant la
+   mauvaise conf. Garde-fou mécanique à lancer après toute déclaration
+   d'images : `games/r-type/tools/check_variants.py <chemin v1>` (compare les
+   variantes v1 (d7) aux <encoder> v2, sortie non nulle si divergence).
+   Cas : docs/lang/en/migration/sprite-variants.md
 4. **Écart au 1:1 = exception tracée.** Tout écart volontaire (bugfix,
    adaptation au contrat v2, optimisation) est noté dans la colonne
    `deviations` (motif court) ET signalé par un commentaire `; V2-DEVIATION:`

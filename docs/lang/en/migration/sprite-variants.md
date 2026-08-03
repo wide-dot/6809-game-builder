@@ -2,7 +2,10 @@
 
 A v1 `sprite.` line lists variants after the semicolon: `NB0,NB1`, `XB0`,
 `ND0`. Each one maps to its own `<encoder>` element in the v2 `<image>`.
-Port the list, not just the first entry.
+Port the list, not just the first entry — **and read it from the properties
+of the TARGET** (`*.d7.properties` for the floppy build): the same object can
+declare different variants per target, and the generic `.properties` is a
+different contract.
 
 ## Symptom
 
@@ -64,21 +67,36 @@ Budget note: each variant is a full compiled sprite. Adding `NB1` to the five
 ship poses and eight pata-pata frames grew their units by 2.3 KB and 3.4 KB —
 check the region budgets after.
 
-## Why it happened, and the rule
+## Why it happened — twice — and the rule
 
-The player's config was written by copying the pata-pata block as a template —
-and pata-pata's own config already carried the omission from an earlier
-session. Copying an existing v2 block propagates its gaps. **The v1
-properties file is the contract; the previous v2 config is not.** When
-declaring a unit's images, open the v1 properties and translate every line.
+The player's config was written by copying the pata-pata block as a template
+instead of reading the v1 properties: the ship lost its `NB1`. Then the fix
+audit read the WRONG properties file (`obj.properties` instead of
+`obj.d7.properties`) and **invented** an `NB1` for pata-pata that the floppy
+target never had — caught by the author again. Same root cause both ways:
+not reading the original contract for the target being built.
+
+**The v1 properties of the target are the contract** — not the previous v2
+config, not another target's properties. Inventing a variant is as wrong as
+losing one: it costs bytes in the page and misstates the 1:1 baseline.
+
+## The guard
+
+`tools/check_variants.py` mechanises the check: it walks the v1
+`*.d7.properties`, unions the variants per image (one png often carries
+several `sprite.` lines, e.g. emitter-flash in `NB0` then `XB0`), matches
+against the v2 `<image>`/`<encoder>` declarations by three-segment path
+suffix (`<object>/images/<png>` survives the tree move and separates
+homonyms — the shell's `mask.png` is not the playfield's), and exits non-zero
+on any divergence on a ported image. Run it after any image declaration
+change; it is part of the migration workflow (see the skill).
 
 ## Proof
 
-`grep -c NB1 gen/<unit>/index.asm` against the v1 properties count, and the
-region sizes moving by the expected amount.
+The guard's `variantes conformes` on a clean run, and the region sizes
+moving by the expected amount when a variant is added.
 
 ## Met in
 
-`games/r-type`, 2026-08-03, caught by the author on the player. The audit
-found pata-pata affected too; explosions, weapons and the mask were conform
-(single-variant in v1 as well).
+`games/r-type`, 2026-08-03, both directions caught by the author: the lost
+`NB1` on the ship, then the invented `NB1` on pata-pata.
