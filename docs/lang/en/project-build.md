@@ -153,6 +153,29 @@ Additionnal parameters :
 
 `    -c (clean build)`
 
+## What a failed target leaves behind : nothing
+
+The disk and cartridge images are written as a target runs, but several checks
+only close it — the `interface` region promises, and whether anything still
+imports a direntry that stopped emitting link data. A target that fails one of
+them **deletes every file it wrote**, plus the link report of the previous
+build, and says so :
+
+```
+removed …/dist/to8.fd : the target did not complete
+removed …/dist/link-report-fd.csv : it described an earlier build
+target fd failed : 5 output file(s) removed, dist holds nothing from this build
+```
+
+Keeping them was worse than useless. A refused build otherwise left a freshly
+timestamped `to8.fd` beside a link report from the last good run, and the two
+were indistinguishable from a success until the machine booted into garbage —
+measured, and it cost a debugging session. An absent file states the outcome in
+a way a stale one cannot.
+
+So `dist/` always holds either the artefacts of the last **successful** target,
+or nothing. Never a mix.
+
 
 ---------------------------
 WORK IN PROGRESS

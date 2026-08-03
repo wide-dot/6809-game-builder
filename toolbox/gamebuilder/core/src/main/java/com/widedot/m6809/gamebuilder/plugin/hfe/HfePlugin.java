@@ -74,6 +74,7 @@ public class HfePlugin {
 		if (rc != 0) {
 			throw new Exception(hxcfe + " failed with exit code " + rc + " on " + tmpoutputFile);
 		}
+        ctx.outputs.record(absFilename);
 		
         Files.deleteIfExists(tmpoutputFile);
         

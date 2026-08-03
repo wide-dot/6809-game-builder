@@ -105,9 +105,12 @@ The rules :
 - Internal references bake as well — see the next section. A unit whose
   `.static` sections hold all its references needs no `loadtimelink` block at
   all.
-- Same-name sections merge across the source, and the section named `code`
-  always leads the unit's binary — the entry point convention — whatever
-  order lwasm wrote the object in.
+- Same-name sections merge across the source, and the section named `code` —
+  or `code.static`, when the whole body of a unit is baked — always leads the
+  unit's binary, the entry point convention, whatever order lwasm wrote the
+  object in. A unit must not hold both : the generators that emit
+  `SECTION code` (`png2pal` and friends) take a `section` attribute so a baked
+  host can move them out of the way.
 
 Measured on `examples/tilescroll` : 768 references baked, link data for the
 map 4.6 KB → 0, the disk back to its standard layout, the memory pool back to
@@ -137,6 +140,91 @@ A tempting shortcut does not work, and was measured rather than assumed :
 leaving the interns unresolved because the unit loads at address zero. lwasm
 writes zeros at relocation sites, not the section-relative value, so the
 pointers would all read zero.
+
+## The policy
+
+The two mechanisms above are not optimisations to reach for once a build gets
+tight. They are the default, and `loadtimelink` is the exception :
+
+> A unit whose destination is fixed at build time — a `<region>` with a literal
+> page and address — declares its references in a `.static` section. That holds
+> for its external references (the provider sits at the same destination in
+> every scene of the target, and its direntry is declared first) and for its
+> internal ones. `loadtimelink` is reserved for what the builder cannot know :
+> content loaded at an address computed at run time.
+
+Three corollaries, each of which has been got wrong :
+
+**The criterion is a fixed destination, not shared content.** "Common to every
+stage" is a symptom of the rule, not the rule. A stage's own tile map, its
+collision data, its wave table sit in a declared region just as firmly as the
+engine does, and their pointer tables are exactly the bulk that fills a pool.
+A habit limited to inter-stage commons leaves the largest tables paying.
+
+**References bake, resources do not.** The marker goes on the *consumer's*
+section, and the provider's direntry must be declared before it. "Bake this
+asset" means nothing; "bake the table that points into it" means something.
+
+**Half a unit baked still costs a block.** The link data shrinks in proportion,
+but the direntry keeps its `loadtimelink` and the loader keeps one allocation
+alive for as long as the file is indexed. The pool cost reaches zero only when
+every reference of the unit is baked and the attribute goes away.
+
+**A block costs 12 bytes before it holds anything** — six two-byte counters —
+then four per export and four to six per reference. So a fully baked direntry
+sitting at exactly 12 bytes in the report is one whose `loadtimelink` has
+nothing left to carry : drop the attribute and it stops costing a block *and*
+an allocation. On r-type that described nineteen entries at once (the animation
+scripts, the two tile maps, sixteen tilesets), 228 bytes and nineteen
+allocations. The exception is a direntry whose exports are still imported —
+`stage1` stays at 36 bytes = 12 + six exports, because the engine relinks
+against those six at every scene load.
+
+Dropping the attribute too early used to fail silently : the reference goes
+back through the loader, finds no export and resolves to zero. The build now
+refuses it, naming each symbol and the direntry that stopped emitting it.
+
+**A reference *into* a swappable unit must stay linked — this one is
+correctness, not size.** The stage exchange is nothing but the loader
+re-resolving the engine's `EXTERNAL`s at each `scene.load` : the moment stage 2
+lands, `ldx #Obj_Index_Page` points at stage 2's table. Bake that and the engine
+is frozen on whichever alternative the builder happened to resolve. The rule is
+directional, and it is the reverse of the intuition : a **consumer** of a fixed
+provider bakes; a consumer of an `interface` region does not. In r-type this is
+what keeps `common.engine` and `common.player` linked — the engine reads the
+stage's five tables, the player writes the stage's `mainloop.state` — while
+`stage1` and `stage2`, which only ever consume fixed providers, bake whole.
+
+The build refuses the mistake rather than committing it, but only because of
+the declaration order rule : a provider is resolvable only once built, and the
+alternatives of an interface region are declared after the resident units that
+read them. `resolve` then finds nothing and says so. Do not rely on that alone
+— `registerExport` is last-one-wins, so a consumer declared *after* two
+alternatives would silently bake against the second.
+
+What happens when the policy is not applied is a load that stops with no
+message at all — see
+[A v1 game has no link data](migration/static-link-bake.md).
+
+## The link report
+
+Arbitration needs numbers, so the build prints them. After each target, every
+direntry that still carries link data is listed, largest first :
+
+```
+link data: 30 direntries, 5278 bytes (pool cost while indexed), 4603 references baked
+  bytes  intern  x8  x16  page  expA  expR   baked  direntry
+   2138     473   0   13     0     0    39       0  common.engine
+    896     122   0   30    36     0     0       0  common.player
+     36       0   0    0     0     0     6     280  stage1
+```
+
+`bytes` is what that file adds to the loader's memory pool while it is indexed;
+the total is what the pool must hold if every one of them is indexed at once.
+A large `bytes` with `baked` at zero is a unit the policy has not reached yet.
+
+The same table is written to `<dist.dir>/link-report-<target>.csv`, one row per
+direntry, so a sweep can be sorted and diffed between builds.
 
 ## Export pruning
 

@@ -39,6 +39,16 @@ public class Png2PalPlugin {
 	private static HashMap<Integer, Integer> rgbIndex = new HashMap<Integer, Integer>();	
 
 	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
+		return run(symbol, mode, colors, offset, profile, filename, gensource, "code");
+	}
+
+	/**
+	 * @param section name of the generated SECTION. A host unit whose whole body
+	 *        is baked names its own section {@code code.static} ; the palette then
+	 *        has to stop being called {@code code}, or it would merge with nothing
+	 *        and lead the binary in the entry point's place.
+	 */
+	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource, String section) throws Exception {
 		
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
@@ -69,7 +79,7 @@ public class Png2PalPlugin {
 		if (!file.isDirectory()) {
 			
 			// Single file processing
-			outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource));
+			outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource, section));
 		} else {
 			
 			// Directory processing
@@ -77,7 +87,7 @@ public class Png2PalPlugin {
 
 			File[] files = file.listFiles((d, name) -> name.endsWith(".png"));
 			for (File curFile : files) {
-				outputStream.write(convertFile(symbol, mode, colors, offset, curFile, gensource));
+				outputStream.write(convertFile(symbol, mode, colors, offset, curFile, gensource, section));
 			}
 		}
 		log.debug("Conversion ended sucessfully.");
@@ -85,7 +95,7 @@ public class Png2PalPlugin {
 		return outputStream.toByteArray();
 	}
 	
-	private static byte[] convertFile(String symbol, String mode, int colors, int offset, File file, String gensource) throws Exception {
+	private static byte[] convertFile(String symbol, String mode, int colors, int offset, File file, String gensource, String section) throws Exception {
 		
 		log.debug("Process file: {}", file.getAbsolutePath());
 		byte[] result;
@@ -99,7 +109,7 @@ public class Png2PalPlugin {
 	     switch (mode) {
          case OBJ:
      		 if (symbol == null) symbol = FileUtil.removeExtension(file.getName());
-        	 result = Png2PalPlugin.genObject(symbol, mode, colors, offset, colorModel).getBytes();
+        	 result = Png2PalPlugin.genObject(symbol, mode, colors, offset, colorModel, section).getBytes();
         	 ext = ASM_EXT;
              break;
          case DAT:
@@ -135,13 +145,17 @@ public class Png2PalPlugin {
 	}
 	
 	public static String genObject(String symbol, String mode, int colors, int offset, ColorModel colorModel) throws IOException {
+		return genObject(symbol, mode, colors, offset, colorModel, "code");
+	}
+
+	public static String genObject(String symbol, String mode, int colors, int offset, ColorModel colorModel, String section) throws IOException {
 
 		// Generate assembly code
 		String code = "";
 		
 		code += symbol + " EXPORT" + System.lineSeparator()
 		      + System.lineSeparator()
-              + " SECTION code" + System.lineSeparator()
+              + " SECTION " + section + System.lineSeparator()
               + symbol + System.lineSeparator();
 		
 		int nearestColor;
@@ -308,6 +322,7 @@ public class Png2PalPlugin {
 	  String profile = Attribute.getString(node, ctx, "profile", "to");
 	  String filename = Attribute.getStringOpt(node, ctx, "filename");
 	  String gensource = Attribute.getStringOpt(node, ctx, "gensource");
+	  String section = Attribute.getString(node, ctx, "section", "code");
 
 	  if (filename == null || filename.equals("")) {
 		  throw new Exception("An input filename should be provided for png2pal!");
@@ -322,7 +337,7 @@ public class Png2PalPlugin {
 	  gensource = ctx.path + File.separator + gensource;
 
 	  // the exported form : one label the rest of the game can link against
-	  Png2PalPlugin.run(symbol, Png2PalPlugin.OBJ, colors, offset, profile, filename, gensource);
+	  Png2PalPlugin.run(symbol, Png2PalPlugin.OBJ, colors, offset, profile, filename, gensource, section);
 	  return new File(gensource);
 	}
 }

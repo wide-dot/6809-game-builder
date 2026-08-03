@@ -93,14 +93,28 @@ public class LwObject implements ObjectDataInterface{
 		// coherent by construction, every offset derives from this list.
 		List<LWSection> ordered = new ArrayList<LWSection>();
 		for (LWSection section : secLst) {
-			if ("code".equals(section.name)) ordered.add(section);
+			if (leads(section)) ordered.add(section);
 		}
 		for (LWSection section : secLst) {
-			if (!"code".equals(section.name)) ordered.add(section);
+			if (!leads(section)) ordered.add(section);
 		}
 		secLst = ordered;
 	}
 	
+	/**
+	 * Whether a section carries the unit's entry point, and so has to come
+	 * first in the binary.
+	 *
+	 * {@code .static} is a linking attribute, not an identity : a unit whose
+	 * whole body is bakeable renames its section to {@code code.static} and
+	 * must keep its entry point at its first byte. Keying this on the exact
+	 * name alone made that rename move the entry point without a word, which
+	 * is the one failure mode the entry point convention exists to prevent.
+	 */
+	private static boolean leads(LWSection section) {
+		return "code".equals(section.name) || "code.static".equals(section.name);
+	}
+
 	public String string_cleanup(String sym) {
 		String symbuf = "";
 		
@@ -494,6 +508,11 @@ public class LwObject implements ObjectDataInterface{
 
 	/** relocations resolved at build time : the link data getters skip them */
 	private final java.util.Set<Reloc> baked = new java.util.HashSet<Reloc>();
+
+	@Override
+	public int getBakedCount() {
+		return baked.size();
+	}
 
 	@Override
 	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,

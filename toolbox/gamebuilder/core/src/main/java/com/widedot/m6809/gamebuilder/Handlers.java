@@ -219,6 +219,7 @@ public final class Handlers {
 			.opt("colors", INT, "number of colors")
 			.opt("offset", INT, "first color index")
 			.opt("mode", STRING, "bin, and only as direntry content ; inside <lwasm> the table is always the exported form")
+			.opt("section", STRING, "name of the generated SECTION, default code ; a host unit baked as code.static needs the palette out of the way of the entry point")
 			.opt("profile", STRING, "color profile"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")

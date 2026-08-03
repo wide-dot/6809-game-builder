@@ -43,6 +43,15 @@ public interface ObjectDataInterface {
 	}
 
 	/**
+	 * How many references {@link #bakeStatic} resolved at build time. Reported,
+	 * never acted on : it is what tells a link report apart a unit the
+	 * {@code .static} policy has reached from one it has not.
+	 */
+	default int getBakedCount() {
+		return 0;
+	}
+
+	/**
 	 * Exported symbols and where they live, for the static resolution
 	 * registry : symbol to {@code {value, absolute}}, absolute 1 meaning the
 	 * value stands alone (a constant), 0 that it is an offset inside this

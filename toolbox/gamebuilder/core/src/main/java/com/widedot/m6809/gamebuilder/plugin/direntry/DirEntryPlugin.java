@@ -284,6 +284,24 @@ public class DirEntryPlugin {
 				hasLinkData = true;
 			}
 		}
+
+		// what this entry costs the loader's memory pool while it stays indexed,
+		// for the report the target prints at the end. Observational only.
+		int baked = 0;
+		for (ObjectDataInterface obj : objects) {
+			baked += obj.getBakedCount();
+		}
+		ctx.linkReport.add(new com.widedot.m6809.gamebuilder.spi.globals.LinkReport.Entry(
+				name,
+				hasLinkData ? linkdata.data.length : 0,
+				linkdata == null ? 0 : linkdata.countIntern(),
+				linkdata == null ? 0 : linkdata.countExtern8(),
+				linkdata == null ? 0 : linkdata.countExtern16(),
+				linkdata == null ? 0 : linkdata.countExternPage(),
+				linkdata == null ? 0 : linkdata.countExportAbs(),
+				linkdata == null ? 0 : linkdata.countExportRel(),
+				baked,
+				loadtimelink));
 		
 		// build direntry data
 	    int i = 0;

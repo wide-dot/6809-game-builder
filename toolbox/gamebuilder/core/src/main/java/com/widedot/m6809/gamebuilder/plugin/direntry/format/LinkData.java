@@ -112,6 +112,13 @@ public class LinkData {
 		return out;
 	}
 	
+	public int countExportAbs()  { return exportAbs.size(); }
+	public int countExportRel()  { return exportRel.size(); }
+	public int countIntern()     { return intern.size(); }
+	public int countExtern8()    { return extern8.size(); }
+	public int countExtern16()   { return extern16.size(); }
+	public int countExternPage() { return externPage.size(); }
+
 	public void process() {
 		int length =	2 + 4 * exportAbs.size() +
 						2 + 4 * exportRel.size() +

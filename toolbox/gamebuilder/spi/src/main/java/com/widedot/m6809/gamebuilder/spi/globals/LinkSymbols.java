@@ -176,6 +176,53 @@ public class LinkSymbols {
 		return unit == null ? "" : " (direntry " + unit + ")";
 	}
 
+	/**
+	 * Every symbol still referenced through the loader has to be emitted by
+	 * some direntry's link data.
+	 *
+	 * Dropping {@code loadtimelink} from a fully baked direntry is the last
+	 * step of the {@code .static} policy, and it is the one step that can be
+	 * taken too early : the day a consumer stops baking, its reference goes
+	 * back through the loader, finds no export, and resolves to zero — the
+	 * loader only complains when {@code loader.CHECK_UNRESOLVED_SYMBOLS} is
+	 * defined, so the default is a program that loads, runs and reads address
+	 * zero. That is the same silent shape {@code undefextern} was dropped for.
+	 *
+	 * Checked after the real pass, so it sees the post-prune truth.
+	 */
+	public void checkImportsResolvable() throws Exception {
+		java.util.Set<String> emitted = new java.util.HashSet<String>();
+		for (java.util.TreeSet<String> list : unitExports.values()) {
+			emitted.addAll(list);
+		}
+		java.util.TreeSet<String> dangling = new java.util.TreeSet<String>();
+		for (String sym : imports) {
+			if (!emitted.contains(sym)) dangling.add(sym);
+		}
+		if (dangling.isEmpty()) return;
+
+		StringBuilder m = new StringBuilder("symbols are referenced through the loader but"
+				+ " no direntry emits them in its link data:");
+		for (String sym : dangling) {
+			String owner = exporters.get(sym);
+			m.append(System.lineSeparator()).append("  ").append(sym);
+			if (owner != null) {
+				m.append(" — defined in ").append(owner).append(unitTag(exporterUnits.get(sym)))
+				 .append(", which does not emit it");
+			} else {
+				// a direntry without loadtimelink never registers its exports
+				// here at all, so this is the shape the mistake actually takes
+				m.append(" — no direntry emits it : either the unit defining it"
+						+ " lost its loadtimelink, or nothing defines it");
+			}
+		}
+		m.append(System.lineSeparator())
+		 .append("Either give that direntry its loadtimelink back, or bake the reference")
+		 .append(" in a *.static section so it stops going through the loader.");
+		log.error(m.toString());
+		throw new Exception(m.toString());
+	}
+
 	public void clear() {
 		ids.clear();
 		exporters.clear();

@@ -52,6 +52,7 @@ public class SdPlugin {
             Files.deleteIfExists(outputFile);
             Files.createFile(outputFile);
             Files.write(outputFile, sdBytes);
+            ctx.outputs.record(outputFile);
         } catch (IOException e) {
             throw new Exception("Cannot write " + absFilename, e);
         }

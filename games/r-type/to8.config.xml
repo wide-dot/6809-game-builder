@@ -102,7 +102,7 @@
                 <!-- Les scripts d'animation, communs. Section .static : leurs  -->
                 <!-- ~2900 pointeurs internes sont cuits au build contre le     -->
                 <!-- placement declare, donc zero donnee de lien.               -->
-                <direntry name="common.anim" codec="zx0" loadtimelink="LINK">
+                <direntry name="common.anim" codec="zx0">
                     <lwasm gensource="gen/common/anim.asm">
                         <asm filename="src/common/fx/animation/anim.asm"/>
                     </lwasm>
@@ -396,7 +396,7 @@
                 <!-- mesure, range et emet un direntry par page. L'auteur       -->
                 <!-- n'affecte jamais une tuile a une page.                     -->
                 <pageset name="stage1.tiles.even" region="tiles.even"
-                         gendir="gen/stages/01/tiles-even" loadtimelink="LINK">
+                         gendir="gen/stages/01/tiles-even">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
@@ -406,7 +406,7 @@
                 </pageset>
 
                 <pageset name="stage1.tiles.odd" region="tiles.odd"
-                         gendir="gen/stages/01/tiles-odd" loadtimelink="LINK"
+                         gendir="gen/stages/01/tiles-odd"
                          gensymbols="gen/stages/01/pages.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
@@ -424,7 +424,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage1.maps" loadtimelink="LINK">
+                <direntry name="stage1.maps">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -443,16 +443,16 @@
                         <!-- La palette du JEU, pas celle des tuiles : c'est   -->
                         <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
                         <!-- Le PNG de carte n'en portait qu'un sous-ensemble. -->
-                        <png2pal symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
+                        <png2pal section="palette.static" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
-                        <png2pal symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette.static" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                     </lwasm>
                 </direntry>
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
                 <pageset name="stage2.tiles.even" region="tiles.even"
-                         gendir="gen/stages/02/tiles-even" loadtimelink="LINK">
+                         gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
@@ -462,7 +462,7 @@
                 </pageset>
 
                 <pageset name="stage2.tiles.odd" region="tiles.odd"
-                         gendir="gen/stages/02/tiles-odd" loadtimelink="LINK"
+                         gendir="gen/stages/02/tiles-odd"
                          gensymbols="gen/stages/02/pages.asm">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
@@ -480,7 +480,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage2.maps" loadtimelink="LINK">
+                <direntry name="stage2.maps">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -496,9 +496,9 @@
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
-                        <png2pal symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <png2pal section="palette.static" symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
-                        <png2pal symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette.static" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                     </lwasm>
                 </direntry>
 

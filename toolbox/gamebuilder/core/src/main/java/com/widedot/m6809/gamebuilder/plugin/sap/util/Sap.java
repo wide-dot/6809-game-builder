@@ -105,7 +105,8 @@ public class Sap {
 		}
 	}
 
-	public void write(String file) throws Exception {
+	public java.util.List<Path> write(String file) throws Exception {
+		java.util.List<Path> written = new java.util.ArrayList<Path>();
 		
 		String ext = FileUtil.getExtension(file).get();
 		String filebase = FileUtil.removeExtension(file);
@@ -135,10 +136,12 @@ public class Sap {
 					Files.deleteIfExists(outputFile);
 					Files.createFile(outputFile);
 					Files.write(outputFile, sapFile[drive]);
+					written.add(outputFile);
 				} catch (IOException e) {
 					throw new Exception("Cannot write " + outputFile, e);
 				}
 			}
 		}
+		return written;
 	}
 }

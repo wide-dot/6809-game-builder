@@ -37,6 +37,7 @@ public class FdPlugin {
             Files.deleteIfExists(outputFile);
             Files.createFile(outputFile);
             Files.write(outputFile, media.getInterleavedData());
+            ctx.outputs.record(outputFile);
         } catch (IOException e) {
             throw new Exception("Cannot write " + absFilename, e);
         }

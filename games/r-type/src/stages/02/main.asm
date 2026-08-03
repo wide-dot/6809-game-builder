@@ -59,7 +59,7 @@ Beamcharge          EXTERNAL
 Beam                EXTERNAL
 emitterFlash.Object EXTERNAL
 
- SECTION code
+ SECTION code.static
 
         INCLUDE "src/common/engine/api.asm"
 

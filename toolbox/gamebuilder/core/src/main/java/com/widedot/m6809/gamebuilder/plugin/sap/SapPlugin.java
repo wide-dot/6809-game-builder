@@ -30,7 +30,9 @@ public class SapPlugin {
 	    String absFilename = dirname + File.separator + filename;
 		
         Sap sap = new Sap(media.getInterleavedData(), format);
-        sap.write(absFilename);
+        for (java.nio.file.Path written : sap.write(absFilename)) {
+            ctx.outputs.record(written);
+        }
         
 		log.debug("End of processing sap");
 	}

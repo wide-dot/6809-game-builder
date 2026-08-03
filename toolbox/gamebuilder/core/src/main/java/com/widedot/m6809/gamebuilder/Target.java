@@ -9,6 +9,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
+import com.widedot.m6809.gamebuilder.spi.globals.LinkReport;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,16 +95,112 @@ public class Target {
 			ctx.linkSymbols.preseed(symbols);
 			ctx.linkSymbols.preseedImports(imported);
 
-			runTarget(node);
-			if (ctx.linkSymbols.pruned > 0) {
-				log.info("{} exports never imported, left out of the link data", ctx.linkSymbols.pruned);
+			// The images are written as the target runs, but the checks that
+			// close it come after — so a refused build would leave a freshly
+			// timestamped disk in dist/ that boots into garbage. Anything this
+			// target produced goes away with it.
+			try {
+				runTarget(node);
+				if (ctx.linkSymbols.pruned > 0) {
+					log.info("{} exports never imported, left out of the link data", ctx.linkSymbols.pruned);
+				}
+				// the promise made by interface="true" regions is checked against
+				// what the link data actually emits, so it holds post-prune
+				ctx.staticLink.checkInterfaces(ctx.linkSymbols.unitExports);
+				// a direntry that dropped loadtimelink must not still be imported
+				ctx.linkSymbols.checkImportsResolvable();
+			} catch (Exception e) {
+				discardOutputs(targetName);
+				throw e;
 			}
-			// the promise made by interface="true" regions is checked against
-			// what the link data actually emits, so it holds post-prune
-			ctx.staticLink.checkInterfaces(ctx.linkSymbols.unitExports);
+			reportLinkData(targetName);
 			log.info("End of processing target {}", targetName);
 
     	}
+	}
+
+	/**
+	 * Removes what a failed target wrote : its images, and the link report of
+	 * whatever build came before, which would otherwise sit in {@code dist/}
+	 * describing a build that no longer exists.
+	 */
+	private void discardOutputs(String targetName) {
+		int removed = ctx.outputs.discard();
+		try {
+			java.nio.file.Path stale = linkReportPath(targetName);
+			if (java.nio.file.Files.deleteIfExists(stale)) {
+				removed++;
+				log.info("removed {} : it described an earlier build", stale);
+			}
+		} catch (Exception e) {
+			log.warn("could not remove the stale link report: {}", e.getMessage());
+		}
+		if (removed > 0) {
+			log.error("target {} failed : {} output file(s) removed, dist holds nothing"
+					+ " from this build", targetName, removed);
+		}
+	}
+
+	private java.nio.file.Path linkReportPath(String targetName) {
+		return java.nio.file.Paths.get(
+				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
+				"link-report-" + targetName + ".csv");
+	}
+
+	/**
+	 * Consolidated view of what the target's link data costs, so the
+	 * {@code .static} policy can be arbitrated on numbers rather than on a
+	 * hunch — see {@code docs/lang/en/symbols.md}, "The policy".
+	 *
+	 * The loader keeps a file's link block in its memory pool for as long as
+	 * the file stays indexed, so the total is what the pool must hold if every
+	 * entry is indexed at once. A large block with nothing baked is a unit the
+	 * policy has not reached.
+	 */
+	private void reportLinkData(String targetName) {
+		List<LinkReport.Entry> costly = ctx.linkReport.costly();
+		int total = ctx.linkReport.totalBytes();
+
+		if (costly.isEmpty()) {
+			log.info("link data: none — every direntry of target {} is fully baked or unlinked",
+					targetName);
+		} else {
+			log.info("link data: {} direntries, {} bytes (pool cost while indexed), {} references baked",
+					costly.size(), total, ctx.linkReport.totalBaked());
+			log.info("  bytes  intern  x8  x16  page  expA  expR   baked  direntry");
+			for (LinkReport.Entry e : costly) {
+				log.info(String.format("%7d %7d %3d %4d %5d %5d %5d %7d  %s",
+						e.bytes, e.intern, e.extern8, e.extern16, e.externPage,
+						e.exportAbs, e.exportRel, e.baked, e.name));
+			}
+		}
+
+		// the same table on disk, one row per direntry — including the entries
+		// that cost nothing, so a sweep can be diffed between two builds
+		java.nio.file.Path csv = linkReportPath(targetName);
+		StringBuilder sb = new StringBuilder(
+				"direntry,bytes,intern,extern8,extern16,externPage,exportAbs,exportRel,references,baked,loadtimelink\n");
+		for (LinkReport.Entry e : ctx.linkReport.entries()) {
+			sb.append(e.name).append(',')
+			  .append(e.bytes).append(',')
+			  .append(e.intern).append(',')
+			  .append(e.extern8).append(',')
+			  .append(e.extern16).append(',')
+			  .append(e.externPage).append(',')
+			  .append(e.exportAbs).append(',')
+			  .append(e.exportRel).append(',')
+			  .append(e.references()).append(',')
+			  .append(e.baked).append(',')
+			  .append(e.loadtimelink).append('\n');
+		}
+		try {
+			java.nio.file.Files.createDirectories(csv.getParent());
+			java.nio.file.Files.write(csv, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			log.info("link report written to {}", csv);
+		} catch (Exception e) {
+			// a report is never worth failing a build that otherwise succeeded
+			log.warn("could not write the link report to {}: {}", csv, e.getMessage());
+		}
 	}
 
 	private void runTarget(ImmutableNode node) throws Exception {
