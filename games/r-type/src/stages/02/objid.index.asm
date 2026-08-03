@@ -11,6 +11,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
@@ -25,6 +26,7 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_beamcharge
         fdb   stage.placeholder        ; ObjID_beamp
         fdb   stage.placeholder        ; ObjID_emitter_flash
+        fdb   stage.placeholder        ; ObjID_collision
         fdb   stage.placeholder        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
@@ -42,10 +44,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -75,5 +79,6 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

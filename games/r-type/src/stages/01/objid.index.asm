@@ -11,6 +11,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -39,6 +40,7 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_beamcharge
         fdb   stage.placeholder        ; ObjID_beamp
         fdb   stage.placeholder        ; ObjID_emitter_flash
+        fdb   terrainCollision.unit        ; ObjID_collision
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
         fdb   stage.placeholder        ; ObjID_bink
@@ -70,6 +72,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -114,6 +117,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
 
 Ani_Asd_none
         fdb   0
@@ -131,6 +135,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink

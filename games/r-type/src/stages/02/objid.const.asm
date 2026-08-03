@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 02 — genere par tools/gen_objid.py 02
 * ===========================================================================
-* Les 11 identifiants que la wave reelle du niveau 02 reference, et
+* Les 12 identifiants que la wave reelle du niveau 02 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -20,7 +20,8 @@ ObjID_commonmissile          equ 6
 ObjID_beamcharge             equ 7
 ObjID_beamp                  equ 8
 ObjID_emitter_flash          equ 9
-ObjID_pow                    equ 10
-ObjID_bossmusic              equ 11
-objid.count                  equ 11
+ObjID_collision              equ 10
+ObjID_pow                    equ 11
+ObjID_bossmusic              equ 12
+objid.count                  equ 12
 objid.animation              equ ObjID_animation

@@ -48,6 +48,10 @@ starfield.draw    EXTERNAL
 ; trois tables — objet, animation et images.
 Player            EXTERNAL
 
+; L'unite de collision terrain du stage, dans sa page : quatre points d'entree
+; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
+terrainCollision.unit EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
@@ -79,6 +83,13 @@ Player            EXTERNAL
 ; Ce qui distingue ce stage
 ;*******************************************************************************
 stage.setup
+        ; La collision terrain : le resident pointe ses operandes sur l'unite
+        ; de CE stage, et le drapeau disabled (pose par defaut dans le corps
+        ; commun) tombe — le vaisseau heurte le decor.
+        ldb   #ObjID_collision
+        jsr   terrainCollision.init.do
+        clr   terrainCollision.disabled
+
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd

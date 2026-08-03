@@ -75,7 +75,15 @@ stage.stateKept
         ldd   #bench.SCROLL_VEL
         std   scroll_vel
 
-        jsr   stage.setup                  ; cartes, largeur, wave : le stage
+        ; COLLISION TERRAIN : desactivee PAR DEFAUT. Un stage sans unite de
+        ; collision laisserait les operandes de terrainCollision.do a zero, et
+        ; la routine sauterait en $0000 de la fenetre cartouche, page 0 NUE —
+        ; le cold-start de la ROM basic512 (vecu). Le stage qui a sa carte
+        ; (stage.setup) pose l'init et leve le drapeau.
+        lda   #1
+        sta   terrainCollision.disabled
+
+        jsr   stage.setup                  ; cartes, largeur, wave, collision : le stage
 
         ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
         ; avant la trame d'amorce et InitScroll.
@@ -135,16 +143,6 @@ stage.stateKept
         jsr   ObjectDp_Clear
         lda   #ObjID_Player1
         sta   player1+id
-
-        ; PAS DE COLLISION TERRAIN pour l'instant : l'unite de collision du
-        ; stage n'est pas portee, et terrainCollision.init.do n'a donc jamais
-        ; pose ses operandes de page — les laisser a zero fait sauter
-        ; terrainCollision.do en $0000 de la fenetre cartouche, page 0 NUE :
-        ; c'est le cold-start de la ROM basic512 (vecu). Le drapeau disabled
-        ; court-circuite la routine (B=0, aucune collision) sans monter de
-        ; page. A retirer avec le portage de l'unite terrain du stage.
-        lda   #1
-        sta   terrainCollision.disabled
 
         ; Le fondu d'ouverture : on part du noir pose plus haut et on monte
         ; vers la palette du stage. L'objet est arme ici et tourne dans la

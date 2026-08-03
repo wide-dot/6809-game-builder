@@ -29,7 +29,7 @@ names = []
 # numerotes avec les autres et pointent le bouchon du stage.
 names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_Weapon', 'ObjID_commonmissile', 'ObjID_beamcharge',
-         'ObjID_beamp', 'ObjID_emitter_flash']
+         'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -71,6 +71,10 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_fade':      ('common', 'PaletteFade'),
           'ObjID_Player1':   ('player', 'Player'),
           'ObjID_patapata': ('enemies', 'patapata.Object')}
+# Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
+# unite par niveau, et seul le stage 1 a la sienne pour l'instant.
+if stage == '01':
+    PORTED['ObjID_collision'] = ('collision', 'terrainCollision.unit')
 
 out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')

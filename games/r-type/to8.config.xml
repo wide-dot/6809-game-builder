@@ -41,6 +41,10 @@
             <!-- page. Obj_Run monte celle-ci pour l'objet, AnimateSpriteSync    -->
             <!-- la remonte pour les scripts, l'index d'imageset pour les images.-->
             <region name="player"     page="$11" address="$0000" size="$4000"/>
+            <!-- La collision terrain du stage courant : code de consultation,  -->
+            <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
+            <!-- stage lui-meme.                                                -->
+            <region name="collision"  page="$12" address="$0000" size="$4000" interface="true"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -213,6 +217,15 @@
                     </lwasm>
                 </direntry>
 
+                <!-- La collision terrain du stage 1                           -->
+                <!-- ******************************************************** -->
+                <direntry name="stage1.collision" loadtimelink="LINK">
+                    <lwasm gensource="gen/stages/01/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/collision/collision.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- Stage 1 : tuiles d'abord, le stage ensuite.               -->
                 <!--                                                           -->
                 <!-- L'ordre compte. Les tables de carte du stage sont cuites   -->
@@ -345,6 +358,7 @@
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>
+                    <load name="stage1.collision"   region="collision"/>
                     <load name="stage1"             region="stage"/>
                 </scene>
 
@@ -352,6 +366,7 @@
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>
+                    <load name="stage1.collision"   region="collision"/>
                     <load name="stage1"             region="stage"/>
                 </scene>
 
