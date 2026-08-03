@@ -34,4 +34,6 @@ LAB_0000_fa93
         rts
 
 createFoeFire.data
-        INCLUDE "./global/preset/18f90_preset-fireVelocity.asm"
+; V2-DEVIATION: chemin du preset — les tables v1 de global/preset/ vivent
+; sous src/common/lib/presets/.
+        INCLUDE "src/common/lib/presets/18f90_preset-fireVelocity.asm"

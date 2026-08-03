@@ -52,6 +52,12 @@ starfield.draw    EXTERNAL
 ; trois tables — objet, animation et images.
 Player            EXTERNAL
 
+; La chaine de tir ennemi, page $14 : deux sous-routines paginees que l'ennemi
+; atteint par RunPgSubRoutine, et le projectile qu'elles font naitre.
+createFoeFire         EXTERNAL
+loadFirePreset.Object EXTERNAL
+foefire.Object        EXTERNAL
+
 ; L'explosion, dans sa page a elle : treize sprites compiles, dont cinq de
 ; 24x48. Tout ce qui meurt la fait naitre par l'index d'objets.
 explosion.Object  EXTERNAL
@@ -79,6 +85,11 @@ emitterFlash.Object EXTERNAL
         ; Les offsets d'OST du fondu : le stage arme l'objet, le moteur le fait
         ; tourner. Le fichier est garde par IFNDEF, donc inclus des deux cotes.
         INCLUDE "engine/objects/palette/fade/fade.equ"
+
+        ; Les variables inter-main, en equates absolues de la zone reservee
+        ; `globals` : la boucle les remet a zero a l'entree du stage, comme la
+        ; v1 le fait dans l'init de son main.
+        INCLUDE "src/common/state/variables.asm"
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"

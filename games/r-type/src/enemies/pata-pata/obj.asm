@@ -35,11 +35,9 @@ Init
         clra
         std   y_pos,u
 
-        ; V2-DEVIATION: meme raison que tryFoeFire plus bas — ce preset ne
-        ; renseigne que les variables de tir, que plus personne ne lit tant
-        ; que la chaine des projectiles n'est pas portee.
-        ;       ldb   subtype_w+1,u
-        ;       _loadFirePreset
+        ; load fire preset
+        ldb   subtype_w+1,u
+        _loadFirePreset
 
         ; display priority
         ldb   #6
@@ -81,12 +79,7 @@ Live
         jsr   moveByScript.runByFrameDrop
 !       lda   moveByScript.anim.end
         bne   @delete
-;
-;  V2-DEVIATION: le tir n'est pas porte. tryFoeFire vise le joueur
-;  (FoeFireTarget), et la chaine createFoeFire / foefire / setDirectionTo
-;  depend du vaisseau, qui n'existe pas encore cote v2.
-;       jsr   tryFoeFire
-;
+        jsr   tryFoeFire
         lda   AABB_0+AABB.p,u
         beq   @destroy
         ldd   x_pos,u

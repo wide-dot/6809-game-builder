@@ -55,37 +55,38 @@ practice; this is a reading order, not a schedule.
    the corollary: data on a fall-through path is executed.
 5. [v1 RAM `fill`s become equates](ram-fill-to-equates.md)
 6. [A page is a register value, not a page number](page-register-value.md)
-7. [A v1 game has no link data; a v2 unit pays for every pointer it
+7. [A global read from several pages is an address, not a label](shared-globals.md)
+8. [A v1 game has no link data; a v2 unit pays for every pointer it
    holds](static-link-bake.md) — the one that fails as a dead machine mid-load,
    and sends you to the disk image instead of the link.
 
 **Assembly and includes** — what the obj target refuses, and where files go.
 
-8. [`setdp` is refused by the obj target](setdp-obj-target.md)
-9. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
-10. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
-11. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)
+9. [`setdp` is refused by the obj target](setdp-obj-target.md)
+10. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
+11. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
+12. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)
 
 **Getting a picture** — in the order that a wrong one is worth investigating.
 
-12. [The video mode is not set for you](video-mode.md) — check this before
+13. [The video mode is not set for you](video-mode.md) — check this before
     judging anything on screen.
-13. [Screen coordinates are offset](screen-coordinates.md)
-14. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
+14. [Screen coordinates are offset](screen-coordinates.md)
+15. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
     the one whose absence a screenshot will not reveal.
-15. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
+16. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
     the v1 habit of declaring it an object just to get it placed.
-16. [Generated draw code carries no absolute address](generated-code-addresses.md)
-17. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
-18. [Every v1 sprite variant becomes an `<encoder>` — losing one is silent](sprite-variants.md)
-19. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
-20. [An imageset bigger than a page is spread, and its index carries a page per
+17. [Generated draw code carries no absolute address](generated-code-addresses.md)
+18. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
+19. [Every v1 sprite variant becomes an `<encoder>` — losing one is silent](sprite-variants.md)
+20. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+21. [An imageset bigger than a page is spread, and its index carries a page per
     image](imageset-pages.md) — the one that stops the build dead, with nothing
     wrong in the game.
 
 **Reading a v1 main loop** — what to port, and what existed only for v1.
 
-21. [A v1 object that only existed to get code out of the resident page becomes
+22. [A v1 object that only existed to get code out of the resident page becomes
     a resident routine](main-private-object.md)
 
 

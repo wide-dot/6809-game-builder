@@ -62,6 +62,12 @@
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
             <!-- image, comme la v1 et comme une table de tuiles.               -->
             <region name="explosion"  page="$14" address="$0000" size="$1000"/>
+            <!-- La chaine de tir ennemi, dans la place que la carte           -->
+            <!-- d'occupation montrait libre en page $14 : les deux            -->
+            <!-- sous-routines paginees et leurs tables de presets d'un cote,  -->
+            <!-- le projectile et ses quatre images de l'autre.                -->
+            <region name="firechain"  page="$14" address="$1000" size="$1000"/>
+            <region name="foefire"    page="$14" address="$2000" size="$1000"/>
             <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="2"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
@@ -450,6 +456,44 @@
                     </lwasm>
                 </direntry>
 
+                <!-- La chaine de tir ennemi : les deux sous-routines         -->
+                <!-- paginees, puis le projectile qu'elles font naitre.       -->
+                <!-- ******************************************************** -->
+                <direntry name="common.firechain" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/firechain.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/lib/firechain.asm"/>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.foefire" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/foefire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/_shared/foefire.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/foefire"
+                                 gensource="gen/weapons/foefire/includes.asm"
+                                 genindex="gen/weapons/foefire/index.asm"
+                                 file="common.foefire">
+                            <image name="foefire_0" filename="src/enemies/_shared/images/foefire_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="foefire_1" filename="src/enemies/_shared/images/foefire_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="foefire_2" filename="src/enemies/_shared/images/foefire_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="foefire_3" filename="src/enemies/_shared/images/foefire_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
                 <direntry name="stage1.collision" loadtimelink="LINK">
@@ -594,6 +638,8 @@
                     <load name="common.emflash"    region="emflash"/>
                     <load name="explosion.images"  region="explosion.images"/>
                     <load name="common.explosion"  region="explosion"/>
+                    <load name="common.firechain"  region="firechain"/>
+                    <load name="common.foefire"    region="foefire"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

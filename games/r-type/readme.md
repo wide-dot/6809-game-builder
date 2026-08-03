@@ -142,6 +142,34 @@ Une image sur deux seulement est compilée : c'est ce que déclare la cible
 disquette de la v1 (`obj.d7.properties`), le code rattachant les manquantes à
 la suivante sous `IFNDEF t2`.
 
+### Le tir ennemi
+
+La chaîne complète, portée telle quelle : un ennemi charge son **preset de
+tir** (`_loadFirePreset`, sous-routine paginée), `tryFoeFire` décompte à chaque
+trame et, l'échéance venue, appelle `createFoeFire` — qui alloue un objet, vise
+le joueur par `setDirectionTo` (seize directions) et lui pose la vitesse du
+preset. Le projectile (`foefire`) avance en 8.8, meurt sur le décor ou hors du
+viewport, et tue le vaisseau au contact sans être détruit par lui.
+
+La répartition est celle de la v1, qui n'est pas évidente : `tryFoeFire`,
+`setDirectionTo` et les deux `moveXPos8.8`/`moveYPos8.8` sont **résidents**
+(son main les inclut, `main.asm:565-568`), tandis que `createFoeFire` et
+`loadFirePreset` sont des unités **montées** — de simples sous-routines
+qu'un ennemi atteint par `RunPgSubRoutine`. Le lien remet les deux bouts en
+face : `createFoeFire`, monté, appelle `setDirectionTo`, résident.
+
+Conséquence à connaître : le résident cite désormais `ObjID_createFoeFire`,
+donc il dépend d'une numérotation d'objets alors qu'elle est *par stage*. C'est
+tenable parce que `gen_objid.py` sème les identifiants du commun **avant** de
+lire la wave — les treize premiers portent le même numéro dans tous les stages.
+
+Les variables inter-main (`globals.difficulty`, `globals.backgroundSolid`,
+`globals.score`) ont quitté leurs étiquettes de page pour la **zone réservée**
+`globals`, en équates absolues comme en v1 : deux étiquettes dans deux pages ne
+sont pas la même variable, et le tir ennemi lit `backgroundSolid` depuis la
+sienne. Cas de migration :
+[shared-globals.md](../../docs/lang/en/migration/shared-globals.md).
+
 ### La manette, et le clavier en bouton B
 
 Les manettes Thomson n'ont qu'un bouton ; le rappel du force pod en demande un
@@ -154,11 +182,10 @@ n'en veut pas inclut `joypad.asm` seul et ne le paie pas.
 
 ### Pata-pata
 
-Écarts marqués dans `obj.asm` (`; V2-DEVIATION:`) : le tir n'est pas porté
-(`tryFoeFire` vise le joueur, et la chaîne `createFoeFire`/`foefire`/
-`setDirectionTo` en dépend), ni `_loadFirePreset` qui ne renseigne que des
-variables de tir. Les entrées d'imageset passent de `Img_<nom>` à `set_<nom>`,
-le nom que gfxcomp génère.
+Il tire désormais : les deux `V2-DEVIATION` qui neutralisaient `tryFoeFire` et
+`_loadFirePreset` sont levées, et le fichier ne diverge plus de la v1 que par
+ses en-têtes (portés par l'unité hôte) et par les entrées d'imageset, qui
+passent de `Img_<nom>` à `set_<nom>` — le nom que gfxcomp génère.
 
 À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
 mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
@@ -171,8 +198,8 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 ## La carte de la zone résidente (page $01)
 
 ```
-$6100  région common   moteur résident, 7 687 o sur $2200 déclarés
-$8300  région stage    stage courant, 1 501 o (st.1) sur $0D00 — échangeable
+$6100  région common   moteur résident, 8 131 o sur $2200 déclarés (93 %)
+$8300  région stage    stage courant, 1 539 o (st.1) sur $0D00 — échangeable
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9C00  réservé         témoins du banc (propre au banc)
 $9E84  réservé         variables inter-main : score 24 bits, vies, difficulté…
@@ -184,6 +211,12 @@ $9F00  réservé         PAGE DIRECTE — et c'est là que vit l'OST DU JOUEUR
          $9FD1  glb_Page, timers, caméra… jusqu'à glb_ram_end $9FF4
 ```
 
+**Le moteur résident est à 93 % de son budget** — la chaîne de tir lui a coûté
+444 octets. C'est le chiffre à surveiller au prochain ajout : au-delà de `$2200`
+il faut soit élargir la région (le stage commence juste après, en `$8300`), soit
+sortir du résident ce que seul le main appelle, comme la v1 le faisait avec son
+objet `mainext`.
+
 Le joueur ayant ses données en page directe, `ObjectDp_Clear` (remise à zéro
 de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#player1`
 est la forme d'appel qui l'anime. Les valeurs de la page directe sont la chaîne
@@ -193,7 +226,11 @@ Hors résident, en pages physiques : `$4000-$5FFF` tampon de fond (page `$00`),
 vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
 tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
 joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions
-à adresses fixes), explosion `$14` (objet et index) et ses sprites sur `$15-$16`.
+à adresses fixes), `$14` l'explosion puis la chaîne de tir ennemi et son
+projectile, et les sprites d'explosion sur `$15-$16`.
+
+L'occupation réelle de tout cela se lit dans `dist/ram-map-fd.txt`, produit à
+chaque build — une carte par scène.
 
 ## Les zones réservées
 

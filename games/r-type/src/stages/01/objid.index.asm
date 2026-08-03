@@ -12,6 +12,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -41,6 +44,9 @@ Obj_Index_Address
         fdb   Beam        ; ObjID_beamp
         fdb   emitterFlash.Object        ; ObjID_emitter_flash
         fdb   terrainCollision.unit        ; ObjID_collision
+        fdb   createFoeFire        ; ObjID_createFoeFire
+        fdb   loadFirePreset.Object        ; ObjID_loadFirePreset
+        fdb   foefire.Object        ; ObjID_foefire
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
         fdb   stage.placeholder        ; ObjID_bink
@@ -73,6 +79,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -118,6 +127,9 @@ Ani_Asd_Index
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
 
 Ani_Asd_none
         fdb   0
@@ -136,6 +148,9 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink

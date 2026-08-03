@@ -27,9 +27,14 @@ names = []
 # celle du moteur, pas celle du stage.
 # Le joueur cite l'armement, qui n'est pas porte : ces identifiants sont
 # numerotes avec les autres et pointent le bouchon du stage.
+# La chaine de tir ennemi ne vient pas non plus de la wave : un ennemi cite
+# createFoeFire et loadFirePreset comme sous-routines paginees (RunPgSubRoutine
+# lit leur page et leur adresse dans l'index), et createFoeFire pose
+# ObjID_foefire dans l'OST du projectile qu'il alloue.
 names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_Weapon', 'ObjID_commonmissile', 'ObjID_beamcharge',
-         'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision']
+         'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision',
+         'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -70,6 +75,9 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_Player1':   ('player', 'Player'),
           'ObjID_patapata': ('enemies', 'patapata.Object'),
           'ObjID_explosion': ('explosion', 'explosion.Object'),
+          'ObjID_createFoeFire':  ('firechain', 'createFoeFire'),
+          'ObjID_loadFirePreset': ('firechain', 'loadFirePreset.Object'),
+          'ObjID_foefire':        ('foefire',   'foefire.Object'),
           'ObjID_Weapon':        ('weapon',     'Weapon'),
           'ObjID_beamcharge':    ('beamcharge', 'Beamcharge'),
           'ObjID_beamp':         ('beamp',      'Beam'),

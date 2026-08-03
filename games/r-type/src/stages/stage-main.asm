@@ -40,6 +40,17 @@ stage.stateKept
         lda   #STAGE_ID
         sta   bench.stage
 
+        ; Les variables inter-main que la chaine de tir lit. Elles vivent dans
+        ; la zone RESERVEE, donc dans de la RAM que rien ne charge : leur
+        ; contenu au demarrage est ce que la machine y avait. La v1 les pose au
+        ; meme endroit, dans l'init de son main (main.asm:103 et 121-130) —
+        ; laisser la difficulte sale ferait indexer la table de presets de
+        ; tir 64 octets plus loin par cran, hors de ses donnees.
+        clr   globals.difficulty
+        ldd   #0
+        std   globals.score
+        stb   globals.score+2              ; le 3e octet du score 24 bits
+
         ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
         ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
         ; ca le niveau apparait d'un coup, et l'ecran de chargement se voit.

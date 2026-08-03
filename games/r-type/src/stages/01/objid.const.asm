@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 01 — genere par tools/gen_objid.py 01
 * ===========================================================================
-* Les 26 identifiants que la wave reelle du niveau 01 reference, et
+* Les 29 identifiants que la wave reelle du niveau 01 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -21,21 +21,24 @@ ObjID_beamcharge             equ 7
 ObjID_beamp                  equ 8
 ObjID_emitter_flash          equ 9
 ObjID_collision              equ 10
-ObjID_patapata               equ 11
-ObjID_bug                    equ 12
-ObjID_bink                   equ 13
-ObjID_pow                    equ 14
-ObjID_fadetotunnel           equ 15
-ObjID_scant                  equ 16
-ObjID_pstaff                 equ 17
-ObjID_cancer                 equ 18
-ObjID_blaster                equ 19
-ObjID_shell                  equ 20
-ObjID_tabrok                 equ 21
-ObjID_bossmusic              equ 22
-ObjID_tailmgr                equ 23
-ObjID_dobkeratops            equ 24
-ObjID_dobkeratops_jaw        equ 25
-ObjID_dobkeratops_monster    equ 26
-objid.count                  equ 26
+ObjID_createFoeFire          equ 11
+ObjID_loadFirePreset         equ 12
+ObjID_foefire                equ 13
+ObjID_patapata               equ 14
+ObjID_bug                    equ 15
+ObjID_bink                   equ 16
+ObjID_pow                    equ 17
+ObjID_fadetotunnel           equ 18
+ObjID_scant                  equ 19
+ObjID_pstaff                 equ 20
+ObjID_cancer                 equ 21
+ObjID_blaster                equ 22
+ObjID_shell                  equ 23
+ObjID_tabrok                 equ 24
+ObjID_bossmusic              equ 25
+ObjID_tailmgr                equ 26
+ObjID_dobkeratops            equ 27
+ObjID_dobkeratops_jaw        equ 28
+ObjID_dobkeratops_monster    equ 29
+objid.count                  equ 29
 objid.animation              equ ObjID_animation

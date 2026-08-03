@@ -212,10 +212,24 @@ _api    macro
         _api AABB_list_ennemy_unkillable
         _api AABB_list_player
         _api AABB_list_bonus
+        _api AABB_list_foefire
+
+        ; --- la chaine de tir ennemi : residente, comme dans le main v1
+        ; (main.asm:565-568). tryFoeFire est appele par l'ennemi, qui tourne
+        ; en page montee ; setDirectionTo par createFoeFire, monte lui aussi.
+        ; FoeFireTarget est la cible que tryFoeFire pose avant de tirer ---
+        _api tryFoeFire
+        _api tryFoeFireShell
+        _api setDirectionTo
+        _api FoeFireTarget
+        _api moveXPos8.8
+        _api moveYPos8.8
 
         ; --- score, qui survit aux stages comme les vies ---
+        ; globals.score N'EST PAS ici : c'est une equate absolue de la zone
+        ; reservee `globals`, partagee a l'assemblage par variables.asm. La
+        ; faire passer par le lien la ferait rebaser.
         _api AwardScore
-        _api globals.score
 
         ; --- alea ---
         _api InitRNG

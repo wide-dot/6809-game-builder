@@ -6,9 +6,11 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (foefire.unit.asm), comme pour tout fichier v1 enveloppe.
+;       INCLUDE "./engine/macros.asm"
+;       INCLUDE "./engine/collision/macros.asm"
+;       INCLUDE "./engine/collision/struct_AABB.equ"
 AABB_0                  equ ext_variables   ; AABB struct (9 bytes)
 imgIdx                  equ ext_variables+9 ; random number (1 bytes)
 

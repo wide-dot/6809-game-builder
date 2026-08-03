@@ -54,6 +54,12 @@ Player            EXTERNAL
 ; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
 terrainCollision.unit EXTERNAL
 
+; La chaine de tir ennemi, page $14 : deux sous-routines paginees que l'ennemi
+; atteint par RunPgSubRoutine, et le projectile qu'elles font naitre.
+createFoeFire         EXTERNAL
+loadFirePreset.Object EXTERNAL
+foefire.Object        EXTERNAL
+
 ; L'explosion, dans sa page a elle : treize sprites compiles, dont cinq de
 ; 24x48. Tout ce qui meurt la fait naitre par l'index d'objets.
 explosion.Object  EXTERNAL
@@ -82,6 +88,11 @@ emitterFlash.Object EXTERNAL
         ; tourner. Le fichier est garde par IFNDEF, donc inclus des deux cotes.
         INCLUDE "engine/objects/palette/fade/fade.equ"
 
+        ; Les variables inter-main, en equates absolues de la zone reservee
+        ; `globals` : la boucle les remet a zero a l'entree du stage, comme la
+        ; v1 le fait dans l'init de son main.
+        INCLUDE "src/common/state/variables.asm"
+
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
         INCLUDE "gen/stages/01/pages.asm"
@@ -105,6 +116,12 @@ checkpoint.positions
         fcb   -1
 
 stage.setup
+        ; Le decor de FOND arrete les projectiles sur ce niveau — la v1 le pose
+        ; a 1 dans l'init de son main (main.asm:130). C'est par stage : les
+        ; niveaux 5 et 7 le mettent a zero.
+        lda   #1
+        sta   globals.backgroundSolid
+
         ; La collision terrain : le resident pointe ses operandes sur l'unite
         ; de CE stage, et le drapeau disabled (pose par defaut dans le corps
         ; commun) tombe — le vaisseau heurte le decor.

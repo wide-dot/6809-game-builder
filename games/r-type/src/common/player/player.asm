@@ -37,7 +37,11 @@ mainloop.state    EXTERNAL
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
         INCLUDE "engine/objects/palette/fade/fade.equ"
-        ; L'etat d'armement, en BOUCHON : la chaine de tir n'est pas portee.
+        ; Les variables inter-main, en equates absolues de la zone reservee
+        ; `globals` : le joueur lit le verrou du missile et l'arriere-plan
+        ; solide, que le tir ennemi lit aussi depuis sa propre page.
+        INCLUDE "src/common/state/variables.asm"
+        ; L'etat du missile, en BOUCHON : le missile n'est pas porte.
         INCLUDE "src/common/player/pending.stub.asm"
         INCLUDE "src/common/player/emitter-flash.equ"
         ; Les identifiants d'objets sont des CONSTANTES combinees par decalage,

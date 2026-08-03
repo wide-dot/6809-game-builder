@@ -73,4 +73,6 @@ loadFirePresetBug ; 0xfca7
         rts
 
 loadFirePreset.data
-        INCLUDE "./global/preset/18e10_preset-fire.asm"
+; V2-DEVIATION: chemin du preset — les tables v1 de global/preset/ vivent
+; sous src/common/lib/presets/.
+        INCLUDE "src/common/lib/presets/18e10_preset-fire.asm"

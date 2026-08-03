@@ -1,4 +1,7 @@
-        INCLUDE "./global/projectile.macro.asm"
+; V2-DEVIATION: l'INCLUDE des macros est retire — elles ne servent qu'aux
+; OBJETS qui appellent _loadFirePreset, et chaque unite d'ennemi les porte
+; deja. Ici, dans le moteur resident, il n'y a rien qui les expanse.
+;       INCLUDE "./global/projectile.macro.asm"
 
 ; -----------------------------------------------------------------------------
 ; tryFoeFire

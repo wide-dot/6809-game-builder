@@ -15,6 +15,13 @@ patapata.Object   EXPORT
 ; ce que l'ennemi appelle chez le moteur résident
         INCLUDE "src/common/engine/api.asm"
 
+; L'index d'objets du stage chargé : le macro `_loadFirePreset` y lit la page
+; et l'adresse de la sous-routine avant de la faire monter. C'est la voie 3 de
+; la frontière, dans le sens moteur→stage, empruntée ici par un ennemi — le
+; re-link de `scene.load` la repointe à chaque échange, comme pour le moteur.
+Obj_Index_Page    EXTERNAL
+Obj_Index_Address EXTERNAL
+
 
  SECTION code
 

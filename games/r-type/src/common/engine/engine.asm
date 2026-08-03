@@ -60,8 +60,14 @@ game.stage      fcb   0
 ; Le score du jeu, sur 24 bits par centaines de points comme en v1, et sa
 ; table de recompenses. AwardScore vit ici parce que le score survit aux
 ; stages, exactement comme les vies.
-globals.score   fcb   0
-                fdb   0
+;
+; globals.score n'est PAS une etiquette de cette unite : c'est une equate de la
+; zone reservee `globals`, comme en v1. Elle valait une etiquette tant que le
+; moteur etait seul a la lire ; des que la chaine de tir a eu besoin de
+; globals.difficulty depuis SA page, il a fallu une adresse absolue partagee a
+; l'assemblage plutot qu'un symbole de lien — c'est exactement ce que la zone
+; reservee est. Voir docs/lang/en/migration/equates-link-boundary.md.
+        INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/state/score.asm"
 
 ; Les listes de boites de collision. Elles sont resideNtes : un objet s'y
@@ -72,6 +78,7 @@ AABB_list_ennemy             fdb   0,0
 AABB_list_ennemy_unkillable  fdb   0,0
 AABB_list_player             fdb   0,0
 AABB_list_bonus              fdb   0,0
+AABB_list_foefire            fdb   0,0
 
 ; Leur remise a zero en bloc, au rechargement d'un checkpoint. Porte du game
 ; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
@@ -79,7 +86,7 @@ AABB_list_bonus              fdb   0,0
 Collision_ClearLists
         ldd   #0
         ldy   #AABB_list_friend
-        ldx   #5*2                     ; cinq listes de deux mots
+        ldx   #6*2                     ; six listes de deux mots
 !       std   ,y++
         leax  -1,x
         bne   <
@@ -98,18 +105,17 @@ Collision_ClearLists
 ; ennemy fait mourir l'ennemi sous le tir du joueur, player x ennemy fait mourir
 ; le joueur au contact.
 ;
-; V2-DEVIATION vs v1 : trois passes manquent, faute des objets qui les
-; peuplent. Les listes AABB_list_foefire et AABB_list_forcepod ne sont meme pas
-; declarees (le tir ennemi et le force pod ne sont pas portes), et
-; WeaponContactTick est le contact force pod / bit device — non porte non plus.
-; Les lignes v1 restantes, dans l'ordre, pour le jour ou elles arrivent :
-;       _Collision_Do AABB_list_player,AABB_list_foefire
+; V2-DEVIATION vs v1 : deux passes manquent, faute des objets qui les peuplent.
+; La liste AABB_list_forcepod n'est meme pas declaree (le force pod n'est pas
+; porte) et WeaponContactTick est le contact force pod / bit device. Les lignes
+; v1 restantes, dans l'ordre, pour le jour ou elles arrivent :
 ;       _Collision_Do AABB_list_forcepod,AABB_list_foefire
 ;       jsr   WeaponContactTick
 ;*******************************************************************************
 Collision_Run
         _Collision_Do AABB_list_friend,AABB_list_ennemy
         _Collision_Do AABB_list_player,AABB_list_bonus
+        _Collision_Do AABB_list_player,AABB_list_foefire
         _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable
         _Collision_Do AABB_list_player,AABB_list_ennemy
         rts
@@ -195,6 +201,23 @@ terrainCollision.init.do
         ; index de routine), mais RESIDENT — tout stage en a besoin a son
         ; ouverture, et il ne pese que 180 lignes.
         INCLUDE "engine/objects/palette/fade/fade.asm"
+        ; Le deplacement en 8.8 et la chaine de tir ennemi. La v1 les inclut
+        ; toutes quatre dans son main (main.asm:565-568) : elles sont donc
+        ; RESIDENTES, et c'est de la qu'elles traversent la frontiere.
+        ; setDirectionTo l'est aussi, alors que createFoeFire qui l'appelle est
+        ; un objet monte — le lien remet les deux bouts en face.
+        ; tryFoeFire cite ObjID_createFoeFire : le RESIDENT depend donc d'une
+        ; numerotation d'objets, alors qu'elle est par stage. C'est tenable
+        ; parce que gen_objid.py seme les identifiants du commun AVANT de lire
+        ; la wave — les treize premiers portent le meme numero dans tous les
+        ; stages, et c'est cet invariant qui autorise la ligne ci-dessous.
+        ; Le joueur et pata-pata font deja le meme emprunt.
+        INCLUDE "src/stages/01/objid.const.asm"
+        INCLUDE "src/common/lib/object.const.asm"
+        INCLUDE "src/common/lib/moveXPos8.8.asm"
+        INCLUDE "src/common/lib/moveYPos8.8.asm"
+        INCLUDE "src/common/lib/projectile.asm"
+        INCLUDE "src/common/lib/setDirectionTo.asm"
         INCLUDE "engine/math/RandomNumber.asm"
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
