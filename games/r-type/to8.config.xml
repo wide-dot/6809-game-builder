@@ -120,27 +120,35 @@
                                  file="common.enemies">
                             <image name="patapata_0" filename="src/enemies/pata-pata/images/pata_0.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_1" filename="src/enemies/pata-pata/images/pata_1.png" index="1">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_2" filename="src/enemies/pata-pata/images/pata_2.png" index="2">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_3" filename="src/enemies/pata-pata/images/pata_3.png" index="3">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_4" filename="src/enemies/pata-pata/images/pata_4.png" index="4">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_5" filename="src/enemies/pata-pata/images/pata_5.png" index="5">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_6" filename="src/enemies/pata-pata/images/pata_6.png" index="6">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="patapata_7" filename="src/enemies/pata-pata/images/pata_7.png" index="7">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -185,18 +193,23 @@
                                  file="common.player">
                             <image name="rship_0" filename="src/common/player/images/rship_0.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="rship_1" filename="src/common/player/images/rship_1.png" index="1">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="rship_2" filename="src/common/player/images/rship_2.png" index="2">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="rship_3" filename="src/common/player/images/rship_3.png" index="3">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="rship_4" filename="src/common/player/images/rship_4.png" index="4">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="player1explosion_0" filename="src/common/player/images/player1explosion_0.png" index="5">
                                 <encoder name="bdraw" mirror="none" shift="0"/>

@@ -72,7 +72,8 @@ practice; this is a reading order, not a schedule.
     the v1 habit of declaring it an object just to get it placed.
 14. [Generated draw code carries no absolute address](generated-code-addresses.md)
 15. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
-16. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+16. [Every v1 sprite variant becomes an `<encoder>` — losing one is silent](sprite-variants.md)
+17. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
 
 ## Not cases, but next door
 
