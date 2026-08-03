@@ -83,6 +83,11 @@ practice; this is a reading order, not a schedule.
     image](imageset-pages.md) — the one that stops the build dead, with nothing
     wrong in the game.
 
+**Reading a v1 main loop** — what to port, and what existed only for v1.
+
+21. [A v1 object that only existed to get code out of the resident page becomes
+    a resident routine](main-private-object.md)
+
 
 ## Not cases, but next door
 

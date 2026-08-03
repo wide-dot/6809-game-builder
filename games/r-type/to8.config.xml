@@ -54,6 +54,15 @@
             <region name="beamcharge" page="$13" address="$0600" size="$0A00"/>
             <region name="beamp"      page="$13" address="$1000" size="$2000"/>
             <region name="emflash"    page="$13" address="$3000" size="$1000"/>
+            <!-- L'explosion. Un seul objet, mais treize sprites compiles dont -->
+            <!-- cinq de 24x48 : 17 881 o, plus qu'une page. Le code part donc -->
+            <!-- en pageset — le builder mesure et range — tandis que l'objet  -->
+            <!-- et l'INDEX restent dans une page a eux : c'est celle que      -->
+            <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
+            <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
+            <!-- image, comme la v1 et comme une table de tuiles.               -->
+            <region name="explosion"  page="$14" address="$0000" size="$1000"/>
+            <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="2"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -374,6 +383,73 @@
                     </lwasm>
                 </direntry>
 
+                <!-- L'explosion : l'objet que tout ce qui meurt fait naitre.  -->
+                <!--                                                           -->
+                <!-- Ses treize sprites pesent 17 Ko : ils sont ranges par le  -->
+                <!-- builder sur les deux pages du pageset, declare AVANT      -->
+                <!-- l'objet puisque son index les designe. Une image sur deux  -->
+                <!-- seulement — c'est ce que la cible disquette de la v1       -->
+                <!-- compile (obj.d7.properties), le code rattache les          -->
+                <!-- manquantes a la suivante.                                  -->
+                <!-- ******************************************************** -->
+                <pageset name="explosion.images" region="explosion.images"
+                         gendir="gen/fx/explosion-pages" loadtimelink="LINK">
+                    <gfxcomp gendir="gen/fx/explosion"
+                             gensource="gen/fx/explosion/includes.asm"
+                             imageset="explosion">
+                        <image name="expSmall_0" filename="src/common/fx/explosion/images/blast_small_0.png" index="0">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expSmall_1" filename="src/common/fx/explosion/images/blast_small_1.png" index="1">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expSmall_3" filename="src/common/fx/explosion/images/blast_small_3.png" index="2">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expSmall_5" filename="src/common/fx/explosion/images/blast_small_5.png" index="3">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expFwk_0" filename="src/common/fx/explosion/images/firework_0.png" index="4">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expFwk_1" filename="src/common/fx/explosion/images/firework_1.png" index="5">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expFwk_3" filename="src/common/fx/explosion/images/firework_3.png" index="6">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expFwk_5" filename="src/common/fx/explosion/images/firework_5.png" index="7">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expBig_0" filename="src/common/fx/explosion/images/blast_big_0.png" index="8">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expBig_1" filename="src/common/fx/explosion/images/blast_big_1.png" index="9">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expBig_3" filename="src/common/fx/explosion/images/blast_big_3.png" index="10">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expBig_5" filename="src/common/fx/explosion/images/blast_big_5.png" index="11">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                        <image name="expBig_7" filename="src/common/fx/explosion/images/blast_big_7.png" index="12">
+                            <encoder name="bdraw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                </pageset>
+
+                <direntry name="common.explosion" loadtimelink="LINK">
+                    <lwasm gensource="gen/fx/explosion.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/fx/explosion/explosion.asm"/>
+                        <!-- L'index : une page par image, demandee au placement -->
+                        <!-- et cuite au build, adresses comprises — l'imageset   -->
+                        <!-- entier ne coute donc aucune donnee de lien.          -->
+                        <imageset name="explosion" gensource="gen/fx/explosion/index.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
                 <direntry name="stage1.collision" loadtimelink="LINK">
@@ -516,6 +592,8 @@
                     <load name="common.beamcharge" region="beamcharge"/>
                     <load name="common.beamp"      region="beamp"/>
                     <load name="common.emflash"    region="emflash"/>
+                    <load name="explosion.images"  region="explosion.images"/>
+                    <load name="common.explosion"  region="explosion"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

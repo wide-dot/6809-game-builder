@@ -195,12 +195,18 @@ stage.states
 mainloop.state fcb 0
 
 stage.state.running
-        ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) : joypad.read
-        ; alimente held/pressed (le tir). addDirection, LUI, est dans l'IRQ —
-        ; voir stage.userIRQ.
-        jsr   joypad.read
+        ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) :
+        ; joypad.readKbd alimente held/pressed (le tir) et fait de n'importe
+        ; quelle touche du clavier le bouton B — c'est exactement ce que la v1
+        ; appelle ici. addDirection, LUI, est dans l'IRQ — voir stage.userIRQ.
+        jsr   joypad.readKbd
         jsr   Scroll
         jsr   ObjectWave
+        ; La passe de collision, ici et pas ailleurs : elle marque les
+        ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant
+        ; le sien pour savoir s'il vient d'etre touche. La v1 l'appelle au meme
+        ; endroit, par son objet mainext.
+        jsr   Collision_Run
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
         ; son OST a lui, donc RunObjects ne le voit pas.
         _Obj_RunU ObjID_fade,#palettefade

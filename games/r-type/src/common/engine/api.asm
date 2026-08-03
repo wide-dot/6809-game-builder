@@ -123,6 +123,9 @@ _api    macro
         ; joypad.const.asm — ils ne franchissent pas le lien.
         _api joypad.init
         _api joypad.read
+        ; La lecture qui fait du clavier un bouton B : les manettes Thomson
+        ; n'en ont qu'un, et le rappel du force pod en demande un second.
+        _api joypad.readKbd
         _api joypad.state.dpad
         _api joypad.state.fire
         _api joypad.held.dpad
@@ -191,6 +194,10 @@ _api    macro
         ; --- collisions AABB : les routines, puis les listes que le jeu
         ; partage. Un objet s'inscrit dans l'une d'elles a sa creation ---
         _api Collision_Do
+        ; La passe de detection complete — toutes les paires de listes, dans
+        ; l'ordre de la v1. Un seul export : les operandes auto-modifiees que
+        ; le macro _Collision_Do ecrit restent chez le moteur.
+        _api Collision_Run
         _api Collision_AddAABB
         _api Collision_RemoveAABB
         _api Collision_ClearLists

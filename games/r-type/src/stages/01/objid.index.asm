@@ -3,7 +3,7 @@
 Obj_Index_Page
         fcb   0                        ; id 0 : slot reserve, jamais execute
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
@@ -32,7 +32,7 @@ Obj_Index_Page
 Obj_Index_Address
         fdb   0
         fdb   Ani_Asd_common        ; ObjID_animation
-        fdb   stage.placeholder        ; ObjID_explosion
+        fdb   explosion.Object        ; ObjID_explosion
         fdb   PaletteFade        ; ObjID_fade
         fdb   Player        ; ObjID_Player1
         fdb   Weapon        ; ObjID_Weapon
@@ -64,7 +64,7 @@ Obj_Index_Address
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
@@ -127,7 +127,7 @@ Ani_Asd_none
 Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon

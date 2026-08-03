@@ -93,39 +93,66 @@ les tuiles, puis les sprites.
 Les **cinq** tables de la frontière sont câblées — l'index d'objets, les deux
 index d'animation et l'index d'images — chaque stage exportant les siennes.
 
-### Pata-pata : construit et chargé, pas encore exécutable
+### Les collisions, et ce qui en meurt
 
-L'unité de l'ennemi existe (`src/enemies/pata-pata/enemy.asm`), s'assemble,
-et est chargée dans la région `enemies` (page $05) avec ses huit images
-compilées et leur index d'imageset. L'index d'objets du stage sait le désigner
-— il suffit de remettre `ObjID_patapata` dans `PORTED` de `tools/gen_objid.py`.
+La chaîne AABB est entière. Chaque objet inscrit sa boîte à sa création et la
+retire à sa mort — le vaisseau dans `AABB_list_player`, pata-pata dans
+`AABB_list_ennemy`, le tir et le beam dans `AABB_list_friend` — et la **passe de
+détection** vit dans le moteur résident, à côté des listes qu'elle lit :
 
-**Mais l'exécuter finit par corrompre la mémoire.** Ce que le pas-à-pas sous
-toje a établi, pour ne pas le refaire :
+```asm
+Collision_Run
+        _Collision_Do AABB_list_friend,AABB_list_ennemy
+        _Collision_Do AABB_list_player,AABB_list_bonus
+        _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable
+        _Collision_Do AABB_list_player,AABB_list_ennemy
+        rts
+```
 
-- L'objet est **créé et initialisé correctement**. Son OST relu en mémoire est
-  sain : `id`=3, `priority`=6, `anim`/`sub_anim` renseignés, position cohérente
-  avec la caméra, `anim_frame_duration`=2 — donc `Init` est allé jusqu'au bout.
-- Le chemin d'appel est **juste** : `RunObjects` monte la page des ennemis et
-  saute à l'entrée de l'objet, qui appelle `Collision_AddAABB` puis
-  `moveByScript.initialize` aux bonnes adresses. Les externes résolus à `$0000`
-  ne sont pas une erreur : les deux unités sont chargées à l'adresse `$0000` et
-  leurs symboles sont à l'offset 0.
-- Le symptôme est ailleurs : **`$9C00` est écrasé** par un motif de 4 octets
-  répété, et les témoins du banc disparaissent avec. Le jeu part dans le
-  moniteur ensuite, ce qui est une conséquence, pas la cause.
+La v1 la déportait dans un objet monté (`obj_mainext`) faute de place dans sa
+page résidente ; le stage v2 vit DANS cette page, donc la raison a disparu et
+l'interface gagne un nom au lieu de trois — `_Collision_Do` est un macro qui
+écrit dans deux opérandes auto-modifiées du moteur, qui restent ainsi privées.
+Cas de migration : [main-private-object.md](../../docs/lang/en/migration/main-private-object.md).
 
-La carte mémoire, corrigée par l'auteur (je l'avais fausse) : `$4000-$5FFF`
-est le **tampon de sauvegarde de fond**, page 0 — pas la zone écran. La RAM
-résidente commence en `$6000`, page 1. La mémoire **vidéo** est montée en
-`$A000` et alterne les pages 2 et 3, dans la même fenêtre que le loader (page
-4), ce qui explique la monte de page avant tout appel au loader.
+Manquent, faute des objets qui les peuplent : `AABB_list_foefire` et
+`AABB_list_forcepod` (tir ennemi et force pod non portés) et
+`WeaponContactTick`. Les lignes v1 correspondantes sont conservées en
+commentaire dans `engine.asm`, dans l'ordre.
 
-Limite haute d'un main : **`$9E84`**. Au-dessus vivent les variables
-inter-main, puis la pile, puis la page directe en `$9F00`. Ces zones sont
-désormais **déclarées et vérifiées** — voir plus bas.
+Le vaisseau meurt au contact d'un pata-pata — explosion, gel de l'écran,
+décompte d'une vie, rechargement du checkpoint — et un pata-pata meurt sous le
+tir : il rend son score et fait naître une explosion.
 
-Le banc tourne donc encore avec le bouchon.
+### L'explosion
+
+Un seul objet pour tout ce qui meurt, `subtype` choisissant l'animation. Ses
+treize sprites pèsent 17 881 octets, plus qu'une page : le **code** est rangé
+par le builder sur les deux pages d'un `<pageset>` (24 parts sur `$15`, 2 sur
+`$16`) tandis que l'objet et son **index** restent dans une page à eux — c'est
+celle que `Img_Page_Index` monte pour lire les descripteurs, elle ne peut pas
+être répartie. Chaque descripteur porte donc la page de SON image, exactement
+comme la v1, et l'index entier est cuit au build : zéro donnée de lien.
+
+C'est une capacité neuve du builder (`<gfxcomp imageset>` + élément
+`<imageset>`), sur la route que le tilemap emprunte déjà. Cas de migration :
+[imageset-pages.md](../../docs/lang/en/migration/imageset-pages.md).
+
+Une image sur deux seulement est compilée : c'est ce que déclare la cible
+disquette de la v1 (`obj.d7.properties`), le code rattachant les manquantes à
+la suivante sous `IFNDEF t2`.
+
+### La manette, et le clavier en bouton B
+
+Les manettes Thomson n'ont qu'un bouton ; le rappel du force pod en demande un
+second. `joypad.readKbd` injecte KTEST (`$E7C8` bit 0, au moins une touche
+enfoncée) dans le bit BRUT du bouton B de la manette 0, **avant** la détection
+de front : `joypad.pressed.fire` se comporte alors comme un vrai bouton B, front
+propre et pas de rafale tant que la touche reste enfoncée. Porté de
+`ReadJoypadsKbd.asm`, et comme en v1 dans son **propre fichier** : un jeu qui
+n'en veut pas inclut `joypad.asm` seul et ne le paie pas.
+
+### Pata-pata
 
 Écarts marqués dans `obj.asm` (`; V2-DEVIATION:`) : le tir n'est pas porté
 (`tryFoeFire` vise le joueur, et la chaîne `createFoeFire`/`foefire`/
@@ -133,44 +160,19 @@ Le banc tourne donc encore avec le bouchon.
 variables de tir. Les entrées d'imageset passent de `Img_<nom>` à `set_<nom>`,
 le nom que gfxcomp génère.
 
-Ce qui a déjà été corrigé en chemin, et qu'il ne faut pas rechercher :
-le **plafond de frame-drop** (`gfxlock.frameDrop.max`, que `_gfxlock.init`
-remet à zéro) et la **trame d'amorce** avant `InitScroll`, tous deux dans la
-chaîne d'init de la v1 ;
-`moveByScript` garde **deux** opérandes de page auto-modifiées, pas une, et le
-moteur a sa propre routine pour les poser — `moveByScript.register`, qui les
-lit dans l'index d'objets à l'identifiant de l'objet animation. Le stage
-l'appelle désormais. `InitDrawSprites` à l'init et `UnsetDisplayPriority` dans
-la boucle manquaient aussi, d'après le main v1.
-
-Pistes non explorées pour la suite : les identifiants d'objets de l'unité
-ennemie viennent de `src/stages/01/objid.const.asm`, donc elle est liée à la
-numérotation du stage 1 ; et le `render_flags` / la priorité que `Init` pose
-n'ont pas été confrontés à ce que `CheckSpritesRefresh` attend.
-
-Complété depuis (le résident portait moins que le main v1) : `Obj_Run` et ses
-macros — l'appel d'objet factorisé, par lequel un stage lance le joueur ou le
-HUD —, `ObjectDp` pour l'espace joueur en page directe, `ObjectMoveSync`, et
-`RunPgSubRoutine` dont dépend toute la chaîne de tir. Reste absent du résident,
-et **volontairement** : la musique (YMM, soundFX), les maths du boss
-(`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par `scene.load`) et
-`PalUpdateNowLean`.
-
-Ce qui manque encore pour qu'un ennemi tourne :
-
-- Le diagnostic du plantage ci-dessus.
-- Le reste des ennemis, et le commun que leur chaîne de tir appelle
-  (`createFoeFire`, `foefire`, `setDirectionTo`, l'explosion, le joueur).
-
 À savoir : `pata-pata/animation.asm` et `bug/animation.asm` sont du **code
 mort** hérité de la v1 — ils référencent des symboles (`x1B139`) définis nulle
 part, et les vrais scripts sont l'objet commun.
 
+Reste absent du résident, et **volontairement** : la musique (YMM, soundFX),
+les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
+`scene.load`) et `PalUpdateNowLean`.
+
 ## La carte de la zone résidente (page $01)
 
 ```
-$6100  région common   moteur résident, 7 208 o sur $2200 déclarés
-$8300  région stage    stage courant, 656 o (st.1) sur $0D00 — échangeable
+$6100  région common   moteur résident, 7 687 o sur $2200 déclarés
+$8300  région stage    stage courant, 1 501 o (st.1) sur $0D00 — échangeable
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9C00  réservé         témoins du banc (propre au banc)
 $9E84  réservé         variables inter-main : score 24 bits, vies, difficulté…
@@ -187,9 +189,11 @@ de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#p
 est la forme d'appel qui l'anime. Les valeurs de la page directe sont la chaîne
 d'équates de `engine/constants.asm`, évaluée depuis `glb_ram_end = $A000-12`.
 
-Hors résident : `$4000-$5FFF` tampon de fond (page 0), vidéo montée en `$A000`
-alternant pages 2 et 3, loader page 4, ennemis page 5, tuiles pages 6-13,
-cartes page 14, scripts d'animation page 15.
+Hors résident, en pages physiques : `$4000-$5FFF` tampon de fond (page `$00`),
+vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
+tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
+joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions
+à adresses fixes), explosion `$14` (objet et index) et ses sprites sur `$15-$16`.
 
 ## Les zones réservées
 

@@ -6,9 +6,13 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (explosion.asm), comme pour tout fichier v1 enveloppe ; et le SON n'est pas
+; porte, donc ni ses constantes ni son macro.
+; Includes v1 retires :
+;       INCLUDE "./engine/macros.asm"
+;       INCLUDE "./objects/soundFX/soundFX.const.asm"
+;       INCLUDE "./engine/sound/soundFX.macro.asm"
 
  IFNDEF t2
 Img_expSmall_2 equ Img_expSmall_3
@@ -31,7 +35,8 @@ Routines
         fdb   Live
 
 Init
-        _soundFX.play soundFX.ExplosionSound,1
+; V2-DEVIATION: son neutralise (moteur audio non porte) — a retablir tel quel
+;        _soundFX.play soundFX.ExplosionSound,1
         ldb   subtype,u
         ldx   #exp.animations
         ldx   b,x

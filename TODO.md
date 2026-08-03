@@ -224,6 +224,38 @@ Fonctionnel :
       XMLConfiguration ; erreurs fichier:ligne sur les géométries ; bug
       dormant `sectorperblock` corrigé (clé cassée → 0 silencieux, champ non
       consommé). Identité binaire prouvée.
+- [x] **Imageset multi-pages** (03/08/2026) — `<gfxcomp genindex>` refusait
+      d'être rangé en pages (« an imageset index reads one page from
+      `<file>$PAGE` for the whole set »), or l'explosion de R-Type pèse
+      17 881 o : 13 sprites dont cinq de 24x48. La v1 n'avait pas le problème,
+      son descripteur porte **un octet de page par image**. Le chemin existait
+      déjà, et sert au tilemap : `<pageset>` range, `StaticLink.pageOf` rend la
+      page réelle d'un symbole — sa javadoc citait déjà « an object index »
+      comme consommateur. Compiler et indexer deviennent **deux éléments** :
+      `<gfxcomp imageset="…">` cède la géométrie mesurée, `<imageset>` écrit
+      l'index en demandant la page image par image, en `code.static` (adresses
+      cuites, zéro donnée de lien). Les descripteurs restent groupés, contrainte
+      de `Img_Page_Index[id]`. Validé : explosion 24 parts sur `$15` + 2 sur
+      `$16`, 26 références cuites, 12 configs d'exemples **identiques à
+      l'octet**, JUnit 103/103, explosion dessinée sous toje.
+      Cas : [imageset-pages.md](docs/lang/en/migration/imageset-pages.md)
+- [x] **Carte d'occupation RAM** (03/08/2026) — `dist/ram-map-<cible>.txt`,
+      **une carte par scène** : c'est la composition qu'on optimise, pas
+      l'enchaînement, donc aucune syntaxe nouvelle — le rapport se produit pour
+      chaque `<scene>` déjà déclarée. Chaque carte montre le layout ENTIER page
+      par page (régions, zones réservées, trous mesurés), annoté du budget face
+      à l'occupation réelle de ce que CETTE scène charge. Une région qu'elle ne
+      charge pas est marquée telle quelle, jamais « libre » : son contenu vient
+      d'une scène antérieure, ce que le builder ignore. Régions multi-pages
+      comptées page par page (sinon un tileset de 5 pages se rapportait à 413 %).
+      Un graphe de scènes déclaré a été envisagé puis écarté — il aurait permis
+      des contrôles inter-scènes (pool de liens au pire cas, recouvrement
+      partiel, symboles sans fournisseur) au prix d'une déclaration à tenir à
+      jour à la main. À rouvrir si ces contrôles deviennent nécessaires.
+      Doc : [`scenes.md`](docs/lang/en/scenes.md) § The occupancy map
+- [ ] **Localisation automatique des destinations** — la carte d'occupation en
+      est le préalable, posé. À reprendre quand la vision du jeu porté sera
+      complète (l'auteur, 03/08/2026).
 - [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
       cartouche n'existe dans le registre : la v2 ne produit que de la
       disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile
@@ -273,7 +305,13 @@ En veille sur décision (31/07/2026) :
 - [ ] 3. Animation (`AnimateSpriteSync`, `moveByScript`)
 - [ ] 4. Scroll horizontal + tilemap (décision : port v1 vs nouvelle génération
       `hscroll`)
-- [ ] 5. Collisions AABB + terrain
+- [x] 5. Collisions AABB + terrain (03/08/2026) — la passe de détection vit
+      dans le moteur résident, à côté des listes (la v1 la déportait dans
+      `obj_mainext` faute de place, raison disparue en v2 : le stage EST dans
+      la page résidente). Le vaisseau meurt au contact, pata-pata meurt sous le
+      tir et fait naître son explosion. Manquent les listes `foefire` et
+      `forcepod` et `WeaponContactTick`, faute des objets qui les peuplent.
+      Cas : [main-private-object.md](docs/lang/en/migration/main-private-object.md)
 - [ ] 6. ObjectWave + caméra/AutoScroll
 - [ ] 7. Pipeline builder « jeu » (équivalent v2 des `.properties` v1)
 - [ ] 8. Portage du projet R-Type (game modes, ~60 objets, assets)

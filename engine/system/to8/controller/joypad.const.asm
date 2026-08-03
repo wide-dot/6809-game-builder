@@ -1,4 +1,10 @@
-; masks for variables : 
+; Guarded : joypad.asm includes it for its own use (the keyboard-as-button-B
+; read needs joypad.0.B), and a game mode that already includes it must not
+; redefine the whole table.
+ ifndef joypad_const
+joypad_const equ 1
+
+; masks for variables :
 ; ---------------------
 ; joypad.0.type
 ; joypad.1.type
@@ -103,3 +109,4 @@ joypad.md6.1.Z    equ   %00010000
 joypad.md6.1.Y    equ   %00100000
 joypad.md6.1.X    equ   %01000000
 joypad.md6.1.MODE equ   %10000000
+ endc

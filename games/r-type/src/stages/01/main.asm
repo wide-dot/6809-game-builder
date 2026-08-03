@@ -54,6 +54,10 @@ Player            EXTERNAL
 ; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
 terrainCollision.unit EXTERNAL
 
+; L'explosion, dans sa page a elle : treize sprites compiles, dont cinq de
+; 24x48. Tout ce qui meurt la fait naitre par l'index d'objets.
+explosion.Object  EXTERNAL
+
 ; L'armement, quatre unites sur la page $13 : le tir de base, la charge, le
 ; beam et l'eclair d'emission. Le joueur les cree par l'index d'objets.
 Weapon              EXTERNAL

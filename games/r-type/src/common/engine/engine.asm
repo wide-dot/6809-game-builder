@@ -27,6 +27,7 @@ ENGINE_RESIDENT equ 1
         INCLUDE "src/common/engine/ram.const.asm"
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
+        INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
@@ -82,6 +83,35 @@ Collision_ClearLists
 !       std   ,y++
         leax  -1,x
         bne   <
+        rts
+
+;*******************************************************************************
+; La passe de detection — doCollision de la v1 (obj_mainext)
+;
+; Elle vit ICI, dans le resident, pour la meme raison que Collision_ClearLists :
+; les listes y vivent, et les operandes auto-modifiees que le macro _Collision_Do
+; ecrit (Collision_Do_1/_2) sont internes a Collision_Do. La v1, elle, la
+; deportait dans un objet monte parce que sa page residente etait pleine ; ici
+; elle tient, et le stage n'a qu'un appel a faire — un export au lieu de trois.
+;
+; L'ordre des paires est celui de la v1. Aucune n'est arbitraire : friend x
+; ennemy fait mourir l'ennemi sous le tir du joueur, player x ennemy fait mourir
+; le joueur au contact.
+;
+; V2-DEVIATION vs v1 : trois passes manquent, faute des objets qui les
+; peuplent. Les listes AABB_list_foefire et AABB_list_forcepod ne sont meme pas
+; declarees (le tir ennemi et le force pod ne sont pas portes), et
+; WeaponContactTick est le contact force pod / bit device — non porte non plus.
+; Les lignes v1 restantes, dans l'ordre, pour le jour ou elles arrivent :
+;       _Collision_Do AABB_list_player,AABB_list_foefire
+;       _Collision_Do AABB_list_forcepod,AABB_list_foefire
+;       jsr   WeaponContactTick
+;*******************************************************************************
+Collision_Run
+        _Collision_Do AABB_list_friend,AABB_list_ennemy
+        _Collision_Do AABB_list_player,AABB_list_bonus
+        _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable
+        _Collision_Do AABB_list_player,AABB_list_ennemy
         rts
 
 ;*******************************************************************************
@@ -183,3 +213,8 @@ terrainCollision.init.do
 
 ; a v2 module, which brings its own section
         INCLUDE "engine/system/to8/controller/joypad.asm"
+; La lecture qui fait de n'importe quelle touche le bouton B — les manettes
+; Thomson n'en ont qu'un, et le rappel du force pod en demande un second. Elle
+; a son propre fichier, comme ReadJoypadsKbd en v1 : les exemples qui n'en
+; veulent pas incluent joypad.asm seul et ne la paient pas.
+        INCLUDE "engine/system/to8/controller/joypad.kbd.asm"
