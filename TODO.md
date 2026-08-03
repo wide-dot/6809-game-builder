@@ -253,6 +253,25 @@ Fonctionnel :
       partiel, symboles sans fournisseur) au prix d'une déclaration à tenir à
       jour à la main. À rouvrir si ces contrôles deviennent nécessaires.
       Doc : [`scenes.md`](docs/lang/en/scenes.md) § The occupancy map
+- [ ] **Page résidente : retrouver le pool d'objets de la v1** (analyse du
+      04/08/2026 : [`analyse-residente-2026-08.md`](docs/lang/fr/analyse-residente-2026-08.md)).
+      La v1 a 50 slots (5 850 o), nous 16 (1 872). Constat mesuré : le contenu
+      v2 tient dans **244 octets de plus** que celui de la v1 — le pool est
+      petit parce que les budgets ont été déclarés larges, pas parce que le
+      code a grossi (4 073 o déclarés inutilisés au 04/08, dont 907 de trou et
+      628 de `bench.wit` qui n'en écrit que 16). Échelle chiffrée dans
+      l'analyse : budgets resserrés + trou + bench + `fade` monté (la v1 le
+      monte) + passe de collision en unité montée (le `mainext` de la v1) +
+      talon zx0 + `ClearInterlacedDataMemory` en `paged.call` + `gfxlock` en
+      routines = **4 987 o**, moins 256 pour `nb_graphical_objects` 32→64,
+      soit **56 slots**. Vérifié non sortable : `setDirectionTo` (5 sites
+      d'appel dans 4 pages). À faire quand le besoin arrive — le boss est ce
+      qui l'imposera. (M)
+  - [x] Rééquilibrage `common`/`stage` (04/08) — la frontière avait été posée
+        avant qu'on connaisse les tailles : 93 % / 46 %. Recalée à 81 % / 69 %,
+        trou de 176 o repris, et `loader.DEFAULT_SCENE_EXEC_ADDR` lit désormais
+        l'équate `stage.address` générée au lieu d'un littéral $8300 — le
+        dupliquer, c'était démarrer dans le vide le jour où la frontière bouge.
 - [ ] **Localisation automatique des destinations** — la carte d'occupation en
       est le préalable, posé. À reprendre quand la vision du jeu porté sera
       complète (l'auteur, 03/08/2026).

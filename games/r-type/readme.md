@@ -198,8 +198,8 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 ## La carte de la zone résidente (page $01)
 
 ```
-$6100  région common   moteur résident, 8 131 o sur $2200 déclarés (93 %)
-$8300  région stage    stage courant, 1 539 o (st.1) sur $0D00 — échangeable
+$6100  région common   moteur résident, 8 131 o sur $2700 déclarés (81 %)
+$8800  région stage    stage courant, 1 539 o (st.1) sur $08B0 (69 %)
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9C00  réservé         témoins du banc (propre au banc)
 $9E84  réservé         variables inter-main : score 24 bits, vies, difficulté…
@@ -211,11 +211,18 @@ $9F00  réservé         PAGE DIRECTE — et c'est là que vit l'OST DU JOUEUR
          $9FD1  glb_Page, timers, caméra… jusqu'à glb_ram_end $9FF4
 ```
 
-**Le moteur résident est à 93 % de son budget** — la chaîne de tir lui a coûté
-444 octets. C'est le chiffre à surveiller au prochain ajout : au-delà de `$2200`
-il faut soit élargir la région (le stage commence juste après, en `$8300`), soit
-sortir du résident ce que seul le main appelle, comme la v1 le faisait avec son
-objet `mainext`.
+**Le moteur résident est à 81 % de son budget** depuis le rééquilibrage du
+04/08 : la frontière `common`/`stage` avait été posée avant qu'on connaisse les
+tailles — 93 % contre 46 % — et elle est recalée, le trou de 176 octets repris
+au passage. `loader.DEFAULT_SCENE_EXEC_ADDR` lit désormais l'équate
+`stage.address` générée plutôt qu'un littéral : dupliquer cette adresse, c'était
+démarrer dans le vide le jour où la frontière bouge.
+
+Ce qu'il reste de marge, et le chemin pour retrouver les **50 slots d'objets de
+la v1** (nous en avons 16), sont chiffrés dans
+[`analyse-residente-2026-08.md`](../../docs/lang/fr/analyse-residente-2026-08.md).
+En un mot : le contenu v2 tient dans 244 octets de plus que celui de la v1, donc
+le pool n'est pas petit parce que le code a grossi.
 
 Le joueur ayant ses données en page directe, `ObjectDp_Clear` (remise à zéro
 de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#player1`
