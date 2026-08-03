@@ -110,7 +110,7 @@ elles sont lues par du code résident à chaque trame.
 
 | quoi | octets | pourquoi c'est sûr |
 |---|---:|---|
-| **`fade`** en objet monté | 279 | la v1 le monte (`object.fade=…`). Il a un OST, un index de routine, et l'explosion vient de montrer que la page `$14` accueille très bien ce genre d'unité |
+| **`fade`** en objet monté — *fait le 04/08* | 279 | la v1 le monte (`object.fade=…`). Il a un OST, un index de routine, et l'explosion vient de montrer que la page `$14` accueille très bien ce genre d'unité |
 | **La passe de collision** (`Collision_Do` + expansions) | 184 | calcul pur, page-neutre — c'est exactement ce que la v1 met dans `obj_mainext`. Seule la boucle l'appelle |
 | **`ClearInterlacedDataMemory`** | 100 | appelé deux fois : ouverture de stage et checkpoint. Un `paged.call` suffit |
 | **Décompresseur zx0** | 200 | aucune image de R-Type n'est encodée `rle`/`zx0` — que du `bdraw`/`draw`. `DrawSpritesExtEnc` garde ses deux `jsr`, donc il faut un talon, pas une suppression |
@@ -152,7 +152,7 @@ L'échelle, dans l'ordre où je la monterais :
 | 1 | Resserrer les budgets déclarés sur le contenu + une marge **énoncée** | 2 538 |
 | 2 | Reprendre le trou `$9875-$9BFF` | 907 |
 | 3 | Ramener `bench.wit` à ses 16 octets réels | 628 |
-| 4 | `fade` en objet monté | 279 |
+| 4 | `fade` en objet monté — **fait le 04/08** | 279 |
 | 5 | La passe de collision en unité montée (le `mainext` de la v1) | 184 |
 | 6 | Talon zx0 | 200 |
 | 7 | `ClearInterlacedDataMemory` en `paged.call` | 100 |

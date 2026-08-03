@@ -134,9 +134,11 @@ _api    macro
         _api joypad.pressed.fire
         _api joypad.buffer.addDirection
         _api joypad.buffer.getDirection
-        ; Le fondu de palette, resident : le stage le designe dans son index
-        ; d'objets, donc son adresse doit traverser le lien.
-        _api PaletteFade
+        ; PaletteFade N'EST PLUS ici : le fondu est un objet MONTE, comme en
+        ; v1. Le stage declare son adresse en EXTERNAL lui-meme, au meme titre
+        ; que l'explosion — ce n'est pas une routine du moteur.
+        ; Pal_buffer, en revanche, y entre : le fondu y compose depuis sa page.
+        _api Pal_buffer
         _api ObjectDp_Clear
         _api ObjectMoveSync
         _api RunPgSubRoutine

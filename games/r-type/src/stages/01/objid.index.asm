@@ -4,7 +4,7 @@ Obj_Index_Page
         fcb   0                        ; id 0 : slot reserve, jamais execute
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
         fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
+        fcb   map.RAM_OVER_CART+fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
@@ -71,7 +71,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
         fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
+        fcb   map.RAM_OVER_CART+fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
@@ -140,7 +140,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+anim.page   ; ObjID_animation
         fcb   map.RAM_OVER_CART+explosion.page   ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
+        fcb   map.RAM_OVER_CART+fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile

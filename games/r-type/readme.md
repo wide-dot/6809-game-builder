@@ -198,7 +198,7 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 ## La carte de la zone résidente (page $01)
 
 ```
-$6100  région common   moteur résident, 8 131 o sur $2700 déclarés (81 %)
+$6100  région common   moteur résident, 7 852 o sur $2700 déclarés (78 %)
 $8800  région stage    stage courant, 1 539 o (st.1) sur $08B0 (69 %)
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9C00  réservé         témoins du banc (propre au banc)
@@ -211,7 +211,7 @@ $9F00  réservé         PAGE DIRECTE — et c'est là que vit l'OST DU JOUEUR
          $9FD1  glb_Page, timers, caméra… jusqu'à glb_ram_end $9FF4
 ```
 
-**Le moteur résident est à 81 % de son budget** depuis le rééquilibrage du
+**Le moteur résident est à 78 % de son budget** depuis le rééquilibrage du
 04/08 : la frontière `common`/`stage` avait été posée avant qu'on connaisse les
 tailles — 93 % contre 46 % — et elle est recalée, le trou de 176 octets repris
 au passage. `loader.DEFAULT_SCENE_EXEC_ADDR` lit désormais l'équate
@@ -223,6 +223,12 @@ la v1** (nous en avons 16), sont chiffrés dans
 [`analyse-residente-2026-08.md`](../../docs/lang/fr/analyse-residente-2026-08.md).
 En un mot : le contenu v2 tient dans 244 octets de plus que celui de la v1, donc
 le pool n'est pas petit parce que le code a grossi.
+
+Premier axe traité, le 04/08 : **le fondu de palette est redevenu un objet
+monté**, comme en v1 (`object.fade=…`). Il a un OST et un index de routine —
+rien ne le distinguait de l'explosion, que `Obj_Run` va chercher dans sa page
+sans que personne y pense. 279 octets rendus à la page 1, pour 86 octets de
+données de lien. Il vit page `$14`, avec l'explosion et la chaîne de tir.
 
 Le joueur ayant ses données en page directe, `ObjectDp_Clear` (remise à zéro
 de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#player1`

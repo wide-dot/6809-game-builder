@@ -76,6 +76,11 @@
             <!-- le projectile et ses quatre images de l'autre.                -->
             <region name="firechain"  page="$14" address="$1000" size="$1000"/>
             <region name="foefire"    page="$14" address="$2000" size="$1000"/>
+            <!-- Le fondu de palette : un objet comme un autre, monte comme    -->
+            <!-- l'explosion. Il etait resident au motif que tout stage en a    -->
+            <!-- besoin a son ouverture ; la v1 le monte, et 279 octets de la   -->
+            <!-- page 1 valent mieux au budget du pool d'objets.                -->
+            <region name="fade"       page="$14" address="$3000" size="$1000"/>
             <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="2"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
@@ -464,6 +469,15 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Le fondu de palette, objet monte                          -->
+                <!-- ******************************************************** -->
+                <direntry name="common.fade" loadtimelink="LINK">
+                    <lwasm gensource="gen/fx/fade.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/fx/fade/fade.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- La chaine de tir ennemi : les deux sous-routines         -->
                 <!-- paginees, puis le projectile qu'elles font naitre.       -->
                 <!-- ******************************************************** -->
@@ -646,6 +660,7 @@
                     <load name="common.emflash"    region="emflash"/>
                     <load name="explosion.images"  region="explosion.images"/>
                     <load name="common.explosion"  region="explosion"/>
+                    <load name="common.fade"       region="fade"/>
                     <load name="common.firechain"  region="firechain"/>
                     <load name="common.foefire"    region="foefire"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>

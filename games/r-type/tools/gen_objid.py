@@ -71,7 +71,7 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # Les ennemis portes vivent dans la page des ennemis et ont leur propre
 # point d'entree ; les autres identifiants visent encore le bouchon du stage.
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
-          'ObjID_fade':      ('common', 'PaletteFade'),
+          'ObjID_fade':      ('fade', 'PaletteFade'),
           'ObjID_Player1':   ('player', 'Player'),
           'ObjID_patapata': ('enemies', 'patapata.Object'),
           'ObjID_explosion': ('explosion', 'explosion.Object'),

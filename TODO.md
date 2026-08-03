@@ -253,25 +253,52 @@ Fonctionnel :
       partiel, symboles sans fournisseur) au prix d'une déclaration à tenir à
       jour à la main. À rouvrir si ces contrôles deviennent nécessaires.
       Doc : [`scenes.md`](docs/lang/en/scenes.md) § The occupancy map
-- [ ] **Page résidente : retrouver le pool d'objets de la v1** (analyse du
-      04/08/2026 : [`analyse-residente-2026-08.md`](docs/lang/fr/analyse-residente-2026-08.md)).
-      La v1 a 50 slots (5 850 o), nous 16 (1 872). Constat mesuré : le contenu
-      v2 tient dans **244 octets de plus** que celui de la v1 — le pool est
-      petit parce que les budgets ont été déclarés larges, pas parce que le
-      code a grossi (4 073 o déclarés inutilisés au 04/08, dont 907 de trou et
-      628 de `bench.wit` qui n'en écrit que 16). Échelle chiffrée dans
-      l'analyse : budgets resserrés + trou + bench + `fade` monté (la v1 le
-      monte) + passe de collision en unité montée (le `mainext` de la v1) +
-      talon zx0 + `ClearInterlacedDataMemory` en `paged.call` + `gfxlock` en
-      routines = **4 987 o**, moins 256 pour `nb_graphical_objects` 32→64,
-      soit **56 slots**. Vérifié non sortable : `setDirectionTo` (5 sites
-      d'appel dans 4 pages). À faire quand le besoin arrive — le boss est ce
-      qui l'imposera. (M)
-  - [x] Rééquilibrage `common`/`stage` (04/08) — la frontière avait été posée
-        avant qu'on connaisse les tailles : 93 % / 46 %. Recalée à 81 % / 69 %,
-        trou de 176 o repris, et `loader.DEFAULT_SCENE_EXEC_ADDR` lit désormais
-        l'équate `stage.address` générée au lieu d'un littéral $8300 — le
-        dupliquer, c'était démarrer dans le vide le jour où la frontière bouge.
+- [ ] **Page résidente : retrouver le pool d'objets de la v1** — la v1 a
+      50 slots (5 850 o), nous 16 (1 872). Constat mesuré le 04/08 : notre
+      contenu tient dans **244 octets de plus** que celui de la v1 ; le pool
+      est petit parce que les budgets ont été déclarés larges, pas parce que
+      le code a grossi. Analyse complète, méthode et chiffres :
+      [`analyse-residente-2026-08.md`](docs/lang/fr/analyse-residente-2026-08.md).
+      **Axes à traiter au fil de l'eau**, chacun indépendant des autres :
+  - [x] Rééquilibrer `common`/`stage` et reprendre le trou de 176 o (04/08) —
+        la frontière avait été posée avant qu'on connaisse les tailles :
+        93 % / 46 %, recalée à 81 % / 69 %. `loader.DEFAULT_SCENE_EXEC_ADDR`
+        lit désormais l'équate `stage.address` au lieu d'un littéral $8300.
+  - [x] **`fade` en objet monté — 279 o** (04/08). La v1 le monte déjà
+        (`object.fade=…`) : il a un OST et un index de routine, donc rien ne
+        le distingue de l'explosion.
+  - [ ] **Resserrer les budgets déclarés sur le contenu + une marge énoncée —
+        2 538 o.** À faire en dernier : chaque autre axe change les nombres.
+  - [ ] **Reprendre le trou `$9875-$9BFF` — 907 o.** Il sépare `objects.static`
+        de `bench.wit` ; il disparaît en remontant le pool.
+  - [ ] **Ramener `bench.wit` à ses 16 octets réels — 628 o.** La zone a été
+        déclarée jusqu'à `$9E84` faute de concurrent, pas par besoin. À faire
+        quand le banc d'échange de stages sera retiré, ou plus tôt en la
+        réduisant simplement.
+  - [ ] **Passe de collision en unité montée — 184 o.** `Collision_Do` + les
+        expansions `_Collision_Do` : calcul pur, page-neutre, appelé par la
+        seule boucle. C'est exactement ce que la v1 met dans `obj_mainext`.
+  - [ ] **Talon zx0 — 200 o.** Aucune image de R-Type n'est encodée `rle`/`zx0`
+        (que du `bdraw`/`draw`), mais `DrawSpritesExtEnc` garde ses deux `jsr` :
+        il faut un talon, pas une suppression.
+  - [ ] **`gfxlock` en routines plutôt qu'en macros — 151 o** (dans `stage`).
+        Trois enveloppes de 95 o + un `jsr` par site remplacent 276 o
+        d'expansions ; placées dans le moteur, elles sortent en plus **huit
+        variables de l'interface**, mais coûtent alors 92 o à `common`.
+  - [ ] **`ClearInterlacedDataMemory` en `paged.call` — 100 o.** Deux sites
+        d'appel : ouverture de stage et checkpoint.
+  - [ ] **Dépense obligatoire** quand le pool grandira :
+        `nb_graphical_objects` 32 → 64 = **−256 o** (tables sous-objets et
+        listes « unset » des buffers de priorité). 50 objets dont 32
+        dessinables n'aurait pas de sens.
+  - [ ] Vérifié **non sortable**, ne pas y revenir : `setDirectionTo` (5 sites
+        d'appel dans 4 pages), `tryFoeFire` / `moveXPos-YPos8.8` / `AwardScore`
+        (appelés depuis les pages montées), toute la chaîne sprites (elle porte
+        les tables de RAM), `object_rsvd_size` (état de rendu du double
+        buffering — la v1 paie les mêmes 117 o/objet), le pool hors page 1 (un
+        OST est adressé par `U` depuis la page cartouche), `$4000-$5FFF` (déjà
+        découpé en 128 cellules de 64 o).
+
 - [ ] **Localisation automatique des destinations** — la carte d'occupation en
       est le préalable, posé. À reprendre quand la vision du jeu porté sera
       complète (l'auteur, 03/08/2026).

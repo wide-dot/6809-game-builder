@@ -197,10 +197,6 @@ terrainCollision.init.do
         ; le lien, aucune operande auto-modifiee. C'est par la que passent les
         ; overlays (masque, hud) qui n'ont ni etat ni OST.
         INCLUDE "engine/system/paged-call.asm"
-        ; Le fondu de palette : un objet a part entiere (il a un OST et un
-        ; index de routine), mais RESIDENT — tout stage en a besoin a son
-        ; ouverture, et il ne pese que 180 lignes.
-        INCLUDE "engine/objects/palette/fade/fade.asm"
         ; Le deplacement en 8.8 et la chaine de tir ennemi. La v1 les inclut
         ; toutes quatre dans son main (main.asm:565-568) : elles sont donc
         ; RESIDENTES, et c'est de la qu'elles traversent la frontiere.

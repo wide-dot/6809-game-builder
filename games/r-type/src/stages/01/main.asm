@@ -54,6 +54,10 @@ Player            EXTERNAL
 ; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
 terrainCollision.unit EXTERNAL
 
+; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
+; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
+PaletteFade           EXTERNAL
+
 ; La chaine de tir ennemi, page $14 : deux sous-routines paginees que l'ennemi
 ; atteint par RunPgSubRoutine, et le projectile qu'elles font naitre.
 createFoeFire         EXTERNAL
