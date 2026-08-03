@@ -70,7 +70,11 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_fade':      ('common', 'PaletteFade'),
           'ObjID_Player1':   ('player', 'Player'),
-          'ObjID_patapata': ('enemies', 'patapata.Object')}
+          'ObjID_patapata': ('enemies', 'patapata.Object'),
+          'ObjID_Weapon':        ('weapon',     'Weapon'),
+          'ObjID_beamcharge':    ('beamcharge', 'Beamcharge'),
+          'ObjID_beamp':         ('beamp',      'Beam'),
+          'ObjID_emitter_flash': ('emflash',    'emitterFlash.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':

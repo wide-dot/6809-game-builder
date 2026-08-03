@@ -45,6 +45,15 @@
             <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
             <!-- stage lui-meme.                                                -->
             <region name="collision"  page="$12" address="$0000" size="$4000" interface="true"/>
+            <!-- L'armement du joueur : quatre objets, chacun son unite comme  -->
+            <!-- en v1 (leurs labels internes Init/Live se repetent, et leurs  -->
+            <!-- equates d'OST divergent — infusionnables). Quatre regions sur  -->
+            <!-- LA MEME page, a adresses fixes : le bin-packing manuel, en     -->
+            <!-- attendant un pageset d'unites code.                            -->
+            <region name="weapon"     page="$13" address="$0000" size="$0600"/>
+            <region name="beamcharge" page="$13" address="$0600" size="$0A00"/>
+            <region name="beamp"      page="$13" address="$1000" size="$2000"/>
+            <region name="emflash"    page="$13" address="$3000" size="$1000"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -217,6 +226,149 @@
                     </lwasm>
                 </direntry>
 
+                <!-- L'armement du joueur : quatre unites, une par objet       -->
+                <!-- ******************************************************** -->
+                <direntry name="common.weapon" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/weapon.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/weapon/weapon.asm"/>
+                        <gfxcomp gendir="gen/weapons/weapon"
+                                 gensource="gen/weapons/weapon/includes.asm"
+                                 genindex="gen/weapons/weapon/index.asm"
+                                 file="common.weapon">
+                            <image name="weapon" filename="src/common/weapons/weapon/images/shoot.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="weapon_impact0" filename="src/common/weapons/weapon/images/impact-0.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="weapon_impact3" filename="src/common/weapons/weapon/images/impact-3.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.beamcharge" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/beamcharge.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/beam/charge.asm"/>
+                        <gfxcomp gendir="gen/weapons/beamcharge"
+                                 gensource="gen/weapons/beamcharge/includes.asm"
+                                 genindex="gen/weapons/beamcharge/index.asm"
+                                 file="common.beamcharge">
+                            <image name="beamcharge_0" filename="src/common/weapons/beam/images/beamcharge_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_1" filename="src/common/weapons/beam/images/beamcharge_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_2" filename="src/common/weapons/beam/images/beamcharge_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_3" filename="src/common/weapons/beam/images/beamcharge_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_4" filename="src/common/weapons/beam/images/beamcharge_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_5" filename="src/common/weapons/beam/images/beamcharge_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_6" filename="src/common/weapons/beam/images/beamcharge_6.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beamcharge_7" filename="src/common/weapons/beam/images/beamcharge_7.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.beamp" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/beamp.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/beam/beamp.asm"/>
+                        <gfxcomp gendir="gen/weapons/beamp"
+                                 gensource="gen/weapons/beamp/includes.asm"
+                                 genindex="gen/weapons/beamp/index.asm"
+                                 file="common.beamp">
+                            <image name="beam0_0" filename="src/common/weapons/beam/images/beam-slim_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam0_1" filename="src/common/weapons/beam/images/beam-slim_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam1_0" filename="src/common/weapons/beam/images/beam-slim_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam1_1" filename="src/common/weapons/beam/images/beam-slim_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam2_0" filename="src/common/weapons/beam/images/beam-slim_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam2_1" filename="src/common/weapons/beam/images/beam-slim_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam3_0" filename="src/common/weapons/beam/images/beam-slim_6.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam3_1" filename="src/common/weapons/beam/images/beam-slim_7.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam4_0" filename="src/common/weapons/beam/images/beam-slim_8.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam4_1" filename="src/common/weapons/beam/images/beam-slim_9.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam_impact_0" filename="src/common/weapons/beam/images/beam-impact_0.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="beam_impact_4" filename="src/common/weapons/beam/images/beam-impact_4.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.emflash" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/emflash.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/_shared/emflash.asm"/>
+                        <gfxcomp gendir="gen/weapons/emflash"
+                                 gensource="gen/weapons/emflash/includes.asm"
+                                 genindex="gen/weapons/emflash/index.asm"
+                                 file="common.emflash">
+                            <image name="emitter_flash_0" filename="src/enemies/_shared/images/scantfireball_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_1" filename="src/enemies/_shared/images/scantfireball_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_2" filename="src/enemies/_shared/images/scantfireball_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_3" filename="src/enemies/_shared/images/scantfireball_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_4" filename="src/enemies/_shared/images/scantfireball_0.png" index="4">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_5" filename="src/enemies/_shared/images/scantfireball_1.png" index="5">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_6" filename="src/enemies/_shared/images/scantfireball_2.png" index="6">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="emitter_flash_7" filename="src/enemies/_shared/images/scantfireball_3.png" index="7">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
                 <direntry name="stage1.collision" loadtimelink="LINK">
@@ -355,6 +507,10 @@
                     <load name="common.enemies"    region="enemies"/>
                     <load name="common.overlay"    region="overlay"/>
                     <load name="common.player"     region="player"/>
+                    <load name="common.weapon"     region="weapon"/>
+                    <load name="common.beamcharge" region="beamcharge"/>
+                    <load name="common.beamp"      region="beamp"/>
+                    <load name="common.emflash"    region="emflash"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

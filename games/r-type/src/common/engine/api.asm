@@ -149,6 +149,7 @@ _api    macro
         ; --- terrain collision : the resident half, the stage mounts the map ---
         _api terrainCollision.init.do
         _api terrainCollision.do
+        _api terrainCollision.xAxis.doRight
         _api terrainCollision.sensor.x
         _api terrainCollision.sensor.y
         _api terrainCollision.impact.x

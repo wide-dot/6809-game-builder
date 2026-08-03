@@ -7,11 +7,16 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
+; V2-DEVIATION: les entrees d'imageset passent de Img_<nom> a set_<nom>,
+; le nom que gfxcomp genere (meme ecart que pata-pata et le joueur).
+; V2-DEVIATION: les en-tetes v1 sont retires — l'unite enveloppe les
+; porte (macros, collision, equates), et le son n'est pas porte.
+; Includes v1 retires :
+;   INCLUDE "./engine/macros.asm"
+;           INCLUDE "./engine/collision/macros.asm"
+;           INCLUDE "./engine/collision/struct_AABB.equ"
+;           INCLUDE "./objects/soundFX/soundFX.const.asm"
+;           INCLUDE "./engine/sound/soundFX.macro.asm"
 
 AABB_0  equ ext_variables ; AABB struct (9 bytes)
 impactX equ ext_variables+9 ; impact x position
@@ -30,14 +35,15 @@ Weapon_Routines
         fdb   AlreadyDeleted
 
 Init
-        _soundFX.play soundFX.FireSound,0
+; V2-DEVIATION: son neutralise (moteur audio non porte)
+;        ;_soundFX.play soundFX.FireSound,0
         ldd   x_pos,u
         addd  #8+3
         std   x_pos,u
         ldd   y_pos,u
         addd  #2
         std   y_pos,u
-        ldd   #Img_weapon
+        ldd   #set_weapon
         std   image_set,u
         ldb   #2
         stb   priority,u
@@ -98,7 +104,7 @@ Live
         stb   AABB_0+AABB.cx,u         ;   branche ne l'ecrivait pas, et sur la trame de
                                        ;   naissance (tir ne DANS le mur) elle restait a 0,
                                        ;   soit une boite active au bord gauche de la camera
-        ldd   #Img_weapon_impact0
+        ldd   #set_weapon_impact0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
@@ -115,7 +121,7 @@ Live
 
 Impact
         inc   routine,u
-        ldd   #Img_weapon_impact3
+        ldd   #set_weapon_impact3
         std   image_set,u
         jmp   DisplaySprite
 

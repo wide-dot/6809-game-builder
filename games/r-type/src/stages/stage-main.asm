@@ -172,11 +172,9 @@ stage.stateKept
 ; les sprites apres — sinon un sprite est recouvert par le decor de sa trame.
 stage.loop
         ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) : joypad.read
-        ; alimente held/pressed (le tir), addDirection pousse la direction brute
-        ; dans l'historique que le joueur consomme (ApplyJoypadInput) et que le
-        ; force pod relira avec du retard.
+        ; alimente held/pressed (le tir). addDirection, LUI, est dans l'IRQ —
+        ; voir stage.userIRQ.
         jsr   joypad.read
-        jsr   joypad.buffer.addDirection
         jsr   Scroll
         jsr   ObjectWave
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
@@ -245,6 +243,12 @@ stage.loop
 
 stage.userIRQ
         jsr   gfxlock.bufferSwap.check
+        ; Une direction par TRAME 50 Hz, pas par tour de boucle : c'est la
+        ; compensation de frame-drop du deplacement joueur. ApplyJoypadInput
+        ; consomme tout l'arriere et applique UN PAS PAR ENTREE — pousse
+        ; depuis la boucle, le vaisseau va frame-drop fois trop lentement
+        ; (vecu). La v1 l'appelle exactement ici, dans UserIRQ.
+        jsr   joypad.buffer.addDirection
         jmp   PalUpdateNow
 
 ; L'objet bouchon : toutes les entrées de l'index du stage pointent ici tant

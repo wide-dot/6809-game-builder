@@ -1,0 +1,24 @@
+;*******************************************************************************
+; Le tir de base — unite paginee (region weapon, page $13 a $0000)
+; Un objet v1 = une unite, comme en v1 : ses labels internes et ses equates
+; d'OST lui appartiennent.
+;*******************************************************************************
+
+Weapon            EXPORT
+
+        INCLUDE "src/common/engine/api.asm"
+
+ SECTION code
+
+        INCLUDE "engine/system/to8/memory-map.equ"
+        INCLUDE "src/common/engine/ram.const.asm"
+        INCLUDE "engine/constants.asm"
+        INCLUDE "engine/macros.asm"
+        INCLUDE "engine/collision/macros.asm"
+        INCLUDE "engine/collision/struct_AABB.equ"
+        INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "engine/graphics/animation/constants-animation.equ"
+
+        INCLUDE "src/common/weapons/weapon/obj.asm"
+
+ ENDSECTION

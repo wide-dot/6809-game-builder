@@ -6,8 +6,11 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./objects/foefire/obj_emitter-flash.equ"
+; V2-DEVIATION: les en-tetes v1 sont retires — l'unite enveloppe les
+; porte (macros, collision, equates), et le son n'est pas porte.
+; Includes v1 retires :
+;   INCLUDE "./engine/macros.asm"
+;           INCLUDE "./objects/foefire/obj_emitter-flash.equ"
 
 Object
         lda   routine,u

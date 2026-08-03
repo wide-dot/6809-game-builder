@@ -6,11 +6,16 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
+; V2-DEVIATION: les entrees d'imageset passent de Img_<nom> a set_<nom>,
+; le nom que gfxcomp genere (meme ecart que pata-pata et le joueur).
+; V2-DEVIATION: les en-tetes v1 sont retires — l'unite enveloppe les
+; porte (macros, collision, equates), et le son n'est pas porte.
+; Includes v1 retires :
+;   INCLUDE "./engine/macros.asm"
+;           INCLUDE "./engine/collision/macros.asm"
+;           INCLUDE "./engine/collision/struct_AABB.equ"
+;           INCLUDE "./objects/soundFX/soundFX.const.asm"
+;           INCLUDE "./engine/sound/soundFX.macro.asm"
 
 AABB_0    equ ext_variables ; AABB struct (9 bytes)
 halfWidth equ ext_variables+9 ; half width of the beam
@@ -34,7 +39,8 @@ Beam_Routines
         fdb   AlreadyDeleted
 
 Init
-        _soundFX.play soundFX.FireBlastSound,2
+; V2-DEVIATION: son neutralise (moteur audio non porte)
+;        ;_soundFX.play soundFX.FireBlastSound,2
         ldb   #4
         stb   priority,u
         lda   render_flags,u
@@ -127,7 +133,7 @@ Live
         subd  glb_camera_x_pos         ; recaler la hitbox sur le point d'impact : cette
         stb   AABB_0+AABB.cx,u         ;   branche ne l'ecrivait pas (cx = 0 si le beam nait
                                        ;   dans le mur -> boite active au bord gauche)
-        ldd   #Img_beam_impact_0
+        ldd   #set_beam_impact_0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
@@ -155,7 +161,7 @@ Live
 
 Impact
         inc   routine,u
-        ldd   #Img_beam_impact_4
+        ldd   #set_beam_impact_4
         std   image_set,u
         jmp   DisplaySprite
 
@@ -176,21 +182,21 @@ Ani_Beams
         fdb   Ani_beam4
 
 Ani_beam0
-        fdb   Img_beam0_1
-        fdb   Img_beam0_0
+        fdb   set_beam0_1
+        fdb   set_beam0_0
 
 Ani_beam1
-        fdb   Img_beam1_1
-        fdb   Img_beam1_0
+        fdb   set_beam1_1
+        fdb   set_beam1_0
 
 Ani_beam2
-        fdb   Img_beam2_1
-        fdb   Img_beam2_0
+        fdb   set_beam2_1
+        fdb   set_beam2_0
 
 Ani_beam3
-        fdb   Img_beam3_1
-        fdb   Img_beam3_0
+        fdb   set_beam3_1
+        fdb   set_beam3_0
 
 Ani_beam4
-        fdb   Img_beam4_1
-        fdb   Img_beam4_0
+        fdb   set_beam4_1
+        fdb   set_beam4_0

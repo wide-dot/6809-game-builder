@@ -50,6 +50,13 @@ starfield.draw    EXTERNAL
 ; trois tables — objet, animation et images.
 Player            EXTERNAL
 
+; L'armement, quatre unites sur la page $13 : le tir de base, la charge, le
+; beam et l'eclair d'emission. Le joueur les cree par l'index d'objets.
+Weapon              EXTERNAL
+Beamcharge          EXTERNAL
+Beam                EXTERNAL
+emitterFlash.Object EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"

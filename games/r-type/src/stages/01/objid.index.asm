@@ -6,11 +6,11 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+beamcharge.page   ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
@@ -35,11 +35,11 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_explosion
         fdb   PaletteFade        ; ObjID_fade
         fdb   Player        ; ObjID_Player1
-        fdb   stage.placeholder        ; ObjID_Weapon
+        fdb   Weapon        ; ObjID_Weapon
         fdb   stage.placeholder        ; ObjID_commonmissile
-        fdb   stage.placeholder        ; ObjID_beamcharge
-        fdb   stage.placeholder        ; ObjID_beamp
-        fdb   stage.placeholder        ; ObjID_emitter_flash
+        fdb   Beamcharge        ; ObjID_beamcharge
+        fdb   Beam        ; ObjID_beamp
+        fdb   emitterFlash.Object        ; ObjID_emitter_flash
         fdb   terrainCollision.unit        ; ObjID_collision
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
@@ -67,11 +67,11 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+beamcharge.page   ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
@@ -130,11 +130,11 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+player.page   ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+weapon.page   ; ObjID_Weapon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+beamcharge.page   ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+beamp.page   ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+emflash.page   ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page   ; ObjID_collision
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug

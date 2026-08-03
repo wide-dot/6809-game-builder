@@ -7,9 +7,12 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./objects/player1/player1.equ"
+; V2-DEVIATION: les en-tetes v1 sont retires — l'unite enveloppe les
+; porte (macros, collision, equates), et le son n'est pas porte.
+; Includes v1 retires :
+;   INCLUDE "./engine/macros.asm"
+;           INCLUDE "./engine/collision/macros.asm"
+;           INCLUDE "./objects/player1/player1.equ"
 
 Beamcharge
         lda   routine,u
