@@ -354,6 +354,12 @@ stage.state.checkpoint
         lda   #mainloop.state.RUNNING
         sta   mainloop.state
         jsr   stage.checkpointLoad
+        ; Le clignotement / l'invincibilite de la reapparition. Il faut le
+        ; reposer APRES le chargement : ObjectDp_Clear vient d'effacer la page
+        ; directe, donc le subtype que le joueur s'etait pose en mourant. La v1
+        ; fait le meme geste au meme endroit.
+        lda   #1
+        sta   player1+subtype
         lbra  stage.loop
 
 ;*******************************************************************************
