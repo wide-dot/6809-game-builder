@@ -180,6 +180,7 @@ public final class Handlers {
 			.req("gensource", STRING, "generated source unit of INCLUDE lines")
 			.opt("genindex", STRING, "generated imageset index ; omit for images with no index")
 			.opt("file", STRING, "direntry name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
+			.opt("imageset", STRING, "name the measured geometry is handed over under, for an <imageset> element to index a set whose code is spread over pages")
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")
@@ -261,6 +262,7 @@ public final class Handlers {
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
 		PARTS.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
+		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as direntry content
 		// a loadable 32 byte file
@@ -280,6 +282,10 @@ public final class Handlers {
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map.static if omitted ; must end with .static")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("imageset").doc("index of an imageset whose drawing code is spread over pages, baked in a .static section")
+			.req("name", STRING, "imageset name, as declared by the <gfxcomp imageset> that compiled the images")
+			.req("gensource", STRING, "generated source file of the index")
+			.opt("section", STRING, "section of the index, code.static if omitted"));
 		spec(element("png2bin").doc("convert an indexed PNG to video memory data, one plane per declaration")
 			.req("filename", STRING, "input .png")
 			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")

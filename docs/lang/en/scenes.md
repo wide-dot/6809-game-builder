@@ -76,12 +76,56 @@ the game code sequences them in an order the builder cannot see. So :
   may carve the same page differently. Nothing is checked across scenes —
   that would amount to demanding a single memory map for the whole game.
 
+## The occupancy map
+
+Destinations are placed by hand, against budgets worked out once. What nothing
+said until now is what those budgets leave over — a region's `size` is a
+promise, not a measurement, and the difference between the two is exactly the
+room the next object can take.
+
+Every build writes `dist/ram-map-<target>.txt` : one map per scene, since a
+scene is the composition that gets optimised. Each map shows the **whole
+declared layout**, page by page, in address order.
+
+```
+scene scenes.boot
+------------------------------------------------------------------------------
+page $01
+  $6100-$82FF  region    common                   8704  common.engine    7687   88%
+  $8300-$8FFF  region    stage                    3328  stage1           1501   45%
+  $9000-$90AF  free                                176
+  $90B0-$97FF  reserved  objects.pool             1872
+  ...
+  declared up to $A000
+page $14
+  $0000-$0FFF  region    explosion                4096  common.explosion  505   12%
+  declared up to $1000
+```
+
+Three things it says, in the order you need them :
+
+- **the gaps** between declarations, with their size — that is where something
+  new can go without moving anything ;
+- **budget against content** for every region the scene loads, so an oversized
+  budget shows up as a low percentage rather than as nothing at all ;
+- **`declared up to`**, the highest address the layout claims on that page.
+  What lies beyond is not free, it is *undeclared* : a layout declares regions
+  and reserved ranges, never the bounds of a page, and those bounds differ with
+  the window a page is seen through. So the map states where the declarations
+  stop rather than inventing where the page does.
+
+A region a scene does **not** load reads `(not loaded by this scene)`, never
+"free". It holds what an earlier scene put there, and that is precisely what
+the builder does not know — see the rule above. Regions spread over several
+pages are counted **page by page** : a pageset member lands on one of them.
+
 ## Element reference
 
 | Element | Attributes |
 |---|---|
 | `<layout>` | `gensymbols` (optional) : generated file of `<region>.page` / `<region>.address` equates for the game code to include |
 | `<region>` | `name`, `page`, `address` (required) ; `size` : byte budget, checked ; `bulk` : the region takes an ordered list per scene, laid out one after the other — the list is the unit of replacement, members are not individually replaceable |
+| `<reserved>` | `name`, `page`, `address`, `size` (all required) : a range the game occupies without loading anything into it — object pool, globals, stack, direct page. Nothing may be loaded on top, and the check is on the *declarations*, so a region declared over the pool is an error even while its content stays small |
 | `<scene>` | `name` (required), `section`, `gensource` (defaults to `gen/scenes/<name>.asm`) |
 | `<load>` | `name` (required) ; either `region`, or `page`+`address` (raw escape hatch), or nothing (link data only — the file must be export-only) |
 

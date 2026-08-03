@@ -5,10 +5,12 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
+import com.widedot.m6809.gamebuilder.spi.globals.ImageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkReport;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import com.widedot.m6809.gamebuilder.spi.globals.Outputs;
 import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
+import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 import com.widedot.m6809.gamebuilder.spi.globals.StaticLink;
 
@@ -52,8 +54,14 @@ public class BuildContext {
 	/** datasets spread over the pages of a multi-page region, and their members */
 	public final PageSets pageSets;
 
+	/** imageset geometry a <gfxcomp> hands to the <imageset> that indexes it */
+	public final ImageSets imageSets;
+
 	/** what each direntry costs in link data, reported at the end of a target */
 	public final LinkReport linkReport;
+
+	/** what each scene puts in memory, mapped at the end of a target */
+	public final RamMap ramMap;
 
 	/** distributable files written by this target, discarded if it fails */
 	public final Outputs outputs;
@@ -69,12 +77,13 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new LinkReport(), new Outputs(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new ImageSets(), new LinkReport(), new RamMap(), new Outputs(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
 			FileIds fileIds, Regions regions, StaticLink staticLink, PageSets pageSets,
-			LinkReport linkReport, Outputs outputs, Defaults defaults, Defines defines) {
+			ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Outputs outputs,
+			Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
 		this.sources = sources;
@@ -83,7 +92,9 @@ public class BuildContext {
 		this.regions = regions;
 		this.staticLink = staticLink;
 		this.pageSets = pageSets;
+		this.imageSets = imageSets;
 		this.linkReport = linkReport;
+		this.ramMap = ramMap;
 		this.outputs = outputs;
 		this.defaults = defaults;
 		this.defines = defines;
@@ -98,7 +109,8 @@ public class BuildContext {
 	 */
 	public BuildContext child() {
 		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, staticLink,
-				pageSets, linkReport, outputs, new Defaults(defaults.values), new Defines(defines.values));
+				pageSets, imageSets, linkReport, ramMap, outputs, new Defaults(defaults.values),
+				new Defines(defines.values));
 	}
 
 	/** Merges back what a child container declared. */
@@ -116,7 +128,9 @@ public class BuildContext {
 		regions.clear();
 		staticLink.clear();
 		pageSets.clear();
+		imageSets.clear();
 		linkReport.clear();
+		ramMap.clear();
 		outputs.clear();
 		defaults.values.clear();
 		defines.values.clear();

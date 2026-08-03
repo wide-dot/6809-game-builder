@@ -12,13 +12,19 @@ import com.widedot.toolbox.graphics.gfxcomp.encoder.bdraw.AssemblyGenerator;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.shift.Shift;
 
-public class ImageSet {
-	
+public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.ImageSets.Index {
+
 	private AsmSourceCode asm;
-	private HashMap<String,HashMap<String,Image>> images; // a map of images grouped by type and name 
-	
+	private HashMap<String,HashMap<String,Image>> images; // a map of images grouped by type and name
+
 	/** name of the direntry the images end up in, or null outside a build */
 	private String file;
+
+	/**
+	 * Asked for the page of each image when the set is spread over several
+	 * direntries, null when one {@code <file>$PAGE} says it for the whole set.
+	 */
+	private com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageOf pages;
 
 	public ImageSet(Integer type) {
 		this(type, null);
@@ -28,6 +34,39 @@ public class ImageSet {
 		// type is unimplemented for now
 		this.file = file;
 		images = new HashMap<String,HashMap<String,Image>>();
+	}
+
+	/**
+	 * Writes the index of a set whose code lives elsewhere — one or several
+	 * other direntries, typically the members of a pageset.
+	 *
+	 * Two things change against the in-unit form. The page is asked per image
+	 * rather than referenced once through {@code <file>$PAGE} : two frames of
+	 * one animation legitimately sit on different pages, and the runtime reads
+	 * the page from the frame it is drawing. And the drawing routines are
+	 * declared EXTERNAL here, since this unit no longer contains them — in a
+	 * {@code .static} section the builder bakes them against the placement it
+	 * already knows, exactly as it does for a tilemap indexing a tileset.
+	 */
+	@Override
+	public void generate(String path, String section,
+			com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageOf pages) throws Exception {
+
+		this.pages = pages;
+		asm = new AsmSourceCode(Paths.get(path));
+		asm.addCommentLine("the drawing code lives in other files of this build : the builder"
+				+ " resolves each reference against where that file is loaded");
+		for (Entry<String, HashMap<String, Image>> imgEntry : images.entrySet()) {
+			for (Image img : imgEntry.getValue().values()) {
+				asm.add("adr_" + img.getFullName() + " EXTERNAL");
+				if (img.nb_cell != null) {
+					asm.add("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE
+							+ " EXTERNAL");
+				}
+			}
+		}
+		asm.flush();
+		body(section);
 	}
 	
 	public void addImage(Image img) throws Exception {
@@ -46,31 +85,40 @@ public class ImageSet {
 	}
 	
 	public void generate(String fileName) throws Exception {
-		
-		// index to image sub set is limited to an offset of +127
-		// this version go up to +102 so it's fine
-		
+
 		asm = new AsmSourceCode(Paths.get(fileName));
-		List<String> line = new ArrayList<String>();
 
 		// The page an image ends up in is only known once it is loaded, so the
 		// index references it through a relocation the load time linker fills
 		// in (externPg) : an 8 bit external named <direntry>$PAGE, resolved to
 		// the page holding that file. v1 had no such step — its builder placed
 		// the pages itself and patched the value in. Every image of an imageset
-		// is compiled into the same unit, hence the same file and one symbol.
+		// compiled into this unit is in the same file, hence one symbol.
 		if (file != null) {
 			asm.addCommentLine("page of the file holding this code, resolved at load time");
 			asm.add(file + "$PAGE EXTERNAL");
 		}
+		body(null);
+	}
+
+	private void body(String section) throws Exception {
+
+		// index to image sub set is limited to an offset of +127
+		// this version go up to +102 so it's fine
+
+		List<String> line = new ArrayList<String>();
 
 		// what the rest of the game links against : an index per image, and the
-		// drawing routines themselves for code that calls one directly
+		// drawing routines themselves for code that calls one directly. When
+		// the code is elsewhere they are imports, declared by generate() above.
 		asm.addCommentLine("imageset interface");
 		for (Entry<String, HashMap<String, Image>> imgEntry : images.entrySet()) {
 			asm.add("set_" + imgEntry.getKey() + " EXPORT");
 			if (((Image) imgEntry.getValue().values().toArray()[0]).index != null) {
 				asm.add("idx_" + imgEntry.getKey() + " EXPORT");
+			}
+			if (pages != null) {
+				continue;
 			}
 			for (Image img : imgEntry.getValue().values()) {
 				asm.add("adr_" + img.getFullName() + " EXPORT");
@@ -78,6 +126,9 @@ public class ImageSet {
 					asm.add("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE + " EXPORT");
 				}
 			}
+		}
+		if (section != null) {
+			asm.add(" SECTION " + section);
 		}
 		asm.flush();
 
@@ -393,9 +444,13 @@ public class ImageSet {
 		}
 
 		flush(line);
+		if (section != null) {
+			asm.add(" ENDSECTION");
+			asm.flush();
+		}
 		return;
 	}
-	
+
 	/**
 	 * One mapping frame : the page of the drawing code then its address, and
 	 * the same pair for the erase code plus its cell count.
@@ -404,28 +459,38 @@ public class ImageSet {
 	 * would keep its low byte only. v1 had the value in hand and split it into
 	 * two bytes itself.
 	 */
-	private void addImgSymbol(Image img, List<String> line) {
+	private void addImgSymbol(Image img, List<String> line) throws Exception {
 		if (img == null) {
 			return;
 		}
 		flush(line);                       // close the row of bytes in progress
-		asm.addFcb(new String[]{pageSymbol()});
+		asm.addFcb(new String[]{pageSymbol(img, "")});
 		asm.addFdb(new String[]{"adr_"+img.getFullName()});
 
 		if (img.nb_cell != null) {
-			asm.addFcb(new String[]{pageSymbol()});
+			asm.addFcb(new String[]{pageSymbol(img, AssemblyGenerator.ERASE_SUFFIXE)});
 			asm.addFdb(new String[]{"adr_"+img.getFullName()+AssemblyGenerator.ERASE_SUFFIXE});
 			asm.addFcb(new String[]{String.format("$%1$02X", img.nb_cell)}); // unsigned value
 		}
 		asm.flush();
 	}
-	
+
 	/**
 	 * The runtime feeds this byte straight to the cartridge window register, so
 	 * it carries the RAM over cartridge bits, exactly as v1 wrote page + $60.
-	 * The load time linker adds the resolved page to that constant operand.
+	 *
+	 * Two ways to get there. Inside the unit holding the code, the load time
+	 * linker adds the resolved page to a constant operand — one symbol for the
+	 * whole set. Spread over several files, the page is asked per image and
+	 * baked here : a literal costs nothing at load time, and it is the only
+	 * form that can say two frames of one animation sit on different pages.
+	 * The erase routine of an image is packed as its own part, so it is asked
+	 * for separately — nothing guarantees it landed with its drawing code.
 	 */
-	private String pageSymbol() {
+	private String pageSymbol(Image img, String suffix) throws Exception {
+		if (pages != null) {
+			return String.format("$%1$02X", (pages.of("adr_" + img.getFullName() + suffix) + 0x60) & 0xFF);
+		}
 		return file == null ? "$00" : file + "$PAGE+$60";
 	}
 

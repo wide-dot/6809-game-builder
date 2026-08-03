@@ -46,8 +46,10 @@ public class GfxcompPlugin {
 
 		String gendir = ctx.path + File.separator + Attribute.getString(node, ctx, "gendir");
 		if (Attribute.getStringOpt(node, ctx, "genindex") != null) {
-			throw new Exception("<gfxcomp genindex> cannot be packed into pages : an imageset"
-					+ " index reads one page from <file>$PAGE for the whole set");
+			throw new Exception("<gfxcomp genindex> cannot be packed into pages : the index has"
+					+ " to stay in one page, the one Img_Page_Index mounts to read it, while the"
+					+ " code is what gets spread. Name the set with imageset=\"...\" here and"
+					+ " index it with an <imageset> element in the direntry that holds it");
 		}
 
 		VideoMemory.memoryLinearBits = Attribute.getInteger(node, ctx, "linearbits", 4);
@@ -55,12 +57,17 @@ public class GfxcompPlugin {
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
 
+		// A spread set is indexed from elsewhere, so the geometry measured here
+		// is handed over rather than written out : see ImageSets.
+		String name = Attribute.getStringOpt(node, ctx, "imageset");
+		ImageSet imageset = name == null ? null : new ImageSet(0, null);
+
 		java.util.List<String[]> parts = new ArrayList<>();
 		for (ImmutableNode child : node.getChildren()) {
 			if (!"image".equals(child.getNodeName())) {
 				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
 			}
-			for (String file : compile(child, ctx, gendir, null)) {
+			for (String file : compile(child, ctx, gendir, imageset)) {
 				if (file.endsWith("_exports.asm")) {
 					continue; // the export block belongs with whichever part is emitted
 				}
@@ -71,6 +78,9 @@ public class GfxcompPlugin {
 		}
 		if (parts.isEmpty()) {
 			throw new Exception("no <image> to compile in <gfxcomp>");
+		}
+		if (imageset != null) {
+			ctx.imageSets.declare(name, imageset);
 		}
 		return parts;
 	}

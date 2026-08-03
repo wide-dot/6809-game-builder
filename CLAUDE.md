@@ -39,7 +39,10 @@ MO5, Tandy CoCo 3.
   les sources versionnées dans `toolbox/third-party/src/asm/`** — voir son
   [readme](toolbox/third-party/src/asm/readme.md). Pour pointer ailleurs :
   `-Dlwasm.path=/chemin` ou la variable d'environnement `LWASM`.
-  Sorties dans `dist/`. Le `<hfe/>` fonctionne sur macOS depuis 08/2026
+  Sorties dans `dist/`, avec deux rapports : `link-report-<cible>.csv` (ce que
+  chaque direntry coûte en données de lien) et `ram-map-<cible>.txt` (l'occupation
+  mémoire, une carte par scène — trous mesurés, budget face au contenu réel).
+  Le `<hfe/>` fonctionne sur macOS depuis 08/2026
   (`hxcfe` 2.16.15.2 universel embarqué, sources dans
   `toolbox/third-party/src/floppy/`).
 - Les scripts `bin/unix/` et `bin/windows/` ne sont **pas faits pour être lancés depuis
@@ -82,7 +85,7 @@ MO5, Tandy CoCo 3.
 | Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) | `engine/system/thomson/graphics/buffer/` | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
 | Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
-| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Doc : [`sprites.md`](docs/lang/en/sprites.md) |
+| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Un set trop gros pour une page se déclare en `<pageset>` et s'indexe par l'élément `<imageset>`, qui grave une page **par image** (03/08/2026, comme la v1). Doc : [`sprites.md`](docs/lang/en/sprites.md) |
 | Autres outils graphiques : `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | Substantiels mais sans consommateur runtime |
 | wddebug | `toolbox/debug/` | Très actif ; ses vues sprites/collisions/objets débuggent les structures v1 en attendant la v2 |
 

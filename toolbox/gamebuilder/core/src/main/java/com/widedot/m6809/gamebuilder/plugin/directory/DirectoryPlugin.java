@@ -175,6 +175,23 @@ public class DirectoryPlugin {
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}
+
+			// the same resolved loads, kept for the occupancy map : where each
+			// scene lands and how much of every budget it really uses
+			for (SceneCheck scene : pendingScenes) {
+				for (SceneCheck.Load load : scene.loads) {
+					if (load.kind == SceneCheck.Kind.EXPORT_ONLY) {
+						continue;
+					}
+					Integer size = sizes.get(load.name);
+					if (size == null) {
+						continue;
+					}
+					ctx.ramMap.record(scene.sceneName, new com.widedot.m6809.gamebuilder.spi.globals.RamMap.Load(
+							load.name, load.region, load.page, load.address, size,
+							load.kind == SceneCheck.Kind.BULK));
+				}
+			}
 		}
 
 		// compute directory size

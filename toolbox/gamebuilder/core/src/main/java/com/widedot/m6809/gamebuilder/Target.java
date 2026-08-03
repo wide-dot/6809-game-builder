@@ -114,6 +114,7 @@ public class Target {
 				throw e;
 			}
 			reportLinkData(targetName);
+			writeRamMap(targetName);
 			log.info("End of processing target {}", targetName);
 
     	}
@@ -132,13 +133,48 @@ public class Target {
 				removed++;
 				log.info("removed {} : it described an earlier build", stale);
 			}
+			java.nio.file.Path staleMap = ramMapPath(targetName);
+			if (java.nio.file.Files.deleteIfExists(staleMap)) {
+				removed++;
+				log.info("removed {} : it described an earlier build", staleMap);
+			}
 		} catch (Exception e) {
-			log.warn("could not remove the stale link report: {}", e.getMessage());
+			log.warn("could not remove the stale reports: {}", e.getMessage());
 		}
 		if (removed > 0) {
 			log.error("target {} failed : {} output file(s) removed, dist holds nothing"
 					+ " from this build", targetName, removed);
 		}
+	}
+
+	/**
+	 * Where each scene lands, and what its budgets leave over.
+	 *
+	 * Destinations are placed by hand ; this is the measurement they are placed
+	 * against. One map per scene — a composition is the unit that gets
+	 * optimised — with the whole declared layout in each, since a budget is
+	 * reserved whether or not that scene fills it.
+	 */
+	private void writeRamMap(String targetName) {
+		if (ctx.ramMap.isEmpty()) {
+			return;
+		}
+		java.nio.file.Path path = ramMapPath(targetName);
+		try {
+			java.nio.file.Files.createDirectories(path.getParent());
+			java.nio.file.Files.writeString(path,
+					com.widedot.m6809.gamebuilder.plugin.scene.RamMapReport.render(
+							targetName, ctx.ramMap, ctx.regions));
+			log.info("RAM occupancy map written to {}", path);
+		} catch (Exception e) {
+			log.warn("could not write the RAM occupancy map: {}", e.getMessage());
+		}
+	}
+
+	private java.nio.file.Path ramMapPath(String targetName) {
+		return java.nio.file.Paths.get(
+				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
+				"ram-map-" + targetName + ".txt");
 	}
 
 	private java.nio.file.Path linkReportPath(String targetName) {

@@ -96,6 +96,42 @@ public class ImageSetIndexTest {
 		assertEquals(flat.getCenterOffset(), shifted.getCenterOffset(), "center_offset");
 	}
 
+	/**
+	 * The other road : a set whose drawing code is spread over several files,
+	 * indexed from a third. The page is then baked per image — two frames of
+	 * one animation legitimately sit on different pages — and the routines are
+	 * imports, this unit no longer holding them.
+	 */
+	@Test
+	void aSpreadIndexBakesOnePagePerImage(@TempDir Path dir) throws Exception {
+		File png = sprite(dir, "hero");
+		Image image = new Image("hero", 3, png.getAbsolutePath(),
+		                        Image.TYPE_BDRAW, Mirror.NONE, 0, Image.POSITION_CENTER);
+		image.encode(dir.toString());
+
+		ImageSet set = new ImageSet(0, null);
+		set.addImage(image);
+		Path index = dir.resolve("spread.asm");
+		// the drawing code landed on page $15, its erase routine on $16
+		set.generate(index.toString(), "code.static",
+				symbol -> symbol.endsWith("_erase") ? 0x16 : 0x15);
+
+		String asm = Files.readString(index);
+		assertTrue(asm.contains("adr_hero_NB0 EXTERNAL"), asm);
+		assertTrue(asm.contains("adr_hero_NB0_erase EXTERNAL"), asm);
+		// page + the cartridge window bits, as a literal : $15+$60 and $16+$60
+		assertTrue(asm.contains("fcb   $75"), asm);
+		assertTrue(asm.contains("fcb   $76"), asm);
+		assertTrue(asm.contains("fdb   adr_hero_NB0"), asm);
+		// no relocation on a file, and the index carries its own section
+		assertTrue(asm.contains(" SECTION code.static"), asm);
+		assertTrue(asm.contains(" ENDSECTION"), asm);
+		assertTrue(!asm.contains("$PAGE"), asm);
+		// the set is still what the game links against
+		assertTrue(asm.contains("set_hero EXPORT"), asm);
+		assertTrue(!asm.contains("adr_hero_NB0 EXPORT"), asm);
+	}
+
 	@Test
 	void aWiderShiftIsRefused(@TempDir Path dir) throws Exception {
 		File png = sprite(dir, "hero");
