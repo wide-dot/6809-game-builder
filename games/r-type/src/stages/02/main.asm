@@ -18,6 +18,8 @@ Obj_Index_Address EXPORT
 Ani_Page_Index    EXPORT
 Ani_Asd_Index     EXPORT
 Img_Page_Index    EXPORT
+; L'etat de la boucle : le joueur (page $11) l'ecrit a travers le lien.
+mainloop.state    EXPORT
 
 ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
 ; residente des que le niveau est entier. Le scroll porte deja une page par
@@ -86,6 +88,12 @@ emitterFlash.Object EXTERNAL
 ;*******************************************************************************
 ; Ce qui distingue ce stage
 ;*******************************************************************************
+; Les points de reprise de CE stage, en tuiles de collision (24 px), la
+; sentinelle -1 en butoir — la table du game mode v1.
+checkpoint.positions
+        fcb   0
+        fcb   -1
+
 stage.setup
         ldd   #map.even
         std   scroll_map_even

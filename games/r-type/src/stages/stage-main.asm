@@ -170,7 +170,31 @@ stage.stateKept
 ; Seul le second touche l'écran.
 ; L'ordre est celui de la v1 : effacer avant de repeindre les tuiles, dessiner
 ; les sprites apres — sinon un sprite est recouvert par le decor de sa trame.
+; La boucle est un AIGUILLAGE A ETATS, comme la v1 (LevelMainLoop) : RUNNING
+; joue, DEAD deroule la mort (le joueur y bascule a la fin de son explosion),
+; CHECKPOINT recharge puis repart. La variable vit ici, dans le stage — le
+; joueur l'ecrit a travers le lien.
+;
+; Deux pieges, tous deux vecus (PC parti en VRAM, page directe ecrasee) :
+;   - les constantes d'etat sont DEJA des decalages en mots (0, 2, 4), comme en
+;     v1 : pas d'asla. Le doubler envoie DEAD sur l'entree CHECKPOINT et
+;     CHECKPOINT deux mots apres la table ;
+;   - la variable et la table sont APRES le jmp, jamais avant. Le code d'init
+;     tombe dans stage.loop par passage, et un octet de donnee sur ce chemin
+;     est execute — la v1 y echappait parce qu'elle SAUTE a LevelMainLoop.
+;
+; Cas de migration : docs/lang/en/migration/loop-fallthrough.md
 stage.loop
+        lda   mainloop.state
+        ldx   #stage.states
+        jmp   [a,x]
+stage.states
+        fdb   stage.state.running
+        fdb   stage.state.dead
+        fdb   stage.state.checkpoint
+mainloop.state fcb 0
+
+stage.state.running
         ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) : joypad.read
         ; alimente held/pressed (le tir). addDirection, LUI, est dans l'IRQ —
         ; voir stage.userIRQ.
@@ -265,6 +289,134 @@ stage.placeholder
         rts
 
 ;*******************************************************************************
+; La mort — la routine dead de la v1, sans les morceaux non portes
+;
+; L'ecran se fige (ni Scroll ni DrawTiles : le decor s'arrete), seuls le fondu,
+; le joueur (son explosion) et le REDESSIN des objets geles tournent — la v1
+; appelle RunFrozenObjects, qui repeint sans derouler la logique. Puis 83
+; trames de pause et l'etat passe a CHECKPOINT.
+; V2-DEVIATION vs v1 : pas de hud dynamique (non porte) ; le masque, lui, est
+; notre overlay paged.call.
+;*******************************************************************************
+stage.state.dead
+        _Obj_RunU ObjID_fade,#palettefade
+        _Obj_RunU ObjID_Player1,#player1
+        jsr   RunFrozenObjects
+        jsr   CheckSpritesRefresh
+        _gfxlock.on
+        jsr   EraseSprites
+        jsr   UnsetDisplayPriority
+        jsr   DrawSprites
+        ldd   #$A000
+        std   <glb_screen_location_1
+        ldu   #$C000
+        lda   #map.RAM_OVER_CART+overlay.page
+        ldx   #adr_playfield_mask_ND0
+        jsr   paged.call
+        _gfxlock.off
+        _gfxlock.loop
+        _waitFrames #83
+        lda   #mainloop.state.CHECKPOINT
+        sta   mainloop.state
+        lbra  stage.loop
+
+;*******************************************************************************
+; Le rechargement — la routine checkpoint de la v1, reduite a ce qui est porte
+;
+; V2-DEVIATION vs v1 : pas de messages READY / GAME OVER (l'objet messages
+; n'est pas porte, la transition reste noire) ; pas de re-seed forcepod /
+; bitdevice / shellEraseTable / endstage (non portes) ; et le GAME OVER ne
+; renvoie pas a l'ecran-titre (pas porte non plus) — il ressert trois vies et
+; recharge le checkpoint, marquage en attendant le titre.
+;*******************************************************************************
+stage.state.checkpoint
+        jsr   stage.paletteFadeOut
+@loop   ; attendre la fin du fondu au noir
+        _Obj_RunU ObjID_fade,#palettefade
+        _gfxlock.on
+        _gfxlock.off
+        _gfxlock.loop
+        ldu   #palettefade
+        lda   routine,u
+        cmpa  #o_fade_routine_idle
+        bne   @loop
+
+        _waitFrames #40
+
+        dec   game.lives
+        bpl   >
+        ; GAME OVER — V2-DEVIATION : trois vies et on repart, faute de titre
+        lda   #3
+        sta   game.lives
+!
+        ldd   #bench.SCROLL_VEL
+        std   scroll_vel
+        lda   #mainloop.state.RUNNING
+        sta   mainloop.state
+        jsr   stage.checkpointLoad
+        lbra  stage.loop
+
+;*******************************************************************************
+; Le chargement de checkpoint — porte de checkpoint.load (v1 global/checkpoint)
+;
+; Trouve le dernier point de reprise <= la position atteinte, nettoie tout ce
+; qui vit (objets, sprites, listes de collision, les deux tampons), rejoue le
+; pre-scroll a cette position, ressort le joueur, arme le fondu d'entree et
+; RECALE LA VAGUE : l'horloge de niveau redevient position x 128 — 128 trames
+; par tuile de 24 px, l'inverse exact de la vitesse de scroll (24 / 0,1875).
+;*******************************************************************************
+stage.checkpointLoad
+        clrb
+        ldx   #checkpoint.positions
+@loop   lda   b,x
+        cmpa  scroll_tile_pos
+        bhi   >
+        incb
+        bra   @loop
+!       decb
+        lda   b,x
+        sta   stage.ckpt.pos
+        sta   stage.ckpt.pos2
+
+        jsr   ObjectDp_Clear
+        jsr   ManagedObjects_ClearAll
+        jsr   InitStack
+        jsr   DisplaySprite_ClearAll
+        jsr   EraseSprites_ClearAll
+        jsr   Collision_ClearLists
+
+        ; les deux tampons au noir, comme a l'ouverture du stage
+        _ram.data.set #2
+        ldx   #$0000
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+        _ram.data.set #3
+        ldx   #$0000
+        jsr   ClearInterlacedEvenDataMemory
+        ldx   #$0000
+        jsr   ClearInterlacedOddDataMemory
+
+        lda   #0
+stage.ckpt.pos equ *-1
+        jsr   stage.preScroll
+
+        lda   #ObjID_Player1
+        sta   player1+id
+
+        jsr   stage.paletteFadeIn
+
+        ; la vague sur l'horloge de la position retrouvee
+        lda   #128
+        ldb   #0
+stage.ckpt.pos2 equ *-1
+        mul
+        std   gfxlock.frame.count
+        std   gfxlock.frame.lastCount
+        std   gfxlock.frame.gameCount
+        jmp   ObjectWave_Init
+
+;*******************************************************************************
 ; L'ouverture en fondu — la forme de la v1 (Palette_FadeIn du game mode 01)
 ;
 ; L'objet ne recoit pas la palette de depart : il lit Pal_current, donc c'est
@@ -289,6 +441,12 @@ stage.paletteFadeCommon
 
 stage.paletteFadeDone
         rts
+
+stage.paletteFadeOut
+        ldu   #palettefade
+        ldx   #Pal_black
+        lda   #1
+        bra   stage.paletteFadeCommon
 
 ;*******************************************************************************
 ; Le PRE-SCROLL d'ouverture — porte de checkpoint.scroll (v1, global/checkpoint)

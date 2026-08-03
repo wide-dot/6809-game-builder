@@ -18,6 +18,10 @@
 
 Player            EXPORT
 
+; L'etat de la boucle vit dans le stage : le joueur y ecrit DEAD a la fin de
+; son explosion, la boucle bascule sur sa routine de mort.
+mainloop.state    EXTERNAL
+
 ; Ce que le joueur emprunte au moteur resident : la liste unique du contrat.
         INCLUDE "src/common/engine/api.asm"
 

@@ -38,3 +38,11 @@ palettefade                  equ Dynamic_Object_RAM_End
 * chaque trame et ses champs sont lus sans arret, donc la v1 lui donnait
 * l'espace utilisateur de la page directe (149 o pour un OST de 117).
 player1                      equ dp
+
+* L'etat de la boucle de stage : RUNNING tourne le jeu, DEAD deroule la mort
+* (le joueur y bascule a la fin de son explosion), CHECKPOINT recharge. Des
+* CONSTANTES partagees a l'assemblage ; la variable, elle, vit dans le stage
+* et traverse le lien (le joueur l'ecrit en EXTERNAL).
+mainloop.state.RUNNING       equ   0
+mainloop.state.DEAD          equ   2
+mainloop.state.CHECKPOINT    equ   4

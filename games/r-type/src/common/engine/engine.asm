@@ -72,6 +72,18 @@ AABB_list_ennemy_unkillable  fdb   0,0
 AABB_list_player             fdb   0,0
 AABB_list_bonus              fdb   0,0
 
+; Leur remise a zero en bloc, au rechargement d'un checkpoint. Porte du game
+; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
+; nettoyage aussi.
+Collision_ClearLists
+        ldd   #0
+        ldy   #AABB_list_friend
+        ldx   #5*2                     ; cinq listes de deux mots
+!       std   ,y++
+        leax  -1,x
+        bne   <
+        rts
+
 ;*******************************************************************************
 ; L'échange de stage
 ;

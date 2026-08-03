@@ -102,6 +102,8 @@ _api    macro
         _api InitStack
         _api ManagedObjects_ClearAll
         _api RunObjects
+        ; Le gel de la mort : redessine les objets sans derouler leur logique.
+        _api RunFrozenObjects
         _api LoadObject_x
         _api LoadObject_u
         _api UnloadObject_u
@@ -168,6 +170,8 @@ _api    macro
         _api UnsetDisplayPriority
         _api BgBufferAlloc
         _api InitDrawSprites
+        _api DisplaySprite_ClearAll
+        _api EraseSprites_ClearAll
         _api AnimateSprite
         _api AnimateSpriteSync
 
@@ -189,6 +193,7 @@ _api    macro
         _api Collision_Do
         _api Collision_AddAABB
         _api Collision_RemoveAABB
+        _api Collision_ClearLists
         ; _Collision_RemoveAABB est une macro : elle ecrit dans les operandes
         ; auto-modifiees du moteur depuis la page de l'objet, donc ces trois
         ; adresses traversent la frontiere — meme mecanique que gfxlock.
