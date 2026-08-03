@@ -160,6 +160,12 @@ terrainCollision.init.do
         INCLUDE "engine/collision/collision.asm"
         INCLUDE "engine/graphics/codec/zx0_mega.asm"
         INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
+        ; L'historique des 16 dernieres directions, que le force pod du joueur
+        ; relit pour le suivre avec du retard. Fichier v1 SANS section : il va
+        ; DANS celle de l'hote, contrairement au joypad v2 juste apres, qui
+        ; porte la sienne.
+        ; Cas de migration : docs/lang/en/migration/v1-file-sections.md
+        INCLUDE "engine/system/to8/controller/joypad.buffer.asm"
 
  ENDSECTION
 

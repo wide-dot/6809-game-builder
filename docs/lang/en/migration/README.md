@@ -59,19 +59,20 @@ practice; this is a reading order, not a schedule.
 6. [`setdp` is refused by the obj target](setdp-obj-target.md)
 7. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
 8. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
+9. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)
 
 **Getting a picture** — in the order that a wrong one is worth investigating.
 
-9. [The video mode is not set for you](video-mode.md) — check this before
+10. [The video mode is not set for you](video-mode.md) — check this before
     judging anything on screen.
-10. [Screen coordinates are offset](screen-coordinates.md)
-11. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
+11. [Screen coordinates are offset](screen-coordinates.md)
+12. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
     the one whose absence a screenshot will not reveal.
-12. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
+13. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
     the v1 habit of declaring it an object just to get it placed.
-13. [Generated draw code carries no absolute address](generated-code-addresses.md)
-14. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
-15. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+14. [Generated draw code carries no absolute address](generated-code-addresses.md)
+15. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
+16. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
 
 ## Not cases, but next door
 

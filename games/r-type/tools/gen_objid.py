@@ -25,7 +25,11 @@ names = []
 # lit sa page et son adresse dans l'index, comme n'importe quel objet.
 # ObjID_fade est resident (le fondu d'ouverture de chaque stage) : sa page est
 # celle du moteur, pas celle du stage.
-names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade']
+# Le joueur cite l'armement, qui n'est pas porte : ces identifiants sont
+# numerotes avec les autres et pointent le bouchon du stage.
+names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
+         'ObjID_Weapon', 'ObjID_commonmissile', 'ObjID_beamcharge',
+         'ObjID_beamp', 'ObjID_emitter_flash']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -65,6 +69,7 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # correctement, mais quelque chose corrompt $9C00 ensuite — voir le readme.
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_fade':      ('common', 'PaletteFade'),
+          'ObjID_Player1':   ('player', 'Player'),
           'ObjID_patapata': ('enemies', 'patapata.Object')}
 
 out.append('Obj_Index_Page')
@@ -87,8 +92,10 @@ out.append('* Les scripts d\'animation. Les vrais vivent dans un objet commun qu
 out.append('* n\'est pas encore chargeable (8 Ko de donnees de lien) : en attendant,')
 out.append('* la table est locale et vide — aucun objet ne s\'anime encore.')
 out.append('Ani_Page_Index')
-for _ in range(len(names) + 1):
-    out.append('        fcb   map.RAM_OVER_CART+stage.page')
+out.append('        fcb   map.RAM_OVER_CART+stage.page')
+for name in names:
+    page = PORTED[name][0] if name in PORTED else 'stage'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
 out.append('')
 out.append('Ani_Asd_Index')
 for _ in range(len(names) + 1):

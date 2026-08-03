@@ -112,6 +112,23 @@ _api    macro
         ; paged.call, sans registre de commande ni table de routage — voir le
         ; champ d'etoiles. Obj_Run reste : le fondu, lui, a bien un OST.
         _api Obj_Run
+        ; Ce que le JOUEUR appelle en plus. ObjectMove n'y est PAS : il est
+        ; inclus dans l'unite du joueur, comme en v1, donc resolu localement.
+        _api gfxlock.screenBorder.update
+
+        ; --- manette : les trois paires d'octets du module resident ---
+        ; Les MASQUES, eux, sont des constantes partagees a l'assemblage par
+        ; joypad.const.asm — ils ne franchissent pas le lien.
+        _api joypad.init
+        _api joypad.read
+        _api joypad.state.dpad
+        _api joypad.state.fire
+        _api joypad.held.dpad
+        _api joypad.held.fire
+        _api joypad.pressed.dpad
+        _api joypad.pressed.fire
+        _api joypad.buffer.addDirection
+        _api joypad.buffer.getDirection
         ; Le fondu de palette, resident : le stage le designe dans son index
         ; d'objets, donc son adresse doit traverser le lien.
         _api PaletteFade

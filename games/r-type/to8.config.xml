@@ -37,6 +37,10 @@
             <!-- dans la meme phase, donc ils partagent une page : une seule    -->
             <!-- montee par trame via paged.call.                               -->
             <region name="overlay"    page="$10" address="$0000" size="$4000"/>
+            <!-- Le joueur : code, scripts d'animation et images dans une seule -->
+            <!-- page. Obj_Run monte celle-ci pour l'objet, AnimateSpriteSync    -->
+            <!-- la remonte pour les scripts, l'index d'imageset pour les images.-->
+            <region name="player"     page="$11" address="$0000" size="$4000"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -150,6 +154,60 @@
                                  file="common.overlay">
                             <image name="playfield_mask" filename="src/common/hud/mask/images/mask.png" index="0" >
                                 <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <!-- Le joueur. Ses images d'abord dans le meme direntry : -->
+                <!-- l'index d'imageset resout leur page par <file>$PAGE.   -->
+                <!-- ******************************************************** -->
+                <direntry name="common.player" loadtimelink="LINK">
+                    <lwasm gensource="gen/player/player.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/player/player.asm"/>
+                        <gfxcomp gendir="gen/player"
+                                 gensource="gen/player/includes.asm"
+                                 genindex="gen/player/index.asm"
+                                 file="common.player">
+                            <image name="rship_0" filename="src/common/player/images/rship_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="rship_1" filename="src/common/player/images/rship_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="rship_2" filename="src/common/player/images/rship_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="rship_3" filename="src/common/player/images/rship_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="rship_4" filename="src/common/player/images/rship_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_0" filename="src/common/player/images/player1explosion_0.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_1" filename="src/common/player/images/player1explosion_1.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_2" filename="src/common/player/images/player1explosion_2.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_3" filename="src/common/player/images/player1explosion_3.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_4" filename="src/common/player/images/player1explosion_4.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_5" filename="src/common/player/images/player1explosion_5.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_6" filename="src/common/player/images/player1explosion_6.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="player1explosion_7" filename="src/common/player/images/player1explosion_7.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -283,6 +341,7 @@
                     <load name="common.anim"       region="anim"/>
                     <load name="common.enemies"    region="enemies"/>
                     <load name="common.overlay"    region="overlay"/>
+                    <load name="common.player"     region="player"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>

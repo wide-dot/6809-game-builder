@@ -33,3 +33,8 @@ Dynamic_Object_RAM_End       equ $9800
 * l'allocateur — la v1 les declarait de meme dans le ram_data de son game mode.
 * Ils vivent juste au-dessus du pool, sous les temoins du banc en $9C00.
 palettefade                  equ Dynamic_Object_RAM_End
+
+* L'OST DU JOUEUR vit en PAGE DIRECTE, pas dans le pool : le joueur tourne a
+* chaque trame et ses champs sont lus sans arret, donc la v1 lui donnait
+* l'espace utilisateur de la page directe (149 o pour un OST de 117).
+player1                      equ dp

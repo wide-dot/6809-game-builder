@@ -127,6 +127,25 @@ stage.stateKept
         ; les structures de priorite du dessin de sprites, une par tampon
         jsr   InitDrawSprites
 
+        ; L'OST DU JOUEUR, en page directe. Il faut le nettoyer AVANT de lancer
+        ; l'objet : son premier champ lu est `routine`, qui indexe une table de
+        ; sauts de cinq entrees — laisse-le sale et le tout premier appel saute
+        ; n'importe ou (vecu : PC en $9F2B, soit dans l'OST lui-meme). La v1 fait
+        ; les deux memes gestes dans checkpoint.load.
+        jsr   ObjectDp_Clear
+        lda   #ObjID_Player1
+        sta   player1+id
+
+        ; PAS DE COLLISION TERRAIN pour l'instant : l'unite de collision du
+        ; stage n'est pas portee, et terrainCollision.init.do n'a donc jamais
+        ; pose ses operandes de page — les laisser a zero fait sauter
+        ; terrainCollision.do en $0000 de la fenetre cartouche, page 0 NUE :
+        ; c'est le cold-start de la ROM basic512 (vecu). Le drapeau disabled
+        ; court-circuite la routine (B=0, aucune collision) sans monter de
+        ; page. A retirer avec le portage de l'unite terrain du stage.
+        lda   #1
+        sta   terrainCollision.disabled
+
         ; Le fondu d'ouverture : on part du noir pose plus haut et on monte
         ; vers la palette du stage. L'objet est arme ici et tourne dans la
         ; boucle ; il se met en veille tout seul une fois arrive.
@@ -154,11 +173,20 @@ stage.stateKept
 ; L'ordre est celui de la v1 : effacer avant de repeindre les tuiles, dessiner
 ; les sprites apres — sinon un sprite est recouvert par le decor de sa trame.
 stage.loop
+        ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) : joypad.read
+        ; alimente held/pressed (le tir), addDirection pousse la direction brute
+        ; dans l'historique que le joueur consomme (ApplyJoypadInput) et que le
+        ; force pod relira avec du retard.
+        jsr   joypad.read
+        jsr   joypad.buffer.addDirection
         jsr   Scroll
         jsr   ObjectWave
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
         ; son OST a lui, donc RunObjects ne le voit pas.
         _Obj_RunU ObjID_fade,#palettefade
+        ; Le joueur, avant les objets du pool comme en v1 : son OST est en page
+        ; directe, donc lui aussi echappe a RunObjects.
+        _Obj_RunU ObjID_Player1,#player1
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         _gfxlock.on

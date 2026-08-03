@@ -10,14 +10,24 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
-        INCLUDE "./engine/objects/sound/ymm/ymm.macro.asm"
-        INCLUDE "./objects/foefire/obj_emitter-flash.equ"
+; V2-DEVIATION: les en-tetes communs (macros.asm, collision/macros.asm,
+; struct_AABB.equ) sont portes par l'unite hote, comme pour tout fichier v1
+; replie dans une unite v2 — les re-inclure donne « Duplicate macro definition ».
+; Cas de migration : docs/lang/en/migration/v1-file-sections.md
+        INCLUDE "src/common/player/player1.equ"
+; V2-DEVIATION: le SON n'est pas porte. _soundFX.play et _ymm.stop lisent et
+; ecrivent les variables du moteur audio (soundFX.newSound / .curSound), qui
+; n'existe pas encore en v2 ; leurs deux sites d'appel sont neutralises plus
+; bas, marques un a un. A retablir avec le portage de soundFX.
+; V2-DEVIATION: obj_emitter-flash.equ appartient a la chaine de tir, elle non
+; plus pas portee — les identifiants d'armement pointent le bouchon.
+; V2-DEVIATION: la lecture de la MANETTE passe a l'API v2. Le module joypad de
+; la v2 est un KEPT-V2 (il porte la Megadrive 6 boutons, que la v1 ignore) et il
+; est deja dans le resident : c'est donc lui qui impose son vocabulaire aux
+; objets importes. Renommage PUR — meme logique, memes bits, memes cycles :
+;   Fire_Press/Fire_Held      -> joypad.pressed.fire / joypad.held.fire
+;   c1_button_A/up/down/...   -> joypad.0.A / .UP / .DOWN / .LEFT / .RIGHT
+; 10 sites. Cas de migration : docs/lang/en/migration/kept-v2-api.md
         
 ply_width        equ 12/2
 ply_height       equ 16/2
@@ -105,8 +115,8 @@ Live
         jsr   ApplyJoypadInput
 @testFire
         ; press fire
-        lda   Fire_Press
-        anda  #c1_button_A_mask
+        lda   joypad.pressed.fire
+        anda  #joypad.0.A
         beq   @testHoldFire
         jsr   LoadObject_x
         beq   @testHoldFire            ; branch if no more available object slot
@@ -146,8 +156,8 @@ Live
         inc   missilePairCount
 @testHoldFire       
         ; holding fire ?
-        lda   Fire_Held
-        anda  #c1_button_A_mask
+        lda   joypad.held.fire
+        anda  #joypad.0.A
         beq   @wasbuttonhdeld           ; branch if button not held, so released ?
         ldb   player1+is_charging
         bne   @incharging
@@ -312,8 +322,9 @@ destroy
  ELSE
         ldd   #0
         std   player1+beam_value
-        _ymm.stop
-        _soundFX.play soundFX.PlayerHitSound,$85
+; V2-DEVIATION: son neutralise (moteur audio non porte) — a retablir tel quel
+;        _ymm.stop
+;        _soundFX.play soundFX.PlayerHitSound,$85
         ldd   #Ani_Player1_explode
         std   anim,u
         lda   #Dead_routine
@@ -446,7 +457,7 @@ ApplyJoypadInput
                                          ; chosen from y_vel in the common tail
                                          ; (SetVerticalAnim), shared with the autopilot
 !
-        anda  #c1_dpad                   ; mask only direction bits for joypad 1
+        anda  #joypad.0.DPAD                   ; mask only direction bits for joypad 1
         bne   >
         ldx   #speed.null
         bra   @setSpeed
@@ -467,29 +478,29 @@ ApplyJoypadInput
         ; 2. Check horizontal (R or L): adds offset +6 or +3
         ; 3. Subtract 1 to convert to 0-based index
         tfr   a,b                                    ; copy input to B
-        andb  #c1_button_up_mask|c1_button_down_mask ; keep only U+D in B
+        andb  #joypad.0.UP|joypad.0.DOWN ; keep only U+D in B
         ; Convert vertical bits to base index:
         ; %01 (Up) -> 1
         ; %10 (Down) -> 2
         ; %00 (None) -> 0 (will be adjusted by horizontal)
-        cmpb  #c1_button_up_mask                     ; test for UP
+        cmpb  #joypad.0.UP                     ; test for UP
         bne   @notUp
         ldb   #1                                     ; UP = index 1
         bra   @testHoriz
 @notUp
-        cmpb  #c1_button_down_mask                   ; test for DOWN
+        cmpb  #joypad.0.DOWN                   ; test for DOWN
         bne   @testHoriz
         ldb   #2                                     ; DOWN = index 2
 @testHoriz
         ; Add horizontal offset:
         ; RIGHT (+6): indices 6,7,8 for Right, Up+Right, Down+Right
         ; LEFT (+3): indices 3,4,5 for Left, Up+Left, Down+Left
-        bita  #c1_button_right_mask                  ; test RIGHT
+        bita  #joypad.0.RIGHT                  ; test RIGHT
         beq   @notRight
         addb  #6                                     ; RIGHT base offset
         bra   @computeOffset
 @notRight
-        bita  #c1_button_left_mask                   ; test LEFT
+        bita  #joypad.0.LEFT                   ; test LEFT
         beq   @computeOffset
         addb  #3                                     ; LEFT base offset
 @computeOffset
@@ -613,4 +624,4 @@ speed.preset
         fdb $010e,$fe20         ; Up+Right
         fdb $010e,$01e0         ; Down+Right
 
-        INCLUDE "./engine/object-management/ObjectMove.asm"
+        INCLUDE "engine/object-management/ObjectMove.asm"

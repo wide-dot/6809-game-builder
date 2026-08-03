@@ -44,6 +44,10 @@ starfield.init    EXTERNAL
 starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
+; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les
+; trois tables — objet, animation et images.
+Player            EXTERNAL
+
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"

@@ -64,3 +64,5 @@ engine/objects/palette/fade/fade.asm,engine/objects/palette/fade/fade.asm,c1ebbd
 engine/objects/palette/fade/fade.equ,engine/objects/palette/fade/fade.equ,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-08-02,
 games/r-type/src/common/fx/starfield/obj.asm,objects/levels/01/starfield/obj.asm,(jeu, hors engine/) ,2026-08-02,INCLUDE macros.asm retire + point d entree Object/sf_rtn remplace par 3 exports
 games/r-type/src/common/fx/starfield/stardata.asm,objects/levels/01/starfield/stardata.asm,(jeu, hors engine/) ,2026-08-02,
+engine/object-management/ObjectMove.asm,engine/object-management/ObjectMove.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-02,
+engine/system/to8/controller/joypad.buffer.asm,engine/joypad/joypad.buffer.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-03,range sous system/to8/controller ou vit le joypad v2
