@@ -56,6 +56,7 @@ public class GfxcompPlugin {
 		VideoMemory.memoryPlanarBits = Attribute.getInteger(node, ctx, "planarbits", 8);
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
+		VideoMemory.memoryPlaneDistance = Attribute.getInteger(node, ctx, "planedistance", 8192);
 
 		// A spread set is indexed from elsewhere, so the geometry measured here
 		// is handed over rather than written out : see ImageSets.
@@ -96,6 +97,7 @@ public class GfxcompPlugin {
 		VideoMemory.memoryPlanarBits = Attribute.getInteger(node, ctx, "planarbits", 8);
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
+		VideoMemory.memoryPlaneDistance = Attribute.getInteger(node, ctx, "planedistance", 8192);
 
 		if (genindex != null && file == null) {
 			throw new Exception("<gfxcomp genindex> also needs file, the direntry name the images "
@@ -250,8 +252,9 @@ public class GfxcompPlugin {
 			String mirror   = Attribute.getString(child, ctx, "mirror", Mirror.NONE);
 			Integer shift   = Attribute.getInteger(child, ctx, "shift", 0);
 			String position = Attribute.getString(child, ctx, "position", Image.POSITION_CENTER);
+			String planes   = Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER);
 
-			Image image = new Image(name, index, filename, encoder, mirror, shift, position);
+			Image image = new Image(name, index, filename, encoder, mirror, shift, position, planes);
 			image.encode(gendir);
 			if (imageset != null) {
 				imageset.addImage(image);

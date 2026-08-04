@@ -184,7 +184,8 @@ public final class Handlers {
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")
-			.opt("nbplanes", INT, "video memory planes"));
+			.opt("nbplanes", INT, "video memory planes")
+			.opt("planedistance", INT, "bytes between the two halves of the video window, 8192 if omitted ; only planes=offset needs it"));
 		spec(element("image").doc("one PNG of a gfxcomp unit")
 			.req("name", STRING, "image name, prefix of the generated symbols")
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
@@ -195,7 +196,8 @@ public final class Handlers {
 			.opt("name", STRING, "draw, bdraw, rle or zx0")
 			.opt("mirror", STRING, "none, x, y or xy")
 			.opt("shift", INT, "pre shift in pixels")
-			.opt("position", STRING, "center, top-left or 3qtr-center"));
+			.opt("position", STRING, "center, top-left or 3qtr-center")
+			.opt("planes", STRING, "how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed) or offset (at planedistance from U, U given back — for a caller drawing a row of sprites). draw encoder only"));
 
 		// asset converters
 		spec(element("vgm2ymm").doc("convert a VGM file to the YM2413 ymm stream")

@@ -114,8 +114,30 @@ public class Image {
 	private boolean plane1_empty;	
 	
 	public Integer index;
-	
+
+	/**
+	 * How the drawing code reaches the second video plane, and what it leaves
+	 * in U.
+	 *
+	 * POINTER is the historical form and stays the default : the second plane
+	 * comes from glb_screen_location_1, and U is consumed walking the first.
+	 * That suits a sprite drawn once at a computed position.
+	 *
+	 * OFFSET reaches the second plane at a constant distance from U and gives
+	 * U back untouched, so a caller can draw a ROW of sprites — advance U,
+	 * call, advance U again. It is what the v1 HUD needed and hand-wrote : its
+	 * twelve digits could not afford to reload the plane pointer twelve times.
+	 */
+	public static final String PLANES_POINTER = "pointer";
+	public static final String PLANES_OFFSET  = "offset";
+
+	public String planes;
+
 	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) throws Exception {
+		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, PLANES_POINTER);
+	}
+
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
 			File file = new File(imageFile);
 			if (!file.isFile()) {
 				throw new Exception("image file " + imageFile + " does not exist");
@@ -126,6 +148,18 @@ public class Image {
 			mirror = Mirror.getId(encoderMirror);
 			shift = encoderShift;
 			position = positionId.get(encoderPosition);
+			planes = encoderPlanes;
+			if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
+				throw new Exception("image " + imageName + " : planes must be "
+						+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
+			}
+			if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT) {
+				// bdraw saves and restores a background through its own cells,
+				// rle and zx0 stream : none of them addresses the two planes
+				// the way this option describes
+				throw new Exception("image " + imageName + " : planes=" + PLANES_OFFSET
+						+ " only applies to the draw encoder, not to " + encoderType);
+			}
 			
 			variant = variantKey(type, mirror, shift);
 			width = image.getWidth();

@@ -11,6 +11,21 @@
 ; V2-DEVIATION: l'en-tete commun est porte par l'unite hote (hud.unit.asm),
 ; comme pour tout fichier v1 enveloppe.
 ;       INCLUDE "./objects/player1/player1.equ"
+;
+; V2-DEVIATION: les douze routines DRAW_Img_hud_* ont ete RETIREES de ce
+; fichier (306 lignes). C'etait du code GENERE une fois puis colle — le
+; .properties v1 le dit en toutes lettres (« used to generate code, should be
+; commented because replaced by the code above »), ses lignes sprite etant
+; commentees faute d'un encodeur au bon contrat d'appel.
+;
+; La v2 en a un : <encoder planes="offset"> rend U intact et atteint le second
+; plan a distance fixe — ce dont ces routines ont besoin, l'appelant enchainant
+; `jsr` puis `leau 1,u`. Les PNG redeviennent la source, et l'unite hote fait le
+; pont de noms (DRAW_Img_hud_0 equ adr_hud_0_ND0).
+;
+; Mesure avant retrait, sur les douze sprites : HUIT identiques a l'octet a ce
+; qui etait colle, QUATRE ne differant que par l'ordre de groupes d'ecriture
+; disjoints (la recherche d'ordre de l'encodeur). Aucun ne diverge.
 
 _beam_seg_extA MACRO                   ; outer lines of 8px
 	std   $2001,u
@@ -282,35 +297,6 @@ DisplayLife
 ; -----
 ; register U : screen location in ram A ($C000-$DFFF)
 ; ----------------------------------------------------
-DRAW_Img_hud_life
-	LDA #$08
-	STA 120,U
-	STA 80,U
-	LDA #$04
-	STA 40,U
-	STA ,U
-	LDA #$05
-	STA -40,U
-	STA -80,U
-	LDA #$00
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$18
-	STA 80,U
-	LDA #$14
-	STA 40,U
-	STA ,U
-	LDA #$08
-	STA 120,U
-	LDA #$d5
-	STA -40,U
-	STA -80,U
-	LDA #$50
-	STA -120,U
-        LEAU $2000,U
-	rts
-
 ; ----------------------------------------------------
 ; Display a n digit number on screen (mode 160x200x16)
 ;
@@ -400,283 +386,6 @@ Img_Num
 ; -----
 ; register U : screen location in ram A ($C000-$DFFF)
 ; ----------------------------------------------------
-DRAW_Img_hud_b
-
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_0
-
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA 120,U
-	STA -120,U
-
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_1
-
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_2
-
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	LDA #$00
-	STA -40,U
-	STA -80,U
-	LDA #$01
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$00
-	STA 80,U
-	STA 40,U
-	LDA #$01
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA 120,U
-	STA ,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_3
-
-	LDA #$01
-	STA 120,U
-	LDA #$00
-	STA 80,U
-	STA 40,U
-	LDA #$01
-	STA ,U
-	LDA #$00
-	STA -40,U
-	STA -80,U
-	LDA #$01
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 80,U
-	STA 40,U
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA 120,U
-	STA ,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_4
-
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	LDA #$01
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-	LDA #$11
-	STA 40,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_5
-
-	LDA #$01
-	STA 120,U
-	LDA #$00
-	STA 80,U
-	STA 40,U
-	LDA #$01
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 80,U
-	STA 40,U
-	LDA #$00
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA 120,U
-	STA ,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_6
-
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 80,U
-	STA 40,U
-	LDA #$00
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA 120,U
-	STA ,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_7
-
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	LDA #$01
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$11
-	STA -120,U
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_8
-
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$11
-	STA 120,U
-	STA ,U
-	STA -120,U
-	LDA #$01
-	STA 80,U
-	STA 40,U
-	STA -40,U
-	STA -80,U
-        LEAU $2000,U
-	rts
-
-DRAW_Img_hud_9
-
-	LDA #$00
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	LDA #$01
-	STA ,U
-	STA -40,U
-	STA -80,U
-	STA -120,U
-
-        LEAU -$2000,U
-	LDA #$01
-	STA 120,U
-	STA 80,U
-	STA 40,U
-	STA -40,U
-	STA -80,U
-	LDA #$11
-	STA ,U
-	STA -120,U
-        LEAU $2000,U
-	rts
-
 ; ---------------------------------------------------------------------------
 ; Beam partial-segment masks
 ; ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.widedot.m6809.util.asm.Register;
 import com.widedot.toolbox.graphics.gfxcomp.Image;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.Encoder;
+import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory;
 
 @Slf4j
 public class SimpleAssemblyGenerator extends Encoder{
@@ -54,7 +55,11 @@ public class SimpleAssemblyGenerator extends Encoder{
 	
 	private boolean alpha = false;   // per generator, not shared : v1 has it on the instance
 	
+	/** how the second plane is reached ; see Image.PLANES_* */
+	private final String planes;
+
 	public SimpleAssemblyGenerator(Image img, String destDir, int alphaOption) throws Exception {
+		planes = img.planes;
 		spriteCenterEven = (img.getCoordinate() % 2) == 0;
 		name = img.getFullName();
 		x1_offset = img.getSubImageX1Offset();
@@ -205,38 +210,59 @@ public class SimpleAssemblyGenerator extends Encoder{
 		return size;
 	}
 
+	/** true when the code walks to the second plane instead of pointing at it */
+	private boolean planesByOffset() {
+		return Image.PLANES_OFFSET.equals(planes);
+	}
+
 	public List<String> getCodeFrameDrawMid() {
 		List<String> asm = new ArrayList<String>();
-		asm.add("\n\tLDU <glb_screen_location_1");		
+		if (planesByOffset()) {
+			asm.add("\n\tLEAU  -" + VideoMemory.memoryPlaneDistance + ",U");
+		} else {
+			asm.add("\n\tLDU <glb_screen_location_1");
+		}
 		return asm;
 	}
 
 	public int getCodeFrameDrawMidCycles() {
 		int cycles = 0;
-		cycles += Register.costDirectLD[Register.U];
+		// LEAU n16,U : 4 base + 5 for the 16 bit offset indexing mode
+		cycles += planesByOffset() ? 9 : Register.costDirectLD[Register.U];
 		return cycles;
 	}
 
 	public int getCodeFrameDrawMidSize() {
 		int size = 0;
-		size += Register.sizeDirectLD[Register.U];
+		// LEAU n16,U : opcode + postbyte + two offset bytes
+		size += planesByOffset() ? 4 : Register.sizeDirectLD[Register.U];
 		return size;
 	}
 
 	public List<String> getCodeFrameDrawEnd() {
 		List<String> asm = new ArrayList<String>();
+		if (planesByOffset()) {
+			// U is the caller's cursor over a row of sprites : give it back
+			asm.add("\tLEAU  " + VideoMemory.memoryPlaneDistance + ",U");
+		}
 		asm.add("\tRTS\n");
 		return asm;
 	}
 
 	public int getCodeFrameDrawEndCycles() {
 		int cycles = 0;
+		if (planesByOffset()) {
+			cycles += 9; // LEAU n16,U
+		}
 		cycles += 5; // RTS
 		return cycles;
 	}
 
 	public int getCodeFrameDrawEndSize() {
 		int size = 0;
+		if (planesByOffset()) {
+			size += 4; // LEAU n16,U
+		}
 		size += 1; // RTS
 		return size;
 	}

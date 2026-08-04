@@ -183,10 +183,21 @@ par `paged.call` — et il le fallait, car **`paged.call` écrase `B`**, où la 
 passait sa commande (`hud.NORMAL` / `hud.READOUT`). Deux entrées exportées
 remplacent l'ObjID et le registre de commande.
 
-Il porte ses propres sprites : les douze `DRAW_Img_hud_*` sont du code généré
-une fois puis collé, ce que le `.properties` v1 dit en toutes lettres (« used to
-generate code, should be commented because replaced by the code above »). Ils ne
-passent pas par gfxcomp.
+**Ses douze sprites sont repassés par la chaîne.** La v1 les portait en dur —
+du code généré une fois puis collé, ce que son `.properties` dit en toutes
+lettres (« used to generate code, should be commented because replaced by the
+code above »), faute d'un encodeur au bon contrat d'appel : le `draw` consomme
+`U`, or le HUD enchaîne `jsr` puis `leau 1,u` pour poser la rangée suivante.
+La v2 a l'option (`<encoder planes="offset">`), donc les PNG redeviennent la
+source et 306 lignes quittent `hud.asm`.
+
+Mesuré avant de supprimer quoi que ce soit : sur les douze sprites, **huit sont
+identiques à l'octet** au code collé et **quatre ne diffèrent que par l'ordre de
+groupes d'écriture disjoints** (la recherche d'ordre de l'encodeur). À l'écran,
+les deux builds sont **strictement identiques, pixel pour pixel**, et l'unité
+pèse 5 184 octets des deux côtés. Ce qui était périmé, ce n'étaient pas les PNG
+mais les `.asm` générés posés à côté — supprimés. Cas de migration :
+[pasted-generated-code.md](../../docs/lang/en/migration/pasted-generated-code.md).
 
 Deux écarts tracés : le dispatch sur `B`, et un bouchon pour l'état du décompte
 (`main.endstage.scoreArmed/scoreDone`, qui appartiennent à l'objet `endstage`

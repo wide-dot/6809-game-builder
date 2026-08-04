@@ -678,6 +678,9 @@
       <xs:attribute name="position" type="xs:string">
         <xs:annotation><xs:documentation>center, top-left or 3qtr-center</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="planes" type="xs:string">
+        <xs:annotation><xs:documentation>how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed) or offset (at planedistance from U, U given back — for a caller drawing a row of sprites). draw encoder only</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -912,6 +915,9 @@
       </xs:attribute>
       <xs:attribute name="nbplanes" type="int6809">
         <xs:annotation><xs:documentation>video memory planes</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planedistance" type="int6809">
+        <xs:annotation><xs:documentation>bytes between the two halves of the video window, 8192 if omitted ; only planes=offset needs it</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

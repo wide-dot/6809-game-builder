@@ -59,6 +59,22 @@ main.endstage.scoreArmed  fcb 0
 main.endstage.scoreDone   fcb 0
 soundFX.newSound          fcb 0
 
+; Le pont de noms : le fichier v1 appelle DRAW_Img_hud_<n>, gfxcomp genere
+; adr_hud_<n>_ND0. Une table de liaison plutot qu'un renommage dans le code,
+; comme pour l'explosion et le tir ennemi.
+DRAW_Img_hud_0    equ adr_hud_0_ND0
+DRAW_Img_hud_1    equ adr_hud_1_ND0
+DRAW_Img_hud_2    equ adr_hud_2_ND0
+DRAW_Img_hud_3    equ adr_hud_3_ND0
+DRAW_Img_hud_4    equ adr_hud_4_ND0
+DRAW_Img_hud_5    equ adr_hud_5_ND0
+DRAW_Img_hud_6    equ adr_hud_6_ND0
+DRAW_Img_hud_7    equ adr_hud_7_ND0
+DRAW_Img_hud_8    equ adr_hud_8_ND0
+DRAW_Img_hud_9    equ adr_hud_9_ND0
+DRAW_Img_hud_b    equ adr_hud_b_ND0
+DRAW_Img_hud_life equ adr_hud_life_ND0
+
         INCLUDE "src/common/hud/hud.asm"
 
 ; Les deux entrées, nommées pour la frontière : à l'intérieur le fichier v1

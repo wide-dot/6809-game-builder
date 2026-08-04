@@ -80,6 +80,9 @@ practice; this is a reading order, not a schedule.
 18. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
 19. [Every v1 sprite variant becomes an `<encoder>` — losing one is silent](sprite-variants.md)
 20. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+20b. [Generated code pasted into a v1 file goes back through the
+    pipeline](pasted-generated-code.md) — and the measurement that says whether
+    the PNGs or the pasted code are the stale ones.
 21. [An imageset bigger than a page is spread, and its index carries a page per
     image](imageset-pages.md) — the one that stops the build dead, with nothing
     wrong in the game.

@@ -486,6 +486,49 @@
                     <lwasm gensource="gen/overlay/hud.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/hud.unit.asm"/>
+                        <!-- Les douze sprites du bandeau. PAS d'imageset : le -->
+                        <!-- HUD les appelle par leur symbole, il n'indexe rien. -->
+                        <!-- planes="offset" rend U intact — l'appelant enchaine -->
+                        <!-- jsr puis leau 1,u pour poser la rangee suivante.    -->
+                        <gfxcomp gendir="gen/overlay/hud"
+                                 gensource="gen/overlay/hud/includes.asm">
+                            <image name="hud_0" filename="src/common/hud/images/0.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_1" filename="src/common/hud/images/1.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_2" filename="src/common/hud/images/2.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_3" filename="src/common/hud/images/3.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_4" filename="src/common/hud/images/4.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_5" filename="src/common/hud/images/5.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_6" filename="src/common/hud/images/6.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_7" filename="src/common/hud/images/7.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_8" filename="src/common/hud/images/8.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_9" filename="src/common/hud/images/9.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_b" filename="src/common/hud/images/black.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                            <image name="hud_life" filename="src/common/hud/images/life.png">
+                                <encoder name="draw" mirror="none" shift="0" planes="offset"/>
+                            </image>
+                        </gfxcomp>
                     </lwasm>
                 </direntry>
 

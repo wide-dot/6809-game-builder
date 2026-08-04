@@ -154,6 +154,36 @@ the file id equate the relocation resolves against is defined.
 Exported for the rest of the game to link against : `set_<name>`,
 `idx_<name>`, and every `adr_<name>_<variant>`.
 
+### Two ways to reach the second plane
+
+A drawing routine touches both video planes, and how it gets to the second one
+is the **caller's** business, not the image's :
+
+```xml
+<encoder name="draw" mirror="none" shift="0" planes="offset"/>
+```
+
+| `planes` | second plane | U on exit |
+|---|---|---|
+| `pointer` *(default)* | `glb_screen_location_1` | consumed |
+| `offset` | `U − planedistance` | **given back** |
+
+The default suits a sprite drawn once at a computed position. `offset` suits a
+caller drawing a **row** of them — a HUD advancing U by one byte between digits
+— which cannot afford to reload the plane pointer at every sprite. It applies
+to the `draw` encoder only : `bdraw` restores a background through its own
+cells and the compressed encoders stream, so neither addresses the planes this
+way, and asking for it there is an error rather than a silent no-op.
+
+`planedistance` is a `<gfxcomp>` attribute, 8192 by default : the distance
+between the two halves of the TO8 video window. A machine constant, not a
+property of the image, and not derivable from the geometry above — so it is
+declared.
+
+This is what let R-Type's HUD stop carrying its twelve digits as pasted
+assembly ; see
+[migration/pasted-generated-code.md](migration/pasted-generated-code.md).
+
 ### When the code outgrows a page
 
 One relocation for the whole set holds only while every image is compiled into

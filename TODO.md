@@ -308,6 +308,18 @@ Fonctionnel :
 - [ ] **Localisation automatique des destinations** — la carte d'occupation en
       est le préalable, posé. À reprendre quand la vision du jeu porté sera
       complète (l'auteur, 03/08/2026).
+- [x] **Encodeur `draw` : convention d'adressage des plans** (04/08/2026) —
+      `<encoder planes="pointer|offset">` ; `offset` atteint le second plan à
+      `planedistance` de `U` (attribut `<gfxcomp>`, 8192 par défaut) et **rend
+      `U` intact**, ce qu'exige un appelant qui pose une RANGÉE de sprites.
+      C'est ce qui manquait à la v1 et qui l'obligeait à coller le code généré
+      de son HUD. Validé : 12 sprites recompilés, 8 identiques à l'octet et 4 à
+      l'ordre près, écran **pixel pour pixel** identique, 12 configs d'exemples
+      inchangées, JUnit 112/112. Piège consigné : les tests appellent
+      l'encodeur en direct, donc ils ne couvrent PAS le branchement de
+      l'attribut — le premier build a silencieusement utilisé le défaut, et
+      c'est la lecture du fichier généré qui l'a montré.
+      Cas : [pasted-generated-code.md](docs/lang/en/migration/pasted-generated-code.md)
 - [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
       cartouche n'existe dans le registre : la v2 ne produit que de la
       disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile
