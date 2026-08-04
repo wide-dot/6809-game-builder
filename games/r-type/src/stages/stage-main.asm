@@ -33,6 +33,12 @@ stage.main
         std   game.score
         lda   #3
         sta   game.lives
+        ldx   #bench.magic                 ; cf. bench.SIZE : la zone n'est chargée
+        ldb   #bench.SIZE                  ; par personne, un témoin non posé lirait
+        clra                               ; sinon $FF au lieu de $00
+!       sta   ,x+
+        decb
+        bne   <
         lda   #bench.MAGIC
         sta   bench.magic
 stage.stateKept

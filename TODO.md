@@ -269,12 +269,18 @@ Fonctionnel :
         le distingue de l'explosion.
   - [ ] **Resserrer les budgets déclarés sur le contenu + une marge énoncée —
         2 538 o.** À faire en dernier : chaque autre axe change les nombres.
-  - [ ] **Reprendre le trou `$9875-$9BFF` — 907 o.** Il sépare `objects.static`
-        de `bench.wit` ; il disparaît en remontant le pool.
-  - [ ] **Ramener `bench.wit` à ses 16 octets réels — 628 o.** La zone a été
-        déclarée jusqu'à `$9E84` faute de concurrent, pas par besoin. À faire
-        quand le banc d'échange de stages sera retiré, ou plus tôt en la
-        réduisant simplement.
+  - [x] **Témoins du banc mutualisés + trou récupéré — 1 547 o d'un tenant**
+        (04/08). `bench.wit` déclarait 644 octets pour seize écrits ; les
+        témoins sont devenus des équates du bloc `globals`
+        (`GLOBAL_VARIABLES+13`), la région a disparu, et le trou `$9875-$9BFF`
+        a fusionné avec elle. L'ancre du bloc passe de `$9E84` — valeur dérivée
+        de la v1 — à `$9E80`, qui donne `$80` pile ; marge de pile 111 → 99 o,
+        sans risque (l'IRQ bascule sur `Irq_sys_stack` dès sa 2e instruction).
+        Le bloc est en outre remis à zéro au démarrage : la zone n'étant
+        chargée par personne, un témoin non posé lisait `$FF`.
+  - [ ] **Reste à prendre : le bloc libre `$9875-$9E7F` (1 547 o)** — il n'a de
+        preneur que le pool d'objets, donc il se prendra en même temps que son
+        agrandissement.
   - [ ] **Passe de collision en unité montée — 184 o.** `Collision_Do` + les
         expansions `_Collision_Do` : calcul pur, page-neutre, appelé par la
         seule boucle. C'est exactement ce que la v1 met dans `obj_mainext`.

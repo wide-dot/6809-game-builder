@@ -1,6 +1,11 @@
  IFNDEF GLOBAL_VARIABLES
 
-GLOBAL_VARIABLES         equ $9E84 ; first free byte after resident code ($9EBC)
+; V2-DEVIATION: l'ancre passe de $9E84 a $9E80. En v1 elle etait DERIVEE — le
+; premier octet libre apres un main qui finissait en $9E80 — donc elle n'avait
+; pas de valeur propre. En v2 le contenu resident s'arrete bien plus bas et
+; l'ancre est un choix de layout : $9E80 donne un bloc reserve de $80 pile, et
+; il se retient. Les temoins du banc partagent ce bloc (bench.const.asm).
+GLOBAL_VARIABLES         equ $9E80 ; ancre du bloc reserve `globals` ($9E80-$9EFF)
 globals.nextGameMode     equ GLOBAL_VARIABLES+0 ; 1 byte
 globals.score            equ GLOBAL_VARIABLES+1 ; 3 bytes (24-bit, unit=100pts, MSB first; cap 99999=$01869F)
 globals.lives            equ GLOBAL_VARIABLES+4 ; 1 byte

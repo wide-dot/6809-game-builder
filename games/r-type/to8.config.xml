@@ -87,7 +87,7 @@
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
             <!-- declare, et il refuse d'y faire atterrir quoi que ce soit.      -->
             <!--                                                                -->
-            <!-- $9E84 est la limite haute d'un main : au-dessus vivent les     -->
+            <!-- $9E80 est la limite haute d'un main : au-dessus vivent les     -->
             <!-- variables inter-main, puis la pile, puis la page directe en    -->
             <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
             <!-- protegee comme le reste.                                       -->
@@ -96,8 +96,12 @@
             <!-- pour toute la partie, lance par _Obj_RunU sur l'adresse de     -->
             <!-- son OST. Voir src/common/engine/ram.const.asm.                 -->
             <reserved name="objects.static" page="$01" address="$9800" size="$0075"/>
-            <reserved name="bench.wit"    page="$01" address="$9C00" size="$0284"/>
-            <reserved name="globals"      page="$01" address="$9E84" size="$007C"/>
+            <!-- Les variables inter-main, la pile qui descend depuis $9F00, et -->
+            <!-- les temoins du banc d'echange de stages — tous dans le MEME     -->
+            <!-- bloc de $80 octets, en equates (variables.asm, bench.const.asm).-->
+            <!-- Les temoins ont eu leur region a eux : 644 octets declares pour -->
+            <!-- seize ecrits. Une equate ne laisse pas de trou quand elle part. -->
+            <reserved name="globals"      page="$01" address="$9E80" size="$0080"/>
             <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
         </layout>
 

@@ -201,9 +201,10 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 $6100  région common   moteur résident, 7 852 o sur $2700 déclarés (78 %)
 $8800  région stage    stage courant, 1 539 o (st.1) sur $08B0 (69 %)
 $90B0  réservé         pool d'objets, 16 slots x 117 o
-$9C00  réservé         témoins du banc (propre au banc)
-$9E84  réservé         variables inter-main : score 24 bits, vies, difficulté…
-       (~111 o)        PILE SYSTÈME, croît vers le bas depuis $9F00
+$9875  LIBRE           1 547 o d'un seul tenant — la réserve du pool
+$9E80  réservé         un seul bloc de $80 : variables inter-main (13 o),
+       (~99 o)         témoins du banc (16 o), puis la PILE SYSTÈME qui
+                       croît vers le bas depuis $9F00
 $9F00  réservé         PAGE DIRECTE — et c'est là que vit l'OST DU JOUEUR
          $9F00  espace utilisateur (149 o) : player1 equ dp, un OST de 117 o
          $9F97  dp_extreg  registres étendus (28 o)
@@ -254,9 +255,18 @@ pool d'objets, les variables inter-main, la pile, la page directe. Ce sont des
 
 ```xml
 <reserved name="objects.pool" page="$01" address="$90B0" size="$0750"/>
-<reserved name="globals"      page="$01" address="$9E84" size="$007C"/>
+<reserved name="globals"      page="$01" address="$9E80" size="$0080"/>
 <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
 ```
+
+Une zone réservée se **mutualise** plutôt que de se multiplier. Les témoins du
+banc ont eu la leur — `$9C00`, 644 octets déclarés pour seize écrits — avant de
+rejoindre le bloc `globals` en équates, à côté des variables inter-main
+(`bench.const.asm` les pose sur `GLOBAL_VARIABLES+13`). Même mécanisme, même
+zone, et quand le banc partira ses seize équates partiront avec lui **sans
+laisser de trou dans le layout** : c'est ce qu'une équate a de plus qu'une
+région. L'ancre est passée de `$9E84` — une valeur dérivée de la v1, le premier
+octet libre après *son* main — à `$9E80`, qui donne un bloc de `$80` pile.
 
 Aucune région ne peut plus y atterrir, et **le contrôle porte sur les
 déclarations**, pas sur la taille de ce qui est chargé : une région déclarée

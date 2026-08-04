@@ -33,6 +33,10 @@ Les 4 073 octets déclarés-mais-vides, au 04/08 :
 | trou `$9875-$9BFF` | 907 | 0 | 907 |
 | `bench.wit` | 644 | 16 | 628 |
 
+*(04/08, fait : les deux dernières lignes ont fusionné. Les témoins du banc sont
+devenus des équates du bloc `globals`, leur région a disparu, et le trou est
+désormais un bloc libre de 1 547 octets d'un seul tenant, `$9875-$9E7F`.)*
+
 Le cas de `bench.wit` mérite une ligne : la zone n'a jamais eu besoin de
 644 octets, elle a été déclarée jusqu'à `$9E84` parce que rien d'autre ne
 réclamait la place. Seize octets de témoins sont réellement écrits.
@@ -150,8 +154,7 @@ L'échelle, dans l'ordre où je la monterais :
 |---|---|---:|
 | 0 | *(fait le 04/08)* rééquilibrer `common`/`stage` et reprendre le trou de 176 o | — |
 | 1 | Resserrer les budgets déclarés sur le contenu + une marge **énoncée** | 2 538 |
-| 2 | Reprendre le trou `$9875-$9BFF` | 907 |
-| 3 | Ramener `bench.wit` à ses 16 octets réels | 628 |
+| 2+3 | Bloc libre `$9875-$9E7F` — **fait le 04/08** : les témoins du banc sont passés en équates du bloc `globals`, leur région a disparu et le trou a fusionné avec | 1 547 |
 | 4 | `fade` en objet monté — **fait le 04/08** | 279 |
 | 5 | La passe de collision en unité montée (le `mainext` de la v1) | 184 |
 | 6 | Talon zx0 | 200 |
