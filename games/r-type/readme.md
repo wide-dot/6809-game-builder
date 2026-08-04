@@ -170,6 +170,39 @@ sont pas la même variable, et le tir ennemi lit `backgroundSolid` depuis la
 sienne. Cas de migration :
 [shared-globals.md](../../docs/lang/en/migration/shared-globals.md).
 
+### Le HUD
+
+Le bandeau du bas — jauge de beam en cinq segments, vies, score sur cinq
+chiffres significatifs — et le décompte de fin de stage. Il peint **directement
+en mémoire vidéo**, à des adresses absolues de la fenêtre `$A000-$DFFF` : c'est
+la page derrière la fenêtre qui alterne au double tampon, pas l'adresse.
+
+Comme le champ d'étoiles, ce n'est pas un objet : ni OST, ni état par entité, et
+rien dans la vague ne le nomme. Ses deux routines sont donc des symboles visés
+par `paged.call` — et il le fallait, car **`paged.call` écrase `B`**, où la v1
+passait sa commande (`hud.NORMAL` / `hud.READOUT`). Deux entrées exportées
+remplacent l'ObjID et le registre de commande.
+
+Il porte ses propres sprites : les douze `DRAW_Img_hud_*` sont du code généré
+une fois puis collé, ce que le `.properties` v1 dit en toutes lettres (« used to
+generate code, should be commented because replaced by the code above »). Ils ne
+passent pas par gfxcomp.
+
+Deux écarts tracés : le dispatch sur `B`, et un bouchon pour l'état du décompte
+(`main.endstage.scoreArmed/scoreDone`, qui appartiennent à l'objet `endstage`
+non porté, et `soundFX.newSound`, la boîte aux lettres du son). `hud.readout`
+est donc exporté mais jamais appelé.
+
+**Les vies ont changé de maison au passage** : elles vivaient dans `game.lives`,
+une variable du moteur inventée par le banc, alors que c'est `globals.lives` que
+le HUD dessine — et deux compteurs dans deux endroits n'en font pas un. Elles
+rejoignent le bloc réservé, à deux vies comme la v1.
+
+La page `$14` a été redécoupée pour l'accueillir : ses 5 184 octets ne tenaient
+pas dans la fin de la page des overlays, mais `$14` n'était remplie qu'à 22 %.
+Redécouper coûtait moins qu'une page neuve — les pages sont ce qui manquera aux
+tuiles.
+
 ### La manette, et le clavier en bouton B
 
 Les manettes Thomson n'ont qu'un bouton ; le rappel du force pod en demande un
@@ -198,7 +231,7 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 ## La carte de la zone résidente (page $01)
 
 ```
-$6100  région common   moteur résident, 7 852 o sur $2700 déclarés (78 %)
+$6100  région common   moteur résident, 7 851 o sur $2700 déclarés (78 %)
 $8800  région stage    stage courant, 1 539 o (st.1) sur $08B0 (69 %)
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9875  LIBRE           1 547 o d'un seul tenant — la réserve du pool
@@ -240,8 +273,8 @@ Hors résident, en pages physiques : `$4000-$5FFF` tampon de fond (page `$00`),
 vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
 tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
 joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions
-à adresses fixes), `$14` l'explosion puis la chaîne de tir ennemi et son
-projectile, et les sprites d'explosion sur `$15-$16`.
+à adresses fixes), `$14` l'explosion, la chaîne de tir ennemi, son projectile,
+le fondu et le HUD (cinq régions), et les sprites d'explosion sur `$15-$16`.
 
 L'occupation réelle de tout cela se lit dans `dist/ram-map-fd.txt`, produit à
 chaque build — une carte par scène.

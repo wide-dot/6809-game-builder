@@ -69,18 +69,25 @@
             <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
             <!-- image, comme la v1 et comme une table de tuiles.               -->
-            <region name="explosion"  page="$14" address="$0000" size="$1000"/>
+            <region name="explosion"  page="$14" address="$0000" size="$0800"/>
             <!-- La chaine de tir ennemi, dans la place que la carte           -->
             <!-- d'occupation montrait libre en page $14 : les deux            -->
             <!-- sous-routines paginees et leurs tables de presets d'un cote,  -->
             <!-- le projectile et ses quatre images de l'autre.                -->
-            <region name="firechain"  page="$14" address="$1000" size="$1000"/>
-            <region name="foefire"    page="$14" address="$2000" size="$1000"/>
+            <region name="firechain"  page="$14" address="$0800" size="$0800"/>
+            <region name="foefire"    page="$14" address="$1000" size="$1000"/>
             <!-- Le fondu de palette : un objet comme un autre, monte comme    -->
             <!-- l'explosion. Il etait resident au motif que tout stage en a    -->
             <!-- besoin a son ouverture ; la v1 le monte, et 279 octets de la   -->
             <!-- page 1 valent mieux au budget du pool d'objets.                -->
-            <region name="fade"       page="$14" address="$3000" size="$1000"/>
+            <region name="fade"       page="$14" address="$2000" size="$0400"/>
+            <!-- Le HUD : bandeau du bas (beam, vies, score) et decompte de    -->
+            <!-- fin de stage. 5 184 octets, dont douze chiffres en sprites    -->
+            <!-- compiles que la v1 portait deja dans son fichier. Il ne tient  -->
+            <!-- pas dans la fin de la page des overlays : la page $14, elle,  -->
+            <!-- n'etait remplie qu'a 22 % — redecoupee plutot que d'en brûler  -->
+            <!-- une neuve, les pages etant ce qui manquera aux tuiles.         -->
+            <region name="hud"        page="$14" address="$2400" size="$1C00"/>
             <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="2"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
@@ -473,6 +480,15 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Le HUD                                                    -->
+                <!-- ******************************************************** -->
+                <direntry name="common.hud" loadtimelink="LINK">
+                    <lwasm gensource="gen/overlay/hud.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/hud/hud.unit.asm"/>
+                    </lwasm>
+                </direntry>
+
                 <!-- Le fondu de palette, objet monte                          -->
                 <!-- ******************************************************** -->
                 <direntry name="common.fade" loadtimelink="LINK">
@@ -665,6 +681,7 @@
                     <load name="explosion.images"  region="explosion.images"/>
                     <load name="common.explosion"  region="explosion"/>
                     <load name="common.fade"       region="fade"/>
+                    <load name="common.hud"        region="hud"/>
                     <load name="common.firechain"  region="firechain"/>
                     <load name="common.foefire"    region="foefire"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>

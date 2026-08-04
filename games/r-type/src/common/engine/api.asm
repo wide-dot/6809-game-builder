@@ -245,7 +245,6 @@ _api    macro
         ; --- state that outlives a stage : the engine holds it, so a stage
         ; swap cannot take it with it ---
         _api game.score
-        _api game.lives
         _api game.stage
 
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à

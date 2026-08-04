@@ -44,6 +44,10 @@ adr_playfield_mask_ND0 EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
+; Le HUD, meme page que le masque et les etoiles : une routine sans etat,
+; visee par son symbole.
+hud.normal        EXTERNAL
+
 starfield.init    EXTERNAL
 starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
@@ -137,8 +141,8 @@ stage.handOver
         ldd   game.score
         cmpd  #bench.SCORE
         bne   stage2.stateLost
-        lda   game.lives
-        cmpa  #3
+        lda   globals.lives
+        cmpa  #2
         bne   stage2.stateLost
         lda   #$01
         sta   bench.t3

@@ -53,8 +53,10 @@ map_width       equ 24*tile_size
 ; ceremony is needed beyond that — the engine's region is never a load
 ; destination after boot, so these bytes are simply never written again.
 ;*******************************************************************************
+; game.lives N'EST PLUS ici : les vies sont `globals.lives`, dans le bloc
+; reserve, comme en v1 — c'est la variable que le HUD dessine, et deux
+; compteurs de vies dans deux endroits n'en font pas un.
 game.score      fdb   0
-game.lives      fcb   0
 game.stage      fcb   0
 
 ; Le score du jeu, sur 24 bits par centaines de points comme en v1, et sa

@@ -31,8 +31,11 @@ stage.main
         ; échanges. Il vit dans le moteur, donc plus personne n'y touche.
         ldd   #bench.SCORE
         std   game.score
-        lda   #3
-        sta   game.lives
+        ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la
+        ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
+        ; elle — le compteur du banc en faisait trois sans raison.
+        ldb   #2
+        stb   globals.lives
         ldx   #bench.magic                 ; cf. bench.SIZE : la zone n'est chargée
         ldb   #bench.SIZE                  ; par personne, un témoin non posé lirait
         clra                               ; sinon $FF au lieu de $00
@@ -266,6 +269,14 @@ stage.state.running
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
 
+        ; Le HUD par-dessus le masque, dans l'ordre de la v1 (main.asm:255-256) :
+        ; le masque couvre les bandes ou le scroll laisse ses artefacts, le HUD
+        ; peint dedans. Il a sa page a lui — 5 184 octets ne tenaient pas dans
+        ; la fin de celle des overlays — donc une montee de plus par trame.
+        lda   #map.RAM_OVER_CART+hud.page
+        ldx   #hud.normal
+        jsr   paged.call
+
         _gfxlock.off
 
         inc   bench.frames
@@ -366,11 +377,12 @@ stage.state.checkpoint
 
         _waitFrames #40
 
-        dec   game.lives
+        dec   globals.lives
         bpl   >
-        ; GAME OVER — V2-DEVIATION : trois vies et on repart, faute de titre
-        lda   #3
-        sta   game.lives
+        ; GAME OVER — V2-DEVIATION : on ressert deux vies et on repart, faute
+        ; d'ecran-titre ou revenir.
+        ldb   #2
+        stb   globals.lives
 !
         ldd   #bench.SCROLL_VEL
         std   scroll_vel

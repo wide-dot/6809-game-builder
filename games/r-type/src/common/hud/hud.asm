@@ -8,7 +8,9 @@
 ;
 ; *****************************************************************************
 
-        INCLUDE "./objects/player1/player1.equ"
+; V2-DEVIATION: l'en-tete commun est porte par l'unite hote (hud.unit.asm),
+; comme pour tout fichier v1 enveloppe.
+;       INCLUDE "./objects/player1/player1.equ"
 
 _beam_seg_extA MACRO                   ; outer lines of 8px
 	std   $2001,u
@@ -51,9 +53,15 @@ beam_m_size  equ 2                     ; number of byte for a segment
 ; Beam_mask to mask off the dark pixels of the last partial segment.
 ; ---------------------------------------------------------------------------
 
-        ; ObjID_hud entry - dispatch on B (hud.NORMAL = bottom HUD, hud.READOUT = score readout)
-        cmpb  #hud.READOUT
-        lbeq  hud.scoreReadout
+; V2-DEVIATION: le dispatch sur B disparait. paged.call ecrase B — la page
+; d'origine y transite — et la v2 vise une routine paginee par SON SYMBOLE :
+; l'unite exporte deux entrees la ou la v1 n'avait qu'un ObjID et une commande.
+; Meme geste que le champ d'etoiles, qui en exporte trois.
+; Cas de migration : docs/lang/en/migration/paged-routine.md
+;        ; ObjID_hud entry - dispatch on B (hud.NORMAL = bottom HUD, hud.READOUT = score readout)
+;        cmpb  #hud.READOUT
+;        lbeq  hud.scoreReadout
+hud.drawNormal
 
         ; display beam in 5 segments
         ldu   #beam_m_start
