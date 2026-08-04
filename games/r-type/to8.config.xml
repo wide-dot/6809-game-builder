@@ -69,25 +69,30 @@
             <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
             <!-- image, comme la v1 et comme une table de tuiles.               -->
-            <region name="explosion"  page="$14" address="$0000" size="$0800"/>
+            <region name="explosion"  page="$14" address="$0000" size="$0600"/>
             <!-- La chaine de tir ennemi, dans la place que la carte           -->
             <!-- d'occupation montrait libre en page $14 : les deux            -->
             <!-- sous-routines paginees et leurs tables de presets d'un cote,  -->
             <!-- le projectile et ses quatre images de l'autre.                -->
-            <region name="firechain"  page="$14" address="$0800" size="$0800"/>
-            <region name="foefire"    page="$14" address="$1000" size="$1000"/>
+            <region name="firechain"  page="$14" address="$0600" size="$0500"/>
+            <region name="foefire"    page="$14" address="$0B00" size="$0C00"/>
             <!-- Le fondu de palette : un objet comme un autre, monte comme    -->
             <!-- l'explosion. Il etait resident au motif que tout stage en a    -->
             <!-- besoin a son ouverture ; la v1 le monte, et 279 octets de la   -->
             <!-- page 1 valent mieux au budget du pool d'objets.                -->
-            <region name="fade"       page="$14" address="$2000" size="$0400"/>
+            <region name="fade"       page="$14" address="$1700" size="$0400"/>
+            <!-- Les flammes de reacteur : elles auraient leur place dans   -->
+            <!-- l'unite du joueur, mais les deux fichiers v1 nomment leurs  -->
+            <!-- routines Init/Live/Routines — meme raison qui donne a       -->
+            <!-- chaque arme sa region.                                      -->
+            <region name="engineflames" page="$14" address="$1B00" size="$0500"/>
             <!-- Le HUD : bandeau du bas (beam, vies, score) et decompte de    -->
             <!-- fin de stage. 5 184 octets, dont douze chiffres en sprites    -->
             <!-- compiles que la v1 portait deja dans son fichier. Il ne tient  -->
             <!-- pas dans la fin de la page des overlays : la page $14, elle,  -->
             <!-- n'etait remplie qu'a 22 % — redecoupee plutot que d'en brûler  -->
             <!-- une neuve, les pages etant ce qui manquera aux tuiles.         -->
-            <region name="hud"        page="$14" address="$2400" size="$1C00"/>
+            <region name="hud"        page="$14" address="$2000" size="$2000"/>
             <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="2"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
@@ -117,9 +122,13 @@
             <!-- Le moteur, lui, a de vraies données de lien : son interface   -->
             <!-- de stage. Les cartes n'en ont aucune (sections .static), donc  -->
             <!-- une piste suffit largement à LINK.                             -->
-            <section name="SCENE" track="0" face="1" sector="16"/>
-            <section name="LINK"  track="1" face="0" sector="1"/>
-            <section name="DATA"  track="3" face="0" sector="1"/>
+            <!-- SCENE tenait dans le dernier secteur de la piste 0 face 1,  -->
+            <!-- entre l'INDEX et la fin de piste. Les scenes ont grandi avec   -->
+            <!-- les unites chargees et debordaient sur le debut de LINK : elle -->
+            <!-- prend une piste libre a elle.                                  -->
+            <section name="SCENE" track="1" face="0" sector="1"/>
+            <section name="LINK"  track="2" face="0" sector="1"/>
+            <section name="DATA"  track="4" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="direntry.section" value="DATA"/>
@@ -532,6 +541,29 @@
                     </lwasm>
                 </direntry>
 
+                <!-- Les flammes de reacteur de la sequence d'ouverture        -->
+                <!-- ******************************************************** -->
+                <direntry name="common.engineflames" loadtimelink="LINK">
+                    <lwasm gensource="gen/player/engineflames.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/player/engineflames/engineflames.asm"/>
+                        <!-- Les images vont avec l'objet, pas avec le joueur : -->
+                        <!-- CheckSpritesRefresh monte Img_Page_Index[id] pour  -->
+                        <!-- lire les descripteurs, et cette page est la sienne. -->
+                        <gfxcomp gendir="gen/player/engineflames"
+                                 gensource="gen/player/engineflames/includes.asm"
+                                 genindex="gen/player/engineflames/index.asm"
+                                 file="common.engineflames">
+                            <image name="engineflames_0" filename="src/common/player/engineflames/images/engineflames_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="engineflames_1" filename="src/common/player/engineflames/images/engineflames_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
                 <!-- Le fondu de palette, objet monte                          -->
                 <!-- ******************************************************** -->
                 <direntry name="common.fade" loadtimelink="LINK">
@@ -724,6 +756,7 @@
                     <load name="explosion.images"  region="explosion.images"/>
                     <load name="common.explosion"  region="explosion"/>
                     <load name="common.fade"       region="fade"/>
+                    <load name="common.engineflames" region="engineflames"/>
                     <load name="common.hud"        region="hud"/>
                     <load name="common.firechain"  region="firechain"/>
                     <load name="common.foefire"    region="foefire"/>

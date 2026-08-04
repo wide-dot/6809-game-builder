@@ -186,6 +186,14 @@ stage.stateKept
         sta   gfxlock.frameDrop.max
         jsr   IrqOn
 
+        ; LA SEQUENCE D'OUVERTURE. Un slot du pool, un identifiant, et
+        ; RunObjects la deroule ensuite seule jusqu'a ce qu'elle se supprime.
+        ; APRES IrqOn, comme la v1 (main.asm:171) : l'objet compte des trames,
+        ; et l'ensemencer avant la trame d'amorce lui ferait consommer d'un coup
+        ; le frame-drop du chargement de scene.
+        ; C'est le stage qui la nomme : chaque niveau a la sienne, ou n'en a pas.
+        jsr   stage.openingSequence
+
 ; L'ordre de la v1 : Scroll et ObjectWave hors du verrou, DrawTiles dedans.
 ; Seul le second touche l'écran.
 ; L'ordre est celui de la v1 : effacer avant de repeindre les tuiles, dessiner

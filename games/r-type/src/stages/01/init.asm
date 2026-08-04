@@ -6,12 +6,17 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote (le stage),
+; comme pour tout fichier v1 enveloppe. player1.equ n'est pas necessaire : cet
+; objet ne touche que des champs generiques de l'OST du joueur.
+;       INCLUDE "./engine/macros.asm"
+;       INCLUDE "./engine/collision/macros.asm"
+;       INCLUDE "./engine/collision/struct_AABB.equ"
+;       INCLUDE "./objects/player1/player1.equ"
 
-Object
+; V2-DEVIATION: l'entree v1 s'appelle Object, un nom trop generique pour la
+; frontiere de lien — meme ecart que l'eclair d'emission et le HUD.
+initlevel1.Object
         lda   routine,u
         asla
         ldx   #Routines

@@ -58,6 +58,9 @@ Player            EXTERNAL
 ; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
 terrainCollision.unit EXTERNAL
 
+; Les flammes de reacteur de la sequence d'ouverture, dans leur page.
+engineflames.Object   EXTERNAL
+
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
 PaletteFade           EXTERNAL
@@ -122,6 +125,15 @@ checkpoint.positions
         fcb   18
         fcb   39
         fcb   -1
+
+; La sequence d'ouverture de CE stage : un slot du pool, l'identifiant, et
+; RunObjects fait le reste. La v1 ensemence exactement de meme (main.asm:171).
+stage.openingSequence
+        jsr   LoadObject_x
+        beq   >                            ; pool plein : on ouvre sans intro
+        lda   #ObjID_initlevel1
+        sta   id,x
+!       rts
 
 stage.setup
         ; Le decor de FOND arrete les projectiles sur ce niveau — la v1 le pose
@@ -199,6 +211,12 @@ stage1.idle   bra   stage1.idle
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 1
 ;*******************************************************************************
+; La sequence d'ouverture : le vaisseau entre en autopilote par la gauche,
+; flammes allumees, puis rend la main. C'est un objet de CE stage (la v1 le
+; range dans objects/player1/initlevel1 mais le declare par game mode), donc il
+; vit dans son unite — le pool le fait tourner, il se supprime a la fin.
+        INCLUDE "src/stages/01/init.asm"
+
         INCLUDE "src/stages/01/objid.const.asm"
         INCLUDE "src/stages/01/objid.index.asm"
 

@@ -142,6 +142,34 @@ Une image sur deux seulement est compilée : c'est ce que déclare la cible
 disquette de la v1 (`obj.d7.properties`), le code rattachant les manquantes à
 la suivante sous `IFNDEF t2`.
 
+### La séquence d'ouverture
+
+Le vaisseau entre en autopilote par la gauche, flammes de réacteur allumées,
+ralentit, dérive en arrière et rend la main. C'est l'objet v1 `initlevel1`, en
+quatre phases : `subtype = -1` (invisible) pendant 50 trames, `subtype = -2`
+avec les flammes et `x_vel = 280` jusqu'à `x_pos > 140`, ralentissement à 150,
+puis marche arrière à −180 jusqu'à 60 px de la caméra, et enfin `clr subtype` +
+auto-suppression.
+
+**Rien n'était cassé — rien n'était branché.** Le joueur porté implémentait déjà
+les deux portes de l'autopilote (`lbmi SkipPlayer1Controls` sur un `subtype`
+négatif, et « si -1, ne pas dessiner »), simplement personne ne posait le
+subtype : `ObjectDp_Clear` met l'OST à zéro à l'ouverture, donc le vaisseau
+apparaissait pilotable et posé. Manquaient les deux identifiants d'objets — que
+`gen_objid.py` ne pouvait deviner, la v1 les ensemençant à la main dans son main
+plutôt que par la wave —, les deux unités, et les trois lignes d'ensemencement.
+
+Elle est ensemencée **après `IrqOn`**, comme la v1 (`main.asm:171`) : l'objet
+compte des trames, et le poser avant la trame d'amorce lui ferait consommer d'un
+coup le frame-drop du chargement de scène. Chaque stage fournit sa
+`stage.openingSequence` — le niveau 2 répond en ne faisant rien, on y entre par
+un échange et pas par un début de partie.
+
+Les flammes ont leur propre unité alors qu'elles sont une pièce du vaisseau :
+les deux fichiers v1 nomment leurs routines internes `Init`, `Live` et
+`Routines`, et les réunir dans une unité les fait entrer en collision. C'est la
+même raison qui donne à chacune des quatre armes sa région.
+
 ### Le tir ennemi
 
 La chaîne complète, portée telle quelle : un ennemi charge son **preset de
@@ -243,7 +271,7 @@ les maths du boss (`CalcSine`, `Mul9x16`), `LoadGameMode` (remplacé par
 
 ```
 $6100  région common   moteur résident, 7 851 o sur $2700 déclarés (78 %)
-$8800  région stage    stage courant, 1 539 o (st.1) sur $08B0 (69 %)
+$8800  région stage    stage courant, 1 721 o (st.1) sur $08B0 (77 %)
 $90B0  réservé         pool d'objets, 16 slots x 117 o
 $9875  LIBRE           1 547 o d'un seul tenant — la réserve du pool
 $9E80  réservé         un seul bloc de $80 : variables inter-main (13 o),
@@ -285,7 +313,7 @@ vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
 tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
 joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions
 à adresses fixes), `$14` l'explosion, la chaîne de tir ennemi, son projectile,
-le fondu et le HUD (cinq régions), et les sprites d'explosion sur `$15-$16`.
+le fondu, les flammes de réacteur et le HUD (six régions), et les sprites d'explosion sur `$15-$16`.
 
 L'occupation réelle de tout cela se lit dans `dist/ram-map-fd.txt`, produit à
 chaque build — une carte par scène.

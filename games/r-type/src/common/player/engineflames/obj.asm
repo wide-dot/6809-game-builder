@@ -7,8 +7,10 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote (le joueur),
+; comme pour tout fichier v1 enveloppe.
+;       INCLUDE "./engine/macros.asm"
+;       INCLUDE "./engine/collision/macros.asm"
 
 Object
         lda   routine,u

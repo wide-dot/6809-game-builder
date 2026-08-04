@@ -56,6 +56,9 @@ starfield.draw    EXTERNAL
 ; trois tables — objet, animation et images.
 Player            EXTERNAL
 
+; Les flammes de reacteur de la sequence d'ouverture, dans leur page.
+engineflames.Object   EXTERNAL
+
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
 PaletteFade           EXTERNAL
@@ -116,6 +119,12 @@ emitterFlash.Object EXTERNAL
 checkpoint.positions
         fcb   0
         fcb   -1
+
+; Ce stage n'a pas de sequence d'ouverture : le banc y entre par un echange,
+; pas par un debut de partie. Le corps commun l'appelle quand meme — chaque
+; stage repond, quitte a ne rien faire.
+stage.openingSequence
+        rts
 
 stage.setup
         ldd   #map.even

@@ -34,7 +34,8 @@ names = []
 names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_Weapon', 'ObjID_commonmissile', 'ObjID_beamcharge',
          'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision',
-         'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire']
+         'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire',
+         'ObjID_initlevel1', 'ObjID_engineflames']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -78,6 +79,7 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_createFoeFire':  ('firechain', 'createFoeFire'),
           'ObjID_loadFirePreset': ('firechain', 'loadFirePreset.Object'),
           'ObjID_foefire':        ('foefire',   'foefire.Object'),
+          'ObjID_engineflames':   ('engineflames', 'engineflames.Object'),
           'ObjID_Weapon':        ('weapon',     'Weapon'),
           'ObjID_beamcharge':    ('beamcharge', 'Beamcharge'),
           'ObjID_beamp':         ('beamp',      'Beam'),
@@ -86,6 +88,9 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':
     PORTED['ObjID_collision'] = ('collision', 'terrainCollision.unit')
+    # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
+    # stage, donc sa page est celle du stage et son adresse un symbole local.
+    PORTED['ObjID_initlevel1'] = ('stage', 'initlevel1.Object')
 
 out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
