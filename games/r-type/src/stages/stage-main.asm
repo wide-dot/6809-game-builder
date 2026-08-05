@@ -88,6 +88,24 @@ statics.SIZE  equ nb_static_objects*object_size
         lda   #ObjID_fade
         sta   palettefade+id
 
+        ; Les identifiants des trois autres slots statiques, et leur routine de
+        ; veille. La v1 seme les identifiants dans le BINAIRE de son game mode
+        ; (ram_data.asm : `fcb ObjID_forcepod` suivi d'un fill), puis pose les
+        ; routines Dormant a la fin de son init (main.asm:174-182) — deux
+        ; endroits pour un seul geste, parce que son bloc arrive du disque.
+        ; Ici la zone est `<reserved>`, donc rien ne la charge : les deux se
+        ; font ensemble, juste apres l'effacement.
+        ;
+        ; Sans la routine de veille, un slot mis a zero part en routine 0 —
+        ; l'Init de l'objet — et le force pod comme les bit devices naitraient
+        ; tout seuls a l'ouverture du stage, sans avoir ete ramasses.
+        lda   #ObjID_bitdevice
+        sta   bitdevTopOST+id
+        sta   bitdevBotOST+id
+        lda   #bitdev.rtnid.Dormant
+        sta   bitdevTopOST+routine
+        sta   bitdevBotOST+routine
+
         ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
         ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
         ; ca le niveau apparait d'un coup, et l'ecran de chargement se voit.

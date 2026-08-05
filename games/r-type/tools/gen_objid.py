@@ -35,7 +35,11 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_Weapon', 'ObjID_commonmissile', 'ObjID_beamcharge',
          'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision',
          'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire',
-         'ObjID_initlevel1', 'ObjID_engineflames', 'ObjID_messages']
+         'ObjID_initlevel1', 'ObjID_engineflames', 'ObjID_messages',
+         # Les bonus : le POW vient de la wave, mais ce qu'il fait naitre en
+         # mourant — la boite a option, ou le bit device quand le quartet haut
+         # de son subtype vaut 5 — n'y figure pas.
+         'ObjID_pow_optionbox', 'ObjID_bitdevice']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -84,7 +88,10 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_beamcharge':    ('beamcharge', 'Beamcharge'),
           'ObjID_beamp':         ('beamp',      'Beam'),
           'ObjID_emitter_flash': ('emflash',    'emitterFlash.Object'),
-          'ObjID_messages':      ('messages',   'messages.Object')}
+          'ObjID_messages':      ('messages',   'messages.Object'),
+          'ObjID_pow':           ('pow',        'pow.Object'),
+          'ObjID_pow_optionbox': ('optionbox',  'powOptionbox.Object'),
+          'ObjID_bitdevice':     ('bitdevice',  'bitdevice.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':

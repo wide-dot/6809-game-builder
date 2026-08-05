@@ -18,7 +18,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Obj_Index_Address
@@ -39,7 +41,9 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_initlevel1
         fdb   engineflames.Object        ; ObjID_engineflames
         fdb   messages.Object        ; ObjID_messages
-        fdb   stage.placeholder        ; ObjID_pow
+        fdb   powOptionbox.Object        ; ObjID_pow_optionbox
+        fdb   bitdevice.Object        ; ObjID_bitdevice
+        fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
 * Les scripts d'animation. Les vrais vivent dans un objet commun qui
@@ -63,10 +67,14 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -110,5 +118,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

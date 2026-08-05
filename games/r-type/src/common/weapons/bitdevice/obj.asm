@@ -6,11 +6,14 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
-        INCLUDE "./objects/player1/bitdevice/bitdevice.equ" ; bitdev.rtnid.* (static-slot seeding)
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (bitdevice.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/player1/player1.equ"
+; INCLUDE "./objects/player1/bitdevice/bitdevice.equ" ; bitdev.rtnid.* (static-slot seeding)
 AABB_0            equ ext_variables    ; AABB struct (9 bytes)
 old_xpos1         equ ext_variables+9  ; word
 old_ypos1         equ ext_variables+11 ; word

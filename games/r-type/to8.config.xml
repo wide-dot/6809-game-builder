@@ -125,6 +125,15 @@
             <!-- <region name="vgc.player" page="$19" address="$0000" size="$0A80"/> -->
             <!-- <region name="vgc.data"   page="$19" address="$0A80" size="$3580"/> -->
 
+            <!-- Les BONUS, communs a tous les stages : le POW et sa boite a   -->
+            <!-- option. Deux unites plutot qu'une (les deux fichiers v1        -->
+            <!-- partagent leurs noms internes). Page $1A : $16 est le          -->
+            <!-- debordement de explosion.images, $19 reste a la config VGC.    -->
+            <region name="pow"        page="$1A" address="$0000" size="$1800"/>
+            <region name="optionbox"  page="$1A" address="$1800" size="$1400"/>
+            <!-- Les deux satellites blindes : un objet, deux OST statiques.  -->
+            <region name="bitdevice"  page="$1A" address="$2C00" size="$1400"/>
+
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
             <!-- declare, et il refuse d'y faire atterrir quoi que ce soit.      -->
@@ -678,6 +687,137 @@
                 <!-- La chaine de tir ennemi : les deux sous-routines         -->
                 <!-- paginees, puis le projectile qu'elles font naitre.       -->
                 <!-- ******************************************************** -->
+                <!-- Les BONUS : le POW et sa boite a option.                  -->
+                <!--                                                           -->
+                <!-- Six sprites pour le POW, cinq pour la boite. Pas           -->
+                <!-- d'imageset : les deux objets citent leurs images par leur  -->
+                <!-- symbole (tables d'animation et table optionboxes), ils     -->
+                <!-- n'indexent rien. Les trois animations reprennent les       -->
+                <!-- chaines `animation.Ani_pow_*` du .properties v1, terminaison -->
+                <!-- comprise : _nextRoutine rend la main a l'objet, _resetAnim  -->
+                <!-- reboucle.                                                  -->
+                <!-- ******************************************************** -->
+                <direntry name="common.pow" loadtimelink="LINK">
+                    <lwasm gensource="gen/pickups/pow.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/pickups/pow/pow.unit.asm"/>
+                        <gfxcomp gendir="gen/pickups/pow"
+                                 gensource="gen/pickups/pow/includes.asm"
+                                 genindex="gen/pickups/pow/index.asm"
+                                 file="common.pow">
+                            <image name="pow_fly" filename="src/common/pickups/pow/images/pow_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_1" filename="src/common/pickups/pow/images/pow_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_2" filename="src/common/pickups/pow/images/pow_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_3" filename="src/common/pickups/pow/images/pow_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_4" filename="src/common/pickups/pow/images/pow_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_5" filename="src/common/pickups/pow/images/pow_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                        <animation name="Ani_pow_land" duration="7" end="nextroutine">
+                            <frame image="pow_fly"/>
+                            <frame image="pow_4"/>
+                            <frame image="pow_1"/>
+                            <frame image="pow_2"/>
+                        </animation>
+                        <animation name="Ani_pow_walk" duration="7" end="reset">
+                            <frame image="pow_1"/>
+                            <frame image="pow_3"/>
+                            <frame image="pow_1"/>
+                            <frame image="pow_2"/>
+                        </animation>
+                        <animation name="Ani_pow_takeoff" duration="7" end="nextroutine">
+                            <frame image="pow_1"/>
+                            <frame image="pow_4"/>
+                            <frame image="pow_1"/>
+                            <frame image="pow_5"/>
+                        </animation>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.optionbox" loadtimelink="LINK">
+                    <lwasm gensource="gen/pickups/optionbox.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/pickups/pow/optionbox.unit.asm"/>
+                        <gfxcomp gendir="gen/pickups/optionbox"
+                                 gensource="gen/pickups/optionbox/includes.asm"
+                                 genindex="gen/pickups/optionbox/index.asm"
+                                 file="common.optionbox">
+                            <image name="pow_optionbox_0" filename="src/common/pickups/pow/images/lasercrystal_blue_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_optionbox_1" filename="src/common/pickups/pow/images/lasercrystal_yellow_0.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_optionbox_3" filename="src/common/pickups/pow/images/option_speedup_0.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_optionbox_4" filename="src/common/pickups/pow/images/lasercrystal_red_0.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="pow_optionbox_7" filename="src/common/pickups/pow/images/option_missiles_0.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.bitdevice" loadtimelink="LINK">
+                    <lwasm gensource="gen/weapons/bitdevice.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/bitdevice/bitdevice.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/bitdevice"
+                                 gensource="gen/weapons/bitdevice/includes.asm"
+                                 genindex="gen/weapons/bitdevice/index.asm"
+                                 file="common.bitdevice">
+                            <image name="bitdevice_0" filename="src/common/weapons/bitdevice/images/bitdevice_00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="bitdevice_1" filename="src/common/weapons/bitdevice/images/bitdevice_01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="bitdevice_2" filename="src/common/weapons/bitdevice/images/bitdevice_02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="bitdevice_3" filename="src/common/weapons/bitdevice/images/bitdevice_03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="bitdevice_4" filename="src/common/weapons/bitdevice/images/bitdevice_04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="bitdevice_5" filename="src/common/weapons/bitdevice/images/bitdevice_05.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                        <animation name="Ani_bitdevice1" duration="4" end="reset">
+                            <frame image="bitdevice_0"/>
+                            <frame image="bitdevice_1"/>
+                            <frame image="bitdevice_2"/>
+                            <frame image="bitdevice_3"/>
+                            <frame image="bitdevice_4"/>
+                            <frame image="bitdevice_5"/>
+                        </animation>
+                        <animation name="Ani_bitdevice2" duration="4" end="reset">
+                            <frame image="bitdevice_5"/>
+                            <frame image="bitdevice_4"/>
+                            <frame image="bitdevice_3"/>
+                            <frame image="bitdevice_2"/>
+                            <frame image="bitdevice_1"/>
+                            <frame image="bitdevice_0"/>
+                        </animation>
+                    </lwasm>
+                </direntry>
+
                 <direntry name="common.firechain" loadtimelink="LINK">
                     <lwasm gensource="gen/weapons/firechain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -889,6 +1029,9 @@
                     <load name="stage1.music.vgc"  region="vgc.data"/>
                     -->
                     <load name="common.hud"        region="hud"/>
+                    <load name="common.pow"        region="pow"/>
+                    <load name="common.optionbox"  region="optionbox"/>
+                    <load name="common.bitdevice"  region="bitdevice"/>
                     <load name="common.firechain"  region="firechain"/>
                     <load name="common.foefire"    region="foefire"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
@@ -921,7 +1064,23 @@
             <!-- moteur en pese 2,5 Ko a lui seul depuis qu'il embarque la chaine   -->
             <!-- sprites, et un echange de stage alloue le nouveau avant de         -->
             <!-- liberer l'ancien : 4 Ko ne suffisent plus.                          -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$2800"/>
+            <!--                                                                    -->
+            <!-- PLAFOND REEL : le pool commence a la fin du code du loader          -->
+            <!-- ($AF81) et la fenetre donnees finit a $E000, soit $307F de place.   -->
+            <!-- Le build affiche « link data: N direntries, X bytes » : si X plus   -->
+            <!-- les en-tetes de l'allocateur passent cette valeur, le loader ne     -->
+            <!-- rend jamais la main et la machine reste au menu du moniteur.        -->
+            <!-- Le pool ne porte PAS que les donnees de lien : le loader y range    -->
+            <!-- aussi le repertoire, le fichier de scene et un tableau de slots      -->
+            <!-- qu'il realloc. La ligne « link data » du build est donc un           -->
+            <!-- INDICATEUR, pas le total — elle sous-estime la demande reelle.       -->
+            <!-- Le seul controle sur : `tlsf.err` ($A138) apres le boot. 0 = tout     -->
+            <!-- va bien, 3 = OUT_OF_MEMORY.                                          -->
+            <!-- Mesure du 2026-08-05, en cablant le bit device :                     -->
+            <!--   $2800 (10 240 o) -> tlsf.err = 3, machine figee au menu moniteur   -->
+            <!--   $3000 (12 288 o) -> tlsf.err = 0, boot normal                      -->
+            <!-- pour 9 032 o de donnees de lien sur les 29 entrees de la scene.      -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$3000"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
             <data section="LOADER">

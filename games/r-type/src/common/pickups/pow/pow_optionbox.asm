@@ -6,13 +6,16 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
-        INCLUDE "./objects/player1/forcepods/forcepod.equ"  ; rtnid.* (activate the static force pod)
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (optionbox.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/player1/player1.equ"
+; INCLUDE "./objects/player1/forcepods/forcepod.equ"  ; rtnid.* (activate the static force pod)
+; INCLUDE "./objects/soundFX/soundFX.const.asm"
+; INCLUDE "./engine/sound/soundFX.macro.asm"
 
 AABB_0            equ ext_variables   ; AABB struct (9 bytes)
 Object

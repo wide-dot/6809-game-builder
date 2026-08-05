@@ -18,10 +18,12 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff
@@ -53,10 +55,12 @@ Obj_Index_Address
         fdb   initlevel1.Object        ; ObjID_initlevel1
         fdb   engineflames.Object        ; ObjID_engineflames
         fdb   messages.Object        ; ObjID_messages
+        fdb   powOptionbox.Object        ; ObjID_pow_optionbox
+        fdb   bitdevice.Object        ; ObjID_bitdevice
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
         fdb   stage.placeholder        ; ObjID_bink
-        fdb   stage.placeholder        ; ObjID_pow
+        fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_fadetotunnel
         fdb   stage.placeholder        ; ObjID_scant
         fdb   stage.placeholder        ; ObjID_pstaff
@@ -91,10 +95,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff
@@ -109,6 +115,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_monster
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -166,10 +174,12 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+optionbox.page   ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff

@@ -82,6 +82,12 @@ foefire.Object        EXTERNAL
 ; L'explosion, dans sa page a elle : treize sprites compiles, dont cinq de
 ; 24x48. Tout ce qui meurt la fait naitre par l'index d'objets.
 explosion.Object  EXTERNAL
+
+; Les bonus, communs a tous les stages : le POW que la wave seme, et la boite a
+; option qu'il fait naitre en mourant. Deux unites, deux pages.
+pow.Object          EXTERNAL
+powOptionbox.Object EXTERNAL
+bitdevice.Object    EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 
@@ -109,6 +115,9 @@ emitterFlash.Object EXTERNAL
         ; Les offsets d'OST du fondu : le stage arme l'objet, le moteur le fait
         ; tourner. Le fichier est garde par IFNDEF, donc inclus des deux cotes.
         INCLUDE "engine/objects/palette/fade/fade.equ"
+        ; La routine de veille des bit devices : le corps commun amorce leurs
+        ; deux OST statiques a l'ouverture du stage. Garde par IFNDEF.
+        INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
 
         ; Les variables inter-main, en equates absolues de la zone reservee
         ; `globals` : la boucle les remet a zero a l'entree du stage, comme la

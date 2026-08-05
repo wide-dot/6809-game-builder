@@ -71,3 +71,6 @@ engine/sound/soundFX.asm,engine/sound/soundFX.asm,5d6f1ae5021e70355d8715830df91f
 engine/sound/soundFX.macro.asm,engine/sound/soundFX.macro.asm,5d6f1ae5021e70355d8715830df91f7298168f07,2026-08-04,
 engine/graphics/fade/pixel-fade.asm,engine/graphics/fade/pixel-fade.asm,fac11cdcc13c9324fa12490bf5b9372602cd3453,2026-08-04,import 1:1 — n'est PAS resident : la v1 l'inclut dans l'unite de l'objet endstage
 engine/graphics/codec/bm4.drawChunbks.asm,engine/graphics/codec/bm4.drawChunbks.asm,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-08-04,import 1:1 — n'est PAS resident : la v1 l'inclut dans l'unite de l'objet messages ; nom de fichier v1 conserve avec sa coquille (drawChunbks)
+games/r-type/src/common/pickups/pow/pow.asm,objects/player1/pow/pow.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par pow.unit.asm ; chemin du preset 18dd0 repointe sur src/common/lib/presets
+games/r-type/src/common/pickups/pow/pow_optionbox.asm,objects/player1/pow/pow_optionbox.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par optionbox.unit.asm
+games/r-type/src/common/weapons/bitdevice/obj.asm,objects/player1/bitdevice/obj.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par bitdevice.unit.asm

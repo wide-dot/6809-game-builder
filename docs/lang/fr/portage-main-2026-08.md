@@ -43,7 +43,7 @@ la source.
 | 14 | `globals.score` + **`globals.stageScoreBase`** (24 bits) | score seul | ❌ base de score |
 | 15 | `globals.lives` = 2, `globals.backgroundSolid` = 1 | idem | ✅ |
 | 16 | `_Obj_Run ObjID_LevelInit` | `stage.openingSequence`, **après IrqOn** | ⚠️ à confirmer |
-| 17 | `_Obj_Run ObjID_LevelWave` | — | ❌ |
+| 17 | `_Obj_Run ObjID_LevelWave` | `stage.setup` — le corps de l'objet, en ligne | ✅ |
 | 18 | `_Obj_RunB ObjID_starfield,#starfield.INIT` | `paged.call starfield.init` | 🟡 |
 | 19 | `gfxlock.bufferSwap.do` | idem | 🟡 |
 | 20 | `RunObjects` | idem | 🟡 |
@@ -154,9 +154,19 @@ Cas de migration : `checkpoint-is-one-routine.md`,
 |---|---|---|---|
 | 1 | `clr globals.nextGameMode` | init, 1re ligne | la variable de sortie de niveau ; non remise à zéro, un stage hérite de la sortie du précédent |
 | 2 | `globals.stageScoreBase` (24 bits) | init | base de score au début du stage — le score de fin de stage s'en déduit |
-| 3 | `_Obj_Run ObjID_LevelWave` | init | l'objet qui **arme la vague** ; nous appelons `ObjectWave_Init` à la main dans le checkpoint |
-| 4 | `ClearDataMemRAMx` | `engine/ram/` | effacement d'une page données autre que la courante |
-| 5 | `ClearCartMemory` | `engine/ram/` | effacement de la fenêtre cartouche |
+| 3 | `ClearDataMemRAMx` | `engine/ram/` | effacement d'une page données autre que la courante |
+| 4 | `ClearCartMemory` | `engine/ram/` | effacement de la fenêtre cartouche |
+
+**Correction du 2026-08-05** : `_Obj_Run ObjID_LevelWave` figurait ici à tort.
+L'objet v1 `LevelWave` n'a pas de comportement — son corps entier fait six
+instructions, exécutées une fois à l'init : `ldd #Level_data / std
+object_wave_data / std object_wave_data_start / _GetCartPageA / sta
+object_wave_data_page / rts`. Le déclarer objet était le moyen v1 de faire
+PLACER ses données dans une page et d'en apprendre le numéro au vol. Nous
+faisons exactement ces cinq écritures dans `stage.setup`, la page venant d'une
+équate de pageset au lieu de `_GetCartPageA`. C'est porté, pas absent — et
+c'est pour ça que la vague marche déjà. Même cas que
+`main-private-object.md`.
 
 **Bloqués par un objet non porté** (⛔ — à reprendre avec l'objet) :
 
@@ -164,14 +174,47 @@ Cas de migration : `checkpoint-is-one-routine.md`,
 |---|---|---|
 | 6 | clear `shellEraseTable` (init **et** checkpoint) | objet rotonde |
 | 7 | `_Obj_RunB ObjID_endstage,#endstage.INIT` (init, et au replay du checkpoint) | objet endstage / boss |
-| 8 | amorçage Dormant de `forcepodOST`, `bitdevTopOST`, `bitdevBotOST` (init **et** checkpoint) | objets force pod et bit devices |
-| 9 | `_Obj_RunU ObjID_forcepod`, `_Obj_RunU ObjID_bitdevice` ×2 | idem |
+| 8 | amorçage Dormant de `forcepodOST` (init **et** checkpoint) | objet force pod — les deux bit devices sont FAITS depuis le 05/08 |
+| 9 | `_Obj_RunU ObjID_forcepod`, `_Obj_RunU ObjID_bitdevice` ×2 dans la boucle | force pod ; les OST des bit devices existent et sont amorcés, il reste à les faire tourner |
 | 10 | `_Obj_RunB ObjID_endstage,#endstage.BLIT` et `#endstage.TICK` | endstage |
 | 11 | `_Obj_Run ObjID_shellEraser` | rotonde |
 | 12 | `InitFadeOut` / `FadeOut` (importés, non câblés) | endstage |
 
 **Non applicable** : `LoadAct` (code généré v1, remplacé par le loader de scène),
 `IFDEF DEBUG_START_LAST_CHECKPOINT` (aide de développement v1).
+
+## 6ter. Les objets v1 encore à porter — relevé du 2026-08-05
+
+Critère objectif : présence de l'objet dans les `.properties` **actifs** des sept
+game modes v1 (01 à 08). 73 objets distincts au total.
+
+### Communs — déclarés par les SEPT game modes
+
+| objet | état v2 |
+|---|---|
+| `animation`, `fade`, `Player1`, `Weapon`, `beamcharge`, `beamp`, `foefire`, `collision`, `Mask`, `hud`, `LevelInit` | ✅ portés |
+| `pow`, `pow_optionbox` | ✅ **portés et câblés le 05/08** |
+| `bitdevice` | ✅ **porté et câblé le 05/08** |
+| `forcepod` + `forcepod_reboundlaser` + `forcepod_counterairlaser` | importés 1:1, **non câblés** — 2 260 lignes, 27 fichiers d'images |
+| `LevelWave` | ✅ porté — son corps est dans `stage.setup` (cf. correction §6bis) |
+
+Quasi-communs (5 ou 6 modes sur 7), même nature : `createFoeFire` et
+`loadFirePreset` ✅ portés ; `bossmusic` en bouchon ;
+`forcepod_simplefire` / `_straightup` / `_straightdown` accompagnent le force
+pod ; `p1explosion` est le nom que les stages ≥ 03 donnent à `explosion` ✅.
+
+### Spécifiques — un à quatre game modes
+
+Cast des niveaux et machinerie de stage : `patapata`, `bug`, `bink`, `scant`,
+`pstaff`, `cancer`, `blaster`, `shell`, `tabrok`, la famille `dobkeratops`
+(6 objets), `shellEraser`, `tabrokcanon`, `scantfire`, `commonmissile(flame)`,
+`fadetotunnel`, `endstage`, `mainext`, `starfield`, `initlevel1`, `messages`,
+`checkpoint`, `soundFX`, `ymm01`, `emitter_flash`, `engineflames`.
+
+Parmi eux, sont ✅ portés : `patapata`, `explosion`, `initlevel1`,
+`engineflames`, `messages`, `emitter_flash`, `starfield`, `checkpoint`,
+`soundFX`, `ymm01`. Les autres sont en bouchon dans l'index d'objets — leur
+identifiant existe, leur code non.
 
 ## 7. Ce qui reste à vérifier À L'EXÉCUTION
 

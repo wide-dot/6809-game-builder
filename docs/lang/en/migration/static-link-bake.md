@@ -148,8 +148,60 @@ its exports became dead and were pruned. The two mechanisms compound.
 On the machine: `tlsf.err` at `$A138` reads `0`, and the load runs past the
 title into stage 1 — ship, starfield, scrolling terrain and HUD.
 
+## The same wall, met from the other side
+
+Baking buys headroom ; it does not remove the ceiling. Two days later, wiring
+one more common object (the bit device, 344 bytes of link data) took r-type
+from 8760 to 9104 bytes against a pool capped at `$2800` = 10240 — and the
+machine hung at the monitor menu again, PC parked inside the loader, with a
+build that was entirely green.
+
+Two things make this worth its own paragraph.
+
+**The failure is indistinguishable from "the disk did not boot".** There is no
+`tlsf.err` to read this time and no crash : the loader simply never hands over,
+so what you see is the machine's own menu, exactly as if the keypress had been
+missed. The tell is the PC — inside the data window (`$A000-$DFFF`), which is
+where the loader lives, rather than in the monitor.
+
+**The real ceiling is not the configured value.** `loader.memoryPool` is
+`equ *` — it starts where the loader's code ends. Read both from the loader's
+map file :
+
+```
+Symbol: loader.ADDRESS      = A000
+Symbol: loader.memoryPool   = AF81
+```
+
+The data window ends at `$E000`, so the pool can be at most `$E000 - $AF81`
+= `$307F` = 12415 bytes.
+
+**And the link-data figure alone will not predict the failure.** The build
+prints
+
+```
+link data: 30 direntries, 9104 bytes (pool cost while indexed), 4537 references baked
+```
+
+but the pool also carries the **directory**, the **scene file**, and a **slot
+table the loader reallocs** — three more `tlsf.malloc` sites in
+`loader.asm`. Doing the arithmetic on link data alone says 9032 bytes for the
+29 boot entries, plus 4 bytes of header per block, plus TLSF's second-level
+rounding, is 9304 — comfortably inside a 10240-byte pool. It is not: the pool
+ran out anyway.
+
+So treat that line as an **indicator**, and measure the answer :
+
+| pool | `tlsf.err` at `$A138` after boot | result |
+|---|---|---|
+| `$2800` = 10240 | `3` (`OUT_OF_MEMORY`) | loader never hands over |
+| `$3000` = 12288 | `0` | boots |
+
+Reading that one byte is the whole diagnosis, and it costs nothing. Do it
+before theorising about which allocation failed.
+
 ## Met in
 
-`games/r-type`, 2026-08-03. The v1 build of the same game boots under the same
+`games/r-type`, 2026-08-03, and again 2026-08-05. The v1 build of the same game boots under the same
 emulator, which is what finally ruled out the disk and the emulator: v1 has no
 link data to lose.
