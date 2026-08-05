@@ -5,3 +5,10 @@ fireVelocityPreset  equ y_acl             ; 1 byte  - var 28 - 8bit index (thoms
 fireThreshold       equ y_acl+1           ; 1 byte  - var 2a - 8bit value (thomson) instead of 16bit value (arcade)
 fireDisplayDelay    equ routine_secondary ; 1 byte  - var 20 - 8bit value (thomson) instead of 16bit value (arcade)
 fireReset           equ routine_tertiary  ; 2 bytes - var 2c
+
+; La hauteur du champ de jeu, constante du game mode v1 (main.asm:91). Le force
+; pod la lit pour se borner ; d'autres objets suivront. Gardee : les mains v1
+; encore presents dans l'arbre la definissent aussi.
+ IFNDEF viewport_height
+viewport_height     equ 180
+ ENDC

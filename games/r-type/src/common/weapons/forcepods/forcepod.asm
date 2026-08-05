@@ -35,14 +35,23 @@
 
         ; TODO _Collision_RemoveAABB when downgrade forcepod (player one respawns)
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
-        INCLUDE "./objects/player1/forcepods/forcepod.equ"
-        INCLUDE "./objects/soundFX/soundFX.const.asm"
-        INCLUDE "./engine/sound/soundFX.macro.asm"
-        INCLUDE "./objects/foefire/obj_emitter-flash.equ"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (forcepod.unit.asm), comme pour tout fichier v1 enveloppe.
+; V2-DEVIATION: la lecture de la MANETTE passe a l'API v2, comme pour le joueur
+; (player1.asm) : le module joypad est un KEPT-V2 deja resident, c'est lui qui
+; impose son vocabulaire. Renommage PUR — memes bits, memes cycles :
+;   Fire_Press -> joypad.pressed.fire, c1_button_B_mask -> joypad.0.B
+; Cas de migration : docs/lang/en/migration/kept-v2-api.md
+;
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/player1/player1.equ"
+; INCLUDE "./objects/player1/forcepods/forcepod.equ"
+; INCLUDE "./objects/soundFX/soundFX.const.asm"
+; INCLUDE "./engine/sound/soundFX.macro.asm"
+; INCLUDE "./objects/foefire/obj_emitter-flash.equ"
 
 AABB_0            equ ext_variables    ; AABB struct (9 bytes)
 mount_side        equ ext_variables+9  ; 1 byte (0: front, 1: rear)
@@ -154,8 +163,8 @@ RunFloating
         beq   >
         sta   rotation                 ; rotation is the sign of the vertical velocity
 !
-        ldb   Fire_Press
-        andb  #c1_button_B_mask
+        ldb   joypad.pressed.fire      ; V2-DEVIATION : Fire_Press
+        andb  #joypad.0.B                ; V2-DEVIATION : c1_button_B_mask
         beq   >
         lda   #1
         sta   return_to_ship,u         ; flag forcepod as returning to ship
@@ -622,8 +631,8 @@ VerticalTracking.backgroundCollision
 RunEjected
         clr   rotation
 
-        lda   Fire_Press
-        anda  #c1_button_B_mask
+        lda   joypad.pressed.fire
+        anda  #joypad.0.B
         beq   >
         lda   #1
         sta   return_to_ship,u
@@ -710,8 +719,8 @@ RunAttached
 
         ; TODO clear green balls of level 4
 
-        lda   Fire_Press
-        anda  #c1_button_B_mask
+        lda   joypad.pressed.fire
+        anda  #joypad.0.B
         beq   @continue
         ldd   #$360
         tst   mount_side,u
@@ -752,8 +761,8 @@ ForcePodAttachedFire
         lda   #0
 !       sta   counterair_lock
 
-        ldb   Fire_Press
-        andb  #c1_button_A_mask
+        ldb   joypad.pressed.fire
+        andb  #joypad.0.A
         beq   @rts
         ; FIX arme : niveau = PUISSANCE (0 no pod, 1 pod sans laser, 2 faible, 3 fort) ;
         ;            l'ARME est choisie par le TYPE (couleur du bonus), comme l'arcade
@@ -785,8 +794,8 @@ ForcePodAttachedFire
 @rts    rts
 
 ForcePodDetachedFire
-        ldb   Fire_Press
-        andb  #c1_button_A_mask
+        ldb   joypad.pressed.fire
+        andb  #joypad.0.A
         beq   @rts
         ldb   power_level,u
         decb

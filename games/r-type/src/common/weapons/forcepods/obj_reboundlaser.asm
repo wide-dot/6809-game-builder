@@ -11,10 +11,13 @@
 ; y_pos: y position of the forcepod
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/player1/player1.equ"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (reboundlaser.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/player1/player1.equ"
 
 AABB_0        equ ext_variables    ; AABB struct (9 bytes)
 direction     equ ext_variables+9  ; 1 byte, diagonal: 0=upright, 2=downright, 4=downleft, 6=upleft - horizontal: 0=right, 2=left
@@ -71,12 +74,23 @@ glb.frameDrop      fcb 0
 glb.buffer         fdb 0 ; temp for buffer address
 glb.dataLocation   fdb 0
 
-                       fill 0,32   ; spare bytes for alignment (cycling buffer)
-glb.diagonalUpBuffer   equ (*/32)*32
+; V2-DEVIATION : la v1 aligne ses trois tampons cycliques par arithmetique sur
+; le compteur d'adresse — `fill 0,32` de rab, puis `equ (*/32)*32` qui arrondit
+; vers le bas. Ca ne tient que dans une unite assemblee a une adresse ABSOLUE :
+; ici la section est relogeable, `*` reste symbolique, et l'expression n'est ni
+; repliable a l'assemblage ni relogeable au chargement — un alignement ne se
+; reloge pas, (base+offset)/32*32 n'est pas base+f(offset).
+;
+; `ALIGN 32` dit la meme chose a l'assembleur, qui rend une constante. Chaque
+; `fill` etant un multiple de 32, aligner le PREMIER tampon aligne les trois.
+; CONDITION : la region qui recoit cette unite doit demarrer sur un multiple de
+; 32 — `reboundlaser` est en $1C:$0000, et le layout le garde.
+                       ALIGN 32
+glb.diagonalUpBuffer   equ *
                        fill 0,32*3 ; used to store up to 16 words group (x_pos, y_pos, image_set)
-glb.diagonalDownBuffer equ (*/32)*32
+glb.diagonalDownBuffer equ *
                        fill 0,32*3 ; used to store up to 16 words group (x_pos, y_pos, image_set)
-glb.horizontalBuffer   equ (*/32)*32
+glb.horizontalBuffer   equ *
                        fill 0,32 ; used to store up to 16 words (x_pos)
 
 DIV6u

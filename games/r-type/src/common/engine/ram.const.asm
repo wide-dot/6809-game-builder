@@ -29,10 +29,18 @@ ext_variables_size           equ 20  ; per dynamic object
 * tables sous-objets et les listes « unset » des buffers de priorite, soit
 * 8 x nb_graphical_objects, +256 octets au moteur — mais 50 objets dont 32
 * seulement peuvent etre dessines n'aurait pas de sens.
-* Le pool remonte jusqu'au bloc `globals` ($9E80) : entre lui et les globales,
+* Le pool remonte jusqu'au bloc `globals` : entre lui et les globales,
 * il n'y a plus que l'OST statique du fondu. C'est le trou libre de 1 547 octets
 * qui trainait entre les deux, absorbe.
-Dynamic_Object_RAM_End       equ $9E80-nb_static_objects*object_size
+* L'ANCRE, et le piege qu'elle porte : cette valeur DOIT etre l'adresse du bloc
+* reserve `globals` du layout (to8.config.xml) et de GLOBAL_VARIABLES
+* (state/variables.asm). Rien ne verifie l'accord — le layout decrit la RAM au
+* builder, ces equates la decrivent a l'assembleur, et les deux se croient.
+* Vecu le 2026-08-05 : le bloc globals a recule de $40 pour loger la trainee du
+* joueur, l'ancre est restee a $9E80, et les OST statiques ont recouvert la
+* trainee sans un mot. Les trois valeurs bougent ENSEMBLE.
+GLOBALS_BASE                 equ $9E40
+Dynamic_Object_RAM_End       equ GLOBALS_BASE-nb_static_objects*object_size
 Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size
 
 * Les OST HORS POOL : des objets uniques, vivants pour toute la partie, que le

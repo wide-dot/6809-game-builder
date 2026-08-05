@@ -88,6 +88,12 @@ explosion.Object  EXTERNAL
 pow.Object          EXTERNAL
 powOptionbox.Object EXTERNAL
 bitdevice.Object    EXTERNAL
+
+; L'armement : le force pod et ses trois armes, une unite chacun.
+forcepod.Object        EXTERNAL
+simplefire.Object      EXTERNAL
+reboundlaser.Object    EXTERNAL
+counterairlaser.Object EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 
@@ -118,6 +124,9 @@ emitterFlash.Object EXTERNAL
         ; La routine de veille des bit devices : le corps commun amorce leurs
         ; deux OST statiques a l'ouverture du stage. Garde par IFNDEF.
         INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
+        ; Les identifiants de routine du force pod : le corps commun amorce son
+        ; OST statique en veille a l'ouverture du stage.
+        INCLUDE "src/common/weapons/forcepods/forcepod.equ"
 
         ; Les variables inter-main, en equates absolues de la zone reservee
         ; `globals` : la boucle les remet a zero a l'entree du stage, comme la

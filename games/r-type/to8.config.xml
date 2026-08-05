@@ -20,8 +20,8 @@
             <!--                                                                 -->
             <!-- La borne haute est le pool d'objets, en $90B0 : common + stage   -->
             <!-- disposent de $6100-$90AF, soit 12 208 octets, et rien d'autre.   -->
-            <region name="common"     page="$01" address="$6100" size="$1F00"/>
-            <region name="stage"      page="$01" address="$8000" size="$05D2" interface="true"/>
+            <region name="common"     page="$01" address="$6100" size="$1EC0"/>
+            <region name="stage"      page="$01" address="$7FC0" size="$05D2" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
             <region name="tiles.even" page="$06" address="$0000" size="$4000" pages="3" interface="true"/>
@@ -133,6 +133,16 @@
             <region name="optionbox"  page="$1A" address="$1800" size="$1400"/>
             <!-- Les deux satellites blindes : un objet, deux OST statiques.  -->
             <region name="bitdevice"  page="$1A" address="$2C00" size="$1400"/>
+            <!-- L'armement : le force pod sur sa page, ses trois armes sur la -->
+            <!-- suivante. Tailles a ajuster sur la carte d'occupation.        -->
+            <!-- Tailles arretees sur les mesures du build : forcepod 12 733 o,  -->
+            <!-- reboundlaser 5 870, counterairlaser 8 528, simplefire 2 206.     -->
+            <!-- Le laser a rebond aligne ses tampons cycliques sur 32 octets par -->
+            <!-- ALIGN : sa region DOIT demarrer sur un multiple de 32.           -->
+            <region name="forcepod"        page="$1B" address="$0000" size="$3300"/>
+            <region name="simplefire"      page="$1B" address="$3300" size="$0D00"/>
+            <region name="reboundlaser"    page="$1C" address="$0000" size="$1800"/>
+            <region name="counterairlaser" page="$1C" address="$1800" size="$2400"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -142,17 +152,17 @@
             <!-- variables inter-main, puis la pile, puis la page directe en    -->
             <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
             <!-- protegee comme le reste.                                       -->
-            <reserved name="objects.pool" page="$01" address="$85D2" size="$16DA"/>
+            <reserved name="objects.pool" page="$01" address="$8592" size="$16DA"/>
             <!-- Les OST hors pool (palettefade) : un objet unique, vivant     -->
             <!-- pour toute la partie, lance par _Obj_RunU sur l'adresse de     -->
             <!-- son OST. Voir src/common/engine/ram.const.asm.                 -->
-            <reserved name="objects.static" page="$01" address="$9CAC" size="$01D4"/>
+            <reserved name="objects.static" page="$01" address="$9C6C" size="$01D4"/>
             <!-- Les variables inter-main, la pile qui descend depuis $9F00, et -->
             <!-- les temoins du banc d'echange de stages — tous dans le MEME     -->
             <!-- bloc de $80 octets, en equates (variables.asm, bench.const.asm).-->
             <!-- Les temoins ont eu leur region a eux : 644 octets declares pour -->
             <!-- seize ecrits. Une equate ne laisse pas de trou quand elle part. -->
-            <reserved name="globals"      page="$01" address="$9E80" size="$0080"/>
+            <reserved name="globals"      page="$01" address="$9E40" size="$00C0"/>
             <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
         </layout>
 
@@ -818,6 +828,219 @@
                     </lwasm>
                 </direntry>
 
+                <!-- L'ARMEMENT : le force pod et ses trois armes.            -->
+                <!--                                                           -->
+                <!-- Quatre unites plutot qu'une : les quatre fichiers v1       -->
+                <!-- nomment leur entree Object, leurs tables Routines, et      -->
+                <!-- posent tous AABB_0 equ ext_variables. La v1 en fait quatre -->
+                <!-- objets, nous en faisons quatre unites.                     -->
+                <!-- ******************************************************** -->
+                <direntry name="common.forcepod" loadtimelink="LINK" bake="auto">
+                    <lwasm gensource="gen/weapons/forcepod.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/forcepod.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/forcepod"
+                                 gensource="gen/weapons/forcepod/includes.asm"
+                                 genindex="gen/weapons/forcepod/index.asm"
+                                 file="common.forcepod">
+                            <image name="forcepod_0_0" filename="src/common/weapons/forcepods/images/forcepod_0_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_1" filename="src/common/weapons/forcepods/images/forcepod_0_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_2" filename="src/common/weapons/forcepods/images/forcepod_0_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_3" filename="src/common/weapons/forcepods/images/forcepod_0_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_4" filename="src/common/weapons/forcepods/images/forcepod_0_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_5" filename="src/common/weapons/forcepods/images/forcepod_0_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_0" filename="src/common/weapons/forcepods/images/forcepod_1_0.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_1" filename="src/common/weapons/forcepods/images/forcepod_1_1.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_2" filename="src/common/weapons/forcepods/images/forcepod_1_2.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_3" filename="src/common/weapons/forcepods/images/forcepod_1_3.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_4" filename="src/common/weapons/forcepods/images/forcepod_1_4.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_5" filename="src/common/weapons/forcepods/images/forcepod_1_5.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_0" filename="src/common/weapons/forcepods/images/forcepod_2_0.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_1" filename="src/common/weapons/forcepods/images/forcepod_2_1.png" index="13">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_2" filename="src/common/weapons/forcepods/images/forcepod_2_2.png" index="14">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_3" filename="src/common/weapons/forcepods/images/forcepod_2_3.png" index="15">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.reboundlaser" loadtimelink="LINK" bake="auto">
+                    <lwasm gensource="gen/weapons/reboundlaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/reboundlaser.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/reboundlaser"
+                                 gensource="gen/weapons/reboundlaser/includes.asm"
+                                 genindex="gen/weapons/reboundlaser/index.asm"
+                                 file="common.reboundlaser">
+                            <image name="reboundlaser_angle_0" filename="src/common/weapons/forcepods/images/reboundlaser/laser000.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_1" filename="src/common/weapons/forcepods/images/reboundlaser/laser001.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_2" filename="src/common/weapons/forcepods/images/reboundlaser/laser002.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_3" filename="src/common/weapons/forcepods/images/reboundlaser/laser003.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_4" filename="src/common/weapons/forcepods/images/reboundlaser/laser004.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_5" filename="src/common/weapons/forcepods/images/reboundlaser/laser005.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_6" filename="src/common/weapons/forcepods/images/reboundlaser/laser006.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_7" filename="src/common/weapons/forcepods/images/reboundlaser/laser007.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_0" filename="src/common/weapons/forcepods/images/reboundlaser/laser008.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_1" filename="src/common/weapons/forcepods/images/reboundlaser/laser009.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_2" filename="src/common/weapons/forcepods/images/reboundlaser/laser010.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_3" filename="src/common/weapons/forcepods/images/reboundlaser/laser011.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_horizontal" filename="src/common/weapons/forcepods/images/reboundlaser/laser012.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_0" filename="src/common/weapons/forcepods/images/reboundlaser/laser013.png" index="13">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_1" filename="src/common/weapons/forcepods/images/reboundlaser/laser014.png" index="14">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_2" filename="src/common/weapons/forcepods/images/reboundlaser/laser015.png" index="15">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_3" filename="src/common/weapons/forcepods/images/reboundlaser/laser016.png" index="16">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.counterairlaser" loadtimelink="LINK" bake="auto">
+                    <lwasm gensource="gen/weapons/counterairlaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/counterairlaser.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/counterairlaser"
+                                 gensource="gen/weapons/counterairlaser/includes.asm"
+                                 genindex="gen/weapons/counterairlaser/index.asm"
+                                 file="common.counterairlaser">
+                            <image name="counterairlaser_0" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_1" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_2" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_3" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_4" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_5" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_6" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_6.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_7" filename="src/common/weapons/forcepods/images/counterairlaser-4/counterairlaser_7.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
+                <direntry name="common.simplefire" loadtimelink="LINK" bake="auto">
+                    <lwasm gensource="gen/weapons/simplefire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/simplefire.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/simplefire"
+                                 gensource="gen/weapons/simplefire/includes.asm"
+                                 genindex="gen/weapons/simplefire/index.asm"
+                                 file="common.simplefire">
+                            <image name="shootup" filename="src/common/weapons/forcepods/images/shootpod_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootupright" filename="src/common/weapons/forcepods/images/shootpod_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootright" filename="src/common/weapons/forcepods/images/shootpod_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootdownright" filename="src/common/weapons/forcepods/images/shootpod_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootdown" filename="src/common/weapons/forcepods/images/shootpod_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="simplefire_impact0" filename="src/common/weapons/weapon/images/impact-0.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="simplefire_impact3" filename="src/common/weapons/weapon/images/impact-3.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </direntry>
+
                 <direntry name="common.firechain" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/firechain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1032,6 +1255,10 @@
                     <load name="common.pow"        region="pow"/>
                     <load name="common.optionbox"  region="optionbox"/>
                     <load name="common.bitdevice"  region="bitdevice"/>
+                    <load name="common.forcepod"   region="forcepod"/>
+                    <load name="common.reboundlaser" region="reboundlaser"/>
+                    <load name="common.counterairlaser" region="counterairlaser"/>
+                    <load name="common.simplefire" region="simplefire"/>
                     <load name="common.firechain"  region="firechain"/>
                     <load name="common.foefire"    region="foefire"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>

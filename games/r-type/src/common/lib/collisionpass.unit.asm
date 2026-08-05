@@ -26,14 +26,16 @@ Collision_Run EXPORT
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/system/to8/map.const.asm"
+        ; Le contact arme lit les trois OST statiques et leurs identifiants de
+        ; routine : le force pod et les deux bit devices.
+        INCLUDE "src/common/weapons/forcepods/forcepod.equ"
+        INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
 
 ;*******************************************************************************
-; V2-DEVIATION vs v1 : deux passes manquent, faute des objets qui les peuplent.
-; La liste AABB_list_forcepod n'est meme pas declaree (le force pod n'est pas
-; porte) et WeaponContactTick est le contact force pod / bit device. Les lignes
-; v1 restantes, dans l'ordre, pour le jour ou elles arrivent :
-;       _Collision_Do AABB_list_forcepod,AABB_list_foefire
-;       jsr   WeaponContactTick
+; La passe complete de la v1 (obj_mainext.asm:47-58) : les six paires de listes,
+; puis le contact arme. Les deux dernieres lignes sont arrivees le 2026-08-05
+; avec le force pod et les bit devices — jusque-la, ni la liste ni les OST
+; qu'elles lisent n'existaient.
 ;*******************************************************************************
 Collision_Run
         _Collision_Do AABB_list_friend,AABB_list_ennemy
@@ -41,6 +43,20 @@ Collision_Run
         _Collision_Do AABB_list_player,AABB_list_foefire
         _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable
         _Collision_Do AABB_list_player,AABB_list_ennemy
+        _Collision_Do AABB_list_forcepod,AABB_list_foefire ; le pod arrete les tirs
+        ; Contact arme (force pod + deux bit devices) contre les ennemis : ce
+        ; n'est PAS generique — une porte globale au 1/16e de trame pour les
+        ; ennemis a points de vie, contact immediat pour ceux qui tombent d'un
+        ; coup, et les armes ne sont jamais consommees.
+        jsr   WeaponContactTick
         rts
+
+; V2-DEVIATION : la v1 declare cet octet dans le ram_data de son game mode ;
+; ici il appartient a l'unite qui l'ecrit — WeaponContactTick est son seul
+; lecteur. Une unite est CHARGEE, donc ce `fcb 0` arrive vraiment a zero,
+; contrairement a un bloc reserve.
+weaponGateAccum fcb 0            ; +frameDrop.count par trame, tire tous les 16
+
+        INCLUDE "src/common/lib/weaponcollide.asm"
 
  ENDSECTION

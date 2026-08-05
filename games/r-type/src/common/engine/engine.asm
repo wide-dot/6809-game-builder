@@ -123,6 +123,7 @@ AABB_list_ennemy_unkillable  fdb   0,0
 AABB_list_player             fdb   0,0
 AABB_list_bonus              fdb   0,0
 AABB_list_foefire            fdb   0,0
+AABB_list_forcepod           fdb   0,0
 
 ; Leur remise a zero en bloc, au rechargement d'un checkpoint. Porte du game
 ; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
@@ -130,7 +131,7 @@ AABB_list_foefire            fdb   0,0
 Collision_ClearLists
         ldd   #0
         ldy   #AABB_list_friend
-        ldx   #6*2                     ; six listes de deux mots
+        ldx   #7*2                     ; sept listes de deux mots
 !       std   ,y++
         leax  -1,x
         bne   <

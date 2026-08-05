@@ -174,8 +174,8 @@ c'est pour ça que la vague marche déjà. Même cas que
 |---|---|---|
 | 6 | clear `shellEraseTable` (init **et** checkpoint) | objet rotonde |
 | 7 | `_Obj_RunB ObjID_endstage,#endstage.INIT` (init, et au replay du checkpoint) | objet endstage / boss |
-| 8 | amorçage Dormant de `forcepodOST` (init **et** checkpoint) | objet force pod — les deux bit devices sont FAITS depuis le 05/08 |
-| 9 | `_Obj_RunU ObjID_forcepod`, `_Obj_RunU ObjID_bitdevice` ×2 dans la boucle | force pod ; les OST des bit devices existent et sont amorcés, il reste à les faire tourner |
+| ~~8~~ | amorçage Dormant de `forcepodOST` | ✅ **fait le 05/08** avec le force pod |
+| ~~9~~ | `_Obj_RunU ObjID_forcepod`, `_Obj_RunU ObjID_bitdevice` ×2 dans la boucle | ✅ **fait le 05/08**, à la place exacte de la v1 (après le joueur) |
 | 10 | `_Obj_RunB ObjID_endstage,#endstage.BLIT` et `#endstage.TICK` | endstage |
 | 11 | `_Obj_Run ObjID_shellEraser` | rotonde |
 | 12 | `InitFadeOut` / `FadeOut` (importés, non câblés) | endstage |
@@ -195,7 +195,7 @@ game modes v1 (01 à 08). 73 objets distincts au total.
 | `animation`, `fade`, `Player1`, `Weapon`, `beamcharge`, `beamp`, `foefire`, `collision`, `Mask`, `hud`, `LevelInit` | ✅ portés |
 | `pow`, `pow_optionbox` | ✅ **portés et câblés le 05/08** |
 | `bitdevice` | ✅ **porté et câblé le 05/08** |
-| `forcepod` + `forcepod_reboundlaser` + `forcepod_counterairlaser` | importés 1:1, **non câblés** — 2 260 lignes, 27 fichiers d'images |
+| `forcepod` + `reboundlaser` + `counterairlaser` + `simplefire` | ✅ **portés et câblés le 05/08** — 4 unités, pages $1B et $1C, 48 sprites |
 | `LevelWave` | ✅ porté — son corps est dans `stage.setup` (cf. correction §6bis) |
 
 Quasi-communs (5 ou 6 modes sur 7), même nature : `createFoeFire` et

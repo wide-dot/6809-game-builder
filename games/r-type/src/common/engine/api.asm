@@ -105,6 +105,9 @@ checkpoint.clearData EXTERNAL
         ; --- object manager ---
         _api InitStack
         _api ManagedObjects_ClearAll
+        ; La tete de la liste d'objets vivants : le laser a rebond la parcourt
+        ; pour retrouver ses propres segments et recalculer son masque de slots.
+        _api object_list_first
         _api RunObjects
         ; Le gel de la mort : redessine les objets sans derouler leur logique.
         _api RunFrozenObjects
@@ -246,6 +249,7 @@ Collision_Run EXTERNAL
         _api AABB_list_player
         _api AABB_list_bonus
         _api AABB_list_foefire
+        _api AABB_list_forcepod
 
         ; --- la chaine de tir ennemi : residente, comme dans le main v1
         ; (main.asm:565-568). tryFoeFire est appele par l'ennemi, qui tourne

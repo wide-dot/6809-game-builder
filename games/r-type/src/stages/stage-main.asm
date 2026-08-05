@@ -99,12 +99,25 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Sans la routine de veille, un slot mis a zero part en routine 0 —
         ; l'Init de l'objet — et le force pod comme les bit devices naitraient
         ; tout seuls a l'ouverture du stage, sans avoir ete ramasses.
+        lda   #ObjID_forcepod
+        sta   forcepodOST+id
+        lda   #rtnid.Dormant
+        sta   forcepodOST+routine
         lda   #ObjID_bitdevice
         sta   bitdevTopOST+id
         sta   bitdevBotOST+id
         lda   #bitdev.rtnid.Dormant
         sta   bitdevTopOST+routine
         sta   bitdevBotOST+routine
+
+        ; LE POINTEUR DE LA TRAINEE DU JOUEUR. La v1 l'initialise depuis le
+        ; binaire de son game mode (`fdb player_pos_ring_buffer`) ; ici la
+        ; trainee vit dans le bloc reserve `globals`, que rien ne charge — donc
+        ; c'est a l'init de le semer. Sans lui, le force pod suit une adresse
+        ; batie sur ce que la RAM contenait.
+        ; Cf. docs/lang/en/migration/reserved-ram-is-not-zeroed.md
+        ldd   #player_pos_ring_buffer
+        std   player_pos_ring_buffer_ptr
 
         ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
         ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
@@ -284,6 +297,13 @@ stage.state.running
         ; Le joueur, avant les objets du pool comme en v1 : son OST est en page
         ; directe, donc lui aussi echappe a RunObjects.
         _Obj_RunU ObjID_Player1,#player1
+        ; Les trois slots statiques d'armement, juste apres le joueur comme en
+        ; v1 (main.asm:225-227). Ils dorment (routine Dormant) tant qu'une
+        ; boite a option ne les a pas reveilles, et RunObjects ne les voit pas :
+        ; leur OST est hors pool.
+        _Obj_RunU ObjID_forcepod,#forcepodOST
+        _Obj_RunU ObjID_bitdevice,#bitdevTopOST
+        _Obj_RunU ObjID_bitdevice,#bitdevBotOST
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         jsr   gfxlock.on

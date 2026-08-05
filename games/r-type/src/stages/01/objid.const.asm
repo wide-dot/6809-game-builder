@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 01 — genere par tools/gen_objid.py 01
 * ===========================================================================
-* Les 34 identifiants que la wave reelle du niveau 01 reference, et
+* Les 38 identifiants que la wave reelle du niveau 01 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -29,21 +29,25 @@ ObjID_engineflames           equ 15
 ObjID_messages               equ 16
 ObjID_pow_optionbox          equ 17
 ObjID_bitdevice              equ 18
-ObjID_patapata               equ 19
-ObjID_bug                    equ 20
-ObjID_bink                   equ 21
-ObjID_pow                    equ 22
-ObjID_fadetotunnel           equ 23
-ObjID_scant                  equ 24
-ObjID_pstaff                 equ 25
-ObjID_cancer                 equ 26
-ObjID_blaster                equ 27
-ObjID_shell                  equ 28
-ObjID_tabrok                 equ 29
-ObjID_bossmusic              equ 30
-ObjID_tailmgr                equ 31
-ObjID_dobkeratops            equ 32
-ObjID_dobkeratops_jaw        equ 33
-ObjID_dobkeratops_monster    equ 34
-objid.count                  equ 34
+ObjID_forcepod               equ 19
+ObjID_forcepod_simplefire    equ 20
+ObjID_forcepod_reboundlaser  equ 21
+ObjID_forcepod_counterairlaser equ 22
+ObjID_patapata               equ 23
+ObjID_bug                    equ 24
+ObjID_bink                   equ 25
+ObjID_pow                    equ 26
+ObjID_fadetotunnel           equ 27
+ObjID_scant                  equ 28
+ObjID_pstaff                 equ 29
+ObjID_cancer                 equ 30
+ObjID_blaster                equ 31
+ObjID_shell                  equ 32
+ObjID_tabrok                 equ 33
+ObjID_bossmusic              equ 34
+ObjID_tailmgr                equ 35
+ObjID_dobkeratops            equ 36
+ObjID_dobkeratops_jaw        equ 37
+ObjID_dobkeratops_monster    equ 38
+objid.count                  equ 38
 objid.animation              equ ObjID_animation

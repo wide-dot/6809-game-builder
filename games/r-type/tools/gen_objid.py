@@ -39,7 +39,11 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          # Les bonus : le POW vient de la wave, mais ce qu'il fait naitre en
          # mourant — la boite a option, ou le bit device quand le quartet haut
          # de son subtype vaut 5 — n'y figure pas.
-         'ObjID_pow_optionbox', 'ObjID_bitdevice']
+         'ObjID_pow_optionbox', 'ObjID_bitdevice',
+         # L'armement : le force pod vit dans un slot statique, la wave ne le
+         # nomme donc jamais ; ses trois armes, c'est lui qui les fait naitre.
+         'ObjID_forcepod', 'ObjID_forcepod_simplefire',
+         'ObjID_forcepod_reboundlaser', 'ObjID_forcepod_counterairlaser']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -91,7 +95,11 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_messages':      ('messages',   'messages.Object'),
           'ObjID_pow':           ('pow',        'pow.Object'),
           'ObjID_pow_optionbox': ('optionbox',  'powOptionbox.Object'),
-          'ObjID_bitdevice':     ('bitdevice',  'bitdevice.Object')}
+          'ObjID_bitdevice':     ('bitdevice',  'bitdevice.Object'),
+          'ObjID_forcepod':                 ('forcepod',        'forcepod.Object'),
+          'ObjID_forcepod_simplefire':      ('simplefire',      'simplefire.Object'),
+          'ObjID_forcepod_reboundlaser':    ('reboundlaser',    'reboundlaser.Object'),
+          'ObjID_forcepod_counterairlaser': ('counterairlaser', 'counterairlaser.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':
