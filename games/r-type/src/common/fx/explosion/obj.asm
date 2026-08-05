@@ -35,8 +35,7 @@ Routines
         fdb   Live
 
 Init
-; V2-DEVIATION: son neutralise (moteur audio non porte) — a retablir tel quel
-;        _soundFX.play soundFX.ExplosionSound,1
+        _soundFX.play soundFX.ExplosionSound,1
         ldb   subtype,u
         ldx   #exp.animations
         ldx   b,x

@@ -15,10 +15,9 @@
 ; replie dans une unite v2 — les re-inclure donne « Duplicate macro definition ».
 ; Cas de migration : docs/lang/en/migration/v1-file-sections.md
         INCLUDE "src/common/player/player1.equ"
-; V2-DEVIATION: le SON n'est pas porte. _soundFX.play et _ymm.stop lisent et
-; ecrivent les variables du moteur audio (soundFX.newSound / .curSound), qui
-; n'existe pas encore en v2 ; leurs deux sites d'appel sont neutralises plus
-; bas, marques un a un. A retablir avec le portage de soundFX.
+; Le SON est porte : la boite aux lettres soundFX.newSound/.curSound est
+; residente et le pilote vit dans sa page. Seul l'arret de la musique a change
+; de forme — voir le site, plus bas.
 ; V2-DEVIATION: obj_emitter-flash.equ appartient a la chaine de tir, elle non
 ; plus pas portee — les identifiants d'armement pointent le bouchon.
 ; V2-DEVIATION: la lecture de la MANETTE passe a l'API v2. Le module joypad de
@@ -322,9 +321,14 @@ destroy
  ELSE
         ldd   #0
         std   player1+beam_value
-; V2-DEVIATION: son neutralise (moteur audio non porte) — a retablir tel quel
-;        _ymm.stop
-;        _soundFX.play soundFX.PlayerHitSound,$85
+; V2-DEVIATION: `_ymm.stop` de la v1 devient un paged.call. Le lecteur v2 vit
+; dans sa page et n'a pas de macro sans argument ; surtout, le joueur tourne
+; lui-meme depuis une page montee, donc l'appel DOIT rendre la fenetre —
+; ce que _ram.cart.set (que les macros _ymm.* emploient) ne fait pas.
+        lda   #map.RAM_OVER_CART+ymm.player.page
+        ldx   #ymm.stop
+        jsr   paged.call
+        _soundFX.play soundFX.PlayerHitSound,$85
         ldd   #Ani_Player1_explode
         std   anim,u
         lda   #Dead_routine

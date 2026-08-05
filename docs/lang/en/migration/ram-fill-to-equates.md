@@ -69,3 +69,16 @@ Recorded from the `sound/to8` pilot, 2026-07-31. The `<reserved>` declarations
 were added for `games/r-type` on 2026-08-01 — the builder checked overlaps
 *between loads*, but knew nothing of what the game occupies without loading
 anything.
+
+## The corollary, met much later
+
+Turning a `fill` into an equate plus a `<reserved>` block keeps the *address*
+and drops the *content*. A v1 `fill` is data of the game mode binary : it
+arrives from disk zeroed. A `<reserved>` block is a promise the builder makes to
+the loader, and nothing writes it.
+
+Whatever a v1 game got for free from that `fill` — zeroed bytes, an object id
+laid down by an `fcb` — needs an explicit initialisation in v2. See
+[a v1 `fill` is loaded data, a v2 `<reserved>` block is not](reserved-ram-is-not-zeroed.md),
+which is the same case caught the hard way, three weeks and one memory map
+later.

@@ -53,7 +53,11 @@ practice; this is a reading order, not a schedule.
 3. [A unit begins at its entry point](unit-entry-point.md)
 4. [A v1 main loop is jumped to; a v2 stage body is fallen into](loop-fallthrough.md) —
    the corollary: data on a fall-through path is executed.
-5. [v1 RAM `fill`s become equates](ram-fill-to-equates.md)
+5. [v1 RAM `fill`s become equates](ram-fill-to-equates.md) — and its corollary,
+   the one that bites much later :
+   [a v1 `fill` is loaded data, a v2 `<reserved>` block is not](reserved-ram-is-not-zeroed.md).
+   The block a v1 game got zeroed from disk has to be zeroed by hand, and the
+   omission hides until the memory map moves.
 6. [A page is a register value, not a page number](page-register-value.md)
 7. [A global read from several pages is an address, not a label](shared-globals.md)
 8. [A v1 game has no link data; a v2 unit pays for every pointer it
@@ -73,7 +77,12 @@ practice; this is a reading order, not a schedule.
     judging anything on screen.
 14. [Screen coordinates are offset](screen-coordinates.md)
 15. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
-    the one whose absence a screenshot will not reveal.
+    the one whose absence a screenshot will not reveal. It turned out to be
+    half of a v1 routine, hence :
+    [import a v1 routine whole, or you will ship two of it](checkpoint-is-one-routine.md).
+15b. [A v1 relative toggle assumes v1 owned the register](relative-toggles-on-shared-registers.md) —
+    read-modify-write on `$E7E5` &co. In v2 the loader and the resident engine
+    share those registers ; anchor absolutely instead of inheriting.
 16. [Calling a routine that lives in a paged unit](paged-routine.md) — replaces
     the v1 habit of declaring it an object just to get it placed.
 17. [Generated draw code carries no absolute address](generated-code-addresses.md)

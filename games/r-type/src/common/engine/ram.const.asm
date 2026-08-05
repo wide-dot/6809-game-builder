@@ -18,21 +18,45 @@ moveByScript.POSXSTEP        equ  $0060
 moveByScript.NEGYSTEP        equ -$00C0
 moveByScript.POSYSTEP        equ  $00C0
 
-nb_dynamic_objects           equ 16
-nb_graphical_objects         equ 32
+nb_dynamic_objects           equ 50
+nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 
-* The dynamic object pool, in resident RAM above the stage region. object_size
-* is 117, so sixteen slots take $750 bytes and the pool ends below the bench
-* result table at $9C00.
-Dynamic_Object_RAM           equ $9800-nb_dynamic_objects*object_size
-Dynamic_Object_RAM_End       equ $9800
+* The dynamic object pool, in resident RAM above the stage region. La geometrie
+* est celle de la v1 pour le niveau 1 (game-mode/01/ram_data.asm) :
+* nb_dynamic_objects = 50, nb_graphical_objects = 64. object_size vaut 117, donc
+* le pool prend $16DA octets. Le second n'est pas gratuit — il dimensionne les
+* tables sous-objets et les listes « unset » des buffers de priorite, soit
+* 8 x nb_graphical_objects, +256 octets au moteur — mais 50 objets dont 32
+* seulement peuvent etre dessines n'aurait pas de sens.
+* Le pool remonte jusqu'au bloc `globals` ($9E80) : entre lui et les globales,
+* il n'y a plus que l'OST statique du fondu. C'est le trou libre de 1 547 octets
+* qui trainait entre les deux, absorbe.
+Dynamic_Object_RAM_End       equ $9E80-nb_static_objects*object_size
+Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size
 
 * Les OST HORS POOL : des objets uniques, vivants pour toute la partie, que le
 * jeu lance par _Obj_RunU avec l'adresse de leur OST. Ils ne passent pas par
 * l'allocateur — la v1 les declarait de meme dans le ram_data de son game mode.
 * Ils vivent juste au-dessus du pool, sous les temoins du banc en $9C00.
+* Les QUATRE OST statiques de la v1 (game-mode/01/ram_data.asm), dans son ordre
+* et contigus. Trois d'entre eux attendent encore leur objet — le force pod et
+* les deux bit devices ne sont pas portes — mais leur PLACE est reservee des
+* maintenant : c'est elle qui fige la carte de la page residente, et la reserver
+* apres coup obligerait a re-decouper regions et pool.
+*
+* NE PAS RETAILLER un seul de ces emplacements : la v1 le dit en toutes lettres
+* pour le fondu, qui ecrit o_fade_curwait au-dela de ce qu'un OST trimme
+* couvrirait, et deborderait alors sur son voisin.
+*
+* La v1 les amorce a leur routine Dormant dans Level01_Start puis au
+* rechargement de checkpoint ; ces deux gestes viendront avec les objets.
+nb_static_objects            equ 4
+
 palettefade                  equ Dynamic_Object_RAM_End
+forcepodOST                  equ palettefade+object_size
+bitdevTopOST                 equ forcepodOST+object_size
+bitdevBotOST                 equ bitdevTopOST+object_size
 
 * L'OST DU JOUEUR vit en PAGE DIRECTE, pas dans le pool : le joueur tourne a
 * chaque trame et ses champs sont lus sans arret, donc la v1 lui donnait

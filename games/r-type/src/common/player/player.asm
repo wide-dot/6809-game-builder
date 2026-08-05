@@ -37,6 +37,14 @@ mainloop.state    EXTERNAL
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
         INCLUDE "engine/objects/palette/fade/fade.equ"
+        ; Le son : le joueur demande un bruitage en mourant, et coupe la
+        ; musique. Meme paire que l'explosion et l'arme — constantes partagees a
+        ; l'assemblage, boite aux lettres traversant le lien. La carte des pages
+        ; vient en plus : couper la musique, c'est appeler DANS la page du
+        ; lecteur, donc nommer `ymm.player.page`.
+        INCLUDE "gen/layout.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         ; Les variables inter-main, en equates absolues de la zone reservee
         ; `globals` : le joueur lit le verrou du missile et l'arriere-plan
         ; solide, que le tir ennemi lit aussi depuis sa propre page.

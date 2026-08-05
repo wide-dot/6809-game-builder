@@ -59,6 +59,16 @@ Player            EXTERNAL
 ; Les flammes de reacteur de la sequence d'ouverture, dans leur page.
 engineflames.Object   EXTERNAL
 
+; Le son : le lecteur et le pilote de bruitages vivent dans leurs pages, le
+; morceau de CE stage dans celle des donnees musicales.
+ymm.obj.play      EXTERNAL
+ymm.frame.play    EXTERNAL
+soundfx.frame     EXTERNAL
+; Ce stage n'a pas de musique a lui : il rejoue celle du niveau 1, seule
+; chargee par la scene de boot.
+sounds.level1.ymm EXTERNAL
+stage.music       equ sounds.level1.ymm
+
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
 PaletteFade           EXTERNAL
@@ -72,6 +82,8 @@ foefire.Object        EXTERNAL
 ; L'explosion, dans sa page a elle : treize sprites compiles, dont cinq de
 ; 24x48. Tout ce qui meurt la fait naitre par l'index d'objets.
 explosion.Object  EXTERNAL
+messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
+        INCLUDE "src/common/hud/messages/messages.const.asm"
 
 ; L'armement, quatre unites sur la page $13 : le tir de base, la charge, le
 ; beam et l'eclair d'emission. Le joueur les cree par l'index d'objets.
@@ -92,6 +104,7 @@ emitterFlash.Object EXTERNAL
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/object-management/Obj_Run.macro.asm"
         ; Les offsets d'OST du fondu : le stage arme l'objet, le moteur le fait
         ; tourner. Le fichier est garde par IFNDEF, donc inclus des deux cotes.
@@ -116,6 +129,7 @@ emitterFlash.Object EXTERNAL
 ;*******************************************************************************
 ; Les points de reprise de CE stage, en tuiles de collision (24 px), la
 ; sentinelle -1 en butoir — la table du game mode v1.
+checkpoint.positions EXPORT
 checkpoint.positions
         fcb   0
         fcb   -1

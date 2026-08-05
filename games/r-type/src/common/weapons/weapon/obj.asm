@@ -35,8 +35,7 @@ Weapon_Routines
         fdb   AlreadyDeleted
 
 Init
-; V2-DEVIATION: son neutralise (moteur audio non porte)
-;        ;_soundFX.play soundFX.FireSound,0
+        _soundFX.play soundFX.FireSound,0
         ldd   x_pos,u
         addd  #8+3
         std   x_pos,u

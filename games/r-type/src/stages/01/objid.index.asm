@@ -15,8 +15,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -51,6 +52,7 @@ Obj_Index_Address
         fdb   foefire.Object        ; ObjID_foefire
         fdb   initlevel1.Object        ; ObjID_initlevel1
         fdb   engineflames.Object        ; ObjID_engineflames
+        fdb   messages.Object        ; ObjID_messages
         fdb   patapata.Object        ; ObjID_patapata
         fdb   stage.placeholder        ; ObjID_bug
         fdb   stage.placeholder        ; ObjID_bink
@@ -86,8 +88,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
@@ -106,6 +109,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_monster
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -159,8 +163,9 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+firechain.page   ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+foefire.page   ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+engineflames.page   ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+messages.page   ; ObjID_messages
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink

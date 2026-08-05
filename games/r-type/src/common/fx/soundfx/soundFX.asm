@@ -1,5 +1,7 @@
 
-        INCLUDE "./engine/sound/soundFX.asm"
+; V2-DEVIATION: meme fichier, chemin v2 — le pilote est importe dans
+; engine/sound/ (ligne de manifest du 04/08).
+        INCLUDE "engine/sound/soundFX.asm"
 
 ; Sound data lookup table
 soundFX.soundTable

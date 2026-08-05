@@ -72,6 +72,48 @@ game.stage      fcb   0
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/state/score.asm"
 
+;*******************************************************************************
+; Le son : la boite aux lettres, et le pont d'IRQ des lecteurs
+;
+; _soundFX.play est un MACRO : il s'expanse dans la page de l'objet qui joue un
+; bruitage et ecrit ces deux mots. Ils sont donc RESIDENTS, comme les listes de
+; collision et pour la meme raison — la v1 les met au meme endroit.
+;
+; Le pont irq.on/irq.off : les lecteurs YMM et VGC sont des modules v2 conserves
+; (KEPT-V2) qui resolvent ces deux noms AU LIEN. Un symbole absent vaut zero en
+; silence, soit un jsr $0000 — c'est la cause racine qui avait coute le pilote
+; M2. Deux equates exportees, zero octet emis.
+; Cas de migration : docs/lang/en/migration/irq-bridge.md
+;*******************************************************************************
+; $FF00 est la sentinelle d'inactivite du pilote (soundFX.NO_SOUND) : semees a
+; zero, les deux boites demanderaient le son 0 a chaque trame.
+soundFX.curSound             fdb   $FF00
+soundFX.newSound             fdb   $FF00
+
+; Le contrat v2 de `irq.on`/`irq.off` est de PRESERVER LES REGISTRES —
+; engine/system/to8/irq/irq.asm le dit en toutes lettres (« and preserve
+; registers ») et l'obtient par pshs a / puls a,pc. Les routines v1 IrqOn et
+; IrqOff, elles, ecrasent A : elles lisent le registre STATUS dedans.
+;
+; Un simple `equ` sur les routines v1 tient donc la promesse du NOM sans tenir
+; celle du CONTRAT. Le lecteur YMM appelle `jsr irq.off` au beau milieu de la
+; sequence ou A porte la page des donnees musicales, juste avant
+; `sta ymm.data.page` : avec l'alias nu il rangeait $00, montait la page 0 au
+; lieu de la sienne, y depaquetait du bruit, et le depaqueteur ne trouvait
+; jamais sa fin de flux — IRQ jamais rendue, machine partie.
+;
+; Le sas est ici et pas dans Irq.asm : c'est NOTRE pont vers le dialecte v2, et
+; les quatre exemples qui incluent engine/irq/Irq.asm doivent rester au bit pres.
+irq.on  EXPORT
+irq.on  pshs  a
+        jsr   IrqOn
+        puls  a,pc
+
+irq.off EXPORT
+irq.off pshs  a
+        jsr   IrqOff
+        puls  a,pc
+
 ; Les listes de boites de collision. Elles sont resideNtes : un objet s'y
 ; inscrit a sa creation et s'en retire a sa mort, et le jeu en entier partage
 ; les memes quatre listes.
@@ -94,33 +136,11 @@ Collision_ClearLists
         bne   <
         rts
 
-;*******************************************************************************
-; La passe de detection — doCollision de la v1 (obj_mainext)
-;
-; Elle vit ICI, dans le resident, pour la meme raison que Collision_ClearLists :
-; les listes y vivent, et les operandes auto-modifiees que le macro _Collision_Do
-; ecrit (Collision_Do_1/_2) sont internes a Collision_Do. La v1, elle, la
-; deportait dans un objet monte parce que sa page residente etait pleine ; ici
-; elle tient, et le stage n'a qu'un appel a faire — un export au lieu de trois.
-;
-; L'ordre des paires est celui de la v1. Aucune n'est arbitraire : friend x
-; ennemy fait mourir l'ennemi sous le tir du joueur, player x ennemy fait mourir
-; le joueur au contact.
-;
-; V2-DEVIATION vs v1 : deux passes manquent, faute des objets qui les peuplent.
-; La liste AABB_list_forcepod n'est meme pas declaree (le force pod n'est pas
-; porte) et WeaponContactTick est le contact force pod / bit device. Les lignes
-; v1 restantes, dans l'ordre, pour le jour ou elles arrivent :
-;       _Collision_Do AABB_list_forcepod,AABB_list_foefire
-;       jsr   WeaponContactTick
-;*******************************************************************************
-Collision_Run
-        _Collision_Do AABB_list_friend,AABB_list_ennemy
-        _Collision_Do AABB_list_player,AABB_list_bonus
-        _Collision_Do AABB_list_player,AABB_list_foefire
-        _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable
-        _Collision_Do AABB_list_player,AABB_list_ennemy
-        rts
+; La passe de detection, elle, a quitte le resident : elle vit dans l'unite
+; montee `collisionpass`, comme la v1 la met dans obj_mainext. Du calcul pur sur
+; ces listes, donc page-neutre, et un seul appelant — la boucle de stage, une
+; fois par trame. Ses 184 octets sont alles au pool d'objets.
+; Voir docs/lang/fr/analyse-residente-2026-08.md, etape 5 du chemin vers 50.
 
 ;*******************************************************************************
 ; L'échange de stage
@@ -179,7 +199,9 @@ terrainCollision.init.do
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
-        INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
+; L'effacement des tampons de donnees est parti en unite montee (clear) : cent
+; octets pour un travail qui n'arrive qu'a l'ouverture d'un stage et au
+; rechargement d'un checkpoint. Voir src/common/lib/clear.unit.asm.
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
@@ -221,7 +243,17 @@ terrainCollision.init.do
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
         INCLUDE "engine/graphics/animation/moveByScript.asm"
         INCLUDE "engine/collision/collision.asm"
-        INCLUDE "engine/graphics/codec/zx0_mega.asm"
+; LE CODEC ZX0 N'EST PAS INCLUS. Aucune image de R-Type n'est encodee `rle` ni
+; `zx0` — que du `bdraw` et du `draw` — et le decompresseur pese 200 octets de
+; page 1, qui valent mieux au budget du pool d'objets.
+;
+; Ce n'est pas une suppression sauvage : DrawSpritesExtEnc garde ses deux `jsr`
+; et porte lui-meme le talon (`ifndef zx0_6809_mega_wrap` -> `rts`), exactement
+; comme pour DecMapAlpha. C'est le repli prevu par le moteur, pas un bricolage.
+;
+; A REACTIVER en decommentant la ligne ci-dessous le jour ou un `<gfxcomp>` de
+; ce jeu produira du zx0 — sans quoi l'image se dessinerait compressee.
+;        INCLUDE "engine/graphics/codec/zx0_mega.asm"
         INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
         ; L'historique des 16 dernieres directions, que le force pod du joueur
         ; relit pour le suivre avec du retard. Fichier v1 SANS section : il va

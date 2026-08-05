@@ -14,6 +14,8 @@ map.YM2413.D EXTERNAL
 ymm.play       EXPORT
 ymm.obj.play   EXPORT
 ymm.frame.play EXPORT
+ymm.stop       EXPORT
+ymm.restart    EXPORT
 
         IFNDEF  engine.sound.ym2413.macro.asm
         INCLUDE "engine/sound/ym2413.macro.asm"
@@ -90,6 +92,46 @@ ymm.obj.play
 ;
 ; ------------------------------------------------------------------------------
         
+; ------------------------------------------------------------------------------
+; ymm.stop - arrete la musique et fait taire la puce
+; ------------------------------------------------------------------------------
+; Pendant v2 de la commande STOP de la v1 (engine/objects/sound/ymm/ymm.asm,
+; branche `cmpb #ymm.command.STOP` -> `jsr ym2413.reset`). La v1 tenait l'arret
+; par une COMMANDE persistante relue a chaque trame ; la v2 n'a pas de commande,
+; mais `ymm.frame.play` se garde deja sur `ymm.status` — le poser a zero donne
+; exactement la meme persistance. `ym2413.init` est, lui, le `ym2413.reset` de
+; la v1 sous un autre nom : meme code, octet pour octet.
+; ------------------------------------------------------------------------------
+ymm.stop
+        clr   ymm.status
+        jmp   ym2413.init
+
+; ------------------------------------------------------------------------------
+; ymm.restart - reprend la musique a son point de bouclage
+; ------------------------------------------------------------------------------
+; Pendant v2 de la commande RESTART de la v1, dont le corps est
+; YVGM_PlayMusicAtLoopPoint (engine/sound/YM2413vgm.asm) : meme sequence, aux
+; noms pres. Un ajout : la v1 arretait par une COMMANDE et laissait
+; YVGM_MusicStatus a 1, alors que `ymm.stop` remet ici le statut a zero — il
+; faut donc le relever, sans quoi `ymm.frame.play` ressortirait aussitot.
+;
+; Le morceau reprend au POINT DE BOUCLAGE, pas au debut : les deux premiers
+; octets des donnees portent ce decalage, et c'est le comportement de la v1 au
+; rechargement de checkpoint.
+; ------------------------------------------------------------------------------
+ymm.restart
+        lda   #1
+        sta   ymm.status
+        ldb   #1
+        stb   ymm.frame.waits
+        ldx   ymm.data
+        ldd   ,x
+        leax  d,x                      ; move to loop point
+        ldu   #ymm.buffer
+        stu   ymm.data.pos
+        jsr   ymm.decompress
+        jmp   ymm.frame.play
+
 ymm.frame.play
         lda   ymm.status
         beq   @rts
@@ -296,7 +338,21 @@ ymm.frame.resume   com @flip
 ; buffer must be placed at absolute addr > buffer size
 ; if buffer is 512 bytes, buffer should be placed >= $0200
 ; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+; Le bourrage qui TIENT cet avertissement, restaure de la v1
+; (engine/sound/YM2413vgm.asm, fin de fichier) : l'import v2 avait garde le
+; commentaire et perdu les quatre lignes qui le rendent vrai. Sans elles le
+; tampon tombe a l'offset $01BF de l'unite ; `leax >$ffff,u` (u - offset) passe
+; alors sous $0000, la comparaison NON SIGNEE `cmpx #ymm.buffer` voit $FFxx
+; comme superieur, le rebouclage d'anneau n'a pas lieu, et le depaqueteur lit
+; hors tampon. Le module se cale donc lui-meme, quelle que soit l'adresse ou la
+; region le pose — c'est ce que faisait la v1, et c'est pour ca qu'aucun projet
+; v1 n'a jamais eu a y penser.
+@buffersize equ 512
+@addr     equ *
+ iflt (@addr-ymm.org)-@buffersize
+          fill 0,@buffersize-(@addr-ymm.org)
+ endc
 ymm.buffer
-          fill 0,512
+          fill 0,@buffersize
 ymm.buffer.end
  ENDSECTION

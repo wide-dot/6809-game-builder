@@ -10,7 +10,7 @@ engine/InitGlobals.asm,engine/InitGlobals.asm,cf6e765e147b1a17c46e20eabb07bdb998
 engine/keyboard/ReadKeyboard.asm,engine/keyboard/ReadKeyboard.asm,054daefca4d714c6c2d018d2e8ac70a89ac20ee6,2026-07-31,
 engine/keyboard/MapKeyboardToJoypads.asm,engine/keyboard/MapKeyboardToJoypads.asm,054daefca4d714c6c2d018d2e8ac70a89ac20ee6,2026-07-31,
 engine/ram/BankSwitch.asm,engine/ram/BankSwitch.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-07-31,
-engine/ram/ClearDataMemory.asm,engine/ram/ClearDataMemory.asm,44f78add41b5dc2813f87f7b92361e3e55742e79,2026-07-31,
+engine/ram/ClearDataMemory.asm,engine/ram/ClearDataMemory.asm,44f78add41b5dc2813f87f7b92361e3e55742e79,2026-07-31,import 1:1 — efface les 16 Ko de la fenetre donnees. Cable le 2026-08-04 dans l'unite montee checkpoint (v1 le garde resident) ; couleur passee par U et non X — V2-DEVIATION imposee par paged.call
 engine/math/RandomNumber.asm,engine/math/RandomNumber.asm,736d8370c22d8608160c91cdeefe5fe9247c217c,2026-07-31,
 engine/system/to8/memory-map.equ,engine/system/to8/memory-map.equ,549c7db3cfee7f550060fa7f44266a614504f527,2026-07-31,
 engine/sound/ymm.asm,engine/objects/sound/ymm/ymm.asm,2eae7b21fb37d59ebb974b955dba2598933690d9,2026-07-31,KEPT-V2: v2-native player (EXPORT/load-time link + dynamic sound ports) ; watch v1 - manual resync
@@ -36,7 +36,7 @@ engine/object-management/RunObjects.asm,engine/object-management/RunObjects.asm,
 engine/graphics/animation/AnimateSprite.asm,engine/graphics/animation/AnimateSprite.asm,f34bbf394477ff59002fbd545c8d3e2bd1eb8b95,2026-08-01,
 engine/graphics/animation/constants-animation.equ,engine/graphics/animation/constants-animation.equ,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-01,
 engine/graphics/vbl/WaitVBL.asm,engine/graphics/vbl/WaitVBL.asm,1d3db8b7edf02f7a73b55bea8c3eeb0a7fd389f1,2026-08-01,
-engine/graphics/clear/ClearInterlacedDataMemory.asm,engine/graphics/clear/ClearInterlacedDataMemory.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-01,
+engine/graphics/clear/ClearInterlacedDataMemory.asm,engine/graphics/clear/ClearInterlacedDataMemory.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-01,NON UTILISE depuis le 2026-08-05 : la v1 n'a pas de routine entrelacee ; le checkpoint traite les deux tampons par _SwitchScreenBuffer entre deux ClearDataMem. Aucun appelant.
 engine/graphics/codec/zx0_mega.asm,engine/graphics/codec/zx0_mega.asm,0b9c7a6af6621dc89d6e106bd0e1eef5a325966b,2026-08-01,"explicit < on the two glb loads (obj target forbids SETDP, which is what made them direct in v1) ; page fill and trailing setdp dropped, the decoder no longer needs aligning"
 engine/object-management/Obj_Run.macro.asm,engine/object-management/Obj_Run.macro.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-01,
 engine/object-management/Obj_Run.asm,engine/object-management/Obj_Run.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-01,
@@ -67,3 +67,7 @@ games/r-type/src/common/fx/starfield/stardata.asm,objects/levels/01/starfield/st
 engine/object-management/ObjectMove.asm,engine/object-management/ObjectMove.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-02,
 engine/system/to8/controller/joypad.buffer.asm,engine/joypad/joypad.buffer.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-03,range sous system/to8/controller ou vit le joypad v2
 engine/system/to8/controller/joypad.kbd.asm,engine/joypad/ReadJoypadsKbd.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-03,dialecte v2 du module joypad KEPT-V2 (joypad.readKbd / joypad.0.B / map.MC6821 au lieu de ReadJoypadsKbd / c1_button_B_mask / adresses en dur) ; fichier separe comme en v1 pour ne pas peser sur joypad.asm
+engine/sound/soundFX.asm,engine/sound/soundFX.asm,5d6f1ae5021e70355d8715830df91f7298168f07,2026-08-04,
+engine/sound/soundFX.macro.asm,engine/sound/soundFX.macro.asm,5d6f1ae5021e70355d8715830df91f7298168f07,2026-08-04,
+engine/graphics/fade/pixel-fade.asm,engine/graphics/fade/pixel-fade.asm,fac11cdcc13c9324fa12490bf5b9372602cd3453,2026-08-04,import 1:1 — n'est PAS resident : la v1 l'inclut dans l'unite de l'objet endstage
+engine/graphics/codec/bm4.drawChunbks.asm,engine/graphics/codec/bm4.drawChunbks.asm,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-08-04,import 1:1 — n'est PAS resident : la v1 l'inclut dans l'unite de l'objet messages ; nom de fichier v1 conserve avec sa coquille (drawChunbks)

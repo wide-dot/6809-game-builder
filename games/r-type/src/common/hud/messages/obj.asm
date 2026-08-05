@@ -49,13 +49,13 @@ bm4.images
 bm4.endImages        
 
 bm4.img.ready
-        INCLUDEBIN "./objects/messages/images/ready.rama.bin"
+        INCLUDEBIN "src/common/hud/messages/images/ready.rama.bin"
 bm4.img.game
-        INCLUDEBIN "./objects/messages/images/game.rama.bin"
+        INCLUDEBIN "src/common/hud/messages/images/game.rama.bin"
 bm4.img.over
-        INCLUDEBIN "./objects/messages/images/over.rama.bin"
+        INCLUDEBIN "src/common/hud/messages/images/over.rama.bin"
 
-        INCLUDE "./engine/graphics/codec/bm4.drawChunbks.asm"
+        INCLUDE "engine/graphics/codec/bm4.drawChunbks.asm"
 
 line.colors
         fcb   %00001000 ; orange dark

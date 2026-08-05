@@ -12,7 +12,6 @@
 ;
 ; Ce fichier doit être inclus EN PREMIER dans la section du stage : l'unité est
 ; chargée à l'adresse de la région et le loader saute sur son premier octet.
-;*******************************************************************************
 
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
@@ -60,6 +59,35 @@ stage.stateKept
         std   globals.score
         stb   globals.score+2              ; le 3e octet du score 24 bits
 
+        ; LES OST STATIQUES, mis a zero. La v1 n'a pas ce geste a faire : chez
+        ; elle `palettefade` et ses voisins sont de la DONNEE du binaire du game
+        ; mode (`fcb ObjID_fade / fill 0,object_size-1`), donc ils arrivent du
+        ; disque a zero, identifiant pose. En v2 ils vivent dans un bloc
+        ; `<reserved>` que rien ne charge : leur contenu au demarrage est ce que
+        ; la RAM avait. Ca passait inapercu tant que la zone tombait sous la
+        ; pile systeme, donc a zero ; en la deplacant on est tombe sur du $FF, et
+        ; `o_fade_unload` a $FF fait appeler UnloadObject_u sur un OST HORS pool
+        ; — palette en vrac et pool corrompu (vecu).
+        ; Efface par MOTS : `std ,x++` (5+3) et `cmpx` (4) coutent les memes 15
+        ; cycles que `clr ,x+` (6+2) et `subd` (4), mais pour deux octets — 3 510
+        ; cycles au lieu de 7 020, a taille de code egale (13 octets).
+        ;
+        ; object_size est IMPAIR (117) : le bloc n'est de taille paire que si
+        ; nb_static_objects l'est. On borne donc la boucle au dernier mot entier
+        ; et on rattrape l'octet restant a l'assemblage — sans quoi le `cmpx`
+        ; serait enjambe et la boucle partirait dans les globales.
+statics.SIZE  equ nb_static_objects*object_size
+        ldx   #palettefade
+        ldd   #0
+!       std   ,x++
+        cmpx  #palettefade+(statics.SIZE/2)*2
+        bne   <
+ ifne statics.SIZE-(statics.SIZE/2)*2
+        clr   ,x
+ endc
+        lda   #ObjID_fade
+        sta   palettefade+id
+
         ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
         ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
         ; ca le niveau apparait d'un coup, et l'ecran de chargement se voit.
@@ -68,17 +96,9 @@ stage.stateKept
         clr   PalRefresh
         jsr   PalUpdateNow
 
-        ; les deux tampons : le scroll ne peint que son viewport
-        _ram.data.set #2
-        ldx   #$0000
-        jsr   ClearInterlacedEvenDataMemory
-        ldx   #$0000
-        jsr   ClearInterlacedOddDataMemory
-        _ram.data.set #3
-        ldx   #$0000
-        jsr   ClearInterlacedEvenDataMemory
-        ldx   #$0000
-        jsr   ClearInterlacedOddDataMemory
+        ; Les deux tampons ne sont PAS effacés ici : c'est `checkpoint.load`,
+        ; appelé en fin d'init comme en v1, qui les met au noir — et il le fait
+        ; en nibble $F, le ciel vierge du champ d'étoiles.
 
         ; le viewport, en tuiles et en pixels — commun aux deux niveaux
         lda   #12
@@ -125,21 +145,6 @@ stage.stateKept
         ldd   #map.COLS*12-144
         std   scroll_max
 
-        ; Le pre-scroll d'ouverture, juste apres InitScroll comme en v1 : il
-        ; repeint le viewport ENTIER dans les deux tampons, en rejouant le
-        ; defilement. C'est lui qui pose le ciel en nibble $F, sans quoi le
-        ; champ d'etoiles n'a rien ou dessiner. Position d'entree : le debut.
-        lda   #0
-        jsr   stage.preScroll
-
-        ; L'horloge de niveau repart a zero. Les horodatages d'une wave sont
-        ; ceux de l'arcade, comptes depuis le debut du stage — en v1 c'etait
-        ; gratuit, un changement de game mode rechargeait le moteur avec ses
-        ; variables. Ici le moteur est RESIDENT : son horloge traverse
-        ; l'echange, et c'est au stage de la remettre a zero.
-        ldd   #0
-        std   gfxlock.frame.gameCount
-
         ; moveByScript garde la page et l'adresse de la table de scripts dans
         ; des operandes auto-modifiees — il y en a DEUX pour la page, une par
         ; routine qui monte. Le moteur a la routine qui les pose toutes : elle
@@ -147,7 +152,6 @@ stage.stateKept
         ldb   #objid.animation
         jsr   moveByScript.register
 
-        jsr   ObjectWave_Init              ; cale le pointeur de wave sur l'horloge
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
         jsr   InitRNG
@@ -155,19 +159,34 @@ stage.stateKept
         ; les structures de priorite du dessin de sprites, une par tampon
         jsr   InitDrawSprites
 
-        ; L'OST DU JOUEUR, en page directe. Il faut le nettoyer AVANT de lancer
-        ; l'objet : son premier champ lu est `routine`, qui indexe une table de
-        ; sauts de cinq entrees — laisse-le sale et le tout premier appel saute
-        ; n'importe ou (vecu : PC en $9F2B, soit dans l'OST lui-meme). La v1 fait
-        ; les deux memes gestes dans checkpoint.load.
-        jsr   ObjectDp_Clear
-        lda   #ObjID_Player1
-        sta   player1+id
+        ; LE CHECKPOINT, dernier geste de l'init — la v1 fait exactement le meme
+        ; (`_Obj_Run ObjID_checkpoint`, main.asm:145), et c'est LUI qui rend
+        ; l'ecran d'ouverture : il efface les deux tampons en nibble $F, rejoue
+        ; le defilement jusqu'a la position de reprise (zero a l'ouverture,
+        ; puisque `scroll_tile_pos` y vaut zero), ressort le joueur, arme le
+        ; fondu d'entree et cale la vague sur l'horloge.
+        ;
+        ; Ne rien remettre ici de ce qu'il fait deja : notre portage avait
+        ; duplique son effacement, son `player1+id`, son `ObjectDp_Clear`, son
+        ; fondu et son `ObjectWave_Init` — et les deux copies avaient divergé.
+        lda   #map.RAM_OVER_CART+checkpoint.page
+        ldx   #checkpoint.load
+        jsr   paged.call
 
-        ; Le fondu d'ouverture : on part du noir pose plus haut et on monte
-        ; vers la palette du stage. L'objet est arme ici et tourne dans la
-        ; boucle ; il se met en veille tout seul une fois arrive.
-        jsr   stage.paletteFadeIn
+        ; LA MUSIQUE. Armee avant IrqInit, comme la v1 (main.asm:151) : le
+        ; lecteur coupe les interruptions le temps de s'initialiser, et il vaut
+        ; mieux que ce soit avant qu'elles ne servent. Le morceau est celui du
+        ; stage — la v1 passait un index dans une table, la v2 nomme le symbole.
+        ; `_ymm.obj.play` MONTE la page du lecteur et ne la rend pas : le macro
+        ; est ecrit pour un appelant qui possede deja la fenetre. Sous IRQ cela
+        ; passe — IrqManager encadre la routine utilisateur d'un
+        ; _GetCartPageB/_SetCartPageA — mais ici on est dans l'init du stage, et
+        ; tout ce qui suit heriterait de la page du lecteur.
+        _GetCartPageB
+        pshs  b
+        _ymm.obj.play #map.RAM_OVER_CART+ymm.player.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
+        puls  b
+        _SetCartPageB
 
         ldd   #stage.userIRQ
         std   Irq_user_routine
@@ -193,7 +212,9 @@ stage.stateKept
         ; le frame-drop du chargement de scene.
         ; C'est le stage qui la nomme : chaque niveau a la sienne, ou n'en a pas.
         jsr   stage.openingSequence
+        
 
+;*******************************************************************************
 ; L'ordre de la v1 : Scroll et ObjectWave hors du verrou, DrawTiles dedans.
 ; Seul le second touche l'écran.
 ; L'ordre est celui de la v1 : effacer avant de repeindre les tuiles, dessiner
@@ -212,6 +233,7 @@ stage.stateKept
 ;     est execute — la v1 y echappait parce qu'elle SAUTE a LevelMainLoop.
 ;
 ; Cas de migration : docs/lang/en/migration/loop-fallthrough.md
+;*******************************************************************************
 stage.loop
         lda   mainloop.state
         ldx   #stage.states
@@ -220,6 +242,7 @@ stage.states
         fdb   stage.state.running
         fdb   stage.state.dead
         fdb   stage.state.checkpoint
+mainloop.state EXPORT
 mainloop.state fcb 0
 
 stage.state.running
@@ -234,7 +257,9 @@ stage.state.running
         ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant
         ; le sien pour savoir s'il vient d'etre touche. La v1 l'appelle au meme
         ; endroit, par son objet mainext.
-        jsr   Collision_Run
+        lda   #map.RAM_OVER_CART+collisionpass.page
+        ldx   #Collision_Run
+        jsr   paged.call
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
         ; son OST a lui, donc RunObjects ne le voit pas.
         _Obj_RunU ObjID_fade,#palettefade
@@ -243,7 +268,7 @@ stage.state.running
         _Obj_RunU ObjID_Player1,#player1
         jsr   RunObjects
         jsr   CheckSpritesRefresh
-        _gfxlock.on
+        jsr   gfxlock.on
         jsr   EraseSprites
         jsr   UnsetDisplayPriority
         jsr   DrawTiles
@@ -285,7 +310,7 @@ stage.state.running
         ldx   #hud.normal
         jsr   paged.call
 
-        _gfxlock.off
+        jsr   gfxlock.off
 
         inc   bench.frames
         ldd   glb_camera_x_pos
@@ -304,7 +329,7 @@ stage.state.running
         cmpd  scroll_max
         lbhs  stage.handOver               ; long : handOver vit apres la boucle
 
-        _gfxlock.loop
+        jsr   gfxlock.loop
         lbra  stage.loop
 
 stage.userIRQ
@@ -314,8 +339,18 @@ stage.userIRQ
         ; consomme tout l'arriere et applique UN PAS PAR ENTREE — pousse
         ; depuis la boucle, le vaisseau va frame-drop fois trop lentement
         ; (vecu). La v1 l'appelle exactement ici, dans UserIRQ.
+        jsr   PalUpdateNow
         jsr   joypad.buffer.addDirection
-        jmp   PalUpdateNow
+
+        ; Le son, dans l'IRQ comme la v1 (main.asm:406-410) : une trame de
+        ; musique, puis le pilote de bruitages qui depile la boite aux lettres.
+        ; La ligne SN76489 de la v1 est commentee chez elle aussi — voir la
+        ; region vgc.* du layout.
+        _ymm.frame.play #map.RAM_OVER_CART+ymm.player.page
+        ;_vgc.frame.play #map.RAM_OVER_CART+vgc.player.page
+        lda   #map.RAM_OVER_CART+soundfx.page
+        ldx   #soundfx.frame
+        jmp   paged.call
 
 ; L'objet bouchon : toutes les entrées de l'index du stage pointent ici tant
 ; que les ennemis ne sont pas portés. Il prouve le chemin complet — la wave a
@@ -331,21 +366,25 @@ stage.placeholder
         rts
 
 ;*******************************************************************************
-; La mort — la routine dead de la v1, sans les morceaux non portes
+; La mort et le rechargement de checkpoint
 ;
-; L'ecran se fige (ni Scroll ni DrawTiles : le decor s'arrete), seuls le fondu,
-; le joueur (son explosion) et le REDESSIN des objets geles tournent — la v1
-; appelle RunFrozenObjects, qui repeint sans derouler la logique. Puis 83
-; trames de pause et l'etat passe a CHECKPOINT.
-; V2-DEVIATION vs v1 : pas de hud dynamique (non porte) ; le masque, lui, est
-; notre overlay paged.call.
+; Ce bloc a ete essaye en unite montee — 467 octets qui ne tournent qu'a la mort
+; du joueur, c'etait tentant. Il est RESTE RESIDENT, et la raison merite d'etre
+; ecrite : il appelle RunFrozenObjects, CheckSpritesRefresh, EraseSprites,
+; DrawSprites et Obj_Run, qui montent tous la page de l'objet ou du sprite
+; qu'ils servent SANS rendre celle de l'appelant. Le fichier de macros d'objet
+; le dit d'ailleurs en toutes lettres : « a n'utiliser que depuis la page
+; residente ». Depuis une page montee, le premier de ces appels fait perdre au
+; bloc sa propre page et le CPU continue dans une autre — ecran fige au premier
+; crash du joueur (vecu). Un sas par appel serait fragile et couterait plus que
+; les octets gagnes.
 ;*******************************************************************************
 stage.state.dead
         _Obj_RunU ObjID_fade,#palettefade
         _Obj_RunU ObjID_Player1,#player1
         jsr   RunFrozenObjects
         jsr   CheckSpritesRefresh
-        _gfxlock.on
+        jsr   gfxlock.on
         jsr   EraseSprites
         jsr   UnsetDisplayPriority
         jsr   DrawSprites
@@ -355,8 +394,8 @@ stage.state.dead
         lda   #map.RAM_OVER_CART+overlay.page
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
-        _gfxlock.off
-        _gfxlock.loop
+        jsr   gfxlock.off
+        jsr   gfxlock.loop
         _waitFrames #83
         lda   #mainloop.state.CHECKPOINT
         sta   mainloop.state
@@ -365,19 +404,23 @@ stage.state.dead
 ;*******************************************************************************
 ; Le rechargement — la routine checkpoint de la v1, reduite a ce qui est porte
 ;
-; V2-DEVIATION vs v1 : pas de messages READY / GAME OVER (l'objet messages
-; n'est pas porte, la transition reste noire) ; pas de re-seed forcepod /
-; bitdevice / shellEraseTable / endstage (non portes) ; et le GAME OVER ne
-; renvoie pas a l'ecran-titre (pas porte non plus) — il ressert trois vies et
-; recharge le checkpoint, marquage en attendant le titre.
+; L'ordre est celui de la v1 (main.asm:340-378) : on decompte la vie, on AFFICHE
+; le message, on attend, on noircit, et seulement ensuite on decide entre reprise
+; et game over. Les separer est ce qui rendait la mort invisible, donc indebogable.
+;
+; V2-DEVIATION vs v1, ce qui manque encore et pourquoi : pas de re-seed forcepod
+; / bitdevice / shellEraseTable / endstage — ces objets ne sont pas portes ; et
+; le GAME OVER ne revient pas a l'ecran-titre, qui ne l'est pas non plus. Il
+; recharge la scene du stage 1 avec `game.stage` remis a zero, ce qui equivaut a
+; une premiere entree — voir stage.gameOver.
 ;*******************************************************************************
 stage.state.checkpoint
         jsr   stage.paletteFadeOut
 @loop   ; attendre la fin du fondu au noir
         _Obj_RunU ObjID_fade,#palettefade
-        _gfxlock.on
-        _gfxlock.off
-        _gfxlock.loop
+        jsr   gfxlock.on
+        jsr   gfxlock.off
+        jsr   gfxlock.loop
         ldu   #palettefade
         lda   routine,u
         cmpa  #o_fade_routine_idle
@@ -385,85 +428,105 @@ stage.state.checkpoint
 
         _waitFrames #40
 
+        ; L'ECRAN EST EFFACE avant le message, comme la v1 (main.asm:319-320 :
+        ; `ldx #$0000 / jsr ClearDataMem`). Sans ca le decor du stage reste
+        ; visible derriere READY — la v1 ne l'eteint pas par la palette, elle
+        ; efface les 16 Ko de la fenetre donnees.
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+
+        ; READY / GAME OVER — la sequence de la v1 (main.asm:340-378), remise
+        ; dans son ordre : on decompte la vie, on AFFICHE le message, on attend,
+        ; on noircit, et seulement ensuite on decide entre reprise et game over.
+        ; L'objet messages n'a ni OST ni routine : _Obj_Mount monte sa page et
+        ; rend son adresse dans X, l'index du message va dans B.
+        _Obj_Mount ObjID_messages
         dec   globals.lives
-        bpl   >
-        ; GAME OVER — V2-DEVIATION : on ressert deux vies et on repart, faute
-        ; d'ecran-titre ou revenir.
-        ldb   #2
-        stb   globals.lives
-!
+        bmi   >
+        ldb   #messages.READY
+        jsr   ,x
+        bra   @displaymessage
+!       ldb   #messages.GAME           ; deux mots a poser, GAME puis OVER
+        jsr   ,x
+        ldb   #messages.OVER
+        jsr   ,x
+@displaymessage
+        clra                           ; le message est en 320x200x16c
+        sta   map.CF74021.LGAMOD
+        ldd   #Pal_messages
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow             ; le message devient visible
+        tst   globals.lives
+        bmi   @waitGameOver            ; vies < 0 : GAME OVER, trois secondes
+        _waitFrames #50                ; READY : une seconde
+        bra   @msgBlackout
+@waitGameOver
+        _waitFrames #150
+@msgBlackout
+        ldd   #Pal_black
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow             ; on noircit le message
+        lda   #$7B                     ; retour en 160x200x16c
+        sta   map.CF74021.LGAMOD
+
         ldd   #bench.SCROLL_VEL
         std   scroll_vel
         lda   #mainloop.state.RUNNING
         sta   mainloop.state
-        jsr   stage.checkpointLoad
+        tst   globals.lives
+        bpl   >
+        jmp   stage.gameOver
+!
+        lda   #map.RAM_OVER_CART+checkpoint.page
+        ldx   #checkpoint.load
+        jsr   paged.call
         ; Le clignotement / l'invincibilite de la reapparition. Il faut le
         ; reposer APRES le chargement : ObjectDp_Clear vient d'effacer la page
         ; directe, donc le subtype que le joueur s'etait pose en mourant. La v1
         ; fait le meme geste au meme endroit.
         lda   #1
         sta   player1+subtype
+        ; La musique repart, comme la v1 (main.asm:383) et au meme endroit :
+        ; apres le chargement du checkpoint, avant de rendre la main a la
+        ; boucle. Elle reprend a son point de bouclage, pas au debut.
+        lda   #map.RAM_OVER_CART+ymm.player.page
+        ldx   #ymm.restart
+        jsr   paged.call
         lbra  stage.loop
 
 ;*******************************************************************************
-; Le chargement de checkpoint — porte de checkpoint.load (v1 global/checkpoint)
+; GAME OVER — porte de la v1 (main.asm:374-377)
 ;
-; Trouve le dernier point de reprise <= la position atteinte, nettoie tout ce
-; qui vit (objets, sprites, listes de collision, les deux tampons), rejoue le
-; pre-scroll a cette position, ressort le joueur, arme le fondu d'entree et
-; RECALE LA VAGUE : l'horloge de niveau redevient position x 128 — 128 trames
-; par tuile de 24 px, l'inverse exact de la vitesse de scroll (24 / 0,1875).
+;   tst   globals.lives
+;   bpl   >
+;   jsr   IrqOff
+;   jmp   Level01_Start           ; GAME OVER: restart level 1
+;
+; La v1 sautait DANS son main de niveau 1, qui etait deja charge : un game mode
+; portait son moteur avec lui, et y revenir suffisait a tout re-semer. En v2 le
+; moteur est RESIDENT et le stage est une scene : le geste equivalent est de
+; recharger la scene du stage 1, ce que fait game.stage.switch.
+;
+; V2-DEVIATION assumee, a la demande : la v1 revient a l'ecran-titre au bout des
+; vies, et le titre n'est pas porte. On recharge donc le stage 1 directement.
+; `game.stage` remis a zero est ce qui rend le rechargement EQUIVALENT a une
+; premiere entree : stage.main teste cette variable pour decider s'il resseme
+; l'etat de partie (score, vies) ou s'il le laisse traverser l'echange.
 ;*******************************************************************************
-stage.checkpointLoad
-        clrb
-        ldx   #checkpoint.positions
-@loop   lda   b,x
-        cmpa  scroll_tile_pos
-        bhi   >
-        incb
-        bra   @loop
-!       decb
-        lda   b,x
-        sta   stage.ckpt.pos
-        sta   stage.ckpt.pos2
+stage.gameOver
+        jsr   IrqOff
+        clr   game.stage
+        ldx   #scenes.stage1
+        jmp   game.stage.switch
 
-        jsr   ObjectDp_Clear
-        jsr   ManagedObjects_ClearAll
-        jsr   InitStack
-        jsr   DisplaySprite_ClearAll
-        jsr   EraseSprites_ClearAll
-        jsr   Collision_ClearLists
-
-        ; les deux tampons au noir, comme a l'ouverture du stage
-        _ram.data.set #2
-        ldx   #$0000
-        jsr   ClearInterlacedEvenDataMemory
-        ldx   #$0000
-        jsr   ClearInterlacedOddDataMemory
-        _ram.data.set #3
-        ldx   #$0000
-        jsr   ClearInterlacedEvenDataMemory
-        ldx   #$0000
-        jsr   ClearInterlacedOddDataMemory
-
-        lda   #0
-stage.ckpt.pos equ *-1
-        jsr   stage.preScroll
-
-        lda   #ObjID_Player1
-        sta   player1+id
-
-        jsr   stage.paletteFadeIn
-
-        ; la vague sur l'horloge de la position retrouvee
-        lda   #128
-        ldb   #0
-stage.ckpt.pos2 equ *-1
-        mul
-        std   gfxlock.frame.count
-        std   gfxlock.frame.lastCount
-        std   gfxlock.frame.gameCount
-        jmp   ObjectWave_Init
+;*******************************************************************************
+; Le checkpoint et le pré-scroll vivent dans l'UNITÉ MONTÉE `checkpoint`, comme
+; l'objet checkpoint de la v1 qui porte les deux. 262 octets rendus au budget.
+;*******************************************************************************
 
 ;*******************************************************************************
 ; L'ouverture en fondu — la forme de la v1 (Palette_FadeIn du game mode 01)
@@ -472,6 +535,7 @@ stage.ckpt.pos2 equ *-1
 ; a l'appelant d'avoir pose le noir avant. o_fade_wait est le nombre de trames
 ; entre deux paliers de couleur ; la v1 monte en 4 et descend en 1.
 ;*******************************************************************************
+stage.paletteFadeIn EXPORT   ; l'unite checkpoint l'appelle apres rechargement
 stage.paletteFadeIn
         ldu   #palettefade
         ldx   #Pal_stage
@@ -498,81 +562,21 @@ stage.paletteFadeOut
         bra   stage.paletteFadeCommon
 
 ;*******************************************************************************
-; Le PRE-SCROLL d'ouverture — porte de checkpoint.scroll (v1, global/checkpoint)
+; Les trois enveloppes gfxlock — la forme de la v1 (main.asm:386-396)
 ;
-; Sans lui le viewport n'est jamais peint EN ENTIER : le premier DrawTiles ne
-; trace que les colonnes de la position courante, et la rangee verticale de
-; fond — celle qui porte le ciel en nibble $F — n'atteint pas l'ecran. Le champ
-; d'etoiles, dont tout le test tient sur « ce pixel vaut-il $F », ne dessine
-; alors rien du tout.
-;
-; Le principe est de REJOUER le defilement : on part d'un viewport large de zero
-; colonne, cale a droite, et on avance de 4 px vers la gauche en elargissant
-; d'une colonne tous les trois pas — dans LES DEUX tampons. Chaque colonne est
-; donc peinte a chacune de ses sous-positions, exactement comme si elle etait
-; entree par la droite.
-;
-; La v1 s'en sert aussi aux checkpoints, avec une position d'entree ; ici elle
-; vaut toujours zero, mais le parametre est conserve pour le jour ou les
-; checkpoints seront portes.
-;
-; Cas de migration : docs/lang/en/migration/init-prescroll.md
-;
-; A = position d'entree, en tuiles de collision (24 px)
+; Le macro est expanse UNE fois, ici, et tous les sites appellent par `jsr`.
+; C'est exactement ce que fait la v1, et c'est ce que notre portage avait perdu :
+; nous appelions le macro a chaque site, soit 292 octets d'expansions dans une
+; region qui n'en a plus. Trois enveloppes et neuf `jsr` en rendent la moitie.
 ;*******************************************************************************
-stage.preScroll
-        sta   scroll_tile_pos              ; les tuiles de collision font 24 px
-        asla                               ; les tuiles tracees en font 12
-        sta   @a
-        ldb   scroll_vp_v_tiles
-        aslb
-        addb  scroll_vp_v_tiles            ; position x hauteur x 3 o (page, adresse)
-        mul
-        std   scroll_map_pos
-        lda   #0
-@a      equ   *-1
-        ldb   scroll_tile_width
-        mul
-        std   glb_camera_x_pos
-        std   glb_camera_x_pos_old
-        subd  #1
-        std   buffer_x_pos
-        std   buffer_x_pos+2
-
-        lda   scroll_vp_h_tiles            ; on emprunte les deux parametres de
-        ldb   scroll_vp_x_pos              ; viewport, rendus a la fin
-        std   @d
-        lda   #0
-        sta   scroll_vp_h_tiles
-        sta   scroll_tile_pos_offset
-        sta   scroll_tile_pos_offset24
-        lda   #8+144-4                     ; cale a droite du viewport
-        sta   scroll_vp_x_pos
-        lda   scroll_map_page_even
-        sta   tile_buffer_page
-        ldx   scroll_map_even
-        stx   tile_buffer
-@loop1
-        lda   #3
-        sta   @cpt
-        inc   scroll_vp_h_tiles
-@loop2
-        lda   #1
-        sta   glb_camera_move
-        jsr   DrawTiles
-        _SwitchScreenBuffer
-        jsr   DrawTiles
-        _SwitchScreenBuffer
-        lda   scroll_vp_x_pos
-        suba  #4
-        sta   scroll_vp_x_pos
-        dec   @cpt
-        bne   @loop2
-        cmpa  #4
-        bne   @loop1
-        ldd   #0
-@d      equ   *-2
-        sta   scroll_vp_h_tiles
-        stb   scroll_vp_x_pos
+gfxlock.on
+        _gfxlock.on
         rts
-@cpt    fcb   0
+
+gfxlock.off
+        _gfxlock.off
+        rts
+
+gfxlock.loop
+        _gfxlock.loop
+        rts

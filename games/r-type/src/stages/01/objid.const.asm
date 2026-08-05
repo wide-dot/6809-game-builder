@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 01 — genere par tools/gen_objid.py 01
 * ===========================================================================
-* Les 31 identifiants que la wave reelle du niveau 01 reference, et
+* Les 32 identifiants que la wave reelle du niveau 01 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -26,21 +26,22 @@ ObjID_loadFirePreset         equ 12
 ObjID_foefire                equ 13
 ObjID_initlevel1             equ 14
 ObjID_engineflames           equ 15
-ObjID_patapata               equ 16
-ObjID_bug                    equ 17
-ObjID_bink                   equ 18
-ObjID_pow                    equ 19
-ObjID_fadetotunnel           equ 20
-ObjID_scant                  equ 21
-ObjID_pstaff                 equ 22
-ObjID_cancer                 equ 23
-ObjID_blaster                equ 24
-ObjID_shell                  equ 25
-ObjID_tabrok                 equ 26
-ObjID_bossmusic              equ 27
-ObjID_tailmgr                equ 28
-ObjID_dobkeratops            equ 29
-ObjID_dobkeratops_jaw        equ 30
-ObjID_dobkeratops_monster    equ 31
-objid.count                  equ 31
+ObjID_messages               equ 16
+ObjID_patapata               equ 17
+ObjID_bug                    equ 18
+ObjID_bink                   equ 19
+ObjID_pow                    equ 20
+ObjID_fadetotunnel           equ 21
+ObjID_scant                  equ 22
+ObjID_pstaff                 equ 23
+ObjID_cancer                 equ 24
+ObjID_blaster                equ 25
+ObjID_shell                  equ 26
+ObjID_tabrok                 equ 27
+ObjID_bossmusic              equ 28
+ObjID_tailmgr                equ 29
+ObjID_dobkeratops            equ 30
+ObjID_dobkeratops_jaw        equ 31
+ObjID_dobkeratops_monster    equ 32
+objid.count                  equ 32
 objid.animation              equ ObjID_animation

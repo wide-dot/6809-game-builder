@@ -17,6 +17,11 @@ Weapon            EXPORT
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/system/to8/map.const.asm"
+        ; Le bruitage : le macro ecrit la boite aux lettres residente, que le
+        ; pilote depile dans l'IRQ. Les constantes de son sont partagees a
+        ; l'assemblage, la boite aux lettres traverse le lien.
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
 
         INCLUDE "src/common/weapons/weapon/obj.asm"

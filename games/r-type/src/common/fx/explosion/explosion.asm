@@ -30,6 +30,11 @@ explosion.Object  EXPORT
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "src/common/fx/explosion/explosion.const.asm"
+        ; Le bruitage : le macro ecrit la boite aux lettres residente, que le
+        ; pilote depile dans l'IRQ. Les constantes de son sont partagees a
+        ; l'assemblage, la boite aux lettres traverse le lien.
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
 
 ; V2-DEVIATION: la v1 nommait ses entrées d'imageset Img_<nom>, gfxcomp les
 ; génère en set_<nom>. Les trois autres objets portés ont renommé leurs

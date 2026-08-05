@@ -66,8 +66,12 @@ _api    macro
         _api PalUpdateNow
 
         ; --- screen clear ---
-        _api ClearInterlacedEvenDataMemory
-        _api ClearInterlacedOddDataMemory
+ IFNDEF CHECKPOINT_UNIT
+        ; Le rechargement de checkpoint et le rejeu de defilement : l'objet
+        ; checkpoint de la v1, dans son unite montee.
+checkpoint.load      EXTERNAL
+checkpoint.clearData EXTERNAL
+ ENDC
 
         ; --- tilemap scroll : the routines, then the state a stage sets up ---
         _api InitScroll
@@ -157,6 +161,11 @@ _api    macro
         _api terrainCollision.init.do
         _api terrainCollision.do
         _api terrainCollision.xAxis.doRight
+        ; Les deux autres entrees du meme fichier, deja assemblees dans le
+        ; moteur : seul l'export manquait. `doLeft` sert au laser anti-aerien du
+        ; force pod, `update` a l'ennemi shell.
+        _api terrainCollision.xAxis.doLeft
+        _api terrainCollision.update
         _api terrainCollision.sensor.x
         _api terrainCollision.sensor.y
         _api terrainCollision.impact.x
@@ -167,6 +176,9 @@ _api    macro
         _api terrainCollision.bgColTmp
 
         ; --- sprites : ce qu'un objet de jeu appelle pour se montrer ---
+        ; Le calcul d'adresse ecran du gestionnaire de queue de dobkeratops.
+        ; Assemblee dans le moteur, elle n'etait pas exportee.
+        _api DRS_XYToAddress
         _api DisplaySprite
         _api DeleteObject
         _api CheckSpritesRefresh
@@ -182,6 +194,12 @@ _api    macro
 
         ; --- appel d'une routine paginee (overlays sans etat) ---
         _api paged.call
+
+        ; L'arret de la musique, que le joueur demande en mourant. Le lecteur
+        ; vit dans sa page : on l'atteint par paged.call, qui rend la page a
+        ; l'appelant — le joueur, lui, tourne depuis la sienne.
+ymm.stop    EXTERNAL
+ymm.restart EXTERNAL
 
         ; --- animation par script ---
         ; Les routines seules franchissent la frontiere. callback, anim.end et
@@ -199,7 +217,20 @@ _api    macro
         ; La passe de detection complete — toutes les paires de listes, dans
         ; l'ordre de la v1. Un seul export : les operandes auto-modifiees que
         ; le macro _Collision_Do ecrit restent chez le moteur.
-        _api Collision_Run
+ IFNDEF COLLISION_PASS_UNIT
+        ; La passe de collision a quitte le moteur pour une unite montee : ce
+        ; n'est plus le moteur qui la fournit, donc pas de `_api` ici.
+Collision_Run EXTERNAL
+ ENDC
+        ; Les deux OPERANDES AUTO-MODIFIEES de Collision_Do. Le macro
+        ; `_Collision_Do` ecrit l'adresse des deux listes dedans avant d'appeler
+        ; la routine ; tant que la passe etait residente, c'etaient des
+        ; etiquettes locales. Depuis qu'elle est montee, elles traversent le
+        ; lien comme le reste — la routine, elle, reste residente.
+        _api Collision_Do
+        _api Collision_Do_1
+        _api Collision_Do_2
+
         _api Collision_AddAABB
         _api Collision_RemoveAABB
         _api Collision_ClearLists
@@ -232,6 +263,11 @@ _api    macro
         ; reservee `globals`, partagee a l'assemblage par variables.asm. La
         ; faire passer par le lien la ferait rebaser.
         _api AwardScore
+
+        ; --- son : la boite aux lettres que le macro _soundFX.play ecrit
+        ; depuis la page de l'objet qui demande un bruitage ---
+        _api soundFX.curSound
+        _api soundFX.newSound
 
         ; --- alea ---
         _api InitRNG
