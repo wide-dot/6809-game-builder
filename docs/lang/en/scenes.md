@@ -119,6 +119,47 @@ A region a scene does **not** load reads `(not loaded by this scene)`, never
 the builder does not know — see the rule above. Regions spread over several
 pages are counted **page by page** : a pageset member lands on one of them.
 
+## The link data pool map
+
+The occupancy map answers *where does this scene land*. The other budget a
+scene is placed against is *what does linking it cost*, and it has its own
+report : `dist/pool-map-<target>.txt`.
+
+The loader keeps one link block per indexed file, in its memory pool, for as
+long as that file stays indexed. So a scene's demand is the sum over the files
+it loads — and the sum that matters is not the raw one. TLSF adds a four byte
+header to every block and rounds each request up to its size class, so a 2266
+byte link block occupies 2304. The report counts what the allocator reserves :
+
+```
+loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $3000 (12288 bytes)
+
+scene scenes.boot — 28 indexed file(s) carrying link data
+     bytes   served  direntry
+      2266     2304  common.engine
+       918      928  common.player
+       ...
+  --------- --------
+      9036     9296  total — 75% of the pool, 2992 bytes left
+```
+
+**The total is a floor, not the peak**, and the report says so at the top. The
+same pool also holds the directory, the scene file and the loader's slot table,
+and a scene swap allocates the incoming scene before releasing the outgoing
+one. Those depend on constants that live in the assembler sources ; hard-coding
+them here would produce a figure that silently goes wrong. What the report does
+count is the term that grows every time a unit is wired, which is the one you
+are arbitrating.
+
+The definitive check costs one byte : read `tlsf.err` on the machine after the
+boot. `0` is fine, `3` is `OUT_OF_MEMORY` — and an overflow shows nothing at
+all on screen, the loader simply never hands over. See
+[static-link-bake.md](migration/static-link-bake.md).
+
+Read the two reports together. When something no longer fits, the RAM map says
+whether there is a page for it and the pool map says whether the loader can
+still link it — and the answers are independent.
+
 ## Element reference
 
 | Element | Attributes |

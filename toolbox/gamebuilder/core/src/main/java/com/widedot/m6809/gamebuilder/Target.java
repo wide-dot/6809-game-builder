@@ -115,6 +115,7 @@ public class Target {
 			}
 			reportLinkData(targetName);
 			writeRamMap(targetName);
+			writePoolMap(targetName, node);
 			log.info("End of processing target {}", targetName);
 
     	}
@@ -137,6 +138,11 @@ public class Target {
 			if (java.nio.file.Files.deleteIfExists(staleMap)) {
 				removed++;
 				log.info("removed {} : it described an earlier build", staleMap);
+			}
+			java.nio.file.Path stalePool = poolMapPath(targetName);
+			if (java.nio.file.Files.deleteIfExists(stalePool)) {
+				removed++;
+				log.info("removed {} : it described an earlier build", stalePool);
 			}
 		} catch (Exception e) {
 			log.warn("could not remove the stale reports: {}", e.getMessage());
@@ -169,6 +175,82 @@ public class Target {
 		} catch (Exception e) {
 			log.warn("could not write the RAM occupancy map: {}", e.getMessage());
 		}
+	}
+
+	/**
+	 * The other budget a scene is placed against : what the loader's memory
+	 * pool has to hold to link it. The RAM map says where a scene lands, this
+	 * says what linking it costs — and an overflow of this one is the failure
+	 * that shows nothing at all on screen.
+	 */
+	private void writePoolMap(String targetName, ImmutableNode node) {
+		if (ctx.ramMap.isEmpty()) {
+			return;
+		}
+		java.nio.file.Path path = poolMapPath(targetName);
+		try {
+			java.nio.file.Files.createDirectories(path.getParent());
+			java.nio.file.Files.writeString(path,
+					com.widedot.m6809.gamebuilder.plugin.scene.PoolMapReport.render(
+							targetName, ctx.ramMap, ctx.linkReport, declaredPoolSize(node)));
+			log.info("link data pool map written to {}", path);
+		} catch (Exception e) {
+			log.warn("could not write the link data pool map: {}", e.getMessage());
+		}
+	}
+
+	/**
+	 * {@code loader.DEFAULT_DYNAMIC_MEMORY_SIZE} as the target declares it, or
+	 * -1 when it does not : the pool map is then drawn without a budget rather
+	 * than not drawn at all.
+	 *
+	 * Read from the configuration tree rather than from {@code ctx.defines}.
+	 * A {@code <define>} is scoped to the container it sits in — the child
+	 * context keeps it and only republishes what went through
+	 * {@code newValues} — so by the time the target closes, the value is no
+	 * longer in scope. The declaration is, and this report is observational.
+	 */
+	private int declaredPoolSize(ImmutableNode node) {
+		String value = findDefine(node, "loader.DEFAULT_DYNAMIC_MEMORY_SIZE");
+		if (value == null) {
+			return -1;
+		}
+		try {
+			String text = value.trim();
+			if (text.startsWith("$")) {
+				return Integer.parseInt(text.substring(1), 16);
+			}
+			if (text.startsWith("0x") || text.startsWith("0X")) {
+				return Integer.parseInt(text.substring(2), 16);
+			}
+			return Integer.parseInt(text);
+		} catch (NumberFormatException e) {
+			// the loader's default is an expression, not a literal : no budget
+			// to draw against, but the per-scene totals still stand
+			return -1;
+		}
+	}
+
+	/** first {@code <define symbol="...">} at or under this node, depth first */
+	private String findDefine(ImmutableNode node, String symbol) {
+		if ("define".equals(node.getNodeName())
+				&& symbol.equals(node.getAttributes().get("symbol"))) {
+			Object value = node.getAttributes().get("value");
+			return value == null ? "1" : value.toString();
+		}
+		for (ImmutableNode child : node.getChildren()) {
+			String found = findDefine(child, symbol);
+			if (found != null) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	private java.nio.file.Path poolMapPath(String targetName) {
+		return java.nio.file.Paths.get(
+				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
+				"pool-map-" + targetName + ".txt");
 	}
 
 	private java.nio.file.Path ramMapPath(String targetName) {
