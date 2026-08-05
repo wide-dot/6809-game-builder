@@ -101,10 +101,12 @@ public final class Handlers {
 			.opt("codec", STRING, "zx0 : compress each member as one stream")
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("section", STRING, "section receiving the members")
-			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds"));
+			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds")
+			.opt("bake", STRING, "reference resolution of every member: none (default), auto, all"));
 		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope ; in a <pageset>, declared after the spread content, it fills what is left")
 			.opt("name", STRING, "name for the generated source, defaults from symbol")
 			.req("symbol", STRING, "exported label placed at the start of the unit")
+			.opt("section", STRING, "for bare data : the builder writes the whole envelope — section, exported symbol, ends. Omit it when the sources open their own section and export their own symbol")
 			.opt("body", STRING, "shorthand for a single <asm> child"));
 		spec(element("data").doc("raw data written to a section, outside the directory")
 			.req("section", STRING, "section receiving the data")

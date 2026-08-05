@@ -119,6 +119,10 @@ public class LayoutPlugin {
 			java.nio.file.Files.createDirectories(
 					java.nio.file.Paths.get(com.widedot.m6809.util.FileUtil.getDir(path)));
 			StringBuilder out = new StringBuilder();
+			// include guard : several units of one pageset member may each
+			// include this file — a header has to survive double inclusion
+			out.append(" IFNDEF LAYOUT_SYMBOLS").append(System.lineSeparator());
+			out.append("LAYOUT_SYMBOLS equ 1").append(System.lineSeparator());
 			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
 				out.append(r.name).append(".address equ $")
 				   .append(String.format("%04X", r.address)).append(System.lineSeparator());
@@ -139,6 +143,7 @@ public class LayoutPlugin {
 					   .append(region.page + region.pages - 1).append(System.lineSeparator());
 				}
 			}
+			out.append(" ENDC").append(System.lineSeparator());
 			java.nio.file.Files.write(java.nio.file.Paths.get(path),
 					out.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			log.debug("layout symbols written to {}", gensymbols);

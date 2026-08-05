@@ -79,10 +79,12 @@ public class Target {
 			// deferred (references are marked consumed, nothing is resolved),
 			// so a consumer declared before its provider cannot stop the pass
 			ctx.staticLink.setDiscovery(true);
+			Exception discoveryStop = null;
 			try {
 				runTarget(node);
 			} catch (Exception e) {
-				log.debug("discovery pass stopped early: {}", e.getMessage());
+				discoveryStop = e;
+				log.warn("discovery pass stopped early: {}", e.getMessage());
 			}
 			// what AUTO will leave load-time linked was invisible to the
 			// discovery emission (its baked sections skip the link data) :
@@ -106,6 +108,14 @@ public class Target {
 			// what each region's content measured : size="auto" reads it back
 			java.util.Map<String, Integer> measured = ctx.ramMap.contentSizes();
 			java.util.Map<String, Integer> measuredPages = ctx.regions.pagesUsedSnapshot();
+			// a discovery that died before the scenes leaves the measures
+			// empty : the real pass would lay every size="auto" region out at
+			// a full page and write a disk that loads over the monitor. Better
+			// no disk than that one.
+			if (discoveryStop != null && measured.isEmpty()) {
+				throw new Exception("discovery pass failed before measuring the layout — "
+						+ discoveryStop.getMessage(), discoveryStop);
+			}
 
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so

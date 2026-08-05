@@ -94,7 +94,10 @@ public final class LayoutResolver {
 					pages = m;
 				} else {
 					Integer next = claimed.higher(page);
-					pages = next != null ? next - page : 1;
+					// nothing declared above : the last region on the map may
+					// claim up to the end of physical RAM (32 pages of 16K on
+					// a 512K machine) — the measure replaces this next pass
+					pages = next != null ? next - page : 32 - page;
 				}
 			}
 			boolean stacked = Attribute.getBoolean(child, ctx, "stacked", false);
