@@ -54,6 +54,38 @@ public class RamMap {
 		return Collections.unmodifiableMap(scenes);
 	}
 
+	/**
+	 * What each region really holds : the largest a scene ever puts in it.
+	 *
+	 * The largest, not the last : a region hosting alternatives — the stage
+	 * boundary — must be sized for the biggest of them, or loading the other
+	 * one overflows. Loads of a same scene are summed, which is what a bulk
+	 * region stacks ; for an ordinary region there is only ever one per scene.
+	 *
+	 * This is what {@code size="auto"} resolves to, measured by the discovery
+	 * pass and applied by the real one.
+	 */
+	public Map<String, Integer> contentSizes() {
+		Map<String, Integer> max = new LinkedHashMap<String, Integer>();
+		for (List<Load> loads : scenes.values()) {
+			Map<String, Integer> perScene = new LinkedHashMap<String, Integer>();
+			for (Load load : loads) {
+				if (load.region == null) {
+					continue;    // a raw page/address destination has no region to size
+				}
+				Integer sum = perScene.get(load.region);
+				perScene.put(load.region, (sum == null ? 0 : sum) + load.size);
+			}
+			for (Map.Entry<String, Integer> e : perScene.entrySet()) {
+				Integer known = max.get(e.getKey());
+				if (known == null || e.getValue() > known) {
+					max.put(e.getKey(), e.getValue());
+				}
+			}
+		}
+		return max;
+	}
+
 	public boolean isEmpty() {
 		return scenes.isEmpty();
 	}

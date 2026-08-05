@@ -116,10 +116,10 @@ public final class Handlers {
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.req("page", INT, "destination page id")
-			.req("address", INT, "destination address")
-			.opt("size", INT, "byte budget, checked against the loaded entry")
+			.req("address", INT_AUTO, "destination address, or auto to follow what precedes it on the page")
+			.opt("size", INT_AUTO, "byte budget, checked against the loaded entry ; auto measures the content")
 			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole")
-			.opt("pages", INT, "consecutive pages the region spans from page, 1 if omitted ; more declares a budget for a dataset no single page holds")
+			.opt("pages", INT_AUTO, "consecutive pages the region spans from page, 1 if omitted ; auto takes what the pageset really filled")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
 			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")

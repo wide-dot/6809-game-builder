@@ -4,6 +4,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.gamebuilder.config.LayoutResolver;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,9 @@ public class LayoutPlugin {
 
 		String gensymbols = Attribute.getStringOpt(node, ctx, "gensymbols");
 
+		// The reserved ranges stay as declared : they describe equates that
+		// live in the game's source, and the builder cannot measure what it
+		// does not produce.
 		for (ImmutableNode child : node.getChildren()) {
 			if ("reserved".equals(child.getNodeName())) {
 				ctx.regions.reserve(new Regions.Reserved(
@@ -34,32 +38,30 @@ public class LayoutPlugin {
 				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains <region>"
 						+ " and <reserved> elements, found <" + child.getNodeName() + ">");
 			}
+		}
 
-			String name = Attribute.getString(child, ctx, "name");
-			int page = Attribute.getInteger(child, ctx, "page");
-			int address = Attribute.getInteger(child, ctx, "address");
-			Integer size = Attribute.getIntegerOpt(child, ctx, "size");
-			boolean bulk = Attribute.getBoolean(child, ctx, "bulk", false);
-			int pages = Attribute.getInteger(child, ctx, "pages", 1);
-
-			if (pages < 1) {
-				throw new Exception(ctx.sources.locate(child) + ": region '" + name
-						+ "' spans " + pages + " pages, which cannot be");
+		// Addresses and sizes may be left to the builder (size="auto",
+		// address="auto") : the resolver reads back what the discovery pass
+		// measured and stacks what follows. Same call as PlacementScan makes,
+		// so both see the identical layout.
+		for (Regions.Region region : LayoutResolver.resolve(node, ctx).values()) {
+			if (region.pages < 1) {
+				throw new Exception(ctx.sources.locate(node) + ": region '" + region.name
+						+ "' spans " + region.pages + " pages, which cannot be");
 			}
-			if (pages > 1 && bulk) {
-				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+			if (region.pages > 1 && region.bulk) {
+				throw new Exception(ctx.sources.locate(node) + ": region '" + region.name
 						+ "' cannot be both bulk and multi-page : bulk members are laid out"
 						+ " one after the other at run time, which no page boundary survives");
 			}
-
 			try {
-				ctx.regions.put(new Regions.Region(name, page, address, size, bulk, pages));
+				ctx.regions.put(region);
 			} catch (Exception e) {
-				throw new Exception(ctx.sources.locate(child) + ": " + e.getMessage());
+				throw new Exception(ctx.sources.locate(node) + ": " + e.getMessage());
 			}
-			log.debug("region {} : page {}{} address {} size {}{}", name, page,
-					pages > 1 ? ".." + (page + pages - 1) : "", address, size,
-					bulk ? " bulk" : "");
+			log.debug("region {} : page {}{} address {} size {}{}", region.name, region.page,
+					region.pages > 1 ? ".." + (region.page + region.pages - 1) : "",
+					region.address, region.size, region.bulk ? " bulk" : "");
 		}
 
 		// A region is a promise about where things land ; a reserved range is

@@ -25,7 +25,9 @@ public final class ElementSpec {
 		/** decimal, 0x or $ notation */
 		INT,
 		/** true or false */
-		BOOL
+		BOOL,
+		/** a number, or the word "auto" when the builder works it out */
+		INT_AUTO
 	}
 
 	public static final class AttrSpec {

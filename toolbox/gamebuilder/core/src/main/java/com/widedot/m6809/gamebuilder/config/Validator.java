@@ -49,12 +49,17 @@ public final class Validator {
 							+ name + "' (known: " + spec.attrNames() + ")");
 					continue;
 				}
-				if (as.type == ElementSpec.AttrType.INT) {
+				if (as.type == ElementSpec.AttrType.INT
+						|| as.type == ElementSpec.AttrType.INT_AUTO) {
 					try {
-						Values.parseInt((String) attr.getValue());
+						if (!(as.type == ElementSpec.AttrType.INT_AUTO
+								&& "auto".equals(attr.getValue()))) {
+							Values.parseInt((String) attr.getValue());
+						}
 					} catch (NumberFormatException e) {
 						errors.add(sources.locate(node) + ": <" + spec.name + "> attribute '" + name
-								+ "': '" + attr.getValue() + "' is not a number (decimal, 0x or $)");
+								+ "': '" + attr.getValue() + "' is not a number (decimal, 0x or $)"
+								+ (as.type == ElementSpec.AttrType.INT_AUTO ? " nor \"auto\"" : ""));
 					}
 				} else if (as.type == ElementSpec.AttrType.BOOL) {
 					String v = (String) attr.getValue();

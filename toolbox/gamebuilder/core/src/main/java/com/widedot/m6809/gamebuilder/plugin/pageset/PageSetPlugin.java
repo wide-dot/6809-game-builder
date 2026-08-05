@@ -128,14 +128,17 @@ public class PageSetPlugin {
 			pages.get(pages.size() - 1).add(i);
 			used += sizes[i];
 		}
+		// what the packing really needed : pages="auto" reads it back next pass
+		ctx.regions.recordPagesUsed(regionName, pages.size());
 		if (pages.size() > region.pages) {
 			throw new Exception("pageset '" + name + "' needs " + pages.size()
 					+ " pages but region '" + regionName + "' declares " + region.pages
 					+ " — raise its pages attribute, or put less in the set");
 		}
 		if (pages.size() < region.pages) {
-			log.warn("pageset {} fills {} of the {} pages region {} declares", name,
-					pages.size(), region.pages, regionName);
+			log.warn("pageset {} fills {} of the {} pages region {} declares — pages=\"auto\""
+					+ " would give the other {} back", name, pages.size(), region.pages,
+					regionName, region.pages - pages.size());
 		}
 
 		// --- emit one direntry per page ------------------------------------

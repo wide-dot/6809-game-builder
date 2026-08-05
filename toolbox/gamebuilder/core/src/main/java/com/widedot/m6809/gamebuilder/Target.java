@@ -103,11 +103,19 @@ public class Target {
 			log.debug("imported : {}", imported);
 			com.widedot.m6809.gamebuilder.spi.globals.StaticLink.Harvest discoveredStatic =
 					ctx.staticLink.snapshot();
+			// what each region's content measured : size="auto" reads it back
+			java.util.Map<String, Integer> measured = ctx.ramMap.contentSizes();
+			java.util.Map<String, Integer> measuredPages = ctx.regions.pagesUsedSnapshot();
 
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
 			ctx.resetTarget();
+			// the measures go in BEFORE the placement scan : the scan resolves
+			// size="auto" too, and a scan that disagreed with the layout would
+			// bake references against addresses nothing ever loads at
+			ctx.regions.seedMeasured(measured);
+			ctx.regions.seedMeasuredPages(measuredPages);
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			ctx.linkSymbols.preseed(symbols);
 			ctx.linkSymbols.preseedImports(imported);

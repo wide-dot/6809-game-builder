@@ -41,33 +41,36 @@ public final class PlacementScan {
 	private static void collectRegions(ImmutableNode node, BuildContext ctx,
 			Map<String, int[]> regions, Map<String, Boolean> bulks) throws Exception {
 		if ("layout".equals(node.getNodeName())) {
-			for (ImmutableNode region : node.getChildren()) {
-				if (!"region".equals(region.getNodeName())) {
-					continue;
-				}
-				String name = raw(region, "name");
-				Integer page = number(region, "page");
-				Integer address = number(region, "address");
-				if (name == null || page == null || address == null) {
-					continue; // the layout plugin reports malformed regions itself
-				}
-				regions.put(name, new int[] { page, address });
-				bulks.put(name, Boolean.parseBoolean(raw(region, "bulk")));
-				if (Boolean.parseBoolean(raw(region, "interface"))) {
-					// an interface region promises its alternatives the same
-					// run-time face ; bulk members have no destination of
-					// their own so the promise cannot even be stated
-					if (Boolean.TRUE.equals(bulks.get(name))) {
-						throw new Exception("region '" + name
+			// the same resolver the layout plugin uses, so an auto address or
+			// size is seen identically here — a placement scan that disagreed
+			// with the layout would bake references against addresses nothing
+			// ever loads at
+			for (com.widedot.m6809.gamebuilder.spi.globals.Regions.Region r
+					: LayoutResolver.resolve(node, ctx).values()) {
+				regions.put(r.name, new int[] { r.page, r.address });
+				bulks.put(r.name, r.bulk);
+				if (Boolean.parseBoolean(raw(findRegion(node, r.name), "interface"))) {
+					if (r.bulk) {
+						throw new Exception("region '" + r.name
 								+ "' cannot be both bulk and interface");
 					}
-					ctx.staticLink.declareInterfaceRegion(name, page, address);
+					ctx.staticLink.declareInterfaceRegion(r.name, r.page, r.address);
 				}
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
 			collectRegions(child, ctx, regions, bulks);
 		}
+	}
+
+	/** the declaration a resolved region came from, for its remaining attributes */
+	private static ImmutableNode findRegion(ImmutableNode layout, String name) {
+		for (ImmutableNode child : layout.getChildren()) {
+			if ("region".equals(child.getNodeName()) && name.equals(raw(child, "name"))) {
+				return child;
+			}
+		}
+		return null;
 	}
 
 	private static void collectLoads(ImmutableNode node, BuildContext ctx,
@@ -111,6 +114,9 @@ public final class PlacementScan {
 	}
 
 	private static String raw(ImmutableNode node, String attribute) {
+		if (node == null) {
+			return null;
+		}
 		Object value = node.getAttributes().get(attribute);
 		return value == null ? null : value.toString();
 	}
