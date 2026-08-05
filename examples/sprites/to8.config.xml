@@ -39,7 +39,7 @@
 
                 <!-- Compiled sprites + their imageset index -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sprites" loadtimelink="LINK">
+                <direntry name="assets.sprites" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/assets/sprites/sprites.asm">
                         <!-- entries.asm brings the file id equates the index needs -->
                         <asm filename="gen/directories/disk0/entries.asm"/>

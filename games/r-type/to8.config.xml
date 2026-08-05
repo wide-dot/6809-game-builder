@@ -179,7 +179,7 @@
 
                 <!-- Le moteur résident                                        -->
                 <!-- ******************************************************** -->
-                <direntry name="common.engine" codec="zx0" loadtimelink="LINK">
+                <direntry name="common.engine" codec="zx0" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
@@ -189,7 +189,7 @@
                 <!-- Les scripts d'animation, communs. Section .static : leurs  -->
                 <!-- ~2900 pointeurs internes sont cuits au build contre le     -->
                 <!-- placement declare, donc zero donnee de lien.               -->
-                <direntry name="common.anim" codec="zx0">
+                <direntry name="common.anim" codec="zx0" bake="all">
                     <lwasm gensource="gen/common/anim.asm">
                         <asm filename="src/common/fx/animation/anim.asm"/>
                     </lwasm>
@@ -197,7 +197,7 @@
 
                 <!-- Les ennemis. Leurs images d'abord dans le meme direntry :   -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.        -->
-                <direntry name="common.enemies" loadtimelink="LINK">
+                <direntry name="common.enemies" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/enemies/enemies.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/pata-pata/enemy.asm"/>
@@ -240,7 +240,7 @@
                 <!-- routine appelee par paged.call. Declare AVANT le stage    -->
                 <!-- qui le consomme.                                          -->
                 <!-- ******************************************************** -->
-                <direntry name="common.overlay" loadtimelink="LINK">
+                <direntry name="common.overlay" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- Le champ d'etoiles : sans etat, 6 Ko de table       -->
@@ -262,7 +262,7 @@
                 <!-- Le joueur. Ses images d'abord dans le meme direntry : -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.   -->
                 <!-- ******************************************************** -->
-                <direntry name="common.player" loadtimelink="LINK">
+                <direntry name="common.player" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/player/player.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/player.asm"/>
@@ -320,7 +320,7 @@
 
                 <!-- L'armement du joueur : quatre unites, une par objet       -->
                 <!-- ******************************************************** -->
-                <direntry name="common.weapon" loadtimelink="LINK">
+                <direntry name="common.weapon" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/weapon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/weapon/weapon.asm"/>
@@ -341,7 +341,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.beamcharge" loadtimelink="LINK">
+                <direntry name="common.beamcharge" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/beamcharge.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/charge.asm"/>
@@ -377,7 +377,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.beamp" loadtimelink="LINK">
+                <direntry name="common.beamp" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/beamp.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/beamp.asm"/>
@@ -425,7 +425,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.emflash" loadtimelink="LINK">
+                <direntry name="common.emflash" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/emflash.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/emflash.asm"/>
@@ -517,7 +517,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <direntry name="common.explosion" loadtimelink="LINK">
+                <direntry name="common.explosion" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/fx/explosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/explosion/explosion.asm"/>
@@ -530,7 +530,7 @@
 
                 <!-- Le HUD                                                    -->
                 <!-- ******************************************************** -->
-                <direntry name="common.hud" loadtimelink="LINK">
+                <direntry name="common.hud" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/overlay/hud.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/hud.unit.asm"/>
@@ -585,34 +585,34 @@
                 <!-- Le port du YM2413 : le lecteur v2 le prend PAR LE LIEN,   -->
                 <!-- c'est ce qui lui permet de servir TO8 et MO6 sans           -->
                 <!-- recompilation. Une unite sans donnees, deux equates.        -->
-                <direntry name="engine.sound.ym.const" loadtimelink="LINK">
+                <direntry name="engine.sound.ym.const" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ym-const.asm">
                         <asm filename="engine/system/to8/sound/ym.2.const.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="engine.sound.ymm" codec="zx0" loadtimelink="LINK">
+                <direntry name="engine.sound.ymm" codec="zx0" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="stage1.music.ymm" loadtimelink="LINK">
+                <direntry name="stage1.music.ymm" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.soundfx" loadtimelink="LINK">
+                <direntry name="common.soundfx" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/soundfx.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/soundfx/soundfx.unit.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.collisionpass" loadtimelink="LINK">
+                <direntry name="common.collisionpass" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/lib/collisionpass.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/collisionpass.unit.asm"/>
@@ -621,14 +621,14 @@
 
 
 
-                <direntry name="common.checkpoint" loadtimelink="LINK">
+                <direntry name="common.checkpoint" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/flow/checkpoint.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/flow/checkpoint.unit.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.messages" loadtimelink="LINK">
+                <direntry name="common.messages" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/hud/messages.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/messages/messages.unit.asm"/>
@@ -636,7 +636,7 @@
                 </direntry>
 
                 <!-- MIGRE MAIS DEBRANCHE — voir la region vgc.* du layout.
-                <direntry name="engine.sound.vgc" codec="zx0" loadtimelink="LINK">
+                <direntry name="engine.sound.vgc" codec="zx0" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/vgc.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
@@ -644,7 +644,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="stage1.music.vgc" loadtimelink="LINK">
+                <direntry name="stage1.music.vgc" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/sound/vgc-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/vgc.unit.asm"/>
@@ -654,7 +654,7 @@
 
                 <!-- Les flammes de reacteur de la sequence d'ouverture        -->
                 <!-- ******************************************************** -->
-                <direntry name="common.engineflames" loadtimelink="LINK">
+                <direntry name="common.engineflames" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/player/engineflames.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/engineflames/engineflames.asm"/>
@@ -677,7 +677,7 @@
 
                 <!-- Le fondu de palette, objet monte                          -->
                 <!-- ******************************************************** -->
-                <direntry name="common.fade" loadtimelink="LINK">
+                <direntry name="common.fade" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/fx/fade.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/fade/fade.asm"/>
@@ -697,7 +697,7 @@
                 <!-- comprise : _nextRoutine rend la main a l'objet, _resetAnim  -->
                 <!-- reboucle.                                                  -->
                 <!-- ******************************************************** -->
-                <direntry name="common.pow" loadtimelink="LINK">
+                <direntry name="common.pow" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/pickups/pow.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/pow.unit.asm"/>
@@ -745,7 +745,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.optionbox" loadtimelink="LINK">
+                <direntry name="common.optionbox" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/pickups/optionbox.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/optionbox.unit.asm"/>
@@ -772,7 +772,7 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.bitdevice" loadtimelink="LINK">
+                <direntry name="common.bitdevice" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/bitdevice.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/bitdevice/bitdevice.unit.asm"/>
@@ -818,14 +818,14 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.firechain" loadtimelink="LINK">
+                <direntry name="common.firechain" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/firechain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/firechain.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="common.foefire" loadtimelink="LINK">
+                <direntry name="common.foefire" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/foefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/foefire.unit.asm"/>
@@ -855,7 +855,7 @@
 
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
-                <direntry name="stage1.collision" loadtimelink="LINK">
+                <direntry name="stage1.collision" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/stages/01/collision.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/collision/collision.asm"/>
@@ -903,7 +903,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage1.maps">
+                <direntry name="stage1.maps" bake="all">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -915,28 +915,28 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="stage1.init" loadtimelink="LINK">
+                <direntry name="stage1.init" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/stages/01/init.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/init.unit.asm"/>
                     </lwasm>
                 </direntry>
 
-                <direntry name="stage1" codec="zx0" loadtimelink="LINK">
+                <direntry name="stage1" codec="zx0" loadtimelink="LINK" bake="all">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
                         <!-- La palette du JEU, pas celle des tuiles : c'est   -->
                         <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
                         <!-- Le PNG de carte n'en portait qu'un sous-ensemble. -->
-                        <png2pal section="palette.static" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
-                        <png2pal section="palette.static" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- La palette des messages READY / GAME OVER, du meme
                              PNG que la v1 (palette.Pal_messages). Le stage la
                              pose le temps d'afficher le message, puis rend la
                              sienne. -->
-                        <png2pal section="palette.static" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
                 </direntry>
 
@@ -971,7 +971,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage2.maps">
+                <direntry name="stage2.maps" bake="all">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -983,18 +983,18 @@
                     </lwasm>
                 </direntry>
 
-                <direntry name="stage2" codec="zx0" loadtimelink="LINK">
+                <direntry name="stage2" codec="zx0" loadtimelink="LINK" bake="all">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
-                        <png2pal section="palette.static" symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
-                        <png2pal section="palette.static" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- La palette des messages READY / GAME OVER, du meme
                              PNG que la v1 (palette.Pal_messages). Le stage la
                              pose le temps d'afficher le message, puis rend la
                              sienne. -->
-                        <png2pal section="palette.static" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
                 </direntry>
 

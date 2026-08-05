@@ -97,7 +97,8 @@ Order matters, and for the same reason it matters for a tilemap: the images
 must be declared **before** the index that resolves their pages. Both `<load>`s
 go in the scene, the pageset by its set name.
 
-`<imageset>` defaults to section `code.static`, so the addresses are baked too
+`<imageset>` joins the unit's `code` section ; with `bake="auto"` (or `all`)
+on the direntry, the addresses are baked too
 and the whole set costs no link data.
 
 ## Proof

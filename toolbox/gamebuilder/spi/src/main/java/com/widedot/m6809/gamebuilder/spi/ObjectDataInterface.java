@@ -33,13 +33,16 @@ public interface ObjectDataInterface {
 	}
 
 	/**
-	 * Resolve the external references of the sections named {@code *.static}
-	 * against the declared placements, patching the binary in place — those
-	 * references then emit no link data at all. Objects without such a section
-	 * do nothing. Must be called before the binary is first read.
+	 * Resolve this object's references against the declared placements,
+	 * patching the binary in place — a baked reference emits no link data at
+	 * all. What gets resolved is the direntry's {@code bake} mode's decision
+	 * (see {@link com.widedot.m6809.gamebuilder.spi.globals.BakeMode}) ;
+	 * {@code NONE} does nothing. Must be called before the binary is first
+	 * read.
 	 */
 	default void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,
-			String direntry, int base) throws Exception {
+			String direntry, int base,
+			com.widedot.m6809.gamebuilder.spi.globals.BakeMode mode) throws Exception {
 	}
 
 	/**

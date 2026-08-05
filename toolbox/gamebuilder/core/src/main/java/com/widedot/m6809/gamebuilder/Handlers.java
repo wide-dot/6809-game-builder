@@ -92,7 +92,8 @@ public final class Handlers {
 			.opt("codec", STRING, "zx0 : compress the whole entry as one stream")
 			.opt("loadtimelink", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
-			.opt("section", STRING, "section receiving the entry"));
+			.opt("section", STRING, "section receiving the entry")
+			.opt("bake", STRING, "reference resolution: none (default), auto, all"));
 		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one direntry per page")
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
 			.req("region", STRING, "multi-page region receiving the set")
@@ -222,7 +223,7 @@ public final class Handlers {
 			.opt("colors", INT, "number of colors")
 			.opt("offset", INT, "first color index")
 			.opt("mode", STRING, "bin, and only as direntry content ; inside <lwasm> the table is always the exported form")
-			.opt("section", STRING, "name of the generated SECTION, default code ; a host unit baked as code.static needs the palette out of the way of the entry point")
+			.opt("section", STRING, "name of the generated SECTION, default code")
 			.opt("profile", STRING, "color profile"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")
@@ -282,12 +283,12 @@ public final class Handlers {
 			.req("tiles", STRING, "tile symbol stem : entries reference adr_<tiles>_<id>_<variant>")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.req("gensource", STRING, "generated source file of the table")
-			.opt("section", STRING, "section of the table, map.static if omitted ; must end with .static")
+			.opt("section", STRING, "section of the table, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("imageset").doc("index of an imageset whose drawing code is spread over pages, baked in a .static section")
 			.req("name", STRING, "imageset name, as declared by the <gfxcomp imageset> that compiled the images")
 			.req("gensource", STRING, "generated source file of the index")
-			.opt("section", STRING, "section of the index, code.static if omitted"));
+			.opt("section", STRING, "section of the index, code if omitted"));
 		spec(element("png2bin").doc("convert an indexed PNG to video memory data, one plane per declaration")
 			.req("filename", STRING, "input .png")
 			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")

@@ -67,7 +67,40 @@ public class StaticLink {
 	private final Map<String, Placement> placements = new LinkedHashMap<String, Placement>();
 	/** direntry -> why it cannot be resolved statically */
 	private final Map<String, String> conflicts = new LinkedHashMap<String, String>();
-	private final Map<String, Export> exports = new LinkedHashMap<String, Export>();
+	/**
+	 * symbol -> provider direntry -> export. Keyed twice because run-time
+	 * alternatives legitimately export the same names (each stage exports its
+	 * wave), each with its own value : a single-slot map silently kept
+	 * whichever registered last, and a consumer baked against it by luck of
+	 * declaration order. resolve() now picks the provider the consumer can
+	 * actually see at run time, or refuses when several remain.
+	 */
+	private final Map<String, LinkedHashMap<String, Export>> exports = new LinkedHashMap<String, LinkedHashMap<String, Export>>();
+	/**
+	 * scene -> direntries it loads, as PlacementScan declared them. This is
+	 * what disambiguates a multi-provider symbol : a provider only reachable
+	 * through scenes that also load an alternative of the consumer can never
+	 * be in memory with it.
+	 */
+	private final Map<String, java.util.LinkedHashSet<String>> sceneLoads = new LinkedHashMap<String, java.util.LinkedHashSet<String>>();
+	/** the direntry being built, for resolutions that lack an explicit consumer */
+	private String currentConsumer = null;
+	/**
+	 * consumer -> external symbols its baked sections referenced, recorded
+	 * during discovery. The pass end classifies them against the finished
+	 * harvest to predict which ones AUTO will leave load-time linked — those
+	 * must count as imports, or the pruning would drop their providers'
+	 * exports and the loader would resolve them to zero.
+	 */
+	private final Map<String, java.util.LinkedHashSet<String>> candidates = new LinkedHashMap<String, java.util.LinkedHashSet<String>>();
+	/**
+	 * Discovery mode : the target's first pass exists to collect symbols and
+	 * placements, and its binaries are thrown away. While it is on, baking
+	 * marks references as statically consumed without resolving them — so a
+	 * consumer declared before its provider no longer kills the pass, and the
+	 * harvest below is always complete.
+	 */
+	private boolean discovery = false;
 	/** interface region name -> its destination ; declared with interface="true" */
 	private final Map<String, int[]> interfaceRegions = new LinkedHashMap<String, int[]>();
 	/**
@@ -79,6 +112,16 @@ public class StaticLink {
 
 	/** record where a scene loads a direntry ; a second, different destination turns into a conflict */
 	public void place(String direntry, int page, int address, String scene) {
+		// pageset members are placed under a pseudo scene ("pageset <name>") ;
+		// only real scenes describe what is in memory together
+		if (scene != null && !scene.startsWith("pageset ")) {
+			java.util.LinkedHashSet<String> loads = sceneLoads.get(scene);
+			if (loads == null) {
+				loads = new java.util.LinkedHashSet<String>();
+				sceneLoads.put(scene, loads);
+			}
+			loads.add(direntry);
+		}
 		java.util.LinkedHashSet<String> dests = allDestinations.get(direntry);
 		if (dests == null) {
 			dests = new java.util.LinkedHashSet<String>();
@@ -111,21 +154,224 @@ public class StaticLink {
 
 	public void registerExport(String symbol, String direntry, int value, boolean absolute) {
 		// duplicate exports across a target are rejected by the link symbol
-		// table already ; last one wins here without further ceremony
-		exports.put(symbol, new Export(direntry, value, absolute));
+		// table already — except between run-time alternatives, which SHOULD
+		// share names, each with its own value
+		LinkedHashMap<String, Export> byProvider = exports.get(symbol);
+		if (byProvider == null) {
+			byProvider = new LinkedHashMap<String, Export>();
+			exports.put(symbol, byProvider);
+		}
+		byProvider.put(direntry, new Export(direntry, value, absolute));
+	}
+
+	/** the direntry whose references are being resolved, set by the builder
+	 *  around each unit so generators can resolve without threading a name */
+	public void setCurrentConsumer(String direntry) {
+		currentConsumer = direntry;
+	}
+
+	public void setDiscovery(boolean discovery) {
+		this.discovery = discovery;
+	}
+
+	/** an external reference seen in a baked section during discovery */
+	public void recordCandidate(String consumer, String symbol) {
+		java.util.LinkedHashSet<String> set = candidates.get(consumer);
+		if (set == null) {
+			set = new java.util.LinkedHashSet<String>();
+			candidates.put(consumer, set);
+		}
+		set.add(symbol);
+	}
+
+	/**
+	 * Which recorded candidates the real pass will leave load-time linked,
+	 * classified against the finished harvest — the exact resolution the real
+	 * bake will attempt, attempted here. {@code $PAGE} references are skipped :
+	 * when linked they emit a FILE id, not a symbol id, so they neither need a
+	 * preseeded name nor keep any export alive.
+	 */
+	public java.util.Set<String> predictLinkedImports() {
+		java.util.TreeSet<String> linked = new java.util.TreeSet<String>();
+		for (Map.Entry<String, java.util.LinkedHashSet<String>> consumer : candidates.entrySet()) {
+			for (String symbol : consumer.getValue()) {
+				if (symbol.endsWith("$PAGE")) {
+					continue;
+				}
+				try {
+					Export export = electProvider(symbol, consumer.getKey());
+					if (!export.absolute) {
+						placementOf(export.direntry, symbol);
+					}
+				} catch (Exception e) {
+					linked.add(symbol);
+				}
+			}
+		}
+		return linked;
+	}
+
+	public boolean isDiscovery() {
+		return discovery;
+	}
+
+	/**
+	 * Everything the discovery pass learned that the real pass needs before
+	 * its first direntry builds : the export table (a provider's offset is
+	 * known whatever the declaration order), but also the build-time half of
+	 * the placement picture — pageset members are placed and declared
+	 * exclusive as each set is BUILT, and the multi-provider election needs
+	 * the whole family to tell which provider a consumer can reach. Without
+	 * it, a consumer built before a later set saw that set's members as plain
+	 * reachable direntries and refused a resolution the finished picture
+	 * allows.
+	 */
+	public static class Harvest {
+		final Map<String, LinkedHashMap<String, Export>> exports;
+		final Map<String, Placement> placements;
+		final Map<String, String> conflicts;
+		final Map<String, String[]> exclusive;
+
+		Harvest(Map<String, LinkedHashMap<String, Export>> exports,
+				Map<String, Placement> placements,
+				Map<String, String> conflicts,
+				Map<String, String[]> exclusive) {
+			this.exports = exports;
+			this.placements = placements;
+			this.conflicts = conflicts;
+			this.exclusive = exclusive;
+		}
+	}
+
+	public Harvest snapshot() {
+		Map<String, LinkedHashMap<String, Export>> exportsCopy = new LinkedHashMap<String, LinkedHashMap<String, Export>>();
+		for (Map.Entry<String, LinkedHashMap<String, Export>> e : exports.entrySet()) {
+			exportsCopy.put(e.getKey(), new LinkedHashMap<String, Export>(e.getValue()));
+		}
+		return new Harvest(exportsCopy,
+				new LinkedHashMap<String, Placement>(placements),
+				new LinkedHashMap<String, String>(conflicts),
+				new LinkedHashMap<String, String[]>(exclusive));
+	}
+
+	public void preseed(Harvest discovered) {
+		for (Map.Entry<String, LinkedHashMap<String, Export>> e : discovered.exports.entrySet()) {
+			LinkedHashMap<String, Export> byProvider = exports.get(e.getKey());
+			if (byProvider == null) {
+				byProvider = new LinkedHashMap<String, Export>();
+				exports.put(e.getKey(), byProvider);
+			}
+			byProvider.putAll(e.getValue());
+		}
+		// placements the real pass has not made yet — the pass re-records each
+		// one identically as it builds ; a real conflict still surfaces, since
+		// place() compares destinations whatever their origin
+		for (Map.Entry<String, Placement> e : discovered.placements.entrySet()) {
+			if (!placements.containsKey(e.getKey()) && !conflicts.containsKey(e.getKey())) {
+				placements.put(e.getKey(), e.getValue());
+			}
+		}
+		for (Map.Entry<String, String> e : discovered.conflicts.entrySet()) {
+			placeConflict(e.getKey(), e.getValue());
+		}
+		exclusive.putAll(discovered.exclusive);
 	}
 
 	/** the absolute value a static 16 bit reference to this symbol resolves to */
 	public int resolve(String symbol) throws Exception {
-		Export export = exports.get(symbol);
-		if (export == null) {
-			throw new Exception("no direntry built so far exports '" + symbol
-					+ "' — a provider consumed statically must be declared before its consumer");
-		}
+		Export export = electProvider(symbol, currentConsumer);
 		if (export.absolute) {
 			return export.value;
 		}
 		return placementOf(export.direntry, symbol).address + export.value;
+	}
+
+	/**
+	 * The provider a static reference binds to, for a given consumer.
+	 *
+	 * One provider : trivial. Several — run-time alternatives sharing a name,
+	 * each stage exporting its wave — and the answer depends on WHO asks : the
+	 * loader would resolve against whichever alternative is in memory with the
+	 * consumer, so the bake must bind to the one provider the consumer can
+	 * ever see. A provider is unreachable from the consumer when it is itself
+	 * an alternative of the consumer, or when every scene that loads it also
+	 * loads an alternative of the consumer (loading that scene evicted the
+	 * consumer first). If more than one reachable provider remains, no single
+	 * build-time value exists and the reference must stay load-time linked —
+	 * refused loudly, never resolved against whichever registered last.
+	 */
+	private Export electProvider(String symbol, String consumer) throws Exception {
+		LinkedHashMap<String, Export> byProvider = exports.get(symbol);
+		if (byProvider == null || byProvider.isEmpty()) {
+			throw new Exception("no direntry of this target exports '" + symbol
+					+ "' — or the discovery pass stopped before its provider was built,"
+					+ " in which case declaring the provider before its consumer works around it");
+		}
+		if (byProvider.size() == 1) {
+			return byProvider.values().iterator().next();
+		}
+		// identical absolute constants are one value whoever provides it
+		Export first = byProvider.values().iterator().next();
+		boolean allSameAbsolute = first.absolute;
+		for (Export e : byProvider.values()) {
+			if (!e.absolute || e.value != first.value) {
+				allSameAbsolute = false;
+				break;
+			}
+		}
+		if (allSameAbsolute) {
+			return first;
+		}
+		java.util.List<Export> reachable = new java.util.ArrayList<Export>();
+		for (Export e : byProvider.values()) {
+			if (consumer == null || !unreachableFrom(consumer, e.direntry)) {
+				reachable.add(e);
+			}
+		}
+		if (reachable.size() == 1) {
+			return reachable.get(0);
+		}
+		throw new Exception("'" + symbol + "' is exported by " + byProvider.keySet()
+				+ ", run-time alternatives that "
+				+ (consumer == null ? "no consumer was named to disambiguate"
+						: "'" + consumer + "' could see either of")
+				+ " — the reference must stay load-time linked");
+	}
+
+	/**
+	 * Whether {@code provider} can never be in the loader's index while
+	 * {@code consumer} is : either the two are direct alternatives, or every
+	 * scene that brings the provider in also brings an alternative of the
+	 * consumer — so reaching the provider means the consumer was evicted.
+	 */
+	private boolean unreachableFrom(String consumer, String provider) {
+		if (sameSingleDestination(consumer, provider)) {
+			return true;
+		}
+		java.util.List<String> carriers = new java.util.ArrayList<String>();
+		String[] set = exclusive.get(provider);
+		for (Map.Entry<String, java.util.LinkedHashSet<String>> scene : sceneLoads.entrySet()) {
+			if (scene.getValue().contains(provider)
+					|| (set != null && scene.getValue().contains(set[1]))) {
+				carriers.add(scene.getKey());
+			}
+		}
+		if (carriers.isEmpty()) {
+			return false; // nothing says how the provider gets in : assume reachable
+		}
+		for (String scene : carriers) {
+			boolean evictsConsumer = false;
+			for (String load : sceneLoads.get(scene)) {
+				if (!load.equals(consumer) && sameSingleDestination(consumer, load)) {
+					evictsConsumer = true;
+					break;
+				}
+			}
+			if (!evictsConsumer) {
+				return false; // this scene can add the provider next to the consumer
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -154,11 +400,7 @@ public class StaticLink {
 	 * landed on, which is the whole point of the question.
 	 */
 	public int pageOf(String symbol) throws Exception {
-		Export export = exports.get(symbol);
-		if (export == null) {
-			throw new Exception("no direntry built so far exports '" + symbol
-					+ "' — a provider must be declared before the table that indexes it");
-		}
+		Export export = electProvider(symbol, currentConsumer);
 		return placementOf(export.direntry, symbol).page;
 	}
 
@@ -268,8 +510,12 @@ public class StaticLink {
 		placements.clear();
 		conflicts.clear();
 		exports.clear();
+		sceneLoads.clear();
 		interfaceRegions.clear();
 		allDestinations.clear();
 		exclusive.clear();
+		candidates.clear();
+		discovery = false;
+		currentConsumer = null;
 	}
 }

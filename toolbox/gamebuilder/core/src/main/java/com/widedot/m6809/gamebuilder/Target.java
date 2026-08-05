@@ -75,17 +75,34 @@ public class Target {
 			// to report, with whatever symbols were seen preseeded.
 			ctx.resetTarget();
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
+			// discovery also harvests the static-link export table : baking is
+			// deferred (references are marked consumed, nothing is resolved),
+			// so a consumer declared before its provider cannot stop the pass
+			ctx.staticLink.setDiscovery(true);
 			try {
 				runTarget(node);
 			} catch (Exception e) {
 				log.debug("discovery pass stopped early: {}", e.getMessage());
 			}
+			// what AUTO will leave load-time linked was invisible to the
+			// discovery emission (its baked sections skip the link data) :
+			// classify the recorded candidates now, so those symbols get ids
+			// and their providers' exports survive the pruning
+			java.util.Set<String> predictedLinked = ctx.staticLink.predictLinkedImports();
 			List<String> symbols = new ArrayList<String>(ctx.linkSymbols.ids.keySet());
+			for (String name : predictedLinked) {
+				if (!ctx.linkSymbols.ids.containsKey(name)) {
+					symbols.add(name);
+				}
+			}
 			java.util.Collections.sort(symbols);
 			java.util.Set<String> imported = new java.util.HashSet<String>(ctx.linkSymbols.imports);
+			imported.addAll(predictedLinked);
 			log.info("{} link symbols discovered ({} imported), ids assigned alphabetically",
 					symbols.size(), imported.size());
 			log.debug("imported : {}", imported);
+			com.widedot.m6809.gamebuilder.spi.globals.StaticLink.Harvest discoveredStatic =
+					ctx.staticLink.snapshot();
 
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
@@ -94,6 +111,11 @@ public class Target {
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			ctx.linkSymbols.preseed(symbols);
 			ctx.linkSymbols.preseedImports(imported);
+			// the real pass bakes against the discovered offsets : declaration
+			// order no longer decides whether a provider is resolvable, and a
+			// symbol exported by several run-time alternatives is refused
+			// deterministically instead of resolving to whichever came last
+			ctx.staticLink.preseed(discoveredStatic);
 
 			// The images are written as the target runs, but the checks that
 			// close it come after — so a refused build would leave a freshly

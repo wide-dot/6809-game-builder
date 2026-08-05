@@ -99,10 +99,22 @@ public class DirEntryPlugin {
 		// direntry is the unit the loader loads and evicts, so it is the
 		// granularity of the export uniqueness rule
 		ctx.linkSymbols.beginUnit(name);
+		// the consumer whose references the static resolutions below serve —
+		// generators (a tilemap asking pageOf) and the bake both run inside
+		// this direntry, and a multi-provider symbol is disambiguated by who
+		// is asking
+		ctx.staticLink.setCurrentConsumer(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = Attribute.getStringOpt(node, ctx, "codec");
 		String linkSection = Attribute.getStringOpt(node, ctx, "loadtimelink");
 		boolean loadtimelink = (linkSection!=null?true:false);
+		// how this direntry's references are resolved — see BakeMode. Declared
+		// here, in the configuration that places everything, never in the
+		// source : the same unit can be fully linked in one project and fully
+		// baked in another.
+		com.widedot.m6809.gamebuilder.spi.globals.BakeMode bake =
+				com.widedot.m6809.gamebuilder.spi.globals.BakeMode.parse(
+						Attribute.getStringOpt(node, ctx, "bake"));
 		// the file size is stored on 14 bits in the directory entry, a bigger
 		// file cannot be described whatever the configuration asks for
 		int maxsize = Attribute.getInteger(node, ctx, "maxsize", MAX_FILE_SIZE);
@@ -139,16 +151,15 @@ public class DirEntryPlugin {
 		// init direntry
 		byte[] direntry = new byte[24];
 		
-		// resolve the *.static sections before anything reads the binaries :
-		// their references bake against providers built earlier, then emit no
-		// link data at all
-		// the baking needs to know where each member sits inside the entry :
-		// an internal reference resolves against the entry's load address plus
-		// that offset. Reading the length before baking is safe — patching
-		// changes bytes in place, never the length.
+		// resolve references before anything reads the binaries : a baked
+		// reference emits no link data at all. The baking needs to know where
+		// each member sits inside the entry — an internal reference resolves
+		// against the entry's load address plus that offset. Reading the
+		// length before baking is safe : patching changes bytes in place,
+		// never the length.
 		int bakeBase = 0;
 		for (ObjectDataInterface obj : objects) {
-			obj.bakeStatic(ctx.staticLink, name, bakeBase);
+			obj.bakeStatic(ctx.staticLink, name, bakeBase, bake);
 			bakeBase += obj.getBytes().length;
 		}
 		
@@ -278,8 +289,18 @@ public class DirEntryPlugin {
 			}
 			linkdata.process();
 			
-			// only create link block if there is actual link data
-			if (linkdata.data.length > 0) {
+			// A block whose six counters are all zero carries nothing : the
+			// bake resolved every reference and the pruning removed every
+			// export. Not writing it is what makes a fully baked file cost
+			// the loader NOTHING — no link file on disk, no index slot, no
+			// pool allocation, no entry every symbol search walks past. The
+			// direntry keeps its reserved descriptor size (file ids derive
+			// from the attributes before anything is built), only the flag
+			// stays down. An export still imported keeps its counter above
+			// zero, so this can never drop a block the loader needs.
+			if (linkdata.countExportAbs() + linkdata.countExportRel()
+					+ linkdata.countIntern() + linkdata.countExtern8()
+					+ linkdata.countExtern16() + linkdata.countExternPage() > 0) {
 				linkDiskLocation = media.cwrite(linkSection, linkdata.data);
 				hasLinkData = true;
 			}
@@ -324,6 +345,10 @@ public class DirEntryPlugin {
 			
 			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
 			i += 6;
+		} else if (loadtimelink) {
+			// the descriptor size was reserved from the attribute — keep it,
+			// zeroed : with the flag down the loader never reads these bytes
+			i += 8;
 		}
 			
 		int expected = blockCount(codec, linkSection) * BLOCK_SIZE;

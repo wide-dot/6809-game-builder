@@ -103,16 +103,12 @@ public class LwObject implements ObjectDataInterface{
 	
 	/**
 	 * Whether a section carries the unit's entry point, and so has to come
-	 * first in the binary.
-	 *
-	 * {@code .static} is a linking attribute, not an identity : a unit whose
-	 * whole body is bakeable renames its section to {@code code.static} and
-	 * must keep its entry point at its first byte. Keying this on the exact
-	 * name alone made that rename move the entry point without a word, which
-	 * is the one failure mode the entry point convention exists to prevent.
+	 * first in the binary. With baking moved to the direntry's {@code bake}
+	 * attribute, section names are identities again : {@code code} leads,
+	 * full stop.
 	 */
 	private static boolean leads(LWSection section) {
-		return "code".equals(section.name) || "code.static".equals(section.name);
+		return "code".equals(section.name);
 	}
 
 	public String string_cleanup(String sym) {
@@ -504,8 +500,6 @@ public class LwObject implements ObjectDataInterface{
 	}
 
 	/** suffix a section uses to ask for build-time resolution of its externals */
-	private static final String STATIC_SUFFIX = ".static";
-
 	/** relocations resolved at build time : the link data getters skip them */
 	private final java.util.Set<Reloc> baked = new java.util.HashSet<Reloc>();
 
@@ -516,12 +510,15 @@ public class LwObject implements ObjectDataInterface{
 
 	@Override
 	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,
-			String direntry, int base) throws Exception {
+			String direntry, int base,
+			com.widedot.m6809.gamebuilder.spi.globals.BakeMode mode) throws Exception {
+
+		if (mode == com.widedot.m6809.gamebuilder.spi.globals.BakeMode.NONE) {
+			return;
+		}
+		boolean strict = (mode == com.widedot.m6809.gamebuilder.spi.globals.BakeMode.ALL);
 
 		for (LWSection section : secLst) {
-			if (section.name == null || !section.name.endsWith(STATIC_SUFFIX)) {
-				continue;
-			}
 			// the concatenated binary is cached on first read — the assembler
 			// reads it once to publish the unit's size — so drop the cache :
 			// patching only changes bytes in place, never the length, and the
@@ -531,30 +528,48 @@ public class LwObject implements ObjectDataInterface{
 			for (Reloc reloc : section.incompletes) {
 
 				RelocValue r = evalReloc(reloc);
+				boolean intern = r.internal || r.symbol.isEmpty();
+				if (intern && reloc.flags != 0) {
+					continue;    // 8 bit interns are not emitted either
+				}
 
-				// An internal reference is the same problem as an external one,
-				// one step closer : the value is relative to where this unit
-				// lands, and a scene-placed direntry lands somewhere the builder
-				// knows. Baking it is what makes a big table of pointers — an
-				// animation script set, a tile map — cost nothing at load time
-				// instead of four bytes and a patch per entry.
-				if (r.internal || r.symbol.isEmpty()) {
-					if (reloc.flags != 0) {
-						continue;    // 8 bit interns are not emitted either
+				// Discovery pass : binaries are thrown away, only the harvest
+				// matters. Record the external candidates so the pass end can
+				// predict which ones AUTO will leave linked (they must count
+				// as imports for the pruning), mark everything as consumed,
+				// resolve nothing — a consumer declared before its provider
+				// must not stop the pass whose job is to collect that provider.
+				if (staticLink.isDiscovery()) {
+					if (!intern) {
+						staticLink.recordCandidate(direntry, r.symbol);
 					}
+					baked.add(reloc);
+					count++;
+					continue;
+				}
+
+				if (intern) {
+					// An internal reference is the same problem as an external
+					// one, one step closer : the value is relative to where
+					// this unit lands, and a scene-placed direntry lands
+					// somewhere the builder knows.
+					int value;
 					try {
-						int value = staticLink.addressOf(direntry) + base
+						value = staticLink.addressOf(direntry) + base
 								+ sectionBase(section) + r.value;
-						section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);
-						section.code[reloc.offset + 1] = (byte) (value & 0xff);
 					} catch (Exception e) {
+						if (!strict) {
+							continue;    // auto : this unit moves, stay linked
+						}
 						throw new Exception(path.getFileName() + " section " + section.name
 								+ " offset " + reloc.offset + " : " + e.getMessage()
 								+ System.lineSeparator()
-								+ "A *.static section resolves its own internal references"
-								+ " too, so the direntry holding it has to be at a declared,"
+								+ "bake='all' resolves internal references too, so the"
+								+ " direntry holding them has to be at a declared,"
 								+ " single destination.");
 					}
+					section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);
+					section.code[reloc.offset + 1] = (byte) (value & 0xff);
 					baked.add(reloc);
 					count++;
 					continue;
@@ -562,30 +577,41 @@ public class LwObject implements ObjectDataInterface{
 
 				try {
 					if (reloc.flags == Reloc.RELOC_8BIT) {
-						if (!r.symbol.endsWith("$PAGE")) {
-							throw new Exception("8 bit reference to '" + r.symbol
-									+ "' : only $PAGE references resolve statically");
+						if (r.symbol.endsWith("$PAGE")) {
+							String provider = r.symbol.substring(0, r.symbol.length() - 5);
+							int value = staticLink.resolvePage(provider) + r.value;
+							section.code[reloc.offset] = (byte) (value & 0xff);
+						} else {
+							// The run-time linker (loader.file.extern8.link)
+							// computes symbol value + operand on 16 bits and
+							// stores the LOW byte. Mirror it exactly : an
+							// absolute export (a constant like ymm.NO_LOOP)
+							// bakes to its value, a placed export to the low
+							// byte of its address — same result either way,
+							// which is the whole contract of baking.
+							int value = staticLink.resolve(r.symbol) + r.value;
+							section.code[reloc.offset] = (byte) (value & 0xff);
 						}
-						String provider = r.symbol.substring(0, r.symbol.length() - 5);
-						int value = staticLink.resolvePage(provider) + r.value;
-						section.code[reloc.offset] = (byte) (value & 0xff);
 					} else {
 						int value = staticLink.resolve(r.symbol) + r.value;
 						section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);
 						section.code[reloc.offset + 1] = (byte) (value & 0xff);
 					}
 				} catch (Exception e) {
+					if (!strict) {
+						continue;    // auto : provider unfixed or ambiguous, stay linked
+					}
 					throw new Exception(path.getFileName() + " section " + section.name
 							+ " offset " + reloc.offset + " : " + e.getMessage()
 							+ System.lineSeparator()
-							+ "A *.static section promises every external it holds resolves"
-							+ " against a declared, single placement ; there is no fallback"
-							+ " to load-time linking.");
+							+ "bake='all' promises every external resolves against a"
+							+ " declared, single placement ; there is no fallback to"
+							+ " load-time linking.");
 				}
 				baked.add(reloc);
 				count++;
 			}
-			if (count > 0) {
+			if (count > 0 && !staticLink.isDiscovery()) {
 				log.info("{} : {} references resolved statically in section '{}'",
 						path.getFileName(), count, section.name);
 			}

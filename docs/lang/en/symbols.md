@@ -75,42 +75,61 @@ symbol is an assembly error, at the line that used it. Keep it that way.
 `sym EXPORT` or `EXPORT sym`. The generated code uses the first form
 consistently; there is no reason to mix.
 
-## The `.static` sections
+## The `bake` attribute
 
-The answer to the bulk-table shape is implemented : a section whose name ends
-with `.static` asks the builder to resolve its external references itself,
-against the declared placement of their providers, and to emit **no link data
-for them**. The source does not change — same `EXTERNAL`, same `fdb` — the
-table is simply bracketed :
+The answer to the bulk-table shape — and, since 2026-08-05, to every fixed
+reference — is the direntry's `bake` attribute. The source does not change at
+all : same `EXTERNAL`, same `fdb`, plain `SECTION code`. The configuration,
+which is what places everything, decides how references resolve :
 
-```asm
- SECTION map.static
-map.even
-        fcb   assets.tiles$PAGE+$60
-        fdb   adr_tile2_ND0
- ENDSECTION
+```xml
+<direntry name="stage1.maps" loadtimelink="LINK" bake="all">
+<direntry name="common.player" loadtimelink="LINK" bake="auto">
 ```
+
+- `bake="none"` (default) — everything through the load-time linker.
+- `bake="auto"` — each reference is **classified** : baked when its provider
+  sits at one fixed destination the consumer can see (interns, when the unit
+  itself does), left load-time linked otherwise. References into run-time
+  alternatives stay linked by construction. An optimiser, not a promise.
+- `bake="all"` — the strict promise : every reference must bake, a failure is
+  a build error naming the symbol and the cause. For generated tables and
+  fully fixed units, where a silent fallback would hide a regression.
+
+(The earlier vehicle — sections named `*.static` — is gone : it forced the
+placement decision into the source, could not express a mixed unit like the
+engine, and complicated the entry-point convention. `bake="all"` carries the
+same promise from the configuration side.)
 
 The rules :
 
-- `extern16` and `externPg` references bake when their provider is loaded at
-  **one single fixed destination** across every scene of the target (a region,
-  or a literal page and address). Placements are collected from the whole
-  configuration before the target runs, so scene declaration order does not
-  matter — but **the provider's direntry must be declared before its
-  consumer**, because a symbol's offset only exists once the provider is
-  assembled.
-- Anything else is a **build error** naming the section, offset, symbol and
-  cause. A `.static` section is a promise ; there is no silent fallback.
-- Internal references bake as well — see the next section. A unit whose
-  `.static` sections hold all its references needs no `loadtimelink` block at
-  all.
-- Same-name sections merge across the source, and the section named `code` —
-  or `code.static`, when the whole body of a unit is baked — always leads the
-  unit's binary, the entry point convention, whatever order lwasm wrote the
-  object in. A unit must not hold both : the generators that emit
-  `SECTION code` (`png2pal` and friends) take a `section` attribute so a baked
-  host can move them out of the way.
+- `extern16`, `extern8` and `externPg` references bake when their provider is
+  loaded at **one single fixed destination** across every scene of the target
+  (a region, or a literal page and address), and 8/16 bit references to an
+  **absolute export** (a `SECTION constant` value) bake without any placement
+  at all. An 8 bit reference to a placed symbol bakes to the low byte of its
+  address — exactly what the run-time linker would store.
+- **Declaration order does not matter.** The discovery pass the build already
+  runs harvests every export offset, every placement and every pageset
+  membership, and the real pass resolves against the harvest — a consumer
+  declared before its provider builds identically. (If the discovery pass
+  itself stops early on an unrelated error, declaring providers first is the
+  workaround the message suggests.)
+- A symbol exported by **several run-time alternatives** (each stage exports
+  its wave) is resolved per consumer : the election binds to the one provider
+  the consumer can see at run time — a provider is unreachable when it is an
+  alternative of the consumer, or when every scene that loads it also loads an
+  alternative of the consumer. If more than one provider remains reachable
+  (the resident engine naming a stage's table), the reference is refused and
+  must stay load-time linked. This replaces the old last-one-wins register,
+  which silently picked whichever alternative was declared last.
+- Under `all`, anything else is a **build error** naming the section, offset,
+  symbol and cause ; under `auto` it stays load-time linked, silently — the
+  pool map and link report are where that residual is read.
+- Internal references bake as well — see the next section.
+- Same-name sections merge across the source, and the section named `code`
+  always leads the unit's binary — the entry point convention, whatever order
+  lwasm wrote the object in.
 
 Measured on `examples/tilescroll` : 768 references baked, link data for the
 map 4.6 KB → 0, the disk back to its standard layout, the memory pool back to
@@ -128,13 +147,14 @@ reason : an intern's value is relative to where its unit lands, and a
 scene-placed direntry lands somewhere the builder already knows. Baking it
 costs nothing the build was not already doing.
 
-It matters exactly where a table of pointers is big. R-type's animation
-scripts are ~2900 pointers into themselves : 8 KB of link data, which lives in
-the loader's memory pool for as long as the file is indexed — two thirds of
-the pool, and a stage exchange did not survive it. Baked, they cost nothing on
-disk and nothing in the pool. It is the same principle as the tile map, one
-step closer to home : there, the builder knew where the *provider* was ; here
-it knows where the *unit itself* is.
+It matters everywhere a unit is fixed, not only where a table is big.
+R-type's animation scripts are ~2900 pointers into themselves — 8 KB of pool,
+a stage exchange did not survive it — but the engine's 455 interns and the
+mounted objects' cost the same per entry. Under `bake="auto"` the whole game
+went from 9 104 to 552 bytes of link data (and 6 direntries instead of 30, the
+empty blocks dropping with their index slots) ; what remains is exactly the
+exchange boundary : the engine's references into the stage's interface region,
+and the stages' nine interface exports.
 
 A tempting shortcut does not work, and was measured rather than assumed :
 leaving the interns unresolved because the unit loads at address zero. lwasm
@@ -146,12 +166,11 @@ pointers would all read zero.
 The two mechanisms above are not optimisations to reach for once a build gets
 tight. They are the default, and `loadtimelink` is the exception :
 
-> A unit whose destination is fixed at build time — a `<region>` with a literal
-> page and address — declares its references in a `.static` section. That holds
-> for its external references (the provider sits at the same destination in
-> every scene of the target, and its direntry is declared first) and for its
-> internal ones. `loadtimelink` is reserved for what the builder cannot know :
-> content loaded at an address computed at run time.
+> Every direntry declares `bake="auto"`, and the classification does the rest :
+> what is fixed bakes, what is exchangeable stays linked. `bake="all"` replaces
+> `auto` where silence would hide a regression — generated tables, fully fixed
+> units. `bake="none"` is for what the builder cannot know : content loaded at
+> an address computed at run time.
 
 Three corollaries, each of which has been got wrong :
 
@@ -165,24 +184,16 @@ A habit limited to inter-stage commons leaves the largest tables paying.
 section, and the provider's direntry must be declared before it. "Bake this
 asset" means nothing; "bake the table that points into it" means something.
 
-**Half a unit baked still costs a block.** The link data shrinks in proportion,
-but the direntry keeps its `loadtimelink` and the loader keeps one allocation
-alive for as long as the file is indexed. The pool cost reaches zero only when
-every reference of the unit is baked and the attribute goes away.
-
-**A block costs 12 bytes before it holds anything** — six two-byte counters —
-then four per export and four to six per reference. So a fully baked direntry
-sitting at exactly 12 bytes in the report is one whose `loadtimelink` has
-nothing left to carry : drop the attribute and it stops costing a block *and*
-an allocation. On r-type that described nineteen entries at once (the animation
-scripts, the two tile maps, sixteen tilesets), 228 bytes and nineteen
-allocations. The exception is a direntry whose exports are still imported —
-`stage1` stays at 36 bytes = 12 + six exports, because the engine relinks
-against those six at every scene load.
-
-Dropping the attribute too early used to fail silently : the reference goes
-back through the loader, finds no export and resolves to zero. The build now
-refuses it, naming each symbol and the direntry that stopped emitting it.
+**An empty block drops itself.** A block costs 12 bytes before it holds
+anything — six two-byte counters — then four per export and four to six per
+reference. When the bake resolves every reference and the pruning removes
+every export, the builder no longer writes the link file at all : the
+descriptor keeps its reserved size (file ids derive from the attributes), the
+flag stays down, and the loader neither indexes the file nor allocates
+anything. `loadtimelink` can stay declared ; it only costs when it carries.
+An export still imported keeps its counter above zero, so a block the loader
+needs can never be dropped — `stage1` keeps its nine interface exports,
+because the engine relinks against them at every scene load.
 
 **A reference *into* a swappable unit must stay linked — this one is
 correctness, not size.** The stage exchange is nothing but the loader
@@ -195,12 +206,12 @@ what keeps `common.engine` and `common.player` linked — the engine reads the
 stage's five tables, the player writes the stage's `mainloop.state` — while
 `stage1` and `stage2`, which only ever consume fixed providers, bake whole.
 
-The build refuses the mistake rather than committing it, but only because of
-the declaration order rule : a provider is resolvable only once built, and the
-alternatives of an interface region are declared after the resident units that
-read them. `resolve` then finds nothing and says so. Do not rely on that alone
-— `registerExport` is last-one-wins, so a consumer declared *after* two
-alternatives would silently bake against the second.
+The build refuses the mistake deterministically : the export table is keyed
+per provider, and a consumer that can reach more than one alternative gets an
+error naming them all — whatever the declaration order. The old refusal was
+accidental (it held only while alternatives were declared after the resident
+units that read them, and `registerExport` was last-one-wins) ; it is now the
+election rule described above.
 
 What happens when the policy is not applied is a load that stops with no
 message at all — see

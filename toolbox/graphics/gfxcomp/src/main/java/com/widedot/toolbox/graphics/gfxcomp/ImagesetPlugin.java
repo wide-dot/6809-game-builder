@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * to index a tileset spread over pages, and the same shape v1's imageset had —
  * a page byte per frame, its builder having placed the pages itself.
  *
- * The section defaults to {@code code.static} so the addresses are baked too :
+ * The addresses are baked by the direntry's {@code bake} mode ; the index joins
  * a set of any size then costs no load-time link data at all. The provider has
  * to be declared before this element, which is the rule for every static
  * reference.
@@ -39,7 +39,7 @@ public class ImagesetPlugin {
 
 		String name = Attribute.getString(node, ctx, "name");
 		String gensource = ctx.path + File.separator + Attribute.getString(node, ctx, "gensource");
-		String section = Attribute.getString(node, ctx, "section", "code.static");
+		String section = Attribute.getString(node, ctx, "section", "code");
 
 		ImageSets.Index index = ctx.imageSets.get(name);
 		if (index == null) {

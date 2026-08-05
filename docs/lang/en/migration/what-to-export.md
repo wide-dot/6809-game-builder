@@ -50,7 +50,8 @@ should not have.
 Export a name only when it genuinely crosses a direntry boundary. In
 particular, a table of pointers into another unit is the expensive shape —
 and usually the avoidable one: **what the builder places, the builder can
-address**. Declaring the table's section `.static` has the builder resolve the
+address**. Declaring the direntry `bake="all"` (formerly a `.static`
+section) has the builder resolve the
 references itself, at build time, and they disappear from the link data
 entirely.
 

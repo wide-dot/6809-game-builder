@@ -55,7 +55,7 @@
 
                 <!-- Game mode : holds the scroll and the two maps -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK">
+                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK" bake="auto">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>

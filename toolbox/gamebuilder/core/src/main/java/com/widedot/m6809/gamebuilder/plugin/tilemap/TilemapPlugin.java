@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * bytes — the scroll skips the entry (BuildDisk generated the same shape from
  * the same .bin files).
  *
- * The table is emitted inside a `.static` section : the builder bakes every
+ * The table's references are baked by the builder : the direntry holding it
  * reference against the declared placement of the tiles' direntry, so the
  * hundreds of entries cost no load-time link data and no run-time symbol
  * search. This is also how v1 paid for its maps — values resolved at build
@@ -44,18 +44,14 @@ public class TilemapPlugin {
 		String tiles = Attribute.getString(node, ctx, "tiles");
 		String variant = Attribute.getString(node, ctx, "variant");
 		String gensource = ctx.path + File.separator + Attribute.getString(node, ctx, "gensource");
-		String section = Attribute.getString(node, ctx, "section", "map.static");
+		String section = Attribute.getString(node, ctx, "section", "map");
 		int bitdepth = Attribute.getInteger(node, ctx, "bitdepth", 16);
 
 		if (bitdepth != 8 && bitdepth != 16) {
 			throw new Exception("tilemap " + label + " : bitdepth must be 8 or 16");
 		}
-		if (!section.endsWith(".static")) {
-			// the whole point of the element is the baked table ; a plain
-			// section would send every entry through the load-time linker
-			throw new Exception("tilemap " + label + " : section must end with .static, got '"
-					+ section + "'");
-		}
+		// the whole point of the element is the baked table : the direntry
+		// holding it declares bake="all", the section name is an identity
 
 		byte[] data = Files.readAllBytes(Paths.get(map));
 		int step = bitdepth / 8;
