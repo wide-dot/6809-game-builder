@@ -49,10 +49,48 @@ public class DirEntryPlugin {
 	public static final int ZX0_DELTA = 6;
 
 	/**
-	 * zx0 optimizer threads. Entries are at most 16 KB, well below the point
-	 * where the fan out pays for its synchronisation.
+	 * zx0 optimizer threads. The optimal parse of a 16 KB entry costs ~2 s on
+	 * one core and the output is byte-identical whatever the thread count
+	 * (verified 1/2/4/8) — so the fan out is free determinism-wise and roughly
+	 * halves the wall time of a cache miss.
 	 */
-	private static final int ZX0_THREADS = 1;
+	private static final int ZX0_THREADS =
+			Math.min(8, Runtime.getRuntime().availableProcessors());
+
+	/**
+	 * zx0 results by SHA-256 of the raw bytes. Compression is the dominant
+	 * cost of a build (~2 s per 16 KB entry) and the same bytes are compressed
+	 * at least twice — the discovery pass and the real pass produce identical
+	 * content for almost every entry — and again at every rebuild during
+	 * development. Pure function of the input, so a hit is exact.
+	 */
+	private static final java.util.concurrent.ConcurrentHashMap<String, byte[]> zx0Cache =
+			new java.util.concurrent.ConcurrentHashMap<String, byte[]>();
+
+	/** compress with the run-wide cache : returned bytes = delta byte then cbin */
+	private static byte[] zx0Cached(byte[] bin, int maxdelta) throws Exception {
+		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+		StringBuilder key = new StringBuilder();
+		for (byte b : md.digest(bin)) {
+			key.append(String.format("%02x", b));
+		}
+		byte[] hit = zx0Cache.get(key.toString());
+		if (hit == null) {
+			int[] delta = { 0 };
+			byte[] sbin = new byte[bin.length - maxdelta];
+			System.arraycopy(bin, 0, sbin, 0, sbin.length);
+			// 3rd argument is the zx0 search window, not a size cap : it must
+			// stay the format constant the 6809 decompressor expects
+			byte[] cbin = new Compressor().compress(
+					new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
+					bin, 0, false, false, delta);
+			hit = new byte[1 + cbin.length];
+			hit[0] = (byte) delta[0];
+			System.arraycopy(cbin, 0, hit, 1, cbin.length);
+			zx0Cache.put(key.toString(), hit);
+		}
+		return hit;
+	}
 
 	
 //	loader file for a file (8, 16 or 24 bytes):
@@ -225,18 +263,10 @@ public class DirEntryPlugin {
 				if (length > maxdelta) {
 				
 					log.debug("Compress data with zx0");
-					int[] delta = { 0 };				
-					
-					// prepare data, shorten by n bytes (maxdelta)
-					byte[] sbin = new byte[bin.length-maxdelta];
-					System.arraycopy(bin, 0, sbin, 0, sbin.length);
-					
-					// compress the shortened data
-					// 3rd argument is the zx0 search window, not a size cap : it must
-					// stay the format constant the 6809 decompressor expects
-					byte[] cbin = new Compressor().compress(
-							new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
-							bin, 0, false, false, delta);
+					byte[] cached = zx0Cached(bin, maxdelta);
+					int[] delta = { cached[0] & 0xff };
+					byte[] cbin = new byte[cached.length - 1];
+					System.arraycopy(cached, 1, cbin, 0, cbin.length);
 					log.debug("Original size: {}+{}, Packed size: {}, Delta: {}", bin.length-maxdelta, maxdelta, cbin.length, delta[0]);
 					
 					// automatic selection of compressed or uncompressed data

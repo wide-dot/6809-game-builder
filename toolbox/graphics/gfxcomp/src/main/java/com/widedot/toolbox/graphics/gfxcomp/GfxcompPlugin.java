@@ -157,7 +157,7 @@ public class GfxcompPlugin {
 			// either way — it is cheap, and it keeps the ids independent of
 			// where the author put the cuts.
 			int[] bounds = parseRange(name, range);
-			List<String> files = new ArrayList<>();
+			List<String[]> selected = new ArrayList<>();
 			for (String tile : slice(name, filename, grid, gendir)) {
 				String tileName = tile.substring(tile.lastIndexOf(File.separatorChar) + 1,
 						tile.length() - ".png".length());
@@ -165,8 +165,9 @@ public class GfxcompPlugin {
 				if (id < bounds[0] || id > bounds[1]) {
 					continue;
 				}
-				files.addAll(encode(node, ctx, gendir, imageset, tileName, tile, null));
+				selected.add(new String[] { tileName, tile });
 			}
+			List<String> files = encodeTiles(node, ctx, gendir, imageset, selected);
 			if (files.isEmpty()) {
 				throw new Exception("image " + name + " : range '" + range
 						+ "' selects no tile of the sheet");
@@ -242,6 +243,78 @@ public class GfxcompPlugin {
 		}
 		log.info("gfxcomp sliced {} into {} tiles of {}", name, tiles.size(), grid);
 		return tiles;
+	}
+
+	/**
+	 * The tiles of a sheet, encoded concurrently. Each tile's optimizer is
+	 * seeded on its own, so the code produced is byte for byte the code of the
+	 * serial loop — the fan out only spends the cores. The build context is
+	 * read on the caller thread (workers get plain values), and the imageset
+	 * registration replays in tile order once every future has landed.
+	 */
+	private static List<String> encodeTiles(ImmutableNode node, BuildContext ctx, String gendir,
+			ImageSet imageset, List<String[]> tiles) throws Exception {
+
+		List<String[]> specs = new ArrayList<>();
+		for (ImmutableNode child : node.getChildren()) {
+			if (!"encoder".equals(child.getNodeName())) {
+				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <image>");
+			}
+			specs.add(new String[] {
+					Attribute.getString(child, ctx, "name", Image.TYPE_DRAW),
+					Attribute.getString(child, ctx, "mirror", Mirror.NONE),
+					String.valueOf(Attribute.getInteger(child, ctx, "shift", 0)),
+					Attribute.getString(child, ctx, "position", Image.POSITION_CENTER),
+					Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER) });
+		}
+		if (specs.isEmpty()) {
+			throw new Exception("tileset has no <encoder>");
+		}
+
+		int threads = Math.min(8, Runtime.getRuntime().availableProcessors());
+		java.util.concurrent.ExecutorService pool =
+				java.util.concurrent.Executors.newFixedThreadPool(threads);
+		try {
+			List<java.util.concurrent.Future<Object[]>> futures = new ArrayList<>();
+			for (String[] t : tiles) {
+				futures.add(pool.submit(() -> {
+					List<String> produced = new ArrayList<>();
+					List<Image> images = new ArrayList<>();
+					for (String[] spec : specs) {
+						Image image = new Image(t[0], null, t[1], spec[0], spec[1],
+								Integer.valueOf(spec[2]), spec[3], spec[4]);
+						image.encode(gendir);
+						images.add(image);
+						produced.add(gendir + File.separator + image.getFullName() + ".asm");
+						String erase = gendir + File.separator + image.getFullName() + "_erase.asm";
+						if (Files.exists(Paths.get(erase))) {
+							produced.add(erase);
+						}
+					}
+					return new Object[] { produced, images };
+				}));
+			}
+			List<String> files = new ArrayList<>();
+			for (java.util.concurrent.Future<Object[]> future : futures) {
+				Object[] result;
+				try {
+					result = future.get();
+				} catch (java.util.concurrent.ExecutionException e) {
+					throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+				}
+				@SuppressWarnings("unchecked")
+				List<String> produced = (List<String>) result[0];
+				files.addAll(produced);
+				if (imageset != null) {
+					for (Object image : (List<?>) result[1]) {
+						imageset.addImage((Image) image);
+					}
+				}
+			}
+			return files;
+		} finally {
+			pool.shutdown();
+		}
 	}
 
 	private static List<String> encode(ImmutableNode node, BuildContext ctx, String gendir,

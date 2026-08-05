@@ -4,6 +4,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.ColorModel;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import javax.imageio.ImageIO;
 
@@ -383,13 +386,110 @@ public class Image {
 		}
 	}
 	
+	/**
+	 * Bump when any encoder changes its emitted code : the cache below returns
+	 * the bytes of a previous run, and a stale entry would silently undo the
+	 * encoder change.
+	 */
+	private static final String CACHE_VERSION = "1";
+
+	/**
+	 * Where finished encodings are kept between runs, or null when no basedir
+	 * is set. The optimizers are seeded, so the same pixels, name and encoder
+	 * parameters always produce the same code — and encoding is the dominant
+	 * cost of a build (~85% of the wall time measured on r-type), paid twice
+	 * per build (discovery pass, then real pass) for images that almost never
+	 * change between two runs of a working session.
+	 */
+	private Path cacheDir() throws Exception {
+		String basedir = System.getProperty("basedir");
+		if (basedir == null) {
+			return null;
+		}
+		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+		java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
+		md.update((CACHE_VERSION + "|" + name + "|" + type + "|" + mirror + "|" + shift
+				+ "|" + position + "|" + planes + "|" + width + "x" + height
+				// the video memory model changes the emitted code as surely as
+				// the pixels do — same image, another plane distance, another
+				// LEAU (caught by DrawPlanesTest)
+				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLinearBits
+				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlanarBits
+				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLineBytes
+				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryNbPlanes
+				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlaneDistance
+				+ "|").getBytes(utf8));
+		// pixels carry the exact source content after mirror and shift ; data
+		// is lossy (transparent and colour 1 both store 0), so hash pixels
+		md.update(pixels[0]);
+		md.update(pixels[1]);
+		StringBuilder hex = new StringBuilder();
+		for (byte b : md.digest()) {
+			hex.append(String.format("%02x", b));
+		}
+		return Paths.get(basedir, ".gfxcomp-cache", hex.toString());
+	}
+
+	private void restoreFromCache(Path cacheDir, String outputDir) throws Exception {
+		try (java.util.stream.Stream<Path> entries = Files.list(cacheDir)) {
+			for (Path f : (Iterable<Path>) entries::iterator) {
+				if (f.getFileName().toString().equals("meta.properties")) {
+					java.util.Properties meta = new java.util.Properties();
+					try (java.io.InputStream in = Files.newInputStream(f)) {
+						meta.load(in);
+					}
+					String cells = meta.getProperty("nb_cell");
+					nb_cell = cells == null ? null : Integer.valueOf(cells);
+					continue;
+				}
+				Files.copy(f, Paths.get(outputDir, f.getFileName().toString()),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+	}
+
+	private void storeToCache(Path cacheDir, String outputDir) throws Exception {
+		Path tmp = cacheDir.resolveSibling(cacheDir.getFileName() + ".tmp-" + Thread.currentThread().getId());
+		Files.createDirectories(tmp);
+		for (String suffix : new String[] { ".asm", "_erase.asm" }) {
+			Path produced = Paths.get(outputDir, getFullName() + suffix);
+			if (Files.exists(produced)) {
+				Files.copy(produced, tmp.resolve(produced.getFileName().toString()));
+			}
+		}
+		java.util.Properties meta = new java.util.Properties();
+		if (nb_cell != null) {
+			meta.setProperty("nb_cell", String.valueOf(nb_cell));
+		}
+		try (java.io.OutputStream out = Files.newOutputStream(tmp.resolve("meta.properties"))) {
+			meta.store(out, null);
+		}
+		try {
+			Files.move(tmp, cacheDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+		} catch (java.nio.file.FileAlreadyExistsException | java.nio.file.AccessDeniedException race) {
+			// another worker finished the same key first : its entry is as good
+			try (java.util.stream.Stream<Path> entries = Files.list(tmp)) {
+				for (Path f : (Iterable<Path>) entries::iterator) {
+					Files.deleteIfExists(f);
+				}
+			}
+			Files.deleteIfExists(tmp);
+		}
+	}
+
 	public void encode(String outputDir) throws Exception {
 		
 	    File directory = new File(outputDir);
 	    if (! directory.exists()){
 	        directory.mkdirs();
 	    }
-		
+
+		Path cache = cacheDir();
+		if (cache != null && Files.isDirectory(cache)) {
+			restoreFromCache(cache, outputDir);
+			return;
+		}
+
 		Encoder e;
 		switch (type) {
 			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, SimpleAssemblyGenerator._NO_ALPHA); break;
@@ -400,6 +500,10 @@ public class Image {
 		}
 		
 		e.generateCode();
+
+		if (cache != null) {
+			storeToCache(cache, outputDir);
+		}
 	}
 	
 	/**
