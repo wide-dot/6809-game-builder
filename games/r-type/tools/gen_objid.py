@@ -99,7 +99,11 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_forcepod':                 ('forcepod',        'forcepod.Object'),
           'ObjID_forcepod_simplefire':      ('simplefire',      'simplefire.Object'),
           'ObjID_forcepod_reboundlaser':    ('reboundlaser',    'reboundlaser.Object'),
-          'ObjID_forcepod_counterairlaser': ('counterairlaser', 'counterairlaser.Object')}
+          'ObjID_forcepod_counterairlaser': ('counterairlaser', 'counterairlaser.Object'),
+          # Le cast d'ennemis : un direntry par ennemi, tous sur la page $05.
+          'ObjID_bug':     ('bug',     'bug.Object'),
+          'ObjID_bink':    ('bink',    'bink.Object'),
+          'ObjID_blaster': ('blaster', 'blaster.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':

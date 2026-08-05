@@ -94,6 +94,11 @@ forcepod.Object        EXTERNAL
 simplefire.Object      EXTERNAL
 reboundlaser.Object    EXTERNAL
 counterairlaser.Object EXTERNAL
+
+; Le cast d'ennemis, un direntry chacun.
+bug.Object      EXTERNAL
+bink.Object     EXTERNAL
+blaster.Object  EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 

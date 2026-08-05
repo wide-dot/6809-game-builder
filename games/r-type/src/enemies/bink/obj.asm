@@ -6,13 +6,16 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./objects/enemies_properties.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/animation/index.equ"
-        INCLUDE "./global/projectile.macro.asm"
-        INCLUDE "./objects/explosion/explosion.const.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (bink.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/animation/index.equ"
+; INCLUDE "./global/projectile.macro.asm"
+; INCLUDE "./objects/explosion/explosion.const.asm"
 
 AABB_0            equ ext_variables   ; AABB struct (9 bytes)
 bink_0x22         equ ext_variables+9
@@ -334,4 +337,6 @@ ImageIndex
         fdb   Img_bink_5
 
 PresetXYIndex
-        INCLUDE "./global/preset/18dd0_preset-xy.asm"
+        ; V2-DEVIATION: chemin du preset — les tables d'arcade communes vivent
+        ; dans src/common/lib/presets/ en v2.
+        INCLUDE "src/common/lib/presets/18dd0_preset-xy.asm"

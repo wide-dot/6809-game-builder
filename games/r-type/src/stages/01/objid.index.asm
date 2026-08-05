@@ -25,14 +25,14 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
+        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_cancer
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_blaster
+        fcb   map.RAM_OVER_CART+blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrok
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
@@ -66,14 +66,14 @@ Obj_Index_Address
         fdb   reboundlaser.Object        ; ObjID_forcepod_reboundlaser
         fdb   counterairlaser.Object        ; ObjID_forcepod_counterairlaser
         fdb   patapata.Object        ; ObjID_patapata
-        fdb   stage.placeholder        ; ObjID_bug
-        fdb   stage.placeholder        ; ObjID_bink
+        fdb   bug.Object        ; ObjID_bug
+        fdb   bink.Object        ; ObjID_bink
         fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_fadetotunnel
         fdb   stage.placeholder        ; ObjID_scant
         fdb   stage.placeholder        ; ObjID_pstaff
         fdb   stage.placeholder        ; ObjID_cancer
-        fdb   stage.placeholder        ; ObjID_blaster
+        fdb   blaster.Object        ; ObjID_blaster
         fdb   stage.placeholder        ; ObjID_shell
         fdb   stage.placeholder        ; ObjID_tabrok
         fdb   stage.placeholder        ; ObjID_bossmusic
@@ -110,14 +110,14 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
+        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_cancer
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_blaster
+        fcb   map.RAM_OVER_CART+blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrok
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
@@ -197,14 +197,14 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
+        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_cancer
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_blaster
+        fcb   map.RAM_OVER_CART+blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrok
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

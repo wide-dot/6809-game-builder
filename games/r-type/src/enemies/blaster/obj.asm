@@ -11,12 +11,15 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./objects/enemies_properties.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./global/projectile.macro.asm"
-        INCLUDE "./objects/explosion/explosion.const.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (blaster.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./global/projectile.macro.asm"
+; INCLUDE "./objects/explosion/explosion.const.asm"
 
 AABB_0  equ ext_variables   ; AABB struct (9 bytes)
 
@@ -144,4 +147,6 @@ UpperBlasterSpriteTable
         fdb   Img_blaster_u5 ; 0x3c
 
 PresetYIndex ; 0x1930c
-        INCLUDE "./global/preset/1930c_preset-y.asm"
+        ; V2-DEVIATION: chemin du preset — les tables d'arcade communes vivent
+        ; dans src/common/lib/presets/ en v2.
+        INCLUDE "src/common/lib/presets/1930c_preset-y.asm"
