@@ -38,8 +38,8 @@ public class DirEntryPlugin {
 	 * exist, and this plugin emits them : both must agree exactly or every
 	 * file id after the divergence points at the wrong entry at runtime.
 	 *
-	 * @param codec       the direntry codec attribute, null when uncompressed
-	 * @param linkSection the loadtimelink attribute, null when not linked
+	 * @param codec       the file codec attribute, null when uncompressed
+	 * @param linkSection the linkdata attribute, null when not linked
 	 */
 	public static int blockCount(String codec, String linkSection) {
 		return 1 + (codec != null ? 1 : 0) + (linkSection != null ? 1 : 0);
@@ -55,7 +55,7 @@ public class DirEntryPlugin {
 	private static final int ZX0_THREADS = 1;
 
 	
-//	loader direntry for a file (8, 16 or 24 bytes):
+//	loader file for a file (8, 16 or 24 bytes):
 //  -----------------------------------------------------------------------------------------------
 //	[0] [0]                    - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes]
 //	[00 0000] [0000 0000]      - [uncompressed file size -1]
@@ -92,23 +92,23 @@ public class DirEntryPlugin {
 	
 	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media) throws Exception {
     	
-		log.debug("Processing direntry ...");
+		log.debug("Processing file ...");
 		
 		String name = Attribute.getString(node, ctx, "name");
-		// exports registered while this direntry builds belong to it : the
-		// direntry is the unit the loader loads and evicts, so it is the
+		// exports registered while this file builds belong to it : the
+		// file is the unit the loader loads and evicts, so it is the
 		// granularity of the export uniqueness rule
 		ctx.linkSymbols.beginUnit(name);
 		// the consumer whose references the static resolutions below serve —
 		// generators (a tilemap asking pageOf) and the bake both run inside
-		// this direntry, and a multi-provider symbol is disambiguated by who
+		// this file, and a multi-provider symbol is disambiguated by who
 		// is asking
 		ctx.staticLink.setCurrentConsumer(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = Attribute.getStringOpt(node, ctx, "codec");
-		String linkSection = Attribute.getStringOpt(node, ctx, "loadtimelink");
-		boolean loadtimelink = (linkSection!=null?true:false);
-		// how this direntry's references are resolved — see BakeMode. Declared
+		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
+		boolean linkDeclared = (linkSection!=null?true:false);
+		// how this file's references are resolved — see BakeMode. Declared
 		// here, in the configuration that places everything, never in the
 		// source : the same unit can be fully linked in one project and fully
 		// baked in another.
@@ -148,8 +148,8 @@ public class DirEntryPlugin {
 	        }
     	}
 
-		// init direntry
-		byte[] direntry = new byte[24];
+		// init file
+		byte[] file = new byte[24];
 		
 		// resolve references before anything reads the binaries : a baked
 		// reference emits no link data at all. The baking needs to know where
@@ -213,9 +213,9 @@ public class DirEntryPlugin {
 		
 		// apply codec
 		boolean compress = false;
-	    int maxdelta = Integer.parseInt(ctx.settings.get("direntry.zx0.delta"));
+	    int maxdelta = Integer.parseInt(ctx.settings.get("file.zx0.delta"));
 	    if (maxdelta != ZX0_DELTA) {
-			throw new Exception("direntry.zx0.delta must be " + ZX0_DELTA
+			throw new Exception("file.zx0.delta must be " + ZX0_DELTA
 					+ ", the loader copies back a fixed size tail (dir.entry.cdataz)");
 	    }
 		if (codec != null) {
@@ -248,13 +248,13 @@ public class DirEntryPlugin {
 						
 					} else {
 										
-						// build direntry data (compression bloc)
+						// build file data (compression bloc)
 						int offset = bin.length-cbin.length;
-						direntry[8] = (byte) ((offset >>8) & 0xff);
-						direntry[9] = (byte) (offset & 0xff);
+						file[8] = (byte) ((offset >>8) & 0xff);
+						file[9] = (byte) (offset & 0xff);
 						
 						// copy delta bytes
-						System.arraycopy(bin, bin.length-maxdelta, direntry, 10, maxdelta);
+						System.arraycopy(bin, bin.length-maxdelta, file, 10, maxdelta);
 						
 						bin = cbin;
 						compress = true;
@@ -266,7 +266,7 @@ public class DirEntryPlugin {
 		}
 		
 		if (codec != null && compress == false) {
-			String m = "Build aborted, please remove codec for direntry: " + name;
+			String m = "Build aborted, please remove codec for file: " + name;
 			log.error(m);
 			throw new Exception(m);
 		}
@@ -279,7 +279,7 @@ public class DirEntryPlugin {
 		LinkData linkdata = null;
 		byte[] linkDiskLocation = null;
 		
-		if (loadtimelink) {
+		if (linkDeclared) {
 			// aggregate all link data
 			linkdata = new LinkData();
 			int linkBase = 0;
@@ -294,7 +294,7 @@ public class DirEntryPlugin {
 			// export. Not writing it is what makes a fully baked file cost
 			// the loader NOTHING — no link file on disk, no index slot, no
 			// pool allocation, no entry every symbol search walks past. The
-			// direntry keeps its reserved descriptor size (file ids derive
+			// file keeps its reserved descriptor size (file ids derive
 			// from the attributes before anything is built), only the flag
 			// stays down. An export still imported keeps its counter above
 			// zero, so this can never drop a block the loader needs.
@@ -322,30 +322,30 @@ public class DirEntryPlugin {
 				linkdata == null ? 0 : linkdata.countExportAbs(),
 				linkdata == null ? 0 : linkdata.countExportRel(),
 				baked,
-				loadtimelink));
+				linkDeclared));
 		
-		// build direntry data
+		// build file data
 	    int i = 0;
-		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
-		if (hasLinkData)  direntry[i] = (byte) (direntry[i] | 0b01000000);
+		if (compress)     file[i] = (byte) (file[i] | 0b10000000);
+		if (hasLinkData)  file[i] = (byte) (file[i] | 0b01000000);
 		int encodedLength = (length-1) & 0x3fff;
-		direntry[i] = (byte) (direntry[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
+		file[i] = (byte) (file[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
 		
-		direntry[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
+		file[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
 		
-		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
+		System.arraycopy(dataDiskLocation, 0, file, i, 6);
 		i += 6;
 		
 		if (compress) i += 8;
 		
 		if (hasLinkData) {
-			direntry[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
-			direntry[i++] = (byte)(linkdata.data.length & 0xff);
+			file[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
+			file[i++] = (byte)(linkdata.data.length & 0xff);
 			
-			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
+			System.arraycopy(linkDiskLocation, 0, file, i, 6);
 			i += 6;
-		} else if (loadtimelink) {
+		} else if (linkDeclared) {
 			// the descriptor size was reserved from the attribute — keep it,
 			// zeroed : with the flag down the loader never reads these bytes
 			i += 8;
@@ -358,12 +358,12 @@ public class DirEntryPlugin {
 					+ " the directory, so every following file would be misread.");
 		}
 
-		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
+		byte[] sizedDirentry = Arrays.copyOf(file, i);
 	    media.addDirEntry(new DirEntry(name, sizedDirentry, length, pageSpans));
 		
 	    String fLength = String.format("%5d", length);
 	    log.info("file {} | {} bytes", name, fLength);
-		log.debug("End of processing direntry");
+		log.debug("End of processing file");
 	}
 	
 }

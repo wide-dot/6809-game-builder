@@ -14,7 +14,7 @@
             <region name="gamemode"   page="$01" address="$6300" size="$2000"/>
             <!-- bulk : the sound blobs are laid out one after the other from
                  the base ; the list is the unit of replacement -->
-            <region name="sound.data" page="$05" address="$0000" size="$6000" bulk="true"/>
+            <region name="sound.data" page="$05" address="$0000" size="$6000" stacked="true"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -23,8 +23,8 @@
             <section name="DATA"  track="1" face="0" sector="4"/>
 
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -32,69 +32,69 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/title/main-test.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/title/main-test.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Test - sample data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sounds.samples" loadtimelink="LINK">
+                <file name="assets.sounds.samples" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/samples/5-timpani.6bit.asm">
                         <label name="samples.timpani"/><includebin filename="src/assets/sounds/samples/5-timpani.6bit.bin" />
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Test - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sounds.ym" loadtimelink="LINK">
+                <file name="assets.sounds.ym" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/ym-sweet.ymm">
                         <label name="sounds.ym"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/vgm/ym-sweet.vgm" genbinary="src/assets/sounds/vgm/ym-sweet.ymm" codec="zx0"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.ym.rythm" loadtimelink="LINK">
+                <file name="assets.sounds.ym.rythm" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/ym-rythm.ymm">
                         <label name="sounds.ym.rythm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/vgm/ym-rythm.vgm" genbinary="src/assets/sounds/vgm/ym-rythm.ymm" codec="zx0"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.sn" loadtimelink="LINK">
+                <file name="assets.sounds.sn" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-melody.vgc">
                         <label name="sounds.sn"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-melody.vgm" genbinary="src/assets/sounds/vgm/sn-melody.vgc"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.sn.noise" loadtimelink="LINK">
+                <file name="assets.sounds.sn.noise" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-noise.vgc">
                         <label name="sounds.sn.noise"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-noise.vgm" genbinary="src/assets/sounds/vgm/sn-noise.vgc"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.sn.music" loadtimelink="LINK">
+                <file name="assets.sounds.sn.music" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/music.vgc">
                         <label name="sounds.sn.music"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/music.vgm" genbinary="src/assets/sounds/vgm/music.vgc"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.ym.music" loadtimelink="LINK">
+                <file name="assets.sounds.ym.music" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/vgm/music.ymm">
                         <label name="sounds.ym.music"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/vgm/music.vgm" genbinary="src/assets/sounds/vgm/music.ymm" codec="zx0"/>
-                </direntry>
+                </file>
 
                 <!-- Test - mea8000 data -->
                 <!-- ******************************************************* -->
 
-                <direntry name="assets.sounds.mea8000" loadtimelink="LINK">
+                <file name="assets.sounds.mea8000" linkdata="LINK">
                     <lwasm gensource="gen/assets/sounds/text/demo.asm">
                         <label name="sounds.mea8000"/>
                         <asm xml:space="preserve"> SECTION code</asm>
@@ -102,15 +102,15 @@
                         <asm filename="engine/system/thomson/sound/mea8000.phonemes.const.asm"/>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Test - sound player dynamic port -->
                 <!-- ******************************************************* -->
-                <direntry name="engine.system.to8.sound.mplus.const" loadtimelink="LINK">
+                <file name="engine.system.to8.sound.mplus.const" linkdata="LINK">
                     <lwasm gensource="gen/system/to8/sound/mplus.const.asm">
                         <asm filename="engine/system/to8/sound/mplus.const.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Scenes : table generated from this declaration -->
                 <!-- ******************************************************* -->

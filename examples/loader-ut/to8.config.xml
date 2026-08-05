@@ -32,15 +32,15 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="1" section="INDEX" genbinary="gen/directories/disk1/directory.bin" gensymbols="gen/directories/disk1/entries.asm">
-                <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
-                <direntry name="d1.marker" codec="zx0" loadtimelink="LINK">
+                <file name="d1.marker" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-d1.asm">
                         <asm filename="src/assets/markers/marker-d1.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- disk 1 scene : the disk 1 marker -->
                 <scene name="d1.scenes.main" section="SCENE" gensource="gen/scenes/d1-main.asm">
@@ -61,8 +61,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -70,269 +70,269 @@
 
                 <!-- Loader unit test - game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.loaderut" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.loaderut" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/disk1/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Marker test files                                       -->
                 <!-- aa : zx0 compressed (checks decompress + cdataz tail)   -->
                 <!-- bb : raw                                                -->
                 <!-- cc : zx0 compressed, loaded by scene "second" OVER bb   -->
                 <!-- ******************************************************* -->
-                <direntry name="data.marker.aa" codec="zx0" loadtimelink="LINK">
+                <file name="data.marker.aa" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-aa.asm">
                         <asm filename="src/assets/markers/marker-aa.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="data.marker.bb" loadtimelink="LINK">
+                <file name="data.marker.bb" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-bb.asm">
                         <asm filename="src/assets/markers/marker-bb.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="data.marker.cc" codec="zx0" loadtimelink="LINK">
+                <file name="data.marker.cc" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-cc.asm">
                         <asm filename="src/assets/markers/marker-cc.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Stress test files                                       -->
                 <!-- hub    : stable, holds extern refs re-patched at link   -->
                 <!-- dd/ee  : variants swapped at the same destination       -->
                 <!-- iface.*: export-only files (index growth / realloc)     -->
                 <!-- ******************************************************* -->
-                <direntry name="data.marker.hub" loadtimelink="LINK">
+                <file name="data.marker.hub" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-hub.asm">
                         <asm filename="src/assets/markers/marker-hub.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="data.marker.dd" codec="zx0" loadtimelink="LINK">
+                <file name="data.marker.dd" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-dd.asm">
                         <asm filename="src/assets/markers/marker-dd.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="data.marker.ee" codec="zx0" loadtimelink="LINK">
+                <file name="data.marker.ee" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-ee.asm">
                         <asm filename="src/assets/markers/marker-ee.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.a" loadtimelink="LINK">
+                <file name="iface.a" linkdata="LINK">
                     <lwasm gensource="gen/iface/a.asm">
                         <asm xml:space="preserve">iface.a.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.a.VALUE equ $0A01</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.b" loadtimelink="LINK">
+                <file name="iface.b" linkdata="LINK">
                     <lwasm gensource="gen/iface/b.asm">
                         <asm xml:space="preserve">iface.b.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.b.VALUE equ $0A02</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.c" loadtimelink="LINK">
+                <file name="iface.c" linkdata="LINK">
                     <lwasm gensource="gen/iface/c.asm">
                         <asm xml:space="preserve">iface.c.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.c.VALUE equ $0A03</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.d" loadtimelink="LINK">
+                <file name="iface.d" linkdata="LINK">
                     <lwasm gensource="gen/iface/d.asm">
                         <asm xml:space="preserve">iface.d.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.d.VALUE equ $0A04</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.e" loadtimelink="LINK">
+                <file name="iface.e" linkdata="LINK">
                     <lwasm gensource="gen/iface/e.asm">
                         <asm xml:space="preserve">iface.e.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.e.VALUE equ $0A05</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="iface.f" loadtimelink="LINK">
+                <file name="iface.f" linkdata="LINK">
                     <lwasm gensource="gen/iface/f.asm">
                         <asm xml:space="preserve">iface.f.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">iface.f.VALUE equ $0A06</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Directory padding files (push the INDEX past 2   -->
                 <!-- sectors) + churn material for the T14 stress test    -->
                 <!-- ******************************************************* -->
-                <direntry name="pad.a" loadtimelink="LINK">
+                <file name="pad.a" linkdata="LINK">
                     <lwasm gensource="gen/pad/a.asm">
                         <asm xml:space="preserve">pad.a.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.a.VALUE equ $0B01</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.b" loadtimelink="LINK">
+                <file name="pad.b" linkdata="LINK">
                     <lwasm gensource="gen/pad/b.asm">
                         <asm xml:space="preserve">pad.b.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.b.VALUE equ $0B02</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.c" loadtimelink="LINK">
+                <file name="pad.c" linkdata="LINK">
                     <lwasm gensource="gen/pad/c.asm">
                         <asm xml:space="preserve">pad.c.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.c.VALUE equ $0B03</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.d" loadtimelink="LINK">
+                <file name="pad.d" linkdata="LINK">
                     <lwasm gensource="gen/pad/d.asm">
                         <asm xml:space="preserve">pad.d.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.d.VALUE equ $0B04</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.e" loadtimelink="LINK">
+                <file name="pad.e" linkdata="LINK">
                     <lwasm gensource="gen/pad/e.asm">
                         <asm xml:space="preserve">pad.e.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.e.VALUE equ $0B05</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.f" loadtimelink="LINK">
+                <file name="pad.f" linkdata="LINK">
                     <lwasm gensource="gen/pad/f.asm">
                         <asm xml:space="preserve">pad.f.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.f.VALUE equ $0B06</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.g" loadtimelink="LINK">
+                <file name="pad.g" linkdata="LINK">
                     <lwasm gensource="gen/pad/g.asm">
                         <asm xml:space="preserve">pad.g.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.g.VALUE equ $0B07</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.h" loadtimelink="LINK">
+                <file name="pad.h" linkdata="LINK">
                     <lwasm gensource="gen/pad/h.asm">
                         <asm xml:space="preserve">pad.h.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.h.VALUE equ $0B08</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.i" loadtimelink="LINK">
+                <file name="pad.i" linkdata="LINK">
                     <lwasm gensource="gen/pad/i.asm">
                         <asm xml:space="preserve">pad.i.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.i.VALUE equ $0B09</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.j" loadtimelink="LINK">
+                <file name="pad.j" linkdata="LINK">
                     <lwasm gensource="gen/pad/j.asm">
                         <asm xml:space="preserve">pad.j.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.j.VALUE equ $0B0A</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.k" loadtimelink="LINK">
+                <file name="pad.k" linkdata="LINK">
                     <lwasm gensource="gen/pad/k.asm">
                         <asm xml:space="preserve">pad.k.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.k.VALUE equ $0B0B</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.l" loadtimelink="LINK">
+                <file name="pad.l" linkdata="LINK">
                     <lwasm gensource="gen/pad/l.asm">
                         <asm xml:space="preserve">pad.l.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.l.VALUE equ $0B0C</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.m" loadtimelink="LINK">
+                <file name="pad.m" linkdata="LINK">
                     <lwasm gensource="gen/pad/m.asm">
                         <asm xml:space="preserve">pad.m.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.m.VALUE equ $0B0D</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.n" loadtimelink="LINK">
+                <file name="pad.n" linkdata="LINK">
                     <lwasm gensource="gen/pad/n.asm">
                         <asm xml:space="preserve">pad.n.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.n.VALUE equ $0B0E</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.o" loadtimelink="LINK">
+                <file name="pad.o" linkdata="LINK">
                     <lwasm gensource="gen/pad/o.asm">
                         <asm xml:space="preserve">pad.o.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.o.VALUE equ $0B0F</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="pad.p" loadtimelink="LINK">
+                <file name="pad.p" linkdata="LINK">
                     <lwasm gensource="gen/pad/p.asm">
                         <asm xml:space="preserve">pad.p.VALUE EXPORT</asm>
                         <asm xml:space="preserve"> SECTION _constant</asm>
                         <asm xml:space="preserve">pad.p.VALUE equ $0B10</asm>
                         <asm xml:space="preserve"> ENDSECTION</asm>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Declared last on purpose : its directory entry lives -->
                 <!-- in the last INDEX sector (multi-sector dir.load)     -->
                 <!-- ******************************************************* -->
-                <direntry name="data.marker.zz" loadtimelink="LINK">
+                <file name="data.marker.zz" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-zz.asm">
                         <asm filename="src/assets/markers/marker-zz.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Multi object group : a raw 256 byte blob followed by an asm
                      member. Both live in one direntry, so the asm member's
@@ -340,12 +340,12 @@
                      This is the case that used to silently produce wrong link
                      data, and the reason a group could only hold one member
                      that mattered. -->
-                <direntry name="data.group.multi" loadtimelink="LINK">
+                <file name="data.group.multi" linkdata="LINK">
                     <bin filename="src/assets/markers/prefix-256.bin"/>
                     <lwasm gensource="gen/markers/marker-grp.asm">
                         <asm filename="src/assets/markers/marker-grp.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Scenes : tables generated from these declarations      -->
                 <!-- ******************************************************* -->

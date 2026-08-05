@@ -25,41 +25,41 @@ class AttributeTest {
 	@Test
 	@DisplayName("the node attribute wins over defaults and fallback")
 	void nodeAttributeWins() throws Exception {
-		ImmutableNode n = node("direntry", Map.of("codec", "zx0"));
+		ImmutableNode n = node("file", Map.of("codec", "zx0"));
 		Defaults d = new Defaults();
-		d.values.put("direntry.codec", "exomizer");
+		d.values.put("file.codec", "exomizer");
 
-		assertEquals("zx0", Attribute.getString(n, d, "codec", "direntry.codec", "none"));
+		assertEquals("zx0", Attribute.getString(n, d, "codec", "file.codec", "none"));
 	}
 
 	@Test
 	@DisplayName("defaults are used when the node carries nothing")
 	void defaultsAreUsed() throws Exception {
-		ImmutableNode n = node("direntry", Map.of());
+		ImmutableNode n = node("file", Map.of());
 		Defaults d = new Defaults();
-		d.values.put("direntry.codec", "exomizer");
+		d.values.put("file.codec", "exomizer");
 
-		assertEquals("exomizer", Attribute.getString(n, d, "codec", "direntry.codec", "none"));
+		assertEquals("exomizer", Attribute.getString(n, d, "codec", "file.codec", "none"));
 	}
 
 	@Test
 	@DisplayName("the fallback is used when neither node nor defaults match")
 	void fallbackIsUsed() throws Exception {
-		ImmutableNode n = node("direntry", Map.of());
+		ImmutableNode n = node("file", Map.of());
 		Defaults d = new Defaults();
 
-		assertEquals("none", Attribute.getString(n, d, "codec", "direntry.codec", "none"));
+		assertEquals("none", Attribute.getString(n, d, "codec", "file.codec", "none"));
 	}
 
 	@Test
 	@DisplayName("defaults are keyed by the fully qualified name, not the short one")
 	void defaultsAreKeyedByFullName() throws Exception {
-		ImmutableNode n = node("direntry", Map.of());
+		ImmutableNode n = node("file", Map.of());
 		Defaults d = new Defaults();
 		// a default declared under the wrong namespace must not be picked up
 		d.values.put("codec", "exomizer");
 
-		assertEquals("none", Attribute.getString(n, d, "codec", "direntry.codec", "none"));
+		assertEquals("none", Attribute.getString(n, d, "codec", "file.codec", "none"));
 	}
 
 	@Test
@@ -75,8 +75,8 @@ class AttributeTest {
 	@Test
 	@DisplayName("an optional attribute that resolves to nothing yields null")
 	void optionalMissingIsNull() throws Exception {
-		ImmutableNode n = node("direntry", Map.of());
-		assertNull(Attribute.getStringOpt(n, new Defaults(), "codec", "direntry.codec"));
+		ImmutableNode n = node("file", Map.of());
+		assertNull(Attribute.getStringOpt(n, new Defaults(), "codec", "file.codec"));
 	}
 
 	@Test
@@ -84,7 +84,7 @@ class AttributeTest {
 	void integerNotations() throws Exception {
 		Defaults d = new Defaults();
 		assertEquals(16384, Attribute.getInteger(node("e", Map.of("maxsize", "0x4000")), d,
-				"maxsize", "direntry.maxsize", null));
+				"maxsize", "file.maxsize", null));
 		assertEquals(4, Attribute.getInteger(node("e", Map.of("page", "4")), d,
 				"page", "x.page", null));
 	}
@@ -93,6 +93,6 @@ class AttributeTest {
 	@DisplayName("an integer falls back to its default value")
 	void integerFallback() throws Exception {
 		assertEquals(42, Attribute.getInteger(node("e", Map.of()), new Defaults(),
-				"maxsize", "direntry.maxsize", 42));
+				"maxsize", "file.maxsize", 42));
 	}
 }

@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * What every direntry of a target costs in load time link data, collected as
+ * What every file of a target costs in load time link data, collected as
  * the entries are built and reported once the target is done.
  *
  * The number that matters is not the disk footprint : the loader keeps a file's
@@ -20,10 +20,10 @@ import java.util.List;
  */
 public class LinkReport {
 
-	/** One direntry's contribution. */
+	/** One file's contribution. */
 	public static final class Entry {
 
-		/** direntry name, as written in the configuration */
+		/** file name, as written in the configuration */
 		public final String name;
 
 		/** bytes of link data, and so bytes of pool while the file is indexed */
@@ -39,11 +39,11 @@ public class LinkReport {
 		/** references the {@code *.static} sections resolved at build time */
 		public final int baked;
 
-		/** whether the direntry asked for a link block at all */
-		public final boolean loadtimelink;
+		/** whether the file asked for a link block at all */
+		public final boolean linkdata;
 
 		public Entry(String name, int bytes, int intern, int extern8, int extern16,
-				int externPage, int exportAbs, int exportRel, int baked, boolean loadtimelink) {
+				int externPage, int exportAbs, int exportRel, int baked, boolean linkdata) {
 			this.name = name;
 			this.bytes = bytes;
 			this.intern = intern;
@@ -53,7 +53,7 @@ public class LinkReport {
 			this.exportAbs = exportAbs;
 			this.exportRel = exportRel;
 			this.baked = baked;
-			this.loadtimelink = loadtimelink;
+			this.linkdata = linkdata;
 		}
 
 		/** total references the loader has to patch for this file */
@@ -72,7 +72,7 @@ public class LinkReport {
 		entries.clear();
 	}
 
-	/** Every direntry seen, in declaration order. */
+	/** Every file seen, in declaration order. */
 	public List<Entry> entries() {
 		return Collections.unmodifiableList(entries);
 	}
@@ -88,7 +88,7 @@ public class LinkReport {
 		return out;
 	}
 
-	/** What the pool holds if every direntry of the target is indexed at once. */
+	/** What the pool holds if every file of the target is indexed at once. */
 	public int totalBytes() {
 		int total = 0;
 		for (Entry e : entries) total += e.bytes;

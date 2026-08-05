@@ -120,7 +120,7 @@ class SceneChecksTest {
 	}
 
 	@Test
-	@DisplayName("a bulk list is laid out sequentially and checked against its budget")
+	@DisplayName("a stacked list is laid out sequentially and checked against its budget")
 	void bulkBudgetAndLayout() {
 		// 3 files of 0x300 : list of 0x900 in a 0x800 region -> error
 		List<String> errors = SceneChecks.verify(Arrays.asList(scene("s",
@@ -129,7 +129,7 @@ class SceneChecksTest {
 				new Load("c", Kind.BULK, 5, 0x0000, 0x800, "sfx", "f:3"))),
 				sizes("a", 0x300, "b", 0x300, "c", 0x300));
 		assertEquals(1, errors.size(), errors.toString());
-		assertTrue(errors.get(0).contains("bulk"), errors.get(0));
+		assertTrue(errors.get(0).contains("stacked"), errors.get(0));
 
 		// an empty file inside the list contributes nothing (mplus.const case)
 		errors = SceneChecks.verify(Arrays.asList(scene("s",
@@ -141,7 +141,7 @@ class SceneChecksTest {
 	}
 
 	@Test
-	@DisplayName("a bulk list overlapping a placed load of the same scene is an error")
+	@DisplayName("a stacked list overlapping a placed load of the same scene is an error")
 	void bulkOverlapsPlaced() {
 		List<String> errors = SceneChecks.verify(Arrays.asList(scene("s",
 				new Load("a", Kind.BULK, 5, 0x0000, null, "sfx", "f:1"),

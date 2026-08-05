@@ -49,9 +49,9 @@ public class LayoutPlugin {
 				throw new Exception(ctx.sources.locate(node) + ": region '" + region.name
 						+ "' spans " + region.pages + " pages, which cannot be");
 			}
-			if (region.pages > 1 && region.bulk) {
+			if (region.pages > 1 && region.stacked) {
 				throw new Exception(ctx.sources.locate(node) + ": region '" + region.name
-						+ "' cannot be both bulk and multi-page : bulk members are laid out"
+						+ "' cannot be both stacked and multi-page : stacked members are laid out"
 						+ " one after the other at run time, which no page boundary survives");
 			}
 			try {
@@ -61,7 +61,7 @@ public class LayoutPlugin {
 			}
 			log.debug("region {} : page {}{} address {} size {}{}", region.name, region.page,
 					region.pages > 1 ? ".." + (region.page + region.pages - 1) : "",
-					region.address, region.size, region.bulk ? " bulk" : "");
+					region.address, region.size, region.stacked ? " stacked" : "");
 		}
 
 		// A region is a promise about where things land ; a reserved range is

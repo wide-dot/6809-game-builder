@@ -12,7 +12,7 @@ public class SceneCheck {
 	public enum Kind {
 		/** a destination of its own : a region or a raw page/address */
 		PLACED,
-		/** member of a bulk region, laid out after the previous members */
+		/** member of a stacked region, laid out after the previous members */
 		BULK,
 		/** no destination : link data only */
 		EXPORT_ONLY
@@ -21,7 +21,7 @@ public class SceneCheck {
 	public static class Load {
 		public final String name;
 		public final Kind kind;
-		/** destination, or the bulk region base ; 0 for export-only */
+		/** destination, or the stacked region base ; 0 for export-only */
 		public final int page;
 		public final int address;
 		/** region byte budget, null when none declared or raw destination */

@@ -9,7 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.widedot.m6809.gamebuilder.plugin.scene.SceneGenerator.Bulk;
+import com.widedot.m6809.gamebuilder.plugin.scene.SceneGenerator.Stacked;
 import com.widedot.m6809.gamebuilder.plugin.scene.SceneGenerator.Placed;
 
 class SceneGeneratorTest {
@@ -62,11 +62,11 @@ class SceneGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("a bulk region becomes one %10 block at its own base")
+	@DisplayName("a stacked region becomes one %10 block at its own base")
 	void bulkBlock() throws Exception {
 		String table = SceneGenerator.generate("s",
 				Arrays.asList(new Placed(0x01, 0x6300, "gm")),
-				Arrays.asList(new Bulk(0x05, 0x0000, Arrays.asList("samples", "sn", "ym"))),
+				Arrays.asList(new Stacked(0x05, 0x0000, Arrays.asList("samples", "sn", "ym"))),
 				Collections.emptyList(), null);
 
 		assertTrue(table.contains("fdb   $4000+1"), table);
@@ -76,7 +76,7 @@ class SceneGeneratorTest {
 		assertTrue(table.contains("fdb   samples"), table);
 		int placedAt = table.indexOf("$4000+1");
 		int bulkAt = table.indexOf("$8000+3");
-		assertTrue(placedAt < bulkAt, "placed block first, then bulk: " + table);
+		assertTrue(placedAt < bulkAt, "placed block first, then stacked: " + table);
 	}
 
 	@Test

@@ -19,13 +19,13 @@ import java.util.Map;
  * Two facts have to meet for a static resolution :
  *
  *  - where a provider lands. Collected from every scene of the target before
- *    it runs, so declaration order does not matter for placements. A direntry
+ *    it runs, so declaration order does not matter for placements. A file
  *    loaded at two different destinations is recorded as conflicting, and any
  *    static reference to it becomes a build error — never a silent fallback :
  *    the section name is a promise, breaking it has to be heard.
  *
- *  - at which offset inside its direntry a symbol sits. Known only once the
- *    provider is assembled, so it is registered as each direntry is built —
+ *  - at which offset inside its file a symbol sits. Known only once the
+ *    provider is assembled, so it is registered as each file is built —
  *    which is why a provider consumed statically must be declared before its
  *    consumer in the configuration.
  *
@@ -36,7 +36,7 @@ import java.util.Map;
  */
 public class StaticLink {
 
-	/** where a direntry is loaded, according to the scenes of the target */
+	/** where a file is loaded, according to the scenes of the target */
 	public static class Placement {
 		public final int page;
 		public final int address;
@@ -50,25 +50,25 @@ public class StaticLink {
 		}
 	}
 
-	/** a symbol some direntry exports, at an offset inside its binary */
+	/** a symbol some file exports, at an offset inside its binary */
 	public static class Export {
-		public final String direntry;
+		public final String file;
 		public final int value;
 		/** a constant-section export : the value stands alone, no placement */
 		public final boolean absolute;
 
-		public Export(String direntry, int value, boolean absolute) {
-			this.direntry = direntry;
+		public Export(String file, int value, boolean absolute) {
+			this.file = file;
 			this.value = value;
 			this.absolute = absolute;
 		}
 	}
 
 	private final Map<String, Placement> placements = new LinkedHashMap<String, Placement>();
-	/** direntry -> why it cannot be resolved statically */
+	/** file -> why it cannot be resolved statically */
 	private final Map<String, String> conflicts = new LinkedHashMap<String, String>();
 	/**
-	 * symbol -> provider direntry -> export. Keyed twice because run-time
+	 * symbol -> provider file -> export. Keyed twice because run-time
 	 * alternatives legitimately export the same names (each stage exports its
 	 * wave), each with its own value : a single-slot map silently kept
 	 * whichever registered last, and a consumer baked against it by luck of
@@ -83,7 +83,7 @@ public class StaticLink {
 	 * be in memory with it.
 	 */
 	private final Map<String, java.util.LinkedHashSet<String>> sceneLoads = new LinkedHashMap<String, java.util.LinkedHashSet<String>>();
-	/** the direntry being built, for resolutions that lack an explicit consumer */
+	/** the file being built, for resolutions that lack an explicit consumer */
 	private String currentConsumer = null;
 	/**
 	 * consumer -> external symbols its baked sections referenced, recorded
@@ -104,14 +104,14 @@ public class StaticLink {
 	/** interface region name -> its destination ; declared with interface="true" */
 	private final Map<String, int[]> interfaceRegions = new LinkedHashMap<String, int[]>();
 	/**
-	 * direntry -> every destination any scene gives it, kept even when they
+	 * file -> every destination any scene gives it, kept even when they
 	 * conflict : the interface check must see a member that also loads
 	 * elsewhere, which the single-placement map forgets.
 	 */
 	private final Map<String, java.util.LinkedHashSet<String>> allDestinations = new LinkedHashMap<String, java.util.LinkedHashSet<String>>();
 
-	/** record where a scene loads a direntry ; a second, different destination turns into a conflict */
-	public void place(String direntry, int page, int address, String scene) {
+	/** record where a scene loads a file ; a second, different destination turns into a conflict */
+	public void place(String file, int page, int address, String scene) {
 		// pageset members are placed under a pseudo scene ("pageset <name>") ;
 		// only real scenes describe what is in memory together
 		if (scene != null && !scene.startsWith("pageset ")) {
@@ -120,39 +120,39 @@ public class StaticLink {
 				loads = new java.util.LinkedHashSet<String>();
 				sceneLoads.put(scene, loads);
 			}
-			loads.add(direntry);
+			loads.add(file);
 		}
-		java.util.LinkedHashSet<String> dests = allDestinations.get(direntry);
+		java.util.LinkedHashSet<String> dests = allDestinations.get(file);
 		if (dests == null) {
 			dests = new java.util.LinkedHashSet<String>();
-			allDestinations.put(direntry, dests);
+			allDestinations.put(file, dests);
 		}
 		dests.add(destKey(page, address));
-		if (conflicts.containsKey(direntry)) {
+		if (conflicts.containsKey(file)) {
 			return;
 		}
-		Placement known = placements.get(direntry);
+		Placement known = placements.get(file);
 		if (known == null) {
-			placements.put(direntry, new Placement(page, address, scene));
+			placements.put(file, new Placement(page, address, scene));
 			return;
 		}
 		if (known.page != page || known.address != address) {
-			conflicts.put(direntry, String.format(
+			conflicts.put(file, String.format(
 					"loaded at page %d $%04X by scene %s, but at page %d $%04X by scene %s",
 					known.page, known.address, known.scene, page, address, scene));
-			placements.remove(direntry);
+			placements.remove(file);
 		}
 	}
 
 	/** record a destination that cannot serve static references, with the reason */
-	public void placeConflict(String direntry, String reason) {
-		if (!conflicts.containsKey(direntry)) {
-			conflicts.put(direntry, reason);
-			placements.remove(direntry);
+	public void placeConflict(String file, String reason) {
+		if (!conflicts.containsKey(file)) {
+			conflicts.put(file, reason);
+			placements.remove(file);
 		}
 	}
 
-	public void registerExport(String symbol, String direntry, int value, boolean absolute) {
+	public void registerExport(String symbol, String file, int value, boolean absolute) {
 		// duplicate exports across a target are rejected by the link symbol
 		// table already — except between run-time alternatives, which SHOULD
 		// share names, each with its own value
@@ -161,13 +161,13 @@ public class StaticLink {
 			byProvider = new LinkedHashMap<String, Export>();
 			exports.put(symbol, byProvider);
 		}
-		byProvider.put(direntry, new Export(direntry, value, absolute));
+		byProvider.put(file, new Export(file, value, absolute));
 	}
 
-	/** the direntry whose references are being resolved, set by the builder
+	/** the file whose references are being resolved, set by the builder
 	 *  around each unit so generators can resolve without threading a name */
-	public void setCurrentConsumer(String direntry) {
-		currentConsumer = direntry;
+	public void setCurrentConsumer(String file) {
+		currentConsumer = file;
 	}
 
 	public void setDiscovery(boolean discovery) {
@@ -201,7 +201,7 @@ public class StaticLink {
 				try {
 					Export export = electProvider(symbol, consumer.getKey());
 					if (!export.absolute) {
-						placementOf(export.direntry, symbol);
+						placementOf(export.file, symbol);
 					}
 				} catch (Exception e) {
 					linked.add(symbol);
@@ -217,7 +217,7 @@ public class StaticLink {
 
 	/**
 	 * Everything the discovery pass learned that the real pass needs before
-	 * its first direntry builds : the export table (a provider's offset is
+	 * its first file builds : the export table (a provider's offset is
 	 * known whatever the declaration order), but also the build-time half of
 	 * the placement picture — pageset members are placed and declared
 	 * exclusive as each set is BUILT, and the multi-provider election needs
@@ -283,7 +283,7 @@ public class StaticLink {
 		if (export.absolute) {
 			return export.value;
 		}
-		return placementOf(export.direntry, symbol).address + export.value;
+		return placementOf(export.file, symbol).address + export.value;
 	}
 
 	/**
@@ -303,7 +303,7 @@ public class StaticLink {
 	private Export electProvider(String symbol, String consumer) throws Exception {
 		LinkedHashMap<String, Export> byProvider = exports.get(symbol);
 		if (byProvider == null || byProvider.isEmpty()) {
-			throw new Exception("no direntry of this target exports '" + symbol
+			throw new Exception("no file of this target exports '" + symbol
 					+ "' — or the discovery pass stopped before its provider was built,"
 					+ " in which case declaring the provider before its consumer works around it");
 		}
@@ -324,7 +324,7 @@ public class StaticLink {
 		}
 		java.util.List<Export> reachable = new java.util.ArrayList<Export>();
 		for (Export e : byProvider.values()) {
-			if (consumer == null || !unreachableFrom(consumer, e.direntry)) {
+			if (consumer == null || !unreachableFrom(consumer, e.file)) {
 				reachable.add(e);
 			}
 		}
@@ -375,54 +375,54 @@ public class StaticLink {
 	}
 
 	/**
-	 * The address a direntry is loaded at.
+	 * The address a file is loaded at.
 	 *
 	 * What an internal reference needs to be baked : a unit's own references
-	 * are relative to where it lands, and a scene-placed direntry lands
+	 * are relative to where it lands, and a scene-placed file lands
 	 * somewhere the builder already knows.
 	 */
-	public int addressOf(String direntry) throws Exception {
-		return placementOf(direntry, direntry).address;
+	public int addressOf(String file) throws Exception {
+		return placementOf(file, file).address;
 	}
 
-	/** the page a static reference to <direntry>$PAGE resolves to */
-	public int resolvePage(String direntry) throws Exception {
-		return placementOf(direntry, direntry + "$PAGE").page;
+	/** the page a static reference to <file>$PAGE resolves to */
+	public int resolvePage(String file) throws Exception {
+		return placementOf(file, file + "$PAGE").page;
 	}
 
 	/**
 	 * The page the object exporting this symbol was placed on.
 	 *
 	 * A generator that emits a page byte per entry — a tilemap, an object
-	 * index — asks here rather than baking one {@code <direntry>$PAGE} for the
-	 * whole table. For an ordinary direntry the answer is simply its region's
+	 * index — asks here rather than baking one {@code <file>$PAGE} for the
+	 * whole table. For an ordinary file the answer is simply its region's
 	 * page ; for a member of a multi-page set it is the page that member
 	 * landed on, which is the whole point of the question.
 	 */
 	public int pageOf(String symbol) throws Exception {
 		Export export = electProvider(symbol, currentConsumer);
-		return placementOf(export.direntry, symbol).page;
+		return placementOf(export.file, symbol).page;
 	}
 
-	private Placement placementOf(String direntry, String symbol) throws Exception {
-		String conflict = conflicts.get(direntry);
+	private Placement placementOf(String file, String symbol) throws Exception {
+		String conflict = conflicts.get(file);
 		if (conflict != null) {
-			throw new Exception("'" + symbol + "' comes from '" + direntry
+			throw new Exception("'" + symbol + "' comes from '" + file
 					+ "', which is not at a single destination : " + conflict);
 		}
-		Placement placement = placements.get(direntry);
+		Placement placement = placements.get(file);
 		if (placement == null) {
-			throw new Exception("'" + symbol + "' comes from '" + direntry
+			throw new Exception("'" + symbol + "' comes from '" + file
 					+ "', which no scene loads at a fixed destination");
 		}
 		return placement;
 	}
 
-	/** direntry -> {exclusion group, owner within it} for pageset members */
+	/** file -> {exclusion group, owner within it} for pageset members */
 	private final Map<String, String[]> exclusive = new LinkedHashMap<String, String[]>();
 
 	/**
-	 * Records that a direntry is a member of a set that occupies a region as a
+	 * Records that a file is a member of a set that occupies a region as a
 	 * whole.
 	 *
 	 * A pageset's members are loaded and evicted together — a scene names the
@@ -431,11 +431,11 @@ public class StaticLink {
 	 * landed on differs between them, so destination alone cannot say it.
 	 *
 	 * @param group the region the sets compete for
-	 * @param owner the set this direntry belongs to ; members of the same set
+	 * @param owner the set this file belongs to ; members of the same set
 	 *              ARE loaded together, and stay subject to plain uniqueness
 	 */
-	public void declareExclusive(String direntry, String group, String owner) {
-		exclusive.put(direntry, new String[] { group, owner });
+	public void declareExclusive(String file, String group, String owner) {
+		exclusive.put(file, new String[] { group, owner });
 	}
 
 	/**
@@ -460,12 +460,12 @@ public class StaticLink {
 	}
 
 	/**
-	 * The interface check, run once the target is built : every direntry loaded
+	 * The interface check, run once the target is built : every file loaded
 	 * at an interface region must emit the same export list. The engine keeps
 	 * EXTERNAL references to those names across swaps — an alternative missing
 	 * one would leave them silently resolved to zero.
 	 *
-	 * @param unitExports direntry -> sorted names its link data emits, as
+	 * @param unitExports file -> sorted names its link data emits, as
 	 *                    collected by the link symbol table during the build
 	 */
 	public void checkInterfaces(Map<String, java.util.TreeSet<String>> unitExports) throws Exception {

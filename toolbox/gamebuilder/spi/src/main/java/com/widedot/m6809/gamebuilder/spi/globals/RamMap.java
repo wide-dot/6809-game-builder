@@ -31,15 +31,15 @@ public class RamMap {
 		/** uncompressed size, what the region actually holds */
 		public final int size;
 		/** true when the region stacks its loads instead of replacing them */
-		public final boolean bulk;
+		public final boolean stacked;
 
-		public Load(String name, String region, int page, int address, int size, boolean bulk) {
+		public Load(String name, String region, int page, int address, int size, boolean stacked) {
 			this.name = name;
 			this.region = region;
 			this.page = page;
 			this.address = address;
 			this.size = size;
-			this.bulk = bulk;
+			this.stacked = stacked;
 		}
 	}
 
@@ -59,8 +59,8 @@ public class RamMap {
 	 *
 	 * The largest, not the last : a region hosting alternatives — the stage
 	 * boundary — must be sized for the biggest of them, or loading the other
-	 * one overflows. Loads of a same scene are summed, which is what a bulk
-	 * region stacks ; for an ordinary region there is only ever one per scene.
+	 * one overflows. Loads of a same scene are summed, which is what a stacked
+	 * region does ; for an ordinary region there is only ever one per scene.
 	 *
 	 * This is what {@code size="auto"} resolves to, measured by the discovery
 	 * pass and applied by the real one.

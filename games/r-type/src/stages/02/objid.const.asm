@@ -11,6 +11,9 @@
 * est le vrai : wave -> LoadObject_u -> id -> RunObjects -> index -> code.
 
 
+ IFNDEF OBJID_CONST_02
+OBJID_CONST_02          equ 1
+
 ObjID_animation              equ 1
 ObjID_explosion              equ 2
 ObjID_fade                   equ 3
@@ -37,3 +40,5 @@ ObjID_pow                    equ 23
 ObjID_bossmusic              equ 24
 objid.count                  equ 24
 objid.animation              equ ObjID_animation
+
+ ENDC

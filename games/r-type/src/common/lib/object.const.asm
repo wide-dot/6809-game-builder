@@ -1,3 +1,9 @@
+; Garde d'inclusion : un membre de PAGESET porte plusieurs blocs qui
+; incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF RTYPE_OBJECT_CONST
+RTYPE_OBJECT_CONST equ 1
+
 ; rtype object constant override
 ; ------------------------------
 fireCounter         equ x_acl             ; 2 bytes - var 26
@@ -11,4 +17,6 @@ fireReset           equ routine_tertiary  ; 2 bytes - var 2c
 ; encore presents dans l'arbre la definissent aussi.
  IFNDEF viewport_height
 viewport_height     equ 180
+ ENDC
+
  ENDC

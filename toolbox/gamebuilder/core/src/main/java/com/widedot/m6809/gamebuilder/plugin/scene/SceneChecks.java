@@ -44,9 +44,9 @@ public final class SceneChecks {
 			List<int[]> ranges = new ArrayList<int[]>(); // {page, start, end}
 			List<String> owners = new ArrayList<String>();
 
-			// bulk regions accumulate a running cursor from their base
-			Map<String, Integer> bulkCursor = new LinkedHashMap<String, Integer>();
-			Map<String, SceneCheck.Load> bulkFirst = new LinkedHashMap<String, SceneCheck.Load>();
+			// stacked regions accumulate a running cursor from their base
+			Map<String, Integer> stackedCursor = new LinkedHashMap<String, Integer>();
+			Map<String, SceneCheck.Load> stackedFirst = new LinkedHashMap<String, SceneCheck.Load>();
 
 			for (SceneCheck.Load load : scene.loads) {
 				Integer size = sizes.get(load.name);
@@ -88,11 +88,11 @@ public final class SceneChecks {
 					break;
 
 				case BULK: {
-					int base = bulkCursor.merge(load.region, size, Integer::sum) - size;
-					bulkFirst.putIfAbsent(load.region, load);
+					int base = stackedCursor.merge(load.region, size, Integer::sum) - size;
+					stackedFirst.putIfAbsent(load.region, load);
 					if (size > 0) {
 						ranges.add(new int[] { load.page, load.address + base, load.address + base + size });
-						owners.add(load.name + " (in bulk '" + load.region + "')");
+						owners.add(load.name + " (in stacked '" + load.region + "')");
 					}
 					break;
 				}
@@ -107,11 +107,11 @@ public final class SceneChecks {
 				}
 			}
 
-			// bulk lists must fit their region budget
-			for (Map.Entry<String, Integer> cursor : bulkCursor.entrySet()) {
-				SceneCheck.Load first = bulkFirst.get(cursor.getKey());
+			// stacked lists must fit their region budget
+			for (Map.Entry<String, Integer> cursor : stackedCursor.entrySet()) {
+				SceneCheck.Load first = stackedFirst.get(cursor.getKey());
 				if (first.budget != null && cursor.getValue() > first.budget) {
-					errors.add(first.where + ": scene " + scene.sceneName + ": the bulk list of region '"
+					errors.add(first.where + ": scene " + scene.sceneName + ": the stacked list of region '"
 							+ cursor.getKey() + "' is " + cursor.getValue() + " bytes, over its "
 							+ first.budget + " byte budget");
 				}

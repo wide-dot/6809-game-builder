@@ -20,12 +20,12 @@ public class LinkSymbols {
 	 */
 	private final HashMap<String, String> exporters = new HashMap<String, String>();
 
-	/** symbol -> direntry whose link data carries the export, for the co-loadable rule */
+	/** symbol -> file whose link data carries the export, for the co-loadable rule */
 	private final HashMap<String, String> exporterUnits = new HashMap<String, String>();
 
 	/**
-	 * The direntry being built, set by the direntry plugin. Export ownership is
-	 * checked at the direntry granularity because that is the unit the loader
+	 * The file being built, set by the file plugin. Export ownership is
+	 * checked at the file granularity because that is the unit the loader
 	 * loads and evicts.
 	 */
 	private String currentUnit = null;
@@ -39,14 +39,14 @@ public class LinkSymbols {
 	public StaticLink placements = null;
 
 	/**
-	 * direntry -> sorted names of the exports its link data actually emits
-	 * (post-prune). This is the run-time face of a direntry, compared between
+	 * file -> sorted names of the exports its link data actually emits
+	 * (post-prune). This is the run-time face of a file, compared between
 	 * the alternatives of an interface region.
 	 */
 	public final HashMap<String, java.util.TreeSet<String>> unitExports = new HashMap<String, java.util.TreeSet<String>>();
 
-	public void beginUnit(String direntry) {
-		currentUnit = direntry;
+	public void beginUnit(String file) {
+		currentUnit = file;
 	}
 
 	/**
@@ -173,14 +173,14 @@ public class LinkSymbols {
 	}
 
 	private static String unitTag(String unit) {
-		return unit == null ? "" : " (direntry " + unit + ")";
+		return unit == null ? "" : " (file " + unit + ")";
 	}
 
 	/**
 	 * Every symbol still referenced through the loader has to be emitted by
-	 * some direntry's link data.
+	 * some file's link data.
 	 *
-	 * Dropping {@code loadtimelink} from a fully baked direntry is the last
+	 * Dropping {@code linkdata} from a fully baked file is the last
 	 * step of the {@code .static} policy, and it is the one step that can be
 	 * taken too early : the day a consumer stops baking, its reference goes
 	 * back through the loader, finds no export, and resolves to zero — the
@@ -202,7 +202,7 @@ public class LinkSymbols {
 		if (dangling.isEmpty()) return;
 
 		StringBuilder m = new StringBuilder("symbols are referenced through the loader but"
-				+ " no direntry emits them in its link data:");
+				+ " no file emits them in its link data:");
 		for (String sym : dangling) {
 			String owner = exporters.get(sym);
 			m.append(System.lineSeparator()).append("  ").append(sym);
@@ -210,15 +210,15 @@ public class LinkSymbols {
 				m.append(" — defined in ").append(owner).append(unitTag(exporterUnits.get(sym)))
 				 .append(", which does not emit it");
 			} else {
-				// a direntry without loadtimelink never registers its exports
+				// a file without linkdata never registers its exports
 				// here at all, so this is the shape the mistake actually takes
-				m.append(" — no direntry emits it : either the unit defining it"
-						+ " lost its loadtimelink, or nothing defines it");
+				m.append(" — no file emits it : either the unit defining it"
+						+ " lost its linkdata, or nothing defines it");
 			}
 		}
 		m.append(System.lineSeparator())
-		 .append("Either give that direntry its loadtimelink back, or bake the reference")
-		 .append(" in a *.static section so it stops going through the loader.");
+		 .append("Either give that file its linkdata back, or bake the reference")
+		 .append(" (bake=\"auto\" or \"all\") so it stops going through the loader.");
 		log.error(m.toString());
 		throw new Exception(m.toString());
 	}

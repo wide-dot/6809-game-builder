@@ -17,8 +17,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -26,22 +26,22 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Title - sample data -->
                 <!-- ******************************************************* -->
-                <direntry name="dummyfile"/>
+                <file name="dummyfile"/>
                 <!-- 24 KB on purpose : the scene loads it at page 5/$0000 and it
                      spills past the cartridge window into video RAM up to $5FFF.
                      maxsize is raised above the 16 KB a directory entry can
                      describe : the stored size wraps, which is harmless here
                      because the scene gives an explicit destination. -->
-                <direntry name="assets.samples" maxsize="0x6000" loadtimelink="LINK">
+                <file name="assets.samples" maxsize="0x6000" linkdata="LINK">
                     <lwasm>
                         <label name="samples.kick"   /><includebin filename="src/assets/sounds/samples/1-kick.6bit.bin"    />
                         <label name="samples.snare"  /><includebin filename="src/assets/sounds/samples/2-snare.6bit.bin"   />
@@ -51,7 +51,7 @@
                         <label name="samples.tom"    /><includebin filename="src/assets/sounds/samples/6-tom.6bit.bin"     />
                         <label name="samples.bongo"  /><includebin filename="src/assets/sounds/samples/7-bongo.6bit.bin"   />
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Scenes -->
                 <!-- ******************************************************* -->

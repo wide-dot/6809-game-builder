@@ -1,3 +1,9 @@
+; Garde d'inclusion : un membre de PAGESET porte plusieurs blocs qui
+; incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF PLAYER1_EQU
+PLAYER1_EQU equ 1
+
         
 p1_AABB_0           equ ext_variables     ; AABB struct (9 bytes)
 beam_value          equ ext_variables+9   ; 1 byte (0-60)
@@ -8,3 +14,5 @@ bitdevice           equ ext_variables+13  ; 1 byte (Number of bit devices attach
 speedlevel          equ ext_variables+14  ; 2 bytes (offset to speed.preset table)
 forcepod_attached   equ ext_variables+16  ; 1 byte (0: no, 1:yes)
 forcepod_mount_side equ ext_variables+17  ; 1 byte (0: front, 1:rear)
+
+ ENDC

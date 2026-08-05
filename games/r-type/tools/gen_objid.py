@@ -69,10 +69,17 @@ equ_out = [f"""* ===============================================================
 * est le vrai : wave -> LoadObject_u -> id -> RunObjects -> index -> code.
 """]
 equ_out.append('')
+# Garde d'inclusion : un membre de pageset porte plusieurs blocs qui incluent
+# chacun cet en-tete (chaque objet a besoin des identifiants).
+equ_out.append(f' IFNDEF OBJID_CONST_{stage}')
+equ_out.append(f'OBJID_CONST_{stage}          equ 1')
+equ_out.append('')
 for i, name in enumerate(names, start=1):
     equ_out.append(f'{name:<28} equ {i}')
 equ_out.append(f'objid.count                  equ {len(names)}')
 equ_out.append('objid.animation              equ ObjID_animation')
+equ_out.append('')
+equ_out.append(' ENDC')
 equ_out.append('')
 open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(equ_out))
 
@@ -102,7 +109,11 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_forcepod_counterairlaser': ('counterairlaser', 'counterairlaser.Object'),
           # Le cast d'ennemis : un direntry par ennemi, tous sur la page $05.
           'ObjID_bug':     ('bug',     'bug.Object'),
-          'ObjID_bink':    ('bink',    'bink.Object'),
+          # bink est RANGE PAR LE BUILDER dans la queue d'un pageset (un
+          # <block>), pas dans une region declaree : sa page n'est pas
+          # `<region>.page` mais l'equate que le pageset publie pour le
+          # symbole du bloc, `<symbole>.page`. None marque ce cas.
+          'ObjID_bink':    (None,      'bink.Object'),
           'ObjID_blaster': ('blaster', 'blaster.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
@@ -116,7 +127,9 @@ out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
 for name in names:
     if name in PORTED:
-        out.append(f'        fcb   map.RAM_OVER_CART+{PORTED[name][0]}.page   ; {name}')
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+        out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
     else:
         out.append(f'        fcb   map.RAM_OVER_CART+stage.page   ; {name}')
 out.append('')
@@ -134,8 +147,12 @@ out.append('* la table est locale et vide — aucun objet ne s\'anime encore.')
 out.append('Ani_Page_Index')
 out.append('        fcb   map.RAM_OVER_CART+stage.page')
 for name in names:
-    page = PORTED[name][0] if name in PORTED else 'stage'
-    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
+    if name in PORTED:
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+    else:
+        page = 'stage.page'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
 out.append('')
 out.append('Ani_Asd_Index')
 for _ in range(len(names) + 1):
@@ -149,8 +166,12 @@ out.append('* portes, le bouchon ne dessine rien et la valeur ne sert pas.')
 out.append('Img_Page_Index')
 out.append('        fcb   map.RAM_OVER_CART+stage.page')
 for name in names:
-    page = PORTED[name][0] if name in PORTED else 'stage'
-    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
+    if name in PORTED:
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+    else:
+        page = 'stage.page'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
 out.append('')
 
 open(f'src/stages/{stage}/objid.index.asm', 'w').write('\n'.join(out))

@@ -17,7 +17,7 @@ import com.widedot.m6809.gamebuilder.spi.schema.ElementSpec.AttrSpec;
  * anything runs.
  *
  * Until now an unknown attribute was silently ignored : a typo made the
- * handler fall back to its default, which is exactly how the direntry size
+ * handler fall back to its default, which is exactly how the file size
  * guard stayed inactive for years. Every error is reported at once, with its
  * source position, instead of one per run.
  */

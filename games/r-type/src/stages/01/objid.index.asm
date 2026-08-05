@@ -26,7 +26,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
@@ -111,7 +111,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant
@@ -198,7 +198,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+enemies.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.page   ; ObjID_bug
-        fcb   map.RAM_OVER_CART+bink.page   ; ObjID_bink
+        fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scant

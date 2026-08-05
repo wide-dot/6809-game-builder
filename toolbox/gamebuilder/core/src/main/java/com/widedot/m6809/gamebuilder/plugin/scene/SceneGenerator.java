@@ -8,7 +8,7 @@ import java.util.Map;
  *
  * The block types are never authored, the generator selects them : loads with
  * their own destination become one type %01 block of explicit
- * [page][address][file id] triplets ; the loads of a bulk region become one
+ * [page][address][file id] triplets ; the loads of a stacked region become one
  * type %10 block (base destination + ids, laid out one after the other by the
  * loader) ; export-only loads (link data only) are grouped into one type %10
  * block at (0,0). This is exactly the structure of the handwritten tables it
@@ -36,13 +36,13 @@ public final class SceneGenerator {
 		}
 	}
 
-	/** the loads of one bulk region : a base destination and an ordered list */
-	public static class Bulk {
+	/** the loads of one stacked region : a base destination and an ordered list */
+	public static class Stacked {
 		public final int page;
 		public final int address;
 		public final List<String> symbols;
 
-		public Bulk(int page, int address, List<String> symbols) {
+		public Stacked(int page, int address, List<String> symbols) {
 			this.page = page;
 			this.address = address;
 			this.symbols = symbols;
@@ -60,7 +60,7 @@ public final class SceneGenerator {
 	 *                 used to detect id chains ; null disables the %11
 	 *                 encoding
 	 */
-	public static String generate(String sceneName, List<Placed> placed, List<Bulk> bulks,
+	public static String generate(String sceneName, List<Placed> placed, List<Stacked> stackeds,
 			List<String> exportOnly, Map<String, int[]> idBlocks) throws Exception {
 
 		if (placed.size() > MAX_FILES || exportOnly.size() > MAX_FILES) {
@@ -81,12 +81,12 @@ public final class SceneGenerator {
 			}
 		}
 
-		for (Bulk bulk : bulks) {
-			if (bulk.symbols.size() > MAX_FILES) {
+		for (Stacked stacked : stackeds) {
+			if (stacked.symbols.size() > MAX_FILES) {
 				throw new Exception("scene " + sceneName + " holds more than " + MAX_FILES + " files in one block");
 			}
-			out.append("        ; bulk region : files laid out one after the other\n");
-			sequentialBlock(out, bulk.page, bulk.address, bulk.symbols, idBlocks);
+			out.append("        ; stacked region : files laid out one after the other\n");
+			sequentialBlock(out, stacked.page, stacked.address, stacked.symbols, idBlocks);
 		}
 
 		if (!exportOnly.isEmpty()) {

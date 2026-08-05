@@ -97,7 +97,7 @@ public final class LayoutResolver {
 					pages = next != null ? next - page : 1;
 				}
 			}
-			boolean bulk = Attribute.getBoolean(child, ctx, "bulk", false);
+			boolean stacked = Attribute.getBoolean(child, ctx, "stacked", false);
 
 			String rawSize = Attribute.getStringOpt(child, ctx, "size");
 			String rawAddress = Attribute.getStringOpt(child, ctx, "address");
@@ -139,7 +139,7 @@ public final class LayoutResolver {
 			// window at $0000. The overlap checks the layout plugin runs are
 			// what catches a region placed on top of something.
 
-			out.put(name, new Regions.Region(name, page, address, size, bulk, pages));
+			out.put(name, new Regions.Region(name, page, address, size, stacked, pages));
 
 			if (pages > 1) {
 				for (int p = 0; p < pages; p++) {

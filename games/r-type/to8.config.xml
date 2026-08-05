@@ -44,7 +44,6 @@
             <!-- pas cohabiter dans une unite.                                   -->
             <region name="enemies"    page="$05" address="$0000" size="auto"/>
             <region name="bug"        page="$05" address="auto" size="auto"/>
-            <region name="bink"       page="$1D" address="$0000" size="$3300"/>
             <region name="blaster"    page="$1E" address="$0000" size="$1B00"/>
             <!-- Les overlays : ce qui se peint PAR-DESSUS le jeu en fin de     -->
             <!-- trame et n'a ni etat ni OST — le masque du champ de jeu        -->
@@ -187,8 +186,8 @@
             <section name="DATA"  track="4" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section" value="DATA"/>
-                <default name="direntry.maxsize" value="0x4000"/>
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -196,25 +195,25 @@
 
                 <!-- Le moteur résident                                        -->
                 <!-- ******************************************************** -->
-                <direntry name="common.engine" codec="zx0" loadtimelink="LINK" bake="auto">
+                <file name="common.engine" codec="zx0" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Les scripts d'animation, communs. Section .static : leurs  -->
                 <!-- ~2900 pointeurs internes sont cuits au build contre le     -->
                 <!-- placement declare, donc zero donnee de lien.               -->
-                <direntry name="common.anim" codec="zx0" bake="all">
+                <file name="common.anim" codec="zx0" bake="all">
                     <lwasm gensource="gen/common/anim.asm">
                         <asm filename="src/common/fx/animation/anim.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Les ennemis. Leurs images d'abord dans le meme direntry :   -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.        -->
-                <direntry name="common.enemies" loadtimelink="LINK" bake="auto">
+                <file name="common.enemies" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/enemies/enemies.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/pata-pata/enemy.asm"/>
@@ -248,7 +247,7 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Les overlays. Le masque du champ de jeu : 160x200, il se  -->
                 <!-- peint par-dessus tout en fin de trame et couvre les       -->
@@ -257,7 +256,7 @@
                 <!-- routine appelee par paged.call. Declare AVANT le stage    -->
                 <!-- qui le consomme.                                          -->
                 <!-- ******************************************************** -->
-                <direntry name="common.overlay" loadtimelink="LINK" bake="auto">
+                <file name="common.overlay" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- Le champ d'etoiles : sans etat, 6 Ko de table       -->
@@ -274,12 +273,12 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Le joueur. Ses images d'abord dans le meme direntry : -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.   -->
                 <!-- ******************************************************** -->
-                <direntry name="common.player" loadtimelink="LINK" bake="auto">
+                <file name="common.player" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/player/player.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/player.asm"/>
@@ -333,11 +332,11 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- L'armement du joueur : quatre unites, une par objet       -->
                 <!-- ******************************************************** -->
-                <direntry name="common.weapon" loadtimelink="LINK" bake="auto">
+                <file name="common.weapon" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/weapon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/weapon/weapon.asm"/>
@@ -356,9 +355,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.beamcharge" loadtimelink="LINK" bake="auto">
+                <file name="common.beamcharge" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/beamcharge.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/charge.asm"/>
@@ -392,9 +391,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.beamp" loadtimelink="LINK" bake="auto">
+                <file name="common.beamp" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/beamp.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/beamp.asm"/>
@@ -440,9 +439,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.emflash" loadtimelink="LINK" bake="auto">
+                <file name="common.emflash" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/emflash.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/emflash.asm"/>
@@ -476,7 +475,7 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- L'explosion : l'objet que tout ce qui meurt fait naitre.  -->
                 <!--                                                           -->
@@ -488,7 +487,7 @@
                 <!-- manquantes a la suivante.                                  -->
                 <!-- ******************************************************** -->
                 <pageset name="explosion.images" region="explosion.images"
-                         gendir="gen/fx/explosion-pages" loadtimelink="LINK">
+                         gendir="gen/fx/explosion-pages" linkdata="LINK">
                     <gfxcomp gendir="gen/fx/explosion"
                              gensource="gen/fx/explosion/includes.asm"
                              imageset="explosion">
@@ -534,7 +533,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <direntry name="common.explosion" loadtimelink="LINK" bake="auto">
+                <file name="common.explosion" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/fx/explosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/explosion/explosion.asm"/>
@@ -543,11 +542,11 @@
                         <!-- entier ne coute donc aucune donnee de lien.          -->
                         <imageset name="explosion" gensource="gen/fx/explosion/index.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Le HUD                                                    -->
                 <!-- ******************************************************** -->
-                <direntry name="common.hud" loadtimelink="LINK" bake="auto">
+                <file name="common.hud" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/overlay/hud.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/hud.unit.asm"/>
@@ -595,83 +594,83 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Le son : lecteur YMM, musiques, et pilote de bruitages   -->
                 <!-- ******************************************************** -->
                 <!-- Le port du YM2413 : le lecteur v2 le prend PAR LE LIEN,   -->
                 <!-- c'est ce qui lui permet de servir TO8 et MO6 sans           -->
                 <!-- recompilation. Une unite sans donnees, deux equates.        -->
-                <direntry name="engine.sound.ym.const" loadtimelink="LINK" bake="auto">
+                <file name="engine.sound.ym.const" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ym-const.asm">
                         <asm filename="engine/system/to8/sound/ym.2.const.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="engine.sound.ymm" codec="zx0" loadtimelink="LINK" bake="auto">
+                <file name="engine.sound.ymm" codec="zx0" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="stage1.music.ymm" loadtimelink="LINK" bake="auto">
+                <file name="stage1.music.ymm" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.soundfx" loadtimelink="LINK" bake="auto">
+                <file name="common.soundfx" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/soundfx.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/soundfx/soundfx.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.collisionpass" loadtimelink="LINK" bake="auto">
+                <file name="common.collisionpass" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/lib/collisionpass.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/collisionpass.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
 
 
-                <direntry name="common.checkpoint" loadtimelink="LINK" bake="auto">
+                <file name="common.checkpoint" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/flow/checkpoint.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/flow/checkpoint.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.messages" loadtimelink="LINK" bake="auto">
+                <file name="common.messages" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/hud/messages.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/messages/messages.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- MIGRE MAIS DEBRANCHE — voir la region vgc.* du layout.
-                <direntry name="engine.sound.vgc" codec="zx0" loadtimelink="LINK" bake="auto">
+                <file name="engine.sound.vgc" codec="zx0" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/vgc.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="stage1.music.vgc" loadtimelink="LINK" bake="auto">
+                <file name="stage1.music.vgc" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/sound/vgc-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/vgc.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
                 -->
 
                 <!-- Les flammes de reacteur de la sequence d'ouverture        -->
                 <!-- ******************************************************** -->
-                <direntry name="common.engineflames" loadtimelink="LINK" bake="auto">
+                <file name="common.engineflames" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/player/engineflames.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/engineflames/engineflames.asm"/>
@@ -690,16 +689,16 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Le fondu de palette, objet monte                          -->
                 <!-- ******************************************************** -->
-                <direntry name="common.fade" loadtimelink="LINK" bake="auto">
+                <file name="common.fade" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/fx/fade.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/fade/fade.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- La chaine de tir ennemi : les deux sous-routines         -->
                 <!-- paginees, puis le projectile qu'elles font naitre.       -->
@@ -714,7 +713,7 @@
                 <!-- comprise : _nextRoutine rend la main a l'objet, _resetAnim  -->
                 <!-- reboucle.                                                  -->
                 <!-- ******************************************************** -->
-                <direntry name="common.pow" loadtimelink="LINK" bake="auto">
+                <file name="common.pow" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/pickups/pow.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/pow.unit.asm"/>
@@ -760,9 +759,9 @@
                             <frame image="pow_5"/>
                         </animation>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.optionbox" loadtimelink="LINK" bake="auto">
+                <file name="common.optionbox" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/pickups/optionbox.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/optionbox.unit.asm"/>
@@ -787,9 +786,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.bitdevice" loadtimelink="LINK" bake="auto">
+                <file name="common.bitdevice" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/bitdevice.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/bitdevice/bitdevice.unit.asm"/>
@@ -833,7 +832,7 @@
                             <frame image="bitdevice_0"/>
                         </animation>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- L'ARMEMENT : le force pod et ses trois armes.            -->
                 <!--                                                           -->
@@ -842,7 +841,7 @@
                 <!-- posent tous AABB_0 equ ext_variables. La v1 en fait quatre -->
                 <!-- objets, nous en faisons quatre unites.                     -->
                 <!-- ******************************************************** -->
-                <direntry name="common.bug" loadtimelink="LINK" bake="auto">
+                <file name="common.bug" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
@@ -876,57 +875,10 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.bink" loadtimelink="LINK" bake="auto">
-                    <lwasm gensource="gen/enemies/bink.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/bink/bink.unit.asm"/>
-                        <gfxcomp gendir="gen/enemies/bink"
-                                 gensource="gen/enemies/bink/includes.asm"
-                                 genindex="gen/enemies/bink/index.asm"
-                                 file="common.bink">
-                            <image name="bink_0" filename="src/enemies/bink/images/bink-0.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_1" filename="src/enemies/bink/images/bink-1.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_2" filename="src/enemies/bink/images/bink-2.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_3" filename="src/enemies/bink/images/bink-5.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_4" filename="src/enemies/bink/images/bink-4.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_5" filename="src/enemies/bink/images/bink-3.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bink_6" filename="src/enemies/bink/images/bink-0.png" index="6">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="bink_7" filename="src/enemies/bink/images/bink-1.png" index="7">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="bink_8" filename="src/enemies/bink/images/bink-2.png" index="8">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="bink_9" filename="src/enemies/bink/images/bink-5.png" index="9">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="bink_10" filename="src/enemies/bink/images/bink-4.png" index="10">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="bink_11" filename="src/enemies/bink/images/bink-3.png" index="11">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </direntry>
 
-                <direntry name="common.blaster" loadtimelink="LINK" bake="auto">
+                <file name="common.blaster" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/enemies/blaster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/blaster/blaster.unit.asm"/>
@@ -976,9 +928,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.forcepod" loadtimelink="LINK" bake="auto">
+                <file name="common.forcepod" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/forcepod.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/forcepod.unit.asm"/>
@@ -1042,9 +994,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.reboundlaser" loadtimelink="LINK" bake="auto">
+                <file name="common.reboundlaser" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/reboundlaser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/reboundlaser.unit.asm"/>
@@ -1105,9 +1057,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.counterairlaser" loadtimelink="LINK" bake="auto">
+                <file name="common.counterairlaser" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/counterairlaser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/counterairlaser.unit.asm"/>
@@ -1149,9 +1101,9 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.simplefire" loadtimelink="LINK" bake="auto">
+                <file name="common.simplefire" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/simplefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/simplefire.unit.asm"/>
@@ -1182,16 +1134,16 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.firechain" loadtimelink="LINK" bake="auto">
+                <file name="common.firechain" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/firechain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/firechain.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="common.foefire" loadtimelink="LINK" bake="auto">
+                <file name="common.foefire" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/foefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/foefire.unit.asm"/>
@@ -1217,16 +1169,16 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
-                <direntry name="stage1.collision" loadtimelink="LINK" bake="auto">
+                <file name="stage1.collision" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/stages/01/collision.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/collision/collision.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Stage 1 : tuiles d'abord, le stage ensuite.               -->
                 <!--                                                           -->
@@ -1262,14 +1214,62 @@
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
                     <!-- stage la comble. Elle est deja lue par page montee      -->
                     <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <block name="stage1.wave" symbol="stage.wave">
+                    <!-- Le premier ennemi range par le builder : son code ET ses  -->
+                    <!-- images dans un bloc, qui comble la queue du dernier      -->
+                    <!-- tileset. section="none" sur le gfxcomp : la source du    -->
+                    <!-- membre a deja ouvert la sienne.                          -->
+                    <unit name="common.bink" symbol="bink.Object">
+                        <asm filename="src/enemies/bink/bink.body.asm"/>
+                            <gfxcomp gendir="gen/enemies/bink"
+                                     gensource="gen/enemies/bink/includes.asm" section="none"
+                                     genindex="gen/enemies/bink/index.asm"
+                                     file="common.bink">
+                                <image name="bink_0" filename="src/enemies/bink/images/bink-0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_1" filename="src/enemies/bink/images/bink-1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_2" filename="src/enemies/bink/images/bink-2.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_3" filename="src/enemies/bink/images/bink-5.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_4" filename="src/enemies/bink/images/bink-4.png" index="4">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_5" filename="src/enemies/bink/images/bink-3.png" index="5">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bink_6" filename="src/enemies/bink/images/bink-0.png" index="6">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="bink_7" filename="src/enemies/bink/images/bink-1.png" index="7">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="bink_8" filename="src/enemies/bink/images/bink-2.png" index="8">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="bink_9" filename="src/enemies/bink/images/bink-5.png" index="9">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="bink_10" filename="src/enemies/bink/images/bink-4.png" index="10">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="bink_11" filename="src/enemies/bink/images/bink-3.png" index="11">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
+                    <unit name="stage1.wave" symbol="stage.wave">
                         <asm filename="src/stages/01/objid.const.asm"/>
                         <asm filename="src/stages/01/wave.asm"/>
-                    </block>
+                    </unit>
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage1.maps" bake="all">
+                <file name="stage1.maps" bake="all">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -1279,16 +1279,16 @@
                                  tiles="tilesOdd" variant="ND0"
                                  gensource="gen/stages/01/map-odd.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="stage1.init" loadtimelink="LINK" bake="auto">
+                <file name="stage1.init" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/stages/01/init.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/init.unit.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="stage1" codec="zx0" loadtimelink="LINK" bake="all">
+                <file name="stage1" codec="zx0" linkdata="LINK" bake="all">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
@@ -1304,7 +1304,7 @@
                              sienne. -->
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
@@ -1330,14 +1330,14 @@
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
                     <!-- stage la comble. Elle est deja lue par page montee      -->
                     <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <block name="stage2.wave" symbol="stage.wave">
+                    <unit name="stage2.wave" symbol="stage.wave">
                         <asm filename="src/stages/02/objid.const.asm"/>
                         <asm filename="src/stages/02/wave.asm"/>
-                    </block>
+                    </unit>
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <direntry name="stage2.maps" bake="all">
+                <file name="stage2.maps" bake="all">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -1347,9 +1347,9 @@
                                  tiles="tilesOdd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="stage2" codec="zx0" loadtimelink="LINK" bake="all">
+                <file name="stage2" codec="zx0" linkdata="LINK" bake="all">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
@@ -1362,7 +1362,7 @@
                              sienne. -->
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Les scènes. Celle du boot charge le moteur ET le stage 1 ; -->
                 <!-- les deux autres ne rechargent que ce qui change, le        -->
@@ -1373,7 +1373,6 @@
                     <load name="common.anim"       region="anim"/>
                     <load name="common.enemies"    region="enemies"/>
                     <load name="common.bug"        region="bug"/>
-                    <load name="common.bink"       region="bink"/>
                     <load name="common.blaster"    region="blaster"/>
                     <load name="common.overlay"    region="overlay"/>
                     <load name="common.player"     region="player"/>

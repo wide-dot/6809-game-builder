@@ -1,3 +1,9 @@
+; Garde d'inclusion : un membre de PAGESET porte plusieurs blocs qui
+; incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF ANIM_INDEX_EQU
+ANIM_INDEX_EQU equ 1
+
 anim_192EC    equ   0  ; bug
 anim_19A96    equ   32 ; pow
 anim_19AA2    equ   34 ; pow
@@ -5,3 +11,5 @@ anim_19AB2    equ   36 ; pow
 anim_19ACE    equ   38 ; pata pata
 anim_19AF8    equ   40 ; bink (jump left)
 anim_19B0A    equ   42 ; bink (jump right)
+
+ ENDC

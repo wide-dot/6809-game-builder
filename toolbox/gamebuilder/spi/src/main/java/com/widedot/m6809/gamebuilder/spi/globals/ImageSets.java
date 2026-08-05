@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public class ImageSets {
 
-	/** the page an {@code adr_} symbol landed on, once its direntry is placed */
+	/** the page an {@code adr_} symbol landed on, once its file is placed */
 	public interface PageOf {
 		int of(String symbol) throws Exception;
 	}

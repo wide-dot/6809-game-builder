@@ -34,7 +34,7 @@ class ValidatorTest {
 	void validTree() throws Exception {
 		assertNull(check(
 			"<configuration><target name=\"fd\">\n" +
-			"  <direntry name=\"x\" codec=\"zx0\" maxsize=\"0x4000\"/>\n" +
+			"  <file name=\"x\" codec=\"zx0\" maxsize=\"0x4000\"/>\n" +
 			"</target></configuration>"));
 	}
 
@@ -43,7 +43,7 @@ class ValidatorTest {
 	void unknownAttribute() throws Exception {
 		Exception e = check(
 			"<configuration><target name=\"fd\">\n" +
-			"  <direntry name=\"x\" codek=\"zx0\"/>\n" +
+			"  <file name=\"x\" codek=\"zx0\"/>\n" +
 			"</target></configuration>");
 		assertNotNull(e, "a typo used to be silently ignored");
 		assertTrue(e.getMessage().contains("t.config.xml:2"), e.getMessage());
@@ -56,8 +56,8 @@ class ValidatorTest {
 	void allErrorsAtOnce() throws Exception {
 		Exception e = check(
 			"<configuration><target name=\"fd\">\n" +
-			"  <direntry name=\"x\" codek=\"zx0\"/>\n" +
-			"  <direntry name=\"y\" maxsize=\"beaucoup\"/>\n" +
+			"  <file name=\"x\" codek=\"zx0\"/>\n" +
+			"  <file name=\"y\" maxsize=\"beaucoup\"/>\n" +
 			"</target></configuration>");
 		assertNotNull(e);
 		assertTrue(e.getMessage().contains("codek"), e.getMessage());
@@ -69,14 +69,14 @@ class ValidatorTest {
 	void defaultKeyChecked() throws Exception {
 		Exception e = check(
 			"<configuration><target name=\"fd\">\n" +
-			"  <default name=\"direntry.maxsze\" value=\"0x4000\"/>\n" +
+			"  <default name=\"file.maxsze\" value=\"0x4000\"/>\n" +
 			"</target></configuration>");
 		assertNotNull(e, "the 16 KB guard stayed inactive on exactly this class of typo");
 		assertTrue(e.getMessage().contains("maxsze"), e.getMessage());
 
 		assertNull(check(
 			"<configuration><target name=\"fd\">\n" +
-			"  <default name=\"direntry.maxsize\" value=\"0x4000\"/>\n" +
+			"  <default name=\"file.maxsize\" value=\"0x4000\"/>\n" +
 			"</target></configuration>"));
 	}
 

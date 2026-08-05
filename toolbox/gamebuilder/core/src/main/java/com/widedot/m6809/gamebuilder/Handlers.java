@@ -78,7 +78,7 @@ public final class Handlers {
 			.req("model", STRING, "disk model declared in the storage file (fd640, fd320, fd158)")
 			.req("storage", STRING, "path of the storage geometry file"));
 		spec(element("section").doc("named area of the media")
-			.req("name", STRING, "section name, referenced by direntry/data")
+			.req("name", STRING, "section name, referenced by file/data")
 			.req("track", INT, "first track")
 			.req("face", INT, "face 0 or 1")
 			.req("sector", INT, "first sector, 1 based"));
@@ -87,24 +87,25 @@ public final class Handlers {
 			.req("section", STRING, "section receiving the directory")
 			.req("gensymbols", STRING, "generated file of <name> equ <file id> equates")
 			.opt("genbinary", STRING, "debug copy of the directory binary"));
-		spec(element("direntry").doc("one loadable file of the directory")
+		spec(element("file").doc("one loadable file of the directory")
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("codec", STRING, "zx0 : compress the whole entry as one stream")
-			.opt("loadtimelink", STRING, "emit load time link data into the given section")
+			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
 			.opt("section", STRING, "section receiving the entry")
 			.opt("bake", STRING, "reference resolution: none (default), auto, all"));
-		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one direntry per page")
+		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one file per page")
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
 			.req("region", STRING, "multi-page region receiving the set")
 			.req("gendir", STRING, "directory receiving the generated member sources")
 			.opt("codec", STRING, "zx0 : compress each member as one stream")
-			.opt("loadtimelink", STRING, "emit load time link data into the given section")
+			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("section", STRING, "section receiving the members")
 			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds"));
-		spec(element("block").doc("one indivisible unit of a pageset, declared after the spread content so it fills what is left")
-			.req("name", STRING, "block name, used for the generated source")
-			.opt("symbol", STRING, "exported label placed at the start of the block, defaults to name"));
+		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope ; in a <pageset>, declared after the spread content, it fills what is left")
+			.opt("name", STRING, "name for the generated source, defaults from symbol")
+			.req("symbol", STRING, "exported label placed at the start of the unit")
+			.opt("body", STRING, "shorthand for a single <asm> child"));
 		spec(element("data").doc("raw data written to a section, outside the directory")
 			.req("section", STRING, "section receiving the data")
 			.opt("maxsize", INT, "maximum size"));
@@ -118,7 +119,7 @@ public final class Handlers {
 			.req("page", INT, "destination page id")
 			.req("address", INT_AUTO, "destination address, or auto to follow what precedes it on the page")
 			.opt("size", INT_AUTO, "byte budget, checked against the loaded entry ; auto measures the content")
-			.opt("bulk", BOOL, "the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole")
+			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")
 			.opt("pages", INT_AUTO, "consecutive pages the region spans from page, 1 if omitted ; auto takes what the pageset really filled")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
@@ -131,7 +132,7 @@ public final class Handlers {
 			.opt("section", STRING, "section receiving the table")
 			.opt("gensource", STRING, "generated table source, defaults to gen/scenes/<name>.asm"));
 		spec(element("load").doc("one file loaded by the scene ; no destination means link data only")
-			.req("name", STRING, "direntry or scene to load")
+			.req("name", STRING, "file or scene to load")
 			.opt("region", STRING, "destination region of the layout")
 			.opt("page", INT, "raw destination page, needs address")
 			.opt("address", INT, "raw destination address, needs page"));
@@ -180,8 +181,9 @@ public final class Handlers {
 			.req("gendir", STRING, "directory receiving the compiled images")
 			.req("gensource", STRING, "generated source unit of INCLUDE lines")
 			.opt("genindex", STRING, "generated imageset index ; omit for images with no index")
-			.opt("file", STRING, "direntry name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
+			.opt("file", STRING, "file name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
 			.opt("imageset", STRING, "name the measured geometry is handed over under, for an <imageset> element to index a set whose code is spread over pages")
+			.opt("section", STRING, "SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one, such as a pageset <block>")
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")
@@ -222,7 +224,7 @@ public final class Handlers {
 			.opt("symbol", STRING, "generated symbol name")
 			.opt("colors", INT, "number of colors")
 			.opt("offset", INT, "first color index")
-			.opt("mode", STRING, "bin, and only as direntry content ; inside <lwasm> the table is always the exported form")
+			.opt("mode", STRING, "bin, and only as file content ; inside <lwasm> the table is always the exported form")
 			.opt("section", STRING, "name of the generated SECTION, default code")
 			.opt("profile", STRING, "color profile"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
@@ -244,7 +246,7 @@ public final class Handlers {
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
 		MEDIA.put("pageset", com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin::run);
-		MEDIA.put("direntry", DirEntryPlugin::run);
+		MEDIA.put("file", DirEntryPlugin::run);
 		MEDIA.put("data", DataPlugin::run);
 
 		// media outputs
@@ -267,7 +269,7 @@ public final class Handlers {
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
-		// also an object : inside <lwasm> a linkable table, as direntry content
+		// also an object : inside <lwasm> a linkable table, as file content
 		// a loadable 32 byte file
 		FILES.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getFile);
 

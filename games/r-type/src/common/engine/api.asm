@@ -16,6 +16,13 @@
 ; short : the engine offers mechanisms, the stage holds the policy.
 ;*******************************************************************************
 
+; Garde d'inclusion. Une unite classique n'inclut ce fichier qu'une fois, mais
+; un membre de PAGESET porte plusieurs blocs qui l'incluent chacun : sans garde,
+; le second redefinit le macro _api. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF ENGINE_API_INCLUDED
+ENGINE_API_INCLUDED equ 1
+
 _api    macro
   ifdef ENGINE_RESIDENT
 \1 EXPORT
@@ -290,3 +297,5 @@ Collision_Run EXTERNAL
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---
         _api game.stage.switch
+
+ ENDC

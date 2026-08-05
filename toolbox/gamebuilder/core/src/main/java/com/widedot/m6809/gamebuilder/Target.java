@@ -137,7 +137,7 @@ public class Target {
 				// the promise made by interface="true" regions is checked against
 				// what the link data actually emits, so it holds post-prune
 				ctx.staticLink.checkInterfaces(ctx.linkSymbols.unitExports);
-				// a direntry that dropped loadtimelink must not still be imported
+				// a file that dropped linkdata must not still be imported
 				ctx.linkSymbols.checkImportsResolvable();
 			} catch (Exception e) {
 				discardOutputs(targetName);
@@ -310,12 +310,12 @@ public class Target {
 		int total = ctx.linkReport.totalBytes();
 
 		if (costly.isEmpty()) {
-			log.info("link data: none — every direntry of target {} is fully baked or unlinked",
+			log.info("link data: none — every file of target {} is fully baked or unlinked",
 					targetName);
 		} else {
 			log.info("link data: {} direntries, {} bytes (pool cost while indexed), {} references baked",
 					costly.size(), total, ctx.linkReport.totalBaked());
-			log.info("  bytes  intern  x8  x16  page  expA  expR   baked  direntry");
+			log.info("  bytes  intern  x8  x16  page  expA  expR   baked  file");
 			for (LinkReport.Entry e : costly) {
 				log.info(String.format("%7d %7d %3d %4d %5d %5d %5d %7d  %s",
 						e.bytes, e.intern, e.extern8, e.extern16, e.externPage,
@@ -323,11 +323,11 @@ public class Target {
 			}
 		}
 
-		// the same table on disk, one row per direntry — including the entries
+		// the same table on disk, one row per file — including the entries
 		// that cost nothing, so a sweep can be diffed between two builds
 		java.nio.file.Path csv = linkReportPath(targetName);
 		StringBuilder sb = new StringBuilder(
-				"direntry,bytes,intern,extern8,extern16,externPage,exportAbs,exportRel,references,baked,loadtimelink\n");
+				"file,bytes,intern,extern8,extern16,externPage,exportAbs,exportRel,references,baked,linkdata\n");
 		for (LinkReport.Entry e : ctx.linkReport.entries()) {
 			sb.append(e.name).append(',')
 			  .append(e.bytes).append(',')
@@ -339,7 +339,7 @@ public class Target {
 			  .append(e.exportRel).append(',')
 			  .append(e.references()).append(',')
 			  .append(e.baked).append(',')
-			  .append(e.loadtimelink).append('\n');
+			  .append(e.linkdata).append('\n');
 		}
 		try {
 			java.nio.file.Files.createDirectories(csv.getParent());

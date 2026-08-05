@@ -57,7 +57,7 @@ public class BuildContext {
 	/** imageset geometry a <gfxcomp> hands to the <imageset> that indexes it */
 	public final ImageSets imageSets;
 
-	/** what each direntry costs in link data, reported at the end of a target */
+	/** what each file costs in link data, reported at the end of a target */
 	public final LinkReport linkReport;
 
 	/** what each scene puts in memory, mapped at the end of a target */

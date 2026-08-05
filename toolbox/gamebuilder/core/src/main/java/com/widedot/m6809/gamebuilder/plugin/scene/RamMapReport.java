@@ -69,7 +69,7 @@ public final class RamMapReport {
 			// What this scene puts in each region, keyed by region AND page : a
 			// pageset member lands on one page of its region, so summing the
 			// whole set on every page would report a region several times full.
-			// A bulk region stacks its loads on one page, and there the sum is
+			// A stacked region stacks its loads on one page, and there the sum is
 			// exactly what is wanted.
 			Map<String, int[]> loadedSize = new LinkedHashMap<String, int[]>();   // key -> {bytes, count}
 			Map<String, List<String>> loadedNames = new LinkedHashMap<String, List<String>>();
@@ -116,7 +116,7 @@ public final class RamMapReport {
 					int[] cell = loadedSize.get(key(region.name, page));
 					if (cell != null) {
 						row.used = cell[0];
-						row.stacked = region.bulk || cell[1] > 1;
+						row.stacked = region.stacked || cell[1] > 1;
 						List<String> names = loadedNames.get(key(region.name, page));
 						row.content = names.size() == 1 ? names.get(0) : names.size() + " files";
 					}

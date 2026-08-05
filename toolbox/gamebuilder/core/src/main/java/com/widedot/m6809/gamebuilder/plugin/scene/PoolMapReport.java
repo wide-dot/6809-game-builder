@@ -125,7 +125,7 @@ public final class PoolMapReport {
 			// largest first : the arbitration order, same as the link report
 			rows.sort((a, b) -> Integer.compare(Integer.parseInt(b[1]), Integer.parseInt(a[1])));
 
-			out.append("     bytes   served  direntry").append(nl);
+			out.append("     bytes   served  file").append(nl);
 			for (String[] r : rows) {
 				out.append(String.format("  %8s %8s  %s", r[0], r[1], r[2])).append(nl);
 			}

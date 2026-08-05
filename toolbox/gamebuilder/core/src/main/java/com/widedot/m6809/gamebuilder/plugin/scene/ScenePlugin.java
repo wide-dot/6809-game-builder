@@ -27,8 +27,8 @@ import lombok.extern.slf4j.Slf4j;
  * handwritten, and the destinations come from the layout regions, so a wrong
  * page or address becomes a build error instead of a runtime corruption.
  *
- * The generated table goes through the regular direntry pipeline : a scene IS
- * a direntry (raw, uncompressed, one id block), only its source is produced
+ * The generated table goes through the regular file pipeline : a scene IS
+ * a file (raw, uncompressed, one id block), only its source is produced
  * here. The directory's gensymbols file provides the file id equates, exactly
  * like the handwritten configurations wired it by hand.
  *
@@ -51,7 +51,7 @@ public class ScenePlugin {
 		String gensource = Attribute.getString(node, ctx, "gensource", "gen/scenes/" + name + ".asm");
 
 		List<SceneGenerator.Placed> placed = new ArrayList<SceneGenerator.Placed>();
-		Map<String, SceneGenerator.Bulk> bulks = new LinkedHashMap<String, SceneGenerator.Bulk>();
+		Map<String, SceneGenerator.Stacked> stackeds = new LinkedHashMap<String, SceneGenerator.Stacked>();
 		List<String> exportOnly = new ArrayList<String>();
 		Set<String> usedRegions = new HashSet<String>();
 		List<String> errors = new ArrayList<String>();
@@ -71,7 +71,7 @@ public class ScenePlugin {
 
 			if (!directoryNames.contains(loadName)) {
 				errors.add(where + ": scene " + name + ": load '" + loadName
-						+ "' references no direntry or scene of this directory");
+						+ "' references no file or scene of this directory");
 				continue;
 			}
 
@@ -111,18 +111,18 @@ public class ScenePlugin {
 							+ "' (layout declares: " + ctx.regions.names() + ")");
 					continue;
 				}
-				if (region.bulk) {
-					// a bulk region takes a whole ordered list
-					bulks.computeIfAbsent(regionName,
-							k -> new SceneGenerator.Bulk(region.page, region.address, new ArrayList<String>()))
+				if (region.stacked) {
+					// a stacked region takes a whole ordered list
+					stackeds.computeIfAbsent(regionName,
+							k -> new SceneGenerator.Stacked(region.page, region.address, new ArrayList<String>()))
 						.symbols.add(loadName);
 					check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.BULK,
 							region.page, region.address, region.size, regionName, where));
 				} else {
 					if (!usedRegions.add(regionName)) {
 						errors.add(where + ": scene " + name + ": region '" + regionName
-								+ "' is loaded twice ; a region takes one direntry per scene, make it"
-								+ " a multi-asm direntry — or declare the region bulk if it takes a list");
+								+ "' is loaded twice ; a region takes one file per scene, make it"
+								+ " a multi-asm file — or declare the region stacked if it takes a list");
 						continue;
 					}
 					placed.add(new SceneGenerator.Placed(region.page, region.address, loadName));
@@ -157,10 +157,10 @@ public class ScenePlugin {
 		String tablePath = ctx.path + File.separator + tableFile;
 		Files.createDirectories(Paths.get(FileUtil.getDir(tablePath)));
 		Files.write(Paths.get(tablePath),
-				SceneGenerator.generate(name, placed, new ArrayList<SceneGenerator.Bulk>(bulks.values()),
+				SceneGenerator.generate(name, placed, new ArrayList<SceneGenerator.Stacked>(stackeds.values()),
 						exportOnly, idBlocks).getBytes(StandardCharsets.UTF_8));
 
-		// hand the table to the regular direntry pipeline, wired exactly like
+		// hand the table to the regular file pipeline, wired exactly like
 		// the handwritten scenes : file id equates first, then the table
 		ImmutableNode equates = new ImmutableNode.Builder()
 				.name("asm").addAttribute("filename", gensymbols).create();
@@ -169,11 +169,11 @@ public class ScenePlugin {
 		ImmutableNode lwasm = new ImmutableNode.Builder()
 				.name("lwasm").addAttribute("format", "raw").addAttribute("gensource", gensource)
 				.addChild(equates).addChild(table).create();
-		ImmutableNode direntry = new ImmutableNode.Builder()
-				.name("direntry").addAttribute("name", name).addAttribute("section", section)
+		ImmutableNode file = new ImmutableNode.Builder()
+				.name("file").addAttribute("name", name).addAttribute("section", section)
 				.addChild(lwasm).create();
 
-		DirEntryPlugin.run(direntry, ctx, media);
+		DirEntryPlugin.run(file, ctx, media);
 
 		log.debug("End of processing scene");
 	}

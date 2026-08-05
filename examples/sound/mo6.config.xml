@@ -18,8 +18,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section"      value="DATA"/>
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -27,73 +27,73 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.title" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/mo6/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/mo6/title/main.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Title - sound player -->
                 <!-- ******************************************************* -->
-                <direntry name="engine.object.sound.ymm" codec="zx0" loadtimelink="LINK">
+                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK">
                     <lwasm>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="engine.object.sound.vgc" codec="zx0" loadtimelink="LINK">
+                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK">
                     <lwasm>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sounds.title.ymm" loadtimelink="LINK">
+                <file name="assets.sounds.title.ymm" linkdata="LINK">
                     <lwasm>
                         <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.title.vgc" loadtimelink="LINK">
+                <file name="assets.sounds.title.vgc" linkdata="LINK">
                     <lwasm>
                         <label name="sounds.title.vgc"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.vgc"/>
-                </direntry>
+                </file>
 
                 <!-- Title - sound player dynamic port -->
                 <!-- ******************************************************* -->
-                <direntry name="engine.system.mo6.sound.ym.const" loadtimelink="LINK">
+                <file name="engine.system.mo6.sound.ym.const" linkdata="LINK">
                     <lwasm>
                         <asm filename="engine/system/mo6/sound/ym.2.const.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
-                <direntry name="engine.system.mo6.sound.sn.const" loadtimelink="LINK">
+                <file name="engine.system.mo6.sound.sn.const" linkdata="LINK">
                     <lwasm>
                         <asm filename="engine/system/mo6/sound/sn.2.const.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sounds.level1.ymm" loadtimelink="LINK">
+                <file name="assets.sounds.level1.ymm" linkdata="LINK">
                     <lwasm>
                         <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.sounds.level1.vgc" loadtimelink="LINK">
+                <file name="assets.sounds.level1.vgc" linkdata="LINK">
                     <lwasm>
                         <label name="sounds.level1.vgc"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.vgc"/>
-                </direntry>
+                </file>
 
                 <!-- Scenes -->
                 <!-- ******************************************************* -->

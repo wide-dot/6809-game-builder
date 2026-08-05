@@ -1,5 +1,15 @@
 # Declarative scenes and memory regions
 
+> **The vocabulary, one line each.** A `<region>` is a named destination — the
+> author picks the page, `auto` lets the builder measure size, address and page
+> count. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
+> indivisible object — entry symbol plus content, code and images alike ; its
+> container decides its dressing. A `<pageset>` packs many contents into a page
+> budget : divisible content spreads, units fill the tails. A `<scene>` says
+> what is in memory at a time, `<load>` by `<load>`. `stacked` on a region
+> lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
+> file's link block to the LINK section ; `bake` decides what never needs one.
+
 Status : implemented and validated (July 2026). French design records :
 [`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) (doctrine),
 [`scenes-declaratives-2026-07.md`](../fr/scenes-declaratives-2026-07.md)
@@ -24,7 +34,7 @@ runtime memory corruption.
 
     <floppydisk model="fd640">
         <directory id="0" ...>
-            <!-- data direntries, declared as usual -->
+            <!-- data files, declared as usual -->
 
             <scene name="scenes.level1" section="SCENE">
                 <load name="group.gm.level1"   region="gamemode"/>
@@ -40,8 +50,8 @@ runtime memory corruption.
 </target>
 ```
 
-A scene is a regular direntry (raw, uncompressed, one id block) whose source
-is generated ; it goes through the standard direntry pipeline and its name
+A scene is a regular file (raw, uncompressed, one id block) whose source
+is generated ; it goes through the standard file pipeline and its name
 becomes a file id equate, so game code loads it exactly as before :
 `ldx #scenes.level1` / `jsr loader.scene.load`.
 
@@ -135,7 +145,7 @@ byte link block occupies 2304. The report counts what the allocator reserves :
 loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $3000 (12288 bytes)
 
 scene scenes.boot — 28 indexed file(s) carrying link data
-     bytes   served  direntry
+     bytes   served  file
       2266     2304  common.engine
        918      928  common.player
        ...
@@ -183,7 +193,7 @@ generator selects them :
 | same, when the ids chain (next id = id + blocks) | `%11` base + start id | **7 flat** |
 
 The id chain is re-checked at every build ; reordering the configuration
-silently falls back to `%10`. Declaring the direntries of a lot consecutively
+silently falls back to `%10`. Declaring the files of a lot consecutively
 and listing them in the same order is what makes `%11` kick in.
 
 ## Validation

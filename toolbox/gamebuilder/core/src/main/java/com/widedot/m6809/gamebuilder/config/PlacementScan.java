@@ -11,17 +11,17 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Values;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Collects, before a target runs, where its scenes load each direntry — the
+ * Collects, before a target runs, where its scenes load each file — the
  * placement half of what static resolution needs (see StaticLink).
  *
  * This walks the raw tree rather than waiting for the scene plugins to run,
- * because link data is emitted as each direntry is built and the scenes are
+ * because link data is emitted as each file is built and the scenes are
  * declared after them. Placements are pure configuration — a region name from
  * the layout, or a literal destination on the load — so nothing here needs
  * the build to have started.
  *
- * A load into a bulk region is recorded as unusable for static resolution :
- * bulk members are laid out one after the other at run time, so no member has
+ * A load into a stacked region is recorded as unusable for static resolution :
+ * stacked members are laid out one after the other at run time, so no member has
  * a declared address of its own.
  */
 @Slf4j
@@ -33,13 +33,13 @@ public final class PlacementScan {
 	public static void run(ImmutableNode targetNode, BuildContext ctx) throws Exception {
 		// regions first : loads reference them by name
 		Map<String, int[]> regions = new LinkedHashMap<String, int[]>();     // name -> page, address
-		Map<String, Boolean> bulks = new LinkedHashMap<String, Boolean>();
-		collectRegions(targetNode, ctx, regions, bulks);
-		collectLoads(targetNode, ctx, regions, bulks);
+		Map<String, Boolean> stackeds = new LinkedHashMap<String, Boolean>();
+		collectRegions(targetNode, ctx, regions, stackeds);
+		collectLoads(targetNode, ctx, regions, stackeds);
 	}
 
 	private static void collectRegions(ImmutableNode node, BuildContext ctx,
-			Map<String, int[]> regions, Map<String, Boolean> bulks) throws Exception {
+			Map<String, int[]> regions, Map<String, Boolean> stackeds) throws Exception {
 		if ("layout".equals(node.getNodeName())) {
 			// the same resolver the layout plugin uses, so an auto address or
 			// size is seen identically here — a placement scan that disagreed
@@ -48,18 +48,18 @@ public final class PlacementScan {
 			for (com.widedot.m6809.gamebuilder.spi.globals.Regions.Region r
 					: LayoutResolver.resolve(node, ctx).values()) {
 				regions.put(r.name, new int[] { r.page, r.address });
-				bulks.put(r.name, r.bulk);
+				stackeds.put(r.name, r.stacked);
 				if (Boolean.parseBoolean(raw(findRegion(node, r.name), "interface"))) {
-					if (r.bulk) {
+					if (r.stacked) {
 						throw new Exception("region '" + r.name
-								+ "' cannot be both bulk and interface");
+								+ "' cannot be both stacked and interface");
 					}
 					ctx.staticLink.declareInterfaceRegion(r.name, r.page, r.address);
 				}
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectRegions(child, ctx, regions, bulks);
+			collectRegions(child, ctx, regions, stackeds);
 		}
 	}
 
@@ -74,7 +74,7 @@ public final class PlacementScan {
 	}
 
 	private static void collectLoads(ImmutableNode node, BuildContext ctx,
-			Map<String, int[]> regions, Map<String, Boolean> bulks) {
+			Map<String, int[]> regions, Map<String, Boolean> stackeds) {
 		if ("scene".equals(node.getNodeName())) {
 			String scene = raw(node, "name");
 			for (ImmutableNode load : node.getChildren()) {
@@ -87,9 +87,9 @@ public final class PlacementScan {
 				}
 				String regionName = raw(load, "region");
 				if (regionName != null) {
-					if (Boolean.TRUE.equals(bulks.get(regionName))) {
+					if (Boolean.TRUE.equals(stackeds.get(regionName))) {
 						ctx.staticLink.placeConflict(name, "scene " + scene + " loads it into the"
-								+ " bulk region '" + regionName + "', whose members have no"
+								+ " stacked region '" + regionName + "', whose members have no"
 								+ " declared address of their own");
 						continue;
 					}
@@ -109,7 +109,7 @@ public final class PlacementScan {
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectLoads(child, ctx, regions, bulks);
+			collectLoads(child, ctx, regions, stackeds);
 		}
 	}
 

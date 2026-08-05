@@ -86,10 +86,10 @@ public class FdUtil implements MediaDataInterface{
 		
 		// check empty file
 		if (srcData.length == 0) {
-	        byte[] direntry = new byte[6];
-			direntry[2] = (byte) 0xff; // empty file flag 
-			direntry[3] = 0;	       // empty file flag
-			return direntry;
+	        byte[] file = new byte[6];
+			file[2] = (byte) 0xff; // empty file flag 
+			file[3] = 0;	       // empty file flag
+			return file;
 		}
 		
 		// retrieve dest section
@@ -108,11 +108,11 @@ public class FdUtil implements MediaDataInterface{
         if (s.track > 0x7f) {
         	throw new Exception("Track " + s.track + " cannot be encoded in a directory entry (7 bit field)");
         }
-        byte[] direntry = new byte[6];
-		direntry[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
-		direntry[1] = (byte) (s.sector - 1);									// start sector nb
-		direntry[4] = 0;	                                                    // nb sectors
-        direntry[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
+        byte[] file = new byte[6];
+		file[0] = (byte) (((s.track & 0b01111111) << 1) | (s.face & 0x1));	// start track and face
+		file[1] = (byte) (s.sector - 1);									// start sector nb
+		file[4] = 0;	                                                    // nb sectors
+        file[5] = 0;														// nb of bytes in last sector (0: no partial end sector)
         
 		while (pos < srcData.length) {
 			int[] v = writeSector(srcData, pos, s);
@@ -121,39 +121,39 @@ public class FdUtil implements MediaDataInterface{
 				if (v[1] == storage.segment.sectorSize) {
 
 					// first written sector is full filled with data
-					direntry[2] = 0;	// nb of bytes in first sector
-					direntry[3] = 0;	// start offset in first sector
+					file[2] = 0;	// nb of bytes in first sector
+					file[3] = 0;	// start offset in first sector
 				} else {
 					
 					// first written sector is partially written
-					direntry[2] = (byte) v[1]; 	// nb of bytes in first sector
-					direntry[3] = (byte) v[0]; 	// start offset in first sector
+					file[2] = (byte) v[1]; 	// nb of bytes in first sector
+					file[3] = (byte) v[0]; 	// start offset in first sector
 				}
 			} else if (v[1] != storage.segment.sectorSize) { 
-				direntry[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
+				file[5] = (byte) v[1];	// nb of bytes in last sector, if partial		
 			}
 			
-			if ((direntry[4] & 0xff) == 0xff) {
+			if ((file[4] & 0xff) == 0xff) {
 				throw new Exception("File at track " + s.track + " exceeds the 255 sectors a directory entry can describe");
 			}
-			direntry[4]++;		 		// inc nb sectors
+			file[4]++;		 		// inc nb sectors
 			
 			pos += v[1];				// moves ahead in source data 
 			if (v[2]==0) nextSector(s);	// moves pointer to current free sector in common section
 			first = false;
 		}
 		
-        log.debug("direntry - section: {}, track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
+        log.debug("file - section: {}, track: {}, face: {}, start sector: {}, nb bytes (first sector): {}, offset (first sector): {}, sectors: {}, nb bytes (last sector): {}",
         		location,
-        		(direntry[0] >> 1) & 0xff,
-				direntry[0] & 0x1,
-				(direntry[1] + 1) & 0xff,
-				direntry[2] & 0xff,
-				direntry[3] & 0xff,
-				direntry[4] & 0xff,
-				direntry[5] & 0xff);
+        		(file[0] >> 1) & 0xff,
+				file[0] & 0x1,
+				(file[1] + 1) & 0xff,
+				file[2] & 0xff,
+				file[3] & 0xff,
+				file[4] & 0xff,
+				file[5] & 0xff);
         
-        return direntry;
+        return file;
 	}
 
 	public byte[] getInterleavedData() throws Exception {

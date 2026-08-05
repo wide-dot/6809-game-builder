@@ -1,7 +1,7 @@
 package com.widedot.m6809.gamebuilder.spi.globals;
 
 /**
- * How a direntry's references are resolved, declared in the configuration —
+ * How a file's references are resolved, declared in the configuration —
  * never in the source. The source says WHAT a unit references
  * ({@code EXPORT}/{@code EXTERNAL}) ; the configuration says WHERE everything
  * lives ; the mode says which of the two resolvers closes the gap.
