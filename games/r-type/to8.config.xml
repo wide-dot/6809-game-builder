@@ -42,9 +42,6 @@
             <!-- meme page, chacune avec sa region — les fichiers v1 partagent   -->
             <!-- leurs noms internes (Object, Routines, AABB_0), ils ne peuvent  -->
             <!-- pas cohabiter dans une unite.                                   -->
-            <region name="enemies"    page="$05" address="$0000" size="auto"/>
-            <region name="bug"        page="$05" address="auto" size="auto"/>
-            <region name="blaster"    page="$1E" address="$0000" size="$1B00"/>
             <!-- Les overlays : ce qui se peint PAR-DESSUS le jeu en fin de     -->
             <!-- trame et n'a ni etat ni OST — le masque du champ de jeu        -->
             <!-- aujourd'hui, le hud et les messages ensuite. Ils tournent tous -->
@@ -145,6 +142,8 @@
             <!-- reboundlaser 5 870, counterairlaser 8 528, simplefire 2 206.     -->
             <!-- Le laser a rebond aligne ses tampons cycliques sur 32 octets par -->
             <!-- ALIGN : sa region DOIT demarrer sur un multiple de 32.           -->
+            <!-- Le cast commun, range par le builder sur des pages contigues -->
+            <region name="cast"       page="$1D" address="$0000" size="$4000" pages="auto"/>
             <region name="forcepod"        page="$1B" address="$0000" size="auto"/>
             <region name="simplefire"      page="$1B" address="auto" size="auto"/>
             <region name="reboundlaser"    page="$1C" address="$0000" size="auto"/>
@@ -213,41 +212,6 @@
 
                 <!-- Les ennemis. Leurs images d'abord dans le meme direntry :   -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.        -->
-                <file name="common.enemies" linkdata="LINK" bake="auto">
-                    <lwasm gensource="gen/enemies/enemies.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/pata-pata/enemy.asm"/>
-                        <gfxcomp gendir="gen/enemies/pata-pata"
-                                 gensource="gen/enemies/pata-pata/includes.asm"
-                                 genindex="gen/enemies/pata-pata/index.asm"
-                                 file="common.enemies">
-                            <image name="patapata_0" filename="src/enemies/pata-pata/images/pata_0.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_1" filename="src/enemies/pata-pata/images/pata_1.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_2" filename="src/enemies/pata-pata/images/pata_2.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_3" filename="src/enemies/pata-pata/images/pata_3.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_4" filename="src/enemies/pata-pata/images/pata_4.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_5" filename="src/enemies/pata-pata/images/pata_5.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_6" filename="src/enemies/pata-pata/images/pata_6.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="patapata_7" filename="src/enemies/pata-pata/images/pata_7.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
 
                 <!-- Les overlays. Le masque du champ de jeu : 160x200, il se  -->
                 <!-- peint par-dessus tout en fin de trame et couvre les       -->
@@ -841,94 +805,171 @@
                 <!-- posent tous AABB_0 equ ext_variables. La v1 en fait quatre -->
                 <!-- objets, nous en faisons quatre unites.                     -->
                 <!-- ******************************************************** -->
-                <file name="common.bug" linkdata="LINK" bake="auto">
-                    <lwasm gensource="gen/enemies/bug.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
+
+
+
+                <!-- LE CAST COMMUN : les ennemis que plusieurs stages partagent, -->
+                <!-- ranges par le builder. Un <unit> par ennemi — corps + images -->
+                <!-- — et le pageset comble ses pages en first-fit. Chargé au     -->
+                <!-- boot, résident : une seule copie sur disquette et en RAM,    -->
+                <!-- quelle que soit la liste des stages qui s'en servent.        -->
+                <!-- ******************************************************** -->
+                <pageset name="common.cast" region="cast" bake="auto" linkdata="LINK"
+                         gendir="gen/enemies/cast"
+                         gensymbols="gen/enemies/cast-pages.asm">
+                    <unit symbol="patapata.Object">
+                        <asm filename="src/enemies/pata-pata/enemy.asm"/>
+                            <gfxcomp gendir="gen/enemies/pata-pata"
+                                     gensource="gen/enemies/pata-pata/includes.asm"
+                                     genindex="gen/enemies/pata-pata/index.asm">
+                                <image name="patapata_0" filename="src/enemies/pata-pata/images/pata_0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_1" filename="src/enemies/pata-pata/images/pata_1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_2" filename="src/enemies/pata-pata/images/pata_2.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_3" filename="src/enemies/pata-pata/images/pata_3.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_4" filename="src/enemies/pata-pata/images/pata_4.png" index="4">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_5" filename="src/enemies/pata-pata/images/pata_5.png" index="5">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_6" filename="src/enemies/pata-pata/images/pata_6.png" index="6">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="patapata_7" filename="src/enemies/pata-pata/images/pata_7.png" index="7">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
+                    <unit symbol="bug.Object">
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
-                        <gfxcomp gendir="gen/enemies/bug"
-                                 gensource="gen/enemies/bug/includes.asm"
-                                 genindex="gen/enemies/bug/index.asm"
-                                 file="common.bug">
-                            <image name="bug_4" filename="src/enemies/bug/images/bug_4.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_5" filename="src/enemies/bug/images/bug_5.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_6" filename="src/enemies/bug/images/bug_6.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_7" filename="src/enemies/bug/images/bug_7.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_8" filename="src/enemies/bug/images/bug_8.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_9" filename="src/enemies/bug/images/bug_9.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_10" filename="src/enemies/bug/images/bug_10.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="bug_11" filename="src/enemies/bug/images/bug_11.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-
-                <file name="common.blaster" linkdata="LINK" bake="auto">
-                    <lwasm gensource="gen/enemies/blaster.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
+                            <gfxcomp gendir="gen/enemies/bug"
+                                     gensource="gen/enemies/bug/includes.asm"
+                                     genindex="gen/enemies/bug/index.asm">
+                                <image name="bug_4" filename="src/enemies/bug/images/bug_4.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_5" filename="src/enemies/bug/images/bug_5.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_6" filename="src/enemies/bug/images/bug_6.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_7" filename="src/enemies/bug/images/bug_7.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_8" filename="src/enemies/bug/images/bug_8.png" index="4">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_9" filename="src/enemies/bug/images/bug_9.png" index="5">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_10" filename="src/enemies/bug/images/bug_10.png" index="6">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="bug_11" filename="src/enemies/bug/images/bug_11.png" index="7">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
+                    <unit symbol="bink.Object">
+                        <asm filename="src/enemies/bink/bink.unit.asm"/>
+                            <gfxcomp gendir="gen/enemies/bink"
+                                         gensource="gen/enemies/bink/includes.asm"
+                                         genindex="gen/enemies/bink/index.asm">
+                                    <image name="bink_0" filename="src/enemies/bink/images/bink-0.png" index="0">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_1" filename="src/enemies/bink/images/bink-1.png" index="1">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_2" filename="src/enemies/bink/images/bink-2.png" index="2">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_3" filename="src/enemies/bink/images/bink-5.png" index="3">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_4" filename="src/enemies/bink/images/bink-4.png" index="4">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_5" filename="src/enemies/bink/images/bink-3.png" index="5">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bink_6" filename="src/enemies/bink/images/bink-0.png" index="6">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="bink_7" filename="src/enemies/bink/images/bink-1.png" index="7">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="bink_8" filename="src/enemies/bink/images/bink-2.png" index="8">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="bink_9" filename="src/enemies/bink/images/bink-5.png" index="9">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="bink_10" filename="src/enemies/bink/images/bink-4.png" index="10">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="bink_11" filename="src/enemies/bink/images/bink-3.png" index="11">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </unit>
+                    <unit symbol="blaster.Object">
                         <asm filename="src/enemies/blaster/blaster.unit.asm"/>
-                        <gfxcomp gendir="gen/enemies/blaster"
-                                 gensource="gen/enemies/blaster/includes.asm"
-                                 genindex="gen/enemies/blaster/index.asm"
-                                 file="common.blaster">
-                            <image name="blaster_l1" filename="src/enemies/blaster/images/blaster_l1.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_l2" filename="src/enemies/blaster/images/blaster_l2.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_l3" filename="src/enemies/blaster/images/blaster_l3.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_l4" filename="src/enemies/blaster/images/blaster_l4.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_l5" filename="src/enemies/blaster/images/blaster_l5.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_u1" filename="src/enemies/blaster/images/blaster_u1.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_u2" filename="src/enemies/blaster/images/blaster_u2.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_u3" filename="src/enemies/blaster/images/blaster_u3.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_u4" filename="src/enemies/blaster/images/blaster_u4.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="blaster_u5" filename="src/enemies/blaster/images/blaster_u5.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
+                            <gfxcomp gendir="gen/enemies/blaster"
+                                     gensource="gen/enemies/blaster/includes.asm"
+                                     genindex="gen/enemies/blaster/index.asm">
+                                <image name="blaster_l1" filename="src/enemies/blaster/images/blaster_l1.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_l2" filename="src/enemies/blaster/images/blaster_l2.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_l3" filename="src/enemies/blaster/images/blaster_l3.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_l4" filename="src/enemies/blaster/images/blaster_l4.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_l5" filename="src/enemies/blaster/images/blaster_l5.png" index="4">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_u1" filename="src/enemies/blaster/images/blaster_u1.png" index="5">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_u2" filename="src/enemies/blaster/images/blaster_u2.png" index="6">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_u3" filename="src/enemies/blaster/images/blaster_u3.png" index="7">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_u4" filename="src/enemies/blaster/images/blaster_u4.png" index="8">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="blaster_u5" filename="src/enemies/blaster/images/blaster_u5.png" index="9">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
+                </pageset>
 
                 <file name="common.forcepod" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/forcepod.asm">
@@ -1214,55 +1255,7 @@
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
                     <!-- stage la comble. Elle est deja lue par page montee      -->
                     <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <!-- Le premier ennemi range par le builder : son code ET ses  -->
-                    <!-- images dans un bloc, qui comble la queue du dernier      -->
-                    <!-- tileset. section="none" sur le gfxcomp : la source du    -->
-                    <!-- membre a deja ouvert la sienne.                          -->
-                    <unit name="common.bink" symbol="bink.Object">
-                        <asm filename="src/enemies/bink/bink.body.asm"/>
-                            <gfxcomp gendir="gen/enemies/bink"
-                                     gensource="gen/enemies/bink/includes.asm" section="none"
-                                     genindex="gen/enemies/bink/index.asm"
-                                     file="common.bink">
-                                <image name="bink_0" filename="src/enemies/bink/images/bink-0.png" index="0">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_1" filename="src/enemies/bink/images/bink-1.png" index="1">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_2" filename="src/enemies/bink/images/bink-2.png" index="2">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_3" filename="src/enemies/bink/images/bink-5.png" index="3">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_4" filename="src/enemies/bink/images/bink-4.png" index="4">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_5" filename="src/enemies/bink/images/bink-3.png" index="5">
-                                    <encoder name="bdraw" mirror="none" shift="0"/>
-                                </image>
-                                <image name="bink_6" filename="src/enemies/bink/images/bink-0.png" index="6">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                                <image name="bink_7" filename="src/enemies/bink/images/bink-1.png" index="7">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                                <image name="bink_8" filename="src/enemies/bink/images/bink-2.png" index="8">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                                <image name="bink_9" filename="src/enemies/bink/images/bink-5.png" index="9">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                                <image name="bink_10" filename="src/enemies/bink/images/bink-4.png" index="10">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                                <image name="bink_11" filename="src/enemies/bink/images/bink-3.png" index="11">
-                                    <encoder name="bdraw" mirror="x" shift="0"/>
-                                </image>
-                            </gfxcomp>
-                    </unit>
-                    <unit name="stage1.wave" symbol="stage.wave">
+                    <unit name="stage1.wave" symbol="stage.wave" section="code">
                         <asm filename="src/stages/01/objid.const.asm"/>
                         <asm filename="src/stages/01/wave.asm"/>
                     </unit>
@@ -1330,7 +1323,7 @@
                     <!-- La queue du dernier tileset ne se perd pas : la wave du -->
                     <!-- stage la comble. Elle est deja lue par page montee      -->
                     <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <unit name="stage2.wave" symbol="stage.wave">
+                    <unit name="stage2.wave" symbol="stage.wave" section="code">
                         <asm filename="src/stages/02/objid.const.asm"/>
                         <asm filename="src/stages/02/wave.asm"/>
                     </unit>
@@ -1371,9 +1364,6 @@
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
                     <load name="common.anim"       region="anim"/>
-                    <load name="common.enemies"    region="enemies"/>
-                    <load name="common.bug"        region="bug"/>
-                    <load name="common.blaster"    region="blaster"/>
                     <load name="common.overlay"    region="overlay"/>
                     <load name="common.player"     region="player"/>
                     <load name="common.weapon"     region="weapon"/>
@@ -1400,6 +1390,7 @@
                     <load name="common.pow"        region="pow"/>
                     <load name="common.optionbox"  region="optionbox"/>
                     <load name="common.bitdevice"  region="bitdevice"/>
+                    <load name="common.cast"       region="cast"/>
                     <load name="common.forcepod"   region="forcepod"/>
                     <load name="common.reboundlaser" region="reboundlaser"/>
                     <load name="common.counterairlaser" region="counterairlaser"/>

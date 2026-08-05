@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF RTYPE_RAM_CONST
+RTYPE_RAM_CONST equ 1
+
 * ===========================================================================
 * Object pool geometry and resident RAM — frozen for the whole game
 * ===========================================================================
@@ -78,3 +84,5 @@ player1                      equ dp
 mainloop.state.RUNNING       equ   0
 mainloop.state.DEAD          equ   2
 mainloop.state.CHECKPOINT    equ   4
+
+ ENDC

@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF ENGINE_CONSTANTS
+ENGINE_CONSTANTS equ 1
+
 * ---------------------------------------------------------------------------
 * Constants
 *
@@ -377,3 +383,5 @@ sub9_mapframe           equ   sub8_mapframe+6
 next_subspr             equ   6 ; size of a subsprite data
  endc
  endc
+
+ ENDC

@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF COLLISION_MACROS
+COLLISION_MACROS equ 1
+
 ; usage:
 ;
 ; in the main code :
@@ -66,3 +72,5 @@ _Collision_Do MACRO
         std   Collision_Do_2
         jsr   Collision_Do
  ENDM
+
+ ENDC

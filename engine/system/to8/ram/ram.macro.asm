@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF TO8_RAM_MACRO
+TO8_RAM_MACRO equ 1
+
 _ram.cart.set MACRO 
         lda   \1
         ora   #map.RAM_OVER_CART
@@ -12,3 +18,5 @@ _ram.data.set MACRO
         ldb   \1
         stb   map.CF74021.DATA   ; Switch RAM page
  ENDM
+
+ ENDC

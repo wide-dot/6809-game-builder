@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF TO8_MAP_CONST
+TO8_MAP_CONST equ 1
+
 ;*******************************************************************************
 ; Thomson TO8 - Memory map
 ; ------------------------------------------------------------------------------
@@ -239,3 +245,5 @@ map.bit.DAC_MUTE   equ map.MC6846.PCR.DAC_MUTE
 map.MC6846.PRC     equ map.MC6846.PDR
 
     ENDC
+
+ ENDC

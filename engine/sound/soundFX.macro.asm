@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF SOUNDFX_MACRO
+SOUNDFX_MACRO equ 1
+
 ; -----------------------------------------------------------------------------
 ; _soundFX.play
 ; -----------------------------------------------------------------------------
@@ -22,3 +28,5 @@ _soundFX.play MACRO
 @exit   equ   *
  ENDM
  
+
+ ENDC

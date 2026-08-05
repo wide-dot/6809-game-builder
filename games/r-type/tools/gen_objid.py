@@ -89,7 +89,7 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_fade':      ('fade', 'PaletteFade'),
           'ObjID_Player1':   ('player', 'Player'),
-          'ObjID_patapata': ('enemies', 'patapata.Object'),
+          'ObjID_patapata': (None, 'patapata.Object'),
           'ObjID_explosion': ('explosion', 'explosion.Object'),
           'ObjID_createFoeFire':  ('firechain', 'createFoeFire'),
           'ObjID_loadFirePreset': ('firechain', 'loadFirePreset.Object'),
@@ -108,13 +108,13 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
           'ObjID_forcepod_reboundlaser':    ('reboundlaser',    'reboundlaser.Object'),
           'ObjID_forcepod_counterairlaser': ('counterairlaser', 'counterairlaser.Object'),
           # Le cast d'ennemis : un direntry par ennemi, tous sur la page $05.
-          'ObjID_bug':     ('bug',     'bug.Object'),
+          'ObjID_bug':     (None, 'bug.Object'),
           # bink est RANGE PAR LE BUILDER dans la queue d'un pageset (un
           # <block>), pas dans une region declaree : sa page n'est pas
           # `<region>.page` mais l'equate que le pageset publie pour le
           # symbole du bloc, `<symbole>.page`. None marque ce cas.
           'ObjID_bink':    (None,      'bink.Object'),
-          'ObjID_blaster': ('blaster', 'blaster.Object')}
+          'ObjID_blaster': (None, 'blaster.Object')}
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':

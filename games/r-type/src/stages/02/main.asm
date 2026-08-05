@@ -141,6 +141,9 @@ emitterFlash.Object EXTERNAL
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
         INCLUDE "gen/stages/02/pages.asm"
+        ; Les pages du cast commun, publiees par son pageset : l'index
+        ; d'objets lit <symbole>.page pour chaque ennemi range.
+        INCLUDE "gen/enemies/cast-pages.asm"
         INCLUDE "src/stages/02/map/intro/map.const.asm"
 
  opt c,ct
