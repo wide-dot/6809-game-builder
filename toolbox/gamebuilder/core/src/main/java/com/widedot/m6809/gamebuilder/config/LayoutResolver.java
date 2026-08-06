@@ -55,8 +55,30 @@ public final class LayoutResolver {
 	public static Map<String, Regions.Region> resolve(ImmutableNode layout, BuildContext ctx)
 			throws Exception {
 
+		// The windows come first, and the RESOLVER reads them — not its
+		// caller. Both the placement scan and the layout plugin resolve the
+		// same layout, and the scan runs before the plugin has parsed
+		// anything : a resolver that depended on its caller having declared
+		// the windows would place a region at $0000 for one and at $2E68 for
+		// the other. The bake follows the scan, the loader follows the
+		// plugin, and the game jumps into empty RAM. Idempotent on purpose —
+		// both callers pay the same two lines.
+		ctx.regions.clearWindows();
+		for (ImmutableNode c : layout.getChildren()) {
+			if ("window".equals(c.getNodeName())) {
+				ctx.regions.addWindow(new Regions.Window(
+						Attribute.getString(c, ctx, "name"),
+						Attribute.getInteger(c, ctx, "address"),
+						Attribute.getInteger(c, ctx, "size")));
+			}
+		}
+
 		Map<String, Regions.Region> out = new LinkedHashMap<String, Regions.Region>();
 		Map<Integer, Integer> cursor = new LinkedHashMap<Integer, Integer>();
+		// what each page already holds, so an auto region can find a hole :
+		// page -> list of [start, end) taken by a fixed region or a reserved range
+		Map<Integer, java.util.List<int[]>> taken = new LinkedHashMap<Integer, java.util.List<int[]>>();
+		java.util.List<ImmutableNode> deferred = new java.util.ArrayList<ImmutableNode>();
 		// Every page some declaration starts on. A pages="auto" region with no
 		// measure yet claims room up to the next one : generous enough that the
 		// discovery pack never hits a ceiling, bounded so two of them never
@@ -64,7 +86,26 @@ public final class LayoutResolver {
 		java.util.TreeSet<Integer> claimed = new java.util.TreeSet<Integer>();
 		for (ImmutableNode c : layout.getChildren()) {
 			if ("region".equals(c.getNodeName()) || "reserved".equals(c.getNodeName())) {
-				claimed.add(Attribute.getInteger(c, ctx, "page"));
+				String p = Attribute.getStringOpt(c, ctx, "page");
+				if (!"auto".equals(p)) {
+					claimed.add(Attribute.getInteger(c, ctx, "page"));
+				}
+			}
+		}
+		// Pages the builder may range over for page="auto". Ordered : the
+		// pages the author placed by hand come first, so an auto region fills
+		// their tail before opening a fresh one — that tail is what the
+		// occupancy report showed sitting unused.
+		java.util.List<Integer> autoPages = new java.util.ArrayList<Integer>(claimed);
+		String spare = Attribute.getStringOpt(layout, ctx, "sparepages");
+		if (spare != null) {
+			String[] bounds = spare.split("-");
+			int from = Integer.decode(bounds[0].trim().replace("$", "0x"));
+			int to = Integer.decode(bounds[bounds.length - 1].trim().replace("$", "0x"));
+			for (int p = from; p <= to; p++) {
+				if (!autoPages.contains(p)) {
+					autoPages.add(p);
+				}
 			}
 		}
 
@@ -75,6 +116,7 @@ public final class LayoutResolver {
 				int address = Attribute.getInteger(child, ctx, "address");
 				int size = Attribute.getInteger(child, ctx, "size");
 				bump(cursor, page, address + size);
+				occupy(taken, page, address, size);
 				continue;
 			}
 			if (!"region".equals(child.getNodeName())) {
@@ -82,7 +124,8 @@ public final class LayoutResolver {
 			}
 
 			String name = Attribute.getString(child, ctx, "name");
-			int page = Attribute.getInteger(child, ctx, "page");
+			boolean autoPage = "auto".equals(Attribute.getStringOpt(child, ctx, "page"));
+			int page = autoPage ? -1 : Attribute.getInteger(child, ctx, "page");
 
 			String rawPages = Attribute.getStringOpt(child, ctx, "pages");
 			int pages;
@@ -107,6 +150,14 @@ public final class LayoutResolver {
 			boolean autoSize = "auto".equals(rawSize);
 			boolean autoAddress = "auto".equals(rawAddress);
 
+			// page="auto" is resolved in a second pass, once everything
+			// placed by hand is known : a hole is only a hole when you can
+			// see both of its edges.
+			if (autoPage) {
+				deferred.add(child);
+				continue;
+			}
+
 			if (autoAddress && !cursor.containsKey(page)) {
 				throw new Exception(ctx.sources.locate(child) + ": region '" + name
 						+ "' has address=\"auto\" but nothing precedes it on page " + page
@@ -114,7 +165,7 @@ public final class LayoutResolver {
 						+ " at $6100, the cartridge one at $0000), so the first declaration"
 						+ " on a page gives its address");
 			}
-			int address = autoAddress ? at(cursor, page)
+			int address = (autoAddress || autoPage) ? at(cursor, page)
 					: Attribute.getInteger(child, ctx, "address");
 
 			Integer size;
@@ -143,6 +194,11 @@ public final class LayoutResolver {
 			// what catches a region placed on top of something.
 
 			out.put(name, new Regions.Region(name, page, address, size, stacked, pages));
+			if (size != null) {
+				for (int p = 0; p < pages; p++) {
+					occupy(taken, page + p, pages > 1 ? 0 : address, pages > 1 ? PAGE_SIZE : size);
+				}
+			}
 
 			if (pages > 1) {
 				for (int p = 0; p < pages; p++) {
@@ -152,7 +208,105 @@ public final class LayoutResolver {
 				bump(cursor, page, address + size);
 			}
 		}
+		// --- pass B : the regions that let the builder pick their page -----
+		//
+		// A hole is only a hole once both edges are known, so this runs after
+		// everything placed by hand. First fit, declaration order : adding a
+		// region must not move those already placed — every object is reached
+		// through its page id, and a layout that reshuffles on each edit would
+		// be impossible to reason about.
+		for (ImmutableNode child : deferred) {
+			String name = Attribute.getString(child, ctx, "name");
+			Integer known = ctx.regions.measured(name);
+			boolean stacked = Attribute.getBoolean(child, ctx, "stacked", false);
+
+			if (known == null) {
+				// discovery : nothing is measured yet and this pass is what
+				// measures. A page of its own, past everything declared —
+				// provisional, and never a refusal, or nothing gets measured.
+				int fresh = 0;
+				for (int c : taken.keySet()) {
+					fresh = Math.max(fresh, c);
+				}
+				for (int c : autoPages) {
+					fresh = Math.max(fresh, c);
+				}
+				int addr = windowStart(ctx);
+				out.put(name, new Regions.Region(name, fresh + 1, addr, PAGE_SIZE, stacked, 1));
+				occupy(taken, fresh + 1, addr, PAGE_SIZE);
+				continue;
+			}
+
+			int[] spot = firstFit(taken, autoPages, ctx, known);
+			if (spot == null) {
+				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+						+ "' asks for page=\"auto\" but no page has " + known
+						+ " free bytes in one run — widen the layout's sparepages, or make it"
+						+ " a multi-page region a pageset fills");
+			}
+			out.put(name, new Regions.Region(name, spot[0], spot[1], known, stacked, 1));
+			occupy(taken, spot[0], spot[1], known);
+			bump(cursor, spot[0], spot[1] + known);
+		}
+
 		return out;
+	}
+
+	/** record a range as taken, so no auto region is offered it */
+	private static void occupy(Map<Integer, java.util.List<int[]>> taken, int page, int address,
+			int size) {
+		taken.computeIfAbsent(page, p -> new java.util.ArrayList<int[]>())
+		     .add(new int[] { address, address + size });
+	}
+
+	/**
+	 * The first gap that fits, scanning the candidate pages in order : the
+	 * pages the author placed by hand come first, so their unused tail is
+	 * filled before a spare page is opened.
+	 *
+	 * @return {page, address} or null when nothing fits
+	 */
+	private static int[] firstFit(Map<Integer, java.util.List<int[]>> taken,
+			java.util.List<Integer> candidates, BuildContext ctx, int need) {
+
+		for (int page : candidates) {
+			java.util.List<int[]> ranges = taken.get(page);
+			// an untouched page : it opens where its window opens
+			if (ranges == null || ranges.isEmpty()) {
+				Regions.Window w = ctx.regions.windowOf(windowStart(ctx));
+				int start = w != null ? w.address : 0;
+				int top = w != null ? w.end() : PAGE_SIZE;
+				if (start + need <= top) {
+					return new int[] { page, start };
+				}
+				continue;
+			}
+			java.util.List<int[]> sorted = new java.util.ArrayList<int[]>(ranges);
+			sorted.sort((a, b) -> Integer.compare(a[0], b[0]));
+			Regions.Window w = ctx.regions.windowOf(sorted.get(0)[0]);
+			int cursor = w != null ? w.address : 0;
+			int top = w != null ? w.end() : PAGE_SIZE;
+			for (int[] range : sorted) {
+				if (range[0] - cursor >= need) {
+					return new int[] { page, cursor };
+				}
+				cursor = Math.max(cursor, range[1]);
+			}
+			if (top - cursor >= need) {
+				return new int[] { page, cursor };
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Where a fresh page opens : the first window the layout declares. A page
+	 * is 16 KB but the CPU sees it somewhere — an auto-placed region landing
+	 * on an empty page has to start at that somewhere, not at zero.
+	 */
+	private static int windowStart(BuildContext ctx) {
+		java.util.List<Regions.Window> windows = ctx.regions.windows();
+		return windows.isEmpty() ? 0 : windows.get(0).address;
 	}
 
 	private static int at(Map<Integer, Integer> cursor, int page) {

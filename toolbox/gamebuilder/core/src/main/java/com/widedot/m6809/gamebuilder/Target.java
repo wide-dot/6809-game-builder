@@ -59,6 +59,62 @@ public class Target {
    		processTargets(nodesToProcess);
 	}
 	
+	/** what one discovery pass learned : measures, symbol ids, export table */
+	private static class Discovery {
+		java.util.Map<String, Integer> measured;
+		java.util.Map<String, Integer> measuredPages;
+		List<String> symbols;
+		java.util.Set<String> imported;
+		com.widedot.m6809.gamebuilder.spi.globals.StaticLink.Harvest harvest;
+		/** what stopped it, or null : an error is left for the real pass to report */
+		Exception stop;
+	}
+
+	/**
+	 * Run the target for what it teaches, not for what it writes : binaries
+	 * are thrown away, baking is deferred (references are marked consumed,
+	 * nothing is resolved), so a consumer declared before its provider cannot
+	 * stop the pass.
+	 *
+	 * @param measured measures from an earlier pass, or null on the first one
+	 */
+	private Discovery discoveryPass(ImmutableNode node, java.util.Map<String, Integer> measured,
+			java.util.Map<String, Integer> measuredPages) throws Exception {
+
+		Discovery out = new Discovery();
+		ctx.resetTarget();
+		if (measured != null) {
+			ctx.regions.seedMeasured(measured);
+			ctx.regions.seedMeasuredPages(measuredPages);
+		}
+		com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
+		ctx.staticLink.setDiscovery(true);
+		try {
+			runTarget(node);
+		} catch (Exception e) {
+			out.stop = e;
+			log.warn("discovery pass stopped early: {}", e.getMessage());
+		}
+		// what AUTO will leave load-time linked was invisible to the discovery
+		// emission (its baked sections skip the link data) : classify the
+		// recorded candidates now, so those symbols get ids and their
+		// providers' exports survive the pruning
+		java.util.Set<String> predictedLinked = ctx.staticLink.predictLinkedImports();
+		out.symbols = new ArrayList<String>(ctx.linkSymbols.ids.keySet());
+		for (String name : predictedLinked) {
+			if (!ctx.linkSymbols.ids.containsKey(name)) {
+				out.symbols.add(name);
+			}
+		}
+		java.util.Collections.sort(out.symbols);
+		out.imported = new java.util.HashSet<String>(ctx.linkSymbols.imports);
+		out.imported.addAll(predictedLinked);
+		out.harvest = ctx.staticLink.snapshot();
+		out.measured = ctx.ramMap.contentSizes();
+		out.measuredPages = ctx.regions.pagesUsedSnapshot();
+		return out;
+	}
+
 	private void processTargets(List<ImmutableNode> targetNodes) throws Exception {
 
     	for(ImmutableNode node : targetNodes)
@@ -66,74 +122,57 @@ public class Target {
 			String targetName = (String) node.getAttributes().get("name");
 			log.info("Processing target {}", targetName);
 
-			// discovery pass : link symbol ids get baked into the link data as
-			// each entry is built, and the full symbol set (all disks) is only
-			// known at the end. Run the target once to collect the symbols,
-			// then rerun it with ids preseeded in alphabetical order — ids
-			// depend on the symbol names only, so reordering sources no longer
-			// renumbers every image. An error here is left for the real pass
-			// to report, with whatever symbols were seen preseeded.
-			ctx.resetTarget();
-			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
-			// discovery also harvests the static-link export table : baking is
-			// deferred (references are marked consumed, nothing is resolved),
-			// so a consumer declared before its provider cannot stop the pass
-			ctx.staticLink.setDiscovery(true);
-			Exception discoveryStop = null;
-			try {
-				runTarget(node);
-			} catch (Exception e) {
-				discoveryStop = e;
-				log.warn("discovery pass stopped early: {}", e.getMessage());
-			}
-			// what AUTO will leave load-time linked was invisible to the
-			// discovery emission (its baked sections skip the link data) :
-			// classify the recorded candidates now, so those symbols get ids
-			// and their providers' exports survive the pruning
-			java.util.Set<String> predictedLinked = ctx.staticLink.predictLinkedImports();
-			List<String> symbols = new ArrayList<String>(ctx.linkSymbols.ids.keySet());
-			for (String name : predictedLinked) {
-				if (!ctx.linkSymbols.ids.containsKey(name)) {
-					symbols.add(name);
-				}
-			}
-			java.util.Collections.sort(symbols);
-			java.util.Set<String> imported = new java.util.HashSet<String>(ctx.linkSymbols.imports);
-			imported.addAll(predictedLinked);
-			log.info("{} link symbols discovered ({} imported), ids assigned alphabetically",
-					symbols.size(), imported.size());
-			log.debug("imported : {}", imported);
-			com.widedot.m6809.gamebuilder.spi.globals.StaticLink.Harvest discoveredStatic =
-					ctx.staticLink.snapshot();
-			// what each region's content measured : size="auto" reads it back
-			java.util.Map<String, Integer> measured = ctx.ramMap.contentSizes();
-			java.util.Map<String, Integer> measuredPages = ctx.regions.pagesUsedSnapshot();
-			// a discovery that died before the scenes leaves the measures
-			// empty : the real pass would lay every size="auto" region out at
-			// a full page and write a disk that loads over the monitor. Better
-			// no disk than that one.
-			if (discoveryStop != null && measured.isEmpty()) {
+			// Two discovery passes, then the real one.
+			//
+			// A discovery pass exists because ids and exports are only fully
+			// known at the end : it runs the whole target, throws the binaries
+			// away and keeps what it learned. But it also MEASURES the layout,
+			// and a layout with measured sizes is not the layout it was built
+			// against — while measuring, a size the author left to the builder
+			// takes a whole page, so regions stacked on one page sit at $4000,
+			// $8000... The exports harvested there carry those addresses.
+			//
+			// It went unnoticed as long as every region had its page fixed by
+			// hand : only the offsets inside a page moved, and the placement
+			// registry — which the real pass rewrites — carried the truth. The
+			// day the builder was allowed to choose the PAGE too, the harvest
+			// started naming pages that the disk never had, and the game
+			// jumped into empty RAM.
+			//
+			// So the second pass replays the discovery with the first one's
+			// measures : same layout as the real pass, same addresses, and a
+			// harvest that describes the disk actually being written. It costs
+			// one more run of a build whose every step is cached.
+			Discovery measuring = discoveryPass(node, null, null);
+			if (measuring.stop != null && measuring.measured.isEmpty()) {
 				throw new Exception("discovery pass failed before measuring the layout — "
-						+ discoveryStop.getMessage(), discoveryStop);
+						+ measuring.stop.getMessage(), measuring.stop);
 			}
+			Discovery discovered = discoveryPass(node, measuring.measured, measuring.measuredPages);
+			if (discovered.stop != null && discovered.measured.isEmpty()) {
+				throw new Exception("discovery pass failed before measuring the layout — "
+						+ discovered.stop.getMessage(), discovered.stop);
+			}
+			log.info("{} link symbols discovered ({} imported), ids assigned alphabetically",
+					discovered.symbols.size(), discovered.imported.size());
 
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
 			ctx.resetTarget();
 			// the measures go in BEFORE the placement scan : the scan resolves
-			// size="auto" too, and a scan that disagreed with the layout would
-			// bake references against addresses nothing ever loads at
-			ctx.regions.seedMeasured(measured);
-			ctx.regions.seedMeasuredPages(measuredPages);
+			// the layout too, and a scan that disagreed with it would bake
+			// references against addresses nothing ever loads at
+			ctx.regions.seedMeasured(discovered.measured);
+			ctx.regions.seedMeasuredPages(discovered.measuredPages);
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
-			ctx.linkSymbols.preseed(symbols);
-			ctx.linkSymbols.preseedImports(imported);
+			ctx.linkSymbols.preseed(discovered.symbols);
+			ctx.linkSymbols.preseedImports(discovered.imported);
 			// the real pass bakes against the discovered offsets : declaration
 			// order no longer decides whether a provider is resolvable, and a
 			// symbol exported by several run-time alternatives is refused
 			// deterministically instead of resolving to whichever came last
-			ctx.staticLink.preseed(discoveredStatic);
+			ctx.staticLink.preseed(discovered.harvest);
 
 			// The images are written as the target runs, but the checks that
 			// close it come after — so a refused build would leave a freshly

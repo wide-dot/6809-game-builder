@@ -115,10 +115,11 @@ public final class Handlers {
 
 		// declarative scenes
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
+			.opt("sparepages", STRING, "page range a page=\"auto\" region may open when no declared page has room, e.g. \"$05-$1F\"")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include"));
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
-			.req("page", INT, "destination page id")
+			.req("page", INT_AUTO, "destination page id, or auto to let the builder range over the pages : it fills the tail of a page already declared before opening one from sparepages")
 			.req("address", INT_AUTO, "destination address, or auto to follow what precedes it on the page")
 			.opt("size", INT_AUTO, "byte budget, checked against the loaded entry ; auto measures the content")
 			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")

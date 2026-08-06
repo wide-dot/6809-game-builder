@@ -11,7 +11,7 @@
         <!-- les unités qui s'y chargent sont des alternatives, mutuellement   -->
         <!-- exclusives au runtime. Le builder les autorise donc à exporter    -->
         <!-- les mêmes noms, et exige d'elles la même liste d'exports.         -->
-        <layout gensymbols="gen/layout.asm">
+        <layout sparepages="$05-$1F" gensymbols="gen/layout.asm">
             <!-- Les trois fenetres par lesquelles le TO8 voit une page de 16 Ko. -->
             <!-- Le layout ne les declarait pas, et personne ne pouvait donc dire -->
             <!-- combien il restait AU-DESSUS de la derniere region d'une page :  -->

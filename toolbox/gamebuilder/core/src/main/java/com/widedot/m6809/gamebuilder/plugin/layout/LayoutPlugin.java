@@ -27,11 +27,7 @@ public class LayoutPlugin {
 		// does not produce.
 		for (ImmutableNode child : node.getChildren()) {
 			if ("window".equals(child.getNodeName())) {
-				ctx.regions.addWindow(new Regions.Window(
-						Attribute.getString(child, ctx, "name"),
-						Attribute.getInteger(child, ctx, "address"),
-						Attribute.getInteger(child, ctx, "size")));
-				continue;
+				continue;    // read by the resolver, which both callers share
 			}
 			if ("reserved".equals(child.getNodeName())) {
 				ctx.regions.reserve(new Regions.Reserved(

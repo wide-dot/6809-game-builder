@@ -110,6 +110,10 @@ public class Regions {
 		windows.add(window);
 	}
 
+	public void clearWindows() {
+		windows.clear();
+	}
+
 	public java.util.List<Window> windows() {
 		return windows;
 	}
