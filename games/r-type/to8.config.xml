@@ -32,7 +32,9 @@
             <!--                                                                 -->
             <!-- La borne haute est le pool d'objets, en $90B0 : common + stage   -->
             <!-- disposent de $6100-$90AF, soit 12 208 octets, et rien d'autre.   -->
-            <region name="common"     page="$01" address="$6100" size="$1EC0"/>
+            <region name="common">
+                <zone page="$01" address="$6100" size="$1EC0"/>
+            </region>
             <region name="stage"      page="$01" address="$7FC0" size="$05D2" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
@@ -46,7 +48,9 @@
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
-            <region name="anim"       page="$0F"/>
+            <region name="anim">
+                <zone page="$0F" address="$0000" size="$1EFE"/>
+            </region>
             <!-- Les ennemis : code et images dans la meme page, comme en v1 —  -->
             <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
             <!-- d'imageset y lit la geometrie des sprites.                     -->

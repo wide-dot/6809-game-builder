@@ -129,6 +129,10 @@ public final class Handlers {
 			.req("name", STRING, "window name, for the report and error messages")
 			.req("address", INT, "where the window opens")
 			.req("size", INT, "window size, one page"));
+		spec(element("zone").doc("a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages")
+			.req("page", INT, "page holding this range")
+			.req("address", INT, "where the range starts")
+			.req("size", INT, "how many bytes it offers"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
 			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")
 			.req("page", INT, "page holding the range")

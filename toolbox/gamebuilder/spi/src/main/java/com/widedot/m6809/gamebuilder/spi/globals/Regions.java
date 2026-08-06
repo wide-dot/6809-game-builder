@@ -17,6 +17,30 @@ public class Regions {
 	/** declaration order is kept for stable error messages */
 	private final Map<String, Region> regions = new LinkedHashMap<String, Region>();
 
+	/**
+	 * A continuous range inside ONE page — the only thing in a layout that
+	 * speaks of physical memory, and it speaks of nothing else.
+	 *
+	 * Never spans pages : declaring several zones is exactly how a discontinuous
+	 * space is described, and a zone that straddled a page boundary would make
+	 * that impossible to express.
+	 */
+	public static class Zone {
+		public final int page;
+		public final int address;
+		public final int size;
+
+		public Zone(int page, int address, int size) {
+			this.page = page;
+			this.address = address;
+			this.size = size;
+		}
+
+		public int end() {
+			return address + size;
+		}
+	}
+
 	public static class Region {
 		public final String name;
 		public final int page;
@@ -37,14 +61,45 @@ public class Regions {
 		 */
 		public final int pages;
 
+		/**
+		 * Where this region physically lives. A region declared the compact way
+		 * — page, address and size on the element itself — holds exactly one
+		 * zone, built from those attributes : the compact form is not a special
+		 * case in the code, only a shorthand in the file.
+		 */
+		public final java.util.List<Zone> zones;
+
 		public Region(String name, int page, int address, Integer size, boolean stacked,
 				int pages) {
+			this(name, page, address, size, stacked, pages, null);
+		}
+
+		public Region(String name, int page, int address, Integer size, boolean stacked,
+				int pages, java.util.List<Zone> zones) {
 			this.name = name;
 			this.page = page;
 			this.address = address;
 			this.size = size;
 			this.stacked = stacked;
 			this.pages = pages;
+			if (zones != null && !zones.isEmpty()) {
+				this.zones = java.util.Collections.unmodifiableList(
+						new java.util.ArrayList<Zone>(zones));
+			} else if (size != null) {
+				this.zones = java.util.Collections.singletonList(
+						new Zone(page, address, size));
+			} else {
+				this.zones = java.util.Collections.emptyList();
+			}
+		}
+
+		/** total room this region offers, across all its zones */
+		public int capacity() {
+			int total = 0;
+			for (Zone z : zones) {
+				total += z.size;
+			}
+			return total;
 		}
 	}
 
