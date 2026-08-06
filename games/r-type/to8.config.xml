@@ -136,7 +136,12 @@
             <!-- Le checkpoint et son rejeu de defilement : l'objet checkpoint  -->
             <!-- de la v1, qui porte les deux. Page-neutre ou restaurant, et    -->
             <!-- ObjectWave_Init en jmp terminal — comme la v1.                 -->
-            <region name="checkpoint" page="$18"/>
+            <!-- Banc d'essai de l'arene : le builder range, sur deux queues -->
+            <!-- de page que personne n'utilisait.                            -->
+            <arena name="objects">
+                <zone page="$18" address="$07CA" size="$3836"/>
+                <zone page="$0F" address="$1EFE" size="$2102"/>
+            </arena>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
             <!-- coupee pour rendre du temps CPU, comme la v1 la coupe deja.    -->
             <!-- La declaration reste pour ne pas perdre la configuration ; la  -->
@@ -1445,7 +1450,7 @@
                     <load name="common.soundfx"    region="soundfx"/>
                     <load name="common.collisionpass" region="collisionpass"/>
                     <load name="common.messages"   region="messages"/>
-                    <load name="common.checkpoint" region="checkpoint"/>
+                    <load name="common.checkpoint" arena="objects"/>
                     <load name="stage1.init"       region="stageinit"/>
                     <!-- MIGRE MAIS DEBRANCHE :
                     <load name="engine.sound.vgc"  region="vgc.player"/>

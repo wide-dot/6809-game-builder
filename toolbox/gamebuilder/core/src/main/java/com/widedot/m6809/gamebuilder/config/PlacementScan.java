@@ -7,6 +7,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Values;
+import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,14 +33,20 @@ public final class PlacementScan {
 
 	public static void run(ImmutableNode targetNode, BuildContext ctx) throws Exception {
 		// regions first : loads reference them by name
+		Map<String, Regions.Region> resolved = new LinkedHashMap<String, Regions.Region>();
 		Map<String, int[]> regions = new LinkedHashMap<String, int[]>();     // name -> page, address
 		Map<String, Boolean> stackeds = new LinkedHashMap<String, Boolean>();
-		collectRegions(targetNode, ctx, regions, stackeds);
+		collectRegions(targetNode, ctx, regions, stackeds, resolved);
+		// arenas next : where an arena-bound file lands depends on all the
+		// files bound to that arena, so it cannot be decided region by region
+		ctx.regions.clearFilePlacements();
+		ArenaPacker.pack(targetNode, ctx, resolved);
 		collectLoads(targetNode, ctx, regions, stackeds);
 	}
 
 	private static void collectRegions(ImmutableNode node, BuildContext ctx,
-			Map<String, int[]> regions, Map<String, Boolean> stackeds) throws Exception {
+			Map<String, int[]> regions, Map<String, Boolean> stackeds,
+			Map<String, Regions.Region> resolved) throws Exception {
 		if ("layout".equals(node.getNodeName())) {
 			// the same resolver the layout plugin uses, so an auto address or
 			// size is seen identically here — a placement scan that disagreed
@@ -47,6 +54,7 @@ public final class PlacementScan {
 			// ever loads at
 			for (com.widedot.m6809.gamebuilder.spi.globals.Regions.Region r
 					: LayoutResolver.resolve(node, ctx).values()) {
+				resolved.put(r.name, r);
 				regions.put(r.name, new int[] { r.page, r.address });
 				stackeds.put(r.name, r.stacked);
 				if (Boolean.parseBoolean(raw(findRegion(node, r.name), "interface"))) {
@@ -59,7 +67,7 @@ public final class PlacementScan {
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectRegions(child, ctx, regions, stackeds);
+			collectRegions(child, ctx, regions, stackeds, resolved);
 		}
 	}
 
@@ -84,6 +92,14 @@ public final class PlacementScan {
 				String name = raw(load, "name");
 				if (name == null) {
 					continue; // the scene plugin reports malformed loads itself
+				}
+				String arenaName = raw(load, "arena");
+				if (arenaName != null) {
+					int[] at = ctx.regions.filePlacement(name);
+					if (at != null) {
+						ctx.staticLink.place(name, at[0], at[1], scene);
+					}
+					continue;
 				}
 				String regionName = raw(load, "region");
 				if (regionName != null) {

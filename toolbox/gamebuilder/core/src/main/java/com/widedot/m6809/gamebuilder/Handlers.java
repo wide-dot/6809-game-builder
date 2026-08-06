@@ -129,6 +129,8 @@ public final class Handlers {
 			.req("name", STRING, "window name, for the report and error messages")
 			.req("address", INT, "where the window opens")
 			.req("size", INT, "window size, one page"));
+		spec(element("arena").doc("a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it")
+			.req("name", STRING, "arena name, referenced by <load arena=...>"));
 		spec(element("zone").doc("a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages")
 			.req("page", INT, "page holding this range")
 			.req("address", INT, "where the range starts")
@@ -145,6 +147,7 @@ public final class Handlers {
 		spec(element("load").doc("one file loaded by the scene ; no destination means link data only")
 			.req("name", STRING, "file or scene to load")
 			.opt("region", STRING, "destination region of the layout")
+			.opt("arena", STRING, "arena to range this file into ; the builder picks the page and address, and publishes them as <file>.page / <file>.address")
 			.opt("page", INT, "raw destination page, needs address")
 			.opt("address", INT, "raw destination address, needs page"));
 

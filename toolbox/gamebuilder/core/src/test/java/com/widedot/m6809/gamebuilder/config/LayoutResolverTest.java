@@ -97,6 +97,25 @@ public class LayoutResolverTest {
 	}
 
 	@Test
+	void anArenaIsARegionTheBuilderRanges() throws Exception {
+		Regions.Region a = LayoutResolver.resolve(layout(
+				node("arena", "name", "objects")
+					.addChild(node("zone", "page", "$18", "address", "$07CA", "size", "$3836").create())
+					.create()), ctx()).get("objects");
+
+		assertTrue(a.packed, "an <arena> is ranged, a <region> is not");
+		assertEquals(0x3836, a.capacity());
+	}
+
+	@Test
+	void anArenaWithoutZonesIsRefused() {
+		Exception e = assertThrows(Exception.class, () -> LayoutResolver.resolve(layout(
+				node("arena", "name", "empty").create()), ctx()));
+		assertTrue(e.getMessage().contains("zone"),
+				"an arena IS its list of places, say so : " + e.getMessage());
+	}
+
+	@Test
 	void onlyZonesMayLiveInsideARegion() throws Exception {
 		Exception e = assertThrows(Exception.class, () -> LayoutResolver.resolve(layout(
 				node("region", "name", "r")

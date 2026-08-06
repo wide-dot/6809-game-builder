@@ -37,9 +37,10 @@ public class LayoutPlugin {
 						Attribute.getInteger(child, ctx, "size")));
 				continue;
 			}
-			if (!"region".equals(child.getNodeName())) {
+			if (!"region".equals(child.getNodeName()) && !"arena".equals(child.getNodeName())) {
 				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains <window>,"
-						+ " <region> and <reserved> elements, found <" + child.getNodeName() + ">");
+						+ " <region>, <arena> and <reserved> elements, found <"
+						+ child.getNodeName() + ">");
 			}
 		}
 
@@ -73,7 +74,13 @@ public class LayoutPlugin {
 		// of what ends up being loaded. A region declared over the object pool
 		// is a latent fault even while its content stays small.
 		java.util.List<String> clashes = new java.util.ArrayList<String>();
-		java.util.List<Regions.Region> all = new java.util.ArrayList<Regions.Region>(ctx.regions.all());
+		// Like the window check : only on the measured pass. While measuring,
+		// a size left to the builder takes a whole page, so two regions that
+		// share a page provisionally cover each other — a false alarm that
+		// would stop the pass whose whole job is to produce the measures.
+		java.util.List<Regions.Region> all = ctx.regions.hasMeasures()
+				? new java.util.ArrayList<Regions.Region>(ctx.regions.all())
+				: new java.util.ArrayList<Regions.Region>();
 		for (int i = 0; i < all.size(); i++) {
 			Regions.Region a = all.get(i);
 			if (a.size == null) {
@@ -176,6 +183,15 @@ public class LayoutPlugin {
 					out.append(region.name).append(".page.last equ ")
 					   .append(region.page + region.pages - 1).append(System.lineSeparator());
 				}
+			}
+			// What the packer decided, published per FILE : an arena holds
+			// several of them, so <region>.page would name nothing. This is
+			// what an object index reads to mount the page before jumping.
+			for (java.util.Map.Entry<String, int[]> e : ctx.regions.filePlacements().entrySet()) {
+				out.append(e.getKey()).append(".page equ ").append(e.getValue()[0])
+				   .append(System.lineSeparator());
+				out.append(e.getKey()).append(".address equ $")
+				   .append(String.format("%04X", e.getValue()[1])).append(System.lineSeparator());
 			}
 			out.append(" ENDC").append(System.lineSeparator());
 			java.nio.file.Files.write(java.nio.file.Paths.get(path),

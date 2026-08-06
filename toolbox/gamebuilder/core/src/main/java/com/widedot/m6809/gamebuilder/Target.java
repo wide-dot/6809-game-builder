@@ -63,6 +63,7 @@ public class Target {
 	private static class Discovery {
 		java.util.Map<String, Integer> measured;
 		java.util.Map<String, Integer> measuredPages;
+		java.util.Map<String, Integer> fileSizes;
 		List<String> symbols;
 		java.util.Set<String> imported;
 		com.widedot.m6809.gamebuilder.spi.globals.StaticLink.Harvest harvest;
@@ -79,13 +80,15 @@ public class Target {
 	 * @param measured measures from an earlier pass, or null on the first one
 	 */
 	private Discovery discoveryPass(ImmutableNode node, java.util.Map<String, Integer> measured,
-			java.util.Map<String, Integer> measuredPages) throws Exception {
+			java.util.Map<String, Integer> measuredPages,
+			java.util.Map<String, Integer> fileSizes) throws Exception {
 
 		Discovery out = new Discovery();
 		ctx.resetTarget();
 		if (measured != null) {
 			ctx.regions.seedMeasured(measured);
 			ctx.regions.seedMeasuredPages(measuredPages);
+			ctx.regions.seedFileSizes(fileSizes);
 		}
 		com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 		ctx.staticLink.setDiscovery(true);
@@ -112,6 +115,7 @@ public class Target {
 		out.harvest = ctx.staticLink.snapshot();
 		out.measured = ctx.ramMap.contentSizes();
 		out.measuredPages = ctx.regions.pagesUsedSnapshot();
+		out.fileSizes = ctx.ramMap.fileSizes();
 		return out;
 	}
 
@@ -143,12 +147,13 @@ public class Target {
 			// measures : same layout as the real pass, same addresses, and a
 			// harvest that describes the disk actually being written. It costs
 			// one more run of a build whose every step is cached.
-			Discovery measuring = discoveryPass(node, null, null);
+			Discovery measuring = discoveryPass(node, null, null, null);
 			if (measuring.stop != null && measuring.measured.isEmpty()) {
 				throw new Exception("discovery pass failed before measuring the layout — "
 						+ measuring.stop.getMessage(), measuring.stop);
 			}
-			Discovery discovered = discoveryPass(node, measuring.measured, measuring.measuredPages);
+			Discovery discovered = discoveryPass(node, measuring.measured, measuring.measuredPages,
+					measuring.fileSizes);
 			if (discovered.stop != null && discovered.measured.isEmpty()) {
 				throw new Exception("discovery pass failed before measuring the layout — "
 						+ discovered.stop.getMessage(), discovered.stop);
@@ -165,6 +170,7 @@ public class Target {
 			// references against addresses nothing ever loads at
 			ctx.regions.seedMeasured(discovered.measured);
 			ctx.regions.seedMeasuredPages(discovered.measuredPages);
+			ctx.regions.seedFileSizes(discovered.fileSizes);
 			com.widedot.m6809.gamebuilder.config.PlacementScan.run(node, ctx);
 			ctx.linkSymbols.preseed(discovered.symbols);
 			ctx.linkSymbols.preseedImports(discovered.imported);

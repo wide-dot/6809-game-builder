@@ -86,6 +86,24 @@ public class RamMap {
 		return max;
 	}
 
+	/**
+	 * What each FILE measured — the counterpart of contentSizes for an arena,
+	 * which places files and not regions. The largest seen, for the same reason
+	 * : a name loaded by two scenes must be sized for the bigger.
+	 */
+	public Map<String, Integer> fileSizes() {
+		Map<String, Integer> max = new LinkedHashMap<String, Integer>();
+		for (List<Load> loads : scenes.values()) {
+			for (Load load : loads) {
+				Integer known = max.get(load.name);
+				if (known == null || load.size > known) {
+					max.put(load.name, load.size);
+				}
+			}
+		}
+		return max;
+	}
+
 	public boolean isEmpty() {
 		return scenes.isEmpty();
 	}

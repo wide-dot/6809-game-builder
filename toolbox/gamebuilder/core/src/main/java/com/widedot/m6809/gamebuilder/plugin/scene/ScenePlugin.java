@@ -66,6 +66,7 @@ public class ScenePlugin {
 
 			String loadName = Attribute.getString(child, ctx, "name");
 			String regionName = Attribute.getStringOpt(child, ctx, "region");
+			String arenaName = Attribute.getStringOpt(child, ctx, "arena");
 			Integer page = Attribute.getIntegerOpt(child, ctx, "page");
 			Integer address = Attribute.getIntegerOpt(child, ctx, "address");
 
@@ -96,6 +97,30 @@ public class ScenePlugin {
 					check.loads.add(new SceneCheck.Load(member.name, SceneCheck.Kind.PLACED,
 							member.page, member.address, null, regionName, where));
 				}
+				continue;
+			}
+
+			if (arenaName != null) {
+				if (regionName != null || page != null || address != null) {
+					errors.add(where + ": scene " + name + ": load '" + loadName
+							+ "' gives an arena and another destination");
+					continue;
+				}
+				Regions.Region arena = ctx.regions.get(arenaName);
+				if (arena == null || !arena.packed) {
+					errors.add(where + ": scene " + name + ": unknown arena '" + arenaName
+							+ "' (layout declares: " + ctx.regions.names() + ")");
+					continue;
+				}
+				int[] at = ctx.regions.filePlacement(loadName);
+				if (at == null) {
+					errors.add(where + ": scene " + name + ": '" + loadName
+							+ "' was not ranged into arena '" + arenaName + "'");
+					continue;
+				}
+				placed.add(new SceneGenerator.Placed(at[0], at[1], loadName));
+				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
+						at[0], at[1], null, arenaName, where));
 				continue;
 			}
 

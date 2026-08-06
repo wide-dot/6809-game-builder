@@ -69,13 +69,27 @@ public class Regions {
 		 */
 		public final java.util.List<Zone> zones;
 
+		/**
+		 * An ARENA : the builder ranges the files over the zones instead of
+		 * taking them in declaration order. Nothing outside may bake an address
+		 * into a file that lives here — it is reached through a table, which is
+		 * what lets it move.
+		 */
+		public final boolean packed;
+
 		public Region(String name, int page, int address, Integer size, boolean stacked,
 				int pages) {
-			this(name, page, address, size, stacked, pages, null);
+			this(name, page, address, size, stacked, pages, null, false);
 		}
 
 		public Region(String name, int page, int address, Integer size, boolean stacked,
 				int pages, java.util.List<Zone> zones) {
+			this(name, page, address, size, stacked, pages, zones, false);
+		}
+
+		public Region(String name, int page, int address, Integer size, boolean stacked,
+				int pages, java.util.List<Zone> zones, boolean packed) {
+			this.packed = packed;
 			this.name = name;
 			this.page = page;
 			this.address = address;
@@ -249,6 +263,41 @@ public class Regions {
 		return !measured.isEmpty();
 	}
 
+	/**
+	 * File name -> the size it measured, harvested by the discovery pass.
+	 * An arena cannot range anything without it : the size of a file is only
+	 * known once it has been built, and the placement has to be known before.
+	 */
+	private Map<String, Integer> fileSizes = new LinkedHashMap<String, Integer>();
+
+	/** File name -> {page, address}, decided by the arena packer. */
+	private final Map<String, int[]> filePlacements = new LinkedHashMap<String, int[]>();
+
+	public void seedFileSizes(Map<String, Integer> sizes) {
+		fileSizes = new LinkedHashMap<String, Integer>(sizes);
+	}
+
+	public Integer fileSize(String file) {
+		return fileSizes.get(file);
+	}
+
+	public void placeFile(String file, int page, int address) {
+		filePlacements.put(file, new int[] { page, address });
+	}
+
+	/** where the packer put this file, or null when no arena holds it */
+	public int[] filePlacement(String file) {
+		return filePlacements.get(file);
+	}
+
+	public Map<String, int[]> filePlacements() {
+		return filePlacements;
+	}
+
+	public void clearFilePlacements() {
+		filePlacements.clear();
+	}
+
 	public void put(Region region) throws Exception {
 		if (regions.containsKey(region.name)) {
 			throw new Exception("region '" + region.name + "' is declared twice");
@@ -274,6 +323,8 @@ public class Regions {
 
 	public void clear() {
 		windows.clear();
+		fileSizes.clear();
+		filePlacements.clear();
 		measured.clear();
 		pagesUsed.clear();
 		measuredPages.clear();

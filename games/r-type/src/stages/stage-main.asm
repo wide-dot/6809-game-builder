@@ -200,7 +200,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Ne rien remettre ici de ce qu'il fait deja : notre portage avait
         ; duplique son effacement, son `player1+id`, son `ObjectDp_Clear`, son
         ; fondu et son `ObjectWave_Init` — et les deux copies avaient divergé.
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
 
@@ -471,7 +471,7 @@ stage.state.checkpoint
         ; visible derriere READY — la v1 ne l'eteint pas par la palette, elle
         ; efface les 16 Ko de la fenetre donnees.
         ldu   #$0000
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.clearData
         jsr   paged.call
 
@@ -519,7 +519,7 @@ stage.state.checkpoint
         bpl   >
         jmp   stage.gameOver
 !
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
         ; Le clignotement / l'invincibilite de la reapparition. Il faut le

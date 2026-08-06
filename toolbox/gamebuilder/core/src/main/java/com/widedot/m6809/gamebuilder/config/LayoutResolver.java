@@ -85,7 +85,8 @@ public final class LayoutResolver {
 		// overlap. The measure replaces it in the real pass.
 		java.util.TreeSet<Integer> claimed = new java.util.TreeSet<Integer>();
 		for (ImmutableNode c : layout.getChildren()) {
-			if ("region".equals(c.getNodeName()) || "reserved".equals(c.getNodeName())) {
+			if ("region".equals(c.getNodeName()) || "arena".equals(c.getNodeName())
+					|| "reserved".equals(c.getNodeName())) {
 				// a region declaring zones names its pages there, one by one
 				boolean fromZones = false;
 				for (ImmutableNode z : c.getChildren()) {
@@ -130,7 +131,8 @@ public final class LayoutResolver {
 				occupy(taken, page, address, size);
 				continue;
 			}
-			if (!"region".equals(child.getNodeName())) {
+			boolean isArena = "arena".equals(child.getNodeName());
+			if (!isArena && !"region".equals(child.getNodeName())) {
 				continue;    // the layout plugin reports what does not belong here
 			}
 
@@ -141,6 +143,10 @@ public final class LayoutResolver {
 			// size on the element — is read further down and becomes a single
 			// zone, so the rest of the builder sees one shape only.
 			java.util.List<Regions.Zone> zones = new java.util.ArrayList<Regions.Zone>();
+			if (isArena && child.getChildren().isEmpty()) {
+				throw new Exception(ctx.sources.locate(child) + ": arena '" + name
+						+ "' declares no <zone> — an arena IS its list of places");
+			}
 			for (ImmutableNode z : child.getChildren()) {
 				if (!"zone".equals(z.getNodeName())) {
 					throw new Exception(ctx.sources.locate(z) + ": <" + z.getNodeName()
@@ -161,7 +167,7 @@ public final class LayoutResolver {
 					bump(cursor, z.page, z.end());
 				}
 				out.put(name, new Regions.Region(name, head.page, head.address, head.size,
-						Attribute.getBoolean(child, ctx, "stacked", false), 1, zones));
+						Attribute.getBoolean(child, ctx, "stacked", false), 1, zones, isArena));
 				continue;
 			}
 			// The layout declares CONSTRAINTS, not decisions : what the author
@@ -271,34 +277,6 @@ public final class LayoutResolver {
 		for (ImmutableNode child : deferred) {
 			String name = Attribute.getString(child, ctx, "name");
 
-			// Zones declared as children : the region says WHERE it lives, in
-			// as many pieces as it needs. The compact form — page, address and
-			// size on the element — is read further down and becomes a single
-			// zone, so the rest of the builder sees one shape only.
-			java.util.List<Regions.Zone> zones = new java.util.ArrayList<Regions.Zone>();
-			for (ImmutableNode z : child.getChildren()) {
-				if (!"zone".equals(z.getNodeName())) {
-					throw new Exception(ctx.sources.locate(z) + ": <" + z.getNodeName()
-							+ "> is not valid inside a <region> ; only <zone> is");
-				}
-				zones.add(new Regions.Zone(
-						Attribute.getInteger(z, ctx, "page"),
-						Attribute.getInteger(z, ctx, "address"),
-						Attribute.getInteger(z, ctx, "size")));
-			}
-			if (!zones.isEmpty()) {
-				// the first zone stands for the region wherever the builder
-				// still expects a single destination ; nothing reads the rest
-				// yet, that is the next step
-				Regions.Zone head = zones.get(0);
-				for (Regions.Zone z : zones) {
-					occupy(taken, z.page, z.address, z.size);
-					bump(cursor, z.page, z.end());
-				}
-				out.put(name, new Regions.Region(name, head.page, head.address, head.size,
-						Attribute.getBoolean(child, ctx, "stacked", false), 1, zones));
-				continue;
-			}
 			Integer known = ctx.regions.measured(name);
 			boolean stacked = Attribute.getBoolean(child, ctx, "stacked", false);
 
