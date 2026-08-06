@@ -323,7 +323,11 @@ loader.scene.apply.type10
         puls  b                  ; Restore page id
         cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
-        ldu   #0                 ; else move to next page
+* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
+* the cartridge window starts at $0000 and the two were the same, so nothing
+* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
+* boundary wrote 45 KB below its window, over the system RAM.
+        ldu   #map.ram.CART_START ; else move to next page
         incb
  IFDEF boot.CHECK_MEMORY_EXT
         cmpb  #31
@@ -381,7 +385,11 @@ loader.scene.apply.type11
 @b1     equ   *-1
         cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
-        ldu   #0                 ; else move to next page
+* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
+* the cartridge window starts at $0000 and the two were the same, so nothing
+* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
+* boundary wrote 45 KB below its window, over the system RAM.
+        ldu   #map.ram.CART_START ; else move to next page
         incb
  IFDEF boot.CHECK_MEMORY_EXT
         cmpb  #31
