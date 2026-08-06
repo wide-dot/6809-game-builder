@@ -124,7 +124,12 @@ public final class LayoutResolver {
 			}
 
 			String name = Attribute.getString(child, ctx, "name");
-			boolean autoPage = "auto".equals(Attribute.getStringOpt(child, ctx, "page"));
+			// The layout declares CONSTRAINTS, not decisions : what the author
+			// does not write, the builder works out. An attribute that is
+			// absent means "up to you" ; "auto" is still accepted, and says
+			// the same thing out loud.
+			String rawPage = Attribute.getStringOpt(child, ctx, "page");
+			boolean autoPage = rawPage == null || "auto".equals(rawPage);
 			int page = autoPage ? -1 : Attribute.getInteger(child, ctx, "page");
 
 			String rawPages = Attribute.getStringOpt(child, ctx, "pages");
@@ -147,8 +152,8 @@ public final class LayoutResolver {
 
 			String rawSize = Attribute.getStringOpt(child, ctx, "size");
 			String rawAddress = Attribute.getStringOpt(child, ctx, "address");
-			boolean autoSize = "auto".equals(rawSize);
-			boolean autoAddress = "auto".equals(rawAddress);
+			boolean autoSize = rawSize == null || "auto".equals(rawSize);
+			boolean autoAddress = rawAddress == null || "auto".equals(rawAddress);
 
 			// page="auto" is resolved in a second pass, once everything
 			// placed by hand is known : a hole is only a hole when you can
@@ -158,18 +163,26 @@ public final class LayoutResolver {
 				continue;
 			}
 
+			// First region of a page : it starts where the window opens. Only
+			// a layout that declares no window still has to be told.
 			if (autoAddress && !cursor.containsKey(page)) {
-				throw new Exception(ctx.sources.locate(child) + ": region '" + name
-						+ "' has address=\"auto\" but nothing precedes it on page " + page
-						+ " — a page does not say where it begins (the resident window opens"
-						+ " at $6100, the cartridge one at $0000), so the first declaration"
-						+ " on a page gives its address");
+				Regions.Window w = ctx.regions.windowOf(windowStart(ctx));
+				if (w == null) {
+					throw new Exception(ctx.sources.locate(child) + ": region '" + name
+							+ "' leaves its address to the builder but nothing precedes it on"
+							+ " page " + page + " and the layout declares no <window> — a page"
+							+ " does not say where it begins, so either give the address or"
+							+ " declare the windows the machine sees its pages through");
+				}
+				bump(cursor, page, w.address);
 			}
 			int address = (autoAddress || autoPage) ? at(cursor, page)
 					: Attribute.getInteger(child, ctx, "address");
 
 			Integer size;
 			if (!autoSize) {
+				// a declared size is a BUDGET : the build refuses content that
+				// outgrows it, which is the whole point of writing it down
 				size = Attribute.getIntegerOpt(child, ctx, "size");
 			} else if (pages > 1) {
 				// a pageset asks for whole pages ; its per-page capacity is the page

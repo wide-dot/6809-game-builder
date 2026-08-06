@@ -15,7 +15,7 @@
             <!-- Les trois fenetres par lesquelles le TO8 voit une page de 16 Ko. -->
             <!-- Le layout ne les declarait pas, et personne ne pouvait donc dire -->
             <!-- combien il restait AU-DESSUS de la derniere region d'une page :  -->
-            <!-- avec size="auto" chaque region se remplit elle-meme, la carte    -->
+            <!-- avec chaque region se remplit elle-meme, la carte    -->
             <!-- d'occupation affichait 100 % partout pendant que des kilo-octets -->
             <!-- dormaient au-dessus. Les declarer donne la queue libre de chaque -->
             <!-- page dans le rapport, et refuse au build une region qui          -->
@@ -36,17 +36,17 @@
             <region name="stage"      page="$01" address="$7FC0" size="$05D2" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
-            <region name="tiles.even" page="$06" address="$0000" size="$4000" pages="auto" interface="true"/>
-            <region name="tiles.odd"  page="$09" address="$0000" size="$4000" pages="auto" interface="true"/>
+            <region name="tiles.even" page="$06" size="$4000" pages="auto" interface="true"/>
+            <region name="tiles.odd"  page="$09" size="$4000" pages="auto" interface="true"/>
             <!-- Les tables de carte : 132x15 cases sur deux plans font 11880  -->
             <!-- octets, hors de portee de la RAM residente. Elles vivent donc  -->
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
             <!-- deja une page par plan de carte.                               -->
-            <region name="maps"       page="$0E" address="$0000" size="auto" interface="true"/>
+            <region name="maps"       page="$0E" interface="true"/>
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
-            <region name="anim"       page="$0F" address="$0000" size="auto"/>
+            <region name="anim"       page="$0F"/>
             <!-- Les ennemis : code et images dans la meme page, comme en v1 —  -->
             <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
             <!-- d'imageset y lit la geometrie des sprites.                     -->
@@ -59,28 +59,28 @@
             <!-- aujourd'hui, le hud et les messages ensuite. Ils tournent tous -->
             <!-- dans la meme phase, donc ils partagent une page : une seule    -->
             <!-- montee par trame via paged.call.                               -->
-            <region name="overlay"    page="$10" address="$0000" size="auto"/>
+            <region name="overlay"    page="$10"/>
             <!-- Le joueur : code, scripts d'animation et images dans une seule -->
             <!-- page. Obj_Run monte celle-ci pour l'objet, AnimateSpriteSync    -->
             <!-- la remonte pour les scripts, l'index d'imageset pour les images.-->
-            <region name="player"     page="$11" address="$0000" size="auto"/>
+            <region name="player"     page="$11"/>
             <!-- La collision terrain du stage courant : code de consultation,  -->
             <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
             <!-- stage lui-meme.                                                -->
-            <region name="collision"  page="$12" address="$0000" size="auto" interface="true"/>
+            <region name="collision"  page="$12" interface="true"/>
             <!-- L'init de niveau, objet monte comme en v1 (_Obj_Run           -->
             <!-- ObjID_LevelInit). Propre au niveau, donc dans la page deja    -->
             <!-- echangee par stage. Seul le stage 1 a la sienne pour l'instant.-->
-            <region name="stageinit"  page="$12" address="auto" size="auto"/>
+            <region name="stageinit"  page="$12"/>
             <!-- L'armement du joueur : quatre objets, chacun son unite comme  -->
             <!-- en v1 (leurs labels internes Init/Live se repetent, et leurs  -->
             <!-- equates d'OST divergent — infusionnables). Quatre regions sur  -->
             <!-- LA MEME page, a adresses fixes : le bin-packing manuel, en     -->
             <!-- attendant un pageset d'unites code.                            -->
-            <region name="weapon"     page="$13" address="$0000" size="auto"/>
-            <region name="beamcharge" page="$13" address="auto" size="auto"/>
-            <region name="beamp"      page="$13" address="auto" size="auto"/>
-            <region name="emflash"    page="$13" address="auto" size="auto"/>
+            <region name="weapon"     page="$13"/>
+            <region name="beamcharge" page="$13"/>
+            <region name="beamp"      page="$13"/>
+            <region name="emflash"    page="$13"/>
             <!-- L'explosion. Un seul objet, mais treize sprites compiles dont -->
             <!-- cinq de 24x48 : 17 881 o, plus qu'une page. Le code part donc -->
             <!-- en pageset — le builder mesure et range — tandis que l'objet  -->
@@ -88,66 +88,66 @@
             <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
             <!-- image, comme la v1 et comme une table de tuiles.               -->
-            <region name="explosion"  page="$14" address="$0000" size="auto"/>
+            <region name="explosion"  page="$14"/>
             <!-- La chaine de tir ennemi, dans la place que la carte           -->
             <!-- d'occupation montrait libre en page $14 : les deux            -->
             <!-- sous-routines paginees et leurs tables de presets d'un cote,  -->
             <!-- le projectile et ses quatre images de l'autre.                -->
-            <region name="firechain"  page="$14" address="auto" size="auto"/>
-            <region name="foefire"    page="$14" address="auto" size="auto"/>
+            <region name="firechain"  page="$14"/>
+            <region name="foefire"    page="$14"/>
             <!-- Le fondu de palette : un objet comme un autre, monte comme    -->
             <!-- l'explosion. Il etait resident au motif que tout stage en a    -->
             <!-- besoin a son ouverture ; la v1 le monte, et 279 octets de la   -->
             <!-- page 1 valent mieux au budget du pool d'objets.                -->
-            <region name="fade"       page="$14" address="auto" size="auto"/>
+            <region name="fade"       page="$14"/>
             <!-- Les flammes de reacteur : elles auraient leur place dans   -->
             <!-- l'unite du joueur, mais les deux fichiers v1 nomment leurs  -->
             <!-- routines Init/Live/Routines — meme raison qui donne a       -->
             <!-- chaque arme sa region.                                      -->
-            <region name="engineflames" page="$14" address="auto" size="auto"/>
+            <region name="engineflames" page="$14"/>
             <!-- Le HUD : bandeau du bas (beam, vies, score) et decompte de    -->
             <!-- fin de stage. 5 184 octets, dont douze chiffres en sprites    -->
             <!-- compiles que la v1 portait deja dans son fichier. Il ne tient  -->
             <!-- pas dans la fin de la page des overlays : la page $14, elle,  -->
             <!-- n'etait remplie qu'a 22 % — redecoupee plutot que d'en brûler  -->
             <!-- une neuve, les pages etant ce qui manquera aux tuiles.         -->
-            <region name="hud"        page="$14" address="auto" size="auto"/>
-            <region name="explosion.images" page="$15" address="$0000" size="$4000" pages="auto"/>
+            <region name="hud"        page="$14"/>
+            <region name="explosion.images" page="$15" size="$4000" pages="auto"/>
             <!-- Le son. Lecteur YMM et donnees dans LA MEME page : le macro    -->
             <!-- _ymm.frame.play n'en monte qu'une. Les bruitages ont la leur,  -->
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
-            <region name="ymm.player" page="$17" address="$0000" size="auto"/>
-            <region name="ymm.data"   page="$17" address="auto" size="auto"/>
-            <region name="soundfx"    page="$18" address="$0000" size="auto"/>
+            <region name="ymm.player" page="$17"/>
+            <region name="ymm.data"   page="$17"/>
+            <region name="soundfx"    page="$18"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
-            <region name="collisionpass" page="$18" address="auto" size="auto"/>
+            <region name="collisionpass" page="$18"/>
             <!-- L'effacement des tampons de donnees : page-neutre, appele deux -->
             <!-- fois seulement (ouverture de stage, rechargement checkpoint).  -->
             <!-- READY / GAME OVER : l'objet messages de la v1. Ni OST ni      -->
             <!-- routine — le stage le monte par _Obj_Mount et l'appelle avec  -->
             <!-- l'index du message dans B.                                    -->
-            <region name="messages"   page="$18" address="auto" size="auto"/>
+            <region name="messages"   page="$18"/>
             <!-- Le checkpoint et son rejeu de defilement : l'objet checkpoint  -->
             <!-- de la v1, qui porte les deux. Page-neutre ou restaurant, et    -->
             <!-- ObjectWave_Init en jmp terminal — comme la v1.                 -->
-            <region name="checkpoint" page="$18" address="auto" size="auto"/>
+            <region name="checkpoint" page="$18"/>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
             <!-- coupee pour rendre du temps CPU, comme la v1 la coupe deja.    -->
             <!-- La declaration reste pour ne pas perdre la configuration ; la  -->
             <!-- rallumer demandera une page et un budget a reprendre.          -->
-            <!-- <region name="vgc.player" page="$19" address="$0000" size="$0A80"/> -->
+            <!-- <region name="vgc.player" page="$19" size="$0A80"/> -->
             <!-- <region name="vgc.data"   page="$19" address="$0A80" size="$3580"/> -->
 
             <!-- Les BONUS, communs a tous les stages : le POW et sa boite a   -->
             <!-- option. Deux unites plutot qu'une (les deux fichiers v1        -->
             <!-- partagent leurs noms internes). Page $1A : $16 est le          -->
             <!-- debordement de explosion.images, $19 reste a la config VGC.    -->
-            <region name="pow"        page="$1A" address="$0000" size="auto"/>
-            <region name="optionbox"  page="$1A" address="auto" size="auto"/>
+            <region name="pow"        page="$1A"/>
+            <region name="optionbox"  page="$1A"/>
             <!-- Les deux satellites blindes : un objet, deux OST statiques.  -->
-            <region name="bitdevice"  page="$1A" address="auto" size="auto"/>
+            <region name="bitdevice"  page="$1A"/>
             <!-- L'armement : le force pod sur sa page, ses trois armes sur la -->
             <!-- suivante. Tailles a ajuster sur la carte d'occupation.        -->
             <!-- Tailles arretees sur les mesures du build : forcepod 12 733 o,  -->
@@ -155,11 +155,11 @@
             <!-- Le laser a rebond aligne ses tampons cycliques sur 32 octets par -->
             <!-- ALIGN : sa region DOIT demarrer sur un multiple de 32.           -->
             <!-- Le cast commun, range par le builder sur des pages contigues -->
-            <region name="cast"       page="$1D" address="$0000" size="$4000" pages="auto"/>
-            <region name="forcepod"        page="$1B" address="$0000" size="auto"/>
-            <region name="simplefire"      page="$1B" address="auto" size="auto"/>
-            <region name="reboundlaser"    page="$1C" address="$0000" size="auto"/>
-            <region name="counterairlaser" page="$1C" address="auto" size="auto"/>
+            <region name="cast"       page="$1D" size="$4000" pages="auto"/>
+            <region name="forcepod"        page="$1B"/>
+            <region name="simplefire"      page="$1B"/>
+            <region name="reboundlaser"    page="$1C"/>
+            <region name="counterairlaser" page="$1C"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->

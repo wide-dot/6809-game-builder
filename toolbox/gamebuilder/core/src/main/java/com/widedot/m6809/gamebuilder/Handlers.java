@@ -119,9 +119,9 @@ public final class Handlers {
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include"));
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
-			.req("page", INT_AUTO, "destination page id, or auto to let the builder range over the pages : it fills the tail of a page already declared before opening one from sparepages")
-			.req("address", INT_AUTO, "destination address, or auto to follow what precedes it on the page")
-			.opt("size", INT_AUTO, "byte budget, checked against the loaded entry ; auto measures the content")
+			.opt("page", INT_AUTO, "destination page id. Omit it and the builder ranges over the pages : it fills the tail of a page already declared before opening one from sparepages")
+			.opt("address", INT_AUTO, "destination address. Omit it and the region follows what precedes it on the page, or opens at its window")
+			.opt("size", INT_AUTO, "byte BUDGET, refused when the content outgrows it. Omit it and the region is exactly as big as what it holds ; auto measures the content")
 			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")
 			.opt("pages", INT_AUTO, "consecutive pages the region spans from page, 1 if omitted ; auto takes what the pageset really filled")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));

@@ -1,8 +1,11 @@
 # Declarative scenes and memory regions
 
-> **The vocabulary, one line each.** A `<region>` is a named destination — the
-> author picks the page, `auto` lets the builder measure size, address and page
-> count. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
+> **The vocabulary, one line each.** A `<region>` is a named destination. The
+> layout declares **constraints, not decisions** : write the page when the
+> region has to travel with its neighbours, the address when it has to be at a
+> given place, the size when it is a budget to enforce — and leave out
+> whatever the builder can work out. A `<window>` says where the machine sees
+> a page, which is how the builder knows where one begins and ends. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
 > indivisible object — entry symbol plus content, code and images alike ; its
 > container decides its dressing. A `<pageset>` packs many contents into a page
 > budget : divisible content spreads, units fill the tails. A `<scene>` says
@@ -14,6 +17,48 @@ Status : implemented and validated (July 2026). French design records :
 [`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) (doctrine),
 [`scenes-declaratives-2026-07.md`](../fr/scenes-declaratives-2026-07.md)
 (implementation plan). Runtime model : [`groups.md`](groups.md).
+
+## Declare the constraints, not the decisions
+
+A layout used to spell out every number : page, address, size, page count. Most
+of them were guesses — a size is a number the author has to invent before the
+content exists, and re-invent every time it changes. Guessing high is the safe
+move, so every region ended up carrying a tail nobody could use (105 060 bytes
+measured on r-type).
+
+So the rule is reversed. **What you write is a constraint ; what you leave out,
+the builder works out.**
+
+| you write | you are saying |
+|---|---|
+| `page="$13"` | this region travels with whatever else is on page $13 |
+| `address="$6100"` | it has to be exactly there |
+| `size="$1EC0"` | this is a budget — refuse the build if the content outgrows it |
+| `pages="auto"` | this region spans as many pages as its pageset fills |
+| nothing | up to you |
+
+```xml
+<region name="common" page="$01" address="$6100" size="$1EC0"/>  <!-- everything pinned -->
+<region name="weapon" page="$13"/>                               <!-- page pinned, rest measured -->
+<region name="beamcharge" page="$13"/>                           <!-- same page, right behind -->
+<region name="checkpoint"/>                                      <!-- the builder finds it a home -->
+```
+
+A region with no page is placed in the first hole big enough, scanning the
+pages the author pinned before opening one from the layout's `sparepages`
+range — so the unused tail of a page gets filled before fresh RAM is spent.
+First fit in declaration order, never sorted by size : adding a region must
+not move the ones already placed, or every object would change page, and its
+page id with it.
+
+**What this costs you.** The builder decides who sits next to whom. On a paged
+machine that is a real decision — two objects in one page is one bank switch
+saved when they run together. Keep `page="…"` for anything whose neighbours
+matter, and for everything the machine reaches by a fixed address : the
+resident window, the loader, the interface regions scenes swap. A region is a
+good candidate for automatic placement when it is reached through a page id,
+which is exactly what the game's objects are.
+
 
 ## What this is
 

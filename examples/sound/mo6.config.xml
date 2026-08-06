@@ -4,12 +4,20 @@
 
         <!-- Memory layout : the MO6 map differs from the TO8 one, so the   -->
         <!-- layout is declared per target and not shared.                  -->
+        <!-- Les fenetres par lesquelles le MO6 voit une page : la RAM de jeu -->
+        <!-- s'ouvre a $2000, la banque a $B000.                              -->
         <layout>
-            <region name="gamemode"   page="$01" address="$2100" size="$1F00"/>
-            <region name="ymm.player" page="$06" address="$B000" size="$0400"/>
-            <region name="ymm.data"   page="$06" address="$B400" size="$3C00"/>
-            <region name="vgc.player" page="$07" address="$B000" size="$0A80"/>
-            <region name="vgc.data"   page="$07" address="$BA80" size="$3580"/>
+            <window name="jeu"    address="$2000" size="$4000"/>
+            <window name="banque" address="$B000" size="$4000"/>
+            <!-- On ne declare que les CONTRAINTES : la page (ce qui voyage    -->
+            <!-- ensemble) et, quand elle compte, l'adresse. Les tailles se     -->
+            <!-- mesurent — les budgets ecrits a la main d'un lecteur YM qui a  -->
+            <!-- grossi de 33 octets faisaient deborder la region suivante.     -->
+            <region name="gamemode"   page="$01" address="$2100"/>
+            <region name="ymm.player" page="$06" address="$B000"/>
+            <region name="ymm.data"   page="$06"/>
+            <region name="vgc.player" page="$07" address="$B000"/>
+            <region name="vgc.data"   page="$07"/>
         </layout>
 
         <floppydisk model="fd640">
