@@ -6,7 +6,11 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (explosion.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+
 
 Object
         lda   routine,u
@@ -61,4 +65,4 @@ Run
         sty   anim,u
         rts
 
-        INCLUDE "./global/preset/1454E_preset_dobkeratops-explosions.asm"
+        INCLUDE "src/common/lib/presets/1454E_preset_dobkeratops-explosions.asm"

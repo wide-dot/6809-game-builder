@@ -28,7 +28,10 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Obj_Index_Address
@@ -59,7 +62,10 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_tabrokcanon
         fdb   stage.placeholder        ; ObjID_shellEraser
         fdb   stage.placeholder        ; ObjID_commonmissileflame
+        fdb   stage.placeholder        ; ObjID_dobkeratops_saw
+        fdb   stage.placeholder        ; ObjID_dobkeratops_explosion
         fdb   pow.Object        ; ObjID_pow
+        fdb   stage.placeholder        ; ObjID_checkpoint
         fdb   stage.placeholder        ; ObjID_bossmusic
 
 * Les scripts d'animation. Les vrais vivent dans un objet commun qui
@@ -93,10 +99,16 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -160,5 +172,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

@@ -6,10 +6,14 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/enemies_properties.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (saw.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/enemies_properties.asm"
+
 
 x_pos_origin  equ ext_variables
 y_pos_origin  equ ext_variables+2

@@ -6,12 +6,16 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/math/rnd.macro.asm"
-        INCLUDE "./objects/explosion/explosion.const.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/enemies_properties.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (monster.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/math/rnd.macro.asm"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/enemies_properties.asm"
+
 
 ; temporary variables
 AABB_0              equ ext_variables   ; AABB struct (9 bytes)
@@ -91,13 +95,22 @@ Intro
 !
         _ldd  ObjID_explosion,explosion.subtype.smallx3
         std   id,x
-        _rnda 0,12
+; V2-DEVIATION : `_rnda 0,n` est le macro v1 (rnd.macro.asm), absent du v2 —
+; dont le `_random.a` appelle un `random.get` qui n'existe nulle part. Le
+; tirage du projet, c'est RandomNumber (interface moteur, aleatoire dans B).
+; Le macro est developpe ici : un tirage, puis B x (n+1) dont mul garde le
+; poids fort dans A — soit A dans [0,n]. Le second tirage de la v1 (le `jsr
+; RandomNumber` deja present plus bas) sert au deuxieme axe.
+        jsr   RandomNumber
+        lda   #13
+        mul
         suba  #6
         ldy   x_pos,u
         leay  a,y
         sty   x_pos,x
         jsr   RandomNumber
-        _rnda 0,24
+        lda   #25             ; V2-DEVIATION : idem, developpe sur RandomNumber
+        mul
         suba  #12
         ldy   y_pos,u
         leay  a,y

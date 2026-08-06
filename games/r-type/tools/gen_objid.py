@@ -53,7 +53,10 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_tabrokcanon', 'ObjID_shellEraser',
          # La flamme du missile : ni la wave ni le joueur ne la nomment, c'est
          # le missile qui la fait naitre.
-         'ObjID_commonmissileflame']
+         'ObjID_commonmissileflame',
+         # La scie du boss et sa sequence d'explosions : la creature les fait
+         # naitre, la wave ne les nomme jamais.
+         'ObjID_dobkeratops_saw', 'ObjID_dobkeratops_explosion']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -99,7 +102,6 @@ out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 PORTED = {'ObjID_animation': ('common.anim', 'Ani_Asd_common'),
           'ObjID_fade':      ('common.fade', 'PaletteFade'),
           'ObjID_Player1':   ('common.player', 'Player'),
-          'ObjID_patapata': (None, 'patapata.Object'),
           'ObjID_explosion': ('common.explosion', 'explosion.Object'),
           'ObjID_createFoeFire':  ('common.firechain', 'createFoeFire'),
           'ObjID_loadFirePreset': ('common.firechain', 'loadFirePreset.Object'),
@@ -118,34 +120,39 @@ PORTED = {'ObjID_animation': ('common.anim', 'Ani_Asd_common'),
           'ObjID_forcepod_reboundlaser':    ('common.reboundlaser', 'reboundlaser.Object'),
           'ObjID_forcepod_counterairlaser': ('common.counterairlaser', 'counterairlaser.Object'),
           # Le cast d'ennemis : un direntry par ennemi, tous sur la page $05.
-          'ObjID_bug':     (None, 'bug.Object'),
           # bink est RANGE PAR LE BUILDER dans la queue d'un pageset (un
           # <block>), pas dans une region declaree : sa page n'est pas
           # `<region>.page` mais l'equate que le pageset publie pour le
           # symbole du bloc, `<symbole>.page`. None marque ce cas.
-          'ObjID_bink':    (None,      'bink.Object'),
-          'ObjID_blaster': (None, 'blaster.Object')}
+          }
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':
     PORTED['ObjID_collision'] = ('collision', 'terrainCollision.unit')
     # Les ennemis propres au niveau : ranges par le builder dans la queue des
     # pagesets de tuiles du stage, leur page est l'equate <symbole>.page.
-    PORTED['ObjID_scant'] = (None, 'scant.Object')
-    PORTED['ObjID_scantfire'] = (None, 'scantfire.Object')
+    # Le cast du niveau : nomme par le stage, range dans son arene.
+    PORTED['ObjID_patapata'] = ('stage1.patapata', 'patapata.Object')
+    PORTED['ObjID_bug'] = ('stage1.bug', 'bug.Object')
+    PORTED['ObjID_bink'] = ('stage1.bink', 'bink.Object')
+    PORTED['ObjID_blaster'] = ('stage1.blaster', 'blaster.Object')
+    PORTED['ObjID_scant'] = ('stage1.scant', 'scant.Object')
+    PORTED['ObjID_scantfire'] = ('stage1.scantfire', 'scantfire.Object')
     # La fin du cast du niveau 1. Le canon du tabrok et l'effaceur de la
     # rotonde ne viennent pas de la wave : le tabrok cree son canon par
     # LoadObject, et le stage appelle l'effaceur une fois par trame.
-    PORTED['ObjID_pstaff'] = (None, 'pstaff.Object')
-    PORTED['ObjID_cancer'] = (None, 'cancer.Object')
-    PORTED['ObjID_shell'] = (None, 'shell.Object')
-    PORTED['ObjID_shellEraser'] = (None, 'shellEraser.Object')
-    PORTED['ObjID_tabrok'] = (None, 'tabrok.Object')
-    PORTED['ObjID_tabrokcanon'] = (None, 'tabrokcanon.Object')
+    PORTED['ObjID_pstaff'] = ('stage1.pstaff', 'pstaff.Object')
+    PORTED['ObjID_cancer'] = ('stage1.cancer', 'cancer.Object')
+    PORTED['ObjID_shell'] = ('stage1.shell', 'shell.Object')
+    PORTED['ObjID_shellEraser'] = ('stage1.shelleraser', 'shellEraser.Object')
+    PORTED['ObjID_tabrok'] = ('stage1.tabrok', 'tabrok.Object')
+    PORTED['ObjID_tabrokcanon'] = ('stage1.tabrokcanon', 'tabrokcanon.Object')
     # Le missile est MUTUALISE : tabrok, p-staff et l'arme du joueur passent
     # tous par cet identifiant. La flamme, elle, est nee par le missile.
-    PORTED['ObjID_commonmissile'] = (None, 'commonmissile.Object')
-    PORTED['ObjID_commonmissileflame'] = (None, 'commonmissileflame.Object')
+    PORTED['ObjID_commonmissile'] = ('common.missile', 'commonmissile.Object')
+    PORTED['ObjID_commonmissileflame'] = ('common.missileflame', 'commonmissileflame.Object')
+    # LE BOSS EST EN ATTENTE : ses unites existent, sa frontiere avec la
+    # boucle du niveau reste a poser. Ses identifiants pointent le bouchon.
     # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
     # stage, donc sa page est celle du stage et son adresse un symbole local.
     PORTED['ObjID_initlevel1'] = ('stageinit', 'initlevel1.Object')

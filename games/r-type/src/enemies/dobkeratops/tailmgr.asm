@@ -1,4 +1,12 @@
 ; ===========================================================================
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (tailmgr.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+
 ; tailmgr - MASTER fan-out COMPLET : 1 objet engine bg-erase qui PILOTE les
 ; 19 vraies tails du boss (hors-pool). Portage 1:1 de tail.asm (Run/follow/
 ; gating moveAlienStart, WaitEndStage/bossDefeated/hold, Explode) eclate sur
@@ -10,10 +18,6 @@
 ; alterne les elements testes une trame sur deux, comme l'arcade). Un hit ->
 ; clr AABB.p de l'adversaire (le joueur detecte sa mort, l'arme se stoppe).
 ; ===========================================================================
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/explosion/explosion.const.asm"
-        INCLUDE "./objects/enemies_properties.asm"
 
 TM_N     equ 19
 TM_SLICE equ 128                     ; octets buffer par element (max saved ~103)
@@ -607,5 +611,5 @@ TMState    fill 0,TM_ST*TM_N        ; 19 x etat complet (18 o)
 TMRec      fill 0,2*TM_N*4          ; records [bgdata(2),erase_rtn(2)] x 19 x 2 buffers
 TMRec_end
 
-        INCLUDE "./objects/enemies/dobkeratops/tail_animation.asm"
-        INCLUDE "./objects/enemies/dobkeratops/tailmgr_blits.asm"
+        INCLUDE "src/enemies/dobkeratops/tail_animation.asm"
+        INCLUDE "src/enemies/dobkeratops/tailmgr_blits.asm"

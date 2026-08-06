@@ -6,11 +6,15 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/explosion/explosion.const.asm"
-        INCLUDE "./objects/enemies_properties.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (dobkeratops.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+
 
 AABB_0  equ ext_variables   ; AABB struct (9 bytes)
 

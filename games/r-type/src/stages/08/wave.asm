@@ -1,4 +1,4 @@
-;$00,$00,ObjID_25,$00,$0F
+;$00,$00,ObjID_stageInit,$00,$0F
 ;$00,$00,ObjID_1,$00,$00
 ;$00,$40,ObjID_44,$00,$00
 ;$00,$50,ObjID_43,$00,$12
@@ -38,13 +38,13 @@
 ;$0A,$8C,ObjID_43,$00,$14
 ;$0A,$F0,ObjID_43,$00,$02
 ;$0B,$14,ObjID_43,$00,$14
-;$0D,$E8,ObjID_33,$00,$03
+;$0D,$E8,ObjID_33wave,$00,$03
 ;$0F,$28,ObjID_46,$00,$00
-;$0F,$78,ObjID_32,$00,$0A
-;$0F,$78,ObjID_32,$00,$0B
-;$0F,$78,ObjID_32,$00,$0C
-;$0F,$78,ObjID_32,$00,$0D
-;$0F,$78,ObjID_32,$00,$0E
-;$0F,$78,ObjID_32,$00,$0F
+;$0F,$78,ObjID_cyclingPalette,$00,$0A
+;$0F,$78,ObjID_cyclingPalette,$00,$0B
+;$0F,$78,ObjID_cyclingPalette,$00,$0C
+;$0F,$78,ObjID_cyclingPalette,$00,$0D
+;$0F,$78,ObjID_cyclingPalette,$00,$0E
+;$0F,$78,ObjID_cyclingPalette,$00,$0F
 ;$11,$30,ObjID_47,$00,$00
 	fdb   $FFFF

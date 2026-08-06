@@ -1,4 +1,4 @@
-;$00,$00,ObjID_25,$00,$04
+;$00,$00,ObjID_stageInit,$00,$04
 ;$00,$00,ObjID_1,$00,$00
 ;$00,$C8,ObjID_gouger,$00,$0A
 ;$01,$90,ObjID_gouger,$00,$00
@@ -26,7 +26,7 @@
 ;$09,$4C,ObjID_gouger,$00,$02
 ;$0A,$3C,ObjID_gouger,$00,$01
 ;$0A,$50,ObjID_gouger,$00,$04
-;$0A,$80,ObjID_0,$00,$05
+	fcb   $0A,$80,ObjID_checkpoint,$00,$05
 ;$0A,$BC,ObjID_gouger,$00,$07
 ;$0A,$F0,ObjID_gouger,$00,$01
 ;$0B,$98,ObjID_gouger,$00,$02
@@ -41,5 +41,4 @@
 ;$13,$60,ObjID_39,$00,$00
 ;$14,$80,ObjID_gomander,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
-
 	fdb   $FFFF
