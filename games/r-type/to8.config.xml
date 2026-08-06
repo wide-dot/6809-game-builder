@@ -1485,14 +1485,20 @@
             <!-- Le pool ne porte PAS que les donnees de lien : le loader y range    -->
             <!-- aussi le repertoire, le fichier de scene et un tableau de slots      -->
             <!-- qu'il realloc. La ligne « link data » du build est donc un           -->
-            <!-- INDICATEUR, pas le total — elle sous-estime la demande reelle.       -->
-            <!-- Le seul controle sur : `tlsf.err` ($A138) apres le boot. 0 = tout     -->
-            <!-- va bien, 3 = OUT_OF_MEMORY.                                          -->
-            <!-- Mesure du 2026-08-05, en cablant le bit device :                     -->
-            <!--   $2800 (10 240 o) -> tlsf.err = 3, machine figee au menu moniteur   -->
-            <!--   $3000 (12 288 o) -> tlsf.err = 0, boot normal                      -->
-            <!-- pour 9 032 o de donnees de lien sur les 29 entrees de la scene.      -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$3000"/>
+            <!-- INDICATEUR, pas le total — la ligne "link data" du build          -->
+            <!-- sous-estime la demande reelle : le pool porte aussi le repertoire, -->
+            <!-- le fichier de scene et la table de slots du loader, et un echange  -->
+            <!-- de scene tient les deux scenes a la fois. Le seul controle sur :   -->
+            <!-- `tlsf.err` ($A138) apres le boot. 0 = tout va bien, 3 = OUT_OF_MEMORY. -->
+            <!--                                                                    -->
+            <!-- 2048 est un PLANCHER, pas un ajustement : depuis que les entrees   -->
+            <!-- cuisent leurs references (bake), la scene de boot ne demande plus  -->
+            <!-- que 306 octets de donnees de lien contre 9 032 avant. Le reglage   -->
+            <!-- d'alors ($3000) mangeait toute la page 4 ; a 2048 il reste ~10 Ko  -->
+            <!-- de cette page pour les donnees du jeu. Mesure en machine :         -->
+            <!-- $1000 -> tlsf.err = 0, stage 1 joue. 2048 est le plancher retenu,   -->
+            <!-- choisi pour ne plus avoir a l'ajuster.                              -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0800"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
             <data section="LOADER">
