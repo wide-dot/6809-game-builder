@@ -19,12 +19,67 @@ public class FdUtil implements MediaDataInterface{
     private byte[] interleavedData;
     private List<DirEntry> dirEntries;
 
+	/** one contiguous byte range written to the raw image, and what it carries */
+	public static class Piece {
+		public final String section;
+		public final int start;
+		public final int length;
+		public final String name;
+
+		Piece(String section, int start, int length, String name) {
+			this.section = section;
+			this.start = start;
+			this.length = length;
+			this.name = name;
+		}
+	}
+
+	/** every write, in order — the media is the only place that knows where bytes land */
+	private final List<Piece> journal = new ArrayList<Piece>();
+	/** what the bytes being written ARE, set by the named write overloads */
+	private String pendingName;
+
     public FdUtil(Storage storage) {
         this.storage = storage;
         data = new byte[storage.segment.faces*storage.segment.tracks*storage.segment.sectors*storage.segment.sectorSize];
         dataMask = new boolean[data.length];
         dirEntries = new ArrayList<DirEntry>();
     }
+
+	public List<Piece> journal() {
+		return journal;
+	}
+
+	public int capacity() {
+		return data.length;
+	}
+
+	@Override
+	public void write(String location, byte[] srcData, String name) throws Exception {
+		pendingName = name;
+		try {
+			write(location, srcData);
+		} finally {
+			pendingName = null;
+		}
+	}
+
+	@Override
+	public byte[] cwrite(String location, byte[] srcData, String name) throws Exception {
+		pendingName = name;
+		try {
+			return cwrite(location, srcData);
+		} finally {
+			pendingName = null;
+		}
+	}
+
+	private void journal(String section, int start, int length) {
+		if (length > 0) {
+			journal.add(new Piece(section, start, length,
+					pendingName == null ? section : pendingName));
+		}
+	}
     
     /**
      * write data to a dedicated section - full sector write
@@ -49,6 +104,8 @@ public class FdUtil implements MediaDataInterface{
 
 		//write sectors
 		int srcIdx = 0;
+		int chunkStart = dstIdx;
+		int chunkLen = 0;
 		while(srcIdx < srcData.length) {
 
 			if (dataMask[dstIdx]) {
@@ -57,14 +114,18 @@ public class FdUtil implements MediaDataInterface{
 				log.error(m);
 				throw new Exception(m);
 			}
-			
+
             data[dstIdx] = srcData[srcIdx++];
             dataMask[dstIdx++] = true;
-             
+            chunkLen++;
+
 			if (srcIdx%storage.segment.sectorSize == 0) {
+				journal(location, chunkStart, chunkLen);
 				nextSector(s);
 				// important : dstIdx is not continuous in the data array, so we need to recalculate it
 				dstIdx = getIndex(s.face, s.track, s.sector);
+				chunkStart = dstIdx;
+				chunkLen = 0;
 
 				if (srcIdx < srcData.length) {
 					log.debug("write sector - section: {}, track: {}, face: {}, sector: {}, remaining bytes: {}",
@@ -76,6 +137,7 @@ public class FdUtil implements MediaDataInterface{
 				}
 			}
 		}
+		journal(location, chunkStart, chunkLen);
 
     }
     
@@ -214,6 +276,8 @@ public class FdUtil implements MediaDataInterface{
             nbBytes++;
             i++;
         }
+
+        journal(s.name, freePos, nbBytes);
 
         ret[0] = freePos-start; // offset to written data
         ret[1] = nbBytes;       // nb of written bytes

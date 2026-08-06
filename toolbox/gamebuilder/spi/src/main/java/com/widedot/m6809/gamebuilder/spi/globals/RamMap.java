@@ -42,6 +42,16 @@ public class RamMap {
 
 	private final Map<String, List<Load>> scenes = new LinkedHashMap<String, List<Load>>();
 
+	/**
+	 * Forget a scene before re-recording it. The build runs several passes
+	 * and the map survives them : without this, every pass appended the same
+	 * loads again — each file collided with itself in the report, and the
+	 * pool map summed every scene twice.
+	 */
+	public void forget(String scene) {
+		scenes.remove(scene);
+	}
+
 	public void record(String scene, Load load) {
 		scenes.computeIfAbsent(scene, s -> new ArrayList<Load>()).add(load);
 	}

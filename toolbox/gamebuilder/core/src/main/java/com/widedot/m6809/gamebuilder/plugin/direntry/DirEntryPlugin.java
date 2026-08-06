@@ -316,7 +316,8 @@ public class DirEntryPlugin {
 		}
 				
 		// write file to media
-	    byte[] dataDiskLocation = media.cwrite(section, bin);
+	    byte[] dataDiskLocation = media.cwrite(section, bin, name);
+	    ctx.occupancy.fileSize(name, length);
 	    
 		// process link data first to determine if we actually have link data
 		boolean hasLinkData = false;
@@ -355,7 +356,7 @@ public class DirEntryPlugin {
 			if (linkdata.countExportAbs() + linkdata.countExportRel()
 					+ linkdata.countIntern() + linkdata.countExtern8()
 					+ linkdata.countExtern16() + linkdata.countExternPage() > 0) {
-				linkDiskLocation = media.cwrite(linkSection, linkdata.data);
+				linkDiskLocation = media.cwrite(linkSection, linkdata.data, name + " (linkdata)");
 				hasLinkData = true;
 			}
 		}

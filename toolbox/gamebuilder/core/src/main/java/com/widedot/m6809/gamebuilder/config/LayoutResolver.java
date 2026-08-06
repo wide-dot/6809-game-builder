@@ -55,22 +55,11 @@ public final class LayoutResolver {
 	public static Map<String, Regions.Region> resolve(ImmutableNode layout, BuildContext ctx)
 			throws Exception {
 
-		// The windows come first, and the RESOLVER reads them — not its
-		// caller. Both the placement scan and the layout plugin resolve the
-		// same layout, and the scan runs before the plugin has parsed
-		// anything : a resolver that depended on its caller having declared
-		// the windows would place a region at $0000 for one and at $2E68 for
-		// the other. The bake follows the scan, the loader follows the
-		// plugin, and the game jumps into empty RAM. Idempotent on purpose —
-		// both callers pay the same two lines.
-		ctx.regions.clearWindows();
-		for (ImmutableNode c : layout.getChildren()) {
-			if ("window".equals(c.getNodeName())) {
-				ctx.regions.addWindow(new Regions.Window(
-						Attribute.getString(c, ctx, "name"),
-						Attribute.getInteger(c, ctx, "address"),
-						Attribute.getInteger(c, ctx, "size")));
-			}
+		// How much physical RAM the report draws : both callers resolve the
+		// same layout, so both read it here. 32 pages (512K) unless said.
+		Integer ramPages = Attribute.getIntegerOpt(layout, ctx, "pages");
+		if (ramPages != null) {
+			ctx.regions.setRamPages(ramPages);
 		}
 
 		Map<String, Regions.Region> out = new LinkedHashMap<String, Regions.Region>();
@@ -211,18 +200,14 @@ public final class LayoutResolver {
 			boolean autoSize = rawSize == null || "auto".equals(rawSize);
 			boolean autoAddress = rawAddress == null || "auto".equals(rawAddress);
 
-			// First region of a page : it starts where the window opens. Only
-			// a layout that declares no window still has to be told.
+			// First region of a page : nothing says where the page begins —
+			// that belongs to the machine, not to the layout. The one who
+			// opens a page states the address ; whoever follows may leave it.
 			if (autoAddress && !cursor.containsKey(page)) {
-				Regions.Window w = ctx.regions.windowOf(windowStart(ctx));
-				if (w == null) {
-					throw new Exception(ctx.sources.locate(child) + ": region '" + name
-							+ "' leaves its address to the builder but nothing precedes it on"
-							+ " page " + page + " and the layout declares no <window> — a page"
-							+ " does not say where it begins, so either give the address or"
-							+ " declare the windows the machine sees its pages through");
-				}
-				bump(cursor, page, w.address);
+				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+						+ "' leaves its address to the builder but nothing precedes it on"
+						+ " page " + page + " — a page does not say where it begins, so the"
+						+ " first region of a page states its address");
 			}
 			int address = (autoAddress || autoPage) ? at(cursor, page)
 					: Attribute.getInteger(child, ctx, "address");
@@ -279,16 +264,6 @@ public final class LayoutResolver {
 		     .add(new int[] { address, address + size });
 	}
 
-
-	/**
-	 * Where a fresh page opens : the first window the layout declares. A page
-	 * is 16 KB but the CPU sees it somewhere — an auto-placed region landing
-	 * on an empty page has to start at that somewhere, not at zero.
-	 */
-	private static int windowStart(BuildContext ctx) {
-		java.util.List<Regions.Window> windows = ctx.regions.windows();
-		return windows.isEmpty() ? 0 : windows.get(0).address;
-	}
 
 	private static int at(Map<Integer, Integer> cursor, int page) {
 		Integer c = cursor.get(page);

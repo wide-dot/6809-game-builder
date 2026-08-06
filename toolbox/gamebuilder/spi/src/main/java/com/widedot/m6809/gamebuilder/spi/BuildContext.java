@@ -8,6 +8,7 @@ import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.spi.globals.ImageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkReport;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
+import com.widedot.m6809.gamebuilder.spi.globals.Occupancy;
 import com.widedot.m6809.gamebuilder.spi.globals.Outputs;
 import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
@@ -63,6 +64,9 @@ public class BuildContext {
 	/** what each scene puts in memory, mapped at the end of a target */
 	public final RamMap ramMap;
 
+	/** what the build physically wrote, for the occupancy report */
+	public final Occupancy occupancy;
+
 	/** distributable files written by this target, discarded if it fails */
 	public final Outputs outputs;
 
@@ -77,13 +81,13 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new ImageSets(), new LinkReport(), new RamMap(), new Outputs(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
 			FileIds fileIds, Regions regions, StaticLink staticLink, PageSets pageSets,
-			ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Outputs outputs,
-			Defaults defaults, Defines defines) {
+			ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Occupancy occupancy,
+			Outputs outputs, Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
 		this.sources = sources;
@@ -95,6 +99,7 @@ public class BuildContext {
 		this.imageSets = imageSets;
 		this.linkReport = linkReport;
 		this.ramMap = ramMap;
+		this.occupancy = occupancy;
 		this.outputs = outputs;
 		this.defaults = defaults;
 		this.defines = defines;
@@ -109,8 +114,8 @@ public class BuildContext {
 	 */
 	public BuildContext child() {
 		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, staticLink,
-				pageSets, imageSets, linkReport, ramMap, outputs, new Defaults(defaults.values),
-				new Defines(defines.values));
+				pageSets, imageSets, linkReport, ramMap, occupancy, outputs,
+				new Defaults(defaults.values), new Defines(defines.values));
 	}
 
 	/** Merges back what a child container declared. */
@@ -131,6 +136,7 @@ public class BuildContext {
 		imageSets.clear();
 		linkReport.clear();
 		ramMap.clear();
+		occupancy.clear();
 		outputs.clear();
 		defaults.values.clear();
 		defines.values.clear();

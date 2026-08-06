@@ -78,8 +78,8 @@ public class DataPlugin {
 			}
 		}		
 		
-	    media.write(section, bin);
-		
+	    media.write(section, bin, section.toLowerCase());
+
 		log.debug("End of processing data");
 	}
 

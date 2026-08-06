@@ -1,7 +1,7 @@
 ---
 date: 2026-08-06
 sujet: Modèle mémoire — zones, régions, arènes. Décision de conception et plan d'implémentation.
-statut: étapes 1 à 5 faites (dans 4, seul <window> reste, lié au rapport) ; 6 (rapport) à venir
+statut: les six étapes sont faites ; le rapport (étape 6) est en v1, design à itérer
 succède à: modele-regions-2026-07.md (doctrine des régions)
 ---
 
@@ -253,12 +253,11 @@ r-type au sha identique, 12/12 exemples, mplus à l'écran identique
 avant/après, stacked-overflow vert (les mêmes adresses, décidées cette fois
 par l'arène).
 
-**Reste**, et volontairement :
-
-- `<window>` : plus rien ne l'utilise pour PLACER, mais le rapport s'en sert
-  pour dire ce qui reste en haut d'une page. Le modèle veut qu'il disparaisse et
-  que le rapport parle par zone — c'est un travail à mener avec la refonte du
-  rapport (étape 6), pas avant.
+**Fait enfin, le 2026-08-06 : `<window>`**, retiré avec l'implémentation du
+rapport (étape 6), son dernier lecteur. La première région sans adresse d'une
+page doit désormais dire son adresse — une page ne dit pas où elle commence,
+et il n'y a plus d'élément pour prétendre le contraire. L'étape 4 est close :
+les cinq notions retirées le sont toutes.
 
 ### 5. La migration de r-type
 
@@ -271,13 +270,13 @@ deviennent des `reserved`, pour que la carte soit honnête.
 qui motive tout : combien de pages entières sont libérées (attendu ~4, soit
 64 Ko, en plus des 32 Ko déjà libres et des 10 Ko de la page 4).
 
-### 6. Le rapport (après)
+### 6. Le rapport — v1 implémentée
 
-Maquette faite et validée, implémentation à venir : voir
-[`rapport-occupation-2026-08.md`](rapport-occupation-2026-08.md) — ce qu'elle
-établit, les trois granularités de chargement, et les deux points à trancher
-avant d'écrire le générateur (le total « non couvert » à scinder, `<window>` à
-retirer avec cette refonte).
+`dist/occupancy-<cible>.html`, deux vues (RAM / média), arbre cochable, rien
+de coché par défaut, collisions en rouge parmi les cochés, fichiers sans
+destination listés à part, sélecteur d'instance média sur la géométrie réelle.
+L'ancien `ram-map-<cible>.txt` a disparu avec `<window>`. Détail et pistes
+d'itération : [`rapport-occupation-2026-08.md`](rapport-occupation-2026-08.md).
 
 ## Points restés ouverts
 

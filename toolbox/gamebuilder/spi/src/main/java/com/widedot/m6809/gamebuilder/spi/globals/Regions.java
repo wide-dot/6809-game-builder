@@ -136,63 +136,18 @@ public class Regions {
 	}
 
 	/**
-	 * A window the machine can see a page through.
-	 *
-	 * A page is 16 KB of RAM ; WHERE the CPU sees it is a property of the
-	 * machine, not of the layout — on a TO8 the cartridge window opens at
-	 * $0000, the resident RAM at $6000, the bank at $A000. The layout used to
-	 * say nothing about it, so nobody could tell how much room was left above
-	 * the last region of a page : the occupancy report showed regions at 100%
-	 * (a size="auto" region always fills itself) while thousands of bytes sat
-	 * unused above them.
-	 *
-	 * Declaring the windows costs three lines and buys two things : the report
-	 * can name the free tail of every page, and a region that would run past
-	 * the end of its window is refused at build time instead of overwriting
-	 * whatever the hardware maps next.
+	 * How many pages of physical RAM the machine has — the vertical extent of
+	 * the occupancy report's RAM view. 32 pages of 16 KB (a 512K TO8) unless
+	 * the layout says otherwise ({@code <layout pages="8">} for a 128K MO6).
 	 */
-	public static class Window {
-		public final String name;
-		public final int address;
-		public final int size;
+	private int ramPages = 32;
 
-		public Window(String name, int address, int size) {
-			this.name = name;
-			this.address = address;
-			this.size = size;
-		}
-
-		public boolean holds(int addr) {
-			return addr >= address && addr < address + size;
-		}
-
-		public int end() {
-			return address + size;
-		}
+	public void setRamPages(int pages) {
+		this.ramPages = pages;
 	}
 
-	private final java.util.List<Window> windows = new java.util.ArrayList<Window>();
-
-	public void addWindow(Window window) {
-		windows.add(window);
-	}
-
-	public void clearWindows() {
-		windows.clear();
-	}
-
-	public java.util.List<Window> windows() {
-		return windows;
-	}
-
-	/** the window an address is seen through, or null when none is declared */
-	public Window windowOf(int address) {
-		for (Window w : windows) {
-			if (w.holds(address)) {
-				return w;
-			}
-		}
-		return null;
+	public int ramPages() {
+		return ramPages;
 	}
 
 	private final java.util.List<Reserved> reserved = new java.util.ArrayList<Reserved>();
@@ -320,7 +275,7 @@ public class Regions {
 	}
 
 	public void clear() {
-		windows.clear();
+		ramPages = 32;
 		fileSizes.clear();
 		filePlacements.clear();
 		measured.clear();

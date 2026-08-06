@@ -115,7 +115,8 @@ public final class Handlers {
 
 		// declarative scenes
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
-			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include"));
+			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include")
+			.opt("pages", INT, "physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6"));
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.opt("page", INT, "destination page, compact form of a region holding one <zone>")
@@ -123,10 +124,6 @@ public final class Handlers {
 			.opt("size", INT, "byte budget of the compact form ; a region declaring <zone> children says its room there")
 			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
-		spec(element("window").doc("a window the machine sees a page through — a page is 16 KB of RAM, where the CPU sees it belongs to the machine (TO8 : cartridge $0000, resident $6000, bank $A000). Declaring them lets the occupancy report name the free tail of each page, and refuses a region that would run past its window")
-			.req("name", STRING, "window name, for the report and error messages")
-			.req("address", INT, "where the window opens")
-			.req("size", INT, "window size, one page"));
 		spec(element("arena").doc("a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it")
 			.req("name", STRING, "arena name, referenced by <load arena=...>"));
 		spec(element("zone").doc("a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages")

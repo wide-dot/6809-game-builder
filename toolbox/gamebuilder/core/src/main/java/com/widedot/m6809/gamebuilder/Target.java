@@ -199,7 +199,7 @@ public class Target {
 				throw e;
 			}
 			reportLinkData(targetName);
-			writeRamMap(targetName);
+			writeOccupancyReport(targetName);
 			writePoolMap(targetName, node);
 			log.info("End of processing target {}", targetName);
 
@@ -219,7 +219,7 @@ public class Target {
 				removed++;
 				log.info("removed {} : it described an earlier build", stale);
 			}
-			java.nio.file.Path staleMap = ramMapPath(targetName);
+			java.nio.file.Path staleMap = occupancyPath(targetName);
 			if (java.nio.file.Files.deleteIfExists(staleMap)) {
 				removed++;
 				log.info("removed {} : it described an earlier build", staleMap);
@@ -239,26 +239,24 @@ public class Target {
 	}
 
 	/**
-	 * Where each scene lands, and what its budgets leave over.
-	 *
-	 * Destinations are placed by hand ; this is the measurement they are placed
-	 * against. One map per scene — a composition is the unit that gets
-	 * optimised — with the whole declared layout in each, since a budget is
-	 * reserved whether or not that scene fills it.
+	 * The interactive occupancy report : one static HTML page, two views —
+	 * where each scene lands in RAM, and where every byte sits on the media.
+	 * Replaces the ram-map text file, which could neither show a collision
+	 * nor be filtered.
 	 */
-	private void writeRamMap(String targetName) {
-		if (ctx.ramMap.isEmpty()) {
+	private void writeOccupancyReport(String targetName) {
+		if (ctx.ramMap.isEmpty() && ctx.occupancy.isEmpty()) {
 			return;
 		}
-		java.nio.file.Path path = ramMapPath(targetName);
+		java.nio.file.Path path = occupancyPath(targetName);
 		try {
 			java.nio.file.Files.createDirectories(path.getParent());
 			java.nio.file.Files.writeString(path,
-					com.widedot.m6809.gamebuilder.plugin.scene.RamMapReport.render(
-							targetName, ctx.ramMap, ctx.regions));
-			log.info("RAM occupancy map written to {}", path);
+					com.widedot.m6809.gamebuilder.report.OccupancyReport.render(
+							targetName, ctx));
+			log.info("occupancy report written to {}", path);
 		} catch (Exception e) {
-			log.warn("could not write the RAM occupancy map: {}", e.getMessage());
+			log.warn("could not write the occupancy report: {}", e.getMessage());
 		}
 	}
 
@@ -338,10 +336,10 @@ public class Target {
 				"pool-map-" + targetName + ".txt");
 	}
 
-	private java.nio.file.Path ramMapPath(String targetName) {
+	private java.nio.file.Path occupancyPath(String targetName) {
 		return java.nio.file.Paths.get(
 				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
-				"ram-map-" + targetName + ".txt");
+				"occupancy-" + targetName + ".html");
 	}
 
 	private java.nio.file.Path linkReportPath(String targetName) {

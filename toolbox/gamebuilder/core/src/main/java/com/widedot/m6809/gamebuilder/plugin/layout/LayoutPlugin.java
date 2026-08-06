@@ -26,9 +26,6 @@ public class LayoutPlugin {
 		// live in the game's source, and the builder cannot measure what it
 		// does not produce.
 		for (ImmutableNode child : node.getChildren()) {
-			if ("window".equals(child.getNodeName())) {
-				continue;    // read by the resolver, which both callers share
-			}
 			if ("reserved".equals(child.getNodeName())) {
 				ctx.regions.reserve(new Regions.Reserved(
 						Attribute.getString(child, ctx, "name"),
@@ -38,7 +35,7 @@ public class LayoutPlugin {
 				continue;
 			}
 			if (!"region".equals(child.getNodeName()) && !"arena".equals(child.getNodeName())) {
-				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains <window>,"
+				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains"
 						+ " <region>, <arena> and <reserved> elements, found <"
 						+ child.getNodeName() + ">");
 			}
@@ -92,36 +89,6 @@ public class LayoutPlugin {
 			}
 		}
 
-		// A region that runs past the end of its window overwrites whatever the
-		// machine maps next — invisible until the byte that lands there matters.
-		//
-		// Only checked when the layout declares its windows (without them the
-		// builder has no idea where a page begins or ends) AND when the sizes
-		// have been measured : during the discovery pass an auto size takes a
-		// whole page, so regions stacked on one page provisionally land at
-		// $4000, $8000... The pass exists to measure ; its addresses are not
-		// the ones anything is built against.
-		if (!ctx.regions.windows().isEmpty() && ctx.regions.hasMeasures()) {
-			for (Regions.Region region : ctx.regions.all()) {
-				for (Regions.Zone zone : region.zones) {
-					Regions.Window window = ctx.regions.windowOf(zone.address);
-					if (window == null) {
-						clashes.add(String.format(
-								"region '%s' has a zone at $%04X, which no declared window holds",
-								region.name, zone.address));
-						continue;
-					}
-					if (zone.end() > window.end()) {
-						clashes.add(String.format(
-								"region '%s' [$%04X-$%04X] runs %d bytes past the '%s' window"
-								+ " [$%04X-$%04X]",
-								region.name, zone.address, zone.end() - 1,
-								zone.end() - window.end(),
-								window.name, window.address, window.end() - 1));
-					}
-				}
-			}
-		}
 		if (!clashes.isEmpty()) {
 			throw new Exception(ctx.sources.locate(node) + ": the memory layout overlaps itself:"
 					+ System.lineSeparator() + "  " + String.join(System.lineSeparator() + "  ", clashes));

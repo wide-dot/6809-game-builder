@@ -12,17 +12,6 @@
         <!-- exclusives au runtime. Le builder les autorise donc à exporter    -->
         <!-- les mêmes noms, et exige d'elles la même liste d'exports.         -->
         <layout gensymbols="gen/layout.asm">
-            <!-- Les trois fenetres par lesquelles le TO8 voit une page de 16 Ko. -->
-            <!-- Le layout ne les declarait pas, et personne ne pouvait donc dire -->
-            <!-- combien il restait AU-DESSUS de la derniere region d'une page :  -->
-            <!-- avec chaque region se remplit elle-meme, la carte    -->
-            <!-- d'occupation affichait 100 % partout pendant que des kilo-octets -->
-            <!-- dormaient au-dessus. Les declarer donne la queue libre de chaque -->
-            <!-- page dans le rapport, et refuse au build une region qui          -->
-            <!-- deborderait de sa fenetre.                                       -->
-            <window name="cartouche" address="$0000" size="$4000"/>
-            <window name="residente" address="$6000" size="$4000"/>
-            <window name="banque"    address="$A000" size="$4000"/>
 
             <!-- Les deux regions de la page residente sont ADJACENTES, et leur -->
             <!-- frontiere a ete posee avant qu'on connaisse les tailles. La     -->
@@ -54,7 +43,7 @@
             <!-- octets, hors de portee de la RAM residente. Elles vivent donc  -->
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
             <!-- deja une page par plan de carte.                               -->
-            <region name="maps"       page="$0E" interface="true"/>
+            <region name="maps"       page="$0E" address="$0000" interface="true"/>
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
@@ -76,7 +65,7 @@
             <!-- La collision terrain du stage courant : code de consultation,  -->
             <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
             <!-- stage lui-meme.                                                -->
-            <region name="collision"  page="$12" interface="true"/>
+            <region name="collision"  page="$12" address="$0000" interface="true"/>
             <!-- L'init de niveau, objet monte comme en v1 (_Obj_Run           -->
             <!-- ObjID_LevelInit). Propre au niveau, donc dans la page deja    -->
             <!-- echangee par stage. Seul le stage 1 a la sienne pour l'instant.-->
@@ -118,7 +107,7 @@
             <!-- Le son. Lecteur YMM et donnees dans LA MEME page : le macro    -->
             <!-- _ymm.frame.play n'en monte qu'une. Les bruitages ont la leur,  -->
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
-            <region name="ymm.player" page="$17"/>
+            <region name="ymm.player" page="$17" address="$0000"/>
             <region name="ymm.data"   page="$17"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->

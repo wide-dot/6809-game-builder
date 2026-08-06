@@ -1,74 +1,77 @@
 ---
 date: 2026-08-06
-sujet: Carte d'occupation mémoire en HTML — maquette validée, implémentation à faire
-statut: maquette faite, non implémentée dans le builder
+sujet: Carte d'occupation en HTML — implémentée (v1), design à itérer sur les données r-type
+statut: implémentée dans le builder, produit dist/occupancy-<cible>.html
 lié à: modele-zones-2026-08.md (étape 6 du plan)
 ---
 
-# Carte d'occupation mémoire
+# Rapport d'occupation
 
-## Pourquoi
+## Ce qui est implémenté
 
-Le rapport texte (`dist/ram-map-<cible>.txt`) affichait **100 % partout** : il
-mesure le remplissage de la *région*, et depuis que les tailles se mesurent, une
-région épouse son contenu. Il ne pouvait pas mieux dire — le layout ne déclarait
-nulle part où une page commence ni où elle finit. 75 114 octets dormaient
-au-dessus des dernières régions, invisibles.
+Le builder produit `dist/occupancy-<cible>.html` à la place de l'ancien
+`ram-map-<cible>.txt`, qui a disparu (il affichait 100 % partout et ne savait
+ni montrer une collision ni se filtrer). Le `pool-map` texte, lui, reste : il
+mesure un autre budget.
 
-Et depuis qu'on a levé l'interdiction de recouvrement entre contenants (le
-builder ignore l'ordre des écrans, donc il ne doit pas prétendre le vérifier),
-il faut **montrer** ce qu'on ne refuse plus. C'est le rôle de ce rapport.
+Une page statique, sans dépendance, ouvrable hors ligne — données en JSON dans
+la page, rendu en SVG par le script embarqué. Générateur :
+`report/OccupancyReport.java` + gabarit `resources/report/occupancy.html`.
 
-## Maquette
+### Deux vues, un panneau latéral
 
-Construite avec les vraies données de r-type, publiée le 2026-08-06 :
-<https://claude.ai/code/artifact/426c327f-5062-4e93-89b0-5a7de59d6a6b>
+**Vue RAM.** Les pages de la machine dessinées à leur capacité réelle —
+`<layout pages="32">` (défaut) ou `pages="8"` pour un MO6 128K. **Rien n'est
+coché par défaut** : on clique les éléments de l'arbre (scènes → fichiers,
+plus le groupe `machine` pour les `reserved`) et ils se peignent au fil de
+l'eau. Une **collision de destination entre éléments cochés** se peint en
+rouge par-dessus, avec la liste détaillée (page, plage, les deux camps et
+leur scène). Deux scènes qui chargent le **même fichier à la même adresse**
+ne collisionnent pas : mêmes octets, c'est un rechargement. Les fichiers
+**sans destination RAM** (tables de scènes, export-only) sont listés à part,
+avec leur taille.
 
-Ce qu'elle établit, et qui est validé :
+**Vue média.** Un sélecteur d'instance (la disquette, nommée par son fichier
+image), puis la géométrie réelle : une grille de secteurs par face, pistes en
+lignes. Chaque secteur écrit porte la couleur de sa section ; un clic dans
+l'arbre (sections → contenus, triés par taille) surligne les secteurs de
+l'élément et estompe le reste — l'alternance de faces du remplissage cylindre
+devient visible. Pas de notion de collision : le média refuse les doubles
+écritures au build.
 
-- **Les 32 pages de la machine**, pas seulement celles que le layout déclare.
-  Les tampons vidéo, la page directe du moniteur, le loader et son pool y
-  figurent en hachuré : ils occupent la RAM même si aucun fichier ne s'y charge.
-  Sans eux la carte ment par omission. C'est un usage supplémentaire de
-  `<reserved>` : documenter le matériel, pas seulement protéger le pool.
-- **Les scènes se cochent**, plusieurs à la fois. Décocher `stage2` montre la
-  machine après le seul niveau 1 ; tout cocher fait apparaître les relais.
-- **Les couches se cochent** aussi (résident, commun, niveau, images, audio,
-  ennemis, machine).
-- **Les superpositions s'empilent sur des couloirs** au lieu de se cacher : la
-  page grandit d'une ligne et on voit qui partage quoi.
-- **Le vide est un objet à part entière** — des blocs mesurés et étiquetés, pas
-  un fond hachuré. Trois totaux séparés : en régions, réservé, non couvert.
+### D'où viennent les données
 
-## Les trois granularités de chargement
+- RAM : `ctx.ramMap` (ce que chaque scène charge où) + `ctx.regions`
+  (réservations, nombre de pages). Corrigé au passage : la carte survivait aux
+  passes du build sans être purgée — chaque fichier apparaissait une fois par
+  passe (auto-collisions dans le rapport, doubles comptes silencieux dans le
+  pool-map). `RamMap.forget(scene)` avant ré-enregistrement.
+- Média : le **journal d'écritures** de `FdUtil` — le seul endroit qui sait où
+  les octets atterrissent — croisé avec le **nom** de ce qu'on écrit, que seul
+  l'appelant connaît : les écritures média prennent un paramètre nom
+  (`MediaDataInterface.cwrite(location, data, name)`), et `FloppyDiskPlugin`
+  verse le journal dans `ctx.occupancy` avec la géométrie de l'instance.
+  Même purge inter-passes (`declareInstance` oublie les écritures de
+  l'instance).
 
-Le rapport coche des scènes parce que c'est ce que la configuration déclare.
-Mais il y en a trois, et la distinction compte :
+### `<window>` a disparu
 
-| granularité | ce que c'est | le builder la connaît ? |
-|---|---|---|
-| scène | ce qu'une transition charge en bloc | oui, déclarée |
-| contenant | l'unité de remplacement : ce qui se substitue à quoi | oui |
-| fichier | l'unité élémentaire (`loader.file.load`) | **non**, c'est le code qui décide |
+Le rapport était son dernier lecteur ; le retrait a été fait avec cette
+implémentation. Conséquence assumée : la **première région sans adresse d'une
+page** doit désormais dire son adresse (l'erreur le dit) — c'est la doctrine
+« une page ne dit pas où elle commence, ça appartient à la machine », sans
+plus d'élément dédié pour le contourner. Les fenêtres qu'r-type et sound/mo6
+déclaraient étaient décoratives ou remplacées par trois `address="$0000"`.
 
-Le firmware SDDrive charge déjà un fichier isolé, hors de toute scène : le
-rapport l'ignore et la carte ment sur ce point. Les déclarer comme des scènes à
-un seul fichier suffirait, sans introduire de concept.
+## À itérer (sur les données r-type)
 
-## À trancher avant d'implémenter
+La v1 est visible sur `games/r-type/dist/occupancy-fd.html`. Pistes déjà
+identifiées, à trancher en regardant l'écran :
 
-- **Le total « non couvert » additionne des choses de nature différente** : les
-  pages vierges, les queues récupérables, et ce qu'une autre combinaison de
-  scènes occupe. Le chiffre est juste, sa lecture ne l'est pas. À scinder en
-  « jamais utilisé par personne » et « libre dans cette combinaison ».
-- **`<window>` doit disparaître avec cette refonte.** Plus rien ne s'en sert
-  pour placer ; le rapport est son dernier usage, pour dire ce qui reste en haut
-  d'une page. Le modèle veut qu'il parle par zone à la place — de l'espace que
-  personne n'a déclaré n'est offert à personne.
-
-## Comment l'implémenter
-
-Un fichier statique produit par le builder à côté de `ram-map-<cible>.txt`,
-qu'on **garde** : le texte se lit en CI et se compare dans un diff git, le HTML
-sert à explorer. Données injectées en JSON dans la page, aucune dépendance
-externe, ouvrable hors ligne. Le générateur est le pendant de `RamMapReport`.
+- un total « libre » par page ou global (la capacité moins les cochés est dans
+  l'en-tête, pas la ventilation) ;
+- la légende des couleurs de sections dans la vue média ;
+- un lien croisé entre les deux vues (cliquer un fichier RAM → le voir sur le
+  disque, et inversement) ;
+- les chargements hors scène (SDDrive) restent invisibles — les déclarer comme
+  scènes à un fichier suffirait, sans nouveau concept.

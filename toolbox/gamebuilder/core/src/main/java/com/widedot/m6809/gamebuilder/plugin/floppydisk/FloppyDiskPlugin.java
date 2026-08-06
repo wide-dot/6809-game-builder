@@ -67,7 +67,35 @@ public class FloppyDiskPlugin {
 			    ctx.publish(localCtx);
 	        }
     	}
-		
+
+		// hand what this disk holds to the occupancy report : its geometry,
+		// and every byte range the children wrote, now attributable to an
+		// instance. Named after the first image file it produces, so the
+		// report speaks the name the user sees in dist/.
+		String instance = instanceName(node, ctx, model);
+		ctx.occupancy.declareInstance(new com.widedot.m6809.gamebuilder.spi.globals.Occupancy.Instance(
+				instance, mediaData.capacity(), storage.segment.faces, storage.segment.tracks,
+				storage.segment.sectors, storage.segment.sectorSize));
+		for (FdUtil.Piece piece : mediaData.journal()) {
+			ctx.occupancy.write(new com.widedot.m6809.gamebuilder.spi.globals.Occupancy.MediaWrite(
+					instance, piece.section, piece.start, piece.length, piece.name));
+		}
+
 		log.debug("End of processing floppydisk");
+	}
+
+	private static String instanceName(ImmutableNode node, BuildContext ctx, String model)
+			throws Exception {
+		for (ImmutableNode child : node.getChildren()) {
+			String name = child.getNodeName();
+			if ("fd".equals(name) || "sap".equals(name) || "hfe".equals(name) || "sd".equals(name)) {
+				String filename = Attribute.getStringOpt(child, ctx, "filename");
+				if (filename != null) {
+					int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+					return slash >= 0 ? filename.substring(slash + 1) : filename;
+				}
+			}
+		}
+		return model;
 	}
 }

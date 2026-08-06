@@ -178,7 +178,12 @@ public class DirectoryPlugin {
 			}
 
 			// the same resolved loads, kept for the occupancy map : where each
-			// scene lands and how much of every budget it really uses
+			// scene lands and how much of every budget it really uses. The
+			// last pass wins — the map survives the passes, re-recording
+			// without forgetting made every load appear once per pass
+			for (SceneCheck scene : pendingScenes) {
+				ctx.ramMap.forget(scene.sceneName);
+			}
 			for (SceneCheck scene : pendingScenes) {
 				for (SceneCheck.Load load : scene.loads) {
 					if (load.kind == SceneCheck.Kind.EXPORT_ONLY) {
@@ -235,7 +240,7 @@ public class DirectoryPlugin {
 		}
 
 		// write whole directory to media
-		media.write(section, bin);
+		media.write(section, bin, "directory " + id);
 		
 		// write whole directory to debug file
 		if (genbinary != null) {
