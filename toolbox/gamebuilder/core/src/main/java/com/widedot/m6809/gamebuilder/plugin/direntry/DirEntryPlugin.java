@@ -67,7 +67,14 @@ public class DirEntryPlugin {
 	private static final java.util.concurrent.ConcurrentHashMap<String, byte[]> zx0Cache =
 			new java.util.concurrent.ConcurrentHashMap<String, byte[]>();
 
-	/** compress with the run-wide cache : returned bytes = delta byte then cbin */
+	/**
+	 * compress with the run-wide cache, backed by a disk cache under
+	 * .zx0-cache/ : returned bytes = delta byte then cbin. The in-memory map
+	 * spares the two passes of one build, the disk entry spares the next
+	 * builds of a working session — same pattern as the gfxcomp and lwasm
+	 * caches, and the compression is as pure a function as they are. maxdelta
+	 * is a checked constant (ZX0_DELTA), so it needs no place in the key.
+	 */
 	private static byte[] zx0Cached(byte[] bin, int maxdelta) throws Exception {
 		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
 		StringBuilder key = new StringBuilder();
@@ -75,7 +82,15 @@ public class DirEntryPlugin {
 			key.append(String.format("%02x", b));
 		}
 		byte[] hit = zx0Cache.get(key.toString());
-		if (hit == null) {
+		if (hit != null) {
+			return hit;
+		}
+		String basedir = System.getProperty("basedir");
+		java.nio.file.Path diskEntry = basedir == null ? null
+				: java.nio.file.Paths.get(basedir, ".zx0-cache", key.toString());
+		if (diskEntry != null && java.nio.file.Files.isRegularFile(diskEntry)) {
+			hit = java.nio.file.Files.readAllBytes(diskEntry);
+		} else {
 			int[] delta = { 0 };
 			byte[] sbin = new byte[bin.length - maxdelta];
 			System.arraycopy(bin, 0, sbin, 0, sbin.length);
@@ -87,8 +102,20 @@ public class DirEntryPlugin {
 			hit = new byte[1 + cbin.length];
 			hit[0] = (byte) delta[0];
 			System.arraycopy(cbin, 0, hit, 1, cbin.length);
-			zx0Cache.put(key.toString(), hit);
+			if (diskEntry != null) {
+				java.nio.file.Files.createDirectories(diskEntry.getParent());
+				java.nio.file.Path tmp = diskEntry.resolveSibling(
+						diskEntry.getFileName() + ".tmp-" + Thread.currentThread().getId());
+				java.nio.file.Files.write(tmp, hit);
+				try {
+					java.nio.file.Files.move(tmp, diskEntry,
+							java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+				} catch (java.nio.file.FileAlreadyExistsException race) {
+					java.nio.file.Files.deleteIfExists(tmp);
+				}
+			}
 		}
+		zx0Cache.put(key.toString(), hit);
 		return hit;
 	}
 

@@ -31,3 +31,4 @@ hs_err_pid*
 /imgui.ini
 .gfxcomp-cache/
 .lwasm-cache/
+.zx0-cache/
