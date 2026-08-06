@@ -107,8 +107,13 @@
             <!-- Le son. Lecteur YMM et donnees dans LA MEME page : le macro    -->
             <!-- _ymm.frame.play n'en monte qu'une. Les bruitages ont la leur,  -->
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
-            <region name="ymm.player" page="$10" address="$0000"/>
-            <region name="ymm.data"   page="$10"/>
+            <!-- Le son partage la page de la collision : lecteur + musique   -->
+            <!-- (6 811 o) tiennent dans la moitie haute a $2000, la moitie    -->
+            <!-- basse reste a collision+init (5 111 o, 3 081 de marge). Le    -->
+            <!-- lecteur est commun mais la musique change par stage — la page -->
+            <!-- appartient au bloc STAGE, seul ymm.data y est recharge.       -->
+            <region name="ymm.player" page="$17" address="$2000"/>
+            <region name="ymm.data"   page="$17"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
