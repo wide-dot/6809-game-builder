@@ -152,7 +152,13 @@ public class Regions {
 
 	private final java.util.List<Reserved> reserved = new java.util.ArrayList<Reserved>();
 
+	/**
+	 * Idempotent by name : the build runs several passes and each one declares
+	 * the same ranges — the last declaration wins, which also lets a measured
+	 * reservation (the loader) replace itself as its size settles.
+	 */
 	public void reserve(Reserved range) {
+		reserved.removeIf(r -> r.name.equals(range.name));
 		reserved.add(range);
 	}
 

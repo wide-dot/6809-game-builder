@@ -184,6 +184,15 @@
             <!-- seize ecrits. Une equate ne laisse pas de trou quand elle part. -->
             <reserved name="globals"      page="$01" address="$9E40" size="$00C0"/>
             <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
+            <!-- Ce que la MACHINE occupe sans qu'aucun fichier n'y soit charge : -->
+            <!-- la VRAM que le moniteur affiche au boot (page 0), et les deux    -->
+            <!-- framebuffers entre lesquels le moteur bascule (gfxlock, $E7DD    -->
+            <!-- bits 6-7 : pages video 2 et 3). Sans elles la carte ment par     -->
+            <!-- omission. Le loader et son pool, eux, sont reserves par le       -->
+            <!-- <data section="LOADER"> lui-meme : leur taille est MESUREE.      -->
+            <reserved name="vram.boot"     page="$00" address="$0000" size="$4000"/>
+            <reserved name="framebuffer.2" page="$02" address="$0000" size="$4000"/>
+            <reserved name="framebuffer.3" page="$03" address="$0000" size="$4000"/>
         </layout>
 
         <floppydisk model="fd640">
@@ -1516,7 +1525,8 @@
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0800"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
-            <data section="LOADER">
+            <data section="LOADER" ram-page="4" ram-address="$A000"
+                  ram-pool="loader.DEFAULT_DYNAMIC_MEMORY_SIZE">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
