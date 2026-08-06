@@ -115,15 +115,14 @@ public final class Handlers {
 
 		// declarative scenes
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
-			.opt("sparepages", STRING, "page range a page=\"auto\" region may open when no declared page has room, e.g. \"$05-$1F\"")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include"));
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
-			.opt("page", INT_AUTO, "destination page id. Omit it and the builder ranges over the pages : it fills the tail of a page already declared before opening one from sparepages")
-			.opt("address", INT_AUTO, "destination address. Omit it and the region follows what precedes it on the page, or opens at its window")
-			.opt("size", INT_AUTO, "byte BUDGET, refused when the content outgrows it. Omit it and the region is exactly as big as what it holds ; auto measures the content")
+			.opt("page", INT, "destination page, compact form of a region holding one <zone>")
+			.opt("address", INT, "destination address, compact form")
+			.opt("size", INT, "byte budget of the compact form ; a region declaring <zone> children says its room there")
 			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")
-			.opt("pages", INT_AUTO, "consecutive pages the region spans from page, 1 if omitted ; auto takes what the pageset really filled")
+			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("window").doc("a window the machine sees a page through — a page is 16 KB of RAM, where the CPU sees it belongs to the machine (TO8 : cartridge $0000, resident $6000, bank $A000). Declaring them lets the occupancy report name the free tail of each page, and refuses a region that would run past its window")
 			.req("name", STRING, "window name, for the report and error messages")

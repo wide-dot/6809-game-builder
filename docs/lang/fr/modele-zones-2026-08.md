@@ -1,7 +1,7 @@
 ---
 date: 2026-08-06
 sujet: Modèle mémoire — zones, régions, arènes. Décision de conception et plan d'implémentation.
-statut: étapes 1 à 3 implémentées, 4 et 5 à faire
+statut: étapes 1, 2, 3 et 5 faites ; 4 partielle ; 6 (rapport) à venir
 succède à: modele-regions-2026-07.md (doctrine des régions)
 ---
 
@@ -232,12 +232,23 @@ l'adresse, et vérifie que le build refuse. Un autre qui déclare deux contenant
 sur la même RAM sans qu'aucune scène ne les charge ensemble, et vérifie que le
 build passe.
 
-### 4. Le retrait
+### 4. Le retrait — partiel
 
-`<window>`, `stacked`, et les trois `auto`. Les messages d'erreur nomment le
-remplaçant, pour que les configurations anciennes se migrent sans deviner.
+**Fait** : les trois `auto` (`size`, `address`, `pages`) et tout le mécanisme de
+placement automatique de RÉGION qui allait avec — la passe de rangement, la
+plage `sparepages`, la recherche de trou. L'arène fait ce travail, mieux et à un
+seul endroit. r-type au sha identique après le retrait.
 
-*Preuve* : plus une occurrence dans le dépôt ; les 12 exemples passent.
+**Reste**, et volontairement :
+
+- `stacked` : deux exemples (`mplus`) l'emploient avec une taille qui déborde
+  d'une page, en s'appuyant sur le passage de page du `type10`. Les migrer vers
+  une arène demande de connaître la géométrie MO6, qu'on ne peut pas éprouver en
+  machine ici. À faire par qui peut tester.
+- `<window>` : plus rien ne l'utilise pour PLACER, mais le rapport s'en sert
+  pour dire ce qui reste en haut d'une page. Le modèle veut qu'il disparaisse et
+  que le rapport parle par zone — c'est un travail à mener avec la refonte du
+  rapport (étape 6), pas avant.
 
 ### 5. La migration de r-type
 
