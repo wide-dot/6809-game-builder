@@ -58,8 +58,8 @@ confondent, et rien n'a jamais montré le défaut. Sur MO6 elle s'ouvre à
 `$B000`, et le chargeur écrivait 45 Ko sous sa fenêtre, en pleine RAM système.
 
 Corrigé dans `engine/system/thomson/bootloader/loader.asm`, aux deux endroits
-où le motif apparaît (`type10` et `type11`). **Reste à éprouver sur MO6** — le
-TO8 ne peut pas voir ce défaut-là.
+où le motif apparaît (`type10` et `type11`). **Éprouvé sur MO6 le 2026-08-06**
+(émulateur externe, bordure verte) — le TO8 ne peut pas voir ce défaut-là.
 
 ## Comment lire le résultat
 
@@ -70,10 +70,10 @@ répond par la bordure de l'écran :
 - **rouge** — un manque ; son numéro est laissé dans l'octet `report` du
   programme (juste après le `bra *` final).
 
-Vérifié sur TO8 (émulateur TOJE, 2026-08-06) : bordure verte, les dix
-marqueurs aux adresses exactes, le franchissement de page compris. Attendu sur
-MO6 : rouge avec le seul défaut 2 présent, vert une fois le loader corrigé —
-c'est cette différence-là qui prouve le correctif MO6.
+Vérifié sur les deux machines le 2026-08-06 : **TO8 vert** (émulateur TOJE,
+dix marqueurs aux adresses exactes, franchissement de page compris) et
+**MO6 vert** (émulateur externe) — la liste survit désormais au passage de
+page quel que soit l'endroit où s'ouvre la fenêtre cartouche.
 
 Au passage : les indices de bordure sont la palette Thomson par défaut —
 vert = 2, rouge = 1. Les valeurs initiales (3 et 6) affichaient jaune et cyan,
