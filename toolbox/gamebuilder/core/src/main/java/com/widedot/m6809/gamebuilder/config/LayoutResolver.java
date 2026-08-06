@@ -166,8 +166,11 @@ public final class LayoutResolver {
 					occupy(taken, z.page, z.address, z.size);
 					bump(cursor, z.page, z.end());
 				}
+				// pages still counts the zones : the rest of the builder reads
+				// it to walk a region's pages, and a zone is one page's worth
 				out.put(name, new Regions.Region(name, head.page, head.address, head.size,
-						Attribute.getBoolean(child, ctx, "stacked", false), 1, zones, isArena));
+						Attribute.getBoolean(child, ctx, "stacked", false), zones.size(),
+						zones, isArena));
 				continue;
 			}
 			// The layout declares CONSTRAINTS, not decisions : what the author

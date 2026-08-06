@@ -50,7 +50,7 @@ public class PageSetPlugin {
 
 	/** the page a member of a set occupies, given the region it lives in */
 	public static int pageOf(Regions.Region region, int member) {
-		return region.page + member;
+		return region.zones.get(member).page;
 	}
 
 	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media)
@@ -70,7 +70,9 @@ public class PageSetPlugin {
 					+ "' targets unknown region '" + regionName + "' (layout declares: "
 					+ ctx.regions.names() + ")");
 		}
-		int capacity = region.size != null ? region.size : 0x4000;
+		// Each zone is one page offered to the set, with its own room : a
+		// region no longer promises N identical pages, it lists what it has.
+		int zoneCount = region.zones.size();
 
 		// --- the parts, in declaration order -------------------------------
 		//
@@ -138,10 +140,11 @@ public class PageSetPlugin {
 		pages.add(new ArrayList<Integer>());
 		int used = 0;
 		for (int i = 0; i < parts.size(); i++) {
+			int capacity = region.zones.get(Math.min(pages.size() - 1, zoneCount - 1)).size;
 			if (sizes[i] > capacity) {
 				throw new Exception("pageset '" + name + "' : '" + parts.get(i)[1] + "' is "
-						+ sizes[i] + " bytes, more than a page of " + capacity
-						+ " — an item is never split, it has to be made smaller");
+						+ sizes[i] + " bytes, more than the " + capacity
+						+ " bytes of its zone — an item is never split, it has to be made smaller");
 			}
 			if (used + sizes[i] > capacity) {
 				pages.add(new ArrayList<Integer>());
@@ -152,21 +155,21 @@ public class PageSetPlugin {
 		}
 		// what the packing really needed : pages="auto" reads it back next pass
 		ctx.regions.recordPagesUsed(regionName, pages.size());
-		if (pages.size() > region.pages) {
+		if (pages.size() > zoneCount) {
 			throw new Exception("pageset '" + name + "' needs " + pages.size()
-					+ " pages but region '" + regionName + "' declares " + region.pages
-					+ " — raise its pages attribute, or put less in the set");
+					+ " pages but region '" + regionName + "' declares " + zoneCount
+					+ " zone(s) — give it another <zone>, or put less in the set");
 		}
-		if (pages.size() < region.pages) {
-			log.warn("pageset {} fills {} of the {} pages region {} declares — pages=\"auto\""
-					+ " would give the other {} back", name, pages.size(), region.pages,
-					regionName, region.pages - pages.size());
+		if (pages.size() < zoneCount) {
+			log.warn("pageset {} fills {} of the {} zones region {} declares — the other {}"
+					+ " could be given back", name, pages.size(), zoneCount,
+					regionName, zoneCount - pages.size());
 		}
 
 		// --- emit one file per page ------------------------------------
 		List<PageSets.Member> members = new ArrayList<PageSets.Member>();
-		List<String> memberNames = PageSets.memberNames(name, region.pages);
-		for (int p = 0; p < region.pages; p++) {
+		List<String> memberNames = PageSets.memberNames(name, zoneCount);
+		for (int p = 0; p < zoneCount; p++) {
 			List<Integer> content = p < pages.size() ? pages.get(p) : new ArrayList<Integer>();
 			String memberName = memberNames.get(p);
 			int page = pageOf(region, p);
