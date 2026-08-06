@@ -43,7 +43,10 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          # L'armement : le force pod vit dans un slot statique, la wave ne le
          # nomme donc jamais ; ses trois armes, c'est lui qui les fait naitre.
          'ObjID_forcepod', 'ObjID_forcepod_simplefire',
-         'ObjID_forcepod_reboundlaser', 'ObjID_forcepod_counterairlaser']
+         'ObjID_forcepod_reboundlaser', 'ObjID_forcepod_counterairlaser',
+         # Le tir du scant : la wave ne le nomme jamais, c'est scant qui le
+         # fait naitre par LoadObject.
+         'ObjID_scantfire']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -119,6 +122,10 @@ PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':
     PORTED['ObjID_collision'] = ('collision', 'terrainCollision.unit')
+    # Les ennemis propres au niveau : ranges par le builder dans la queue des
+    # pagesets de tuiles du stage, leur page est l'equate <symbole>.page.
+    PORTED['ObjID_scant'] = (None, 'scant.Object')
+    PORTED['ObjID_scantfire'] = (None, 'scantfire.Object')
     # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
     # stage, donc sa page est celle du stage et son adresse un symbole local.
     PORTED['ObjID_initlevel1'] = ('stageinit', 'initlevel1.Object')

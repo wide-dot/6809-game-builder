@@ -24,6 +24,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+simplefire.page   ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
@@ -51,6 +52,7 @@ Obj_Index_Address
         fdb   simplefire.Object        ; ObjID_forcepod_simplefire
         fdb   reboundlaser.Object        ; ObjID_forcepod_reboundlaser
         fdb   counterairlaser.Object        ; ObjID_forcepod_counterairlaser
+        fdb   stage.placeholder        ; ObjID_scantfire
         fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
@@ -81,10 +83,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+simplefire.page   ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -140,5 +144,6 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+simplefire.page   ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+counterairlaser.page   ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

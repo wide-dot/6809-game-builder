@@ -1234,13 +1234,37 @@
                 <!-- mesure, range et emet un direntry par page. L'auteur       -->
                 <!-- n'affecte jamais une tuile a une page.                     -->
                 <pageset name="stage1.tiles.even" region="tiles.even"
-                         gendir="gen/stages/01/tiles-even">
+                         gendir="gen/stages/01/tiles-even"
+                         gensymbols="gen/stages/01/pages-even.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
+                    <unit symbol="scantfire.Object">
+                        <asm filename="src/enemies/scant/scantfire.unit.asm"/>
+                            <gfxcomp gendir="gen/enemies/scantfire"
+                                     gensource="gen/enemies/scantfire/includes.asm"
+                                     genindex="gen/enemies/scantfire/index.asm">
+                                <image name="scantfire_0" filename="src/enemies/_shared/images/scantfire_0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="scantfire_1" filename="src/enemies/_shared/images/scantfire_1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                    <encoder name="bdraw" mirror="none" shift="1"/>
+                                </image>
+                                <image name="scantfire_2" filename="src/enemies/_shared/images/scantfire_0.png" index="2">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                    <encoder name="bdraw" mirror="x" shift="1"/>
+                                </image>
+                                <image name="scantfire_3" filename="src/enemies/_shared/images/scantfire_1.png" index="3">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                    <encoder name="bdraw" mirror="x" shift="1"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
                 </pageset>
 
                 <pageset name="stage1.tiles.odd" region="tiles.odd"
@@ -1258,6 +1282,31 @@
                     <unit name="stage1.wave" symbol="stage.wave" section="code">
                         <asm filename="src/stages/01/objid.const.asm"/>
                         <asm filename="src/stages/01/wave.asm"/>
+                    </unit>
+                    <unit symbol="scant.Object">
+                        <asm filename="src/enemies/scant/scant.unit.asm"/>
+                            <gfxcomp gendir="gen/enemies/scant"
+                                     gensource="gen/enemies/scant/includes.asm"
+                                     genindex="gen/enemies/scant/index.asm">
+                                <image name="scant_0" filename="src/enemies/scant/images/scant_v2_0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="scant_1" filename="src/enemies/scant/images/scant_v2_1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="scant_2" filename="src/enemies/scant/images/scant_v2_2.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="scant_3" filename="src/enemies/scant/images/scant_v2_0.png" index="3">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="scant_4" filename="src/enemies/scant/images/scant_v2_1.png" index="4">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="scant_5" filename="src/enemies/scant/images/scant_v2_2.png" index="5">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                            </gfxcomp>
                     </unit>
                 </pageset>
 

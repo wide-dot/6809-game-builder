@@ -31,6 +31,11 @@ map.odd           EXTERNAL
 stage.wave        EXTERNAL
 patapata.Object   EXTERNAL
 
+; Les ennemis propres au niveau, ranges eux aussi dans le comblement des
+; pagesets de tuiles (scant cote impair, son tir cote pair).
+scant.Object      EXTERNAL
+scantfire.Object  EXTERNAL
+
 ; La table des scripts d'animation, commune a tous les stages et dans sa
 ; propre page : moveByScript la lit par page montee.
 Ani_Asd_common    EXTERNAL
@@ -141,6 +146,7 @@ emitterFlash.Object EXTERNAL
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
         INCLUDE "gen/stages/01/pages.asm"
+        INCLUDE "gen/stages/01/pages-even.asm"
         ; Les pages du cast commun, publiees par son pageset : l'index
         ; d'objets lit <symbole>.page pour chaque ennemi range.
         INCLUDE "gen/enemies/cast-pages.asm"
