@@ -113,7 +113,7 @@ public final class Handlers {
 			.opt("maxsize", INT, "maximum size")
 			.opt("ram-page", INT, "page this data stays resident in (the loader) : reserves its MEASURED size on the RAM map")
 			.opt("ram-address", INT, "address the data is loaded at, required with ram-page")
-			.opt("ram-pool", STRING, "reserves a further block right after the code (the TLSF pool sits there) ; a size, or the name of a <define> so the number lives in one place"));
+			.opt("ram-pool", STRING, "reserves a further block right after the code (the TLSF pool sits there) ; a size, fill-to:<address> to take everything up to a boundary (the loader's half-page), or the name of a <define>"));
 		spec(element("cksumfd640").doc("applies the fd640 boot sector checksum to its content"));
 
 		// declarative scenes
