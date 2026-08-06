@@ -13,6 +13,13 @@
 > lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
 > file's link block to the LINK section ; `bake` decides what never needs one.
 
+> **Next model, decided 2026-08-06, not yet implemented** : regions gain
+> `<zone>` children (a continuous range in one page), `<arena>` arrives for
+> automatic placement, and `<window>` / `size="auto"` / `address="auto"` /
+> `pages="auto"` / `stacked` all go away. See
+> [`modele-zones-2026-08.md`](../fr/modele-zones-2026-08.md) — decision and
+> implementation plan.
+
 Status : implemented and validated (July 2026). French design records :
 [`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) (doctrine),
 [`scenes-declaratives-2026-07.md`](../fr/scenes-declaratives-2026-07.md)
