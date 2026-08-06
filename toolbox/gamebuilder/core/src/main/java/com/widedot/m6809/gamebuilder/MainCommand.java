@@ -101,6 +101,7 @@ public class MainCommand implements Callable<Integer> {
 			
 			long endTime = System.currentTimeMillis();
 			double duration = (endTime - startTime) / 1000.0;
+			com.widedot.m6809.gamebuilder.spi.cache.BuildCache.logSummary();
 			log.info("Build done in {}s", duration);
 			return 0;
 		} catch (Exception e) {

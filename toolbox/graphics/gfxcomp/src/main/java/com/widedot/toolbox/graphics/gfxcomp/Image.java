@@ -394,40 +394,30 @@ public class Image {
 	private static final String CACHE_VERSION = "1";
 
 	/**
-	 * Where finished encodings are kept between runs, or null when no basedir
-	 * is set. The optimizers are seeded, so the same pixels, name and encoder
-	 * parameters always produce the same code — and encoding is the dominant
-	 * cost of a build (~85% of the wall time measured on r-type), paid twice
-	 * per build (discovery pass, then real pass) for images that almost never
-	 * change between two runs of a working session.
+	 * The finished encodings are kept between runs (see BuildCache). The
+	 * optimizers are seeded, so the same pixels, name and encoder parameters
+	 * always produce the same code — and encoding is the dominant cost of a
+	 * build (~85% of the wall time measured on r-type), paid twice per build
+	 * (discovery pass, then real pass) for images that almost never change
+	 * between two runs of a working session.
 	 */
-	private Path cacheDir() throws Exception {
-		String basedir = System.getProperty("basedir");
-		if (basedir == null) {
-			return null;
-		}
-		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-		java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
-		md.update((CACHE_VERSION + "|" + name + "|" + type + "|" + mirror + "|" + shift
-				+ "|" + position + "|" + planes + "|" + width + "x" + height
-				// the video memory model changes the emitted code as surely as
-				// the pixels do — same image, another plane distance, another
-				// LEAU (caught by DrawPlanesTest)
-				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLinearBits
-				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlanarBits
-				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLineBytes
-				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryNbPlanes
-				+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlaneDistance
-				+ "|").getBytes(utf8));
-		// pixels carry the exact source content after mirror and shift ; data
-		// is lossy (transparent and colour 1 both store 0), so hash pixels
-		md.update(pixels[0]);
-		md.update(pixels[1]);
-		StringBuilder hex = new StringBuilder();
-		for (byte b : md.digest()) {
-			hex.append(String.format("%02x", b));
-		}
-		return Paths.get(basedir, ".gfxcomp-cache", hex.toString());
+	private com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry cacheEntry() throws Exception {
+		return com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("gfxcomp", CACHE_VERSION)
+				.keyString(name + "|" + type + "|" + mirror + "|" + shift
+						+ "|" + position + "|" + planes + "|" + width + "x" + height
+						// the video memory model changes the emitted code as
+						// surely as the pixels do — same image, another plane
+						// distance, another LEAU (caught by DrawPlanesTest)
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLinearBits
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlanarBits
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLineBytes
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryNbPlanes
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlaneDistance)
+				// pixels carry the exact source content after mirror and
+				// shift ; data is lossy (transparent and colour 1 both store
+				// 0), so hash pixels
+				.keyBytes(pixels[0])
+				.keyBytes(pixels[1]);
 	}
 
 	private void restoreFromCache(Path cacheDir, String outputDir) throws Exception {
@@ -448,35 +438,6 @@ public class Image {
 		}
 	}
 
-	private void storeToCache(Path cacheDir, String outputDir) throws Exception {
-		Path tmp = cacheDir.resolveSibling(cacheDir.getFileName() + ".tmp-" + Thread.currentThread().getId());
-		Files.createDirectories(tmp);
-		for (String suffix : new String[] { ".asm", "_erase.asm" }) {
-			Path produced = Paths.get(outputDir, getFullName() + suffix);
-			if (Files.exists(produced)) {
-				Files.copy(produced, tmp.resolve(produced.getFileName().toString()));
-			}
-		}
-		java.util.Properties meta = new java.util.Properties();
-		if (nb_cell != null) {
-			meta.setProperty("nb_cell", String.valueOf(nb_cell));
-		}
-		try (java.io.OutputStream out = Files.newOutputStream(tmp.resolve("meta.properties"))) {
-			meta.store(out, null);
-		}
-		try {
-			Files.move(tmp, cacheDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
-		} catch (java.nio.file.FileAlreadyExistsException | java.nio.file.AccessDeniedException race) {
-			// another worker finished the same key first : its entry is as good
-			try (java.util.stream.Stream<Path> entries = Files.list(tmp)) {
-				for (Path f : (Iterable<Path>) entries::iterator) {
-					Files.deleteIfExists(f);
-				}
-			}
-			Files.deleteIfExists(tmp);
-		}
-	}
-
 	public void encode(String outputDir) throws Exception {
 		
 	    File directory = new File(outputDir);
@@ -484,8 +445,9 @@ public class Image {
 	        directory.mkdirs();
 	    }
 
-		Path cache = cacheDir();
-		if (cache != null && Files.isDirectory(cache)) {
+		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry = cacheEntry();
+		Path cache = entry.find();
+		if (cache != null) {
 			restoreFromCache(cache, outputDir);
 			return;
 		}
@@ -501,9 +463,21 @@ public class Image {
 		
 		e.generateCode();
 
-		if (cache != null) {
-			storeToCache(cache, outputDir);
-		}
+		entry.store(staging -> {
+			for (String suffix : new String[] { ".asm", "_erase.asm" }) {
+				Path produced = Paths.get(outputDir, getFullName() + suffix);
+				if (Files.exists(produced)) {
+					Files.copy(produced, staging.resolve(produced.getFileName().toString()));
+				}
+			}
+			java.util.Properties meta = new java.util.Properties();
+			if (nb_cell != null) {
+				meta.setProperty("nb_cell", String.valueOf(nb_cell));
+			}
+			try (java.io.OutputStream out = Files.newOutputStream(staging.resolve("meta.properties"))) {
+				meta.store(out, null);
+			}
+		});
 	}
 	
 	/**

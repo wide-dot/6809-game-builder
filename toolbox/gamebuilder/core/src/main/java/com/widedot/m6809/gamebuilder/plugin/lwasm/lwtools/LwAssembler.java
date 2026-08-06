@@ -115,8 +115,18 @@ public class LwAssembler
 		// between the discovery pass and the real pass, and again at the next
 		// run of a working session. Finished outputs (bin, lst, lwmap) are
 		// kept under the hash of everything the assembly can see.
-		Path cache = cacheDir(path, rootPath, command);
-		if (cache != null && Files.isDirectory(cache)) {
+		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
+				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("lwasm", CACHE_VERSION);
+		// the command line minus the absolute output paths : those change with
+		// the build dir without changing what is produced
+		for (String arg : command) {
+			if (!arg.startsWith("--output=") && !arg.startsWith("--list=") && !arg.startsWith("--map=")) {
+				entry.keyString(arg);
+			}
+		}
+		entry.keyFileTree(path, java.util.List.of(Paths.get(rootPath), path.getParent()));
+		Path cache = entry.find();
+		if (cache != null) {
 			Files.copy(cache.resolve("out." + format), Paths.get(binFilename));
 			Files.copy(cache.resolve("out." + LST), Paths.get(lstFilename));
 			Files.copy(cache.resolve("out." + LWMAP), Paths.get(mapFilename));
@@ -135,9 +145,11 @@ public class LwAssembler
 			if (result != 0) {
 				throw new Exception("Build Aborted !");			
 			}
-			if (cache != null) {
-				storeToCache(cache, binFilename, lstFilename, mapFilename, format);
-			}
+			entry.store(staging -> {
+				Files.copy(Paths.get(binFilename), staging.resolve("out." + format));
+				Files.copy(Paths.get(lstFilename), staging.resolve("out." + LST));
+				Files.copy(Paths.get(mapFilename), staging.resolve("out." + LWMAP));
+			});
 		}
         
         Class<?> clazz = Class.forName(formatClass.get(format));
@@ -193,95 +205,4 @@ public class LwAssembler
 		}
 	}
 
-	/**
-	 * The cache key covers everything the assembly can see : the source, every
-	 * file reachable through its INCLUDE / includebin lines (resolved the way
-	 * lwasm resolves them : against the including file's directory, then the
-	 * include dirs), and the full command line (defines, format, processor).
-	 * An include that cannot be resolved is keyed as missing — if it was
-	 * conditional the content hash is over-approximated, never wrong.
-	 */
-	private static Path cacheDir(Path source, String rootPath, List<String> command)
-			throws Exception {
-		String basedir = System.getProperty("basedir");
-		if (basedir == null) {
-			return null;
-		}
-		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-		java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
-		md.update((CACHE_VERSION + "|").getBytes(utf8));
-		// the command line minus the absolute output paths : those change with
-		// the build dir without changing what is produced
-		for (String arg : command) {
-			if (arg.startsWith("--output=") || arg.startsWith("--list=") || arg.startsWith("--map=")) {
-				continue;
-			}
-			md.update(arg.getBytes(utf8));
-			md.update((byte) 0);
-		}
-		java.util.Set<Path> seen = new java.util.LinkedHashSet<Path>();
-		hashSourceTree(source, Paths.get(rootPath), md, seen);
-		StringBuilder hex = new StringBuilder();
-		for (byte b : md.digest()) {
-			hex.append(String.format("%02x", b));
-		}
-		return Paths.get(basedir, ".lwasm-cache", hex.toString());
-	}
-
-	private static final java.util.regex.Pattern INCLUDE_LINE = java.util.regex.Pattern.compile(
-			"^\\s*(?:include|includebin|use)\\s+\"?([^\"\\s]+)\"?.*",
-			java.util.regex.Pattern.CASE_INSENSITIVE);
-
-	private static void hashSourceTree(Path file, Path includeDir,
-			java.security.MessageDigest md, java.util.Set<Path> seen) throws Exception {
-		Path normalized = file.toAbsolutePath().normalize();
-		if (!seen.add(normalized)) {
-			return;
-		}
-		byte[] content = Files.readAllBytes(normalized);
-		md.update(content);
-		md.update((byte) 0);
-		for (String line : new String(content, java.nio.charset.StandardCharsets.ISO_8859_1)
-				.split("\\r?\\n")) {
-			java.util.regex.Matcher m = INCLUDE_LINE.matcher(line);
-			if (!m.matches()) {
-				continue;
-			}
-			String ref = m.group(1);
-			Path resolved = null;
-			for (Path base : new Path[] { normalized.getParent(), includeDir }) {
-				Path candidate = base.resolve(ref).normalize();
-				if (Files.isRegularFile(candidate)) {
-					resolved = candidate;
-					break;
-				}
-			}
-			if (resolved == null) {
-				// conditional or truly missing : key its absence, do not guess
-				md.update(("missing:" + ref).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-				md.update((byte) 0);
-				continue;
-			}
-			hashSourceTree(resolved, includeDir, md, seen);
-		}
-	}
-
-	private static void storeToCache(Path cache, String binFilename, String lstFilename,
-			String mapFilename, String format) throws Exception {
-		Path tmp = cache.resolveSibling(cache.getFileName() + ".tmp-" + Thread.currentThread().getId());
-		Files.createDirectories(tmp);
-		Files.copy(Paths.get(binFilename), tmp.resolve("out." + format));
-		Files.copy(Paths.get(lstFilename), tmp.resolve("out." + LST));
-		Files.copy(Paths.get(mapFilename), tmp.resolve("out." + LWMAP));
-		try {
-			Files.move(tmp, cache, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
-		} catch (java.nio.file.FileAlreadyExistsException | java.nio.file.AccessDeniedException race) {
-			try (java.util.stream.Stream<Path> entries = Files.list(tmp)) {
-				for (Path f : (Iterable<Path>) entries::iterator) {
-					Files.deleteIfExists(f);
-				}
-			}
-			Files.deleteIfExists(tmp);
-		}
-	}
 }
