@@ -354,12 +354,14 @@ function ramView() {
       "–" + hex(i.address + i.size - 1) + " · " + kb(i.size) + "</span>"));
     r.addEventListener("mouseleave", hideTip);
 
-    /* the name inside the bar, when it fits — shortened before dropped */
+    /* the name inside the bar, when it fits — shortened before dropped.
+       Same per-page origin as the bar itself : without it, every label of
+       a $6000- or $A000-based page was drawn off-canvas */
     const fit = Math.floor((w - 8) / 6.2);
     if (fit >= 4) {
       const label = i.name.length <= fit ? i.name : i.name.slice(0, fit - 1) + "…";
       const t = S("text", {
-        x: LABEL + px(i.address) + w / 2, y: y + ROW / 2 + 4,
+        x: LABEL + px(i.address - origins[i.page]) + w / 2, y: y + ROW / 2 + 4,
         "text-anchor": "middle", "pointer-events": "none"
       }, svg);
       t.textContent = label;

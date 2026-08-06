@@ -184,15 +184,20 @@
             <!-- seize ecrits. Une equate ne laisse pas de trou quand elle part. -->
             <reserved name="globals"      page="$01" address="$9E40" size="$00C0"/>
             <reserved name="stack"        page="$01" address="$9F00" size="$0100"/>
-            <!-- Ce que la MACHINE occupe sans qu'aucun fichier n'y soit charge : -->
-            <!-- la VRAM que le moniteur affiche au boot (page 0), et les deux    -->
-            <!-- framebuffers entre lesquels le moteur bascule (gfxlock, $E7DD    -->
-            <!-- bits 6-7 : pages video 2 et 3). Sans elles la carte ment par     -->
-            <!-- omission. Le loader et son pool, eux, sont reserves par le       -->
-            <!-- <data section="LOADER"> lui-meme : leur taille est MESUREE.      -->
-            <reserved name="vram.boot"     page="$00" address="$0000" size="$4000"/>
-            <reserved name="framebuffer.2" page="$02" address="$0000" size="$4000"/>
-            <reserved name="framebuffer.3" page="$03" address="$0000" size="$4000"/>
+            <!-- Ce que la MACHINE occupe sans qu'aucun fichier n'y soit charge. -->
+            <!-- Page 0 : le buffer d'effacement des sprites (background save    -->
+            <!-- de la conf moteur). Pages 2 et 3 : les deux framebuffers entre  -->
+            <!-- lesquels gfxlock bascule ($E7DD bits 6-7) — l'ecran balaye     -->
+            <!-- 8000 octets par moitie (200 lignes x 40), donc 192 octets      -->
+            <!-- restent LIBRES en fin de chaque moitie : les reserver plage    -->
+            <!-- par plage laisse la carte les montrer. Le loader et son pool,  -->
+            <!-- eux, sont reserves par le <data section="LOADER"> lui-meme :   -->
+            <!-- leur taille est MESUREE.                                       -->
+            <reserved name="background.save"       page="$00" address="$0000" size="$4000"/>
+            <reserved name="framebuffer.2.couleur" page="$02" address="$0000" size="$1F40"/>
+            <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
+            <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
+            <reserved name="framebuffer.3.forme"   page="$03" address="$2000" size="$1F40"/>
         </layout>
 
         <floppydisk model="fd640">
