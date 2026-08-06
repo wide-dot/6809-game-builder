@@ -7,7 +7,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page   ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+commonmissile.Object.page   ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page   ; ObjID_emitter_flash
@@ -27,6 +27,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+scantfire.Object.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+tabrokcanon.Object.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+shellEraser.Object.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+commonmissileflame.Object.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+patapata.Object.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.Object.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink
@@ -51,7 +52,7 @@ Obj_Index_Address
         fdb   PaletteFade        ; ObjID_fade
         fdb   Player        ; ObjID_Player1
         fdb   Weapon        ; ObjID_Weapon
-        fdb   stage.placeholder        ; ObjID_commonmissile
+        fdb   commonmissile.Object        ; ObjID_commonmissile
         fdb   Beamcharge        ; ObjID_beamcharge
         fdb   Beam        ; ObjID_beamp
         fdb   emitterFlash.Object        ; ObjID_emitter_flash
@@ -71,6 +72,7 @@ Obj_Index_Address
         fdb   scantfire.Object        ; ObjID_scantfire
         fdb   tabrokcanon.Object        ; ObjID_tabrokcanon
         fdb   shellEraser.Object        ; ObjID_shellEraser
+        fdb   commonmissileflame.Object        ; ObjID_commonmissileflame
         fdb   patapata.Object        ; ObjID_patapata
         fdb   bug.Object        ; ObjID_bug
         fdb   bink.Object        ; ObjID_bink
@@ -98,7 +100,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page   ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+commonmissile.Object.page   ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page   ; ObjID_emitter_flash
@@ -118,6 +120,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+scantfire.Object.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+tabrokcanon.Object.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+shellEraser.Object.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+commonmissileflame.Object.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+patapata.Object.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.Object.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink
@@ -178,6 +181,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
 
 Ani_Asd_none
         fdb   0
@@ -191,7 +195,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.fade.page   ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page   ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page   ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+commonmissile.Object.page   ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page   ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page   ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page   ; ObjID_emitter_flash
@@ -211,6 +215,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+scantfire.Object.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+tabrokcanon.Object.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+shellEraser.Object.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+commonmissileflame.Object.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+patapata.Object.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+bug.Object.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+bink.Object.page   ; ObjID_bink

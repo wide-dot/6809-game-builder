@@ -179,6 +179,7 @@
                 <zone page="$10" address="$0000" size="$4000"/>
                 <zone page="$11" address="$0000" size="$4000"/>
                 <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
             </region>
             <!-- Les images du tabrok : trop grosses pour tenir dans son unite
                  (20 Ko a elles seules), etalees comme celles de l'explosion. -->
@@ -1234,6 +1235,84 @@
                     <unit symbol="tabrok.Object">
                         <asm filename="src/enemies/tabrok/tabrok.unit.asm"/>
                         <imageset name="tabrok" gensource="gen/enemies/tabrok/index.asm"/>
+                    </unit>
+                    <!-- Le missile, MUTUALISE : tabrok et p-staff par leurs
+                         subtypes 0 et 1, le joueur par le 2 (player_missile.asm,
+                         inclus par le meme fichier v1). Un identifiant, un jeu de
+                         sprites, trois clients. -->
+                    <unit symbol="commonmissile.Object">
+                        <asm filename="src/enemies/_shared/commonmissile.unit.asm"/>
+                            <gfxcomp gendir="gen/enemies/commonmissile"
+                                     gensource="gen/enemies/commonmissile/includes.asm"
+                                     genindex="gen/enemies/commonmissile/index.asm">
+                                <image name="missile_0" filename="src/enemies/_shared/images/missile_0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missile_1" filename="src/enemies/_shared/images/missile_1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missile_2" filename="src/enemies/_shared/images/missile_2.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missile_3" filename="src/enemies/_shared/images/missile_3.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missile_4" filename="src/enemies/_shared/images/missile_4.png" index="4">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missile_5" filename="src/enemies/_shared/images/missile_3.png" index="5">
+                                    <encoder name="bdraw" mirror="y" shift="0"/>
+                                </image>
+                                <image name="missile_6" filename="src/enemies/_shared/images/missile_2.png" index="6">
+                                    <encoder name="bdraw" mirror="y" shift="0"/>
+                                </image>
+                                <image name="missile_7" filename="src/enemies/_shared/images/missile_1.png" index="7">
+                                    <encoder name="bdraw" mirror="y" shift="0"/>
+                                </image>
+                                <image name="missile_8" filename="src/enemies/_shared/images/missile_0.png" index="8">
+                                    <encoder name="bdraw" mirror="y" shift="0"/>
+                                </image>
+                                <image name="missile_9" filename="src/enemies/_shared/images/missile_1.png" index="9">
+                                    <encoder name="bdraw" mirror="xy" shift="0"/>
+                                </image>
+                                <image name="missile_10" filename="src/enemies/_shared/images/missile_2.png" index="10">
+                                    <encoder name="bdraw" mirror="xy" shift="0"/>
+                                </image>
+                                <image name="missile_11" filename="src/enemies/_shared/images/missile_3.png" index="11">
+                                    <encoder name="bdraw" mirror="xy" shift="0"/>
+                                </image>
+                                <image name="missile_12" filename="src/enemies/_shared/images/missile_4.png" index="12">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="missile_13" filename="src/enemies/_shared/images/missile_3.png" index="13">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="missile_14" filename="src/enemies/_shared/images/missile_2.png" index="14">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                                <image name="missile_15" filename="src/enemies/_shared/images/missile_1.png" index="15">
+                                    <encoder name="bdraw" mirror="x" shift="0"/>
+                                </image>
+                            </gfxcomp>
+                    </unit>
+                    <unit symbol="commonmissileflame.Object">
+                        <asm filename="src/enemies/_shared/commonmissileflame.unit.asm"/>
+                            <gfxcomp gendir="gen/enemies/commonmissileflame"
+                                     gensource="gen/enemies/commonmissileflame/includes.asm"
+                                     genindex="gen/enemies/commonmissileflame/index.asm">
+                                <image name="missileflame_0" filename="src/enemies/_shared/images/boost_0.png" index="0">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missileflame_1" filename="src/enemies/_shared/images/boost_1.png" index="1">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missileflame_2" filename="src/enemies/_shared/images/boost_2.png" index="2">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                                <image name="missileflame_3" filename="src/enemies/_shared/images/boost_3.png" index="3">
+                                    <encoder name="bdraw" mirror="none" shift="0"/>
+                                </image>
+                            </gfxcomp>
                     </unit>
                     <unit symbol="tabrokcanon.Object">
                         <asm filename="src/enemies/tabrok/tabrokcanon.unit.asm"/>

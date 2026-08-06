@@ -16,9 +16,11 @@
 * ennemi lit backgroundSolid depuis SA page, et deux etiquettes dans deux pages
 * ne sont pas la meme variable.
 
-missilePairCount             fcb   0
-missileTgtTop                fdb   0
-missileTgtBot                fdb   0
+* LES TROIS VARIABLES DU MISSILE ONT DEMENAGE (2026-08-06) : le missile est
+* porte, il vit dans la page du cast et decompte le compteur que le joueur
+* incremente. Elles sont donc dans la zone reservee `globals`, comme
+* globals.missileUnlocked et la trainee — la lecon du paragraphe ci-dessus,
+* appliquee le jour ou elle est devenue vraie.
 
 * LA TRAINEE DU JOUEUR A DEMENAGE (2026-08-05) : elle est dans la zone reservee
 * `globals`, decrite par variables.asm. Le force pod la lit depuis SA page, ou

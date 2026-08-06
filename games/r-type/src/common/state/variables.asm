@@ -32,7 +32,18 @@ globals.missileUnlocked  equ GLOBAL_VARIABLES+12 ; 1 byte (1 = missile débloqu�
 * statiques. Cf. docs/lang/en/migration/reserved-ram-is-not-zeroed.md
 player_pos_ring_buffer     equ GLOBAL_VARIABLES+13  ; 4*32 = 128 octets
 player_pos_ring_buffer_ptr equ GLOBAL_VARIABLES+141 ; 2 octets
-; NB : missilePairCount / missileTgtTop / missileTgtBot = état TRANSITOIRE in-stage
-;      -> déclarés dans game-mode/<n>/ram_data.asm (fcb/fdb), PAS ici.
+
+* L'etat du gestionnaire de missiles. Il vivait dans la page du JOUEUR, seul a
+* le lire — et la note d'a cote disait de le ranger dans la RAM du stage. Les
+* deux sont perimees depuis que le missile est porte : il est COMMUN (page du
+* cast, partagee par tous les stages) et il decompte le meme compteur que le
+* joueur incremente. Deux etiquettes dans deux pages ne sont pas la meme
+* variable — meme lecon que globals.missileUnlocked et la trainee du joueur.
+*
+* Le bloc reserve n'est ni charge ni mis a zero : c'est l'Init du joueur qui
+* seme les trois, comme la v1 (player1.asm).
+missilePairCount           equ GLOBAL_VARIABLES+143 ; 1 octet, missiles vivants
+missileTgtTop              equ GLOBAL_VARIABLES+144 ; 2 octets, OST cible du haut
+missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 
  ENDC

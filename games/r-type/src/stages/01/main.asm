@@ -112,6 +112,9 @@ tabrok.Object   EXTERNAL
 ; tank, et l'effaceur de la rotonde, que la boucle de trame appelle.
 tabrokcanon.Object EXTERNAL
 shellEraser.Object EXTERNAL
+; Le missile et sa flamme : mutualises entre les ennemis et l'arme du joueur.
+commonmissile.Object      EXTERNAL
+commonmissileflame.Object EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 

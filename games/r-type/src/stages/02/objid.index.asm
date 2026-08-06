@@ -27,6 +27,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
@@ -57,6 +58,7 @@ Obj_Index_Address
         fdb   stage.placeholder        ; ObjID_scantfire
         fdb   stage.placeholder        ; ObjID_tabrokcanon
         fdb   stage.placeholder        ; ObjID_shellEraser
+        fdb   stage.placeholder        ; ObjID_commonmissileflame
         fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
@@ -90,10 +92,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -155,5 +159,6 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
