@@ -171,7 +171,8 @@ public class DirectoryPlugin {
 					pageSpans.put(entry.name, entry.pageSpans);
 				}
 			}
-			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans);
+			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans,
+					ctx.regions.hasMeasures());
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}

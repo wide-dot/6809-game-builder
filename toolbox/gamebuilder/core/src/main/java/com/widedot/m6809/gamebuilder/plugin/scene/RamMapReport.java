@@ -93,8 +93,10 @@ public final class RamMapReport {
 			// every page the layout declares something on
 			TreeSet<Integer> pages = new TreeSet<Integer>();
 			for (Regions.Region region : regions.all()) {
-				for (int p = region.page; p < region.page + region.pages; p++) {
-					pages.add(p);
+				// a region's pages are its ZONES' pages : they no longer have
+				// to follow one another, so counting from the first is wrong
+				for (Regions.Zone z : region.zones) {
+					pages.add(z.page);
 				}
 			}
 			for (Regions.Reserved reserved : regions.reservedRanges()) {
@@ -109,11 +111,17 @@ public final class RamMapReport {
 				List<Row> rows = new ArrayList<Row>();
 
 				for (Regions.Region region : regions.all()) {
-					if (region.size == null || page < region.page
-							|| page >= region.page + region.pages) {
+					Regions.Zone here = null;
+					for (Regions.Zone z : region.zones) {
+						if (z.page == page) {
+							here = z;
+							break;
+						}
+					}
+					if (here == null) {
 						continue;
 					}
-					Row row = new Row(region.address, region.size, "region", region.name);
+					Row row = new Row(here.address, here.size, "region", region.name);
 					int[] cell = loadedSize.get(key(region.name, page));
 					if (cell != null) {
 						row.used = cell[0];

@@ -158,7 +158,7 @@ statics.SIZE  equ nb_static_objects*object_size
 
         ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
         ; avant la trame d'amorce et InitScroll.
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.init
         jsr   paged.call
 
@@ -288,7 +288,7 @@ stage.state.running
         ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant
         ; le sien pour savoir s'il vient d'etre touche. La v1 l'appelle au meme
         ; endroit, par son objet mainext.
-        lda   #map.RAM_OVER_CART+collisionpass.page
+        lda   #map.RAM_OVER_CART+common.collisionpass.page
         ldx   #Collision_Run
         jsr   paged.call
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
@@ -315,13 +315,13 @@ stage.state.running
         ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
         ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
         ; immobile puis remis en mouvement reinjecte des etoiles perimees.
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.erase
         jsr   paged.call
 
         jsr   DrawSprites
 
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.draw
         jsr   paged.call
 
@@ -336,7 +336,7 @@ stage.state.running
         ldd   #$A000
         std   <glb_screen_location_1
         ldu   #$C000
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
 
@@ -344,7 +344,7 @@ stage.state.running
         ; le masque couvre les bandes ou le scroll laisse ses artefacts, le HUD
         ; peint dedans. Il a sa page a lui — 5 184 octets ne tenaient pas dans
         ; la fin de celle des overlays — donc une montee de plus par trame.
-        lda   #map.RAM_OVER_CART+hud.page
+        lda   #map.RAM_OVER_CART+common.hud.page
         ldx   #hud.normal
         jsr   paged.call
 
@@ -386,7 +386,7 @@ stage.userIRQ
         ; region vgc.* du layout.
         _ymm.frame.play #map.RAM_OVER_CART+ymm.player.page
         ;_vgc.frame.play #map.RAM_OVER_CART+vgc.player.page
-        lda   #map.RAM_OVER_CART+soundfx.page
+        lda   #map.RAM_OVER_CART+common.soundfx.page
         ldx   #soundfx.frame
         jmp   paged.call
 
@@ -429,7 +429,7 @@ stage.state.dead
         ldd   #$A000
         std   <glb_screen_location_1
         ldu   #$C000
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
         jsr   gfxlock.off

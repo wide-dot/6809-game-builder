@@ -36,6 +36,29 @@ public final class SceneChecks {
 	 * @return the errors found, empty when all the scenes are coherent
 	 */
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal) {
+		List<String> errors = verify(scenes, sizes, pageSpans);
+		return addressesAreReal ? errors : budgetsOnly(errors);
+	}
+
+	/**
+	 * While the layout is being measured, an arena's files all sit at
+	 * provisional addresses : they would look piled on each other. Budgets and
+	 * missing files still mean something, overlaps do not — the pass whose job
+	 * is to produce the real addresses must not be stopped by the absence of
+	 * real addresses.
+	 */
+	private static List<String> budgetsOnly(List<String> errors) {
+		List<String> kept = new ArrayList<String>();
+		for (String e : errors) {
+			if (!e.contains("overlap on page")) {
+				kept.add(e);
+			}
+		}
+		return kept;
+	}
+
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
 			Map<String, Map<String, int[]>> pageSpans) {
 		List<String> errors = new ArrayList<String>();
 

@@ -41,7 +41,7 @@ scantfire.Object  EXTERNAL
 Ani_Asd_common    EXTERNAL
 
 ; Le masque du champ de jeu, dans la page des overlays. Ce n'est pas un objet :
-; il n'a ni etat ni OST, sa page est une equate (overlay.page) et son adresse
+; il n'a ni etat ni OST, sa page est une equate (common.overlay.page) et son adresse
 ; ce symbole — paged.call suffit a l'atteindre.
 adr_playfield_mask_ND0 EXTERNAL
 

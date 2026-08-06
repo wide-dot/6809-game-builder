@@ -100,8 +100,14 @@ public class Regions {
 				this.zones = java.util.Collections.unmodifiableList(
 						new java.util.ArrayList<Zone>(zones));
 			} else if (size != null) {
-				this.zones = java.util.Collections.singletonList(
-						new Zone(page, address, size));
+				// the compact form, including its multi-page spelling : N
+				// consecutive pages of the same size is exactly N zones, and
+				// saying it that way keeps one shape downstream
+				java.util.List<Zone> built = new java.util.ArrayList<Zone>();
+				for (int p = 0; p < Math.max(1, pages); p++) {
+					built.add(new Zone(page + p, address, size));
+				}
+				this.zones = java.util.Collections.unmodifiableList(built);
 			} else {
 				this.zones = java.util.Collections.emptyList();
 			}

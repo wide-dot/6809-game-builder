@@ -58,9 +58,6 @@
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
-            <region name="anim">
-                <zone page="$0F" address="$0000" size="$1EFE"/>
-            </region>
             <!-- Les ennemis : code et images dans la meme page, comme en v1 —  -->
             <!-- RunObjects monte la page avant d'appeler l'objet, et l'index   -->
             <!-- d'imageset y lit la geometrie des sprites.                     -->
@@ -73,11 +70,9 @@
             <!-- aujourd'hui, le hud et les messages ensuite. Ils tournent tous -->
             <!-- dans la meme phase, donc ils partagent une page : une seule    -->
             <!-- montee par trame via paged.call.                               -->
-            <region name="overlay"    page="$10"/>
             <!-- Le joueur : code, scripts d'animation et images dans une seule -->
             <!-- page. Obj_Run monte celle-ci pour l'objet, AnimateSpriteSync    -->
             <!-- la remonte pour les scripts, l'index d'imageset pour les images.-->
-            <region name="player"     page="$11"/>
             <!-- La collision terrain du stage courant : code de consultation,  -->
             <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
             <!-- stage lui-meme.                                                -->
@@ -91,10 +86,6 @@
             <!-- equates d'OST divergent — infusionnables). Quatre regions sur  -->
             <!-- LA MEME page, a adresses fixes : le bin-packing manuel, en     -->
             <!-- attendant un pageset d'unites code.                            -->
-            <region name="weapon"     page="$13"/>
-            <region name="beamcharge" page="$13"/>
-            <region name="beamp"      page="$13"/>
-            <region name="emflash"    page="$13"/>
             <!-- L'explosion. Un seul objet, mais treize sprites compiles dont -->
             <!-- cinq de 24x48 : 17 881 o, plus qu'une page. Le code part donc -->
             <!-- en pageset — le builder mesure et range — tandis que l'objet  -->
@@ -102,30 +93,24 @@
             <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
             <!-- image, comme la v1 et comme une table de tuiles.               -->
-            <region name="explosion"  page="$14"/>
             <!-- La chaine de tir ennemi, dans la place que la carte           -->
             <!-- d'occupation montrait libre en page $14 : les deux            -->
             <!-- sous-routines paginees et leurs tables de presets d'un cote,  -->
             <!-- le projectile et ses quatre images de l'autre.                -->
-            <region name="firechain"  page="$14"/>
-            <region name="foefire"    page="$14"/>
             <!-- Le fondu de palette : un objet comme un autre, monte comme    -->
             <!-- l'explosion. Il etait resident au motif que tout stage en a    -->
             <!-- besoin a son ouverture ; la v1 le monte, et 279 octets de la   -->
             <!-- page 1 valent mieux au budget du pool d'objets.                -->
-            <region name="fade"       page="$14"/>
             <!-- Les flammes de reacteur : elles auraient leur place dans   -->
             <!-- l'unite du joueur, mais les deux fichiers v1 nomment leurs  -->
             <!-- routines Init/Live/Routines — meme raison qui donne a       -->
             <!-- chaque arme sa region.                                      -->
-            <region name="engineflames" page="$14"/>
             <!-- Le HUD : bandeau du bas (beam, vies, score) et decompte de    -->
             <!-- fin de stage. 5 184 octets, dont douze chiffres en sprites    -->
             <!-- compiles que la v1 portait deja dans son fichier. Il ne tient  -->
             <!-- pas dans la fin de la page des overlays : la page $14, elle,  -->
             <!-- n'etait remplie qu'a 22 % — redecoupee plutot que d'en brûler  -->
             <!-- une neuve, les pages etant ce qui manquera aux tuiles.         -->
-            <region name="hud"        page="$14"/>
             <region name="explosion.images">
                 <zone page="$15" address="$0000" size="$4000"/>
                 <zone page="$16" address="$0000" size="$4000"/>
@@ -135,25 +120,35 @@
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
             <region name="ymm.player" page="$17"/>
             <region name="ymm.data"   page="$17"/>
-            <region name="soundfx"    page="$18"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
-            <region name="collisionpass" page="$18"/>
             <!-- L'effacement des tampons de donnees : page-neutre, appele deux -->
             <!-- fois seulement (ouverture de stage, rechargement checkpoint).  -->
             <!-- READY / GAME OVER : l'objet messages de la v1. Ni OST ni      -->
             <!-- routine — le stage le monte par _Obj_Mount et l'appelle avec  -->
             <!-- l'index du message dans B.                                    -->
-            <region name="messages"   page="$18"/>
             <!-- Le checkpoint et son rejeu de defilement : l'objet checkpoint  -->
             <!-- de la v1, qui porte les deux. Page-neutre ou restaurant, et    -->
             <!-- ObjectWave_Init en jmp terminal — comme la v1.                 -->
             <!-- Banc d'essai de l'arene : le builder range, sur deux queues -->
             <!-- de page que personne n'utilisait.                            -->
+            <!-- Les objets communs : le builder les range, du plus gros au   -->
+            <!-- plus petit, sur les pages qu'on lui ouvre. Leur page et leur   -->
+            <!-- adresse sont publiees par fichier — c'est l'index d'objets qui -->
+            <!-- les lit, personne ne grave d'adresse vers ici.                 -->
             <arena name="objects">
-                <zone page="$18" address="$07CA" size="$3836"/>
-                <zone page="$0F" address="$1EFE" size="$2102"/>
+                <zone page="$0F" address="$0000" size="$4000"/>
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$1A" address="$0000" size="$4000"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$05" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
             <!-- coupee pour rendre du temps CPU, comme la v1 la coupe deja.    -->
@@ -166,10 +161,7 @@
             <!-- option. Deux unites plutot qu'une (les deux fichiers v1        -->
             <!-- partagent leurs noms internes). Page $1A : $16 est le          -->
             <!-- debordement de explosion.images, $19 reste a la config VGC.    -->
-            <region name="pow"        page="$1A"/>
-            <region name="optionbox"  page="$1A"/>
             <!-- Les deux satellites blindes : un objet, deux OST statiques.  -->
-            <region name="bitdevice"  page="$1A"/>
             <!-- L'armement : le force pod sur sa page, ses trois armes sur la -->
             <!-- suivante. Tailles a ajuster sur la carte d'occupation.        -->
             <!-- Tailles arretees sur les mesures du build : forcepod 12 733 o,  -->
@@ -182,10 +174,6 @@
                 <zone page="$1E" address="$0000" size="$4000"/>
                 <zone page="$1F" address="$0000" size="$4000"/>
             </region>
-            <region name="forcepod"        page="$1B"/>
-            <region name="simplefire"      page="$1B"/>
-            <region name="reboundlaser"    page="$1C"/>
-            <region name="counterairlaser" page="$1C"/>
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
             <!-- peut pas le deviner — ce sont des equates du code — donc on le  -->
@@ -1450,40 +1438,40 @@
                 <!-- ******************************************************** -->
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"     region="common"/>
-                    <load name="common.anim"       region="anim"/>
-                    <load name="common.overlay"    region="overlay"/>
-                    <load name="common.player"     region="player"/>
-                    <load name="common.weapon"     region="weapon"/>
-                    <load name="common.beamcharge" region="beamcharge"/>
-                    <load name="common.beamp"      region="beamp"/>
-                    <load name="common.emflash"    region="emflash"/>
+                    <load name="common.anim"       arena="objects"/>
+                    <load name="common.overlay"    arena="objects"/>
+                    <load name="common.player"     arena="objects"/>
+                    <load name="common.weapon"     arena="objects"/>
+                    <load name="common.beamcharge" arena="objects"/>
+                    <load name="common.beamp"      arena="objects"/>
+                    <load name="common.emflash"    arena="objects"/>
                     <load name="explosion.images"  region="explosion.images"/>
-                    <load name="common.explosion"  region="explosion"/>
-                    <load name="common.fade"       region="fade"/>
-                    <load name="common.engineflames" region="engineflames"/>
+                    <load name="common.explosion"  arena="objects"/>
+                    <load name="common.fade"       arena="objects"/>
+                    <load name="common.engineflames" arena="objects"/>
                     <load name="engine.sound.ym.const"/>
                     <load name="engine.sound.ymm"  region="ymm.player"/>
                     <load name="stage1.music.ymm"  region="ymm.data"/>
-                    <load name="common.soundfx"    region="soundfx"/>
-                    <load name="common.collisionpass" region="collisionpass"/>
-                    <load name="common.messages"   region="messages"/>
+                    <load name="common.soundfx"    arena="objects"/>
+                    <load name="common.collisionpass" arena="objects"/>
+                    <load name="common.messages"   arena="objects"/>
                     <load name="common.checkpoint" arena="objects"/>
                     <load name="stage1.init"       region="stageinit"/>
                     <!-- MIGRE MAIS DEBRANCHE :
                     <load name="engine.sound.vgc"  region="vgc.player"/>
                     <load name="stage1.music.vgc"  region="vgc.data"/>
                     -->
-                    <load name="common.hud"        region="hud"/>
-                    <load name="common.pow"        region="pow"/>
-                    <load name="common.optionbox"  region="optionbox"/>
-                    <load name="common.bitdevice"  region="bitdevice"/>
+                    <load name="common.hud"        arena="objects"/>
+                    <load name="common.pow"        arena="objects"/>
+                    <load name="common.optionbox"  arena="objects"/>
+                    <load name="common.bitdevice"  arena="objects"/>
                     <load name="common.cast"       region="cast"/>
-                    <load name="common.forcepod"   region="forcepod"/>
-                    <load name="common.reboundlaser" region="reboundlaser"/>
-                    <load name="common.counterairlaser" region="counterairlaser"/>
-                    <load name="common.simplefire" region="simplefire"/>
-                    <load name="common.firechain"  region="firechain"/>
-                    <load name="common.foefire"    region="foefire"/>
+                    <load name="common.forcepod"   arena="objects"/>
+                    <load name="common.reboundlaser" arena="objects"/>
+                    <load name="common.counterairlaser" arena="objects"/>
+                    <load name="common.simplefire" arena="objects"/>
+                    <load name="common.firechain"  arena="objects"/>
+                    <load name="common.foefire"    arena="objects"/>
                     <load name="stage1.tiles.even"  region="tiles.even"/>
                     <load name="stage1.tiles.odd"   region="tiles.odd"/>
                     <load name="stage1.maps"         region="maps"/>
