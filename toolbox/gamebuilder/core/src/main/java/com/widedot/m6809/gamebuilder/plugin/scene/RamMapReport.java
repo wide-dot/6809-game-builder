@@ -104,6 +104,7 @@ public final class RamMapReport {
 				pages.add(load.page);
 			}
 
+			int freeTotal = 0;
 			for (int page : pages) {
 				List<Row> rows = new ArrayList<Row>();
 
@@ -160,8 +161,26 @@ public final class RamMapReport {
 					out.append(System.lineSeparator());
 					cursor = Math.max(cursor, row.address + row.size);
 				}
+				// What is left above the last declaration. The report used to
+				// stop at "declared up to", which said nothing : with
+				// size="auto" every region fills itself, so the percentages
+				// all read 100% while whole kilobytes sat free above them.
+				// Needs the layout to declare its windows — a page is 16 KB
+				// but WHERE it is seen belongs to the machine.
+				Regions.Window window = regions.windowOf(rows.get(0).address);
+				if (window != null && cursor < window.end()) {
+					int free = window.end() - cursor;
+					out.append(String.format("  $%04X-$%04X  %-9s %-22s %6d",
+							cursor, window.end() - 1, "free", "(end of page)", free))
+					   .append(System.lineSeparator());
+					freeTotal += free;
+				}
 				out.append(String.format("  declared up to $%04X", cursor))
 				   .append(System.lineSeparator());
+			}
+			if (!regions.windows().isEmpty()) {
+				out.append(String.format("free at the top of the declared pages : %d bytes",
+						freeTotal)).append(System.lineSeparator());
 			}
 		}
 		return out.toString();

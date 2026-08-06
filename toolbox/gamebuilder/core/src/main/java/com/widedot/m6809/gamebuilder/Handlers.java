@@ -124,6 +124,10 @@ public final class Handlers {
 			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")
 			.opt("pages", INT_AUTO, "consecutive pages the region spans from page, 1 if omitted ; auto takes what the pageset really filled")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
+		spec(element("window").doc("a window the machine sees a page through — a page is 16 KB of RAM, where the CPU sees it belongs to the machine (TO8 : cartridge $0000, resident $6000, bank $A000). Declaring them lets the occupancy report name the free tail of each page, and refuses a region that would run past its window")
+			.req("name", STRING, "window name, for the report and error messages")
+			.req("address", INT, "where the window opens")
+			.req("size", INT, "window size, one page"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
 			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")
 			.req("page", INT, "page holding the range")

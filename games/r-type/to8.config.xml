@@ -12,6 +12,18 @@
         <!-- exclusives au runtime. Le builder les autorise donc à exporter    -->
         <!-- les mêmes noms, et exige d'elles la même liste d'exports.         -->
         <layout gensymbols="gen/layout.asm">
+            <!-- Les trois fenetres par lesquelles le TO8 voit une page de 16 Ko. -->
+            <!-- Le layout ne les declarait pas, et personne ne pouvait donc dire -->
+            <!-- combien il restait AU-DESSUS de la derniere region d'une page :  -->
+            <!-- avec size="auto" chaque region se remplit elle-meme, la carte    -->
+            <!-- d'occupation affichait 100 % partout pendant que des kilo-octets -->
+            <!-- dormaient au-dessus. Les declarer donne la queue libre de chaque -->
+            <!-- page dans le rapport, et refuse au build une region qui          -->
+            <!-- deborderait de sa fenetre.                                       -->
+            <window name="cartouche" address="$0000" size="$4000"/>
+            <window name="residente" address="$6000" size="$4000"/>
+            <window name="banque"    address="$A000" size="$4000"/>
+
             <!-- Les deux regions de la page residente sont ADJACENTES, et leur -->
             <!-- frontiere a ete posee avant qu'on connaisse les tailles. La     -->
             <!-- carte d'occupation a montre le desequilibre : le moteur a 93 %,  -->
