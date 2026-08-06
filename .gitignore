@@ -30,3 +30,5 @@ hs_err_pid*
 /engine/**/build/
 /imgui.ini
 .builder-cache/
+examples/*/dist/
+examples/*/gen/
