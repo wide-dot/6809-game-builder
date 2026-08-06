@@ -126,18 +126,23 @@
             <!-- plus petit, sur les pages qu'on lui ouvre. Leur page et leur   -->
             <!-- adresse sont publiees par fichier — c'est l'index d'objets qui -->
             <!-- les lit, personne ne grave d'adresse vers ici.                 -->
+            <!-- Les zones dans l'ordre de remplissage : les petits trous     -->
+            <!-- d'abord — le premier-qui-convient les reserve de fait aux    -->
+            <!-- petits fichiers — puis les pages pleines. La queue de la     -->
+            <!-- page 4 commence a $B900, derriere loader+pool ($B781 mesure  -->
+            <!-- au build) : si le loader grossit de plus de 383 octets, le   -->
+            <!-- chevauchement zone/reserved REFUSE le build au lieu de       -->
+            <!-- laisser l'arene ecraser le pool. $18-$1C restent vierges     -->
+            <!-- pour la fin du cast et le boss.                              -->
             <arena name="objects">
+                <zone page="$04" address="$0000" size="$2000"/>
+                <zone page="$04" address="$3880" size="$0780"/>
+                <zone page="$05" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
                 <zone page="$10" address="$0000" size="$4000"/>
                 <zone page="$11" address="$0000" size="$4000"/>
                 <zone page="$13" address="$0000" size="$4000"/>
                 <zone page="$14" address="$0000" size="$4000"/>
-                <zone page="$18" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$4000"/>
-                <zone page="$1B" address="$0000" size="$4000"/>
-                <zone page="$1C" address="$0000" size="$4000"/>
-                <zone page="$05" address="$0000" size="$4000"/>
-                <zone page="$19" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
             <!-- coupee pour rendre du temps CPU, comme la v1 la coupe deja.    -->
@@ -1530,7 +1535,15 @@
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0800"/>
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 
-            <data section="LOADER" ram-page="4" ram-address="$A000"
+            <!-- L'empreinte du loader est declaree dans le repere de la      -->
+            <!-- FENETRE CARTOUCHE, celui de tout ce que la page 4 partage     -->
+            <!-- avec l'arene : le quirk TO8 echange les deux moities de 8 Ko  -->
+            <!-- vues par $E7E6 — le code (offsets physiques 0-$0F80, execute  -->
+            <!-- a $A000 par la banque) s'y voit en $2000+, la queue libre en  -->
+            <!-- $0000-$1FFF et $3781+. Meme repere pour la carte ET pour le   -->
+            <!-- garde-fou zone/reserved : si loader+pool depassent $3880, le  -->
+            <!-- build refuse au lieu de laisser l'arene les recouvrir.        -->
+            <data section="LOADER" ram-page="4" ram-address="$2000"
                   ram-pool="loader.DEFAULT_DYNAMIC_MEMORY_SIZE">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
