@@ -48,7 +48,12 @@
             <!-- octets, hors de portee de la RAM residente. Elles vivent donc  -->
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
             <!-- deja une page par plan de carte.                               -->
-            <region name="maps"       page="$16" address="$0000" interface="true"/>
+            <!-- Les cartes vivent dans la QUEUE du dernier tileset impair ($1F,
+                 fin mesuree $09C7). Le stage 1 porte la plus grande carte ET
+                 les plus gros tilesets du jeu : cette queue est garantie chez
+                 tous les stages. Un stage qui la deborderait est refuse par le
+                 controle de scene. -->
+            <region name="maps"       page="$1F" address="$09C7" interface="true"/>
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
@@ -105,23 +110,16 @@
             <!-- pas dans la fin de la page des overlays : la page $14, elle,  -->
             <!-- n'etait remplie qu'a 22 % — redecoupee plutot que d'en brûler  -->
             <!-- une neuve, les pages etant ce qui manquera aux tuiles.         -->
-            <!-- Les images d'explosion : 17 376 octets etales, donc un pageset
-                 — il ne sait prendre que des pages ENTIERES. Elles closent le
-                 domaine commun, juste apres son arene. -->
-            <region name="explosion.images">
-                <zone page="$0C" address="$0000" size="$4000"/>
-                <zone page="$0D" address="$0000" size="$4000"/>
-            </region>
             <!-- Le son. Lecteur YMM et donnees dans LA MEME page : le macro    -->
             <!-- _ymm.frame.play n'en monte qu'une. Les bruitages ont la leur,  -->
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
-            <!-- Le son partage la page de la collision : lecteur + musique   -->
-            <!-- (6 811 o) tiennent dans la moitie haute a $2000, la moitie    -->
-            <!-- basse reste a collision+init (5 111 o, 3 081 de marge). Le    -->
-            <!-- lecteur est commun mais la musique change par stage — la page -->
-            <!-- appartient au bloc STAGE, seul ymm.data y est recharge.       -->
-            <region name="ymm.player" page="$17" address="$2000"/>
-            <region name="ymm.data"   page="$17"/>
+            <!-- Le son vit dans la QUEUE du tileset pair $1A (fin mesuree
+                 $1C9B) : lecteur puis musique, colocalises — _ymm.frame.play
+                 ne monte qu'une page. Le lecteur est commun mais voyage avec
+                 les donnees ; les stages suivants ne rechargeront que
+                 ymm.data. -->
+            <region name="ymm.player" page="$1A" address="$1C9B"/>
+            <region name="ymm.data"   page="$1A" address="$20BC"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
@@ -159,17 +157,33 @@
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
                 <zone page="$0B" address="$0000" size="$4000"/>
+                <!-- La tete de $0C, jusqu'a la frontiere relevee a la main
+                     avec l'arene du stage 1 : $0769, l'octet exact ou le
+                     commun s'arrete aujourd'hui. Zero marge, donc les deux
+                     arenes ne peuvent pas se recouvrir — c'est le controle de
+                     scene qui refusera le build si le commun grossit, plutot
+                     qu'un ennemi ecrase en silence. -->
+                <zone page="$0C" address="$0000" size="$0769"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete. Ces objets sont nommes
                  stage1.* parce qu'ils appartiennent au niveau ; le jour ou un
                  ennemi servira deux stages, ce sera une autre etape. -->
+            <!-- Elle demarre a la FIN REELLE du domaine commun, relevee a la
+                 main sur la carte : $0D59 sur la page $0C (le debordement du
+                 commun, derriere les images d'explosion). Marge a $0E00 —
+                 si le commun grossit au-dela, le controle de scene refuse le
+                 chevauchement. -->
             <arena name="stage1.enemies">
+                <zone page="$0C" address="$0769" size="$3897"/>
+                <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
                 <zone page="$10" address="$0000" size="$4000"/>
                 <zone page="$11" address="$0000" size="$4000"/>
                 <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
                 <zone page="$15" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
@@ -191,12 +205,6 @@
             <!-- Le laser a rebond aligne ses tampons cycliques sur 32 octets par -->
             <!-- ALIGN : sa region DOIT demarrer sur un multiple de 32.           -->
             <!-- Le cast commun, range par le builder sur des pages contigues -->
-            <!-- Les images du tabrok : trop grosses pour tenir dans son unite
-                 (20 Ko a elles seules), etalees comme celles de l'explosion. -->
-            <region name="stage1.tabrok.images">
-                <zone page="$13" address="$0000" size="$4000"/>
-                <zone page="$14" address="$0000" size="$4000"/>
-            </region>
 
 
             <!-- Ce que le jeu occupe sans jamais rien y charger. Le builder ne -->
@@ -524,52 +532,77 @@
                 <!-- compile (obj.d7.properties), le code rattache les          -->
                 <!-- manquantes a la suivante.                                  -->
                 <!-- ******************************************************** -->
-                <pageset name="explosion.images" region="explosion.images"
-                         gendir="gen/fx/explosion-pages" linkdata="LINK">
-                    <gfxcomp gendir="gen/fx/explosion"
-                             gensource="gen/fx/explosion/includes.asm"
-                             imageset="explosion">
-                        <image name="expSmall_0" filename="src/common/fx/explosion/images/blast_small_0.png" index="0">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expSmall_1" filename="src/common/fx/explosion/images/blast_small_1.png" index="1">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expSmall_3" filename="src/common/fx/explosion/images/blast_small_3.png" index="2">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expSmall_5" filename="src/common/fx/explosion/images/blast_small_5.png" index="3">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expFwk_0" filename="src/common/fx/explosion/images/firework_0.png" index="4">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expFwk_1" filename="src/common/fx/explosion/images/firework_1.png" index="5">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expFwk_3" filename="src/common/fx/explosion/images/firework_3.png" index="6">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expFwk_5" filename="src/common/fx/explosion/images/firework_5.png" index="7">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expBig_0" filename="src/common/fx/explosion/images/blast_big_0.png" index="8">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expBig_1" filename="src/common/fx/explosion/images/blast_big_1.png" index="9">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expBig_3" filename="src/common/fx/explosion/images/blast_big_3.png" index="10">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expBig_5" filename="src/common/fx/explosion/images/blast_big_5.png" index="11">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="expBig_7" filename="src/common/fx/explosion/images/blast_big_7.png" index="12">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                    </gfxcomp>
-                </pageset>
+                <!-- Ses treize sprites pesent 17 Ko : TROIS TRANCHES d'arene,
+                     une par type d'explosion (petite, firework, grande), que
+                     le rangement glisse dans les creux du commun. L'index
+                     unique reste dans l'objet, chaque descripteur portant la
+                     page de SA tranche. Une image sur deux seulement — c'est
+                     ce que la cible disquette de la v1 compile
+                     (obj.d7.properties), le code rattache les manquantes a la
+                     suivante. -->
+                <file name="common.explosion.imgSmall" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/fx/explosion-imgsmall.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
+                                 gensource="gen/fx/explosion/includesSmall.asm">
+                            <image name="expSmall_0" filename="src/common/fx/explosion/images/blast_small_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expSmall_1" filename="src/common/fx/explosion/images/blast_small_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expSmall_3" filename="src/common/fx/explosion/images/blast_small_3.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expSmall_5" filename="src/common/fx/explosion/images/blast_small_5.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <file name="common.explosion.imgFwk" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/fx/explosion-imgfwk.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
+                                 gensource="gen/fx/explosion/includesFwk.asm">
+                            <image name="expFwk_0" filename="src/common/fx/explosion/images/firework_0.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expFwk_1" filename="src/common/fx/explosion/images/firework_1.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expFwk_3" filename="src/common/fx/explosion/images/firework_3.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expFwk_5" filename="src/common/fx/explosion/images/firework_5.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <file name="common.explosion.imgBig" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/fx/explosion-imgbig.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
+                                 gensource="gen/fx/explosion/includesBig.asm">
+                            <image name="expBig_0" filename="src/common/fx/explosion/images/blast_big_0.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expBig_1" filename="src/common/fx/explosion/images/blast_big_1.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expBig_3" filename="src/common/fx/explosion/images/blast_big_3.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expBig_5" filename="src/common/fx/explosion/images/blast_big_5.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expBig_7" filename="src/common/fx/explosion/images/blast_big_7.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
 
                 <file name="common.explosion" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/fx/explosion.asm">
@@ -888,52 +921,6 @@
                 <!-- boot, résident : une seule copie sur disquette et en RAM,    -->
                 <!-- quelle que soit la liste des stages qui s'en servent.        -->
                 <!-- ******************************************************** -->
-                <!-- Les douze poses du tabrok, etalees par le builder. L'index,
-                     lui, vit dans l'unite du tank : c'est la page que
-                     Img_Page_Index monte pour lire les descripteurs. -->
-                <pageset name="stage1.tabrok.images" region="stage1.tabrok.images"
-                         gendir="gen/enemies/tabrok-pages" linkdata="LINK">
-                    <gfxcomp gendir="gen/enemies/tabrok"
-                             gensource="gen/enemies/tabrok/includes.asm"
-                             imageset="tabrok">
-                        <image name="tabrok_0" filename="src/enemies/tabrok/images/tabrok_0.png" index="0">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_1" filename="src/enemies/tabrok/images/tabrok_1.png" index="1">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_2" filename="src/enemies/tabrok/images/tabrok_2.png" index="2">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_3" filename="src/enemies/tabrok/images/tabrok_3.png" index="3">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_4" filename="src/enemies/tabrok/images/tabrok_4.png" index="4">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_5" filename="src/enemies/tabrok/images/tabrok_5.png" index="5">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_6" filename="src/enemies/tabrok/images/tabrok_6.png" index="6">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_7" filename="src/enemies/tabrok/images/tabrok_7.png" index="7">
-                            <encoder name="bdraw" mirror="none" shift="0"/>
-                        </image>
-                        <image name="tabrok_12" filename="src/enemies/tabrok/images/tabrok_4.png" index="12">
-                            <encoder name="bdraw" mirror="x" shift="0"/>
-                        </image>
-                        <image name="tabrok_13" filename="src/enemies/tabrok/images/tabrok_5.png" index="13">
-                            <encoder name="bdraw" mirror="x" shift="0"/>
-                        </image>
-                        <image name="tabrok_14" filename="src/enemies/tabrok/images/tabrok_6.png" index="14">
-                            <encoder name="bdraw" mirror="x" shift="0"/>
-                        </image>
-                        <image name="tabrok_15" filename="src/enemies/tabrok/images/tabrok_7.png" index="15">
-                            <encoder name="bdraw" mirror="x" shift="0"/>
-                        </image>
-                    </gfxcomp>
-                </pageset>
 
                 <!-- LE CAST D'ENNEMIS, un direntry PAR objet, range par l'arene. -->
                 <!-- Ils etaient empaquetes dans un pageset : sept pages entieres  -->
@@ -1271,6 +1258,81 @@
                     </lwasm>
                 </file>
 
+                <!-- Les douze poses du tabrok, en TROIS TRANCHES d'arene nommees
+                     par la PHASE qui les joue — le verrou "un imageset = un
+                     gfxcomp" etant leve, le grain redevient celui du jeu. Aucun
+                     mode n'en joue deux a la fois (releve dans obj.asm), et une
+                     table d'animation peut de toute facon citer une pose d'une
+                     autre tranche : chaque descripteur de l'index unique porte
+                     la page de SON image. -->
+                <!-- Vol et chute (modes 1, 5-10) : deux poses alternees a chaque tick par
+                     tabrok_flameToggle, la flamme du reacteur. Poses 6-7 et leurs
+                     miroirs 14-15 — le tank vole dans les deux sens -->
+                <file name="stage1.tabrok.imgFlight" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/tabrok-imgflight.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
+                                 gensource="gen/enemies/tabrok/includesFlight.asm">
+                            <image name="tabrok_6" filename="src/enemies/tabrok/images/tabrok_6.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_7" filename="src/enemies/tabrok/images/tabrok_7.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_14" filename="src/enemies/tabrok/images/tabrok_6.png" index="14">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="tabrok_15" filename="src/enemies/tabrok/images/tabrok_7.png" index="15">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Pose au sol, visee et tir (modes 2, 3, 11) : la posture immobile et son
+                     leger cycle de repos 4,4,5,4. Poses 4-5 et miroirs 12-13 -->
+                <file name="stage1.tabrok.imgGround" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/tabrok-imgground.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
+                                 gensource="gen/enemies/tabrok/includesGround.asm">
+                            <image name="tabrok_4" filename="src/enemies/tabrok/images/tabrok_4.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_5" filename="src/enemies/tabrok/images/tabrok_5.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_12" filename="src/enemies/tabrok/images/tabrok_4.png" index="12">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="tabrok_13" filename="src/enemies/tabrok/images/tabrok_5.png" index="13">
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Marche (mode 4) : le cycle de huit pas indexe sur le compteur global,
+                     seul consommateur des poses 0-3. Sans miroir — la table 2b70
+                     n'existe que dans un sens -->
+                <file name="stage1.tabrok.imgWalk" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/tabrok-imgwalk.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
+                                 gensource="gen/enemies/tabrok/includesWalk.asm">
+                            <image name="tabrok_0" filename="src/enemies/tabrok/images/tabrok_0.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_1" filename="src/enemies/tabrok/images/tabrok_1.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_2" filename="src/enemies/tabrok/images/tabrok_2.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_3" filename="src/enemies/tabrok/images/tabrok_3.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
                 <file name="stage1.tabrok" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/enemies/tabrok.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1843,7 +1905,9 @@
                     <load name="common.beamcharge" arena="objects"/>
                     <load name="common.beamp"      arena="objects"/>
                     <load name="common.emflash"    arena="objects"/>
-                    <load name="explosion.images"  region="explosion.images"/>
+                    <load name="common.explosion.imgSmall" arena="objects"/>
+                    <load name="common.explosion.imgFwk"   arena="objects"/>
+                    <load name="common.explosion.imgBig"   arena="objects"/>
                     <load name="common.explosion"  arena="objects"/>
                     <load name="common.fade"       arena="objects"/>
                     <load name="common.engineflames" arena="objects"/>
@@ -1872,12 +1936,14 @@
                     <load name="stage1.shell"                            arena="stage1.enemies"/>
                     <load name="stage1.shelleraser"                      arena="stage1.enemies"/>
                     <load name="stage1.tabrok"                           arena="stage1.enemies"/>
+                    <load name="stage1.tabrok.imgFlight"  arena="stage1.enemies"/>
+                    <load name="stage1.tabrok.imgGround"  arena="stage1.enemies"/>
+                    <load name="stage1.tabrok.imgWalk"    arena="stage1.enemies"/>
                     <load name="stage1.tabrokcanon"                      arena="stage1.enemies"/>
                     <load name="common.missile"           arena="objects"/>
                     <load name="common.missileflame"      arena="objects"/>
                     <load name="stage1.scant"             arena="stage1.enemies"/>
                     <load name="stage1.scantfire"         arena="stage1.enemies"/>
-                    <load name="stage1.tabrok.images"     region="stage1.tabrok.images"/>
                     <load name="common.forcepod"   arena="objects"/>
                     <load name="common.reboundlaser" arena="objects"/>
                     <load name="common.counterairlaser" arena="objects"/>
