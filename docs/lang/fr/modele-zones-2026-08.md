@@ -1,7 +1,7 @@
 ---
 date: 2026-08-06
 sujet: Modèle mémoire — zones, régions, arènes. Décision de conception et plan d'implémentation.
-statut: décidé, non implémenté
+statut: étapes 1 à 3 implémentées, 4 et 5 à faire
 succède à: modele-regions-2026-07.md (doctrine des régions)
 ---
 
@@ -139,6 +139,13 @@ Il refuse ce qui est faux **quel que soit l'enchaînement des écrans** :
 3. une zone qui mord sur un `reserved` ;
 4. une adresse **gravée** vers une cible qui n'est pas rechargée avec le graveur
    — le garde-fou sans lequel l'erreur se reproduit en silence.
+
+Le quatrième était **déjà tenu**, par un chemin qu'on n'avait pas vu : l'élection
+de fournisseur. Mis à l'épreuve en rangeant les cartes des deux niveaux dans une
+arène, le build refuse de lui-même — « `adr_tilesEven_1_ND0` est exporté par
+[stage1.tiles.even.0, stage2.tiles.even.0], alternatives d'exécution dont
+stage2.maps pourrait voir l'une ou l'autre ». Rien à ajouter, donc, sinon de
+savoir que la protection existe et par où elle passe.
 
 Il **montre**, sans refuser, tout le reste : les recouvrements entre contenants,
 l'occupation réelle, ce qui dort. Deux contenants peuvent occuper la même RAM :

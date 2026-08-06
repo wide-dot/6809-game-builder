@@ -106,12 +106,19 @@ public final class ArenaPacker {
 		}
 		if (!measured) {
 			// The discovery pass is running and it is what produces the sizes.
-			// Give every file the head of the first zone : a provisional
-			// address nothing is built against, and above all no refusal —
-			// the pass has to reach the end for anything to be measured.
+			// Lay the files out one after another from the head of the first
+			// zone, ignoring its bounds : the addresses are provisional and
+			// nothing is built against them, but they must not land on each
+			// other — a scene's own writes are checked for overlap, and a pile
+			// of files at one address would fail a check that means nothing
+			// yet. No refusal either : the pass has to reach the end for
+			// anything to be measured at all.
 			Regions.Zone head = arena.zones.get(0);
+			int at = head.address;
 			for (String f : files) {
-				ctx.regions.placeFile(f, head.page, head.address);
+				ctx.regions.placeFile(f, head.page, at);
+				Integer known = ctx.regions.fileSize(f);
+				at += known == null ? 1 : known;
 			}
 			return;
 		}

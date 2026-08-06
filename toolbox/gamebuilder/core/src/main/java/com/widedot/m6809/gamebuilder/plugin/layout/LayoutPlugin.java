@@ -69,53 +69,34 @@ public class LayoutPlugin {
 		}
 
 		// A region is a promise about where things land ; a reserved range is
-		// a promise about where they must not. Both are declarations, so both
-		// are checked here — before anything is built, and whatever the size
-		// of what ends up being loaded. A region declared over the object pool
-		// is a latent fault even while its content stays small.
+		// a promise about where they must not. Only the second is checked
+		// here, and it is checked whatever the sizes : the object pool, the
+		// stack and the video buffers do not negotiate.
+		//
+		// Two CONTAINERS overlapping is no longer an error. The builder does
+		// not know the order of the game's screens — that belongs to the game
+		// code — so it cannot tell a title screen legitimately reusing a
+		// family's RAM from a mistake. What it can tell, and does, is that no
+		// single SCENE writes twice to the same bytes (SceneChecks). The rest
+		// is shown, not refused : see the occupancy report.
 		java.util.List<String> clashes = new java.util.ArrayList<String>();
-		// Like the window check : only on the measured pass. While measuring,
-		// a size left to the builder takes a whole page, so two regions that
-		// share a page provisionally cover each other — a false alarm that
-		// would stop the pass whose whole job is to produce the measures.
-		java.util.List<Regions.Region> all = ctx.regions.hasMeasures()
-				? new java.util.ArrayList<Regions.Region>(ctx.regions.all())
-				: new java.util.ArrayList<Regions.Region>();
-		for (int i = 0; i < all.size(); i++) {
-			Regions.Region a = all.get(i);
-			if (a.size == null) {
-				continue;
-			}
-			for (int j = i + 1; j < all.size(); j++) {
-				Regions.Region b = all.get(j);
-				if (b.size == null) {
-					continue;
-				}
-				for (int pa = a.page; pa < a.page + a.pages; pa++) {
-					for (int pb = b.page; pb < b.page + b.pages; pb++) {
-						if (pa == pb && a.address < b.address + b.size
-								&& b.address < a.address + a.size) {
+		if (ctx.regions.hasMeasures()) {
+			for (Regions.Region a : ctx.regions.all()) {
+				for (Regions.Zone z : a.zones) {
+					for (Regions.Reserved r : ctx.regions.reservedRanges()) {
+						if (z.page == r.page && z.address < r.address + r.size
+								&& r.address < z.end()) {
 							clashes.add(String.format(
-									"regions '%s' [$%04X-$%04X] and '%s' [$%04X-$%04X] overlap on page %d",
-									a.name, a.address, a.address + a.size - 1,
-									b.name, b.address, b.address + b.size - 1, pa));
+									"region '%s' [$%04X-$%04X] runs into the reserved range '%s'"
+									+ " [$%04X-$%04X] on page %d",
+									a.name, z.address, z.end() - 1,
+									r.name, r.address, r.address + r.size - 1, z.page));
 						}
 					}
 				}
 			}
-			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
-				for (int pa = a.page; pa < a.page + a.pages; pa++) {
-					if (pa == r.page && a.address < r.address + r.size
-							&& r.address < a.address + a.size) {
-						clashes.add(String.format(
-								"region '%s' [$%04X-$%04X] runs into the reserved range '%s'"
-								+ " [$%04X-$%04X] on page %d",
-								a.name, a.address, a.address + a.size - 1,
-								r.name, r.address, r.address + r.size - 1, pa));
-					}
-				}
-			}
 		}
+
 		// A region that runs past the end of its window overwrites whatever the
 		// machine maps next — invisible until the byte that lands there matters.
 		//
@@ -127,23 +108,22 @@ public class LayoutPlugin {
 		// the ones anything is built against.
 		if (!ctx.regions.windows().isEmpty() && ctx.regions.hasMeasures()) {
 			for (Regions.Region region : ctx.regions.all()) {
-				if (region.size == null) {
-					continue;
-				}
-				Regions.Window window = ctx.regions.windowOf(region.address);
-				if (window == null) {
-					clashes.add(String.format(
-							"region '%s' starts at $%04X, which no declared window holds",
-							region.name, region.address));
-					continue;
-				}
-				int end = region.address + region.size;
-				if (end > window.end()) {
-					clashes.add(String.format(
-							"region '%s' [$%04X-$%04X] runs %d bytes past the '%s' window"
-							+ " [$%04X-$%04X]",
-							region.name, region.address, end - 1, end - window.end(),
-							window.name, window.address, window.end() - 1));
+				for (Regions.Zone zone : region.zones) {
+					Regions.Window window = ctx.regions.windowOf(zone.address);
+					if (window == null) {
+						clashes.add(String.format(
+								"region '%s' has a zone at $%04X, which no declared window holds",
+								region.name, zone.address));
+						continue;
+					}
+					if (zone.end() > window.end()) {
+						clashes.add(String.format(
+								"region '%s' [$%04X-$%04X] runs %d bytes past the '%s' window"
+								+ " [$%04X-$%04X]",
+								region.name, zone.address, zone.end() - 1,
+								zone.end() - window.end(),
+								window.name, window.address, window.end() - 1));
+					}
 				}
 			}
 		}
