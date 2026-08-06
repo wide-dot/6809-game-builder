@@ -1,12 +1,17 @@
-# stacked-overflow — une liste empilée qui franchit une page
+# stacked-overflow — une liste qui franchit une page
 
-Dix marqueurs de 2 Ko chargés dans une région `stacked` : ils remplissent une
-page et débordent sur la suivante. Chaque marqueur est rempli de son propre
-numéro, de 1 à 10 — jamais 0, qu'on ne saurait distinguer d'une RAM jamais
-écrite.
+Dix marqueurs de 2 Ko chargés dans une **arène à deux zones** : ils remplissent
+la première et débordent dans la seconde. Chaque marqueur est rempli de son
+propre numéro, de 1 à 10 — jamais 0, qu'on ne saurait distinguer d'une RAM
+jamais écrite.
 
-Deux cibles, `to8.config.xml` et `mo6.config.xml`. L'exemple aura finalement
-trouvé **deux défauts**, corrigés tous les deux.
+Deux cibles, `to8.config.xml` et `mo6.config.xml`. L'exemple est né pour
+éprouver l'empilement *à l'exécution* (`stacked="true"`), y a trouvé **deux
+défauts**, corrigés et prouvés tous les deux — puis a survécu au retrait de
+`stacked` (2026-08-06) : il prouve désormais que l'arène remplit ses zones dans
+l'ordre et fait déborder la suite dans la zone suivante, le chargeur ne
+recevant plus que des destinations explicites (`%01`). Mêmes adresses
+attendues, décidées par le builder au lieu d'être recalculées par le chargeur.
 
 ## Défaut 1 — le décalage d'un octet par fichier (élucidé, corrigé)
 
@@ -61,6 +66,11 @@ Corrigé dans `engine/system/thomson/bootloader/loader.asm`, aux deux endroits
 où le motif apparaît (`type10` et `type11`). **Éprouvé sur MO6 le 2026-08-06**
 (émulateur externe, bordure verte) — le TO8 ne peut pas voir ce défaut-là.
 
+Depuis le retrait de `stacked`, le builder n'émet plus de bloc séquentiel pour
+des données écrites en RAM : cette marche du chargeur (et son passage de page)
+n'est plus exercée que par une table écrite à la main. Le correctif y reste,
+prouvé par la validation ci-dessus.
+
 ## Comment lire le résultat
 
 Le programme cherche chaque marqueur là où le chargeur devait le mettre, et
@@ -73,7 +83,8 @@ répond par la bordure de l'écran :
 Vérifié sur les deux machines le 2026-08-06 : **TO8 vert** (émulateur TOJE,
 dix marqueurs aux adresses exactes, franchissement de page compris) et
 **MO6 vert** (émulateur externe) — la liste survit désormais au passage de
-page quel que soit l'endroit où s'ouvre la fenêtre cartouche.
+page quel que soit l'endroit où s'ouvre la fenêtre cartouche. Revérifié TO8
+vert après la migration vers l'arène, le même jour.
 
 Au passage : les indices de bordure sont la palette Thomson par défaut —
 vert = 2, rouge = 1. Les valeurs initiales (3 et 6) affichaient jaune et cyan,

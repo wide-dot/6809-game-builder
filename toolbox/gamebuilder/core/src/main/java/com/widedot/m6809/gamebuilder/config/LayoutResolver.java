@@ -137,6 +137,17 @@ public final class LayoutResolver {
 
 			String name = Attribute.getString(child, ctx, "name");
 
+			if (Attribute.getStringOpt(child, ctx, "stacked") != null) {
+				// removed 2026-08 : a run-time-stacked list is what an arena
+				// does at build time, better — per-file placement, bakable,
+				// and the drift bugs of the loader's walk out of the way
+				throw new Exception(ctx.sources.locate(child) + ": region '" + name
+						+ "' declares stacked=… — this attribute no longer exists. Declare an"
+						+ " <arena name=\"" + name + "\"> with one <zone> per page of room, and"
+						+ " load into it with <load arena=\"" + name + "\"> : the builder lays"
+						+ " the files out itself and publishes <file>.page / <file>.address");
+			}
+
 			// Zones declared as children : the region says WHERE it lives, in
 			// as many pieces as it needs. The compact form — page, address and
 			// size on the element — is read further down and becomes a single
@@ -168,8 +179,7 @@ public final class LayoutResolver {
 				// pages still counts the zones : the rest of the builder reads
 				// it to walk a region's pages, and a zone is one page's worth
 				out.put(name, new Regions.Region(name, head.page, head.address, head.size,
-						Attribute.getBoolean(child, ctx, "stacked", false), zones.size(),
-						zones, isArena));
+						zones.size(), zones, isArena));
 				continue;
 			}
 			// The layout declares CONSTRAINTS, not decisions : what the author
@@ -196,8 +206,6 @@ public final class LayoutResolver {
 					pages = next != null ? next - page : 32 - page;
 				}
 			}
-			boolean stacked = Attribute.getBoolean(child, ctx, "stacked", false);
-
 			String rawSize = Attribute.getStringOpt(child, ctx, "size");
 			String rawAddress = Attribute.getStringOpt(child, ctx, "address");
 			boolean autoSize = rawSize == null || "auto".equals(rawSize);
@@ -246,7 +254,7 @@ public final class LayoutResolver {
 			// window at $0000. The overlap checks the layout plugin runs are
 			// what catches a region placed on top of something.
 
-			out.put(name, new Regions.Region(name, page, address, size, stacked, pages));
+			out.put(name, new Regions.Region(name, page, address, size, pages));
 			if (size != null) {
 				for (int p = 0; p < pages; p++) {
 					occupy(taken, page + p, pages > 1 ? 0 : address, pages > 1 ? PAGE_SIZE : size);

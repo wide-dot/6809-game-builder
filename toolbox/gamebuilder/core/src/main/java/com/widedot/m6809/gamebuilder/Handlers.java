@@ -121,7 +121,6 @@ public final class Handlers {
 			.opt("page", INT, "destination page, compact form of a region holding one <zone>")
 			.opt("address", INT, "destination address, compact form")
 			.opt("size", INT, "byte budget of the compact form ; a region declaring <zone> children says its room there")
-			.opt("stacked", BOOL, "the region takes a list of loads per scene, laid out one after the other at run time ; the list is replaced as a whole")
 			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>")
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("window").doc("a window the machine sees a page through — a page is 16 KB of RAM, where the CPU sees it belongs to the machine (TO8 : cartridge $0000, resident $6000, bank $A000). Declaring them lets the occupancy report name the free tail of each page, and refuses a region that would run past its window")

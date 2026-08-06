@@ -30,16 +30,13 @@ public class RamMap {
 		public final int address;
 		/** uncompressed size, what the region actually holds */
 		public final int size;
-		/** true when the region stacks its loads instead of replacing them */
-		public final boolean stacked;
 
-		public Load(String name, String region, int page, int address, int size, boolean stacked) {
+		public Load(String name, String region, int page, int address, int size) {
 			this.name = name;
 			this.region = region;
 			this.page = page;
 			this.address = address;
 			this.size = size;
-			this.stacked = stacked;
 		}
 	}
 
@@ -59,8 +56,9 @@ public class RamMap {
 	 *
 	 * The largest, not the last : a region hosting alternatives — the stage
 	 * boundary — must be sized for the biggest of them, or loading the other
-	 * one overflows. Loads of a same scene are summed, which is what a stacked
-	 * region does ; for an ordinary region there is only ever one per scene.
+	 * one overflows. Loads of a same scene are summed — that is what a
+	 * multi-zone region or an arena holds ; an ordinary region only ever
+	 * takes one per scene.
 	 *
 	 * This is what {@code size="auto"} resolves to, measured by the discovery
 	 * pass and applied by the real one.

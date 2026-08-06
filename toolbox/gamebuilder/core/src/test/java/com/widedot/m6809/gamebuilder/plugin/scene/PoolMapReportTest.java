@@ -22,7 +22,7 @@ public class PoolMapReportTest {
 	}
 
 	private static RamMap.Load load(String name) {
-		return new RamMap.Load(name, "somewhere", 1, 0x0000, 0, false);
+		return new RamMap.Load(name, "somewhere", 1, 0x0000, 0);
 	}
 
 	/**

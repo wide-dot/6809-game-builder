@@ -39,7 +39,6 @@ public final class RamMapReport {
 		final String name;
 		String content;        // what the scene loads there, null when nothing
 		int used;
-		boolean stacked;
 
 		Row(int address, int size, String kind, String name) {
 			this.address = address;
@@ -69,8 +68,8 @@ public final class RamMapReport {
 			// What this scene puts in each region, keyed by region AND page : a
 			// pageset member lands on one page of its region, so summing the
 			// whole set on every page would report a region several times full.
-			// A stacked region stacks its loads on one page, and there the sum is
-			// exactly what is wanted.
+			// An arena zone holding several files sums them, which is exactly
+			// what is wanted.
 			Map<String, int[]> loadedSize = new LinkedHashMap<String, int[]>();   // key -> {bytes, count}
 			Map<String, List<String>> loadedNames = new LinkedHashMap<String, List<String>>();
 			List<RamMap.Load> raw = new ArrayList<RamMap.Load>();                 // no region
@@ -125,7 +124,6 @@ public final class RamMapReport {
 					int[] cell = loadedSize.get(key(region.name, page));
 					if (cell != null) {
 						row.used = cell[0];
-						row.stacked = region.stacked || cell[1] > 1;
 						List<String> names = loadedNames.get(key(region.name, page));
 						row.content = names.size() == 1 ? names.get(0) : names.size() + " files";
 					}
@@ -160,9 +158,8 @@ public final class RamMapReport {
 					out.append(String.format("  $%04X-$%04X  %-9s %-22s %6d",
 							row.address, row.address + row.size - 1, row.kind, row.name, row.size));
 					if (row.content != null) {
-						out.append(String.format("  %-28s %6d  %3d%%%s", row.content, row.used,
-								row.size == 0 ? 0 : row.used * 100 / row.size,
-								row.stacked ? "  stacked" : ""));
+						out.append(String.format("  %-28s %6d  %3d%%", row.content, row.used,
+								row.size == 0 ? 0 : row.used * 100 / row.size));
 					} else if ("region".equals(row.kind)) {
 						out.append("  (not loaded by this scene)");
 					}

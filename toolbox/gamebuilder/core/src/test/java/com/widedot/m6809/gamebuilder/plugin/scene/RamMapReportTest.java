@@ -17,9 +17,9 @@ public class RamMapReportTest {
 
 	private static Regions layout() throws Exception {
 		Regions regions = new Regions();
-		regions.put(new Regions.Region("common", 1, 0x6100, 0x2200, false, 1));
-		regions.put(new Regions.Region("stage", 1, 0x8300, 0x0D00, false, 1));
-		regions.put(new Regions.Region("tiles", 6, 0x0000, 0x4000, false, 2));
+		regions.put(new Regions.Region("common", 1, 0x6100, 0x2200, 1));
+		regions.put(new Regions.Region("stage", 1, 0x8300, 0x0D00, 1));
+		regions.put(new Regions.Region("tiles", 6, 0x0000, 0x4000, 2));
 		regions.reserve(new Regions.Reserved("objects.pool", 1, 0x90B0, 0x0750));
 		return regions;
 	}
@@ -27,7 +27,7 @@ public class RamMapReportTest {
 	@Test
 	void aGapBetweenDeclarationsIsMeasured() throws Exception {
 		RamMap map = new RamMap();
-		map.record("boot", new RamMap.Load("engine", "common", 1, 0x6100, 7687, false));
+		map.record("boot", new RamMap.Load("engine", "common", 1, 0x6100, 7687));
 
 		String report = RamMapReport.render("fd", map, layout());
 
@@ -40,7 +40,7 @@ public class RamMapReportTest {
 	@Test
 	void aBudgetIsShownAgainstWhatIsReallyLoaded() throws Exception {
 		RamMap map = new RamMap();
-		map.record("boot", new RamMap.Load("engine", "common", 1, 0x6100, 7687, false));
+		map.record("boot", new RamMap.Load("engine", "common", 1, 0x6100, 7687));
 
 		String report = RamMapReport.render("fd", map, layout());
 
@@ -55,7 +55,7 @@ public class RamMapReportTest {
 	@Test
 	void aRegionTheSceneLeavesAloneIsNotReportedAsFree() throws Exception {
 		RamMap map = new RamMap();
-		map.record("stage1", new RamMap.Load("stage1", "stage", 1, 0x8300, 1501, false));
+		map.record("stage1", new RamMap.Load("stage1", "stage", 1, 0x8300, 1501));
 
 		String report = RamMapReport.render("fd", map, layout());
 
@@ -71,8 +71,8 @@ public class RamMapReportTest {
 	@Test
 	void aMultiPageRegionCountsEachPageOnItsOwn() throws Exception {
 		RamMap map = new RamMap();
-		map.record("boot", new RamMap.Load("tiles.0", "tiles", 6, 0x0000, 16163, false));
-		map.record("boot", new RamMap.Load("tiles.1", "tiles", 7, 0x0000, 7323, false));
+		map.record("boot", new RamMap.Load("tiles.0", "tiles", 6, 0x0000, 16163));
+		map.record("boot", new RamMap.Load("tiles.1", "tiles", 7, 0x0000, 7323));
 
 		String report = RamMapReport.render("fd", map, layout());
 

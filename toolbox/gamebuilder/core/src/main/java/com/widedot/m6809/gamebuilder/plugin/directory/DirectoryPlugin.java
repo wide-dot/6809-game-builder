@@ -189,8 +189,7 @@ public class DirectoryPlugin {
 						continue;
 					}
 					ctx.ramMap.record(scene.sceneName, new com.widedot.m6809.gamebuilder.spi.globals.RamMap.Load(
-							load.name, load.region, load.page, load.address, size,
-							load.kind == SceneCheck.Kind.BULK));
+							load.name, load.region, load.page, load.address, size));
 				}
 			}
 		}

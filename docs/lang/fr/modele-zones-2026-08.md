@@ -1,7 +1,7 @@
 ---
 date: 2026-08-06
 sujet: Modèle mémoire — zones, régions, arènes. Décision de conception et plan d'implémentation.
-statut: étapes 1, 2, 3 et 5 faites ; 4 partielle ; 6 (rapport) à venir
+statut: étapes 1 à 5 faites (dans 4, seul <window> reste, lié au rapport) ; 6 (rapport) à venir
 succède à: modele-regions-2026-07.md (doctrine des régions)
 ---
 
@@ -239,12 +239,22 @@ placement automatique de RÉGION qui allait avec — la passe de rangement, la
 plage `sparepages`, la recherche de trou. L'arène fait ce travail, mieux et à un
 seul endroit. r-type au sha identique après le retrait.
 
+**Fait aussi, le 2026-08-06 : `stacked`.** Le blocage (géométrie MO6 non
+éprouvable) est tombé avec la validation du correctif `ldu #CART_START` sur
+émulateur MO6. Les quatre configs (`mplus` ×2, `stacked-overflow` ×2) sont
+migrées vers une arène à deux zones ; l'attribut est refusé avec le geste de
+migration dans le message ; `Regions.Region.stacked`, le genre `BULK`, la
+simulation de curseur des vérifications et la branche `Stacked` du générateur
+de scène ont disparu. Ce que le retrait change de posture : **plus aucun octet
+de donnée n'est placé par la marche à l'exécution du chargeur** — le builder
+décide, publie, et émet du `%01` ; les blocs séquentiels `%10`/`%11` ne
+servent plus qu'aux fichiers export-only, qui n'écrivent rien. Preuves :
+r-type au sha identique, 12/12 exemples, mplus à l'écran identique
+avant/après, stacked-overflow vert (les mêmes adresses, décidées cette fois
+par l'arène).
+
 **Reste**, et volontairement :
 
-- `stacked` : deux exemples (`mplus`) l'emploient avec une taille qui déborde
-  d'une page, en s'appuyant sur le passage de page du `type10`. Les migrer vers
-  une arène demande de connaître la géométrie MO6, qu'on ne peut pas éprouver en
-  machine ici. À faire par qui peut tester.
 - `<window>` : plus rien ne l'utilise pour PLACER, mais le rapport s'en sert
   pour dire ce qui reste en haut d'une page. Le modèle veut qu'il disparaisse et
   que le rapport parle par zone — c'est un travail à mener avec la refonte du

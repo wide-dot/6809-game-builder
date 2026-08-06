@@ -51,7 +51,6 @@ public class ScenePlugin {
 		String gensource = Attribute.getString(node, ctx, "gensource", "gen/scenes/" + name + ".asm");
 
 		List<SceneGenerator.Placed> placed = new ArrayList<SceneGenerator.Placed>();
-		Map<String, SceneGenerator.Stacked> stackeds = new LinkedHashMap<String, SceneGenerator.Stacked>();
 		List<String> exportOnly = new ArrayList<String>();
 		Set<String> usedRegions = new HashSet<String>();
 		List<String> errors = new ArrayList<String>();
@@ -136,24 +135,15 @@ public class ScenePlugin {
 							+ "' (layout declares: " + ctx.regions.names() + ")");
 					continue;
 				}
-				if (region.stacked) {
-					// a stacked region takes a whole ordered list
-					stackeds.computeIfAbsent(regionName,
-							k -> new SceneGenerator.Stacked(region.page, region.address, new ArrayList<String>()))
-						.symbols.add(loadName);
-					check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.BULK,
-							region.page, region.address, region.size, regionName, where));
-				} else {
-					if (!usedRegions.add(regionName)) {
-						errors.add(where + ": scene " + name + ": region '" + regionName
-								+ "' is loaded twice ; a region takes one file per scene, make it"
-								+ " a multi-asm file — or declare the region stacked if it takes a list");
-						continue;
-					}
-					placed.add(new SceneGenerator.Placed(region.page, region.address, loadName));
-					check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
-							region.page, region.address, region.size, regionName, where));
+				if (!usedRegions.add(regionName)) {
+					errors.add(where + ": scene " + name + ": region '" + regionName
+							+ "' is loaded twice ; a region takes one file per scene, make it"
+							+ " a multi-asm file — or use an <arena> if it takes a list");
+					continue;
 				}
+				placed.add(new SceneGenerator.Placed(region.page, region.address, loadName));
+				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
+						region.page, region.address, region.size, regionName, where));
 			} else if (page != null || address != null) {
 				if (page == null || address == null) {
 					errors.add(where + ": scene " + name + ": load '" + loadName
@@ -182,8 +172,8 @@ public class ScenePlugin {
 		String tablePath = ctx.path + File.separator + tableFile;
 		Files.createDirectories(Paths.get(FileUtil.getDir(tablePath)));
 		Files.write(Paths.get(tablePath),
-				SceneGenerator.generate(name, placed, new ArrayList<SceneGenerator.Stacked>(stackeds.values()),
-						exportOnly, idBlocks).getBytes(StandardCharsets.UTF_8));
+				SceneGenerator.generate(name, placed, exportOnly, idBlocks)
+						.getBytes(StandardCharsets.UTF_8));
 
 		// hand the table to the regular file pipeline, wired exactly like
 		// the handwritten scenes : file id equates first, then the table

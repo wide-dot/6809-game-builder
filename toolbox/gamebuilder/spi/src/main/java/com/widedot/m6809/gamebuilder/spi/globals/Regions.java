@@ -48,12 +48,6 @@ public class Regions {
 		/** byte budget checked against the loaded entry, null means unchecked */
 		public final Integer size;
 		/**
-		 * stacked : the region takes a whole list of loads per scene, laid
-		 * out one after the other at run time. Members give up individual
-		 * replaceability — the list is the unit of replacement.
-		 */
-		public final boolean stacked;
-		/**
 		 * How many consecutive pages the region spans, starting at page. One
 		 * for an ordinary region ; more makes room for a dataset no single
 		 * page can hold, which a pageset fills — the author declares the
@@ -77,24 +71,22 @@ public class Regions {
 		 */
 		public final boolean packed;
 
-		public Region(String name, int page, int address, Integer size, boolean stacked,
-				int pages) {
-			this(name, page, address, size, stacked, pages, null, false);
+		public Region(String name, int page, int address, Integer size, int pages) {
+			this(name, page, address, size, pages, null, false);
 		}
 
-		public Region(String name, int page, int address, Integer size, boolean stacked,
-				int pages, java.util.List<Zone> zones) {
-			this(name, page, address, size, stacked, pages, zones, false);
+		public Region(String name, int page, int address, Integer size, int pages,
+				java.util.List<Zone> zones) {
+			this(name, page, address, size, pages, zones, false);
 		}
 
-		public Region(String name, int page, int address, Integer size, boolean stacked,
-				int pages, java.util.List<Zone> zones, boolean packed) {
+		public Region(String name, int page, int address, Integer size, int pages,
+				java.util.List<Zone> zones, boolean packed) {
 			this.packed = packed;
 			this.name = name;
 			this.page = page;
 			this.address = address;
 			this.size = size;
-			this.stacked = stacked;
 			this.pages = pages;
 			if (zones != null && !zones.isEmpty()) {
 				this.zones = java.util.Collections.unmodifiableList(

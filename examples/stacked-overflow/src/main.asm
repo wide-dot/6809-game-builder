@@ -1,14 +1,16 @@
 ; -----------------------------------------------------------------------------
-; Does a stacked list survive crossing a page boundary ?
+; Does a list of files survive crossing a page boundary ?
 ;
-; The loader lays a stacked list out from a base address and moves to the next
-; page when a file no longer fits. It used to restart the next page at address
-; ZERO. On a TO8 the cartridge window opens at $0000, so "zero" and "where the
-; window opens" were the same number and nothing ever showed. On a MO6 the
-; window opens at $B000 : the loader wrote 45 KB below it, over system RAM.
+; Historically the loader laid a stacked list out at run time and restarted the
+; next page at address ZERO instead of where the window opens — invisible on
+; TO8 ($0000), destructive on MO6 ($B000, 45 KB written over system RAM).
+; That bug is fixed and proved on both machines. Since the removal of
+; stacked="true", the BUILDER decides the layout : an arena of two zones,
+; filled in declaration order, the overflow going to the second zone. The
+; expected addresses are the same ; who decides them changed.
 ;
-; This program checks every marker where the loader was supposed to put it, and
-; says so with the screen border :
+; This program checks every marker where it is supposed to be, and says so
+; with the screen border :
 ;
 ;   GREEN  every marker is where it belongs
 ;   RED    one is missing — its number is left in $6000 (and on screen)

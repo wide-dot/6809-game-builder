@@ -21,9 +21,8 @@ import lombok.extern.slf4j.Slf4j;
  * the layout, or a literal destination on the load — so nothing here needs
  * the build to have started.
  *
- * A load into a stacked region is recorded as unusable for static resolution :
- * stacked members are laid out one after the other at run time, so no member has
- * a declared address of its own.
+ * An arena-bound load is placed where the packing put it — the builder decides
+ * the address, then stands by its decision everywhere, including here.
  */
 @Slf4j
 public final class PlacementScan {
@@ -35,17 +34,16 @@ public final class PlacementScan {
 		// regions first : loads reference them by name
 		Map<String, Regions.Region> resolved = new LinkedHashMap<String, Regions.Region>();
 		Map<String, int[]> regions = new LinkedHashMap<String, int[]>();     // name -> page, address
-		Map<String, Boolean> stackeds = new LinkedHashMap<String, Boolean>();
-		collectRegions(targetNode, ctx, regions, stackeds, resolved);
+		collectRegions(targetNode, ctx, regions, resolved);
 		// arenas next : where an arena-bound file lands depends on all the
 		// files bound to that arena, so it cannot be decided region by region
 		ctx.regions.clearFilePlacements();
 		ArenaPacker.pack(targetNode, ctx, resolved);
-		collectLoads(targetNode, ctx, regions, stackeds);
+		collectLoads(targetNode, ctx, regions);
 	}
 
 	private static void collectRegions(ImmutableNode node, BuildContext ctx,
-			Map<String, int[]> regions, Map<String, Boolean> stackeds,
+			Map<String, int[]> regions,
 			Map<String, Regions.Region> resolved) throws Exception {
 		if ("layout".equals(node.getNodeName())) {
 			// the same resolver the layout plugin uses, so an auto address or
@@ -56,18 +54,13 @@ public final class PlacementScan {
 					: LayoutResolver.resolve(node, ctx).values()) {
 				resolved.put(r.name, r);
 				regions.put(r.name, new int[] { r.page, r.address });
-				stackeds.put(r.name, r.stacked);
 				if (Boolean.parseBoolean(raw(findRegion(node, r.name), "interface"))) {
-					if (r.stacked) {
-						throw new Exception("region '" + r.name
-								+ "' cannot be both stacked and interface");
-					}
 					ctx.staticLink.declareInterfaceRegion(r.name, r.page, r.address);
 				}
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectRegions(child, ctx, regions, stackeds, resolved);
+			collectRegions(child, ctx, regions, resolved);
 		}
 	}
 
@@ -82,7 +75,7 @@ public final class PlacementScan {
 	}
 
 	private static void collectLoads(ImmutableNode node, BuildContext ctx,
-			Map<String, int[]> regions, Map<String, Boolean> stackeds) {
+			Map<String, int[]> regions) {
 		if ("scene".equals(node.getNodeName())) {
 			String scene = raw(node, "name");
 			for (ImmutableNode load : node.getChildren()) {
@@ -103,12 +96,6 @@ public final class PlacementScan {
 				}
 				String regionName = raw(load, "region");
 				if (regionName != null) {
-					if (Boolean.TRUE.equals(stackeds.get(regionName))) {
-						ctx.staticLink.placeConflict(name, "scene " + scene + " loads it into the"
-								+ " stacked region '" + regionName + "', whose members have no"
-								+ " declared address of their own");
-						continue;
-					}
 					int[] destination = regions.get(regionName);
 					if (destination == null) {
 						continue; // unknown region : the scene plugin reports it
@@ -125,7 +112,7 @@ public final class PlacementScan {
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectLoads(child, ctx, regions, stackeds);
+			collectLoads(child, ctx, regions);
 		}
 	}
 
