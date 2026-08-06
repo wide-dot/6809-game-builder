@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 01 — genere par tools/gen_objid.py 01
 * ===========================================================================
-* Les 39 identifiants que la wave reelle du niveau 01 reference, et
+* Les 41 identifiants que la wave reelle du niveau 01 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -37,23 +37,25 @@ ObjID_forcepod_simplefire    equ 20
 ObjID_forcepod_reboundlaser  equ 21
 ObjID_forcepod_counterairlaser equ 22
 ObjID_scantfire              equ 23
-ObjID_patapata               equ 24
-ObjID_bug                    equ 25
-ObjID_bink                   equ 26
-ObjID_pow                    equ 27
-ObjID_fadetotunnel           equ 28
-ObjID_scant                  equ 29
-ObjID_pstaff                 equ 30
-ObjID_cancer                 equ 31
-ObjID_blaster                equ 32
-ObjID_shell                  equ 33
-ObjID_tabrok                 equ 34
-ObjID_bossmusic              equ 35
-ObjID_tailmgr                equ 36
-ObjID_dobkeratops            equ 37
-ObjID_dobkeratops_jaw        equ 38
-ObjID_dobkeratops_monster    equ 39
-objid.count                  equ 39
+ObjID_tabrokcanon            equ 24
+ObjID_shellEraser            equ 25
+ObjID_patapata               equ 26
+ObjID_bug                    equ 27
+ObjID_bink                   equ 28
+ObjID_pow                    equ 29
+ObjID_fadetotunnel           equ 30
+ObjID_scant                  equ 31
+ObjID_pstaff                 equ 32
+ObjID_cancer                 equ 33
+ObjID_blaster                equ 34
+ObjID_shell                  equ 35
+ObjID_tabrok                 equ 36
+ObjID_bossmusic              equ 37
+ObjID_tailmgr                equ 38
+ObjID_dobkeratops            equ 39
+ObjID_dobkeratops_jaw        equ 40
+ObjID_dobkeratops_monster    equ 41
+objid.count                  equ 41
 objid.animation              equ ObjID_animation
 
  ENDC

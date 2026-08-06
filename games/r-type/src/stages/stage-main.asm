@@ -319,6 +319,13 @@ stage.state.running
         ldx   #starfield.erase
         jsr   paged.call
 
+        ; L'effaceur de la rotonde, ICI comme en v1 (main.asm:243) : entre les
+        ; etoiles et DrawSprites, le fond venant d'etre restaure. C'est un
+        ; objet hors pool — pas d'OST, RunObjects ne le voit pas — qui relit la
+        ; table que les shells remplissent. Les stages sans rotonde n'en
+        ; souffrent pas : la table y est vide, la boucle ne blitte rien.
+        _Obj_Run ObjID_shellEraser
+
         jsr   DrawSprites
 
         lda   #map.RAM_OVER_CART+common.overlay.page

@@ -266,6 +266,12 @@ Collision_Run EXTERNAL
         _api tryFoeFireShell
         _api setDirectionTo
         _api FoeFireTarget
+        ; Le centre de la rotonde, resident avec la chaine de tir : la v1 le
+        ; range dans le meme fichier (global/projectile.asm), et le shell y
+        ; ajoute son rayon pour se placer. Deux noms, parce que le troisieme
+        ; (circleCenter lui-meme) est une equate relative — rien a lier.
+        _api circleCenter.x_pos
+        _api circleCenter.y_pos
         _api moveXPos8.8
         _api moveYPos8.8
 

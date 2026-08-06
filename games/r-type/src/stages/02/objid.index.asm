@@ -25,6 +25,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
@@ -53,6 +55,8 @@ Obj_Index_Address
         fdb   reboundlaser.Object        ; ObjID_forcepod_reboundlaser
         fdb   counterairlaser.Object        ; ObjID_forcepod_counterairlaser
         fdb   stage.placeholder        ; ObjID_scantfire
+        fdb   stage.placeholder        ; ObjID_tabrokcanon
+        fdb   stage.placeholder        ; ObjID_shellEraser
         fdb   pow.Object        ; ObjID_pow
         fdb   stage.placeholder        ; ObjID_bossmusic
 
@@ -84,10 +88,14 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -145,5 +153,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.reboundlaser.page   ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page   ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic

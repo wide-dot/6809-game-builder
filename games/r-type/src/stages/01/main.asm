@@ -104,6 +104,14 @@ counterairlaser.Object EXTERNAL
 bug.Object      EXTERNAL
 bink.Object     EXTERNAL
 blaster.Object  EXTERNAL
+pstaff.Object   EXTERNAL
+cancer.Object   EXTERNAL
+shell.Object    EXTERNAL
+tabrok.Object   EXTERNAL
+; Ce que ces deux-la font naitre ou servent : le canon du tabrok, cree par le
+; tank, et l'effaceur de la rotonde, que la boucle de trame appelle.
+tabrokcanon.Object EXTERNAL
+shellEraser.Object EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 
@@ -210,6 +218,16 @@ stage.setup
         std   object_wave_data_start
         lda   #map.RAM_OVER_CART+stage.wave.page
         sta   object_wave_data_page
+
+        ; La table d'effacement de la rotonde part vide : un slot non nul
+        ; herite de la partie precedente et efface un shell qui n'existe pas.
+        ; La v1 fait le meme geste a l'ouverture ET au checkpoint
+        ; (main.asm:101 et 324) ; ici stage.setup couvre les deux, il est
+        ; rejoue a chaque entree dans le niveau.
+        ldx   #shellEraseTable
+!       clr   ,x+
+        cmpx  #shellEraseTable_end
+        blo   <
         rts
 ; Deux passages : à l'aller on sème l'état et on part sur le stage 2 ; au
 ; retour on constate que l'échange est réversible et on exerce le checkpoint.
@@ -267,6 +285,19 @@ initlevel1.Object EXTERNAL
 
         INCLUDE "src/stages/01/objid.const.asm"
         INCLUDE "src/stages/01/objid.index.asm"
+
+; La table d'effacement de la rotonde : 14 emplacements de deux positions (un
+; par tampon), que chaque shell remplit et que l'effaceur relit. Elle vit dans
+; le stage — c'est de la RAM propre au niveau 1, comme en v1 (ram_data.asm) —
+; et traverse la frontiere de lien vers les deux unites qui la partagent.
+;
+; Elle DOIT etre remise a zero a l'ouverture du niveau et au rechargement de
+; checkpoint, sinon des positions fantomes s'effacent sur des shells absents.
+shellEraseTable     EXPORT
+shellEraseTable_end EXPORT
+shellEraseTable
+        fill  0,14*4
+shellEraseTable_end
 
 
  ENDSECTION

@@ -46,7 +46,11 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_forcepod_reboundlaser', 'ObjID_forcepod_counterairlaser',
          # Le tir du scant : la wave ne le nomme jamais, c'est scant qui le
          # fait naitre par LoadObject.
-         'ObjID_scantfire']
+         'ObjID_scantfire',
+         # Le canon du tabrok, ne par LoadObject depuis le tabrok, et
+         # l'effaceur de la rotonde, appele une fois par trame par le stage :
+         # ni l'un ni l'autre ne figure dans la wave.
+         'ObjID_tabrokcanon', 'ObjID_shellEraser']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -126,6 +130,15 @@ if stage == '01':
     # pagesets de tuiles du stage, leur page est l'equate <symbole>.page.
     PORTED['ObjID_scant'] = (None, 'scant.Object')
     PORTED['ObjID_scantfire'] = (None, 'scantfire.Object')
+    # La fin du cast du niveau 1. Le canon du tabrok et l'effaceur de la
+    # rotonde ne viennent pas de la wave : le tabrok cree son canon par
+    # LoadObject, et le stage appelle l'effaceur une fois par trame.
+    PORTED['ObjID_pstaff'] = (None, 'pstaff.Object')
+    PORTED['ObjID_cancer'] = (None, 'cancer.Object')
+    PORTED['ObjID_shell'] = (None, 'shell.Object')
+    PORTED['ObjID_shellEraser'] = (None, 'shellEraser.Object')
+    PORTED['ObjID_tabrok'] = (None, 'tabrok.Object')
+    PORTED['ObjID_tabrokcanon'] = (None, 'tabrokcanon.Object')
     # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
     # stage, donc sa page est celle du stage et son adresse un symbole local.
     PORTED['ObjID_initlevel1'] = ('stageinit', 'initlevel1.Object')
