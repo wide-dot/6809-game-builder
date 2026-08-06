@@ -263,9 +263,11 @@ qui motive tout : combien de pages entières sont libérées (attendu ~4, soit
 
 ### 6. Le rapport (après)
 
-La maquette existe et sera retravaillée avant d'être implémentée. Elle produira
-un fichier statique à côté de `ram-map-fd.txt`, qu'on garde — le texte se lit en
-CI et se compare dans un diff git.
+Maquette faite et validée, implémentation à venir : voir
+[`rapport-occupation-2026-08.md`](rapport-occupation-2026-08.md) — ce qu'elle
+établit, les trois granularités de chargement, et les deux points à trancher
+avant d'écrire le générateur (le total « non couvert » à scinder, `<window>` à
+retirer avec cette refonte).
 
 ## Points restés ouverts
 
