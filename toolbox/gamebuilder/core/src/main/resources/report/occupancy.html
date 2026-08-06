@@ -285,7 +285,7 @@ function ramView() {
 
   /* the map : one row per page, at the machine's real capacity. The bar
      takes the room the window offers, so the free column stays in sight */
-  const LABEL = 64, FREE = 78, ROW = 26, GAP = 7, PAD = 4;
+  const LABEL = 64, FREE = 106, ROW = 26, GAP = 7, PAD = 4;
   const W = Math.max(420, view.clientWidth - LABEL - FREE - 60);
   const pages = DATA.ram.pages;
   const svg = S("svg", { width: LABEL + W + FREE + 10, height: pages * (ROW + GAP) + 20 }, view);
