@@ -1233,7 +1233,7 @@
                 <!-- on declare un budget de pages et un contenu, le builder    -->
                 <!-- mesure, range et emet un direntry par page. L'auteur       -->
                 <!-- n'affecte jamais une tuile a une page.                     -->
-                <pageset name="stage1.tiles.even" region="tiles.even"
+                <pageset name="stage1.tiles.even" bake="auto" linkdata="LINK" region="tiles.even"
                          gendir="gen/stages/01/tiles-even"
                          gensymbols="gen/stages/01/pages-even.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
@@ -1267,7 +1267,7 @@
                     </unit>
                 </pageset>
 
-                <pageset name="stage1.tiles.odd" region="tiles.odd"
+                <pageset name="stage1.tiles.odd" bake="auto" linkdata="LINK" region="tiles.odd"
                          gendir="gen/stages/01/tiles-odd"
                          gensymbols="gen/stages/01/pages.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
@@ -1350,7 +1350,7 @@
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
-                <pageset name="stage2.tiles.even" region="tiles.even"
+                <pageset name="stage2.tiles.even" bake="auto" linkdata="LINK" region="tiles.even"
                          gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
@@ -1360,7 +1360,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset name="stage2.tiles.odd" region="tiles.odd"
+                <pageset name="stage2.tiles.odd" bake="auto" linkdata="LINK" region="tiles.odd"
                          gendir="gen/stages/02/tiles-odd"
                          gensymbols="gen/stages/02/pages.asm">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
