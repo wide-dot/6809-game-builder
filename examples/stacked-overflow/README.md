@@ -5,31 +5,45 @@ page et débordent sur la suivante. Chaque marqueur est rempli de son propre
 numéro, de 1 à 10 — jamais 0, qu'on ne saurait distinguer d'une RAM jamais
 écrite.
 
-Deux cibles, `to8.config.xml` et `mo6.config.xml`, parce que le défaut cherché
-ne se voit que sur l'une des deux.
+Deux cibles, `to8.config.xml` et `mo6.config.xml`. L'exemple aura finalement
+trouvé **deux défauts**, corrigés tous les deux.
 
-## Ce que l'exemple a déjà trouvé
+## Défaut 1 — le décalage d'un octet par fichier (élucidé, corrigé)
 
-**Un décalage d'un octet par fichier**, observé en mémoire sur TO8 après
-chargement — indépendamment du programme de vérification :
+Observé en mémoire sur TO8 : marqueur 2 à `$0801`, marqueur 3 à `$1002` — un
+octet fantôme entre chaque fichier, cumulatif. Et pire, constaté ensuite :
+**seule la première moitié de la liste se chargeait** (5 marqueurs sur 10).
 
+L'entrée de répertoire était pourtant juste (`sizeu = $07FF`, sectorisation
+exacte). La cause était dans la **marche des ids du type %11** (liste à ids
+consécutifs) : le chargeur calcule l'id suivant d'après les *drapeaux* de
+l'entrée —
+
+```asm
+ldb   #1                ; id suivant : +1
+lda   dir.entry.bitfld,y
+lsla
+adcb  #0                ; +1 si compressé
+lsla
+adcb  #0                ; +1 si linkdata
+abx
 ```
-$0000-$07FF   01 01 …      marqueur 1, à sa place
-$0800         00           un octet que personne n'a écrit
-$0801-$1000   02 02 …      marqueur 2, décalé de 1
-$1001         00
-$1002-…       03 03 …      marqueur 3, décalé de 2
-```
 
-L'entrée de répertoire est pourtant juste : `sizeu = $07FF`, soit 2047, et le
-chargeur ajoute 1 — il devrait avancer de 2048 exactement. Le décalage naît
-donc à l'exécution, pas dans la donnée. **Non élucidé.**
+— alors que le builder alloue les ids d'après les *déclarations* : un fichier
+qui déclare `linkdata="LINK"` réserve un second bloc de 8 octets même quand la
+section moissonnée est vide (élagage du loadtimelink), en laissant le drapeau
+baissé. Le chargeur avançait donc de 1 au lieu de 2, retombait sur le **bloc
+réservé zéroté** et le traitait comme un fichier : `sizea=0` → rien chargé,
+`sizeu=0` → avance de `0+1 = 1` octet, et une itération du compteur brûlée.
+D'où l'octet fantôme *et* la moitié manquante.
 
-Ce défaut est visible sur TO8, donc il n'a rien à voir avec celui décrit
-ci-dessous. Une liste empilée de n fichiers perd n octets et décale tout ce qui
-suit le premier.
+**Correctif** (`DirEntryPlugin`) : le drapeau bit 6 reflète le **bloc réservé**,
+pas son contenu. Section déclarée mais vide → drapeau levé sur un descripteur
+zéroté ; le chargeur lit une taille de 0 et l'ignore (« Ignore empty link
+file », chemin qui existait déjà). Les types %01 et %10 n'ont jamais été
+touchés : leurs ids sont explicites.
 
-## Le défaut que l'exemple était censé éprouver
+## Défaut 2 — la page suivante s'ouvrait à zéro
 
 Quand une liste déborde d'une page, le chargeur passe à la suivante. Il y
 repartait de l'adresse **zéro** :
@@ -44,8 +58,8 @@ confondent, et rien n'a jamais montré le défaut. Sur MO6 elle s'ouvre à
 `$B000`, et le chargeur écrivait 45 Ko sous sa fenêtre, en pleine RAM système.
 
 Corrigé dans `engine/system/thomson/bootloader/loader.asm`, aux deux endroits
-où le motif apparaît (`type10` et `type11`). **Non éprouvé en machine** : c'est
-ce que cet exemple doit permettre.
+où le motif apparaît (`type10` et `type11`). **Reste à éprouver sur MO6** — le
+TO8 ne peut pas voir ce défaut-là.
 
 ## Comment lire le résultat
 
@@ -54,17 +68,16 @@ répond par la bordure de l'écran :
 
 - **verte** — tous les marqueurs sont à leur place ;
 - **rouge** — un manque ; son numéro est laissé dans l'octet `report` du
-  programme.
+  programme (juste après le `bra *` final).
 
-Attendu : TO8 vert avant comme après le correctif (sa fenêtre s'ouvrant à zéro,
-il ne pouvait pas voir le défaut) ; MO6 rouge avant, vert après. C'est cette
-différence-là qui prouve le correctif.
+Vérifié sur TO8 (émulateur TOJE, 2026-08-06) : bordure verte, les dix
+marqueurs aux adresses exactes, le franchissement de page compris. Attendu sur
+MO6 : rouge avec le seul défaut 2 présent, vert une fois le loader corrigé —
+c'est cette différence-là qui prouve le correctif MO6.
 
-**En l'état, le programme de vérification n'est pas fiable** : sur TO8 il se fige
-sur une instruction qui ne peut pas figer, ce qui veut dire qu'il ne lit pas ce
-qu'il croit lire. À reprendre avant de conclure quoi que ce soit de sa bordure.
-Le décalage d'un octet, lui, est établi par lecture directe de la mémoire et ne
-dépend pas de ce programme.
+Au passage : les indices de bordure sont la palette Thomson par défaut —
+vert = 2, rouge = 1. Les valeurs initiales (3 et 6) affichaient jaune et cyan,
+ce qui a fait passer le checker pour peu fiable alors qu'il disait vrai.
 
 ## Construire
 

@@ -31,8 +31,11 @@
 
 MARKER_COUNT    equ 10
 MARKER_SIZE     equ $0800          ; 2 KB each : ten of them cross two pages
-BORDER_GREEN    equ 3
-BORDER_RED      equ 6
+; Thomson default palette : 0 black, 1 red, 2 green, 3 yellow, 4 blue…
+; (3 and 6 showed yellow and cyan — measured on machine, not what their
+; names promised)
+BORDER_GREEN    equ 2
+BORDER_RED      equ 1
 
 
 main.init

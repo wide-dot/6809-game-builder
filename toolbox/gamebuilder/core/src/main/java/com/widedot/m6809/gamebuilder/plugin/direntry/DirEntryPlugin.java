@@ -109,7 +109,7 @@ public class DirEntryPlugin {
 	
 //	loader file for a file (8, 16 or 24 bytes):
 //  -----------------------------------------------------------------------------------------------
-//	[0] [0]                    - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes]
+//	[0] [0]                    - [compression 0:none, 1:packed] [linkdata block 0:absent, 1:present — present with a zero size word means "declared but empty", the loader skips it]
 //	[00 0000] [0000 0000]      - [uncompressed file size -1]
 //	[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
 //	[0000 0000] [0000 0000]    - [bytes in first sector] [start offset in first sector (0: no sector)] ($ff00 : empty file)
@@ -339,9 +339,19 @@ public class DirEntryPlugin {
 			// the loader NOTHING — no link file on disk, no index slot, no
 			// pool allocation, no entry every symbol search walks past. The
 			// file keeps its reserved descriptor size (file ids derive
-			// from the attributes before anything is built), only the flag
-			// stays down. An export still imported keeps its counter above
-			// zero, so this can never drop a block the loader needs.
+			// from the attributes before anything is built). An export still
+			// imported keeps its counter above zero, so this can never drop
+			// a block the loader needs.
+			//
+			// The FLAG, however, must stay UP (see below) : it does not mean
+			// "there is link data to load" but "this entry carries a linkdata
+			// block". The loader's consecutive-id walk (scene type %11)
+			// derives the next file id from the flags ; a reserved block with
+			// the flag down made it land on the zeroed descriptor as if it
+			// were a file — one ghost byte of drift per file, and half the
+			// list never loaded. Emptiness is conveyed by the descriptor's
+			// size word being zero, which loader.file.linkData.load already
+			// treats as "ignore empty link file".
 			if (linkdata.countExportAbs() + linkdata.countExportRel()
 					+ linkdata.countIntern() + linkdata.countExtern8()
 					+ linkdata.countExtern16() + linkdata.countExternPage() > 0) {
@@ -370,8 +380,11 @@ public class DirEntryPlugin {
 		
 		// build file data
 	    int i = 0;
-		if (compress)     file[i] = (byte) (file[i] | 0b10000000);
-		if (hasLinkData)  file[i] = (byte) (file[i] | 0b01000000);
+		if (compress)      file[i] = (byte) (file[i] | 0b10000000);
+		// the flag mirrors the RESERVED block, not its content : the type %11
+		// id arithmetic counts blocks through the flags, so a declared-but-
+		// empty link section keeps the flag up over a zeroed descriptor
+		if (linkDeclared)  file[i] = (byte) (file[i] | 0b01000000);
 		int encodedLength = (length-1) & 0x3fff;
 		file[i] = (byte) (file[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
