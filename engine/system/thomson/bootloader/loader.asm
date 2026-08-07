@@ -137,6 +137,10 @@ loader.scene.loadDefault
         ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
         ldx   #loader.memoryPool
         jsr   tlsf.init
+        ; route tlsf errors through the log block instead of the anonymous
+        ; tlsf.err.loop : A carries the legacy code at callback time
+        ldd   #log.tlsf.trap
+        std   tlsf.err.callback
 
         ; load directory entries
         lda   #loader.DEFAULT_SCENE_DIR_ID
@@ -726,6 +730,12 @@ ZX0_DP equ $6031
 ;
 ; X : [ptr to ascii string]
 ;---------------------------------------
+* tlsf error callback : expose the legacy code through the log block.
+* Every tlsf failure path does "lda #code / sta tlsf.err" before jumping
+* here, so A carries the code and the photograph keeps it.
+log.tlsf.trap
+        _log.error log.tlsf.ERROR
+
 * Display error message
 err     ldu   #messloc           ; Location
         bsr   err2               ; Display location

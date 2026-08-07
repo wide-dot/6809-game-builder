@@ -71,7 +71,9 @@ glb_Page                      equ glb_timer_frame-1
 dp_engine                     equ glb_Page-30  ; engine routines tmp var space
 dp_extreg                     equ dp_engine-28 ; extra register space (user and engine common)
 dp                            equ $9F00        ; user space (149 bytes max)
-glb_system_stack              equ dp
+glb_system_stack              equ dp-16 ; the log block owns dp-16..dp-1
+                                         ; ($9EF0-$9EFF, engine/log/log.const.asm) :
+                                         ; the stack tops right below it
 
 ; generic direct page extra registers
 ; -----------------------------------

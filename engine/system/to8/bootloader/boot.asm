@@ -9,6 +9,7 @@
         INCLUDE "engine/6809/types.const.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/bootloader/loader.const.asm"
+        INCLUDE "engine/log/log.const.asm"
 
 ; Disk boot
         org    $6200
@@ -83,7 +84,11 @@ boot3   inc   <map.DK.BUF        ; Move sector ptr
         clrb                     ; reset sector
 !       dec   >secnbr            ; next
         bne   boot2              ; sector
-        lds   #$9F00             ; Set system stack
+        lds   #log.BLOCK         ; Set system stack - it tops right below the
+                                 ; log block, exactly like the loader's. A
+                                 ; literal $9F00 here pushed INTO the block
+                                 ; (measured 2026-08-07): two anchors for one
+                                 ; address is how they drift.
         jmp   >loader.ADDRESS
 
 ; Error messages

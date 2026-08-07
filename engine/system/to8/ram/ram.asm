@@ -32,4 +32,4 @@ ram.set
         orb   #map.RAM_OVER_CART  ; Set RAM over cartridge space
         stb   >map.CF74021.CART   ; Switch RAM page
         rts
-!       bra   *                   ; error trap
+!       _log.error log.ram.SET_RANGE ; B=requested page, U=destination address

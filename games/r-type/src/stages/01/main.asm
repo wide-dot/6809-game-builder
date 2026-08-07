@@ -201,6 +201,10 @@ emitterFlash.Object EXTERNAL
         INCLUDE "src/stages/01/map/intro/map.const.asm"
         ; La chronologie du boss : le stage la partage avec ses six objets.
         INCLUDE "src/stages/01/timestamps.const.asm"
+        ; Le systeme de log : registre moteur, registre programme, macros.
+        INCLUDE "engine/log/log.const.asm"
+        INCLUDE "src/common/engine/log.const.asm"
+        INCLUDE "engine/log/log.macro.asm"
 
  opt c,ct
 
@@ -316,6 +320,9 @@ stage.setup
         sta   scroll_map_page_odd
 
         ldd   #stage.wave
+        ; SONDE DE TEST du systeme de log : D porte l'adresse de la wave du
+        ; stage, connue au build — de quoi verifier la photographie.
+        _log.info log.stage.SETUP
         std   object_wave_data
         std   object_wave_data_start
         lda   #map.RAM_OVER_CART+stage.wave.page

@@ -31,6 +31,8 @@ ENGINE_RESIDENT equ 1
         INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/log/log.const.asm"
+        INCLUDE "engine/log/log.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
         INCLUDE "gen/layout.asm"
@@ -222,6 +224,7 @@ terrainCollision.init.do
         ; le lien, aucune operande auto-modifiee. C'est par la que passent les
         ; overlays (masque, hud) qui n'ont ni etat ni OST.
         INCLUDE "engine/system/paged-call.asm"
+        INCLUDE "engine/log/log.asm"
         ; Le deplacement en 8.8 et la chaine de tir ennemi. La v1 les inclut
         ; toutes quatre dans son main (main.asm:565-568) : elles sont donc
         ; RESIDENTES, et c'est de la qu'elles traversent la frontiere.

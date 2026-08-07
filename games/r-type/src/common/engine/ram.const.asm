@@ -24,13 +24,14 @@ moveByScript.POSXSTEP        equ  $0060
 moveByScript.NEGYSTEP        equ -$00C0
 moveByScript.POSYSTEP        equ  $00C0
 
-; 48, et non les 50 de la v1 : le stage 1 porte le sequencement du boss, qui
+; 46, et non les 50 de la v1 : le stage 1 porte le sequencement du boss (2),
+; la sequence de fin (1) et la lib log residente (1) — voir les commits. Ce qui
 ; DOIT etre resident (cinq objets pagines l'appellent, et la fenetre cartouche
 ; ne monte qu'une page a la fois). La RAM residente de la page 1 est saturee —
-; le moteur n'avait que 20 octets de marge — donc les 351 octets sortent du
+; le moteur n'avait pas la marge — donc les octets sortent du
 ; pool. TROIS valeurs bougent ensemble et rien ne verifie leur accord :
 ; ce nombre, <reserved name="objects.pool"> et <region name="stage"> du layout.
-nb_dynamic_objects           equ 47
+nb_dynamic_objects           equ 46
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 

@@ -267,6 +267,13 @@ Collision_Run EXTERNAL
         ; (main.asm:565-568). tryFoeFire est appele par l'ennemi, qui tourne
         ; en page montee ; setDirectionTo par createFoeFire, monte lui aussi.
         ; FoeFireTarget est la cible que tryFoeFire pose avant de tirer ---
+        ; --- the log block : les sites des unites paginees appellent la
+        ; routine residente ; le loader porte sa propre copie du meme code,
+        ; les deux ecrivent le MEME bloc ($9EF0). log.halt est l'ancre du
+        ; superviseur (breakpoint) quand aucun watchpoint n'est pose. ---
+        _api log.write
+        _api log.halt
+
         _api tryFoeFire
         _api tryFoeFireShell
         _api setDirectionTo
