@@ -32,4 +32,4 @@ ram.set
         rola                      ; apply actual register
         sta   >map.HALFPAGE       ; Set desired half page in video space
         rts
-!       bra   *                   ; error trap
+!       _log.error log.ram.SET_RANGE ; B=requested page, U=destination address

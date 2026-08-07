@@ -62,7 +62,7 @@ public class DirectoryPlugin {
 		// file ids are global to the target : keep numbering where the
 		// previous directory left off, and record the base in the header
 		int baseId = ctx.fileIds.peek();
-		int direntryId = baseId;
+		int fileId = baseId;
 		java.util.Set<String> directoryNames = new java.util.HashSet<String>();
 		// id and block count of every entry : lets the scene generator emit
 		// the compact %11 encoding when a list follows the id chain the
@@ -83,39 +83,39 @@ public class DirectoryPlugin {
 							+ "' targets unknown region '" + regionName + "'");
 				}
 				int blocks = DirEntryPlugin.blockCount(Attribute.getStringOpt(child, ctx, "codec"),
-						Attribute.getStringOpt(child, ctx, "loadtimelink"));
+						Attribute.getStringOpt(child, ctx, "linkdata"));
 				for (String member : com.widedot.m6809.gamebuilder.spi.globals.PageSets
 						.memberNames(name, region.pages)) {
-					writer.write(member + " equ " + direntryId + System.lineSeparator());
+					writer.write(member + " equ " + fileId + System.lineSeparator());
 					directoryNames.add(member);
-					idBlocks.put(member, new int[] { direntryId, blocks });
-					direntryId += blocks;
+					idBlocks.put(member, new int[] { fileId, blocks });
+					fileId += blocks;
 				}
 				directoryNames.add(name);
 				continue;
 			}
-			if (plugin.equals("direntry") || plugin.equals("scene")) {
+			if (plugin.equals("file") || plugin.equals("scene")) {
 
 				String name = Attribute.getString(child, ctx, "name");
-				writer.write(name + " equ " + direntryId + System.lineSeparator());
+				writer.write(name + " equ " + fileId + System.lineSeparator());
 				directoryNames.add(name);
 
 				int blocks;
-				if (plugin.equals("direntry")) {
+				if (plugin.equals("file")) {
 					String codec = Attribute.getStringOpt(child, ctx, "codec");
-					String linkSection = Attribute.getStringOpt(child, ctx, "loadtimelink");
+					String linkSection = Attribute.getStringOpt(child, ctx, "linkdata");
 					blocks = DirEntryPlugin.blockCount(codec, linkSection);
 				} else {
 					// a scene table is raw, uncompressed and carries no link data
 					blocks = 1;
 				}
-				idBlocks.put(name, new int[] { direntryId, blocks });
-				direntryId += blocks;
+				idBlocks.put(name, new int[] { fileId, blocks });
+				fileId += blocks;
 			}
 		}
 		writer.close();
-		ctx.fileIds.next = direntryId;
-		log.debug("directory {} : file ids {} to {}", id, baseId, direntryId-1);
+		ctx.fileIds.next = fileId;
+		log.debug("directory {} : file ids {} to {}", id, baseId, fileId-1);
 		
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
@@ -171,13 +171,19 @@ public class DirectoryPlugin {
 					pageSpans.put(entry.name, entry.pageSpans);
 				}
 			}
-			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans);
+			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans,
+					ctx.regions.hasMeasures());
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}
 
 			// the same resolved loads, kept for the occupancy map : where each
-			// scene lands and how much of every budget it really uses
+			// scene lands and how much of every budget it really uses. The
+			// last pass wins — the map survives the passes, re-recording
+			// without forgetting made every load appear once per pass
+			for (SceneCheck scene : pendingScenes) {
+				ctx.ramMap.forget(scene.sceneName);
+			}
 			for (SceneCheck scene : pendingScenes) {
 				for (SceneCheck.Load load : scene.loads) {
 					if (load.kind == SceneCheck.Kind.EXPORT_ONLY) {
@@ -188,8 +194,7 @@ public class DirectoryPlugin {
 						continue;
 					}
 					ctx.ramMap.record(scene.sceneName, new com.widedot.m6809.gamebuilder.spi.globals.RamMap.Load(
-							load.name, load.region, load.page, load.address, size,
-							load.kind == SceneCheck.Kind.BULK));
+							load.name, load.region, load.page, load.address, size));
 				}
 			}
 		}
@@ -205,7 +210,7 @@ public class DirectoryPlugin {
 		// the ids handed out above are indexes into this very table : if the two
 		// ever disagree, every file after the divergence is read at the wrong
 		// offset by loader.dir.getFile
-		int reservedBlocks = direntryId - baseId;
+		int reservedBlocks = fileId - baseId;
 		if (emittedBlocks != reservedBlocks) {
 			throw new Exception("Directory " + id + " emitted " + emittedBlocks
 					+ " entry blocks while " + reservedBlocks + " file ids were reserved");
@@ -228,14 +233,14 @@ public class DirectoryPlugin {
 		bin[i++] = (byte) ((baseId >> 8) & 0xff);
 		bin[i++] = (byte) (baseId & 0xff);
 		
-		// set each direntry data
+		// set each file data
 		for (DirEntry entry : media.getDirEntries()) {
 			System.arraycopy(entry.data,0,bin,i,entry.data.length);
 			i += entry.data.length;
 		}
 
 		// write whole directory to media
-		media.write(section, bin);
+		media.write(section, bin, "directory " + id);
 		
 		// write whole directory to debug file
 		if (genbinary != null) {

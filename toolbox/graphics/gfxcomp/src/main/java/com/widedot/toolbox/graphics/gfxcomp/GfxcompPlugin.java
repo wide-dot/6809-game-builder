@@ -103,7 +103,19 @@ public class GfxcompPlugin {
 			throw new Exception("<gfxcomp genindex> also needs file, the direntry name the images "
 			                  + "end up in : the index references their page through <file>$PAGE");
 		}
-		ImageSet imageset = genindex == null ? null : new ImageSet(0, file);
+		// A slice of a spread set : imageset= (without genindex) hands the
+		// geometry over to the registry — several slices merge there — and the
+		// single <imageset> element writes the whole index later, asking each
+		// image for the page of ITS slice. This is what lets one set be cut
+		// into files the arena ranges independently.
+		String setName = Attribute.getStringOpt(node, ctx, "imageset");
+		if (setName != null && genindex != null) {
+			throw new Exception("<gfxcomp> takes genindex (the index lives here) or imageset"
+			                  + " (the index lives with the <imageset> element), not both");
+		}
+		ImageSet imageset = genindex != null ? new ImageSet(0, file)
+		                  : setName != null ? new ImageSet(0, null)
+		                  : null;
 		List<String> generated = new ArrayList<>();
 
 		for (ImmutableNode child : node.getChildren()) {
@@ -117,14 +129,26 @@ public class GfxcompPlugin {
 			throw new Exception("no <image> to compile in <gfxcomp>");
 		}
 
-		if (imageset != null) {
+		if (setName != null) {
+			ctx.imageSets.declare(setName, imageset);
+		} else if (imageset != null) {
 			String index = ctx.path + File.separator + genindex;
 			Files.createDirectories(Paths.get(index).getParent());
 			imageset.generate(index);
 			generated.add(index);
 		}
 
-		return writeIncludes(gensource, generated);
+		// section="none" for a host that has already opened one — a <block> of
+		// a pageset, whose member source wraps every part alike. Nesting a
+		// second SECTION there would close the member's.
+		//
+		// A slice exports every part it compiles : the index lives in ANOTHER
+		// file and reaches the images through the linker — exactly what the
+		// pageset member source did for its parts. Inline-index mode exports
+		// nothing, the index being in the same assembly.
+		return writeIncludes(gensource, generated,
+				Attribute.getString(node, ctx, "section", "code"),
+				setName != null);
 	}
 
 	private static List<String> compile(ImmutableNode node, BuildContext ctx, String gendir, ImageSet imageset)
@@ -153,7 +177,7 @@ public class GfxcompPlugin {
 			// either way — it is cheap, and it keeps the ids independent of
 			// where the author put the cuts.
 			int[] bounds = parseRange(name, range);
-			List<String> files = new ArrayList<>();
+			List<String[]> selected = new ArrayList<>();
 			for (String tile : slice(name, filename, grid, gendir)) {
 				String tileName = tile.substring(tile.lastIndexOf(File.separatorChar) + 1,
 						tile.length() - ".png".length());
@@ -161,8 +185,9 @@ public class GfxcompPlugin {
 				if (id < bounds[0] || id > bounds[1]) {
 					continue;
 				}
-				files.addAll(encode(node, ctx, gendir, imageset, tileName, tile, null));
+				selected.add(new String[] { tileName, tile });
 			}
+			List<String> files = encodeTiles(node, ctx, gendir, imageset, selected);
 			if (files.isEmpty()) {
 				throw new Exception("image " + name + " : range '" + range
 						+ "' selects no tile of the sheet");
@@ -240,6 +265,78 @@ public class GfxcompPlugin {
 		return tiles;
 	}
 
+	/**
+	 * The tiles of a sheet, encoded concurrently. Each tile's optimizer is
+	 * seeded on its own, so the code produced is byte for byte the code of the
+	 * serial loop — the fan out only spends the cores. The build context is
+	 * read on the caller thread (workers get plain values), and the imageset
+	 * registration replays in tile order once every future has landed.
+	 */
+	private static List<String> encodeTiles(ImmutableNode node, BuildContext ctx, String gendir,
+			ImageSet imageset, List<String[]> tiles) throws Exception {
+
+		List<String[]> specs = new ArrayList<>();
+		for (ImmutableNode child : node.getChildren()) {
+			if (!"encoder".equals(child.getNodeName())) {
+				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <image>");
+			}
+			specs.add(new String[] {
+					Attribute.getString(child, ctx, "name", Image.TYPE_DRAW),
+					Attribute.getString(child, ctx, "mirror", Mirror.NONE),
+					String.valueOf(Attribute.getInteger(child, ctx, "shift", 0)),
+					Attribute.getString(child, ctx, "position", Image.POSITION_CENTER),
+					Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER) });
+		}
+		if (specs.isEmpty()) {
+			throw new Exception("tileset has no <encoder>");
+		}
+
+		int threads = Math.min(8, Runtime.getRuntime().availableProcessors());
+		java.util.concurrent.ExecutorService pool =
+				java.util.concurrent.Executors.newFixedThreadPool(threads);
+		try {
+			List<java.util.concurrent.Future<Object[]>> futures = new ArrayList<>();
+			for (String[] t : tiles) {
+				futures.add(pool.submit(() -> {
+					List<String> produced = new ArrayList<>();
+					List<Image> images = new ArrayList<>();
+					for (String[] spec : specs) {
+						Image image = new Image(t[0], null, t[1], spec[0], spec[1],
+								Integer.valueOf(spec[2]), spec[3], spec[4]);
+						image.encode(gendir);
+						images.add(image);
+						produced.add(gendir + File.separator + image.getFullName() + ".asm");
+						String erase = gendir + File.separator + image.getFullName() + "_erase.asm";
+						if (Files.exists(Paths.get(erase))) {
+							produced.add(erase);
+						}
+					}
+					return new Object[] { produced, images };
+				}));
+			}
+			List<String> files = new ArrayList<>();
+			for (java.util.concurrent.Future<Object[]> future : futures) {
+				Object[] result;
+				try {
+					result = future.get();
+				} catch (java.util.concurrent.ExecutionException e) {
+					throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+				}
+				@SuppressWarnings("unchecked")
+				List<String> produced = (List<String>) result[0];
+				files.addAll(produced);
+				if (imageset != null) {
+					for (Object image : (List<?>) result[1]) {
+						imageset.addImage((Image) image);
+					}
+				}
+			}
+			return files;
+		} finally {
+			pool.shutdown();
+		}
+	}
+
 	private static List<String> encode(ImmutableNode node, BuildContext ctx, String gendir,
 			ImageSet imageset, String name, String filename, Integer index) throws Exception {
 
@@ -274,14 +371,35 @@ public class GfxcompPlugin {
 		return files;
 	}
 
-	private static File writeIncludes(String gensource, List<String> files) throws Exception {
-		// the compiled code carries no SECTION of its own : the unit owns it
+	private static File writeIncludes(String gensource, List<String> files, String section)
+			throws Exception {
+		return writeIncludes(gensource, files, section, false);
+	}
+
+	private static File writeIncludes(String gensource, List<String> files, String section,
+			boolean exportParts) throws Exception {
+		// the compiled code carries no SECTION of its own : the unit owns it,
+		// and section="none" says the host already opened it
+		boolean wrap = !"none".equals(section);
 		StringBuilder source = new StringBuilder("* Generated by gfxcomp" + System.lineSeparator());
-		source.append(" SECTION code").append(System.lineSeparator());
+		if (exportParts) {
+			// EXPORT stays outside the section, as everywhere else
+			for (String file : files) {
+				String base = file.substring(file.lastIndexOf(File.separatorChar) + 1,
+						file.length() - ".asm".length());
+				source.append("adr_").append(base).append(" EXPORT")
+				      .append(System.lineSeparator());
+			}
+		}
+		if (wrap) {
+			source.append(" SECTION ").append(section).append(System.lineSeparator());
+		}
 		for (String file : files) {
 			source.append("        INCLUDE \"").append(file).append('"').append(System.lineSeparator());
 		}
-		source.append(" ENDSECTION").append(System.lineSeparator());
+		if (wrap) {
+			source.append(" ENDSECTION").append(System.lineSeparator());
+		}
 		Path path = Paths.get(gensource);
 		if (path.getParent() != null) {
 			Files.createDirectories(path.getParent());

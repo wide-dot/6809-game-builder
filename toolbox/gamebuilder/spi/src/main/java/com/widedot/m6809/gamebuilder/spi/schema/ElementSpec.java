@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  * configuration format was the set of Attribute.get calls scattered through
  * the handlers — which is why a typo in an attribute name was silently
  * ignored, and why a defaults key could drift from the element that read it
- * (the 16 KB direntry guard stayed inactive for years that way). A declared
+ * (the 16 KB file guard stayed inactive for years that way). A declared
  * spec is validated before the build runs, derives the defaults namespace
  * mechanically, and doubles as the reference documentation and the source of
  * the generated XSD.
@@ -25,7 +25,9 @@ public final class ElementSpec {
 		/** decimal, 0x or $ notation */
 		INT,
 		/** true or false */
-		BOOL
+		BOOL,
+		/** a number, or the word "auto" when the builder works it out */
+		INT_AUTO
 	}
 
 	public static final class AttrSpec {

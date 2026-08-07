@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * Dropping {@code loadtimelink} from a direntry something still imports used to
+ * Dropping {@code linkdata} from a direntry something still imports used to
  * fail silently : the reference goes through the loader, finds no export and
  * resolves to zero. The build refuses it instead.
  */
@@ -25,7 +25,7 @@ public class LinkSymbolsDanglingImportTest {
 	}
 
 	/**
-	 * The direntry keeps its exports out of the link data — no loadtimelink, so
+	 * The direntry keeps its exports out of the link data — no linkdata, so
 	 * {@code export} is never called for it — while another unit still
 	 * references the name.
 	 */
@@ -36,7 +36,7 @@ public class LinkSymbolsDanglingImportTest {
 
 		Exception e = assertThrows(Exception.class, symbols::checkImportsResolvable);
 		assertTrue(e.getMessage().contains("AnimateSprite"), e.getMessage());
-		assertTrue(e.getMessage().contains("no direntry emits them"), e.getMessage());
+		assertTrue(e.getMessage().contains("no file emits them"), e.getMessage());
 	}
 
 	/**
@@ -54,7 +54,7 @@ public class LinkSymbolsDanglingImportTest {
 	}
 
 	/**
-	 * A direntry without {@code loadtimelink} never registers its exports here
+	 * A direntry without {@code linkdata} never registers its exports here
 	 * at all, so the builder cannot name it — the message has to point at the
 	 * cause rather than pretend to know the file.
 	 */
@@ -64,8 +64,8 @@ public class LinkSymbolsDanglingImportTest {
 		symbols.add("AwardScore");
 
 		Exception e = assertThrows(Exception.class, symbols::checkImportsResolvable);
-		assertTrue(e.getMessage().contains("lost its loadtimelink"), e.getMessage());
-		assertTrue(e.getMessage().contains("*.static"), e.getMessage());
+		assertTrue(e.getMessage().contains("lost its linkdata"), e.getMessage());
+		assertTrue(e.getMessage().contains("bake"), e.getMessage());
 	}
 
 	/** every dangling symbol is listed, not just the first one met */

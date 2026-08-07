@@ -103,7 +103,7 @@ public class LwObject implements ObjectDataInterface{
 	
 	/**
 	 * Whether a section carries the unit's entry point, and so has to come
-	 * first in the binary. With baking moved to the direntry's {@code bake}
+	 * first in the binary. With baking moved to the file's {@code bake}
 	 * attribute, section names are identities again : {@code code} leads,
 	 * full stop.
 	 */
@@ -510,7 +510,7 @@ public class LwObject implements ObjectDataInterface{
 
 	@Override
 	public void bakeStatic(com.widedot.m6809.gamebuilder.spi.globals.StaticLink staticLink,
-			String direntry, int base,
+			String file, int base,
 			com.widedot.m6809.gamebuilder.spi.globals.BakeMode mode) throws Exception {
 
 		if (mode == com.widedot.m6809.gamebuilder.spi.globals.BakeMode.NONE) {
@@ -541,7 +541,7 @@ public class LwObject implements ObjectDataInterface{
 				// must not stop the pass whose job is to collect that provider.
 				if (staticLink.isDiscovery()) {
 					if (!intern) {
-						staticLink.recordCandidate(direntry, r.symbol);
+						staticLink.recordCandidate(file, r.symbol);
 					}
 					baked.add(reloc);
 					count++;
@@ -551,11 +551,11 @@ public class LwObject implements ObjectDataInterface{
 				if (intern) {
 					// An internal reference is the same problem as an external
 					// one, one step closer : the value is relative to where
-					// this unit lands, and a scene-placed direntry lands
+					// this unit lands, and a scene-placed file lands
 					// somewhere the builder knows.
 					int value;
 					try {
-						value = staticLink.addressOf(direntry) + base
+						value = staticLink.addressOf(file) + base
 								+ sectionBase(section) + r.value;
 					} catch (Exception e) {
 						if (!strict) {
@@ -565,7 +565,7 @@ public class LwObject implements ObjectDataInterface{
 								+ " offset " + reloc.offset + " : " + e.getMessage()
 								+ System.lineSeparator()
 								+ "bake='all' resolves internal references too, so the"
-								+ " direntry holding them has to be at a declared,"
+								+ " file holding them has to be at a declared,"
 								+ " single destination.");
 					}
 					section.code[reloc.offset] = (byte) ((value & 0xff00) >> 8);

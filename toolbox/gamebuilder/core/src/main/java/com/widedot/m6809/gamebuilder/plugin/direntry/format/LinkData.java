@@ -67,7 +67,7 @@ public class LinkData {
 	/**
 	 * Appends the link data of one object.
 	 *
-	 * A direntry may hold several objects, whose binaries are concatenated in
+	 * A file may hold several objects, whose binaries are concatenated in
 	 * the order they are added. Offsets produced by an object are relative to
 	 * that object, so everything but the absolute exports has to be shifted by
 	 * the total size of the objects added before it. Without this, only a first

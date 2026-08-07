@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF RTYPE_RAM_CONST
+RTYPE_RAM_CONST equ 1
+
 * ===========================================================================
 * Object pool geometry and resident RAM — frozen for the whole game
 * ===========================================================================
@@ -18,7 +24,14 @@ moveByScript.POSXSTEP        equ  $0060
 moveByScript.NEGYSTEP        equ -$00C0
 moveByScript.POSYSTEP        equ  $00C0
 
-nb_dynamic_objects           equ 50
+; 46, et non les 50 de la v1 : le stage 1 porte le sequencement du boss (2),
+; la sequence de fin (1) et la lib log residente (1) — voir les commits. Ce qui
+; DOIT etre resident (cinq objets pagines l'appellent, et la fenetre cartouche
+; ne monte qu'une page a la fois). La RAM residente de la page 1 est saturee —
+; le moteur n'avait pas la marge — donc les octets sortent du
+; pool. TROIS valeurs bougent ensemble et rien ne verifie leur accord :
+; ce nombre, <reserved name="objects.pool"> et <region name="stage"> du layout.
+nb_dynamic_objects           equ 46
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 
@@ -29,10 +42,18 @@ ext_variables_size           equ 20  ; per dynamic object
 * tables sous-objets et les listes « unset » des buffers de priorite, soit
 * 8 x nb_graphical_objects, +256 octets au moteur — mais 50 objets dont 32
 * seulement peuvent etre dessines n'aurait pas de sens.
-* Le pool remonte jusqu'au bloc `globals` ($9E80) : entre lui et les globales,
+* Le pool remonte jusqu'au bloc `globals` : entre lui et les globales,
 * il n'y a plus que l'OST statique du fondu. C'est le trou libre de 1 547 octets
 * qui trainait entre les deux, absorbe.
-Dynamic_Object_RAM_End       equ $9E80-nb_static_objects*object_size
+* L'ANCRE, et le piege qu'elle porte : cette valeur DOIT etre l'adresse du bloc
+* reserve `globals` du layout (to8.config.xml) et de GLOBAL_VARIABLES
+* (state/variables.asm). Rien ne verifie l'accord — le layout decrit la RAM au
+* builder, ces equates la decrivent a l'assembleur, et les deux se croient.
+* Vecu le 2026-08-05 : le bloc globals a recule de $40 pour loger la trainee du
+* joueur, l'ancre est restee a $9E80, et les OST statiques ont recouvert la
+* trainee sans un mot. Les trois valeurs bougent ENSEMBLE.
+GLOBALS_BASE                 equ $9E40
+Dynamic_Object_RAM_End       equ GLOBALS_BASE-nb_static_objects*object_size
 Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size
 
 * Les OST HORS POOL : des objets uniques, vivants pour toute la partie, que le
@@ -70,3 +91,5 @@ player1                      equ dp
 mainloop.state.RUNNING       equ   0
 mainloop.state.DEAD          equ   2
 mainloop.state.CHECKPOINT    equ   4
+
+ ENDC

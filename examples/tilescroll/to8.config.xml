@@ -22,8 +22,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section" value="DATA"/>
-                <default name="direntry.maxsize" value="0x4000"/>
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -36,7 +36,7 @@
                 <!-- bakes against these tiles, and a provider consumed        -->
                 <!-- statically must be built before its consumer.             -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.tiles" loadtimelink="LINK">
+                <file name="assets.tiles" linkdata="LINK">
                     <lwasm gensource="gen/assets/tiles/tiles.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- One sheet, sliced on the fly : tiles_0..tiles_4,   -->
@@ -51,11 +51,11 @@
                             </image>
                         </gfxcomp>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Game mode : holds the scroll and the two maps -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK" bake="auto">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
@@ -71,17 +71,17 @@
                                  tiles="tiles" variant="ND1"
                                  gensource="gen/assets/maps/map_odd.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Terrain collision : the mounted unit, r-type's per level
                      shape (impl + maps + bitmap). It follows the scroll through
                      two link-resolved symbols of the game mode.              -->
-                <direntry name="assets.terrain" loadtimelink="LINK">
+                <file name="assets.terrain" linkdata="LINK">
                     <lwasm gensource="gen/assets/terrain/terrain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/terrain/terrain.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main" region="gamemode"/>

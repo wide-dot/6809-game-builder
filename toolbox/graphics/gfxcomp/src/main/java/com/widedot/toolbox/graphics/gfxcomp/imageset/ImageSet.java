@@ -83,6 +83,25 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 			                    + img.getVariant() + " : only one can be indexed");
 		}
 	}
+
+	/**
+	 * Absorb another slice of the same set : a big set is cut into several
+	 * {@code <gfxcomp>} the arena ranges independently, and this is where
+	 * their image lists meet again. The duplicate check of {@link #addImage}
+	 * still guards — two slices declaring the same pose is the mistake.
+	 */
+	@Override
+	public void merge(com.widedot.m6809.gamebuilder.spi.globals.ImageSets.Index other)
+			throws Exception {
+		if (!(other instanceof ImageSet)) {
+			throw new Exception("cannot merge an imageset of another kind");
+		}
+		for (HashMap<String, Image> variants : ((ImageSet) other).images.values()) {
+			for (Image img : variants.values()) {
+				addImage(img);
+			}
+		}
+	}
 	
 	public void generate(String fileName) throws Exception {
 

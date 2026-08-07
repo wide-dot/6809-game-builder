@@ -16,8 +16,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section" value="DATA"/>
-                <default name="direntry.maxsize" value="0x4000"/>
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -25,7 +25,7 @@
 
                 <!-- Game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
@@ -35,11 +35,11 @@
                              interrupt, so it has to stay addressable. -->
                         <png2pal symbol="Pal_sprites" filename="src/assets/sprites/glyph.png"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <!-- Compiled sprites + their imageset index -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.sprites" loadtimelink="LINK" bake="auto">
+                <file name="assets.sprites" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/assets/sprites/sprites.asm">
                         <!-- entries.asm brings the file id equates the index needs -->
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -73,7 +73,7 @@
                             <frame image="marker"/>
                         </animation>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main" region="gamemode"/>

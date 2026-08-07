@@ -6,13 +6,17 @@
 ;
 ; ---------------------------------------------------------------------------
 
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (shell.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+; INCLUDE "./global/projectile.macro.asm"
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/explosion/explosion.const.asm"
-        INCLUDE "./objects/enemies_properties.asm"
-        INCLUDE "./global/projectile.macro.asm"
+
 
 AABB_0          equ  ext_variables     ; AABB struct (9 bytes)
 angle           equ  ext_variables+9   ; 8.8
@@ -264,11 +268,19 @@ LiveContinue
         jmp   DisplaySprite
 !
         ldx   dad_ptr,u         ; Order to self destroy has been received
-        lbeq  DisplaySprite     ; No dad (so sad)
+; V2-DEVIATION : un branchement RELATIF vers un symbole d'une autre unite est
+; inexprimable ici — le lien de chargement ecrit une valeur ABSOLUE a un
+; offset (EXTERN16), il ne sait pas ce qu'est un deplacement. La v1 assemblait
+; tout d'un bloc, donc lbeq passait. Meme sens, deux octets de plus.
+        bne   >
+        jmp   DisplaySprite     ; No dad (so sad)
+!
         cmpa  #2
         bne   >
         ldx   son_ptr,u         ; Son to be destroyed, not dad
-        lbeq  DisplaySprite     ; No son (not so sad, tons of time available)
+        bne   >                 ; V2-DEVIATION : idem, branchement relatif externe
+        jmp   DisplaySprite     ; No son (not so sad, tons of time available)
+!
 !
         asla                    ; Set the order back to initial value ... 
         asla
@@ -330,11 +342,19 @@ Destroyed
         jmp   DisplaySprite
 !
         ldx   dad_ptr,u         ; I'm already destroyed, but I need to destroy my next of kin, is it dad ?
-        lbeq  DisplaySprite     ; No dad (so sad)
+; V2-DEVIATION : un branchement RELATIF vers un symbole d'une autre unite est
+; inexprimable ici — le lien de chargement ecrit une valeur ABSOLUE a un
+; offset (EXTERN16), il ne sait pas ce qu'est un deplacement. La v1 assemblait
+; tout d'un bloc, donc lbeq passait. Meme sens, deux octets de plus.
+        bne   >
+        jmp   DisplaySprite     ; No dad (so sad)
+!
         cmpa  #2
         bne   >
         ldx   son_ptr,u         ; Son to be destroyed, not dad
-        lbeq  DisplaySprite     ; No son (not so sad, tons of time available)
+        bne   >                 ; V2-DEVIATION : idem, branchement relatif externe
+        jmp   DisplaySprite     ; No son (not so sad, tons of time available)
+!
 !
         asla                    ; Set the order back to initial value ... 
         asla

@@ -4,6 +4,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.ColorModel;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import javax.imageio.ImageIO;
 
@@ -383,13 +386,72 @@ public class Image {
 		}
 	}
 	
+	/**
+	 * Bump when any encoder changes its emitted code : the cache below returns
+	 * the bytes of a previous run, and a stale entry would silently undo the
+	 * encoder change.
+	 */
+	private static final String CACHE_VERSION = "1";
+
+	/**
+	 * The finished encodings are kept between runs (see BuildCache). The
+	 * optimizers are seeded, so the same pixels, name and encoder parameters
+	 * always produce the same code — and encoding is the dominant cost of a
+	 * build (~85% of the wall time measured on r-type), paid twice per build
+	 * (discovery pass, then real pass) for images that almost never change
+	 * between two runs of a working session.
+	 */
+	private com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry cacheEntry() throws Exception {
+		return com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("gfxcomp", CACHE_VERSION)
+				.keyString(name + "|" + type + "|" + mirror + "|" + shift
+						+ "|" + position + "|" + planes + "|" + width + "x" + height
+						// the video memory model changes the emitted code as
+						// surely as the pixels do — same image, another plane
+						// distance, another LEAU (caught by DrawPlanesTest)
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLinearBits
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlanarBits
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryLineBytes
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryNbPlanes
+						+ "|" + com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory.memoryPlaneDistance)
+				// pixels carry the exact source content after mirror and
+				// shift ; data is lossy (transparent and colour 1 both store
+				// 0), so hash pixels
+				.keyBytes(pixels[0])
+				.keyBytes(pixels[1]);
+	}
+
+	private void restoreFromCache(Path cacheDir, String outputDir) throws Exception {
+		try (java.util.stream.Stream<Path> entries = Files.list(cacheDir)) {
+			for (Path f : (Iterable<Path>) entries::iterator) {
+				if (f.getFileName().toString().equals("meta.properties")) {
+					java.util.Properties meta = new java.util.Properties();
+					try (java.io.InputStream in = Files.newInputStream(f)) {
+						meta.load(in);
+					}
+					String cells = meta.getProperty("nb_cell");
+					nb_cell = cells == null ? null : Integer.valueOf(cells);
+					continue;
+				}
+				Files.copy(f, Paths.get(outputDir, f.getFileName().toString()),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+	}
+
 	public void encode(String outputDir) throws Exception {
 		
 	    File directory = new File(outputDir);
 	    if (! directory.exists()){
 	        directory.mkdirs();
 	    }
-		
+
+		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry = cacheEntry();
+		Path cache = entry.find();
+		if (cache != null) {
+			restoreFromCache(cache, outputDir);
+			return;
+		}
+
 		Encoder e;
 		switch (type) {
 			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, SimpleAssemblyGenerator._NO_ALPHA); break;
@@ -400,6 +462,22 @@ public class Image {
 		}
 		
 		e.generateCode();
+
+		entry.store(staging -> {
+			for (String suffix : new String[] { ".asm", "_erase.asm" }) {
+				Path produced = Paths.get(outputDir, getFullName() + suffix);
+				if (Files.exists(produced)) {
+					Files.copy(produced, staging.resolve(produced.getFileName().toString()));
+				}
+			}
+			java.util.Properties meta = new java.util.Properties();
+			if (nb_cell != null) {
+				meta.setProperty("nb_cell", String.valueOf(nb_cell));
+			}
+			try (java.io.OutputStream out = Files.newOutputStream(staging.resolve("meta.properties"))) {
+				meta.store(out, null);
+			}
+		});
 	}
 	
 	/**

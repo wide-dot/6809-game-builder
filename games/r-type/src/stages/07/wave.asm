@@ -1,6 +1,6 @@
-;$00,$00,ObjID_25,$00,$0D
+;$00,$00,ObjID_stageInit,$00,$0D
 ;$00,$00,ObjID_1,$00,$00
-;$00,$30,ObjID_32,$00,$02
+;$00,$30,ObjID_cyclingPalette,$00,$02
 	fcb   $00,$7C,ObjID_patapata,$00,$47
 	fcb   $00,$8C,ObjID_patapata,$00,$38
 	fcb   $00,$98,ObjID_patapata,$00,$47
@@ -14,7 +14,7 @@
 ;$01,$48,ObjID_16,$00,$05
 	fcb   $01,$66,ObjID_patapata,$00,$38
 	fcb   $01,$8E,ObjID_patapata,$00,$57
-;$01,$A4,ObjID_21,$00,$08
+	fcb   $01,$A4,ObjID_pstaff,$00,$08
 ;$01,$C8,ObjID_16,$00,$05
 	fcb   $01,$D2,ObjID_patapata,$00,$48
 	fcb   $02,$06,ObjID_patapata,$00,$37
@@ -23,7 +23,7 @@
 ;$02,$48,ObjID_16,$00,$05
 ;$02,$48,ObjID_16,$00,$04
 	fcb   $02,$58,ObjID_cancer,$00,$54
-;$02,$6C,ObjID_21,$00,$08
+	fcb   $02,$6C,ObjID_pstaff,$00,$08
 	fcb   $02,$7E,ObjID_cancer,$00,$4F
 	fcb   $02,$80,ObjID_bink,$00,$46
 	fcb   $02,$80,ObjID_bink,$00,$58
@@ -34,7 +34,7 @@
 	fcb   $03,$3C,ObjID_bink,$00,$65
 	fcb   $03,$50,ObjID_bug,$02,$22
 	fcb   $03,$92,ObjID_pow,$00,$07
-;$03,$D0,ObjID_21,$00,$08
+	fcb   $03,$D0,ObjID_pstaff,$00,$08
 ;$03,$D0,ObjID_18,$00,$3A
 	fcb   $03,$D4,ObjID_cancer,$00,$44
 ;$03,$E8,ObjID_18,$00,$3A
@@ -58,13 +58,13 @@
 ;$06,$68,ObjID_18,$00,$47
 ;$06,$A0,ObjID_16,$00,$03
 ;$06,$A2,ObjID_18,$00,$37
-	;fcb   $06,$E0,ObjID_bink,$00,$46
-	;fcb   $06,$E0,ObjID_bink,$00,$58
+	fcb   $06,$E0,ObjID_bink,$00,$46
+	fcb   $06,$E0,ObjID_bink,$00,$58
 ;$07,$48,ObjID_16,$00,$05
-	;fcb   $07,$6C,ObjID_bink,$00,$63
-	;fcb   $07,$6C,ObjID_bink,$00,$56
-	;fcb   $07,$6C,ObjID_bink,$00,$48
-	;fcb   $07,$B8,ObjID_bink,$00,$53
+	fcb   $07,$6C,ObjID_bink,$00,$63
+	fcb   $07,$6C,ObjID_bink,$00,$56
+	fcb   $07,$6C,ObjID_bink,$00,$48
+	fcb   $07,$B8,ObjID_bink,$00,$53
 ;$07,$C8,ObjID_16,$00,$05
 ;$07,$C8,ObjID_16,$00,$04
 	fcb   $07,$D0,ObjID_bink,$00,$33
@@ -77,7 +77,7 @@
 	fcb   $08,$E8,ObjID_bink,$00,$45
 ;$08,$F8,ObjID_16,$00,$02
 ;$08,$F8,ObjID_16,$00,$03
-;$09,$50,ObjID_21,$00,$08
+	fcb   $09,$50,ObjID_pstaff,$00,$08
 ;$09,$C8,ObjID_16,$00,$05
 	fcb   $09,$D8,ObjID_bink,$01,$3E
 	fcb   $0A,$0C,ObjID_cancer,$00,$5F
@@ -88,8 +88,8 @@
 	fcb   $0A,$B2,ObjID_cancer,$00,$3C
 ;$0A,$C8,ObjID_16,$00,$05
 	fcb   $0A,$DC,ObjID_cancer,$00,$48
-;$0B,$00,ObjID_0,$00,$0E
-;$0B,$30,ObjID_32,$00,$03
+	fcb   $0B,$00,ObjID_checkpoint,$00,$0E
+;$0B,$30,ObjID_cyclingPalette,$00,$03
 	fcb   $0B,$48,ObjID_bink,$00,$48
 	fcb   $0B,$70,ObjID_bink,$00,$38
 	fcb   $0B,$8C,ObjID_bink,$01,$4E
@@ -115,24 +115,24 @@
 	fcb   $0D,$D4,ObjID_cancer,$00,$53
 	fcb   $0D,$E8,ObjID_cancer,$00,$56
 	fcb   $0E,$0E,ObjID_cancer,$00,$54
-;$0F,$28,ObjID_21,$00,$08
+	fcb   $0F,$28,ObjID_pstaff,$00,$08
 ;$0F,$48,ObjID_16,$00,$05
-;$0F,$88,ObjID_21,$00,$08
+	fcb   $0F,$88,ObjID_pstaff,$00,$08
 	fcb   $0F,$92,ObjID_patapata,$00,$64
 	fcb   $0F,$B4,ObjID_patapata,$00,$46
 ;$0F,$C8,ObjID_16,$00,$04
 ;$0F,$C8,ObjID_16,$00,$05
-;$0F,$D4,ObjID_21,$00,$08
+	fcb   $0F,$D4,ObjID_pstaff,$00,$08
 	fcb   $0F,$F6,ObjID_patapata,$00,$46
 	fcb   $10,$10,ObjID_patapata,$00,$04
-;$10,$14,ObjID_21,$00,$08
+	fcb   $10,$14,ObjID_pstaff,$00,$08
 	fcb   $10,$22,ObjID_patapata,$00,$47
 	fcb   $10,$30,ObjID_patapata,$00,$83
 	fcb   $10,$48,ObjID_patapata,$00,$05
 ;$10,$48,ObjID_16,$00,$05
 	fcb   $10,$66,ObjID_patapata,$00,$06
 	fcb   $10,$7C,ObjID_patapata,$00,$04
-;$10,$88,ObjID_21,$00,$08
+	fcb   $10,$88,ObjID_pstaff,$00,$08
 	fcb   $10,$AE,ObjID_patapata,$00,$53
 	fcb   $10,$B6,ObjID_pow,$00,$54
 	fcb   $10,$D6,ObjID_patapata,$00,$07

@@ -1,3 +1,9 @@
+; Garde d'inclusion : un membre de PAGESET porte plusieurs blocs qui
+; incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF ENEMIES_PROPERTIES
+ENEMIES_PROPERTIES equ 1
+
 ; ***********************************************************************************************
 ;
 ; Defines the properties for each enemies. A properties is declined into 4 equates :
@@ -105,3 +111,5 @@ scant_hitdamage           equ $1e    ; arcade : +0x2F = 30 (v2) ; arcade St.7, r
 ; Shell : corps maintenu invincible ($80 = -128) jusqu'a l'ancrage de progression ;
 ;   le vrai kill = le coeur bleu expose. Logique speciale dans shell/obj.asm
 ;   (invincible_full_potential + potential_set), pas un simple PV initial.
+
+ ENDC

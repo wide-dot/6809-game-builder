@@ -28,6 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LwAssembler
 {
+
+	/**
+	 * Bump when the way lwasm is driven changes (flags, formats) : the cache
+	 * below replays the outputs of a previous run.
+	 */
+	private static final String CACHE_VERSION = "1";
+
 	// format types
 	public static final String OBJ  = "obj";
 	public static final String DECB = "decb";
@@ -100,18 +107,49 @@ public class LwAssembler
 		}
 
 		log.debug("{}", command);
-		Process p;
-		try {
-			p = new ProcessBuilder(command).inheritIO().start();
-		} catch (IOException e) {
-			throw new Exception(lwasm + " could not be run. The assembler ships with the"
-					+ " build under toolbox/third-party/bin/<os>/ ; pass -Dbasedir=<repository root>"
-					+ " so it can be found, put it on the PATH, or point at it with"
-					+ " -Dlwasm.path=/full/path (or the LWASM environment variable).", e);
+
+		// An assembly is a pure function of the source tree and the command
+		// line : same sources, same includes, same defines, same outputs. It
+		// is also the dominant cost of a warm build — measured on r-type at
+		// 204 spawns for 19.7 s of a 23 s build, every one of them repeated
+		// between the discovery pass and the real pass, and again at the next
+		// run of a working session. Finished outputs (bin, lst, lwmap) are
+		// kept under the hash of everything the assembly can see.
+		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
+				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("lwasm", CACHE_VERSION);
+		// the command line minus the absolute output paths : those change with
+		// the build dir without changing what is produced
+		for (String arg : command) {
+			if (!arg.startsWith("--output=") && !arg.startsWith("--list=") && !arg.startsWith("--map=")) {
+				entry.keyString(arg);
+			}
 		}
-		int result = p.waitFor();
-		if (result != 0) {
-			throw new Exception("Build Aborted !");			
+		entry.keyFileTree(path, java.util.List.of(Paths.get(rootPath), path.getParent()));
+		Path cache = entry.find();
+		if (cache != null) {
+			Files.copy(cache.resolve("out." + format), Paths.get(binFilename));
+			Files.copy(cache.resolve("out." + LST), Paths.get(lstFilename));
+			Files.copy(cache.resolve("out." + LWMAP), Paths.get(mapFilename));
+			log.debug("lwasm cache hit for {}", asmBasename);
+		} else {
+			Process p;
+			try {
+				p = new ProcessBuilder(command).inheritIO().start();
+			} catch (IOException e) {
+				throw new Exception(lwasm + " could not be run. The assembler ships with the"
+						+ " build under toolbox/third-party/bin/<os>/ ; pass -Dbasedir=<repository root>"
+						+ " so it can be found, put it on the PATH, or point at it with"
+						+ " -Dlwasm.path=/full/path (or the LWASM environment variable).", e);
+			}
+			int result = p.waitFor();
+			if (result != 0) {
+				throw new Exception("Build Aborted !");			
+			}
+			entry.store(staging -> {
+				Files.copy(Paths.get(binFilename), staging.resolve("out." + format));
+				Files.copy(Paths.get(lstFilename), staging.resolve("out." + LST));
+				Files.copy(Paths.get(mapFilename), staging.resolve("out." + LWMAP));
+			});
 		}
         
         Class<?> clazz = Class.forName(formatClass.get(format));
@@ -166,4 +204,5 @@ public class LwAssembler
 			}
 		}
 	}
+
 }

@@ -77,7 +77,7 @@ class XmlLoaderTest {
 		XmlLoader.Result r = load(
 			"<configuration>\n" +
 			"  <target name=\"fd\">\n" +
-			"    <direntry name=\"x\"/>\n" +
+			"    <file name=\"x\"/>\n" +
 			"  </target>\n" +
 			"</configuration>\n");
 

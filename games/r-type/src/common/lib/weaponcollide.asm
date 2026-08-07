@@ -52,9 +52,12 @@
 ; touched), p==0 = already disabled (skipped). The weapons are never consumed.
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/collision/struct_AABB.equ"        ; AABB.* (guarded)
-        INCLUDE "./objects/player1/forcepods/forcepod.equ"  ; rtnid.*  (guarded)
-        INCLUDE "./objects/player1/bitdevice/bitdevice.equ" ; bitdev.rtnid.* (guarded)
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (collisionpass.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+;       INCLUDE "./engine/collision/struct_AABB.equ"
+;       INCLUDE "./objects/player1/forcepods/forcepod.equ"
+;       INCLUDE "./objects/player1/bitdevice/bitdevice.equ"
 
 WEAPON_GATE_PERIOD equ 16        ; elapsed 50Hz frames between two contact-damage passes
 

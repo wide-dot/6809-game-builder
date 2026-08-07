@@ -1,0 +1,148 @@
+<configuration>
+
+    <!-- ========================================================= -->
+    <!-- Does a stacked list survive crossing a page boundary ?     -->
+    <!--                                                            -->
+    <!-- Ten markers of 2 KB are stacked from the base : they fill  -->
+    <!-- one page and spill into the next. Each carries its own     -->
+    <!-- number in its first and last byte, and the game mode looks -->
+    <!-- for every one of them where the loader was supposed to put -->
+    <!-- it. GREEN border : all present. RED : one is missing, its  -->
+    <!-- number is left at $6000.                                   -->
+    <!--                                                            -->
+    <!-- TO8 must be green whatever happens — its window opens at   -->
+    <!-- $0000, so the old "restart at zero" was right by accident. -->
+    <!-- MO6 is red before the fix and green after : its window     -->
+    <!-- opens at $B000.                                            -->
+    <!-- ========================================================= -->
+
+    <target name="fd">
+        <define symbol="TO8" value="0"/>
+
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+
+        <layout>
+            <region name="gamemode" page="$01" address="$6100" size="$1000"/>
+            <arena name="stacked">
+                <zone page="$05" address="$0000" size="$4000"/>
+                <zone page="$06" address="$0000" size="$4000"/>
+            </arena>
+        </layout>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="1" face="0" sector="3"/>
+            <section name="DATA"  track="1" face="0" sector="4"/>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section"  value="DATA"/>
+                <default name="file.maxsize"  value="0x4000"/>
+                <default name="lwasm.format"  value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$6000"/>
+
+                <!-- the checker : it knows where each marker should be -->
+                <file name="gamemode" linkdata="LINK">
+                    <lwasm gensource="gen/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm xml:space="preserve">stacked.base.page    equ $05</asm>
+                        <asm xml:space="preserve">stacked.base.address equ $0000</asm>
+                        <asm filename="src/main.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="marker.0" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-0.asm">
+                        <asm filename="src/markers/marker-0.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.1" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-1.asm">
+                        <asm filename="src/markers/marker-1.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.2" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-2.asm">
+                        <asm filename="src/markers/marker-2.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.3" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-3.asm">
+                        <asm filename="src/markers/marker-3.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.4" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-4.asm">
+                        <asm filename="src/markers/marker-4.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.5" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-5.asm">
+                        <asm filename="src/markers/marker-5.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.6" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-6.asm">
+                        <asm filename="src/markers/marker-6.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.7" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-7.asm">
+                        <asm filename="src/markers/marker-7.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.8" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-8.asm">
+                        <asm filename="src/markers/marker-8.asm"/>
+                    </lwasm>
+                </file>
+                <file name="marker.9" linkdata="LINK">
+                    <lwasm gensource="gen/markers/marker-9.asm">
+                        <asm filename="src/markers/marker-9.asm"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scene.asm">
+                    <load name="gamemode" region="gamemode"/>
+                    <load name="marker.0" arena="stacked"/>
+                    <load name="marker.1" arena="stacked"/>
+                    <load name="marker.2" arena="stacked"/>
+                    <load name="marker.3" arena="stacked"/>
+                    <load name="marker.4" arena="stacked"/>
+                    <load name="marker.5" arena="stacked"/>
+                    <load name="marker.6" arena="stacked"/>
+                    <load name="marker.7" arena="stacked"/>
+                    <load name="marker.8" arena="stacked"/>
+                    <load name="marker.9" arena="stacked"/>
+                </scene>
+
+            </directory>
+
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.main</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw" gensource="gen/bootloader/boot.asm">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd filename="stacked-overflow-to8.fd"/>
+            <sap filename="stacked-overflow-to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>

@@ -6,8 +6,10 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/objects/palette/fade/fade.equ"
+; V2-DEVIATION : en-tete porte par l'enveloppe unit.
+;        INCLUDE "./engine/macros.asm"
+; V2-DEVIATION : en-tete porte par l'enveloppe unit.
+;        INCLUDE "./engine/objects/palette/fade/fade.equ"
 
 Object
         lda   routine,u

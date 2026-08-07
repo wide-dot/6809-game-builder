@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF PROJECTILE_MACRO
+PROJECTILE_MACRO equ 1
+
 _loadFirePreset MACRO
         lda   Obj_Index_Page+ObjID_loadFirePreset
         sta   PSR_Page   
@@ -17,3 +23,5 @@ _loadFirePresetBug MACRO
         sta   PSR_Param
         jsr   RunPgSubRoutine
  ENDM    
+
+ ENDC

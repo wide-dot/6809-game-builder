@@ -47,7 +47,7 @@ public class PageSets {
 		sets.put(set, members);
 	}
 
-	/** null when the name is an ordinary direntry rather than a pageset */
+	/** null when the name is an ordinary file rather than a pageset */
 	public List<Member> get(String set) {
 		return sets.get(set);
 	}

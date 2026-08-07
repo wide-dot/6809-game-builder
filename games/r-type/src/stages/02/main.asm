@@ -12,6 +12,8 @@
 ;*******************************************************************************
 
 STAGE_ID equ 2
+; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
+STAGE_SCENE equ scenes.stage2
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -37,7 +39,7 @@ patapata.Object   EXTERNAL
 Ani_Asd_common    EXTERNAL
 
 ; Le masque du champ de jeu, dans la page des overlays. Ce n'est pas un objet :
-; il n'a ni etat ni OST, sa page est une equate (overlay.page) et son adresse
+; il n'a ni etat ni OST, sa page est une equate (common.overlay.page) et son adresse
 ; ce symbole — paged.call suffit a l'atteindre. Les deux stages partagent
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
@@ -47,6 +49,9 @@ adr_playfield_mask_ND0 EXTERNAL
 ; Le HUD, meme page que le masque et les etoiles : une routine sans etat,
 ; visee par son symbole.
 hud.normal        EXTERNAL
+; Cite par la boucle commune (phase 4 de la sequence de fin) ; le stage 2 n'y
+; passe jamais, mais le symbole doit se resoudre.
+hud.readout       EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.erase   EXTERNAL
@@ -88,6 +93,17 @@ explosion.Object  EXTERNAL
 pow.Object          EXTERNAL
 powOptionbox.Object EXTERNAL
 bitdevice.Object    EXTERNAL
+
+; L'armement : le force pod et ses trois armes, une unite chacun.
+forcepod.Object        EXTERNAL
+simplefire.Object      EXTERNAL
+reboundlaser.Object    EXTERNAL
+counterairlaser.Object EXTERNAL
+
+; Le cast d'ennemis, un direntry chacun.
+bug.Object      EXTERNAL
+bink.Object     EXTERNAL
+blaster.Object  EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 
@@ -118,6 +134,9 @@ emitterFlash.Object EXTERNAL
         ; La routine de veille des bit devices : le corps commun amorce leurs
         ; deux OST statiques a l'ouverture du stage. Garde par IFNDEF.
         INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
+        ; Les identifiants de routine du force pod : le corps commun amorce son
+        ; OST statique en veille a l'ouverture du stage.
+        INCLUDE "src/common/weapons/forcepods/forcepod.equ"
 
         ; Les variables inter-main, en equates absolues de la zone reservee
         ; `globals` : la boucle les remet a zero a l'entree du stage, comme la
@@ -127,6 +146,9 @@ emitterFlash.Object EXTERNAL
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
         INCLUDE "gen/stages/02/pages.asm"
+        ; Les pages du cast commun, publiees par son pageset : l'index
+        ; d'objets lit <symbole>.page pour chaque ennemi range.
+        INCLUDE "gen/enemies/cast-pages.asm"
         INCLUDE "src/stages/02/map/intro/map.const.asm"
 
  opt c,ct
@@ -147,6 +169,22 @@ checkpoint.positions
 ; pas par un debut de partie. Le corps commun l'appelle quand meme — chaque
 ; stage repond, quitte a ne rien faire.
 stage.openingSequence
+        rts
+
+; ---------------------------------------------------------------------------
+; Les trois rendez-vous de la boucle commune. Le stage 2 n'a ni boss ni
+; sequence de fin : il ne peint rien de plus dans le verrou, ne change pas de
+; surimpression, et se termine au bout de la carte.
+; ---------------------------------------------------------------------------
+stage.frameBlit
+        rts
+
+stage.overlayPhase fcb 0
+
+stage.endTick
+        ldd   glb_camera_x_pos
+        cmpd  scroll_max
+        lbhs  stage.handOver
         rts
 
 stage.setup
@@ -191,6 +229,8 @@ stage2.notRelinked
 
         lda   #2
         sta   game.stage
+        ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
+        jsr   game.stage.unload
         ldx   #scenes.stage1
         jmp   game.stage.switch
 

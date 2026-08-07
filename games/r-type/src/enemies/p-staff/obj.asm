@@ -6,11 +6,15 @@
 ;
 ; ---------------------------------------------------------------------------
 
-	INCLUDE "./engine/macros.asm"
-	INCLUDE "./engine/collision/macros.asm"
-	INCLUDE "./engine/collision/struct_AABB.equ"
-	INCLUDE "./objects/explosion/explosion.const.asm"
-	INCLUDE "./objects/enemies_properties.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (pstaff.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+; INCLUDE "./objects/enemies_properties.asm"
+
 
  IFNDEF t2
 Img_pstaff_3 equ Img_pstaff_0
@@ -33,7 +37,8 @@ pstaff_0x14     equ ext_variables+15 ; 2 bytes
 pstaff_0x16     equ ext_variables+17 ; 2 bytes
 
 
-Onject
+* V2-DEVIATION : entree renommee, le nom v1 ne franchit pas la frontiere de lien.
+* Onject
 	lda   routine,u
 	asla
 	ldx   #Routines
@@ -535,4 +540,4 @@ pstaff_0x340e
 
 
 PresetXYIndex
-        INCLUDE "./global/preset/18dd0_preset-xy.asm"
+        INCLUDE "src/common/lib/presets/18dd0_preset-xy.asm"

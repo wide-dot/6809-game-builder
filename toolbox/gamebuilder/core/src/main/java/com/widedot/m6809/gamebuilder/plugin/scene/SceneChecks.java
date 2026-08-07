@@ -36,6 +36,29 @@ public final class SceneChecks {
 	 * @return the errors found, empty when all the scenes are coherent
 	 */
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal) {
+		List<String> errors = verify(scenes, sizes, pageSpans);
+		return addressesAreReal ? errors : budgetsOnly(errors);
+	}
+
+	/**
+	 * While the layout is being measured, an arena's files all sit at
+	 * provisional addresses : they would look piled on each other. Budgets and
+	 * missing files still mean something, overlaps do not — the pass whose job
+	 * is to produce the real addresses must not be stopped by the absence of
+	 * real addresses.
+	 */
+	private static List<String> budgetsOnly(List<String> errors) {
+		List<String> kept = new ArrayList<String>();
+		for (String e : errors) {
+			if (!e.contains("overlap on page")) {
+				kept.add(e);
+			}
+		}
+		return kept;
+	}
+
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
 			Map<String, Map<String, int[]>> pageSpans) {
 		List<String> errors = new ArrayList<String>();
 
@@ -43,10 +66,6 @@ public final class SceneChecks {
 			// resolved memory range of every write of this scene, per page
 			List<int[]> ranges = new ArrayList<int[]>(); // {page, start, end}
 			List<String> owners = new ArrayList<String>();
-
-			// bulk regions accumulate a running cursor from their base
-			Map<String, Integer> bulkCursor = new LinkedHashMap<String, Integer>();
-			Map<String, SceneCheck.Load> bulkFirst = new LinkedHashMap<String, SceneCheck.Load>();
 
 			for (SceneCheck.Load load : scene.loads) {
 				Integer size = sizes.get(load.name);
@@ -87,16 +106,6 @@ public final class SceneChecks {
 					}
 					break;
 
-				case BULK: {
-					int base = bulkCursor.merge(load.region, size, Integer::sum) - size;
-					bulkFirst.putIfAbsent(load.region, load);
-					if (size > 0) {
-						ranges.add(new int[] { load.page, load.address + base, load.address + base + size });
-						owners.add(load.name + " (in bulk '" + load.region + "')");
-					}
-					break;
-				}
-
 				case EXPORT_ONLY:
 					if (size > 0) {
 						errors.add(load.where + ": scene " + scene.sceneName + ": '" + load.name
@@ -104,16 +113,6 @@ public final class SceneChecks {
 								+ " give it a region, or make it export-only");
 					}
 					break;
-				}
-			}
-
-			// bulk lists must fit their region budget
-			for (Map.Entry<String, Integer> cursor : bulkCursor.entrySet()) {
-				SceneCheck.Load first = bulkFirst.get(cursor.getKey());
-				if (first.budget != null && cursor.getValue() > first.budget) {
-					errors.add(first.where + ": scene " + scene.sceneName + ": the bulk list of region '"
-							+ cursor.getKey() + "' is " + cursor.getValue() + " bytes, over its "
-							+ first.budget + " byte budget");
 				}
 			}
 

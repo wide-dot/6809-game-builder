@@ -40,6 +40,7 @@ operation — see the loader analysis in the repository `CLAUDE.md`.
 | +12 | T12 index growth : +6 export-only files push the index past 8 slots (realloc), values resolved ($F7), mass unload ($F8), count restored ($F9) |
 | +13 | T13 multi-sector directory : marker zz is the LAST directory entry (3rd INDEX sector), loaded and verified ($FA content, $FB not indexed) |
 | +14 | T14 index churn : 16 cycles of +22 export-only files (first pass walks the realloc steps 8→16→24→32) then mass unload of all 22 ($FC peak count, $FD value, $FE unload/floor) |
+| +17 | T17 scene unload : `loader.scene.unload` deindexes every file the named scene loaded (`$D5` premise, `$D6` still indexed, `$D7` count did not drop, `$D8` replay was not a no-op) — exercises both the cached-table path and the re-read one |
 | +15 | T15 multi-disk : switch to disk 1, load a file from it, cross-disk links checked both ways, disk 0 files still linked, then switch back ($EA content/inbound fixup, $EB outbound symbol, $EC disk 0 links lost, $ED count, $EE disk 0 unusable) |
 | +24/+25 | info : `#marker.cc.begin` before the second scene load |
 | +26 | T11 progress : remaining iterations |

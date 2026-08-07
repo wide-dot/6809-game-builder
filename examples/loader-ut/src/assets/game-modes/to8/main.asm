@@ -13,10 +13,11 @@
 ;   +5  : T5 scene "second" loaded : marker cc content @ cart page 6, $0800
 ;   +6  : T6 re-link after scene load : #marker.cc.begin
 ;   +7  : T7 loader.file.getPageID for cc
-;   +8  : T8 implicit unload : loading cc at bb's destination deindexed bb
+;   +8  : T8 explicit unload : bb had to be dropped BEFORE cc could take
+;         its place ; replaying the unload reports not found
 ;   +9  : T9 dedup : reloading scene "second" does not grow the index
 ;   +10 : T10 explicit linkData.unload of aa : status, isLoaded, count drop
-;   +11 : T11 stress : 128 load/unload/relink cycles of dd/ee variants over
+;   +11 : T11 stress : 128 unload/load/relink cycles of dd/ee variants over
 ;         the same destination, hub extern refs flip checked each cycle,
 ;         pool/index stability ($01 pass, $F1..$F5 first failing check)
 ;   +12 : T12 index growth : +6 export-only files (realloc beyond 8 slots),
@@ -27,6 +28,9 @@
 ;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
 ;   +15 : T15 multi-disk : switch to disk 1, load from it, cross-disk link
 ;         both ways, disk 0 files still linked, switch back ($EA..$EE)
+;   +17 : T17 scene unload : loader.scene.unload deindexes every file the
+;         named scene loaded, is a no-op when replayed, and works from the
+;         cached table as well as from a re-read one ($D5..$D8)
 ;   +16 : T16 multi object group : an asm member concatenated after a 256
 ;         byte blob in one direntry, its export and its relocation must both
 ;         be shifted by the size of what precedes it ($E1..$E3)
@@ -37,7 +41,12 @@
 ;   +27 : T15 disk handshake, for the operator/emulator :
 ;         $D1 waiting for disk 1, $D2 disk 1 loaded,
 ;         $D3 waiting for disk 0, $D4 back on disk 0
-;   +31 : $00 running, $0D all tests passed, $E0+n : n test(s) failed
+;   +31 : $00 running, $0D all tests passed, $E0+n : n test(s) failed,
+;         $DE the overlap trap did NOT fire (see T18, read after the halt)
+;
+;   T18 is not a table slot : it provokes the overlap trap on purpose, AFTER
+;   +31 is written, and the machine freezes. Read the log block at $9EF0 -
+;   log.code must be $8301. See the tail of this file.
 ;
 ; each test slot : $00 not run, $01 pass, $FF fail
 ;*******************************************************************************
@@ -67,6 +76,7 @@ result           equ $9C00
 result.MAGIC     equ $CA
 result.DONE_OK   equ $0D
 result.DONE_KO   equ $E0
+result.TRAP_MISSED equ $DE   ; T18 : the overlap went through without trapping
 
 page.markers     equ 6
 addr.marker.aa   equ $0000
@@ -147,7 +157,14 @@ init
 @res    equ   *-1
         jsr   test.next
 
-        ; T5 : load scene "second" (marker cc over marker bb), check content
+        ; T5 : load scene "second" (marker cc where marker bb was), check content
+        ;
+        ; bb leaves the index FIRST, and by name. The loader used to deduce it
+        ; — a file landing on an occupied destination silently evicted the
+        ; occupant — which meant the incoming scene answered for what the
+        ; previous one had taken. It does not : covering a still-indexed file
+        ; is now log.scene.LOAD_OVERLAP, and this line is what keeps it quiet.
+        _loader.file.linkData.unload #0,#data.marker.bb
         _loader.scene.load #scenes.second
         _ram.cart.set #page.markers
         ldx   #addr.marker.cc
@@ -177,9 +194,10 @@ init
 @res    equ   *-1
         jsr   test.next
 
-        ; T8 : implicit unload - loading cc at bb's destination (T5) must
-        ; have removed bb from the index ; an explicit unload of bb then
-        ; reports not found
+        ; T8 : explicit unload - the unload T5 had to perform before loading
+        ; cc took bb out of the index, and replaying it reports not found.
+        ; The assertions are the ones the implicit unload used to satisfy ;
+        ; what changed is WHO deindexed bb, and that it is now written down.
         lda   #$01
         sta   @res8
         _loader.file.isLoaded #data.marker.bb
@@ -257,8 +275,9 @@ init
         ;   $F3 gm immediates flip (#marker.dd.begin / #marker.ee.begin)
         ;   $F4 hub words flip + stable ref + fill
         ;   $F5 linkData.count steady at 4
-        ; every 16th cycle the current variant is explicitly unloaded first
-        ; (exercises the unload->append path instead of implicit unload) ;
+        ; each cycle drops both variants by name before loading the next :
+        ; dropping the one that is not indexed is a no-op (T17 states it), and
+        ; dropping the one that is frees the destination the swap reuses ;
         ; the whole loop must run within the 4 KB memory pool : any alloc/
         ; free imbalance aborts the run long before 128 cycles
         lda   #$01
@@ -269,11 +288,8 @@ init
 @sloop
         lda   stress.iter
         sta   result+26                       ; progress, for the debugger
-        anda  #15
-        bne   @swap
         _loader.file.linkData.unload #0,#data.marker.dd
         _loader.file.linkData.unload #0,#data.marker.ee
-@swap
         lda   stress.iter
         anda  #1
         beq   @even
@@ -612,6 +628,48 @@ init
 @res16  equ   *-1
         jsr   test.next
 
+        ; T17 : scene unload. loader.scene.unload names the scene whose files
+        ; must leave the index - there is no hidden "current scene", and no
+        ; primitive that chains unload and load : the order belongs here.
+        ;   $D5 cc was not indexed before the unload (test premise broken)
+        ;   $D6 cc still indexed after unloading its scene
+        ;   $D7 index count did not drop by one
+        ;   $D8 replaying the unload reported something other than a no-op
+        lda   #$01
+        sta   @res17
+        ; scene "second" was reloaded by T9, so cc is indexed again
+        _loader.file.isLoaded #data.marker.cc
+        bne   >                               ; ne : loaded, as expected
+        lda   #$D5
+        bra   @fail17
+!       _loader.file.linkData.count
+        std   test.t17.count
+        ; the cached table path : "second" is the last scene loaded
+        _loader.scene.unload #scenes.second
+        _loader.file.isLoaded #data.marker.cc
+        beq   >                               ; eq : deindexed, as expected
+        lda   #$D6
+        bra   @fail17
+!       _loader.file.linkData.count
+        addd  #1
+        cmpd  test.t17.count
+        beq   >
+        lda   #$D7
+        bra   @fail17
+        ; replaying it must be harmless : the walk unloads files that are no
+        ; longer indexed, and each of those is a no-op. This also exercises
+        ; the re-read path, the cached table having been freed.
+!       _loader.scene.unload #scenes.second
+        _loader.file.linkData.count
+        addd  #1
+        cmpd  test.t17.count                  ; still the same count
+        beq   @end17
+        lda   #$D8
+@fail17 sta   @res17
+@end17  lda   #0
+@res17  equ   *-1
+        jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
@@ -619,6 +677,32 @@ init
         addb  #result.DONE_KO
         tfr   b,a
 !       sta   result+31
+
+        ; T18 : the overlap trap itself, DELIBERATELY provoked - it freezes the
+        ; machine, so it has to come after the final status. The result table
+        ; is already written : +31 says whether T1..T17 passed, and this last
+        ; step is read from the LOG BLOCK instead ($9EF0), which is the point
+        ; of the log system - a supervisor watches log.code and reads the rest.
+        ;
+        ; cc is loaded and indexed (T9 reloaded scene "second", T17 unloaded it
+        ; - so reload it), then scene "second" is loaded again WITHOUT dropping
+        ; it. Expected at the halt :
+        ;   log.code = $8301  (error class + log.scene.LOAD_OVERLAP)
+        ;   log.x    = data.marker.cc  (the file being loaded)
+        ;   log.u    = data.marker.cc  (the occupant - itself, one scene older)
+        ;   log.y    = addr.marker.cc  (the destination)
+        ;
+        ; A machine that reaches `trap.missed` instead has NOT trapped : the
+        ; overlap went through unnoticed, which is the regression this guards.
+        _loader.scene.load #scenes.second     ; cc indexed again
+        _loader.file.linkData.unload #0,#data.marker.cc
+        _loader.scene.load #scenes.second     ; indexed once more, deliberately
+        _loader.scene.load #scenes.second     ; ... and covered : must trap
+        lda   #result.TRAP_MISSED
+        sta   result+31
+trap.missed
+        bra   trap.missed
+
 done    bra   done
 
 ; exported anchor : a non-zero resident address, referenced as an extern
@@ -683,6 +767,7 @@ test.t10.count fdb 0
 test.t12.count fdb 0
 test.t14.count fdb 0
 test.t15.count fdb 0
+test.t17.count fdb 0
 test.t14.list  fdb iface.a,iface.b,iface.c,iface.d,iface.e,iface.f
                fdb pad.a,pad.b,pad.c,pad.d,pad.e,pad.f,pad.g,pad.h
                fdb pad.i,pad.j,pad.k,pad.l,pad.m,pad.n,pad.o,pad.p

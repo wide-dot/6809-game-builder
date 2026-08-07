@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 02 — genere par tools/gen_objid.py 02
 * ===========================================================================
-* Les 20 identifiants que la wave reelle du niveau 02 reference, et
+* Les 32 identifiants que la wave reelle du niveau 02 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -10,6 +10,9 @@
 * bouchon tant que les ennemis ne sont pas portes ; le chemin exerce, lui,
 * est le vrai : wave -> LoadObject_u -> id -> RunObjects -> index -> code.
 
+
+ IFNDEF OBJID_CONST_02
+OBJID_CONST_02          equ 1
 
 ObjID_animation              equ 1
 ObjID_explosion              equ 2
@@ -27,9 +30,23 @@ ObjID_foefire                equ 13
 ObjID_initlevel1             equ 14
 ObjID_engineflames           equ 15
 ObjID_messages               equ 16
-ObjID_pow_optionbox          equ 17
-ObjID_bitdevice              equ 18
-ObjID_pow                    equ 19
-ObjID_bossmusic              equ 20
-objid.count                  equ 20
+ObjID_endstage               equ 17
+ObjID_pow_optionbox          equ 18
+ObjID_bitdevice              equ 19
+ObjID_forcepod               equ 20
+ObjID_forcepod_simplefire    equ 21
+ObjID_forcepod_reboundlaser  equ 22
+ObjID_forcepod_counterairlaser equ 23
+ObjID_scantfire              equ 24
+ObjID_tabrokcanon            equ 25
+ObjID_shellEraser            equ 26
+ObjID_commonmissileflame     equ 27
+ObjID_dobkeratops_saw        equ 28
+ObjID_dobkeratops_explosion  equ 29
+ObjID_pow                    equ 30
+ObjID_checkpoint             equ 31
+ObjID_bossmusic              equ 32
+objid.count                  equ 32
 objid.animation              equ ObjID_animation
+
+ ENDC

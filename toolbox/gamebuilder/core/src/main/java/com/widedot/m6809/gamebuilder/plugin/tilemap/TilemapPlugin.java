@@ -28,8 +28,8 @@ import lombok.extern.slf4j.Slf4j;
  * bytes — the scroll skips the entry (BuildDisk generated the same shape from
  * the same .bin files).
  *
- * The table's references are baked by the builder : the direntry holding it
- * reference against the declared placement of the tiles' direntry, so the
+ * The table's references are baked by the builder : the file holding it
+ * reference against the declared placement of the tiles' file, so the
  * hundreds of entries cost no load-time link data and no run-time symbol
  * search. This is also how v1 paid for its maps — values resolved at build
  * time, placed after the tiles were.
@@ -50,7 +50,7 @@ public class TilemapPlugin {
 		if (bitdepth != 8 && bitdepth != 16) {
 			throw new Exception("tilemap " + label + " : bitdepth must be 8 or 16");
 		}
-		// the whole point of the element is the baked table : the direntry
+		// the whole point of the element is the baked table : the file
 		// holding it declares bake="all", the section name is an identity
 
 		byte[] data = Files.readAllBytes(Paths.get(map));
@@ -84,7 +84,7 @@ public class TilemapPlugin {
 					.append(variant).append(" EXTERNAL").append(System.lineSeparator());
 		}
 		// The table is exported : a map big enough to need its own page lives
-		// in a direntry of its own, and the game mode then reaches it by name.
+		// in a file of its own, and the game mode then reaches it by name.
 		// When it stays in the unit that uses it, the export costs nothing —
 		// nothing imports it, so pruning leaves it out of the link data.
 		source.append(label).append(" EXPORT").append(System.lineSeparator());

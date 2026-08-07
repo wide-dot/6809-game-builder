@@ -36,10 +36,31 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision',
          'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire',
          'ObjID_initlevel1', 'ObjID_engineflames', 'ObjID_messages',
+         # Le sequenceur de fin de niveau : objet MONTE, jamais cree. La wave
+         # ne le nomme pas — c'est la boucle du stage qui l'appelle, avec une
+         # commande en B.
+         'ObjID_endstage',
          # Les bonus : le POW vient de la wave, mais ce qu'il fait naitre en
          # mourant — la boite a option, ou le bit device quand le quartet haut
          # de son subtype vaut 5 — n'y figure pas.
-         'ObjID_pow_optionbox', 'ObjID_bitdevice']
+         'ObjID_pow_optionbox', 'ObjID_bitdevice',
+         # L'armement : le force pod vit dans un slot statique, la wave ne le
+         # nomme donc jamais ; ses trois armes, c'est lui qui les fait naitre.
+         'ObjID_forcepod', 'ObjID_forcepod_simplefire',
+         'ObjID_forcepod_reboundlaser', 'ObjID_forcepod_counterairlaser',
+         # Le tir du scant : la wave ne le nomme jamais, c'est scant qui le
+         # fait naitre par LoadObject.
+         'ObjID_scantfire',
+         # Le canon du tabrok, ne par LoadObject depuis le tabrok, et
+         # l'effaceur de la rotonde, appele une fois par trame par le stage :
+         # ni l'un ni l'autre ne figure dans la wave.
+         'ObjID_tabrokcanon', 'ObjID_shellEraser',
+         # La flamme du missile : ni la wave ni le joueur ne la nomment, c'est
+         # le missile qui la fait naitre.
+         'ObjID_commonmissileflame',
+         # La scie du boss et sa sequence d'explosions : la creature les fait
+         # naitre, la wave ne les nomme jamais.
+         'ObjID_dobkeratops_saw', 'ObjID_dobkeratops_explosion']
 
 for line in open(src):
     code = line.split(';')[0]
@@ -65,37 +86,90 @@ equ_out = [f"""* ===============================================================
 * est le vrai : wave -> LoadObject_u -> id -> RunObjects -> index -> code.
 """]
 equ_out.append('')
+# Garde d'inclusion : un membre de pageset porte plusieurs blocs qui incluent
+# chacun cet en-tete (chaque objet a besoin des identifiants).
+equ_out.append(f' IFNDEF OBJID_CONST_{stage}')
+equ_out.append(f'OBJID_CONST_{stage}          equ 1')
+equ_out.append('')
 for i, name in enumerate(names, start=1):
     equ_out.append(f'{name:<28} equ {i}')
 equ_out.append(f'objid.count                  equ {len(names)}')
 equ_out.append('objid.animation              equ ObjID_animation')
+equ_out.append('')
+equ_out.append(' ENDC')
 equ_out.append('')
 open(f'src/stages/{stage}/objid.const.asm', 'w').write('\n'.join(equ_out))
 
 out = ['* Index d\'objets — genere par tools/gen_objid.py, ne pas editer', '']
 # Les ennemis portes vivent dans la page des ennemis et ont leur propre
 # point d'entree ; les autres identifiants visent encore le bouchon du stage.
-PORTED = {'ObjID_animation': ('anim', 'Ani_Asd_common'),
-          'ObjID_fade':      ('fade', 'PaletteFade'),
-          'ObjID_Player1':   ('player', 'Player'),
-          'ObjID_patapata': ('enemies', 'patapata.Object'),
-          'ObjID_explosion': ('explosion', 'explosion.Object'),
-          'ObjID_createFoeFire':  ('firechain', 'createFoeFire'),
-          'ObjID_loadFirePreset': ('firechain', 'loadFirePreset.Object'),
-          'ObjID_foefire':        ('foefire',   'foefire.Object'),
-          'ObjID_engineflames':   ('engineflames', 'engineflames.Object'),
-          'ObjID_Weapon':        ('weapon',     'Weapon'),
-          'ObjID_beamcharge':    ('beamcharge', 'Beamcharge'),
-          'ObjID_beamp':         ('beamp',      'Beam'),
-          'ObjID_emitter_flash': ('emflash',    'emitterFlash.Object'),
-          'ObjID_messages':      ('messages',   'messages.Object'),
-          'ObjID_pow':           ('pow',        'pow.Object'),
-          'ObjID_pow_optionbox': ('optionbox',  'powOptionbox.Object'),
-          'ObjID_bitdevice':     ('bitdevice',  'bitdevice.Object')}
+PORTED = {'ObjID_animation': ('common.anim', 'Ani_Asd_common'),
+          'ObjID_fade':      ('common.fade', 'PaletteFade'),
+          'ObjID_Player1':   ('common.player', 'Player'),
+          'ObjID_explosion': ('common.explosion', 'explosion.Object'),
+          'ObjID_createFoeFire':  ('common.firechain', 'createFoeFire'),
+          'ObjID_loadFirePreset': ('common.firechain', 'loadFirePreset.Object'),
+          'ObjID_foefire':        ('common.foefire', 'foefire.Object'),
+          'ObjID_engineflames':   ('common.engineflames', 'engineflames.Object'),
+          'ObjID_Weapon':        ('common.weapon', 'Weapon'),
+          'ObjID_beamcharge':    ('common.beamcharge', 'Beamcharge'),
+          'ObjID_beamp':         ('common.beamp', 'Beam'),
+          'ObjID_emitter_flash': ('common.emflash', 'emitterFlash.Object'),
+          'ObjID_messages':      ('common.messages', 'messages.Object'),
+          'ObjID_pow':           ('common.pow', 'pow.Object'),
+          'ObjID_pow_optionbox': ('common.optionbox', 'powOptionbox.Object'),
+          'ObjID_bitdevice':     ('common.bitdevice', 'bitdevice.Object'),
+          'ObjID_forcepod':                 ('common.forcepod', 'forcepod.Object'),
+          'ObjID_forcepod_simplefire':      ('common.simplefire', 'simplefire.Object'),
+          'ObjID_forcepod_reboundlaser':    ('common.reboundlaser', 'reboundlaser.Object'),
+          'ObjID_forcepod_counterairlaser': ('common.counterairlaser', 'counterairlaser.Object'),
+          # Le cast d'ennemis : un direntry par ennemi, tous sur la page $05.
+          # bink est RANGE PAR LE BUILDER dans la queue d'un pageset (un
+          # <block>), pas dans une region declaree : sa page n'est pas
+          # `<region>.page` mais l'equate que le pageset publie pour le
+          # symbole du bloc, `<symbole>.page`. None marque ce cas.
+          }
 # Ce qui n'est porte que pour CERTAINS stages : la collision terrain a une
 # unite par niveau, et seul le stage 1 a la sienne pour l'instant.
 if stage == '01':
     PORTED['ObjID_collision'] = ('collision', 'terrainCollision.unit')
+    # Les ennemis propres au niveau : ranges par le builder dans la queue des
+    # pagesets de tuiles du stage, leur page est l'equate <symbole>.page.
+    # Le cast du niveau : nomme par le stage, range dans son arene.
+    PORTED['ObjID_patapata'] = ('stage1.patapata', 'patapata.Object')
+    PORTED['ObjID_bug'] = ('stage1.bug', 'bug.Object')
+    PORTED['ObjID_bink'] = ('stage1.bink', 'bink.Object')
+    PORTED['ObjID_blaster'] = ('stage1.blaster', 'blaster.Object')
+    PORTED['ObjID_scant'] = ('stage1.scant', 'scant.Object')
+    PORTED['ObjID_scantfire'] = ('stage1.scantfire', 'scantfire.Object')
+    # La fin du cast du niveau 1. Le canon du tabrok et l'effaceur de la
+    # rotonde ne viennent pas de la wave : le tabrok cree son canon par
+    # LoadObject, et le stage appelle l'effaceur une fois par trame.
+    PORTED['ObjID_pstaff'] = ('stage1.pstaff', 'pstaff.Object')
+    PORTED['ObjID_cancer'] = ('stage1.cancer', 'cancer.Object')
+    PORTED['ObjID_shell'] = ('stage1.shell', 'shell.Object')
+    PORTED['ObjID_shellEraser'] = ('stage1.shelleraser', 'shellEraser.Object')
+    PORTED['ObjID_tabrok'] = ('stage1.tabrok', 'tabrok.Object')
+    PORTED['ObjID_tabrokcanon'] = ('stage1.tabrokcanon', 'tabrokcanon.Object')
+    # Le missile est MUTUALISE : tabrok, p-staff et l'arme du joueur passent
+    # tous par cet identifiant. La flamme, elle, est nee par le missile.
+    PORTED['ObjID_commonmissile'] = ('common.missile', 'commonmissile.Object')
+    PORTED['ObjID_commonmissileflame'] = ('common.missileflame', 'commonmissileflame.Object')
+    # LE BOSS : six objets dans l'arene du niveau. Ce qui les accorde (le pas
+    # de deplacement commun, les drapeaux de mort) est resident dans le stage.
+    PORTED['ObjID_dobkeratops'] = ('stage1.dobkeratops', 'dobkeratops.Object')
+    PORTED['ObjID_dobkeratops_jaw'] = ('stage1.dobkeratopsjaw', 'dobkeratopsJaw.Object')
+    PORTED['ObjID_tailmgr'] = ('stage1.tailmgr', 'tailmgr.Object')
+    PORTED['ObjID_dobkeratops_monster'] = ('stage1.dobkeratopsmonster', 'dobkeratopsMonster.Object')
+    PORTED['ObjID_dobkeratops_saw'] = ('stage1.dobkeratopssaw', 'dobkeratopsSaw.Object')
+    PORTED['ObjID_dobkeratops_explosion'] = ('stage1.dobkeratopsexplosion', 'dobkeratopsExplosion.Object')
+    # La sequence de fin : compte a rebours, autopilote, fondu, releve du score.
+    PORTED['ObjID_endstage'] = ('stage1.endstage', 'endstage.Object')
+    # Le marqueur de musique du boss : la wave le seme, il pose le drapeau que
+    # la boucle du stage releve, puis se supprime.
+    PORTED['ObjID_bossmusic'] = ('common.bossmusic', 'bossmusic.Object')
+    # Le passage de palette du tunnel, aux deux bouts de la section souterraine.
+    PORTED['ObjID_fadetotunnel'] = ('stage1.fadetotunnel', 'fadetotunnel.Object')
     # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
     # stage, donc sa page est celle du stage et son adresse un symbole local.
     PORTED['ObjID_initlevel1'] = ('stageinit', 'initlevel1.Object')
@@ -104,7 +178,9 @@ out.append('Obj_Index_Page')
 out.append('        fcb   0                        ; id 0 : slot reserve, jamais execute')
 for name in names:
     if name in PORTED:
-        out.append(f'        fcb   map.RAM_OVER_CART+{PORTED[name][0]}.page   ; {name}')
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+        out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
     else:
         out.append(f'        fcb   map.RAM_OVER_CART+stage.page   ; {name}')
 out.append('')
@@ -122,8 +198,12 @@ out.append('* la table est locale et vide — aucun objet ne s\'anime encore.')
 out.append('Ani_Page_Index')
 out.append('        fcb   map.RAM_OVER_CART+stage.page')
 for name in names:
-    page = PORTED[name][0] if name in PORTED else 'stage'
-    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
+    if name in PORTED:
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+    else:
+        page = 'stage.page'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
 out.append('')
 out.append('Ani_Asd_Index')
 for _ in range(len(names) + 1):
@@ -137,8 +217,12 @@ out.append('* portes, le bouchon ne dessine rien et la valeur ne sert pas.')
 out.append('Img_Page_Index')
 out.append('        fcb   map.RAM_OVER_CART+stage.page')
 for name in names:
-    page = PORTED[name][0] if name in PORTED else 'stage'
-    out.append(f'        fcb   map.RAM_OVER_CART+{page}.page   ; {name}')
+    if name in PORTED:
+        region, addr = PORTED[name]
+        page = f'{addr}.page' if region is None else f'{region}.page'
+    else:
+        page = 'stage.page'
+    out.append(f'        fcb   map.RAM_OVER_CART+{page}   ; {name}')
 out.append('')
 
 open(f'src/stages/{stage}/objid.index.asm', 'w').write('\n'.join(out))

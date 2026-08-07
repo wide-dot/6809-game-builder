@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Occupation — __TARGET__</title>
+<style>
+:root {
+  --bg: #12151a; --panel: #191d24; --ink: #d6dae2; --dim: #8a92a0;
+  --rule: #2a303a; --hover: #222834; --accent: #5cc8ff; --danger: #ff4d4d;
+  --free: #1d222b;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #23272e; --dim: #6b7280;
+    --rule: #d9dde3; --hover: #eef1f5; --accent: #0077cc; --danger: #d92626;
+    --free: #e8eaee;
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, sans-serif;
+  display: flex; flex-direction: column;
+}
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+
+header {
+  display: flex; align-items: baseline; gap: 18px;
+  padding: 10px 16px; border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+header h1 { font-size: 15px; font-weight: 600; }
+header h1 span { color: var(--dim); font-weight: 400; }
+nav { display: flex; gap: 4px; }
+nav button {
+  background: none; border: 1px solid transparent; border-radius: 6px;
+  color: var(--dim); font: inherit; padding: 4px 14px; cursor: pointer;
+}
+nav button.on { color: var(--ink); border-color: var(--rule); background: var(--bg); }
+header .stats { margin-left: auto; color: var(--dim); font-size: 12px; }
+
+main { flex: 1; display: flex; min-height: 0; }
+aside {
+  width: 320px; flex: none; overflow-y: auto;
+  border-right: 1px solid var(--rule); background: var(--panel);
+  padding: 10px 0 30px;
+}
+section.view { flex: 1; overflow: auto; padding: 18px 22px 60px; }
+
+.grouphead {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; cursor: pointer; user-select: none;
+  color: var(--ink); font-weight: 600; font-size: 13px;
+}
+.grouphead:hover { background: var(--hover); }
+.grouphead .n { color: var(--dim); font-weight: 400; font-size: 11px; margin-left: auto; }
+.grouphead .arrow { color: var(--dim); font-size: 10px; width: 10px; }
+.item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 2px 12px 2px 28px; cursor: pointer; user-select: none;
+}
+.item:hover { background: var(--hover); }
+.item .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .sz { color: var(--dim); font-size: 11px; }
+.item input { accent-color: var(--accent); }
+.item.sel { background: var(--hover); box-shadow: inset 2px 0 0 var(--accent); }
+.sidetitle {
+  padding: 14px 12px 4px; color: var(--dim); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.nodest .item { cursor: default; padding-left: 12px; }
+.nodest .item:hover { background: none; }
+
+.viewhead { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.viewhead select {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 4px 8px; font: inherit;
+}
+.viewhead .hint { color: var(--dim); font-size: 12px; }
+.collisions {
+  border: 1px solid var(--danger); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 14px; font-size: 13px;
+  display: none; max-height: 180px; overflow-y: auto;
+}
+.collisions.on { display: block; }
+.collisions b { color: var(--danger); }
+.collisions div { margin-top: 2px; }
+
+svg { display: block; }
+svg text { fill: var(--dim); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+.pagebar { fill: var(--free); }
+.blk { stroke: rgba(0,0,0,.35); stroke-width: .5; }
+.blk.hl { stroke: var(--accent); stroke-width: 1.5; }
+.resv { opacity: .8; }
+.clash { fill: var(--danger); opacity: .85; }
+.cell { stroke: var(--bg); stroke-width: .6; }
+.cell.hl { stroke: var(--accent); stroke-width: 1.4; }
+
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; display: none;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 5px 9px; font-size: 12px; max-width: 340px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+#tip .mono { color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Occupation <span>— cible __TARGET__</span></h1>
+  <nav>
+    <button id="tab-ram" class="on">RAM</button>
+    <button id="tab-media">Média</button>
+  </nav>
+  <div class="stats" id="stats"></div>
+</header>
+<main>
+  <aside id="side"></aside>
+  <section class="view" id="view"></section>
+</main>
+<div id="tip"></div>
+<script>
+"use strict";
+const DATA = /*__DATA__*/null;
+
+/* ---------------------------------------------------------------- helpers */
+const $ = (t, attrs, parent) => {
+  const e = document.createElement(t);
+  for (const k in attrs || {}) {
+    if (k === "text") e.textContent = attrs[k];
+    else if (k === "class") e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const S = (t, attrs, parent) => {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", t);
+  for (const k in attrs || {}) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const hex = (v, w) => "$" + v.toString(16).toUpperCase().padStart(w || 4, "0");
+const kb = v => v >= 1024 ? (v / 1024).toFixed(v % 1024 ? 1 : 0) + " Ko" : v + " o";
+/* a stable hue per name : the same element keeps its colour across builds */
+function hue(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+const color = name => `hsl(${hue(name)} 55% 52%)`;
+const tip = document.getElementById("tip");
+function showTip(evt, html) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const x = Math.min(evt.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  const y = Math.min(evt.clientY + 14, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+
+const side = document.getElementById("side");
+const view = document.getElementById("view");
+const stats = document.getElementById("stats");
+
+/* -------------------------------------------------------------- RAM view */
+/* every checkable element, flat : scene loads and reserved ranges */
+const ramItems = [];
+DATA.ram.scenes.forEach(sc => sc.loads.forEach(l => ramItems.push({
+  kind: "load", group: sc.name, name: l.name, container: l.container,
+  page: l.page, address: l.address, size: l.size, checked: false
+})));
+DATA.ram.reserved.forEach(r => ramItems.push({
+  kind: "reserved", group: "machine", name: r.name,
+  page: r.page, address: r.address, size: r.size, checked: false
+}));
+
+/* the tree re-renders on every check : keep what the user opened, and where
+   the panel was scrolled, or every click folds the tree back */
+const openGroups = new Set();
+
+function ramSide() {
+  const scroll = side.scrollTop;
+  side.innerHTML = "";
+  $("div", { class: "sidetitle", text: "éléments — cocher pour afficher" }, side);
+  const groups = [...new Set(ramItems.map(i => i.group))];
+  groups.forEach(g => {
+    const items = ramItems.filter(i => i.group === g);
+    const det = $("details", openGroups.has(g) ? { open: "" } : {}, side);
+    det.addEventListener("toggle", () => {
+      det.open ? openGroups.add(g) : openGroups.delete(g);
+    });
+    const sum = $("summary", { class: "grouphead" }, det);
+    sum.style.listStyle = "none";
+    $("span", { class: "arrow", text: "▸" }, sum);
+    const gcb = $("input", { type: "checkbox" }, sum);
+    $("span", { text: g }, sum);
+    $("span", { class: "n", text: items.length + " · " + kb(items.reduce((a, i) => a + i.size, 0)) }, sum);
+    gcb.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      const on = !items.every(i => i.checked);
+      items.forEach(i => i.checked = on);
+      render();
+    });
+    const sync = () => {
+      gcb.checked = items.every(i => i.checked);
+      gcb.indeterminate = !gcb.checked && items.some(i => i.checked);
+    };
+    sync();
+    items.forEach(i => {
+      const row = $("div", { class: "item" }, det);
+      const cb = $("input", { type: "checkbox" }, row);
+      cb.checked = i.checked;
+      $("span", { class: "sw" }, row).style.background = color(i.name);
+      $("span", { class: "nm", text: i.name, title: i.name }, row);
+      $("span", { class: "sz mono", text: kb(i.size) }, row);
+      row.addEventListener("click", e => {
+        if (e.target !== cb) cb.checked = !cb.checked;
+        i.checked = cb.checked;
+        render();
+      });
+      row.addEventListener("mouseenter", () => hover(i, true));
+      row.addEventListener("mouseleave", () => hover(i, false));
+    });
+  });
+
+  if (DATA.ram.noDest.length) {
+    $("div", { class: "sidetitle", text: "sans destination RAM" }, side);
+    const box = $("div", { class: "nodest" }, side);
+    DATA.ram.noDest.forEach(f => {
+      const row = $("div", { class: "item" }, box);
+      $("span", { class: "sw" }, row).style.background = "var(--rule)";
+      $("span", { class: "nm", text: f.name, title: f.name }, row);
+      $("span", { class: "sz mono", text: kb(f.size) }, row);
+    });
+  }
+  side.scrollTop = scroll;
+}
+
+let hoverName = null;
+function hover(item, on) {
+  hoverName = on ? item.name : null;
+  document.querySelectorAll(".blk").forEach(b => {
+    b.classList.toggle("hl", on && b.dataset.name === item.name);
+  });
+}
+
+function ramView() {
+  view.innerHTML = "";
+  const head = $("div", { class: "viewhead" }, view);
+  const checked = ramItems.filter(i => i.checked);
+  $("span", { class: "hint", text: DATA.ram.pages + " pages de " + kb(DATA.ram.pageSize)
+      + (checked.length ? "" : " — rien n'est affiché tant que rien n'est coché") }, head);
+
+  const collBox = $("div", { class: "collisions" }, view);
+
+  /* collisions among the CHECKED elements only. Two scenes loading the SAME
+     file at the SAME destination write the same bytes : that is a reload,
+     not a collision, and boot legitimately preloads what stage1 declares */
+  const clashes = [];
+  for (let a = 0; a < checked.length; a++) {
+    for (let b = a + 1; b < checked.length; b++) {
+      const i = checked[a], j = checked[b];
+      if (i.page !== j.page) continue;
+      if (i.name === j.name && i.address === j.address && i.size === j.size) continue;
+      const lo = Math.max(i.address, j.address);
+      const hi = Math.min(i.address + i.size, j.address + j.size);
+      if (lo < hi) clashes.push({ page: i.page, lo, hi, a: i, b: j });
+    }
+  }
+  if (clashes.length) {
+    collBox.classList.add("on");
+    collBox.innerHTML = "<b>" + clashes.length + " collision" + (clashes.length > 1 ? "s" : "") + "</b>";
+    clashes.forEach(c => {
+      const d = $("div", {}, collBox);
+      d.innerHTML = "page <code>" + hex(c.page, 2) + "</code> " +
+        "<code>" + hex(c.lo) + "–" + hex(c.hi - 1) + "</code> (" + kb(c.hi - c.lo) + ") : " +
+        c.a.name + " <i>(" + c.a.group + ")</i> ↔ " + c.b.name + " <i>(" + c.b.group + ")</i>";
+    });
+  }
+
+  /* the map : one row per page, at the machine's real capacity. The bar
+     takes the room the window offers, so the free column stays in sight */
+  const LABEL = 64, FREE = 106, ROW = 26, GAP = 7, PAD = 4;
+  const W = Math.max(420, view.clientWidth - LABEL - FREE - 60);
+  const pages = DATA.ram.pages;
+  const svg = S("svg", { width: LABEL + W + FREE + 10, height: pages * (ROW + GAP) + 20 }, view);
+  const px = v => v * W / DATA.ram.pageSize;
+
+  /* A load carries the CPU address it is reached through, and a page is only
+     16 KB : each row draws in ITS window. The origin is the smallest address
+     anything (checked or not : stable) declares on the page, floored to a
+     $2000 boundary — $0000 for a cartridge page, $6000 for the resident one,
+     $A000 for a bank. */
+  const originOf = p => {
+    let min = Infinity;
+    ramItems.forEach(i => { if (i.page === p && i.address < min) min = i.address; });
+    return min === Infinity ? 0 : Math.floor(min / 0x2000) * 0x2000;
+  };
+  const origins = Array.from({ length: pages }, (_, p) => originOf(p));
+
+  /* free bytes per page : capacity minus the UNION of the checked ranges —
+     a sum would count a collision twice and report negative room */
+  const freeOf = p => {
+    const o = origins[p];
+    const spans = checked.filter(i => i.page === p)
+      .map(i => [Math.max(i.address, o),
+                 Math.min(i.address + i.size, o + DATA.ram.pageSize)])
+      .filter(([lo, hi]) => lo < hi)
+      .sort((a, b) => a[0] - b[0]);
+    let used = 0, end = -1;
+    spans.forEach(([lo, hi]) => {
+      if (lo > end) { used += hi - lo; end = hi; }
+      else if (hi > end) { used += hi - end; end = hi; }
+    });
+    return DATA.ram.pageSize - used;
+  };
+
+  for (let p = 0; p < pages; p++) {
+    const y = p * (ROW + GAP) + 10;
+    S("text", { x: LABEL - 10, y: y + ROW / 2 - 1, "text-anchor": "end" }, svg)
+      .textContent = hex(p, 2);
+    if (origins[p] > 0) {
+      const o = S("text", { x: LABEL - 10, y: y + ROW / 2 + 10, "text-anchor": "end" }, svg);
+      o.textContent = hex(origins[p]);
+      o.style.fontSize = "9px";
+      o.style.opacity = ".6";
+    }
+    S("rect", { class: "pagebar", x: LABEL, y, width: W, height: ROW, rx: 3 }, svg);
+    const free = freeOf(p);
+    const t = S("text", { x: LABEL + W + FREE, y: y + ROW / 2 + 4, "text-anchor": "end" }, svg);
+    t.textContent = free === DATA.ram.pageSize ? kb(free) : kb(free) + " libres";
+    if (free < DATA.ram.pageSize) t.style.fill = "var(--ink)";
+  }
+
+  checked.forEach(i => {
+    if (i.page >= pages) return;
+    const y = i.page * (ROW + GAP) + 10;
+    const w = Math.max(px(i.size), 1.5);
+    const r = S("rect", {
+      class: "blk" + (i.kind === "reserved" ? " resv" : ""),
+      x: LABEL + px(i.address - origins[i.page]), y: y + PAD,
+      width: w, height: ROW - PAD * 2, rx: 2
+    }, svg);
+    r.dataset.name = i.name;
+    r.style.fill = i.kind === "reserved" ? "var(--dim)" : color(i.name);
+    r.addEventListener("mousemove", e => showTip(e,
+      "<b>" + i.name + "</b>" + (i.container ? " · " + i.container : "") +
+      "<br><span class='mono'>page " + hex(i.page, 2) + " · " + hex(i.address) +
+      "–" + hex(i.address + i.size - 1) + " · " + kb(i.size) + "</span>"));
+    r.addEventListener("mouseleave", hideTip);
+
+    /* the name inside the bar, when it fits — shortened before dropped.
+       Same per-page origin as the bar itself : without it, every label of
+       a $6000- or $A000-based page was drawn off-canvas */
+    const fit = Math.floor((w - 8) / 6.2);
+    if (fit >= 4) {
+      const label = i.name.length <= fit ? i.name : i.name.slice(0, fit - 1) + "…";
+      const t = S("text", {
+        x: LABEL + px(i.address - origins[i.page]) + w / 2, y: y + ROW / 2 + 4,
+        "text-anchor": "middle", "pointer-events": "none"
+      }, svg);
+      t.textContent = label;
+      t.style.fill = "#0c0e12";
+      t.style.fontSize = "10.5px";
+    }
+  });
+
+  clashes.forEach(c => {
+    const y = c.page * (ROW + GAP) + 10;
+    const r = S("rect", {
+      class: "clash", x: LABEL + px(c.lo - origins[c.page]), y: y + 1,
+      width: Math.max(px(c.hi - c.lo), 2), height: ROW - 2, rx: 2
+    }, svg);
+    r.addEventListener("mousemove", e => showTip(e,
+      "<b style='color:var(--danger)'>collision</b> " + c.a.name + " ↔ " + c.b.name +
+      "<br><span class='mono'>" + hex(c.lo) + "–" + hex(c.hi - 1) + " · " + kb(c.hi - c.lo) + "</span>"));
+    r.addEventListener("mouseleave", hideTip);
+  });
+
+  const total = checked.reduce((a, i) => a + i.size, 0);
+  stats.textContent = checked.length
+    ? checked.length + " éléments cochés · " + kb(total)
+      + " / " + kb(pages * DATA.ram.pageSize)
+      + (clashes.length ? " · " + clashes.length + " collision" + (clashes.length > 1 ? "s" : "") : "")
+    : "rien de coché";
+}
+
+/* ------------------------------------------------------------ media view */
+let mediaIdx = 0;
+let mediaSel = new Set();
+
+function mediaSide() {
+  const scroll = side.scrollTop;
+  side.innerHTML = "";
+  const inst = DATA.media[mediaIdx];
+  if (!inst) { $("div", { class: "sidetitle", text: "aucun média" }, side); return; }
+  $("div", { class: "sidetitle", text: "contenu — cliquer pour surligner" }, side);
+  const sections = [...new Set(inst.items.map(i => i.section))];
+  sections.forEach(sec => {
+    const items = inst.items.filter(i => i.section === sec)
+      .slice().sort((a, b) => b.size - a.size);
+    const det = $("details", { open: "" }, side);
+    const sum = $("summary", { class: "grouphead" }, det);
+    sum.style.listStyle = "none";
+    $("span", { class: "arrow", text: "▸" }, sum);
+    $("span", { class: "sw" }, sum).style.background = color(sec);
+    $("span", { text: sec }, sum);
+    $("span", { class: "n", text: items.length + " · " + kb(items.reduce((a, i) => a + i.size, 0)) }, sum);
+    items.forEach(i => {
+      const key = i.section + "|" + i.name;
+      const row = $("div", { class: "item" + (mediaSel.has(key) ? " sel" : "") }, det);
+      $("span", { class: "sw" }, row).style.background = color(i.section);
+      $("span", { class: "nm", text: i.name, title: i.name }, row);
+      $("span", { class: "sz mono", text: kb(i.size) }, row);
+      row.addEventListener("click", () => {
+        mediaSel.has(key) ? mediaSel.delete(key) : mediaSel.add(key);
+        render();
+      });
+    });
+  });
+  side.scrollTop = scroll;
+}
+
+function mediaView() {
+  view.innerHTML = "";
+  const head = $("div", { class: "viewhead" }, view);
+  const sel = $("select", {}, head);
+  DATA.media.forEach((m, i) => {
+    const o = $("option", { value: i, text: m.name }, sel);
+    if (i === mediaIdx) o.selected = true;
+  });
+  sel.addEventListener("change", () => { mediaIdx = +sel.value; mediaSel.clear(); render(); });
+
+  const inst = DATA.media[mediaIdx];
+  if (!inst) { stats.textContent = ""; return; }
+
+  const used = inst.items.reduce((a, i) => a + i.size, 0);
+  $("span", { class: "hint", text: inst.faces + " faces · " + inst.tracks + " pistes · "
+      + inst.sectors + " secteurs de " + inst.sectorSize + " o — "
+      + kb(used) + " / " + kb(inst.capacity)
+      + " (" + Math.round(used * 100 / inst.capacity) + " %)" }, head);
+  stats.textContent = inst.name + " · " + kb(used) + " / " + kb(inst.capacity);
+
+  /* owner of every sector : who wrote its bytes (at most one, double writes
+     are refused at build time — partial sectors may host two, keep the list) */
+  const secOwners = new Map();
+  inst.items.forEach(i => {
+    const key = i.section + "|" + i.name;
+    i.pieces.forEach(([start, len]) => {
+      const first = Math.floor(start / inst.sectorSize);
+      const last = Math.floor((start + len - 1) / inst.sectorSize);
+      for (let s = first; s <= last; s++) {
+        if (!secOwners.has(s)) secOwners.set(s, []);
+        const owners = secOwners.get(s);
+        if (!owners.some(o => o.key === key)) owners.push({ key, item: i });
+      }
+    });
+  });
+
+  /* one grid per face : tracks as rows, sectors as columns */
+  const CELL = 11, GAPC = 1, LABEL = 40, TITLE = 22;
+  const gridW = inst.sectors * (CELL + GAPC);
+  const wrap = $("div", {}, view);
+  wrap.style.display = "flex";
+  wrap.style.gap = "36px";
+  wrap.style.flexWrap = "wrap";
+
+  for (let f = 0; f < inst.faces; f++) {
+    const svg = S("svg", {
+      width: LABEL + gridW + 6,
+      height: TITLE + inst.tracks * (CELL + GAPC) + 8
+    }, wrap);
+    S("text", { x: LABEL, y: 13 }, svg).textContent = "face " + f;
+    for (let t = 0; t < inst.tracks; t++) {
+      if (t % 10 === 0) {
+        S("text", { x: LABEL - 8, y: TITLE + t * (CELL + GAPC) + CELL - 2, "text-anchor": "end" }, svg)
+          .textContent = t;
+      }
+      for (let s = 0; s < inst.sectors; s++) {
+        const linear = (f * inst.tracks + t) * inst.sectors + s;
+        const owners = secOwners.get(linear);
+        const rect = S("rect", {
+          class: "cell", x: LABEL + s * (CELL + GAPC), y: TITLE + t * (CELL + GAPC),
+          width: CELL, height: CELL, rx: 1.5
+        }, svg);
+        if (!owners) {
+          rect.style.fill = "var(--free)";
+          continue;
+        }
+        const hl = owners.some(o => mediaSel.has(o.key));
+        rect.style.fill = color(owners[0].item.section);
+        if (mediaSel.size && !hl) rect.style.opacity = ".25";
+        if (hl) rect.classList.add("hl");
+        rect.addEventListener("mousemove", e => showTip(e,
+          owners.map(o => "<b>" + o.item.name + "</b> · " + o.item.section).join("<br>") +
+          "<br><span class='mono'>face " + f + " · piste " + t + " · secteur " + (s + 1) + "</span>"));
+        rect.addEventListener("mouseleave", hideTip);
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ tabs */
+let tab = "ram";
+const bRam = document.getElementById("tab-ram");
+const bMedia = document.getElementById("tab-media");
+bRam.addEventListener("click", () => { tab = "ram"; render(); });
+bMedia.addEventListener("click", () => { tab = "media"; render(); });
+
+function render() {
+  bRam.classList.toggle("on", tab === "ram");
+  bMedia.classList.toggle("on", tab === "media");
+  hideTip();
+  if (tab === "ram") { ramSide(); ramView(); }
+  else { mediaSide(); mediaView(); }
+}
+render();
+addEventListener("resize", () => { if (tab === "ram") ramView(); });
+</script>
+</body>
+</html>

@@ -6,8 +6,12 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./objects/explosion/explosion.const.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (jaw.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+
 
 rtnid.WaitEndStage equ 3
 rtnid.AlreadyDeleted equ 4

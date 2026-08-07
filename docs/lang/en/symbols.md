@@ -46,7 +46,7 @@ exports in scope. Nothing alarming at this size, and quadratic all the same.
 
 ## The practices
 
-**Export what crosses a direntry boundary, and nothing else.** Inside one
+**Export what crosses a file boundary, and nothing else.** Inside one
 assembly unit the assembler resolves everything for free. `EXPORT` is a
 statement that another *file* needs the symbol — not a statement that the
 symbol is important. v2's engine modules get this right: `joypad.asm` exports
@@ -78,13 +78,13 @@ consistently; there is no reason to mix.
 ## The `bake` attribute
 
 The answer to the bulk-table shape — and, since 2026-08-05, to every fixed
-reference — is the direntry's `bake` attribute. The source does not change at
+reference — is the file's `bake` attribute. The source does not change at
 all : same `EXTERNAL`, same `fdb`, plain `SECTION code`. The configuration,
 which is what places everything, decides how references resolve :
 
 ```xml
-<direntry name="stage1.maps" loadtimelink="LINK" bake="all">
-<direntry name="common.player" loadtimelink="LINK" bake="auto">
+<file name="stage1.maps" linkdata="LINK" bake="all">
+<file name="common.player" linkdata="LINK" bake="auto">
 ```
 
 - `bake="none"` (default) — everything through the load-time linker.
@@ -144,14 +144,14 @@ everything declared.
 
 A `.static` section resolves its **internal** references too, and for the same
 reason : an intern's value is relative to where its unit lands, and a
-scene-placed direntry lands somewhere the builder already knows. Baking it
+scene-placed file lands somewhere the builder already knows. Baking it
 costs nothing the build was not already doing.
 
 It matters everywhere a unit is fixed, not only where a table is big.
 R-type's animation scripts are ~2900 pointers into themselves — 8 KB of pool,
 a stage exchange did not survive it — but the engine's 455 interns and the
 mounted objects' cost the same per entry. Under `bake="auto"` the whole game
-went from 9 104 to 552 bytes of link data (and 6 direntries instead of 30, the
+went from 9 104 to 552 bytes of link data (and 6 files instead of 30, the
 empty blocks dropping with their index slots) ; what remains is exactly the
 exchange boundary : the engine's references into the stage's interface region,
 and the stages' nine interface exports.
@@ -164,9 +164,9 @@ pointers would all read zero.
 ## The policy
 
 The two mechanisms above are not optimisations to reach for once a build gets
-tight. They are the default, and `loadtimelink` is the exception :
+tight. They are the default, and `linkdata` is the exception :
 
-> Every direntry declares `bake="auto"`, and the classification does the rest :
+> Every file declares `bake="auto"`, and the classification does the rest :
 > what is fixed bakes, what is exchangeable stays linked. `bake="all"` replaces
 > `auto` where silence would hide a regression — generated tables, fully fixed
 > units. `bake="none"` is for what the builder cannot know : content loaded at
@@ -181,7 +181,7 @@ engine does, and their pointer tables are exactly the bulk that fills a pool.
 A habit limited to inter-stage commons leaves the largest tables paying.
 
 **References bake, resources do not.** The marker goes on the *consumer's*
-section, and the provider's direntry must be declared before it. "Bake this
+section, and the provider's file must be declared before it. "Bake this
 asset" means nothing; "bake the table that points into it" means something.
 
 **An empty block drops itself.** A block costs 12 bytes before it holds
@@ -190,7 +190,7 @@ reference. When the bake resolves every reference and the pruning removes
 every export, the builder no longer writes the link file at all : the
 descriptor keeps its reserved size (file ids derive from the attributes), the
 flag stays down, and the loader neither indexes the file nor allocates
-anything. `loadtimelink` can stay declared ; it only costs when it carries.
+anything. `linkdata` can stay declared ; it only costs when it carries.
 An export still imported keeps its counter above zero, so a block the loader
 needs can never be dropped — `stage1` keeps its nine interface exports,
 because the engine relinks against them at every scene load.
@@ -220,11 +220,11 @@ message at all — see
 ## The link report
 
 Arbitration needs numbers, so the build prints them. After each target, every
-direntry that still carries link data is listed, largest first :
+file that still carries link data is listed, largest first :
 
 ```
-link data: 30 direntries, 5278 bytes (pool cost while indexed), 4603 references baked
-  bytes  intern  x8  x16  page  expA  expR   baked  direntry
+link data: 30 files, 5278 bytes (pool cost while indexed), 4603 references baked
+  bytes  intern  x8  x16  page  expA  expR   baked  file
    2138     473   0   13     0     0    39       0  common.engine
     896     122   0   30    36     0     0       0  common.player
      36       0   0    0     0     0     6     280  stage1
@@ -235,7 +235,7 @@ the total is what the pool must hold if every one of them is indexed at once.
 A large `bytes` with `baked` at zero is a unit the policy has not reached yet.
 
 The same table is written to `<dist.dir>/link-report-<target>.csv`, one row per
-direntry, so a sweep can be sorted and diffed between builds.
+file, so a sweep can be sorted and diffed between builds.
 
 ## Export pruning
 
@@ -255,7 +255,7 @@ carries no exports and no externals at all, only interns.
 What pruning does *not* do is shrink the corpus much on its own : most bulk
 exports turn out to be genuinely imported (a sample table importing 2667
 labels is the `.static` shape, not the dead-export shape), and units without
-`loadtimelink` never put their exports on disk in the first place. It removed
+`linkdata` never put their exports on disk in the first place. It removed
 19 dead exports from `loader-ut` and every export from the two `.static`
 consumers. Its real value is keeping the search tables honest as the corpus
 grows.
@@ -263,7 +263,7 @@ grows.
 ## Uniqueness per co-loadable set, and interface regions
 
 Export names must be unique — but the boundary of that rule is the set of
-direntries that can be **in memory together**, not the project. Two direntries
+files that can be **in memory together**, not the project. Two files
 every scene loads at the *same exact destination* (page + address) are
 mutually exclusive at run time : registering one evicts the other from the
 loader's index (the implicit unload by destination). The builder therefore

@@ -67,6 +67,9 @@ practice; this is a reading order, not a schedule.
 **Assembly and includes** — what the obj target refuses, and where files go.
 
 9. [`setdp` is refused by the obj target](setdp-obj-target.md)
+9b. [Alignment arithmetic on the location counter does not survive
+    relocation](relocatable-alignment.md) — `equ (*/32)*32` folds in a v1 game
+    mode assembled absolutely, and cannot be relocated at all.
 10. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
 11. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
 12. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)

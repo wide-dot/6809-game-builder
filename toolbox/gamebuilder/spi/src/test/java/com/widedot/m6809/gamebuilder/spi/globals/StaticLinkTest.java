@@ -159,12 +159,12 @@ public class StaticLinkTest {
 	}
 
 	@Test
-	void aBulkMemberCarriesItsReason() {
+	void aStackedMemberCarriesItsReason() {
 		StaticLink link = new StaticLink();
-		link.placeConflict("assets.stack", "scene s loads it into the bulk region 'perm'");
+		link.placeConflict("assets.stack", "scene s loads it into the stacked region 'perm'");
 		link.registerExport("stack.begin", "assets.stack", 0, false);
 
 		Exception e = assertThrows(Exception.class, () -> link.resolve("stack.begin"));
-		assertTrue(e.getMessage().contains("bulk"), e.getMessage());
+		assertTrue(e.getMessage().contains("stacked"), e.getMessage());
 	}
 }

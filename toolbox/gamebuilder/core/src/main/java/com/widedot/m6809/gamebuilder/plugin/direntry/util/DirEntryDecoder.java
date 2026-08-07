@@ -5,9 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import com.widedot.m6809.gamebuilder.spi.media.DirEntry;
 
 /**
- * Utility class for decoding and analyzing directory entries in the direntry plugin.
+ * Utility class for decoding and analyzing directory entries in the file plugin.
  * 
- * This decoder is specifically designed for direntry plugin operations and provides
+ * This decoder is specifically designed for file plugin operations and provides
  * additional validation and analysis capabilities beyond basic decoding.
  * 
  * Directory entry format:

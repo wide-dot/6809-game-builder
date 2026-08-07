@@ -29,3 +29,6 @@ hs_err_pid*
 /.vscode/
 /engine/**/build/
 /imgui.ini
+.builder-cache/
+examples/*/dist/
+examples/*/gen/

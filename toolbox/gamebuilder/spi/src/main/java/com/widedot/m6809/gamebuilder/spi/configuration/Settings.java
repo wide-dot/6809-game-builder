@@ -17,7 +17,7 @@ public class Settings {
 
 	private static final String[] MANDATORY_KEYS = {
 		"build.dir", "build.dir.tag", "plugin.dir", "plugin.package",
-		"generate.unnamedFiles.dir", "dist.dir", "direntry.zx0.delta"
+		"generate.unnamedFiles.dir", "dist.dir", "file.zx0.delta"
 	};
 
 	private final Map<String, String> values;

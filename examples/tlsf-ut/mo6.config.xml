@@ -12,12 +12,12 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/00/entries.asm">
-                <default name="direntry.maxsize"      value="0x4000"/>
+                <default name="file.maxsize"      value="0x4000"/>
                 <default name="lwasm.format"          value="raw"/>
 
                 <define symbol="tlsf.ut.MEMORY_POOL" value="0xB000"/>
 
-                <direntry name="fileid.tlsf.ut" codec="zx0" section="DATA">
+                <file name="fileid.tlsf.ut" codec="zx0" section="DATA">
                     <lwasm gensource="gen/tlsf/tlsf.ut.asm">
                         <asm xml:space="preserve">        org   $2100</asm>
                         <asm xml:space="preserve">        INCLUDE "engine/system/mo6/map.const.asm"</asm>
@@ -28,7 +28,7 @@
                         <asm filename="engine/memory/malloc/tlsf-realloc.asm"/>
                         <asm filename="engine/memory/memcpy/memcpy.asm"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <scene name="scenes.default" section="SCENE">
                     <load name="fileid.tlsf.ut" region="gamemode"/>

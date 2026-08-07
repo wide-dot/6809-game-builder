@@ -58,6 +58,12 @@ stage.stateKept
         ldd   #0
         std   globals.score
         stb   globals.score+2              ; le 3e octet du score 24 bits
+        ; La base du score DU STAGE : le decompte de fin affiche
+        ; globals.score moins cette base. La v1 la seme ici meme
+        ; (main.asm:124) ; sans elle le decompte partirait de ce que la RAM
+        ; reservee contenait.
+        std   globals.stageScoreBase
+        stb   globals.stageScoreBase+2
 
         ; LES OST STATIQUES, mis a zero. La v1 n'a pas ce geste a faire : chez
         ; elle `palettefade` et ses voisins sont de la DONNEE du binaire du game
@@ -99,12 +105,25 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Sans la routine de veille, un slot mis a zero part en routine 0 —
         ; l'Init de l'objet — et le force pod comme les bit devices naitraient
         ; tout seuls a l'ouverture du stage, sans avoir ete ramasses.
+        lda   #ObjID_forcepod
+        sta   forcepodOST+id
+        lda   #rtnid.Dormant
+        sta   forcepodOST+routine
         lda   #ObjID_bitdevice
         sta   bitdevTopOST+id
         sta   bitdevBotOST+id
         lda   #bitdev.rtnid.Dormant
         sta   bitdevTopOST+routine
         sta   bitdevBotOST+routine
+
+        ; LE POINTEUR DE LA TRAINEE DU JOUEUR. La v1 l'initialise depuis le
+        ; binaire de son game mode (`fdb player_pos_ring_buffer`) ; ici la
+        ; trainee vit dans le bloc reserve `globals`, que rien ne charge — donc
+        ; c'est a l'init de le semer. Sans lui, le force pod suit une adresse
+        ; batie sur ce que la RAM contenait.
+        ; Cf. docs/lang/en/migration/reserved-ram-is-not-zeroed.md
+        ldd   #player_pos_ring_buffer
+        std   player_pos_ring_buffer_ptr
 
         ; Le stage OUVRE SUR LE NOIR, comme la v1 : la palette du jeu n'arrive
         ; que par le fondu arme plus bas, une fois le premier ecran peint. Sans
@@ -145,7 +164,7 @@ statics.SIZE  equ nb_static_objects*object_size
 
         ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
         ; avant la trame d'amorce et InitScroll.
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.init
         jsr   paged.call
 
@@ -187,7 +206,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Ne rien remettre ici de ce qu'il fait deja : notre portage avait
         ; duplique son effacement, son `player1+id`, son `ObjectDp_Clear`, son
         ; fondu et son `ObjectWave_Init` — et les deux copies avaient divergé.
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
 
@@ -275,7 +294,7 @@ stage.state.running
         ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant
         ; le sien pour savoir s'il vient d'etre touche. La v1 l'appelle au meme
         ; endroit, par son objet mainext.
-        lda   #map.RAM_OVER_CART+collisionpass.page
+        lda   #map.RAM_OVER_CART+common.collisionpass.page
         ldx   #Collision_Run
         jsr   paged.call
         ; Le fondu, avant les objets du pool : c'est un objet hors pool, avec
@@ -284,10 +303,25 @@ stage.state.running
         ; Le joueur, avant les objets du pool comme en v1 : son OST est en page
         ; directe, donc lui aussi echappe a RunObjects.
         _Obj_RunU ObjID_Player1,#player1
+        ; Les trois slots statiques d'armement, juste apres le joueur comme en
+        ; v1 (main.asm:225-227). Ils dorment (routine Dormant) tant qu'une
+        ; boite a option ne les a pas reveilles, et RunObjects ne les voit pas :
+        ; leur OST est hors pool.
+        _Obj_RunU ObjID_forcepod,#forcepodOST
+        _Obj_RunU ObjID_bitdevice,#bitdevTopOST
+        _Obj_RunU ObjID_bitdevice,#bitdevBotOST
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         jsr   gfxlock.on
         jsr   EraseSprites
+
+        ; Ce que CE stage peint dans le verrou graphique, juste apres
+        ; l'effacement des sprites et avant les tuiles : sur le niveau 1, les
+        ; bandes noires du boss et le rectangle de la salle. La v1 l'appelle
+        ; exactement ici (main.asm:236), pour que le noir recouvre le fond
+        ; restaure et que les sauvegardes de fond capturent le resultat noirci.
+        jsr   stage.frameBlit
+
         jsr   UnsetDisplayPriority
         jsr   DrawTiles
 
@@ -295,16 +329,36 @@ stage.state.running
         ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
         ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
         ; immobile puis remis en mouvement reinjecte des etoiles perimees.
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.erase
         jsr   paged.call
 
+        ; L'effaceur de la rotonde, ICI comme en v1 (main.asm:243) : entre les
+        ; etoiles et DrawSprites, le fond venant d'etre restaure. C'est un
+        ; objet hors pool — pas d'OST, RunObjects ne le voit pas — qui relit la
+        ; table que les shells remplissent. Les stages sans rotonde n'en
+        ; souffrent pas : la table y est vide, la boucle ne blitte rien.
+        _Obj_Run ObjID_shellEraser
+
         jsr   DrawSprites
 
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.draw
         jsr   paged.call
 
+        ; Les surimpressions, selon la phase de fin de niveau que CE stage
+        ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
+        ; (main.asm:248) : phases 0-2 le masque et le HUD normal ; phase 3, le
+        ; fondu pixel possede l'ecran entier, bandeau compris, et on ne peint
+        ; rien ; phase 4, le releve de score centre, seul.
+        lda   stage.overlayPhase
+        cmpa  #3
+        blo   stage.overlay.normal
+        cmpa  #4
+        beq   stage.overlay.readout
+        bra   stage.overlay.off
+
+stage.overlay.normal
         ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
         ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse
         ; ses artefacts, donc il doit etre le dernier a peindre.
@@ -316,7 +370,7 @@ stage.state.running
         ldd   #$A000
         std   <glb_screen_location_1
         ldu   #$C000
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
 
@@ -324,28 +378,29 @@ stage.state.running
         ; le masque couvre les bandes ou le scroll laisse ses artefacts, le HUD
         ; peint dedans. Il a sa page a lui — 5 184 octets ne tenaient pas dans
         ; la fin de celle des overlays — donc une montee de plus par trame.
-        lda   #map.RAM_OVER_CART+hud.page
+        lda   #map.RAM_OVER_CART+common.hud.page
         ldx   #hud.normal
         jsr   paged.call
+        bra   stage.overlay.off
 
+stage.overlay.readout
+        lda   #map.RAM_OVER_CART+common.hud.page
+        ldx   #hud.readout
+        jsr   paged.call
+
+stage.overlay.off
         jsr   gfxlock.off
 
         inc   bench.frames
         ldd   glb_camera_x_pos
         std   bench.camera
 
-        ; La main se passe A LA FIN DE LA CARTE, comme dans le jeu. Scroll
-        ; borne la camera a scroll_max exactement (cap applique par tampon,
-        ; pour que les deux s'arretent au meme endroit), donc elle l'atteint
-        ; et s'y tient : le test se declenche pile.
-        ;
-        ; C'etait une horloge de niveau (800 trames), qu'il fallait recaler a
-        ; chaque changement de longueur de niveau ou de vitesse de scroll — et
-        ; qui, a la vitesse reelle du jeu, passait la main apres un dixieme du
-        ; niveau 1. La fin de carte s'adapte d'elle-meme aux deux.
-        ldd   glb_camera_x_pos
-        cmpd  scroll_max
-        lbhs  stage.handOver               ; long : handOver vit apres la boucle
+        ; Comment CE stage se termine. Un stage sans sequence de fin compare la
+        ; camera au bout de la carte ; le niveau 1, lui, a un boss, et c'est sa
+        ; sequence de fin qui decide — elle cale d'ailleurs scroll_max sur la
+        ; salle du boss pendant le combat, ce qui ferait mordre le test de
+        ; camera en plein milieu. Le geste appartient donc au stage.
+        jsr   stage.endTick
 
         jsr   gfxlock.loop
         lbra  stage.loop
@@ -366,7 +421,7 @@ stage.userIRQ
         ; region vgc.* du layout.
         _ymm.frame.play #map.RAM_OVER_CART+ymm.player.page
         ;_vgc.frame.play #map.RAM_OVER_CART+vgc.player.page
-        lda   #map.RAM_OVER_CART+soundfx.page
+        lda   #map.RAM_OVER_CART+common.soundfx.page
         ldx   #soundfx.frame
         jmp   paged.call
 
@@ -409,7 +464,7 @@ stage.state.dead
         ldd   #$A000
         std   <glb_screen_location_1
         ldu   #$C000
-        lda   #map.RAM_OVER_CART+overlay.page
+        lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #adr_playfield_mask_ND0
         jsr   paged.call
         jsr   gfxlock.off
@@ -451,7 +506,7 @@ stage.state.checkpoint
         ; visible derriere READY — la v1 ne l'eteint pas par la palette, elle
         ; efface les 16 Ko de la fenetre donnees.
         ldu   #$0000
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.clearData
         jsr   paged.call
 
@@ -499,7 +554,7 @@ stage.state.checkpoint
         bpl   >
         jmp   stage.gameOver
 !
-        lda   #map.RAM_OVER_CART+checkpoint.page
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
         ; Le clignotement / l'invincibilite de la reapparition. Il faut le
@@ -538,6 +593,12 @@ stage.state.checkpoint
 stage.gameOver
         jsr   IrqOff
         clr   game.stage
+        ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
+        ; chaque stage a nommé sa scène. Décharger la sienne avant de recharger
+        ; le stage 1 vaut aussi quand c'est le stage 1 qui meurt — l'index
+        ; rendu puis repris est la séquence honnête, pas un cas particulier.
+        ldx   #STAGE_SCENE
+        jsr   game.stage.unload
         ldx   #scenes.stage1
         jmp   game.stage.switch
 
@@ -570,6 +631,9 @@ stage.paletteFadeCommon
         std   o_fade_callback,u
         rts
 
+; EXPORTe : l'objet fadetotunnel, pagine, arme le meme fondu et doit lui
+; donner le meme rappel de fin.
+stage.paletteFadeDone EXPORT
 stage.paletteFadeDone
         rts
 

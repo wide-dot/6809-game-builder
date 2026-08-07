@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF STRUCT_AABB_EQU
+STRUCT_AABB_EQU equ 1
+
 
  ifndef struct_AABB
 struct_AABB equ 1
@@ -12,3 +18,5 @@ prev    rmb   2
 next    rmb   2
  endstruct
  endc
+
+ ENDC

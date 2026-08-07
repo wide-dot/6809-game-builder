@@ -6,8 +6,12 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (commonmissileflame.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+
 
 
 kill_me	equ ext_variables ; 1 byte

@@ -1,9 +1,71 @@
 # Declarative scenes and memory regions
 
+> **The vocabulary, one line each.** A `<region>` is a named destination. The
+> layout declares **constraints, not decisions** : write the page when the
+> region has to travel with its neighbours, the address when it has to be at a
+> given place, the size when it is a budget to enforce — and leave out
+> whatever the builder can work out. A `<window>` says where the machine sees
+> a page, which is how the builder knows where one begins and ends. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
+> indivisible object — entry symbol plus content, code and images alike ; its
+> container decides its dressing. A `<pageset>` packs many contents into a page
+> budget : divisible content spreads, units fill the tails. A `<scene>` says
+> what is in memory at a time, `<load>` by `<load>`. `stacked` on a region
+> lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
+> file's link block to the LINK section ; `bake` decides what never needs one.
+
+> **Next model, decided 2026-08-06, not yet implemented** : regions gain
+> `<zone>` children (a continuous range in one page), `<arena>` arrives for
+> automatic placement, and `<window>` / `size="auto"` / `address="auto"` /
+> `pages="auto"` / `stacked` all go away. See
+> [`modele-zones-2026-08.md`](../fr/modele-zones-2026-08.md) — decision and
+> implementation plan.
+
 Status : implemented and validated (July 2026). French design records :
 [`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) (doctrine),
 [`scenes-declaratives-2026-07.md`](../fr/scenes-declaratives-2026-07.md)
 (implementation plan). Runtime model : [`groups.md`](groups.md).
+
+## Declare the constraints, not the decisions
+
+A layout used to spell out every number : page, address, size, page count. Most
+of them were guesses — a size is a number the author has to invent before the
+content exists, and re-invent every time it changes. Guessing high is the safe
+move, so every region ended up carrying a tail nobody could use (105 060 bytes
+measured on r-type).
+
+So the rule is reversed. **What you write is a constraint ; what you leave out,
+the builder works out.**
+
+| you write | you are saying |
+|---|---|
+| `page="$13"` | this region travels with whatever else is on page $13 |
+| `address="$6100"` | it has to be exactly there |
+| `size="$1EC0"` | this is a budget — refuse the build if the content outgrows it |
+| `pages="auto"` | this region spans as many pages as its pageset fills |
+| nothing | up to you |
+
+```xml
+<region name="common" page="$01" address="$6100" size="$1EC0"/>  <!-- everything pinned -->
+<region name="weapon" page="$13"/>                               <!-- page pinned, rest measured -->
+<region name="beamcharge" page="$13"/>                           <!-- same page, right behind -->
+<region name="checkpoint"/>                                      <!-- the builder finds it a home -->
+```
+
+A region with no page is placed in the first hole big enough, scanning the
+pages the author pinned before opening one from the layout's `sparepages`
+range — so the unused tail of a page gets filled before fresh RAM is spent.
+First fit in declaration order, never sorted by size : adding a region must
+not move the ones already placed, or every object would change page, and its
+page id with it.
+
+**What this costs you.** The builder decides who sits next to whom. On a paged
+machine that is a real decision — two objects in one page is one bank switch
+saved when they run together. Keep `page="…"` for anything whose neighbours
+matter, and for everything the machine reaches by a fixed address : the
+resident window, the loader, the interface regions scenes swap. A region is a
+good candidate for automatic placement when it is reached through a page id,
+which is exactly what the game's objects are.
+
 
 ## What this is
 
@@ -24,7 +86,7 @@ runtime memory corruption.
 
     <floppydisk model="fd640">
         <directory id="0" ...>
-            <!-- data direntries, declared as usual -->
+            <!-- data files, declared as usual -->
 
             <scene name="scenes.level1" section="SCENE">
                 <load name="group.gm.level1"   region="gamemode"/>
@@ -40,8 +102,8 @@ runtime memory corruption.
 </target>
 ```
 
-A scene is a regular direntry (raw, uncompressed, one id block) whose source
-is generated ; it goes through the standard direntry pipeline and its name
+A scene is a regular file (raw, uncompressed, one id block) whose source
+is generated ; it goes through the standard file pipeline and its name
 becomes a file id equate, so game code loads it exactly as before :
 `ldx #scenes.level1` / `jsr loader.scene.load`.
 
@@ -135,7 +197,7 @@ byte link block occupies 2304. The report counts what the allocator reserves :
 loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $3000 (12288 bytes)
 
 scene scenes.boot — 28 indexed file(s) carrying link data
-     bytes   served  direntry
+     bytes   served  file
       2266     2304  common.engine
        918      928  common.player
        ...
@@ -183,7 +245,7 @@ generator selects them :
 | same, when the ids chain (next id = id + blocks) | `%11` base + start id | **7 flat** |
 
 The id chain is re-checked at every build ; reordering the configuration
-silently falls back to `%10`. Declaring the direntries of a lot consecutively
+silently falls back to `%10`. Declaring the files of a lot consecutively
 and listing them in the same order is what makes `%11` kick in.
 
 ## Validation

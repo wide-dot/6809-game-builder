@@ -94,6 +94,7 @@ DIR_DEFAULT_SECTOR  EQU   $04-1  ; Default sector for directory (from 0 to 15)
         jmp   >loader.file.linkData.unload ; OK
         jmp   >loader.file.getPageID       ; OK
         jmp   >loader.file.linkData.count  ; OK
+        jmp   >loader.scene.unload         ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -113,6 +114,13 @@ loader.dir              fdb   0 ; file directory
 loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 loader.scene.routine    fdb   0
 loader.scene.fileCount  fdb   0
+; La table de la scene chargee SURVIT a son application : c'est la liste de
+; ce que cette scene a mis en RAM, et donc la liste de ce qu'il faudra
+; retirer de l'index quand le jeu la dechargera. Elle est gardee en CACHE —
+; loader.scene.unload prend l'identifiant de la scene en argument, comme
+; load, et relit le fichier si ce n'est pas celle-ci.
+loader.scene.table      fdb   0 ; table de la derniere scene chargee (0 : aucune)
+loader.scene.tableId    fdb   0 ; son identifiant de fichier
 linkData.currentFile    fdb   0
 linkData.currentDisk    fcb   0 ; file ids are per disk : a file is only
                                 ; fully identified by [disk id][file id]
@@ -137,6 +145,10 @@ loader.scene.loadDefault
         ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
         ldx   #loader.memoryPool
         jsr   tlsf.init
+        ; route tlsf errors through the log block instead of the anonymous
+        ; tlsf.err.loop : A carries the legacy code at callback time
+        ldd   #log.tlsf.trap
+        std   tlsf.err.callback
 
         ; load directory entries
         lda   #loader.DEFAULT_SCENE_DIR_ID
@@ -198,10 +210,83 @@ loader.scene.load
         ; once all files are loaded, proceed to the link
         jsr   loader.file.link
 
-        ; free memory for default scene file
+        ; La table N'EST PAS liberee : elle devient le cache du dechargement
+        ; a venir. La precedente, elle, ne sert plus.
+        pshs  u,x
+        ldu   >loader.scene.table
+        beq   >
         jsr   tlsf.free
+!       puls  u,x
+        stu   >loader.scene.table
+        stx   >loader.scene.tableId
 !       rts
 
+
+;-----------------------------------------------------------------
+; loader.scene.unload
+;
+; input  REG : [X] scene file id
+;-----------------------------------------------------------------
+; Remove from the link data index every file the given scene loaded.
+;
+; A scene table IS the list of what that scene put in RAM, so unloading a
+; scene is the SAME walk as applying it, with a different per file routine
+; (loader.scene.apply calls through loader.scene.routine). No new block
+; type, no second table.
+;
+; This does NOT erase RAM : it deindexes. The danger was never the content,
+; it is a global re-link patching a dead file's stale offsets over the live
+; binary. "Occupied" means "indexed".
+;
+; Unloading a file that is not indexed is a no-op, so unloading twice — or
+; unloading a scene that was never applied — is harmless.
+;
+; The caller names the scene: there is no hidden "current scene" state, and
+; load/unload are two separate calls whose order belongs to the game.
+;-----------------------------------------------------------------
+loader.scene.unload
+        pshs  d,x,u
+        ; the cached table is the nominal case : a scene is unloaded right
+        ; before the next one is loaded
+        cmpx  >loader.scene.tableId
+        bne   @fromDisk
+        ldu   >loader.scene.table
+        beq   @fromDisk
+        bsr   loader.scene.unload.walk
+        jsr   tlsf.free                   ; u still points at the table
+        ldu   #0
+        stu   >loader.scene.table
+        puls  d,x,u,pc
+@fromDisk
+        ; any other scene : read its table, walk it, give the memory back
+        jsr   loader.file.malloc
+        cmpu  #0
+        beq   >                           ; empty or unknown : nothing to do
+        pshs  u
+        ldb   #loader.PAGE
+        jsr   loader.file.load
+        puls  u
+        bsr   loader.scene.unload.walk
+        jsr   tlsf.free
+!       puls  d,x,u,pc
+
+loader.scene.unload.walk
+        ldx   #loader.scene.unload.file
+        stx   loader.scene.routine
+        jmp   loader.scene.apply
+
+;-----------------------------------------------------------------
+; loader.scene.unload.file
+;
+; input  REG : [B] destination page (from the walk), [X] file id
+;-----------------------------------------------------------------
+; The adapter the walk needs : loader.scene.apply hands out the DESTINATION
+; page in B, while loader.file.linkData.unload wants the DIRECTORY id. The
+; directory a scene was loaded from is the one currently selected.
+;-----------------------------------------------------------------
+loader.scene.unload.file
+        ldb   >diskId
+        jmp   loader.file.linkData.unload
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc
@@ -323,7 +408,11 @@ loader.scene.apply.type10
         puls  b                  ; Restore page id
         cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
-        ldu   #0                 ; else move to next page
+* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
+* the cartridge window starts at $0000 and the two were the same, so nothing
+* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
+* boundary wrote 45 KB below its window, over the system RAM.
+        ldu   #map.ram.CART_START ; else move to next page
         incb
  IFDEF boot.CHECK_MEMORY_EXT
         cmpb  #31
@@ -381,7 +470,11 @@ loader.scene.apply.type11
 @b1     equ   *-1
         cmpy  #map.ram.CART_END  ; Branch if data fits memory page
         bls   >
-        ldu   #0                 ; else move to next page
+* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
+* the cartridge window starts at $0000 and the two were the same, so nothing
+* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
+* boundary wrote 45 KB below its window, over the system RAM.
+        ldu   #map.ram.CART_START ; else move to next page
         incb
  IFDEF boot.CHECK_MEMORY_EXT
         cmpb  #31
@@ -686,6 +779,13 @@ loader.file.decompress
         ldb   dir.entry.bitfld,y  ; test if compression flag
         bpl   @rts                ; no, exit
         ldd   dir.entry.coffset,y ; get offset to write data
+        ; The flag says the entry CARRIES a compression block, not that its
+        ; content is compressed : a declared codec that did not pay off keeps
+        ; its reserved block, offset zero, and the data was stored raw. No
+        ; real compressed entry can have a zero offset, so it is a safe
+        ; sentinel — and it is what lets a pageset declare one codec for
+        ; members whose content it does not choose.
+        beq   @rts                ; zero offset : stored raw, nothing to do
         leax  d,u                 ; set x to start of compressed data
         pshs  y
         jsr   >zx0_decompress     ; decompress and set u to end of decompressed data
@@ -718,6 +818,12 @@ ZX0_DP equ $6031
 ;
 ; X : [ptr to ascii string]
 ;---------------------------------------
+* tlsf error callback : expose the legacy code through the log block.
+* Every tlsf failure path does "lda #code / sta tlsf.err" before jumping
+* here, so A carries the code and the photograph keeps it.
+log.tlsf.trap
+        _log.error log.tlsf.ERROR
+
 * Display error message
 err     ldu   #messloc           ; Location
         bsr   err2               ; Display location
@@ -770,6 +876,31 @@ loader.dir.getFile
         _lsld      ; to dir entry size
         _lsld
         leay  d,y  ; Y ptr to file dir.entry
+        rts
+
+
+;---------------------------------------
+; loader.dir.fileSize
+;
+; input  REG : [Y] ptr to the dir entry
+; output REG : [D] bytes the file occupies
+;              in RAM, 0 for an empty file
+;---------------------------------------
+; The size field is the UNCOMPRESSED one,
+; which is what a compressed file ends up
+; taking : it expands in place over its
+; own destination.
+;---------------------------------------
+loader.dir.fileSize
+        ldd   dir.entry.sizea,y   ; the empty marker lives in the disk
+        cmpd  #$ff00              ; location, not in the size field : an
+        beq   @empty              ; empty file's size reads $3fff (0-1)
+        ldd   dir.entry.sizeu,y
+        anda  #%00111111          ; drop the compression and linkdata flags
+        addd  #1                  ; the field holds size-1
+        rts
+@empty  clra
+        clrb
         rts
 
 
@@ -839,24 +970,36 @@ loader.file.linkData.load
         ldu   linkData.entry.linkData,u
         jsr   tlsf.free
         puls  u
-        bra   @fill                           ; u is a ptr to the reused slot
+        lbra  @fill                           ; u is a ptr to the reused slot
+                                              ; (long : the overlap check sits
+                                              ;  between here and the target)
 !
         ; empty (export-only) files have no RAM footprint : several of them
-        ; legitimately share the (0,0) pseudo-destination, never evict by dest
+        ; legitimately share the (0,0) pseudo-destination, so they neither
+        ; cover nor get covered
         ldx   2,s                             ; load file id
         jsr   loader.dir.getFile
-        ldd   dir.entry.sizea,y
-        cmpd  #$ff00
+        jsr   loader.dir.fileSize
+        cmpd  #0
         beq   @index                          ; branch if file is empty
-        ; implicit unload : a different indexed file located at the very same
-        ; destination is being overwritten, remove it from the index so the
-        ; global re-link will not patch its stale offsets over the new binary
+        tfr   d,y                             ; y = bytes this file occupies
         lda   1,s                             ; load file dest page
         ldx   6,s                             ; load file dest addr
-        jsr   linkData.slot.findByDest
+        jsr   linkData.slot.findOverlap
         cmpu  #0
         beq   @index
-        jsr   linkData.slot.remove
+        ; A file still indexed occupies bytes this load has just written over.
+        ; It used to be DEDUCED here that the occupant was implicitly unloaded
+        ; — the loader removed it from the index and said nothing. That took
+        ; the sequence away from the developer : the incoming scene silently
+        ; answered for what the outgoing one had taken, which it has no way of
+        ; knowing. The scene that ENDS declares what it drops ; anything left
+        ; over is a missing declaration, and it is reported as such.
+        ldu   linkData.entry.fileId,u         ; the occupant, before u is reused
+        ldb   1,s                             ; destination page
+        ldx   2,s                             ; file id being loaded
+        ldy   6,s                             ; destination address
+        _log.error log.scene.LOAD_OVERLAP
 @index
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
@@ -1034,31 +1177,63 @@ linkData.slot.find
 
 
 ;---------------------------------------
-; linkData.slot.findByDest
+; linkData.slot.findOverlap
 ;
 ; input  REG : [A] file dest page
 ; input  REG : [X] file dest address
-; output REG : [U] ptr to slot ($0000 if not found)
+; input  REG : [Y] bytes the file occupies
+; output REG : [U] ptr to the covered slot ($0000 if none)
 ;---------------------------------------
 ; search the link data index for a file
-; loaded at a given destination
+; whose bytes intersect the ones about to
+; be written. Equality of destination is
+; NOT the question : a file loaded a few
+; bytes further covers just as surely.
 ;---------------------------------------
-linkData.slot.findByDest
+; The extent of an indexed file is read
+; back from the DIRECTORY, not carried in
+; its slot : loader.dir.getFile is O(1)
+; (base + id x 8), so two bytes per slot
+; would buy nothing. Cost is O(n) per
+; load over the files that carry link
+; data — measured 15 on r-type, next to
+; nothing beside the disk read itself.
+;---------------------------------------
+linkData.slot.findOverlap
         pshs  d,x,y
+        sta   @page
+        stx   @start
+        tfr   y,d
+        leax  d,x
+        stx   @end                            ; first byte AFTER this file
         ldu   >loader.file.linkDataIdx
-        beq   @notfound
+        beq   @none
         ldy   linkData.header.occupiedSlots,u
-        beq   @notfound
+        beq   @none
         leau  sizeof{linkData.header},u
-@loop   cmpa  linkData.entry.filePage,u
-        bne   >
-        cmpx  linkData.entry.fileAddr,u
-        beq   @found
-!       leau  sizeof{linkData.entry},u
+@loop   lda   #0
+@page   equ   *-1
+        cmpa  linkData.entry.filePage,u
+        bne   @next                           ; another page : cannot intersect
+        pshs  u,y
+        ldx   linkData.entry.fileId,u
+        jsr   loader.dir.getFile
+        jsr   loader.dir.fileSize
+        puls  u,y
+        cmpd  #0
+        beq   @next                           ; empty file : occupies nothing
+        addd  linkData.entry.fileAddr,u       ; first byte after the occupant
+        cmpd  #0
+@start  equ   *-2
+        bls   @next                           ; it ends at or before we start
+        ldd   linkData.entry.fileAddr,u
+        cmpd  #0
+@end    equ   *-2
+        blo   @found                          ; it starts before we end
+@next   leau  sizeof{linkData.entry},u
         leay  -1,y
         bne   @loop
-@notfound
-        ldu   #0
+@none   ldu   #0
 @found  puls  d,x,y,pc
 
 

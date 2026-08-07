@@ -35,14 +35,14 @@ class SchemaGeneratorTest {
 			"    <section name=\"DATA\" track=\"1\" face=\"0\" sector=\"1\"/>\n" +
 			"    <define symbol=\"loader.ADDRESS\" value=\"$A000\"/>\n" +
 			"    <directory id=\"0\" section=\"INDEX\" gensymbols=\"gen/entries.asm\">\n" +
-			"      <default name=\"direntry.maxsize\" value=\"0x4000\"/>\n" +
-			"      <direntry name=\"x\" codec=\"zx0\" loadtimelink=\"LINK\">\n" +
+			"      <default name=\"file.maxsize\" value=\"0x4000\"/>\n" +
+			"      <file name=\"x\" codec=\"zx0\" linkdata=\"LINK\">\n" +
 			"        <bin filename=\"a.bin\"/>\n" +
 			"        <lwasm gensource=\"gen/x.asm\">\n" +
 			"          <asm xml:space=\"preserve\">        org   $2100</asm>\n" +
 			"          <label name=\"sym\"/>\n" +
 			"        </lwasm>\n" +
-			"      </direntry>\n" +
+			"      </file>\n" +
 			"    </directory>\n" +
 			"    <fd filename=\"out.fd\"/>\n" +
 			"  </floppydisk>\n" +
@@ -54,7 +54,7 @@ class SchemaGeneratorTest {
 	@DisplayName("an unknown attribute is rejected by the schema too")
 	void unknownAttributeRejected() throws Exception {
 		String config = "<configuration><target name=\"fd\">"
-				+ "<direntry name=\"x\" codek=\"zx0\"/></target></configuration>";
+				+ "<file name=\"x\" codek=\"zx0\"/></target></configuration>";
 		assertThrows(SAXException.class,
 				() -> schemaValidator().validate(new StreamSource(new StringReader(config))));
 	}
@@ -63,7 +63,7 @@ class SchemaGeneratorTest {
 	@DisplayName("a malformed hex value is rejected by the schema too")
 	void badHexRejected() throws Exception {
 		String config = "<configuration><target name=\"fd\">"
-				+ "<direntry name=\"x\" maxsize=\"beaucoup\"/></target></configuration>";
+				+ "<file name=\"x\" maxsize=\"beaucoup\"/></target></configuration>";
 		assertThrows(SAXException.class,
 				() -> schemaValidator().validate(new StreamSource(new StringReader(config))));
 	}

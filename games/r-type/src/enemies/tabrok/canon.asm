@@ -6,10 +6,14 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
-        INCLUDE "./engine/collision/macros.asm"
-        INCLUDE "./engine/collision/struct_AABB.equ"
-        INCLUDE "./objects/explosion/explosion.const.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (tabrokcanon.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
+; INCLUDE "./engine/collision/macros.asm"
+; INCLUDE "./engine/collision/struct_AABB.equ"
+; INCLUDE "./objects/explosion/explosion.const.asm"
+
 
 AABB_0          equ ext_variables   ; AABB struct (9 bytes)
 canon_0x30	equ ext_variables+10 ; 2 bytes, canon velocity

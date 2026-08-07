@@ -18,8 +18,8 @@
             <section name="DATA"  track="1" face="0" sector="1"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
-                <default name="direntry.section" value="DATA"/>
-                <default name="direntry.maxsize" value="0x4000"/>
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
@@ -29,19 +29,19 @@
                 <!-- These come first because converting also writes the .equ   -->
                 <!-- describing the buffer, which the game mode below reads.    -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.bandA">
+                <file name="assets.bandA">
                     <png2bin filename="band.png" gendir="gen/assets/band"
                              videomode="bm16" buffer="hscroll" guardcolor="11" plane="0"/>
-                </direntry>
+                </file>
 
-                <direntry name="assets.bandB">
+                <file name="assets.bandB">
                     <png2bin filename="band.png" gendir="gen/assets/band"
                              videomode="bm16" buffer="hscroll" guardcolor="11" plane="1"/>
-                </direntry>
+                </file>
 
                 <!-- Game mode -->
                 <!-- ******************************************************* -->
-                <direntry name="assets.gm.main" codec="zx0" loadtimelink="LINK">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- height, guard colour and exit offset of the buffer,
@@ -51,7 +51,7 @@
                         <!-- the band's own palette -->
                         <png2pal symbol="Pal_band" filename="band.png"/>
                     </lwasm>
-                </direntry>
+                </file>
 
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main" region="gamemode"/>

@@ -72,7 +72,7 @@ public class Attribute {
 	//
 	// The defaults key is derived from the element name (<element>.<attr>),
 	// so it cannot drift from the element that reads it — retyping it by
-	// hand is how the direntry size guard ended up reading directory.maxsize
+	// hand is how the file size guard ended up reading directory.maxsize
 	// and stayed inactive. Errors carry the source position of the element.
 	// ------------------------------------------------------------------
 

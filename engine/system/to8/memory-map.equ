@@ -1,3 +1,9 @@
+* Garde d'inclusion : un membre de pageset porte plusieurs units qui
+* incluent chacun cet en-tete. Un en-tete doit pouvoir etre inclus deux
+* fois — c'est vrai independamment du pageset.
+ IFNDEF TO8_MEMORY_MAP_EQU
+TO8_MEMORY_MAP_EQU equ 1
+
 ; Thomson TO8 - Memory map
 
 ; mc6846
@@ -101,3 +107,5 @@ IRQ.ONEFRAME    equ 312*64-1  ; one frame timer (lines*cycles_per_lines-1), time
 
 CORE.DAC        equ MC6821.PRA2
 CORE.RND        equ CF74021.CART
+
+ ENDC

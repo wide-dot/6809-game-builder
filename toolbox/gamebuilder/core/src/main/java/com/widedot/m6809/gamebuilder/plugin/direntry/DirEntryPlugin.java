@@ -38,8 +38,8 @@ public class DirEntryPlugin {
 	 * exist, and this plugin emits them : both must agree exactly or every
 	 * file id after the divergence points at the wrong entry at runtime.
 	 *
-	 * @param codec       the direntry codec attribute, null when uncompressed
-	 * @param linkSection the loadtimelink attribute, null when not linked
+	 * @param codec       the file codec attribute, null when uncompressed
+	 * @param linkSection the linkdata attribute, null when not linked
 	 */
 	public static int blockCount(String codec, String linkSection) {
 		return 1 + (codec != null ? 1 : 0) + (linkSection != null ? 1 : 0);
@@ -49,15 +49,67 @@ public class DirEntryPlugin {
 	public static final int ZX0_DELTA = 6;
 
 	/**
-	 * zx0 optimizer threads. Entries are at most 16 KB, well below the point
-	 * where the fan out pays for its synchronisation.
+	 * zx0 optimizer threads. The optimal parse of a 16 KB entry costs ~2 s on
+	 * one core and the output is byte-identical whatever the thread count
+	 * (verified 1/2/4/8) — so the fan out is free determinism-wise and roughly
+	 * halves the wall time of a cache miss.
 	 */
-	private static final int ZX0_THREADS = 1;
+	private static final int ZX0_THREADS =
+			Math.min(8, Runtime.getRuntime().availableProcessors());
+
+	/**
+	 * zx0 results by SHA-256 of the raw bytes. Compression is the dominant
+	 * cost of a build (~2 s per 16 KB entry) and the same bytes are compressed
+	 * at least twice — the discovery pass and the real pass produce identical
+	 * content for almost every entry — and again at every rebuild during
+	 * development. Pure function of the input, so a hit is exact.
+	 */
+	private static final java.util.concurrent.ConcurrentHashMap<String, byte[]> zx0Cache =
+			new java.util.concurrent.ConcurrentHashMap<String, byte[]>();
+
+	/**
+	 * compress with the run-wide cache, backed by the shared disk cache
+	 * (see BuildCache, domain "zx0") : returned bytes = delta byte then cbin. The in-memory map
+	 * spares the two passes of one build, the disk entry spares the next
+	 * builds of a working session — same pattern as the gfxcomp and lwasm
+	 * caches, and the compression is as pure a function as they are. maxdelta
+	 * is a checked constant (ZX0_DELTA), so it needs no place in the key.
+	 */
+	private static byte[] zx0Cached(byte[] bin, int maxdelta) throws Exception {
+		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+		StringBuilder key = new StringBuilder();
+		for (byte b : md.digest(bin)) {
+			key.append(String.format("%02x", b));
+		}
+		byte[] hit = zx0Cache.get(key.toString());
+		if (hit != null) {
+			return hit;
+		}
+		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
+				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("zx0", "1").keyBytes(bin);
+		hit = entry.findBlob();
+		if (hit == null) {
+			int[] delta = { 0 };
+			byte[] sbin = new byte[bin.length - maxdelta];
+			System.arraycopy(bin, 0, sbin, 0, sbin.length);
+			// 3rd argument is the zx0 search window, not a size cap : it must
+			// stay the format constant the 6809 decompressor expects
+			byte[] cbin = new Compressor().compress(
+					new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
+					bin, 0, false, false, delta);
+			hit = new byte[1 + cbin.length];
+			hit[0] = (byte) delta[0];
+			System.arraycopy(cbin, 0, hit, 1, cbin.length);
+			entry.storeBlob(hit);
+		}
+		zx0Cache.put(key.toString(), hit);
+		return hit;
+	}
 
 	
-//	loader direntry for a file (8, 16 or 24 bytes):
+//	loader file for a file (8, 16 or 24 bytes):
 //  -----------------------------------------------------------------------------------------------
-//	[0] [0]                    - [compression 0:none, 1:packed] [load time linker 0:no, 1:yes]
+//	[0] [0]                    - [compression 0:none, 1:packed] [linkdata block 0:absent, 1:present — present with a zero size word means "declared but empty", the loader skips it]
 //	[00 0000] [0000 0000]      - [uncompressed file size -1]
 //	[0000 000] [0] [0000 0000] - [track 0-128] [face 0-1] [sector 0-255]
 //	[0000 0000] [0000 0000]    - [bytes in first sector] [start offset in first sector (0: no sector)] ($ff00 : empty file)
@@ -92,23 +144,23 @@ public class DirEntryPlugin {
 	
 	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media) throws Exception {
     	
-		log.debug("Processing direntry ...");
+		log.debug("Processing file ...");
 		
 		String name = Attribute.getString(node, ctx, "name");
-		// exports registered while this direntry builds belong to it : the
-		// direntry is the unit the loader loads and evicts, so it is the
+		// exports registered while this file builds belong to it : the
+		// file is the unit the loader loads and evicts, so it is the
 		// granularity of the export uniqueness rule
 		ctx.linkSymbols.beginUnit(name);
 		// the consumer whose references the static resolutions below serve —
 		// generators (a tilemap asking pageOf) and the bake both run inside
-		// this direntry, and a multi-provider symbol is disambiguated by who
+		// this file, and a multi-provider symbol is disambiguated by who
 		// is asking
 		ctx.staticLink.setCurrentConsumer(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = Attribute.getStringOpt(node, ctx, "codec");
-		String linkSection = Attribute.getStringOpt(node, ctx, "loadtimelink");
-		boolean loadtimelink = (linkSection!=null?true:false);
-		// how this direntry's references are resolved — see BakeMode. Declared
+		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
+		boolean linkDeclared = (linkSection!=null?true:false);
+		// how this file's references are resolved — see BakeMode. Declared
 		// here, in the configuration that places everything, never in the
 		// source : the same unit can be fully linked in one project and fully
 		// baked in another.
@@ -148,8 +200,8 @@ public class DirEntryPlugin {
 	        }
     	}
 
-		// init direntry
-		byte[] direntry = new byte[24];
+		// init file
+		byte[] file = new byte[24];
 		
 		// resolve references before anything reads the binaries : a baked
 		// reference emits no link data at all. The baking needs to know where
@@ -213,9 +265,9 @@ public class DirEntryPlugin {
 		
 		// apply codec
 		boolean compress = false;
-	    int maxdelta = Integer.parseInt(ctx.settings.get("direntry.zx0.delta"));
+	    int maxdelta = Integer.parseInt(ctx.settings.get("file.zx0.delta"));
 	    if (maxdelta != ZX0_DELTA) {
-			throw new Exception("direntry.zx0.delta must be " + ZX0_DELTA
+			throw new Exception("file.zx0.delta must be " + ZX0_DELTA
 					+ ", the loader copies back a fixed size tail (dir.entry.cdataz)");
 	    }
 		if (codec != null) {
@@ -225,18 +277,10 @@ public class DirEntryPlugin {
 				if (length > maxdelta) {
 				
 					log.debug("Compress data with zx0");
-					int[] delta = { 0 };				
-					
-					// prepare data, shorten by n bytes (maxdelta)
-					byte[] sbin = new byte[bin.length-maxdelta];
-					System.arraycopy(bin, 0, sbin, 0, sbin.length);
-					
-					// compress the shortened data
-					// 3rd argument is the zx0 search window, not a size cap : it must
-					// stay the format constant the 6809 decompressor expects
-					byte[] cbin = new Compressor().compress(
-							new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
-							bin, 0, false, false, delta);
+					byte[] cached = zx0Cached(bin, maxdelta);
+					int[] delta = { cached[0] & 0xff };
+					byte[] cbin = new byte[cached.length - 1];
+					System.arraycopy(cached, 1, cbin, 0, cbin.length);
 					log.debug("Original size: {}+{}, Packed size: {}, Delta: {}", bin.length-maxdelta, maxdelta, cbin.length, delta[0]);
 					
 					// automatic selection of compressed or uncompressed data
@@ -248,13 +292,13 @@ public class DirEntryPlugin {
 						
 					} else {
 										
-						// build direntry data (compression bloc)
+						// build file data (compression bloc)
 						int offset = bin.length-cbin.length;
-						direntry[8] = (byte) ((offset >>8) & 0xff);
-						direntry[9] = (byte) (offset & 0xff);
+						file[8] = (byte) ((offset >>8) & 0xff);
+						file[9] = (byte) (offset & 0xff);
 						
 						// copy delta bytes
-						System.arraycopy(bin, bin.length-maxdelta, direntry, 10, maxdelta);
+						System.arraycopy(bin, bin.length-maxdelta, file, 10, maxdelta);
 						
 						bin = cbin;
 						compress = true;
@@ -265,21 +309,32 @@ public class DirEntryPlugin {
 			}
 		}
 		
-		if (codec != null && compress == false) {
-			String m = "Build aborted, please remove codec for direntry: " + name;
-			log.error(m);
-			throw new Exception(m);
+		if (codec != null && !compress) {
+			// La regle qui refuse de compresser est conservee ; c'est son ISSUE
+			// qui change. Avorter le build etait la seule sortie tant que le
+			// descripteur suivait le RESULTAT : une entree declaree compressee
+			// mais stockee brute emettait un bloc de moins que le repertoire
+			// n'avait reserve, et les identifiants derivaient (mesure : 267
+			// blocs pour 268 ids). Le bloc etant desormais reserve sur la
+			// DECLARATION, l'entree tient dans son enveloppe et part telle
+			// quelle — le decalage nul le dit au loader.
+			//
+			// Ca rend codec="zx0" utilisable la ou l'auteur ne choisit pas ce
+			// qu'il compresse : un pageset applique le sien a chaque membre, y
+			// compris celui que le rangement n'a pas rempli.
+			log.info("{} : stocke tel quel, la compression ne paie pas", name);
 		}
 				
 		// write file to media
-	    byte[] dataDiskLocation = media.cwrite(section, bin);
+	    byte[] dataDiskLocation = media.cwrite(section, bin, name);
+	    ctx.occupancy.fileSize(name, length);
 	    
 		// process link data first to determine if we actually have link data
 		boolean hasLinkData = false;
 		LinkData linkdata = null;
 		byte[] linkDiskLocation = null;
 		
-		if (loadtimelink) {
+		if (linkDeclared) {
 			// aggregate all link data
 			linkdata = new LinkData();
 			int linkBase = 0;
@@ -294,14 +349,24 @@ public class DirEntryPlugin {
 			// export. Not writing it is what makes a fully baked file cost
 			// the loader NOTHING — no link file on disk, no index slot, no
 			// pool allocation, no entry every symbol search walks past. The
-			// direntry keeps its reserved descriptor size (file ids derive
-			// from the attributes before anything is built), only the flag
-			// stays down. An export still imported keeps its counter above
-			// zero, so this can never drop a block the loader needs.
+			// file keeps its reserved descriptor size (file ids derive
+			// from the attributes before anything is built). An export still
+			// imported keeps its counter above zero, so this can never drop
+			// a block the loader needs.
+			//
+			// The FLAG, however, must stay UP (see below) : it does not mean
+			// "there is link data to load" but "this entry carries a linkdata
+			// block". The loader's consecutive-id walk (scene type %11)
+			// derives the next file id from the flags ; a reserved block with
+			// the flag down made it land on the zeroed descriptor as if it
+			// were a file — one ghost byte of drift per file, and half the
+			// list never loaded. Emptiness is conveyed by the descriptor's
+			// size word being zero, which loader.file.linkData.load already
+			// treats as "ignore empty link file".
 			if (linkdata.countExportAbs() + linkdata.countExportRel()
 					+ linkdata.countIntern() + linkdata.countExtern8()
 					+ linkdata.countExtern16() + linkdata.countExternPage() > 0) {
-				linkDiskLocation = media.cwrite(linkSection, linkdata.data);
+				linkDiskLocation = media.cwrite(linkSection, linkdata.data, name + " (linkdata)");
 				hasLinkData = true;
 			}
 		}
@@ -322,30 +387,39 @@ public class DirEntryPlugin {
 				linkdata == null ? 0 : linkdata.countExportAbs(),
 				linkdata == null ? 0 : linkdata.countExportRel(),
 				baked,
-				loadtimelink));
+				linkDeclared));
 		
-		// build direntry data
+		// build file data
 	    int i = 0;
-		if (compress)     direntry[i] = (byte) (direntry[i] | 0b10000000);
-		if (hasLinkData)  direntry[i] = (byte) (direntry[i] | 0b01000000);
+		// Both flags mirror the RESERVED block, not its content : the type %11
+		// id arithmetic counts blocks through the flags, so a declared-but-
+		// empty link section keeps the flag up over a zeroed descriptor — and
+		// a declared-but-incompressible entry keeps its compression block,
+		// whose zero offset tells the loader to load it raw.
+		if (codec != null)  file[i] = (byte) (file[i] | 0b10000000);
+		if (linkDeclared)   file[i] = (byte) (file[i] | 0b01000000);
 		int encodedLength = (length-1) & 0x3fff;
-		direntry[i] = (byte) (direntry[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
+		file[i] = (byte) (file[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
 		
-		direntry[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
+		file[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
 		
-		System.arraycopy(dataDiskLocation, 0, direntry, i, 6);
+		System.arraycopy(dataDiskLocation, 0, file, i, 6);
 		i += 6;
 		
-		if (compress) i += 8;
+		if (codec != null) {
+			// reserved from the attribute : written above when the compression
+			// paid off, left at zero otherwise — offset zero means "raw"
+			i += 8;
+		}
 		
 		if (hasLinkData) {
-			direntry[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
-			direntry[i++] = (byte)(linkdata.data.length & 0xff);
+			file[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
+			file[i++] = (byte)(linkdata.data.length & 0xff);
 			
-			System.arraycopy(linkDiskLocation, 0, direntry, i, 6);
+			System.arraycopy(linkDiskLocation, 0, file, i, 6);
 			i += 6;
-		} else if (loadtimelink) {
+		} else if (linkDeclared) {
 			// the descriptor size was reserved from the attribute — keep it,
 			// zeroed : with the flag down the loader never reads these bytes
 			i += 8;
@@ -358,12 +432,12 @@ public class DirEntryPlugin {
 					+ " the directory, so every following file would be misread.");
 		}
 
-		byte[] sizedDirentry = Arrays.copyOf(direntry, i);
+		byte[] sizedDirentry = Arrays.copyOf(file, i);
 	    media.addDirEntry(new DirEntry(name, sizedDirentry, length, pageSpans));
 		
 	    String fLength = String.format("%5d", length);
 	    log.info("file {} | {} bytes", name, fLength);
-		log.debug("End of processing direntry");
+		log.debug("End of processing file");
 	}
 	
 }

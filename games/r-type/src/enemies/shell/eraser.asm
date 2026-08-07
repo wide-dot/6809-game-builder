@@ -1,4 +1,3 @@
-; ===========================================================================
 ; Object - effaceur de la rotonde de shells. OBJET NON DYNAMIQUE (hors pool),
 ; monte via _Obj_Run ObjID_shellEraser depuis le main loop ENTRE DrawTiles et
 ; DrawSprites. Boucle + blit inline vivent sur une PAGE CARTOUCHE -> aucune RAM
@@ -7,7 +6,10 @@
 ; L'effaceur ne fait que blitter les old_pos non-nuls du buffer courant.
 ;   shellEraseTable : 14 x [old_pos_0(2), old_pos_1(2)] ; slot a 0 = vide.
 ; ===========================================================================
-        INCLUDE "./engine/macros.asm"
+; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote
+; (shelleraser.unit.asm), comme pour tout fichier v1 enveloppe.
+; Includes v1 retires :
+; INCLUDE "./engine/macros.asm"
 Object
         ldx   #shellEraseTable
         tst   gfxlock.backBuffer.id      ; selectionne l'old_pos du buffer courant (cf mask.asm)

@@ -6,7 +6,11 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./objects/enemies/bug/obj_main.asm"
+; V2-DEVIATION: obj_main.asm n'est PAS un en-tete : c'est le corps commun de
+; l'objet (les deux versions level1/full s'y adossent). Le retirer laissait
+; l'unite sans code — la table de routines sautait dans le vide (gel constate
+; en jeu a l'apparition du premier bug). Seul le chemin change.
+        INCLUDE "src/enemies/bug/obj_main.asm"
 ImageIndex
         fdb   Img_bug_8
         fdb   Img_bug_8

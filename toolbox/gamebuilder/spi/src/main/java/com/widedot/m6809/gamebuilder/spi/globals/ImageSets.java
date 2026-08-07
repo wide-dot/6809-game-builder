@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public class ImageSets {
 
-	/** the page an {@code adr_} symbol landed on, once its direntry is placed */
+	/** the page an {@code adr_} symbol landed on, once its file is placed */
 	public interface PageOf {
 		int of(String symbol) throws Exception;
 	}
@@ -35,14 +35,31 @@ public class ImageSets {
 		 * @param pages   asked for the page of each image, one by one
 		 */
 		void generate(String path, String section, PageOf pages) throws Exception;
+
+		/**
+		 * Absorb another gfxcomp's contribution to the same set. Refusing a
+		 * duplicate image name is the implementation's job — two contributors
+		 * declaring the same pose is the one real mistake here.
+		 */
+		default void merge(Index other) throws Exception {
+			throw new Exception("this imageset cannot merge contributions");
+		}
 	}
 
 	private final Map<String, Index> sets = new LinkedHashMap<String, Index>();
 
+	/**
+	 * Several {@code <gfxcomp>} MAY contribute to one set : that is what lets
+	 * a big set be cut into slices the arena ranges independently — the v1
+	 * granularity, chosen by hand. Each descriptor already carries the page of
+	 * ITS image, so the index never cared where the slices land. The one
+	 * {@code <imageset>} element still writes the whole index, once.
+	 */
 	public void declare(String name, Index index) throws Exception {
-		if (sets.containsKey(name)) {
-			throw new Exception("two <gfxcomp> declare the imageset '" + name
-					+ "' : an imageset is indexed once, by the element that names it");
+		Index existing = sets.get(name);
+		if (existing != null) {
+			existing.merge(index);
+			return;
 		}
 		sets.put(name, index);
 	}

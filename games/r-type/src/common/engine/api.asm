@@ -16,6 +16,13 @@
 ; short : the engine offers mechanisms, the stage holds the policy.
 ;*******************************************************************************
 
+; Garde d'inclusion. Une unite classique n'inclut ce fichier qu'une fois, mais
+; un membre de PAGESET porte plusieurs blocs qui l'incluent chacun : sans garde,
+; le second redefinit le macro _api. Un en-tete doit pouvoir etre inclus deux
+; fois — c'est vrai independamment du pageset.
+ IFNDEF ENGINE_API_INCLUDED
+ENGINE_API_INCLUDED equ 1
+
 _api    macro
   ifdef ENGINE_RESIDENT
 \1 EXPORT
@@ -105,6 +112,9 @@ checkpoint.clearData EXTERNAL
         ; --- object manager ---
         _api InitStack
         _api ManagedObjects_ClearAll
+        ; La tete de la liste d'objets vivants : le laser a rebond la parcourt
+        ; pour retrouver ses propres segments et recalculer son masque de slots.
+        _api object_list_first
         _api RunObjects
         ; Le gel de la mort : redessine les objets sans derouler leur logique.
         _api RunFrozenObjects
@@ -112,12 +122,17 @@ checkpoint.clearData EXTERNAL
         _api LoadObject_u
         _api UnloadObject_u
         _api Obj_Mount
-        ; Obj_RunB N'EST PLUS AU CONTRAT : plus personne ne s'en sert. Il
-        ; portait une commande dans B parce qu'un objet ne s'atteignait que par
-        ; l'index ; en v2 une routine sans etat se vise par son symbole, via
-        ; paged.call, sans registre de commande ni table de routage — voir le
-        ; champ d'etoiles. Obj_Run reste : le fondu, lui, a bien un OST.
         _api Obj_Run
+        ; Obj_RunB est REVENU au contrat le 2026-08-07, avec le sequenceur de
+        ; fin de niveau. Il avait ete retire au motif que plus personne ne s'en
+        ; servait : en v2 une routine sans etat se vise par son symbole, via
+        ; paged.call, sans registre de commande — voir le champ d'etoiles.
+        ; Mais paged.call se sert de B pour memoriser la page de l'appelant :
+        ; il ne sait NI porter une commande NI rendre un statut. L'objet
+        ; endstage a besoin des deux (INIT / TICK / BLIT en entree, le jingle
+        ; ou la fin du niveau en sortie), et c'est precisement le protocole que
+        ; porte Obj_RunB. A n'appeler que depuis le code resident.
+        _api Obj_RunB
         ; Ce que le JOUEUR appelle en plus. ObjectMove n'y est PAS : il est
         ; inclus dans l'unite du joueur, comme en v1, donc resolu localement.
         _api gfxlock.screenBorder.update
@@ -246,15 +261,29 @@ Collision_Run EXTERNAL
         _api AABB_list_player
         _api AABB_list_bonus
         _api AABB_list_foefire
+        _api AABB_list_forcepod
 
         ; --- la chaine de tir ennemi : residente, comme dans le main v1
         ; (main.asm:565-568). tryFoeFire est appele par l'ennemi, qui tourne
         ; en page montee ; setDirectionTo par createFoeFire, monte lui aussi.
         ; FoeFireTarget est la cible que tryFoeFire pose avant de tirer ---
+        ; --- the log block : les sites des unites paginees appellent la
+        ; routine residente ; le loader porte sa propre copie du meme code,
+        ; les deux ecrivent le MEME bloc ($9EF0). log.halt est l'ancre du
+        ; superviseur (breakpoint) quand aucun watchpoint n'est pose. ---
+        _api log.write
+        _api log.halt
+
         _api tryFoeFire
         _api tryFoeFireShell
         _api setDirectionTo
         _api FoeFireTarget
+        ; Le centre de la rotonde, resident avec la chaine de tir : la v1 le
+        ; range dans le meme fichier (global/projectile.asm), et le shell y
+        ; ajoute son rayon pour se placer. Deux noms, parce que le troisieme
+        ; (circleCenter lui-meme) est une equate relative — rien a lier.
+        _api circleCenter.x_pos
+        _api circleCenter.y_pos
         _api moveXPos8.8
         _api moveYPos8.8
 
@@ -286,3 +315,6 @@ Collision_Run EXTERNAL
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---
         _api game.stage.switch
+        _api game.stage.unload
+
+ ENDC
