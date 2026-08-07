@@ -428,16 +428,17 @@ public class PageSetPlugin {
 			out.append("        INCLUDE \"").append(parts.get(i)[0]).append('"')
 			   .append(System.lineSeparator());
 		}
-		if (indexes.isEmpty()) {
-			// A member the packing did not fill still has to be a real file.
-			// The loader exempts EMPTY files from eviction by destination —
-			// export-only files all share the pseudo destination (0,0) and
-			// would evict one another — so an empty member would leave the
-			// previous set's member alive at that page, its exports still
-			// resolvable while the pages around it have changed. One byte is
-			// enough to make it evict.
-			out.append("        fcb   0").append(System.lineSeparator());
-		}
+		// A member the packing did not fill emits NOTHING : it is an empty,
+		// export-only file, which the loader indexes without a RAM footprint.
+		//
+		// It used to carry one filler byte, to make it evict by destination
+		// the member it replaced — the loader exempts empty files from that
+		// eviction, since export-only files all share the (0,0) pseudo
+		// destination and would evict one another. That was the implicit
+		// unload doing the work, and it is not the model any more : the scene
+		// that ENDS names what it drops, so an incoming member has nothing
+		// left to evict. A byte written to spare the author a declaration is
+		// exactly the comfort this builder does not offer.
 		out.append(" ENDSECTION").append(System.lineSeparator());
 
 		String path = ctx.path + File.separator + source;

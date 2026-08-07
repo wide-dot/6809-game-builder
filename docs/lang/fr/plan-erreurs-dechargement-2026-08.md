@@ -966,7 +966,34 @@ si l'adresse déterminait la vie des fichiers — doit tomber avec ce modèle.
    permanent ? Un contrôle qui ne coûte que du temps de chargement peut
    rester permanent. À trancher.
 
-# Phase 5 — le membre fantôme redevient vide
+# Phase 5 — le membre fantôme redevient vide — FAIT
+
+Implémenté le 2026-08-07. `PageSetPlugin.writeMemberSource` n'écrit plus le
+`fcb 0` : un membre que le rangement n'a pas rempli émet une section vide,
+donc un fichier **vide, purement exportateur** que `cwrite` marque `$ff00`
+sans écrire un seul secteur.
+
+Le remplissage servait à faire **évincer par destination** le membre que
+celui-ci remplaçait — le loader exempte les fichiers vides de cette
+éviction, puisque tous les fichiers purement exportateurs partagent la
+pseudo-destination (0,0) et s'évinceraient les uns les autres. C'était le
+déchargement implicite qui travaillait, et ce n'est plus le modèle : la
+scène qui **se termine** nomme ce qu'elle laisse tomber, donc un membre
+entrant n'a plus rien à évincer. Un octet écrit pour épargner une
+déclaration à l'auteur est exactement le confort que ce builder n'offre
+pas.
+
+Vérifié : r-type n'a qu'un seul membre non rempli
+(`stage2.tiles.odd.4`), et `scenes.stage2` est **déclarée mais jamais
+appelée** — le chaînage des stages reste à câbler. L'éviction que ce
+`fcb 0` assurait ne servait donc encore personne ; quand le chaînage
+arrivera, c'est P3 qui la remplace par une déclaration.
+
+Gain médium : un octet. Le `cwrite` tasse les fins de fichiers dans des
+secteurs partagés, un fichier d'un octet ne coûtait donc pas un secteur
+entier. Ce qui disparaît vraiment, c'est **un fichier de données de
+plus sur la disquette** et la ligne qui allait avec.
+
 
 Sans déchargement implicite, le membre de remplissage d'un pageset n'a
 plus de travail : il redevient un fichier **vide, purement exportateur**
