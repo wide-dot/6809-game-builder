@@ -94,6 +94,7 @@ DIR_DEFAULT_SECTOR  EQU   $04-1  ; Default sector for directory (from 0 to 15)
         jmp   >loader.file.linkData.unload ; OK
         jmp   >loader.file.getPageID       ; OK
         jmp   >loader.file.linkData.count  ; OK
+        jmp   >loader.scene.unload         ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -113,6 +114,13 @@ loader.dir              fdb   0 ; file directory
 loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 loader.scene.routine    fdb   0
 loader.scene.fileCount  fdb   0
+; La table de la scene chargee SURVIT a son application : c'est la liste de
+; ce que cette scene a mis en RAM, et donc la liste de ce qu'il faudra
+; retirer de l'index quand le jeu la dechargera. Elle est gardee en CACHE —
+; loader.scene.unload prend l'identifiant de la scene en argument, comme
+; load, et relit le fichier si ce n'est pas celle-ci.
+loader.scene.table      fdb   0 ; table de la derniere scene chargee (0 : aucune)
+loader.scene.tableId    fdb   0 ; son identifiant de fichier
 linkData.currentFile    fdb   0
 linkData.currentDisk    fcb   0 ; file ids are per disk : a file is only
                                 ; fully identified by [disk id][file id]
@@ -202,10 +210,83 @@ loader.scene.load
         ; once all files are loaded, proceed to the link
         jsr   loader.file.link
 
-        ; free memory for default scene file
+        ; La table N'EST PAS liberee : elle devient le cache du dechargement
+        ; a venir. La precedente, elle, ne sert plus.
+        pshs  u,x
+        ldu   >loader.scene.table
+        beq   >
         jsr   tlsf.free
+!       puls  u,x
+        stu   >loader.scene.table
+        stx   >loader.scene.tableId
 !       rts
 
+
+;-----------------------------------------------------------------
+; loader.scene.unload
+;
+; input  REG : [X] scene file id
+;-----------------------------------------------------------------
+; Remove from the link data index every file the given scene loaded.
+;
+; A scene table IS the list of what that scene put in RAM, so unloading a
+; scene is the SAME walk as applying it, with a different per file routine
+; (loader.scene.apply calls through loader.scene.routine). No new block
+; type, no second table.
+;
+; This does NOT erase RAM : it deindexes. The danger was never the content,
+; it is a global re-link patching a dead file's stale offsets over the live
+; binary. "Occupied" means "indexed".
+;
+; Unloading a file that is not indexed is a no-op, so unloading twice — or
+; unloading a scene that was never applied — is harmless.
+;
+; The caller names the scene: there is no hidden "current scene" state, and
+; load/unload are two separate calls whose order belongs to the game.
+;-----------------------------------------------------------------
+loader.scene.unload
+        pshs  d,x,u
+        ; the cached table is the nominal case : a scene is unloaded right
+        ; before the next one is loaded
+        cmpx  >loader.scene.tableId
+        bne   @fromDisk
+        ldu   >loader.scene.table
+        beq   @fromDisk
+        bsr   loader.scene.unload.walk
+        jsr   tlsf.free                   ; u still points at the table
+        ldu   #0
+        stu   >loader.scene.table
+        puls  d,x,u,pc
+@fromDisk
+        ; any other scene : read its table, walk it, give the memory back
+        jsr   loader.file.malloc
+        cmpu  #0
+        beq   >                           ; empty or unknown : nothing to do
+        pshs  u
+        ldb   #loader.PAGE
+        jsr   loader.file.load
+        puls  u
+        bsr   loader.scene.unload.walk
+        jsr   tlsf.free
+!       puls  d,x,u,pc
+
+loader.scene.unload.walk
+        ldx   #loader.scene.unload.file
+        stx   loader.scene.routine
+        jmp   loader.scene.apply
+
+;-----------------------------------------------------------------
+; loader.scene.unload.file
+;
+; input  REG : [B] destination page (from the walk), [X] file id
+;-----------------------------------------------------------------
+; The adapter the walk needs : loader.scene.apply hands out the DESTINATION
+; page in B, while loader.file.linkData.unload wants the DIRECTORY id. The
+; directory a scene was loaded from is the one currently selected.
+;-----------------------------------------------------------------
+loader.scene.unload.file
+        ldb   >diskId
+        jmp   loader.file.linkData.unload
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc

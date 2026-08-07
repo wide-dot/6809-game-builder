@@ -11,3 +11,6 @@ loader.file.linkData.load.IDX   equ   21 ; Add load time link data to RAM for a 
 loader.file.linkData.unload.IDX equ   24 ; Remove load time link data from RAM for a specified file
 loader.file.getPageID.IDX       equ   27 ; Get the page ID where a file is loaded
 loader.file.linkData.count.IDX  equ   30 ; Get the number of files in the link data index
+; L'entree s'AJOUTE en fin de table : les decalages precedents sont l'ABI que
+; le jeu compile en dur, ils ne bougent jamais.
+loader.scene.unload.IDX         equ   33 ; Remove from the index every file a scene loaded

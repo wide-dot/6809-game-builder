@@ -27,6 +27,9 @@
 ;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
 ;   +15 : T15 multi-disk : switch to disk 1, load from it, cross-disk link
 ;         both ways, disk 0 files still linked, switch back ($EA..$EE)
+;   +17 : T17 scene unload : loader.scene.unload deindexes every file the
+;         named scene loaded, is a no-op when replayed, and works from the
+;         cached table as well as from a re-read one ($D5..$D8)
 ;   +16 : T16 multi object group : an asm member concatenated after a 256
 ;         byte blob in one direntry, its export and its relocation must both
 ;         be shifted by the size of what precedes it ($E1..$E3)
@@ -612,6 +615,48 @@ init
 @res16  equ   *-1
         jsr   test.next
 
+        ; T17 : scene unload. loader.scene.unload names the scene whose files
+        ; must leave the index - there is no hidden "current scene", and no
+        ; primitive that chains unload and load : the order belongs here.
+        ;   $D5 cc was not indexed before the unload (test premise broken)
+        ;   $D6 cc still indexed after unloading its scene
+        ;   $D7 index count did not drop by one
+        ;   $D8 replaying the unload reported something other than a no-op
+        lda   #$01
+        sta   @res17
+        ; scene "second" was reloaded by T9, so cc is indexed again
+        _loader.file.isLoaded #data.marker.cc
+        bne   >                               ; ne : loaded, as expected
+        lda   #$D5
+        bra   @fail17
+!       _loader.file.linkData.count
+        std   test.t17.count
+        ; the cached table path : "second" is the last scene loaded
+        _loader.scene.unload #scenes.second
+        _loader.file.isLoaded #data.marker.cc
+        beq   >                               ; eq : deindexed, as expected
+        lda   #$D6
+        bra   @fail17
+!       _loader.file.linkData.count
+        addd  #1
+        cmpd  test.t17.count
+        beq   >
+        lda   #$D7
+        bra   @fail17
+        ; replaying it must be harmless : the walk unloads files that are no
+        ; longer indexed, and each of those is a no-op. This also exercises
+        ; the re-read path, the cached table having been freed.
+!       _loader.scene.unload #scenes.second
+        _loader.file.linkData.count
+        addd  #1
+        cmpd  test.t17.count                  ; still the same count
+        beq   @end17
+        lda   #$D8
+@fail17 sta   @res17
+@end17  lda   #0
+@res17  equ   *-1
+        jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
@@ -683,6 +728,7 @@ test.t10.count fdb 0
 test.t12.count fdb 0
 test.t14.count fdb 0
 test.t15.count fdb 0
+test.t17.count fdb 0
 test.t14.list  fdb iface.a,iface.b,iface.c,iface.d,iface.e,iface.f
                fdb pad.a,pad.b,pad.c,pad.d,pad.e,pad.f,pad.g,pad.h
                fdb pad.i,pad.j,pad.k,pad.l,pad.m,pad.n,pad.o,pad.p

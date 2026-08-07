@@ -787,36 +787,159 @@ disk 0 ». La sonde d'exemple du stage 1 attend donc un test en jeu réel.
 
 ---
 
-# Phase 2 — le déchargement déclaré par la scène
+# Phase 2 — le déchargement déclaré par la scène — CONCEPTION
 
 Acté : **le déchargement implicite du loader était une erreur** (commit
 `6b7a9bac` du 2026-07-30 — sa propre limitation le condamne : il ne couvre
 que la destination exacte, jamais le recouvrement partiel, c'est-à-dire
-qu'il rate le cas réel). Le développeur maîtrise sa séquence de
-chargement/déchargement. Le loader a déjà le geste explicite :
-`loader.file.linkData.unload` est dans sa table de saut publique.
+qu'il rate le cas réel). Le développeur maîtrise sa séquence.
 
-À concevoir — les décisions de format, ouvertes :
+## La découverte qui dicte la conception
 
-1. **Où la liste vit.** Options : (a) la scène porte deux tables, loads et
-   unloads, et le code du stage sortant appelle `loader.scene.unapply`
-   avant `game.stage.switch` ; (b) une table d'unload par TRANSITION,
-   portée par la scène entrante mais exécutée avant ses chargements.
-   L'option (a) respecte « le stage sortant sait ce qu'il doit décharger » ;
-   l'option (b) centralise mais recrée un couplage entrant→sortant.
-   Préférence (a), à confirmer.
-2. **Granularité** : par fichier (liste d'identifiants) — simple, verbeux —
-   ou par arène/région (« décharge tout ce qui est dans stage1.enemies ») —
-   compact, mais demande que le loader connaisse les zones. Par fichier
-   d'abord ; le builder peut GÉNÉRER la liste depuis les `<load>` de la
-   scène sortante, donc la verbosité ne coûte rien à l'auteur.
-3. **Vérification statique** : le builder connaît les scènes ; il peut
-   vérifier qu'un `<load>` d'une scène N ne recouvre aucun fichier resté
-   indexé — dès lors que l'enchaînement des scènes lui est déclaré
-   (le chaînage des stages va justement l'introduire).
+En relevant le format avant de le modifier, il apparaît qu'il n'y a **rien
+à modifier**. Une scène est appliquée en parcourant sa table **trois fois**,
+avec un vecteur d'action différent à chaque passe (`loader.scene.load`) :
 
-Côté builder : `SceneGenerator` (nouveau bloc dans le format),
-`ScenePlugin`, et le pendant `loader.scene.unapply` dans le loader.
+```
+        ldx   #loader.file.load          \
+        stx   loader.scene.routine        |  la MÊME table,
+        jsr   loader.scene.apply          |  parcourue trois fois,
+        ldx   #loader.file.decompress     |  avec trois actions
+        stx   loader.scene.routine        |  différentes
+        jsr   loader.scene.apply          |
+        ldx   #loader.file.linkData.load  |
+        stx   loader.scene.routine        |
+        jsr   loader.scene.apply         /
+```
+
+`loader.scene.apply` est un **itérateur générique** : il décode les blocs
+(%01, %10, %11), en extrait pour chaque fichier `B`=page, `U`=adresse,
+`X`=identifiant, et appelle `jsr [loader.scene.routine]`. L'action est un
+paramètre, pas une propriété du parcours.
+
+**Donc : décharger une scène = une QUATRIÈME passe, avec la routine de
+déchargement.** Pas de nouveau type de bloc, pas de seconde table, pas
+d'évolution du format de scène. `loader.file.linkData.unload` existe déjà
+et est dans la table de saut publique.
+
+Et le corollaire est celui qu'on cherchait : **la table d'une scène EST la
+liste de ce que cette scène a chargé.** Le stage sortant n'a rien à
+déclarer — il rejoue sa propre table. La sémantique tombe juste sans qu'on
+l'écrive : `scenes.boot` a chargé le commun, `scenes.stage1` ses tuiles,
+cartes, collision et main ; déparcourir `scenes.stage1` retire exactement
+ses cinq fichiers de l'index et laisse le commun tranquille.
+
+## Ce que « décharger » veut dire, précisément
+
+`loader.file.linkData.unload` **désindexe** : il libère le tampon de
+données de lien et retire l'emplacement de l'index. Il n'efface pas la RAM,
+et c'est la bonne sémantique — le danger n'a jamais été le contenu, c'est
+qu'une relink globale aille patcher les décalages périmés d'un fichier
+mort par-dessus le binaire vivant. « Occupé » veut dire « indexé », pas
+« non nul ». C'est aussi la définition dont la phase 4 a besoin pour son
+contrôle.
+
+Un fichier non indexé rend `$FF` sans rien casser : **déparcourir deux fois
+est sans effet**, et déparcourir une scène jamais appliquée aussi.
+
+## Les trois points durs
+
+### 1. La table de la scène sortante est LIBÉRÉE après usage
+
+`loader.scene.load` finit par `jsr tlsf.free` : la table vit dans le pool
+le temps des trois passes, puis disparaît. Pour en faire une quatrième plus
+tard, il faut qu'elle soit encore là. Trois voies :
+
+| Voie | Coût | Remarque |
+|---|---|---|
+| **a. Garder la table de la scène courante** | sa taille dans le pool en permanence (mesuré : 54-406 octets sur r-type) | la plus simple ; le pool est justement fait pour ça |
+| b. Recharger le fichier de scène sortant avant de le déparcourir | un secteur lu, zéro RAM permanente | le déchargement devient une lecture disque |
+| c. La scène entrante porte la liste | zéro | recrée le couplage entrant→sortant qu'on veut supprimer |
+
+**Préférence : (a).** 406 octets au pire, et le loader sait déjà que la
+scène courante est un objet vivant. (c) est à écarter explicitement : c'est
+le raccourci qui redonnerait au nouveau stage la responsabilité de savoir
+ce que l'ancien avait fait.
+
+### 2. L'itérateur donne la page de DESTINATION, l'unload veut l'identifiant de DISQUE
+
+Le parcours fournit `B`=page de destination ; `loader.file.linkData.unload`
+attend `B`=identifiant de répertoire. Il faut donc une petite routine
+d'adaptation — la quatrième « action » n'est pas `unload` directement mais
+un adaptateur de quelques octets qui substitue `B` par le `diskId` courant
+(le loader en tient déjà un, `>diskId`, posé par `loader.dir.load`) avant
+d'appeler l'unload. C'est le seul code nouveau du côté loader.
+
+### 3. Deux appels séparés, l'ordre appartient au développeur
+
+**Pas de `switch`.** Un point d'entrée unique qui enchaînerait déchargement
+et chargement serait le déchargement automatique sous un autre nom : la
+séquence redeviendrait implicite, et c'est exactement ce qu'on retire. Le
+jeu écrit les deux appels, dans l'ordre qu'il choisit :
+
+```
+        ldx   #scenes.stage1
+        jsr   loader.scene.unload    ; ce que le stage sortant retire
+        ldx   #scenes.stage2
+        jsr   loader.scene.load      ; ce que le stage entrant apporte
+```
+
+Noms symétriques : `load` / `unload`. Pas d'`unapply`, terme sans emploi
+ailleurs dans le loader.
+
+**`unload` prend l'identifiant de scène en argument**, comme `load`. Aucun
+état caché du genre « la scène courante » : le développeur nomme ce qu'il
+décharge. C'est ce qui rend le mécanisme utilisable pour autre chose que
+l'échange nominal — décharger une scène chargée deux échanges plus tôt,
+par exemple.
+
+La table gardée (voie a) devient donc un **cache**, pas un état de
+protocole : `unload` regarde si l'identifiant demandé est celui de la table
+en mémoire — cas nominal, puisque le déchargement précède immédiatement le
+chargement suivant — et sinon relit le fichier de scène, exactement comme
+`load` le fait. Le code du repli est celui de `load`, aux deux premières
+lignes près.
+
+### 4. Aucun garde-fou sur la scène de boot
+
+On pourrait interdire de décharger la scène de boot, puisque son commun est
+résident pour toute la partie. **On ne le fait pas.** Le développeur est
+responsable de sa séquence, et ce cas a des usages légitimes : un test qui
+vérifie qu'une scène se décharge proprement, ou un mode qui repart de zéro.
+Un garde-fou ici serait une politique du loader imposée au jeu.
+
+## Ce que le BUILDER a à faire : rien, ou presque
+
+Aucun nouveau type de bloc, aucun attribut. Deux ajouts utiles seulement :
+
+- **Une vérification statique.** Le builder connaît les `<load>` de chaque
+  scène. Dès que l'enchaînement des scènes lui est déclaré — et le chaînage
+  des stages est justement en train de l'introduire — il peut vérifier que
+  tout ce qu'une scène charge est soit libre, soit déchargé par la scène
+  qu'elle remplace. Le trap de la phase 4 devient le dernier filet, pas le
+  premier.
+- **Le rapport de pool.** `pool-map-fd.txt` doit compter la table de la
+  scène courante, désormais résidente dans le pool (voie a).
+
+## Ce qu'on n'aura pas, et qu'il faut assumer
+
+Déparcourir la scène sortante retire ce que la scène **a chargé**, pas ce
+qu'un objet a alloué en cours de route. Le déchargement reste au grain du
+FICHIER — c'est le bon grain pour l'index de lien, et rien d'autre n'y est
+indexé.
+
+Et si un stage veut décharger autre chose que sa propre scène, il lui reste
+`loader.file.linkData.unload` en direct, qui est déjà public. Le mécanisme
+de scène est le cas général, pas une prison.
+
+## Décisions prises (2026-08-07)
+
+1. **Voie (a)** : la table de la scène chargée survit dans le pool, comme
+   cache du déchargement à venir.
+2. **`load` et `unload` séparés**, tous deux prenant l'identifiant de scène.
+   Pas de `switch` : l'ordre appartient au jeu.
+3. **Pas de garde-fou** sur la scène de boot : c'est au développeur de
+   savoir ce qu'il décharge.
 
 # Phase 3 — les scènes r-type déclarent leurs déchargements
 
@@ -894,3 +1017,10 @@ questions ouvertes ci-dessus sont à trancher ensemble avant.
 > pour un cas d'usage particulier : si un cas particulier coince, c'est le
 > modèle générique qu'on interroge, pas une exception qu'on ajoute.
 > (2026-08-07, à la suite du remplissage compressible — annulé.)
+
+> **Le développeur maîtrise sa séquence.** Aucune primitive ne doit
+> enchaîner à sa place des étapes qu'il pourrait vouloir ordonner, espacer
+> ou omettre — ni un déchargement déduit d'une adresse d'écriture, ni un
+> `switch` qui recolle un `unload` et un `load`. Un mécanisme qui « rend
+> service » en cachant la séquence est la même erreur sous deux noms.
+> (2026-08-07, deux fois de suite : déchargement implicite, puis switch.)
