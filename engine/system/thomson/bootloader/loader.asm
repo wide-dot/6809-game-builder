@@ -779,6 +779,13 @@ loader.file.decompress
         ldb   dir.entry.bitfld,y  ; test if compression flag
         bpl   @rts                ; no, exit
         ldd   dir.entry.coffset,y ; get offset to write data
+        ; The flag says the entry CARRIES a compression block, not that its
+        ; content is compressed : a declared codec that did not pay off keeps
+        ; its reserved block, offset zero, and the data was stored raw. No
+        ; real compressed entry can have a zero offset, so it is a safe
+        ; sentinel — and it is what lets a pageset declare one codec for
+        ; members whose content it does not choose.
+        beq   @rts                ; zero offset : stored raw, nothing to do
         leax  d,u                 ; set x to start of compressed data
         pshs  y
         jsr   >zx0_decompress     ; decompress and set u to end of decompressed data

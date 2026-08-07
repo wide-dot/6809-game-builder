@@ -309,10 +309,20 @@ public class DirEntryPlugin {
 			}
 		}
 		
-		if (codec != null && compress == false) {
-			String m = "Build aborted, please remove codec for file: " + name;
-			log.error(m);
-			throw new Exception(m);
+		if (codec != null && !compress) {
+			// La regle qui refuse de compresser est conservee ; c'est son ISSUE
+			// qui change. Avorter le build etait la seule sortie tant que le
+			// descripteur suivait le RESULTAT : une entree declaree compressee
+			// mais stockee brute emettait un bloc de moins que le repertoire
+			// n'avait reserve, et les identifiants derivaient (mesure : 267
+			// blocs pour 268 ids). Le bloc etant desormais reserve sur la
+			// DECLARATION, l'entree tient dans son enveloppe et part telle
+			// quelle — le decalage nul le dit au loader.
+			//
+			// Ca rend codec="zx0" utilisable la ou l'auteur ne choisit pas ce
+			// qu'il compresse : un pageset applique le sien a chaque membre, y
+			// compris celui que le rangement n'a pas rempli.
+			log.info("{} : stocke tel quel, la compression ne paie pas", name);
 		}
 				
 		// write file to media
@@ -381,11 +391,13 @@ public class DirEntryPlugin {
 		
 		// build file data
 	    int i = 0;
-		if (compress)      file[i] = (byte) (file[i] | 0b10000000);
-		// the flag mirrors the RESERVED block, not its content : the type %11
+		// Both flags mirror the RESERVED block, not its content : the type %11
 		// id arithmetic counts blocks through the flags, so a declared-but-
-		// empty link section keeps the flag up over a zeroed descriptor
-		if (linkDeclared)  file[i] = (byte) (file[i] | 0b01000000);
+		// empty link section keeps the flag up over a zeroed descriptor — and
+		// a declared-but-incompressible entry keeps its compression block,
+		// whose zero offset tells the loader to load it raw.
+		if (codec != null)  file[i] = (byte) (file[i] | 0b10000000);
+		if (linkDeclared)   file[i] = (byte) (file[i] | 0b01000000);
 		int encodedLength = (length-1) & 0x3fff;
 		file[i] = (byte) (file[i] | (encodedLength >> 8)); // uncompressed file size -1 (max 0x4000 bytes) HIGH BYTE
 		i++;
@@ -395,7 +407,11 @@ public class DirEntryPlugin {
 		System.arraycopy(dataDiskLocation, 0, file, i, 6);
 		i += 6;
 		
-		if (compress) i += 8;
+		if (codec != null) {
+			// reserved from the attribute : written above when the compression
+			// paid off, left at zero otherwise — offset zero means "raw"
+			i += 8;
+		}
 		
 		if (hasLinkData) {
 			file[i++] = (byte)((linkdata.data.length >> 8) & 0xff);

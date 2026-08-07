@@ -974,26 +974,40 @@ plus de travail : il redevient un fichier **vide, purement exportateur**
 `fcb 0` disparaît de `PageSetPlugin.writeMemberSource`. Le cas « un octet
 incompressible » disparaît à la racine.
 
-# Phase 6 — compression : la réservation et l'émission disent pareil
+# Phase 6 — compression : la réservation et l'émission disent pareil — FAIT
 
-Indépendant du reste, actable à tout moment. La règle actuelle est
-conservée — **un fichier trop petit ou dont le delta ne convient pas
-n'est PAS compressé** — mais l'issue change : au lieu d'avorter le build,
-l'entrée est **stockée brute dans son enveloppe déclarée**. Même principe
-que le bloc de lien (commentaire de DirEntryPlugin:338) : le drapeau du
-descripteur reflète la DÉCLARATION (`codec=` présent), le contenu dit
-l'état réel. Le champ d'offset à zéro est le sentinelle naturel — une
-entrée réellement compressée a toujours un offset non nul.
+Implémenté le 2026-08-07.
 
-- Builder : `blockCount` inchangé (prédit sur la déclaration) ; l'émission
-  écrit toujours les 8 octets réservés, offset 0 si brut.
-- Loader : `loader.file.decompress` teste l'offset après le drapeau, sort
-  si nul.
-- Gain immédiat : le codec revient sur `stage2.tiles.odd` (~33 Ko), et
-  `codec=` sur un pageset devient une demande sûre, quel que soit le
-  remplissage réel des pages.
+La règle est **conservée** : une entrée trop petite, ou dont le delta ne
+convient pas, n'est PAS compressée. Ce qui change est son issue — au lieu
+d'avorter le build, elle est **stockée brute dans son enveloppe déclarée**.
 
----
+Le défaut était une asymétrie : la réservation de blocs suivait la
+DÉCLARATION (`blockCount(codec, linkSection)`), le descripteur suivait le
+RÉSULTAT (`if (compress)`). Une entrée déclarée compressée mais
+incompressible émettait donc un bloc de moins que le répertoire n'avait
+réservé, et les identifiants dérivaient — mesuré : 267 blocs pour 268 ids.
+Avorter était la seule sortie honnête tant que l'écart existait.
+
+Le correctif est le geste déjà en place pour le bloc de lien, appliqué à la
+compression : **le drapeau et les huit octets réservés reflètent la
+déclaration**, et « stocké brut » se dit à l'intérieur du bloc, par un
+décalage nul — aucune entrée réellement compressée ne peut en avoir un.
+
+- `DirEntryPlugin` : l'avortement tombe (un `log.info` le remplace) ; le
+  drapeau et le bloc suivent `codec != null` ; le décalage reste à zéro
+  quand la compression ne paie pas.
+- `loader.file.decompress` : après le drapeau, teste le décalage et sort
+  s'il est nul.
+
+**Ce que ça débloque.** `codec="zx0"` devient utilisable là où l'auteur ne
+choisit pas ce qu'il compresse : un pageset applique le sien à chaque
+membre, y compris celui que le rangement n'a pas rempli. Le codec revient
+donc sur `stage2.tiles.odd`, et la disquette passe de 37,8 % à **32,8 %** —
+le gain total de la passe zx0 atteint **311 564 octets** (526 726 → 215 162).
+
+Le membre non rempli reste un fichier d'un octet, stocké brut, un secteur :
+c'est la phase 5 qui le fera disparaître, pas celle-ci.
 
 # Ordre et dépendances
 

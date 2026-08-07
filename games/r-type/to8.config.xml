@@ -2344,7 +2344,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset name="stage2.tiles.odd" bake="auto" linkdata="LINK" region="tiles.odd"
+                <pageset codec="zx0" name="stage2.tiles.odd" bake="auto" linkdata="LINK" region="tiles.odd"
                          gendir="gen/stages/02/tiles-odd"
                          gensymbols="gen/stages/02/pages.asm">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
