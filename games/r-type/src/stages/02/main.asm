@@ -47,6 +47,9 @@ adr_playfield_mask_ND0 EXTERNAL
 ; Le HUD, meme page que le masque et les etoiles : une routine sans etat,
 ; visee par son symbole.
 hud.normal        EXTERNAL
+; Cite par la boucle commune (phase 4 de la sequence de fin) ; le stage 2 n'y
+; passe jamais, mais le symbole doit se resoudre.
+hud.readout       EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.erase   EXTERNAL
@@ -164,6 +167,22 @@ checkpoint.positions
 ; pas par un debut de partie. Le corps commun l'appelle quand meme — chaque
 ; stage repond, quitte a ne rien faire.
 stage.openingSequence
+        rts
+
+; ---------------------------------------------------------------------------
+; Les trois rendez-vous de la boucle commune. Le stage 2 n'a ni boss ni
+; sequence de fin : il ne peint rien de plus dans le verrou, ne change pas de
+; surimpression, et se termine au bout de la carte.
+; ---------------------------------------------------------------------------
+stage.frameBlit
+        rts
+
+stage.overlayPhase fcb 0
+
+stage.endTick
+        ldd   glb_camera_x_pos
+        cmpd  scroll_max
+        lbhs  stage.handOver
         rts
 
 stage.setup

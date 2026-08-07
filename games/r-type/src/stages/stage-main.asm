@@ -58,6 +58,12 @@ stage.stateKept
         ldd   #0
         std   globals.score
         stb   globals.score+2              ; le 3e octet du score 24 bits
+        ; La base du score DU STAGE : le decompte de fin affiche
+        ; globals.score moins cette base. La v1 la seme ici meme
+        ; (main.asm:124) ; sans elle le decompte partirait de ce que la RAM
+        ; reservee contenait.
+        std   globals.stageScoreBase
+        stb   globals.stageScoreBase+2
 
         ; LES OST STATIQUES, mis a zero. La v1 n'a pas ce geste a faire : chez
         ; elle `palettefade` et ses voisins sont de la DONNEE du binaire du game
@@ -308,6 +314,14 @@ stage.state.running
         jsr   CheckSpritesRefresh
         jsr   gfxlock.on
         jsr   EraseSprites
+
+        ; Ce que CE stage peint dans le verrou graphique, juste apres
+        ; l'effacement des sprites et avant les tuiles : sur le niveau 1, les
+        ; bandes noires du boss et le rectangle de la salle. La v1 l'appelle
+        ; exactement ici (main.asm:236), pour que le noir recouvre le fond
+        ; restaure et que les sauvegardes de fond capturent le resultat noirci.
+        jsr   stage.frameBlit
+
         jsr   UnsetDisplayPriority
         jsr   DrawTiles
 
@@ -332,6 +346,19 @@ stage.state.running
         ldx   #starfield.draw
         jsr   paged.call
 
+        ; Les surimpressions, selon la phase de fin de niveau que CE stage
+        ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
+        ; (main.asm:248) : phases 0-2 le masque et le HUD normal ; phase 3, le
+        ; fondu pixel possede l'ecran entier, bandeau compris, et on ne peint
+        ; rien ; phase 4, le releve de score centre, seul.
+        lda   stage.overlayPhase
+        cmpa  #3
+        blo   stage.overlay.normal
+        cmpa  #4
+        beq   stage.overlay.readout
+        bra   stage.overlay.off
+
+stage.overlay.normal
         ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
         ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse
         ; ses artefacts, donc il doit etre le dernier a peindre.
@@ -354,25 +381,26 @@ stage.state.running
         lda   #map.RAM_OVER_CART+common.hud.page
         ldx   #hud.normal
         jsr   paged.call
+        bra   stage.overlay.off
 
+stage.overlay.readout
+        lda   #map.RAM_OVER_CART+common.hud.page
+        ldx   #hud.readout
+        jsr   paged.call
+
+stage.overlay.off
         jsr   gfxlock.off
 
         inc   bench.frames
         ldd   glb_camera_x_pos
         std   bench.camera
 
-        ; La main se passe A LA FIN DE LA CARTE, comme dans le jeu. Scroll
-        ; borne la camera a scroll_max exactement (cap applique par tampon,
-        ; pour que les deux s'arretent au meme endroit), donc elle l'atteint
-        ; et s'y tient : le test se declenche pile.
-        ;
-        ; C'etait une horloge de niveau (800 trames), qu'il fallait recaler a
-        ; chaque changement de longueur de niveau ou de vitesse de scroll — et
-        ; qui, a la vitesse reelle du jeu, passait la main apres un dixieme du
-        ; niveau 1. La fin de carte s'adapte d'elle-meme aux deux.
-        ldd   glb_camera_x_pos
-        cmpd  scroll_max
-        lbhs  stage.handOver               ; long : handOver vit apres la boucle
+        ; Comment CE stage se termine. Un stage sans sequence de fin compare la
+        ; camera au bout de la carte ; le niveau 1, lui, a un boss, et c'est sa
+        ; sequence de fin qui decide — elle cale d'ailleurs scroll_max sur la
+        ; salle du boss pendant le combat, ce qui ferait mordre le test de
+        ; camera en plein milieu. Le geste appartient donc au stage.
+        jsr   stage.endTick
 
         jsr   gfxlock.loop
         lbra  stage.loop
@@ -597,6 +625,9 @@ stage.paletteFadeCommon
         std   o_fade_callback,u
         rts
 
+; EXPORTe : l'objet fadetotunnel, pagine, arme le meme fondu et doit lui
+; donner le meme rappel de fin.
+stage.paletteFadeDone EXPORT
 stage.paletteFadeDone
         rts
 

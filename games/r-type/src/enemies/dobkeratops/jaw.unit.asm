@@ -14,6 +14,14 @@ dobkeratopsJaw.Object   EXPORT
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
 
+; Le boss est un CORPS qui glisse d'un bloc : l'etat qui accorde ses six objets
+; est resident dans le stage, qui l'EXPORTe. Ces references traversent donc le
+; lien — l'objet, lui, est pagine dans l'arene du niveau.
+main.followDobkeratops        EXTERNAL
+main.timestamp.moveAlienStart EXTERNAL
+main.dobkeratops.move.left    EXTERNAL
+main.dobkeratops.explode      EXTERNAL
+
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"

@@ -18,6 +18,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage1.endstage.page   ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page   ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page   ; ObjID_forcepod
@@ -28,24 +29,24 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage1.shelleraser.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page   ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage1.patapata.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage1.bug.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage1.bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
+        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage1.scant.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage1.pstaff.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage1.cancer.page   ; ObjID_cancer
         fcb   map.RAM_OVER_CART+stage1.blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage1.shell.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage1.tabrok.page   ; ObjID_tabrok
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tailmgr
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_jaw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+common.bossmusic.page   ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+stage1.tailmgr.page   ; ObjID_tailmgr
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.page   ; ObjID_dobkeratops
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page   ; ObjID_dobkeratops_jaw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page   ; ObjID_dobkeratops_monster
 
 Obj_Index_Address
         fdb   0
@@ -65,6 +66,7 @@ Obj_Index_Address
         fdb   initlevel1.Object        ; ObjID_initlevel1
         fdb   engineflames.Object        ; ObjID_engineflames
         fdb   messages.Object        ; ObjID_messages
+        fdb   endstage.Object        ; ObjID_endstage
         fdb   powOptionbox.Object        ; ObjID_pow_optionbox
         fdb   bitdevice.Object        ; ObjID_bitdevice
         fdb   forcepod.Object        ; ObjID_forcepod
@@ -75,24 +77,24 @@ Obj_Index_Address
         fdb   tabrokcanon.Object        ; ObjID_tabrokcanon
         fdb   shellEraser.Object        ; ObjID_shellEraser
         fdb   commonmissileflame.Object        ; ObjID_commonmissileflame
-        fdb   stage.placeholder        ; ObjID_dobkeratops_saw
-        fdb   stage.placeholder        ; ObjID_dobkeratops_explosion
+        fdb   dobkeratopsSaw.Object        ; ObjID_dobkeratops_saw
+        fdb   dobkeratopsExplosion.Object        ; ObjID_dobkeratops_explosion
         fdb   patapata.Object        ; ObjID_patapata
         fdb   bug.Object        ; ObjID_bug
         fdb   bink.Object        ; ObjID_bink
         fdb   pow.Object        ; ObjID_pow
-        fdb   stage.placeholder        ; ObjID_fadetotunnel
+        fdb   fadetotunnel.Object        ; ObjID_fadetotunnel
         fdb   scant.Object        ; ObjID_scant
         fdb   pstaff.Object        ; ObjID_pstaff
         fdb   cancer.Object        ; ObjID_cancer
         fdb   blaster.Object        ; ObjID_blaster
         fdb   shell.Object        ; ObjID_shell
         fdb   tabrok.Object        ; ObjID_tabrok
-        fdb   stage.placeholder        ; ObjID_bossmusic
-        fdb   stage.placeholder        ; ObjID_tailmgr
-        fdb   stage.placeholder        ; ObjID_dobkeratops
-        fdb   stage.placeholder        ; ObjID_dobkeratops_jaw
-        fdb   stage.placeholder        ; ObjID_dobkeratops_monster
+        fdb   bossmusic.Object        ; ObjID_bossmusic
+        fdb   tailmgr.Object        ; ObjID_tailmgr
+        fdb   dobkeratops.Object        ; ObjID_dobkeratops
+        fdb   dobkeratopsJaw.Object        ; ObjID_dobkeratops_jaw
+        fdb   dobkeratopsMonster.Object        ; ObjID_dobkeratops_monster
 
 * Les scripts d'animation. Les vrais vivent dans un objet commun qui
 * n'est pas encore chargeable (8 Ko de donnees de lien) : en attendant,
@@ -115,6 +117,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage1.endstage.page   ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page   ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page   ; ObjID_forcepod
@@ -125,26 +128,27 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage1.shelleraser.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page   ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage1.patapata.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage1.bug.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage1.bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
+        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage1.scant.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage1.pstaff.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage1.cancer.page   ; ObjID_cancer
         fcb   map.RAM_OVER_CART+stage1.blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage1.shell.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage1.tabrok.page   ; ObjID_tabrok
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tailmgr
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_jaw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+common.bossmusic.page   ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+stage1.tailmgr.page   ; ObjID_tailmgr
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.page   ; ObjID_dobkeratops
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page   ; ObjID_dobkeratops_jaw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page   ; ObjID_dobkeratops_monster
 
 Ani_Asd_Index
+        fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
         fdb   Ani_Asd_none
@@ -214,6 +218,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stageinit.page   ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page   ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page   ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage1.endstage.page   ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page   ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page   ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page   ; ObjID_forcepod
@@ -224,21 +229,21 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page   ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage1.shelleraser.page   ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page   ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page   ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page   ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage1.patapata.page   ; ObjID_patapata
         fcb   map.RAM_OVER_CART+stage1.bug.page   ; ObjID_bug
         fcb   map.RAM_OVER_CART+stage1.bink.page   ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page   ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_fadetotunnel
+        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page   ; ObjID_fadetotunnel
         fcb   map.RAM_OVER_CART+stage1.scant.page   ; ObjID_scant
         fcb   map.RAM_OVER_CART+stage1.pstaff.page   ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage1.cancer.page   ; ObjID_cancer
         fcb   map.RAM_OVER_CART+stage1.blaster.page   ; ObjID_blaster
         fcb   map.RAM_OVER_CART+stage1.shell.page   ; ObjID_shell
         fcb   map.RAM_OVER_CART+stage1.tabrok.page   ; ObjID_tabrok
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_bossmusic
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_tailmgr
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_jaw
-        fcb   map.RAM_OVER_CART+stage.page   ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+common.bossmusic.page   ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+stage1.tailmgr.page   ; ObjID_tailmgr
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.page   ; ObjID_dobkeratops
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page   ; ObjID_dobkeratops_jaw
+        fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page   ; ObjID_dobkeratops_monster

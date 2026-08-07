@@ -26,10 +26,18 @@
             </region>
             <!-- La frontiere recule de 48 octets : le stage 1 porte desormais la
                  table d'effacement de la rotonde (56 octets de RAM propres au
-                 niveau, comme en v1). Les deux regions se partagent $6100-$8591,
-                 borne haute par le pool d'objets ; il reste 20 octets au moteur
-                 et 23 au stage, mesures a l'appui. -->
-            <region name="stage"      page="$01" address="$7F90" size="$0602" interface="true"/>
+                 niveau, comme en v1).
+                 Puis de 254 de plus, pris au POOL cette fois (le moteur n'avait
+                 que 20 octets de marge) : le stage 1 porte le sequencement du
+                 boss — le pas de deplacement commun a ses six objets et les
+                 drapeaux de mort. Ce code doit etre RESIDENT : cinq objets
+                 pagines l'appellent, et deux pages ne peuvent pas etre montees
+                 en meme temps par la fenetre cartouche. La v1 le range dans son
+                 main pour la meme raison. La place vient du POOL D'OBJETS, qui
+                 passe de 50 a 47 emplacements — voir nb_dynamic_objects dans
+                 src/common/engine/ram.const.asm, qui est ce qui le place
+                 REELLEMENT ; ce layout ne fait que le decrire. -->
+            <region name="stage"      page="$01" address="$7F90" size="$0761" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
             <region name="tiles.even" interface="true">
@@ -185,6 +193,9 @@
                 <zone page="$13" address="$0000" size="$4000"/>
                 <zone page="$14" address="$0000" size="$4000"/>
                 <zone page="$15" address="$0000" size="$4000"/>
+                <!-- La derniere page libre avant la collision ($17) et les
+                     tuiles ($18-$1F) : le boss la reclame. -->
+                <zone page="$16" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, MIGREE MAIS DEBRANCHEE : volontairement    -->
             <!-- coupee pour rendre du temps CPU, comme la v1 la coupe deja.    -->
@@ -215,7 +226,17 @@
             <!-- variables inter-main, puis la pile, puis la page directe en    -->
             <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
             <!-- protegee comme le reste.                                       -->
-            <reserved name="objects.pool" page="$01" address="$8592" size="$16DA"/>
+            <!-- ATTENTION : cette adresse n'est PAS ce qui place le pool. Le pool
+                 est pose par des equates de l'assembleur (ram.const.asm), ancrees
+                 sur GLOBALS_BASE et croissant VERS LE BAS :
+                   Dynamic_Object_RAM = $9E40 - nb_static*117 - nb_dynamic*117
+                 Ce <reserved> ne fait que le DECRIRE au builder. Les deux se
+                 croient, rien ne verifie leur accord — le deplacer seul fait
+                 grandir le stage par-dessus les premiers OST, qui ecrasent sa
+                 queue (tables d'index, table d'effacement) des le premier objet
+                 cree : ecran noir au chargement, vecu le 2026-08-07.
+                 nb_dynamic_objects = 47 -> $9C6C - $157B = $86F1. -->
+            <reserved name="objects.pool" page="$01" address="$86F1" size="$157B"/>
             <!-- Les OST hors pool (palettefade) : un objet unique, vivant     -->
             <!-- pour toute la partie, lance par _Obj_RunU sur l'adresse de     -->
             <!-- son OST. Voir src/common/engine/ram.const.asm.                 -->
@@ -1497,14 +1518,478 @@
                     </lwasm>
                 </file>
 
+                <!-- Le marqueur de musique du boss : la wave le seme, il pose le
+                     drapeau que la boucle du stage releve, puis se supprime.
+                     Commun a tous les niveaux qui ont un boss. -->
+                <file name="common.bossmusic" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/flow/bossmusic.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/flow/bossmusic/bossmusic.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le passage de palette du tunnel : la wave le seme aux deux
+                     bouts de la section souterraine. Il arme le fondu resident
+                     vers la palette du tunnel, ou vers celle du jeu au retour
+                     (subtype), attend la fin, puis se supprime. -->
+                <file name="stage1.fadetotunnel" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/stages/01/fadetotunnel.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/background/fadetotunnel.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le sequenceur de fin du niveau : objet MONTE, appele par la
+                     boucle du stage avec une commande en B. Il porte le compte a
+                     rebours, l'autopilote du vaisseau, le fondu pixel et le
+                     releve de score — hors de la RAM residente, qui est saturee. -->
+                <file name="stage1.endstage" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/stages/01/endstage.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/endstage/endstage.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- ===================================================== -->
-                <!-- LE BOSS EN ATTENTE : ses six objets sont ecrits et    -->
-                <!-- leurs unites pretes, mais il partage un etat avec la  -->
-                <!-- boucle du niveau (main.dobkeratops.*, timestamp.*)    -->
-                <!-- que la v1 range dans son main et que endstage remet a -->
-                <!-- zero. Cette frontiere reste a poser ; en attendant le -->
-                <!-- boss n'est pas construit.                             -->
+                <!-- LE BOSS : dobkeratops et ses cinq satellites.          -->
+                <!--                                                        -->
+                <!-- Le corps mene la sequence ; la machoire, les queues,   -->
+                <!-- le monstre, ses scies et ses explosions le suivent. Ce -->
+                <!-- qui les accorde (le pas de deplacement commun, les     -->
+                <!-- drapeaux de mort) est resident dans le stage, qui      -->
+                <!-- l'EXPORTe — voir src/stages/01/main.asm.               -->
                 <!-- ===================================================== -->
+                <!-- Le visage du boss, un etat par fichier : chaque pose est un sprite
+                     geant (~6 Ko avec ses deux decalages), les six ensemble depassent
+                     deux pages. Un etat = une tranche, le rangement les etale. -->
+                <!-- Le visage intact, tant qu'aucun nerf n'a cede -->
+                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgface.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesFace.asm">
+                            <image name="dobkeratops_alien" filename="src/enemies/dobkeratops/final/dk-alien.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le visage a l'etat de nerfs 0 -->
+                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves0.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesNerves0.asm">
+                            <image name="dobkeratops_alienN0" filename="src/enemies/dobkeratops/final/dk-alien nerves-0.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le visage a l'etat de nerfs 1 -->
+                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves1.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesNerves1.asm">
+                            <image name="dobkeratops_alienN1" filename="src/enemies/dobkeratops/final/dk-alien nerves-1.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le visage a l'etat de nerfs 2 -->
+                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves2.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesNerves2.asm">
+                            <image name="dobkeratops_alienN2" filename="src/enemies/dobkeratops/final/dk-alien nerves-2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le visage a l'etat de nerfs 3 -->
+                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves3.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesNerves3.asm">
+                            <image name="dobkeratops_alienN3" filename="src/enemies/dobkeratops/final/dk-alien nerves-3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le visage a l'etat de nerfs 4 -->
+                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves4.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesNerves4.asm">
+                            <image name="dobkeratops_alienN4" filename="src/enemies/dobkeratops/final/dk-alien nerves-4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Les yeux : les quatre nerfs optiques, la seule cible du joueur -->
+                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgeyes.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesEyes.asm">
+                            <image name="dobkeratops_eye100" filename="src/enemies/dobkeratops/final/dk-eye 1-0-0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_eye101" filename="src/enemies/dobkeratops/final/dk-eye 1-0-1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye102" filename="src/enemies/dobkeratops/final/dk-eye 1-0-2.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye103" filename="src/enemies/dobkeratops/final/dk-eye 1-0-3.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye104" filename="src/enemies/dobkeratops/final/dk-eye 1-0-4.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye300" filename="src/enemies/dobkeratops/final/dk-eye 3-0-0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_eye301" filename="src/enemies/dobkeratops/final/dk-eye 3-0-1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye310" filename="src/enemies/dobkeratops/final/dk-eye 3-1-0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_eye311" filename="src/enemies/dobkeratops/final/dk-eye 3-1-1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye312" filename="src/enemies/dobkeratops/final/dk-eye 3-1-2.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye313" filename="src/enemies/dobkeratops/final/dk-eye 3-1-3.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye320" filename="src/enemies/dobkeratops/final/dk-eye 3-2-0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_eye321" filename="src/enemies/dobkeratops/final/dk-eye 3-2-1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_eye322" filename="src/enemies/dobkeratops/final/dk-eye 3-2-2.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le nettoyage, bande 0 : 16 tranches. Le boss est trop large pour que le
+                     moteur restaure son fond par sprite — il se nettoie par bandes,
+                     une par tranche de decor decouverte. Une bande par fichier :
+                     les quarante-cinq ensemble depassent la page -->
+                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesWipe0.asm">
+                            <image name="dobkeratops_erase0_0" filename="src/enemies/dobkeratops/final/eraser-0-0.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_1" filename="src/enemies/dobkeratops/final/eraser-0-1.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_2" filename="src/enemies/dobkeratops/final/eraser-0-2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_3" filename="src/enemies/dobkeratops/final/eraser-0-3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_4" filename="src/enemies/dobkeratops/final/eraser-0-4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_5" filename="src/enemies/dobkeratops/final/eraser-0-5.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_6" filename="src/enemies/dobkeratops/final/eraser-0-6.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_7" filename="src/enemies/dobkeratops/final/eraser-0-7.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_8" filename="src/enemies/dobkeratops/final/eraser-0-8.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_9" filename="src/enemies/dobkeratops/final/eraser-0-9.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_10" filename="src/enemies/dobkeratops/final/eraser-0-10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_11" filename="src/enemies/dobkeratops/final/eraser-0-11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_12" filename="src/enemies/dobkeratops/final/eraser-0-12.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_13" filename="src/enemies/dobkeratops/final/eraser-0-13.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_14" filename="src/enemies/dobkeratops/final/eraser-0-14.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase0_15" filename="src/enemies/dobkeratops/final/eraser-0-15.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le nettoyage, bande 1 : 7 tranches. Le boss est trop large pour que le
+                     moteur restaure son fond par sprite — il se nettoie par bandes,
+                     une par tranche de decor decouverte. Une bande par fichier :
+                     les quarante-cinq ensemble depassent la page -->
+                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesWipe1.asm">
+                            <image name="dobkeratops_erase1_2" filename="src/enemies/dobkeratops/final/eraser-1-2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_3" filename="src/enemies/dobkeratops/final/eraser-1-3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_4" filename="src/enemies/dobkeratops/final/eraser-1-4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_5" filename="src/enemies/dobkeratops/final/eraser-1-5.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_6" filename="src/enemies/dobkeratops/final/eraser-1-6.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_10" filename="src/enemies/dobkeratops/final/eraser-1-10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase1_11" filename="src/enemies/dobkeratops/final/eraser-1-11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le nettoyage, bande 2 : 12 tranches. Le boss est trop large pour que le
+                     moteur restaure son fond par sprite — il se nettoie par bandes,
+                     une par tranche de decor decouverte. Une bande par fichier :
+                     les quarante-cinq ensemble depassent la page -->
+                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesWipe2.asm">
+                            <image name="dobkeratops_erase2_0" filename="src/enemies/dobkeratops/final/eraser-2-0.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_1" filename="src/enemies/dobkeratops/final/eraser-2-1.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_2" filename="src/enemies/dobkeratops/final/eraser-2-2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_3" filename="src/enemies/dobkeratops/final/eraser-2-3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_4" filename="src/enemies/dobkeratops/final/eraser-2-4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_5" filename="src/enemies/dobkeratops/final/eraser-2-5.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_6" filename="src/enemies/dobkeratops/final/eraser-2-6.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_7" filename="src/enemies/dobkeratops/final/eraser-2-7.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_8" filename="src/enemies/dobkeratops/final/eraser-2-8.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_9" filename="src/enemies/dobkeratops/final/eraser-2-9.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_10" filename="src/enemies/dobkeratops/final/eraser-2-10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase2_11" filename="src/enemies/dobkeratops/final/eraser-2-11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le nettoyage, bande 3 : 10 tranches. Le boss est trop large pour que le
+                     moteur restaure son fond par sprite — il se nettoie par bandes,
+                     une par tranche de decor decouverte. Une bande par fichier :
+                     les quarante-cinq ensemble depassent la page -->
+                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
+                                 gensource="gen/enemies/dobkeratops/includesWipe3.asm">
+                            <image name="dobkeratops_erase3_0" filename="src/enemies/dobkeratops/final/eraser-3-0.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_1" filename="src/enemies/dobkeratops/final/eraser-3-1.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_2" filename="src/enemies/dobkeratops/final/eraser-3-2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_3" filename="src/enemies/dobkeratops/final/eraser-3-3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_4" filename="src/enemies/dobkeratops/final/eraser-3-4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_5" filename="src/enemies/dobkeratops/final/eraser-3-5.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_6" filename="src/enemies/dobkeratops/final/eraser-3-6.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_7" filename="src/enemies/dobkeratops/final/eraser-3-7.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_8" filename="src/enemies/dobkeratops/final/eraser-3-8.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dobkeratops_erase3_9" filename="src/enemies/dobkeratops/final/eraser-3-9.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Le corps : le code et l'INDEX de ses images, qui doit rester dans la
+                     page que Img_Page_Index monte -->
+                <file name="stage1.dobkeratops" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratops.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/dobkeratops.unit.asm"/>
+                        <imageset name="dobkeratops" gensource="gen/enemies/dobkeratops/index.asm"/>
+                    </lwasm>
+                </file>
+                <!-- La machoire, dont le monstre sort -->
+                <file name="stage1.dobkeratopsjaw" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratopsjaw.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/jaw.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dobkeratopsjaw"
+                                 gensource="gen/enemies/dobkeratopsjaw/includes.asm"
+                                 genindex="gen/enemies/dobkeratopsjaw/index.asm"
+                                 file="stage1.dobkeratopsjaw">
+                            <image name="dobkeratops_jaw_0" filename="src/enemies/dobkeratops/images/jaw_0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_jaw_1" filename="src/enemies/dobkeratops/images/jaw_1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_jaw_2" filename="src/enemies/dobkeratops/images/jaw_2.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Les dix-neuf queues, gerees par un seul objet maitre : il ECRIT sa
+                     propre page dans Img_Page_Index, ses blits vivant avec lui -->
+                <file name="stage1.tailmgr" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/tailmgr.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
+                    </lwasm>
+                </file>
+                <!-- Le monstre qui emerge de la bouche -->
+                <file name="stage1.dobkeratopsmonster" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratopsmonster.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/monster.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dobkeratopsmonster"
+                                 gensource="gen/enemies/dobkeratopsmonster/includes.asm"
+                                 genindex="gen/enemies/dobkeratopsmonster/index.asm"
+                                 file="stage1.dobkeratopsmonster">
+                            <image name="dobkeratops_monster_1" filename="src/enemies/dobkeratops/images/monster_1.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_monster_2" filename="src/enemies/dobkeratops/images/monster_2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_monster_3" filename="src/enemies/dobkeratops/images/monster_3.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_monster_4" filename="src/enemies/dobkeratops/images/monster_4.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_monster_5" filename="src/enemies/dobkeratops/images/monster_5.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_monster_6" filename="src/enemies/dobkeratops/images/monster_6.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Ses scies -->
+                <file name="stage1.dobkeratopssaw" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratopssaw.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/saw.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dobkeratopssaw"
+                                 gensource="gen/enemies/dobkeratopssaw/includes.asm"
+                                 genindex="gen/enemies/dobkeratopssaw/index.asm"
+                                 file="stage1.dobkeratopssaw">
+                            <image name="dobkeratops_saw_0" filename="src/enemies/dobkeratops/images/saw_0.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_saw_1" filename="src/enemies/dobkeratops/images/saw_1.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_saw_2" filename="src/enemies/dobkeratops/images/saw_2.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_saw_3" filename="src/enemies/dobkeratops/images/saw_3.png">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- Ses explosions : un preset partage, pas d'images propres -->
+                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" bake="auto">
+                    <lwasm gensource="gen/enemies/dobkeratopsexplosion.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/dobkeratops/explosion.unit.asm"/>
+                    </lwasm>
+                </file>
                 <file name="common.forcepod" linkdata="LINK" bake="auto">
                     <lwasm gensource="gen/weapons/forcepod.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1824,6 +2309,9 @@
                         <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
                         <!-- Le PNG de carte n'en portait qu'un sous-ensemble. -->
                         <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
+                        <!-- La palette de la section souterraine (palette.Pal_tunnel
+                             de la v1, game-mode/01/images/pal-inside.png). -->
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- La palette des messages READY / GAME OVER, du meme
@@ -1882,6 +2370,9 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <!-- La palette de la section souterraine (palette.Pal_tunnel
+                             de la v1, game-mode/01/images/pal-inside.png). -->
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- La palette des messages READY / GAME OVER, du meme
@@ -1944,6 +2435,26 @@
                     <load name="common.missileflame"      arena="objects"/>
                     <load name="stage1.scant"             arena="stage1.enemies"/>
                     <load name="stage1.scantfire"         arena="stage1.enemies"/>
+                    <load name="common.bossmusic"                     arena="objects"/>
+                    <load name="stage1.fadetotunnel"                  arena="stage1.enemies"/>
+                    <load name="stage1.endstage"                      arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgFace"           arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgNerves0"        arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgNerves1"        arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgNerves2"        arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgNerves3"        arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgNerves4"        arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgEyes"           arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgWipe0"          arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgWipe1"          arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgWipe2"          arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops.imgWipe3"          arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratops"                   arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratopsjaw"                arena="stage1.enemies"/>
+                    <load name="stage1.tailmgr"                       arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratopsmonster"            arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratopssaw"                arena="stage1.enemies"/>
+                    <load name="stage1.dobkeratopsexplosion"          arena="stage1.enemies"/>
                     <load name="common.forcepod"   arena="objects"/>
                     <load name="common.reboundlaser" arena="objects"/>
                     <load name="common.counterairlaser" arena="objects"/>

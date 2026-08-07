@@ -32,6 +32,11 @@ hud.readout EXPORT
 RandomNumber            EXTERNAL
 gfxlock.frame.count     EXTERNAL
 gfxlock.frameDrop.count EXTERNAL
+; La boîte aux lettres du pilote de bruitages, dans le moteur résident.
+soundFX.newSound        EXTERNAL
+; Les deux drapeaux du décompte, résidents dans le stage.
+main.endstage.scoreArmed EXTERNAL
+main.endstage.scoreDone  EXTERNAL
 
  SECTION code
 
@@ -46,18 +51,17 @@ gfxlock.frameDrop.count EXTERNAL
         ; `beam_value`, la charge du beam dans l'OST du joueur.
         INCLUDE "src/common/player/player1.equ"
 
-; L'ÉTAT DU DÉCOMPTE DE FIN DE STAGE, en bouchon.
+; L'état du décompte de fin de stage vit AILLEURS : les deux drapeaux sont
+; résidents dans le stage — c'est l'objet `endstage` qui les arme et les
+; termine, le HUD ne fait que les lire et les rendre — et la boîte aux lettres
+; du son est celle du moteur.
 ;
-; `hud.readout` appartient à la séquence de fin de niveau : c'est l'objet
-; `endstage` qui l'arme, la cadence et la termine, et il n'est pas porté. Ses
-; deux drapeaux vivent donc ici en attendant, et partiront avec lui.
-;
-; `soundFX.newSound` est la boîte aux lettres du moteur audio, pas porté non
-; plus. Le décompte y dépose son bip ; personne ne le relève. Un octet plutôt
-; qu'un site d'appel neutralisé : le code du HUD reste FIDÈLE à la v1.
-main.endstage.scoreArmed  fcb 0
-main.endstage.scoreDone   fcb 0
-soundFX.newSound          fcb 0
+; Ils ont vécu ici en bouchon tant qu'`endstage` n'était pas porté. Trois
+; conséquences, toutes constatées : le décompte ne s'amorçait jamais (personne
+; n'écrivait dans la copie privée de `scoreArmed`, donc les chiffres restaient
+; à zéro), la séquence ne pouvait pas apprendre qu'il était fini, et le bip du
+; décompte — un `std`, deux octets — débordait d'un `fcb` d'un seul et écrasait
+; le premier octet du code du HUD.
 
 ; Le pont de noms : le fichier v1 appelle DRAW_Img_hud_<n>, gfxcomp genere
 ; adr_hud_<n>_ND0. Une table de liaison plutot qu'un renommage dans le code,

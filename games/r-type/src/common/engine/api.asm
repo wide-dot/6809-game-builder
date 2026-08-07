@@ -122,12 +122,17 @@ checkpoint.clearData EXTERNAL
         _api LoadObject_u
         _api UnloadObject_u
         _api Obj_Mount
-        ; Obj_RunB N'EST PLUS AU CONTRAT : plus personne ne s'en sert. Il
-        ; portait une commande dans B parce qu'un objet ne s'atteignait que par
-        ; l'index ; en v2 une routine sans etat se vise par son symbole, via
-        ; paged.call, sans registre de commande ni table de routage — voir le
-        ; champ d'etoiles. Obj_Run reste : le fondu, lui, a bien un OST.
         _api Obj_Run
+        ; Obj_RunB est REVENU au contrat le 2026-08-07, avec le sequenceur de
+        ; fin de niveau. Il avait ete retire au motif que plus personne ne s'en
+        ; servait : en v2 une routine sans etat se vise par son symbole, via
+        ; paged.call, sans registre de commande — voir le champ d'etoiles.
+        ; Mais paged.call se sert de B pour memoriser la page de l'appelant :
+        ; il ne sait NI porter une commande NI rendre un statut. L'objet
+        ; endstage a besoin des deux (INIT / TICK / BLIT en entree, le jingle
+        ; ou la fin du niveau en sortie), et c'est precisement le protocole que
+        ; porte Obj_RunB. A n'appeler que depuis le code resident.
+        _api Obj_RunB
         ; Ce que le JOUEUR appelle en plus. ObjectMove n'y est PAS : il est
         ; inclus dans l'unite du joueur, comme en v1, donc resolu localement.
         _api gfxlock.screenBorder.update

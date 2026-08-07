@@ -21,6 +21,15 @@ tailmgr.Object   EXPORT
 ; gestionnaire y inscrit la sienne pour que le moteur trouve ses blits.
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
+
+; Le boss est un CORPS qui glisse d'un bloc : l'etat qui accorde ses six objets
+; est resident dans le stage, qui l'EXPORTe. Ces references traversent donc le
+; lien — l'objet, lui, est pagine dans l'arene du niveau.
+main.dobkeratops.computeStep  EXTERNAL
+main.timestamp.moveAlienStart EXTERNAL
+main.dobkeratops.move.left    EXTERNAL
+main.dobkeratops.move.step    EXTERNAL
+main.dobkeratops.explode      EXTERNAL
 Img_Page_Index    EXTERNAL
 
  SECTION code

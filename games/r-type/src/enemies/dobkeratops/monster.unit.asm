@@ -15,6 +15,22 @@ dobkeratopsMonster.Object   EXPORT
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
 
+; Le boss est un CORPS qui glisse d'un bloc : l'etat qui accorde ses six objets
+; est resident dans le stage, qui l'EXPORTe. Ces references traversent donc le
+; lien — l'objet, lui, est pagine dans l'arene du niveau.
+main.followDobkeratops        EXTERNAL
+main.timestamp.moveAlienStart EXTERNAL
+main.dobkeratops.move.left    EXTERNAL
+main.dobkeratops.halfDamage   EXTERNAL
+main.dobkeratops.nervesErasing EXTERNAL
+main.dobkeratops.explode      EXTERNAL
+
+; V2-DEVIATION : la palette du jeu s'appelle Pal_stage en v2 (png2pal du
+; stage) ; la v1 la nomme Pal_game. Elle est residente, le monstre la lit
+; par le lien.
+Pal_stage                      EXTERNAL
+Pal_game equ Pal_stage
+
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"

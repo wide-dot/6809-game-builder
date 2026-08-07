@@ -19,6 +19,16 @@ dobkeratops.Object   EXPORT
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
 
+; Le boss est un CORPS qui glisse d'un bloc : l'etat qui accorde ses six objets
+; est resident dans le stage, qui l'EXPORTe. Ces references traversent donc le
+; lien — l'objet, lui, est pagine dans l'arene du niveau.
+main.followDobkeratops        EXTERNAL
+main.dobkeratops.allEyesDead  EXTERNAL
+main.timestamp.moveAlienStart EXTERNAL
+main.dobkeratops.move.left    EXTERNAL
+main.dobkeratops.halfDamage   EXTERNAL
+main.dobkeratops.nervesErasing EXTERNAL
+
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -31,6 +41,8 @@ Obj_Index_Address EXTERNAL
         ; Les identifiants d'objets sont des CONSTANTES, pas des externes : le
         ; code les combine par decalage, ce qu'aucune relocation ne sait faire.
         INCLUDE "src/stages/01/objid.const.asm"
+        ; La chronologie du boss, partagee avec le stage.
+        INCLUDE "src/stages/01/timestamps.const.asm"
         INCLUDE "src/enemies/enemies_properties.asm"
         INCLUDE "src/common/fx/explosion/explosion.const.asm"
         INCLUDE "src/common/state/variables.asm"

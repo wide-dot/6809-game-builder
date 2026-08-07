@@ -1,7 +1,7 @@
 * ===========================================================================
 * Objets du stage 01 — genere par tools/gen_objid.py 01
 * ===========================================================================
-* Les 44 identifiants que la wave reelle du niveau 01 reference, et
+* Les 45 identifiants que la wave reelle du niveau 01 reference, et
 * l'index que RunObjects consulte : une page et une adresse par identifiant.
 *
 * C'est la voie 3 de la frontiere — les deux tables sont EXPORTees par le
@@ -30,35 +30,36 @@ ObjID_foefire                equ 13
 ObjID_initlevel1             equ 14
 ObjID_engineflames           equ 15
 ObjID_messages               equ 16
-ObjID_pow_optionbox          equ 17
-ObjID_bitdevice              equ 18
-ObjID_forcepod               equ 19
-ObjID_forcepod_simplefire    equ 20
-ObjID_forcepod_reboundlaser  equ 21
-ObjID_forcepod_counterairlaser equ 22
-ObjID_scantfire              equ 23
-ObjID_tabrokcanon            equ 24
-ObjID_shellEraser            equ 25
-ObjID_commonmissileflame     equ 26
-ObjID_dobkeratops_saw        equ 27
-ObjID_dobkeratops_explosion  equ 28
-ObjID_patapata               equ 29
-ObjID_bug                    equ 30
-ObjID_bink                   equ 31
-ObjID_pow                    equ 32
-ObjID_fadetotunnel           equ 33
-ObjID_scant                  equ 34
-ObjID_pstaff                 equ 35
-ObjID_cancer                 equ 36
-ObjID_blaster                equ 37
-ObjID_shell                  equ 38
-ObjID_tabrok                 equ 39
-ObjID_bossmusic              equ 40
-ObjID_tailmgr                equ 41
-ObjID_dobkeratops            equ 42
-ObjID_dobkeratops_jaw        equ 43
-ObjID_dobkeratops_monster    equ 44
-objid.count                  equ 44
+ObjID_endstage               equ 17
+ObjID_pow_optionbox          equ 18
+ObjID_bitdevice              equ 19
+ObjID_forcepod               equ 20
+ObjID_forcepod_simplefire    equ 21
+ObjID_forcepod_reboundlaser  equ 22
+ObjID_forcepod_counterairlaser equ 23
+ObjID_scantfire              equ 24
+ObjID_tabrokcanon            equ 25
+ObjID_shellEraser            equ 26
+ObjID_commonmissileflame     equ 27
+ObjID_dobkeratops_saw        equ 28
+ObjID_dobkeratops_explosion  equ 29
+ObjID_patapata               equ 30
+ObjID_bug                    equ 31
+ObjID_bink                   equ 32
+ObjID_pow                    equ 33
+ObjID_fadetotunnel           equ 34
+ObjID_scant                  equ 35
+ObjID_pstaff                 equ 36
+ObjID_cancer                 equ 37
+ObjID_blaster                equ 38
+ObjID_shell                  equ 39
+ObjID_tabrok                 equ 40
+ObjID_bossmusic              equ 41
+ObjID_tailmgr                equ 42
+ObjID_dobkeratops            equ 43
+ObjID_dobkeratops_jaw        equ 44
+ObjID_dobkeratops_monster    equ 45
+objid.count                  equ 45
 objid.animation              equ ObjID_animation
 
  ENDC

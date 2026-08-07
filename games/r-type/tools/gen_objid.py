@@ -36,6 +36,10 @@ names = ['ObjID_animation', 'ObjID_explosion', 'ObjID_fade', 'ObjID_Player1',
          'ObjID_beamp', 'ObjID_emitter_flash', 'ObjID_collision',
          'ObjID_createFoeFire', 'ObjID_loadFirePreset', 'ObjID_foefire',
          'ObjID_initlevel1', 'ObjID_engineflames', 'ObjID_messages',
+         # Le sequenceur de fin de niveau : objet MONTE, jamais cree. La wave
+         # ne le nomme pas — c'est la boucle du stage qui l'appelle, avec une
+         # commande en B.
+         'ObjID_endstage',
          # Les bonus : le POW vient de la wave, mais ce qu'il fait naitre en
          # mourant — la boite a option, ou le bit device quand le quartet haut
          # de son subtype vaut 5 — n'y figure pas.
@@ -151,8 +155,21 @@ if stage == '01':
     # tous par cet identifiant. La flamme, elle, est nee par le missile.
     PORTED['ObjID_commonmissile'] = ('common.missile', 'commonmissile.Object')
     PORTED['ObjID_commonmissileflame'] = ('common.missileflame', 'commonmissileflame.Object')
-    # LE BOSS EST EN ATTENTE : ses unites existent, sa frontiere avec la
-    # boucle du niveau reste a poser. Ses identifiants pointent le bouchon.
+    # LE BOSS : six objets dans l'arene du niveau. Ce qui les accorde (le pas
+    # de deplacement commun, les drapeaux de mort) est resident dans le stage.
+    PORTED['ObjID_dobkeratops'] = ('stage1.dobkeratops', 'dobkeratops.Object')
+    PORTED['ObjID_dobkeratops_jaw'] = ('stage1.dobkeratopsjaw', 'dobkeratopsJaw.Object')
+    PORTED['ObjID_tailmgr'] = ('stage1.tailmgr', 'tailmgr.Object')
+    PORTED['ObjID_dobkeratops_monster'] = ('stage1.dobkeratopsmonster', 'dobkeratopsMonster.Object')
+    PORTED['ObjID_dobkeratops_saw'] = ('stage1.dobkeratopssaw', 'dobkeratopsSaw.Object')
+    PORTED['ObjID_dobkeratops_explosion'] = ('stage1.dobkeratopsexplosion', 'dobkeratopsExplosion.Object')
+    # La sequence de fin : compte a rebours, autopilote, fondu, releve du score.
+    PORTED['ObjID_endstage'] = ('stage1.endstage', 'endstage.Object')
+    # Le marqueur de musique du boss : la wave le seme, il pose le drapeau que
+    # la boucle du stage releve, puis se supprime.
+    PORTED['ObjID_bossmusic'] = ('common.bossmusic', 'bossmusic.Object')
+    # Le passage de palette du tunnel, aux deux bouts de la section souterraine.
+    PORTED['ObjID_fadetotunnel'] = ('stage1.fadetotunnel', 'fadetotunnel.Object')
     # La sequence d'ouverture est propre au niveau : elle vit dans l'unite du
     # stage, donc sa page est celle du stage et son adresse un symbole local.
     PORTED['ObjID_initlevel1'] = ('stageinit', 'initlevel1.Object')
