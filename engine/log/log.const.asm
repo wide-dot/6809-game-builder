@@ -50,6 +50,13 @@ log.tlsf.ERROR      equ $0101  ; A=legacy tlsf.err code (1..7, see tlsf.asm)
 * ram.set was asked to reach an address outside every known space.
 log.ram.SET_RANGE   equ $0701  ; B=requested page, U=destination address
 
+* A file was loaded over bytes another INDEXED file still occupies. The scene
+* that ended did not declare its unload, so the global re-link would patch the
+* occupant's stale offsets over the new binary. Only files that CARRY link
+* data are indexed, so this sees the exchange of scenes, not every write.
+log.scene.LOAD_OVERLAP equ $0301  ; B=destination page, X=file id loaded,
+                                  ; Y=destination address, U=occupant file id
+
 
 * Cross-check: whoever also computes the block or the stack top must agree
 * with the address above. Two anchors that drift silently is exactly how the

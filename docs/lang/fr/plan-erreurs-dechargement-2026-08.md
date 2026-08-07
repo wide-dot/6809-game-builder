@@ -996,23 +996,94 @@ le stage 1 décharge sa collision en partant, et personne ne lit la région.
 Le modèle marche exactement comme annoncé — le fichier absent n'est pas
 chargé, son entrée d'index n'existe pas, et rien ne la consulte.
 
-# Phase 4 — retrait de l'implicite, trap à sa place
+# Phase 4 — retrait de l'implicite, trap à sa place — FAIT
 
-1. Retirer `linkData.slot.findByDest` du chemin de chargement.
-2. À la place : **contrôle de recouvrement** → `error.raise
-   err.scene.LOAD_OVERLAP` avec en données : identifiant chargé (2),
-   destination (3), identifiant occupant (2). Premier vrai client de la
-   phase 1.
-3. **Décision structurante** : le recouvrement exige la TAILLE de chaque
-   fichier indexé. Options : la stocker dans l'index linkData (quelques
-   octets de pool par entrée — l'index la reçoit du répertoire au moment du
-   chargement, elle est déjà dans D), ou relire le répertoire à chaque
-   contrôle (zéro RAM, coût en temps de chargement). Préférence : stocker —
-   le chargement est le moment lent de toute façon, mais la comparaison
-   d'intervalles à chaque load sur N entrées mérite d'être bornée.
-4. Le trap est **optionnel à la construction** (un `define` DEBUG ?) ou
-   permanent ? Un contrôle qui ne coûte que du temps de chargement peut
-   rester permanent. À trancher.
+Implémenté le 2026-08-07.
+
+`linkData.slot.findByDest` est parti avec son unique appelant. À sa place,
+`linkData.slot.findOverlap` : même position dans `loader.file.linkData.load`,
+mais il ne cherche plus une destination ÉGALE — il cherche une
+**intersection**. L'égalité n'était déjà pas la bonne question : un fichier
+chargé quelques octets plus loin recouvre tout autant.
+
+Recouvrement détecté → `_log.error log.scene.LOAD_OVERLAP` ($0301), premier
+vrai client du système de la phase 1. Le cliché porte les cinq valeurs :
+`B` page de destination, `X` identifiant chargé, `Y` adresse de destination,
+`U` identifiant occupant.
+
+## Les deux décisions que le plan laissait ouvertes
+
+**1. Stocker la taille dans l'index, ou la relire ? → LA RELIRE.** La
+préférence écrite ici allait au stockage ; la mesure la renverse.
+`loader.dir.getFile` est en **O(1)** — `base + id × 8`, une dizaine
+d'instructions — parce que l'identifiant d'un fichier EST son index de bloc.
+Relire coûte donc zéro RAM et presque zéro temps. Stocker aurait coûté 2
+octets par slot **et** cassé le décalage : `linkData.entry` fait exactement
+8 octets, et l'allocateur multiplie par 8 avec trois `_asld`. Passer à 10
+imposait une vraie multiplication, ou 6 octets perdus par slot pour rester
+sur une puissance de deux.
+
+`loader.dir.fileSize` fait la lecture, et retient deux pièges : la taille
+stockée est celle de l'**avant-compression**, qui est bien l'empreinte
+finale (un fichier compressé se déplie sur sa propre destination) ; et un
+fichier vide se reconnaît au marqueur `$ff00` de sa localisation disque, pas
+à son champ de taille, qui lit $3fff (0-1 replié).
+
+**2. Trap optionnel ou permanent ? → PERMANENT.** Il ne coûte que du temps
+de chargement : O(n) sur les fichiers **porteurs de données de lien**, 14 sur
+r-type, à côté d'une lecture disque. Et `_log.error` est déjà toujours
+compilé par construction — un contrôle fatal qu'on peut éteindre n'en est
+pas un.
+
+## Portée réelle du trap, à savoir
+
+Seuls les fichiers qui **portent des données de lien** sont indexés : un
+fichier entièrement cuit n'a pas de slot, donc le trap ne le voit ni comme
+chargeur ni comme occupant. Sur r-type, 14 fichiers sur 80 placements. Ça
+suffit pour ce qui compte — l'échange de scènes, où `stage1` (page $01,
+$8000-$849A) est indexé — mais ce n'est pas une garantie universelle, et il
+ne faut pas la lire comme telle.
+
+Le contrôle a lieu **après** l'écriture, à l'indexation. Détecter avant
+demanderait de le déplacer dans la première passe de la scène, ce qui
+perdrait les recouvrements internes à une même scène (les fichiers d'une
+scène ne sont indexés qu'à la troisième passe). Comme le trap fige la
+machine, « après corruption » ne coûte rien au diagnostic.
+
+## Vérifications
+
+- Rejeu du calcul du trap sur `scenes.boot` de r-type, à partir des
+  destinations de la table de scène générée et des tailles du rapport
+  d'occupation : **0 recouvrement** sur les 14 fichiers indexés. Le trap ne
+  se déclenche pas à tort au démarrage.
+- Coût : `findOverlap` 78 octets, `fileSize` ~18, moins les ~35 de
+  `findByDest` — **~80 octets** de pool, site d'appel compris.
+- Un `bra @fill` du chemin de déduplication a dû passer en `lbra` : le
+  contrôle inséré a poussé sa cible au-delà de 127 octets.
+
+## Le banc encodait l'ancien contrat
+
+`examples/loader-ut` **testait le déchargement implicite** — c'est dire à
+quel point il était installé :
+
+- **T5/T8** : la scène « second » chargeait cc sur la destination de bb, et
+  T8 vérifiait que bb avait été évincé. T5 décharge désormais bb **par son
+  nom** avant de charger ; T8 garde ses assertions (bb absent, second
+  déchargement « not found ») mais change de sens — ce qui a changé, c'est
+  QUI a désindexé bb, et que ce soit écrit.
+- **T11** : 128 cycles d'échange dd/ee sur la même destination, avec un
+  déchargement explicite tous les 16 cycles seulement « pour exercer l'autre
+  chemin ». Les deux variantes sont maintenant déchargées à chaque cycle —
+  décharger celle qui n'est pas indexée est un no-op, T17 l'établit.
+- **T18, nouveau** : le trap provoqué exprès. Il fige la machine, donc il
+  vient **après** l'écriture du statut final : `+31` dit si T1..T17 sont
+  passés, et T18 se lit dans le **bloc de log** ($9EF0), ce pour quoi ce
+  bloc existe. Attendu `log.code = $8301`, `log.x = log.u = data.marker.cc`,
+  `log.y = addr.marker.cc`. Une machine qui atteint `trap.missed` et écrit
+  `$DE` en `+31` n'a PAS trappé : c'est la régression que T18 garde.
+
+**Le banc n'a pas été exécuté sur machine** — les deux cibles construisent
+proprement, mais T11 (128 cycles) et T18 demandent un passage réel.
 
 # Phase 5 — le membre fantôme redevient vide — FAIT
 

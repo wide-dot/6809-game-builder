@@ -880,6 +880,31 @@ loader.dir.getFile
 
 
 ;---------------------------------------
+; loader.dir.fileSize
+;
+; input  REG : [Y] ptr to the dir entry
+; output REG : [D] bytes the file occupies
+;              in RAM, 0 for an empty file
+;---------------------------------------
+; The size field is the UNCOMPRESSED one,
+; which is what a compressed file ends up
+; taking : it expands in place over its
+; own destination.
+;---------------------------------------
+loader.dir.fileSize
+        ldd   dir.entry.sizea,y   ; the empty marker lives in the disk
+        cmpd  #$ff00              ; location, not in the size field : an
+        beq   @empty              ; empty file's size reads $3fff (0-1)
+        ldd   dir.entry.sizeu,y
+        anda  #%00111111          ; drop the compression and linkdata flags
+        addd  #1                  ; the field holds size-1
+        rts
+@empty  clra
+        clrb
+        rts
+
+
+;---------------------------------------
 ; loader.file.linkData.load
 ;
 ; input  REG : [X] file id
@@ -945,24 +970,36 @@ loader.file.linkData.load
         ldu   linkData.entry.linkData,u
         jsr   tlsf.free
         puls  u
-        bra   @fill                           ; u is a ptr to the reused slot
+        lbra  @fill                           ; u is a ptr to the reused slot
+                                              ; (long : the overlap check sits
+                                              ;  between here and the target)
 !
         ; empty (export-only) files have no RAM footprint : several of them
-        ; legitimately share the (0,0) pseudo-destination, never evict by dest
+        ; legitimately share the (0,0) pseudo-destination, so they neither
+        ; cover nor get covered
         ldx   2,s                             ; load file id
         jsr   loader.dir.getFile
-        ldd   dir.entry.sizea,y
-        cmpd  #$ff00
+        jsr   loader.dir.fileSize
+        cmpd  #0
         beq   @index                          ; branch if file is empty
-        ; implicit unload : a different indexed file located at the very same
-        ; destination is being overwritten, remove it from the index so the
-        ; global re-link will not patch its stale offsets over the new binary
+        tfr   d,y                             ; y = bytes this file occupies
         lda   1,s                             ; load file dest page
         ldx   6,s                             ; load file dest addr
-        jsr   linkData.slot.findByDest
+        jsr   linkData.slot.findOverlap
         cmpu  #0
         beq   @index
-        jsr   linkData.slot.remove
+        ; A file still indexed occupies bytes this load has just written over.
+        ; It used to be DEDUCED here that the occupant was implicitly unloaded
+        ; — the loader removed it from the index and said nothing. That took
+        ; the sequence away from the developer : the incoming scene silently
+        ; answered for what the outgoing one had taken, which it has no way of
+        ; knowing. The scene that ENDS declares what it drops ; anything left
+        ; over is a missing declaration, and it is reported as such.
+        ldu   linkData.entry.fileId,u         ; the occupant, before u is reused
+        ldb   1,s                             ; destination page
+        ldx   2,s                             ; file id being loaded
+        ldy   6,s                             ; destination address
+        _log.error log.scene.LOAD_OVERLAP
 @index
         ; store file location index on RAM (data and link data)
         ldu   >loader.file.linkDataIdx
@@ -1140,31 +1177,63 @@ linkData.slot.find
 
 
 ;---------------------------------------
-; linkData.slot.findByDest
+; linkData.slot.findOverlap
 ;
 ; input  REG : [A] file dest page
 ; input  REG : [X] file dest address
-; output REG : [U] ptr to slot ($0000 if not found)
+; input  REG : [Y] bytes the file occupies
+; output REG : [U] ptr to the covered slot ($0000 if none)
 ;---------------------------------------
 ; search the link data index for a file
-; loaded at a given destination
+; whose bytes intersect the ones about to
+; be written. Equality of destination is
+; NOT the question : a file loaded a few
+; bytes further covers just as surely.
 ;---------------------------------------
-linkData.slot.findByDest
+; The extent of an indexed file is read
+; back from the DIRECTORY, not carried in
+; its slot : loader.dir.getFile is O(1)
+; (base + id x 8), so two bytes per slot
+; would buy nothing. Cost is O(n) per
+; load over the files that carry link
+; data — measured 15 on r-type, next to
+; nothing beside the disk read itself.
+;---------------------------------------
+linkData.slot.findOverlap
         pshs  d,x,y
+        sta   @page
+        stx   @start
+        tfr   y,d
+        leax  d,x
+        stx   @end                            ; first byte AFTER this file
         ldu   >loader.file.linkDataIdx
-        beq   @notfound
+        beq   @none
         ldy   linkData.header.occupiedSlots,u
-        beq   @notfound
+        beq   @none
         leau  sizeof{linkData.header},u
-@loop   cmpa  linkData.entry.filePage,u
-        bne   >
-        cmpx  linkData.entry.fileAddr,u
-        beq   @found
-!       leau  sizeof{linkData.entry},u
+@loop   lda   #0
+@page   equ   *-1
+        cmpa  linkData.entry.filePage,u
+        bne   @next                           ; another page : cannot intersect
+        pshs  u,y
+        ldx   linkData.entry.fileId,u
+        jsr   loader.dir.getFile
+        jsr   loader.dir.fileSize
+        puls  u,y
+        cmpd  #0
+        beq   @next                           ; empty file : occupies nothing
+        addd  linkData.entry.fileAddr,u       ; first byte after the occupant
+        cmpd  #0
+@start  equ   *-2
+        bls   @next                           ; it ends at or before we start
+        ldd   linkData.entry.fileAddr,u
+        cmpd  #0
+@end    equ   *-2
+        blo   @found                          ; it starts before we end
+@next   leau  sizeof{linkData.entry},u
         leay  -1,y
         bne   @loop
-@notfound
-        ldu   #0
+@none   ldu   #0
 @found  puls  d,x,y,pc
 
 
