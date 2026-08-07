@@ -593,6 +593,12 @@ stage.state.checkpoint
 stage.gameOver
         jsr   IrqOff
         clr   game.stage
+        ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
+        ; chaque stage a nommé sa scène. Décharger la sienne avant de recharger
+        ; le stage 1 vaut aussi quand c'est le stage 1 qui meurt — l'index
+        ; rendu puis repris est la séquence honnête, pas un cas particulier.
+        ldx   #STAGE_SCENE
+        jsr   game.stage.unload
         ldx   #scenes.stage1
         jmp   game.stage.switch
 

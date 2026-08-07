@@ -11,6 +11,9 @@
 ;*******************************************************************************
 
 STAGE_ID equ 1
+; La scène de CE stage : ce qu'il rend en partant, et ce que le game over du
+; corps partagé décharge sans savoir dans quel stage il tourne.
+STAGE_SCENE equ scenes.stage1
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -361,6 +364,12 @@ stage.handOver
 stage1.noSpawn
         lda   #1
         sta   game.stage
+        ; Ce stage rend ce qu'il avait pris, AVANT que le suivant ne charge :
+        ; lui seul sait ce qu'il occupait. Le stage 2 ne reprend ni la
+        ; collision ni rien d'autre du 1 — il n'aurait aucun moyen de le
+        ; deviner, et ce n'est pas son travail.
+        ldx   #STAGE_SCENE
+        jsr   game.stage.unload
         ldx   #scenes.stage2
         jmp   game.stage.switch
 

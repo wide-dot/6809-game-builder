@@ -148,12 +148,35 @@ Collision_ClearLists
 ;*******************************************************************************
 ; L'échange de stage
 ;
-; Cette routine DOIT être résidente : elle est appelée par le stage sortant,
-; et le chargement de scène écrase précisément la région où ce stage vit. Le
-; retour du scene.load se fait donc dans du code qui n'existe plus si on le
-; laisse au stage. Depuis le moteur, il ne se passe rien de particulier.
+; Résident pour la même raison. Le retour du scene.load se ferait sinon dans du
+; code qui n'existe plus.
 ;
 ; x = identifiant de fichier de la scène à charger.
+;*******************************************************************************
+;*******************************************************************************
+; Le déchargement d'une scène
+;
+; Résident pour la même raison que l'échange : c'est le stage SORTANT qui
+; appelle, et sa région est sur le point d'être écrasée.
+;
+; Volontairement SÉPARÉ de `game.stage.switch`, et à n'appeler qu'explicitement.
+; Une routine qui recollerait le déchargement et le chargement retirerait au
+; stage la maîtrise de sa séquence : lui seul sait ce qu'il a pris, ce qu'il
+; laisse au suivant, et quand il peut s'en défaire. Le stage entrant, lui, ne
+; sait rien de ce que le sortant occupait.
+;
+; Le déchargement DÉSINDEXE : il rend les données de lien au pool et retire les
+; fichiers de l'index. Il n'efface pas la RAM — le code qui appelle continue
+; donc de tourner jusqu'à ce que le chargement suivant l'écrase.
+;
+; x = identifiant de fichier de la scène à décharger.
+;*******************************************************************************
+game.stage.unload
+        _ram.data.set #loader.PAGE         ; même fenêtre à monter que pour charger
+        jmp   loader.ADDRESS+loader.scene.unload.IDX
+
+;*******************************************************************************
+; L'échange de stage — la suite du commentaire ci-dessus
 ;*******************************************************************************
 game.stage.switch
         jsr   IrqOff                       ; le chargement parle au contrôleur disque

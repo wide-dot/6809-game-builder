@@ -941,12 +941,60 @@ de scène est le cas général, pas une prison.
 3. **Pas de garde-fou** sur la scène de boot : c'est au développeur de
    savoir ce qu'il décharge.
 
-# Phase 3 — les scènes r-type déclarent leurs déchargements
+# Phase 3 — les scènes r-type déclarent leurs déchargements — FAIT
 
-Migration du jeu : `scenes.stage1` et `scenes.stage2` (et la boucle
-`stage.handOver`) posent leurs unloads. C'est aussi le moment de vérifier
-l'hypothèse : **l'héritage v1 dans r-type** — des données organisées comme
-si l'adresse déterminait la vie des fichiers — doit tomber avec ce modèle.
+Implémenté le 2026-08-07.
+
+**Trois sites d'échange**, tous par `game.stage.switch`, et aucun ne
+déchargeait — l'éviction par destination faisait le travail en silence :
+
+| Site | Sortant → entrant |
+|---|---|
+| `src/stages/01/main.asm` `stage.handOver` | stage 1 → `scenes.stage2` |
+| `src/stages/02/main.asm` `stage.handOver` | stage 2 → `scenes.stage1` |
+| `src/stages/stage-main.asm` `stage.gameOver` | stage courant → `scenes.stage1` |
+
+Chacun nomme désormais **sa propre** scène avant de charger la suivante.
+Chaque stage pose `STAGE_SCENE equ scenes.stageN` à côté de son
+`STAGE_ID` : le corps partagé (`stage-main.asm`) ne sait pas dans quel
+stage il tourne, mais le stage, lui, l'a dit.
+
+`game.stage.unload` rejoint `game.stage.switch` dans le moteur résident,
+et pour la même raison — l'appelant est le stage sortant, dont la région
+est sur le point d'être écrasée. **Volontairement séparé** : une routine
+qui recollerait déchargement et chargement retirerait au stage la
+maîtrise de sa séquence. Le déchargement DÉSINDEXE et rend les données
+de lien au pool ; il n'efface pas la RAM, donc le code appelant continue
+de tourner jusqu'à ce que le chargement suivant l'écrase.
+
+Le game over déchargeant sa propre scène pour recharger le stage 1 : quand
+c'est le stage 1 qui meurt, l'index est rendu puis repris. C'est la
+séquence honnête, pas un cas à excepter.
+
+## L'héritage v1 : ce qu'on a trouvé, et ce qui reste
+
+L'hypothèse se vérifie sur un point et un seul, mais il est net :
+**un pageset doit émettre un membre par zone que la région déclare.**
+`region tiles.odd` en déclare 5 parce que le stage 1 en remplit 5 ; le
+stage 2 n'en remplit que 4, et le build le dit lui-même — *« pageset
+stage2.tiles.odd fills 4 of the 5 zones region tiles.odd declares — the
+other 1 could be given back »*. Le 5ᵉ membre existe donc uniquement parce
+que la région a cette forme : l'adresse dicte encore l'existence d'un
+fichier.
+
+Depuis P5 ce membre ne coûte plus rien (fichier vide, aucun secteur), et
+depuis P6 son codec ne fait plus avorter le build. Ce qui reste est une
+**entrée de répertoire** et un identifiant réservés pour rien. Les faire
+tomber demande qu'un pageset n'émette que les membres qu'il remplit — donc
+que les identifiants ne soient plus réservés sur la déclaration, ce qui
+touche l'arithmétique d'identifiants du type %11. À instruire à part ;
+ce n'est pas un blocage.
+
+Ce qui, en revanche, **n'est pas** un héritage v1 : le stage 2 sans
+fichier de collision. Il pointe `ObjID_collision` sur `stage.placeholder`,
+le stage 1 décharge sa collision en partant, et personne ne lit la région.
+Le modèle marche exactement comme annoncé — le fichier absent n'est pas
+chargé, son entrée d'index n'existe pas, et rien ne la consulte.
 
 # Phase 4 — retrait de l'implicite, trap à sa place
 

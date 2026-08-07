@@ -315,5 +315,6 @@ Collision_Run EXTERNAL
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---
         _api game.stage.switch
+        _api game.stage.unload
 
  ENDC

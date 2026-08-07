@@ -12,6 +12,8 @@
 ;*******************************************************************************
 
 STAGE_ID equ 2
+; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
+STAGE_SCENE equ scenes.stage2
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -227,6 +229,8 @@ stage2.notRelinked
 
         lda   #2
         sta   game.stage
+        ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
+        jsr   game.stage.unload
         ldx   #scenes.stage1
         jmp   game.stage.switch
 
