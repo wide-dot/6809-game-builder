@@ -326,6 +326,87 @@ Deux observations pour plus tard :
   dans le rapport d'occupation — le contrôle qui manque à la convention
   ci-dessus, sans rien changer au format.
 
+## 9. Réduction conceptuelle (réflexion auteur, 2026-08-08)
+
+Trois questions posées en poursuivant : pourquoi contrôler le couplage de
+placement au build ? qui dépend de données continues sur pages consécutives ?
+et le pageset ne serait-il pas « une région avec coupe autorisée » ?
+
+### Le couplage contrôlé au build ne sert que la cuisson
+
+Sans bake, la liberté est **déjà totale** : les link data se re-résolvent au
+re-link global de chaque `scene.load`, aucun alignement n'est requis, rien à
+déclarer. Le contrôle (« alternatives = même destination », `declareExclusive`,
+`interface="true"`) n'existe que parce qu'une **adresse cuite doit avoir une
+vérité unique au build** — sans lui, un symbole multi-fournisseurs se
+résolvait au dernier venu et le jeu sautait dans de la RAM vide (l'historique
+des deux passes de découverte le raconte).
+
+Deux conséquences honnêtes :
+
+1. **Le périmètre actuel du contrôle est plus large que sa justification.**
+   L'unicité des exports par ensemble co-chargeable s'applique aussi aux
+   symboles purement linkés, et l'heuristique « même destination = jamais
+   co-chargés » est une inférence d'enchaînement — précisément ce que la
+   doctrine refuse de faire pour les recouvrements RAM (« le builder vérifie
+   une composition, pas les enchaînements »). La posture cohérente avec
+   9c176a3 (trap au runtime plutôt que déduction au build) serait : contrôle
+   au build **pour ce qui est cuit**, trap au runtime pour le reste (une
+   recherche de symbole qui trouve deux fournisseurs chargés → log + trap,
+   même mécanique que `LOAD_OVERLAP`).
+2. **La contrepartie à dire à l'utilisateur en une phrase** : la cuisson est
+   une optimisation opt-in qui achète du pool et du temps de chargement
+   (mesuré : les scripts d'animation, 2 900 pointeurs = 8 Ko de link = les
+   deux tiers du pool, cuits = zéro ; la liaison coûte références × exports
+   à chaque scène) contre une contrainte : le placement des fournisseurs
+   cuits est figé et leur remplacement doit être à l'identique. Un seul axe —
+   bake ou link — au lieu de trois notions de surface.
+
+   Nuance à ne pas perdre : le contrôle au build attrape la cuisson fausse
+   sur **le chemin qu'on n'a pas testé** ; le trap runtime ne la montre que
+   le jour où ce chemin s'exécute. Restreindre le périmètre, oui ; le
+   supprimer sur les symboles cuits, non.
+
+### Personne ne dépend de la continuité inter-pages
+
+Vérifié dans l'engine : les players tiennent UNE page de données et lisent
+dedans (`ymm.data.page`, `vgc.data.page` ; aucun motif « page suivante » dans
+`engine/sound`) ; le scroll monte ses pages discrètement depuis ses tables
+(littéraux par tuile) ; zx0 décompresse à l'intérieur d'un fichier ≤ 16 Ko ;
+sprites et objets montent leur page par objet. Le **seul** code qui ait jamais
+marché octet par octet à travers une frontière de page est la marche %10/%11
+du loader — morte en pratique (§5), et c'est elle qui avait coûté le bug MO6
+des 45 Ko. Physiquement d'ailleurs, « pages consécutives » n'offre aucune
+continuité : les pages se montent dans la même fenêtre, le franchissement est
+toujours logiciel.
+
+Conclusion : la consécutivité n'est pas un besoin runtime. C'était une
+commodité de déclaration (forme compacte `pages="N"`) et l'hypothèse de la
+marche morte. Le modèle zones l'a déjà retirée — une zone nomme sa page ET
+son adresse librement — et la note « hors périmètre : pages non consécutives »
+d'analyse-multipage est de fait obsolète. Reste le §« En dérive » : l'adresse
+de membre lue du scalaire au lieu de la zone.
+
+### Le pageset devient « une région, avec coupe autorisée au niveau file »
+
+La formule de l'auteur tient. Ce qui doit survivre du pageset est sa
+mécanique, pas son élément : mesurer, ranger dans les zones, émettre **une
+entrée de répertoire par morceau** (le plafond de 16 Ko l'impose), placer
+par symbole. Rien de tout ça n'a besoin d'un concept de surface : un
+attribut de coupe sur le contenu (`<file>` divisible) ciblant une région à
+n zones — ou une arène, pour le contenu chargé une fois — suffit, et avec le
+§4 (membres = résultat du rangement) les membres deviennent un détail
+d'émission visible seulement dans les rapports. Le vocabulaire utilisateur
+retombe à : **région** = destinations convenues (zones libres en pages ET en
+adresses), **arène** = rangement libre, **coupe** = propriété du contenu,
+**bake** = optimisation opt-in qui fige. Le choix région-ou-arène pour un
+contenu coupé découle du premier axe : des consommateurs cuits → région
+(remplacement à l'identique) ; tout linké → arène.
+
+Ce paragraphe est la suite naturelle du §7 : le §7 établit que la coupe et
+l'exclusivité doivent exister quelque part ; celui-ci constate qu'aucun des
+deux n'a besoin d'être un élément que l'utilisateur apprend.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
