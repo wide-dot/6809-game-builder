@@ -320,6 +320,17 @@ Fonctionnel :
       l'attribut — le premier build a silencieusement utilisé le défaut, et
       c'est la lecture du fichier généré qui l'a montré.
       Cas : [pasted-generated-code.md](docs/lang/en/migration/pasted-generated-code.md)
+- [ ] **Placement : membres de pageset = résultat du rangement + retrait des
+      mécanismes morts** — analyse faite le 08/08, rien d'implémenté :
+      [`analyse-placement-2026-08.md`](docs/lang/fr/analyse-placement-2026-08.md).
+      Un pageset émet un membre par zone déclarée (dernier héritage v1 : les
+      ids sont réservés sur la déclaration) ; la voie recommandée est de
+      mesurer/ranger au moment de la réservation dans `DirectoryPlugin`.
+      Inventaire associé : souches du placement auto dans `LayoutResolver`,
+      tuyauterie `pages="auto"` sans usage, `range=` gfxcomp supplanté par
+      `<pageset>`, marche de destination %10/%11 morte en pratique côté
+      loader, adresse de membre lue du scalaire `region.address` au lieu de
+      la zone. (M)
 - [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
       cartouche n'existe dans le registre : la v2 ne produit que de la
       disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile
