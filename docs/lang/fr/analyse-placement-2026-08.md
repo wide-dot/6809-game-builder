@@ -407,6 +407,72 @@ Ce paragraphe est la suite naturelle du §7 : le §7 établit que la coupe et
 l'exclusivité doivent exister quelque part ; celui-ci constate qu'aucun des
 deux n'a besoin d'être un élément que l'utilisateur apprend.
 
+## 10. L'index normalisé — la seconde face de la coupe
+
+Précision d'auteur qui ferme le concept : la coupe ne s'applique qu'aux
+données, et il faut un mécanisme normalisé pour atteindre les extraits — une
+table d'indexation page/adresse.
+
+**La coupe et l'index sont un seul contrat.** Un morceau coupé n'est jamais un
+point d'entrée qu'on appelle ; déclarer un contenu divisible, c'est déclarer
+qu'il ne s'atteint QUE par sa table. C'est la règle de modele-zones (« ce qui
+est atteint par une table peut être rangé n'importe où ») lue côté
+producteur : la table n'est pas une commodité ajoutée à la coupe, elle est ce
+qui rend la coupe invisible au runtime — et le placement libre, sain.
+
+**L'état des lieux : cinq formes pour un concept.** Aujourd'hui id → (page,
+adresse) existe en :
+
+1. table de tilemap (`<tilemap>`) : entrées **entrelacées** de 3 octets
+   `fcb page / fdb adresse`, cuites en `.static`, générées par le builder ;
+2. index d'imageset (`<imageset>`) : descripteurs à octet de page par image,
+   générés, cuits — page/adresse déjà résolues par `StaticLink.pageOf` ;
+3. index d'objets (`Obj_Index_Page`/`Obj_Index_Address`) : tables
+   **parallèles**, générées par un script Python **hors builder**
+   (`games/r-type/tools/gen_objid.py`) qui relit les équates du layout ;
+4. tables d'animation (`Ani_*`) : élément `<animation>` naissant côté builder,
+   écrites à la main côté banc sprites ;
+5. les équates (`gensymbols` de bloc, publications d'arène) : le cas dégénéré
+   à une entrée, résolu à l'assemblage.
+
+Même source de vérité partout (le placement par symbole de `StaticLink`),
+cinq émetteurs — dont un script par projet, précisément ce qu'un builder doit
+absorber.
+
+**La normalisation : un émetteur, deux layouts.** Un élément (ou attribut)
+`index` : en entrée la liste ordonnée des symboles — explicite, ou dérivée du
+contenu coupé en ordre de déclaration, l'ordre ÉTANT les ids — en sortie une
+table cuite en `.static`, zéro donnée de lien par construction. Deux layouts
+suffisent, et les deux existent déjà dans le corpus :
+
+- **parallèle** : `<nom>.page` (1 o/entrée) puis `<nom>.address`
+  (2 o/entrée) — l'accès aléatoire par id, l'idiome v1 (`abx` puis `lda b,x`,
+  pas de multiplication par 3) ; c'est la forme des cinq tables moteur→stage ;
+- **entrelacé** : 3 o/entrée — le parcours séquentiel (`leau 3,u`), la forme
+  du tilemap.
+
+Les index à charge utile métier (les descripteurs d'imageset portent la
+géométrie) gardent leur élément et délèguent page/adresse à la même source —
+c'est déjà le cas. À normaliser aussi : l'entrée 0 réservée (le tilemap émet
+3 octets nuls, l'index d'objets un slot jamais exécuté) — même convention
+partout. Et l'octet de page émis **fenêtre comprise** (`map.RAM_OVER_CART+p`),
+comme les trois générateurs le font déjà chacun de son côté.
+
+**Ce que ça amplifie.** L'index cuit est ce qui fait passer la frontière
+moteur→contenu par UNE adresse — celle de la table — au lieu d'une donnée de
+lien par entrée (mesuré : 5,3 Ko de link pour une carte de 24×8 avant la
+cuisson ; moteur→stage = 5 tables, tout le reste étant dedans). La chaîne
+complète devient : contenu déclaré divisible → coupe rangée dans les zones →
+index normalisé cuit → le runtime monte la page de l'entrée et lit. Le script
+`gen_objid.py` devient une déclaration ; le générateur de tilemap devient un
+consommateur du même émetteur.
+
+Côté runtime, l'idiome d'accès (monter la page de l'entrée, lire l'adresse)
+existe partout mais s'écrit partout à la main — un pack de macros
+`_index.get`/`_index.walk` est le pendant asm de l'émetteur, à condition de
+mesurer avant de remplacer les accès v1 chauds (le dessin de sprites lit son
+index dans des boucles serrées ; v1 a choisi les tables parallèles pour ça).
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
