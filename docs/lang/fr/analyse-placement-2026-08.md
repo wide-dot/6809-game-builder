@@ -234,6 +234,98 @@ personne n'appelle — et un mécanisme sans émetteur ni consommateur n'est pas
 une réserve de généricité, c'est du code que le prochain lecteur doit
 comprendre pour rien.
 
+## 7. Le pageset se réduit-il à région/arène ?
+
+Question posée après coup : les fichiers ciblent déjà une région ou une arène
+directement — à quoi sert le pageset ? Deux fonctions ne sont portées par
+aucun autre mécanisme.
+
+**Il coupe.** Une entrée de répertoire décrit 16 Ko au plus (taille sur
+14 bits) et une page en fait autant : un contenu plus gros DOIT devenir
+plusieurs fichiers. Une région ne coupe pas (un fichier par scène) ; une arène
+ne coupe pas (elle range des fichiers **que l'auteur a déjà découpés**). Or un
+tileset de 245 tuiles auto-nommées n'a pas de frontières de fichiers
+authorées — personne ne peut choisir les coupes à la main, et la coupe dépend
+des capacités des zones cibles : celui qui coupe doit être celui qui place.
+Le cas où l'auteur PEUT couper (un imageset en phases flight/ground/walk) est
+précisément celui que les tranches d'arène couvrent (0fe3123) — la partition
+est cohérente.
+
+**Il rend les alternatives échangeables légales.** Les tilesets des stages 1
+et 2 exportent les MÊMES noms (`tilesEven_*` des deux côtés : les cartes sont
+générées contre les ids de la feuille). Le contrôle d'unicité des exports
+n'admet des homonymes qu'entre alternatives d'exécution — même destination
+exacte, ou ensembles déclarés exclusifs (`declareExclusive`, avec élection par
+consommateur pour `pageOf`). Une arène place librement : les paquets du stage 1
+et ceux du stage 2 tomberaient à des adresses différentes et le build
+refuserait — c'est arrivé en vrai, en rangeant les cartes des deux niveaux
+dans une arène (modele-zones, §Ce que le builder refuse). Le couple
+pageset+région n'est donc pas un accident : les destinations épinglées et
+l'exclusivité par ensemble sont ce qui rend exprimable « un gros contenu par
+stage, mêmes noms, échangé en bloc ».
+
+Ce qui est en revanche partageable : la **boucle de rangement**. Pageset
+(premier ajustement en ordre de déclaration) et arène (premier ajustement par
+taille décroissante) sont deux politiques du même algorithme sur les mêmes
+zones. Une convergence de code — un moteur de rangement, deux politiques,
+deux appelants — est la vraie simplification disponible ; fusionner les
+*concepts* ne l'est pas, leurs sémantiques d'exclusivité diffèrent.
+
+## 8. Le chemin disquette → RAM : ce qui est optimisé, ce qui ne l'est pas
+
+La question : existe-t-il un mécanisme de continuité secteur avec
+entrelacement entre le média et les pages arrangées par région/arène ?
+
+**Oui, le chemin intra-fichier est complet et outillé des deux côtés.**
+`storage.xml` déclare trois paramètres par géométrie
+(`<interleave softskip="2" softskew="4" hardskip="7"/>`) :
+
+- `hardskip` : l'entrelacement physique de formatage (numérotation des
+  secteurs sur la piste, 7 en fd640 — celle du moniteur TO8) ;
+- `softskip=2` : le builder écrit les données logiquement contiguës, puis
+  `FdUtil.interleave()` les dépose un secteur physique sur deux. Le loader lit
+  secteur par secteur via le moniteur (pas de chaînage DMA) et convertit
+  l'index logique en numéro physique par sa table miroir (`sclist` dans
+  `ldsec`) : entre deux lectures, la boucle de copie (`tfrxua`) dispose d'un
+  temps de secteur — pas de tour de disque perdu ;
+- `softskew=4` : décalage rotatif par piste (`andb #$06` dans `ldsec` : skew
+  0,2,4,6 cyclique), pour qu'après un changement de piste le premier secteur
+  logique arrive sous la tête après le seek au lieu d'être manqué d'un tour.
+
+Les **quatre sorties** (fd, sap, sd, hfe) consomment l'image entrelacée. Et le
+chargement de scène en trois passes (disque groupé → décompression → link
+data) sert exactement cet objectif : la passe disque ne fait que copier — la
+décompression ZX0 est différée, donc le `softskip` est calibré pour la boucle
+de copie, pas pour le décodeur.
+
+**La continuité entre fichiers existe, mais par convention.** `cwrite` colle
+les fichiers d'une section à l'octet près (un fichier peut commencer au milieu
+du dernier secteur du précédent — l'entrée de répertoire porte l'offset de
+départ), et la passe disque d'une scène lit les fichiers dans l'ordre de sa
+table. La tête balaie donc la section en avant **si** l'ordre de déclaration
+des direntries suit l'ordre des `<load>` — rien ne le vérifie ni ne
+l'optimise, et un fichier chargé par deux scènes ne peut être contigu que pour
+une seule. Les membres d'un pageset, eux, sont contigus par construction
+(émis à la suite, chargés à la suite).
+
+**Ce qui n'existe pas, et n'a pas à exister : un lien RAM ↔ disque.**
+L'arrangement des régions et arènes est sans effet sur le temps de
+chargement — la RAM est à accès direct, écrire en page $1B ou $05 coûte
+pareil. La seule corrélation qui compte est ordre-de-chargement ↔
+ordre-sur-média, ci-dessus.
+
+Deux observations pour plus tard :
+
+- **Couplage nu** : les paramètres d'entrelacement vivent en double —
+  `storage.xml` côté builder, `sclist` + le masque de skew en dur dans
+  `loader.asm`. Changer l'un sans l'autre casse toutes les lectures. Même
+  famille que `DIR_DEFAULT_SECTOR`, déjà notée ; à consigner au même endroit.
+- **Rapport de seeks par scène, à peu de frais** : `FdUtil` journalise déjà
+  chaque écriture avec son nom (`Piece`). Croiser ce journal avec l'ordre des
+  loads de chaque scène donnerait « cette scène lit en arrière à tel endroit »
+  dans le rapport d'occupation — le contrôle qui manque à la convention
+  ci-dessus, sans rien changer au format.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
