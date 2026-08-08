@@ -473,6 +473,69 @@ existe partout mais s'écrit partout à la main — un pack de macros
 mesurer avant de remplacer les accès v1 chauds (le dessin de sprites lit son
 index dans des boucles serrées ; v1 a choisi les tables parallèles pour ça).
 
+## 11. Ce que l'écriture du manuel a révélé
+
+L'esquisse ([esquisse-manuel-placement-2026-08.md](esquisse-manuel-placement-2026-08.md))
+est écrite dans le modèle cible, sans jargon, par cas d'usage. Les endroits où
+la plume a résisté sont des failles du modèle, pas de la rédaction :
+
+1. **« La coupe ne s'applique qu'aux data » ne survit pas à l'écriture.** Une
+   tuile compilée est *appelée* (`jsr` via la carte) — le critère code/données
+   ne tient pas. Le critère qui tient : **n'être atteint que par sa table**.
+   C'est la phrase du manuel (« votre code n'atteint ce contenu QUE par cette
+   table ») et elle doit devenir la définition du contrat de coupe.
+2. **Le choix région/arène n'est pas une liberté, et le builder ne le dit
+   pas.** Le manuel s'en sort par les cas d'usage (« remplacé → rendez-vous ;
+   chargé une fois → rangement »), mais un utilisateur qui range du contenu
+   échangé dans une arène n'obtient pas « le contenu échangé va dans une
+   région » : il obtient une erreur d'élection d'exports, trois concepts plus
+   loin. Le message d'erreur doit parler le langage du manuel.
+3. **Région multi-zones hors coupe : la doc et le code se contredisent.**
+   modele-zones promet des `<load>` ordonnés dans les zones ; `ScenePlugin`
+   refuse une région chargée deux fois. L'esquisse n'a pu employer la région
+   multi-zones QUE pour du contenu coupé. Trancher — le plus simple : région
+   multi-zones = contenu coupé, point ; sinon implémenter les loads ordonnés.
+4. **Le déchargement n'a aucune existence déclarative.** Les chargements sont
+   du XML, le déchargement est un appel dans le code asm. Le manuel doit
+   écrire « charger n'a jamais déchargé personne » en toutes lettres, et
+   aucun rapport ne peut dire « la scène X n'est déchargée nulle part ». Le
+   trap runtime est le seul filet — assumé par doctrine, mais l'asymétrie
+   déclaré/codé est exactement l'endroit où un utilisateur trébuchera.
+5. **« Le builder choisit bien tout seul » (références gravées/chargées) est
+   une promesse, pas l'état du code.** `bake=` se déclare fichier par
+   fichier ; le manuel sans jargon exige que `auto` soit le défaut partout et
+   que le sujet n'apparaisse qu'au chapitre performances, rapport à l'appui.
+6. **Le comblement de queue trahit la faille 3.** L'esquisse dit « un fichier
+   de plus vers le même rendez-vous » — or une région prend un fichier par
+   scène. Aujourd'hui la queue se comble DANS la déclaration coupée
+   (`<block>`) ; dans le modèle cible elle doit être un load ordinaire, ce
+   qui suppose la faille 3 tranchée dans le sens des loads multiples — ou
+   rester un enfant du contenu coupé, et le manuel doit le dire ainsi.
+7. **Les numéros d'index naissent de l'ordre de déclaration.** Réordonner le
+   contenu renumérote — sans conséquence tant que tout est régénéré ensemble,
+   mais un état persistant qui retient un numéro (checkpoint, sauvegarde,
+   mot de passe de niveau) devient faux d'un build à l'autre. À écrire noir
+   sur blanc dans le manuel, ou à couvrir (numéros nommés, déjà le cas des
+   équates `ObjID_*` — c'est l'ordre DES déclarations qui doit être stable).
+8. **L'interdit « on ne grave jamais vers une arène » proscrit un cas sain.**
+   Du contenu d'arène chargé une fois ne bouge jamais au runtime : graver
+   vers lui serait correct. La règle simple achète une phrase de manuel
+   limpide (« personne n'a besoin de savoir où ») au prix d'une expressivité —
+   choix à faire en connaissance, et si la règle reste, l'erreur doit là
+   aussi parler le langage du manuel.
+9. **La performance disque n'a nulle part où exister dans le manuel.** Rien
+   de déclarable, rien de visible : l'ordre des loads face à l'ordre sur
+   média se dégrade en silence. Le rapport de seeks par scène (§8) est ce qui
+   donnerait au chapitre « performances » sa matière.
+
+Signal d'ensemble, plutôt rassurant : les cinq notions se sont laissé nommer
+sans jargon (emplacement, rendez-vous, rangement, découpage + table d'accès,
+liste de chargement) et chaque cas d'usage tient en une dizaine de lignes. La
+seule notion qui a exigé un paragraphe de précautions est la paire
+gravé/chargé — c'est donc elle que le défaut (`auto` + rapport) doit rendre
+invisible, et c'est cohérent avec le §9 : un axe unique, réglé par le
+builder, surfacé par les rapports.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
