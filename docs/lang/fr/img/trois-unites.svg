@@ -11,10 +11,10 @@
   <rect x="20" y="45" width="250" height="180" rx="8" fill="#eef3f8" stroke="#9db2c4"/>
   <text x="34" y="68" font-weight="bold" fill="#22313f">Ce que vous déclarez</text>
   <rect x="34" y="80" width="222" height="80" rx="6" fill="#ffffff" stroke="#9db2c4"/>
-  <text x="44" y="99" fill="#22313f">&lt;file name="stage1.tiles"&gt;</text>
-  <text x="56" y="117" fill="#5a6b7a">244 éléments (tuiles)</text>
+  <text x="44" y="99" fill="#22313f">&lt;file name="stage1.tiles"</text>
+  <text x="56" y="117" fill="#5a6b7a">index="idx"&gt; 244 tuiles &lt;/file&gt;</text>
   <text x="44" y="135" fill="#22313f">&lt;file name="stage1.tables"&gt;</text>
-  <text x="56" y="153" fill="#5a6b7a">&lt;index of="stage1.tiles"/&gt;</text>
+  <text x="56" y="153" fill="#5a6b7a">&lt;index name="idx"/&gt;</text>
   <rect x="34" y="168" width="222" height="22" rx="6" fill="#ffffff" stroke="#9db2c4"/>
   <text x="44" y="184" fill="#22313f">&lt;file name="stage1.map"&gt;   rigide</text>
   <rect x="34" y="194" width="222" height="22" rx="6" fill="#ffffff" stroke="#9db2c4"/>

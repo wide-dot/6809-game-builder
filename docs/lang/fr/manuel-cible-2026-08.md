@@ -178,16 +178,14 @@ adresse fixe — le fichier la déclare lui-même :
 <file name="hud.tiles" page="$1A" address="$3000"> ... </file>
 ```
 
-**La destination se déclare au fichier, se surcharge à l'élément.** Ce que
-le fichier déclare — un rangement, ou une place précise — vaut pour tout son
-contenu par défaut. Un élément nommé du fichier peut dire autre chose : sa
-table en mémoire fixe (3.5), une routine chaude au fixe pendant que ses
-données restent en page, un tampon à adresse imposée au milieu d'un contenu
-libre. Chaque destination distincte fait un morceau de plus — une entrée de
-répertoire, que le rapport montre — mais **sur la disquette rien ne
-s'éparpille** : les morceaux d'un fichier restent collés, lus dans le même
-balayage ; seule leur arrivée en mémoire diffère. Le reste ne bouge pas :
-même nom, même liste, même durée de vie.
+**La destination est une affaire de fichier, et de fichier seulement.** Ce
+que le fichier déclare — un rangement, ou une place précise — vaut pour tout
+son contenu, sans exception. Ce qui doit vivre ailleurs se déclare comme un
+fichier à part : la table lue à chaque trame dans un fichier de mémoire
+fixe, le tampon à adresse matérielle dans son propre fichier épinglé. Un
+fichier de plus est le prix d'une règle sans cas particulier — et les
+petites données n'ont de toute façon rien à demander : les collections
+coulent autour d'elles (4.7).
 
 Deux fichiers peuvent déclarer **la même place** : cela dit au builder qu'ils
 ne sont jamais en mémoire en même temps — l'un remplace l'autre. C'est ainsi
@@ -245,22 +243,22 @@ vérifier : l'enchaînement est votre code.
 
 Certains contenus sont des **collections** : des tuiles, des images, des
 ennemis — des dizaines d'éléments du même genre, que le code désigne par un
-numéro et n'atteint jamais autrement que par sa table. La table se déclare
-avec l'élément `<index>`, qui **nomme toujours sa cible** (`of=`) et vit
-dans le fichier de votre choix :
+numéro et n'atteint jamais autrement que par sa table. La référence va du
+producteur vers la table : **un fichier contribue à un index en le
+nommant**, et l'index se déclare, nu, dans le fichier qui l'héberge :
 
 ```xml
-<file name="stage1.tiles" arena="stage">
+<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
     <gfxcomp ...les tuiles du niveau.../>
 </file>
 
 <file name="stage1.tables" arena="stage.fixe">
-    <index of="stage1.tiles" name="stage1.tiles.idx"/>
+    <index name="stage1.tiles.idx"/>
 </file>
 ```
 
-**Être visé par un index change la nature du fichier.** Un fichier ordinaire
-est **rigide** : un seul tenant, une seule place. Un fichier indexé est une
+**Contribuer à un index change la nature du fichier.** Un fichier ordinaire
+est **rigide** : un seul tenant, une seule place. Un contributeur est une
 **collection**, fluide : le builder connaît chaque élément un par un, et
 peut la faire couler dans plusieurs creux. Au placement, les fichiers
 rigides se posent d'abord, du plus gros au plus petit ; puis les collections
@@ -269,12 +267,16 @@ plusieurs **morceaux** — aussi peu que possible, chacun aussi gros que son
 creux le permet, chacun d'un seul tenant et compressé. Vous n'en choisissez
 ni le nombre ni la taille : les creux décident, le rapport les montre.
 
-La table est générée une fois tout placé, dans le fichier qui la déclare —
-sa place et sa durée de vie sont **celles de son hôte**, rien de plus à
-dire. `of` accepte plusieurs cibles : un seul index peut couvrir deux
-fichiers (les objets communs ET ceux du stage), les numéros suivant l'ordre
-des cibles puis des éléments. Votre code n'atteint une collection QUE par
-sa table : c'est le marché qui autorise le builder à couler librement.
+**Plusieurs fichiers peuvent contribuer au même index** — les objets communs
+et les ennemis du stage nourrissent ensemble la table des objets. Ajouter un
+ennemi est une déclaration locale : l'index, lui, n'est jamais retouché. Les
+numéros suivent l'ordre de déclaration des contributeurs puis de leurs
+éléments, et un élément peut fixer le sien. La table est générée une fois
+tout placé, dans son hôte — sa place et sa durée de vie sont celles de
+l'hôte. Quand deux écrans alternatifs déclarent chacun un index du même nom
+(l'interface du stage 1, celle du stage 2), chaque instance contient les
+contributeurs **chargés avec elle**. Votre code n'atteint une collection QUE
+par sa table : c'est le marché qui autorise le builder à couler librement.
 
 **Où vit la table : là où vit son hôte.** Lire une table qui vit dans une
 page coûte double — monter la page de la table pour lire l'entrée, puis
@@ -485,7 +487,7 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 </layout>
 
 <!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour une page -->
-<file name="stage1.tiles" arena="stage">
+<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
     <gfxcomp>
         <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
     </gfxcomp>
@@ -493,7 +495,7 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 
 <!-- sa table, lue à chaque trame : hébergée dans un fichier au fixe -->
 <file name="stage1.tables" arena="stage.fixe">
-    <index of="stage1.tiles" name="stage1.tiles.idx"/>
+    <index name="stage1.tiles.idx"/>
 </file>
 
 <!-- des fichiers rigides, même durée de vie -->
@@ -592,30 +594,30 @@ du moteur, le voici en entier.
     <zone page="$0D" .../> <zone page="$0E" .../> <zone page="$12" .../>
 </arena>
 
-<!-- les collections, dans les pages -->
-<file name="common.objects" arena="common">  ...joueur, armes, explosions... </file>
-<file name="common.images"  arena="common">  <gfxcomp .../> </file>
-<file name="common.anims"   arena="common">  <animation .../> </file>
-<file name="stage1.objects" arena="stage">   ...les ennemis du stage... </file>
+<!-- les collections, dans les pages — chacune nomme son index -->
+<file name="common.objects" arena="common" index="Obj_Index">  ...joueur, armes... </file>
+<file name="common.images"  arena="common" index="Img_Page_Index"> <gfxcomp .../> </file>
+<file name="common.anims"   arena="common" index="Ani_Index"> <animation .../> </file>
+<file name="stage1.objects" arena="stage"  index="Obj_Index">  ...les ennemis... </file>
 
-<!-- l'interface du stage : la boucle, l'état, et LES CINQ TABLES -->
+<!-- l'interface du stage : la boucle, l'état, et LES TABLES, déclarées nues -->
 <file name="stage1.interface" arena="stage.fixe">
     <lwasm> ...la boucle du stage, son état... </lwasm>
-    <index of="common.objects stage1.objects" name="Obj_Index"/>
-    <index of="common.images"  name="Img_Page_Index"/>
-    <index of="common.anims"   name="Ani_Index"/>
+    <index name="Obj_Index"/>
+    <index name="Img_Page_Index"/>
+    <index name="Ani_Index"/>
 </file>
 ```
 
-Un fichier peut héberger **plusieurs index**, chacun nommant sa cible — même
-une cible qui vit dans un autre rangement, avec une autre durée de vie. Et
-une cible peut être **multiple** : l'index des objets couvre les habitants
-communs ET les ennemis du stage, les numéros suivant l'ordre des cibles puis
-des éléments — c'est ce que l'index des objets du vrai jeu fait déjà (le
-joueur est le numéro 4, le pata-pata du stage un numéro plus loin). Les
-tables ont la durée de vie de leur hôte : ici, elles se rechargent avec le
-stage, ce qui est exactement ce qu'on veut — chaque stage recharge SES
-tables sur les mêmes noms.
+Un fichier peut héberger **plusieurs index** ; chaque index reçoit ce que
+ses contributeurs lui apportent, d'où qu'ils viennent — les objets communs
+ET les ennemis du stage nourrissent `Obj_Index`, c'est ce que la table du
+vrai jeu fait déjà (le joueur est le numéro 4, le pata-pata quelques numéros
+plus loin). Ajouter un ennemi ne retouche jamais l'interface : une
+déclaration locale suffit. Les tables ont la durée de vie de leur hôte :
+ici, elles se rechargent avec le stage — et l'interface du stage 2, qui
+déclare les mêmes noms, reçoit d'office les contributeurs chargés avec ELLE
+(les communs, plus SES ennemis).
 
 ### Pourquoi cet étage-là
 
@@ -679,8 +681,8 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 |---|---|
 | **fichier** (`<file>`) | l'unité qu'on nomme et qu'on charge ; contenu produit par des modules |
 | **élément** | un contenu nommé DANS un fichier ; jamais coupé ; peut surcharger la destination |
-| **collection** | un fichier visé par un index — ses éléments coulent dans les creux |
-| **index** (`<index of="…">`) | la table numéro → page + adresse ; élément d'un fichier hôte (sa place, sa durée de vie), `of` nomme sa ou ses cibles |
+| **collection** | un fichier qui contribue à un index (`index="…"`) — ses éléments coulent dans les creux |
+| **index** (`<index name="…">`) | la table numéro → page + adresse, déclarée nue dans son fichier hôte (sa place, sa durée de vie) ; remplie par ses contributeurs |
 | **morceau** | un bout de fichier à UNE destination contiguë = une unité de compression ; visible aux rapports seulement |
 | **zone** (`<zone>`) | de la place : une page, une adresse, une taille |
 | **rangement** (`<arena>`) | un nom sur des zones ; le builder y place ; c'est aussi une durée de vie |

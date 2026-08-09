@@ -1193,6 +1193,79 @@ fichier », hôte = place + durée de vie, `of` multiple), exemple §5 à deux
 fichiers (`stage1.tiles` + `stage1.tables`), §6 avec l'index d'objets
 multi-cibles, glossaire, schéma des trois unités.
 
+## 23. La référence inversée : on contribue à un index, on ne le tire pas (2026-08-09)
+
+Deux retours d'auteur sur le §22 : les deux coûts pas clairs, et une
+intuition — « x objets contribuent à un index, un gfxcomp produit un
+index… il faudrait retourner la réf, cibler l'index plutôt que tirer la
+source avec of ». Creusé : **l'inversion est la bonne**, et elle efface un
+des deux coûts.
+
+**Les deux coûts du §22, dits simplement.** Premier coût : avec `of`, en
+lisant la déclaration d'un fichier on ne voit pas qu'il est une collection —
+il faut trouver l'index qui le vise, ailleurs. Second coût : le petit
+projet doit déclarer un fichier de plus pour héberger sa table. Le second
+est structurel et assumé ; le premier disparaît avec l'inversion.
+
+**Pourquoi la contribution gagne, trois preuves du dépôt :**
+
+1. **L'échelle.** L'index d'objets réel a ~30 fichiers contributeurs côté
+   commun (31 loads `common.*`) plus les ennemis du stage. En `of`, c'est
+   une liste de trente noms à tenir à jour au centre ; en contribution,
+   ajouter un ennemi est UNE déclaration locale et l'index n'est jamais
+   retouché. `of` ne passait pas l'échelle du vrai jeu.
+2. **Le pattern existe déjà, validé sur machine.** `<gfxcomp
+   imageset="explosion">` répété sur trois tranches, fusionné par
+   `Index.merge`, l'élément `<imageset>` écrivant la table entière : c'est
+   exactement la contribution par nom — implémentée, prouvée (l'explosion en
+   24+2 parts). L'inversion ne propose pas un mécanisme, elle généralise
+   celui qui marche.
+3. **La localité revient.** Un fichier qui porte `index="Obj_Index"` se lit
+   collection/contributeur sur place — le coût 1 du §22 s'efface.
+
+**La forme :**
+
+```xml
+<file name="common.objects" arena="common" index="Obj_Index"> … </file>
+<file name="stage1.objects" arena="stage"  index="Obj_Index"> … </file>
+<file name="stage1.tiles"   arena="stage"  index="stage1.tiles.idx"> … </file>
+
+<file name="stage1.interface" arena="stage.fixe">
+    <index name="Obj_Index"/>          <!-- l'hôte : place et durée de vie -->
+    <index name="stage1.tiles.idx"/>
+</file>
+```
+
+Le contributeur **nomme son index** ; l'index se déclare nu dans son hôte.
+Le nom est la jointure. Les numéros suivent l'ordre de déclaration des
+contributeurs puis de leurs éléments — et un élément peut fixer son numéro
+(l'attribut `index=` des `<image>` d'aujourd'hui, inchangé).
+
+**La règle d'instance, pour les alternatives.** Deux hôtes qui déclarent un
+index du même nom (l'interface du stage 1 et celle du stage 2) sont des
+instances alternatives. Chaque instance contient **les contributeurs de son
+nom chargés avec elle** — dérivé des compositions de scènes, que le builder
+connaît (c'est une propriété de composition, pas d'enchaînement : la
+doctrine est sauve). `common.objects` contribue aux deux instances,
+`stage2.objects` seulement à celle du stage 2. Les numéros des contributeurs
+communs sortent identiques dans toutes les instances (même préfixe de
+déclaration) — ce que le moteur cuit (`ObjID_Player`) reste vrai partout.
+
+**Et la surcharge d'arène par élément se retire (fin du §18).** Question
+d'auteur : un intérêt persiste-t-il ? Non. Les trois cas qui la
+justifiaient sont tous couverts autrement : la table au fixe → l'hôte de
+l'index ; le comblement de queue → l'écoulement automatique ; le tampon à
+adresse matérielle → un fichier à part entière, à adresse déclarée. Ce que
+la surcharge achetait encore : économiser UN `<file>` et UN `<load>` — au
+prix d'un concept, d'une subtilité de durée de vie et d'une émission
+éclatée. Retirée : **la destination est strictement par fichier**. Le
+fichier redevient l'unité de tout — nom, chargement, durée de vie,
+destination — et l'élément n'est plus que du contenu qui contribue.
+
+Manuel aligné : §3.2 (le paragraphe de surcharge par élément remplacé),
+§3.5 (contribution par nom, règle d'instance), exemples §5 et §6,
+glossaire, schéma des trois unités.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
