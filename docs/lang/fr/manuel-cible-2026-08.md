@@ -165,6 +165,15 @@ adresse fixe — le fichier la déclare lui-même :
 <file name="hud.tiles" page="$1A" address="$3000"> ... </file>
 ```
 
+**La destination se déclare au fichier, se surcharge à l'élément.** Ce que
+le fichier déclare — un rangement, ou une place précise — vaut pour tout son
+contenu par défaut. Un élément nommé du fichier peut dire autre chose : sa
+table en mémoire fixe (3.5), une routine chaude au fixe pendant que ses
+données restent en page, un tampon à adresse imposée au milieu d'un contenu
+libre. L'élément qui surcharge devient son propre morceau sur la disquette —
+ça coûte une entrée de répertoire, le rapport le montre. Le reste du fichier
+ne bouge pas : même nom, même liste, même durée de vie.
+
 Deux fichiers peuvent déclarer **la même place** : cela dit au builder qu'ils
 ne sont jamais en mémoire en même temps — l'un remplace l'autre. C'est ainsi
 qu'on déclare des contenus interchangeables (le décor du niveau 1, celui du
@@ -262,6 +271,10 @@ La mémoire fixe est la ressource la plus rare de la machine — le moteur y
 vit déjà. La règle simple : lue à chaque trame → au fixe ; lue au chargement
 ou de temps en temps → en page, ce n'est pas un drame. Le rapport
 d'occupation vous montre ce que le fixe porte.
+
+Ce n'est pas un cas particulier de la table : c'est le principe général de
+3.2 — la destination du fichier vaut par défaut, tout élément nommé peut la
+surcharger.
 
 Certaines tables du moteur ont un format à elles — celle des sprites porte
 aussi la géométrie de chaque image. Même source, mêmes règles, autre

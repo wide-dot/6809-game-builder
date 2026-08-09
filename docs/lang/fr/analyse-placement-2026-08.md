@@ -935,6 +935,55 @@ son rangement, et la durée de vie reste portée par l'arène (une arène fixe
 « du stage » se décharge avec le stage, comme `region stage` le fait
 aujourd'hui à $01:$8000).
 
+## 18. Le principe de destination : défaut au fichier, surcharge à l'élément (2026-08-09)
+
+Distillation d'auteur à partir du §17 : la destination — un rangement ou une
+place précise — se déclare au fichier et vaut pour tout son contenu ; **tout
+élément nommé peut la surcharger**. L'index en mémoire fixe n'était qu'une
+instance.
+
+**Ce que le principe unifie.** Quatre mécanismes distincts deviennent un :
+la table d'une collection placée au fixe (§17) ; une routine chaude extraite
+au fixe pendant que ses données restent en page ; un tampon à adresse
+matérielle imposée au milieu d'un contenu libre ; et l'ancien `<block>` du
+pageset / le comblement de queues — un élément déclaré, une destination.
+C'est aussi l'idiome maison : la cascade défaut → surcharge est déjà celle
+des attributs de configuration (`<default>` scopés), le placement parle
+désormais la même grammaire.
+
+**La conséquence mécanique : surcharger, c'est se détacher.** Un fichier est
+continu sur le média ; un élément qui déclare une autre destination ne peut
+pas rester dans le morceau de ses voisins — il devient SON morceau (sa
+lecture, sa compression, son entrée de répertoire à 8-24 o). Le coût est
+borné et visible au rapport. Corollaire de définition qui simplifie encore :
+« rigide » n'est plus une nature de fichier mais un cas — un fichier dont
+aucun élément ne surcharge tient en un morceau. Et la contiguïté cesse
+d'être un absolu du fichier pour devenir celle du morceau, ce qui était déjà
+la définition depuis le §15.
+
+**Les limites, pour que le principe reste sain :**
+
+1. **La surcharge porte sur les éléments DÉCLARÉS**, pas sur les essaims
+   générés : les 244 tuiles d'une grille héritent en bloc — surcharger une
+   tuile n'a pas de sens (elle est atteinte par l'index, qui absorbe
+   n'importe quel placement). Les candidats sont ce qui a un nom dans la
+   configuration : l'index, une unité, un tampon, une routine désignée.
+2. **La durée de vie reste celle du fichier.** L'élément surchargé est
+   chargé et déchargé avec son fichier, où que ses octets vivent. Une
+   surcharge vers l'espace d'une AUTRE durée de vie (un élément de stage
+   posé dans les zones du commun) est légale pour le placement — les
+   vérifications par scène s'appliquent — mais c'est le cas à montrer du
+   doigt dans le rapport : l'espace se libère au déchargement du fichier,
+   pas de son arène d'accueil. Le cas nominal est la surcharge vers une
+   arène de MÊME durée de vie (`stage` → `stage.fixe`).
+3. **Un élément à adresse imposée** entre dans la phase « rigide » du
+   placement (§15) : il se pose avant que le fluide coule, comme n'importe
+   quel fichier épinglé.
+
+Manuel aligné : le principe est énoncé au §3.2 (là où vivent les
+destinations), et le §3.5 renvoie vers lui — la table n'est plus un cas
+particulier, c'est la première application.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
