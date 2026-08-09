@@ -198,9 +198,6 @@ emitterFlash.Object EXTERNAL
         INCLUDE "src/common/bench.const.asm"
         INCLUDE "gen/stages/01/pages.asm"
         INCLUDE "gen/stages/01/pages-even.asm"
-        ; Les pages du cast commun, publiees par son pageset : l'index
-        ; d'objets lit <symbole>.page pour chaque ennemi range.
-        INCLUDE "gen/enemies/cast-pages.asm"
         INCLUDE "src/stages/01/map/intro/map.const.asm"
         ; La chronologie du boss : le stage la partage avec ses six objets.
         INCLUDE "src/stages/01/timestamps.const.asm"
