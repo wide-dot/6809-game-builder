@@ -1146,6 +1146,53 @@ rangement — le même pour toutes les listes ») avec ses deux sorties, et le
 cas 4.3 mentionne le chevauchement de rangements pour un écran à géographie
 particulière.
 
+## 22. `of` obligatoire sur `<index>` — accord, et tout ce qui tombe avec (2026-08-09)
+
+Proposition d'auteur : `of` devrait être obligatoire, c'est explicite.
+**Accord**, et le fil tiré simplifie plus que la question ne le demandait.
+
+**Trois raisons de fond :**
+
+1. **L'implicite positionnel est fragile.** La forme enfant (« l'index de la
+   collection qui m'entoure ») donne un sens au *placement dans l'arbre* —
+   déplacer la déclaration en changeait la cible silencieusement. `of` rend
+   la déclaration déplaçable sans changement de sens.
+2. **Le cas réel est multi-cibles, et l'implicite ne peut pas le dire.**
+   Vérifié dans le code : l'index d'objets de r-type couvre 69 références
+   `common.*` ET 60 `stage1.*` — les objets communs et les ennemis du stage
+   dans une seule table, une seule numérotation. `of="common.objects
+   stage1.objects"` l'exprime (numéros = ordre des cibles puis des
+   éléments) ; une forme enfant n'avait aucun moyen de le faire.
+3. **Une forme au lieu de deux.** L'index devient uniformément « un élément
+   du fichier qui l'héberge, ciblant ce que `of` nomme » — la place et la
+   durée de vie sont celles de l'hôte, point final.
+
+**Ce qui tombe en conséquence :**
+
+- la forme enfant elle-même ;
+- l'attribut `arena` sur `<index>` (§17) : on place l'HÔTE, plus l'index —
+  le cas « table au fixe » se dit en déclarant l'index dans un fichier du
+  rangement fixe ;
+- la moitié du §18 qui ne servait qu'à la table : la surcharge de
+  destination par élément reste pour les vrais éléments (tampon à adresse
+  imposée, routine extraite), mais l'index n'en a plus besoin.
+
+**Les deux coûts, assumés :**
+
+1. La divisibilité d'un fichier devient **non locale** : « collection » se
+   lit sur l'index qui le vise, pas sur le fichier. Acceptable — le builder
+   vérifie (une cible d'index doit savoir nommer ses éléments ; un fichier à
+   éléments jamais visé est simplement rigide), et les rapports le montrent.
+2. Le cas minimal demande un fichier hôte de plus (`stage1.tables`) — une
+   déclaration, contre la disparition d'une forme spéciale. L'échange est
+   bon, et le fichier hôte est de toute façon la forme vers laquelle tout
+   projet réel converge (les cinq tables du stage).
+
+Manuel aligné : §3.5 réécrit (« être visé par un index change la nature du
+fichier », hôte = place + durée de vie, `of` multiple), exemple §5 à deux
+fichiers (`stage1.tiles` + `stage1.tables`), §6 avec l'index d'objets
+multi-cibles, glossaire, schéma des trois unités.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,

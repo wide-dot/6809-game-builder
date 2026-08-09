@@ -245,57 +245,52 @@ vérifier : l'enchaînement est votre code.
 
 Certains contenus sont des **collections** : des tuiles, des images, des
 ennemis — des dizaines d'éléments du même genre, que le code désigne par un
-numéro et n'atteint jamais autrement que par sa table. Une collection est un
-fichier comme un autre — **c'est un fichier qui déclare son index** :
+numéro et n'atteint jamais autrement que par sa table. La table se déclare
+avec l'élément `<index>`, qui **nomme toujours sa cible** (`of=`) et vit
+dans le fichier de votre choix :
 
 ```xml
 <file name="stage1.tiles" arena="stage">
-    <index name="stage1.tiles.idx"/>
     <gfxcomp ...les tuiles du niveau.../>
+</file>
+
+<file name="stage1.tables" arena="stage.fixe">
+    <index of="stage1.tiles" name="stage1.tiles.idx"/>
 </file>
 ```
 
-Déclarer l'index change la nature du fichier. Un fichier ordinaire est
-**rigide** : un seul tenant, une seule place. Une collection est **fluide** :
-le builder connaît chaque élément un par un, et peut la faire couler dans
-plusieurs creux. Au placement, les fichiers rigides se posent d'abord, du
-plus gros au plus petit ; puis les collections coulent dans ce qui reste.
-Sur la disquette, une collection devient un ou plusieurs **morceaux** —
-aussi peu que possible, chacun aussi gros que son creux le permet, chacun
-d'un seul tenant et compressé. Vous n'en choisissez ni le nombre ni la
-taille : les creux décident, le rapport les montre.
+**Être visé par un index change la nature du fichier.** Un fichier ordinaire
+est **rigide** : un seul tenant, une seule place. Un fichier indexé est une
+**collection**, fluide : le builder connaît chaque élément un par un, et
+peut la faire couler dans plusieurs creux. Au placement, les fichiers
+rigides se posent d'abord, du plus gros au plus petit ; puis les collections
+coulent dans ce qui reste. Sur la disquette, une collection devient un ou
+plusieurs **morceaux** — aussi peu que possible, chacun aussi gros que son
+creux le permet, chacun d'un seul tenant et compressé. Vous n'en choisissez
+ni le nombre ni la taille : les creux décident, le rapport les montre.
 
-La **table d'accès** — numéro → page + adresse — est générée une fois tout
-placé. Votre code n'atteint la collection QUE par elle : c'est le marché qui
-autorise le builder à couler librement. La table est un fichier rigide
-ordinaire, chargé et déchargé avec sa collection.
+La table est générée une fois tout placé, dans le fichier qui la déclare —
+sa place et sa durée de vie sont **celles de son hôte**, rien de plus à
+dire. `of` accepte plusieurs cibles : un seul index peut couvrir deux
+fichiers (les objets communs ET ceux du stage), les numéros suivant l'ordre
+des cibles puis des éléments. Votre code n'atteint une collection QUE par
+sa table : c'est le marché qui autorise le builder à couler librement.
 
-**Où vit la table.** La table est un fichier : elle a un rangement, comme
-tout le monde — par défaut celui de sa collection. Mais lire une table qui
-vit dans une page coûte double : le code doit monter la page de la table
-pour lire l'entrée, puis monter la page de l'élément pour y aller. Une table
-lue **à chaque trame** — l'index des images, celui des objets — gagne donc à
-vivre dans la **mémoire fixe**, celle qui est toujours visible : une seule
-bascule par accès. Déclarez-lui un rangement en mémoire fixe :
-
-```xml
-<index name="stage1.tiles.idx" arena="fixe"/>
-```
+**Où vit la table : là où vit son hôte.** Lire une table qui vit dans une
+page coûte double — monter la page de la table pour lire l'entrée, puis
+monter la page de l'élément pour y aller. Une table lue **à chaque trame** —
+l'index des images, celui des objets — gagne donc à être déclarée dans un
+fichier de **mémoire fixe**, celle qui est toujours visible : une seule
+bascule par accès. C'est l'exemple ci-dessus (`stage1.tables` dans
+`stage.fixe`), et c'est ainsi que le moteur groupe ses tables chaudes —
+objets, images, animations — dans un seul fichier hôte : plusieurs index
+dans un fichier, c'est le cas normal, pas l'exception (voir le
+deuxième exemple, section 6).
 
 La mémoire fixe est la ressource la plus rare de la machine — le moteur y
-vit déjà. La règle simple : lue à chaque trame → au fixe ; lue au chargement
-ou de temps en temps → en page, ce n'est pas un drame. Le rapport
-d'occupation vous montre ce que le fixe porte.
-
-Ce n'est pas un cas particulier de la table : c'est le principe général de
-3.2 — la destination du fichier vaut par défaut, tout élément nommé peut la
-surcharger.
-
-Un index peut aussi se déclarer **dans un autre fichier**, en nommant sa
-cible : `<index of="stage1.tiles"/>`. C'est ainsi que le moteur groupe ses
-tables chaudes — objets, images, animations — dans un seul fichier de
-mémoire fixe, chargé et déchargé comme un tout : plusieurs index dans un
-fichier, c'est le cas normal, pas l'exception.
+vit déjà. La règle simple : lue à chaque trame → hôte au fixe ; lue au
+chargement ou de temps en temps → hôte en page, ce n'est pas un drame. Le
+rapport d'occupation vous montre ce que le fixe porte.
 
 Certaines tables du moteur ont un format à elles — celle des sprites porte
 aussi la géométrie de chaque image. Même source, mêmes règles, autre
@@ -491,10 +486,14 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 
 <!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour une page -->
 <file name="stage1.tiles" arena="stage">
-    <index name="stage1.tiles.idx" arena="stage.fixe"/>  <!-- lue à chaque trame -->
     <gfxcomp>
         <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
     </gfxcomp>
+</file>
+
+<!-- sa table, lue à chaque trame : hébergée dans un fichier au fixe -->
+<file name="stage1.tables" arena="stage.fixe">
+    <index of="stage1.tiles" name="stage1.tiles.idx"/>
 </file>
 
 <!-- des fichiers rigides, même durée de vie -->
@@ -503,12 +502,13 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 
 <scene name="scenes.stage1">
     <load name="stage1.tiles"/>     <!-- la collection, par son nom -->
+    <load name="stage1.tables"/>
     <load name="stage1.map"/>
     <load name="stage1.wave"/>
 </scene>
 ```
 
-Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode, aucune
+Quatre lignes de `<load>`. Aucune adresse, aucune page, aucun mode, aucune
 taille de coupe.
 
 ### Ce que le builder en fait
@@ -516,12 +516,12 @@ taille de coupe.
 1. **Il mesure.** Chaque tuile est compilée seule : 244 éléments de 30 à
    120 octets, 17 810 octets en tout. La table se mesure sans être remplie :
    244 entrées de 3 octets, 734 o.
-2. **Il pose le rigide.** La table part dans son rangement en mémoire fixe ;
-   les autres fichiers rigides dans `stage`, du plus gros au plus petit :
+2. **Il pose le rigide.** Le fichier des tables au fixe ; les autres
+   fichiers rigides dans `stage`, du plus gros au plus petit :
 
    | fichier | page | adresse |
    |---|---|---|
-   | stage1.tiles.idx (734 o)  | $01 | $8000 |
+   | stage1.tables (734 o)     | $01 | $8000 |
    | stage1.map (5 940 o)      | $18 | $0000 |
    | stage1.wave (610 o)       | $18 | $1734 |
 
@@ -593,21 +593,26 @@ du moteur, le voici en entier.
 </arena>
 
 <!-- les collections, dans les pages -->
-<file name="common.images" arena="common">  <gfxcomp .../> </file>
-<file name="common.anims"  arena="common">  <animation .../> </file>
-<file name="stage1.objects" arena="stage">  ...les ennemis du stage... </file>
+<file name="common.objects" arena="common">  ...joueur, armes, explosions... </file>
+<file name="common.images"  arena="common">  <gfxcomp .../> </file>
+<file name="common.anims"   arena="common">  <animation .../> </file>
+<file name="stage1.objects" arena="stage">   ...les ennemis du stage... </file>
 
 <!-- l'interface du stage : la boucle, l'état, et LES CINQ TABLES -->
 <file name="stage1.interface" arena="stage.fixe">
     <lwasm> ...la boucle du stage, son état... </lwasm>
-    <index of="stage1.objects" name="Obj_Index"/>
+    <index of="common.objects stage1.objects" name="Obj_Index"/>
     <index of="common.images"  name="Img_Page_Index"/>
     <index of="common.anims"   name="Ani_Index"/>
 </file>
 ```
 
 Un fichier peut héberger **plusieurs index**, chacun nommant sa cible — même
-une cible qui vit dans un autre rangement, avec une autre durée de vie. Les
+une cible qui vit dans un autre rangement, avec une autre durée de vie. Et
+une cible peut être **multiple** : l'index des objets couvre les habitants
+communs ET les ennemis du stage, les numéros suivant l'ordre des cibles puis
+des éléments — c'est ce que l'index des objets du vrai jeu fait déjà (le
+joueur est le numéro 4, le pata-pata du stage un numéro plus loin). Les
 tables ont la durée de vie de leur hôte : ici, elles se rechargent avec le
 stage, ce qui est exactement ce qu'on veut — chaque stage recharge SES
 tables sur les mêmes noms.
@@ -674,8 +679,8 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 |---|---|
 | **fichier** (`<file>`) | l'unité qu'on nomme et qu'on charge ; contenu produit par des modules |
 | **élément** | un contenu nommé DANS un fichier ; jamais coupé ; peut surcharger la destination |
-| **collection** | un fichier qui déclare son index — ses éléments coulent dans les creux |
-| **index** (`<index>`) | la table numéro → page + adresse d'une collection ; déclarable chez un hôte (`of=`) |
+| **collection** | un fichier visé par un index — ses éléments coulent dans les creux |
+| **index** (`<index of="…">`) | la table numéro → page + adresse ; élément d'un fichier hôte (sa place, sa durée de vie), `of` nomme sa ou ses cibles |
 | **morceau** | un bout de fichier à UNE destination contiguë = une unité de compression ; visible aux rapports seulement |
 | **zone** (`<zone>`) | de la place : une page, une adresse, une taille |
 | **rangement** (`<arena>`) | un nom sur des zones ; le builder y place ; c'est aussi une durée de vie |
