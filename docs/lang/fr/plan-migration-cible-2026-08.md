@@ -59,9 +59,31 @@ par composition pour les alternatives, équates de numéros émises comme
 Introduit **en plus** de l'existant : les configs actuelles ne bougent pas,
 r-type bascule seul. `gen_objid.py` est remplacé, puis supprimé.
 
-*Preuve : la sortie de l'émetteur est comparée **byte à byte** aux
-`objid.const.asm`/`objid.index.asm` committés (le banc est tout trouvé),
-puis le banc r-type 5/5 sous toje. 12 configs inchangées.*
+**Arbitrage rendu (auteur, 2026-08-09) : l'émetteur reste le modèle cible
+pur, la transition reste déclarée.** La table actuelle est dérivée de la
+WAVE par le script, avec repli bouchon pour les ennemis non portés — une
+logique de transition. L'option écartée (le builder apprend le repli
+bouchon) aurait construit un mécanisme jetable ; l'option retenue : les
+entrées bouchon sont des **déclarations explicites** du stage (id fixé,
+cible = l'objet bouchon), qui tombent une à une au fil du portage. État des
+lieux favorable : le cast du stage 1 est entièrement porté (chaque ligne
+pointe un vrai `.Object`) — les bouchons ne concernent plus que les stages
+2..8.
+
+Contraintes de conception relevées sur la table réelle : une entrée est un
+couple (nom `ObjID_*` → fichier de page + symbole `*.Object`) — plusieurs
+ObjID peuvent viser le même fichier (`firechain` en porte deux) ; les ids
+doivent reproduire l'ordre de citation de la wave (les équates `ObjID_*`
+sont assemblées dans la wave), donc **id explicite au niveau de l'entrée**
+pendant la transition ; le fichier généré porte aussi les tables Ani (même
+gabarit parallèle, mêmes contributeurs).
+
+*Preuve REFORMULÉE : on bascule r-type du script vers l'émetteur + les
+déclarations, et **l'image .fd reste identique à l'octet** (le contenu
+assemblé de la table est le même, peu importe le format du fichier
+intermédiaire — exiger l'identité du .asm généré aurait mimé jusqu'aux
+commentaires du Python, fragile et sans valeur). Puis banc r-type 5/5 sous
+toje ; les 14 autres configs inchangées ; `gen_objid.py` supprimé.*
 
 *Étend, dans la foulée : les tables d'animation (même gabarit parallèle),
 et l'imageset délégué au même service de résolution — sans toucher son
