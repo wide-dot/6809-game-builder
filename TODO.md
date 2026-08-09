@@ -331,6 +331,15 @@ Fonctionnel :
       `<pageset>`, marche de destination %10/%11 morte en pratique côté
       loader, adresse de membre lue du scalaire `region.address` au lieu de
       la zone. (M)
+- [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
+      [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
+      Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
+      leanscroll non orchestré), api.asm/stage-tables.asm au clavier,
+      2 568 lignes de config dont 52 blocs gfxcomp répétitifs. Priorités :
+      index+équates (quotidien, couvert par le modèle cible §23),
+      déclaration d'images compacte, .external.asm générés, orchestration
+      leanscroll. Critère de fin : tools/ ne contient plus que des outils
+      de contenu. (L)
 - [ ] **Média cartouche** — CLAUDE.md annonce `rom t2` mais aucun handler
       cartouche n'existe dans le registre : la v2 ne produit que de la
       disquette (fd/sd/sap/hfe). À décider : porter le média ROM (utile

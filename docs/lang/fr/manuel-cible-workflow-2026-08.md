@@ -61,7 +61,7 @@ ligne surprenante y est en général un nom exporté deux fois par erreur.
 ## 3. Poser le rigide
 
 Le placement se fait rangement par rangement, en deux temps. D'abord le
-rigide : les fichiers (et éléments) à **adresse imposée** prennent leur
+rigide : les fichiers à **adresse imposée** prennent leur
 place déclarée ; puis les fichiers ordinaires se posent **du plus gros au
 plus petit** dans les zones. Un fichier chargé par plusieurs listes reçoit
 UNE place, choisie pour que toutes ses compositions tiennent. Deux fichiers

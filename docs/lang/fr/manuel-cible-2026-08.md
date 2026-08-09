@@ -563,7 +563,7 @@ taille de coupe.
 
 ### L'articulation en quatre phrases
 
-La **collection** est un fichier qui a déclaré son index : au build, elle
+La **collection** est un fichier qui contribue à un index : au build, elle
 devient des **morceaux** — taillés par les creux — et sa table, qui est la
 porte d'entrée. Les morceaux et la table sont ce que connaissent la
 disquette, le répertoire et le chargeur ; vous ne les voyez que dans les
@@ -680,7 +680,7 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 | mot | ce que c'est |
 |---|---|
 | **fichier** (`<file>`) | l'unité qu'on nomme et qu'on charge ; contenu produit par des modules |
-| **élément** | un contenu nommé DANS un fichier ; jamais coupé ; peut surcharger la destination |
+| **élément** | un contenu nommé DANS un fichier ; jamais coupé ; hérite de la destination du fichier |
 | **collection** | un fichier qui contribue à un index (`index="…"`) — ses éléments coulent dans les creux |
 | **index** (`<index name="…">`) | la table numéro → page + adresse, déclarée nue dans son fichier hôte (sa place, sa durée de vie) ; remplie par ses contributeurs |
 | **morceau** | un bout de fichier à UNE destination contiguë = une unité de compression ; visible aux rapports seulement |
