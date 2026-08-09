@@ -225,7 +225,8 @@ numéro et n'atteint jamais autrement que par sa table. Une collection est un
 fichier comme un autre — **c'est un fichier qui déclare son index** :
 
 ```xml
-<file name="stage1.tiles" index="stage1.tiles.idx">
+<file name="stage1.tiles" arena="stage">
+    <index name="stage1.tiles.idx"/>
     <gfxcomp ...les tuiles du niveau.../>
 </file>
 ```
@@ -244,6 +245,23 @@ La **table d'accès** — numéro → page + adresse — est générée une fois
 placé. Votre code n'atteint la collection QUE par elle : c'est le marché qui
 autorise le builder à couler librement. La table est un fichier rigide
 ordinaire, chargé et déchargé avec sa collection.
+
+**Où vit la table.** La table est un fichier : elle a un rangement, comme
+tout le monde — par défaut celui de sa collection. Mais lire une table qui
+vit dans une page coûte double : le code doit monter la page de la table
+pour lire l'entrée, puis monter la page de l'élément pour y aller. Une table
+lue **à chaque trame** — l'index des images, celui des objets — gagne donc à
+vivre dans la **mémoire fixe**, celle qui est toujours visible : une seule
+bascule par accès. Déclarez-lui un rangement en mémoire fixe :
+
+```xml
+<index name="stage1.tiles.idx" arena="fixe"/>
+```
+
+La mémoire fixe est la ressource la plus rare de la machine — le moteur y
+vit déjà. La règle simple : lue à chaque trame → au fixe ; lue au chargement
+ou de temps en temps → en page, ce n'est pas un drame. Le rapport
+d'occupation vous montre ce que le fixe porte.
 
 Certaines tables du moteur ont un format à elles — celle des sprites porte
 aussi la géométrie de chaque image. Même source, mêmes règles, autre
@@ -390,10 +408,14 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
         <zone page="$19" address="$0000" size="$4000"/>
         <zone page="$1A" address="$0000" size="$4000"/>
     </arena>
+    <arena name="stage.fixe">  <!-- même durée de vie, mémoire toujours visible -->
+        <zone page="$01" address="$8000" size="$0800"/>
+    </arena>
 </layout>
 
 <!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour une page -->
-<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
+<file name="stage1.tiles" arena="stage">
+    <index name="stage1.tiles.idx" arena="stage.fixe"/>  <!-- lue à chaque trame -->
     <gfxcomp>
         <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
     </gfxcomp>
@@ -418,23 +440,23 @@ taille de coupe.
 1. **Il mesure.** Chaque tuile est compilée seule : 244 éléments de 30 à
    120 octets, 17 810 octets en tout. La table se mesure sans être remplie :
    244 entrées de 3 octets, 734 o.
-2. **Il pose le rigide.** Les fichiers rigides du rangement `stage`, du plus
-   gros au plus petit :
+2. **Il pose le rigide.** La table part dans son rangement en mémoire fixe ;
+   les autres fichiers rigides dans `stage`, du plus gros au plus petit :
 
    | fichier | page | adresse |
    |---|---|---|
+   | stage1.tiles.idx (734 o)  | $01 | $8000 |
    | stage1.map (5 940 o)      | $18 | $0000 |
-   | stage1.tiles.idx (734 o)  | $18 | $1734 |
-   | stage1.wave (610 o)       | $18 | $1A12 |
+   | stage1.wave (610 o)       | $18 | $1734 |
 
-   Reste un creux de 9 100 o en page $18, et les pages $19 et $1A vierges.
+   Reste un creux de 9 834 o en page $18, et les pages $19 et $1A vierges.
 3. **Il coule le fluide.** La collection remplit les creux, dans l'ordre des
-   tuiles : un **morceau** de 9 088 o (tuiles 0–124) dans le creux de $18,
-   un morceau de 8 722 o (tuiles 125–243) en $19. Deux morceaux — pas
+   tuiles : un **morceau** de 9 826 o (tuiles 0–135) dans le creux de $18,
+   un morceau de 7 984 o (tuiles 136–243) en $19. Deux morceaux — pas
    cinq : les creux ont décidé de la coupe. La page $1A n'a pas servi ; le
    rapport le montre, la zone peut être rendue.
 4. **Il génère, maintenant que tout est placé.** La table `.idx` est
-   remplie : l'entrée 137 dit « page $19, adresse $04C6 » — la place du
+   remplie : l'entrée 137 dit « page $19, adresse $002E » — la place du
    morceau qui porte la tuile 137, plus son décalage dedans. La carte
    `stage1.map` écrit ses pointeurs de tuiles de la même façon. Tout est
    écrit à l'avance : zéro donnée de liaison pour tout ça.
@@ -451,8 +473,9 @@ taille de coupe.
   déplie sur place, l'un après l'autre, et résout les quelques références
   « au chargement » — ici, celle du moteur vers `stage.tiles.idx`, car le
   niveau 2 exporte le même nom (le cas 4.6, la frontière).
-- Le code veut la tuile 137 : il lit l'entrée 137 de la table → page $19,
-  $04C6 → monte la page, y va. Il ne sait pas — et n'a pas à savoir — dans
+- Le code veut la tuile 137 : la table est en mémoire fixe, toujours
+  visible — il lit l'entrée 137 → page $19, $002E → monte cette seule page,
+  y va. Une bascule, pas deux. Il ne sait pas — et n'a pas à savoir — dans
   quel morceau la coupe l'a mise.
 - Fin du niveau : `décharge(scenes.stage1)`, `charge(scenes.stage2)`. Le
   niveau 2 a sa propre collection, ses propres morceaux, sa propre table qui

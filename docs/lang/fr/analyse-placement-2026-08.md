@@ -892,6 +892,49 @@ Le manuel n'a besoin que d'une phrase (les tables du moteur ont leur propre
 gabarit — même source, mêmes règles) : l'utilisateur ne voit pas la
 différence, et c'est le critère de réussite de l'option C.
 
+## 17. L'index en mémoire fixe (2026-08-09)
+
+Trou relevé par l'auteur : certains index sont attendus en zone résidente,
+et le modèle ne traitait pas leur positionnement optionnel au fixe pour
+limiter les alternances de pages.
+
+**Le coût évité, chiffré en bascules.** Une table qui vit dans une page
+coûte double à chaque accès depuis le code : monter la page de la table pour
+lire l'entrée, puis monter la page de l'élément pour y aller (et pour un
+appelant paginé, restaurer ensuite — trois mouvements de fenêtre). La même
+table en mémoire fixe — toujours visible — ne coûte qu'une bascule : celle
+vers l'élément. Pour une table lue à chaque trame par sprite ou par objet,
+la différence est structurelle, pas marginale.
+
+**Le précédent v1 valide le besoin, vérifié dans le code.** Les cinq tables
+moteur→stage (`Obj_Index_Page/Address`, `Img_Page_Index`, `Ani_Page_Index`,
+`Ani_Asd_Index`) sont exportées par le main de stage, chargé en page $01 à
+$8000 — la RAM résidente. La v1 fait exactement la partition qu'on cherche :
+**tables chaudes au fixe, descripteurs riches en pages** (les `set_*` de
+l'imageset sont paginés, montés via `Img_Page_Index` avant déréférencement).
+Le modèle cible ne doit pas l'inventer, seulement l'exprimer.
+
+**Il l'exprime déjà — il manquait le crochet et le défaut.** La mémoire fixe
+n'est pas un concept de plus : c'est une zone comme une autre (`page="$01"`,
+adresses hautes), qu'une arène peut porter. La table d'une collection étant
+un fichier, son placement se pilote comme celui d'un fichier : un attribut
+`arena` sur l'élément `<index>`, dont le défaut est l'arène de la
+collection. Manuel mis à jour en conséquence : `<index name="…"
+arena="stage.fixe"/>`, l'exemple §5 place la table en $01:$8000 (une bascule
+au lieu de deux, dit en toutes lettres), et §3.5 donne la règle simple —
+**lue à chaque trame → au fixe ; lue au chargement → en page**. La mémoire
+fixe étant la ressource la plus rare (le moteur y vit), le fixe reste un
+choix, jamais un défaut global, et le rapport d'occupation en montre la
+charge.
+
+Nuance de cohérence avec le §16 : la partition chaud/froid traverse les
+étages — `Img_Page_Index` (chaud, fixe, gabarit standard) pointe des
+descripteurs (froids, paginés, gabarit sprites) qui pointent des routines
+(paginées, fluides). Le modèle n'impose pas un étage : chaque table choisit
+son rangement, et la durée de vie reste portée par l'arène (une arène fixe
+« du stage » se décharge avec le stage, comme `region stage` le fait
+aujourd'hui à $01:$8000).
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
