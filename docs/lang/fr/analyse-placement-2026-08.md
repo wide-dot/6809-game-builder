@@ -1104,6 +1104,48 @@ manque — jamais un concept utilisateur.
 Manuel : cas 4.11 ajouté (les mêmes ennemis aux stages 1, 4 et 7 — partager
 d'abord, recopier sur suggestion du build).
 
+## 21. Ce que le déplacement de `arena` du load vers le file a cassé — acté (2026-08-09)
+
+Constat d'auteur, exact : un fichier va désormais toujours dans le même
+rangement. L'ancien modèle (`arena` sur le `<load>`) permettait de charger
+LE MÊME fichier à des places différentes selon la scène — un stage donné
+pouvait avoir une carte mémoire différente des autres. Le déplacement de
+l'attribut a retiré cette capacité. Ce n'est pas un accident : c'est LE prix
+du bake par défaut — une référence écrite à l'avance suppose une place
+unique, donc la place est une propriété du fichier, pas de l'usage. La
+capacité perdue est exactement celle du monde tout-link. À dire en toutes
+lettres, c'est fait ici et au manuel.
+
+**Ce qui reste exprimable sans rien ajouter :**
+
+1. **Une carte mémoire particulière pour un stage donné** n'exige PAS la
+   place-par-usage. Les rangements peuvent se chevaucher — la doctrine le
+   dit depuis modele-zones (« deux contenants peuvent occuper la même RAM »,
+   montré jamais interdit) : un stage à la géographie spéciale déclare SES
+   rangements sur les mêmes pages, y met SES fichiers, et les vérifications
+   par scène gardent chaque composition. La carte mémoire n'est pas une
+   partition globale : elle est émergente, par composition — le rapport
+   d'occupation en montre une par scène, précisément pour ça.
+2. **Le même contenu à deux places selon l'écran** : la recopie (§20) — deux
+   fichiers, mêmes sources, chacun son rangement. Coût disquette, liberté
+   totale, et l'index du stage absorbe.
+
+**Par où la capacité rentrerait, si un cas réel l'exigeait** : par le `link`
+explicite — une place par scène n'est cohérente qu'avec une résolution au
+chargement (le fichier et ses consommateurs), et la table de scène sait déjà
+porter une destination par entrée. Mais aucun cas du corpus ne le demande
+(la v1 chargeait ses parts partagées à places fixes ; les bancs exercent
+« même destination », pas « destination par scène »), et la recopie couvre
+le besoin au prix d'une copie disque. Décision recommandée : **non-feature
+délibérée** — ne pas offrir la place-par-usage, la réévaluer si un fichier
+apparaît qui soit à la fois trop gros pour être recopié et nécessaire à des
+places différentes. Critère écrit, comme pour le DSL.
+
+Manuel : §3.2 dit désormais la contrainte en une phrase (« un fichier a un
+rangement — le même pour toutes les listes ») avec ses deux sorties, et le
+cas 4.3 mentionne le chevauchement de rangements pour un écran à géographie
+particulière.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,

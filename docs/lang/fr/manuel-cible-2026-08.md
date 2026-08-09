@@ -158,6 +158,14 @@ adresse — choisie pour que toutes les listes qui le chargent tiennent
 ensemble, et gardée d'un chargement à l'autre. Vous ne déclarez rien ; le
 rapport d'occupation vous montre où tout est tombé.
 
+Conséquence à connaître : **un fichier a un rangement — le même pour toutes
+les listes.** Le même fichier ne peut pas atterrir ici dans un écran et là
+dans un autre : c'est ce qui permet d'écrire les adresses à l'avance. S'il
+vous faut le même contenu à deux places selon l'écran, ce sont deux
+fichiers (mêmes sources, deux noms — voir 4.11) ; et un écran à la
+géographie particulière déclare ses propres rangements sur les mêmes pages
+(voir 4.3).
+
 Quand une place précise compte — une table que le matériel lit, un tampon à
 adresse fixe — le fichier la déclare lui-même :
 
@@ -347,6 +355,13 @@ rangements, une liste par écran :
 Le titre et les niveaux déclarent leurs fichiers dans le rangement `screen` :
 le builder peut leur attribuer les mêmes pages, puisqu'aucune liste ne les
 charge ensemble. Le rapport d'occupation le montre ; rien à déclarer.
+
+Un écran à la géographie particulière — un stage bonus qui veut toute la
+place pour ses décors — n'a pas à tordre les rangements des autres : il
+déclare **les siens**, sur les mêmes pages. Deux rangements peuvent occuper
+la même mémoire, du moment qu'aucune liste ne charge les deux à la fois —
+la carte mémoire n'est pas un plan unique, c'est une carte par écran, et
+c'est ainsi que le rapport la montre.
 
 ### 4.4 Un niveau plus gros qu'une page
 
