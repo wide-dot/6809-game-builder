@@ -170,9 +170,11 @@ le fichier déclare — un rangement, ou une place précise — vaut pour tout s
 contenu par défaut. Un élément nommé du fichier peut dire autre chose : sa
 table en mémoire fixe (3.5), une routine chaude au fixe pendant que ses
 données restent en page, un tampon à adresse imposée au milieu d'un contenu
-libre. L'élément qui surcharge devient son propre morceau sur la disquette —
-ça coûte une entrée de répertoire, le rapport le montre. Le reste du fichier
-ne bouge pas : même nom, même liste, même durée de vie.
+libre. Chaque destination distincte fait un morceau de plus — une entrée de
+répertoire, que le rapport montre — mais **sur la disquette rien ne
+s'éparpille** : les morceaux d'un fichier restent collés, lus dans le même
+balayage ; seule leur arrivée en mémoire diffère. Le reste ne bouge pas :
+même nom, même liste, même durée de vie.
 
 Deux fichiers peuvent déclarer **la même place** : cela dit au builder qu'ils
 ne sont jamais en mémoire en même temps — l'un remplace l'autre. C'est ainsi
@@ -275,6 +277,12 @@ d'occupation vous montre ce que le fixe porte.
 Ce n'est pas un cas particulier de la table : c'est le principe général de
 3.2 — la destination du fichier vaut par défaut, tout élément nommé peut la
 surcharger.
+
+Un index peut aussi se déclarer **dans un autre fichier**, en nommant sa
+cible : `<index of="stage1.tiles"/>`. C'est ainsi que le moteur groupe ses
+tables chaudes — objets, images, animations — dans un seul fichier de
+mémoire fixe, chargé et déchargé comme un tout : plusieurs index dans un
+fichier, c'est le cas normal, pas l'exception.
 
 Certaines tables du moteur ont un format à elles — celle des sprites porte
 aussi la géométrie de chaque image. Même source, mêmes règles, autre

@@ -984,6 +984,78 @@ Manuel aligné : le principe est énoncé au §3.2 (là où vivent les
 destinations), et le §3.5 renvoie vers lui — la table n'est plus un cas
 particulier, c'est la première application.
 
+## 19. Correction du §18, et l'invariant des générations multiples (2026-08-09)
+
+Deux objections d'auteur, toutes deux fondées : « surcharger, c'est se
+détacher » confondait les unités, et le cas de plusieurs index générés dans
+un même fichier n'était pas traité. Reprise du problème à la racine.
+
+### Les trois unités, enfin séparées
+
+Le mot « morceau » recouvrait deux choses distinctes, et la confusion vient
+de là :
+
+| unité | ce qui la définit | ce qui la dérive |
+|---|---|---|
+| **le fichier** | déclaration, nom, chargement, durée de vie | l'auteur |
+| **le morceau** | UNE destination RAM contiguë = UNE unité de compression | les destinations × les creux |
+| **l'étendue disque** | des secteurs consécutifs, lus d'un balayage | l'ordre d'émission |
+
+Le lien morceau ↔ destination n'est pas un choix de disque, c'est une
+conséquence de la **décompression en place** (§14) : le flux compressé est
+lu dans la queue de son emplacement final et déplié sur place — l'unité de
+compression est donc forcément une plage RAM contiguë. Éparpiller le contenu
+d'un seul bloc compressé exigerait un tampon de transit et une passe de
+copie, précisément ce que le §14 a montré ne pas exister et ne pas devoir
+exister.
+
+**La correction** : surcharger la destination d'un élément le détache **du
+morceau** — pas du flux disque. Les morceaux d'un même fichier sont émis à
+la suite, collés à l'octet près, lus dans le même balayage de tête : la
+continuité disque est une propriété de l'ordre d'émission, indépendante des
+destinations RAM, qui peuvent être aussi non linéaires qu'on veut. Le coût
+réel d'une surcharge : une entrée de répertoire (8-24 o) et une ligne de
+table de scène. Pas un seek, pas un tour de disque. Le §18 reste juste sur
+tout le reste ; le manuel est reformulé pour ne plus suggérer une
+discontinuité disque.
+
+### Plusieurs index générés dans un fichier : le cas est déjà réel
+
+Le main de stage v1/v2 exporte CINQ tables — `Obj_Index_Page/Address`,
+`Img_Page_Index`, `Ani_Page_Index`, `Ani_Asd_Index` — cinq index générés
+sur cinq cibles différentes, dans un seul fichier résident. Ce n'est pas un
+cas limite du modèle, c'est son cas central. Deux conséquences de
+conception :
+
+1. **L'index est un élément généré AVEC UNE CIBLE, déclarable où il vit.**
+   La forme du §17 (`<index arena="…">` enfant de sa collection, téléporté
+   ailleurs) n'est qu'un raccourci. La forme générale : un index se déclare
+   comme élément du fichier QUI L'HÉBERGE, en nommant sa cible —
+   `<index of="stage1.tiles"/>` dans le fichier d'interface du stage. Cinq
+   index dans un fichier = cinq éléments. Ça résout au passage la gêne de
+   durée de vie du §18 (limite 2) : un index déclaré chez son hôte a la
+   durée de vie de l'hôte, ce qui est exactement le contrat des cinq tables.
+2. **L'invariant qui rend tout ordonnançable** : les enregistrements générés
+   sont à **largeur fixe**, donc la TAILLE d'un index ne dépend que de la
+   structure de sa cible (des comptes, des variantes déclarées) — jamais des
+   placements. D'où l'ordre de build en deux temps, valable quel que soit le
+   nombre d'index et leur imbrication : (a) tout se MESURE (les éléments par
+   assemblage, les index par comptage) et tout se PLACE en une passe ;
+   (b) tout se REMPLIT, dans n'importe quel ordre — un remplissage ne
+   consomme que des placements, figés en (a), jamais le contenu d'une autre
+   table. L'index d'index (`Img_Page_Index` pointe les descripteurs,
+   eux-mêmes générés) passe sans étage supplémentaire : la place d'un
+   descripteur est un placement comme un autre.
+
+   La règle de conception qui porte l'invariant : **champs à largeur fixe
+   dans toute table générée**. Une table à largeur variable (un index
+   compressé, des enregistrements optionnels dépendant d'une valeur placée)
+   casserait « taille avant placement » — à interdire, ou à reléguer
+   explicitement dans une génération à deux passes qui dirait son nom.
+
+En creux, la leçon de la question : le morceau se définit par la destination
+et la compression — le disque n'y est pour rien, il ne connaît que l'ordre.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
