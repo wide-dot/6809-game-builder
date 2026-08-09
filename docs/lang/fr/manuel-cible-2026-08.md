@@ -334,7 +334,109 @@ fichiers et enchaînez-les par leur table — le lecteur change de morceau, pas
 de page au milieu d'un octet. Aucun contenu du moteur ne lit à cheval sur
 deux pages ; ne concevez pas de données qui l'exigent.
 
-## 5. Quand le build refuse
+## 5. Un exemple suivi de bout en bout
+
+Comment s'articulent l'ensemble, ses fichiers, le rangement et la liste —
+sur le cas réel du niveau 1. (Les tailles sont illustratives.)
+
+### Ce que vous écrivez
+
+```xml
+<layout>
+    <!-- durée de vie : tout le jeu -->
+    <arena name="common">
+        <zone page="$04" address="$2000" size="$2000"/>
+        <zone page="$05" address="$0000" size="$4000"/>
+    </arena>
+    <!-- durée de vie : le niveau courant -->
+    <arena name="stage">
+        <zone page="$18" address="$0000" size="$4000"/>
+        <zone page="$19" address="$0000" size="$4000"/>
+        <zone page="$1A" address="$0000" size="$4000"/>
+    </arena>
+</layout>
+
+<!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour un fichier -->
+<set name="stage1.tiles" arena="stage" blocks="~4k">
+    <gfxcomp>
+        <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
+    </gfxcomp>
+</set>
+
+<!-- des fichiers ordinaires, même durée de vie -->
+<file name="stage1.map"  arena="stage"> <tilemap .../> </file>
+<file name="stage1.wave" arena="stage"> <lwasm .../>   </file>
+
+<scene name="scenes.stage1">
+    <load name="stage1.tiles"/>     <!-- l'ensemble, par son nom -->
+    <load name="stage1.map"/>
+    <load name="stage1.wave"/>
+</scene>
+```
+
+Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode.
+
+### Ce que le builder en fait
+
+1. **Il mesure.** Chaque tuile est compilée seule : 244 morceaux de 30 à
+   120 octets, 17 810 octets en tout.
+2. **Il coupe.** L'ensemble devient des fichiers d'environ 4 Ko, dans
+   l'ordre des tuiles : `stage1.tiles.0` (tuiles 0–58, 3 980 o),
+   `.1` (59–121, 4 010 o), `.2`, `.3`, `.4` (le reste, 1 828 o) — plus la
+   **table** `stage1.tiles.idx` : 244 entrées de 3 octets, 732 o. À partir
+   d'ici, l'ensemble n'existe plus : il n'y a que des fichiers.
+3. **Il place.** L'optimiseur du rangement `stage` attribue les places
+   attitrées — les fichiers à adresse déclarée d'abord (aucun ici), puis du
+   plus gros au plus petit :
+
+   | fichier | page | adresse |
+   |---|---|---|
+   | stage1.tiles.3 (4 102 o) | $18 | $0000 |
+   | stage1.tiles.1 (4 010 o) | $18 | $1006 |
+   | stage1.tiles.0 (3 980 o) | $18 | $2AB0 |
+   | stage1.map (5 940 o)     | $19 | $0000 |
+   | stage1.tiles.2 (3 890 o) | $19 | $1734 |
+   | stage1.tiles.4 (1 828 o) | $19 | $2666 |
+   | stage1.tiles.idx (732 o) | $19 | $2D8A |
+   | stage1.wave (610 o)      | $19 | $3066 |
+
+4. **Il génère, maintenant que tout est placé.** La table `.idx` est
+   remplie : l'entrée 137 dit « page $19, adresse $1B12 » — la place du
+   fichier qui porte la tuile 137, plus son décalage dedans. La carte
+   `stage1.map` écrit ses pointeurs de tuiles de la même façon. Tout est
+   écrit à l'avance : zéro donnée de liaison pour tout ça.
+5. **Il écrit la disquette.** Huit entrées de répertoire, les huit fichiers
+   compressés collés bout à bout dans l'ordre de la liste, et la liste
+   elle-même devient une petite table sur disque : huit fois
+   (page, adresse, numéro).
+
+### Ce qui se passe en jeu
+
+- `charge(scenes.stage1)` : le chargeur lit la liste, charge les huit
+  fichiers en un seul balayage de tête, décompresse, et résout les quelques
+  références « au chargement » — ici, celle du moteur vers
+  `stage.tiles.idx`, car le niveau 2 exporte le même nom (le cas 4.6, la
+  frontière).
+- Le code veut la tuile 137 : il lit l'entrée 137 de la table → page $19,
+  $1B12 → monte la page, y va. Il ne sait pas — et n'a pas à savoir — dans
+  quel fichier la coupe l'a mise.
+- Fin du niveau : `décharge(scenes.stage1)`, `charge(scenes.stage2)`. Le
+  niveau 2 a son propre ensemble, ses propres fichiers, sa propre table qui
+  exporte le même nom — la référence du moteur pointe maintenant sur elle.
+  Mêmes numéros de tuiles, autres dessins, autre découpe : le code ne voit
+  pas la différence.
+
+### L'articulation en quatre phrases
+
+L'**ensemble** est une déclaration : il n'existe qu'au build, où il PRODUIT
+des fichiers — les morceaux, et la table qui est la porte d'entrée. Les
+**fichiers** sont la seule chose que connaissent la disquette, le répertoire,
+la liste et le chargeur. Le **rangement** est l'endroit où ces fichiers
+reçoivent leur place attitrée — et la durée de vie qu'ils partagent. La
+**liste** ne manipule que des noms : charger le nom d'un ensemble, c'est
+charger les fichiers qu'il a produits ; la décharger, c'est les lâcher tous.
+
+## 6. Quand le build refuse
 
 Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 
@@ -350,7 +452,7 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
    runtime, avec qui recouvrait quoi, où. La cause la plus courante : un
    déchargement oublié.
 
-## 6. La performance : ce qui coûte, où le voir
+## 7. La performance : ce qui coûte, où le voir
 
 - **Le chargement** : secteurs lus (la compression les réduit), retours de
   tête (l'ordre disquette suit vos listes ; le rapport montre ce qui reste),
