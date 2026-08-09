@@ -64,50 +64,6 @@ public final class LayoutResolver {
 
 		Map<String, Regions.Region> out = new LinkedHashMap<String, Regions.Region>();
 		Map<Integer, Integer> cursor = new LinkedHashMap<Integer, Integer>();
-		// what each page already holds, so an auto region can find a hole :
-		// page -> list of [start, end) taken by a fixed region or a reserved range
-		Map<Integer, java.util.List<int[]>> taken = new LinkedHashMap<Integer, java.util.List<int[]>>();
-		// Every page some declaration starts on. A pages="auto" region with no
-		// measure yet claims room up to the next one : generous enough that the
-		// discovery pack never hits a ceiling, bounded so two of them never
-		// overlap. The measure replaces it in the real pass.
-		java.util.TreeSet<Integer> claimed = new java.util.TreeSet<Integer>();
-		for (ImmutableNode c : layout.getChildren()) {
-			if ("region".equals(c.getNodeName()) || "arena".equals(c.getNodeName())
-					|| "reserved".equals(c.getNodeName())) {
-				// a region declaring zones names its pages there, one by one
-				boolean fromZones = false;
-				for (ImmutableNode z : c.getChildren()) {
-					if ("zone".equals(z.getNodeName())) {
-						claimed.add(Attribute.getInteger(z, ctx, "page"));
-						fromZones = true;
-					}
-				}
-				if (fromZones) {
-					continue;
-				}
-				String p = Attribute.getStringOpt(c, ctx, "page");
-				if (p != null && !"auto".equals(p)) {
-					claimed.add(Attribute.getInteger(c, ctx, "page"));
-				}
-			}
-		}
-		// Pages the builder may range over for page="auto". Ordered : the
-		// pages the author placed by hand come first, so an auto region fills
-		// their tail before opening a fresh one — that tail is what the
-		// occupancy report showed sitting unused.
-		java.util.List<Integer> autoPages = new java.util.ArrayList<Integer>(claimed);
-		String spare = Attribute.getStringOpt(layout, ctx, "sparepages");
-		if (spare != null) {
-			String[] bounds = spare.split("-");
-			int from = Integer.decode(bounds[0].trim().replace("$", "0x"));
-			int to = Integer.decode(bounds[bounds.length - 1].trim().replace("$", "0x"));
-			for (int p = from; p <= to; p++) {
-				if (!autoPages.contains(p)) {
-					autoPages.add(p);
-				}
-			}
-		}
 
 		for (ImmutableNode child : layout.getChildren()) {
 
@@ -116,7 +72,6 @@ public final class LayoutResolver {
 				int address = Attribute.getInteger(child, ctx, "address");
 				int size = Attribute.getInteger(child, ctx, "size");
 				bump(cursor, page, address + size);
-				occupy(taken, page, address, size);
 				continue;
 			}
 			boolean isArena = "arena".equals(child.getNodeName());
@@ -162,7 +117,6 @@ public final class LayoutResolver {
 				// yet, that is the next step
 				Regions.Zone head = zones.get(0);
 				for (Regions.Zone z : zones) {
-					occupy(taken, z.page, z.address, z.size);
 					bump(cursor, z.page, z.end());
 				}
 				// pages still counts the zones : the rest of the builder reads
@@ -175,26 +129,8 @@ public final class LayoutResolver {
 			// does not write, the builder works out. An attribute that is
 			// absent means "up to you" ; "auto" is still accepted, and says
 			// the same thing out loud.
-			String rawPage = Attribute.getStringOpt(child, ctx, "page");
-			boolean autoPage = false;
-			int page = autoPage ? -1 : Attribute.getInteger(child, ctx, "page");
-
-			String rawPages = Attribute.getStringOpt(child, ctx, "pages");
-			int pages;
-			if (!"auto".equals(rawPages)) {
-				pages = Attribute.getInteger(child, ctx, "pages", 1);
-			} else {
-				Integer m = ctx.regions.measuredPages(name);
-				if (m != null) {
-					pages = m;
-				} else {
-					Integer next = claimed.higher(page);
-					// nothing declared above : the last region on the map may
-					// claim up to the end of physical RAM (32 pages of 16K on
-					// a 512K machine) — the measure replaces this next pass
-					pages = next != null ? next - page : 32 - page;
-				}
-			}
+			int page = Attribute.getInteger(child, ctx, "page");
+			int pages = Attribute.getInteger(child, ctx, "pages", 1);
 			String rawSize = Attribute.getStringOpt(child, ctx, "size");
 			String rawAddress = Attribute.getStringOpt(child, ctx, "address");
 			boolean autoSize = rawSize == null || "auto".equals(rawSize);
@@ -209,7 +145,7 @@ public final class LayoutResolver {
 						+ " page " + page + " — a page does not say where it begins, so the"
 						+ " first region of a page states its address");
 			}
-			int address = (autoAddress || autoPage) ? at(cursor, page)
+			int address = autoAddress ? at(cursor, page)
 					: Attribute.getInteger(child, ctx, "address");
 
 			Integer size;
@@ -240,11 +176,6 @@ public final class LayoutResolver {
 			// what catches a region placed on top of something.
 
 			out.put(name, new Regions.Region(name, page, address, size, pages));
-			if (size != null) {
-				for (int p = 0; p < pages; p++) {
-					occupy(taken, page + p, pages > 1 ? 0 : address, pages > 1 ? PAGE_SIZE : size);
-				}
-			}
 
 			if (pages > 1) {
 				for (int p = 0; p < pages; p++) {
@@ -256,14 +187,6 @@ public final class LayoutResolver {
 		}
 		return out;
 	}
-
-	/** record a range as taken, so no auto region is offered it */
-	private static void occupy(Map<Integer, java.util.List<int[]>> taken, int page, int address,
-			int size) {
-		taken.computeIfAbsent(page, p -> new java.util.ArrayList<int[]>())
-		     .add(new int[] { address, address + size });
-	}
-
 
 	private static int at(Map<Integer, Integer> cursor, int page) {
 		Integer c = cursor.get(page);

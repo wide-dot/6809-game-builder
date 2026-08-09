@@ -153,8 +153,6 @@ public class PageSetPlugin {
 			pages.get(pages.size() - 1).add(i);
 			used += sizes[i];
 		}
-		// what the packing really needed : pages="auto" reads it back next pass
-		ctx.regions.recordPagesUsed(regionName, pages.size());
 		if (pages.size() > zoneCount) {
 			throw new Exception("pageset '" + name + "' needs " + pages.size()
 					+ " pages but region '" + regionName + "' declares " + zoneCount
@@ -460,31 +458,4 @@ public class PageSetPlugin {
 		return lwasm.create();
 	}
 
-	private static ImmutableNode member(String name, String source, String codec,
-			String linkSection, String section, String bake) {
-
-		ImmutableNode.Builder asm = new ImmutableNode.Builder();
-		asm.name("asm").addAttribute("filename", source);
-
-		ImmutableNode.Builder lwasm = new ImmutableNode.Builder();
-		lwasm.name("lwasm").addAttribute("gensource", source).addChild(asm.create());
-
-		ImmutableNode.Builder entry = new ImmutableNode.Builder();
-		entry.name("file").addAttribute("name", name).addChild(lwasm.create());
-		if (bake != null) {
-			// the pageset's bake mode travels to every member : a unit packed
-			// here resolves its references exactly as it would in its own file
-			entry.addAttribute("bake", bake);
-		}
-		if (codec != null) {
-			entry.addAttribute("codec", codec);
-		}
-		if (linkSection != null) {
-			entry.addAttribute("linkdata", linkSection);
-		}
-		if (section != null) {
-			entry.addAttribute("section", section);
-		}
-		return entry.create();
-	}
 }

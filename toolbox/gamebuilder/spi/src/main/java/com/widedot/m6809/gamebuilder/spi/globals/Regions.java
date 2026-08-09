@@ -174,41 +174,6 @@ public class Regions {
 	 */
 	private Map<String, Integer> measured = new LinkedHashMap<String, Integer>();
 
-	/**
-	 * Region name -> how many pages its pageset really filled, recorded as the
-	 * set is packed. The counterpart of {@code measured} for {@code pages="auto"} :
-	 * a page budget is a number the author guesses just as badly as a size, and
-	 * the packer knows the answer the moment it has packed.
-	 */
-	private final Map<String, Integer> pagesUsed = new LinkedHashMap<String, Integer>();
-	private Map<String, Integer> measuredPages = new LinkedHashMap<String, Integer>();
-
-	/**
-	 * The LARGEST, not the last : a region hosting alternatives is targeted by
-	 * one pageset per alternative — stage 1's tileset and stage 2's — and it
-	 * has to be sized for the biggest of them. Keeping the last one packed
-	 * makes the build refuse the other, which is how this was found.
-	 */
-	public void recordPagesUsed(String region, int pages) {
-		Integer known = pagesUsed.get(region);
-		if (known == null || pages > known) {
-			pagesUsed.put(region, pages);
-		}
-	}
-
-	public Map<String, Integer> pagesUsedSnapshot() {
-		return new LinkedHashMap<String, Integer>(pagesUsed);
-	}
-
-	public void seedMeasuredPages(Map<String, Integer> pages) {
-		measuredPages = new LinkedHashMap<String, Integer>(pages);
-	}
-
-	/** how many pages this region's content needed, or null when unmeasured */
-	public Integer measuredPages(String name) {
-		return measuredPages.get(name);
-	}
-
 	public void seedMeasured(Map<String, Integer> sizes) {
 		measured = new LinkedHashMap<String, Integer>(sizes);
 	}
@@ -285,8 +250,6 @@ public class Regions {
 		fileSizes.clear();
 		filePlacements.clear();
 		measured.clear();
-		pagesUsed.clear();
-		measuredPages.clear();
 		reserved.clear();
 		regions.clear();
 	}

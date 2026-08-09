@@ -41,7 +41,6 @@ the builder works out.**
 | `page="$13"` | this region travels with whatever else is on page $13 |
 | `address="$6100"` | it has to be exactly there |
 | `size="$1EC0"` | this is a budget — refuse the build if the content outgrows it |
-| `pages="auto"` | this region spans as many pages as its pageset fills |
 | nothing | up to you |
 
 ```xml

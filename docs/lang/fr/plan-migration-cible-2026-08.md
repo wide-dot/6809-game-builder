@@ -31,7 +31,7 @@ s'appuie sur: analyse-placement-2026-08.md, analyse-charge-manuelle-2026-08.md,
    manuel cible passant du statut « modèle en discussion » à « ce que le
    builder fait » section par section.
 
-## Phase 0 — Les retraits sans risque (courte)
+## Phase 0 — Les retraits sans risque (courte) — FAITE (2026-08-09)
 
 Le code mort du §5 de l'analyse : souches de `LayoutResolver` (`taken`/
 `occupy`, `autoPages`/`sparepages`, `autoPage`), la tuyauterie
@@ -39,7 +39,13 @@ Le code mort du §5 de l'analyse : souches de `LayoutResolver` (`taken`/
 `PageSetPlugin.member()`, `range=` de gfxcomp. Corrections doc associées
 (`scenes.md` documente encore `pages="auto"`).
 
-*Preuve : 12 configs identiques à l'octet. Aucun risque, aucun préalable.*
+*Preuve : **faite** — les 15 configs du corpus (59 images fd/sap/sd)
+identiques à l'octet avant/après, JUnit 61/61. Trois préalables
+d'environnement corrigés au passage : lwtools 4.25 compilé pour Linux
+(l'amont 4.18 ne comprenait pas les labels @), l'include fantôme
+gen/enemies/cast-pages.asm retiré des mains r-type (un clone frais ne
+construisait pas), les includes de log ajoutés au main de
+stacked-overflow (régression du système de log).*
 
 ## Phase 1 — L'émetteur d'index et les contributions (la valeur immédiate)
 

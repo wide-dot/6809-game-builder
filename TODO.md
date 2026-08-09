@@ -342,6 +342,13 @@ Fonctionnel :
       manuel-cible + workflow + analyse-placement §12-§23. Phases 0-3
       additives (portage r-type continue en parallèle), 4-5 basculent la
       syntaxe. (XL)
+  - [x] Phase 0 (09/08) — code mort retiré (souches LayoutResolver,
+        tuyauterie pages="auto" dans Regions/Target/PageSetPlugin,
+        member(), range= de gfxcomp + spec + scenes.md) ; PREUVE : 15
+        configs, 59 images identiques à l'octet, JUnit 61/61, banc
+        reproductible vérifié. Préalables : lwtools 4.25 Linux compilé
+        depuis les sources versionnées, include fantôme cast-pages.asm
+        (clone frais cassé), log manquant de stacked-overflow.
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
