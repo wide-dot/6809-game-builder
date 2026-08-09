@@ -4,7 +4,32 @@ Fichier de travail : on coche ici, le détail vit dans `CLAUDE.md` et `docs/`.
 
 Méthode standard pour tout changement builder/loader : images des 8 configs
 d'exemples comparées **octet par octet** avec la référence, `loader-ut` rejoué
-sous toje (16/16), tests JUnit verts, CI master verte.
+sous toje (16/16), tests JUnit verts, CI master verte. Le replay toje se fait
+désormais **sans écran** en une commande : `ci/toje-bench/` (boot, montages à
+chaud, lecture des témoins, dump du bloc de log au blocage).
+
+## À corriger — trouvé par la lane toje headless (09/08, détail : `ci/toje-bench/readme.md`)
+
+Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut à
+`ff633bc` rejoue 16/16 `$0D` sous le harnais). Toutes antérieures à la campagne
+« modèle cible » — ses phases sont hors de cause (contrôle par image).
+
+- [ ] **loader-ut T12/T14 en échec depuis `4576b95` (05/08)** : l'élagage vide
+      les blocs des fichiers de lest (`iface.b..e`, 20 `pad.*` — exports que
+      personne n'importe : 12 → 0 octets au link-report), ils ne sont plus
+      indexés, les comptes de T12/T14 ne collent plus ($F6/$FC). Arbitrage :
+      lest à export consommé, ou re-spec des tests sur la sémantique d'élagage.
+- [ ] **loader-ut gèle après T15 depuis `9c176a3` (07/08)** : trap
+      LOAD_OVERLAP (`$8301`, site $AD11, file $45 → page 6/$1C00, occupant
+      id 0) — déchargement manquant dans le banc migré, ou faux positif de
+      `findOverlap` (occupant id 0 suspect). T16/T17 jamais atteints, statut
+      final jamais écrit.
+- [ ] **r-type : l'échange de stages gèle** — le stage 1 se joue en entier
+      (vitesse réelle, art juste) puis le lecteur YMM boucle sans fin sur
+      `map.YM2413.D` ($E7FD) pendant la bascule : flux musical au-delà de son
+      marqueur, pointeurs sur données remplacées. Piste : `ymm.stop` / ordre
+      d'IrqOff dans `stage.handOver`. Le banc 5/5 n'avait sans doute pas été
+      rejoué en entier depuis la vitesse de scroll réelle (`bfd1a52`, 02/08).
 
 ## En cours
 
