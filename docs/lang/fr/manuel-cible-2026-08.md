@@ -409,6 +409,39 @@ fichiers et enchaînez-les par leur table — le lecteur change de morceau, pas
 de page au milieu d'un octet. Aucun contenu du moteur ne lit à cheval sur
 deux pages ; ne concevez pas de données qui l'exigent.
 
+### 4.11 Réutiliser : les mêmes ennemis aux stages 1, 4 et 7
+
+Un fichier se déclare **une fois** et se charge depuis autant de listes qu'on
+veut :
+
+```xml
+<file name="enemies.patapata"> ...ses sources... </file>
+
+<scene name="scenes.stage1"> <load name="enemies.patapata"/> ... </scene>
+<scene name="scenes.stage4"> <load name="enemies.patapata"/> ... </scene>
+<scene name="scenes.stage7"> <load name="enemies.patapata"/> ... </scene>
+```
+
+C'est ça, réutiliser. La place attitrée n'est pas un obstacle — c'est elle
+qui rend la réutilisation gratuite : le fichier a UNE place, choisie pour
+que toutes les listes qui le chargent tiennent ensemble, et tout ce qui le
+référence est écrit à l'avance une fois pour toutes. Une copie sur la
+disquette, zéro décision. Et les ennemis que le stage 2 ne partage pas
+peuvent recevoir la même place que lui : deux fichiers qu'aucune liste ne
+charge ensemble peuvent cohabiter sur le papier.
+
+Si aucune place ne convient à toutes les listes à la fois, le build le dit —
+et il reste la deuxième forme : **recopier**. Les mêmes sources (un ennemi =
+un dossier de la bibliothèque) se déclarent dans un fichier par stage, ou
+dans la collection d'ennemis de chaque stage : chaque stage place sa copie à
+sa façon, et l'index du stage — régénéré pour lui — pointe la sienne. La
+disquette paie une copie par stage, la mémoire respire.
+
+En bref : **partager** = une place et une copie ; **recopier** = liberté de
+placement et copies multiples. Commencez par partager ; recopiez quand le
+build ou le rapport vous le suggère. Sur un jeu à plusieurs disquettes, la
+recopie évite en plus un échange de disquette au milieu d'un niveau.
+
 ## 5. Un exemple suivi de bout en bout
 
 Comment s'articulent la collection, ses morceaux, le rangement et la liste —

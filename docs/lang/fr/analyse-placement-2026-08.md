@@ -1056,6 +1056,54 @@ conception :
 En creux, la leçon de la question : le morceau se définit par la destination
 et la compression — le disque n'y est pour rien, il ne connaît que l'ordre.
 
+## 20. La réutilisation (2026-08-09)
+
+Question d'auteur : si la position est associée au fichier, comment
+réutiliser des fichiers ? et des éléments (les ennemis des stages 1, 4, 7) ?
+
+**Le malentendu à lever : la place est par fichier, pas par usage.** Un
+fichier se déclare une fois et se charge depuis autant de scènes qu'on veut ;
+sa place attitrée est UNE place pour tout le jeu, résolue pour que toutes
+les compositions qui le chargent tiennent (§12, raffinement 3 — résolution
+globale, pas première-scène). L'épinglage n'empêche pas la réutilisation :
+il la rend gratuite — tout consommateur cuit contre cette place unique, et
+chaque scène retrouve le fichier au même endroit. La bibliothèque existe
+déjà dans le dépôt (`src/enemies/`, un ennemi = un dossier) : la
+réutilisation se fait au `<load>`, pas à la déclaration.
+
+**Les deux formes, et l'aiguillage entre elles :**
+
+1. **Partager** : un fichier, n scènes qui le chargent. Une copie disque,
+   une place RAM. L'optimiseur peut donner la même place à deux fichiers
+   qu'aucune scène ne co-charge (patapata des stages 1/4/7 et cancer du
+   stage 2) — le partage ne gèle pas l'espace des autres.
+2. **Recopier** : les mêmes SOURCES déclarées dans un fichier (ou une
+   collection) par stage. Chaque stage place sa copie librement, son index —
+   régénéré pour lui — pointe la sienne. Coût disquette, liberté RAM.
+
+L'aiguillage est un refus de build informatif : quand aucune place ne
+satisfait toutes les compositions d'un fichier partagé, le message doit
+proposer la recopie (et réciproquement, le rapport média peut signaler une
+recopie dont toutes les copies auraient tenu à une place commune).
+
+**Pourquoi ça marche sans mécanisme nouveau : l'index absorbe.** L'identité
+d'un ennemi dans le jeu est son numéro d'objet ; l'index du stage courant
+dit où il vit. Partagé (même place partout) ou recopié (une place par
+stage), l'index régénéré du stage donne la bonne réponse — le code ne voit
+jamais la différence. C'est la même propriété qui couvrait déjà les
+alternatives (§4.6 du manuel) et le placement libre : la table est le joint
+de dilatation du modèle.
+
+**Deux notes de réalité** : sur un jeu multi-disquette, partager un fichier
+entre stages de disquettes différentes provoque l'invite d'échange — la
+recopie par disquette est la forme normale là-bas (la v1 fait ainsi). Et la
+dédup média (deux fichiers au contenu identique stockés une fois) est une
+optimisation possible du builder, à ne considérer que si la disquette
+manque — jamais un concept utilisateur.
+
+Manuel : cas 4.11 ajouté (les mêmes ennemis aux stages 1, 4 et 7 — partager
+d'abord, recopier sur suggestion du build).
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
