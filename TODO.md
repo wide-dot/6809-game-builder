@@ -356,6 +356,14 @@ Fonctionnel :
         gen_objid.py supprimé). PREUVE : 59 images identiques à
         l'octet, JUnit 61/61. Banc toje 5/5 à rejouer par l'auteur ;
         délégation imageset différée en phase 3 (sa link data fondra).
+  - [x] Phase 2 (09/08) — le membre par zone tombe : le répertoire mesure
+        et range le pageset à la réservation des ids (PageSetPlugin
+        scindé pack/run, defaults du répertoire rejoués, adresse de
+        membre lue de la zone), n'émet que les pages remplies.
+        stage2.tiles.odd.4 disparaît (répertoire −3 blocs, table de
+        scène −5 octets). PREUVE : seules les 4 images r-type changent,
+        55 images identiques, JUnit 61/61. **Banc toje 5/5 À REJOUER
+        par l'auteur — l'image r-type change réellement.**
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

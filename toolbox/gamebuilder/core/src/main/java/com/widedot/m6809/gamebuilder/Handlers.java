@@ -268,7 +268,8 @@ public final class Handlers {
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
-		MEDIA.put("pageset", com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin::run);
+		// pageset has a spec but no handler here : like scene, it lives inside
+		// a directory, which packs it when reserving ids and runs its emission
 		MEDIA.put("file", DirEntryPlugin::run);
 		MEDIA.put("data", DataPlugin::run);
 

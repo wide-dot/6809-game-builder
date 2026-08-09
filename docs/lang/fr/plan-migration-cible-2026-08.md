@@ -107,7 +107,7 @@ byte-identique. Reste de l'extension : l'imageset délégué au même service
 de résolution — différé en phase 3, car supprimer sa link data change
 les images, ce qui contredirait la preuve d'identité de cette phase.*
 
-## Phase 2 — Membres de pageset dérivés du rangement (l'héritage v1 tombe)
+## Phase 2 — Membres de pageset dérivés du rangement (l'héritage v1 tombe) — FAITE (2026-08-09)
 
 Le sujet d'origine : `DirectoryPlugin` mesure et range au moment de la
 réservation (§4, option B), le nombre de membres devient le résultat du
@@ -119,6 +119,26 @@ réservés == émis reste le garde-fou.
 scènes raccourcies) — méthode standard complète, banc r-type 5/5 (c'est lui
 qui exerce les alternatives à comptes différents : stage1 = 5 membres,
 stage2 = 4).*
+
+*Réalisé : `PageSetPlugin` scindé en `pack()` (mesure + premier-ajustement,
+appelé par la boucle de réservation du répertoire) et `run()` (émission,
+qui réutilise le rangement mémorisé — mesurer deux fois laisserait les
+passes diverger, ce que l'assertion réservés==émis refuserait). Le pageset
+est traité comme la scène : cas particulier du répertoire, plus de handler
+média générique — hors répertoire il n'a pas de sens, ses membres sont des
+entrées. Subtilité payée en route : le rangement assemble du contenu, il
+doit donc voir les `<default>`/`<define>` propres au répertoire exactement
+comme l'émission les verrait — la boucle de réservation les rejoue dans un
+contexte de brouillon (sans quoi `lwasm.format=obj` manquait et la mesure
+refusait les EXPORT). `stage2.tiles.odd.4` a disparu (répertoire −3 blocs,
+table de `scenes.stage2` −5 octets, ids suivants décalés) ; la scène peut
+désormais précéder son pageset, `ctx.pageSets` étant peuplé dès la
+réservation. **Preuve tenue : seules les 4 images r-type changent, les 55
+images des 14 autres configs sont identiques à l'octet, JUnit 61/61.**
+Banc r-type 5/5 sous toje : à rejouer par l'auteur (pas d'émulateur ici) —
+cette fois l'image change, la revalidation a un enjeu réel. Docs du même
+commit : note datée dans analyse-multipage (membre vide/octet de
+remplissage : variante rejetée), phrase de CLAUDE.md.*
 
 ## Phase 3 — Bake par défaut, link dérivé
 

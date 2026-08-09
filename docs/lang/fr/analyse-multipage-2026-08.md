@@ -134,6 +134,14 @@ l'ancien set et sa page du nouveau. Le banc l'a montré en direct — la wave du
 stage 2 ne se déclenchait plus. Un octet de remplissage suffit à ce qu'un
 membre inutilisé évince quand même.
 
+> **Note (2026-08-09)** : ce paragraphe décrit deux mécanismes disparus
+> depuis. L'éviction par destination a été retirée du loader (9c176a3, le
+> recouvrement trappe), ce qui a emporté l'octet de remplissage avec elle ;
+> puis le membre non rempli lui-même a disparu — le répertoire mesure et
+> range le pageset au moment où il réserve les ids, et n'émet que les pages
+> remplies (plan-migration-cible, phase 2). Le paragraphe reste : c'est la
+> variante rejetée, et le bug qu'elle raconte est réel.
+
 ## Les références internes se cuisent aussi
 
 Même principe, un cran plus près : la valeur d'un intern est relative à

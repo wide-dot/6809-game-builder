@@ -41,9 +41,10 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Two invariants make it safe. Packing regroups *sources*, never cutting an
  * assembled binary, so no routine is split and no relocation is lost. And the
- * member count is the declared page budget rather than the packing result :
- * file ids are handed out before anything is built, so the number of entries
- * has to follow from the configuration alone.
+ * member count is the RESULT of the packing : the directory measures and
+ * packs the set when it reserves file ids ({@link #pack}), so the count is
+ * true by construction — a budget the packing does not fill simply produces
+ * fewer members, and the build says how many zones could be given back.
  */
 @Slf4j
 public class PageSetPlugin {
@@ -53,8 +54,53 @@ public class PageSetPlugin {
 		return region.zones.get(member).page;
 	}
 
-	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media)
-			throws Exception {
+	/**
+	 * Everything the reservation learned, kept for the emission : the parts
+	 * and their generated sources, the sizes, the pages the first-fit
+	 * produced, and the members with their real destinations. The directory
+	 * packs when it hands out file ids and emits later from this very
+	 * result — measuring twice would let the two passes disagree, which the
+	 * reserved==emitted assertion would refuse, loudly.
+	 */
+	public static class Packing {
+		public final String name;
+		public final String regionName;
+		public final Regions.Region region;
+		public final String gendir;
+		public final String codec;
+		public final String linkSection;
+		public final String section;
+		public final String bake;
+		public final List<String[]> parts;
+		public final List<String[]> blocks;
+		public final List<ImmutableNode> unitNodes;
+		public final int divisibleCount;
+		public final List<List<Integer>> pages;
+		public final List<PageSets.Member> members;
+
+		Packing(String name, String regionName, Regions.Region region, String gendir,
+				String codec, String linkSection, String section, String bake,
+				List<String[]> parts, List<String[]> blocks, List<ImmutableNode> unitNodes,
+				int divisibleCount, List<List<Integer>> pages, List<PageSets.Member> members) {
+			this.name = name;
+			this.regionName = regionName;
+			this.region = region;
+			this.gendir = gendir;
+			this.codec = codec;
+			this.linkSection = linkSection;
+			this.section = section;
+			this.bake = bake;
+			this.parts = parts;
+			this.blocks = blocks;
+			this.unitNodes = unitNodes;
+			this.divisibleCount = divisibleCount;
+			this.pages = pages;
+			this.members = members;
+		}
+	}
+
+	/** measure and pack, at reservation time : the member count comes out of here */
+	public static Packing pack(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		String name = Attribute.getString(node, ctx, "name");
 		String regionName = Attribute.getString(node, ctx, "region");
@@ -164,18 +210,51 @@ public class PageSetPlugin {
 					regionName, zoneCount - pages.size());
 		}
 
-		// --- emit one file per page ------------------------------------
+		// the members, at their real destinations : one per FILLED page, and
+		// each address comes from its zone — the scalar region.address only
+		// stands for the first zone
 		List<PageSets.Member> members = new ArrayList<PageSets.Member>();
-		List<String> memberNames = PageSets.memberNames(name, zoneCount);
-		for (int p = 0; p < zoneCount; p++) {
-			List<Integer> content = p < pages.size() ? pages.get(p) : new ArrayList<Integer>();
-			String memberName = memberNames.get(p);
-			int page = pageOf(region, p);
+		List<String> names = PageSets.memberNames(name, pages.size());
+		for (int p = 0; p < pages.size(); p++) {
+			members.add(new PageSets.Member(names.get(p), pageOf(region, p),
+					region.zones.get(p).address));
+		}
+		return new Packing(name, regionName, region, gendir, codec, linkSection, section,
+				bake, parts, blocks, unitNodes, divisibleCount, pages, members);
+	}
+
+	/**
+	 * Emission : one file per FILLED page, from the packing the directory
+	 * kept when it reserved the ids. A pageset lives inside a directory —
+	 * its members are directory entries, their ids have to be reserved.
+	 */
+	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media,
+			Packing packing) throws Exception {
+
+		if (packing == null) {
+			throw new Exception(ctx.sources.locate(node)
+					+ ": a <pageset> lives inside a <directory> ; its members are"
+					+ " directory entries, so their file ids have to be reserved there");
+		}
+		String name = packing.name;
+		String regionName = packing.regionName;
+		Regions.Region region = packing.region;
+		String gendir = packing.gendir;
+		List<String[]> parts = packing.parts;
+		List<String[]> blocks = packing.blocks;
+		int divisibleCount = packing.divisibleCount;
+		List<List<Integer>> pages = packing.pages;
+
+		for (int p = 0; p < pages.size(); p++) {
+			List<Integer> content = pages.get(p);
+			PageSets.Member member = packing.members.get(p);
+			String memberName = member.name;
+			int page = member.page;
 
 			// the placement has to be known before the entry is built : its own
 			// content may hold a *.static section, and the tables that index
 			// this set ask for each symbol's page as soon as it is exported
-			ctx.staticLink.place(memberName, page, region.address, "pageset " + name);
+			ctx.staticLink.place(memberName, page, member.address, "pageset " + name);
 			// the set occupies the region as a whole : another set targeting it
 			// replaces every member, so their items may share names even when
 			// the packing put a given item on different pages
@@ -189,10 +268,10 @@ public class PageSetPlugin {
 
 			ImmutableNode.Builder entry = new ImmutableNode.Builder();
 			entry.name("file").addAttribute("name", memberName);
-			if (bake != null)        entry.addAttribute("bake", bake);
-			if (codec != null)       entry.addAttribute("codec", codec);
-			if (linkSection != null) entry.addAttribute("linkdata", linkSection);
-			if (section != null)     entry.addAttribute("section", section);
+			if (packing.bake != null)        entry.addAttribute("bake", packing.bake);
+			if (packing.codec != null)       entry.addAttribute("codec", packing.codec);
+			if (packing.linkSection != null) entry.addAttribute("linkdata", packing.linkSection);
+			if (packing.section != null)     entry.addAttribute("section", packing.section);
 
 			// the divisible parts of this page share one assembly, as before ;
 			// each unit is its own — the member concatenates the binaries
@@ -204,16 +283,14 @@ public class PageSetPlugin {
 			for (int u : units) {
 				// regenerate with the REAL member file : the placeholder of
 				// the measure pass pointed at member 0
-				String[] regenerated = unit(unitNodes.get(u - divisibleCount),
+				String[] regenerated = unit(packing.unitNodes.get(u - divisibleCount),
 						ctx, gendir, memberName);
 				entry.addChild(lwasmOf(regenerated[0]));
 			}
 			DirEntryPlugin.run(entry.create(), ctx, media);
 
-			members.add(new PageSets.Member(memberName, page, region.address));
 			log.info("pageset {} page {} : {} parts", name, page, content.size());
 		}
-		ctx.pageSets.declare(name, members);
 
 		// A block's page is only known once the packing is done, and the game
 		// needs it to mount what it holds — the wave spawner reads its data
@@ -426,17 +503,6 @@ public class PageSetPlugin {
 			out.append("        INCLUDE \"").append(parts.get(i)[0]).append('"')
 			   .append(System.lineSeparator());
 		}
-		// A member the packing did not fill emits NOTHING : it is an empty,
-		// export-only file, which the loader indexes without a RAM footprint.
-		//
-		// It used to carry one filler byte, to make it evict by destination
-		// the member it replaced — the loader exempts empty files from that
-		// eviction, since export-only files all share the (0,0) pseudo
-		// destination and would evict one another. That was the implicit
-		// unload doing the work, and it is not the model any more : the scene
-		// that ENDS names what it drops, so an incoming member has nothing
-		// left to evict. A byte written to spare the author a declaration is
-		// exactly the comfort this builder does not offer.
 		out.append(" ENDSECTION").append(System.lineSeparator());
 
 		String path = ctx.path + File.separator + source;
