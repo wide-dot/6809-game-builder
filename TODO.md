@@ -371,9 +371,11 @@ Robustesse / outillage :
       d'OS, et les binaires macOS embarqués (lwtools 4.18) sont trop vieux
       (>= 4.22 requis). Piste : défaut par OS + attribut `processor` déjà
       existant, et rafraîchir les binaires third-party. (S)
-- [ ] **Build d'image en CI** — la CI ne joue que les tests unitaires ;
-      installer lwtools sur le runner et builder une mini-config avec hash de
-      l'image mettrait la méthode d'identité binaire sous CI. (M)
+- [ ] **Build d'image en CI** — débloqué le 09/08 : lwtools 4.25 Linux est
+      dans le dépôt et `ci/build-corpus.sh` construit les 15 configs et
+      empreinte les 59 images (le banc de la phase 0). Reste à brancher le
+      script dans le workflow GitHub Actions avec une empreinte de
+      référence commitée. (S)
 - [ ] **Parallélisation lwasm** — débloquée par BuildContext (état réentrant),
       jamais exploitée ; gain de temps de build sur les configs à dizaines de
       direntries. (M)

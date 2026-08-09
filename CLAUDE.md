@@ -704,9 +704,9 @@ Cas de migration (la v1 écrivait `$E7DC` en direct) :
   hxcfe : macOS en 2.16.15.2 (universel, reconstruit depuis les sources
   versionnées dans `toolbox/third-party/src/floppy/`), Windows et linux-arm sur
   binaire amont.
-  lwtools : macOS en 4.25 (universel, reconstruit depuis les sources versionnées),
-  Windows en 4.22, Linux et Linux-arm encore en 4.18 — à reconstruire sur ces
-  plateformes le jour où l'occasion se présente (procédure dans
-  `toolbox/third-party/src/asm/readme.md`).
+  lwtools : macOS en 4.25 (universel) et Linux x86_64 en 4.25 (09/08/2026),
+  tous deux reconstruits depuis les sources versionnées ; Windows en 4.22,
+  Linux-arm encore en 4.18 — procédure dans
+  `toolbox/third-party/src/asm/readme.md`.
 - `rom t2` cité plus haut : aucun média cartouche n'existe dans le registre v2
   (fd/sd/sap/hfe seulement) — à porter ou à retirer de la doc.
