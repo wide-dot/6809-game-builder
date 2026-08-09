@@ -1266,15 +1266,6 @@ Manuel aligné : §3.2 (le paragraphe de surcharge par élément remplacé),
 §3.5 (contribution par nom, règle d'instance), exemples §5 et §6,
 glossaire, schéma des trois unités.
 
-Ordre suggéré, le jour de l'implémentation :
-
-1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
-   tuyauterie `pages="auto"`, `member()`, `range=`) + les corrections de doc.
-   Preuve : 12 configs identiques à l'octet.
-2. **Membres = résultat du rangement** (§4, option B) + l'adresse de membre
-   lue de la zone. Les images changent (répertoire plus court, ids décalés,
-   tables de scènes raccourcies) : méthode standard complète, banc d'échange
-   stage1↔stage2 rejoué — c'est lui qui exerce les alternatives à comptes
-   différents.
-3. **La marche %10/%11 du loader** : optionnelle, à coupler avec la prochaine
-   campagne loader pour amortir la revalidation.
+L'ordre d'implémentation, d'abord esquissé ici en trois points, est devenu
+un plan complet en neuf phases avec preuves et dépendances :
+[plan-migration-cible-2026-08.md](plan-migration-cible-2026-08.md).

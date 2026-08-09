@@ -331,6 +331,17 @@ Fonctionnel :
       `<pageset>`, marche de destination %10/%11 morte en pratique côté
       loader, adresse de membre lue du scalaire `region.address` au lieu de
       la zone. (M)
+- [ ] **Migration vers le modèle cible « file maître »** — plan complet en
+      neuf phases écrit le 09/08 :
+      [`plan-migration-cible-2026-08.md`](docs/lang/fr/plan-migration-cible-2026-08.md)
+      (0 retraits sans risque, 1 émetteur d'index + contributions —
+      remplace gen_objid.py byte à byte, 2 membres de pageset dérivés,
+      3 bake par défaut + link dérivé, 4 place attitrée — région absorbée,
+      5 collections fluides, 6 média dérivé des scènes, 7 contrats
+      générés, 8 campagne loader unique, 9 passe documentaire). Modèle :
+      manuel-cible + workflow + analyse-placement §12-§23. Phases 0-3
+      additives (portage r-type continue en parallèle), 4-5 basculent la
+      syntaxe. (XL)
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
