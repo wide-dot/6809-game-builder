@@ -31,6 +31,11 @@
         INCLUDE "engine/system/mo6/map.const.asm"
  ENDC
 
+; ram.set logs a fatal probe on an unmappable destination since the common
+; log system landed : the unit that carries ram.asm carries the log contract
+        INCLUDE "engine/log/log.const.asm"
+        INCLUDE "engine/log/log.macro.asm"
+
 MARKER_COUNT    equ 10
 MARKER_SIZE     equ $0800          ; 2 KB each : ten of them cross two pages
 ; Thomson default palette : 0 black, 1 red, 2 green, 3 yellow, 4 blue…
@@ -109,5 +114,6 @@ report  fcb   $FF                   ; first faulty marker, $FF when all is well
  IFDEF MO6
         INCLUDE "engine/system/mo6/ram/ram.asm"
  ENDC
+        INCLUDE "engine/log/log.asm"
 
  ENDSECTION
