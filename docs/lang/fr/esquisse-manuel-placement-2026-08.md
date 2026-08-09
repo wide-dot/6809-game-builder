@@ -2,9 +2,10 @@
 date: 2026-08-08
 sujet: Esquisse du manuel utilisateur du placement, écrite pour éprouver le
   modèle cible (région / arène / découpage / table d'accès / références).
-statut: brouillon d'étude — la syntaxe montrée est celle du modèle EN DISCUSSION,
-  pas celle du builder d'aujourd'hui. Les failles relevées en l'écrivant sont
-  consignées dans analyse-placement-2026-08.md §11.
+statut: REMPLACÉ par manuel-cible-2026-08.md (modèle « file maître », média
+  compris). Conservé pour les variantes rejetées : ce brouillon documente le
+  modèle intermédiaire à régions, dont les failles sont consignées dans
+  analyse-placement-2026-08.md §11.
 ---
 
 # Placer et charger — esquisse de manuel

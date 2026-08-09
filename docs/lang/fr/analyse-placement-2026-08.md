@@ -648,6 +648,62 @@ Le vocabulaire final : **file** (l'unité), **zone/arena/reserved** (l'espace),
 vocabulaire — le premier comme concept, le second comme mot, en devenant le
 silence par défaut.
 
+## 13. Ce que le manuel complet a révélé (2026-08-09)
+
+Le manuel du modèle « file maître », média compris, est écrit :
+[manuel-cible-2026-08.md](manuel-cible-2026-08.md) (il remplace l'esquisse du
+§11). Deux découvertes structurantes, quatre confirmations, un détail.
+
+**1. La coupe ne peut pas être un attribut de `file` — l'élément collection
+est une conséquence, pas un choix.** Dans le modèle §12, le file est
+indivisible *par définition* (l'unité média continue et compressée). Un
+contenu découpable ne peut donc pas ÊTRE un file : c'est une déclaration qui
+en **produit** plusieurs, plus leur table. D'où l'élément `<set>` du manuel
+(§3.5) : le pageset meurt comme mécanique « un membre par zone » et renaît
+comme déclaration de collection — cette fois dérivé de la définition du
+fichier, avec la granularité en réglage (`blocks="~4k"`) au lieu de la page
+imposée.
+
+**2. Le `link` explicite disparaît aussi — il se dérive.** En écrivant le
+§3.3, la règle s'est simplifiée d'elle-même : un nom à fournisseur unique se
+cuit ; un nom que plusieurs fichiers proposent à des places différentes est
+résolu au chargement, automatiquement. La frontière moteur↔stage (§4.6 du
+manuel) se déclare alors TOUTE SEULE : les deux stages exportent
+`stage.wave`, donc la référence du moteur est linkée, sans un mot de
+configuration. Les failles 1 (résidu de région) et 5 (défaut de bake) se
+referment ensemble ; le garde-fou d'élection devient un aiguillage au lieu
+d'un refus. **Le prix, à outiller** : un export dupliqué par erreur devient
+un link silencieux au lieu d'une erreur de build — le rapport doit lister
+chaque référence résolue au chargement AVEC sa cause, et le manuel enseigne
+que cette liste courte se relit (« une ligne surprenante est un nom exporté
+deux fois par erreur »).
+
+**Confirmations :**
+
+3. **L'ordre disquette peut se dériver des scènes** (§2.4 du manuel) : le
+   builder connaît l'ordre des loads et `cwrite` est le seul écrivain —
+   ranger les fichiers d'un quartier par première utilisation ferme la
+   faille 9 par construction, le rapport ne montrant plus que les retours de
+   tête résiduels (fichiers partagés entre écrans).
+4. **La compression perd son mot** : défaut avec repli brut — déjà
+   l'implémentation depuis 3318c07 ; le manuel n'en parle qu'au chapitre
+   disquette, comme un fait.
+5. **La sémantique du conteneur restant est la durée de vie**, pas la
+   géométrie : c'est la seule façon dont le manuel a réussi à expliquer
+   pourquoi on déclare plusieurs arènes (« on décharge un rangement d'un
+   coup, on ne mélange pas les durées »). À porter tel quel dans le modèle.
+6. **Les flux multi-pages sont hors contrat, en toutes lettres** (§4.10) :
+   verrouille côté manuel le constat du §9 (aucune lib ne lit à cheval).
+
+**Restes, inchangés mais assumés par le manuel :** le déchargement sans
+syntaxe (faille 4 — la phrase rituelle « charger n'a jamais déchargé
+personne » et le trap) ; les numéros vs l'état persistant (faille 7 — écrit
+noir sur blanc au §3.5). **Nouveauté à outiller** : le rapport multi-disquette
+(« une liste qui demanderait un échange au milieu d'un niveau », §4.9).
+**Détail à trancher** : le « plus petit programme » (§4.1) suppose une zone
+par défaut quand aucun layout n'est déclaré — commodité à confirmer ou à
+retirer du manuel.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
