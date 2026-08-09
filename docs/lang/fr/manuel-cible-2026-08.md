@@ -25,6 +25,11 @@ chaque écran du jeu charge** (les listes de chargement). Le builder fait le
 reste : il mesure, compresse, place, écrit les tables, produit la disquette —
 et refuse au build ce qui ne peut pas marcher.
 
+Ce manuel a un compagnon : [le déroulé du
+builder](manuel-cible-workflow-2026-08.md), qui raconte ce que le builder
+fait de vos déclarations, étape par étape — à lire pour comprendre les
+rapports et les refus. Les schémas des deux documents vivent dans `img/`.
+
 ## 2. La disquette
 
 ### 2.1 Ce que c'est physiquement
@@ -462,6 +467,8 @@ recopie évite en plus un échange de disquette au milieu d'un niveau.
 Comment s'articulent la collection, ses morceaux, le rangement et la liste —
 sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 
+![Les trois unités : fichier, morceaux, disquette](img/trois-unites.svg)
+
 ### Ce que vous écrivez
 
 ```xml
@@ -563,7 +570,75 @@ attitrée — et la durée de vie que ça partage. La **liste** ne manipule que
 des noms : charger le nom d'une collection, c'est charger ses morceaux et sa
 table ; la décharger, c'est tout lâcher d'un coup.
 
-## 6. Quand le build refuse
+## 6. Deuxième exemple : cinq tables, deux mondes
+
+Le premier exemple avait UNE collection et SA table. Un vrai stage en a
+plusieurs — les objets, les images, les animations — et leurs tables ne
+vivent pas là où vivent leurs contenus. C'est le montage le plus important
+du moteur, le voici en entier.
+
+![Plusieurs index, deux mondes](img/multi-index.svg)
+
+### Ce que vous écrivez
+
+```xml
+<arena name="stage.fixe">    <!-- la mémoire toujours visible du stage -->
+    <zone page="$01" address="$8000" size="$0761"/>
+</arena>
+<arena name="stage">         <!-- les pages du stage -->
+    <zone page="$0A" .../> <zone page="$0B" .../> <zone page="$0C" .../>
+</arena>
+<arena name="common">        <!-- chargé une fois : images, animations -->
+    <zone page="$0D" .../> <zone page="$0E" .../> <zone page="$12" .../>
+</arena>
+
+<!-- les collections, dans les pages -->
+<file name="common.images" arena="common">  <gfxcomp .../> </file>
+<file name="common.anims"  arena="common">  <animation .../> </file>
+<file name="stage1.objects" arena="stage">  ...les ennemis du stage... </file>
+
+<!-- l'interface du stage : la boucle, l'état, et LES CINQ TABLES -->
+<file name="stage1.interface" arena="stage.fixe">
+    <lwasm> ...la boucle du stage, son état... </lwasm>
+    <index of="stage1.objects" name="Obj_Index"/>
+    <index of="common.images"  name="Img_Page_Index"/>
+    <index of="common.anims"   name="Ani_Index"/>
+</file>
+```
+
+Un fichier peut héberger **plusieurs index**, chacun nommant sa cible — même
+une cible qui vit dans un autre rangement, avec une autre durée de vie. Les
+tables ont la durée de vie de leur hôte : ici, elles se rechargent avec le
+stage, ce qui est exactement ce qu'on veut — chaque stage recharge SES
+tables sur les mêmes noms.
+
+### Pourquoi cet étage-là
+
+Les cinq tables sont lues **à chaque trame** : au fixe, les lire est
+gratuit. Leurs contenus — routines, scripts, descripteurs — sont gros et
+lus **un élément à la fois** : en pages, montés à la demande. C'est la
+partition chaud/froid : les petites tables chaudes au fixe, les gros
+contenus froids en pages. La table des images a même deux étages : elle
+pointe des **descripteurs** (le gabarit riche des sprites — géométrie plus,
+par variante, un octet de page et une adresse), eux-mêmes en page, qui
+pointent les routines de dessin.
+
+### Le chemin complet, compté en bascules
+
+« Dessine l'image 12 » : le moteur lit `Img_Page_Index[12]` au fixe
+(**zéro** bascule) → monte la page des descripteurs, lit la géométrie et la
+variante de l'image 12 (**une** bascule) → monte la page de la routine et
+l'appelle (**deux**). C'est le moteur résident qui fait ces bascules ; un
+objet paginé qui veut dessiner passe le numéro 12 à un service résident,
+jamais une adresse.
+
+Au changement de stage : `décharge(scenes.stage1)`, `charge(scenes.stage2)`
+— l'interface du stage 2 arrive au même endroit avec les mêmes noms de
+tables et d'autres contenus. Les références du moteur vers les tables sont
+résolues au chargement (plusieurs stages offrent les mêmes noms — la règle
+de 3.3 se déclenche seule) ; tout le reste est écrit à l'avance.
+
+## 7. Quand le build refuse
 
 Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 
@@ -579,7 +654,7 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
    runtime, avec qui recouvrait quoi, où. La cause la plus courante : un
    déchargement oublié.
 
-## 7. La performance : ce qui coûte, où le voir
+## 8. La performance : ce qui coûte, où le voir
 
 - **Le chargement** : secteurs lus (la compression les réduit), retours de
   tête (l'ordre disquette suit vos listes ; le rapport montre ce qui reste),
@@ -592,3 +667,22 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 - **La mémoire de liaison** : chaque référence résolue au chargement occupe
   le pool du chargeur tant que son fichier est en mémoire. La liste doit
   rester courte ; si elle enfle, un nom est exporté en double quelque part.
+
+## 9. Le vocabulaire, en une ligne chacun
+
+| mot | ce que c'est |
+|---|---|
+| **fichier** (`<file>`) | l'unité qu'on nomme et qu'on charge ; contenu produit par des modules |
+| **élément** | un contenu nommé DANS un fichier ; jamais coupé ; peut surcharger la destination |
+| **collection** | un fichier qui déclare son index — ses éléments coulent dans les creux |
+| **index** (`<index>`) | la table numéro → page + adresse d'une collection ; déclarable chez un hôte (`of=`) |
+| **morceau** | un bout de fichier à UNE destination contiguë = une unité de compression ; visible aux rapports seulement |
+| **zone** (`<zone>`) | de la place : une page, une adresse, une taille |
+| **rangement** (`<arena>`) | un nom sur des zones ; le builder y place ; c'est aussi une durée de vie |
+| **réservé** (`<reserved>`) | ce que la machine ou le code occupe sans chargement ; rien ne s'y pose |
+| **mémoire fixe** | la partie toujours visible ; les pages, elles, se montent une à la fois dans la fenêtre |
+| **liste** (`<scene>`) | ce qu'un écran charge — des noms, rien d'autre |
+| **place attitrée** | la page + adresse d'un fichier, choisie par le builder, la même pour toutes les listes |
+| **écrit à l'avance** | référence résolue au build (fournisseur unique) — gratuite à l'exécution |
+| **résolu au chargement** | référence vers du contenu interchangeable (plusieurs fournisseurs) — le chargeur pointe la version présente |
+| **seuil de creux** | en dessous, un creux reste vide plutôt que d'émietter une collection |

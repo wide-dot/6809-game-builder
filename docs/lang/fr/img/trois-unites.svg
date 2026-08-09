@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="470" viewBox="0 0 860 470" font-family="Helvetica,Arial,sans-serif" font-size="13">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a6b7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="860" height="470" fill="#ffffff"/>
+  <text x="20" y="26" font-size="16" font-weight="bold" fill="#22313f">Les trois unités : le fichier, les morceaux, la disquette</text>
+
+  <!-- Declaration -->
+  <rect x="20" y="45" width="250" height="180" rx="8" fill="#eef3f8" stroke="#9db2c4"/>
+  <text x="34" y="68" font-weight="bold" fill="#22313f">Ce que vous déclarez</text>
+  <rect x="34" y="80" width="222" height="80" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="44" y="99" fill="#22313f">&lt;file name="stage1.tiles"&gt;</text>
+  <text x="56" y="117" fill="#5a6b7a">244 éléments (tuiles)</text>
+  <text x="56" y="135" fill="#5a6b7a">&lt;index arena="stage.fixe"/&gt;</text>
+  <text x="44" y="153" fill="#22313f">&lt;/file&gt;</text>
+  <rect x="34" y="168" width="222" height="22" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="44" y="184" fill="#22313f">&lt;file name="stage1.map"&gt;   rigide</text>
+  <rect x="34" y="194" width="222" height="22" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="44" y="210" fill="#22313f">&lt;file name="stage1.wave"&gt;  rigide</text>
+
+  <!-- RAM -->
+  <rect x="330" y="45" width="240" height="300" rx="8" fill="#f4f9f0" stroke="#93b487"/>
+  <text x="344" y="68" font-weight="bold" fill="#2c4a24">En mémoire : les morceaux</text>
+  <text x="344" y="88" fill="#5a6b7a">mémoire fixe (toujours visible)</text>
+  <rect x="344" y="96" width="212" height="24" rx="4" fill="#dff0d5" stroke="#93b487"/>
+  <text x="352" y="113" fill="#2c4a24">$01:$8000  table .idx (732 o)</text>
+  <text x="344" y="140" fill="#5a6b7a">page $18 (fenêtre)</text>
+  <rect x="344" y="148" width="212" height="22" rx="4" fill="#ffffff" stroke="#93b487"/>
+  <text x="352" y="164" fill="#2c4a24">$0000  map (5 940 o)</text>
+  <rect x="344" y="172" width="212" height="22" rx="4" fill="#ffffff" stroke="#93b487"/>
+  <text x="352" y="188" fill="#2c4a24">$1734  wave (610 o)</text>
+  <rect x="344" y="196" width="212" height="24" rx="4" fill="#dff0d5" stroke="#93b487"/>
+  <text x="352" y="213" fill="#2c4a24">$1998  morceau 0 : tuiles 0-135</text>
+  <text x="344" y="240" fill="#5a6b7a">page $19 (fenêtre)</text>
+  <rect x="344" y="248" width="212" height="24" rx="4" fill="#dff0d5" stroke="#93b487"/>
+  <text x="352" y="265" fill="#2c4a24">$0000  morceau 1 : tuiles 136-243</text>
+  <text x="344" y="295" fill="#5a6b7a">un morceau = une destination</text>
+  <text x="344" y="312" fill="#5a6b7a">contiguë = une unité de</text>
+  <text x="344" y="329" fill="#5a6b7a">compression (dépli sur place)</text>
+
+  <!-- Disk -->
+  <rect x="630" y="45" width="210" height="300" rx="8" fill="#fdf6ec" stroke="#c9ab7c"/>
+  <text x="644" y="68" font-weight="bold" fill="#5c451d">Sur la disquette</text>
+  <rect x="644" y="82" width="182" height="26" fill="#ffffff" stroke="#c9ab7c"/>
+  <text x="652" y="100" fill="#5c451d">map (compressée)</text>
+  <rect x="644" y="108" width="182" height="26" fill="#ffffff" stroke="#c9ab7c"/>
+  <text x="652" y="126" fill="#5c451d">idx (compressée)</text>
+  <rect x="644" y="134" width="182" height="26" fill="#ffffff" stroke="#c9ab7c"/>
+  <text x="652" y="152" fill="#5c451d">wave (compressée)</text>
+  <rect x="644" y="160" width="182" height="26" fill="#fdeeda" stroke="#c9ab7c"/>
+  <text x="652" y="178" fill="#5c451d">morceau 0 (compressé)</text>
+  <rect x="644" y="186" width="182" height="26" fill="#fdeeda" stroke="#c9ab7c"/>
+  <text x="652" y="204" fill="#5c451d">morceau 1 (compressé)</text>
+  <text x="644" y="240" fill="#5a6b7a">collés à l'octet près,</text>
+  <text x="644" y="257" fill="#5a6b7a">dans l'ordre de la liste :</text>
+  <text x="644" y="274" fill="#5a6b7a">un seul balayage de tête,</text>
+  <text x="644" y="291" fill="#5a6b7a">quelles que soient les</text>
+  <text x="644" y="308" fill="#5a6b7a">destinations en mémoire</text>
+
+  <!-- arrows -->
+  <line x1="272" y1="130" x2="326" y2="130" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="276" y="122" fill="#5a6b7a" font-size="12">place</text>
+  <line x1="572" y1="190" x2="626" y2="190" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="576" y="182" fill="#5a6b7a" font-size="12">émet</text>
+
+  <text x="20" y="390" fill="#22313f" font-weight="bold">À retenir :</text>
+  <text x="20" y="410" fill="#5a6b7a">surcharger la destination d'un élément (l'index au fixe) crée un morceau de plus en mémoire —</text>
+  <text x="20" y="428" fill="#5a6b7a">mais sur la disquette rien ne s'éparpille : les morceaux d'un fichier restent collés et lus d'un trait.</text>
+  <text x="20" y="446" fill="#5a6b7a">Le disque ne connaît que l'ordre ; la mémoire ne connaît que les destinations.</text>
+</svg>

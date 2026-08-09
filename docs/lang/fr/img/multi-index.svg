@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="500" viewBox="0 0 860 500" font-family="Helvetica,Arial,sans-serif" font-size="13">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a6b7a"/>
+    </marker>
+    <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a9a6d"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="860" height="500" fill="#ffffff"/>
+  <text x="20" y="26" font-size="16" font-weight="bold" fill="#22313f">Plusieurs index, deux mondes : la mémoire fixe et les pages</text>
+
+  <!-- Fixed memory -->
+  <rect x="20" y="50" width="330" height="360" rx="8" fill="#f4f9f0" stroke="#93b487"/>
+  <text x="34" y="74" font-weight="bold" fill="#2c4a24">Mémoire fixe — toujours visible</text>
+
+  <rect x="34" y="88" width="300" height="80" rx="6" fill="#ffffff" stroke="#93b487"/>
+  <text x="44" y="108" font-weight="bold" fill="#2c4a24">Le moteur (résident)</text>
+  <text x="44" y="126" fill="#5a6b7a">boucle objets, dessin des sprites,</text>
+  <text x="44" y="142" fill="#5a6b7a">animation — c'est LUI qui monte les</text>
+  <text x="44" y="158" fill="#5a6b7a">pages ; le code paginé passe des numéros</text>
+
+  <rect x="34" y="182" width="300" height="150" rx="6" fill="#dff0d5" stroke="#93b487"/>
+  <text x="44" y="202" font-weight="bold" fill="#2c4a24">stage1.interface — un fichier, cinq index</text>
+  <text x="56" y="222" fill="#2c4a24">Obj_Index_Page / _Address</text>
+  <text x="56" y="240" fill="#2c4a24">Img_Page_Index</text>
+  <text x="56" y="258" fill="#2c4a24">Ani_Page_Index</text>
+  <text x="56" y="276" fill="#2c4a24">Ani_Asd_Index</text>
+  <text x="56" y="296" fill="#5a6b7a">lus à chaque trame : les lire ne coûte</text>
+  <text x="56" y="312" fill="#5a6b7a">AUCUNE bascule de page</text>
+
+  <text x="34" y="356" fill="#5a6b7a">Le stage 2 charge SON interface au même</text>
+  <text x="34" y="372" fill="#5a6b7a">endroit : mêmes noms, autres contenus —</text>
+  <text x="34" y="388" fill="#5a6b7a">le moteur ne voit pas la différence.</text>
+
+  <!-- Paged memory -->
+  <rect x="430" y="50" width="410" height="360" rx="8" fill="#eef3f8" stroke="#9db2c4"/>
+  <text x="444" y="74" font-weight="bold" fill="#22313f">Les pages — une à la fois dans la fenêtre</text>
+
+  <rect x="444" y="90" width="380" height="86" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="454" y="110" font-weight="bold" fill="#22313f">page $0C — descripteurs des sprites</text>
+  <text x="454" y="128" fill="#5a6b7a">le gabarit riche : géométrie + par variante,</text>
+  <text x="454" y="144" fill="#5a6b7a">un octet de page et l'adresse de la routine</text>
+  <text x="454" y="160" fill="#5a6b7a">(fcb page / fdb adresse)</text>
+
+  <rect x="444" y="190" width="380" height="56" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="454" y="210" font-weight="bold" fill="#22313f">pages $0D-$0F — routines de dessin</text>
+  <text x="454" y="228" fill="#5a6b7a">les images compilées (collection, morceaux)</text>
+
+  <rect x="444" y="258" width="380" height="56" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="454" y="278" font-weight="bold" fill="#22313f">page $12 — scripts d'animation</text>
+  <text x="454" y="296" fill="#5a6b7a">les données que Ani_Asd_Index pointe</text>
+
+  <rect x="444" y="326" width="380" height="56" rx="6" fill="#ffffff" stroke="#9db2c4"/>
+  <text x="454" y="346" font-weight="bold" fill="#22313f">pages $0A-$0B — objets du stage</text>
+  <text x="454" y="364" fill="#5a6b7a">le code que Obj_Index_* pointe</text>
+
+  <!-- arrows -->
+  <line x1="184" y1="168" x2="184" y2="180" stroke="#7a9a6d" stroke-width="1.6" marker-end="url(#arg)"/>
+  <text x="196" y="178" fill="#7a9a6d" font-size="12">0 bascule</text>
+
+  <line x1="334" y1="238" x2="440" y2="120" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="352" y="196" fill="#5a6b7a" font-size="12">1 bascule</text>
+  <line x1="334" y1="272" x2="440" y2="288" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="334" y1="222" x2="440" y2="350" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="620" y1="176" x2="620" y2="188" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="632" y="186" fill="#5a6b7a" font-size="12">1 bascule (l'octet de page est dans le descripteur)</text>
+
+  <text x="20" y="440" font-weight="bold" fill="#22313f">« Dessine l'image 12 » — le chemin complet :</text>
+  <text x="20" y="460" fill="#5a6b7a">Img_Page_Index[12] se lit au fixe (gratuit) → monte la page des descripteurs, lit set_12 (géométrie + page/adresse</text>
+  <text x="20" y="478" fill="#5a6b7a">de la variante) → monte la page de la routine, l'appelle. Deux bascules en tout, faites par le moteur résident.</text>
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="430" viewBox="0 0 860 430" font-family="Helvetica,Arial,sans-serif" font-size="13">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a6b7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="860" height="430" fill="#ffffff"/>
+  <text x="20" y="26" font-size="16" font-weight="bold" fill="#22313f">Le déroulé du builder — ce qui se passe entre votre config et la disquette</text>
+
+  <rect x="20" y="46" width="820" height="30" rx="6" fill="#f1eefa" stroke="#a396c8"/>
+  <text x="32" y="66" fill="#3d3360">0. La répétition générale : tout est joué une première fois pour apprendre tailles et places, puis rejoué pour de vrai — même résultat à chaque build.</text>
+
+  <!-- Row 1 -->
+  <rect x="20" y="100" width="190" height="88" rx="8" fill="#eef3f8" stroke="#9db2c4"/>
+  <text x="32" y="122" font-weight="bold" fill="#22313f">1. Mesurer</text>
+  <text x="32" y="141" fill="#5a6b7a">chaque contenu compilé ;</text>
+  <text x="32" y="157" fill="#5a6b7a">les tables se mesurent en</text>
+  <text x="32" y="173" fill="#5a6b7a">comptant (largeur fixe)</text>
+
+  <rect x="230" y="100" width="190" height="88" rx="8" fill="#eef3f8" stroke="#9db2c4"/>
+  <text x="242" y="122" font-weight="bold" fill="#22313f">2. Résoudre les noms</text>
+  <text x="242" y="141" fill="#5a6b7a">un fournisseur : écrit à</text>
+  <text x="242" y="157" fill="#5a6b7a">l'avance ; plusieurs :</text>
+  <text x="242" y="173" fill="#5a6b7a">résolu au chargement</text>
+
+  <rect x="440" y="100" width="190" height="88" rx="8" fill="#f4f9f0" stroke="#93b487"/>
+  <text x="452" y="122" font-weight="bold" fill="#2c4a24">3. Poser le rigide</text>
+  <text x="452" y="141" fill="#5a6b7a">adresses imposées, puis</text>
+  <text x="452" y="157" fill="#5a6b7a">fichiers du plus gros au</text>
+  <text x="452" y="173" fill="#5a6b7a">plus petit, par rangement</text>
+
+  <rect x="650" y="100" width="190" height="88" rx="8" fill="#f4f9f0" stroke="#93b487"/>
+  <text x="662" y="122" font-weight="bold" fill="#2c4a24">4. Couler le fluide</text>
+  <text x="662" y="141" fill="#5a6b7a">les collections dans les</text>
+  <text x="662" y="157" fill="#5a6b7a">creux : les morceaux, taille</text>
+  <text x="662" y="173" fill="#5a6b7a">décidée par les creux</text>
+
+  <!-- Row 2 -->
+  <rect x="20" y="230" width="190" height="88" rx="8" fill="#fdf6ec" stroke="#c9ab7c"/>
+  <text x="32" y="252" font-weight="bold" fill="#5c451d">5. Remplir les tables</text>
+  <text x="32" y="271" fill="#5a6b7a">index, cartes, références :</text>
+  <text x="32" y="287" fill="#5a6b7a">tout ne lit que des places,</text>
+  <text x="32" y="303" fill="#5a6b7a">donc n'importe quel ordre</text>
+
+  <rect x="230" y="230" width="190" height="88" rx="8" fill="#fdf6ec" stroke="#c9ab7c"/>
+  <text x="242" y="252" font-weight="bold" fill="#5c451d">6. Écrire la disquette</text>
+  <text x="242" y="271" fill="#5a6b7a">compression par morceau,</text>
+  <text x="242" y="287" fill="#5a6b7a">ordre des listes, rotation</text>
+  <text x="242" y="303" fill="#5a6b7a">réglée, répertoire</text>
+
+  <rect x="440" y="230" width="190" height="88" rx="8" fill="#faeeee" stroke="#c49a9a"/>
+  <text x="452" y="252" font-weight="bold" fill="#5e2b2b">7. Vérifier</text>
+  <text x="452" y="271" fill="#5a6b7a">budgets, écrasements,</text>
+  <text x="452" y="287" fill="#5a6b7a">ambiguïtés — un refus</text>
+  <text x="452" y="303" fill="#5a6b7a">nomme fichier et geste</text>
+
+  <rect x="650" y="230" width="190" height="88" rx="8" fill="#faeeee" stroke="#c49a9a"/>
+  <text x="662" y="252" font-weight="bold" fill="#5e2b2b">8. Rapporter</text>
+  <text x="662" y="271" fill="#5a6b7a">occupation par écran,</text>
+  <text x="662" y="287" fill="#5a6b7a">coût de liaison, disquette,</text>
+  <text x="662" y="303" fill="#5a6b7a">ce qui dort</text>
+
+  <!-- arrows -->
+  <line x1="212" y1="144" x2="228" y2="144" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="422" y1="144" x2="438" y2="144" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="632" y1="144" x2="648" y2="144" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M 745 190 L 745 210 L 115 210 L 115 228" fill="none" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="212" y1="274" x2="228" y2="274" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="422" y1="274" x2="438" y2="274" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="632" y1="274" x2="648" y2="274" stroke="#5a6b7a" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <text x="20" y="356" font-weight="bold" fill="#22313f">Les invariants qui tiennent l'ensemble :</text>
+  <text x="20" y="376" fill="#5a6b7a">la taille d'une table se connaît avant tout placement (champs à largeur fixe) — donc une seule passe de placement ;</text>
+  <text x="20" y="394" fill="#5a6b7a">un remplissage ne lit que des places, jamais le contenu d'une autre table — donc aucun ordre entre les générations ;</text>
+  <text x="20" y="412" fill="#5a6b7a">un morceau = une destination contiguë = une unité de compression ; le disque, lui, ne connaît que l'ordre.</text>
+</svg>
