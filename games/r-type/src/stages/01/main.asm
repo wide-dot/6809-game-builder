@@ -404,7 +404,7 @@ stage1.idle   bra   stage1.idle
 initlevel1.Object EXTERNAL
 
         INCLUDE "src/stages/01/objid.const.asm"
-        INCLUDE "src/stages/01/objid.index.asm"
+        INCLUDE "gen/stages/01/objid.index.asm"
 
 ; La table d'effacement de la rotonde : 14 emplacements de deux positions (un
 ; par tampon), que chaque shell remplit et que l'effaceur relit. Elle vit dans

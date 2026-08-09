@@ -129,6 +129,17 @@ public final class Handlers {
 			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
 		spec(element("arena").doc("a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it")
 			.req("name", STRING, "arena name, referenced by <load arena=...>"));
+		spec(element("objectindex").doc("the object index a stage exports to the engine : ObjID equates and the five tables RunObjects and the sprite runtime read. One <entry> per id, in id order — the id space is authored, the wave assembles against it")
+			.req("name", STRING, "index name, prefix of the include guard")
+			.req("genconst", STRING, "generated file of ObjID_* equates")
+			.req("gensource", STRING, "generated file of the five tables")
+			.req("zero", STRING, "file or region whose .page fills the reserved slot 0 of the Ani/Img page tables")
+			.opt("guard", STRING, "include guard of the equates file, derived from the name if omitted"));
+		spec(element("entry").doc("one object id of the index, in id order")
+			.req("name", STRING, "the ObjID_* equate this entry defines")
+			.req("file", STRING, "file or region whose .page equate locates the object")
+			.req("object", STRING, "entry symbol of the object, the address the index dispatches to")
+			.opt("asd", STRING, "animation descriptor symbol, Ani_Asd_none if omitted"));
 		spec(element("zone").doc("a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages")
 			.req("page", INT, "page holding this range")
 			.req("address", INT, "where the range starts")
@@ -253,6 +264,7 @@ public final class Handlers {
 		DEFAULTS.put("define", DefinePlugin::run);
 		DEFAULTS.put("floppydisk", FloppyDiskPlugin::run);
 		DEFAULTS.put("layout", LayoutPlugin::run);
+		DEFAULTS.put("objectindex", com.widedot.m6809.gamebuilder.plugin.objectindex.ObjectIndexPlugin::run);
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);

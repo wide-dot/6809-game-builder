@@ -349,6 +349,13 @@ Fonctionnel :
         reproductible vérifié. Préalables : lwtools 4.25 Linux compilé
         depuis les sources versionnées, include fantôme cast-pages.asm
         (clone frais cassé), log manquant de stacked-overflow.
+  - [x] Phase 1 (09/08) — élément `<objectindex>` (équates ObjID_* +
+        5 tables parallèles Obj/Ani/Img, entrées = déclarations
+        explicites dans l'ordre des ids — option b arbitrée) ; r-type
+        basculé (77 entrées dans le config, relais d'include,
+        gen_objid.py supprimé). PREUVE : 59 images identiques à
+        l'octet, JUnit 61/61. Banc toje 5/5 à rejouer par l'auteur ;
+        délégation imageset différée en phase 3 (sa link data fondra).
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

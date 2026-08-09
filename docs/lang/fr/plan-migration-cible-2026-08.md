@@ -47,7 +47,7 @@ gen/enemies/cast-pages.asm retiré des mains r-type (un clone frais ne
 construisait pas), les includes de log ajoutés au main de
 stacked-overflow (régression du système de log).*
 
-## Phase 1 — L'émetteur d'index et les contributions (la valeur immédiate)
+## Phase 1 — L'émetteur d'index et les contributions (la valeur immédiate) — FAITE (2026-08-09)
 
 La pièce qui rembourse tout de suite : le service en trois étages (§16 —
 résolution `StaticLink` existante, conventions, deux gabarits standards) et
@@ -88,6 +88,24 @@ toje ; les 14 autres configs inchangées ; `gen_objid.py` supprimé.*
 *Étend, dans la foulée : les tables d'animation (même gabarit parallèle),
 et l'imageset délégué au même service de résolution — sans toucher son
 format runtime (§16, option C).*
+
+*Réalisé : élément `<objectindex>` (plugin `objectindex/ObjectIndexPlugin`,
+specs déclarées) — les entrées sont des déclarations explicites
+`<entry name file object [asd]>` dans l'ordre des ids (option b : le
+bouchon est une déclaration du stage, pas un mécanisme du builder). Il
+émet le fichier d'équates (`ObjID_*`, `objid.count`, alias
+`objid.animation`, garde IFNDEF) et le fichier des 5 tables parallèles
+(Obj_Index_Page/Address, Ani_Page_Index, Ani_Asd_Index, Img_Page_Index)
+— les tables d'animation sont donc DANS l'émetteur, pas une extension.
+r-type basculé : 77 entrées transplantées dans `to8.config.xml` (45 + 32),
+`objid.const.asm` des stages réduits à un relais d'include,
+`gen_objid.py` et les `objid.index.asm` manuscrits supprimés.
+**Preuve tenue : les 59 images des 15 configs identiques à l'octet**
+(dont le .fd r-type), JUnit 61/61. Banc r-type 5/5 sous toje : à rejouer
+par l'auteur (pas d'émulateur ici) — sans enjeu attendu, l'image étant
+byte-identique. Reste de l'extension : l'imageset délégué au même service
+de résolution — différé en phase 3, car supprimer sa link data change
+les images, ce qui contredirait la preuve d'identité de cette phase.*
 
 ## Phase 2 — Membres de pageset dérivés du rangement (l'héritage v1 tombe)
 
