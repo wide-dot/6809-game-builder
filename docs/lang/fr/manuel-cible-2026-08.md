@@ -221,25 +221,37 @@ vérifier : l'enchaînement est votre code.
 
 Certains contenus sont des **collections** : des tuiles, des images, des
 ennemis — des dizaines d'éléments du même genre, que le code désigne par un
-numéro et n'appelle jamais directement. Une collection trop grosse pour un
-fichier se déclare comme un **ensemble** (`<set>`) :
+numéro et n'atteint jamais autrement que par sa table. Une collection est un
+fichier comme un autre — **c'est un fichier qui déclare son index** :
 
 ```xml
-<set name="stage1.tiles" blocks="~4k">
+<file name="stage1.tiles" index="stage1.tiles.idx">
     <gfxcomp ...les tuiles du niveau.../>
-</set>
+</file>
 ```
 
-Le builder compile chaque élément, les groupe en fichiers de la taille
-demandée (`blocks`), les place, et génère la **table d'accès** : numéro →
-page + adresse. Votre code n'atteint la collection QUE par cette table —
-c'est le marché qui autorise le builder à ranger librement. La table
-elle-même est un fichier ordinaire, chargé et déchargé avec sa collection.
+Déclarer l'index change la nature du fichier. Un fichier ordinaire est
+**rigide** : un seul tenant, une seule place. Une collection est **fluide** :
+le builder connaît chaque élément un par un, et peut la faire couler dans
+plusieurs creux. Au placement, les fichiers rigides se posent d'abord, du
+plus gros au plus petit ; puis les collections coulent dans ce qui reste.
+Sur la disquette, une collection devient un ou plusieurs **morceaux** —
+aussi peu que possible, chacun aussi gros que son creux le permet, chacun
+d'un seul tenant et compressé. Vous n'en choisissez ni le nombre ni la
+taille : les creux décident, le rapport les montre.
 
-La taille des blocs est un réglage, avec un compromis que le rapport vous
-montre : des blocs plus petits remplissent mieux la mémoire (moins de place
-perdue en fin de zone), des blocs plus gros se compressent mieux et coûtent
-moins d'entrées de répertoire.
+La **table d'accès** — numéro → page + adresse — est générée une fois tout
+placé. Votre code n'atteint la collection QUE par elle : c'est le marché qui
+autorise le builder à couler librement. La table est un fichier rigide
+ordinaire, chargé et déchargé avec sa collection.
+
+Deux limites, toutes deux des erreurs nommées : un élément ne se coupe
+jamais (plus gros qu'une page, il doit maigrir), et une collection qui
+déborde de son rangement donne le manque. Et un garde-fou automatique : un
+creux trop petit pour valoir un morceau — une entrée de répertoire coûte
+jusqu'à 24 octets, et un petit bloc se compresse mal — reste vide plutôt que
+d'émietter la collection ; le seuil se règle, le rapport montre ce qu'il
+laisse.
 
 Attention aux numéros : ils suivent l'ordre de déclaration des éléments. Tout
 est régénéré ensemble à chaque build, donc rien ne se décale — mais ne
@@ -295,21 +307,22 @@ charge ensemble. Le rapport d'occupation le montre ; rien à déclarer.
 
 ### 4.4 Un niveau plus gros qu'une page
 
-Le cas 3.5 en vrai : les tuiles en `<set>`, la carte générée qui connaît la
-page et l'adresse de chaque tuile, la table d'accès chargée avec le niveau.
-Le niveau 2 déclare son propre ensemble : mêmes numéros de tuiles, autres
-dessins, autre découpe — le code ne voit pas la différence.
+Le cas 3.5 en vrai : les tuiles en collection (un fichier qui déclare son
+index), la carte générée qui connaît la page et l'adresse de chaque tuile,
+la table chargée avec le niveau. Le niveau 2 déclare sa propre collection :
+mêmes numéros de tuiles, autres dessins, autre coupe — le code ne voit pas
+la différence.
 
-Si l'ensemble déborde des zones du rangement, le build refuse en donnant le
-manque. Si un seul élément dépasse un fichier, il est nommé : un élément ne
+Si la collection déborde des zones du rangement, le build refuse en donnant
+le manque. Si un seul élément dépasse une page, il est nommé : un élément ne
 se coupe jamais, il faut le faire maigrir.
 
 ### 4.5 La troupe commune, chargée une fois
 
-Le joueur, ses armes, les explosions : un ensemble dans le rangement
-`common`, chargé au boot, jamais remplacé. Sa table — l'index des objets —
+Le joueur, ses armes, les explosions : une collection dans le rangement
+`common`, chargée au boot, jamais remplacée. Sa table — l'index des objets —
 donne au moteur numéro → page + adresse de chaque habitant. Ajouter un
-ennemi : une déclaration dans l'ensemble, zéro adresse à choisir.
+ennemi : une déclaration dans la collection, zéro adresse à choisir.
 
 ### 4.6 La frontière entre ce qui reste et ce qui change
 
@@ -323,10 +336,11 @@ l'avance.
 
 ### 4.7 Remplir les queues
 
-La dernière page d'un ensemble finit rarement pleine. Les petites données du
-niveau — sa vague, ses textes — se déclarent comme fichiers du même
-rangement : le builder les glisse dans les creux. Leur page vous est publiée
-en équate quand votre code doit la monter.
+Il n'y a rien à faire : c'est l'ordre de placement qui s'en charge. Les
+petits fichiers rigides du niveau — sa vague, ses textes — se posent avec
+les autres, et les collections coulent ensuite **autour** d'eux : les queues
+se remplissent toutes seules. La page d'un fichier vous est publiée en
+équate quand votre code doit la monter.
 
 ### 4.8 Recommencer sans disquette
 
@@ -354,7 +368,7 @@ deux pages ; ne concevez pas de données qui l'exigent.
 
 ## 5. Un exemple suivi de bout en bout
 
-Comment s'articulent l'ensemble, ses fichiers, le rangement et la liste —
+Comment s'articulent la collection, ses morceaux, le rangement et la liste —
 sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 
 ### Ce que vous écrivez
@@ -374,93 +388,91 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
     </arena>
 </layout>
 
-<!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour un fichier -->
-<set name="stage1.tiles" arena="stage" blocks="~4k">
+<!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour une page -->
+<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
     <gfxcomp>
         <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
     </gfxcomp>
-</set>
+</file>
 
-<!-- des fichiers ordinaires, même durée de vie -->
+<!-- des fichiers rigides, même durée de vie -->
 <file name="stage1.map"  arena="stage"> <tilemap .../> </file>
 <file name="stage1.wave" arena="stage"> <lwasm .../>   </file>
 
 <scene name="scenes.stage1">
-    <load name="stage1.tiles"/>     <!-- l'ensemble, par son nom -->
+    <load name="stage1.tiles"/>     <!-- la collection, par son nom -->
     <load name="stage1.map"/>
     <load name="stage1.wave"/>
 </scene>
 ```
 
-Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode.
+Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode, aucune
+taille de coupe.
 
 ### Ce que le builder en fait
 
-1. **Il mesure.** Chaque tuile est compilée seule : 244 morceaux de 30 à
-   120 octets, 17 810 octets en tout.
-2. **Il coupe.** L'ensemble devient des fichiers d'environ 4 Ko, dans
-   l'ordre des tuiles : `stage1.tiles.0` (tuiles 0–58, 3 980 o),
-   `.1` (59–121, 4 010 o), `.2`, `.3`, `.4` (le reste, 1 828 o) — plus la
-   **table** `stage1.tiles.idx` : 244 entrées de 3 octets, 732 o. À partir
-   d'ici, l'ensemble n'existe plus : il n'y a que des fichiers.
-3. **Il place.** L'optimiseur du rangement `stage` attribue les places
-   attitrées — les fichiers à adresse déclarée d'abord (aucun ici), puis du
-   plus gros au plus petit :
+1. **Il mesure.** Chaque tuile est compilée seule : 244 éléments de 30 à
+   120 octets, 17 810 octets en tout. La table se mesure sans être remplie :
+   244 entrées de 3 octets, 734 o.
+2. **Il pose le rigide.** Les fichiers rigides du rangement `stage`, du plus
+   gros au plus petit :
 
    | fichier | page | adresse |
    |---|---|---|
-   | stage1.tiles.3 (4 102 o) | $18 | $0000 |
-   | stage1.tiles.1 (4 010 o) | $18 | $1006 |
-   | stage1.tiles.0 (3 980 o) | $18 | $2AB0 |
-   | stage1.map (5 940 o)     | $19 | $0000 |
-   | stage1.tiles.2 (3 890 o) | $19 | $1734 |
-   | stage1.tiles.4 (1 828 o) | $19 | $2666 |
-   | stage1.tiles.idx (732 o) | $19 | $2D8A |
-   | stage1.wave (610 o)      | $19 | $3066 |
+   | stage1.map (5 940 o)      | $18 | $0000 |
+   | stage1.tiles.idx (734 o)  | $18 | $1734 |
+   | stage1.wave (610 o)       | $18 | $1A12 |
 
+   Reste un creux de 9 100 o en page $18, et les pages $19 et $1A vierges.
+3. **Il coule le fluide.** La collection remplit les creux, dans l'ordre des
+   tuiles : un **morceau** de 9 088 o (tuiles 0–124) dans le creux de $18,
+   un morceau de 8 722 o (tuiles 125–243) en $19. Deux morceaux — pas
+   cinq : les creux ont décidé de la coupe. La page $1A n'a pas servi ; le
+   rapport le montre, la zone peut être rendue.
 4. **Il génère, maintenant que tout est placé.** La table `.idx` est
-   remplie : l'entrée 137 dit « page $19, adresse $1B12 » — la place du
-   fichier qui porte la tuile 137, plus son décalage dedans. La carte
+   remplie : l'entrée 137 dit « page $19, adresse $04C6 » — la place du
+   morceau qui porte la tuile 137, plus son décalage dedans. La carte
    `stage1.map` écrit ses pointeurs de tuiles de la même façon. Tout est
    écrit à l'avance : zéro donnée de liaison pour tout ça.
-5. **Il écrit la disquette.** Huit entrées de répertoire, les huit fichiers
-   compressés collés bout à bout dans l'ordre de la liste, et la liste
-   elle-même devient une petite table sur disque : huit fois
-   (page, adresse, numéro).
+5. **Il écrit la disquette.** Cinq entrées de répertoire — la carte, la
+   table, la vague, les deux morceaux — les cinq contenus compressés collés
+   bout à bout dans l'ordre de la liste, et la liste elle-même devient une
+   petite table sur disque : cinq fois (page, adresse, numéro).
 
 ### Ce qui se passe en jeu
 
-- `charge(scenes.stage1)` : le chargeur lit la liste et charge les huit
-  fichiers en un seul balayage de tête — chacun lu directement à sa place
+- `charge(scenes.stage1)` : le chargeur lit la liste et charge les cinq
+  contenus en un seul balayage de tête — chacun lu directement à sa place
   attitrée, les octets compressés calés en fin d'emplacement. Puis il les
   déplie sur place, l'un après l'autre, et résout les quelques références
   « au chargement » — ici, celle du moteur vers `stage.tiles.idx`, car le
   niveau 2 exporte le même nom (le cas 4.6, la frontière).
 - Le code veut la tuile 137 : il lit l'entrée 137 de la table → page $19,
-  $1B12 → monte la page, y va. Il ne sait pas — et n'a pas à savoir — dans
-  quel fichier la coupe l'a mise.
+  $04C6 → monte la page, y va. Il ne sait pas — et n'a pas à savoir — dans
+  quel morceau la coupe l'a mise.
 - Fin du niveau : `décharge(scenes.stage1)`, `charge(scenes.stage2)`. Le
-  niveau 2 a son propre ensemble, ses propres fichiers, sa propre table qui
+  niveau 2 a sa propre collection, ses propres morceaux, sa propre table qui
   exporte le même nom — la référence du moteur pointe maintenant sur elle.
-  Mêmes numéros de tuiles, autres dessins, autre découpe : le code ne voit
+  Mêmes numéros de tuiles, autres dessins, autre coupe : le code ne voit
   pas la différence.
 
 ### L'articulation en quatre phrases
 
-L'**ensemble** est une déclaration : il n'existe qu'au build, où il PRODUIT
-des fichiers — les morceaux, et la table qui est la porte d'entrée. Les
-**fichiers** sont la seule chose que connaissent la disquette, le répertoire,
-la liste et le chargeur. Le **rangement** est l'endroit où ces fichiers
-reçoivent leur place attitrée — et la durée de vie qu'ils partagent. La
-**liste** ne manipule que des noms : charger le nom d'un ensemble, c'est
-charger les fichiers qu'il a produits ; la décharger, c'est les lâcher tous.
+La **collection** est un fichier qui a déclaré son index : au build, elle
+devient des **morceaux** — taillés par les creux — et sa table, qui est la
+porte d'entrée. Les morceaux et la table sont ce que connaissent la
+disquette, le répertoire et le chargeur ; vous ne les voyez que dans les
+rapports. Le **rangement** est l'endroit où tout ça reçoit sa place
+attitrée — et la durée de vie que ça partage. La **liste** ne manipule que
+des noms : charger le nom d'une collection, c'est charger ses morceaux et sa
+table ; la décharger, c'est tout lâcher d'un coup.
 
 ## 6. Quand le build refuse
 
 Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 
 1. **Ça ne rentre pas** : un budget dépassé (le manque en octets), un élément
-   plus gros qu'un fichier (son nom), un ensemble plus large que son
+   plus gros qu'une page (son nom), une collection plus large que son
    rangement (le nombre de zones qu'il faudrait).
 2. **C'est ambigu** : deux fichiers d'une même liste à la même place ; une
    adresse écrite à l'avance vers un nom que deux fichiers proposent à des
@@ -478,8 +490,9 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
   références résolues au chargement (le rapport en donne la liste et le
   coût). La rotation est réglée d'avance, vous n'y pouvez ni bien ni mal.
 - **La mémoire** : le rapport d'occupation, page par page, écran par écran —
-  les creux, les queues d'ensembles, ce qui dort. Le réglage `blocks` des
-  ensembles arbitre creux contre compression.
+  les creux, ce qui dort, les zones rendables. Le seuil de creux des
+  collections arbitre place récupérée contre entrées de répertoire et
+  compression — le rapport montre les deux plateaux de la balance.
 - **La mémoire de liaison** : chaque référence résolue au chargement occupe
   le pool du chargeur tant que son fichier est en mémoire. La liste doit
   rester courte ; si elle enfle, un nom est exporté en double quelque part.

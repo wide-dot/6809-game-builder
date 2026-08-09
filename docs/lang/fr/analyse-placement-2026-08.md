@@ -739,6 +739,66 @@ d'un `RunPgSubRoutine`) — et une lecture d'index inline ne doit jamais être
 expansée dans du code destiné à la fenêtre. C'est un point de génération
 (où la macro est autorisée), pas seulement de documentation.
 
+## 15. La collection est un fichier, et les creux décident de la coupe (2026-08-09)
+
+Deux questions d'auteur : pourquoi un mot `set` alors qu'au final ce sont des
+fichiers ? et comment limiter le nombre de fichiers tout en favorisant les
+petits éléments qui bouchent les trous ?
+
+**`set` disparaît : une collection est un fichier qui déclare son index.**
+Le §13.1 objectait que la coupe ne peut pas être un attribut de `file`, le
+file étant l'unité média indivisible. La résolution est un déplacement de
+définition : `file` redevient **l'unité qu'on nomme et qu'on charge** ; sur
+le média, il devient un **morceau** — ou plusieurs, quand c'est une
+collection. L'indivisibilité descend d'un cran : c'est le morceau qui est
+continu et compressé d'un tenant, et l'élément qui ne se coupe jamais. La
+déclaration n'a pas de mot nouveau : `<file index="…">` — et c'est cohérent
+au fond, puisque le contrat de la coupe EST l'index (§10) : déclarer l'index,
+c'est déclarer la divisibilité. Le vocabulaire utilisateur perd encore un
+mot ; « morceau » n'apparaît que dans les rapports.
+
+**La granularité disparaît aussi : les creux décident.** La réponse à « quel
+nombre de fichiers ? » n'est pas un réglage, c'est un ordre de placement.
+Les fichiers **rigides** (sans index) se posent d'abord, du plus gros au plus
+petit ; les collections — **fluides** — coulent ensuite dans ce qui reste, en
+ordre d'éléments. Un morceau naît par creux utilisé, aussi gros que son creux
+le permet. Conséquences mesurables sur l'exemple du manuel : le rangement
+`stage` produit **2 morceaux au lieu de 5** (l'ancien `blocks="~4k"`), la
+compression y gagne (morceaux de 9 Ko au lieu de 4), le répertoire aussi
+(5 entrées au lieu de 8), et les queues se comblent sans le moindre concept —
+le cas 4.7 du manuel devient « il n'y a rien à faire ». La distinction qui
+résout la tension de l'auteur est **élément vs morceau** : on favorise les
+petits ÉLÉMENTS (ils coulent dans n'importe quel creux), et le nombre de
+MORCEAUX reste minimal parce qu'il est dérivé, jamais choisi.
+
+**Les deux garde-fous qui restent :**
+
+1. **L'élément est plafonné** — plus gros qu'une page (ou que le plus grand
+   creux offert), c'est une erreur qui le nomme. C'est la règle « une taille
+   maximum, au-delà erreur » de l'auteur, appliquée à l'élément plutôt qu'au
+   bloc — le bloc n'existant plus comme réglage.
+2. **Un seuil de creux** : un morceau coûte une entrée de répertoire
+   (8-24 o), une entrée de table de scène (5 o), un appel de chargement, et
+   un petit bloc compresse mal. Un creux plus petit que le seuil n'est pas
+   offert aux collections — mieux vaut le laisser vide que d'émietter. Le
+   seuil a un défaut raisonnable (quelques centaines d'octets) et le rapport
+   montre ce qu'il laisse, pour qu'on puisse le juger.
+
+**Ce que ça coûte : l'ordre de placement devient un algorithme à deux
+phases** (rigide posé, fluide coulé) au lieu d'un tri simple — c'est le
+premier ajustement du pageset généralisé de « pages entières » à « creux
+quelconques », et il hérite de son invariant (on regroupe des éléments, on ne
+coupe jamais dans un binaire assemblé). À surveiller à l'implémentation : la
+stabilité (un élément qui grossit peut déplacer une frontière de morceau —
+sans conséquence puisque tables et cartes sont régénérées, mais le rapport
+doit montrer ce qui a bougé, comme pour l'arène) ; et l'interaction avec les
+fichiers épinglés (un creux peut être ENTRE deux fichiers à adresse déclarée
+— c'est même son intérêt).
+
+Le manuel est aligné : §3.5 réécrit (rigide/fluide, morceaux, seuil), exemple
+§5 refait (2 morceaux, page $1A rendue), cas 4.7 réduit à « rien à faire »,
+§7 performance sur le seuil de creux.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
