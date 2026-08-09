@@ -68,6 +68,13 @@ lus (chargement plus rapide) et plus de contenu par disquette. La
 décompression se fait après la lecture, en mémoire, pas pendant — la tête ne
 l'attend jamais.
 
+Où atterrissent les octets compressés : **directement dans l'emplacement
+final du fichier**, calés à la fin (le compressé est plus court que
+l'original). Une fois toute la liste lue, le chargeur déplie chaque fichier
+sur place, du premier octet compressé vers le début de l'emplacement. Pas de
+tampon intermédiaire, donc pas de limite au nombre ni à la taille cumulée
+des fichiers d'une liste — la seule limite reste celle du fichier lui-même.
+
 ### 2.4 Les quartiers de la disquette
 
 La disquette est divisée en quartiers nommés (les *sections*) : quelques-uns
@@ -238,6 +245,17 @@ Attention aux numéros : ils suivent l'ordre de déclaration des éléments. Tou
 est régénéré ensemble à chaque build, donc rien ne se décale — mais ne
 stockez jamais un numéro dans une sauvegarde ou un mot de passe qui doit
 survivre à une nouvelle version du jeu.
+
+**Qui monte les pages.** La fenêtre ne montre qu'une page à la fois : du code
+qui s'exécute *dans* la fenêtre ne peut pas en monter une autre — il
+disparaîtrait sous ses propres pieds. La règle du moteur : **les numéros
+voyagent, les adresses non.** Le code résident monte les pages et lit les
+tables ; le code paginé — un ennemi, un objet — passe des numéros à des
+services résidents, qui sauvent la page courante, montent, lisent, remontent
+la sienne et reviennent. C'est déjà ainsi que le moteur travaille (« dessine
+l'image n », « lance l'animation n » : vous donnez le numéro, le service fait
+la bascule). La lecture d'une table existe donc en deux formes : en direct
+pour le code résident, en service résident pour le code paginé.
 
 ## 4. Les cas d'usage
 
@@ -412,11 +430,12 @@ Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode.
 
 ### Ce qui se passe en jeu
 
-- `charge(scenes.stage1)` : le chargeur lit la liste, charge les huit
-  fichiers en un seul balayage de tête, décompresse, et résout les quelques
-  références « au chargement » — ici, celle du moteur vers
-  `stage.tiles.idx`, car le niveau 2 exporte le même nom (le cas 4.6, la
-  frontière).
+- `charge(scenes.stage1)` : le chargeur lit la liste et charge les huit
+  fichiers en un seul balayage de tête — chacun lu directement à sa place
+  attitrée, les octets compressés calés en fin d'emplacement. Puis il les
+  déplie sur place, l'un après l'autre, et résout les quelques références
+  « au chargement » — ici, celle du moteur vers `stage.tiles.idx`, car le
+  niveau 2 exporte le même nom (le cas 4.6, la frontière).
 - Le code veut la tuile 137 : il lit l'entrée 137 de la table → page $19,
   $1B12 → monte la page, y va. Il ne sait pas — et n'a pas à savoir — dans
   quel fichier la coupe l'a mise.

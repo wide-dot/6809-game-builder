@@ -704,6 +704,41 @@ noir sur blanc au §3.5). **Nouveauté à outiller** : le rapport multi-disquett
 par défaut quand aucun layout n'est déclaré — commodité à confirmer ou à
 retirer du manuel.
 
+## 14. Deux contraintes runtime soulevées, vérifiées dans le code (2026-08-09)
+
+Objections d'auteur sur le manuel : le chargement groupé supposerait un
+tampon de 16 Ko et un lotissement des fichiers ; et un code paginé qui lit un
+index d'une autre page a besoin d'un mécanisme de bascule résident. Les deux
+mécanismes existent — c'est le manuel qui ne les disait pas.
+
+**1. Pas de tampon, pas de lotissement : le compressé est chargé dans son
+empreinte finale.** `loader.file.load` avance la destination de `coffset`
+pour un fichier compressé (le flux est lu du disque directement dans la
+QUEUE de l'emplacement final, page de destination montée pendant la
+lecture) ; `loader.file.decompress` déplie ensuite SUR PLACE (X =
+destination+offset → zx0 vers destination, les 6 octets de queue recopiés
+depuis `cdataz` du répertoire). L'enchaînement des n décompressions est la
+marche de scène elle-même (passe 1 : tous les loads ; passe 2 : tous les
+déplis). Il n'y a donc aucune limite de lot — la seule limite est par
+fichier (compressé ≤ original, garanti par le repli brut à offset zéro). Le
+manuel dit désormais où atterrissent les octets (§2.3) et l'exemple le
+montre (§5).
+
+**2. La bascule de page a son contrat, il faut l'écrire et le décliner pour
+l'index.** Le trampoline résident existe et est validé :
+`RunPgSubRoutine` (`_GetCartPageA` → sauvegarde → monte → appelle →
+restaure), `Obj_Run` qui remonte la page de chaque objet, et les services du
+moteur (dessin, animation) qui sont résidents et font la bascule pour le
+code paginé — le code paginé leur passe des NUMÉROS. La règle, maintenant
+écrite au manuel (§3.5) : **les numéros voyagent, les adresses non** — le
+code résident monte et lit ; le code paginé passe des ids à des services
+résidents. Conséquence pour l'émetteur d'index du §10 : les macros d'accès
+existent en deux formes — inline pour appelant résident (quelques cycles),
+routine résidente pour appelant paginé (sauve/monte/lit/restaure, le coût
+d'un `RunPgSubRoutine`) — et une lecture d'index inline ne doit jamais être
+expansée dans du code destiné à la fenêtre. C'est un point de génération
+(où la macro est autorisée), pas seulement de documentation.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
