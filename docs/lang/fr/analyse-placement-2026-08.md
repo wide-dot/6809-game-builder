@@ -536,6 +536,118 @@ gravé/chargé — c'est donc elle que le défaut (`auto` + rapport) doit rendre
 invisible, et c'est cohérent avec le §9 : un axe unique, réglé par le
 builder, surfacé par les rapports.
 
+## 12. Le modèle « file maître » (proposition auteur, 2026-08-09)
+
+Renversement proposé pour lever les failles du §11 : le **fichier** devient
+l'unité maîtresse, le placement en découle.
+
+**Le modèle, tel que proposé :**
+
+- `file` définit un contenu à persister sur le média, produit par des modules
+  (générateurs, convertisseurs, assembleur). C'est **l'unité continue sur le
+  média** : lue séquentiellement (pas de seek interne), **compressée d'un
+  bloc** (meilleur ratio sur les gros blocs), donc **indivisible**. C'est
+  aussi l'unité positionnable en RAM, et l'unité qui porte le mode de
+  résolution — les données de lien concernent un file.
+- **Bake par défaut**, sans rien déclarer. Un bake suppose un placement
+  déterministe : l'adresse de départ est un paramètre du file (explicite), ou
+  **déterminée automatiquement à l'optimisation** s'il ne dit rien — le cas
+  d'un seul usage ne coûte aucune déclaration. Le mode `link` se demande
+  explicitement.
+- L'optimiseur pose **les bakes d'abord** (contraintes fixes), puis répartit
+  **les links par taille** pour minimiser l'espace perdu.
+- Conteneurs : **arena et reserved seulement**. La région disparaît.
+- Le découpage produit des blocs plus petits pour réduire la perte ; il ne
+  s'applique qu'aux éléments à index page/adresse, et l'index est produit par
+  le builder — production, positionnement et accès restant à déterminer.
+
+**Ce qui tient, vérifié contre l'existant :**
+
+- « File = unité média continue et compressée » est le concept *group* déjà
+  arbitré (groups.md : un direntry multi-asm, flux compressé entier, link
+  data fusionnées) — promu au rang de définition du fichier. Cohérent.
+- Bake par défaut est soutenu par toutes les mesures (§9) et par le loader :
+  une référence cuite vers du contenu pas encore chargé est même PLUS sûre
+  qu'un link (pas de fenêtre « résolu à 0 »). Le pool de liens se vide, les
+  scènes se chargent plus vite — l'objectif de performance est servi par la
+  simplification, pas contre elle.
+- L'épinglage automatique donne à chaque file UNE vérité de placement : le
+  contrôle d'alternatives du §7 devient une **déclaration** (deux files qui
+  fixent la même adresse SONT des alternatives) au lieu d'une inférence — la
+  faille 2 se referme par construction.
+- Le plafond reste : un file se charge d'une adresse à la fin de sa fenêtre,
+  donc ≤ 16 Ko de fait. « Maîtriser l'unité » veut dire pouvoir la faire
+  petite, pas grande.
+
+**Quatre incohérences ou raffinements relevés :**
+
+1. **« La région devient inutile » n'est vrai que si la frontière
+   permanent→échangé est linkée.** Le texte de la proposition le trahit
+   lui-même (« si besoin d'une cible précise on utilise une region dédiée »
+   … puis « region devient inutile »). Le cas échangeable : si le moteur
+   résident CUIT une référence vers du contenu de stage, les alternatives
+   doivent partager une adresse épinglée — et un nom pour cette adresse
+   ressuscite la région. Mais la frontière mesurée est minuscule
+   (moteur→stage = **5 tables**) : la règle qui dissout la région est «
+   une référence du permanent vers l'échangé se déclare `link` » — cinq
+   références linkées, tout le reste cuit, aucune ancre nommée. Le garde-fou
+   existant (élection de fournisseur) détecte la violation et son message
+   peut enseigner la règle. Résidu acceptable si la répétition d'adresse
+   gêne : une ancre nommée minimale — mais c'est un confort, plus un concept.
+2. **« Seule la page peut varier au load » casse les références de page
+   cuites.** Les interns et extern16 sont indifférents à la page ; les
+   externPg et les octets de page des index (`fcb RAM_OVER_CART+p`) ne le
+   sont pas. Un file dont la page varie par scène ne peut pas être pointé
+   par un index cuit unique. Raffinement : le défaut est l'épinglage COMPLET
+   (page + adresse) ; la variance de page est l'exception, réservée au
+   contenu prouvé page-neutre — et le builder peut le prouver (aucun
+   externPg, aucun index ne cite sa page).
+3. **« L'adresse auto se fixe à la première scène qui l'utilise » : préférer
+   la résolution globale.** Le builder voit toutes les scènes ; épingler sur
+   la première (ordre de déclaration) peut choisir une place qui collisionne
+   dans la deuxième et forcer un retour à l'adresse manuelle. Épingler en
+   résolvant l'intersection des compositions qui chargent le file donne le
+   même confort déclaratif sans ce piège. Même coût : c'est la passe de
+   découverte qui fait déjà ce travail pour les mesures.
+4. **Le découpage fin a un prix que le pageset n'avait pas : la compression
+   et le répertoire.** Des blocs plus petits remplissent mieux la RAM, mais
+   compressent moins bien (zx0 sur petits blocs) et coûtent chacun leur
+   entrée de répertoire (8-24 o) et leur lecture. La granularité de coupe
+   devient un **réglage** (une taille visée, pas « la page ») avec le rapport
+   d'occupation et le ratio de compression comme juges — c'est un progrès sur
+   le pageset, qui coupait aveuglément à la page, à condition de montrer les
+   deux coûts.
+
+**L'index : la question ouverte, résolue en principe.**
+
+- *Production* : après placement. La taille d'un index ne dépend que de son
+  nombre d'entrées (3 o/entrée + en-tête), donc l'optimiseur peut le placer
+  AVANT que son contenu soit généré, et l'émission le cuit ensuite — c'est
+  exactement la danse des passes de découverte actuelles ; rien de neuf à
+  inventer, seulement à ordonner.
+- *Positionnement* : l'index hérite du **cycle de vie de son contenu** — la
+  règle « graveur et cible rechargés ensemble ». L'index d'un stage vit dans
+  les pages du stage (le cas tilemap actuel) ; l'index d'un commun chargé une
+  fois vit n'importe où. Il est lui-même un file ordinaire de l'arène.
+- *Accès* : l'index est **la porte unique** du contenu coupé, et l'adresse de
+  la porte est la seule chose qui traverse la frontière de cycle de vie —
+  linkée si la porte est échangée (les 5 tables), cuite sinon. La récursion
+  se termine là, et les deux layouts + macros du §10 restent valables tels
+  quels.
+
+**Bilan.** Le modèle est cohérent une fois les quatre points raffinés, et il
+referme les failles 1, 2, 5 et 8 du §11 par construction (contrat = atteint
+par sa table ; alternatives déclarées ; bake par défaut ; plus d'interdit
+d'arène — graver vers un file épinglé est sain par définition). Restent
+ouvertes : la 3/6 (la queue et les loads multiples — probablement dissoutes
+aussi : sans région, tout load est un file de l'arène), la 4 (déchargement
+sans syntaxe), la 7 (numéros vs état persistant), la 9 (rapport de seeks).
+Le vocabulaire final : **file** (l'unité), **zone/arena/reserved** (l'espace),
+**scene** (la liste), **coupe + index** (le contrat des collections),
+**link** (l'exception déclarée). La région et le bake disparaissent du
+vocabulaire — le premier comme concept, le second comme mot, en devenant le
+silence par défaut.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
