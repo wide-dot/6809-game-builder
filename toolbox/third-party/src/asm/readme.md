@@ -16,7 +16,7 @@ une chaîne de compilation à tout le monde.
 |---|---|---|---|
 | `bin/macos` | **4.25** | universel (x86_64 + arm64) | compilé depuis `lwtools-4.25/` |
 | `bin/win` | 4.22 | x86 | binaire amont |
-| `bin/linux` | 4.18 | x86_64 | binaire amont |
+| `bin/linux` | **4.25** | x86_64 | compilé depuis `lwtools-4.25/` |
 | `bin/linux-arm` | 4.18 | arm | binaire amont |
 
 **Minimum requis : 4.22.** En dessous, les labels locaux `@` utilisés dans les
