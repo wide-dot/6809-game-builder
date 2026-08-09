@@ -245,6 +245,10 @@ placé. Votre code n'atteint la collection QUE par elle : c'est le marché qui
 autorise le builder à couler librement. La table est un fichier rigide
 ordinaire, chargé et déchargé avec sa collection.
 
+Certaines tables du moteur ont un format à elles — celle des sprites porte
+aussi la géométrie de chaque image. Même source, mêmes règles, autre
+gabarit : vous ne voyez pas la différence.
+
 Deux limites, toutes deux des erreurs nommées : un élément ne se coupe
 jamais (plus gros qu'une page, il doit maigrir), et une collection qui
 déborde de son rangement donne le manque. Et un garde-fou automatique : un

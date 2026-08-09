@@ -799,6 +799,99 @@ Le manuel est aligné : §3.5 réécrit (rigide/fluide, morceaux, seuil), exempl
 §5 refait (2 morceaux, page $1A rendue), cas 4.7 réduit à « rien à faire »,
 §7 performance sur le seuil de creux.
 
+## 16. Les index du moteur : formats spécifiques contre système de placement (2026-08-09)
+
+Question d'auteur : l'imageset et les données d'animation SONT des index —
+mais l'imageset référence pages et images dans un format spécifique,
+incompatible avec l'émetteur normalisé du §10. Comment gérer ça au mieux ?
+
+### L'incompatibilité, précisément
+
+Le descripteur d'imageset (v1, importé 1:1, `sprites.md` § The imageset
+index) n'est pas une table id → (page, adresse) : c'est un enregistrement
+riche qui ENTRELACE géométrie et placements —
+
+```
+set_<name>  fcb n,x,y,xy            ; offsets des sous-ensembles miroir
+            fcb x_size,y_size,center_offset
+            ; puis par variante :
+            fcb page                 ; valeur du registre fenêtre
+            fdb adr_<variante>       ; code de dessin
+            fcb page
+            fdb adr_<variante>_erase
+            fcb nb_cell
+```
+
+Trois écarts au gabarit normalisé : plusieurs couples (page, adresse) par
+entrée, au milieu de charges utiles métier ; un layout optimisé pour les
+boucles chaudes du runtime (chaque octet et son ordre sont le contrat de
+`DrawSprites`/`CheckSpritesRefresh`, intouchables avant la phase finale de
+migration) ; et DEUX chemins d'émission qui coexistent — `genindex` (page en
+relocation `externPg` sur `<file>$PAGE`, donnée de lien par image) et
+`<imageset>` (page demandée par image, littéral cuit, `code.static`, zéro
+lien). S'y ajoute l'étage au-dessus : `Img_Page_Index[id]` donne la page du
+descripteur lui-même, que le runtime monte avant de le déréférencer — les
+descripteurs d'un jeu restent groupés.
+
+### Les options
+
+**A. Statu quo par générateur.** Chaque générateur (imageset, tilemap,
+animation, objets) résout ses placements et émet son format. C'est l'état
+actuel et ça marche — mais les conventions (entrée 0, octet fenêtre,
+génération post-placement, règle d'accès résident) se réimplémentent à
+chaque fois, et la classe de bugs « chaque générateur les siens » est
+documentée (center_offset, adresses en fcb, pages inventées).
+
+**B. Normaliser le format runtime** — séparer géométrie et placements en
+deux tables que le moteur lirait. Rejeté : ça casse le 1:1 sur la boucle la
+plus chaude du moteur, ça coûte des cycles par sprite et par trame, et la
+doctrine de migration l'interdit avant la phase finale. Le format v1 a une
+raison d'être : il est déroulé par le dessin, pas parcouru par une recherche.
+
+**C. L'émetteur normalisé est un SERVICE, pas un format.** Ce que le §10
+normalise vraiment se sépare en trois étages : (1) la **résolution** —
+symbole → page + adresse post-placement, octet fenêtre compris (c'est
+`StaticLink`, déjà unique) ; (2) les **conventions** — entrée 0 réservée,
+ids = ordre de déclaration, table générée après placement, table rigide,
+accès résident seulement ; (3) des **gabarits**. Les deux layouts standards
+(parallèle, entrelacé) sont deux gabarits fournis ; un domaine qui a son
+format v1 garde son gabarit et consomme (1) + (2). Le descripteur d'imageset
+devient « le gabarit sprites » : ses `fcb page / fdb adr` sont des appels au
+même service de résolution, son layout ne bouge pas d'un octet.
+
+**D. Un méta-format déclaratif** (décrire les gabarits dans une petite
+langue). Écarté : quatre gabarits ne justifient pas une DSL — le dépôt a
+déjà rendu cet arbitrage (analyse-dsl-2026-07) ; le gabarit est du code Java
+qui appelle la bibliothèque, c'est l'option C.
+
+### Recommandation : C, avec quatre conséquences
+
+1. **Le chemin `genindex`/`externPg` meurt.** Dans le modèle cible (tout
+   épinglé, bake par défaut), la page d'une image est un littéral connu au
+   build — la relocation par donnée de lien est l'anomalie. Un seul chemin
+   d'émission, celui de `<imageset>` : pages et adresses cuites, zéro lien.
+   C'est aussi une simplification du présent : deux chemins pour la même
+   table est exactement le genre de doublon que cette analyse traque.
+2. **Animation et objets rejoignent les gabarits standards tels quels.**
+   `Ani_Page_Index`, `Ani_Asd_Index`, `Obj_Index_Page/Address` SONT déjà le
+   layout parallèle — aucun gabarit métier à écrire, le script
+   `gen_objid.py` et les tables manuscrites du banc sprites sont remplacés
+   par l'émetteur standard. Seul l'imageset garde un gabarit à lui, parce
+   que seul son format transporte de la géométrie.
+3. **L'étagement se décompose proprement** : `Img_Page_Index` (gabarit
+   parallèle standard, pointant les descripteurs) → descripteurs (gabarit
+   sprites, rigides et groupés) → routines de dessin (éléments d'une
+   collection, fluides). Chaque variante portant SON octet de page dans le
+   descripteur, les routines coulent librement — l'atome de la collection
+   sprites peut descendre à la variante ; par prudence de migration, il
+   reste l'image entière tant que le banc n'a pas prouvé le contraire.
+4. **Les consommateurs sont résidents** (`DrawSprites` monte les pages
+   depuis l'index), conforme à la règle du §14 — rien à ajouter.
+
+Le manuel n'a besoin que d'une phrase (les tables du moteur ont leur propre
+gabarit — même source, mêmes règles) : l'utilisateur ne voit pas la
+différence, et c'est le critère de réussite de l'option C.
+
 Ordre suggéré, le jour de l'implémentation :
 
 1. **Les retraits sans risque** (code mort Java : souches de `LayoutResolver`,
