@@ -11,7 +11,6 @@
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
 
         <layout>
-            <region name="gamemode"   page="$01" address="$2200" size="$2000"/>
             <!-- the sound blobs : the builder lays them out over these zones
                  and the load-time linker resolves their labels wherever they
                  land — nothing assumes an order or a base address -->
@@ -36,7 +35,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$2200">
                     <lwasm gensource="gen/assets/game-modes/title/main-test.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/title/main-test.asm"/>
