@@ -5,6 +5,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
+import com.widedot.m6809.gamebuilder.spi.globals.FilePlaces;
 import com.widedot.m6809.gamebuilder.spi.globals.ImageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkReport;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
@@ -55,6 +56,9 @@ public class BuildContext {
 	/** datasets spread over the pages of a multi-page region, and their members */
 	public final PageSets pageSets;
 
+	/** destinations declared on the <file> elements themselves, by file name */
+	public final FilePlaces filePlaces;
+
 	/** imageset geometry a <gfxcomp> hands to the <imageset> that indexes it */
 	public final ImageSets imageSets;
 
@@ -81,12 +85,12 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new StaticLink(), new PageSets(), new FilePlaces(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
 			FileIds fileIds, Regions regions, StaticLink staticLink, PageSets pageSets,
-			ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Occupancy occupancy,
+			FilePlaces filePlaces, ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Occupancy occupancy,
 			Outputs outputs, Defaults defaults, Defines defines) {
 		this.path = path;
 		this.settings = settings;
@@ -96,6 +100,7 @@ public class BuildContext {
 		this.regions = regions;
 		this.staticLink = staticLink;
 		this.pageSets = pageSets;
+		this.filePlaces = filePlaces;
 		this.imageSets = imageSets;
 		this.linkReport = linkReport;
 		this.ramMap = ramMap;
@@ -114,7 +119,7 @@ public class BuildContext {
 	 */
 	public BuildContext child() {
 		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, staticLink,
-				pageSets, imageSets, linkReport, ramMap, occupancy, outputs,
+				pageSets, filePlaces, imageSets, linkReport, ramMap, occupancy, outputs,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
 
@@ -133,6 +138,7 @@ public class BuildContext {
 		regions.clear();
 		staticLink.clear();
 		pageSets.clear();
+		filePlaces.clear();
 		imageSets.clear();
 		linkReport.clear();
 		ramMap.clear();

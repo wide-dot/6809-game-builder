@@ -12,6 +12,8 @@
 > what is in memory at a time, `<load>` by `<load>`. `stacked` on a region
 > lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
 > file's link block to the LINK section ; `bake` decides what never needs one.
+> A `<file>` may declare its **attributed place** (`arena=`, `region=`, or
+> `page=`+`address=`) — then every `<load>` of it reduces to the name.
 
 > **Next model, decided 2026-08-06, not yet implemented** : regions gain
 > `<zone>` children (a continuous range in one page), `<arena>` arrives for
@@ -105,6 +107,47 @@ A scene is a regular file (raw, uncompressed, one id block) whose source
 is generated ; it goes through the standard file pipeline and its name
 becomes a file id equate, so game code loads it exactly as before :
 `ldx #scenes.level1` / `jsr loader.scene.load`.
+
+## The attributed place
+
+A file may declare its destination **on its own declaration** instead of on
+every load that names it :
+
+```xml
+<file name="common.player" codec="zx0" linkdata="LINK" bake="auto" arena="objects">…</file>
+<file name="common.engine" codec="zx0" linkdata="LINK" bake="auto" region="common">…</file>
+…
+<scene name="scenes.boot" section="SCENE">
+    <load name="common.player"/>     <!-- loads into arena "objects" -->
+    <load name="common.engine"/>     <!-- loads at region "common" -->
+</scene>
+```
+
+One form of the three at most : `arena=` (the builder picks page and
+address), `region=` (a named place of the layout), or a literal
+`page=`+`address=`. A `<pageset>` already declares its `region=` — that IS
+its attributed place, so a scene names the set bare.
+
+What this buys is **structural uniqueness** : a file loaded by five scenes
+has one declared destination, and there is nothing left for two scenes to
+disagree about — where the per-load form could only verify their agreement
+after the fact. One destination per file is also what lets `bake="auto"`
+resolve references into it at build time.
+
+The rules :
+
+- a **bare load** of a file with an attributed place loads it there ; a bare
+  load of a file without one stays what it always was, link data only ;
+- a load that **repeats** the same destination is tolerated — the
+  transitional form while a configuration migrates ;
+- a load that **contradicts** the attributed place is a build error naming
+  both declarations ;
+- declaring a **different place** for the same file name twice is a build
+  error.
+
+The per-load destination keeps working for files that declare nothing — the
+attributed place is additive, and the target model (where `<load>` is only
+ever a name) is reached by migrating file by file.
 
 ## The model in one rule
 

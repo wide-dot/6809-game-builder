@@ -454,6 +454,17 @@ Fonctionnel :
         à l'octet, JUnit 64/64 (3 tests ajoutés). Restes 3a : arbitrage
         interface/« même destination » (rapport d'abord, acté), imageset
         délégué (images r-type changeront).
+  - [x] Phase 4a-syntaxe (10/08) — la place attitrée : `<file>` déclare
+        `arena=`/`region=`/`page=`+`address=` (une forme au plus), un
+        `<load>` nu résout contre elle (ScenePlugin + PlacementScan +
+        ArenaPacker), le `<pageset>` nommé nu (son region= déclaré EST sa
+        place). Répétition cohérente tolérée (transition), contradiction
+        = erreur, double place = erreur : l'unicité devient structurelle.
+        Mesuré au passage : les 85 loads r-type n'ont aucune incohérence
+        de destination. Doc : scenes.md § The attributed place ; XSD
+        régénéré (il avait dérivé depuis P1). PREUVE : 59 images
+        identiques à l'octet, JUnit 70/70 (6 tests ajoutés). Reste 4a :
+        vérification globale des places fixes hors arène (avec 4b).
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

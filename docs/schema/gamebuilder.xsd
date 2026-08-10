@@ -13,18 +13,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -36,6 +37,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -50,9 +52,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>exported symbol, the address an object puts in anim</xs:documentation></xs:annotation>
@@ -72,23 +76,24 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- assembly source unit : a file, or inline text -->
-  <xs:element name="asm">
-    <xs:complexType mixed="true">
+  <!-- a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it -->
+  <xs:element name="arena">
+    <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -100,6 +105,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -114,9 +120,67 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>arena name, referenced by &lt;load arena=...&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- assembly source unit : a file, or inline text -->
+  <xs:element name="asm">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>source file ; omit when using inline text</xs:documentation></xs:annotation>
@@ -130,18 +194,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -153,6 +218,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -167,67 +233,14 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>input file</xs:documentation></xs:annotation>
-      </xs:attribute>
-    </xs:complexType>
-  </xs:element>
-
-  <!-- one indivisible unit of a pageset, declared after the spread content so it fills what is left -->
-  <xs:element name="block">
-    <xs:complexType>
-      <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element ref="animation"/>
-        <xs:element ref="asm"/>
-        <xs:element ref="bin"/>
-        <xs:element ref="block"/>
-        <xs:element ref="cksumfd640"/>
-        <xs:element ref="configuration"/>
-        <xs:element ref="data"/>
-        <xs:element ref="default"/>
-        <xs:element ref="define"/>
-        <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
-        <xs:element ref="encoder"/>
-        <xs:element ref="fd"/>
-        <xs:element ref="floppydisk"/>
-        <xs:element ref="frame"/>
-        <xs:element ref="gfxcomp"/>
-        <xs:element ref="hfe"/>
-        <xs:element ref="image"/>
-        <xs:element ref="imageset"/>
-        <xs:element ref="includebin"/>
-        <xs:element ref="label"/>
-        <xs:element ref="layout"/>
-        <xs:element ref="load"/>
-        <xs:element ref="lwasm"/>
-        <xs:element ref="pageset"/>
-        <xs:element ref="pcm"/>
-        <xs:element ref="phoneme"/>
-        <xs:element ref="png2bin"/>
-        <xs:element ref="png2pal"/>
-        <xs:element ref="region"/>
-        <xs:element ref="reserved"/>
-        <xs:element ref="sap"/>
-        <xs:element ref="scene"/>
-        <xs:element ref="sd"/>
-        <xs:element ref="section"/>
-        <xs:element ref="target"/>
-        <xs:element ref="tilemap"/>
-        <xs:element ref="txt2bas"/>
-        <xs:element ref="vgm2sfx"/>
-        <xs:element ref="vgm2vgc"/>
-        <xs:element ref="vgm2ymm"/>
-      </xs:choice>
-      <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>block name, used for the generated source</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="symbol" type="xs:string">
-        <xs:annotation><xs:documentation>exported label placed at the start of the block, defaults to name</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -237,18 +250,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -260,6 +274,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -274,9 +289,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
     </xs:complexType>
   </xs:element>
@@ -286,18 +303,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -309,6 +327,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -323,9 +342,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
     </xs:complexType>
   </xs:element>
@@ -335,18 +356,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -358,6 +380,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -372,15 +395,26 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="section" type="xs:string" use="required">
         <xs:annotation><xs:documentation>section receiving the data</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="maxsize" type="int6809">
         <xs:annotation><xs:documentation>maximum size</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ram-page" type="int6809">
+        <xs:annotation><xs:documentation>page this data stays resident in (the loader) : reserves its MEASURED size on the RAM map</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ram-address" type="int6809">
+        <xs:annotation><xs:documentation>address the data is loaded at, required with ram-page</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ram-pool" type="xs:string">
+        <xs:annotation><xs:documentation>reserves a further block right after the code (the TLSF pool sits there) ; a size, fill-to:&lt;address&gt; to take everything up to a boundary (the loader's half-page), or the name of a &lt;define&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -390,18 +424,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -413,6 +448,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -427,9 +463,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>target attribute, as &lt;element&gt;.&lt;attribute&gt;</xs:documentation></xs:annotation>
@@ -445,18 +483,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -468,6 +507,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -482,9 +522,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="symbol" type="xs:string" use="required">
         <xs:annotation><xs:documentation>symbol name</xs:documentation></xs:annotation>
@@ -500,18 +542,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -523,6 +566,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -537,9 +581,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="id" type="int6809" use="required">
         <xs:annotation><xs:documentation>disk id, matched by the loader at run time</xs:documentation></xs:annotation>
@@ -556,87 +602,24 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- one loadable file of the directory -->
-  <xs:element name="direntry">
-    <xs:complexType>
-      <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element ref="animation"/>
-        <xs:element ref="asm"/>
-        <xs:element ref="bin"/>
-        <xs:element ref="block"/>
-        <xs:element ref="cksumfd640"/>
-        <xs:element ref="configuration"/>
-        <xs:element ref="data"/>
-        <xs:element ref="default"/>
-        <xs:element ref="define"/>
-        <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
-        <xs:element ref="encoder"/>
-        <xs:element ref="fd"/>
-        <xs:element ref="floppydisk"/>
-        <xs:element ref="frame"/>
-        <xs:element ref="gfxcomp"/>
-        <xs:element ref="hfe"/>
-        <xs:element ref="image"/>
-        <xs:element ref="imageset"/>
-        <xs:element ref="includebin"/>
-        <xs:element ref="label"/>
-        <xs:element ref="layout"/>
-        <xs:element ref="load"/>
-        <xs:element ref="lwasm"/>
-        <xs:element ref="pageset"/>
-        <xs:element ref="pcm"/>
-        <xs:element ref="phoneme"/>
-        <xs:element ref="png2bin"/>
-        <xs:element ref="png2pal"/>
-        <xs:element ref="region"/>
-        <xs:element ref="reserved"/>
-        <xs:element ref="sap"/>
-        <xs:element ref="scene"/>
-        <xs:element ref="sd"/>
-        <xs:element ref="section"/>
-        <xs:element ref="target"/>
-        <xs:element ref="tilemap"/>
-        <xs:element ref="txt2bas"/>
-        <xs:element ref="vgm2sfx"/>
-        <xs:element ref="vgm2vgc"/>
-        <xs:element ref="vgm2ymm"/>
-      </xs:choice>
-      <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="codec" type="xs:string">
-        <xs:annotation><xs:documentation>zx0 : compress the whole entry as one stream</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="loadtimelink" type="xs:string">
-        <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="maxsize" type="int6809">
-        <xs:annotation><xs:documentation>maximum entry size ; past 16384 the stored size wraps, see the warning</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="section" type="xs:string">
-        <xs:annotation><xs:documentation>section receiving the entry</xs:documentation></xs:annotation>
-      </xs:attribute>
-    </xs:complexType>
-  </xs:element>
-
   <!-- one compiled rendering of an image -->
   <xs:element name="encoder">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -648,6 +631,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -662,9 +646,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string">
         <xs:annotation><xs:documentation>draw, bdraw, rle or zx0</xs:documentation></xs:annotation>
@@ -684,23 +670,24 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- write the interleaved image as a .fd file -->
-  <xs:element name="fd">
+  <!-- one object id of the index, in id order -->
+  <xs:element name="entry">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -712,6 +699,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -726,12 +714,162 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the ObjID_* equate this entry defines</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="file" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>file or region whose .page equate locates the object</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="object" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>entry symbol of the object, the address the index dispatches to</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="asd" type="xs:string">
+        <xs:annotation><xs:documentation>animation descriptor symbol, Ani_Asd_none if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- write the interleaved image as a .fd file -->
+  <xs:element name="fd">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- one loadable file of the directory -->
+  <xs:element name="file">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>zx0 : compress the whole entry as one stream</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linkdata" type="xs:string">
+        <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>maximum entry size ; past 16384 the stored size wraps, see the warning</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>section receiving the entry</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="bake" type="xs:string">
+        <xs:annotation><xs:documentation>reference resolution: none (default), auto, all</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="arena" type="xs:string">
+        <xs:annotation><xs:documentation>attributed place : arena to range this file into ; loads of it become bare names</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="region" type="xs:string">
+        <xs:annotation><xs:documentation>attributed place : destination region of the layout ; loads of it become bare names</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="page" type="int6809">
+        <xs:annotation><xs:documentation>attributed place : raw destination page, needs address</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="address" type="int6809">
+        <xs:annotation><xs:documentation>attributed place : raw destination address, needs page</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -741,18 +879,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -764,6 +903,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -778,9 +918,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="model" type="xs:string" use="required">
         <xs:annotation><xs:documentation>disk model declared in the storage file (fd640, fd320, fd158)</xs:documentation></xs:annotation>
@@ -796,18 +938,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -819,6 +962,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -833,9 +977,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="image" type="xs:string" use="required">
         <xs:annotation><xs:documentation>image name ; the frame points at its imageset</xs:documentation></xs:annotation>
@@ -848,18 +994,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -871,6 +1018,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -885,9 +1033,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="gendir" type="xs:string" use="required">
         <xs:annotation><xs:documentation>directory receiving the compiled images</xs:documentation></xs:annotation>
@@ -899,10 +1049,13 @@
         <xs:annotation><xs:documentation>generated imageset index ; omit for images with no index</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="file" type="xs:string">
-        <xs:annotation><xs:documentation>direntry name the images end up in ; the index reads their page from &lt;file&gt;$PAGE, required with genindex</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>file name the images end up in ; the index reads their page from &lt;file&gt;$PAGE, required with genindex</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="imageset" type="xs:string">
         <xs:annotation><xs:documentation>name the measured geometry is handed over under, for an &lt;imageset&gt; element to index a set whose code is spread over pages</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one, such as a pageset &lt;block&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="linearbits" type="int6809">
         <xs:annotation><xs:documentation>video memory linear bits</xs:documentation></xs:annotation>
@@ -927,18 +1080,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -950,6 +1104,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -964,9 +1119,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
@@ -979,18 +1136,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1002,6 +1160,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1016,9 +1175,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>image name, prefix of the generated symbols</xs:documentation></xs:annotation>
@@ -1032,9 +1193,6 @@
       <xs:attribute name="grid" type="xs:string">
         <xs:annotation><xs:documentation>tile size &lt;width&gt;x&lt;height&gt; : the png is a tileset, sliced into tiles named &lt;name&gt;_&lt;id&gt; in reading order, each compiled with the declared encoders</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="range" type="xs:string">
-        <xs:annotation><xs:documentation>grid only : &lt;first&gt;-&lt;last&gt; tile ids this unit takes of the sheet, for a tileset too big for one page ; ids stay those of the sheet</xs:documentation></xs:annotation>
-      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -1043,18 +1201,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1066,6 +1225,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1080,9 +1240,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>imageset name, as declared by the &lt;gfxcomp imageset&gt; that compiled the images</xs:documentation></xs:annotation>
@@ -1091,7 +1253,7 @@
         <xs:annotation><xs:documentation>generated source file of the index</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="section" type="xs:string">
-        <xs:annotation><xs:documentation>section of the index, code.static if omitted</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>section of the index, code if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1101,18 +1263,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1124,6 +1287,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1138,9 +1302,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>binary file</xs:documentation></xs:annotation>
@@ -1153,18 +1319,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1176,6 +1343,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1190,9 +1358,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>exported symbol</xs:documentation></xs:annotation>
@@ -1205,18 +1375,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1228,6 +1399,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1242,33 +1414,39 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="gensymbols" type="xs:string">
         <xs:annotation><xs:documentation>generated file of &lt;region&gt;.page / &lt;region&gt;.address equates, for the game code to include</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="pages" type="int6809">
+        <xs:annotation><xs:documentation>physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
-  <!-- one file loaded by the scene ; no destination means link data only -->
+  <!-- one file loaded by the scene ; no destination means the file's attributed place, or link data only when it declares none -->
   <xs:element name="load">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1280,6 +1458,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1294,15 +1473,20 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>direntry or scene to load</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>file or scene to load</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="region" type="xs:string">
         <xs:annotation><xs:documentation>destination region of the layout</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="arena" type="xs:string">
+        <xs:annotation><xs:documentation>arena to range this file into ; the builder picks the page and address, and publishes them as &lt;file&gt;.page / &lt;file&gt;.address</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="page" type="int6809">
         <xs:annotation><xs:documentation>raw destination page, needs address</xs:documentation></xs:annotation>
@@ -1318,18 +1502,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1341,6 +1526,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1355,9 +1541,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="format" type="xs:string">
         <xs:annotation><xs:documentation>obj (linkable) or raw</xs:documentation></xs:annotation>
@@ -1371,23 +1559,24 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- a dataset spread over the pages of a multi-page region : the builder packs it and emits one direntry per page -->
-  <xs:element name="pageset">
+  <!-- the object index a stage exports to the engine : ObjID equates and the five tables RunObjects and the sprite runtime read. One <entry> per id, in id order — the id space is authored, the wave assembles against it -->
+  <xs:element name="objectindex">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1399,6 +1588,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1413,9 +1603,79 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>index name, prefix of the include guard</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genconst" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated file of ObjID_* equates</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated file of the five tables</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="zero" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>file or region whose .page fills the reserved slot 0 of the Ani/Img page tables</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="guard" type="xs:string">
+        <xs:annotation><xs:documentation>include guard of the equates file, derived from the name if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a dataset spread over the pages of a multi-page region : the builder packs it and emits one file per page -->
+  <xs:element name="pageset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>set name ; members are &lt;name&gt;.0 .. &lt;name&gt;.&lt;pages-1&gt;</xs:documentation></xs:annotation>
@@ -1429,7 +1689,7 @@
       <xs:attribute name="codec" type="xs:string">
         <xs:annotation><xs:documentation>zx0 : compress each member as one stream</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="loadtimelink" type="xs:string">
+      <xs:attribute name="linkdata" type="xs:string">
         <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="section" type="xs:string">
@@ -1437,6 +1697,9 @@
       </xs:attribute>
       <xs:attribute name="gensymbols" type="xs:string">
         <xs:annotation><xs:documentation>generated file of &lt;block symbol&gt;.page equates, for code that has to mount what a block holds</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="bake" type="xs:string">
+        <xs:annotation><xs:documentation>reference resolution of every member: none (default), auto, all</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1446,18 +1709,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1469,6 +1733,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1483,9 +1748,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input file or directory</xs:documentation></xs:annotation>
@@ -1504,18 +1771,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1527,6 +1795,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1541,9 +1810,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input text file</xs:documentation></xs:annotation>
@@ -1562,18 +1833,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1585,6 +1857,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1599,9 +1872,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>input .png</xs:documentation></xs:annotation>
@@ -1653,18 +1928,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1676,6 +1952,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1690,9 +1967,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input .png</xs:documentation></xs:annotation>
@@ -1710,10 +1989,10 @@
         <xs:annotation><xs:documentation>first color index</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="mode" type="xs:string">
-        <xs:annotation><xs:documentation>bin, and only as direntry content ; inside &lt;lwasm&gt; the table is always the exported form</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>bin, and only as file content ; inside &lt;lwasm&gt; the table is always the exported form</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="section" type="xs:string">
-        <xs:annotation><xs:documentation>name of the generated SECTION, default code ; a host unit baked as code.static needs the palette out of the way of the entry point</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>name of the generated SECTION, default code</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation><xs:documentation>color profile</xs:documentation></xs:annotation>
@@ -1726,18 +2005,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1749,6 +2029,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1763,27 +2044,26 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>region name, referenced by &lt;load region=...&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="page" type="int6809" use="required">
-        <xs:annotation><xs:documentation>destination page id</xs:documentation></xs:annotation>
+      <xs:attribute name="page" type="int6809">
+        <xs:annotation><xs:documentation>destination page, compact form of a region holding one &lt;zone&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="address" type="int6809" use="required">
-        <xs:annotation><xs:documentation>destination address</xs:documentation></xs:annotation>
+      <xs:attribute name="address" type="int6809">
+        <xs:annotation><xs:documentation>destination address, compact form</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="size" type="int6809">
-        <xs:annotation><xs:documentation>byte budget, checked against the loaded entry</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="bulk" type="xs:boolean">
-        <xs:annotation><xs:documentation>the region takes a list of loads per scene, laid out one after the other ; the list is replaced as a whole</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>byte budget of the compact form ; a region declaring &lt;zone&gt; children says its room there</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="pages" type="int6809">
-        <xs:annotation><xs:documentation>consecutive pages the region spans from page, 1 if omitted ; more declares a budget for a dataset no single page holds</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>consecutive pages of the compact form, 1 if omitted — the same as declaring that many &lt;zone&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="interface" type="xs:boolean">
         <xs:annotation><xs:documentation>the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else</xs:documentation></xs:annotation>
@@ -1796,18 +2076,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1819,6 +2100,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1833,9 +2115,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>range name, emitted as &lt;name&gt;.address / &lt;name&gt;.size equates</xs:documentation></xs:annotation>
@@ -1857,18 +2141,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1880,6 +2165,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1894,9 +2180,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
@@ -1912,18 +2200,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1935,6 +2224,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -1949,9 +2239,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
@@ -1970,18 +2262,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -1993,6 +2286,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2007,9 +2301,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
@@ -2022,18 +2318,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2045,6 +2342,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2059,12 +2357,14 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>section name, referenced by direntry/data</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>section name, referenced by file/data</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="track" type="int6809" use="required">
         <xs:annotation><xs:documentation>first track</xs:documentation></xs:annotation>
@@ -2083,18 +2383,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2106,6 +2407,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2120,9 +2422,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>target name</xs:documentation></xs:annotation>
@@ -2135,18 +2439,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2158,6 +2463,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2172,9 +2478,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="map" type="xs:string" use="required">
         <xs:annotation><xs:documentation>tile index .bin (leanscroll output), big endian, column major</xs:documentation></xs:annotation>
@@ -2192,7 +2500,7 @@
         <xs:annotation><xs:documentation>generated source file of the table</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="section" type="xs:string">
-        <xs:annotation><xs:documentation>section of the table, map.static if omitted ; must end with .static</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>section of the table, map if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="bitdepth" type="int6809">
         <xs:annotation><xs:documentation>bits per tile index in the map, 16 if omitted</xs:documentation></xs:annotation>
@@ -2205,18 +2513,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2228,6 +2537,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2242,9 +2552,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>input text file</xs:documentation></xs:annotation>
@@ -2255,23 +2567,24 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- convert a VGM file to sound effects source -->
-  <xs:element name="vgm2sfx">
+  <!-- one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope ; in a <pageset>, declared after the spread content, it fills what is left -->
+  <xs:element name="unit">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2283,6 +2596,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2297,9 +2611,76 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string">
+        <xs:annotation><xs:documentation>name for the generated source, defaults from symbol</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="symbol" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>exported label placed at the start of the unit</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>for bare data : the builder writes the whole envelope — section, exported symbol, ends. Omit it when the sources open their own section and export their own symbol</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="body" type="xs:string">
+        <xs:annotation><xs:documentation>shorthand for a single &lt;asm&gt; child</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- convert a VGM file to sound effects source -->
+  <xs:element name="vgm2sfx">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input .vgm file</xs:documentation></xs:annotation>
@@ -2315,18 +2696,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2338,6 +2720,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2352,9 +2735,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input .vgm file or directory</xs:documentation></xs:annotation>
@@ -2370,18 +2755,19 @@
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
         <xs:element ref="asm"/>
         <xs:element ref="bin"/>
-        <xs:element ref="block"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="configuration"/>
         <xs:element ref="data"/>
         <xs:element ref="default"/>
         <xs:element ref="define"/>
         <xs:element ref="directory"/>
-        <xs:element ref="direntry"/>
         <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
         <xs:element ref="fd"/>
+        <xs:element ref="file"/>
         <xs:element ref="floppydisk"/>
         <xs:element ref="frame"/>
         <xs:element ref="gfxcomp"/>
@@ -2393,6 +2779,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
@@ -2407,9 +2794,11 @@
         <xs:element ref="target"/>
         <xs:element ref="tilemap"/>
         <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
         <xs:annotation><xs:documentation>input .vgm file or directory</xs:documentation></xs:annotation>
@@ -2422,6 +2811,68 @@
       </xs:attribute>
       <xs:attribute name="dac2drum" type="xs:string">
         <xs:annotation><xs:documentation>map DAC samples to drums</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages -->
+  <xs:element name="zone">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="page" type="int6809" use="required">
+        <xs:annotation><xs:documentation>page holding this range</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="address" type="int6809" use="required">
+        <xs:annotation><xs:documentation>where the range starts</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="size" type="int6809" use="required">
+        <xs:annotation><xs:documentation>how many bytes it offers</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

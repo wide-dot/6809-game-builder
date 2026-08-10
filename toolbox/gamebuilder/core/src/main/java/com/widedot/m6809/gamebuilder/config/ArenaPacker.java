@@ -72,9 +72,23 @@ public final class ArenaPacker {
 			Map<String, List<String>> wanted) throws Exception {
 		if ("load".equals(node.getNodeName())) {
 			String arena = Attribute.getStringOpt(node, ctx, "arena");
+			String name = Attribute.getStringOpt(node, ctx, "name");
+			if (name == null) {
+				return; // the scene plugin reports malformed loads itself
+			}
+			if (arena == null
+					&& Attribute.getStringOpt(node, ctx, "region") == null
+					&& Attribute.getStringOpt(node, ctx, "page") == null
+					&& Attribute.getStringOpt(node, ctx, "address") == null) {
+				// a bare load joins the arena its file declared, if any
+				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
+						ctx.filePlaces.get(name);
+				if (attributed != null) {
+					arena = attributed.arena;
+				}
+			}
 			if (arena != null) {
 				List<String> files = wanted.computeIfAbsent(arena, k -> new ArrayList<String>());
-				String name = Attribute.getString(node, ctx, "name");
 				if (!files.contains(name)) {
 					files.add(name);    // a file loaded by two scenes is placed once
 				}

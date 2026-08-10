@@ -93,7 +93,14 @@ public final class Handlers {
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
 			.opt("section", STRING, "section receiving the entry")
-			.opt("bake", STRING, "reference resolution: none (default), auto, all"));
+			.opt("bake", STRING, "reference resolution: none (default), auto, all")
+			// the attributed place : the file declares its destination once,
+			// and every <load> that names it reduces to the name — read
+			// literally by the placement scan, one form of the three at most
+			.opt("arena", STRING, "attributed place : arena to range this file into ; loads of it become bare names")
+			.opt("region", STRING, "attributed place : destination region of the layout ; loads of it become bare names")
+			.opt("page", INT, "attributed place : raw destination page, needs address")
+			.opt("address", INT, "attributed place : raw destination address, needs page"));
 		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one file per page")
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
 			.req("region", STRING, "multi-page region receiving the set")
@@ -153,7 +160,7 @@ public final class Handlers {
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("section", STRING, "section receiving the table")
 			.opt("gensource", STRING, "generated table source, defaults to gen/scenes/<name>.asm"));
-		spec(element("load").doc("one file loaded by the scene ; no destination means link data only")
+		spec(element("load").doc("one file loaded by the scene ; no destination means the file's attributed place, or link data only when it declares none")
 			.req("name", STRING, "file or scene to load")
 			.opt("region", STRING, "destination region of the layout")
 			.opt("arena", STRING, "arena to range this file into ; the builder picks the page and address, and publishes them as <file>.page / <file>.address")

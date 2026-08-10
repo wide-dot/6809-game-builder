@@ -35,11 +35,60 @@ public final class PlacementScan {
 		Map<String, Regions.Region> resolved = new LinkedHashMap<String, Regions.Region>();
 		Map<String, int[]> regions = new LinkedHashMap<String, int[]>();     // name -> page, address
 		collectRegions(targetNode, ctx, regions, resolved);
+		// attributed places next : a bare load resolves against what its file
+		// declared, so the map must exist before loads and arenas are read
+		ctx.filePlaces.clear();
+		collectFilePlaces(targetNode, ctx);
 		// arenas next : where an arena-bound file lands depends on all the
 		// files bound to that arena, so it cannot be decided region by region
 		ctx.regions.clearFilePlacements();
 		ArenaPacker.pack(targetNode, ctx, resolved);
 		collectLoads(targetNode, ctx, regions);
+	}
+
+	/**
+	 * Collects the destinations declared on the file declarations themselves :
+	 * {@code arena=}, {@code region=} or {@code page=}+{@code address=} on a
+	 * {@code <file>}, and the {@code region=} a {@code <pageset>} already
+	 * carries. Read literally, like every attribute of this scan — the place
+	 * is configuration, not something a default cascade should move.
+	 */
+	private static void collectFilePlaces(ImmutableNode node, BuildContext ctx) throws Exception {
+		String kind = node.getNodeName();
+		if ("file".equals(kind)) {
+			String name = raw(node, "name");
+			String arena = raw(node, "arena");
+			String region = raw(node, "region");
+			Integer page = number(node, "page");
+			Integer address = number(node, "address");
+			if (name != null && (arena != null || region != null || page != null || address != null)) {
+				String where = ctx.sources.locate(node);
+				int forms = (arena != null ? 1 : 0) + (region != null ? 1 : 0)
+						+ (page != null || address != null ? 1 : 0);
+				if (forms > 1) {
+					throw new Exception(where + ": file '" + name + "' declares more than one"
+							+ " attributed place — give one of arena, region, or page+address");
+				}
+				if ((page == null) != (address == null)) {
+					throw new Exception(where + ": file '" + name + "' needs both page and"
+							+ " address for a raw attributed place");
+				}
+				ctx.filePlaces.declare(name, new com.widedot.m6809.gamebuilder.spi.globals
+						.FilePlaces.Place(arena, region, page, address, where));
+			}
+		} else if ("pageset".equals(kind)) {
+			// a pageset's region IS its attributed place, declared since the
+			// multi-page work : record it so a scene can name the set bare
+			String name = raw(node, "name");
+			String region = raw(node, "region");
+			if (name != null && region != null) {
+				ctx.filePlaces.declare(name, new com.widedot.m6809.gamebuilder.spi.globals
+						.FilePlaces.Place(null, region, null, null, ctx.sources.locate(node)));
+			}
+		}
+		for (ImmutableNode child : node.getChildren()) {
+			collectFilePlaces(child, ctx);
+		}
 	}
 
 	private static void collectRegions(ImmutableNode node, BuildContext ctx,
@@ -87,6 +136,21 @@ public final class PlacementScan {
 					continue; // the scene plugin reports malformed loads itself
 				}
 				String arenaName = raw(load, "arena");
+				String regionName = raw(load, "region");
+				Integer page = number(load, "page");
+				Integer address = number(load, "address");
+				if (arenaName == null && regionName == null && page == null
+						&& address == null) {
+					// a bare load : the file's attributed place, when it has one
+					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
+							ctx.filePlaces.get(name);
+					if (attributed != null) {
+						arenaName = attributed.arena;
+						regionName = attributed.region;
+						page = attributed.page;
+						address = attributed.address;
+					}
+				}
 				if (arenaName != null) {
 					int[] at = ctx.regions.filePlacement(name);
 					if (at != null) {
@@ -94,7 +158,6 @@ public final class PlacementScan {
 					}
 					continue;
 				}
-				String regionName = raw(load, "region");
 				if (regionName != null) {
 					int[] destination = regions.get(regionName);
 					if (destination == null) {
@@ -103,8 +166,6 @@ public final class PlacementScan {
 					ctx.staticLink.place(name, destination[0], destination[1], scene);
 					continue;
 				}
-				Integer page = number(load, "page");
-				Integer address = number(load, "address");
 				if (page != null && address != null) {
 					// a literal destination is placed all the same
 					ctx.staticLink.place(name, page, address, scene);

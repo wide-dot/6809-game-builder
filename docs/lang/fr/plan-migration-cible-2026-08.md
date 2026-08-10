@@ -187,6 +187,23 @@ Le grand basculement de syntaxe, groupé pour ne casser qu'une fois :
     voit toutes les scènes) ; deux fichiers jamais co-chargés peuvent
     partager une place. Les fichiers gagnent `arena=`/`page=`+`address=` ;
     `<load>` se réduit à un nom.
+
+    *Réalisé (10/08) — la syntaxe et sa résolution, additives.* `<file>`
+    gagne `arena=`/`region=`/`page=`+`address=` (une forme au plus,
+    `FilePlaces` dans le contexte) ; un `<load>` nu résout contre la place
+    attitrée de son fichier dans les trois points de lecture (`ScenePlugin`,
+    `PlacementScan`, `ArenaPacker`) ; le `<pageset>` n'a rien à gagner — son
+    `region=` déclaré EST sa place, un load le nomme nu. Un load qui répète
+    la même destination est toléré (forme transitionnelle), un load qui la
+    contredit est une erreur nommant les deux déclarations, une seconde
+    place pour le même nom aussi. L'unicité devient structurelle. Vérifié
+    sur le corpus réel : les 85 loads de r-type n'ont AUCUNE incohérence de
+    destination par fichier — la revendication du modèle, mesurée. Doc :
+    `scenes.md` § The attributed place. Preuve : 59 images identiques à
+    l'octet (rien ne l'utilise encore), JUnit 64/64 ; la migration r-type
+    (commit suivant) prouve l'équivalence par identité sur les 4 images.
+    Reste de 4a : la vérification globale des places fixes hors arène
+    (déclarée mais non recoupée toutes-compositions), différée avec 4b.
 4b. **Migration du corpus** : les 12 configs d'exemples puis r-type, région
     par région — une région devient soit une place explicite partagée par
     des alternatives, soit rien (la place attitrée suffit). Réécriture

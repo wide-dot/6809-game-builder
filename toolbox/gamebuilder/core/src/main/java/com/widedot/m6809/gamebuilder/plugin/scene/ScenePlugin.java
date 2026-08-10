@@ -75,6 +75,35 @@ public class ScenePlugin {
 				continue;
 			}
 
+			// the attributed place : the file (or pageset) declared its own
+			// destination, and the load reduces to the name. A load that still
+			// repeats the same destination is tolerated while the corpus
+			// migrates ; one that contradicts it is refused — a file has ONE
+			// source of truth for where it lives.
+			com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
+					ctx.filePlaces.get(loadName);
+			if (attributed != null) {
+				if (regionName != null || arenaName != null || page != null || address != null) {
+					boolean consistent = java.util.Objects.equals(arenaName, attributed.arena)
+							&& java.util.Objects.equals(regionName, attributed.region)
+							&& java.util.Objects.equals(page, attributed.page)
+							&& java.util.Objects.equals(address, attributed.address);
+					if (!consistent) {
+						errors.add(where + ": scene " + name + ": load '" + loadName
+								+ "' gives a destination, but the file already declares "
+								+ attributed.describe() + " (" + attributed.where
+								+ ") — the load reduces to the name");
+						continue;
+					}
+					// redundant but consistent : the transitional form
+				} else {
+					arenaName = attributed.arena;
+					regionName = attributed.region;
+					page = attributed.page;
+					address = attributed.address;
+				}
+			}
+
 			// a pageset is one authored load and several entries : the members
 			// go to consecutive pages of the same region, so the scene simply
 			// places each one where the packing put it
