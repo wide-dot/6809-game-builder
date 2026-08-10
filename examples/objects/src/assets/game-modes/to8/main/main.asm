@@ -50,13 +50,12 @@ wave.data       EXTERNAL
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
-        INCLUDE "gen/layout.asm"
         INCLUDE "src/common/result.const.asm"
         INCLUDE "src/assets/game-modes/to8/main/ram_data.asm"
 
  opt c,ct
 
-        ; the scene loads this file at the game mode region address and jumps
+        ; the scene loads this file at its attributed place and jumps
         ; to its first byte, so main has to be the first thing emitted
 
 main
@@ -335,7 +334,7 @@ t11ko
 ; one without pulling its own code out from under itself.
 ; ---------------------------------------------------------------------------
         _ram.cart.set #$05                 ; the caller's page
-        lda   #map.RAM_OVER_CART+objects.page
+        lda   #map.RAM_OVER_CART+assets.objects.page
         sta   PSR_Page
         ldd   #obj.paged.sub
         std   PSR_Address
@@ -611,7 +610,7 @@ t16ko
 ; with the arcade timeline across dropped frames.
 ; ---------------------------------------------------------------------------
         jsr   bench.reset
-        lda   #map.RAM_OVER_CART+objects.page
+        lda   #map.RAM_OVER_CART+assets.objects.page
         sta   object_wave_data_page
         ldd   #wave.data
         std   object_wave_data_start
@@ -973,7 +972,8 @@ trace      equ   $9D00
 ; page its code sits in and its entry point. v2 has no object pipeline yet
 ; (roadmap item 7), so the bench writes them by hand — which is what makes the
 ; paged entry the interesting one : its address is an EXTERNAL the load time
-; linker resolves, and its page comes from the declared layout.
+; linker resolves or the builder bakes, and its page comes from the
+; attributed-place equates entries.asm publishes.
 
 objid.tracer  equ 1
 objid.suicide equ 2
@@ -982,10 +982,10 @@ objid.paged   equ 4
 
 Obj_Index_Page
         fcb   $00                                    ; id 0 : free slot
-        fcb   map.RAM_OVER_CART+gamemode.page        ; tracer
-        fcb   map.RAM_OVER_CART+gamemode.page        ; suicide
-        fcb   map.RAM_OVER_CART+gamemode.page        ; parent
-        fcb   map.RAM_OVER_CART+objects.page         ; paged : its own page
+        fcb   map.RAM_OVER_CART+assets.gm.main.page        ; tracer
+        fcb   map.RAM_OVER_CART+assets.gm.main.page        ; suicide
+        fcb   map.RAM_OVER_CART+assets.gm.main.page        ; parent
+        fcb   map.RAM_OVER_CART+assets.objects.page         ; paged : its own page
 
 Obj_Index_Address
         fdb   $0000
@@ -1001,10 +1001,10 @@ Obj_Index_Address
 ; symbol still has to resolve.
 Ani_Page_Index
         fcb   $00
-        fcb   map.RAM_OVER_CART+gamemode.page
-        fcb   map.RAM_OVER_CART+gamemode.page
-        fcb   map.RAM_OVER_CART+gamemode.page
-        fcb   map.RAM_OVER_CART+objects.page
+        fcb   map.RAM_OVER_CART+assets.gm.main.page
+        fcb   map.RAM_OVER_CART+assets.gm.main.page
+        fcb   map.RAM_OVER_CART+assets.gm.main.page
+        fcb   map.RAM_OVER_CART+assets.objects.page
 
 Ani_Asd_Index
         fdb   $0000

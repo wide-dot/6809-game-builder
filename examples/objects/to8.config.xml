@@ -2,16 +2,6 @@
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
 
-        <!-- Two regions, because the point of this bench is the second one :   -->
-        <!-- object code lives in a page of its own, mounted over the cartridge -->
-        <!-- window by RunObjects before it calls the object. The game mode     -->
-        <!-- reaches those objects only through Obj_Index_Page/Address, whose   -->
-        <!-- entry points the load time linker resolves.                        -->
-        <layout gensymbols="gen/layout.asm">
-            <region name="gamemode" page="$01" address="$6100" size="$1F00"/>
-            <region name="objects"  page="$06" address="$0000" size="$4000"/>
-        </layout>
-
         <floppydisk model="fd640">
 
             <section name="SCENE" track="0" face="1" sector="16"/>
@@ -28,18 +18,18 @@
                 <!-- Game mode : the resident page. Holds the object manager -->
                 <!-- itself and the objects that exercise the run list.      -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" region="gamemode">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
                     </lwasm>
                 </file>
 
-                <!-- Paged objects : a second unit, loaded at a region of its  -->
+                <!-- Paged objects : a second unit, at a literal place of its  -->
                 <!-- own. Nothing here is reachable until RunObjects mounts    -->
                 <!-- the page, which is exactly what T9 and T12 check.         -->
                 <!-- ******************************************************** -->
-                <file name="assets.objects" linkdata="LINK" region="objects">
+                <file name="assets.objects" linkdata="LINK" bake="auto" page="$06" address="$0000">
                     <lwasm gensource="gen/assets/objects/objects.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/objects/paged.asm"/>
