@@ -235,19 +235,19 @@
                  grandir le stage par-dessus les premiers OST, qui ecrasent sa
                  queue (tables d'index, table d'effacement) des le premier objet
                  cree : ecran noir au chargement, vecu le 2026-08-07.
-                 nb_dynamic_objects = 45 -> $9C6C - $1491 = $87DB. -->
-            <!-- Les 16 premiers octets du slot rendu par le 46e objet logent  -->
+                 nb_dynamic_objects = 44 -> $9BF7 - $141C = $87DB. -->
+            <!-- Les 16 premiers octets du slot rendu par le 45e objet logent  -->
             <!-- les temoins du banc (bench.const.asm) : nulle part ailleurs en -->
             <!-- page 1 — globals est plein a +147, au-dessus c'est la pile, et -->
             <!-- l'ancien emplacement (+13) etait ECRASE par la trainee du     -->
             <!-- joueur a chaque trame. Le reste du slot ($8776-$87DA) est      -->
             <!-- volontairement non declare : c'est de la marge visible.       -->
             <reserved name="bench"        page="$01" address="$8766" size="$0010"/>
-            <reserved name="objects.pool" page="$01" address="$87DB" size="$1491"/>
+            <reserved name="objects.pool" page="$01" address="$87DB" size="$141C"/>
             <!-- Les OST hors pool (palettefade) : un objet unique, vivant     -->
             <!-- pour toute la partie, lance par _Obj_RunU sur l'adresse de     -->
             <!-- son OST. Voir src/common/engine/ram.const.asm.                 -->
-            <reserved name="objects.static" page="$01" address="$9C6C" size="$01D4"/>
+            <reserved name="objects.static" page="$01" address="$9BF7" size="$01D4"/>
             <!-- Les variables inter-main, la pile qui descend depuis $9F00, et -->
             <!-- les temoins du banc d'echange de stages — tous dans le MEME     -->
             <!-- bloc de $80 octets, en equates (variables.asm, bench.const.asm).-->
@@ -256,10 +256,17 @@
             <!-- $94 et pas $90 : missileTgtTop/Bot (variables.asm +144..+147)  -->
             <!-- debordaient de 4 octets sur la reservation de pile — le layout -->
             <!-- dit desormais ce que les equates font vraiment.                -->
-            <reserved name="globals"      page="$01" address="$9E40" size="$0094"/>
-            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16) ;   -->
-            <!-- enfin declaree, avec le fond que le temoin de crue verifiera. -->
-            <reserved name="stack"        page="$01" address="$9ED4" size="$001C"/>
+            <reserved name="globals"      page="$01" address="$9DCB" size="$0094"/>
+            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16).     -->
+            <!-- 145 octets : les 28 d'origine debordaient — la chaine de mort  -->
+            <!-- d'un objet (Remove/Delete/Unload) sous IRQ plongeait sous      -->
+            <!-- $9ED4 et ecrasait player_pos_ring_buffer_ptr, premier octet    -->
+            <!-- sous l'ancien plancher ; la trainee desalignee labourait alors -->
+            <!-- la page directe puis la fenetre (vecu au 2e passage du stage 1,-->
+            <!-- gel a cam=198). Le pool a rendu un objet (45 -> 44) pour cette  -->
+            <!-- marge : les trois ancres (ce layout, GLOBALS_BASE,             -->
+            <!-- GLOBAL_VARIABLES) ont bouge ENSEMBLE de -117.                  -->
+            <reserved name="stack"        page="$01" address="$9E5F" size="$0091"/>
             <!-- Le bloc log ($9EF0-$9EFF) : le contrat de sondes de           -->
             <!-- engine/log/. Jamais initialise — lu seulement sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>

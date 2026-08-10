@@ -38,7 +38,7 @@ moveByScript.POSYSTEP        equ  $00C0
 ; a +147 et au-dessus c'est la pile — donc les temoins EMPRUNTENT un slot
 ; d'objet, rendu quand le banc partira. Le banc ne cree qu'une dizaine
 ; d'objets, la marge reste large.
-nb_dynamic_objects           equ 45
+nb_dynamic_objects           equ 44
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 
@@ -59,7 +59,14 @@ ext_variables_size           equ 20  ; per dynamic object
 * Vecu le 2026-08-05 : le bloc globals a recule de $40 pour loger la trainee du
 * joueur, l'ancre est restee a $9E80, et les OST statiques ont recouvert la
 * trainee sans un mot. Les trois valeurs bougent ENSEMBLE.
-GLOBALS_BASE                 equ $9E40
+* 2026-08-10 : $9E40 -> $9DCB (-117). La pile de 28 octets debordait : la
+* chaine de mort d'un objet (RemoveAABB/DeleteObject/UnloadObject) sous IRQ
+* plongeait sous $9ED4 et ecrasait player_pos_ring_buffer_ptr — premier octet
+* sous le plancher — d'ou la trainee desalignee qui labourait la page directe
+* puis la fenetre cartouche (gel au 2e passage du stage 1). Le pool rend un
+* objet (nb_dynamic_objects 45 -> 44) : sa BASE ne bouge pas ($87DB), tout le
+* haut descend de 117 et la pile passe a 145 octets ($9E5F-$9EF0).
+GLOBALS_BASE                 equ $9DCB
 Dynamic_Object_RAM_End       equ GLOBALS_BASE-nb_static_objects*object_size
 Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size
 

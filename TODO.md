@@ -51,14 +51,36 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       non-produit s'arrête net au lieu de boucler. + `clr @flip` à l'init
       du décompresseur. La signature YM a disparu des blocages ; images
       ymm changées (sound, mplus-test, r-type), 10 configs identiques.
-- [ ] **r-type : la marche `$39CA` n'avance pas à l'entrée du stage 2** —
-      LE dernier bloqueur du 5/5, démasqué par l'extinction du spin YM :
-      boucle sur un slot `rsv_prev_*` (EraseSprites) contenant $FF00,
-      pointeur jamais avancé, 16 octets identiques à chaque échantillon.
-      t=[1,0,0,0,0] : t1 passe et survit, t2..t5 attendent. À faire :
-      désassembler `$3980-$3A40` sur la machine bloquée, identifier la
-      page et le générateur du code, confronter à la sémantique v1 des
-      slots. Détail : `ci/toje-bench/readme.md`.
+- [x] **r-type : le 5/5 est ATTEINT** (10/08) — « la marche `$39CA` » était un
+      faux diagnostic : `$6154-$6156` n'est pas un slot `rsv_prev_*` mais la
+      boîte aux lettres soundFX (`curSound`/`newSound`, moteur $6100+$53/$55,
+      `$FF00` = NO_SOUND), et `$39CA` le test d'entrée IDLE de
+      `soundFX.playIRQ` (page 8, unité à $398A) — la signature IRQ d'une
+      machine vivante échantillonnée, pas une boucle. La relance YMM,
+      elle, était déjà GUÉRIE par `clr @flip` + `buffer.reset` (vérifié
+      octet par octet contre un décodage ZX0 hors machine : production et
+      consommation conformes à la référence). Les deux vrais bloqueurs,
+      pris sur le fait au watchpoint sous toje :
+      1. **Bouchon auto-supprimant invoqué à cru** : au stage 2, l'index
+         mappe `ObjID_shellEraser` (appelé CHAQUE TRAME sans OST) sur
+         `stage.placeholder`, qui fait `UnloadObject_u` — un slot fantôme
+         par trame, la pile de slots déborde sous $6628 et laboure le
+         moteur jusqu'au code de `terrainCollision.do` (gel caméra=16,
+         le fil principal finit par exécuter l'OST joueur en page directe).
+         Corrigé : `stage.placeholder.raw` (rts) pour les invocations sans
+         OST. Règle écrite dans stage-main.
+      2. **Pile S de 28 octets** : la chaîne de mort d'un objet
+         (RemoveAABB→Delete→Unload) sous IRQ plongeait sous $9ED4 et
+         écrasait `player_pos_ring_buffer_ptr` (premier octet sous le
+         plancher) ; la traînée désalignée (wrap par égalité stricte)
+         labourait la page directe puis la fenêtre — gel au 2e passage du
+         stage 1 (cam=198, Init du joueur rejoué, liste AABB player
+         auto-bouclée, `Collision_Do` infini). Corrigé : pool 45 → 44
+         objets, les trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES)
+         descendues ensemble de 117, pile portée à 145 octets
+         ($9E5F-$9EF0). **`rtype_bench.py` : R-TYPE BENCH 5/5 PASS.**
+      Seules les images r-type changent (stage-main + layout résident) ;
+      loader intact, exemples byte-identiques par construction.
 
 ## En cours
 

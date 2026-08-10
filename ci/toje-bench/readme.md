@@ -27,7 +27,57 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
-## État après la campagne de correction (2026-08-10)
+## 5/5 PASS (2026-08-10, seconde campagne)
+
+**`rtype_bench.py` affiche « R-TYPE BENCH 5/5 PASS »** : stage1 → stage2 →
+stage1 complet, checkpoint sans disque compris. Ce qui restait après la
+première campagne s'est résolu en trois constats, tous établis au watchpoint
+et au breakpoint page-qualifié de toje (voir les scripts d'instrumentation
+dans l'historique de session ; la méthode : poser la surveillance sur la
+DONNÉE qui ment, pas sur le code qu'on soupçonne) :
+
+1. **« La marche $39CA » était un faux diagnostic.** `$6154-$6156` n'est pas
+   un slot `rsv_prev_*` d'EraseSprites : c'est la boîte aux lettres soundFX
+   (`curSound`/`newSound`, moteur+$53/$55, `$FF00` = NO_SOUND), et `$39CA`
+   est le test d'entrée idle de `soundFX.playIRQ` (page 8, unité $398A).
+   Une machine dont l'IRQ tourne s'échantillonne LÀ presque à chaque arrêt —
+   ce n'est pas une boucle, c'est la signature d'un fil principal mort
+   ailleurs. De même, S≈$62D1 sous IRQ n'est pas une pile corrompue :
+   `Irq_sys_stack` vit à $62D6.
+2. **La désync YMM à la relance n'existait plus** : les correctifs
+   `clr @flip` + `ymm.buffer.reset` suffisaient. Vérifié contre un décodage
+   ZX0 hors machine : à la relance du stage 2, le producteur suspend à
+   buffer+47 (23 paires + wait), le consommateur suit la référence à
+   l'octet (+47/+54/+61…, l'instrument à +110, les WAIT1 en rafale) — les
+   « balayages » revus ensuite étaient des lectures mi-trame avec une autre
+   page montée, et plus tard une VICTIME des corruptions ci-dessous.
+3. **Deux corruptions résidentes, prises sur le fait :**
+   - `stage.placeholder` (le bouchon d'index qui marque les témoins puis
+     s'auto-supprime par `UnloadObject_u`) était mappé sur
+     `ObjID_shellEraser`, que la boucle invoque À CRU chaque trame, sans
+     OST : un slot fantôme par trame, la pile de slots (`stu ,--x`,
+     culprit $672C) déborde sous $6628 et laboure object_list, les tables,
+     puis le code de `terrainCollision.do` — gel caméra=16 à l'entrée du
+     stage 2, fil principal finissant dans les octets de l'OST joueur
+     ($9F08-$9F47, 98 % du profil). Le stage 1 était immunisé : vrai
+     shellEraser, et ses spawns compensaient les fantômes. Corrigé par
+     `stage.placeholder.raw` (rts) pour toute invocation sans OST.
+   - La pile S de 28 octets ($9ED4-$9EF0) débordait sous le plancher dans
+     la chaîne de mort d'un objet sous IRQ ; premier octet écrasé :
+     `player_pos_ring_buffer_ptr`. La traînée désalignée ne rencontre plus
+     jamais son wrap (égalité stricte) et laboure la page directe puis la
+     fenêtre cartouche (le dispatcher du joueur !) — au 2e passage du
+     stage 1, Init rejoué → AABB player auto-bouclé (`prev=next=self`,
+     la signature du double-add) → `Collision_Do` infini au premier
+     contact ennemi (cam=198). Corrigé : pool 45 → 44, ancres descendues
+     de 117 ensemble, pile 145 octets.
+
+Piège d'instrumentation consigné : `mount_disk` résout les chemins relatifs
+depuis le cwd du serveur MCP — un chemin d'image relatif qui ne résout plus
+donne un boot silencieusement raté (menu moniteur, witness muet). Chemins
+absolus, et retenter l'appui « B » si le witness ne vient pas.
+
+## État après la première campagne de correction (2026-08-10)
 
 Les trois régressions ci-dessous sont **corrigées** :
 
