@@ -6,14 +6,6 @@
         <!-- A region is where scenes hand memory over to one another :    -->
         <!-- same destination, so the loader implicitly unloads the        -->
         <!-- previous content. Sizes are byte budgets.                     -->
-        <layout gensymbols="gen/layout.asm">
-            <region name="gamemode"   page="$01" address="$6100" size="$1F00"/>
-            <!-- ymm.asm a grandi (ymm.stop / ymm.restart, ajoutes pour R-Type) : 1057 o -->
-            <region name="ymm.player" page="$06" address="$0000" size="$0480"/>
-            <region name="ymm.data"   page="$06" address="$0480" size="$3B80"/>
-            <region name="vgc.player" page="$07" address="$0000" size="$0A80"/>
-            <region name="vgc.data"   page="$07" address="$0A80" size="$3580"/>
-        </layout>
 
         <floppydisk model="fd640">
 
@@ -30,7 +22,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
@@ -39,13 +31,13 @@
 
                 <!-- Title - sound player -->
                 <!-- ******************************************************* -->
-                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" region="ymm.player">
+                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" bake="auto" page="$06" address="$0000">
                     <lwasm>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" region="vgc.player">
+                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" bake="auto" page="$07" address="$0000">
                     <lwasm>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
@@ -54,14 +46,14 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.title.ymm" linkdata="LINK" region="ymm.data">
+                <file name="assets.sounds.title.ymm" linkdata="LINK" bake="auto" page="$06" address="$0480">
                     <lwasm>
                         <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.title.vgc" linkdata="LINK" region="vgc.data">
+                <file name="assets.sounds.title.vgc" linkdata="LINK" bake="auto" page="$07" address="$0A80">
                     <lwasm>
                         <label name="sounds.title.vgc"/>
                     </lwasm>
@@ -84,14 +76,14 @@
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.level1.ymm" linkdata="LINK" region="ymm.data">
+                <file name="assets.sounds.level1.ymm" linkdata="LINK" bake="auto" page="$06" address="$0480">
                     <lwasm>
                         <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.level1.vgc" linkdata="LINK" region="vgc.data">
+                <file name="assets.sounds.level1.vgc" linkdata="LINK" bake="auto" page="$07" address="$0A80">
                     <lwasm>
                         <label name="sounds.level1.vgc"/>
                     </lwasm>

@@ -9,7 +9,6 @@
             <!-- ensemble) et, quand elle compte, l'adresse. Les tailles se     -->
             <!-- mesurent — les budgets ecrits a la main d'un lecteur YM qui a  -->
             <!-- grossi de 33 octets faisaient deborder la region suivante.     -->
-            <region name="gamemode"   page="$01" address="$2100"/>
             <region name="ymm.player" page="$06" address="$B000"/>
             <region name="ymm.data"   page="$06"/>
             <region name="vgc.player" page="$07" address="$B000"/>
@@ -31,7 +30,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$2100">
                     <lwasm gensource="gen/assets/game-modes/mo6/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/mo6/title/main.asm"/>
@@ -40,13 +39,13 @@
 
                 <!-- Title - sound player -->
                 <!-- ******************************************************* -->
-                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" region="ymm.player">
+                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" bake="auto" region="ymm.player">
                     <lwasm>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" region="vgc.player">
+                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" bake="auto" region="vgc.player">
                     <lwasm>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
@@ -55,14 +54,14 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.title.ymm" linkdata="LINK" region="ymm.data">
+                <file name="assets.sounds.title.ymm" linkdata="LINK" bake="auto" region="ymm.data">
                     <lwasm>
                         <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.title.vgc" linkdata="LINK" region="vgc.data">
+                <file name="assets.sounds.title.vgc" linkdata="LINK" bake="auto" region="vgc.data">
                     <lwasm>
                         <label name="sounds.title.vgc"/>
                     </lwasm>
@@ -85,14 +84,14 @@
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.level1.ymm" linkdata="LINK" region="ymm.data">
+                <file name="assets.sounds.level1.ymm" linkdata="LINK" bake="auto" region="ymm.data">
                     <lwasm>
                         <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.level1.vgc" linkdata="LINK" region="vgc.data">
+                <file name="assets.sounds.level1.vgc" linkdata="LINK" bake="auto" region="vgc.data">
                     <lwasm>
                         <label name="sounds.level1.vgc"/>
                     </lwasm>
