@@ -156,6 +156,10 @@ public class DirEntryPlugin {
 		// this file, and a multi-provider symbol is disambiguated by who
 		// is asking
 		ctx.staticLink.setCurrentConsumer(name);
+		// the host generated symbols are qualified with ; a pageset overrides
+		// it with the set's name before packing, since the member split is its
+		// own business, not the content's
+		ctx.staticLink.setCurrentHost(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = Attribute.getStringOpt(node, ctx, "codec");
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");

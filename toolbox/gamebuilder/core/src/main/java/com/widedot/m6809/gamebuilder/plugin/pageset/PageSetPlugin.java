@@ -116,6 +116,10 @@ public class PageSetPlugin {
 					+ "' targets unknown region '" + regionName + "' (layout declares: "
 					+ ctx.regions.names() + ")");
 		}
+		// generated symbols are qualified by the SET, never by the member a
+		// part happens to land in : the split is the packing's result, and a
+		// symbol name must not change when the packing does
+		ctx.staticLink.setCurrentHost(name);
 		// Each zone is one page offered to the set, with its own room : a
 		// region no longer promises N identical pages, it lists what it has.
 		int zoneCount = region.zones.size();

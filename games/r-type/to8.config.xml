@@ -2404,10 +2404,10 @@
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
-                                 tiles="tilesEven" variant="ND0"
+                                 tiles="stage1.tiles.even" variant="ND0"
                                  gensource="gen/stages/01/map-even.asm"/>
                         <tilemap map="src/stages/01/map/intro/odd.bin" label="map.odd"
-                                 tiles="tilesOdd" variant="ND0"
+                                 tiles="stage1.tiles.odd" variant="ND0"
                                  gensource="gen/stages/01/map-odd.asm"/>
                     </lwasm>
                 </file>
@@ -2475,10 +2475,10 @@
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
-                                 tiles="tilesEven" variant="ND0"
+                                 tiles="stage2.tiles.even" variant="ND0"
                                  gensource="gen/stages/02/map-even.asm"/>
                         <tilemap map="src/stages/02/map/intro/odd.bin" label="map.odd"
-                                 tiles="tilesOdd" variant="ND0"
+                                 tiles="stage2.tiles.odd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
                     </lwasm>
                 </file>

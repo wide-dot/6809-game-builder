@@ -161,18 +161,23 @@ public class GfxcompPlugin {
 
 		if (grid != null) {
 			// a tileset : the input is a sheet of grid-sized tiles, each one
-			// compiled as its own image named <name>_<id>. Ids follow the v1
+			// compiled as its own image named <host>_<id>. Ids follow the v1
 			// reading order — left to right, then top to bottom — which is the
 			// order leanscroll writes the sheet in, so the tile indexes of its
-			// map .bin land on the right symbols
+			// map .bin land on the right symbols. The HOST — the direntry or
+			// pageset carrying this gfxcomp — qualifies the name : host names
+			// are unique per target by construction, so two stages slicing
+			// same-named sheets never collide on their tile symbols, and a
+			// <tilemap> names the host it consumes
 			if (index != null) {
 				throw new Exception("image " + name + " : grid and index are exclusive, a"
 						+ " tileset is addressed by a <tilemap>, not by the imageset");
 			}
+			String host = ctx.staticLink.currentHost();
 			List<String[]> selected = new ArrayList<>();
+			int id = 0;
 			for (String tile : slice(name, filename, grid, gendir)) {
-				String tileName = tile.substring(tile.lastIndexOf(File.separatorChar) + 1,
-						tile.length() - ".png".length());
+				String tileName = (host != null ? host : name) + "_" + id++;
 				selected.add(new String[] { tileName, tile });
 			}
 			List<String> files = encodeTiles(node, ctx, gendir, imageset, selected);

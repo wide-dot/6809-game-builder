@@ -313,7 +313,7 @@ public final class Handlers {
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")
-			.req("tiles", STRING, "tile symbol stem : entries reference adr_<tiles>_<id>_<variant>")
+			.req("tiles", STRING, "the file or pageset hosting the tiles : entries reference adr_<host>_<id>_<variant>")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map if omitted")
