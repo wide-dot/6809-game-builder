@@ -452,8 +452,15 @@ Fonctionnel :
         liste montre la frontière moteur→stage attendue, ligne par ligne.
         Doc : symbols.md § The caused list. PREUVE : 59 images identiques
         à l'octet, JUnit 64/64 (3 tests ajoutés). Restes 3a : arbitrage
-        interface/« même destination » (rapport d'abord, acté), imageset
-        délégué (images r-type changeront).
+        interface/« même destination » (rapport d'abord, acté).
+  - [x] Imageset délégué — CLOS PAR MESURE (10/08) : la fonte avait déjà
+        eu lieu à 4576b95 (05/08, bake=auto sur les porteurs d'index,
+        images changées et validées alors) ; externPg = 0 sur tout le
+        corpus hors mplus (hors imageset), listes causées sans symbole
+        d'imageset, contre-preuve par cassage volontaire (bake=none →
+        1 externPg de retour), bancs verts en tête de branche. Les deux
+        formes consomment le même service (pageOf direct / resolvePage à
+        la cuisson). Détail : annotation 3a du plan.
   - [x] Phase 4a-syntaxe (10/08) — la place attitrée : `<file>` déclare
         `arena=`/`region=`/`page=`+`address=` (une forme au plus), un
         `<load>` nu résout contre elle (ScenePlugin + PlacementScan +

@@ -165,8 +165,22 @@ Le renversement du §12/§23, en trois pas :
     interface/« même destination » reste ouvert, dans l'ordre voulu par
     l'état des lieux du 10/08 : le rapport d'abord, l'observation ensuite —
     les retirer avant d'avoir lu la liste causée sur le corpus migré serait
-    aveugle. Restes de 3a : cet arbitrage, et l'imageset délégué au service
-    de résolution (les images r-type changent — à faire banc vert).
+    aveugle. Restes de 3a : cet arbitrage, et ~~l'imageset délégué au service
+    de résolution (les images r-type changent — à faire banc vert)~~
+    **CLOS PAR MESURE (10/08)** : la fonte avait déjà eu lieu à `4576b95`
+    (05/08 — `bake="auto"` posé sur les fichiers porteurs d'index, images
+    changées et validées alors) ; les notes « différé » recopiaient un état
+    caduc. Mesure : externPg = 0 sur tout le corpus hors mplus (14 réfs
+    style getPageID, hors imageset) ; aucune ligne `$PAGE` ni symbole
+    d'imageset dans les listes causées ; contre-preuve par cassage
+    (`bake="none"` sur common.overlay → 282 octets de lien dont 1 externPg,
+    restauré, image byte-identique) ; bancs verts en tête de branche
+    (loader-ut 17/17 `$0D`, r-type 5/5). Le critère du §16.C est tenu : un
+    seul service de résolution — `<imageset>` appelle `StaticLink.pageOf`
+    par image, la forme in-unit `genindex` émet `<file>$PAGE` symbolique
+    que `StaticLink.resolvePage` cuit à la passe bake. Le repli externPg
+    de la forme in-unit meurt naturellement à 3c (défaut AUTO), aucun code
+    à écrire.
 3b. **`bake="auto"` partout** dans le corpus (mécanique : l'attribut est
     déjà posé sur r-type) — les configs d'exemples migrent une à une, chaque
     migration validée par exécution (les images changent : la donnée de

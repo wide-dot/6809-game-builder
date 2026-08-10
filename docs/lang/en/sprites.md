@@ -141,15 +141,21 @@ so one off puts the sprite a pixel away, or selects a variant that was never
 compiled and the sprite vanishes. The bench compares it against v1 for that
 reason.
 
-**The page is a relocation.** v1 placed pages during a global build pass and
-wrote the number in. v2 loads files into regions at run time, so the index
-carries an `externPg` relocation on `<direntry>$PAGE`, resolved when the file
-is loaded. The byte goes straight to the cartridge window register, so it also
-carries the RAM over cartridge bits — the relocation's plus operand covers
-that, which is why the generated source reads `assets.sprites$PAGE+$60`.
+**The page is a reference the builder resolves.** v1 placed pages during a
+global build pass and wrote the number in. v2 writes the reference
+symbolically — the generated source reads `assets.sprites$PAGE+$60`, the
+`+$60` carrying the RAM over cartridge bits since the byte goes straight to
+the cartridge window register — and the placement service turns it into a
+number. In a file with an attributed place and `bake="auto"` (the corpus
+state) the byte is baked at build time and the index costs no link data ; in
+a file left load-time linked it survives as an `externPg` relocation the
+loader resolves when the file is loaded. Both forms consume the same service
+the spread form below uses : `<imageset>` asks it per image, this in-unit
+form asks it once for the whole set.
 
-The unit must therefore include the directory's `entries.asm` : that is where
-the file id equate the relocation resolves against is defined.
+The unit must include the directory's `entries.asm` : that is where the file
+id equate an `externPg` relocation resolves against is defined — the baked
+form does not read it, but one source serves both modes.
 
 Exported for the rest of the game to link against : `set_<name>`,
 `idx_<name>`, and every `adr_<name>_<variant>`.

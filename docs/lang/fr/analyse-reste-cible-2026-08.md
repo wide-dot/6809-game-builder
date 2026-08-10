@@ -51,9 +51,14 @@ Ce qui manque réellement à 3a n'est plus le mécanisme, c'est **la voix** :
   d'élagage d'exports séparé (`LinkSymbols`) : le plan veut qu'ils deviennent
   des conséquences de la multiplicité. Tant que le rapport de cause n'existe
   pas, les retirer serait aveugle — l'ordre est donc rapport d'abord. (M)
-- Le reliquat déclaré de la phase 1 : **l'imageset délégué au service de
+- ~~Le reliquat déclaré de la phase 1 : **l'imageset délégué au service de
   résolution** (sa link data fond) — différé exprès jusqu'ici parce qu'il
-  change les images. (S)
+  change les images. (S)~~ **CLOS PAR MESURE (10/08)** : la fonte avait
+  déjà eu lieu à `4576b95` (05/08, bake=auto sur les fichiers porteurs
+  d'index, images changées et validées alors). Mesuré : externPg = 0 sur
+  tout le corpus hors mplus (14, hors imageset), listes causées sans
+  symbole d'imageset, contre-preuve par cassage volontaire, bancs verts.
+  Détail dans l'annotation 3a du plan.
 
 3b est le gros du volume : la migration du corpus. Le recensement au
 2026-08-10 :
@@ -181,7 +186,7 @@ plan le demande, principe 4) : arènes et `bake=` sont déjà racontables. (M)
 | Phase | État | Reste | Taille |
 |---|---|---|---|
 | 0-2 | faites, prouvées | — | — |
-| 3a | mécanisme fait, **rapport de cause fait (10/08)** | interface/élagage en conséquences, imageset délégué | M |
+| 3a | mécanisme fait, **rapport de cause fait (10/08)**, **imageset délégué clos par mesure (10/08)** | interface/élagage en conséquences | M |
 | 3b | 2 configs sur 12 | ~100 `linkdata=` à fondre, loader-ut à scinder, MO6 sur parole | L |
 | 3c | non | une ligne, après 3b | S |
 | 4a | arènes faites, **place sur le `<file>` faite (10/08)** | vérif globale des places fixes | S |
@@ -196,8 +201,10 @@ plan le demande, principe 4) : arènes et `bake=` sont déjà racontables. (M)
 ## 5. L'ordre de reprise recommandé
 
 1. ~~**3a-voix**~~ **FAIT (10/08)** — le rapport de cause existe
-   (`linked-refs-<target>.csv`). L'imageset délégué reste À FAIRE : il
-   change les images r-type, donc il attend une session avec la lane toje.
+   (`linked-refs-<target>.csv`). ~~L'imageset délégué reste À FAIRE : il
+   change les images r-type, donc il attend une session avec la lane
+   toje.~~ **Clos par mesure (10/08)** : déjà fondu à `4576b95`, voir
+   l'annotation 3a du plan.
    *(Fait aussi le 10/08, hors de cet ordre parce que prouvable par
    identité sans banc : la place attitrée 4a + le déplacement d'attribut
    4b sur tout le corpus, et le rapport de seeks du point 3.)*
