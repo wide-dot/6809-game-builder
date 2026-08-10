@@ -504,6 +504,21 @@ Fonctionnel :
         scenes.boot paie 4 retours. PREUVE : 59 images identiques,
         JUnit 70/70. Restent en 6 : l'ordre d'écriture par première
         utilisation, le silence du codec.
+  - [x] Publication des places attitrées littérales (10/08) — le
+        `gensymbols` du répertoire publie `<name>.page`/`.address` à côté
+        de l'id de fichier pour tout fichier à place `page=`+`address=`
+        (le remplaçant du gensymbols de layout, idiome du pageset).
+        PREUVE : identité (les équates n'émettent rien), JUnit 70/70.
+  - [x] 3b+4b-dissolution, 6 configs sur l'ordre acté (10/08) : tlsf-ut
+        (TO8+MO6, identité), hscroll (déphasage de 4 trames prouvé par
+        alignement d'écrans déterministes), objects (banc 18/18 `$0D`),
+        sprites (7 verdicts `$9C00`, tête de liste libre inchangée),
+        tilescroll (caméra + 3 verdicts terrain), stacked-overflow
+        (TO8+MO6, 10 marqueurs relus en pages 5/6). Chaque commit :
+        images changées annoncées, reste du corpus identique, exécution
+        rejouée sous la lane toje. **sound SUSPENDU** (régression
+        `f7d4474`, voir « À corriger »). Restent : mplus (à instruire
+        avec l'arbitrage empilage §12), loader-ut (à scinder), r-type.
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
