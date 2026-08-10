@@ -45,15 +45,16 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       tampon perdu à l'import v1, l'avertissement d'à côté). `clr @flip` à
       l'init. Les images ymm changent (sound TO8/MO6, mplus-test TO8/MO6,
       r-type), les 10 autres configs sont identiques à l'octet.
-- [ ] **r-type : l'entrée du stage 2 spinne dans la marche EraseSprites**
-      (préexistant, resserré le 10/08) : la caméra reste à 16 pendant que
-      les trames IRQ avancent — la boucle PRINCIPALE est coincée dans UNE
-      itération, le walk des slots d'effacement (`$6153-$6156` =
-      `rsv_prev_*`, code de page en `$39xx`) ne termine jamais. Les trois
-      ClearAll de `checkpoint.load` SONT sur le chemin d'entrée : l'état
-      moulu est donc celui, frais, du stage 2 — à inspecter en live
-      (pointeur de marche, page montée, bornes de la liste). Dernier
-      bloqueur du 5/5. Détail : `ci/toje-bench/readme.md`.
+- [ ] **ymm : toute relance après interruption se désynchronise** — LE
+      dernier bloqueur du 5/5 (l'hypothèse EraseSprites est écartée :
+      c'était la boucle principale échantillonnée pendant que le player
+      mange les trames). Dossier prêt : au spin, l'anneau contient la
+      musique VALIDE et le consommateur la lit décalée d'un octet (les
+      waits tombent en position valeur) ; `clr @flip` (fait) ne suffit
+      pas, la coroutine produit/consomme garde un autre état de phase à
+      travers l'interruption d'un morceau. Sonde de rejeu :
+      `ci/toje-bench/ymm_state_probe.py` (2 min). À reprendre avec
+      l'auteur du player. Détail : `ci/toje-bench/readme.md`.
 
 ## En cours
 
