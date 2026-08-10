@@ -24,7 +24,23 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       `scenes.trap`). **loader-ut 17/17 + `$0D` + T18 `$8301`, vérifié sous
       la lane toje.** Changement du binaire du loader : les images bootables
       changent toutes.
-- [ ] **examples/sound TO8 ne joue plus depuis `f7d4474` (05/08)** — trouvé
+- [x] **examples/sound TO8 ne joue plus** — RÉSOLU (10/08). La bissection
+      vers `f7d4474` était un leurre de phase : le vrai coupable est la
+      **passerelle `irq.off equ IrqOff`** du gm title (l'anti-pattern que
+      `irq-bridge.md` recommandait !). Le IrqOff v1 écrase A ; or
+      `ymm.obj.play` appelle `irq.off` juste avant `sta ymm.data.page` —
+      la page stockée devenait le résidu STATUS ($00), et chaque
+      `frame.play` remontait la fenêtre cartouche sur la page 0 EN
+      S'EXÉCUTANT DEPUIS LA FENÊTRE. Le verdict dépendait de la phase de
+      la première IRQ musicale, donc tout changement de taille déplaçait
+      le vert/rouge — d'où la fausse bissection. Correctif : wrappers
+      préservants APRÈS mainLoop (la scène saute sur le premier octet de
+      l'unité), `irq-bridge.md` amendé (l'equ nu est banni, deuxième
+      morsure après r-type). Validé sous toje : mainLoop en 4069
+      instructions, data.page=$66, bascule title→level1 par le hook $9C00
+      avec les deux flux remplacés en RAM, 1500 trames de vie libre.
+      Migration 3b+4b de sound DÉBLOQUÉE, dépendance de 3c levée.
+      (Diagnostic initial, conservé pour l'histoire : « depuis `f7d4474` (05/08)** — trouvé
       le 10/08 en préparant sa migration 3b+4b : le mainLoop du title n'est
       jamais atteint, le premier userIRQ qui streame finit en sous-débord de
       la pile d'IRQ privée et la machine erre en VRAM. Bissecté (worktree +

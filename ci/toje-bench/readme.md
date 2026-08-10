@@ -27,7 +27,35 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
-## RÉGRESSION OUVERTE : examples/sound TO8 ne joue plus (2026-08-10)
+## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
+
+Le dossier ci-dessous s'est conclu le jour même, et la bissection était un
+**leurre de phase**. Cause racine, prise sur le fait au désassemblage vivant
+(breakpoint page-qualifié sur `ymm.frame.play`, lecture de `ymm.data.page`) :
+la passerelle `irq.off equ IrqOff` du gm title tient la promesse du NOM sans
+tenir celle du CONTRAT — le `IrqOff` v1 écrase A (il lit le STATUS moniteur
+dedans), or `ymm.obj.play` appelle `irq.off` l'instruction d'avant
+`sta ymm.data.page` : la page musicale stockée devenait $00, et chaque
+`frame.play` remontait la fenêtre cartouche sur la page 0 **en s'exécutant
+depuis la fenêtre** — le sol disparaît sous le PC, marche dans la ROM,
+parcage en VRAM. Le crash n'arrivant qu'à la première IRQ musicale, le
+verdict dépendait de la phase du chargement : tout changement de taille de
+n'importe quel fichier déplaçait le vert/rouge — c'est ce qui a fait
+bissecter vers l'innocent `f7d4474` (le tableau d'expériences ci-dessous
+reste vrai ; son interprétation ne l'était pas — un filler mort de même
+taille était rouge aussi, c'est ce qui a rouvert le dossier).
+
+La preuve croisée : r-type mesuré sain (`data.page=$7A`) parce que SA
+passerelle applique le contrat (`pshs a` — engine.asm, avec le war story en
+commentaire). Correctif : mêmes wrappers dans le gm sound, placés APRÈS la
+boucle principale (la scène saute sur le premier octet de l'unité — un
+premier essai les avait mis en tête, plantant l'entrée). `irq-bridge.md`
+amendé : l'equ nu qu'il recommandait est banni, deuxième morsure.
+Validé : mainLoop en 4069 instructions, bascule title→level1 à chaud avec
+les deux flux vérifiés en RAM, 1500 trames de vie libre. Seules les 4
+images sound TO8 changent.
+
+## Archive du dossier initial (diagnostic dépassé, méthode conservée)
 
 Trouvée en préparant la migration 3b+4b de `sound` (le témoin d'exécution
 n'a jamais pu passer au vert sur l'image de RÉFÉRENCE — la règle « un vert

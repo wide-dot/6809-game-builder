@@ -12,13 +12,12 @@ sounds.level1.vgc  EXTERNAL
  SECTION code
 
         ; v2 compatibility bridge : the kept-v2 sound players resolve
-        ; irq.on/irq.off at load time (an unresolved link symbol silently
-        ; becomes 0 — jsr $0000). The v1 dialect provides IrqOn/IrqOff ;
-        ; export them under the v2 names, zero bytes added.
+        ; irq.on/irq.off at load time. The wrappers live AFTER the main
+        ; loop — the scene jumps to this unit's first byte, so main has to
+        ; be the first thing emitted. See the definition below for why a
+        ; bare equ on IrqOn/IrqOff is not enough.
 irq.on  EXPORT
-irq.on  equ   IrqOn
 irq.off EXPORT
-irq.off equ   IrqOff
 
         ; v1 engine dialect (1:1 imported files)
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -123,6 +122,26 @@ mainLoop
 
 ; ------------------------------------------------------------------------------
 keydown fcb   0                       ; bench trigger edge state
+
+; ------------------------------------------------------------------------------
+; irq.on / irq.off — the v2-contract bridge over the v1 IrqOn/IrqOff.
+; A bare equ holds the promise of the NAME without the promise of the
+; CONTRACT : the v2 irq.on/irq.off PRESERVE REGISTERS
+; (engine/system/to8/irq/irq.asm), while the v1 routines read the STATUS
+; byte through A. The YMM player calls irq.off in the middle of the
+; sequence where A carries the music data page, right before
+; sta ymm.data.page : with the bare alias it stored the STATUS residue
+; ($00), and every frame.play then remounted the cartridge window on
+; page 0 WHILE EXECUTING FROM THE WINDOW — the ground vanished under the
+; PC. See docs/lang/en/migration/irq-bridge.md.
+; ------------------------------------------------------------------------------
+irq.on  pshs  a
+        jsr   IrqOn
+        puls  a,pc
+
+irq.off pshs  a
+        jsr   IrqOff
+        puls  a,pc
 
 userIRQ
         jsr   PalUpdateNow              ; self-skips when PalRefresh is 0

@@ -217,11 +217,10 @@ Le renversement du §12/§23, en trois pas :
     répertoire — et son sort par-load se décide à 4c (forme témoin
     conservée ou conversion, à trancher alors).
 
-    *Dépendance de 3c* : la bascule du défaut change les images de tout
-    config sans attribut — dont examples/sound, suspendu sur la
-    régression `f7d4474` (voir TODO « À corriger »). 3c attend le vert
-    de sound : basculer un config qu'aucune exécution ne peut valider
-    contredirait la méthode.
+    *Dépendance de 3c* : ~~la bascule attend le vert de sound~~ **LEVÉE
+    (10/08)** — la régression sound est résolue (passerelle `irq.off`,
+    voir TODO « À corriger » et `irq-bridge.md`) et son témoin toje est
+    vert. 3c reste la dernière ligne, après la migration 3b de sound.
 
 *Preuve à chaque pas : bancs sous toje (loader-ut garde des tests DÉDIÉS aux
 chemins link — le loader doit rester complet), link-report et pool-map en
