@@ -56,7 +56,6 @@ terrainCollision.bgColTmp   EXPORT
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
-        INCLUDE "gen/layout.asm"
 
 ; The scroll asks the game for these two, and caps the camera with them so the
 ; map never runs off its own end.
@@ -105,7 +104,7 @@ main
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+gamemode.page
+        lda   #map.RAM_OVER_CART+assets.gm.main.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 
@@ -222,17 +221,18 @@ userIRQ
 
 ;*******************************************************************************
 ; object index — where the terrain unit lives. Both values come from the
-; declared layout, so there is nothing here for the linker to resolve.
+; attributed-place equates entries.asm publishes, so there is nothing here
+; for the linker to resolve.
 ;*******************************************************************************
 objid.terrain equ 1
 
 Obj_Index_Page
         fcb   $00
-        fcb   map.RAM_OVER_CART+terrain.page
+        fcb   map.RAM_OVER_CART+assets.terrain.page
 
 Obj_Index_Address
         fdb   $0000
-        fdb   terrain.address
+        fdb   assets.terrain.address
 
 ;*******************************************************************************
 ; engine
