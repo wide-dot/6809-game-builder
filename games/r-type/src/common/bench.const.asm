@@ -11,8 +11,17 @@
 * endroit qui survive aux échanges de scène — et quand le banc partira, ces
 * seize équates partiront avec lui sans laisser de trou dans le layout.
 *
-* Ils se placent AU-DESSUS de globals.missileUnlocked : variables.asm est un
-* fichier repris de la v1, on l'étend, on ne le réarrange pas.
+* Ils vivent dans les 16 premiers octets du slot rendu par le 46e objet du
+* pool (<reserved name="bench"> à $8766, nb_dynamic_objects 46 -> 45 dans
+* ram.const.asm) : nulle part ailleurs — le bloc `globals` est plein à +147
+* (la traînée du joueur y a pris 128 octets, ÉCRASANT l'ancien emplacement
+* +13 des témoins à chaque trame : deux fichiers déclaraient la même RAM
+* sans qu'aucun assembleur ne les fasse se rencontrer), et au-dessus de
+* globals c'est la pile S ($9ED4-$9EEF), qui griffonne tout autant — la
+* première relocalisation, +148, l'a appris en direct. Trouvé par la lane
+* toje headless (ci/toje-bench) : du bruit de coordonnées puis de pile dans
+* les témoins pendant le jeu. Qui étend variables.asm ou déplace le pool
+* doit regarder CE fichier aussi.
 
 bench.MAGIC        equ $CA
 bench.SCORE        equ $1234        ; l'état semé au premier stage
@@ -31,22 +40,23 @@ bench.SCROLL_VEL   equ $0030        ; 8.8 : 3/16 de pixel par trame, la vitesse
                                     ; rend toute observation d'un ennemi
                                     ; ininterpretable.
 
-bench.magic        equ GLOBAL_VARIABLES+13   ; $CA : la partie a démarré
-bench.stage        equ GLOBAL_VARIABLES+14   ; le numéro du stage qui tourne
-bench.frames       equ GLOBAL_VARIABLES+15   ; compteur de trames, un blocage se voit
-bench.camera       equ GLOBAL_VARIABLES+16   ; (mot) position caméra du stage courant
-bench.spawns       equ GLOBAL_VARIABLES+18   ; (mot) objets réellement exécutés par la wave
-bench.t1           equ GLOBAL_VARIABLES+20   ; $01 le stage 1 a tourné, sa wave a peuplé
-bench.t2           equ GLOBAL_VARIABLES+21   ; $01 le stage 2 a tourné sur SES données
-bench.t3           equ GLOBAL_VARIABLES+22   ; $01 l'état persistant a survécu à l'échange
-bench.t4           equ GLOBAL_VARIABLES+23   ; $01 retour au stage 1 : l'échange est réversible
-bench.t5           equ GLOBAL_VARIABLES+24   ; $01 checkpoint sans disque : wave recalée
-bench.stage1Spawns equ GLOBAL_VARIABLES+26   ; (mot) spawns du premier passage, pour comparer
+bench.BLOCK        equ $8766        ; <reserved name="bench"> du layout
+bench.magic        equ bench.BLOCK+0   ; $CA : la partie a démarré
+bench.stage        equ bench.BLOCK+1   ; le numéro du stage qui tourne
+bench.frames       equ bench.BLOCK+2   ; compteur de trames, un blocage se voit
+bench.camera       equ bench.BLOCK+3   ; (mot) position caméra du stage courant
+bench.spawns       equ bench.BLOCK+5   ; (mot) objets réellement exécutés par la wave
+bench.t1           equ bench.BLOCK+7   ; $01 le stage 1 a tourné, sa wave a peuplé
+bench.t2           equ bench.BLOCK+8   ; $01 le stage 2 a tourné sur SES données
+bench.t3           equ bench.BLOCK+9   ; $01 l'état persistant a survécu à l'échange
+bench.t4           equ bench.BLOCK+10  ; $01 retour au stage 1 : l'échange est réversible
+bench.t5           equ bench.BLOCK+11  ; $01 checkpoint sans disque : wave recalée
+bench.stage1Spawns equ bench.BLOCK+13  ; (mot) spawns du premier passage, pour comparer
 bench.SIZE         equ 16                    ; le bloc entier, remis à zéro au démarrage :
                                              ; la zone n'est chargée par personne, donc
                                              ; sans ça un témoin non posé lit ce que la
                                              ; machine avait là — $FF, pas $00
-bench.spawnStage   equ GLOBAL_VARIABLES+28   ; numéro du stage dont le bouchon a tourné en
+bench.spawnStage   equ bench.BLOCK+15  ; numéro du stage dont le bouchon a tourné en
                                              ; dernier : c'est LUI qui prouve le re-link,
                                              ; le moteur ne peut l'atteindre qu'en lisant
                                              ; l'index du stage effectivement chargé

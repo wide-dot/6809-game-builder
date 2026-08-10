@@ -361,6 +361,13 @@
                     <load name="data.marker.cc" region="marker.b"/>
                 </scene>
 
+                <!-- T18's provocation : bb over cc, same region, no unload.
+                     A DIFFERENT file is required — reloading the same file is
+                     a dedup (slot reuse) and never reaches the overlap check. -->
+                <scene name="scenes.trap" section="SCENE" gensource="gen/scenes/trap.asm">
+                    <load name="data.marker.bb" region="marker.b"/>
+                </scene>
+
                 <!-- stress : stable hub file, holds refs re-patched at link -->
                 <scene name="scenes.stress.hub" section="SCENE" gensource="gen/scenes/stress-hub.asm">
                     <load name="data.marker.hub" region="stress.hub"/>

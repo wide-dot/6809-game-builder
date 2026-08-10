@@ -41,8 +41,18 @@ for i in range(600):
         t.press()
     if status != 0:
         if status == 0x0D:
-            print("LOADER-UT PASS (status $0D)")
-            verdict = 0
+            # T18 fires AFTER the status : it provokes the overlap trap on
+            # purpose and wedges the machine. Let it run, then check the log.
+            t.call("run_frames", {"n": 200, "timeout_ms": 10000})
+            lb = t.read("9EF0", 3)
+            code = (lb[0] << 8) | lb[1]
+            if code == 0x8301:
+                print("LOADER-UT PASS (status $0D, T18 trap log $8301)")
+                verdict = 0
+            else:
+                print(f"LOADER-UT FAIL (status $0D but T18 log.code={code:04X},"
+                      " expected $8301)")
+                verdict = 1
         else:
             print(f"LOADER-UT FAIL (status ${status:02X})")
             verdict = 1

@@ -204,6 +204,11 @@ stage.setup
 ; laisse la trace du passage, et on rend la main au stage 1.
 stage.handOver
         jsr   IrqOff
+        ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
+        ; le commentaire de son handOver.
+        lda   #map.RAM_OVER_CART+ymm.player.page
+        ldx   #ymm.stop
+        jsr   paged.call
 
         ldd   game.score
         cmpd  #bench.SCORE

@@ -347,6 +347,15 @@ stage.setup
 ; retour on constate que l'échange est réversible et on exerce le checkpoint.
 stage.handOver
         jsr   IrqOff
+        ; La musique s'arrête AVANT l'échange : relancer `ymm.obj.play` sur un
+        ; lecteur en cours de flux le laisse désynchronisé — l'anneau rejoue
+        ; ses octets hors phase, plus aucun wait n'est vu, et la machine passe
+        ; ses trames à écrire des registres YM (constaté sous toje : ~1 trame/s
+        ; à l'entrée du stage suivant). C'est le geste v1 au changement de game
+        ; mode, et la raison d'être de `ymm.stop`.
+        lda   #map.RAM_OVER_CART+ymm.player.page
+        ldx   #ymm.stop
+        jsr   paged.call
 
         lda   game.stage
         cmpa  #2

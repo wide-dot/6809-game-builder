@@ -56,9 +56,32 @@ marker.bb.begin EXTERNAL
 marker.cc.begin EXTERNAL
 marker.dd.begin EXTERNAL
 marker.ee.begin EXTERNAL
+; Every ballast export is CONSUMED here, on purpose : the builder prunes an
+; export nobody imports and no longer writes an empty link block, so an
+; export-only file with unconsumed exports carries no link data and never
+; reaches the loader's index — T12/T14 count on these very files occupying
+; slots. The checks sum every value, so the imports are real references.
 iface.a.VALUE   EXTERNAL
+iface.b.VALUE   EXTERNAL
+iface.c.VALUE   EXTERNAL
+iface.d.VALUE   EXTERNAL
+iface.e.VALUE   EXTERNAL
 iface.f.VALUE   EXTERNAL
 pad.a.VALUE     EXTERNAL
+pad.b.VALUE     EXTERNAL
+pad.c.VALUE     EXTERNAL
+pad.d.VALUE     EXTERNAL
+pad.e.VALUE     EXTERNAL
+pad.f.VALUE     EXTERNAL
+pad.g.VALUE     EXTERNAL
+pad.h.VALUE     EXTERNAL
+pad.i.VALUE     EXTERNAL
+pad.j.VALUE     EXTERNAL
+pad.k.VALUE     EXTERNAL
+pad.l.VALUE     EXTERNAL
+pad.m.VALUE     EXTERNAL
+pad.n.VALUE     EXTERNAL
+pad.o.VALUE     EXTERNAL
 pad.p.VALUE     EXTERNAL
 marker.zz.begin EXTERNAL
 marker.d1.begin EXTERNAL
@@ -384,8 +407,15 @@ init
 !       ldd   #iface.a.VALUE
         cmpd  #$0A01
         bne   @f7
-        ldd   #iface.f.VALUE
-        cmpd  #$0A06
+        ; the sum consumes EVERY iface export (see the EXTERNAL block's
+        ; comment) : $0A01+..+$0A06 = $3C15
+        ldd   #iface.a.VALUE
+        addd  #iface.b.VALUE
+        addd  #iface.c.VALUE
+        addd  #iface.d.VALUE
+        addd  #iface.e.VALUE
+        addd  #iface.f.VALUE
+        cmpd  #$3C15
         beq   >
 @f7     lda   #$F7
         lbra  @fail12
@@ -467,8 +497,25 @@ init
 !       ldd   #pad.a.VALUE
         cmpd  #$0B01
         bne   @f14b
-        ldd   #pad.p.VALUE
-        cmpd  #$0B10
+        ; the sum consumes EVERY pad export (see the EXTERNAL block's
+        ; comment) : $0B01+..+$0B10 = $B088
+        ldd   #pad.a.VALUE
+        addd  #pad.b.VALUE
+        addd  #pad.c.VALUE
+        addd  #pad.d.VALUE
+        addd  #pad.e.VALUE
+        addd  #pad.f.VALUE
+        addd  #pad.g.VALUE
+        addd  #pad.h.VALUE
+        addd  #pad.i.VALUE
+        addd  #pad.j.VALUE
+        addd  #pad.k.VALUE
+        addd  #pad.l.VALUE
+        addd  #pad.m.VALUE
+        addd  #pad.n.VALUE
+        addd  #pad.o.VALUE
+        addd  #pad.p.VALUE
+        cmpd  #$B088
         beq   >
 @f14b   lda   #$FD
         lbra  @fail14
@@ -685,19 +732,21 @@ init
         ; of the log system - a supervisor watches log.code and reads the rest.
         ;
         ; cc is loaded and indexed (T9 reloaded scene "second", T17 unloaded it
-        ; - so reload it), then scene "second" is loaded again WITHOUT dropping
-        ; it. Expected at the halt :
+        ; - so reload it), then scene "trap" loads bb at the same region
+        ; WITHOUT dropping cc. The covering file must be a DIFFERENT one :
+        ; reloading the same file takes the dedup path (slot reuse) and never
+        ; reaches the overlap check — the first shape of this test reloaded
+        ; scene "second" over itself and could not trap by construction.
+        ; Expected at the halt :
         ;   log.code = $8301  (error class + log.scene.LOAD_OVERLAP)
-        ;   log.x    = data.marker.cc  (the file being loaded)
-        ;   log.u    = data.marker.cc  (the occupant - itself, one scene older)
+        ;   log.x    = data.marker.bb  (the file being loaded)
+        ;   log.u    = data.marker.cc  (the occupant)
         ;   log.y    = addr.marker.cc  (the destination)
         ;
         ; A machine that reaches `trap.missed` instead has NOT trapped : the
         ; overlap went through unnoticed, which is the regression this guards.
         _loader.scene.load #scenes.second     ; cc indexed again
-        _loader.file.linkData.unload #0,#data.marker.cc
-        _loader.scene.load #scenes.second     ; indexed once more, deliberately
-        _loader.scene.load #scenes.second     ; ... and covered : must trap
+        _loader.scene.load #scenes.trap       ; bb covers cc : must trap
         lda   #result.TRAP_MISSED
         sta   result+31
 trap.missed

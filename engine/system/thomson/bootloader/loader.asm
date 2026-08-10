@@ -1199,6 +1199,18 @@ linkData.slot.find
 ; data — measured 15 on r-type, next to
 ; nothing beside the disk read itself.
 ;---------------------------------------
+; That read-back is only valid for slots
+; of the disk whose directory is in
+; cache : file ids restart on each disk,
+; so another disk's id would address the
+; wrong entry — a phantom extent (seen :
+; disk 1's file 0 read as disk 0's game
+; mode, covering a region it never
+; touched). Foreign-disk slots are
+; skipped ; their extent is unknowable
+; here, so cross-disk overlaps are the
+; caller's declarations to make.
+;---------------------------------------
 linkData.slot.findOverlap
         pshs  d,x,y
         sta   @page
@@ -1206,6 +1218,9 @@ linkData.slot.findOverlap
         tfr   y,d
         leax  d,x
         stx   @end                            ; first byte AFTER this file
+        ldu   >loader.dir
+        lda   dir.header.diskId,u
+        sta   @dirdisk
         ldu   >loader.file.linkDataIdx
         beq   @none
         ldy   linkData.header.occupiedSlots,u
@@ -1215,6 +1230,10 @@ linkData.slot.findOverlap
 @page   equ   *-1
         cmpa  linkData.entry.filePage,u
         bne   @next                           ; another page : cannot intersect
+        lda   #0
+@dirdisk equ  *-1
+        cmpa  linkData.entry.diskId,u
+        bne   @next                           ; another disk : extent unknowable
         pshs  u,y
         ldx   linkData.entry.fileId,u
         jsr   loader.dir.getFile

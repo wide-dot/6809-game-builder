@@ -14,22 +14,31 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
 `ff633bc` rejoue 16/16 `$0D` sous le harnais). Toutes antérieures à la campagne
 « modèle cible » — ses phases sont hors de cause (contrôle par image).
 
-- [ ] **loader-ut T12/T14 en échec depuis `4576b95` (05/08)** : l'élagage vide
-      les blocs des fichiers de lest (`iface.b..e`, 20 `pad.*` — exports que
-      personne n'importe : 12 → 0 octets au link-report), ils ne sont plus
-      indexés, les comptes de T12/T14 ne collent plus ($F6/$FC). Arbitrage :
-      lest à export consommé, ou re-spec des tests sur la sémantique d'élagage.
-- [ ] **loader-ut gèle après T15 depuis `9c176a3` (07/08)** : trap
-      LOAD_OVERLAP (`$8301`, site $AD11, file $45 → page 6/$1C00, occupant
-      id 0) — déchargement manquant dans le banc migré, ou faux positif de
-      `findOverlap` (occupant id 0 suspect). T16/T17 jamais atteints, statut
-      final jamais écrit.
-- [ ] **r-type : l'échange de stages gèle** — le stage 1 se joue en entier
-      (vitesse réelle, art juste) puis le lecteur YMM boucle sans fin sur
-      `map.YM2413.D` ($E7FD) pendant la bascule : flux musical au-delà de son
-      marqueur, pointeurs sur données remplacées. Piste : `ymm.stop` / ordre
-      d'IrqOff dans `stage.handOver`. Le banc 5/5 n'avait sans doute pas été
-      rejoué en entier depuis la vitesse de scroll réelle (`bfd1a52`, 02/08).
+- [x] **loader-ut T12/T14** (10/08) : les 24 exports de lest sont consommés
+      par des sommes de contrôle dans le gm — les fichiers regagnent bloc de
+      lien et slots d'index.
+- [x] **Recouvrement fantôme de `findOverlap`** (10/08) : garde diskId — un
+      slot d'un autre disque est ignoré, son étendue étant illisible depuis
+      le répertoire en cache. T18 réparé au passage (recharger le même
+      fichier prend la dédup : la provocation charge désormais bb sur cc via
+      `scenes.trap`). **loader-ut 17/17 + `$0D` + T18 `$8301`, vérifié sous
+      la lane toje.** Changement du binaire du loader : les images bootables
+      changent toutes.
+- [x] **r-type : gel YM à l'échange** (10/08) : `ymm.stop` dans les deux
+      `stage.handOver` (relancer `ymm.obj.play` sur un flux en cours
+      désynchronisait l'anneau). Témoins du banc relogés en `$8766` (bloc
+      réservé pris au 46e objet du pool — deux collisions successives ont
+      montré qu'il n'y a pas un octet libre ailleurs : la traînée du joueur
+      écrasait +13, la pile S écrase +148) ; layout mis au vrai (globals
+      $94, pile $9ED4/$1C — le débordement missile est déclaré).
+- [ ] **r-type : la wave n'exécute aucun objet** (préexistant, RÉVÉLÉ le
+      10/08 par les témoins enfin propres — le t1=1 historique était un
+      artefact, `bench.spawns` griffonné lisait non-nul). spawns=0 sur toute
+      la traversée du stage 1. Ère du portage des ennemis.
+- [ ] **r-type : l'entrée du stage 2 broie dans le dessin/terrain**
+      (préexistant, révélé le 10/08) : ~1,4 trame/s, boucle `$39xx` sur les
+      entrées de carte (`$6154/6155`), caméra figée à 16. Le banc 5/5 exige
+      ces deux corrections. Détail : `ci/toje-bench/readme.md`.
 
 ## En cours
 

@@ -31,7 +31,14 @@ moveByScript.POSYSTEP        equ  $00C0
 ; le moteur n'avait pas la marge — donc les octets sortent du
 ; pool. TROIS valeurs bougent ensemble et rien ne verifie leur accord :
 ; ce nombre, <reserved name="objects.pool"> et <region name="stage"> du layout.
-nb_dynamic_objects           equ 46
+;
+; 46 -> 45 (banc d'echange) : le 46e slot rend ses 117 octets, dont 16 logent
+; les temoins du banc (bench.const.asm, <reserved name="bench"> a $8766). La
+; page 1 n'a pas un octet libre par construction — le bloc `globals` est plein
+; a +147 et au-dessus c'est la pile — donc les temoins EMPRUNTENT un slot
+; d'objet, rendu quand le banc partira. Le banc ne cree qu'une dizaine
+; d'objets, la marge reste large.
+nb_dynamic_objects           equ 45
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 

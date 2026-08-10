@@ -27,6 +27,39 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
+## État après la campagne de correction (2026-08-10)
+
+Les trois régressions ci-dessous sont **corrigées** :
+
+1. T12/T14 : chaque export de lest est désormais consommé par une somme de
+   contrôle dans le game mode ($3C15 pour les 6 iface, $B088 pour les 16
+   pads) — les fichiers regagnent leur bloc de lien et leurs slots.
+2. Le recouvrement fantôme : `findOverlap` ignore les slots d'un autre
+   disque — leur étendue est illisible depuis le répertoire en cache (les
+   ids de fichiers recommencent par disquette). Au passage, T18 était
+   invalidable par construction (recharger le MÊME fichier prend la dédup,
+   qui court-circuite le contrôle) : une scène `scenes.trap` charge bb sur
+   cc, et le trap se déclenche. **loader-ut : 17/17, statut `$0D`, T18
+   `$8301` — vérifié sous cette lane.**
+3. r-type : témoins du banc relogés dans un bloc réservé à eux (`$8766`,
+   16 octets empruntés au 46e objet du pool — la page 1 n'a pas un octet
+   libre par construction), `ymm.stop` posé dans les deux `stage.handOver`
+   (la signature YM du gel a disparu), et le layout dit vrai sur
+   globals/pile (le débordement missile de 4 octets est déclaré).
+
+L'instrumentation étant enfin fiable, elle **révèle** deux défauts
+préexistants du jeu, jusqu'ici masqués par le griffonnage des témoins (le
+t1=1 historique était un artefact : `handOver` testait un `bench.spawns`
+griffonné, donc non nul) :
+
+- **la wave n'exécute aucun objet** (spawns=0 sur toute la traversée du
+  stage 1, t1 muet — honnêtement, cette fois) ;
+- **l'entrée du stage 2 broie dans le code de dessin/terrain** (~1,4
+  trame/s, boucle `$39xx` lisant les entrées de carte en `$6154/6155`,
+  la caméra reste à 16). Le banc ne peut pas passer 5/5 tant que ces
+  deux-là ne sont pas résolus — ère du portage des ennemis, à
+  instruire avec l'auteur.
+
 ## Ce que la première campagne a établi (2026-08-09)
 
 La lane a été étalonnée en rejouant un état **connu-bon** : loader-ut à
