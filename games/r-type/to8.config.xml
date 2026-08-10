@@ -413,7 +413,7 @@
 
                 <!-- Le moteur résident                                        -->
                 <!-- ******************************************************** -->
-                <file name="common.engine" codec="zx0" linkdata="LINK" page="$01" address="$6100">
+                <file name="common.engine" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
@@ -423,7 +423,7 @@
                 <!-- Les scripts d'animation, communs. Section .static : leurs  -->
                 <!-- ~2900 pointeurs internes sont cuits au build contre le     -->
                 <!-- placement declare, donc zero donnee de lien.               -->
-                <file name="common.anim" codec="zx0" bake="all" arena="objects">
+                <file name="common.anim" bake="all" arena="objects">
                     <lwasm gensource="gen/common/anim.asm">
                         <asm filename="src/common/fx/animation/anim.asm"/>
                     </lwasm>
@@ -439,7 +439,7 @@
                 <!-- routine appelee par paged.call. Declare AVANT le stage    -->
                 <!-- qui le consomme.                                          -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.overlay" linkdata="LINK" arena="objects">
+                <file name="common.overlay" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- Le champ d'etoiles : sans etat, 6 Ko de table       -->
@@ -461,7 +461,7 @@
                 <!-- Le joueur. Ses images d'abord dans le meme direntry : -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.   -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.player" linkdata="LINK" arena="objects">
+                <file name="common.player" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/player/player.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/player.asm"/>
@@ -519,7 +519,7 @@
 
                 <!-- L'armement du joueur : quatre unites, une par objet       -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.weapon" linkdata="LINK" arena="objects">
+                <file name="common.weapon" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/weapon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/weapon/weapon.asm"/>
@@ -540,7 +540,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.beamcharge" linkdata="LINK" arena="objects">
+                <file name="common.beamcharge" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/beamcharge.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/charge.asm"/>
@@ -576,7 +576,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.beamp" linkdata="LINK" arena="objects">
+                <file name="common.beamp" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/beamp.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/beam/beamp.asm"/>
@@ -624,7 +624,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.emflash" linkdata="LINK" arena="objects">
+                <file name="common.emflash" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/emflash.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/emflash.asm"/>
@@ -677,7 +677,7 @@
                      ce que la cible disquette de la v1 compile
                      (obj.d7.properties), le code rattache les manquantes a la
                      suivante. -->
-                <file codec="zx0" name="common.explosion.imgSmall" linkdata="LINK" arena="objects">
+                <file name="common.explosion.imgSmall" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/explosion-imgsmall.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
@@ -697,7 +697,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <file codec="zx0" name="common.explosion.imgFwk" linkdata="LINK" arena="objects">
+                <file name="common.explosion.imgFwk" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/explosion-imgfwk.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
@@ -717,7 +717,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <file codec="zx0" name="common.explosion.imgBig" linkdata="LINK" arena="objects">
+                <file name="common.explosion.imgBig" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/explosion-imgbig.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
@@ -741,7 +741,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.explosion" linkdata="LINK" arena="objects">
+                <file name="common.explosion" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/explosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/explosion/explosion.asm"/>
@@ -754,7 +754,7 @@
 
                 <!-- Le HUD                                                    -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.hud" linkdata="LINK" arena="objects">
+                <file name="common.hud" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/hud.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/hud.unit.asm"/>
@@ -815,28 +815,28 @@
                     </lwasm>
                 </file>
 
-                <file name="engine.sound.ymm" codec="zx0" linkdata="LINK" page="$1A" address="$1C9B">
+                <file name="engine.sound.ymm" linkdata="LINK" page="$1A" address="$1C9B">
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.soundfx" linkdata="LINK" arena="objects">
+                <file name="common.soundfx" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/sound/soundfx.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/soundfx/soundfx.unit.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.collisionpass" linkdata="LINK" arena="objects">
+                <file name="common.collisionpass" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/lib/collisionpass.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/collisionpass.unit.asm"/>
@@ -845,14 +845,14 @@
 
 
 
-                <file codec="zx0" name="common.checkpoint" linkdata="LINK" arena="objects">
+                <file name="common.checkpoint" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/flow/checkpoint.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/flow/checkpoint.unit.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.messages" linkdata="LINK" arena="objects">
+                <file name="common.messages" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/hud/messages.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/hud/messages/messages.unit.asm"/>
@@ -860,7 +860,7 @@
                 </file>
 
                 <!-- MIGRE MAIS DEBRANCHE — voir la region vgc.* du layout.
-                <file name="engine.sound.vgc" codec="zx0" linkdata="LINK" region="vgc.player">
+                <file name="engine.sound.vgc" linkdata="LINK" region="vgc.player">
                     <lwasm gensource="gen/sound/vgc.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
@@ -868,7 +868,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.music.vgc" linkdata="LINK" region="vgc.data">
+                <file name="stage1.music.vgc" linkdata="LINK" region="vgc.data">
                     <lwasm gensource="gen/sound/vgc-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/vgc.unit.asm"/>
@@ -878,7 +878,7 @@
 
                 <!-- Les flammes de reacteur de la sequence d'ouverture        -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.engineflames" linkdata="LINK" arena="objects">
+                <file name="common.engineflames" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/player/engineflames.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/player/engineflames/engineflames.asm"/>
@@ -901,7 +901,7 @@
 
                 <!-- Le fondu de palette, objet monte                          -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.fade" linkdata="LINK" arena="objects">
+                <file name="common.fade" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/fade.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/fx/fade/fade.asm"/>
@@ -921,7 +921,7 @@
                 <!-- comprise : _nextRoutine rend la main a l'objet, _resetAnim  -->
                 <!-- reboucle.                                                  -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="common.pow" linkdata="LINK" arena="objects">
+                <file name="common.pow" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/pickups/pow.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/pow.unit.asm"/>
@@ -969,7 +969,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.optionbox" linkdata="LINK" arena="objects">
+                <file name="common.optionbox" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/pickups/optionbox.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/pickups/pow/optionbox.unit.asm"/>
@@ -996,7 +996,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.bitdevice" linkdata="LINK" arena="objects">
+                <file name="common.bitdevice" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/bitdevice.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/bitdevice/bitdevice.unit.asm"/>
@@ -1066,7 +1066,7 @@
                 <!-- qu'un autre laisse. Un fichier par objet coute un bloc de     -->
                 <!-- liaison de plus dans le pool (mesure : 362 octets servis sur  -->
                 <!-- 4223 disponibles), et rend au rangement toute sa liberte.     -->
-                <file codec="zx0" name="stage1.patapata" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.patapata" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/patapata.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/pata-pata/enemy.asm"/>
@@ -1101,7 +1101,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.bug" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.bug" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
@@ -1136,7 +1136,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.bink" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.bink" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/bink.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bink/bink.unit.asm"/>
@@ -1183,7 +1183,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.blaster" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.blaster" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/blaster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/blaster/blaster.unit.asm"/>
@@ -1234,7 +1234,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.pstaff" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.pstaff" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/pstaff.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/p-staff/pstaff.unit.asm"/>
@@ -1281,7 +1281,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.cancer" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.cancer" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/cancer.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/cancer/cancer.unit.asm"/>
@@ -1310,7 +1310,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.shell" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.shell" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/shell.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/shell/shell.unit.asm"/>
@@ -1388,7 +1388,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.shelleraser" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.shelleraser" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/shelleraser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/shell/shelleraser.unit.asm"/>
@@ -1405,7 +1405,7 @@
                 <!-- Vol et chute (modes 1, 5-10) : deux poses alternees a chaque tick par
                      tabrok_flameToggle, la flamme du reacteur. Poses 6-7 et leurs
                      miroirs 14-15 — le tank vole dans les deux sens -->
-                <file codec="zx0" name="stage1.tabrok.imgFlight" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgFlight" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgflight.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1427,7 +1427,7 @@
                 </file>
                 <!-- Pose au sol, visee et tir (modes 2, 3, 11) : la posture immobile et son
                      leger cycle de repos 4,4,5,4. Poses 4-5 et miroirs 12-13 -->
-                <file codec="zx0" name="stage1.tabrok.imgGround" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgGround" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgground.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1450,7 +1450,7 @@
                 <!-- Marche (mode 4) : le cycle de huit pas indexe sur le compteur global,
                      seul consommateur des poses 0-3. Sans miroir — la table 2b70
                      n'existe que dans un sens -->
-                <file codec="zx0" name="stage1.tabrok.imgWalk" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgWalk" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgwalk.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1470,7 +1470,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <file codec="zx0" name="stage1.tabrok" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tabrok.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrok.unit.asm"/>
@@ -1478,7 +1478,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.missile" linkdata="LINK" arena="objects">
+                <file name="common.missile" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/enemies/missile.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/commonmissile.unit.asm"/>
@@ -1537,7 +1537,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.missileflame" linkdata="LINK" arena="objects">
+                <file name="common.missileflame" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/enemies/missileflame.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/commonmissileflame.unit.asm"/>
@@ -1560,7 +1560,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.tabrokcanon" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrokcanon" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tabrokcanon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrokcanon.unit.asm"/>
@@ -1578,7 +1578,7 @@
                 </file>
 
 
-                <file codec="zx0" name="stage1.scant" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.scant" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/scant.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/scant/scant.unit.asm"/>
@@ -1607,7 +1607,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.scantfire" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.scantfire" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/scantfire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/scant/scantfire.unit.asm"/>
@@ -1648,7 +1648,7 @@
                      bouts de la section souterraine. Il arme le fondu resident
                      vers la palette du tunnel, ou vers celle du jeu au retour
                      (subtype), attend la fin, puis se supprime. -->
-                <file codec="zx0" name="stage1.fadetotunnel" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.fadetotunnel" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/stages/01/fadetotunnel.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/background/fadetotunnel.unit.asm"/>
@@ -1659,7 +1659,7 @@
                      boucle du stage avec une commande en B. Il porte le compte a
                      rebours, l'autopilote du vaisseau, le fondu pixel et le
                      releve de score — hors de la RAM residente, qui est saturee. -->
-                <file codec="zx0" name="stage1.endstage" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.endstage" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/stages/01/endstage.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/endstage/endstage.unit.asm"/>
@@ -1679,7 +1679,7 @@
                      geant (~6 Ko avec ses deux decalages), les six ensemble depassent
                      deux pages. Un etat = une tranche, le rangement les etale. -->
                 <!-- Le visage intact, tant qu'aucun nerf n'a cede -->
-                <file codec="zx0" name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgface.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1692,7 +1692,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 0 -->
-                <file codec="zx0" name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1705,7 +1705,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 1 -->
-                <file codec="zx0" name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1718,7 +1718,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 2 -->
-                <file codec="zx0" name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1731,7 +1731,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 3 -->
-                <file codec="zx0" name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1744,7 +1744,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 4 -->
-                <file codec="zx0" name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves4.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1757,7 +1757,7 @@
                     </lwasm>
                 </file>
                 <!-- Les yeux : les quatre nerfs optiques, la seule cible du joueur -->
-                <file codec="zx0" name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgeyes.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1815,7 +1815,7 @@
                      moteur restaure son fond par sprite — il se nettoie par bandes,
                      une par tranche de decor decouverte. Une bande par fichier :
                      les quarante-cinq ensemble depassent la page -->
-                <file codec="zx0" name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1875,7 +1875,7 @@
                      moteur restaure son fond par sprite — il se nettoie par bandes,
                      une par tranche de decor decouverte. Une bande par fichier :
                      les quarante-cinq ensemble depassent la page -->
-                <file codec="zx0" name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1908,7 +1908,7 @@
                      moteur restaure son fond par sprite — il se nettoie par bandes,
                      une par tranche de decor decouverte. Une bande par fichier :
                      les quarante-cinq ensemble depassent la page -->
-                <file codec="zx0" name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1956,7 +1956,7 @@
                      moteur restaure son fond par sprite — il se nettoie par bandes,
                      une par tranche de decor decouverte. Une bande par fichier :
                      les quarante-cinq ensemble depassent la page -->
-                <file codec="zx0" name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1996,7 +1996,7 @@
                 </file>
                 <!-- Le corps : le code et l'INDEX de ses images, qui doit rester dans la
                      page que Img_Page_Index monte -->
-                <file codec="zx0" name="stage1.dobkeratops" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/dobkeratops.unit.asm"/>
@@ -2004,7 +2004,7 @@
                     </lwasm>
                 </file>
                 <!-- La machoire, dont le monstre sort -->
-                <file codec="zx0" name="stage1.dobkeratopsjaw" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsjaw" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsjaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/jaw.unit.asm"/>
@@ -2029,14 +2029,14 @@
                 </file>
                 <!-- Les dix-neuf queues, gerees par un seul objet maitre : il ECRIT sa
                      propre page dans Img_Page_Index, ses blits vivant avec lui -->
-                <file codec="zx0" name="stage1.tailmgr" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tailmgr" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/tailmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
                     </lwasm>
                 </file>
                 <!-- Le monstre qui emerge de la bouche -->
-                <file codec="zx0" name="stage1.dobkeratopsmonster" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsmonster" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsmonster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/monster.unit.asm"/>
@@ -2072,7 +2072,7 @@
                     </lwasm>
                 </file>
                 <!-- Ses scies -->
-                <file codec="zx0" name="stage1.dobkeratopssaw" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratopssaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/saw.unit.asm"/>
@@ -2100,13 +2100,13 @@
                     </lwasm>
                 </file>
                 <!-- Ses explosions : un preset partage, pas d'images propres -->
-                <file codec="zx0" name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsexplosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/explosion.unit.asm"/>
                     </lwasm>
                 </file>
-                <file codec="zx0" name="common.forcepod" linkdata="LINK" arena="objects">
+                <file name="common.forcepod" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/forcepod.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/forcepod.unit.asm"/>
@@ -2172,7 +2172,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.reboundlaser" linkdata="LINK" arena="objects">
+                <file name="common.reboundlaser" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/reboundlaser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/reboundlaser.unit.asm"/>
@@ -2235,7 +2235,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.counterairlaser" linkdata="LINK" arena="objects">
+                <file name="common.counterairlaser" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/counterairlaser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/counterairlaser.unit.asm"/>
@@ -2279,7 +2279,7 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.simplefire" linkdata="LINK" arena="objects">
+                <file name="common.simplefire" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/simplefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/weapons/forcepods/simplefire.unit.asm"/>
@@ -2312,14 +2312,14 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.firechain" linkdata="LINK" arena="objects">
+                <file name="common.firechain" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/firechain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/lib/firechain.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="common.foefire" linkdata="LINK" arena="objects">
+                <file name="common.foefire" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/foefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/_shared/foefire.unit.asm"/>
@@ -2349,7 +2349,7 @@
 
                 <!-- La collision terrain du stage 1                           -->
                 <!-- ******************************************************** -->
-                <file codec="zx0" name="stage1.collision" linkdata="LINK" region="collision">
+                <file name="stage1.collision" linkdata="LINK" region="collision">
                     <lwasm gensource="gen/stages/01/collision.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/collision/collision.asm"/>
@@ -2368,7 +2368,7 @@
                 <!-- on declare un budget de pages et un contenu, le builder    -->
                 <!-- mesure, range et emet un direntry par page. L'auteur       -->
                 <!-- n'affecte jamais une tuile a une page.                     -->
-                <pageset codec="zx0" name="stage1.tiles.even" linkdata="LINK" region="tiles.even"
+                <pageset name="stage1.tiles.even" linkdata="LINK" region="tiles.even"
                          gendir="gen/stages/01/tiles-even"
                          gensymbols="gen/stages/01/pages-even.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
@@ -2379,7 +2379,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset codec="zx0" name="stage1.tiles.odd" linkdata="LINK" region="tiles.odd"
+                <pageset name="stage1.tiles.odd" linkdata="LINK" region="tiles.odd"
                          gendir="gen/stages/01/tiles-odd"
                          gensymbols="gen/stages/01/pages.asm">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
@@ -2398,7 +2398,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <file codec="zx0" name="stage1.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
+                <file name="stage1.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -2410,14 +2410,14 @@
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.init" linkdata="LINK" region="stageinit">
+                <file name="stage1.init" linkdata="LINK" region="stageinit">
                     <lwasm gensource="gen/stages/01/init.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/init.unit.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="stage1" codec="zx0" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage1" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
@@ -2440,7 +2440,7 @@
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
-                <pageset codec="zx0" name="stage2.tiles.even" linkdata="LINK" region="tiles.even"
+                <pageset name="stage2.tiles.even" linkdata="LINK" region="tiles.even"
                          gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
@@ -2450,7 +2450,7 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset codec="zx0" name="stage2.tiles.odd" linkdata="LINK" region="tiles.odd"
+                <pageset name="stage2.tiles.odd" linkdata="LINK" region="tiles.odd"
                          gendir="gen/stages/02/tiles-odd"
                          gensymbols="gen/stages/02/pages.asm">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
@@ -2469,7 +2469,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <file codec="zx0" name="stage2.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
+                <file name="stage2.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -2481,7 +2481,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2" codec="zx0" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage2" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>

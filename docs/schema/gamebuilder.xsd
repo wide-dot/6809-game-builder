@@ -845,7 +845,7 @@
         <xs:annotation><xs:documentation>unique alias, becomes the file id equate</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="codec" type="xs:string">
-        <xs:annotation><xs:documentation>zx0 : compress the whole entry as one stream</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>zx0 (default) compresses the whole entry as one stream ; none stores it raw with no compression block — for content whose raw path is the point</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="linkdata" type="xs:string">
         <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>
@@ -1687,7 +1687,7 @@
         <xs:annotation><xs:documentation>directory receiving the generated member sources</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="codec" type="xs:string">
-        <xs:annotation><xs:documentation>zx0 : compress each member as one stream</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>zx0 (default) compresses each member as one stream ; none stores them raw with no compression block</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="linkdata" type="xs:string">
         <xs:annotation><xs:documentation>emit load time link data into the given section</xs:documentation></xs:annotation>

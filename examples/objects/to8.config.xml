@@ -18,7 +18,7 @@
                 <!-- Game mode : the resident page. Holds the object manager -->
                 <!-- itself and the objects that exercise the run list.      -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" page="$01" address="$6100">
+                <file name="assets.gm.main" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>

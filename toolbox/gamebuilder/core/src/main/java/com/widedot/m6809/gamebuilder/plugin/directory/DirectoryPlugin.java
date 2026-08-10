@@ -105,7 +105,11 @@ public class DirectoryPlugin {
 			}
 			if (plugin.equals("file") || plugin.equals("scene")) {
 
-				String name = Attribute.getString(child, ctx, "name");
+				// resCtx, not ctx : the directory's own <default> elements are
+				// replayed into it as this loop walks, and a defaulted attribute
+				// that changes the block count (file.codec) must be seen here
+				// exactly as the emission will see it
+				String name = Attribute.getString(child, resCtx, "name");
 				writer.write(name + " equ " + fileId + System.lineSeparator());
 				directoryNames.add(name);
 
@@ -130,8 +134,9 @@ public class DirectoryPlugin {
 
 				int blocks;
 				if (plugin.equals("file")) {
-					String codec = Attribute.getStringOpt(child, ctx, "codec");
-					String linkSection = Attribute.getStringOpt(child, ctx, "linkdata");
+					String codec = DirEntryPlugin.effectiveCodec(
+							Attribute.getStringOpt(child, resCtx, "codec"));
+					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
 					blocks = DirEntryPlugin.blockCount(codec, linkSection);
 				} else {
 					// a scene table is raw, uncompressed and carries no link data

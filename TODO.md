@@ -520,6 +520,18 @@ Fonctionnel :
         scenes.boot paie 4 retours. PREUVE : 59 images identiques,
         JUnit 70/70. Restent en 6 : l'ordre d'écriture par première
         utilisation, le silence du codec.
+  - [x] Phase 6-codec (10/08) — le silence du codec : défaut zx0
+        (effectiveCodec aux trois lecteurs), codec="none" opt-out sans
+        bloc de compression, table de scène épinglée brute (le loader ne
+        la décompresse jamais), pageset écrit sa décision effective sur
+        chaque membre. Bug latent corrigé : la réservation du répertoire
+        ne voyait pas les <default> rejoués (attrapé par réservé==émis).
+        loader-ut opte out par défaut de répertoire ; codec="zx0"
+        redondant retiré des 12 autres configs (identité 59/59). PREUVE :
+        46/59 images changent (annoncé), JUnit 116/116, banc toje complet
+        vert (r-type 5/5, loader-ut $0D+T18, hscroll k=−16 aligné, mplus
+        séquences identiques). Mesure : mplus-test −24 % média. Reste en
+        6 : l'ordre d'écriture par première utilisation.
   - [x] Publication des places attitrées littérales (10/08) — le
         `gensymbols` du répertoire publie `<name>.page`/`.address` à côté
         de l'id de fichier pour tout fichier à place `page=`+`address=`

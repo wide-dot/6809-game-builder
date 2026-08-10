@@ -45,6 +45,20 @@ public class DirEntryPlugin {
 		return 1 + (codec != null ? 1 : 0) + (linkSection != null ? 1 : 0);
 	}
 
+	/**
+	 * The codec a file actually gets : compression is the default, the word
+	 * is the exception (phase 6 of the target-model migration). An absent
+	 * attribute means zx0 — the raw fallback already stores what does not
+	 * pay, offset zero telling the loader — and {@code codec="none"} is the
+	 * explicit opt-out for content whose RAW path is the point, such as the
+	 * loader bench's.
+	 */
+	public static String effectiveCodec(String declared) {
+		if (declared == null) return ZX0;
+		if (declared.equals("none")) return null;
+		return declared;
+	}
+
 	/** the loader copies back exactly 6 uncompressed tail bytes (dir.entry.cdataz) */
 	public static final int ZX0_DELTA = 6;
 
@@ -161,7 +175,7 @@ public class DirEntryPlugin {
 		// own business, not the content's
 		ctx.staticLink.setCurrentHost(name);
 		String section = Attribute.getString(node, ctx, "section");
-		String codec = Attribute.getStringOpt(node, ctx, "codec");
+		String codec = effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
 		boolean linkDeclared = (linkSection!=null?true:false);
 		// how this file's references are resolved — see BakeMode. Declared

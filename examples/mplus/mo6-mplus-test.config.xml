@@ -35,7 +35,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" page="$01" address="$2200">
+                <file name="assets.gm.title" linkdata="LINK" page="$01" address="$2200">
                     <lwasm gensource="gen/assets/game-modes/title/main-test.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/title/main-test.asm"/>
@@ -56,14 +56,14 @@
                     <lwasm gensource="gen/assets/sounds/vgm/ym-sweet.ymm">
                         <label name="sounds.ym"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/vgm/ym-sweet.vgm" genbinary="src/assets/sounds/vgm/ym-sweet.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/vgm/ym-sweet.vgm" genbinary="src/assets/sounds/vgm/ym-sweet.ymm"/>
                 </file>
 
                 <file name="assets.sounds.ym.rythm" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/ym-rythm.ymm">
                         <label name="sounds.ym.rythm"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/vgm/ym-rythm.vgm" genbinary="src/assets/sounds/vgm/ym-rythm.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/vgm/ym-rythm.vgm" genbinary="src/assets/sounds/vgm/ym-rythm.ymm"/>
                 </file>
 
                 <file name="assets.sounds.sn" linkdata="LINK" arena="sound.data">
@@ -91,7 +91,7 @@
                     <lwasm gensource="gen/assets/sounds/vgm/music.ymm">
                         <label name="sounds.ym.music"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/vgm/music.vgm" genbinary="src/assets/sounds/vgm/music.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/vgm/music.vgm" genbinary="src/assets/sounds/vgm/music.ymm"/>
                 </file>
 
                 <!-- Test - mea8000 data -->

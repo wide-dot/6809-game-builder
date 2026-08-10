@@ -114,8 +114,8 @@ A file may declare its destination **on its own declaration** instead of on
 every load that names it :
 
 ```xml
-<file name="common.player" codec="zx0" linkdata="LINK" bake="auto" arena="objects">…</file>
-<file name="common.engine" codec="zx0" linkdata="LINK" bake="auto" region="common">…</file>
+<file name="common.player" linkdata="LINK" arena="objects">…</file>
+<file name="common.engine" linkdata="LINK" region="common">…</file>
 …
 <scene name="scenes.boot" section="SCENE">
     <load name="common.player"/>     <!-- loads into arena "objects" -->

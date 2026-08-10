@@ -13,7 +13,7 @@
 
                 <define symbol="tlsf.ut.MEMORY_POOL" value="0xB000"/>
 
-                <file name="fileid.tlsf.ut" codec="zx0" section="DATA" page="$01" address="$2100">
+                <file name="fileid.tlsf.ut" section="DATA" page="$01" address="$2100">
                     <lwasm gensource="gen/tlsf/tlsf.ut.asm">
                         <asm xml:space="preserve">        org   $2100</asm>
                         <asm xml:space="preserve">        INCLUDE "engine/system/mo6/map.const.asm"</asm>

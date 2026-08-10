@@ -105,7 +105,8 @@ public class PageSetPlugin {
 		String name = Attribute.getString(node, ctx, "name");
 		String regionName = Attribute.getString(node, ctx, "region");
 		String gendir = Attribute.getString(node, ctx, "gendir");
-		String codec = Attribute.getStringOpt(node, ctx, "codec");
+		String codec = com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin
+				.effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
 		String section = Attribute.getStringOpt(node, ctx, "section");
 		String bake = Attribute.getStringOpt(node, ctx, "bake");
@@ -268,7 +269,10 @@ public class PageSetPlugin {
 			ImmutableNode.Builder entry = new ImmutableNode.Builder();
 			entry.name("file").addAttribute("name", memberName);
 			if (packing.bake != null)        entry.addAttribute("bake", packing.bake);
-			if (packing.codec != null)       entry.addAttribute("codec", packing.codec);
+			// packing.codec is already the EFFECTIVE codec : write the decision
+			// out explicitly, "none" included — an omitted attribute would be
+			// re-defaulted to zx0 by the entry, undoing an authored opt-out
+			entry.addAttribute("codec", packing.codec != null ? packing.codec : "none");
 			if (packing.linkSection != null) entry.addAttribute("linkdata", packing.linkSection);
 			if (packing.section != null)     entry.addAttribute("section", packing.section);
 

@@ -344,6 +344,29 @@ critère « zéro retour pour une scène non partagée » est imprimé en tête 
 rapport. Aucune image ne change (59/59 identiques). Reste de la phase :
 l'ordre d'écriture lui-même, et le silence du `codec`.
 
+*Le silence du `codec` est FAIT (10/08)* — le défaut devient `zx0`
+(`DirEntryPlugin.effectiveCodec`, appliqué aux trois lecteurs : entrée,
+réservation du répertoire, pageset), `codec="none"` est l'opt-out explicite
+(brut, aucun bloc de compression). La table de scène reste épinglée brute
+dans le générateur — le loader la parcourt sans passe de décompression, un
+tableau compressé serait lu tel quel. Le pageset écrit sa décision effective
+sur chaque membre, `none` compris (un attribut omis serait re-défauté). La
+réservation du répertoire lisait les attributs hors du contexte des
+`<default>` rejoués — bug latent tant qu'aucun défaut ne touchait au nombre
+de blocs, attrapé par l'assertion réservé==émis (103 vs 77). loader-ut
+opte out par `<default name="file.codec" value="none"/>` (ses chemins bruts
+sont des objets de test) ; les `codec="zx0"` devenus redondants sont
+supprimés des 12 autres configs. PREUVE : 46/59 images changent (annoncé),
+loader-ut et tlsf-ut identiques à l'octet ; retrait des attributs prouvé
+par identité 59/59 ; JUnit 116/116 ; banc complet sous toje — r-type 5/5,
+loader-ut $0D + T18, objects $0D, sprites, tilescroll, stacked, sound
+(échange à chaud + flux YMM/VGC), mplus test+pcm (séquences d'écrans
+identiques aux références), hscroll aligné à k=−16 (la compression fait
+gagner 16 trames de chargement, écrans identiques aux deux jalons). MO6 sur
+foi du jumeau TO8, annoncé. Mesure : mplus-test −4248 octets média (−24 %),
+sound −405 ; r-type +17 (ses entrées déclaraient déjà zx0 — le delta est
+le bloc de compression des petites entrées stockées brutes).
+
 *Preuve : les images changent (ordre des secteurs) — chargements vérifiés
 sous toje, le rapport doit montrer ZÉRO retour de tête pour une scène dont
 les fichiers ne sont pas partagés.*

@@ -89,7 +89,7 @@ public final class Handlers {
 			.opt("genbinary", STRING, "debug copy of the directory binary"));
 		spec(element("file").doc("one loadable file of the directory")
 			.req("name", STRING, "unique alias, becomes the file id equate")
-			.opt("codec", STRING, "zx0 : compress the whole entry as one stream")
+			.opt("codec", STRING, "zx0 (default) compresses the whole entry as one stream ; none stores it raw with no compression block — for content whose raw path is the point")
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
 			.opt("section", STRING, "section receiving the entry")
@@ -105,7 +105,7 @@ public final class Handlers {
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
 			.req("region", STRING, "multi-page region receiving the set")
 			.req("gendir", STRING, "directory receiving the generated member sources")
-			.opt("codec", STRING, "zx0 : compress each member as one stream")
+			.opt("codec", STRING, "zx0 (default) compresses each member as one stream ; none stores them raw with no compression block")
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("section", STRING, "section receiving the members")
 			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds")

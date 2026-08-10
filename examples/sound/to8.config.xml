@@ -22,7 +22,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" page="$01" address="$6100">
+                <file name="assets.gm.title" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
@@ -31,13 +31,13 @@
 
                 <!-- Title - sound player -->
                 <!-- ******************************************************* -->
-                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" page="$06" address="$0000">
+                <file name="engine.object.sound.ymm" linkdata="LINK" page="$06" address="$0000">
                     <lwasm>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" page="$07" address="$0000">
+                <file name="engine.object.sound.vgc" linkdata="LINK" page="$07" address="$0000">
                     <lwasm>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
@@ -50,7 +50,7 @@
                     <lwasm>
                         <label name="sounds.title.ymm"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm"/>
                 </file>
 
                 <file name="assets.sounds.title.vgc" linkdata="LINK" page="$07" address="$0A80">
@@ -80,7 +80,7 @@
                     <lwasm>
                         <label name="sounds.level1.ymm"/>
                     </lwasm>
-                    <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
+                    <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm"/>
                 </file>
 
                 <file name="assets.sounds.level1.vgc" linkdata="LINK" page="$07" address="$0A80">

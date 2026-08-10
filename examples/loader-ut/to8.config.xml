@@ -38,6 +38,10 @@
                      every reference load-time linked despite the auto
                      default the 3c switch installed -->
                 <default name="file.bake"         value="none"/>
+                <!-- same guardian rule for the codec default flip (phase 6) :
+                     the raw storage paths are test objects here, files that
+                     want compression say codec="zx0" one by one -->
+                <default name="file.codec"        value="none"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <file name="d1.marker" codec="zx0" linkdata="LINK">
@@ -71,6 +75,10 @@
                      every reference load-time linked despite the auto
                      default the 3c switch installed -->
                 <default name="file.bake"         value="none"/>
+                <!-- same guardian rule for the codec default flip (phase 6) :
+                     the raw storage paths are test objects here, files that
+                     want compression say codec="zx0" one by one -->
+                <default name="file.codec"        value="none"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>

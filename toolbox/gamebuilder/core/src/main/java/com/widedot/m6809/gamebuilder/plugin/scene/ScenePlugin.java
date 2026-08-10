@@ -197,7 +197,11 @@ public class ScenePlugin {
 						.getBytes(StandardCharsets.UTF_8));
 
 		// hand the table to the regular file pipeline, wired exactly like
-		// the handwritten scenes : file id equates first, then the table
+		// the handwritten scenes : file id equates first, then the table.
+		// codec is pinned to none : the loader reads a scene table straight
+		// after loader.file.load, the decompression pass only runs on the
+		// files the table lists — a compressed table would be walked as
+		// garbage (and the directory reservation counts a scene as one block)
 		ImmutableNode equates = new ImmutableNode.Builder()
 				.name("asm").addAttribute("filename", gensymbols).create();
 		ImmutableNode table = new ImmutableNode.Builder()
@@ -207,6 +211,7 @@ public class ScenePlugin {
 				.addChild(equates).addChild(table).create();
 		ImmutableNode file = new ImmutableNode.Builder()
 				.name("file").addAttribute("name", name).addAttribute("section", section)
+				.addAttribute("codec", "none")
 				.addChild(lwasm).create();
 
 		DirEntryPlugin.run(file, ctx, media);
