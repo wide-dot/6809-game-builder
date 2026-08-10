@@ -39,9 +39,13 @@ MO5, Tandy CoCo 3.
   les sources versionnées dans `toolbox/third-party/src/asm/`** — voir son
   [readme](toolbox/third-party/src/asm/readme.md). Pour pointer ailleurs :
   `-Dlwasm.path=/chemin` ou la variable d'environnement `LWASM`.
-  Sorties dans `dist/`, avec deux rapports : `link-report-<cible>.csv` (ce que
-  chaque direntry coûte en données de lien) et `ram-map-<cible>.txt` (l'occupation
-  mémoire, une carte par scène — trous mesurés, budget face au contenu réel).
+  Sorties dans `dist/`, avec les rapports : `link-report-<cible>.csv` (ce que
+  chaque direntry coûte en données de lien), `linked-refs-<cible>.csv` (chaque
+  référence résolue au chargement, AVEC sa cause — depuis le 10/08),
+  `occupancy-<cible>.html` (l'occupation RAM par scène + le média, remplace
+  l'ancien ram-map), `pool-map-<cible>.txt` (le coût de liaison par scène face
+  au pool) et `seek-report-<cible>.txt` (les déplacements de tête par scène —
+  depuis le 10/08).
   Le `<hfe/>` fonctionne sur macOS depuis 08/2026
   (`hxcfe` 2.16.15.2 universel embarqué, sources dans
   `toolbox/third-party/src/floppy/`).

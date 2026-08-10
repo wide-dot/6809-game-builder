@@ -31,7 +31,7 @@ campagnes précédentes sans avoir été pointées au plan.
 | Aiguillage cuit/lié (3a) | `spi/globals/BakeMode.java`, `StaticLink.java` | `bake=none/auto/all` existe ; en `auto`, chaque référence est classée, et un refus d'élection (multi-fournisseurs atteignables) **retombe silencieusement sur le lien au chargement** (`StaticLink.java:201-208`) — l'aiguillage du plan, déjà en place |
 | Élection consciente des alternatives | `StaticLink.electProvider` (`:303`) | Fournisseur inatteignable (alternative du consommateur, ou co-chargé avec une) exclu ; constantes absolues identiques fusionnées |
 | Arènes = places décidées par le builder (4a) | `config/ArenaPacker.java`, `PlacementScan.java`, `<arena>` dans `Handlers` | **Un rangement par arène, toutes scènes ensemble**, plus-gros-d'abord, place publiée par fichier (`<file>.page/.address`) ; deux arènes peuvent déclarer les mêmes zones pour les alternances — r-type l'utilise (2 arènes, ~20 loads) |
-| Journal d'écriture disquette (6) | `plugin/floppydisk/storage/FdUtil.java:38-50` | Le `journal` des `Piece` existe — la matière première du rapport de seeks est là, personne ne la lit encore |
+| Journal d'écriture disquette (6) | `plugin/floppydisk/storage/FdUtil.java:38-50` | Le `journal` des `Piece` existe — ~~personne ne la lit encore~~ **lu depuis le 10/08** par `report/SeekReport` (`seek-report-<target>.txt`) |
 | Membres de pageset dérivés (2) | `PageSetPlugin` scindé pack/run | Fait (phase 2) ; la scène peut précéder son pageset |
 | Émetteur d'index (1) | `<objectindex>` | Fait, forme transitionnelle : entrées **centralisées et explicites** dans le config (77 chez r-type) |
 
@@ -90,12 +90,12 @@ c'est la dernière ligne, après 3b. (S)
 
 L'écart entre l'existant et 4a est précis :
 
-- `arena=` vit sur le **`<load>`** (`Handlers.java:156-161`), pas sur le
-  `<file>`. Le modèle cible veut la place déclarée SUR le fichier
-  (`arena=`, ou `page=`+`address=` pour une place fixe), et `<load>` réduit
-  à un nom. C'est un déplacement d'attribut plus une résolution : quand
-  plusieurs scènes chargent le même fichier, l'attribut sur le fichier rend
-  l'unicité de place structurelle au lieu de vérifiée. (M)
+- ~~`arena=` vit sur le **`<load>`**~~ **FAIT (10/08)** : `<file>` déclare
+  `arena=`/`region=`/`page=`+`address=` (`FilePlaces`), un load nu résout
+  contre, contradiction = erreur — l'unicité est structurelle. Le corpus
+  entier est migré à places égales (r-type + 13 exemples, 59 images
+  identiques), loader-ut gardé à l'ancienne forme jusqu'à 4c. Voir
+  l'annotation 4a/4b du plan et `scenes.md` § The attributed place. (M)
 - Le contenu **hors arène** (régions fixes : stage, tiles, maps, ymm…) n'a
   pas d'optimiseur : les adresses de régions restent choisies à la main.
   4a ne promet pas l'optimiseur général (écarté au §21), mais la place fixe
@@ -132,8 +132,11 @@ rend les pages (« 2 morceaux au lieu de 5 » sur les tuiles). (L)
 
 ### Phase 6 — média dérivé des scènes — la matière première attend
 
-- Le journal de `FdUtil` existe et n'est pas lu : le **rapport de seeks par
-  scène** est un consommateur à écrire, sans toucher au média. (S)
+- ~~Le journal de `FdUtil` existe et n'est pas lu~~ **FAIT (10/08)** : le
+  **rapport de seeks par scène** est écrit (`report/SeekReport`,
+  `seek-report-<target>.txt`) — retours de tête marqués avec provenance,
+  critère « zéro retour pour une scène non partagée » imprimé en tête.
+  Première lecture : scenes.boot paie 4 retours. (S)
 - L'**ordre d'écriture par première utilisation** touche `Target`/le
   répertoire (l'ordre des `cwrite`) : les images changent, validation
   chargements sous toje, critère « zéro retour de tête pour une scène non
@@ -178,23 +181,26 @@ plan le demande, principe 4) : arènes et `bake=` sont déjà racontables. (M)
 | Phase | État | Reste | Taille |
 |---|---|---|---|
 | 0-2 | faites, prouvées | — | — |
-| 3a | mécanisme fait | rapport de cause, interface/élagage en conséquences, imageset délégué | S+M |
+| 3a | mécanisme fait, **rapport de cause fait (10/08)** | interface/élagage en conséquences, imageset délégué | M |
 | 3b | 2 configs sur 12 | ~100 `linkdata=` à fondre, loader-ut à scinder, MO6 sur parole | L |
 | 3c | non | une ligne, après 3b | S |
-| 4a | arènes faites | place sur le `<file>`, vérif globale des places fixes | M |
-| 4b | non | 47 `<region>` à convertir — **fusionner avec 3b par config** | L |
+| 4a | arènes faites, **place sur le `<file>` faite (10/08)** | vérif globale des places fixes | S |
+| 4b | **déplacement d'attribut fait (10/08, corpus entier sauf loader-ut)** | la dissolution des régions (places bougent, preuve par exécution) | M |
 | 4c | non | retrait mécanique | S |
 | 5 | non | arbitrage inversion À RE-VALIDER, puis coupe par les creux | XL |
-| 6 | journal prêt | rapport de seeks (S), ordre par scène (M), codec silencieux (S) | M |
+| 6 | **rapport de seeks fait (10/08)** | ordre par scène (M), codec silencieux (S) | M |
 | 7 | non | api/stage-tables générés, 3 scripts + leanscroll à absorber, images compactes avec les ennemis | L |
 | 8 | gelée exprès | %10/%11 + dépoussiérage, une revalidation totale | M |
 | 9 | non | bandeaux, version EN, clôture des études | M |
 
 ## 5. L'ordre de reprise recommandé
 
-1. **3a-voix** : le rapport « lié au chargement, avec cause » (petite pièce,
-   débloque le pilotage de tout 3b/4b) ; l'imageset délégué dans la foulée
-   (les images r-type changent — le banc est vert, c'est le moment).
+1. ~~**3a-voix**~~ **FAIT (10/08)** — le rapport de cause existe
+   (`linked-refs-<target>.csv`). L'imageset délégué reste À FAIRE : il
+   change les images r-type, donc il attend une session avec la lane toje.
+   *(Fait aussi le 10/08, hors de cet ordre parce que prouvable par
+   identité sans banc : la place attitrée 4a + le déplacement d'attribut
+   4b sur tout le corpus, et le rapport de seeks du point 3.)*
 2. **3b+4b fusionnées, un config par commit**, du plus simple au plus
    chargé : tlsf → hscroll → objects → sprites → tilescroll → sound →
    stacked-overflow → mplus → loader-ut (scission) → r-type. Chaque commit :

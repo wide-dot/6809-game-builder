@@ -272,7 +272,7 @@ still link it — and the answers are independent.
 | `<region>` | `name`, `page`, `address` (required) ; `size` : byte budget, checked ; `bulk` : the region takes an ordered list per scene, laid out one after the other — the list is the unit of replacement, members are not individually replaceable |
 | `<reserved>` | `name`, `page`, `address`, `size` (all required) : a range the game occupies without loading anything into it — object pool, globals, stack, direct page. Nothing may be loaded on top, and the check is on the *declarations*, so a region declared over the pool is an error even while its content stays small |
 | `<scene>` | `name` (required), `section`, `gensource` (defaults to `gen/scenes/<name>.asm`) |
-| `<load>` | `name` (required) ; either `region`, or `page`+`address` (raw escape hatch), or nothing (link data only — the file must be export-only) |
+| `<load>` | `name` (required) ; either `region`, `arena`, or `page`+`address` (raw escape hatch), or nothing — which means the file's attributed place when it declares one, link data only otherwise (the file must then be export-only) |
 
 ## Block encoding is automatic
 
