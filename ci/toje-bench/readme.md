@@ -60,19 +60,27 @@ L'instrumentation étant enfin fiable, la suite s'est éclaircie :
   bouchon du stage 2 est l'instrument. (Au passage : le t1=1 historique
   était un artefact — `handOver` testait un `bench.spawns` griffonné par
   la traînée du joueur, donc non nul par accident.)
-- **L'entrée du stage 2 spinne dans la marche EraseSprites** (caméra
-  figée à 16 pendant que les trames IRQ avancent : la boucle PRINCIPALE
-  est coincée dans une seule itération). Le walk des slots d'effacement
-  (`$6153-$6156` = `rsv_prev_*` d'EraseSprites, lwmap moteur base
-  $6100 ; code de page en `$39xx`) ne termine jamais. Écarté en route :
-  le lecteur YMM (le vrai coupable du premier crawl — coroutine du
-  décompresseur, `@flip` non réinitialisé, corrigé) et les données
-  périmées du stage 1 (les trois ClearAll de `checkpoint.load` sont
-  bien sur le chemin d'entrée). L'état moulu est donc celui, frais, du
-  stage 2 — prochaine étape : inspection live du pointeur de marche et
-  de la page montée au point du spin. Préexistant (identique sur
-  l'image d'avant la campagne modèle-cible). Le 5/5 attend cette
-  correction ; t1 passe et survit à l'échange depuis les correctifs.
+- **Le lecteur YMM se désynchronise sur toute relance après
+  interruption** — le dernier bloqueur du 5/5, et le dossier est prêt
+  pour l'auteur. Au spin du stage 2 (caméra figée à 16, PC dans
+  `@UpdateLoop`, X balayant l'anneau en boucle), l'inspection live
+  donne : variables cohérentes (`ymm.data=$20BC`, `page=$7A`,
+  `status=1`), et **l'anneau contient la musique VALIDE** (l'ouverture
+  du morceau, octets identiques au premier lancement sain, waits
+  présents : $D9, $59, $3A, $C2…) — le consommateur les traverse
+  pourtant sans jamais s'arrêter : il lit le flux décalé d'un octet
+  (les waits tombent en position valeur). `clr @flip` à l'init du
+  décompresseur (corrigé, nécessaire — c'était l'évidence) ne suffit
+  pas : la coroutine produit/consomme (`@stackContext`, `@flip` toggé
+  par octet des deux côtés, suspend sur « wait et flip=0 ») garde un
+  autre état de phase qui survit à l'interruption d'un morceau. Le
+  premier lancement (état vierge) marche toujours ; toute relance
+  après interruption part fausse. À reprendre avec l'auteur du player
+  — la sonde `ymm_state_probe` rejoue le diagnostic en deux minutes.
+  Piste secondaire écartée : les ClearAll de `checkpoint.load` sont
+  sur le chemin d'entrée, et la marche EraseSprites vue dans certains
+  échantillons (`$39C8`) est le travail normal de la boucle, échantillonné
+  pendant que le player mange les trames.
 
 ## Ce que la première campagne a établi (2026-08-09)
 
