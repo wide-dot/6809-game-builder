@@ -140,7 +140,7 @@ cette fois l'image change, la revalidation a un enjeu réel. Docs du même
 commit : note datée dans analyse-multipage (membre vide/octet de
 remplissage : variante rejetée), phrase de CLAUDE.md.*
 
-## Phase 3 — Bake par défaut, link dérivé
+## Phase 3 — Bake par défaut, link dérivé — FAITE (2026-08-10, hors arbitrage interface)
 
 Le renversement du §12/§23, en trois pas :
 
@@ -205,6 +205,14 @@ Le renversement du §12/§23, en trois pas :
     liaison fond).
 3c. **Le défaut passe de NONE à AUTO** ; l'attribut devient l'exception
     (`link` explicite pour forcer, cas rares de bancs).
+
+    *FAIT (10/08)* : `BakeMode.parse` bascule, loader-ut s'exempte par un
+    `<default file.bake=none>` par répertoire (l'arbitrage rendu), les 93
+    `bake="auto"` redondants du corpus tombent — restent les 5
+    `bake="all"` volontaires de r-type. Preuve par identité parfaite aux
+    deux pas (bascule seule, puis retrait des attributs : 59 images
+    inchangées chaque fois), JUnit 70/70. La phase 3 est close, à
+    l'arbitrage interface près (qui vit en 4b/4c).
 
     *Arbitrage loader-ut rendu (10/08, test par test sur le config réel)* :
     **le décor est vide.** Les 32 `linkdata=` sont tous objets de test —

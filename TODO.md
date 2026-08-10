@@ -534,6 +534,14 @@ Fonctionnel :
         images changées annoncées, reste du corpus identique, exécution
         rejouée sous la lane toje. **sound SUSPENDU** (régression
         `f7d4474`, voir « À corriger »).
+  - [x] 3b clos et 3c FAIT (10/08) : sound migré (TO8 dissous entier,
+        MO6 garde ses régions mesurées — témoin complet rejoué, identique
+        au témoin du correctif), loader-ut arbitré hors 3b (décor vide,
+        exempté par un default par répertoire), défaut bake NONE→AUTO
+        prouvé par identité parfaite aux deux pas (bascule + retrait des
+        93 attributs redondants). **La phase 3 est close.** Restent de la
+        campagne : l'arbitrage interface/alternatives (matière prête),
+        les régions interface de r-type après lui, 4c.
   - [x] 3b+4b-dissolution, suite (10/08) : mplus ×3 (les scènes
         « manuscrites » de la note CLAUDE.md n'existaient plus — l'arène
         les avait résorbées ; séquence d'écrans décalée d'un cran, pcm
