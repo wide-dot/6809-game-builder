@@ -24,6 +24,18 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       `scenes.trap`). **loader-ut 17/17 + `$0D` + T18 `$8301`, vérifié sous
       la lane toje.** Changement du binaire du loader : les images bootables
       changent toutes.
+- [ ] **examples/sound TO8 ne joue plus depuis `f7d4474` (05/08)** — trouvé
+      le 10/08 en préparant sa migration 3b+4b : le mainLoop du title n'est
+      jamais atteint, le premier userIRQ qui streame finit en sous-débord de
+      la pile d'IRQ privée et la machine erre en VRAM. Bissecté (worktree +
+      `git bisect run`, prédicat mainLoop-sous-toje) : le bloc
+      `ymm.stop`/`ymm.restart` est la condition nécessaire (padding
+      innocent, builder disculpé — mêmes commits, seul `ymm.asm` échangé).
+      Rien dans `sound` ne les appelle : l'effet passe par le décalage ou
+      les exports, pas par un appel. r-type non affecté (player à `$1C9B` ;
+      `sound` est le seul à placer le sien à `$0000`). Même zone que le
+      dossier YMM : à instruire ensemble. **Migration 3b+4b de sound
+      SUSPENDUE jusqu'au vert.** Détail : `ci/toje-bench/readme.md`.
 - [x] **r-type : gel YM à l'échange** (10/08) : `ymm.stop` dans les deux
       `stage.handOver` (relancer `ymm.obj.play` sur un flux en cours
       désynchronisait l'anneau). Témoins du banc relogés en `$8766` (bloc

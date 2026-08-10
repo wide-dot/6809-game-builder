@@ -27,6 +27,51 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
+## RÉGRESSION OUVERTE : examples/sound TO8 ne joue plus (2026-08-10)
+
+Trouvée en préparant la migration 3b+4b de `sound` (le témoin d'exécution
+n'a jamais pu passer au vert sur l'image de RÉFÉRENCE — la règle « un vert
+est une revendication » appliquée à l'envers : un rouge de base n'est pas
+un effet de la migration). **Le main loop du game mode title n'est jamais
+atteint** ; le premier userIRQ qui streame la musique finit en sous-débord
+de la pile d'IRQ privée (S remonte au-delà de `$6359`), les retours se
+font sur des adresses fantômes (`$FF63`), la queue d'IRQ moniteur `PULS`
+un PC=`$5C00` et la machine erre en VRAM, IRQ masquées. Déterministe.
+
+Bissection outillée par cette lane (worktree + `git bisect run`, prédicat
+= « mainLoop atteint sous toje ») : **bon à `7f9494d`, mauvais depuis
+`f7d4474` (05/08)** — le commit qui ajoute `ymm.stop`/`ymm.restart` et le
+bourrage d'anneau à `engine/sound/ymm.asm`. Expériences minimales, builder
+de `4576b95` constant :
+
+| variante de `ymm.asm` | verdict |
+|---|---|
+| ancienne (7f9494d) | VERT |
+| ancienne + bourrage seul | VERT |
+| nouvelle sans bourrage (stop/restart seuls) | ROUGE |
+| nouvelle complète (celle de HEAD) | ROUGE |
+
+Le **builder est disculpé** (même commit `4576b95`, seul `ymm.asm`
+échangé, le verdict suit le fichier), le **bourrage est innocent** — le
+bloc `ymm.stop`/`ymm.restart` est la condition nécessaire du rouge, alors
+que rien dans `sound` ne les appelle. Le retaillage de régions de
+`4576b95` (`ymm.player` \$0400→\$0480) ne faisait qu'absorber la
+croissance ; il est innocent aussi (testé sur builder bon).
+
+À qui la suite : c'est la même zone que le dossier « YMM restart
+desync » (les routines incriminées SONT stop/restart) — à instruire avec
+lui, au watchpoint sur la pile privée. r-type n'est PAS affecté (banc
+5/5, son player à `$1C9B` ; `sound` place le sien à `$0000`, seul cas du
+corpus). **La migration 3b+4b de `sound` est suspendue** jusqu'au vert de
+base : sa validation d'exécution n'aurait rien prouvé.
+
+Matériel de reproduction : le prédicat lit l'adresse de `mainLoop` dans
+le listing du build et arme `run_until_pc` ; images bonne/mauvaise,
+traces pas-à-pas jusqu'au crash et dumps du player chargé sont
+regénérables par la méthode ci-dessus (breakpoint `$6100` posé AVANT le
+boot, `write_memory` sur `$E7E6` entre deux trames pour lire la page 6,
+registre restauré).
+
 ## 5/5 PASS (2026-08-10, seconde campagne)
 
 **`rtype_bench.py` affiche « R-TYPE BENCH 5/5 PASS »** : stage1 → stage2 →
