@@ -43,7 +43,7 @@
                 <define symbol="loader.ADDRESS" value="$6000"/>
 
                 <!-- the checker : it knows where each marker should be -->
-                <file name="gamemode" linkdata="LINK">
+                <file name="gamemode" linkdata="LINK" region="gamemode">
                     <lwasm gensource="gen/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm xml:space="preserve">stacked.base.page    equ $05</asm>
@@ -52,69 +52,69 @@
                     </lwasm>
                 </file>
 
-                <file name="marker.0" linkdata="LINK">
+                <file name="marker.0" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-0.asm">
                         <asm filename="src/markers/marker-0.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.1" linkdata="LINK">
+                <file name="marker.1" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-1.asm">
                         <asm filename="src/markers/marker-1.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.2" linkdata="LINK">
+                <file name="marker.2" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-2.asm">
                         <asm filename="src/markers/marker-2.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.3" linkdata="LINK">
+                <file name="marker.3" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-3.asm">
                         <asm filename="src/markers/marker-3.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.4" linkdata="LINK">
+                <file name="marker.4" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-4.asm">
                         <asm filename="src/markers/marker-4.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.5" linkdata="LINK">
+                <file name="marker.5" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-5.asm">
                         <asm filename="src/markers/marker-5.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.6" linkdata="LINK">
+                <file name="marker.6" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-6.asm">
                         <asm filename="src/markers/marker-6.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.7" linkdata="LINK">
+                <file name="marker.7" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-7.asm">
                         <asm filename="src/markers/marker-7.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.8" linkdata="LINK">
+                <file name="marker.8" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-8.asm">
                         <asm filename="src/markers/marker-8.asm"/>
                     </lwasm>
                 </file>
-                <file name="marker.9" linkdata="LINK">
+                <file name="marker.9" linkdata="LINK" arena="stacked">
                     <lwasm gensource="gen/markers/marker-9.asm">
                         <asm filename="src/markers/marker-9.asm"/>
                     </lwasm>
                 </file>
 
                 <scene name="scenes.main" section="SCENE" gensource="gen/scene.asm">
-                    <load name="gamemode" region="gamemode"/>
-                    <load name="marker.0" arena="stacked"/>
-                    <load name="marker.1" arena="stacked"/>
-                    <load name="marker.2" arena="stacked"/>
-                    <load name="marker.3" arena="stacked"/>
-                    <load name="marker.4" arena="stacked"/>
-                    <load name="marker.5" arena="stacked"/>
-                    <load name="marker.6" arena="stacked"/>
-                    <load name="marker.7" arena="stacked"/>
-                    <load name="marker.8" arena="stacked"/>
-                    <load name="marker.9" arena="stacked"/>
+                    <load name="gamemode"/>
+                    <load name="marker.0"/>
+                    <load name="marker.1"/>
+                    <load name="marker.2"/>
+                    <load name="marker.3"/>
+                    <load name="marker.4"/>
+                    <load name="marker.5"/>
+                    <load name="marker.6"/>
+                    <load name="marker.7"/>
+                    <load name="marker.8"/>
+                    <load name="marker.9"/>
                 </scene>
 
             </directory>

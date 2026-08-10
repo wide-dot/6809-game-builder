@@ -17,7 +17,7 @@
 
                 <define symbol="tlsf.ut.MEMORY_POOL" value="0xB000"/>
 
-                <file name="fileid.tlsf.ut" codec="zx0" section="DATA">
+                <file name="fileid.tlsf.ut" codec="zx0" section="DATA" region="gamemode">
                     <lwasm gensource="gen/tlsf/tlsf.ut.asm">
                         <asm xml:space="preserve">        org   $2100</asm>
                         <asm xml:space="preserve">        INCLUDE "engine/system/mo6/map.const.asm"</asm>
@@ -31,7 +31,7 @@
                 </file>
 
                 <scene name="scenes.default" section="SCENE">
-                    <load name="fileid.tlsf.ut" region="gamemode"/>
+                    <load name="fileid.tlsf.ut"/>
                 </scene>
 
             </directory>

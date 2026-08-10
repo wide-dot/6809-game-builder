@@ -29,19 +29,19 @@
                 <!-- These come first because converting also writes the .equ   -->
                 <!-- describing the buffer, which the game mode below reads.    -->
                 <!-- ******************************************************* -->
-                <file name="assets.bandA">
+                <file name="assets.bandA" region="bandA">
                     <png2bin filename="band.png" gendir="gen/assets/band"
                              videomode="bm16" buffer="hscroll" guardcolor="11" plane="0"/>
                 </file>
 
-                <file name="assets.bandB">
+                <file name="assets.bandB" region="bandB">
                     <png2bin filename="band.png" gendir="gen/assets/band"
                              videomode="bm16" buffer="hscroll" guardcolor="11" plane="1"/>
                 </file>
 
                 <!-- Game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" region="gamemode">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- height, guard colour and exit offset of the buffer,
@@ -54,9 +54,9 @@
                 </file>
 
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
-                    <load name="assets.gm.main" region="gamemode"/>
-                    <load name="assets.bandA"   region="bandA"/>
-                    <load name="assets.bandB"   region="bandB"/>
+                    <load name="assets.gm.main"/>
+                    <load name="assets.bandA"/>
+                    <load name="assets.bandB"/>
                 </scene>
 
             </directory>

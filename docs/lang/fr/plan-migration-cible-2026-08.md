@@ -219,6 +219,14 @@ Le grand basculement de syntaxe, groupé pour ne casser qu'une fois :
     restent identiques à l'octet, dont les 4 de r-type.** La dissolution
     des régions elle-même (une région → place attitrée partagée ou rien)
     reste à faire, exemples compris.
+
+    *Étendue aux exemples dans la foulée (10/08)* : 13 configs migrés du
+    même mouvement (71 fichiers annotés, 71 loads réduits), MO6 compris —
+    le déplacement à places égales se prouve par identité, ce qui couvre
+    exactement les images qu'aucun émulateur ne valide ici. **loader-ut
+    est exclu à dessein** : il garde la forme par-load vivante dans le
+    corpus tant que 4c ne l'a pas retirée, comme il garde ses chemins
+    link pour 3b. Preuve : 59 images identiques à l'octet.
 4c. **Retrait de `<region>`** quand plus rien ne l'utilise.
 
 *Preuve : 4a est additif (configs inchangées = images inchangées) ; chaque

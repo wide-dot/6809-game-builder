@@ -36,7 +36,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
                     <lwasm gensource="gen/assets/game-modes/title/main-test.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/title/main-test.asm"/>
@@ -45,7 +45,7 @@
 
                 <!-- Test - sample data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.samples" linkdata="LINK">
+                <file name="assets.sounds.samples" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/samples/5-timpani.6bit.asm">
                         <label name="samples.timpani"/><includebin filename="src/assets/sounds/samples/5-timpani.6bit.bin" />
                     </lwasm>
@@ -53,42 +53,42 @@
 
                 <!-- Test - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.ym" linkdata="LINK">
+                <file name="assets.sounds.ym" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/ym-sweet.ymm">
                         <label name="sounds.ym"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/vgm/ym-sweet.vgm" genbinary="src/assets/sounds/vgm/ym-sweet.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.ym.rythm" linkdata="LINK">
+                <file name="assets.sounds.ym.rythm" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/ym-rythm.ymm">
                         <label name="sounds.ym.rythm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/vgm/ym-rythm.vgm" genbinary="src/assets/sounds/vgm/ym-rythm.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.sn" linkdata="LINK">
+                <file name="assets.sounds.sn" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-melody.vgc">
                         <label name="sounds.sn"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-melody.vgm" genbinary="src/assets/sounds/vgm/sn-melody.vgc"/>
                 </file>
 
-                <file name="assets.sounds.sn.noise" linkdata="LINK">
+                <file name="assets.sounds.sn.noise" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/sn-noise.vgc">
                         <label name="sounds.sn.noise"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/sn-noise.vgm" genbinary="src/assets/sounds/vgm/sn-noise.vgc"/>
                 </file>
 
-                <file name="assets.sounds.sn.music" linkdata="LINK">
+                <file name="assets.sounds.sn.music" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/music.vgc">
                         <label name="sounds.sn.music"/>
                     </lwasm>
                         <vgm2vgc filename="src/assets/sounds/vgm/music.vgm" genbinary="src/assets/sounds/vgm/music.vgc"/>
                 </file>
 
-                <file name="assets.sounds.ym.music" linkdata="LINK">
+                <file name="assets.sounds.ym.music" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/vgm/music.ymm">
                         <label name="sounds.ym.music"/>
                     </lwasm>
@@ -98,7 +98,7 @@
                 <!-- Test - mea8000 data -->
                 <!-- ******************************************************* -->
 
-                <file name="assets.sounds.mea8000" linkdata="LINK">
+                <file name="assets.sounds.mea8000" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/assets/sounds/text/demo.asm">
                         <label name="sounds.mea8000"/>
                         <asm xml:space="preserve"> SECTION code</asm>
@@ -110,7 +110,7 @@
 
                 <!-- Test - sound player dynamic port -->
                 <!-- ******************************************************* -->
-                <file name="engine.system.mo6.sound.mplus.const" linkdata="LINK">
+                <file name="engine.system.mo6.sound.mplus.const" linkdata="LINK" arena="sound.data">
                     <lwasm gensource="gen/system/mo6/sound/mplus.const.asm">
                         <asm filename="engine/system/mo6/sound/mplus.const.asm"/>
                     </lwasm>
@@ -119,17 +119,17 @@
                 <!-- Scenes : table generated from this declaration -->
                 <!-- ******************************************************* -->
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title-test.asm">
-                    <load name="assets.gm.title" region="gamemode"/>
+                    <load name="assets.gm.title"/>
                     <!-- ranged by the builder ; the linker finds every label -->
-                    <load name="assets.sounds.samples"  arena="sound.data"/>
-                    <load name="assets.sounds.sn"       arena="sound.data"/>
-                    <load name="assets.sounds.sn.noise" arena="sound.data"/>
-                    <load name="assets.sounds.ym"       arena="sound.data"/>
-                    <load name="assets.sounds.ym.rythm" arena="sound.data"/>
-                    <load name="engine.system.mo6.sound.mplus.const" arena="sound.data"/>
-                    <load name="assets.sounds.mea8000"  arena="sound.data"/>
-                    <load name="assets.sounds.sn.music" arena="sound.data"/>
-                    <load name="assets.sounds.ym.music" arena="sound.data"/>
+                    <load name="assets.sounds.samples"/>
+                    <load name="assets.sounds.sn"/>
+                    <load name="assets.sounds.sn.noise"/>
+                    <load name="assets.sounds.ym"/>
+                    <load name="assets.sounds.ym.rythm"/>
+                    <load name="engine.system.mo6.sound.mplus.const"/>
+                    <load name="assets.sounds.mea8000"/>
+                    <load name="assets.sounds.sn.music"/>
+                    <load name="assets.sounds.ym.music"/>
                 </scene>
 
             </directory>

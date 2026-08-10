@@ -26,7 +26,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
                     <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
@@ -35,13 +35,13 @@
 
                 <!-- Title - sample data -->
                 <!-- ******************************************************* -->
-                <file name="dummyfile"/>
+                <file name="dummyfile" address="$4000" page="$00"/>
                 <!-- 24 KB on purpose : the scene loads it at page 5/$0000 and it
                      spills past the cartridge window into video RAM up to $5FFF.
                      maxsize is raised above the 16 KB a directory entry can
                      describe : the stored size wraps, which is harmless here
                      because the scene gives an explicit destination. -->
-                <file name="assets.samples" maxsize="0x6000" linkdata="LINK">
+                <file name="assets.samples" maxsize="0x6000" linkdata="LINK" region="samples">
                     <lwasm>
                         <label name="samples.kick"   /><includebin filename="src/assets/sounds/samples/1-kick.6bit.bin"    />
                         <label name="samples.snare"  /><includebin filename="src/assets/sounds/samples/2-snare.6bit.bin"   />
@@ -56,12 +56,12 @@
                 <!-- Scenes -->
                 <!-- ******************************************************* -->
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
-                    <load name="assets.gm.title" region="gamemode"/>
+                    <load name="assets.gm.title"/>
                     <!-- raw destination : loaded at a half page boundary only to
                          make the loader switch page before the samples, which
                          then span 24 KB from $0000 -->
-                    <load name="dummyfile" page="$00" address="$4000"/>
-                    <load name="assets.samples" region="samples"/>
+                    <load name="dummyfile"/>
+                    <load name="assets.samples"/>
                 </scene>
 
             </directory>

@@ -471,6 +471,13 @@ Fonctionnel :
         l'octet (le déplacement d'attribut à places égales se prouve par
         identité, pas besoin du banc). Restent : les 12 configs
         d'exemples (region= sur loads), puis la dissolution des régions.
+  - [x] Phase 4b-exemples (10/08) — les 13 configs d'exemples migrés au
+        même mouvement (71 fichiers annotés, 71 loads réduits au nom),
+        MO6 compris — l'identité binaire vaut preuve là où l'émulateur
+        manque. loader-ut est EXCLU à dessein : il reste le gardien de
+        la forme par-load tant que 4c ne l'a pas retirée. PREUVE : 59
+        images identiques à l'octet. Reste 4b : la dissolution des
+        régions elle-mêmes (places bougent, preuve par exécution).
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

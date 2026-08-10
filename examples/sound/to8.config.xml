@@ -30,7 +30,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" region="gamemode">
                     <lwasm gensource="gen/assets/game-modes/to8/title/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/title/main.asm"/>
@@ -39,13 +39,13 @@
 
                 <!-- Title - sound player -->
                 <!-- ******************************************************* -->
-                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK">
+                <file name="engine.object.sound.ymm" codec="zx0" linkdata="LINK" region="ymm.player">
                     <lwasm>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK">
+                <file name="engine.object.sound.vgc" codec="zx0" linkdata="LINK" region="vgc.player">
                     <lwasm>
                         <asm filename="engine/sound/vgc.buffers.asm"/>
                         <asm filename="engine/sound/vgc.asm"/>
@@ -54,14 +54,14 @@
 
                 <!-- Title - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.title.ymm" linkdata="LINK">
+                <file name="assets.sounds.title.ymm" linkdata="LINK" region="ymm.data">
                     <lwasm>
                         <label name="sounds.title.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/title/resources/rtype-title.vgm" genbinary="src/assets/sounds/title/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.title.vgc" linkdata="LINK">
+                <file name="assets.sounds.title.vgc" linkdata="LINK" region="vgc.data">
                     <lwasm>
                         <label name="sounds.title.vgc"/>
                     </lwasm>
@@ -84,14 +84,14 @@
 
                 <!-- Level1 - sound data -->
                 <!-- ******************************************************* -->
-                <file name="assets.sounds.level1.ymm" linkdata="LINK">
+                <file name="assets.sounds.level1.ymm" linkdata="LINK" region="ymm.data">
                     <lwasm>
                         <label name="sounds.level1.ymm"/>
                     </lwasm>
                     <vgm2ymm filename="src/assets/sounds/level1/resources/rtype-level1.vgm" genbinary="src/assets/sounds/level1/music.ymm" codec="zx0"/>
                 </file>
 
-                <file name="assets.sounds.level1.vgc" linkdata="LINK">
+                <file name="assets.sounds.level1.vgc" linkdata="LINK" region="vgc.data">
                     <lwasm>
                         <label name="sounds.level1.vgc"/>
                     </lwasm>
@@ -101,19 +101,19 @@
                 <!-- Scenes : tables generated from these declarations      -->
                 <!-- ******************************************************* -->
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
-                    <load name="assets.gm.title"         region="gamemode"/>
-                    <load name="engine.object.sound.ymm" region="ymm.player"/>
-                    <load name="engine.object.sound.vgc" region="vgc.player"/>
-                    <load name="assets.sounds.title.ymm" region="ymm.data"/>
-                    <load name="assets.sounds.title.vgc" region="vgc.data"/>
+                    <load name="assets.gm.title"/>
+                    <load name="engine.object.sound.ymm"/>
+                    <load name="engine.object.sound.vgc"/>
+                    <load name="assets.sounds.title.ymm"/>
+                    <load name="assets.sounds.title.vgc"/>
                     <!-- link data only (export-only files) -->
                     <load name="engine.system.to8.sound.ym.const"/>
                     <load name="engine.system.to8.sound.sn.const"/>
                 </scene>
 
                 <scene name="scenes.level1" section="SCENE" gensource="gen/scenes/level1.asm">
-                    <load name="assets.sounds.level1.ymm" region="ymm.data"/>
-                    <load name="assets.sounds.level1.vgc" region="vgc.data"/>
+                    <load name="assets.sounds.level1.ymm"/>
+                    <load name="assets.sounds.level1.vgc"/>
                 </scene>
 
             </directory>
