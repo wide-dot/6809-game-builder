@@ -109,6 +109,25 @@ public class DirectoryPlugin {
 				writer.write(name + " equ " + fileId + System.lineSeparator());
 				directoryNames.add(name);
 
+				// a literal attributed place is published next to the file id :
+				// resident code that reaches a raw binary by page and address
+				// (a scroll buffer, a bitmap) reads it from the same include it
+				// already needs for the id — the value has one source, the
+				// declaration. Arena and region places are not published : their
+				// content is linkable, so references resolve through the
+				// symbols, baked or load-time linked
+				if (plugin.equals("file")) {
+					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
+							ctx.filePlaces.get(name);
+					if (place != null && place.page != null && place.address != null) {
+						writer.write(name + ".page equ " + place.page
+								+ System.lineSeparator());
+						writer.write(name + ".address equ $"
+								+ String.format("%04X", place.address)
+								+ System.lineSeparator());
+					}
+				}
+
 				int blocks;
 				if (plugin.equals("file")) {
 					String codec = Attribute.getStringOpt(child, ctx, "codec");
