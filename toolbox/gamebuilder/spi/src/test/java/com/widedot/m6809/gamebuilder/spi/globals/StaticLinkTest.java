@@ -79,28 +79,21 @@ public class StaticLinkTest {
 
 	/**
 	 * Run-time alternatives share export names by design — each stage exports
-	 * its wave. The consumer decides : a stage baking its own wave binds to
-	 * the one provider it can see at run time, because every scene that loads
-	 * the other stage's wave also loads the other stage, which evicts it.
+	 * its wave. Under the naked provider counting there is no consumer
+	 * election : several providers refuse a build-time value whoever asks,
+	 * and the loader's first-match scan decides at run time.
 	 */
 	@Test
-	void aMultiProviderSymbolBindsToTheOnlyReachableProvider() throws Exception {
+	void aMultiProviderSymbolStaysLoadTimeLinked() throws Exception {
 		StaticLink link = new StaticLink();
-		// the two stages are alternatives at the same destination
-		link.place("stage1", 1, 0x8000, "scenes.boot");
-		link.place("stage1", 1, 0x8000, "scenes.stage1");
-		link.place("stage2", 1, 0x8000, "scenes.stage2");
-		// each carries its own wave provider
-		link.place("stage1.wave", 6, 0x0000, "scenes.boot");
 		link.place("stage1.wave", 6, 0x0000, "scenes.stage1");
 		link.place("stage2.wave", 6, 0x0000, "scenes.stage2");
 		link.registerExport("wave.data", "stage1.wave", 0x0100, false);
 		link.registerExport("wave.data", "stage2.wave", 0x0200, false);
 
 		link.setCurrentConsumer("stage1");
-		assertEquals(0x0100, link.resolve("wave.data"));
-		link.setCurrentConsumer("stage2");
-		assertEquals(0x0200, link.resolve("wave.data"));
+		Exception e = assertThrows(Exception.class, () -> link.resolve("wave.data"));
+		assertTrue(e.getMessage().contains("several providers"), e.getMessage());
 	}
 
 	/**

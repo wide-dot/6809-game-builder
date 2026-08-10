@@ -857,7 +857,7 @@
         <xs:annotation><xs:documentation>section receiving the entry</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="bake" type="xs:string">
-        <xs:annotation><xs:documentation>reference resolution: none (default), auto, all</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>reference resolution: auto (default), none, all</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="arena" type="xs:string">
         <xs:annotation><xs:documentation>attributed place : arena to range this file into ; loads of it become bare names</xs:documentation></xs:annotation>
@@ -1699,7 +1699,7 @@
         <xs:annotation><xs:documentation>generated file of &lt;block symbol&gt;.page equates, for code that has to mount what a block holds</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="bake" type="xs:string">
-        <xs:annotation><xs:documentation>reference resolution of every member: none (default), auto, all</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>reference resolution of every member: auto (default), none, all</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -2064,9 +2064,6 @@
       </xs:attribute>
       <xs:attribute name="pages" type="int6809">
         <xs:annotation><xs:documentation>consecutive pages of the compact form, 1 if omitted — the same as declaring that many &lt;zone&gt;</xs:documentation></xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="interface" type="xs:boolean">
-        <xs:annotation><xs:documentation>the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -2491,7 +2488,7 @@
         <xs:annotation><xs:documentation>label of the generated table</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="tiles" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>tile symbol stem : entries reference adr_&lt;tiles&gt;_&lt;id&gt;_&lt;variant&gt;</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>the file or pageset hosting the tiles : entries reference adr_&lt;host&gt;_&lt;id&gt;_&lt;variant&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="variant" type="xs:string" use="required">
         <xs:annotation><xs:documentation>compiled tile variant, ND0 for unshifted, ND1 for pre-shifted</xs:documentation></xs:annotation>

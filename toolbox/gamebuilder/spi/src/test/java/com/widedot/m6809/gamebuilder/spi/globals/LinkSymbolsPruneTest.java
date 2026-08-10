@@ -48,16 +48,6 @@ public class LinkSymbolsPruneTest {
 	}
 
 	@Test
-	void uniquenessIsStillCheckedForPrunedExports() throws Exception {
-		LinkSymbols symbols = new LinkSymbols();
-		symbols.preseedImports(java.util.Collections.emptySet());
-		// neither is imported, both would be pruned — the clash must still be heard
-		symbols.export("shared.dead", "a.o");
-		Exception e = assertThrows(Exception.class, () -> symbols.export("shared.dead", "b.o"));
-		assertTrue(e.getMessage().contains("a.o"), e.getMessage());
-	}
-
-	@Test
 	void idsStayDrivenByThePreseedNotByPruning() throws Exception {
 		LinkSymbols symbols = new LinkSymbols();
 		symbols.preseed(java.util.Arrays.asList("alpha", "beta", "gamma"));

@@ -206,6 +206,30 @@ Le renversement du §12/§23, en trois pas :
 3c. **Le défaut passe de NONE à AUTO** ; l'attribut devient l'exception
     (`link` explicite pour forcer, cas rares de bancs).
 
+    *Arbitrage interface/alternatives TRANCHÉ ET EXÉCUTÉ (10/08, décision
+    auteur)* : **aucune logique ni contrôle lié à l'interchangeabilité ou à
+    la co-location.** La mesure préalable a montré que l'élection ne servait
+    pas l'interchangeabilité mais compensait une collision de noms générés
+    (421 noms de tuiles partagés entre stages, 2 089 sites — la règle nue
+    seule aurait rendu ~12 Ko de lien et des refus bake=all). Option B :
+    les labels générés s'uniquifient AU GÉNÉRATEUR (une tuile devient
+    `adr_<hôte>_<id>_<variante>`, l'hôte = fichier ou pageset, unique par
+    construction ; `<tilemap tiles=…>` nomme l'hôte), et l'entrée principale
+    d'une table garde son nom commun POUR LE LIEN. Puis la taille : élection
+    par consommateur → **comptage nu des fournisseurs** (plusieurs ⇒ lié,
+    sauf constantes absolues de même valeur), refus d'unicité des exports
+    supprimé (le doublon est un fait, premier-chargé gagne, visibilité par
+    la liste causée), `interface="true"` retiré (la garantie vit dans
+    api.asm + les bancs), régions `stage` et `maps` dissoutes en places
+    littérales partagées (`collision`/`stageinit` restent : chaîne d'ancrage
+    mesurée). Le moteur saute sur `stage.main` par le lien (nom commun
+    exporté par les deux mains, repointé à chaque échange) au lieu du
+    littéral de région. Coût mesuré du retrait : 512 → 634 octets de lien
+    (+122 : map.even/odd, stage.wave, stage.main — exactement les entrées
+    principales voulues au lien), liste causée 27 → 33 lignes. PREUVE :
+    seules les images r-type changent, banc 5/5, loader-ut 17/17, JUnit
+    70/70. Doc : symbols.md (comptage nu, § Shared export names).
+
     *FAIT (10/08)* : `BakeMode.parse` bascule, loader-ut s'exempte par un
     `<default file.bake=none>` par répertoire (l'arbitrage rendu), les 93
     `bake="auto"` redondants du corpus tombent — restent les 5

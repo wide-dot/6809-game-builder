@@ -315,7 +315,7 @@ stage.setup
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+maps.page
+        lda   #map.RAM_OVER_CART+stage1.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 

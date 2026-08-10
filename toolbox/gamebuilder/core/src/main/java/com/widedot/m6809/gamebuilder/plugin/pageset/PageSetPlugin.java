@@ -259,11 +259,6 @@ public class PageSetPlugin {
 			// content may hold a *.static section, and the tables that index
 			// this set ask for each symbol's page as soon as it is exported
 			ctx.staticLink.place(memberName, page, member.address, "pageset " + name);
-			// the set occupies the region as a whole : another set targeting it
-			// replaces every member, so their items may share names even when
-			// the packing put a given item on different pages
-			ctx.staticLink.declareExclusive(memberName, regionName, name);
-
 			List<Integer> divisible = new ArrayList<Integer>();
 			List<Integer> units = new ArrayList<Integer>();
 			for (int idx : content) {

@@ -534,6 +534,17 @@ Fonctionnel :
         images changées annoncées, reste du corpus identique, exécution
         rejouée sous la lane toje. **sound SUSPENDU** (régression
         `f7d4474`, voir « À corriger »).
+  - [x] Arbitrage interface/alternatives TRANCHÉ (10/08, décision auteur) :
+        zéro logique d'interchangeabilité/co-location. Labels générés
+        uniques au générateur (adr_<hôte>_<id>_<variante>, tiles= nomme
+        l'hôte), comptage nu des fournisseurs (l'élection meurt), doublons
+        d'exports = un fait (premier-chargé gagne, liste causée = témoin),
+        interface= retiré, régions stage/maps dissoutes, le moteur saute
+        sur stage.main par le lien. Coût mesuré : 512→634 octets (+122,
+        les entrées principales voulues au lien) — contre les ~12 Ko
+        qu'aurait coûté la règle nue sans l'uniquification (mesure faite
+        d'abord, elle a réfuté la proposition naïve). Bancs 5/5 + 17/17,
+        JUnit 70/70, détail dans l'annotation 3c du plan.
   - [x] 3b clos et 3c FAIT (10/08) : sound migré (TO8 dissous entier,
         MO6 garde ses régions mesurées — témoin complet rejoué, identique
         au témoin du correctif), loader-ut arbitré hors 3b (décor vide,

@@ -13,6 +13,10 @@
 ; Ce fichier doit être inclus EN PREMIER dans la section du stage : l'unité est
 ; chargée à l'adresse de la région et le loader saute sur son premier octet.
 
+; Le moteur résident y saute par le LIEN (`jmp stage.main` dans
+; game.stage.switch) : nom commun aux deux stages, le re-link de chaque
+; scene.load le repointe sur le stage fraîchement chargé.
+stage.main EXPORT
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff

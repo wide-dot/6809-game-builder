@@ -34,15 +34,14 @@
                  passe de 50 a 47 emplacements — voir nb_dynamic_objects dans
                  src/common/engine/ram.const.asm, qui est ce qui le place
                  REELLEMENT ; ce layout ne fait que le decrire. -->
-            <region name="stage"      page="$01" address="$8000" size="$0761" interface="true"/>
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
-            <region name="tiles.even" interface="true">
+            <region name="tiles.even">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$4000"/>
             </region>
-            <region name="tiles.odd" interface="true">
+            <region name="tiles.odd">
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -58,7 +57,6 @@
                  les plus gros tilesets du jeu : cette queue est garantie chez
                  tous les stages. Un stage qui la deborderait est refuse par le
                  controle de scene. -->
-            <region name="maps"       page="$1F" address="$09C7" interface="true"/>
             <!-- Les scripts d'animation : communs a tous les objets et a tous -->
             <!-- les stages, charges une fois — mais pagines, AnimateSprite      -->
             <!-- montant la page avant de lire.                                 -->
@@ -80,7 +78,7 @@
             <!-- La collision terrain du stage courant : code de consultation,  -->
             <!-- tables et cartes. Echangeable par stage (interface), comme le  -->
             <!-- stage lui-meme.                                                -->
-            <region name="collision"  page="$17" address="$0000" interface="true"/>
+            <region name="collision"  page="$17" address="$0000"/>
             <!-- L'init de niveau, objet monte comme en v1 (_Obj_Run           -->
             <!-- ObjID_LevelInit). Propre au niveau, donc dans la page deja    -->
             <!-- echangee par stage. Seul le stage 1 a la sienne pour l'instant.-->
@@ -286,7 +284,7 @@
                  assemblent, et les cinq tables que le moteur lit. Les entrees
                  non portees visent le bouchon du stage et tombent au fil du
                  portage (plan-migration-cible, phase 1). -->
-            <objectindex name="stage1.objid" zero="stage"
+            <objectindex name="stage1.objid" zero="stage1"
                          genconst="gen/stages/01/objid.const.asm"
                          gensource="gen/stages/01/objid.index.asm"
                          guard="OBJID_CONST_01">
@@ -337,7 +335,7 @@
                 <entry name="ObjID_dobkeratops_monster" file="stage1.dobkeratopsmonster" object="dobkeratopsMonster.Object"/>
             </objectindex>
 
-            <objectindex name="stage2.objid" zero="stage"
+            <objectindex name="stage2.objid" zero="stage2"
                          genconst="gen/stages/02/objid.const.asm"
                          gensource="gen/stages/02/objid.index.asm"
                          guard="OBJID_CONST_02">
@@ -346,36 +344,36 @@
                 <entry name="ObjID_fade" file="common.fade" object="PaletteFade"/>
                 <entry name="ObjID_Player1" file="common.player" object="Player"/>
                 <entry name="ObjID_Weapon" file="common.weapon" object="Weapon"/>
-                <entry name="ObjID_commonmissile" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_commonmissile" file="stage2" object="stage.placeholder"/>
                 <entry name="ObjID_beamcharge" file="common.beamcharge" object="Beamcharge"/>
                 <entry name="ObjID_beamp" file="common.beamp" object="Beam"/>
                 <entry name="ObjID_emitter_flash" file="common.emflash" object="emitterFlash.Object"/>
-                <entry name="ObjID_collision" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_collision" file="stage2" object="stage.placeholder"/>
                 <entry name="ObjID_createFoeFire" file="common.firechain" object="createFoeFire"/>
                 <entry name="ObjID_loadFirePreset" file="common.firechain" object="loadFirePreset.Object"/>
                 <entry name="ObjID_foefire" file="common.foefire" object="foefire.Object"/>
-                <entry name="ObjID_initlevel1" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_initlevel1" file="stage2" object="stage.placeholder"/>
                 <entry name="ObjID_engineflames" file="common.engineflames" object="engineflames.Object"/>
                 <entry name="ObjID_messages" file="common.messages" object="messages.Object"/>
-                <entry name="ObjID_endstage" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_endstage" file="stage2" object="stage.placeholder"/>
                 <entry name="ObjID_pow_optionbox" file="common.optionbox" object="powOptionbox.Object"/>
                 <entry name="ObjID_bitdevice" file="common.bitdevice" object="bitdevice.Object"/>
                 <entry name="ObjID_forcepod" file="common.forcepod" object="forcepod.Object"/>
                 <entry name="ObjID_forcepod_simplefire" file="common.simplefire" object="simplefire.Object"/>
                 <entry name="ObjID_forcepod_reboundlaser" file="common.reboundlaser" object="reboundlaser.Object"/>
                 <entry name="ObjID_forcepod_counterairlaser" file="common.counterairlaser" object="counterairlaser.Object"/>
-                <entry name="ObjID_scantfire" file="stage" object="stage.placeholder"/>
-                <entry name="ObjID_tabrokcanon" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_scantfire" file="stage2" object="stage.placeholder"/>
+                <entry name="ObjID_tabrokcanon" file="stage2" object="stage.placeholder"/>
                 <!-- Invoqué À CRU chaque trame (_Obj_Run sans OST) : le bouchon
                      auto-supprimant empilerait un slot fantôme par trame et la
                      pile de slots déborderait — voir stage.placeholder.raw. -->
-                <entry name="ObjID_shellEraser" file="stage" object="stage.placeholder.raw"/>
-                <entry name="ObjID_commonmissileflame" file="stage" object="stage.placeholder"/>
-                <entry name="ObjID_dobkeratops_saw" file="stage" object="stage.placeholder"/>
-                <entry name="ObjID_dobkeratops_explosion" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_shellEraser" file="stage2" object="stage.placeholder.raw"/>
+                <entry name="ObjID_commonmissileflame" file="stage2" object="stage.placeholder"/>
+                <entry name="ObjID_dobkeratops_saw" file="stage2" object="stage.placeholder"/>
+                <entry name="ObjID_dobkeratops_explosion" file="stage2" object="stage.placeholder"/>
                 <entry name="ObjID_pow" file="common.pow" object="pow.Object"/>
-                <entry name="ObjID_checkpoint" file="stage" object="stage.placeholder"/>
-                <entry name="ObjID_bossmusic" file="stage" object="stage.placeholder"/>
+                <entry name="ObjID_checkpoint" file="stage2" object="stage.placeholder"/>
+                <entry name="ObjID_bossmusic" file="stage2" object="stage.placeholder"/>
             </objectindex>
 
         <floppydisk model="fd640">
@@ -2400,7 +2398,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <file codec="zx0" name="stage1.maps" bake="all" region="maps">
+                <file codec="zx0" name="stage1.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -2419,7 +2417,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1" codec="zx0" linkdata="LINK" bake="all" region="stage">
+                <file name="stage1" codec="zx0" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
@@ -2471,7 +2469,7 @@
                 </pageset>
 
                 <!-- Les deux tables de carte, dans leur page                  -->
-                <file codec="zx0" name="stage2.maps" bake="all" region="maps">
+                <file codec="zx0" name="stage2.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -2483,7 +2481,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2" codec="zx0" linkdata="LINK" bake="all" region="stage">
+                <file name="stage2" codec="zx0" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
@@ -2649,12 +2647,12 @@
                     <asm filename="gen/directories/disk0/entries.asm"/>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
-                    <!-- L'adresse d'execution de la scene de boot EST celle de -->
-                    <!-- la region du stage : la dupliquer en litteral, c'est     -->
-                    <!-- demarrer dans le vide le jour ou la frontiere bouge. Le  -->
-                    <!-- layout la genere, le loader la lit.                      -->
+                    <!-- L'adresse d'execution de la scene de boot EST la place -->
+                    <!-- attitree du stage 1 : la dupliquer en litteral, c'est    -->
+                    <!-- demarrer dans le vide le jour ou la frontiere bouge.     -->
+                    <!-- entries.asm la publie, le loader la lit.                 -->
                     <asm filename="gen/layout.asm"/>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ stage.address</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ stage1.address</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.boot</asm>
                     <asm filename="engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>

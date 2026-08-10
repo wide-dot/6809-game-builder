@@ -115,14 +115,18 @@ The rules :
   declared before its provider builds identically. (If the discovery pass
   itself stops early on an unrelated error, declaring providers first is the
   workaround the message suggests.)
-- A symbol exported by **several run-time alternatives** (each stage exports
-  its wave) is resolved per consumer : the election binds to the one provider
-  the consumer can see at run time — a provider is unreachable when it is an
-  alternative of the consumer, or when every scene that loads it also loads an
-  alternative of the consumer. If more than one provider remains reachable
-  (the resident engine naming a stage's table), the reference is refused and
-  must stay load-time linked. This replaces the old last-one-wins register,
-  which silently picked whichever alternative was declared last.
+- A symbol exported by **several files** refuses a build-time value,
+  whoever asks : naked provider counting, no reachability or co-location
+  analysis (author's arbitration, 2026-08-10 — the consumer election that
+  used to disambiguate per scene composition is gone). The reference stays
+  load-time linked and the loader's first-match scan decides at run time —
+  whichever alternative is loaded wins. The one multi-provider case that
+  resolves is several exports of the same absolute value : one answer,
+  whoever provides it. Sharing a name is therefore the author's way of
+  saying "the loaded one wins" — a table's main entry (`map.even`,
+  `stage.wave`, the five engine tables) does exactly that, and generated
+  per-set labels are made unique by the generator (a tile is
+  `adr_<host>_<id>_<variant>`) so they never collide by accident.
 - Under `all`, anything else is a **build error** naming the section, offset,
   symbol and cause ; under `auto` it stays load-time linked — a routing, not
   a failure, and it is recorded : the caused list (below) says why each named
@@ -194,7 +198,7 @@ descriptor keeps its reserved size (file ids derive from the attributes), the
 flag stays down, and the loader neither indexes the file nor allocates
 anything. `linkdata` can stay declared ; it only costs when it carries.
 An export still imported keeps its counter above zero, so a block the loader
-needs can never be dropped — `stage1` keeps its nine interface exports,
+needs can never be dropped — `stage1` keeps its frontier exports,
 because the engine relinks against them at every scene load.
 
 **A reference *into* a swappable unit must stay linked — this one is
@@ -203,17 +207,17 @@ re-resolving the engine's `EXTERNAL`s at each `scene.load` : the moment stage 2
 lands, `ldx #Obj_Index_Page` points at stage 2's table. Bake that and the engine
 is frozen on whichever alternative the builder happened to resolve. The rule is
 directional, and it is the reverse of the intuition : a **consumer** of a fixed
-provider bakes; a consumer of an `interface` region does not. In r-type this is
+single provider bakes; a consumer of a multi-provider name does not. In r-type this is
 what keeps `common.engine` and `common.player` linked — the engine reads the
 stage's five tables, the player writes the stage's `mainloop.state` — while
 `stage1` and `stage2`, which only ever consume fixed providers, bake whole.
 
 The build refuses the mistake deterministically : the export table is keyed
-per provider, and a consumer that can reach more than one alternative gets an
-error naming them all — whatever the declaration order. The old refusal was
-accidental (it held only while alternatives were declared after the resident
-units that read them, and `registerExport` was last-one-wins) ; it is now the
-election rule described above.
+per provider, and any multi-provider name refuses a build-time value —
+whatever the declaration order, whoever asks. The old refusal was accidental
+(it held only while alternatives were declared after the resident units that
+read them, and `registerExport` was last-one-wins) ; it is now the naked
+provider counting described above.
 
 What happens when the policy is not applied is a load that stops with no
 message at all — see
@@ -290,33 +294,24 @@ labels is the `.static` shape, not the dead-export shape), and units without
 consumers. Its real value is keeping the search tables honest as the corpus
 grows.
 
-## Uniqueness per co-loadable set, and interface regions
+## Shared export names
 
-Export names must be unique — but the boundary of that rule is the set of
-files that can be **in memory together**, not the project. Two files
-every scene loads at the *same exact destination* (page + address) are
-mutually exclusive at run time : registering one evicts the other from the
-loader's index (the implicit unload by destination). The builder therefore
-lets them share export names, and rejects any other collision with the usual
-error. This is what makes swappable stages expressible at all : each stage
-exports `Obj_Index_Page`, its wave, its entry point — the same names, by
-design, because the engine's `EXTERNAL` references must find whichever stage
-is in.
+Export names MAY be shared between files : the loader resolves a symbol by
+scanning the loaded files and taking the first match, so whichever
+alternative is loaded wins. No uniqueness rule and no co-loadability
+analysis exist any more (author's arbitration, 2026-08-10) — sharing a name
+IS the mechanism of swappable content : each stage exports `Obj_Index_Page`,
+`map.even`, `stage.wave` — the same names, by design, because the engine's
+`EXTERNAL` references must find whichever stage is in, and the global
+re-link repoints them at every `scene.load`.
 
-The stronger promise is opt-in, on the region :
-
-```xml
-<region name="stage" page="4" address="$A000" interface="true"/>
-```
-
-An `interface` region requires its alternatives to emit the **same export
-list** — compared post-prune, on what the link data actually carries — and
-forbids loading an alternative anywhere else. Without the attribute, nothing
-changes : a region hosting different content with different exports stays
-legal (the sound example swaps musics whose forward references resolve to
-zero until the next `scene.load` — a documented, working pattern). With it,
-the build fails the moment two stages stop being drop-in replacements, which
-is exactly the moment the engine would start reading zeros after a swap.
+The guarantee that two stages stay drop-in replacements does not live in
+the builder : it lives in the source (`api.asm` — one file, `EXPORT` or
+`EXTERNAL` depending on `ENGINE_RESIDENT`, drift impossible) and in the
+benches. What the builder gives is **visibility** : every reference left to
+the loader appears in the caused list with its providers named — a name
+duplicated by accident reads as a surprising line there — and the dangling
+check still refuses a linked reference whose export no file emits.
 
 ## Where this bites next
 

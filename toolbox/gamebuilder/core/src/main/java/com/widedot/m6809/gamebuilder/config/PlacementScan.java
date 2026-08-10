@@ -103,24 +103,11 @@ public final class PlacementScan {
 					: LayoutResolver.resolve(node, ctx).values()) {
 				resolved.put(r.name, r);
 				regions.put(r.name, new int[] { r.page, r.address });
-				if (Boolean.parseBoolean(raw(findRegion(node, r.name), "interface"))) {
-					ctx.staticLink.declareInterfaceRegion(r.name, r.page, r.address);
-				}
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
 			collectRegions(child, ctx, regions, resolved);
 		}
-	}
-
-	/** the declaration a resolved region came from, for its remaining attributes */
-	private static ImmutableNode findRegion(ImmutableNode layout, String name) {
-		for (ImmutableNode child : layout.getChildren()) {
-			if ("region".equals(child.getNodeName()) && name.equals(raw(child, "name"))) {
-				return child;
-			}
-		}
-		return null;
 	}
 
 	private static void collectLoads(ImmutableNode node, BuildContext ctx,

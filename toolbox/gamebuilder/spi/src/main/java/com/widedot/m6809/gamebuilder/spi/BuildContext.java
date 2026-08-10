@@ -108,9 +108,6 @@ public class BuildContext {
 		this.outputs = outputs;
 		this.defaults = defaults;
 		this.defines = defines;
-		// export uniqueness is relaxed between direntries the scenes make
-		// mutually exclusive ; the symbol table asks the placements for that
-		this.linkSymbols.placements = staticLink;
 	}
 
 	/**

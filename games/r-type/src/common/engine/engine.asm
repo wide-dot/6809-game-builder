@@ -178,6 +178,7 @@ game.stage.unload
 ;*******************************************************************************
 ; L'échange de stage — la suite du commentaire ci-dessus
 ;*******************************************************************************
+stage.main EXTERNAL
 game.stage.switch
         jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
@@ -185,7 +186,10 @@ game.stage.switch
         ; d'écran, donc c'est une autre page qui est en place.
         _ram.data.set #loader.PAGE
         jsr   loader.ADDRESS+loader.scene.load.IDX
-        jmp   stage.address                ; le premier octet du stage fraîchement chargé
+        ; nom commun exporté par les deux mains : la référence reste au lien
+        ; (plusieurs fournisseurs), le re-link du scene.load ci-dessus vient
+        ; de la repointer sur le stage fraîchement chargé
+        jmp   stage.main
 
 ;*******************************************************************************
 ; Terrain collision : mounting the per stage map

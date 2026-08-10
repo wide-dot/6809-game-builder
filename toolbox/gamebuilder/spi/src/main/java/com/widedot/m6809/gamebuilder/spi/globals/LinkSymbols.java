@@ -31,14 +31,6 @@ public class LinkSymbols {
 	private String currentUnit = null;
 
 	/**
-	 * The target's scene placements, wired by the build context. Two direntries
-	 * loaded at the same exact destination are mutually exclusive at run time —
-	 * registering one evicts the other from the loader's index (implicit unload
-	 * by destination) — so their exports may share names.
-	 */
-	public StaticLink placements = null;
-
-	/**
 	 * file -> sorted names of the exports its link data actually emits
 	 * (post-prune). This is the run-time face of a file, compared between
 	 * the alternatives of an interface region.
@@ -124,42 +116,19 @@ public class LinkSymbols {
 	/**
 	 * Records that a file exports a symbol, and returns its link id.
 	 *
-	 * The runtime resolves a symbol by scanning the loaded files and taking the
-	 * first match (linkData.symbol.search), so two files exporting the same name
-	 * would resolve differently depending on load order. Rejecting it here is
-	 * what makes the resolution unambiguous.
+	 * Several files MAY export the same name : the runtime resolves a symbol
+	 * by scanning the loaded files and taking the first match
+	 * (linkData.symbol.search), so whichever alternative is loaded wins.
+	 * No co-loadability analysis is made here (author's arbitration,
+	 * 2026-08-10) — the bake side refuses to resolve a multi-provider name
+	 * at build time, and the caused list is where a name duplicated by
+	 * mistake is seen.
 	 *
 	 * @param sym   exported symbol
-	 * @param owner file that exports it, used for the error message
+	 * @param owner file that exports it, kept for the dangling-import report
 	 */
 	public int export(String sym, String owner) throws Exception {
-		String previousUnit = exporterUnits.get(sym);
-		String previous = exporters.put(sym, owner);
-		boolean sameOwner = previous == null
-				|| (previous.equals(owner) && java.util.Objects.equals(previousUnit, currentUnit));
-		if (!sameOwner) {
-			// uniqueness is required per co-loadable set, not per project : two
-			// direntries loaded at the same exact destination can never be in
-			// the loader's index together (registering one evicts the other),
-			// so the scan-first-match resolution stays unambiguous
-			boolean alternatives = previousUnit != null && currentUnit != null
-					&& !previousUnit.equals(currentUnit)
-					&& placements != null
-					&& placements.sameSingleDestination(previousUnit, currentUnit);
-			if (!alternatives) {
-				String m = "symbol " + sym + " is exported by both " + previous
-						+ unitTag(previousUnit) + " and " + owner + unitTag(currentUnit)
-						+ " ; exported symbols must be unique across the direntries that can"
-						+ " be loaded together — the loader resolves them by scanning loaded"
-						+ " files and takes the first match. Only direntries every scene loads"
-						+ " at the same exact destination may share names, being mutually"
-						+ " exclusive at run time";
-				log.error(m);
-				throw new Exception(m);
-			}
-			log.debug("symbol {} exported by both {} and {} : direntries at the same"
-					+ " destination, mutually exclusive at run time", sym, previousUnit, currentUnit);
-		}
+		exporters.put(sym, owner);
 		exporterUnits.put(sym, currentUnit);
 		if (currentUnit != null && isEmitted(sym)) {
 			java.util.TreeSet<String> list = unitExports.get(currentUnit);

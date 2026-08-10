@@ -63,7 +63,7 @@ page id with it.
 machine that is a real decision — two objects in one page is one bank switch
 saved when they run together. Keep `page="…"` for anything whose neighbours
 matter, and for everything the machine reaches by a fixed address : the
-resident window, the loader, the interface regions scenes swap. A region is a
+resident window, the loader, the shared places scenes swap. A region is a
 good candidate for automatic placement when it is reached through a page id,
 which is exactly what the game's objects are.
 

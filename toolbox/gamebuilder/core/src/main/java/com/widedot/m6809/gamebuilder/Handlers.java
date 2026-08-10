@@ -132,8 +132,7 @@ public final class Handlers {
 			.opt("page", INT, "destination page, compact form of a region holding one <zone>")
 			.opt("address", INT, "destination address, compact form")
 			.opt("size", INT, "byte budget of the compact form ; a region declaring <zone> children says its room there")
-			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>")
-			.opt("interface", BOOL, "the direntries loaded here are alternatives : they may share export names, must emit the same export list, and must not be loaded anywhere else"));
+			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>"));
 		spec(element("arena").doc("a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it")
 			.req("name", STRING, "arena name, referenced by <load arena=...>"));
 		spec(element("objectindex").doc("the object index a stage exports to the engine : ObjID equates and the five tables RunObjects and the sprite runtime read. One <entry> per id, in id order — the id space is authored, the wave assembles against it")

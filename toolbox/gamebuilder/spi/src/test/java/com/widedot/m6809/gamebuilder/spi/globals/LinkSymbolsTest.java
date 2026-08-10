@@ -40,12 +40,12 @@ class LinkSymbolsTest {
 	}
 
 	@Test
-	@DisplayName("duplicate exports stay rejected after a preseed")
-	void duplicateExportRejected() throws Exception {
+	@DisplayName("several files may export one name ; the id is shared")
+	void duplicateExportsShareTheId() throws Exception {
 		LinkSymbols symbols = new LinkSymbols();
 		symbols.preseed(Arrays.asList("shared.sym"));
-		symbols.export("shared.sym", "file.a");
-		Exception e = assertThrows(Exception.class, () -> symbols.export("shared.sym", "file.b"));
-		assertTrue(e.getMessage().contains("file.a"), e.getMessage());
+		int first = symbols.export("shared.sym", "file.a");
+		int second = symbols.export("shared.sym", "file.b");
+		assertEquals(first, second);
 	}
 }
