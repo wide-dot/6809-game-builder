@@ -228,6 +228,14 @@ ymm.decompress
                    sta @zx0_bit          ; init bit stream
                    sex                   ; reg A = $FF
                    std @zx0_offset       ; init offset = -1
+; A fresh stream starts in COMMAND phase. @flip tracks the register/value
+; parity of the emitted bytes and survives from song to song : a track
+; interrupted mid-frame (a stage swap) parks it on an arbitrary parity, and
+; the next song then unpacks with its frame boundaries shifted by one byte —
+; no wait byte is ever seen in phase and the player writes YM registers
+; forever. Same family as the lost buffer padding below : state the
+; streaming adaptation forgot to reset.
+                   clr @flip
 ; 0 - literal (copy next N bytes from compressed data)
 @ym2413zx0_literals bsr @zx0_elias       ; obtain length
                    tfr d,y               ;  "      "

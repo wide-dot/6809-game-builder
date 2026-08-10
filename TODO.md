@@ -36,13 +36,24 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       porté (la wave est VIVANTE : cinq patapata à l'écran, capture à
       l'appui). t1 re-spécifié sur la progression de la wave ; t2 garde la
       preuve du chemin de spawn (bouchon du stage 2).
-- [ ] **r-type : l'entrée du stage 2 broie dans EraseSprites** (préexistant,
-      caractérisé le 10/08) : ~1,4 trame/s, caméra figée à 16, boucle de
-      page `$39xx` sur la liste d'effacement de la trame précédente
-      (`$6154-$6156` = `rsv_prev_erase_*`, lwmap moteur). Piste : ce que le
-      stage 2 dessine/efface via son index majoritairement bouchon (sans
-      images). Le banc 5/5 attend cette correction. Détail :
-      `ci/toje-bench/readme.md`.
+- [x] **ymm : le second morceau partait en vrille** (10/08) — le
+      décompresseur streaming est une coroutine et `ymm.decompress` ne
+      remettait pas `@flip` (la parité registre/valeur) à zéro : un morceau
+      interrompu en pleine trame (échange de stage) la laissait quelconque,
+      et le morceau suivant se dépliait décalé d'un octet — plus un wait vu
+      en phase, écritures YM sans fin (même famille que le bourrage de
+      tampon perdu à l'import v1, l'avertissement d'à côté). `clr @flip` à
+      l'init. Les images ymm changent (sound TO8/MO6, mplus-test TO8/MO6,
+      r-type), les 10 autres configs sont identiques à l'octet.
+- [ ] **r-type : l'entrée du stage 2 spinne dans la marche EraseSprites**
+      (préexistant, resserré le 10/08) : la caméra reste à 16 pendant que
+      les trames IRQ avancent — la boucle PRINCIPALE est coincée dans UNE
+      itération, le walk des slots d'effacement (`$6153-$6156` =
+      `rsv_prev_*`, code de page en `$39xx`) ne termine jamais. Les trois
+      ClearAll de `checkpoint.load` SONT sur le chemin d'entrée : l'état
+      moulu est donc celui, frais, du stage 2 — à inspecter en live
+      (pointeur de marche, page montée, bornes de la liste). Dernier
+      bloqueur du 5/5. Détail : `ci/toje-bench/readme.md`.
 
 ## En cours
 

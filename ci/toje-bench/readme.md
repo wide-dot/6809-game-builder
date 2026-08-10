@@ -60,15 +60,19 @@ L'instrumentation étant enfin fiable, la suite s'est éclaircie :
   bouchon du stage 2 est l'instrument. (Au passage : le t1=1 historique
   était un artefact — `handOver` testait un `bench.spawns` griffonné par
   la traînée du joueur, donc non nul par accident.)
-- **L'entrée du stage 2 broie dans la passe d'effacement des sprites**
-  (~1,4 trame/s, caméra figée à 16) : la boucle est du code de page
-  (`$39xx`) qui marche la liste d'effacement de la trame précédente —
-  `$6154-$6156` sont les `rsv_prev_erase_*` d'EraseSprites (résolu par
-  l'lwmap du moteur, base $6100). Préexistant (identique sur l'image
-  d'avant la campagne modèle-cible), ère du portage des ennemis. Piste
-  à instruire : ce que le stage 2 dessine/efface via SON index, dont la
-  plupart des entrées sont des bouchons sans images. Le 5/5 attend
-  cette correction.
+- **L'entrée du stage 2 spinne dans la marche EraseSprites** (caméra
+  figée à 16 pendant que les trames IRQ avancent : la boucle PRINCIPALE
+  est coincée dans une seule itération). Le walk des slots d'effacement
+  (`$6153-$6156` = `rsv_prev_*` d'EraseSprites, lwmap moteur base
+  $6100 ; code de page en `$39xx`) ne termine jamais. Écarté en route :
+  le lecteur YMM (le vrai coupable du premier crawl — coroutine du
+  décompresseur, `@flip` non réinitialisé, corrigé) et les données
+  périmées du stage 1 (les trois ClearAll de `checkpoint.load` sont
+  bien sur le chemin d'entrée). L'état moulu est donc celui, frais, du
+  stage 2 — prochaine étape : inspection live du pointeur de marche et
+  de la page montée au point du spin. Préexistant (identique sur
+  l'image d'avant la campagne modèle-cible). Le 5/5 attend cette
+  correction ; t1 passe et survit à l'échange depuis les correctifs.
 
 ## Ce que la première campagne a établi (2026-08-09)
 
