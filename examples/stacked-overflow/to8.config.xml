@@ -22,7 +22,6 @@
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
 
         <layout>
-            <region name="gamemode" page="$01" address="$6100" size="$1000"/>
             <arena name="stacked">
                 <zone page="$05" address="$0000" size="$4000"/>
                 <zone page="$06" address="$0000" size="$4000"/>
@@ -43,7 +42,7 @@
                 <define symbol="loader.ADDRESS" value="$6000"/>
 
                 <!-- the checker : it knows where each marker should be -->
-                <file name="gamemode" linkdata="LINK" region="gamemode">
+                <file name="gamemode" linkdata="LINK" bake="auto" page="$01" address="$6100">
                     <lwasm gensource="gen/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm xml:space="preserve">stacked.base.page    equ $05</asm>
