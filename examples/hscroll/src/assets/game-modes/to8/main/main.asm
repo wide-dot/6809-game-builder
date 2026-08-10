@@ -31,8 +31,6 @@
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
-        INCLUDE "gen/layout.asm"
-
  opt c,ct
 
         ; the scene loads this at the game mode region and jumps to its first
@@ -133,22 +131,23 @@ userIRQ
 ; object index — where the two code buffers ended up
 ;*******************************************************************************
 ; hscroll reads a buffer's page and address out of these tables, the same way
-; RunObjects reaches an object's code. The buffers are raw binaries loaded at a
-; declared region, so the values come straight from the layout : there is
-; nothing to relocate and nothing for the linker to resolve.
+; RunObjects reaches an object's code. The buffers are raw binaries at a
+; literal attributed place, published as equates next to the file ids in the
+; directory's entries.asm : there is nothing to relocate and nothing for the
+; linker to resolve.
 
 objid.bandA equ 1
 objid.bandB equ 2
 
 Obj_Index_Page
         fcb   $00
-        fcb   map.RAM_OVER_CART+bandA.page
-        fcb   map.RAM_OVER_CART+bandB.page
+        fcb   map.RAM_OVER_CART+assets.bandA.page
+        fcb   map.RAM_OVER_CART+assets.bandB.page
 
 Obj_Index_Address
         fdb   $0000
-        fdb   bandA.address
-        fdb   bandB.address
+        fdb   assets.bandA.address
+        fdb   assets.bandB.address
 
 ;*******************************************************************************
 ; engine
