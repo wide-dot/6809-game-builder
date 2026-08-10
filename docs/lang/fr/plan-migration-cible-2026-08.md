@@ -206,6 +206,23 @@ Le renversement du §12/§23, en trois pas :
 3c. **Le défaut passe de NONE à AUTO** ; l'attribut devient l'exception
     (`link` explicite pour forcer, cas rares de bancs).
 
+    *Arbitrage loader-ut rendu (10/08, test par test sur le config réel)* :
+    **le décor est vide.** Les 32 `linkdata=` sont tous objets de test —
+    les marqueurs et le gm portent les re-links que T1-T18 mesurent, les
+    pads et ifaces SONT la croissance d'index de T12/T14, et les loads à
+    destination explicite sont la forme par-load dont loader-ut est le
+    gardien désigné jusqu'à 4c (alternatives bb/cc sur marker.b comprises).
+    Il ne migre donc RIEN en 3b/4b ; sa protection à 3c tient en une
+    ligne — `<default name="file.bake" value="none"/>` dans son
+    répertoire — et son sort par-load se décide à 4c (forme témoin
+    conservée ou conversion, à trancher alors).
+
+    *Dépendance de 3c* : la bascule du défaut change les images de tout
+    config sans attribut — dont examples/sound, suspendu sur la
+    régression `f7d4474` (voir TODO « À corriger »). 3c attend le vert
+    de sound : basculer un config qu'aucune exécution ne peut valider
+    contredirait la méthode.
+
 *Preuve à chaque pas : bancs sous toje (loader-ut garde des tests DÉDIÉS aux
 chemins link — le loader doit rester complet), link-report et pool-map en
 décrue mesurée, banc r-type 5/5. Les images changent à 3b/3c.*
