@@ -138,10 +138,9 @@ The rules :
 
 - a **bare load** of a file with an attributed place loads it there ; a bare
   load of a file without one stays what it always was, link data only ;
-- a load that **repeats** the same destination is tolerated — the
-  transitional form while a configuration migrates ;
-- a load that **contradicts** the attributed place is a build error naming
-  both declarations ;
+- a load that gives **any destination** for a file with an attributed
+  place is a build error naming both declarations, redundant or not — the
+  transitional repeat form died with the corpus migration (4c) ;
 - declaring a **different place** for the same file name twice is a build
   error.
 
