@@ -445,6 +445,15 @@ Fonctionnel :
         scène −5 octets). PREUVE : seules les 4 images r-type changent,
         55 images identiques, JUnit 61/61. **Banc toje 5/5 À REJOUER
         par l'auteur — l'image r-type change réellement.**
+  - [x] Phase 3a-voix (10/08) — le rapport « résolu au chargement, avec
+        cause » : l'aiguillage bake=auto n'avale plus sa cause, chaque
+        décision (classée OU déclarée bake=none) est enregistrée et
+        rapportée dans `linked-refs-<target>.csv` + au log. Sur r-type la
+        liste montre la frontière moteur→stage attendue, ligne par ligne.
+        Doc : symbols.md § The caused list. PREUVE : 59 images identiques
+        à l'octet, JUnit 64/64 (3 tests ajoutés). Restes 3a : arbitrage
+        interface/« même destination » (rapport d'abord, acté), imageset
+        délégué (images r-type changeront).
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

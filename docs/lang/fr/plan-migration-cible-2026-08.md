@@ -150,6 +150,23 @@ Le renversement du §12/§23, en trois pas :
     « résolu au chargement, avec cause » naît ici ; `interface="true"` et
     l'heuristique « même destination = alternatives » deviennent des
     conséquences, plus des déclarations.
+
+    *Réalisé (10/08) — la voix de l'aiguillage.* L'aiguillage lui-même
+    existait déjà (`bake="auto"` retombait sur le lien), mais il **avalait
+    sa cause** (`catch { continue; }`). Désormais chaque décision est
+    enregistrée (`StaticLink.recordLinked`, aussi pour les `bake="none"`
+    déclarés) et rapportée : les classifications au log, la liste complète
+    dans `linked-refs-<target>.csv` (file, symbol, sites, mode, cause).
+    Sur r-type le rapport montre exactement la frontière attendue — les 5
+    tables moteur→stage, `mainloop.state`, les palettes de stage — chaque
+    ligne avec les alternatives qui la causent. Doc : `symbols.md`,
+    section « The caused list ». JUnit 61→64, **59 images identiques à
+    l'octet** (preuve d'identité tenue). L'arbitrage
+    interface/« même destination » reste ouvert, dans l'ordre voulu par
+    l'état des lieux du 10/08 : le rapport d'abord, l'observation ensuite —
+    les retirer avant d'avoir lu la liste causée sur le corpus migré serait
+    aveugle. Restes de 3a : cet arbitrage, et l'imageset délégué au service
+    de résolution (les images r-type changent — à faire banc vert).
 3b. **`bake="auto"` partout** dans le corpus (mécanique : l'attribut est
     déjà posé sur r-type) — les configs d'exemples migrent une à une, chaque
     migration validée par exécution (les images changent : la donnée de

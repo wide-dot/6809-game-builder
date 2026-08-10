@@ -41,10 +41,11 @@ campagnes précédentes sans avoir été pointées au plan.
 
 Ce qui manque réellement à 3a n'est plus le mécanisme, c'est **la voix** :
 
-- Le repli vers le lien au chargement **avale sa cause**
-  (`StaticLink.java:206-208` : `catch { linked.add(symbol); }`). Le rapport
-  « résolu au chargement, avec cause » du plan n'existe pas — c'est lui qui
-  rendra la décrue du pool de liens pilotable pendant 3b. (S)
+- ~~Le repli vers le lien au chargement **avale sa cause**~~ **FAIT
+  (10/08, dans la foulée de cet état des lieux)** : chaque décision est
+  enregistrée avec sa cause (`StaticLink.recordLinked`) et rapportée —
+  classifications au log, liste complète dans `linked-refs-<target>.csv`.
+  Voir `symbols.md` § « The caused list » et l'annotation 3a du plan.
 - `interface="true"` reste une **déclaration** (5 usages, tous chez r-type)
   et l'heuristique « même destination = alternatives » reste un mécanisme
   d'élagage d'exports séparé (`LinkSymbols`) : le plan veut qu'ils deviennent

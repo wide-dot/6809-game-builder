@@ -514,6 +514,21 @@ public class LwObject implements ObjectDataInterface{
 			com.widedot.m6809.gamebuilder.spi.globals.BakeMode mode) throws Exception {
 
 		if (mode == com.widedot.m6809.gamebuilder.spi.globals.BakeMode.NONE) {
+			// nothing to resolve, but the decision is still a decision : every
+			// named reference of this file goes through the loader because the
+			// configuration said so — the caused report lists it as declared
+			if (!staticLink.isDiscovery()) {
+				for (LWSection section : secLst) {
+					for (Reloc reloc : section.incompletes) {
+						RelocValue r = evalReloc(reloc);
+						if (r.internal || r.symbol.isEmpty()) {
+							continue;
+						}
+						staticLink.recordLinked(file, r.symbol,
+								"the file declares bake=\"none\"", false);
+					}
+				}
+			}
 			return;
 		}
 		boolean strict = (mode == com.widedot.m6809.gamebuilder.spi.globals.BakeMode.ALL);
@@ -599,7 +614,13 @@ public class LwObject implements ObjectDataInterface{
 					}
 				} catch (Exception e) {
 					if (!strict) {
-						continue;    // auto : provider unfixed or ambiguous, stay linked
+						// auto : provider unfixed or ambiguous — the routing
+						// derived from provider multiplicity, not a failure.
+						// Recorded with its cause : the caused report is where
+						// an export duplicated by mistake is caught, now that
+						// no election refusal stops the build.
+						staticLink.recordLinked(file, r.symbol, e.getMessage(), true);
+						continue;
 					}
 					throw new Exception(path.getFileName() + " section " + section.name
 							+ " offset " + reloc.offset + " : " + e.getMessage()

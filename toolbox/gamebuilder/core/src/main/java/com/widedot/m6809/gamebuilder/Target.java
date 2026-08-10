@@ -194,6 +194,7 @@ public class Target {
 				throw e;
 			}
 			reportLinkData(targetName);
+			reportLinkedRefs(targetName);
 			writeOccupancyReport(targetName);
 			writePoolMap(targetName, node);
 			log.info("End of processing target {}", targetName);
@@ -213,6 +214,11 @@ public class Target {
 			if (java.nio.file.Files.deleteIfExists(stale)) {
 				removed++;
 				log.info("removed {} : it described an earlier build", stale);
+			}
+			java.nio.file.Path staleRefs = linkedRefsPath(targetName);
+			if (java.nio.file.Files.deleteIfExists(staleRefs)) {
+				removed++;
+				log.info("removed {} : it described an earlier build", staleRefs);
 			}
 			java.nio.file.Path staleMap = occupancyPath(targetName);
 			if (java.nio.file.Files.deleteIfExists(staleMap)) {
@@ -341,6 +347,79 @@ public class Target {
 		return java.nio.file.Paths.get(
 				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
 				"link-report-" + targetName + ".csv");
+	}
+
+	private java.nio.file.Path linkedRefsPath(String targetName) {
+		return java.nio.file.Paths.get(
+				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
+				"linked-refs-" + targetName + ".csv");
+	}
+
+	/**
+	 * Every named reference the loader will resolve at run time, WITH its
+	 * cause — the report born with the derived link (see
+	 * {@code docs/lang/en/symbols.md}, "The caused list").
+	 *
+	 * The link report says what link data costs per file ; this one says WHY
+	 * each named reference still goes through the loader. Once baking is the
+	 * default the list is short, and it is meant to be re-read : every line
+	 * should be a boundary the author recognises (an exchangeable provider, a
+	 * declared bake="none") — a surprising line is a name exported twice by
+	 * mistake, which the derived routing turns into a silent link instead of
+	 * a build error.
+	 *
+	 * Internal relocations carry no name to review ; the link report counts
+	 * them per file.
+	 */
+	private void reportLinkedRefs(String targetName) {
+		java.util.List<com.widedot.m6809.gamebuilder.spi.globals.StaticLink.LinkedRef> refs =
+				ctx.staticLink.linkedRefs();
+
+		int classified = 0;
+		for (com.widedot.m6809.gamebuilder.spi.globals.StaticLink.LinkedRef r : refs) {
+			if (r.classified) classified++;
+		}
+		if (!refs.isEmpty()) {
+			log.info("resolved at load: {} named references ({} classified by bake=\"auto\","
+					+ " {} declared bake=\"none\")", refs.size(), classified, refs.size() - classified);
+			// the classified ones are the reviewable list — a declared none is
+			// its own cause, a classification deserves its line
+			for (com.widedot.m6809.gamebuilder.spi.globals.StaticLink.LinkedRef r : refs) {
+				if (r.classified) {
+					log.info("  {} in {} ({} site{}) : {}", r.symbol, r.consumer,
+							r.count, r.count > 1 ? "s" : "", r.cause);
+				}
+			}
+		}
+
+		java.nio.file.Path csv = linkedRefsPath(targetName);
+		if (refs.isEmpty()) {
+			// nothing linked : no report to leave around describing an earlier build
+			try {
+				java.nio.file.Files.deleteIfExists(csv);
+			} catch (Exception e) {
+				log.warn("could not remove the stale caused list {}: {}", csv, e.getMessage());
+			}
+			return;
+		}
+		StringBuilder sb = new StringBuilder("file,symbol,sites,mode,cause\n");
+		for (com.widedot.m6809.gamebuilder.spi.globals.StaticLink.LinkedRef r : refs) {
+			sb.append(r.consumer).append(',')
+			  .append(r.symbol).append(',')
+			  .append(r.count).append(',')
+			  .append(r.classified ? "auto" : "declared").append(',')
+			  .append('"').append(r.cause.replace("\"", "\"\"")
+					  .replace('\n', ' ').replace("\r", "")).append('"')
+			  .append('\n');
+		}
+		try {
+			java.nio.file.Files.createDirectories(csv.getParent());
+			java.nio.file.Files.write(csv, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			log.info("caused list written to {}", csv);
+		} catch (Exception e) {
+			// a report is never worth failing a build that otherwise succeeded
+			log.warn("could not write the caused list to {}: {}", csv, e.getMessage());
+		}
 	}
 
 	/**

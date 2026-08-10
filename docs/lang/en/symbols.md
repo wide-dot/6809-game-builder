@@ -124,8 +124,10 @@ The rules :
   must stay load-time linked. This replaces the old last-one-wins register,
   which silently picked whichever alternative was declared last.
 - Under `all`, anything else is a **build error** naming the section, offset,
-  symbol and cause ; under `auto` it stays load-time linked, silently — the
-  pool map and link report are where that residual is read.
+  symbol and cause ; under `auto` it stays load-time linked — a routing, not
+  a failure, and it is recorded : the caused list (below) says why each named
+  reference still goes through the loader, the pool map and link report say
+  what the residual costs.
 - Internal references bake as well — see the next section.
 - Same-name sections merge across the source, and the section named `code`
   always leads the unit's binary — the entry point convention, whatever order
@@ -236,6 +238,34 @@ A large `bytes` with `baked` at zero is a unit the policy has not reached yet.
 
 The same table is written to `<dist.dir>/link-report-<target>.csv`, one row per
 file, so a sweep can be sorted and diffed between builds.
+
+## The caused list
+
+The link report says what link data costs ; the caused list says **why each
+named reference still goes through the loader**. After each target, every
+load-time resolution the bake classified is printed with its cause, and the
+full list — classified and declared alike — is written to
+`<dist.dir>/linked-refs-<target>.csv` :
+
+```
+file,symbol,sites,mode,cause
+common.engine,Obj_Index_Page,5,auto,"'Obj_Index_Page' is exported by [stage1, stage2], run-time alternatives that 'common.engine' could see either of — the reference must stay load-time linked"
+ut.gm,data.value,1,declared,"the file declares bake=""none"""
+```
+
+This list exists because the link is **derived** : a name with a single fixed
+provider bakes, a name several reachable alternatives export stays load-time
+linked, automatically. The price of that routing is that an export duplicated
+by mistake no longer stops the build — it becomes one more silent link. The
+caused list is where it is caught : once baking is the default the list is
+short, and it is meant to be re-read. Every line should be a boundary the
+author recognises — an exchangeable provider (the engine reading a stage's
+tables), a declared `bake="none"` (a bench exercising the linker). **A
+surprising line is a name exported twice by error.**
+
+Internal relocations carry no name to review ; the link report counts them
+per file. When nothing is load-time linked, no file is written — an absent
+`linked-refs` csv is itself the report.
 
 ## Export pruning
 
