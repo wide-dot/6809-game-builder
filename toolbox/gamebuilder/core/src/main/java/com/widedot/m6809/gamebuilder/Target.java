@@ -195,6 +195,7 @@ public class Target {
 			}
 			reportLinkData(targetName);
 			reportLinkedRefs(targetName);
+			writeSeekReport(targetName);
 			writeOccupancyReport(targetName);
 			writePoolMap(targetName, node);
 			log.info("End of processing target {}", targetName);
@@ -230,12 +231,42 @@ public class Target {
 				removed++;
 				log.info("removed {} : it described an earlier build", stalePool);
 			}
+			java.nio.file.Path staleSeek = seekReportPath(targetName);
+			if (java.nio.file.Files.deleteIfExists(staleSeek)) {
+				removed++;
+				log.info("removed {} : it described an earlier build", staleSeek);
+			}
 		} catch (Exception e) {
 			log.warn("could not remove the stale reports: {}", e.getMessage());
 		}
 		if (removed > 0) {
 			log.error("target {} failed : {} output file(s) removed, dist holds nothing"
 					+ " from this build", targetName, removed);
+		}
+	}
+
+	private java.nio.file.Path seekReportPath(String targetName) {
+		return java.nio.file.Paths.get(
+				ctx.path + java.io.File.separator + ctx.settings.get("dist.dir"),
+				"seek-report-" + targetName + ".txt");
+	}
+
+	/**
+	 * What loading each scene costs the drive's head, from the media journal
+	 * and the RAM map — see {@link com.widedot.m6809.gamebuilder.report.SeekReport}.
+	 */
+	private void writeSeekReport(String targetName) {
+		if (ctx.ramMap.isEmpty() || ctx.occupancy.isEmpty()) {
+			return;
+		}
+		java.nio.file.Path path = seekReportPath(targetName);
+		try {
+			String report = com.widedot.m6809.gamebuilder.report.SeekReport.render(targetName, ctx);
+			java.nio.file.Files.createDirectories(path.getParent());
+			java.nio.file.Files.writeString(path, report);
+			log.info("seek report written to {}", path);
+		} catch (Exception e) {
+			log.warn("could not write the seek report: {}", e.getMessage());
 		}
 	}
 

@@ -253,6 +253,17 @@ scène au lieu de l'ordre de déclaration), le rapport de seeks par scène
 (le journal de `FdUtil` existe), et le mot `codec` qui devient silence
 (défaut compressé, repli brut déjà en place).
 
+*Le rapport de seeks est FAIT (10/08)* — consommateur en lecture seule du
+journal média + de la RAM map (`report/SeekReport`,
+`seek-report-<target>.txt`) : pistes visitées par scène dans l'ordre de la
+table, retours de tête marqués avec leur provenance, distance totale.
+Première lecture sur r-type : `scenes.boot` paie 4 retours (dont
+`stage1.init` à t25 qui force un retour à t7) — l'instrument montre
+exactement ce que l'ordre par première utilisation fera disparaître, et le
+critère « zéro retour pour une scène non partagée » est imprimé en tête du
+rapport. Aucune image ne change (59/59 identiques). Reste de la phase :
+l'ordre d'écriture lui-même, et le silence du `codec`.
+
 *Preuve : les images changent (ordre des secteurs) — chargements vérifiés
 sous toje, le rapport doit montrer ZÉRO retour de tête pour une scène dont
 les fichiers ne sont pas partagés.*

@@ -478,6 +478,13 @@ Fonctionnel :
         la forme par-load tant que 4c ne l'a pas retirée. PREUVE : 59
         images identiques à l'octet. Reste 4b : la dissolution des
         régions elle-mêmes (places bougent, preuve par exécution).
+  - [x] Phase 6-rapport (10/08) — le rapport de seeks par scène
+        (`report/SeekReport`, `seek-report-<target>.txt`) : lecture
+        seule du journal média + RAM map, retours de tête marqués avec
+        provenance, critère imprimé en tête. Première lecture r-type :
+        scenes.boot paie 4 retours. PREUVE : 59 images identiques,
+        JUnit 70/70. Restent en 6 : l'ordre d'écriture par première
+        utilisation, le silence du codec.
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
