@@ -2,10 +2,6 @@
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
 
-        <layout>
-            <region name="gamemode" page="$01" address="$6100" size="$1F00"/>
-        </layout>
-
         <floppydisk model="fd640">
 
             <section name="SCENE" track="0" face="1" sector="16"/>
@@ -17,7 +13,7 @@
 
                 <define symbol="tlsf.ut.MEMORY_POOL" value="0x0000"/>
 
-                <file name="fileid.tlsf.ut" codec="zx0" section="DATA" region="gamemode">
+                <file name="fileid.tlsf.ut" codec="zx0" section="DATA" page="$01" address="$6100">
                     <lwasm gensource="gen/tlsf/tlsf.ut.asm">
                         <asm xml:space="preserve">        org   $6100</asm>
                         <asm xml:space="preserve">        INCLUDE "engine/system/to8/map.const.asm"</asm>
