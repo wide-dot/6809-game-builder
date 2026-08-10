@@ -52,9 +52,6 @@ irq.off equ   IrqOff
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
-        ; the memory layout of this target, generated from <layout>
-        INCLUDE "gen/layout.asm"
-
         ; object sizing and RAM placement, the game's to declare (equates only)
         INCLUDE "src/assets/game-modes/to8/main/ram_data.asm"
 
@@ -106,8 +103,9 @@ main
         sta   $9C00
 
         ; the compiled sprites live in a page mapped over the cartridge
-        ; window, so mount it before reading anything of theirs
-        _ram.cart.set #sprites.page
+        ; window, so mount it before reading anything of theirs — the page
+        ; comes from the attributed-place equates entries.asm publishes
+        _ram.cart.set #assets.sprites.page
 
         ; imageset header : [n][x][y][xy] sub set offsets, then x_size,
         ; y_size, center_offset. A missing mirror falls back to an existing
