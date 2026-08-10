@@ -417,7 +417,12 @@ Fonctionnel :
       générés, 8 campagne loader unique, 9 passe documentaire). Modèle :
       manuel-cible + workflow + analyse-placement §12-§23. Phases 0-3
       additives (portage r-type continue en parallèle), 4-5 basculent la
-      syntaxe. (XL)
+      syntaxe. (XL) **État des lieux chiffré du reste (10/08, post-5/5) :**
+      [`analyse-reste-cible-2026-08.md`](docs/lang/fr/analyse-reste-cible-2026-08.md)
+      — 3a/4a plus avancées que le plan ne le créditait (aiguillage bake
+      et arènes déjà en place), chemin critique = migration du corpus
+      (recommandation : 3b+4b fusionnées, un config par commit), un
+      arbitrage à re-valider avant la phase 5 (inversion `index=`).
   - [x] Phase 0 (09/08) — code mort retiré (souches LayoutResolver,
         tuyauterie pages="auto" dans Regions/Target/PageSetPlugin,
         member(), range= de gfxcomp + spec + scenes.md) ; PREUVE : 15
