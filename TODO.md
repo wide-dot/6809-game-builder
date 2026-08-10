@@ -532,6 +532,16 @@ Fonctionnel :
         vert (r-type 5/5, loader-ut $0D+T18, hscroll k=−16 aligné, mplus
         séquences identiques). Mesure : mplus-test −24 % média. Reste en
         6 : l'ordre d'écriture par première utilisation.
+  - [ ] Phase 5-arbitrage (10/08) — le cas objet MESURÉ (§24 de
+        l'analyse placement) : réutilisation multi-stages massive et sans
+        axe (20/54 objets, sous-ensembles arbitraires), v1 sans contrat
+        de numérotation (par game-mode), contrat v2 = les 25 ObjID du
+        résident + clusters ennemi/satellites (binaire partagé) +
+        présence forcée par source partagée (bouchon shellEraser).
+        Constat : l'arbitrage porte sur le MODÈLE DE NUMÉROTATION
+        (résident figé / clusters cohérents / local libre), pas sur la
+        syntaxe. EN ATTENTE de l'arbitrage auteur ; la coupe par les
+        creux est indépendante et peut précéder.
   - [x] Phase 6-ordre (10/08) — PHASE 6 CLOSE. Écritures différées
         (DirEntry.Pending), flush par le répertoire en ordre de première
         utilisation (table de scène puis fichiers en ordre de table),

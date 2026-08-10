@@ -326,6 +326,20 @@ que l'écoulement contourne.
 membres actuels (2 au lieu de 5 sur l'exemple des tuiles), pages rendues
 visibles au rapport, banc 5/5, niveau 1 entier traversé sous toje.*
 
+*Re-validation entamée (10/08) — le cas objet est mesuré au §24 de
+l'analyse : la réutilisation multi-stages est massive et sans axe (20
+objets sur 54, sous-ensembles arbitraires), la v1 n'avait aucun contrat de
+numérotation entre stages, le contrat v2 vient du résident et porte sur
+25 ObjID exactement, plus deux contraintes de second ordre (clusters
+ennemi+satellites sur binaire partagé ; présence forcée par source
+partagée — le bouchon shellEraser). Conclusion de l'étude : l'objet de
+l'arbitrage est le MODÈLE DE NUMÉROTATION (trois étages : résident figé,
+clusters cohérents, local libre), orthogonal à la syntaxe de déclaration —
+l'inversion « le contributeur nomme son index » échoue sur la matrice,
+l'instance par co-chargement et le centralisé dédoublonné exigent tous
+deux le même ordonnanceur. Arbitrage auteur en attente ; la coupe par les
+creux reste indépendante et peut précéder.*
+
 ## Phase 6 — Le média dérivé des scènes
 
 L'ordre disquette par première utilisation (le builder trie `cwrite` par

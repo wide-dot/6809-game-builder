@@ -1269,3 +1269,66 @@ glossaire, schéma des trois unités.
 L'ordre d'implémentation, d'abord esquissé ici en trois points, est devenu
 un plan complet en neuf phases avec preuves et dépendances :
 [plan-migration-cible-2026-08.md](plan-migration-cible-2026-08.md).
+
+## 24. Le cas objet : la réutilisation multi-stages, mesurée (2026-08-10)
+
+Objection d'auteur à la re-validation du §23 : la table d'objets ne peut pas
+être commune à tout le jeu (le luxe mémoire n'existe pas), donc un fichier
+réutilisé par trois stages entre dans PLUSIEURS index — et le renversement
+force alors le contributeur à énumérer ses consommateurs, c'est-à-dire
+recréer dans l'autre sens le couplage qu'il devait effacer. Avant de
+trancher : mesurer la forme réelle de la réutilisation et du contrat de
+numérotation. Quatre mesures, toutes scriptées sur le dépôt.
+
+**1. La réutilisation est massive et sans axe.** Les 8 waves v1 citent
+54 objets : 34 mono-stage, **20 multi-stages** (8 sur 2 stages, 4 sur 3,
+2 sur 4, 3 sur 5, 1 sur 7, 2 sur 8) — et par sous-ensembles arbitraires
+(patapata sur 01/03/04/07, bink et bug sur 01/04/07, bossmusic sur
+01/02/04/07). Il n'existe PAS de partition commun/spécifique : c'est une
+matrice pleine. Toute forme qui suppose « un préfixe commun et une queue
+locale » décrit mal 20 objets sur 54.
+
+**2. La v1 n'avait AUCUN contrat de numérotation entre stages.** Chaque
+game-mode déclarait sa liste (55 lignes `object.*` dans
+`main.d7.properties` du niveau 1) et recevait sa numérotation propre ;
+waves et code de stage étaient assemblés contre les constantes de LEUR
+game-mode, et le rechargement complet (LoadGameMode) effaçait tout. Le
+contrat v2 naît d'une seule chose : le moteur est RÉSIDENT.
+
+**3. Le contrat du résident porte sur 25 ObjID exactement.** Mesuré sur
+`games/r-type/src/common/**` : 25 noms cités (Player1, Weapon, explosion,
+foefire, fade, hud…). Ce sont les seuls numéros qui doivent valoir dans
+TOUTES les instances d'index. Tout le reste — ennemis compris, même
+réutilisés — n'est cité que par du code assemblé par stage.
+
+**4. Deux contraintes de second ordre, distinctes.** (a) Un BINAIRE
+d'ennemi partagé entre stages cuit ses citations : du commun déjà couvert
+par le résident (explosion, foefire, commonmissile, emitter_flash) et SES
+satellites (scantfire, tabrokcanon, pstaff_rocket, dobkeratops_saw… — un
+ennemi = un dossier avec ses tirs). L'ennemi et ses satellites forment un
+CLUSTER dont les numéros doivent être cohérents sur les stages qui
+partagent le binaire — cluster auto-contenu, jamais transverse. (b) Une
+SOURCE partagée force la PRÉSENCE, pas le numéro : `stage-main.asm`
+(inclus par les deux mains) invoque `_Obj_Run ObjID_shellEraser` chaque
+trame — d'où le bouchon `stage.placeholder.raw` du stage 2, qui n'est pas
+un problème de numérotation mais d'appartenance.
+
+**Le constat qui déplace l'arbitrage.** La discipline de numérotation a
+trois étages — le résident figé partout (25), les clusters d'ennemis
+cohérents sur leurs stages, le local libre — et elle est ORTHOGONALE à la
+forme de déclaration. L'alignement manuel actuel (stage2.objid recopie
+stage1 position par position, 13 bouchons) est la version artisanale de
+cette discipline, sur-contrainte : il aligne aussi les slots locaux, que
+rien n'exige. La forme « le contributeur nomme son index » du §23 échoue
+bien sur la matrice (énumérer ses consommateurs) ; la forme « instances du
+même nom, appartenance par co-chargement » survit, mais exige un
+ordonnanceur de numéros qui honore les trois étages — et la forme
+centralisée a besoin du MÊME ordonnanceur pour perdre ses bouchons.
+L'objet réel de l'arbitrage n'est donc pas la syntaxe de déclaration,
+c'est le modèle de numérotation ; la syntaxe en découlera.
+
+**Non tranché ici.** Matière pour l'arbitrage de phase 5 : (A) §23 entier
+avec ordonnanceur trois-étages ; (B) centralisé conservé, dédoublonné par
+un bloc commun partagé entre index ; (C) scinder — la coupe par les creux
+d'abord (indépendante, gains certains), le modèle de numérotation conçu et
+arbitré ensuite, la syntaxe en dernier.
