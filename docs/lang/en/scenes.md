@@ -108,6 +108,14 @@ is generated ; it goes through the standard file pipeline and its name
 becomes a file id equate, so game code loads it exactly as before :
 `ldx #scenes.level1` / `jsr loader.scene.load`.
 
+The scenes also decide the **disk order** : entry payloads land on the
+media in first-use order — the first scene's table, then its files in
+table order, then the next scene's — so loading a scene reads the disk
+monotonically instead of paying the declaration order in head returns.
+`seek-report-<target>.txt` prints the travel per scene ; a scene sharing
+no file with another scene reads zero returns. Files no scene names keep
+the declaration order, after the ranked ones.
+
 ## The attributed place
 
 A file may declare its destination **on its own declaration** instead of on

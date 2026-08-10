@@ -371,6 +371,23 @@ le bloc de compression des petites entrées stockées brutes).
 sous toje, le rapport doit montrer ZÉRO retour de tête pour une scène dont
 les fichiers ne sont pas partagés.*
 
+*L'ordre d'écriture est FAIT (10/08) — la phase 6 est close.* Les cwrite
+d'une entrée sont différés (`DirEntry.Pending` : section, octets, offset du
+descripteur à patcher) et le répertoire les flush dans l'ordre de première
+utilisation — la table de la première scène, puis ses fichiers dans l'ordre
+de la table, puis la scène suivante ; les fichiers hors scène gardent
+l'ordre de déclaration, après. Le descripteur de 6 octets est patché dans
+les blocs au flush, seule partie d'une entrée qui dépend d'où tombent les
+octets. Garde-fou : une entrée bâtie hors `<directory>` (aucun point de
+flush) est une erreur au niveau du floppydisk. PREUVE : critère atteint —
+r-type `scenes.boot` passe de 4 retours/75 pistes à **0 retour/25 pistes**,
+stage1 35→25, ZÉRO retour sur tout le corpus ; 24/59 images changent
+(annoncé — hscroll, loader-ut, mplus-test TO8+MO6, tilescroll, r-type ;
+les autres étaient déjà dans l'ordre), reconstruction reproductible ;
+JUnit 119/119 ; bancs des images changées verts (loader-ut $0D+T18,
+r-type 5/5, tilescroll, hscroll aligné k=−13, mplus-test séquence
+identique). MO6 sur foi du jumeau TO8, annoncé.
+
 ## Phase 7 — Les contrats générés (la fin de la glue)
 
 La charge manuelle restante (analyse-charge-manuelle) : les `.external.asm`

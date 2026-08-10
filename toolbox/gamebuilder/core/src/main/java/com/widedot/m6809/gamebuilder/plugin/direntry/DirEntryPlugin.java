@@ -343,15 +343,18 @@ public class DirEntryPlugin {
 			log.info("{} : stocke tel quel, la compression ne paie pas", name);
 		}
 				
-		// write file to media
-	    byte[] dataDiskLocation = media.cwrite(section, bin, name);
+		// the media write is DEFERRED : the entry is built before anything
+		// knows which scene reads it first, so the payload waits on the
+		// DirEntry and the directory flushes every entry in first-use order —
+		// the disk order becomes a projection of the scenes instead of the
+		// declaration order (phase 6). Only the location descriptor depends
+		// on the flush ; everything else about the entry is final here.
 	    ctx.occupancy.fileSize(name, length);
-	    
+
 		// process link data first to determine if we actually have link data
 		boolean hasLinkData = false;
 		LinkData linkdata = null;
-		byte[] linkDiskLocation = null;
-		
+
 		if (linkDeclared) {
 			// aggregate all link data
 			linkdata = new LinkData();
@@ -384,7 +387,6 @@ public class DirEntryPlugin {
 			if (linkdata.countExportAbs() + linkdata.countExportRel()
 					+ linkdata.countIntern() + linkdata.countExtern8()
 					+ linkdata.countExtern16() + linkdata.countExternPage() > 0) {
-				linkDiskLocation = media.cwrite(linkSection, linkdata.data, name + " (linkdata)");
 				hasLinkData = true;
 			}
 		}
@@ -421,21 +423,28 @@ public class DirEntryPlugin {
 		i++;
 		
 		file[i++] = (byte) (encodedLength & 0xff); // uncompressed file size -1 (max 0x4000 bytes) LOW BYTE
-		
-		System.arraycopy(dataDiskLocation, 0, file, i, 6);
+
+		// the data location descriptor : an empty file gets its $ff00 flag
+		// right away (it never touches the media), anything else is patched
+		// here by the directory's flush
+		final int dataPatch = i;
+		if (bin.length == 0) {
+			file[i + 2] = (byte) 0xff; // empty file flag (bytes in first sector)
+		}
 		i += 6;
-		
+
 		if (codec != null) {
 			// reserved from the attribute : written above when the compression
 			// paid off, left at zero otherwise — offset zero means "raw"
 			i += 8;
 		}
-		
+
+		int linkPatch = -1;
 		if (hasLinkData) {
 			file[i++] = (byte)((linkdata.data.length >> 8) & 0xff);
 			file[i++] = (byte)(linkdata.data.length & 0xff);
-			
-			System.arraycopy(linkDiskLocation, 0, file, i, 6);
+
+			linkPatch = i;
 			i += 6;
 		} else if (linkDeclared) {
 			// the descriptor size was reserved from the attribute — keep it,
@@ -451,7 +460,15 @@ public class DirEntryPlugin {
 		}
 
 		byte[] sizedDirentry = Arrays.copyOf(file, i);
-	    media.addDirEntry(new DirEntry(name, sizedDirentry, length, pageSpans));
+		DirEntry entry = new DirEntry(name, sizedDirentry, length, pageSpans);
+		if (bin.length > 0) {
+			entry.pending.add(new DirEntry.Pending(section, bin, name, dataPatch));
+		}
+		if (hasLinkData) {
+			entry.pending.add(new DirEntry.Pending(linkSection, linkdata.data,
+					name + " (linkdata)", linkPatch));
+		}
+	    media.addDirEntry(entry);
 		
 	    String fLength = String.format("%5d", length);
 	    log.info("file {} | {} bytes", name, fLength);

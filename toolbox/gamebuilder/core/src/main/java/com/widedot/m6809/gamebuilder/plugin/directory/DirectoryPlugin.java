@@ -242,6 +242,41 @@ public class DirectoryPlugin {
 			}
 		}
 
+		// flush the entries' payloads to the media in FIRST-USE order : the
+		// scenes, walked in declaration order, say which entry a game reads
+		// first — its table, then its files in table order — so a scene's
+		// sectors follow each other and its load never sends the head back
+		// (the seek report prints that criterion). Entries no scene names
+		// keep the declaration order, after the ranked ones. The 6 byte
+		// location descriptors are patched into the entry blocks here, the
+		// only part of an entry that depends on where the bytes land.
+		java.util.LinkedHashSet<String> firstUse = new java.util.LinkedHashSet<String>();
+		for (SceneCheck scene : pendingScenes) {
+			firstUse.add(scene.sceneName);
+			for (SceneCheck.Load load : scene.loads) {
+				firstUse.add(load.name);
+			}
+		}
+		java.util.Map<String, DirEntry> unranked = new java.util.LinkedHashMap<String, DirEntry>();
+		for (DirEntry entry : media.getDirEntries()) {
+			unranked.put(entry.name, entry);
+		}
+		java.util.List<DirEntry> flushOrder = new java.util.ArrayList<DirEntry>();
+		for (String name : firstUse) {
+			DirEntry ranked = unranked.remove(name);
+			if (ranked != null) {
+				flushOrder.add(ranked);
+			}
+		}
+		flushOrder.addAll(unranked.values());
+		for (DirEntry entry : flushOrder) {
+			for (DirEntry.Pending pending : entry.pending) {
+				byte[] location = media.cwrite(pending.section, pending.bytes, pending.name);
+				System.arraycopy(location, 0, entry.data, pending.patchOffset, 6);
+			}
+			entry.pending.clear();
+		}
+
 		// compute directory size
 		int size = 7;
 		int emittedBlocks = 0;

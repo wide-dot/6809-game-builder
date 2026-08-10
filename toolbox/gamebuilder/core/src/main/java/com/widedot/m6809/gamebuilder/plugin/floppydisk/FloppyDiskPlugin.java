@@ -68,6 +68,17 @@ public class FloppyDiskPlugin {
 	        }
     	}
 
+		// entry payloads are flushed by their directory in first-use order ;
+		// an entry built outside a <directory> has no flush point, and an
+		// unflushed payload would produce an image silently missing its data
+		for (com.widedot.m6809.gamebuilder.spi.media.DirEntry entry : mediaData.getDirEntries()) {
+			if (!entry.pending.isEmpty()) {
+				throw new Exception("entry '" + entry.name + "' was built outside a <directory> :"
+						+ " nothing flushed its payload to the media (the directory's"
+						+ " first-use flush is the only writer)");
+			}
+		}
+
 		// hand what this disk holds to the occupancy report : its geometry,
 		// and every byte range the children wrote, now attributable to an
 		// instance. Named after the first image file it produces, so the

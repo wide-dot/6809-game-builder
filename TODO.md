@@ -532,6 +532,15 @@ Fonctionnel :
         vert (r-type 5/5, loader-ut $0D+T18, hscroll k=−16 aligné, mplus
         séquences identiques). Mesure : mplus-test −24 % média. Reste en
         6 : l'ordre d'écriture par première utilisation.
+  - [x] Phase 6-ordre (10/08) — PHASE 6 CLOSE. Écritures différées
+        (DirEntry.Pending), flush par le répertoire en ordre de première
+        utilisation (table de scène puis fichiers en ordre de table),
+        descripteurs patchés au flush, garde-fou entrée-hors-répertoire.
+        PREUVE : r-type scenes.boot 4 retours/75 pistes → 0/25, ZÉRO
+        retour sur tout le corpus, 24/59 images changent (annoncé),
+        reproductible, JUnit 119/119, bancs des images changées verts
+        (loader-ut $0D+T18, r-type 5/5, tilescroll, hscroll k=−13,
+        mplus-test séquence identique).
   - [x] Publication des places attitrées littérales (10/08) — le
         `gensymbols` du répertoire publie `<name>.page`/`.address` à côté
         de l'id de fichier pour tout fichier à place `page=`+`address=`
