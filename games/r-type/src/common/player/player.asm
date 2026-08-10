@@ -41,7 +41,7 @@ mainloop.state    EXTERNAL
         ; musique. Meme paire que l'explosion et l'arme — constantes partagees a
         ; l'assemblage, boite aux lettres traversant le lien. La carte des pages
         ; vient en plus : couper la musique, c'est appeler DANS la page du
-        ; lecteur, donc nommer `ymm.player.page`.
+        ; lecteur, donc nommer `engine.sound.ymm.page`.
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
         INCLUDE "engine/sound/soundFX.macro.asm"

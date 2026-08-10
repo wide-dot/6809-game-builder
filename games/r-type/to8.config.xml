@@ -21,9 +21,6 @@
             <!--                                                                 -->
             <!-- La borne haute est le pool d'objets, en $90B0 : common + stage   -->
             <!-- disposent de $6100-$90AF, soit 12 208 octets, et rien d'autre.   -->
-            <region name="common">
-                <zone page="$01" address="$6100" size="$1F00"/>
-            </region>
             <!-- La frontiere recule de 48 octets : le stage 1 porte desormais la
                  table d'effacement de la rotonde (56 octets de RAM propres au
                  niveau, comme en v1).
@@ -126,8 +123,6 @@
                  ne monte qu'une page. Le lecteur est commun mais voyage avec
                  les donnees ; les stages suivants ne rechargeront que
                  ymm.data. -->
-            <region name="ymm.player" page="$1A" address="$1C9B"/>
-            <region name="ymm.data"   page="$1A" address="$20BC"/>
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
@@ -420,7 +415,7 @@
 
                 <!-- Le moteur résident                                        -->
                 <!-- ******************************************************** -->
-                <file name="common.engine" codec="zx0" linkdata="LINK" bake="auto" region="common">
+                <file name="common.engine" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
@@ -822,14 +817,14 @@
                     </lwasm>
                 </file>
 
-                <file name="engine.sound.ymm" codec="zx0" linkdata="LINK" bake="auto" region="ymm.player">
+                <file name="engine.sound.ymm" codec="zx0" linkdata="LINK" bake="auto" page="$1A" address="$1C9B">
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
                     </lwasm>
                 </file>
 
-                <file codec="zx0" name="stage1.music.ymm" linkdata="LINK" bake="auto" region="ymm.data">
+                <file codec="zx0" name="stage1.music.ymm" linkdata="LINK" bake="auto" page="$1A" address="$20BC">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>

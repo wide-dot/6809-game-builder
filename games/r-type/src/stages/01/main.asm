@@ -250,7 +250,7 @@ stage.endTick
         jsr   IrqOff
         _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+ymm.player.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
         jsr   IrqOn
@@ -271,7 +271,7 @@ stage.endTick.jingle
         jsr   IrqOff
         _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+ymm.player.page,#sounds.clearstage.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.clearstage.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
         jsr   IrqOn
@@ -353,7 +353,7 @@ stage.handOver
         ; ses trames à écrire des registres YM (constaté sous toje : ~1 trame/s
         ; à l'entrée du stage suivant). C'est le geste v1 au changement de game
         ; mode, et la raison d'être de `ymm.stop`.
-        lda   #map.RAM_OVER_CART+ymm.player.page
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
         ldx   #ymm.stop
         jsr   paged.call
 

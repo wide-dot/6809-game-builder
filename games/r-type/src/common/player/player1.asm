@@ -325,7 +325,7 @@ destroy
 ; dans sa page et n'a pas de macro sans argument ; surtout, le joueur tourne
 ; lui-meme depuis une page montee, donc l'appel DOIT rendre la fenetre —
 ; ce que _ram.cart.set (que les macros _ymm.* emploient) ne fait pas.
-        lda   #map.RAM_OVER_CART+ymm.player.page
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
         ldx   #ymm.stop
         jsr   paged.call
         _soundFX.play soundFX.PlayerHitSound,$85

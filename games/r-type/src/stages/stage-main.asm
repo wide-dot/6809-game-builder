@@ -221,7 +221,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ; tout ce qui suit heriterait de la page du lecteur.
         _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+ymm.player.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
 
@@ -419,7 +419,7 @@ stage.userIRQ
         ; musique, puis le pilote de bruitages qui depile la boite aux lettres.
         ; La ligne SN76489 de la v1 est commentee chez elle aussi — voir la
         ; region vgc.* du layout.
-        _ymm.frame.play #map.RAM_OVER_CART+ymm.player.page
+        _ymm.frame.play #map.RAM_OVER_CART+engine.sound.ymm.page
         ;_vgc.frame.play #map.RAM_OVER_CART+vgc.player.page
         lda   #map.RAM_OVER_CART+common.soundfx.page
         ldx   #soundfx.frame
@@ -577,7 +577,7 @@ stage.state.checkpoint
         ; La musique repart, comme la v1 (main.asm:383) et au meme endroit :
         ; apres le chargement du checkpoint, avant de rendre la main a la
         ; boucle. Elle reprend a son point de bouclage, pas au debut.
-        lda   #map.RAM_OVER_CART+ymm.player.page
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
         ldx   #ymm.restart
         jsr   paged.call
         lbra  stage.loop

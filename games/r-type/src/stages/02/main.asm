@@ -206,7 +206,7 @@ stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
         ; le commentaire de son handOver.
-        lda   #map.RAM_OVER_CART+ymm.player.page
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
         ldx   #ymm.stop
         jsr   paged.call
 
