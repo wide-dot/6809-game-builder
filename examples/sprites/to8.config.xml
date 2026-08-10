@@ -17,7 +17,7 @@
 
                 <!-- Game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
@@ -31,7 +31,7 @@
 
                 <!-- Compiled sprites + their imageset index -->
                 <!-- ******************************************************* -->
-                <file name="assets.sprites" linkdata="LINK" bake="auto" page="$06" address="$0000">
+                <file name="assets.sprites" linkdata="LINK" page="$06" address="$0000">
                     <lwasm gensource="gen/assets/sprites/sprites.asm">
                         <!-- entries.asm brings the file id equates the index needs -->
                         <asm filename="gen/directories/disk0/entries.asm"/>

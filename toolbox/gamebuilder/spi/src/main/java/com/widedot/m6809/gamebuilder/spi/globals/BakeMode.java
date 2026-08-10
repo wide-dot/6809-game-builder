@@ -7,12 +7,15 @@ package com.widedot.m6809.gamebuilder.spi.globals;
  * lives ; the mode says which of the two resolvers closes the gap.
  *
  * <ul>
- *   <li>{@code NONE} — everything through the load-time linker. The default.</li>
+ *   <li>{@code NONE} — everything through the load-time linker. The
+ *       explicit opt-out, for benches whose object IS the link path.</li>
  *   <li>{@code AUTO} — each reference is classified : baked when its provider
  *       sits at one fixed destination the consumer can see (interns, when the
  *       unit itself does), left load-time linked otherwise — references into
  *       run-time alternatives stay linked by construction. An optimiser, not
- *       a promise.</li>
+ *       a promise. The default since the 3c switch of the target-model
+ *       migration : the corpus is fully attributed, so the default is the
+ *       mode that already covers it.</li>
  *   <li>{@code ALL} — the strict promise the {@code *.static} sections used to
  *       carry : every reference must bake, a failure is a build error naming
  *       the symbol and the cause. For generated tables and fully-fixed
@@ -23,8 +26,8 @@ public enum BakeMode {
 	NONE, AUTO, ALL;
 
 	public static BakeMode parse(String value) throws Exception {
-		if (value == null || value.isBlank() || value.equals("none")) return NONE;
-		if (value.equals("auto")) return AUTO;
+		if (value == null || value.isBlank() || value.equals("auto")) return AUTO;
+		if (value.equals("none")) return NONE;
 		if (value.equals("all"))  return ALL;
 		throw new Exception("bake='" + value + "' is not one of none, auto, all");
 	}

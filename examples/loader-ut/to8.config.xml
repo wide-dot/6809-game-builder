@@ -34,6 +34,10 @@
             <directory id="1" section="INDEX" genbinary="gen/directories/disk1/directory.bin" gensymbols="gen/directories/disk1/entries.asm">
                 <default name="file.section"      value="DATA"/>
                 <default name="file.maxsize"      value="0x4000"/>
+                <!-- the link paths ARE this bench's object (T1-T18) : keep
+                     every reference load-time linked despite the auto
+                     default the 3c switch installed -->
+                <default name="file.bake"         value="none"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <file name="d1.marker" codec="zx0" linkdata="LINK">
@@ -63,6 +67,10 @@
             <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="file.section"      value="DATA"/>
                 <default name="file.maxsize"      value="0x4000"/>
+                <!-- the link paths ARE this bench's object (T1-T18) : keep
+                     every reference load-time linked despite the auto
+                     default the 3c switch installed -->
+                <default name="file.bake"         value="none"/>
                 <default name="lwasm.format"          value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>

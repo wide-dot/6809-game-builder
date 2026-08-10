@@ -33,7 +33,7 @@
 
                 <!-- Game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- height, guard colour and exit offset of the buffer,

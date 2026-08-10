@@ -35,7 +35,7 @@
 
                 <!-- Title - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.title" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$2200">
+                <file name="assets.gm.title" codec="zx0" linkdata="LINK" page="$01" address="$2200">
                     <lwasm gensource="gen/assets/game-modes/title/main-test.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/title/main-test.asm"/>

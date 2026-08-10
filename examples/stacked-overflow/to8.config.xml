@@ -42,7 +42,7 @@
                 <define symbol="loader.ADDRESS" value="$6000"/>
 
                 <!-- the checker : it knows where each marker should be -->
-                <file name="gamemode" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                <file name="gamemode" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm xml:space="preserve">stacked.base.page    equ $05</asm>

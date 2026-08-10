@@ -18,7 +18,7 @@
                 <!-- Game mode : the resident page. Holds the object manager -->
                 <!-- itself and the objects that exercise the run list.      -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
@@ -29,7 +29,7 @@
                 <!-- own. Nothing here is reachable until RunObjects mounts    -->
                 <!-- the page, which is exactly what T9 and T12 check.         -->
                 <!-- ******************************************************** -->
-                <file name="assets.objects" linkdata="LINK" bake="auto" page="$06" address="$0000">
+                <file name="assets.objects" linkdata="LINK" page="$06" address="$0000">
                     <lwasm gensource="gen/assets/objects/objects.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/objects/paged.asm"/>

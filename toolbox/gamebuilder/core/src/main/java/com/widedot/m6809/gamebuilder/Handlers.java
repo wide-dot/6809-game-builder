@@ -93,7 +93,7 @@ public final class Handlers {
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("maxsize", INT, "maximum entry size ; past 16384 the stored size wraps, see the warning")
 			.opt("section", STRING, "section receiving the entry")
-			.opt("bake", STRING, "reference resolution: none (default), auto, all")
+			.opt("bake", STRING, "reference resolution: auto (default), none, all")
 			// the attributed place : the file declares its destination once,
 			// and every <load> that names it reduces to the name — read
 			// literally by the placement scan, one form of the three at most
@@ -109,7 +109,7 @@ public final class Handlers {
 			.opt("linkdata", STRING, "emit load time link data into the given section")
 			.opt("section", STRING, "section receiving the members")
 			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds")
-			.opt("bake", STRING, "reference resolution of every member: none (default), auto, all"));
+			.opt("bake", STRING, "reference resolution of every member: auto (default), none, all"));
 		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope ; in a <pageset>, declared after the spread content, it fills what is left")
 			.opt("name", STRING, "name for the generated source, defaults from symbol")
 			.req("symbol", STRING, "exported label placed at the start of the unit")

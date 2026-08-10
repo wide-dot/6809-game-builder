@@ -27,7 +27,7 @@
                 <!-- bakes against these tiles, and a provider consumed        -->
                 <!-- statically must be built before its consumer.             -->
                 <!-- ******************************************************* -->
-                <file name="assets.tiles" linkdata="LINK" bake="auto" page="$06" address="$0000">
+                <file name="assets.tiles" linkdata="LINK" page="$06" address="$0000">
                     <lwasm gensource="gen/assets/tiles/tiles.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <!-- One sheet, sliced on the fly : tiles_0..tiles_4,   -->
@@ -46,7 +46,7 @@
 
                 <!-- Game mode : holds the scroll and the two maps -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.main" codec="zx0" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                <file name="assets.gm.main" codec="zx0" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/game-modes/to8/main/main.asm"/>
@@ -67,7 +67,7 @@
                 <!-- Terrain collision : the mounted unit, r-type's per level
                      shape (impl + maps + bitmap). It follows the scroll through
                      two link-resolved symbols of the game mode.              -->
-                <file name="assets.terrain" linkdata="LINK" bake="auto" page="$07" address="$0000">
+                <file name="assets.terrain" linkdata="LINK" page="$07" address="$0000">
                     <lwasm gensource="gen/assets/terrain/terrain.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/assets/terrain/terrain.asm"/>
