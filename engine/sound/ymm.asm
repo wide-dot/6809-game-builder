@@ -74,10 +74,33 @@ ymm.obj.play
         stx   ymm.data
         ldu   #ymm.buffer
         stu   ymm.data.pos
+        bsr   ymm.buffer.reset
         leax  2,x
         jsr   ymm.decompress
         _ym2413.init
         puls  u,pc
+
+; ------------------------------------------------------------------------------
+; ymm.buffer.reset - fait table rase de l'anneau avant une lecture
+; ------------------------------------------------------------------------------
+; Le producteur ne remplit l'anneau qu'une trame en avance : tout ce qui est
+; au-dela de sa tete d'ecriture est le RESTE DU MORCEAU PRECEDENT, en phase
+; quelconque. Un consommateur qui y deborde — quelle qu'en soit la cause — n'y
+; rencontre plus jamais un wait en phase et passe ses trames a ecrire des
+; registres (constate sous toje : pos a 400 octets du debut alors que seule la
+; premiere trame etait produite). Rempli de $39 (fin de flux), l'anneau arrete
+; la piste au premier octet non produit : avec ymm.LOOP elle repart proprement
+; du point de bouclage, sans boucle infinie possible. ~5 000 cycles, une fois
+; par lancement.
+; ------------------------------------------------------------------------------
+ymm.buffer.reset
+        pshs  a,x
+        ldx   #ymm.buffer
+        lda   #$39                     ; end of stream
+!       sta   ,x+
+        cmpx  #ymm.buffer.end
+        blo   <
+        puls  a,x,pc
 
 ; ------------------------------------------------------------------------------
 ; ymm.frame.play - processes a music frame (VInt)
@@ -129,6 +152,7 @@ ymm.restart
         leax  d,x                      ; move to loop point
         ldu   #ymm.buffer
         stu   ymm.data.pos
+        jsr   ymm.buffer.reset         ; meme table rase qu'au lancement
         jsr   ymm.decompress
         jmp   ymm.frame.play
 

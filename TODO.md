@@ -45,16 +45,20 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       tampon perdu à l'import v1, l'avertissement d'à côté). `clr @flip` à
       l'init. Les images ymm changent (sound TO8/MO6, mplus-test TO8/MO6,
       r-type), les 10 autres configs sont identiques à l'octet.
-- [ ] **ymm : toute relance après interruption se désynchronise** — LE
-      dernier bloqueur du 5/5 (l'hypothèse EraseSprites est écartée :
-      c'était la boucle principale échantillonnée pendant que le player
-      mange les trames). Dossier prêt : au spin, l'anneau contient la
-      musique VALIDE et le consommateur la lit décalée d'un octet (les
-      waits tombent en position valeur) ; `clr @flip` (fait) ne suffit
-      pas, la coroutine produit/consomme garde un autre état de phase à
-      travers l'interruption d'un morceau. Sonde de rejeu :
-      `ci/toje-bench/ymm_state_probe.py` (2 min). À reprendre avec
-      l'auteur du player. Détail : `ci/toje-bench/readme.md`.
+- [x] **ymm : relance après interruption** (10/08, décision auteur : une
+      lecture fait table rase) — `ymm.buffer.reset` remplit l'anneau de
+      $39 à chaque obj.play/restart : un consommateur qui déborde dans le
+      non-produit s'arrête net au lieu de boucler. + `clr @flip` à l'init
+      du décompresseur. La signature YM a disparu des blocages ; images
+      ymm changées (sound, mplus-test, r-type), 10 configs identiques.
+- [ ] **r-type : la marche `$39CA` n'avance pas à l'entrée du stage 2** —
+      LE dernier bloqueur du 5/5, démasqué par l'extinction du spin YM :
+      boucle sur un slot `rsv_prev_*` (EraseSprites) contenant $FF00,
+      pointeur jamais avancé, 16 octets identiques à chaque échantillon.
+      t=[1,0,0,0,0] : t1 passe et survit, t2..t5 attendent. À faire :
+      désassembler `$3980-$3A40` sur la machine bloquée, identifier la
+      page et le générateur du code, confronter à la sémantique v1 des
+      slots. Détail : `ci/toje-bench/readme.md`.
 
 ## En cours
 

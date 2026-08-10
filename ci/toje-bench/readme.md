@@ -60,27 +60,27 @@ L'instrumentation étant enfin fiable, la suite s'est éclaircie :
   bouchon du stage 2 est l'instrument. (Au passage : le t1=1 historique
   était un artefact — `handOver` testait un `bench.spawns` griffonné par
   la traînée du joueur, donc non nul par accident.)
-- **Le lecteur YMM se désynchronise sur toute relance après
-  interruption** — le dernier bloqueur du 5/5, et le dossier est prêt
-  pour l'auteur. Au spin du stage 2 (caméra figée à 16, PC dans
-  `@UpdateLoop`, X balayant l'anneau en boucle), l'inspection live
-  donne : variables cohérentes (`ymm.data=$20BC`, `page=$7A`,
-  `status=1`), et **l'anneau contient la musique VALIDE** (l'ouverture
-  du morceau, octets identiques au premier lancement sain, waits
-  présents : $D9, $59, $3A, $C2…) — le consommateur les traverse
-  pourtant sans jamais s'arrêter : il lit le flux décalé d'un octet
-  (les waits tombent en position valeur). `clr @flip` à l'init du
-  décompresseur (corrigé, nécessaire — c'était l'évidence) ne suffit
-  pas : la coroutine produit/consomme (`@stackContext`, `@flip` toggé
-  par octet des deux côtés, suspend sur « wait et flip=0 ») garde un
-  autre état de phase qui survit à l'interruption d'un morceau. Le
-  premier lancement (état vierge) marche toujours ; toute relance
-  après interruption part fausse. À reprendre avec l'auteur du player
-  — la sonde `ymm_state_probe` rejoue le diagnostic en deux minutes.
-  Piste secondaire écartée : les ClearAll de `checkpoint.load` sont
-  sur le chemin d'entrée, et la marche EraseSprites vue dans certains
-  échantillons (`$39C8`) est le travail normal de la boucle, échantillonné
-  pendant que le player mange les trames.
+- **Le spin YMM est éteint par construction** (décision auteur : une
+  lecture fait table rase de ce qu'il lui faut) : `ymm.buffer.reset`
+  remplit l'anneau de `$39` (fin de flux) à chaque `obj.play`/`restart`
+  — le producteur n'écrit qu'une trame en avance, et un consommateur
+  qui déborde dans le non-produit (les restes du morceau précédent, en
+  phase quelconque — c'était le spin observé, pos à 400 octets du début
+  quand seule la première trame était produite) s'arrête net au premier
+  octet non produit et reboucle proprement. S'ajoute au `clr @flip` de
+  l'init du décompresseur. La signature YM a disparu des blocages.
+- **Le bloqueur restant du 5/5, que le player masquait : une marche de
+  page en `$39CA` qui n'avance pas.** À l'entrée du stage 2 (caméra
+  figée à 16, t=[1,0,0,0,0]), le CPU boucle sur : `LDD $6155 / CMPD
+  #$FF00 / BEQ →` retour au même point — le slot lu (`$6154-$6156`,
+  famille `rsv_prev_*` d'EraseSprites au lwmap moteur) contient `00 FF
+  00` et les 16 octets autour sont IDENTIQUES à chaque échantillon : la
+  boucle traite « entrée vide » sans jamais faire avancer son pointeur.
+  Prochaine étape : désassembler la routine complète (`$3980-$3A40`)
+  depuis la machine bloquée, identifier la page montée et le générateur
+  de ce code (effacement de sprites généré ?), et confronter à la
+  sémantique v1 des slots `rsv_prev`. t1 passe et survit à l'échange ;
+  t2..t5 attendent cette marche.
 
 ## Ce que la première campagne a établi (2026-08-09)
 
