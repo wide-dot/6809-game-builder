@@ -181,6 +181,24 @@ Le renversement du §12/§23, en trois pas :
     que `StaticLink.resolvePage` cuit à la passe bake. Le repli externPg
     de la forme in-unit meurt naturellement à 3c (défaut AUTO), aucun code
     à écrire.
+
+    *Observation faite (10/08, corpus migré — le préalable acté de
+    l'arbitrage)* : les listes causées du corpus dissous sont VIDES
+    partout sauf trois. r-type, 27 lignes : exactement la frontière
+    moteur→stage (5 tables ×leurs sites, palettes de stage,
+    `mainloop.state`, `checkpoint.positions`), chaque cause étant
+    « exported by [stage1, stage2], run-time alternatives ». loader-ut
+    (37) et sound (15) : non migrés — l'un garde ses chemins link à
+    dessein, l'autre est suspendu. Matière pour la dérivation : après la
+    dissolution 4b, la relation « alternatives » est LISIBLE dans
+    `FilePlaces` (deux fichiers à place attitrée égale — les mains de
+    stage partagent la région `stage`, demain une place littérale
+    partagée) ; l'élection de `LinkSymbols` peut la lire là au lieu de
+    balayer les loads, et `interface="true"` devient un contrôle dérivé
+    (fichiers co-placés ⇒ même liste d'exports post-élagage). Les quatre
+    régions `interface` de r-type (stage, maps, tiles.even/odd,
+    collision) sont conservées comme matière de l'arbitrage — leur
+    dissolution suit sa décision, pas l'inverse.*
 3b. **`bake="auto"` partout** dans le corpus (mécanique : l'attribut est
     déjà posé sur r-type) — les configs d'exemples migrent une à une, chaque
     migration validée par exécution (les images changent : la donnée de

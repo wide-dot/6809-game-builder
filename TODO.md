@@ -517,8 +517,20 @@ Fonctionnel :
         (TO8+MO6, 10 marqueurs relus en pages 5/6). Chaque commit :
         images changées annoncées, reste du corpus identique, exécution
         rejouée sous la lane toje. **sound SUSPENDU** (régression
-        `f7d4474`, voir « À corriger »). Restent : mplus (à instruire
-        avec l'arbitrage empilage §12), loader-ut (à scinder), r-type.
+        `f7d4474`, voir « À corriger »).
+  - [x] 3b+4b-dissolution, suite (10/08) : mplus ×3 (les scènes
+        « manuscrites » de la note CLAUDE.md n'existaient plus — l'arène
+        les avait résorbées ; séquence d'écrans décalée d'un cran, pcm
+        statique identique, MO6 sur la foi du jumeau) ; r-type mécanique
+        (common, ymm.player, ymm.data → places littérales,
+        `engine.sound.ymm.page` publié — PREUVE PAR IDENTITÉ, 59 images,
+        banc 5/5 rejoué par surcroît). Observation de l'arbitrage
+        interface consignée dans le plan (listes causées du corpus
+        migré : vides sauf la frontière r-type). Restent : **loader-ut à
+        scinder** (ce qui teste le linker garde bake=none et la forme
+        par-load, le décor migre), **l'arbitrage interface/alternatives**
+        (la matière est prête : dérivation depuis FilePlaces), les
+        régions interface de r-type après lui, et sound après le vert.
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,
