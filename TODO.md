@@ -465,6 +465,12 @@ Fonctionnel :
         régénéré (il avait dérivé depuis P1). PREUVE : 59 images
         identiques à l'octet, JUnit 70/70 (6 tests ajoutés). Reste 4a :
         vérification globale des places fixes hors arène (avec 4b).
+  - [x] Phase 4b-pilote (10/08) — r-type migré vers la place attitrée :
+        75 fichiers annotés (64 arena, 11 region), 4 pagesets nommés
+        nus, 84 loads réduits au nom. PREUVE : 59 images identiques à
+        l'octet (le déplacement d'attribut à places égales se prouve par
+        identité, pas besoin du banc). Restent : les 12 configs
+        d'exemples (region= sur loads), puis la dissolution des régions.
 - [ ] **Charge manuelle r-type** — inventaire fait le 09/08 :
       [`analyse-charge-manuelle-2026-08.md`](docs/lang/fr/analyse-charge-manuelle-2026-08.md).
       Cinq scripts Python de glue (gen_objid, gen_enemy_unit, crop_stage,

@@ -208,6 +208,17 @@ Le grand basculement de syntaxe, groupé pour ne casser qu'une fois :
     par région — une région devient soit une place explicite partagée par
     des alternatives, soit rien (la place attitrée suffit). Réécriture
     mécanique, un projet par commit.
+
+    *Entamée par le pilote (10/08) : r-type migré en premier* — l'ordre du
+    plan (exemples d'abord) supposait la preuve par exécution ; le
+    déplacement d'attribut à places égales se prouve par IDENTITÉ, et
+    r-type est le seul config à arènes, donc le vrai banc du mécanisme.
+    75 fichiers annotés (64 arena, 11 region), 4 pagesets nommés nus, les
+    84 loads réduits au nom (reste `engine.sound.ym.const`, export-only
+    par absence de place — l'historique). **Les 59 images du corpus
+    restent identiques à l'octet, dont les 4 de r-type.** La dissolution
+    des régions elle-même (une région → place attitrée partagée ou rien)
+    reste à faire, exemples compris.
 4c. **Retrait de `<region>`** quand plus rien ne l'utilise.
 
 *Preuve : 4a est additif (configs inchangées = images inchangées) ; chaque
