@@ -364,7 +364,10 @@
                 <entry name="ObjID_forcepod_counterairlaser" file="common.counterairlaser" object="counterairlaser.Object"/>
                 <entry name="ObjID_scantfire" file="stage" object="stage.placeholder"/>
                 <entry name="ObjID_tabrokcanon" file="stage" object="stage.placeholder"/>
-                <entry name="ObjID_shellEraser" file="stage" object="stage.placeholder"/>
+                <!-- Invoqué À CRU chaque trame (_Obj_Run sans OST) : le bouchon
+                     auto-supprimant empilerait un slot fantôme par trame et la
+                     pile de slots déborderait — voir stage.placeholder.raw. -->
+                <entry name="ObjID_shellEraser" file="stage" object="stage.placeholder.raw"/>
                 <entry name="ObjID_commonmissileflame" file="stage" object="stage.placeholder"/>
                 <entry name="ObjID_dobkeratops_saw" file="stage" object="stage.placeholder"/>
                 <entry name="ObjID_dobkeratops_explosion" file="stage" object="stage.placeholder"/>

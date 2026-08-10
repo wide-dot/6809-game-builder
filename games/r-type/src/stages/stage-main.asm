@@ -438,6 +438,17 @@ stage.placeholder
         jsr   UnloadObject_u
         rts
 
+; Le bouchon des invocations À CRU : pour les identifiants que le moteur ou la
+; boucle appellent SANS OST (le shellEraser tourne chaque trame entre DrawTiles
+; et DrawSprites, sans slot du pool). Le bouchon standard s'auto-supprime par
+; UnloadObject_u — legitime pour un objet que la wave a alloue, fatal ici : U ne
+; porte aucun OST, chaque passage rendait un slot fantome et la pile de slots
+; debordait sous elle ($6628 vers le bas), labourant object_list_first/last puis
+; le code residant — la machine mourait ~50 trames apres l'entree du stage 2.
+; Regle : dans l'index d'un stage, un identifiant invoque sans OST pointe ICI.
+stage.placeholder.raw
+        rts
+
 ;*******************************************************************************
 ; La mort et le rechargement de checkpoint
 ;
