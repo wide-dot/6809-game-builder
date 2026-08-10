@@ -45,8 +45,9 @@ bench.magic        equ bench.BLOCK+0   ; $CA : la partie a démarré
 bench.stage        equ bench.BLOCK+1   ; le numéro du stage qui tourne
 bench.frames       equ bench.BLOCK+2   ; compteur de trames, un blocage se voit
 bench.camera       equ bench.BLOCK+3   ; (mot) position caméra du stage courant
-bench.spawns       equ bench.BLOCK+5   ; (mot) objets réellement exécutés par la wave
-bench.t1           equ bench.BLOCK+7   ; $01 le stage 1 a tourné, sa wave a peuplé
+bench.spawns       equ bench.BLOCK+5   ; (mot) BOUCHONS exécutés — le stage 1 n'en a
+                                       ; plus (cast porté), seul le stage 2 compte ici
+bench.t1           equ bench.BLOCK+7   ; $01 le stage 1 a tourné, sa wave a progressé
 bench.t2           equ bench.BLOCK+8   ; $01 le stage 2 a tourné sur SES données
 bench.t3           equ bench.BLOCK+9   ; $01 l'état persistant a survécu à l'échange
 bench.t4           equ bench.BLOCK+10  ; $01 retour au stage 1 : l'échange est réversible

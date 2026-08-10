@@ -47,18 +47,28 @@ Les trois régressions ci-dessous sont **corrigées** :
    (la signature YM du gel a disparu), et le layout dit vrai sur
    globals/pile (le débordement missile de 4 octets est déclaré).
 
-L'instrumentation étant enfin fiable, elle **révèle** deux défauts
-préexistants du jeu, jusqu'ici masqués par le griffonnage des témoins (le
-t1=1 historique était un artefact : `handOver` testait un `bench.spawns`
-griffonné, donc non nul) :
+L'instrumentation étant enfin fiable, la suite s'est éclaircie :
 
-- **la wave n'exécute aucun objet** (spawns=0 sur toute la traversée du
-  stage 1, t1 muet — honnêtement, cette fois) ;
-- **l'entrée du stage 2 broie dans le code de dessin/terrain** (~1,4
-  trame/s, boucle `$39xx` lisant les entrées de carte en `$6154/6155`,
-  la caméra reste à 16). Le banc ne peut pas passer 5/5 tant que ces
-  deux-là ne sont pas résolus — ère du portage des ennemis, à
-  instruire avec l'auteur.
+- **« la wave n'exécute aucun objet » était un faux diagnostic** — la
+  capture d'écran à la trame 3400 montre cinq patapata en formation et
+  leurs tirs : la wave est parfaitement vivante. Le compteur
+  `bench.spawns` ne compte que les BOUCHONS, et le cast du stage 1 est
+  entièrement porté — plus un bouchon n'y tourne, donc t1 était
+  invérifiable par construction depuis le portage. Le contrat de t1 est
+  re-spécifié sur la progression de la wave (le pointeur de lecture a
+  avancé) ; le chemin de spawn par l'index reste prouvé par t2, dont le
+  bouchon du stage 2 est l'instrument. (Au passage : le t1=1 historique
+  était un artefact — `handOver` testait un `bench.spawns` griffonné par
+  la traînée du joueur, donc non nul par accident.)
+- **L'entrée du stage 2 broie dans la passe d'effacement des sprites**
+  (~1,4 trame/s, caméra figée à 16) : la boucle est du code de page
+  (`$39xx`) qui marche la liste d'effacement de la trame précédente —
+  `$6154-$6156` sont les `rsv_prev_erase_*` d'EraseSprites (résolu par
+  l'lwmap du moteur, base $6100). Préexistant (identique sur l'image
+  d'avant la campagne modèle-cible), ère du portage des ennemis. Piste
+  à instruire : ce que le stage 2 dessine/efface via SON index, dont la
+  plupart des entrées sont des bouchons sans images. Le 5/5 attend
+  cette correction.
 
 ## Ce que la première campagne a établi (2026-08-09)
 

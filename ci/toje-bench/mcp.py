@@ -53,19 +53,29 @@ class Toje:
         r = self.call("read_memory", {"addr": addr, "len": length})
         return [int(x, 16) for x in r["bytes"]]
 
-    def press(self, scancode="0F"):
+    def press(self, scancode="0F", hold=8):
         """press and release a key, running frames so the monitor scans it"""
         self.call("press_key", {"scancode": scancode, "down": True})
-        self.call("run_frames", {"n": 5})
+        self.call("run_frames", {"n": hold})
         self.call("press_key", {"scancode": scancode, "down": False})
+        self.call("run_frames", {"n": 4})
 
     def boot_floppy(self, image):
-        """the /toje-boot sequence: reset, menu, key B, let the media start"""
+        """the /toje-boot sequence: reset, menu, key B, let the media start.
+
+        The monitor menu stabilises around frame 75 ; a press landing during
+        its setup is missed (seen once), so wait longer, hold longer, and
+        verify the machine LEFT the menu — retry the key if it did not."""
         self.call("mount_disk", {"path": image})
         self.call("reset")
-        self.call("run_frames", {"n": 90})
-        self.press("0F")                      # 'B' : boot from floppy
         self.call("run_frames", {"n": 120})
+        for _ in range(3):
+            self.press("0F", hold=8)          # 'B' : boot from floppy
+            self.call("run_frames", {"n": 300})
+            ram = self.read("6100", 8)
+            if any(b not in (0x00, 0xFF) for b in ram):
+                return                        # something was loaded : booted
+        # three presses without a load ; caller's timeouts will say more
 
     def dump(self, tag=""):
         """engine log block ($9EF0), registers and disassembly at PC"""

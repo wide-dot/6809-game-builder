@@ -362,9 +362,15 @@ stage.handOver
         beq   stage1.secondVisit
 
         ; --- premier passage ---
-        ldd   bench.spawns
-        beq   stage1.noSpawn                     ; la wave n'a rien peuplé : témoin muet
-        std   bench.stage1Spawns
+        ; t1 : la wave a tourné. Le témoin est sa PROGRESSION (le pointeur de
+        ; lecture a avancé), plus bench.spawns : ce compteur ne compte que les
+        ; bouchons, et le cast du stage 1 est entièrement porté — il restait à
+        ; zéro pendant que cinq patapata traversaient l'écran. L'exécution
+        ; réelle du chemin de spawn par l'index reste prouvée par t2, dont le
+        ; bouchon du stage 2 est précisément l'instrument.
+        ldd   object_wave_data
+        cmpd  object_wave_data_start
+        beq   stage1.noSpawn                     ; la wave n'a rien lu : témoin muet
         lda   #$01
         sta   bench.t1
 stage1.noSpawn

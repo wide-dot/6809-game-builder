@@ -31,14 +31,18 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
       montré qu'il n'y a pas un octet libre ailleurs : la traînée du joueur
       écrasait +13, la pile S écrase +148) ; layout mis au vrai (globals
       $94, pile $9ED4/$1C — le débordement missile est déclaré).
-- [ ] **r-type : la wave n'exécute aucun objet** (préexistant, RÉVÉLÉ le
-      10/08 par les témoins enfin propres — le t1=1 historique était un
-      artefact, `bench.spawns` griffonné lisait non-nul). spawns=0 sur toute
-      la traversée du stage 1. Ère du portage des ennemis.
-- [ ] **r-type : l'entrée du stage 2 broie dans le dessin/terrain**
-      (préexistant, révélé le 10/08) : ~1,4 trame/s, boucle `$39xx` sur les
-      entrées de carte (`$6154/6155`), caméra figée à 16. Le banc 5/5 exige
-      ces deux corrections. Détail : `ci/toje-bench/readme.md`.
+- [x] **r-type : t1 invérifiable par construction** (10/08) — `bench.spawns`
+      ne compte que les bouchons, et le cast du stage 1 est entièrement
+      porté (la wave est VIVANTE : cinq patapata à l'écran, capture à
+      l'appui). t1 re-spécifié sur la progression de la wave ; t2 garde la
+      preuve du chemin de spawn (bouchon du stage 2).
+- [ ] **r-type : l'entrée du stage 2 broie dans EraseSprites** (préexistant,
+      caractérisé le 10/08) : ~1,4 trame/s, caméra figée à 16, boucle de
+      page `$39xx` sur la liste d'effacement de la trame précédente
+      (`$6154-$6156` = `rsv_prev_erase_*`, lwmap moteur). Piste : ce que le
+      stage 2 dessine/efface via son index majoritairement bouchon (sans
+      images). Le banc 5/5 attend cette correction. Détail :
+      `ci/toje-bench/readme.md`.
 
 ## En cours
 
