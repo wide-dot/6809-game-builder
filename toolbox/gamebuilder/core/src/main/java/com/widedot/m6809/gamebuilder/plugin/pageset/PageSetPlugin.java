@@ -478,6 +478,21 @@ public class PageSetPlugin {
 	 * their normal envelope — EXPORT, SECTION, entry label — exactly as they
 	 * would in a standalone <file>.
 	 */
+	/**
+	 * A unit hosted directly by a {@code <file>} : the same envelope generator
+	 * as the pageset form, the enclosing file itself standing for the member —
+	 * it IS the file a {@code <gfxcomp>} index would name. This is what the
+	 * spec promises ("in a <file> the builder generates its envelope"), and
+	 * what a rigid unit of an arena declares since the gap-driven cut.
+	 */
+	public static com.widedot.m6809.gamebuilder.spi.ObjectDataInterface unitObject(
+			ImmutableNode node, BuildContext ctx) throws Exception {
+		String host = ctx.staticLink.currentHost();
+		String gendir = Attribute.getString(node, ctx, "gendir", "gen/units");
+		String[] unit = unit(node, ctx, gendir, host != null ? host : "unit");
+		return LwasmPlugin.getObject(lwasmOf(unit[0]), ctx);
+	}
+
 	private static String[] unit(ImmutableNode node, BuildContext ctx, String gendir,
 			String memberFile) throws Exception {
 

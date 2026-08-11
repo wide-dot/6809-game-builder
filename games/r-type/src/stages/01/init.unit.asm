@@ -45,7 +45,6 @@ stage.music          equ sounds.level1.ymm
 starfield.init       EXTERNAL
 ymm.obj.play         EXTERNAL
         INCLUDE "gen/layout.asm"
-        INCLUDE "gen/stages/01/pages.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
         INCLUDE "src/stages/01/objid.const.asm"
 

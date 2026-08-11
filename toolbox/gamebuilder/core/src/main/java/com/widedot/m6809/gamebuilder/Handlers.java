@@ -116,7 +116,8 @@ public final class Handlers {
 			.opt("name", STRING, "name for the generated source, defaults from symbol")
 			.req("symbol", STRING, "exported label placed at the start of the unit")
 			.opt("section", STRING, "for bare data : the builder writes the whole envelope — section, exported symbol, ends. Omit it when the sources open their own section and export their own symbol")
-			.opt("body", STRING, "shorthand for a single <asm> child"));
+			.opt("body", STRING, "shorthand for a single <asm> child")
+			.opt("gendir", STRING, "file form : directory receiving the generated source (default gen/units)"));
 		spec(element("data").doc("raw data written to a section, outside the directory")
 			.req("section", STRING, "section receiving the data")
 			.opt("maxsize", INT, "maximum size")
@@ -289,6 +290,7 @@ public final class Handlers {
 
 		// binary producers
 		OBJECTS.put("lwasm", LwasmPlugin::getObject);
+		OBJECTS.put("unit", com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin::unitObject);
 		OBJECTS.put("bin", BinPlugin::getObject);
 		OBJECTS.put("cksumfd640", Cksumfd640Plugin::getObject);
 

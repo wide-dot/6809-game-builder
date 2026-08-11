@@ -145,7 +145,6 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
-        INCLUDE "gen/stages/02/pages.asm"
         INCLUDE "src/stages/02/map/intro/map.const.asm"
 
  opt c,ct
@@ -196,7 +195,7 @@ stage.setup
         ldd   #stage.wave
         std   object_wave_data
         std   object_wave_data_start
-        lda   #map.RAM_OVER_CART+stage.wave.page
+        lda   #map.RAM_OVER_CART+stage2.wave.page
         sta   object_wave_data_page
         rts
 

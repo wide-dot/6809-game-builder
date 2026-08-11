@@ -2632,6 +2632,9 @@
       <xs:attribute name="body" type="xs:string">
         <xs:annotation><xs:documentation>shorthand for a single &lt;asm&gt; child</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string">
+        <xs:annotation><xs:documentation>file form : directory receiving the generated source (default gen/units)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

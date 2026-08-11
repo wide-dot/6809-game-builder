@@ -133,8 +133,15 @@ every load that names it :
 
 One form of the three at most : `arena=` (the builder picks page and
 address), `region=` (a named place of the layout), or a literal
-`page=`+`address=`. A `<pageset>` already declares its `region=` — that IS
-its attributed place, so a scene names the set bare.
+`page=`+`address=`. A `<pageset>` already declares its `region=` or
+`arena=` — that IS its attributed place, so a scene names the set bare.
+The two pageset forms differ in how the members are cut : `region=` fills
+whole dedicated pages, one member per filled page ; `arena=` flows the
+elements into the gaps the arena's rigid placement leaves — one member
+(chunk) per gap used, as big as its gap allows. The gaps decide the cut,
+the author chooses neither the number nor the size of the chunks, and a
+gap smaller than `gapmin=` (default 256) is left empty rather than
+crumbling the set. The build prints both plates of the balance.
 
 What this buys is **structural uniqueness** : a file loaded by five scenes
 has one declared destination, and there is nothing left for two scenes to

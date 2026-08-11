@@ -196,8 +196,6 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
-        INCLUDE "gen/stages/01/pages.asm"
-        INCLUDE "gen/stages/01/pages-even.asm"
         INCLUDE "src/stages/01/map/intro/map.const.asm"
         ; La chronologie du boss : le stage la partage avec ses six objets.
         INCLUDE "src/stages/01/timestamps.const.asm"
@@ -325,7 +323,7 @@ stage.setup
         _log.info log.stage.SETUP
         std   object_wave_data
         std   object_wave_data_start
-        lda   #map.RAM_OVER_CART+stage.wave.page
+        lda   #map.RAM_OVER_CART+stage1.wave.page
         sta   object_wave_data_page
 
         ; La table d'effacement de la rotonde part vide : un slot non nul

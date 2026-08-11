@@ -117,9 +117,10 @@ public class DirectoryPlugin {
 				// resident code that reaches a raw binary by page and address
 				// (a scroll buffer, a bitmap) reads it from the same include it
 				// already needs for the id — the value has one source, the
-				// declaration. Arena and region places are not published : their
-				// content is linkable, so references resolve through the
-				// symbols, baked or load-time linked
+				// declaration. Arena places are published by the LAYOUT
+				// gensymbols (the packer's decisions live with the layout) ;
+				// region places are not published at all : their content is
+				// linkable, so references resolve through the symbols
 				if (plugin.equals("file")) {
 					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
 							ctx.filePlaces.get(name);

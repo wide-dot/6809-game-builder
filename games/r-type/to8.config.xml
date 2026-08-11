@@ -36,18 +36,40 @@
                  REELLEMENT ; ce layout ne fait que le decrire. -->
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
-            <region name="tiles.even">
+            <!-- La memoire graphique du stage : cartes et vague (rigides)     -->
+            <!-- posees d'abord, puis les tuiles COULENT dans les creux — la   -->
+            <!-- coupe des morceaux est le resultat des creux, jamais un       -->
+            <!-- reglage. Deux arenes sur les memes pages : les stages sont    -->
+            <!-- des alternatives qui se relaient sur cette RAM (l'echange     -->
+            <!-- passe par scene.unload, les destinations peuvent differer).   -->
+            <arena name="stage1.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$4000"/>
-            </region>
-            <region name="tiles.odd">
+                <!-- $1A : les musiques permanentes (lecteur YMM + musique,
+                     chargees au boot, jamais echangees) occupent $1C9B-$3736 ;
+                     l'arene offre les deux fenetres libres autour. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
                 <zone page="$1E" address="$0000" size="$4000"/>
                 <zone page="$1F" address="$0000" size="$4000"/>
-            </region>
+            </arena>
+            <arena name="stage2.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : les musiques permanentes (lecteur YMM + musique,
+                     chargees au boot, jamais echangees) occupent $1C9B-$3736 ;
+                     l'arene offre les deux fenetres libres autour. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
             <!-- Les tables de carte : 132x15 cases sur deux plans font 11880  -->
             <!-- octets, hors de portee de la RAM residente. Elles vivent donc  -->
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
@@ -2368,9 +2390,21 @@
                 <!-- on declare un budget de pages et un contenu, le builder    -->
                 <!-- mesure, range et emet un direntry par page. L'auteur       -->
                 <!-- n'affecte jamais une tuile a une page.                     -->
-                <pageset name="stage1.tiles.even" linkdata="LINK" region="tiles.even"
-                         gendir="gen/stages/01/tiles-even"
-                         gensymbols="gen/stages/01/pages-even.asm">
+                <!-- La vague est un fichier rigide de l'arene : posee AVANT    -->
+                <!-- que les tuiles coulent, elle n'a plus besoin d'etre un     -->
+                <!-- <unit> de comblement — les creux se remplissent tout      -->
+                <!-- seuls. Sa page est publiee en equate (stage1.wave.page)    -->
+                <!-- dans entries.asm, elle est lue par page montee             -->
+                <!-- (object_wave_data_page).                                   -->
+                <file name="stage1.wave" linkdata="LINK" arena="stage1.gfx">
+                    <unit name="stage1.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/01/objid.const.asm"/>
+                        <asm filename="src/stages/01/wave.asm"/>
+                    </unit>
+                </file>
+
+                <pageset name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
+                         gendir="gen/stages/01/tiles-even">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
@@ -2379,26 +2413,19 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset name="stage1.tiles.odd" linkdata="LINK" region="tiles.odd"
-                         gendir="gen/stages/01/tiles-odd"
-                         gensymbols="gen/stages/01/pages.asm">
+                <pageset name="stage1.tiles.odd" linkdata="LINK" arena="stage1.gfx"
+                         gendir="gen/stages/01/tiles-odd">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                    <!-- La queue du dernier tileset ne se perd pas : la wave du -->
-                    <!-- stage la comble. Elle est deja lue par page montee      -->
-                    <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <unit name="stage1.wave" symbol="stage.wave" section="code">
-                        <asm filename="src/stages/01/objid.const.asm"/>
-                        <asm filename="src/stages/01/wave.asm"/>
-                    </unit>
                 </pageset>
 
-                <!-- Les deux tables de carte, dans leur page                  -->
-                <file name="stage1.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
+                <!-- Les deux tables de carte : rigides, posees par le packer   -->
+                <!-- dans la meme arene que les tuiles                          -->
+                <file name="stage1.maps" linkdata="LINK" bake="all" arena="stage1.gfx">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
@@ -2440,7 +2467,14 @@
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <!-- ******************************************************** -->
-                <pageset name="stage2.tiles.even" linkdata="LINK" region="tiles.even"
+                <file name="stage2.wave" linkdata="LINK" arena="stage2.gfx">
+                    <unit name="stage2.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/02/objid.const.asm"/>
+                        <asm filename="src/stages/02/wave.asm"/>
+                    </unit>
+                </file>
+
+                <pageset name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
                          gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
@@ -2450,26 +2484,18 @@
                     </gfxcomp>
                 </pageset>
 
-                <pageset name="stage2.tiles.odd" linkdata="LINK" region="tiles.odd"
-                         gendir="gen/stages/02/tiles-odd"
-                         gensymbols="gen/stages/02/pages.asm">
+                <pageset name="stage2.tiles.odd" linkdata="LINK" arena="stage2.gfx"
+                         gendir="gen/stages/02/tiles-odd">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                    <!-- La queue du dernier tileset ne se perd pas : la wave du -->
-                    <!-- stage la comble. Elle est deja lue par page montee      -->
-                    <!-- (object_wave_data_page), donc rien a adapter cote code. -->
-                    <unit name="stage2.wave" symbol="stage.wave" section="code">
-                        <asm filename="src/stages/02/objid.const.asm"/>
-                        <asm filename="src/stages/02/wave.asm"/>
-                    </unit>
                 </pageset>
 
-                <!-- Les deux tables de carte, dans leur page                  -->
-                <file name="stage2.maps" linkdata="LINK" bake="all" page="$1F" address="$09C7">
+                <!-- Les deux tables de carte : rigides, posees par le packer   -->
+                <file name="stage2.maps" linkdata="LINK" bake="all" arena="stage2.gfx">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
@@ -2580,6 +2606,7 @@
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>
                     <load name="stage1.maps"/>
+                    <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
                     <load name="stage1"/>
                 </scene>
@@ -2588,6 +2615,7 @@
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>
                     <load name="stage1.maps"/>
+                    <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
                     <load name="stage1"/>
                 </scene>
@@ -2596,6 +2624,7 @@
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
                     <load name="stage2.maps"/>
+                    <load name="stage2.wave"/>
                     <load name="stage2"/>
                 </scene>
 

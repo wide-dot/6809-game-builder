@@ -326,6 +326,34 @@ que l'écoulement contourne.
 membres actuels (2 au lieu de 5 sur l'exemple des tuiles), pages rendues
 visibles au rapport, banc 5/5, niveau 1 entier traversé sous toje.*
 
+*La coupe par les creux est FAITE (10/08).* Deux temps au placement :
+l'ArenaPacker enregistre les creux que le rangement rigide laisse par zone,
+et `<pageset arena="…">` y coule ses éléments — un morceau par creux
+utilisé, aussi gros que son creux le permet, seuil `gapmin` (256 par
+défaut, les deux plateaux au rapport), erreurs nommées (élément trop gros,
+ensemble qui ne tient pas, avec le manque mesuré). Les creux consommés
+partiellement et les creux trop petits pour l'élément en cours restent
+disponibles pour la collection suivante. `<unit>` refusé dans la forme
+arène (un rigide ordinaire y suffit — et `<unit>` marche désormais aussi
+dans un `<file>`, la promesse de la spec est tenue). La forme `region=`
+est intacte. r-type re-rangé : les 8 pages de tuiles deviennent deux
+arènes alternatives (l'échange passe par scene.unload, les destinations
+divergent sans danger), cartes et vagues sont des rigides posés par le
+packer, et **les adresses mesurées à la main disparaissent** ($1C9B « fin
+mesurée », $09C7) — la fenêtre des musiques permanentes de $1A est
+déclarée en deux zones libres, et la collision musiques/tuiles a été
+attrapée par le contrôle de scène AVANT toute exécution. Mesure honnête :
+l'espace étant quasi plein (reste 4 001 octets utilisables côté stage 1),
+la coupe donne 10 morceaux là où la forme région en avait 8 — les
+fenêtres fragmentent ; le gain ici est la disparition du câblage manuel
+et la visibilité du reste, pas le nombre d'entrées (le « 2 au lieu de
+5 » du manuel suppose des zones spacieuses, prouvé par le test unitaire
+qui rejoue son exemple). PREUVE : mécanisme par identité 59/59 + JUnit
+125/125 (6 tests sur la fonction pure de flux) ; re-rangement par
+exécution — banc r-type 5/5, niveau 1 traversé (caméra à 1440), zéro
+retour de tête conservé, 4 images r-type changent (annoncé), reste du
+corpus identique.*
+
 *Re-validation entamée (10/08) — le cas objet est mesuré au §24 de
 l'analyse : la réutilisation multi-stages est massive et sans axe (20
 objets sur 54, sous-ensembles arbitraires), la v1 n'avait aucun contrat de

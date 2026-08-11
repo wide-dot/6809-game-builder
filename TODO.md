@@ -532,6 +532,18 @@ Fonctionnel :
         vert (r-type 5/5, loader-ut $0D+T18, hscroll k=−16 aligné, mplus
         séquences identiques). Mesure : mplus-test −24 % média. Reste en
         6 : l'ordre d'écriture par première utilisation.
+  - [x] Phase 5-creux (10/08) — la coupe par les creux : ArenaPacker
+        enregistre les creux résiduels, <pageset arena=…> y coule ses
+        éléments (morceau par creux, gapmin 256, erreurs nommées, restes
+        disponibles pour la collection suivante), <unit> marche dans un
+        <file>. r-type re-rangé : 2 arènes alternatives sur les 8 pages
+        de tuiles, cartes+vagues rigides posées par le packer, adresses
+        mesurées à la main disparues ($1C9B, $09C7), fenêtre musiques
+        déclarée. PREUVE : identité 59/59 (mécanisme), JUnit 125/125,
+        banc r-type 5/5 + niveau 1 traversé, zéro retour conservé,
+        4 images r-type changent (annoncé). Mesure honnête : 10 morceaux
+        vs 8 (espace quasi plein — le gain est la fin du câblage manuel,
+        pas le compte d'entrées).
   - [ ] Phase 5-arbitrage (10/08) — le cas objet MESURÉ (§24 de
         l'analyse placement) : réutilisation multi-stages massive et sans
         axe (20/54 objets, sous-ensembles arbitraires), v1 sans contrat
