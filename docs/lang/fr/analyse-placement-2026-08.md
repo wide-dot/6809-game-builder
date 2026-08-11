@@ -1564,3 +1564,76 @@ L'étage load-time du §25 reste optionnel et relève de la phase 8.
 
 **Non tranché ici** : l'adoption, et si `$ADDR` vaut la peine pour son
 unique consommateur actuel.
+
+## 27. Deux questions d'auteur : le consommateur de `$ADDR`, et qui est fluide (2026-08-11)
+
+**1. L'unique consommateur de `.address` — relevé exact.**
+Un seul site dans tout le corpus :
+`loader.DEFAULT_SCENE_EXEC_ADDR equ stage1.address` (`to8.config.xml:2594`),
+l'adresse d'exécution de la scène de boot. Elle vient de la publication du
+**répertoire** (places littérales : `stage1` est déclaré
+`page="$01" address="$8000"`), pas du layout, et elle doit être une
+constante de build — le loader saute là avant que rien ne soit chargé, donc
+aucun symbole ne peut la porter.
+
+Le relevé a montré autre chose, plus utile : **tout le reste de la
+publication `.address` et `.size` est mort.** Zéro consommateur pour
+`bench.address`, `objects.pool.address`, `objects.static.address`,
+`globals.address`, `stack.address`, `log.block.address`, `dp.address`,
+`background.save.address`, ni pour aucun `.address` de région ou d'arène ;
+zéro pour tous les `.size` (les 34+ `*.size` du corpus sont des champs de
+structure du JEU — `tlsf.blockHdr.size`, `linkData.content.header.size`).
+Seul `.page` est consommé.
+
+Deux conséquences :
+- **`$ADDR` ne vaut pas la peine** : un attribut de langage pour un site,
+  déjà servi par une équate justifiée (place littérale, publiée à côté de
+  l'id de fichier). À écarter du §26.
+- **Le layout doit cesser de publier `.address` et `.size`** — code mort qui
+  encombre l'espace de noms du jeu, là où `samples.address` et
+  `sample.current.address` (mplus) et `stacked.base.address` sont de vrais
+  symboles de jeu. C'est le §26 §2 pris sur le fait une seconde fois.
+
+**2. Distinguer l'indivisible du fluide, pour les deux phases.**
+La question est le résidu exact du test des objets : `index="…"` du §23
+portait DEUX rôles — déclarer la contribution à une table (mort avec les
+objets : la table est manuscrite) et **déclarer la divisibilité** (vivant :
+le rangement en deux temps ne peut pas commencer sans savoir qui est
+rigide). Il faut donc redonner un porteur au second rôle. Quatre formes :
+
+- **(A) l'élément, tel qu'implémenté** — `<pageset arena=…>` fluide,
+  `<file arena=…>` rigide. Explicite, aucune inférence. Coût : deux éléments
+  pour un concept, et « pageset » est un mot de builder, pas de domaine.
+- **(B) un attribut de nature sur `<file>`** — la forme du §23 privée de sa
+  sémantique de contribution. Un seul élément, et la nature se lit sur la
+  déclaration : c'est exactement le « coût 1 » que le §22 reprochait à `of`
+  et que le §23 voulait effacer. Le mot doit dire la nature, pas une table
+  que le builder n'émet plus.
+- **(C) déduite du contenu** — le builder sait déjà qui peut nommer ses
+  parties : `PartsPluginInterface`, **un seul inscrit** (`gfxcomp`). Un
+  fichier dont tous les enfants savent se nommer est divisible. Zéro mot
+  nouveau, donc le plus proche de « réduire le spécifique builder ». Sûr
+  techniquement : une référence entre deux éléments tombés dans des morceaux
+  différents devient un symbole non défini, donc **lwasm refuse bruyamment**
+  — le contrat « on n'atteint une collection que par sa table » est tenu par
+  l'assembleur, pas par la confiance. Mais (C) **réintroduit le coût de
+  localité** : la déclaration ne dit plus si le fichier est une collection.
+- **(D) (C) plus le rapport** — déduire, et imprimer la nature là où le
+  RÉSULTAT se lit déjà (« collection : N morceaux » par fichier au rapport
+  d'occupation). La localité est rendue au lecteur sans coûter un mot au
+  déclarant. Cohérent avec un projet qui instrumente déjà tout.
+
+*Aucune des quatre n'a de problème d'ordonnancement* : les quatre se
+décident sur l'arbre brut, avant toute mesure, là où `PlacementScan`
+travaille déjà.
+
+**Constat de bord, à ne pas perdre** : la coupe par les creux refuse
+aujourd'hui `<unit>` dans la forme arène (« l'arène range déjà ses
+rigides »). C'est commode mais ça ferme les fichiers MIXTES — du contenu
+divisible plus une unité indivisible. Le modèle cible les veut : tout est
+élément, certains indivisibles, et « fichier rigide » n'est que le cas d'un
+fichier à un seul élément. Si (C) ou (D) est retenu, ce refus doit tomber,
+et le flux placer les indivisibles comme il place déjà les autres — ce
+qu'il fait déjà dans la forme région (`<unit>` de comblement).
+
+**Non tranché ici** : (A)/(B)/(C)/(D), et le mot si (B).
