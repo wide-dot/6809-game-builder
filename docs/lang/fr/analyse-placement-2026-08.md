@@ -1460,3 +1460,107 @@ qu'en lever l'obstacle.
 
 **Non tranché ici** : le choix (b)/(c), et l'étage load-time — qui peut
 attendre la phase 8 puisque la cuisson couvre tout ce que le builder place.
+
+## 26. Normalisation : la syntaxe des index, et la fin des n orthographes de page (2026-08-11)
+
+Demande d'auteur avant toute implémentation : creuser la **normalisation**,
+proposer les **syntaxes pour les index**, et **résoudre l'histoire des n
+versions de la syntaxe de page**. Relevé exhaustif d'abord, proposition
+ensuite.
+
+**1. L'inventaire — combien d'orthographes, exactement.**
+
+Pour la VALEUR (quelle page), **quatre formes vivantes** :
+
+| forme | qui l'écrit | à la main ? | résolution |
+|---|---|---|---|
+| `fichier$PAGE` | `ImageSet` forme en-unité (616 occ.) | oui | cuisson, ou `externPg` au chargement |
+| `nom.page` équate | `LayoutPlugin` (régions, arènes) **et** `DirectoryPlugin` (places littérales) — deux émetteurs, deux fichiers à inclure | oui, via include | équate |
+| `fcb map.RAM_OVER_CART+24` | `TilemapPlugin` (490 occ. pour UNE carte) | **non** | littéral Java (`pageOf`) |
+| `fcb $72` | `ImageSet` forme répartie | **non** | littéral Java, `+$60` déjà plié |
+
+(`region.pages` et `region.page.last` ne comptent pas : c'est le budget
+déclaré, pas une réponse de placement.)
+
+Pour les BITS CARTOUCHE, **trois conventions** pour les deux mêmes bits :
+le consommateur écrit `map.RAM_OVER_CART+` (4446 occ.), le générateur plie
+`+$60` dans l'expression symbolique (554 occ.), le générateur plie `$60`
+dans le littéral (`$72`).
+
+**2. Le fait dur : `.` est l'espace de noms du JEU, et le builder y écrit.**
+`terrainCollision.main.address equ *-2` est un symbole de jeu — un slot
+d'auto-modification — de même orthographe que `stage1.address`, équate du
+builder. Idem pour `.size` : 34 occurrences de `tlsf.blockHdr.size` et
+consorts, tous des champs de structure du jeu, quand le layout publie des
+`nom.size` que **personne ne consomme** (mesuré : zéro).
+Ça ne collisionne aujourd'hui que par chance de nommage, et quand ça
+collisionne c'est bruyant — vécu cette session : `Multiply defined symbol
+(common.anim.page)` le jour où le répertoire ET le layout ont publié les
+places d'arène. Mais c'est structurellement faux : **le builder répond dans
+l'espace de noms que le jeu habite.** `$` n'a pas ce défaut — ce n'est pas
+un caractère de symbole écrit à la main (c'est le préfixe hexadécimal),
+donc `X$PAGE` ne peut pas entrer en collision avec un nom de jeu.
+
+**3. La normalisation proposée : `<nom>$<ATTRIBUT>`.**
+Une seule règle : **`$` introduit une QUESTION que le builder résout.** À
+gauche un nom du jeu (symbole ou fichier), à droite l'attribut demandé.
+
+- **`X$PAGE`** — la page où X est chargé. Remplace les quatre formes du §1.
+- **`X$ADDR`** — l'adresse de X quand X n'a pas de symbole (un binaire
+  brut). Un seul consommateur réel mesuré (`stage1.address`, le define du
+  loader), mais c'est le pendant naturel et il retire l'autre moitié des
+  équates.
+- **rien d'autre** : `size` n'a aucun consommateur (§2), `pages`/`page.last`
+  restent des équates de layout — un budget déclaré n'est pas une réponse.
+
+*Ambiguïté fichier/symbole* : **un seul jeton, deux tables consultées,
+collision REFUSÉE en nommant les deux.** C'est la règle du comptage nu
+appliquée ici. Ceci **corrige la variante (a) du §25**, dont le défaut était
+le repli silencieux : une collision nommée l'annule.
+
+*Bits cartouche* : **le builder répond la page, jamais les bits du
+registre.** Le consommateur écrit `map.RAM_OVER_CART+X$PAGE`, comme le font
+déjà 4446 sites. Deux raisons : c'est la majorité écrasante, et surtout
+`+$60` est une constante **TO8** — la plier dans la réponse ferait fuir une
+spécificité machine dans le service de placement, au moment où MO6 est une
+cible déclarée.
+
+**4. La syntaxe des index : moins de vocabulaire qu'il n'y paraît.**
+Une entrée d'index veut trois choses, et deux existent déjà :
+
+- **l'adresse de l'élément** = le symbole lui-même (`fdb adr_…`). Rien à
+  inventer, c'est déjà unifié (§25).
+- **la page de l'élément** = `X$PAGE`, ci-dessus.
+- **le numéro de l'élément** = soit authoré (`ObjID_patapata equ 30`,
+  prouvé le 11/08), soit porté par la donnée (l'id d'une tuile vient de sa
+  grille). **Le builder n'a jamais à l'attribuer** — c'est précisément ce
+  que le test des objets a démontré.
+
+Donc **il n'y a pas de « langage d'index » à créer** : un index est une
+table ordinaire de symboles plus un attribut. Le seul vocabulaire propre aux
+index est le **nommage des éléments générés**, déjà normalisé cette
+session : `adr_<hôte>_<id>_<variante>`, variante = `<miroir><encodeur>
+<décalage>` (`ND0`, `NB0`, `MD3`). C'est la conclusion utile de la demande :
+*l'unification réclamée ne demande pas un langage, elle demande un attribut*.
+
+**5. Ce qui n'est PAS dans ce périmètre.** Trois dialectes de labels
+coexistent — `adr_`/`set_`/`idx_` (14696 / 1176 / 542 occurrences, héritage
+gfxcomp v1), `Obj_Index_Page` / `Ani_*` / `Img_*` (héritage moteur v1), et
+`module.routine` (la convention v2 de CLAUDE.md). Les unifier est **le
+renommage**, explicitement différé en phase finale
+(`docs/engine-naming.csv`) et interdit avant par la règle 1:1. Ne pas le
+faire entrer ici par la bande.
+
+**6. Migration si adopté — trois pas, chacun prouvable par identité.**
+a. `X$PAGE` accepte un **symbole** à la cuisson (`pageOf` au lieu de
+   `resolvePage`, collision refusée) ; les deux générateurs de littéraux
+   émettent le symbole au lieu du nombre. *Preuve : identité binaire — le
+   littéral cuit vaut exactement ce que le symbole résoudra.*
+b. `+$60` retiré des générateurs, `map.RAM_OVER_CART+` écrit dans le texte
+   émis. *Identité binaire aussi.*
+c. les équates `.page`/`.address` deviennent redondantes : retrait au fil
+   des consommateurs, et `.size` part tout de suite (zéro consommateur).
+L'étage load-time du §25 reste optionnel et relève de la phase 8.
+
+**Non tranché ici** : l'adoption, et si `$ADDR` vaut la peine pour son
+unique consommateur actuel.

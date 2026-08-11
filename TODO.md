@@ -553,6 +553,21 @@ Fonctionnel :
         de lien inchangé par construction. Verdict au §24. Reste si
         adopté : retirer l'élément <objectindex> et son plugin (plus de
         consommateur) ; l'inversion §23 ne porte plus que sur le généré.
+  - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
+        inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
+        pour les bits cartouche) et fait dur mesuré — `.` est l'espace de
+        noms du JEU (`terrainCollision.main.address`, 34 `*.size` de
+        structures) et le builder y écrit, collision déjà vécue
+        (`Multiply defined symbol (common.anim.page)`). PROPOSITION :
+        `<nom>$<ATTRIBUT>` — `$` = question résolue par le builder, hors de
+        l'espace de noms du jeu ; `X$PAGE` remplace les 4 formes, `X$ADDR`
+        pour les binaires sans symbole, rien d'autre ; collision
+        fichier/symbole REFUSÉE en nommant les deux (corrige §25(a)) ; le
+        builder répond la page, jamais les bits `$60` (constante TO8, MO6
+        est une cible). Conclusion : PAS de langage d'index à créer —
+        l'adresse est le symbole, le numéro est authoré, seule la page
+        manque. Migration en 3 pas prouvables par identité. HORS PÉRIMÈTRE :
+        les 3 dialectes de labels = le renommage, phase finale.
   - [ ] Phase 5-nomenclature (11/08) — ÉTUDE ÉCRITE (§25) : le nom comme
         interface unique. Mesure : l'ADRESSE d'une entrée d'index est déjà
         unifiée (symbole des deux côtés), la PAGE s'écrit de deux façons
