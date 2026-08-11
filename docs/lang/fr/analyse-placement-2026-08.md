@@ -1358,3 +1358,105 @@ Conséquence si adopté définitivement : l'élément `<objectindex>` et son
 plugin n'ont plus de consommateur — retrait au prochain passage. La
 question d'inversion du §23 ne porte plus que sur le cas 1, où la
 contribution est déjà le mécanisme qui tourne.
+
+## 25. Le nom comme interface unique : la page d'un symbole (2026-08-11)
+
+Proposition d'auteur, après le test des objets : pour unifier le geste de
+l'outil et le geste manuel, il faut **une interface unique**, et elle peut
+vivre dans la **nomenclature des labels indexés** — comme `$PAGE`
+aujourd'hui, le builder résoudrait de manière uniforme sans savoir si la
+source est outillée ou manuscrite ; « ça permet aussi de réduire le
+spécifique builder ». Mesuré sur les trois émetteurs de tables.
+
+**1. La moitié du chemin est déjà faite — et la couture est exactement là
+où l'auteur la désigne.** Une entrée d'index est un couple (page, adresse).
+
+- **L'adresse est DÉJÀ unifiée** : `fdb adr_<hôte>_<id>_<variante>` chez le
+  générateur de cartes, `fdb patapata.Object` dans la table manuscrite
+  prouvée hier. Même écriture des deux côtés, résolue par le même service —
+  cuite si fournisseur unique placé, liée sinon, refusée si pendante.
+- **La page est écrite de DEUX façons**, et le partage ne suit pas le choix
+  de l'auteur, il suit la **nature du contenu** : rigide dans un fichier →
+  symbolique (`fichier$PAGE` dans l'imageset en unité, équate `fichier.page`
+  dans la table manuscrite) ; fluide réparti par un pageset → **littéral**
+  calculé en Java par `pageOf(symbole)` (`TilemapPlugin:108`,
+  `ImageSet.pageSymbol:510`).
+
+La preuve que c'est une couture et non un accident : **le même générateur
+porte les deux branches**. `ImageSet.pageSymbol` rend `fichier$PAGE+$60`
+dans un cas et `$1A` dans l'autre, et son propre commentaire dit pourquoi.
+Conséquence, qui est exactement le « cas 3 » relevé au §24 : **une table
+manuscrite ne peut pas désigner du contenu fluide** — il n'en existe
+aucune orthographe.
+
+**2. Le service existe déjà ; il n'est pas exposé au langage.**
+`StaticLink.pageOf(symbole)` — « la page de l'objet qui exporte ce symbole »
+— élit le fournisseur puis lit son placement, cas fluide compris (membre de
+pageset). Deux appelants Java, pas un de plus : `ImagesetPlugin:52` et
+`TilemapPlugin:108`. En face, `resolvePage(fichier)` est ce que `$PAGE`
+résout à la cuisson. Même question, deux publics, **un seul privilégié** :
+l'asm sait demander la page d'un FICHIER, le Java sait demander celle d'un
+SYMBOLE. Unifier, c'est donner la seconde forme au langage.
+
+**3. Le prix, chiffré.**
+*À la cuisson : rien de neuf.* Le chemin existe (`LwObject:595` traite le
+suffixe `$PAGE` sur les relocations 8 bits) ; il appellerait `pageOf` au
+lieu de `resolvePage`. Seule la règle de désambiguïsation est à décider (§4).
+*Au chargement : une relocation de plus, mais bon marché.* Aujourd'hui
+`externPg` transporte un **id de fichier** et le loader répond
+`getPageID(fileId)`. Une référence par symbole ne peut pas : le fichier
+n'est pas connu au build. Mais `linkData.symbol.search` parcourt déjà
+l'index et tient, au moment où il apparie, l'entrée du fichier fournisseur
+dans X — la page est `linkData.entry.filePage,x`, juste là. C'est une
+variante d'une routine existante, pas un mécanisme neuf. C'est du loader,
+donc **phase 8** (campagne gelée, revalidée une seule fois).
+
+*Et une question qui allège tout* : l'étage load-time est-il seulement
+nécessaire ? Le contenu fluide est placé PAR le builder — c'est le sens
+même de l'écoulement — donc son fournisseur est toujours à une destination
+connue au build, donc toujours cuisible. Le littéral que les générateurs
+cuisent aujourd'hui en est la preuve vivante. La forme liée ne servirait
+qu'aux noms à plusieurs fournisseurs (les alternatives : `stage.wave`
+exporté par les deux stages), que le corpus désambiguïse déjà en nommant le
+FICHIER (`stage1.wave.page`). **Adoption par étages possible :
+`symbole$PAGE` cuit d'abord, aucun travail loader, phase 8 intacte** — et
+le cas 3 est déjà résolu pour tout ce que le builder place.
+
+**4. Le point de conception à trancher : un token ou deux.**
+`X$PAGE` — X est-il un fichier ou un symbole ?
+- **(a) un token, symbole d'abord, fichier en repli.** Se lit bien ; ambigu
+  si un symbole et un fichier portent un jour le même nom, et l'erreur
+  serait SILENCIEUSE (la mauvaise page). À écarter pour cette raison seule.
+- **(b) un token, un seul espace de noms.** `$PAGE` devient symbole-only ;
+  la page d'un fichier s'obtient en nommant un symbole qu'il exporte (la
+  plupart des unités en ont un), et les binaires bruts sans symbole gardent
+  leur équate `nom.page` publiée par le répertoire. Coûte une migration de
+  la forme imageset-en-unité. **C'est le modèle cible.**
+- **(c) deux tokens.** `fichier$PAGE` inchangé, plus une forme symbole
+  distincte. Aucune ambiguïté, aucune migration ; l'« interface unique »
+  n'est qu'à moitié tenue — quoique unifiée là où ça compte : une
+  orthographe par QUESTION, et les deux marchent identiquement depuis une
+  source outillée ou manuscrite. **C'est le pas sûr.**
+
+**5. Ce que ça retire de spécifique builder.** Trois retraits mécaniques —
+l'interface `ImageSets.PageOf` et son câblage (`ctx.staticLink::pageOf`), la
+branche à deux formes de `ImageSet.pageSymbol` et le champ `pages` qui la
+porte (3 sites), l'appel `pageOf` du `TilemapPlugin` — et surtout **un
+couplage d'ordonnancement qui tombe** : aujourd'hui un générateur ne peut
+pas émettre avant que le placement soit décidé (`PageSetPlugin` place le
+membre AVANT de construire l'entrée, précisément pour que les tables
+puissent demander). Si la page est un symbole, la génération redevient de
+la pure émission de texte et la résolution a lieu une fois, au seul endroit
+qui la fait déjà pour les adresses. **Les générateurs cessent de connaître
+la mémoire** — c'est ça, le spécifique builder en moins ; pas des lignes,
+une chose de moins à modéliser.
+
+**6. Ce que ça ouvre, à ne pas décider maintenant.** Si la page d'un symbole
+s'écrit, la table manuscrite peut désigner du fluide : le cas 3 se ferme, et
+les ennemis pourraient couler en collection (60 petites entrées de
+répertoire contre des morceaux compressés) sans renoncer à l'index
+manuscrit. C'est la décision du portage des ennemis ; cette étude ne fait
+qu'en lever l'obstacle.
+
+**Non tranché ici** : le choix (b)/(c), et l'étage load-time — qui peut
+attendre la phase 8 puisque la cuisson couvre tout ce que le builder place.

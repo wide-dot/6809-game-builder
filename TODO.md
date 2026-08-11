@@ -553,6 +553,18 @@ Fonctionnel :
         de lien inchangé par construction. Verdict au §24. Reste si
         adopté : retirer l'élément <objectindex> et son plugin (plus de
         consommateur) ; l'inversion §23 ne porte plus que sur le généré.
+  - [ ] Phase 5-nomenclature (11/08) — ÉTUDE ÉCRITE (§25) : le nom comme
+        interface unique. Mesure : l'ADRESSE d'une entrée d'index est déjà
+        unifiée (symbole des deux côtés), la PAGE s'écrit de deux façons
+        selon la nature du contenu (symbolique pour le rigide, littéral
+        Java `pageOf` pour le fluide) — le même générateur porte les deux
+        branches. `pageOf(symbole)` existe et n'est pas exposé à l'asm.
+        Cuisson : rien de neuf. Load-time : variante bon marché de
+        `linkData.symbol.search` (phase 8) — mais PAS nécessaire d'abord,
+        le fluide est toujours placé donc toujours cuisible. Retire
+        `ImageSets.PageOf`, la branche à deux formes, et surtout le
+        couplage génération↔placement. À trancher : un token (modèle
+        cible) ou deux (pas sûr).
   - [ ] Phase 5-arbitrage (10/08) — le cas objet MESURÉ (§24 de
         l'analyse placement) : réutilisation multi-stages massive et sans
         axe (20/54 objets, sous-ensembles arbitraires), v1 sans contrat
