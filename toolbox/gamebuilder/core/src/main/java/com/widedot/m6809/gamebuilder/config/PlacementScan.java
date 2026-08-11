@@ -38,11 +38,14 @@ public final class PlacementScan {
 		// attributed places next : a bare load resolves against what its file
 		// declared, so the map must exist before loads and arenas are read
 		ctx.filePlaces.clear();
-		collectFilePlaces(targetNode, ctx);
+		java.util.Set<String> pagesets = new java.util.LinkedHashSet<String>();
+		collectFilePlaces(targetNode, ctx, pagesets);
 		// arenas next : where an arena-bound file lands depends on all the
-		// files bound to that arena, so it cannot be decided region by region
+		// files bound to that arena, so it cannot be decided region by region.
+		// The pageset names are passed so the packer leaves the collections
+		// out : they flow into the gaps the rigid placement leaves.
 		ctx.regions.clearFilePlacements();
-		ArenaPacker.pack(targetNode, ctx, resolved);
+		ArenaPacker.pack(targetNode, ctx, resolved, pagesets);
 		collectLoads(targetNode, ctx, regions);
 	}
 
@@ -53,7 +56,8 @@ public final class PlacementScan {
 	 * carries. Read literally, like every attribute of this scan — the place
 	 * is configuration, not something a default cascade should move.
 	 */
-	private static void collectFilePlaces(ImmutableNode node, BuildContext ctx) throws Exception {
+	private static void collectFilePlaces(ImmutableNode node, BuildContext ctx,
+			java.util.Set<String> pagesets) throws Exception {
 		String kind = node.getNodeName();
 		if ("file".equals(kind)) {
 			String name = raw(node, "name");
@@ -77,17 +81,22 @@ public final class PlacementScan {
 						.FilePlaces.Place(arena, region, page, address, where));
 			}
 		} else if ("pageset".equals(kind)) {
-			// a pageset's region IS its attributed place, declared since the
-			// multi-page work : record it so a scene can name the set bare
+			// a pageset's region — or arena, for the gap-flowing form — IS its
+			// attributed place, declared since the multi-page work : record it
+			// so a scene can name the set bare
 			String name = raw(node, "name");
 			String region = raw(node, "region");
-			if (name != null && region != null) {
+			String arena = raw(node, "arena");
+			if (name != null && (region != null || arena != null)) {
 				ctx.filePlaces.declare(name, new com.widedot.m6809.gamebuilder.spi.globals
-						.FilePlaces.Place(null, region, null, null, ctx.sources.locate(node)));
+						.FilePlaces.Place(arena, region, null, null, ctx.sources.locate(node)));
+			}
+			if (name != null) {
+				pagesets.add(name);
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collectFilePlaces(child, ctx);
+			collectFilePlaces(child, ctx, pagesets);
 		}
 	}
 

@@ -49,11 +49,15 @@ public final class ArenaPacker {
 	 * @param regions the resolved layout
 	 */
 	public static void pack(ImmutableNode target, BuildContext ctx,
-			Map<String, Regions.Region> regions) throws Exception {
+			Map<String, Regions.Region> regions, java.util.Set<String> pagesets)
+			throws Exception {
 
-		// file order per arena, as the scenes declare them
+		// file order per arena, as the scenes declare them. Pagesets are NOT
+		// rigid files : they are the collections that will flow into whatever
+		// this packing leaves, so they must not be ranged here — their names
+		// are excluded from the collection below.
 		Map<String, List<String>> wanted = new LinkedHashMap<String, List<String>>();
-		collect(target, ctx, wanted);
+		collect(target, ctx, wanted, pagesets);
 		if (wanted.isEmpty()) {
 			return;
 		}
@@ -69,12 +73,13 @@ public final class ArenaPacker {
 	}
 
 	private static void collect(ImmutableNode node, BuildContext ctx,
-			Map<String, List<String>> wanted) throws Exception {
+			Map<String, List<String>> wanted, java.util.Set<String> pagesets) throws Exception {
 		if ("load".equals(node.getNodeName())) {
 			String arena = Attribute.getStringOpt(node, ctx, "arena");
 			String name = Attribute.getStringOpt(node, ctx, "name");
-			if (name == null) {
-				return; // the scene plugin reports malformed loads itself
+			if (name == null || pagesets.contains(name)) {
+				return; // malformed loads are the scene plugin's report ;
+						// pagesets flow into the gaps, they are not ranged
 			}
 			if (arena == null
 					&& Attribute.getStringOpt(node, ctx, "region") == null
@@ -95,7 +100,7 @@ public final class ArenaPacker {
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collect(child, ctx, wanted);
+			collect(child, ctx, wanted, pagesets);
 		}
 	}
 
@@ -168,5 +173,17 @@ public final class ArenaPacker {
 			log.debug("arena {} : {} -> page {} ${}", arena.name, f, z.page,
 					Integer.toHexString(at).toUpperCase());
 		}
+
+		// what the rigid placement leaves is the raw material of the fluid
+		// one : each zone's tail is a gap a collection can flow into. Recorded
+		// in zone order so the flow stays deterministic.
+		List<int[]> gaps = new ArrayList<int[]>();
+		for (int i = 0; i < free.length; i++) {
+			if (free[i] > 0) {
+				Regions.Zone z = arena.zones.get(i);
+				gaps.add(new int[] { z.page, z.end() - free[i], free[i] });
+			}
+		}
+		ctx.regions.setArenaGaps(arena.name, gaps);
 	}
 }

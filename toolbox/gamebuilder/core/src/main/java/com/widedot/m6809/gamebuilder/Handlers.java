@@ -101,9 +101,11 @@ public final class Handlers {
 			.opt("region", STRING, "attributed place : destination region of the layout ; loads of it become bare names")
 			.opt("page", INT, "attributed place : raw destination page, needs address")
 			.opt("address", INT, "attributed place : raw destination address, needs page"));
-		spec(element("pageset").doc("a dataset spread over the pages of a multi-page region : the builder packs it and emits one file per page")
+		spec(element("pageset").doc("a collection the builder packs and emits as several files : whole pages of a region, or chunks flowed into the gaps an arena's rigid placement leaves")
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
-			.req("region", STRING, "multi-page region receiving the set")
+			.opt("region", STRING, "multi-page region receiving the set, one member per filled page (one of region or arena)")
+			.opt("arena", STRING, "arena whose free gaps the elements flow into, one member (chunk) per gap used (one of region or arena)")
+			.opt("gapmin", INT, "arena form : a gap smaller than this is left empty rather than crumbling the set (default 256)")
 			.req("gendir", STRING, "directory receiving the generated member sources")
 			.opt("codec", STRING, "zx0 (default) compresses each member as one stream ; none stores them raw with no compression block")
 			.opt("linkdata", STRING, "emit load time link data into the given section")

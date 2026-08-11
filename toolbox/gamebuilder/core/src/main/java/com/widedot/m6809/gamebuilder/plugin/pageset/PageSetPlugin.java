@@ -103,7 +103,8 @@ public class PageSetPlugin {
 	public static Packing pack(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		String name = Attribute.getString(node, ctx, "name");
-		String regionName = Attribute.getString(node, ctx, "region");
+		String regionName = Attribute.getStringOpt(node, ctx, "region");
+		String arenaName = Attribute.getStringOpt(node, ctx, "arena");
 		String gendir = Attribute.getString(node, ctx, "gendir");
 		String codec = com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin
 				.effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
@@ -111,11 +112,21 @@ public class PageSetPlugin {
 		String section = Attribute.getStringOpt(node, ctx, "section");
 		String bake = Attribute.getStringOpt(node, ctx, "bake");
 
-		Regions.Region region = ctx.regions.get(regionName);
+		if ((regionName == null) == (arenaName == null)) {
+			throw new Exception(ctx.sources.locate(node) + ": pageset '" + name
+					+ "' takes exactly one of region= (whole dedicated pages) or"
+					+ " arena= (flow into the gaps the rigid placement leaves)");
+		}
+		Regions.Region region = ctx.regions.get(regionName != null ? regionName : arenaName);
 		if (region == null) {
 			throw new Exception(ctx.sources.locate(node) + ": pageset '" + name
-					+ "' targets unknown region '" + regionName + "' (layout declares: "
-					+ ctx.regions.names() + ")");
+					+ "' targets unknown " + (regionName != null ? "region" : "arena")
+					+ " '" + (regionName != null ? regionName : arenaName)
+					+ "' (layout declares: " + ctx.regions.names() + ")");
+		}
+		if (arenaName != null && !region.packed) {
+			throw new Exception(ctx.sources.locate(node) + ": pageset '" + name
+					+ "' flows into '" + arenaName + "', which is not an arena");
 		}
 		// generated symbols are qualified by the SET, never by the member a
 		// part happens to land in : the split is the packing's result, and a
@@ -138,6 +149,12 @@ public class PageSetPlugin {
 		List<ImmutableNode> unitNodes = new ArrayList<ImmutableNode>();
 		for (ImmutableNode child : node.getChildren()) {
 			if ("unit".equals(child.getNodeName())) {
+				if (arenaName != null) {
+					throw new Exception(ctx.sources.locate(child) + ": pageset '" + name
+							+ "' flows into an arena, where a unit has no place : the"
+							+ " arena's own rigid placement fills the tails, so declare"
+							+ " it as an ordinary <file arena=\"" + arenaName + "\">");
+				}
 				// the images' index writes <file>$PAGE, and WHICH member file a
 				// unit lands in is only known once packed. The measure assembly
 				// uses the first member as a placeholder — its link data is
@@ -186,6 +203,45 @@ public class PageSetPlugin {
 			sizes[divisibleCount + u] = obj.getBytes().length;
 		}
 
+		if (arenaName != null) {
+			// --- flow : the gaps decide the cut ---------------------------
+			// The rigid files were placed first (ArenaPacker) ; what they left
+			// per zone is the raw material. A chunk is born per gap used, as
+			// big as its gap allows, elements in declaration order. Gaps under
+			// the threshold are not offered : a chunk costs a directory entry,
+			// a scene table entry and a load call, and a small block compresses
+			// badly — better left empty than crumbled. The report shows both
+			// plates of that balance.
+			int gapmin = Attribute.getInteger(node, ctx, "gapmin", 256);
+			List<int[]> gaps = ctx.regions.arenaGaps(arenaName);
+			if (gaps == null) {
+				// nothing recorded : the arena holds no rigid file, or the
+				// discovery pass is running blind — the whole zones are the gaps
+				gaps = new ArrayList<int[]>();
+				for (Regions.Zone z : region.zones) {
+					gaps.add(new int[] { z.page, z.address, z.size });
+				}
+			}
+			Flow flow = flow(name, parts, sizes, gaps, gapmin);
+			ctx.regions.setArenaGaps(arenaName, flow.leftover);
+
+			List<PageSets.Member> members = new ArrayList<PageSets.Member>();
+			List<String> names = PageSets.memberNames(name, flow.chunks.size());
+			for (int c = 0; c < flow.chunks.size(); c++) {
+				members.add(new PageSets.Member(names.get(c), flow.chunkGaps.get(c)[0],
+						flow.chunkGaps.get(c)[1]));
+			}
+			int usable = 0, small = 0;
+			for (int[] g : flow.leftover) {
+				if (g[2] >= gapmin) { usable += g[2]; } else { small += g[2]; }
+			}
+			log.info("pageset {} : {} chunk(s) flowed into '{}' ; left : {} bytes usable,"
+					+ " {} bytes under the {} byte threshold", name, flow.chunks.size(),
+					arenaName, usable, small, gapmin);
+			return new Packing(name, arenaName, region, gendir, codec, linkSection, section,
+					bake, parts, blocks, unitNodes, divisibleCount, flow.chunks, members);
+		}
+
 		// --- pack : first fit, declaration order ---------------------------
 		List<List<Integer>> pages = new ArrayList<List<Integer>>();
 		pages.add(new ArrayList<Integer>());
@@ -226,6 +282,89 @@ public class PageSetPlugin {
 		}
 		return new Packing(name, regionName, region, gendir, codec, linkSection, section,
 				bake, parts, blocks, unitNodes, divisibleCount, pages, members);
+	}
+
+	/** the result of flowing parts into gaps : which parts land in which gap */
+	static class Flow {
+		final List<List<Integer>> chunks = new ArrayList<List<Integer>>();
+		/** the gap each chunk fills, {page, address, size}, aligned with chunks */
+		final List<int[]> chunkGaps = new ArrayList<int[]>();
+		/** what remains for the next collection, in zone order */
+		final List<int[]> leftover = new ArrayList<int[]>();
+	}
+
+	/**
+	 * Flow the parts, in declaration order, into the gaps, in zone order : one
+	 * chunk per gap used, as big as its gap allows. A gap under the threshold
+	 * is not offered and goes straight to the leftover. Pure function of its
+	 * inputs, deterministic by construction.
+	 */
+	static Flow flow(String name, List<String[]> parts, int[] sizes, List<int[]> gaps,
+			int gapmin) throws Exception {
+		Flow flow = new Flow();
+		List<int[]> offered = new ArrayList<int[]>();
+		for (int[] g : gaps) {
+			(g[2] >= gapmin ? offered : flow.leftover).add(g);
+		}
+		int biggest = 0;
+		for (int[] g : offered) {
+			biggest = Math.max(biggest, g[2]);
+		}
+		int g = 0;
+		int used = 0;
+		List<Integer> chunk = new ArrayList<Integer>();
+		for (int i = 0; i < parts.size(); i++) {
+			if (sizes[i] > biggest) {
+				throw new Exception("pageset '" + name + "' : '" + parts.get(i)[1] + "' is "
+						+ sizes[i] + " bytes, more than the " + biggest
+						+ " bytes of the roomiest gap — an item is never split, it has"
+						+ " to be made smaller (or the arena needs a roomier zone)");
+			}
+			while (g < offered.size() && used + sizes[i] > offered.get(g)[2]) {
+				int[] gap = offered.get(g);
+				if (!chunk.isEmpty()) {
+					flow.chunks.add(chunk);
+					flow.chunkGaps.add(gap);
+					if (gap[2] - used >= 1) {
+						// the unused tail of a consumed gap stays available —
+						// it just was not big enough for the NEXT element of
+						// this set, another set's smaller elements may fit
+						flow.leftover.add(new int[] { gap[0], gap[1] + used, gap[2] - used });
+					}
+					chunk = new ArrayList<Integer>();
+				} else {
+					// too small for the very element at hand : stays whole
+					flow.leftover.add(gap);
+				}
+				g++;
+				used = 0;
+			}
+			if (g == offered.size()) {
+				int remaining = 0;
+				for (int r = i; r < parts.size(); r++) {
+					remaining += sizes[r];
+				}
+				throw new Exception("pageset '" + name + "' does not fit : " + remaining
+						+ " bytes of elements remain and every offered gap is used —"
+						+ " give the arena another <zone>, or put less in the set");
+			}
+			chunk.add(i);
+			used += sizes[i];
+		}
+		if (!chunk.isEmpty()) {
+			flow.chunks.add(chunk);
+			flow.chunkGaps.add(offered.get(g));
+			int[] gap = offered.get(g);
+			if (gap[2] - used >= 1) {
+				flow.leftover.add(new int[] { gap[0], gap[1] + used, gap[2] - used });
+			}
+			g++;
+		}
+		// gaps the flow never reached stay whole
+		for (; g < offered.size(); g++) {
+			flow.leftover.add(offered.get(g));
+		}
+		return flow;
 	}
 
 	/**

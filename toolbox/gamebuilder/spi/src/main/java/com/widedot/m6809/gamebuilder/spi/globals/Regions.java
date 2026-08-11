@@ -197,6 +197,26 @@ public class Regions {
 	/** File name -> {page, address}, decided by the arena packer. */
 	private final Map<String, int[]> filePlacements = new LinkedHashMap<String, int[]>();
 
+	/**
+	 * Arena name -> the free ranges its rigid placement left, {page, address,
+	 * size} in zone order. This is what a collection flows into : the packer
+	 * records what remains after the rigid files are placed, and each pageset
+	 * that flows consumes its share and stores the rest back. Absent (null)
+	 * when nothing was recorded — the discovery pass, or an arena holding no
+	 * rigid file — in which case the whole zones are the gaps.
+	 */
+	private final Map<String, java.util.List<int[]>> arenaGaps =
+			new LinkedHashMap<String, java.util.List<int[]>>();
+
+	public void setArenaGaps(String arena, java.util.List<int[]> gaps) {
+		arenaGaps.put(arena, gaps);
+	}
+
+	/** the recorded free ranges of an arena, or null when none were recorded */
+	public java.util.List<int[]> arenaGaps(String arena) {
+		return arenaGaps.get(arena);
+	}
+
 	public void seedFileSizes(Map<String, Integer> sizes) {
 		fileSizes = new LinkedHashMap<String, Integer>(sizes);
 	}
@@ -220,6 +240,7 @@ public class Regions {
 
 	public void clearFilePlacements() {
 		filePlacements.clear();
+		arenaGaps.clear();
 	}
 
 	public void put(Region region) throws Exception {
@@ -249,6 +270,7 @@ public class Regions {
 		ramPages = 32;
 		fileSizes.clear();
 		filePlacements.clear();
+		arenaGaps.clear();
 		measured.clear();
 		reserved.clear();
 		regions.clear();

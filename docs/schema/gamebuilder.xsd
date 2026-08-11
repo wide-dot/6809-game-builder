@@ -1627,7 +1627,7 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- a dataset spread over the pages of a multi-page region : the builder packs it and emits one file per page -->
+  <!-- a collection the builder packs and emits as several files : whole pages of a region, or chunks flowed into the gaps an arena's rigid placement leaves -->
   <xs:element name="pageset">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
@@ -1680,8 +1680,14 @@
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>set name ; members are &lt;name&gt;.0 .. &lt;name&gt;.&lt;pages-1&gt;</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="region" type="xs:string" use="required">
-        <xs:annotation><xs:documentation>multi-page region receiving the set</xs:documentation></xs:annotation>
+      <xs:attribute name="region" type="xs:string">
+        <xs:annotation><xs:documentation>multi-page region receiving the set, one member per filled page (one of region or arena)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="arena" type="xs:string">
+        <xs:annotation><xs:documentation>arena whose free gaps the elements flow into, one member (chunk) per gap used (one of region or arena)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gapmin" type="int6809">
+        <xs:annotation><xs:documentation>arena form : a gap smaller than this is left empty rather than crumbling the set (default 256)</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="gendir" type="xs:string" use="required">
         <xs:annotation><xs:documentation>directory receiving the generated member sources</xs:documentation></xs:annotation>

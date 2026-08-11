@@ -102,12 +102,15 @@ public class ScenePlugin {
 			List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member> members =
 					ctx.pageSets.get(loadName);
 			if (members != null) {
-				if (regionName == null) {
+				String setPlace = regionName != null ? regionName : arenaName;
+				if (setPlace == null) {
 					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' is a pageset, which needs its region");
+							+ "' is a pageset, which needs its region or arena");
 					continue;
 				}
-				if (!usedRegions.add(regionName)) {
+				// a region takes one set per scene ; an arena takes many — its
+				// flow already guarantees the chunks never overlap
+				if (regionName != null && !usedRegions.add(regionName)) {
 					errors.add(where + ": scene " + name + ": region '" + regionName
 							+ "' is loaded twice");
 					continue;
@@ -115,7 +118,7 @@ public class ScenePlugin {
 				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member : members) {
 					placed.add(new SceneGenerator.Placed(member.page, member.address, member.name));
 					check.loads.add(new SceneCheck.Load(member.name, SceneCheck.Kind.PLACED,
-							member.page, member.address, null, regionName, where));
+							member.page, member.address, null, setPlace, where));
 				}
 				continue;
 			}
