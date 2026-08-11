@@ -239,7 +239,7 @@ stage2.notRelinked
 ; L'index d'objets et la wave — les données réelles du niveau 2
 ;*******************************************************************************
         INCLUDE "src/stages/02/objid.const.asm"
-        INCLUDE "gen/stages/02/objid.index.asm"
+        INCLUDE "src/stages/02/objid.index.asm"
 
 
  ENDSECTION

@@ -544,6 +544,15 @@ Fonctionnel :
         4 images r-type changent (annoncé). Mesure honnête : 10 morceaux
         vs 8 (espace quasi plein — le gain est la fin du câblage manuel,
         pas le compte d'entrées).
+  - [x] Phase 5-objets (11/08) — TEST CONCLUANT : les objets sortent du
+        XML. Les 2 <objectindex> de r-type remplacés par de l'asm de dev
+        (objid-common.const.asm : préfixe de 29 ids partagé par include,
+        l'invariant devient structurel ; tables manuscrites par stage,
+        pages par équates du layout, adresses EXTERNAL cuites ou liées).
+        PREUVE : 59 images identiques à l'octet — même exécution, coût
+        de lien inchangé par construction. Verdict au §24. Reste si
+        adopté : retirer l'élément <objectindex> et son plugin (plus de
+        consommateur) ; l'inversion §23 ne porte plus que sur le généré.
   - [ ] Phase 5-arbitrage (10/08) — le cas objet MESURÉ (§24 de
         l'analyse placement) : réutilisation multi-stages massive et sans
         axe (20/54 objets, sous-ensembles arbitraires), v1 sans contrat

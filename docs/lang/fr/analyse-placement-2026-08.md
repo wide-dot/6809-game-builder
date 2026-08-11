@@ -1332,3 +1332,29 @@ avec ordonnanceur trois-étages ; (B) centralisé conservé, dédoublonné par
 un bloc commun partagé entre index ; (C) scinder — la coupe par les creux
 d'abord (indépendante, gains certains), le modèle de numérotation conçu et
 arbitré ensuite, la syntaxe en dernier.
+
+### Verdict d'exécution (2026-08-11) : les objets sortent du XML
+
+Test acté par l'auteur, exécuté sur r-type : les deux `<objectindex>` sont
+retirés du config et remplacés par de l'asm de dev — le préfixe partagé
+(29 ids) factorisé dans `src/common/objid-common.const.asm` inclus par les
+deux consts de stage (l'invariant que l'ancien générateur ne promettait
+qu'en commentaire devient STRUCTUREL), et les cinq tables recopiées en
+manuscrit (`src/stages/NN/objid.index.asm`), pages par équates du layout,
+adresses par EXTERNAL cuits ou liés. **Preuve : les 59 images du corpus
+sont identiques à l'octet** — mêmes équates, mêmes lignes, mêmes binaires,
+donc même exécution et coût de lien inchangé par construction. Le banc
+n'avait rien à ajouter.
+
+Ce que le test a montré en creux : la numérotation DIVERGE déjà entre
+stages après le préfixe (ObjID_pow 33 vs 30, bossmusic 39 vs 32) — le
+modèle trois-étages était en action de fait ; et le distinguo de l'auteur
+tient : l'index builder reste indispensable pour le GÉNÉRÉ (cas 1 :
+tuiles, images), le cas 3 (entrées authorées pointant dans du contenu
+FLUIDE) reste la seule frontière future, à trancher avec le portage des
+ennemis (soit `symbole$PAGE`, soit passage en cas 1).
+
+Conséquence si adopté définitivement : l'élément `<objectindex>` et son
+plugin n'ont plus de consommateur — retrait au prochain passage. La
+question d'inversion du §23 ne porte plus que sur le cas 1, où la
+contribution est déjà le mécanisme qui tourne.
