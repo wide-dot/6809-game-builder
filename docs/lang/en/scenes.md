@@ -108,6 +108,13 @@ is generated ; it goes through the standard file pipeline and its name
 becomes a file id equate, so game code loads it exactly as before :
 `ldx #scenes.level1` / `jsr loader.scene.load`.
 
+**The boot entry is `$6100`** — the single entry point for a load that
+wipes the resident area and takes it over, which is what every example
+does (`loader.DEFAULT_SCENE_EXEC_ADDR equ $6100`). A game that keeps a
+RESIDENT engine is the exception and enters elsewhere : r-type's engine
+lives at `$6100` and stays, so its stage enters at its own place
+(`equ stage1.address`) without wiping anything.
+
 The scenes also decide the **disk order** : entry payloads land on the
 media in first-use order — the first scene's table, then its files in
 table order, then the next scene's — so loading a scene reads the disk
