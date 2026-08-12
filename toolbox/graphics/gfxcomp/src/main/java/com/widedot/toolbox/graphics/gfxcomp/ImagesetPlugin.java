@@ -49,7 +49,10 @@ public class ImagesetPlugin {
 					+ " imageset=\"" + name + "\"");
 		}
 
-		index.generate(gensource, section, ctx.staticLink::pageOf);
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
+				ctx.machines.required("<imageset>");
+		index.generate(gensource, section,
+				new ImageSets.PageByte(machine.pageExpr, machine.pageInclude));
 		log.info("imageset {} : index generated in section {}", name, section);
 		return new File(gensource);
 	}

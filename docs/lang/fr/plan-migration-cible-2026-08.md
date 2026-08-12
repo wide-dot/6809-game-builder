@@ -352,8 +352,22 @@ sont authorées (la table d'objets, prouvée le 11/08).
 > par l'auteur AVANT son implémentation.** Le plan porte la spec ; le commit
 > porte la preuve.
 
-- **5b — l'attribut de page d'un élément.** Isolé, prouvable par identité.
-  Spec détaillée ci-dessous, EN ATTENTE DE VALIDATION.
+- **5b — l'attribut de page d'un élément. FAIT (11/08).** `StaticLink.pageOfName`
+  consulte les deux tables (fichiers placés, symboles exportés) et REFUSE un
+  nom qui répond aux deux, en les nommant ; le chemin de cuisson l'utilise, la
+  forme liée reste sur un id de fichier. Les trois générateurs demandent la
+  page PAR SON NOM : `<tilemap>` et les deux formes de l'imageset écrivent
+  `<expression machine><symbole>$PAGE` au lieu d'un littéral, déclarent le
+  `$PAGE EXTERNAL` de chaque élément et émettent l'include de la machine
+  (gardé). `ImageSets.PageOf` et son câblage disparaissent, la branche à deux
+  formes de `pageSymbol` se réduit à une ligne, et les deux derniers `0x60`
+  du builder partent — il ne reste de constante machine que dans
+  `ObjectIndexPlugin`, qui meurt en 5e. PRÉALABLE FAIT : la définition machine
+  (`engine/config/machine.xml`, lue comme `storage.xml`) porte l'expression et
+  son include. PREUVE : 59 images identiques à l'octet (le littéral cuit vaut
+  ce que le symbole résout), JUnit 142/142, banc r-type 5/5, et les deux
+  garde-fous LUS pour de vrai — « 'overlay$PAGE' is ambiguous : … » et
+  « 'nowhere$PAGE' resolves to nothing : … ».
 - **5c — le flux par élément, sur tout fichier.** Retire `<pageset>` du
   vocabulaire. Les images changent (les 48 fichiers `lwasm`+`gfxcomp`
   deviennent des collections : 1 élément de code + N éléments d'images) ;

@@ -134,7 +134,11 @@ public class GfxcompPlugin {
 		} else if (imageset != null) {
 			String index = ctx.path + File.separator + genindex;
 			Files.createDirectories(Paths.get(index).getParent());
-			imageset.generate(index);
+			com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
+					ctx.machines.required("<gfxcomp>");
+			imageset.generate(index,
+					new com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte(
+							machine.pageExpr, machine.pageInclude));
 			generated.add(index);
 		}
 

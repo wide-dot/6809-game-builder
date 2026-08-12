@@ -24,7 +24,10 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 	 * Asked for the page of each image when the set is spread over several
 	 * direntries, null when one {@code <file>$PAGE} says it for the whole set.
 	 */
-	private com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageOf pages;
+	/** set when the code lives in OTHER files : the page is asked per image */
+	private boolean spread;
+	/** the machine's page byte prefix, null only for the standalone tool */
+	private com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte pageByte;
 
 	public ImageSet(Integer type) {
 		this(type, null);
@@ -50,18 +53,19 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 	 */
 	@Override
 	public void generate(String path, String section,
-			com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageOf pages) throws Exception {
+			com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte pageByte) throws Exception {
 
-		this.pages = pages;
+		this.spread = true;
+		this.pageByte = pageByte;
 		asm = new AsmSourceCode(Paths.get(path));
 		asm.addCommentLine("the drawing code lives in other files of this build : the builder"
 				+ " resolves each reference against where that file is loaded");
+		asm.add("        INCLUDE \"" + pageByte.include + "\"");
 		for (Entry<String, HashMap<String, Image>> imgEntry : images.entrySet()) {
 			for (Image img : imgEntry.getValue().values()) {
-				asm.add("adr_" + img.getFullName() + " EXTERNAL");
+				extern("adr_" + img.getFullName());
 				if (img.nb_cell != null) {
-					asm.add("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE
-							+ " EXTERNAL");
+					extern("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE);
 				}
 			}
 		}
@@ -69,6 +73,12 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 		body(section);
 	}
 	
+	/** a referenced element declares its symbol AND the page it lives on */
+	private void extern(String symbol) {
+		asm.add(symbol + " EXTERNAL");
+		asm.add(symbol + "$PAGE EXTERNAL");
+	}
+
 	public void addImage(Image img) throws Exception {
 		HashMap<String,Image> imgTypes = images.get(img.getName());
 		if (imgTypes == null) {
@@ -103,7 +113,10 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 		}
 	}
 	
-	public void generate(String fileName) throws Exception {
+	public void generate(String fileName,
+			com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte pageByte) throws Exception {
+
+		this.pageByte = pageByte;
 
 		asm = new AsmSourceCode(Paths.get(fileName));
 
@@ -115,6 +128,7 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 		// compiled into this unit is in the same file, hence one symbol.
 		if (file != null) {
 			asm.addCommentLine("page of the file holding this code, resolved at load time");
+			asm.add("        INCLUDE \"" + pageByte.include + "\"");
 			asm.add(file + "$PAGE EXTERNAL");
 		}
 		body(null);
@@ -136,7 +150,7 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 			if (((Image) imgEntry.getValue().values().toArray()[0]).index != null) {
 				asm.add("idx_" + imgEntry.getKey() + " EXPORT");
 			}
-			if (pages != null) {
+			if (spread) {
 				continue;
 			}
 			for (Image img : imgEntry.getValue().values()) {
@@ -507,10 +521,13 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 	 * for separately — nothing guarantees it landed with its drawing code.
 	 */
 	private String pageSymbol(Image img, String suffix) throws Exception {
-		if (pages != null) {
-			return String.format("$%1$02X", (pages.of("adr_" + img.getFullName() + suffix) + 0x60) & 0xFF);
+		if (spread) {
+			return pageByte.expr + "adr_" + img.getFullName() + suffix + "$PAGE";
 		}
-		return file == null ? "$00" : file + "$PAGE+$60";
+		if (file == null) {
+			return "$00";     // the standalone tool : no build, no placement
+		}
+		return pageByte.expr + file + "$PAGE";
 	}
 
 	private void flush(List<String> line) {

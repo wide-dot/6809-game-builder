@@ -21,9 +21,21 @@ import java.util.Map;
  */
 public class ImageSets {
 
-	/** the page an {@code adr_} symbol landed on, once its file is placed */
-	public interface PageOf {
-		int of(String symbol) throws Exception;
+	/**
+	 * What a generated index writes in front of a page : the machine's
+	 * expression and the asm header defining it. The index asks the page BY
+	 * NAME ({@code <symbol>$PAGE}) and the builder resolves it, so nothing
+	 * here knows a page number — nor the cartridge bits, which belong to the
+	 * machine declaration (see Machines).
+	 */
+	public static class PageByte {
+		public final String expr;
+		public final String include;
+
+		public PageByte(String expr, String include) {
+			this.expr = expr;
+			this.include = include;
+		}
 	}
 
 	/** an imageset that knows its images and can write their index */
@@ -32,9 +44,9 @@ public class ImageSets {
 		 * @param path    where to write the generated source
 		 * @param section the section to emit it in ; a {@code .static} one has
 		 *                the addresses baked at build time
-		 * @param pages   asked for the page of each image, one by one
+		 * @param pageByte the machine's page byte prefix and its header
 		 */
-		void generate(String path, String section, PageOf pages) throws Exception;
+		void generate(String path, String section, PageByte pageByte) throws Exception;
 
 		/**
 		 * Absorb another gfxcomp's contribution to the same set. Refusing a

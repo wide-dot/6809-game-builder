@@ -27,6 +27,11 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.shift.Shift;
  */
 public class ImageSetIndexTest {
 
+	/** what a to8 declares in engine/config/machine.xml */
+	private static final com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte PAGE_BYTE =
+			new com.widedot.m6809.gamebuilder.spi.globals.ImageSets.PageByte(
+					"map.RAM_OVER_CART+", "engine/system/to8/map.const.asm");
+
 	/** an 8 bit indexed sprite, colour 0 transparent, a 2x2 block of colour 1 */
 	private static File sprite(Path dir, String name) throws Exception {
 		byte[] r = new byte[17], g = new byte[17], b = new byte[17];
@@ -55,7 +60,7 @@ public class ImageSetIndexTest {
 		ImageSet set = new ImageSet(0, "assets.sprites");
 		set.addImage(image);
 		Path index = dir.resolve("index.asm");
-		set.generate(index.toString());
+		set.generate(index.toString(), PAGE_BYTE);
 
 		String asm = Files.readString(index);
 		assertTrue(asm.contains("idx_hero equ 3"), asm);
@@ -66,7 +71,7 @@ public class ImageSetIndexTest {
 		// the page is a relocation on the file, with the cartridge window bits,
 		// and the addresses are words : an fcb would keep their low byte only
 		assertTrue(asm.contains("assets.sprites$PAGE EXTERNAL"), asm);
-		assertTrue(asm.contains("fcb   assets.sprites$PAGE+$60"), asm);
+		assertTrue(asm.contains("fcb   map.RAM_OVER_CART+assets.sprites$PAGE"), asm);
 		assertTrue(asm.contains("fdb   adr_hero_NB0"), asm);
 
 		// the sub set offset of the unmirrored variant, right after the header
@@ -98,12 +103,12 @@ public class ImageSetIndexTest {
 
 	/**
 	 * The other road : a set whose drawing code is spread over several files,
-	 * indexed from a third. The page is then baked per image — two frames of
+	 * indexed from a third. The page is then asked PER IMAGE — two frames of
 	 * one animation legitimately sit on different pages — and the routines are
 	 * imports, this unit no longer holding them.
 	 */
 	@Test
-	void aSpreadIndexBakesOnePagePerImage(@TempDir Path dir) throws Exception {
+	void aSpreadIndexAsksOnePagePerImage(@TempDir Path dir) throws Exception {
 		File png = sprite(dir, "hero");
 		Image image = new Image("hero", 3, png.getAbsolutePath(),
 		                        Image.TYPE_BDRAW, Mirror.NONE, 0, Image.POSITION_CENTER);
@@ -112,21 +117,25 @@ public class ImageSetIndexTest {
 		ImageSet set = new ImageSet(0, null);
 		set.addImage(image);
 		Path index = dir.resolve("spread.asm");
-		// the drawing code landed on page $15, its erase routine on $16
-		set.generate(index.toString(), "code.static",
-				symbol -> symbol.endsWith("_erase") ? 0x16 : 0x15);
+		set.generate(index.toString(), "code.static", PAGE_BYTE);
 
 		String asm = Files.readString(index);
 		assertTrue(asm.contains("adr_hero_NB0 EXTERNAL"), asm);
 		assertTrue(asm.contains("adr_hero_NB0_erase EXTERNAL"), asm);
-		// page + the cartridge window bits, as a literal : $15+$60 and $16+$60
-		assertTrue(asm.contains("fcb   $75"), asm);
-		assertTrue(asm.contains("fcb   $76"), asm);
+		// the page is asked BY NAME, like the address : the machine's
+		// expression plus <symbol>$PAGE, never a number (5b)
+		assertTrue(asm.contains("fcb   map.RAM_OVER_CART+adr_hero_NB0$PAGE"), asm);
+		assertTrue(asm.contains("fcb   map.RAM_OVER_CART+adr_hero_NB0_erase$PAGE"), asm);
+		assertTrue(asm.contains("adr_hero_NB0$PAGE EXTERNAL"), asm);
+		assertTrue(asm.contains("INCLUDE \"engine/system/to8/map.const.asm\""), asm);
 		assertTrue(asm.contains("fdb   adr_hero_NB0"), asm);
-		// no relocation on a file, and the index carries its own section
+		// the index carries its own section. The old contract asserted the
+		// ABSENCE of $PAGE here — the spread form baked a literal per image ;
+		// since 5b it asks per SYMBOL, which is what the two fcb above check,
+		// and the set's page is never asked as a whole (there is no file to
+		// name : the code lives in several).
 		assertTrue(asm.contains(" SECTION code.static"), asm);
 		assertTrue(asm.contains(" ENDSECTION"), asm);
-		assertTrue(!asm.contains("$PAGE"), asm);
 		// the set is still what the game links against
 		assertTrue(asm.contains("set_hero EXPORT"), asm);
 		assertTrue(!asm.contains("adr_hero_NB0 EXPORT"), asm);

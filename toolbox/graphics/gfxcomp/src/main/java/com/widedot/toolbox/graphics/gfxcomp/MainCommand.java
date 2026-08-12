@@ -120,7 +120,7 @@ public class MainCommand implements Callable<Integer> {
 		    		imagesetFile = path+imageset.getString("[@fileOut]");
 	    			imagesetGenerator = new ImageSet(imagesetType);
 		    		parseImages(imageset);
-		    		imagesetGenerator.generate(imagesetFile);
+		    		imagesetGenerator.generate(imagesetFile, null);
 		    	}
 		    	
 			    // process images outside an imageset, will produce compiled images only	
