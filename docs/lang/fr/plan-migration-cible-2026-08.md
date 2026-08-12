@@ -385,15 +385,71 @@ sont authorées (la table d'objets, prouvée le 11/08).
   `<unit>` relogé dans son propre plugin, les 6 scénarios de flux
   retargetés sur `ArenaPacker.cut`, docs alignées. Preuve : 59 images
   identiques à l'octet.
-- **5d — `<unit>` sur son vrai rôle.** Fiche réécrite (grouper pour la
-  continuité), refus dans la forme arène levé, cas composite documenté.
-  À spécifier après 5c.
+- **5d — `<unit>` sur son vrai rôle.** Spec détaillée ci-dessous,
+  EN ATTENTE DE VALIDATION.
 
 - **5e — retrait de `<objectindex>`. FAIT (12/08).** L'élément, son plugin
   (les 5 derniers `map.RAM_OVER_CART` codés en dur du builder) et les specs
   `<objectindex>`/`<entry>` retirés ; XSD −219 lignes. Avec lui disparaît
   la dernière constante machine hors `machine.xml`. PREUVE : 59 images
   identiques à l'octet, JUnit vert.
+
+### 5d — spécification détaillée (à valider)
+
+*Le rôle, dans le modèle du §28.* Un `<unit>` est le mot qui groupe des
+plugins dont la sortie doit rester **continue** : un élément aux yeux du
+placement, jamais coupé en son intérieur. Trois faits mesurés sur l'état
+d'aujourd'hui :
+
+1. **Le corpus compte 4 `<unit>`** (les vagues des stages 1-2, deux armes),
+   tous **enfant unique d'un `<file>`** — la continuité y est triviale
+   puisque rien d'autre ne partage le fichier. L'élément fonctionne :
+   enveloppe générée (EXPORT + section + label d'entrée), assemblée seule,
+   patch du `file=` d'un gfxcomp à genindex imbriqué.
+2. **Le refus historique « pas de unit dans la forme arène » est déjà
+   tombé** — il vivait dans PageSetPlugin, mort au commit B. Un
+   `<file arena=…><unit>…</unit></file>` est le pattern courant des vagues.
+3. **Ce qui n'est PAS exprimable : le fichier mixte.** Un `<file arena=…>`
+   mêlant des éléments coupables (`<gfxcomp>`) et un `<unit>` n'est pas vu
+   comme collection — la détection exige que TOUS les enfants sachent nommer
+   leurs parties, et `unit` n'est pas au registre PARTS. Le fichier entier
+   devient donc rigide : c'est le cas composite du §28 (« certains objets
+   composites qui ne sont pas dans rtype »).
+
+*Ce que la 5d ferait, en trois volets :*
+
+- **(a) La fiche.** La spec de l'élément dit déjà « one indivisible object »
+  (réécrite au commit B). Reste le manuel : un paragraphe `<unit>` dans
+  scenes.md — grouper pour la continuité, les deux espèces (sources
+  auto-enveloppées vs données nues via `section=`), et le composite.
+- **(b) unit = fournisseur d'éléments.** Enregistrer `unit` au registre
+  PARTS avec UNE partie : sa source générée + son `symbol`. Effet : le
+  fichier mixte devient une collection dont le unit est un élément
+  insécable — le packer peut couper ENTRE le unit et les tuiles, jamais
+  DANS le unit. Coût réel, pas une ligne : la MESURE d'une collection
+  assemble aujourd'hui tous les éléments en un seul lot, or deux units ne
+  peuvent pas partager une assemblée (les sources v1 réutilisent leurs noms
+  internes `Object`/`Routines` — c'est pour ça que l'ancien pageset
+  mesurait chaque unit À PART). Il faut donc réintroduire la mesure
+  séparée des units dans CollectionPlugin, et l'émission par morceau doit
+  concaténer des BINAIRES (divisible + units), pas des sources.
+- **(c) Le cas composite documenté**, avec un exemple synthétique.
+
+*LE POINT À TRANCHER : (b) maintenant ou au premier consommateur ?* Aucun
+objet de r-type n'a besoin du fichier mixte (les 48 ennemis imbriquent leur
+gfxcomp DANS le lwasm — un seul élément, continuité par construction ; les
+4 units du corpus sont seuls dans leur fichier). Implémenter (b) aujourd'hui
+c'est réintroduire ~80 lignes de mesure/émission spéciales units sans
+personne pour les exercer en vrai — un banc JUnit synthétique serait la
+seule preuve, et la machinerie dormirait. Ne faire que (a)+(c) c'est
+documenter le modèle et laisser le registre PARTS comme point d'ancrage
+nommé — la ligne `PARTS.put("unit", …)` est exactement où brancher le jour
+où un objet composite existe.
+
+**Recommandation : (a)+(c) maintenant, (b) différé au premier objet
+composite réel.** C'est le précédent du repo (le retrait du ServiceLoader :
+on ne garde pas de machinerie sans consommateur, on garde le point
+d'ancrage). Preuve de (a)+(c) : identité 59/59 — c'est de la doc.
 
 ### Prérequis mesuré : les éléments portent-ils déjà un nom ?
 
