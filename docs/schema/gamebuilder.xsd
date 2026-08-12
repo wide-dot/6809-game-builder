@@ -37,6 +37,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -105,6 +106,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -161,6 +163,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -218,6 +221,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -274,6 +278,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -327,6 +332,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -380,6 +386,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -448,6 +455,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -507,6 +515,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -566,6 +575,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -631,6 +641,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -699,6 +710,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -764,6 +776,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -820,6 +833,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -903,6 +917,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -962,6 +977,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1018,6 +1034,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1104,6 +1121,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1160,6 +1178,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1225,6 +1244,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1287,6 +1307,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1343,6 +1364,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1399,6 +1421,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1458,6 +1481,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1526,6 +1550,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1559,6 +1584,66 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- the target machine, picked out of the machine definitions the way <floppydisk model=…> picks a media out of storage.xml -->
+  <xs:element name="machine">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="entry"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="objectindex"/>
+        <xs:element ref="pageset"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>machine name declared in the definitions file (to8, mo6)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="definitions" type="xs:string">
+        <xs:annotation><xs:documentation>definitions file, defaults to engine/config/machine.xml</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- the object index a stage exports to the engine : ObjID equates and the five tables RunObjects and the sprite runtime read. One <entry> per id, in id order — the id space is authored, the wave assembles against it -->
   <xs:element name="objectindex">
     <xs:complexType>
@@ -1588,6 +1673,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1656,6 +1742,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1739,6 +1826,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1801,6 +1889,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1863,6 +1952,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -1958,6 +2048,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2035,6 +2126,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2103,6 +2195,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2168,6 +2261,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2227,6 +2321,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2289,6 +2384,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2345,6 +2441,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2410,6 +2507,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2466,6 +2564,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2540,6 +2639,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2599,6 +2699,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2667,6 +2768,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2726,6 +2828,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2785,6 +2888,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>
@@ -2850,6 +2954,7 @@
         <xs:element ref="layout"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
         <xs:element ref="objectindex"/>
         <xs:element ref="pageset"/>
         <xs:element ref="pcm"/>

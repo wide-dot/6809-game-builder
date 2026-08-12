@@ -1,10 +1,11 @@
 <configuration>
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <machine name="mo6"/>
 
         <!-- Memory layout : the MO6 map differs from the TO8 one, so the   -->
         <!-- layout is declared per target and not shared.                  -->
-        <layout pages="8">
+        <layout>
             <!-- On ne declare que les CONTRAINTES : la page (ce qui voyage    -->
             <!-- ensemble) et, quand elle compte, l'adresse. Les tailles se     -->
             <!-- mesurent — les budgets ecrits a la main d'un lecteur YM qui a  -->

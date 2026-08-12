@@ -90,6 +90,9 @@ public class TilemapPlugin {
 		source.append(label).append(" EXPORT").append(System.lineSeparator());
 		source.append(" SECTION ").append(section).append(System.lineSeparator());
 		source.append(label).append(System.lineSeparator());
+		// the page byte's prefix is a MACHINE fact, declared in the machine
+		// definitions — never a constant of the builder (§26)
+		String pageExpr = ctx.machines.required("<tilemap>").pageExpr;
 		int empty = 0;
 		for (int i = 0; i < entries; i++) {
 			if (ids[i] == 0) {
@@ -104,7 +107,7 @@ public class TilemapPlugin {
 			// two entries of the same map legitimately carry different pages.
 			// It also costs nothing at load time — a literal, not a reference.
 			String symbol = "adr_" + tiles + "_" + ids[i] + "_" + variant;
-			source.append("        fcb   map.RAM_OVER_CART+")
+			source.append("        fcb   ").append(pageExpr)
 					.append(ctx.staticLink.pageOf(symbol)).append(System.lineSeparator());
 			source.append("        fdb   ").append(symbol).append(System.lineSeparator());
 		}

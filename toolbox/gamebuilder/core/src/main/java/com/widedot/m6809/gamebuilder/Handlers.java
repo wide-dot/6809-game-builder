@@ -127,6 +127,9 @@ public final class Handlers {
 		spec(element("cksumfd640").doc("applies the fd640 boot sector checksum to its content"));
 
 		// declarative scenes
+		spec(element("machine").doc("the target machine, picked out of the machine definitions the way <floppydisk model=…> picks a media out of storage.xml")
+			.req("name", STRING, "machine name declared in the definitions file (to8, mo6)")
+			.opt("definitions", STRING, "definitions file, defaults to engine/config/machine.xml"));
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include")
 			.opt("pages", INT, "physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6"));
@@ -273,6 +276,7 @@ public final class Handlers {
 		DEFAULTS.put("define", DefinePlugin::run);
 		DEFAULTS.put("floppydisk", FloppyDiskPlugin::run);
 		DEFAULTS.put("layout", LayoutPlugin::run);
+		DEFAULTS.put("machine", com.widedot.m6809.gamebuilder.plugin.machine.MachinePlugin::run);
 		DEFAULTS.put("objectindex", com.widedot.m6809.gamebuilder.plugin.objectindex.ObjectIndexPlugin::run);
 
 		// media structure

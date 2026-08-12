@@ -6,6 +6,7 @@
 
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <machine name="to8"/>
 
         <floppydisk model="fd640">
 

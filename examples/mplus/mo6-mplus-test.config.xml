@@ -9,6 +9,7 @@
         <phoneme filename="src/assets/sounds/text/demo.txt" genbinary="src/assets/sounds/text/demo.asm"/>
 
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <machine name="mo6"/>
 
         <layout>
             <!-- the sound blobs : the builder lays them out over these zones

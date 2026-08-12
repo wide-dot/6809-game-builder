@@ -1,0 +1,24 @@
+<configuration>
+
+    <!-- What the builder must know about a machine, and nothing more : it -->
+    <!-- places bytes and resolves names, the rest belongs to the engine.  -->
+    <!-- One file for every machine, exactly like storage.xml holds every  -->
+    <!-- media ; a target picks one with <machine name="…"/>.              -->
+    <!--                                                                   -->
+    <!-- pagebyte : what a generated table writes in front of a page       -->
+    <!-- number so the byte can go straight to the window register. It is  -->
+    <!-- a NAME plus the header defining it, never a value — the number    -->
+    <!-- (%01100000 today, on both machines) stays in the asm header, its  -->
+    <!-- single home, and a machine whose bits differ only changes here.   -->
+
+    <machine name="to8">
+        <ram pages="32"/>   <!-- 512 KB in 16 KB pages -->
+        <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/to8/map.const.asm"/>
+    </machine>
+
+    <machine name="mo6">
+        <ram pages="8"/>    <!-- 128 KB in 16 KB pages -->
+        <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/mo6/map.const.asm"/>
+    </machine>
+
+</configuration>

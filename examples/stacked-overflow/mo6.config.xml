@@ -20,6 +20,7 @@
         <define symbol="MO6" value="0"/>
 
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <machine name="mo6"/>
 
         <layout>
             <arena name="stacked">
