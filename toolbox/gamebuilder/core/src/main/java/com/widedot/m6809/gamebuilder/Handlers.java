@@ -208,6 +208,15 @@ public final class Handlers {
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
 			.opt("index", INT, "index in the imageset, emitted as idx_<name>")
 			.opt("grid", STRING, "tile size <width>x<height> : the png is a tileset, sliced into tiles named <name>_<id> in reading order, each compiled with the declared encoders"));
+		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
+			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
+			.opt("match", STRING, "glob filter on the file names, *.png if omitted")
+			.opt("encoder", STRING, "draw, bdraw, rle or zx0 — bdraw if omitted")
+			.opt("mirror", STRING, "none (default), x, y or xy — applied to every file of the row")
+			.opt("shifts", STRING, "comma list of pre-shifts, one compiled variant each ; defaults through <default name=\"images.shifts\"> — the target's one-line d7/t2 decision — then to 0. A row may pin its own (the player and the boss pre-shift even on floppy)")
+			.opt("names", STRING, "symbol base, <base>_<n> ; derived from the series directory if omitted (its parent when the directory is a plain images/)")
+			.opt("position", STRING, "center, top-left or 3qtr-center, forwarded to every encoder of the row")
+			.opt("planes", STRING, "pointer or offset, forwarded to every encoder of the row"));
 		spec(element("encoder").doc("one compiled rendering of an image")
 			.opt("name", STRING, "draw, bdraw, rle or zx0")
 			.opt("mirror", STRING, "none, x, y or xy")

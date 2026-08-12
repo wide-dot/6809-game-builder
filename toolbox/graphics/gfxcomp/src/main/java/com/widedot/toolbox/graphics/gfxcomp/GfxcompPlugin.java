@@ -64,10 +64,7 @@ public class GfxcompPlugin {
 		ImageSet imageset = name == null ? null : new ImageSet(0, null);
 
 		java.util.List<String[]> parts = new ArrayList<>();
-		for (ImmutableNode child : node.getChildren()) {
-			if (!"image".equals(child.getNodeName())) {
-				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
-			}
+		for (ImmutableNode child : imageNodes(node, ctx)) {
 			for (String file : compile(child, ctx, gendir, imageset)) {
 				if (file.endsWith("_exports.asm")) {
 					continue; // the export block belongs with whichever part is emitted
@@ -118,10 +115,7 @@ public class GfxcompPlugin {
 		                  : null;
 		List<String> generated = new ArrayList<>();
 
-		for (ImmutableNode child : node.getChildren()) {
-			if (!"image".equals(child.getNodeName())) {
-				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
-			}
+		for (ImmutableNode child : imageNodes(node, ctx)) {
 			generated.addAll(compile(child, ctx, gendir, imageset));
 		}
 
@@ -205,6 +199,132 @@ public class GfxcompPlugin {
 			return files;
 		}
 		return encode(node, ctx, gendir, imageset, name, filename, index);
+	}
+
+	/**
+	 * The effective {@code <image>} nodes of a gfxcomp : literal children pass
+	 * through, and each {@code <images>} row — the compact declaration (7b) —
+	 * expands into one image per file of its SERIES directory.
+	 *
+	 * The contract, measured on the v1 reference :
+	 * <ul>
+	 * <li>the files, filtered by {@code match} (default *.png), are ordered by
+	 *     their NN numeric prefix — the order IS the name, assigned from the
+	 *     v1 d7 properties order at renaming time ;</li>
+	 * <li>imageset indexes CONTINUE across rows and literal images alike — one
+	 *     running counter for the whole gfxcomp, a literal {@code index=}
+	 *     resetting it ;</li>
+	 * <li>symbol names are {@code <base>_<n>} : base from {@code names=}, or
+	 *     the series directory (its parent when the directory is the plain
+	 *     {@code images/}), with one counter PER BASE so a mirror row of the
+	 *     same directory continues the numbering ;</li>
+	 * <li>each row composes its encoders : {@code encoder=} (bdraw if absent)
+	 *     + {@code mirror=} + one entry per shift of {@code shifts=} — the
+	 *     latter defaulting through the attribute cascade, so a target's
+	 *     {@code <default name="images.shifts">} decides d7/t2 in ONE line
+	 *     while any row may pin its own.</li>
+	 * </ul>
+	 */
+	static List<ImmutableNode> imageNodes(ImmutableNode node, BuildContext ctx)
+			throws Exception {
+
+		boolean indexed = Attribute.getStringOpt(node, ctx, "genindex") != null
+				|| Attribute.getStringOpt(node, ctx, "imageset") != null;
+		List<ImmutableNode> images = new ArrayList<>();
+		int nextIndex = 0;
+		java.util.Map<String, Integer> baseCounters = new java.util.LinkedHashMap<>();
+
+		for (ImmutableNode child : node.getChildren()) {
+			if ("image".equals(child.getNodeName())) {
+				Integer index = Attribute.getIntegerOpt(child, ctx, "index");
+				if (index != null) {
+					nextIndex = index + 1;
+				}
+				// a literal name of the <base>_<n> shape advances that base's
+				// counter, so compact rows resume after hand-written exceptions
+				String name = Attribute.getStringOpt(child, ctx, "name");
+				if (name != null && name.matches(".*_\\d+")) {
+					int cut = name.lastIndexOf('_');
+					String base = name.substring(0, cut);
+					int n = Integer.parseInt(name.substring(cut + 1));
+					baseCounters.merge(base, n + 1, Math::max);
+				}
+				images.add(child);
+				continue;
+			}
+			if (!"images".equals(child.getNodeName())) {
+				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
+			}
+
+			String dir = Attribute.getString(child, ctx, "dir");
+			String match = Attribute.getString(child, ctx, "match", "*.png");
+			String encoder = Attribute.getString(child, ctx, "encoder", Image.TYPE_BDRAW);
+			String mirror = Attribute.getString(child, ctx, "mirror", Mirror.NONE);
+			String shifts = Attribute.getString(child, ctx, "shifts", "0");
+			String position = Attribute.getStringOpt(child, ctx, "position");
+			String planes = Attribute.getStringOpt(child, ctx, "planes");
+			String base = Attribute.getStringOpt(child, ctx, "names");
+			if (base == null) {
+				Path p = Paths.get(dir).getFileName() != null ? Paths.get(dir) : null;
+				String last = p.getFileName().toString();
+				base = "images".equals(last) && p.getParent() != null
+						? p.getParent().getFileName().toString() : last;
+			}
+
+			File series = new File(ctx.path + File.separator + dir);
+			if (!series.isDirectory()) {
+				throw new Exception(ctx.sources.locate(child) + ": <images> dir '" + dir
+						+ "' is not a directory");
+			}
+			java.nio.file.PathMatcher glob = java.nio.file.FileSystems.getDefault()
+					.getPathMatcher("glob:" + match);
+			java.util.TreeMap<Integer, String> ordered = new java.util.TreeMap<>();
+			for (File f : series.listFiles()) {
+				if (!f.isFile() || !glob.matches(Paths.get(f.getName()))) {
+					continue;
+				}
+				java.util.regex.Matcher nn = java.util.regex.Pattern
+						.compile("^(\\d+)").matcher(f.getName());
+				if (!nn.find()) {
+					throw new Exception(ctx.sources.locate(child) + ": <images> file '"
+							+ dir + "/" + f.getName() + "' has no NN order prefix — the"
+							+ " order is the name (see analyse-images-7b)");
+				}
+				String twin = ordered.put(Integer.parseInt(nn.group(1)), f.getName());
+				if (twin != null) {
+					throw new Exception(ctx.sources.locate(child) + ": <images> files '"
+							+ twin + "' and '" + f.getName() + "' share order prefix "
+							+ nn.group(1) + " in '" + dir + "'");
+				}
+			}
+			if (ordered.isEmpty()) {
+				throw new Exception(ctx.sources.locate(child) + ": <images> matches no file"
+						+ " in '" + dir + "' (match=" + match + ")");
+			}
+
+			for (String file : ordered.values()) {
+				int n = baseCounters.merge(base, 1, Integer::sum) - 1;
+				ImmutableNode.Builder image = new ImmutableNode.Builder();
+				image.name("image")
+					 .addAttribute("name", base + "_" + n)
+					 .addAttribute("filename", dir + "/" + file);
+				if (indexed) {
+					image.addAttribute("index", String.valueOf(nextIndex++));
+				}
+				for (String shift : shifts.split(",")) {
+					ImmutableNode.Builder enc = new ImmutableNode.Builder();
+					enc.name("encoder")
+					   .addAttribute("name", encoder)
+					   .addAttribute("mirror", mirror)
+					   .addAttribute("shift", shift.trim());
+					if (position != null) enc.addAttribute("position", position);
+					if (planes != null)   enc.addAttribute("planes", planes);
+					image.addChild(enc.create());
+				}
+				images.add(image.create());
+			}
+		}
+		return images;
 	}
 
 	/** cut a sheet into grid-sized tile PNGs, returning their paths in id order */

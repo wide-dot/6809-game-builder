@@ -30,6 +30,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -96,6 +97,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -150,6 +152,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -205,6 +208,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -259,6 +263,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -310,6 +315,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -361,6 +367,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -427,6 +434,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -484,6 +492,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -541,6 +550,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -604,6 +614,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -670,6 +681,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -724,6 +736,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -808,6 +821,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -865,6 +879,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -919,6 +934,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1003,6 +1019,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1057,6 +1074,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1098,6 +1116,82 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering -->
+  <xs:element name="images">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="dir" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>series directory ; files are ordered by their NN numeric prefix (the order IS the name)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="match" type="xs:string">
+        <xs:annotation><xs:documentation>glob filter on the file names, *.png if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="encoder" type="xs:string">
+        <xs:annotation><xs:documentation>draw, bdraw, rle or zx0 — bdraw if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mirror" type="xs:string">
+        <xs:annotation><xs:documentation>none (default), x, y or xy — applied to every file of the row</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="shifts" type="xs:string">
+        <xs:annotation><xs:documentation>comma list of pre-shifts, one compiled variant each ; defaults through &lt;default name="images.shifts"&gt; — the target's one-line d7/t2 decision — then to 0. A row may pin its own (the player and the boss pre-shift even on floppy)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="names" type="xs:string">
+        <xs:annotation><xs:documentation>symbol base, &lt;base&gt;_&lt;n&gt; ; derived from the series directory if omitted (its parent when the directory is a plain images/)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="position" type="xs:string">
+        <xs:annotation><xs:documentation>center, top-left or 3qtr-center, forwarded to every encoder of the row</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planes" type="xs:string">
+        <xs:annotation><xs:documentation>pointer or offset, forwarded to every encoder of the row</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- index of an imageset whose drawing code is spread over pages, baked in a .static section -->
   <xs:element name="imageset">
     <xs:complexType>
@@ -1120,6 +1214,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1180,6 +1275,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1234,6 +1330,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1288,6 +1385,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1345,6 +1443,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1411,6 +1510,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1471,6 +1571,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1528,6 +1629,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1588,6 +1690,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1648,6 +1751,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1741,6 +1845,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1816,6 +1921,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1882,6 +1988,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -1945,6 +2052,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2002,6 +2110,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2062,6 +2171,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2116,6 +2226,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2179,6 +2290,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2233,6 +2345,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2305,6 +2418,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2362,6 +2476,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2428,6 +2543,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2485,6 +2601,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2542,6 +2659,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
@@ -2605,6 +2723,7 @@
         <xs:element ref="gfxcomp"/>
         <xs:element ref="hfe"/>
         <xs:element ref="image"/>
+        <xs:element ref="images"/>
         <xs:element ref="imageset"/>
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
