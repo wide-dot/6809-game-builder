@@ -29,11 +29,21 @@ public class Cuts {
 		public final List<List<Integer>> chunks;
 		/** where the generated member sources are written */
 		public final String gendir;
+		/**
+		 * The {@code <unit>} nodes among the parts, by part index. A unit is
+		 * one indivisible element measured and assembled ALONE (its internal
+		 * names legitimately repeat between units), and its source is
+		 * regenerated at emission with the member it landed in — which only
+		 * the packing knows. Empty for a file of divisible content only.
+		 */
+		public final Map<Integer, org.apache.commons.configuration2.tree.ImmutableNode> units;
 
-		public Cut(List<String[]> parts, List<List<Integer>> chunks, String gendir) {
+		public Cut(List<String[]> parts, List<List<Integer>> chunks, String gendir,
+				Map<Integer, org.apache.commons.configuration2.tree.ImmutableNode> units) {
 			this.parts = parts;
 			this.chunks = chunks;
 			this.gendir = gendir;
+			this.units = units;
 		}
 	}
 

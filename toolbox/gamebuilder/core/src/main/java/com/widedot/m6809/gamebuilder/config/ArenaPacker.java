@@ -59,12 +59,16 @@ public final class ArenaPacker {
 		public final List<String[]> parts;
 		public final int[] sizes;
 		public final String gendir;
+		/** the <unit> nodes among the parts, by part index — see Cuts.Cut */
+		public final Map<Integer, ImmutableNode> units;
 		public final int total;
 
-		public Divisible(List<String[]> parts, int[] sizes, String gendir) {
+		public Divisible(List<String[]> parts, int[] sizes, String gendir,
+				Map<Integer, ImmutableNode> units) {
 			this.parts = parts;
 			this.sizes = sizes;
 			this.gendir = gendir;
+			this.units = units;
 			int sum = 0;
 			for (int s : sizes) {
 				sum += s;
@@ -226,7 +230,7 @@ public final class ArenaPacker {
 					}
 					List<List<Integer>> one = new ArrayList<List<Integer>>();
 					one.add(all);
-					ctx.cuts.declare(f, new Cuts.Cut(d.parts, one, d.gendir));
+					ctx.cuts.declare(f, new Cuts.Cut(d.parts, one, d.gendir, d.units));
 				}
 				log.debug("arena {} : {} -> page {} ${}", arena.name, f, z.page,
 						Integer.toHexString(at).toUpperCase());
@@ -307,7 +311,7 @@ public final class ArenaPacker {
 		} else {
 			ctx.pageSets.declare(file, members);
 		}
-		ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir));
+		ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units));
 		log.info("collection {} : {} member(s) flowed into arena '{}'", file, members.size(),
 				arena.name);
 	}

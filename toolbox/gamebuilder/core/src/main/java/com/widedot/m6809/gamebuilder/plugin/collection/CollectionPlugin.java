@@ -12,6 +12,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.LwasmPlugin;
+import com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
@@ -24,17 +25,21 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A COLLECTION is an ordinary {@code <file>} whose top-level children can all
- * name their parts (a {@code <gfxcomp>} tileset). It needs no word of its
- * own : the frontier is the PLUGIN — lwasm yields one element, gfxcomp
- * exposes N — and the placement's rule is the author's "whole if it fits,
- * cut between elements if it does not" (5c). This class holds what the two
- * sides of that rule share :
+ * name their parts. It needs no word of its own : the frontier is the PLUGIN —
+ * lwasm yields one element, gfxcomp exposes N, {@code <unit>} exactly one —
+ * and the placement's rule is the author's "whole if it fits, cut between
+ * elements if it does not" (5c). This class holds what the two sides of that
+ * rule share :
  *
  * <ul>
- * <li>{@link #measure} — element sizes, read from one batched assembly's
- *     export offsets, asked by the packer before it sorts ;</li>
+ * <li>{@link #measure} — element sizes, asked by the packer before it sorts.
+ *     Divisible parts share batched assemblies (sizes read from export
+ *     offsets) ; every unit is assembled ALONE, because unit sources
+ *     legitimately reuse the same internal names ;</li>
  * <li>{@link #emit} — the member entries, one per chunk the packer decided,
- *     the single-chunk case keeping the file's own name.</li>
+ *     the single-chunk case keeping the file's own name. A member holding a
+ *     unit concatenates BINARIES : one assembly per divisible run, one per
+ *     unit, in element order — never their sources.</li>
  * </ul>
  *
  * The cut itself is the ARENA PACKER's decision, recorded in {@link Cuts} :
@@ -50,29 +55,55 @@ public class CollectionPlugin {
 	 */
 	private static final int MEASURE_BATCH = 192;
 
-	/** measure each part's size from batched assemblies' export offsets */
-	public static int[] measure(String name, List<String[]> parts, BuildContext ctx,
-			String gendir) throws Exception {
+	/**
+	 * Measure each part's size. Consecutive divisible parts are measured from
+	 * one batched assembly's export offsets ; each unit part is assembled
+	 * alone and measured by its binary length.
+	 */
+	public static int[] measure(String name, List<String[]> parts,
+			Map<Integer, ImmutableNode> units, BuildContext ctx, String gendir)
+			throws Exception {
 
 		int[] sizes = new int[parts.size()];
-		int from = 0;
+		int i = 0;
+		while (i < parts.size()) {
+			if (units.containsKey(i)) {
+				ObjectDataInterface obj = LwasmPlugin.getObject(
+						UnitPlugin.lwasmOfUnit(parts.get(i)[0]), ctx);
+				sizes[i] = obj.getBytes().length;
+				i++;
+				continue;
+			}
+			int to = i;
+			while (to < parts.size() && !units.containsKey(to)) {
+				to++;
+			}
+			measureRun(name, parts, i, to, ctx, gendir, sizes);
+			i = to;
+		}
+		return sizes;
+	}
+
+	/** measure one run of divisible parts, in batches bounded by the format */
+	private static void measureRun(String name, List<String[]> parts, int from, int to,
+			BuildContext ctx, String gendir, int[] sizes) throws Exception {
+		int at = from;
 		int batch = MEASURE_BATCH;
-		while (from < parts.size()) {
-			int to = Math.min(from + batch, parts.size());
+		while (at < to) {
+			int end = Math.min(at + batch, to);
 			try {
-				measureBatch(name, parts, from, to, ctx, gendir, sizes);
-				from = to;
+				measureBatch(name, parts, at, end, ctx, gendir, sizes);
+				at = end;
 				batch = MEASURE_BATCH;
 			} catch (Exception e) {
-				if (to - from <= 1) {
+				if (end - at <= 1) {
 					throw e;
 				}
-				batch = (to - from) / 2;
+				batch = (end - at) / 2;
 				log.debug("collection {} : measuring batch too large to parse, retrying {} parts",
 						name, batch);
 			}
 		}
-		return sizes;
 	}
 
 	private static void measureBatch(String name, List<String[]> parts, int from, int to,
@@ -80,7 +111,7 @@ public class CollectionPlugin {
 
 		List<String[]> batch = parts.subList(from, to);
 		String source = gendir + File.separator + name + ".measure." + from + ".asm";
-		writeMemberSource(ctx, source, batch, null);
+		writeMemberSource(ctx, source, batch, null, java.util.Collections.emptyMap());
 
 		ObjectDataInterface object = LwasmPlugin.getObject(lwasmOf(source), ctx);
 		Map<String, int[]> offsets = object.getExportOffsets();
@@ -111,6 +142,9 @@ public class CollectionPlugin {
 	 * Emission : one entry per chunk of the packer's cut. A single chunk is
 	 * the file placed WHOLE — one entry under the file's own name ; several
 	 * chunks are the members a scene expands to, {@code <file>.0}, {@code .1}…
+	 * Within a member the elements keep declaration order : each run of
+	 * divisible parts becomes one generated assembly, each unit is its own —
+	 * the entry concatenates the binaries.
 	 */
 	public static void emit(ImmutableNode node, BuildContext ctx, MediaDataInterface media)
 			throws Exception {
@@ -156,16 +190,44 @@ public class CollectionPlugin {
 			// as it is exported
 			ctx.staticLink.place(memberName, page, address, "collection " + name);
 
-			String source = cut.gendir + File.separator + memberName + ".asm";
-			writeMemberSource(ctx, source, cut.parts, cut.chunks.get(c));
-
 			ImmutableNode.Builder entry = new ImmutableNode.Builder();
 			entry.name("file").addAttribute("name", memberName);
 			if (bake != null)        entry.addAttribute("bake", bake);
 			entry.addAttribute("codec", codec != null ? codec : "none");
 			if (linkSection != null) entry.addAttribute("linkdata", linkSection);
 			if (section != null)     entry.addAttribute("section", section);
-			entry.addChild(lwasmOf(source));
+
+			// element order is binary order : divisible runs share an
+			// assembly, units are regenerated for the member they landed in
+			// (a nested genindex writes <member>$PAGE) and assembled alone
+			List<Integer> chunk = cut.chunks.get(c);
+			int run = 0;
+			int i = 0;
+			while (i < chunk.size()) {
+				int part = chunk.get(i);
+				ImmutableNode unitNode = cut.units.get(part);
+				if (unitNode != null) {
+					String unitGendir = Attribute.getString(unitNode, ctx, "gendir",
+							"gen/units");
+					String[] regenerated = UnitPlugin.unit(unitNode, ctx, unitGendir,
+							memberName);
+					entry.addChild(UnitPlugin.lwasmOfUnit(regenerated[0]));
+					i++;
+					continue;
+				}
+				List<Integer> runParts = new ArrayList<Integer>();
+				while (i < chunk.size() && cut.units.get(chunk.get(i)) == null) {
+					runParts.add(chunk.get(i));
+					i++;
+				}
+				// the first run keeps the member's own source name — the shape
+				// every all-divisible collection has always had
+				String source = cut.gendir + File.separator + memberName
+						+ (run == 0 ? "" : ".d" + run) + ".asm";
+				writeMemberSource(ctx, source, cut.parts, runParts, cut.units);
+				entry.addChild(lwasmOf(source));
+				run++;
+			}
 			DirEntryPlugin.run(entry.create(), ctx, media);
 
 			log.info("collection {} : member {} ({} parts) at page {} ${}", name, memberName,
@@ -176,7 +238,7 @@ public class CollectionPlugin {
 
 	/** one member's source : exports first, then the parts, in chunk order */
 	public static void writeMemberSource(BuildContext ctx, String source, List<String[]> parts,
-			List<Integer> content) throws Exception {
+			List<Integer> content, Map<Integer, ImmutableNode> units) throws Exception {
 
 		StringBuilder out = new StringBuilder("* Generated collection member"
 				+ System.lineSeparator());
@@ -189,6 +251,10 @@ public class CollectionPlugin {
 			indexes.addAll(content);
 		}
 		for (int i : indexes) {
+			if (units.containsKey(i)) {
+				throw new Exception("collection member source '" + source + "' would include"
+						+ " a unit — units are assembled alone, never share a source");
+			}
 			out.append(parts.get(i)[1]).append(" EXPORT").append(System.lineSeparator());
 		}
 		out.append(" SECTION code").append(System.lineSeparator());

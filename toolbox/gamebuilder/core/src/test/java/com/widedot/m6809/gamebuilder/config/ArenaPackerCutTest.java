@@ -37,7 +37,8 @@ class ArenaPackerCutTest {
 		for (int i = 0; i < sizes.length; i++) {
 			parts.add(new String[] { "path" + i, "el" + i });
 		}
-		return new ArenaPacker.Divisible(parts, sizes, "gen");
+		return new ArenaPacker.Divisible(parts, sizes, "gen",
+				java.util.Collections.emptyMap());
 	}
 
 	/** an arena whose zones' free room equals the given runs, page = index+4 */

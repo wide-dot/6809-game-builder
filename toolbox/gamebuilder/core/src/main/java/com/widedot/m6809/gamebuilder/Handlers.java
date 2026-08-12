@@ -280,6 +280,10 @@ public final class Handlers {
 		FILES.put("includebin", IncludeBinPlugin::getFile);
 		FILES.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getFile);
 		PARTS.put("gfxcomp", com.widedot.toolbox.graphics.gfxcomp.GfxcompPlugin::getParts);
+		// a unit is ONE element : the packer may cut between it and its
+		// neighbours, never inside it — the word that groups plugins whose
+		// output must stay continuous (5d)
+		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);

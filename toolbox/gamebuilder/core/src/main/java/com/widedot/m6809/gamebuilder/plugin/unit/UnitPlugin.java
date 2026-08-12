@@ -36,6 +36,29 @@ public class UnitPlugin {
 		return LwasmPlugin.getObject(lwasmOf(unit[0]), ctx);
 	}
 
+	/**
+	 * The parts form : a unit is ONE element of a collection — the word that
+	 * groups plugins whose output must stay continuous. The packer may cut
+	 * between a unit and its neighbours, never inside it. The source written
+	 * here carries the FILE name as its member placeholder ; when the packing
+	 * lands the unit in a cut member, the emission regenerates it with the
+	 * real member name (a nested genindex writes {@code <member>$PAGE}).
+	 */
+	public static java.util.List<String[]> getParts(ImmutableNode node, BuildContext ctx)
+			throws Exception {
+		String host = ctx.staticLink.currentHost();
+		String gendir = Attribute.getString(node, ctx, "gendir", "gen/units");
+		String[] unit = unit(node, ctx, gendir, host != null ? host : "unit");
+		java.util.List<String[]> parts = new java.util.ArrayList<String[]>();
+		parts.add(unit);
+		return parts;
+	}
+
+	/** an lwasm node assembling one unit source alone, for the collection */
+	public static ImmutableNode lwasmOfUnit(String source) {
+		return lwasmOf(source);
+	}
+
 	/** write the unit's generated source ; returns {source path, entry symbol} */
 	public static String[] unit(ImmutableNode node, BuildContext ctx, String gendir,
 			String memberFile) throws Exception {

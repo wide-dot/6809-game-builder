@@ -80,6 +80,8 @@ public final class PlacementScan {
 					continue;
 				}
 				java.util.List<String[]> parts = null;
+				java.util.Map<Integer, ImmutableNode> units =
+						new java.util.LinkedHashMap<Integer, ImmutableNode>();
 				boolean allParts = false;
 				for (ImmutableNode content : child.getChildren()) {
 					com.widedot.m6809.gamebuilder.spi.PartsPluginInterface handler =
@@ -95,6 +97,12 @@ public final class PlacementScan {
 					if (parts == null) {
 						parts = new java.util.ArrayList<String[]>();
 					}
+					// a unit is ONE element, remembered by index : it is
+					// measured and assembled alone, and regenerated at
+					// emission with the member the packing put it in
+					if ("unit".equals(content.getNodeName())) {
+						units.put(parts.size(), content);
+					}
 					parts.addAll(handler.getParts(content, scope));
 					allParts = true;
 				}
@@ -102,13 +110,15 @@ public final class PlacementScan {
 					continue;
 				}
 				String gendir = raw(child, "gendir");
-				if (gendir == null) {
+				if (gendir == null && parts.size() > units.size()) {
+					// units write their own sources under their own gendir ;
+					// only divisible content needs the collection's
 					throw new Exception(scope.sources.locate(child) + ": collection '" + name
 							+ "' needs gendir= : its member sources are generated");
 				}
 				int[] sizes = com.widedot.m6809.gamebuilder.plugin.collection.CollectionPlugin
-						.measure(name, parts, scope, gendir);
-				divisibles.put(name, new ArenaPacker.Divisible(parts, sizes, gendir));
+						.measure(name, parts, units, scope, gendir);
+				divisibles.put(name, new ArenaPacker.Divisible(parts, sizes, gendir, units));
 				continue;
 			}
 			// recurse with the SCOPE : a directory's defaults stack on its

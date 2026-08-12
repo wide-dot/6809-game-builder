@@ -153,6 +153,21 @@ is left empty rather than crumbled into. A scene still names the file
 bare ; the load expands to the members the packing produced. Cutting is a
 fallback of the placement, never a policy.
 
+A `<unit>` inside such a file is **one element** : the word that groups
+plugins whose output must stay continuous. The packer may cut between a
+unit and its neighbours, never inside it. Because unit sources
+legitimately reuse the same internal names (every v1 object calls its
+entry `Object`), each unit is measured and assembled ALONE, and a member
+holding one concatenates BINARIES — one assembly per run of divisible
+elements, one per unit, in declaration order. A composite object — code,
+images and data that must travel together — is therefore an ordinary
+arena file mixing `<gfxcomp>` content and `<unit>`s; a unit whose nested
+`<gfxcomp genindex>` names its host gets the real member name written in,
+since which member a unit lands in is the packing's result.
+`examples/collection` exercises the whole shape on machine : forty tiles
+and a unit cut over four members, the unit's bytes and its link-resolved
+pointer to a tile of another member verified at $9C00.
+
 What this buys is **structural uniqueness** : a file loaded by five scenes
 has one declared destination, and there is nothing left for two scenes to
 disagree about — where the per-load form could only verify their agreement

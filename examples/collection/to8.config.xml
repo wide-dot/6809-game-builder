@@ -1,0 +1,91 @@
+<configuration>
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+            <section name="LINK"  track="2" face="0" sector="1"/>
+
+            <!-- Every zone on purpose smaller than the collection : the forty
+                 tiles and the unit cannot fit any single free run whole, so
+                 the packer cuts the collection between elements. Nothing here
+                 says how many members, nor where — the free runs decide. -->
+            <layout gensymbols="gen/layout.asm">
+                <arena name="pool">
+                    <zone page="$06" address="$0000" size="$0800"/>
+                    <zone page="$07" address="$0000" size="$0800"/>
+                    <zone page="$08" address="$0000" size="$0800"/>
+                    <zone page="$09" address="$0000" size="$0800"/>
+                </arena>
+            </layout>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- One ordinary file, two kinds of content : gfxcomp exposes
+                     its forty tiles as elements, the unit is one indivisible
+                     element — the packer may cut between it and its
+                     neighbours, never inside it. -->
+                <file name="assets.mixed" linkdata="LINK" arena="pool" gendir="gen/mixed">
+                    <gfxcomp gendir="gen/mixed/tiles" gensource="gen/mixed/tiles/includes.asm">
+                        <image name="glyphs" filename="src/assets/tiles/glyphs.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0"/>
+                        </image>
+                    </gfxcomp>
+                    <unit name="mixed.table" symbol="mixed.table">
+                        <asm filename="src/assets/table.asm"/>
+                    </unit>
+                </file>
+
+                <!-- Game mode : verifies the cut on machine, results at $9C00 -->
+                <file name="assets.gm.main" linkdata="LINK" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="src/assets/game-modes/to8/main/main.asm"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="assets.mixed"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.main</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>

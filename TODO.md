@@ -593,6 +593,17 @@ Fonctionnel :
         specs <objectindex>/<entry>, XSD −219 lignes. Plus aucune
         constante machine hors machine.xml. PREUVE : 59 images
         identiques à l'octet, JUnit vert.
+  - [x] Phase 5d — <unit> sur son vrai rôle (12/08, décision auteur :
+        « b tout de suite, builder générique ») : unit au registre PARTS
+        (UN élément, jamais coupé en son intérieur), mesuré et assemblé
+        SEUL, membre mixte = concaténation de binaires en ordre de
+        déclaration, genindex imbriqué repointé sur le membre réel ;
+        les 2 vagues basculent sur la voie collection. Doc scenes.md.
+        PREUVE : 59 images identiques (vagues comprises), JUnit vert,
+        et le NOUVEAU banc examples/collection — 40 tuiles + un unit
+        coupés en 4 membres, 4/4 sous toje (contenu du unit via son
+        membre, pages distinctes, pointeur inter-membres dans le unit),
+        erreur « does not fit » lue en vrai.
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de

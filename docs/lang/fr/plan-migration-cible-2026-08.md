@@ -385,8 +385,22 @@ sont authorées (la table d'objets, prouvée le 11/08).
   `<unit>` relogé dans son propre plugin, les 6 scénarios de flux
   retargetés sur `ArenaPacker.cut`, docs alignées. Preuve : 59 images
   identiques à l'octet.
-- **5d — `<unit>` sur son vrai rôle.** Spec détaillée ci-dessous,
-  EN ATTENTE DE VALIDATION.
+- **5d — `<unit>` sur son vrai rôle. FAIT (12/08), volets (a)+(b)+(c) —
+  décision auteur : « b tout de suite, on fait un builder générique ».**
+  `unit` est au registre PARTS : un fichier d'arène mêlant `<gfxcomp>` et
+  `<unit>` est une collection dont le unit est un élément insécable —
+  mesuré et assemblé SEUL (les noms internes des units se répètent), le
+  membre qui le porte concatène des BINAIRES (une assemblée par série
+  divisible, une par unit, dans l'ordre de déclaration), et un genindex
+  imbriqué reçoit le nom du membre réel. Les 2 units du corpus (vagues)
+  basculent sur ce chemin. PREUVE : 59 images identiques à l'octet (les
+  vagues émises par la voie collection, mêmes octets), JUnit vert, et le
+  nouveau banc `examples/collection` — 40 tuiles + un unit coupés en 4
+  membres (12+12+12+4+unit), **4/4 sous toje** : contenu du unit relu à
+  travers son membre, coupe prouvée par pages distinctes, pointeur
+  inter-membres DANS le unit égal au pointeur du game mode (rebasage des
+  link data du membre concaténé). L'erreur « does not fit » lue en vrai
+  (690 octets restants sur 3 zones). Doc : scenes.md § unit.
 
 - **5e — retrait de `<objectindex>`. FAIT (12/08).** L'élément, son plugin
   (les 5 derniers `map.RAM_OVER_CART` codés en dur du builder) et les specs
@@ -394,7 +408,7 @@ sont authorées (la table d'objets, prouvée le 11/08).
   la dernière constante machine hors `machine.xml`. PREUVE : 59 images
   identiques à l'octet, JUnit vert.
 
-### 5d — spécification détaillée (à valider)
+### 5d — spécification détaillée (VALIDÉE le 12/08 — « b tout de suite », réalisée le jour même)
 
 *Le rôle, dans le modèle du §28.* Un `<unit>` est le mot qui groupe des
 plugins dont la sortie doit rester **continue** : un élément aux yeux du
@@ -450,6 +464,12 @@ où un objet composite existe.
 composite réel.** C'est le précédent du repo (le retrait du ServiceLoader :
 on ne garde pas de machinerie sans consommateur, on garde le point
 d'ancrage). Preuve de (a)+(c) : identité 59/59 — c'est de la doc.
+
+**Tranché par l'auteur le 12/08 : (b) tout de suite — « on fait un builder
+générique, pas juste rtype », avec test par exemples.** Réalisé le jour
+même ; le consommateur qui manquait a été construit : `examples/collection`
+(art généré en mire, l'index de chaque tuile encodé dans son dessin),
+validé 4/4 sous toje. Voir le bilan en tête de phase.
 
 ### Prérequis mesuré : les éléments portent-ils déjà un nom ?
 
