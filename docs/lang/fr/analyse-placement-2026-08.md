@@ -1637,3 +1637,69 @@ et le flux placer les indivisibles comme il place déjà les autres — ce
 qu'il fait déjà dans la forme région (`<unit>` de comblement).
 
 **Non tranché ici** : (A)/(B)/(C)/(D), et le mot si (B).
+
+## 28. Correction : la frontière est le plugin, et l'index est l'autre face (2026-08-11)
+
+Deux corrections d'auteur, dont une qui annule le §27.
+
+**1. Les quatre options du §27 posaient la mauvaise question.** Elles
+demandaient toutes « ce FICHIER est-il divisible ? ». La cible d'un fichier
+objet typique est le code asm, ses graphismes, ses animations — **chaque
+élément est naturellement coupable**, et la frontière n'est pas le fichier :
+c'est le **plugin**. `lwasm` produit UN élément (une assemblée, d'un
+tenant) ; `gfxcomp` expose N éléments coupables. Posée ainsi, la question
+n'a plus d'ambiguïté et ne demande aucun mot : le builder demande à chaque
+plugin combien d'éléments il porte. C'est déjà écrit dans le code
+(`PartsPluginInterface`, `gfxcomp` inscrit).
+
+Donc **§27 (A)(B)(C)(D) tombent**, et avec elles ma « mesure qui dé-risque »
+— elle plaidait pour la règle stricte par FICHIER, qui est fausse. Sous la
+règle par élément, les 48 fichiers portant `lwasm`+`gfxcomp` deviennent des
+collections (1 élément de code + N éléments d'images). **Ce n'est pas un
+danger, c'est l'intention** ; la preuve n'est simplement plus l'identité
+binaire mais le banc et les rapports.
+
+**2. `<unit>` retrouve son vrai rôle.** Ce n'est pas « l'objet
+indivisible » : c'est le mot qui **groupe plusieurs plugins dont la sortie
+doit rester continue** — un objet composite, cas absent de r-type mais
+prévisible. Le code fait déjà exactement ça (les sources sont concaténées
+en une assemblée, donc un élément) ; c'est la fiche de spec qui le décrit
+mal et devra être réécrite.
+
+**3. Le fil perdu : l'index est l'autre face du même fait.** Un élément est
+coupable **parce qu'il est indexé** — on ne l'atteint que par sa table, et
+c'est ce marché qui autorise le builder à le poser où il veut. Placement et
+production d'index ne sont pas deux sujets voisins, ce sont les deux faces
+d'un seul mécanisme, et le §26 a eu tort de conclure « pas de langage
+d'index » sans le redire.
+
+Qui écrit la table dépend de qui connaît les entrées, et **cela seul** :
+- **le builder l'écrit** quand lui seul connaît les éléments — les 244
+  tuiles d'une grille, les images d'un imageset (`<tilemap>`, `<imageset>`).
+- **le développeur l'écrit** quand les entrées sont authorées — la table
+  d'objets, prouvée le 11/08.
+
+Mais les deux posent au builder **la même question**, et c'est là que le §25
+et le §26 se raccordent : la page d'un élément s'obtient par son nom,
+`élément$PAGE`, que la table soit générée ou manuscrite. L'adresse est déjà
+le symbole. Le numéro est authoré ou porté par la donnée. **Il n'y a donc
+toujours pas de langage d'index à créer — mais il y a bien une production
+d'index, et c'est l'attribut qui la rend uniforme.**
+
+**Le modèle complet, en quatre phrases.** Un plugin déclare combien
+d'éléments il produit. Les éléments coulent dans les creux que les
+indivisibles ont laissés. Tout ce qui référence un élément passe par une
+table. Toute table — générée ou manuscrite — demande la page d'un élément en
+écrivant `élément$PAGE`. Et `<unit>` groupe les plugins dont la sortie doit
+rester continue.
+
+**Ce qu'il reste à construire**, et rien d'autre :
+1. `symbole$PAGE` à la cuisson (§26) — l'attribut qui unifie les tables.
+2. Le flux appliqué à **tout fichier, par élément**, au lieu du seul
+   `<pageset>` — ce qui retire `<pageset>` du vocabulaire.
+3. La fiche de `<unit>` réécrite sur son vrai rôle (grouper pour la
+   continuité), son refus dans la forme arène levé.
+
+**Preuve** : plus l'identité binaire (les 48 fichiers changent de découpe),
+mais le banc r-type 5/5, le niveau 1 traversé, et les rapports qui montrent
+la nouvelle découpe morceau par morceau.
