@@ -751,6 +751,117 @@ modules producteurs dans le `<file>`.
 outils de contenu — plus aucun script dont la sortie est requise par le
 build. Le bloc config d'un ennemi tient en ~6 lignes.*
 
+### Phase 7 — recadrage mesuré (12/08, après la clôture de la phase 5)
+
+L'analyse-charge-manuelle date du 09/08 ; trois de ses postes ont bougé
+depuis :
+
+- **Le poste n°1 (`gen_objid.py`, index et équates) est DISSOUS** — pas par
+  un générateur, par la décision 5-objets : les tables d'objets sont de
+  l'asm de dev, l'invariant du préfixe est un include. Le script est
+  supprimé depuis la phase 1 ; `<objectindex>`, son remplaçant transitoire,
+  est retiré (5e). Plus rien à construire.
+- **`crop_stage.py` ne coupe plus rien** : sa fenêtre est aujourd'hui le
+  niveau ENTIER (132 colonnes = les 1584 px du niveau 1 ; `intro/even.png`
+  mesure 245 tuiles). Son rôle réel restant : adapter le format des sorties
+  leanscroll (strip + bin renumérotés) et émettre `map.const.asm` (la
+  géométrie). C'est un adaptateur, plus un choix de contenu.
+- **`api.asm` rend déjà la dérive impossible** : une seule liste, lue en
+  EXPORT par le moteur (`ENGINE_RESIDENT`) et en EXTERNAL par les stages,
+  via la macro `_api`. La propriété que le générateur devait apporter est
+  acquise sans machinerie.
+
+### 7a — les contrats d'interface : rien à générer (à valider comme décision)
+
+Le générateur imaginé (`.external.asm` émis du registre d'exports) porte une
+circularité : la liste des exports du moteur EST le contrat authoré —
+« la liste reste délibérément courte » est une décision de design (chaque nom
+coûte 4 octets de pool et une recherche linéaire par référence). Générer la
+liste depuis « ce que le moteur exporte » inverserait la causalité : c'est
+api.asm qui DÉCIDE ce que le moteur exporte. Et le côté consommateur est déjà
+généré… par la même macro. `stage-tables.asm` (28 lignes, 5 tables, stable
+depuis la frontière mesurée) a la même propriété en sens inverse.
+
+**Proposition : 7a se clôt par un enregistrement de décision** (l'alternative
+rejetée est nommée : le générateur `.external.asm`) **et un paragraphe de
+manuel** sur l'idiome du contrat à liste unique. Zéro mécanisme.
+
+### 7b — la déclaration d'images compacte (le gros du volume — spec à valider)
+
+Mesure : **340 blocs `<image>`** dans le config r-type, ~9 motifs d'encodeur
+seulement — `bdraw/none/0` en couvre 209, les miroirs continuent la
+numérotation des mêmes fichiers (scant : 3 png, images 0-2 en `none`, 3-5 les
+MÊMES png en `mirror=x`). La forme compacte proposée, UN élément :
+
+```xml
+<images dir="src/enemies/scant/images" match="scant_v2_*.png"
+        encoder="bdraw"/>
+<images dir="src/enemies/scant/images" match="scant_v2_*.png"
+        encoder="bdraw" mirror="x"/>
+```
+
+- `dir` + `match` : la liste ordonnée (tri numérique sur le nom de fichier —
+  l'ordre EST la numérotation, comme les properties v1) ;
+- les index continuent d'un `<images>` au suivant dans le même gfxcomp ;
+- un `<image>` unitaire reste valide au milieu (l'exception : shift
+  particulier, png hors série) — les deux formes se mélangent, les index
+  se suivent ;
+- POINT À TRANCHER — le nom des symboles : aujourd'hui authoré
+  (`name="scant_0"`), non dérivable du fichier (`scant_v2_0.png`). Deux
+  options : (i) dériver du nom de fichier (les symboles CHANGENT, les
+  équates de liaison `Img_* equ set_*` des unités suivent — un renommage
+  mécanique, prouvé par le banc) ; (ii) un attribut `names="scant_%d"`
+  (gabarit, les symboles ne bougent pas, preuve par identité).
+  Recommandation : **(ii) d'abord** — l'identité reste la preuve — et (i)
+  en phase de renommage finale, où il a sa place.
+
+*Preuve 7b : réécrire les 52 gfxcomp du config en forme compacte, 59+4
+images identiques à l'octet (option ii). Le banc : le config perd ~500
+lignes, le bloc d'un ennemi tient en ~8 lignes.*
+
+### 7c — leanscroll + crop orchestrés (spec à valider)
+
+État : la chaîne carte est la DERNIÈRE où le build dépend d'un geste hors
+builder — `tools/leanscroll-NN.txt` (invocations manuelles, chemins Windows
+pointant le repo v1) puis `crop_stage.py` (adaptation de format + géométrie),
+sorties committées. Les entrées (`in.png`, `init.png`) sont déjà dans v2.
+leanscroll est déjà un module Maven v2.
+
+Proposition : un élément `<leanscroll>` producteur, déclaré là où ses
+sorties sont consommées (le `<file>` des tuiles), invoquant le module en
+JVM comme les convertisseurs, avec cache (mêmes entrées → pas de re-calcul,
+comme gfxcomp) :
+
+```xml
+<leanscroll image="src/stages/01/map/in.png" lean="src/stages/01/map/init.png"
+            tile="12x12" gendir="gen/stages/01/map"/>
+```
+
+émettant `even.png/even.bin/odd.png/odd.bin` sous `gendir`, consommés par
+le `<image grid>` et le `<tilemap>` du même config ; la géométrie
+(`map_width`…) émise en équates par le builder (gensymbols de l'élément —
+`map.const.asm` disparaît). `crop_stage.py` et les `.txt` sont supprimés ;
+les sorties committées quittent `src/` (décision du 02/08 à REVOIR avec
+l'auteur : elle datait d'avant l'orchestration).
+
+*Preuve 7c : les .bin/.png régénérés identiques aux committés (leanscroll
+est déterministe), puis 63 images identiques, banc r-type 5/5 et
+tilescroll sous toje.*
+
+### Ce qui reste dans tools/ après 7 (le critère de fin, réactualisé)
+
+`arcade_to_in.py`, `sync_waves.py` (extraction arcade — contenu),
+`check_variants.py` (garde-fou de migration v1, vit tant que le portage des
+ennemis n'est pas fini), `fade_preview.html`, `remap_font_colors.py`
+(prévisualisation/contenu), `gen_enemy_unit.py` — à trancher : son moule XML
+fond avec 7b, son moule asm est l'affaire du dev (doctrine 5-objets) ;
+proposition : le retirer quand 7b sera là, le préambule restant documenté
+dans le manuel.
+
+**Ordre proposé : 7b (volume, preuve par identité) → 7c (chaîne, preuve par
+régénération + bancs) → 7a (décision + manuel).** Chaque pas validé par
+l'auteur avant implémentation.
+
 ## Phase 8 — La campagne loader (une seule, à la fin)
 
 Tout ce qui touche le binaire du loader, groupé pour une seule revalidation
