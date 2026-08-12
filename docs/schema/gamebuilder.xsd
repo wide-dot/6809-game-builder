@@ -1638,8 +1638,8 @@
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation><xs:documentation>machine name declared in the definitions file (to8, mo6)</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="definitions" type="xs:string">
-        <xs:annotation><xs:documentation>definitions file, defaults to engine/config/machine.xml</xs:documentation></xs:annotation>
+      <xs:attribute name="definitions" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>path of the machine definitions file</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

@@ -1,22 +1,20 @@
-package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
+package com.widedot.m6809.gamebuilder.spi.configuration;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
-import com.widedot.m6809.gamebuilder.spi.configuration.Values;
 
 /**
- * Attribute reads for the storage geometry file. The storage vocabulary is
- * not part of the game configuration contract (its element names would clash
- * with the config ones), so it reads its attributes directly — with the same
- * file:line error messages.
+ * Attribute reads for the builder's DEFINITION files — the storage geometry,
+ * the machines. Their vocabulary is not part of the game configuration
+ * contract (their element names would clash with the config ones), so they
+ * read their attributes directly — with the same file:line error messages.
  */
-final class NodeAttr {
+public final class NodeAttr {
 
 	private NodeAttr() {
 	}
 
-	static String getString(ImmutableNode node, SourceMap sources, String name) throws Exception {
+	public static String getString(ImmutableNode node, SourceMap sources, String name) throws Exception {
 		String value = (String) node.getAttributes().get(name);
 		if (value == null) {
 			throw new Exception(sources.locate(node) + ": <" + node.getNodeName()
@@ -25,11 +23,11 @@ final class NodeAttr {
 		return value;
 	}
 
-	static int getInteger(ImmutableNode node, SourceMap sources, String name) throws Exception {
+	public static int getInteger(ImmutableNode node, SourceMap sources, String name) throws Exception {
 		return parse(node, sources, name, getString(node, sources, name));
 	}
 
-	static int getInteger(ImmutableNode node, SourceMap sources, String name, int fallback) throws Exception {
+	public static int getInteger(ImmutableNode node, SourceMap sources, String name, int fallback) throws Exception {
 		String value = (String) node.getAttributes().get(name);
 		if (value == null) {
 			return fallback;
@@ -47,19 +45,20 @@ final class NodeAttr {
 	}
 
 	/** the single mandatory child of the given name */
-	static ImmutableNode child(ImmutableNode node, SourceMap sources, String name) throws Exception {
+	public static ImmutableNode child(ImmutableNode node, SourceMap sources, String name) throws Exception {
 		ImmutableNode found = null;
 		for (ImmutableNode child : node.getChildren()) {
 			if (name.equals(child.getNodeName())) {
 				if (found != null) {
 					throw new Exception(sources.locate(child) + ": only one <" + name
-							+ "> is allowed per storage");
+							+ "> is allowed per <" + node.getNodeName() + ">");
 				}
 				found = child;
 			}
 		}
 		if (found == null) {
-			throw new Exception(sources.locate(node) + ": <" + name + "> is mandatory for a storage");
+			throw new Exception(sources.locate(node) + ": <" + name + "> is mandatory in a <"
+					+ node.getNodeName() + ">");
 		}
 		return found;
 	}

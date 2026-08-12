@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.spi.configuration.NodeAttr;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 
 public class Storage {

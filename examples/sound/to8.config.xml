@@ -1,6 +1,7 @@
 <configuration>
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
         <machine name="to8"/>
 
         <!-- Memory layout : the fixed regions scenes load into.           -->

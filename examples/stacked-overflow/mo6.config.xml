@@ -20,6 +20,7 @@
         <define symbol="MO6" value="0"/>
 
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
         <machine name="mo6"/>
 
         <layout>

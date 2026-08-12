@@ -129,7 +129,7 @@ public final class Handlers {
 		// declarative scenes
 		spec(element("machine").doc("the target machine, picked out of the machine definitions the way <floppydisk model=…> picks a media out of storage.xml")
 			.req("name", STRING, "machine name declared in the definitions file (to8, mo6)")
-			.opt("definitions", STRING, "definitions file, defaults to engine/config/machine.xml"));
+			.req("definitions", STRING, "path of the machine definitions file"));
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include")
 			.opt("pages", INT, "physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6"));

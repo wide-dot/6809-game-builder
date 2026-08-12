@@ -2,6 +2,7 @@ package com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import com.widedot.m6809.gamebuilder.spi.configuration.NodeAttr;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 
 public class Interleave {

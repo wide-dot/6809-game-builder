@@ -1,6 +1,7 @@
 <configuration>
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
         <machine name="mo6"/>
 
         <!-- Memory layout : the MO6 map differs from the TO8 one, so the   -->
