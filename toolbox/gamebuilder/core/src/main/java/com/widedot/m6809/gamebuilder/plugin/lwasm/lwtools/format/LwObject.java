@@ -594,7 +594,10 @@ public class LwObject implements ObjectDataInterface{
 					if (reloc.flags == Reloc.RELOC_8BIT) {
 						if (r.symbol.endsWith("$PAGE")) {
 							String provider = r.symbol.substring(0, r.symbol.length() - 5);
-							int value = staticLink.resolvePage(provider) + r.value;
+							// a FILE or a SYMBOL : one spelling, the resolution
+							// picks the right table and refuses a name that is
+							// both (see StaticLink.pageOfName)
+							int value = staticLink.pageOfName(provider) + r.value;
 							section.code[reloc.offset] = (byte) (value & 0xff);
 						} else {
 							// The run-time linker (loader.file.extern8.link)

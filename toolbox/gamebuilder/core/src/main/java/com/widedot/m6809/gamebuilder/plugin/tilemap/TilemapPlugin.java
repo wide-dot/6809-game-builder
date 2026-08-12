@@ -79,9 +79,20 @@ public class TilemapPlugin {
 		// the generated file declares its own externals — a real tileset has
 		// hundreds of tiles, nobody hand-writes those. lwasm accepts the same
 		// symbol declared EXTERNAL by several files of a unit
+		// the machine's header defines the page byte's prefix ; it is guarded,
+		// so including it here costs nothing when the unit already has it and
+		// makes the generated table self-sufficient when it does not
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
+				ctx.machines.required("<tilemap>");
+		source.append("        INCLUDE \"").append(machine.pageInclude).append('"')
+				.append(System.lineSeparator());
 		for (int id : used) {
-			source.append("adr_").append(tiles).append('_').append(id).append('_')
-					.append(variant).append(" EXTERNAL").append(System.lineSeparator());
+			String tile = "adr_" + tiles + "_" + id + "_" + variant;
+			source.append(tile).append(" EXTERNAL").append(System.lineSeparator());
+			// the page is asked BY NAME, like the address just below : the
+			// builder answers both at bake time, and a hand-written table
+			// spells them exactly the same way
+			source.append(tile).append("$PAGE EXTERNAL").append(System.lineSeparator());
 		}
 		// The table is exported : a map big enough to need its own page lives
 		// in a file of its own, and the game mode then reaches it by name.
@@ -90,9 +101,6 @@ public class TilemapPlugin {
 		source.append(label).append(" EXPORT").append(System.lineSeparator());
 		source.append(" SECTION ").append(section).append(System.lineSeparator());
 		source.append(label).append(System.lineSeparator());
-		// the page byte's prefix is a MACHINE fact, declared in the machine
-		// definitions — never a constant of the builder (§26)
-		String pageExpr = ctx.machines.required("<tilemap>").pageExpr;
 		int empty = 0;
 		for (int i = 0; i < entries; i++) {
 			if (ids[i] == 0) {
@@ -107,8 +115,8 @@ public class TilemapPlugin {
 			// two entries of the same map legitimately carry different pages.
 			// It also costs nothing at load time — a literal, not a reference.
 			String symbol = "adr_" + tiles + "_" + ids[i] + "_" + variant;
-			source.append("        fcb   ").append(pageExpr)
-					.append(ctx.staticLink.pageOf(symbol)).append(System.lineSeparator());
+			source.append("        fcb   ").append(machine.pageExpr).append(symbol)
+					.append("$PAGE").append(System.lineSeparator());
 			source.append("        fdb   ").append(symbol).append(System.lineSeparator());
 		}
 		source.append(" ENDSECTION").append(System.lineSeparator());
