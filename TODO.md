@@ -588,6 +588,11 @@ Fonctionnel :
         (scenes.md, sprites.md, symbols.md ; note de mise à jour dans le
         cas imageset-pages.md). PREUVE : 59 images identiques à l'octet,
         JUnit vert, reproductibilité.
+  - [x] Phase 5e — retrait de <objectindex> (12/08) : l'élément, son
+        plugin (les 5 derniers map.RAM_OVER_CART codés en dur) et les
+        specs <objectindex>/<entry>, XSD −219 lignes. Plus aucune
+        constante machine hors machine.xml. PREUVE : 59 images
+        identiques à l'octet, JUnit vert.
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de

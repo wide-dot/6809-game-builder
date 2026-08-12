@@ -389,9 +389,11 @@ sont authorées (la table d'objets, prouvée le 11/08).
   continuité), refus dans la forme arène levé, cas composite documenté.
   À spécifier après 5c.
 
-- **5e — retrait de `<objectindex>`.** Son unique consommateur est parti le
-  11/08 (les tables d'objets sont manuscrites) : l'élément, son plugin et
-  ses specs n'ont plus personne. Retrait mécanique, prouvé par identité.
+- **5e — retrait de `<objectindex>`. FAIT (12/08).** L'élément, son plugin
+  (les 5 derniers `map.RAM_OVER_CART` codés en dur du builder) et les specs
+  `<objectindex>`/`<entry>` retirés ; XSD −219 lignes. Avec lui disparaît
+  la dernière constante machine hors `machine.xml`. PREUVE : 59 images
+  identiques à l'octet, JUnit vert.
 
 ### Prérequis mesuré : les éléments portent-ils déjà un nom ?
 

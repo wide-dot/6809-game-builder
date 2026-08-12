@@ -5,11 +5,11 @@ package com.widedot.m6809.gamebuilder.spi.globals;
  * configuration and never hard-coded here.
  *
  * The builder is machine-agnostic on purpose : it places bytes and resolves
- * names. Two facts nonetheless leaked into its code — the page byte's
- * cartridge-window bits (written as {@code map.RAM_OVER_CART+} by two
- * generators and as {@code $60} by a third) and the amount of RAM the
- * occupancy report draws. Both are properties of a TO8 or an MO6, not of the
- * builder, and both move the day another machine is targeted (MO5, CoCo 3).
+ * names. Two facts nonetheless used to leak into its code — the page byte's
+ * cartridge-window bits (once written as {@code map.RAM_OVER_CART+} or
+ * {@code $60} by the generators) and the amount of RAM the occupancy report
+ * draws. Both are properties of a TO8 or an MO6, not of the builder, and
+ * both move the day another machine is targeted (MO5, CoCo 3).
  * They are declared in {@code engine/config/machine.xml} — one file holding
  * every machine, exactly like {@code storage.xml} holds every media — and
  * selected by {@code <machine name="…"/>} in the target.
