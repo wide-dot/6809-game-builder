@@ -5,8 +5,8 @@ import java.util.List;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 /**
- * Content that can name the pieces it is made of, so a pageset can pack them
- * into pages.
+ * Content that can name the pieces it is made of, so the arena packer can
+ * cut between them.
  *
  * A part is one generated source and the symbol it defines. Sources rather
  * than bytes : regrouping sources and reassembling keeps every routine whole

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
  * The codec silence (phase 6 of the target-model migration) : compression is
  * the default, the word is the exception. The mapping below is read by three
  * places that must agree — the entry build, the directory's id reservation
- * and the pageset packing — or the reserved==emitted assertion fires.
+ * and the collection emission — or the reserved==emitted assertion fires.
  */
 class EffectiveCodecTest {
 

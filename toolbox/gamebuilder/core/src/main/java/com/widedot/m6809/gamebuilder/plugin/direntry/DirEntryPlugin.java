@@ -170,9 +170,9 @@ public class DirEntryPlugin {
 		// this file, and a multi-provider symbol is disambiguated by who
 		// is asking
 		ctx.staticLink.setCurrentConsumer(name);
-		// the host generated symbols are qualified with ; a pageset overrides
-		// it with the set's name before packing, since the member split is its
-		// own business, not the content's
+		// the host generated symbols are qualified with ; the placement scan
+		// overrides it with the collection's name before measuring, since the
+		// member split is the packing's business, not the content's
 		ctx.staticLink.setCurrentHost(name);
 		String section = Attribute.getString(node, ctx, "section");
 		String codec = effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
@@ -338,8 +338,8 @@ public class DirEntryPlugin {
 			// quelle — le decalage nul le dit au loader.
 			//
 			// Ca rend codec="zx0" utilisable la ou l'auteur ne choisit pas ce
-			// qu'il compresse : un pageset applique le sien a chaque membre, y
-			// compris celui que le rangement n'a pas rempli.
+			// qu'il compresse : une collection applique le sien a chaque
+			// membre, y compris le plus petit morceau de la coupe.
 			log.info("{} : stocke tel quel, la compression ne paie pas", name);
 		}
 				

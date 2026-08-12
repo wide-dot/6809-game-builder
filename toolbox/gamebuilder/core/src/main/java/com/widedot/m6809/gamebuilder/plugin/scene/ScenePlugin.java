@@ -75,8 +75,8 @@ public class ScenePlugin {
 				continue;
 			}
 
-			// the attributed place : the file (or pageset) declared its own
-			// destination, and the load reduces to the name. Any destination
+			// the attributed place : the file declared its own destination,
+			// and the load reduces to the name. Any destination
 			// on the load is refused, redundant or not — a file has ONE
 			// source of truth for where it lives, and the corpus migration
 			// that needed the transitional repeat form is over (4c).
@@ -96,23 +96,16 @@ public class ScenePlugin {
 				address = attributed.address;
 			}
 
-			// a pageset is one authored load and several entries : the members
-			// go to consecutive pages of the same region, so the scene simply
-			// places each one where the packing put it
+			// a collection the packer CUT is one authored load and several
+			// entries : the scene simply places each member where the packing
+			// put it (the flow already guarantees the chunks never overlap)
 			List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member> members =
 					ctx.pageSets.get(loadName);
 			if (members != null) {
 				String setPlace = regionName != null ? regionName : arenaName;
 				if (setPlace == null) {
 					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' is a pageset, which needs its region or arena");
-					continue;
-				}
-				// a region takes one set per scene ; an arena takes many — its
-				// flow already guarantees the chunks never overlap
-				if (regionName != null && !usedRegions.add(regionName)) {
-					errors.add(where + ": scene " + name + ": region '" + regionName
-							+ "' is loaded twice");
+							+ "' was cut by the packer, which needs its arena");
 					continue;
 				}
 				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member : members) {

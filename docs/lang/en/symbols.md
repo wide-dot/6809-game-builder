@@ -110,7 +110,7 @@ The rules :
   at all. An 8 bit reference to a placed symbol bakes to the low byte of its
   address — exactly what the run-time linker would store.
 - **Declaration order does not matter.** The discovery pass the build already
-  runs harvests every export offset, every placement and every pageset
+  runs harvests every export offset, every placement and every cut
   membership, and the real pass resolves against the harvest — a consumer
   declared before its provider builds identically. (If the discovery pass
   itself stops early on an unrelated error, declaring providers first is the

@@ -58,7 +58,7 @@ public final class Handlers {
 	/** produces a file for a later stage to consume */
 	private static final Map<String, FilePluginInterface> FILES = new HashMap<>();
 
-	/** content that can name its parts, so a pageset can pack them into pages */
+	/** content that can name its parts, so the arena packer can cut between them */
 	private static final Map<String, com.widedot.m6809.gamebuilder.spi.PartsPluginInterface> PARTS =
 			new HashMap<>();
 
@@ -102,18 +102,7 @@ public final class Handlers {
 			.opt("page", INT, "attributed place : raw destination page, needs address")
 			.opt("address", INT, "attributed place : raw destination address, needs page")
 			.opt("gendir", STRING, "collection form (every child names its parts) : directory receiving the generated member sources"));
-		spec(element("pageset").doc("a collection the builder packs and emits as several files : whole pages of a region, or chunks flowed into the gaps an arena's rigid placement leaves")
-			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
-			.opt("region", STRING, "multi-page region receiving the set, one member per filled page (one of region or arena)")
-			.opt("arena", STRING, "arena whose free gaps the elements flow into, one member (chunk) per gap used (one of region or arena)")
-			.opt("gapmin", INT, "arena form : a gap smaller than this is left empty rather than crumbling the set (default 256)")
-			.req("gendir", STRING, "directory receiving the generated member sources")
-			.opt("codec", STRING, "zx0 (default) compresses each member as one stream ; none stores them raw with no compression block")
-			.opt("linkdata", STRING, "emit load time link data into the given section")
-			.opt("section", STRING, "section receiving the members")
-			.opt("gensymbols", STRING, "generated file of <block symbol>.page equates, for code that has to mount what a block holds")
-			.opt("bake", STRING, "reference resolution of every member: auto (default), none, all"));
-		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope ; in a <pageset>, declared after the spread content, it fills what is left")
+		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope")
 			.opt("name", STRING, "name for the generated source, defaults from symbol")
 			.req("symbol", STRING, "exported label placed at the start of the unit")
 			.opt("section", STRING, "for bare data : the builder writes the whole envelope — section, exported symbol, ends. Omit it when the sources open their own section and export their own symbol")
@@ -219,7 +208,7 @@ public final class Handlers {
 			.opt("genindex", STRING, "generated imageset index ; omit for images with no index")
 			.opt("file", STRING, "file name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
 			.opt("imageset", STRING, "name the measured geometry is handed over under, for an <imageset> element to index a set whose code is spread over pages")
-			.opt("section", STRING, "SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one, such as a pageset <block>")
+			.opt("section", STRING, "SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one")
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")
@@ -282,8 +271,6 @@ public final class Handlers {
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
-		// pageset has a spec but no handler here : like scene, it lives inside
-		// a directory, which packs it when reserving ids and runs its emission
 		MEDIA.put("file", DirEntryPlugin::run);
 		MEDIA.put("data", DataPlugin::run);
 
@@ -295,7 +282,7 @@ public final class Handlers {
 
 		// binary producers
 		OBJECTS.put("lwasm", LwasmPlugin::getObject);
-		OBJECTS.put("unit", com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin::unitObject);
+		OBJECTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::unitObject);
 		OBJECTS.put("bin", BinPlugin::getObject);
 		OBJECTS.put("cksumfd640", Cksumfd640Plugin::getObject);
 
@@ -321,7 +308,7 @@ public final class Handlers {
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")
-			.req("tiles", STRING, "the file or pageset hosting the tiles : entries reference adr_<host>_<id>_<variant>")
+			.req("tiles", STRING, "the file hosting the tiles : entries reference adr_<host>_<id>_<variant>")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map if omitted")

@@ -46,7 +46,7 @@ public class CollectionPlugin {
 
 	/**
 	 * A measure assembly cannot exceed 64 KB (LWOBJ16 offsets are 16 bits),
-	 * so parts are measured in batches — same figure the pageset used.
+	 * so parts are measured in batches.
 	 */
 	private static final int MEASURE_BATCH = 192;
 

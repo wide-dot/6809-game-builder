@@ -7,8 +7,7 @@
 > whatever the builder can work out. A `<window>` says where the machine sees
 > a page, which is how the builder knows where one begins and ends. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
 > indivisible object — entry symbol plus content, code and images alike ; its
-> container decides its dressing. A `<pageset>` packs many contents into a page
-> budget : divisible content spreads, units fill the tails. A `<scene>` says
+> container decides its dressing. A `<scene>` says
 > what is in memory at a time, `<load>` by `<load>`. `stacked` on a region
 > lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
 > file's link block to the LINK section ; `bake` decides what never needs one.
@@ -140,15 +139,19 @@ every load that names it :
 
 One form of the three at most : `arena=` (the builder picks page and
 address), `region=` (a named place of the layout), or a literal
-`page=`+`address=`. A `<pageset>` already declares its `region=` or
-`arena=` — that IS its attributed place, so a scene names the set bare.
-The two pageset forms differ in how the members are cut : `region=` fills
-whole dedicated pages, one member per filled page ; `arena=` flows the
-elements into the gaps the arena's rigid placement leaves — one member
-(chunk) per gap used, as big as its gap allows. The gaps decide the cut,
-the author chooses neither the number nor the size of the chunks, and a
-gap smaller than `gapmin=` (default 256) is left empty rather than
-crumbling the set. The build prints both plates of the balance.
+`page=`+`address=`.
+
+An arena ranges ALL its files in one largest-first sort. A file that fits
+a free run is placed **whole and keeps its name**. A file that does not
+fit, and whose elements the builder knows — a collection : every top-level
+child names its parts, like a `<gfxcomp>` tileset (which then also needs
+`gendir=` for its generated member sources) — is **cut between elements**
+into the free tails : one member (`<file>.0`, `.1`…) per tail used, as big
+as the tail allows. The tails decide the cut, the author chooses neither
+the number nor the size of the chunks, and a tail smaller than 256 bytes
+is left empty rather than crumbled into. A scene still names the file
+bare ; the load expands to the members the packing produced. Cutting is a
+fallback of the placement, never a policy.
 
 What this buys is **structural uniqueness** : a file loaded by five scenes
 has one declared destination, and there is nothing left for two scenes to
@@ -242,7 +245,8 @@ Three things it says, in the order you need them :
 A region a scene does **not** load reads `(not loaded by this scene)`, never
 "free". It holds what an earlier scene put there, and that is precisely what
 the builder does not know — see the rule above. Regions spread over several
-pages are counted **page by page** : a pageset member lands on one of them.
+pages are counted **page by page** : a cut collection's member lands on one
+of them.
 
 ## The link data pool map
 

@@ -37,12 +37,12 @@
                  src/common/engine/ram.const.asm, qui est ce qui le place
                  REELLEMENT ; ce layout ne fait que le decrire. -->
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
-            <!-- bien plus qu'une page. On declare un budget, le pageset range. -->
-            <!-- La memoire graphique du stage : cartes et vague (rigides)     -->
-            <!-- posees d'abord, puis les tuiles COULENT dans les creux — la   -->
-            <!-- coupe des morceaux est le resultat des creux, jamais un       -->
-            <!-- reglage. Deux arenes sur les memes pages : les stages sont    -->
-            <!-- des alternatives qui se relaient sur cette RAM (l'echange     -->
+            <!-- bien plus qu'une page. On offre des zones, le packer range.   -->
+            <!-- La memoire graphique du stage : un seul tri, plus gros        -->
+            <!-- d'abord — entier ce qui rentre, coupe entre elements ce qui   -->
+            <!-- ne rentre pas ; la coupe des morceaux est le resultat des     -->
+            <!-- creux, jamais un reglage. Deux arenes sur les memes pages :   -->
+            <!-- les stages sont des alternatives qui se relaient sur cette RAM (l'echange -->
             <!-- passe par scene.unload, les destinations peuvent differer).   -->
             <arena name="stage1.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
@@ -111,10 +111,10 @@
             <!-- en v1 (leurs labels internes Init/Live se repetent, et leurs  -->
             <!-- equates d'OST divergent — infusionnables). Quatre regions sur  -->
             <!-- LA MEME page, a adresses fixes : le bin-packing manuel, en     -->
-            <!-- attendant un pageset d'unites code.                            -->
+            <!-- attendant le rangement d'unites code par le packer.            -->
             <!-- L'explosion. Un seul objet, mais treize sprites compiles dont -->
             <!-- cinq de 24x48 : 17 881 o, plus qu'une page. Le code part donc -->
-            <!-- en pageset — le builder mesure et range — tandis que l'objet  -->
+            <!-- en tranches d'arene — le builder mesure et range — tandis que l'objet -->
             <!-- et l'INDEX restent dans une page a eux : c'est celle que      -->
             <!-- Img_Page_Index monte pour lire les descripteurs, elle ne peut  -->
             <!-- pas etre repartie. Chaque descripteur porte la page de SON     -->
@@ -597,7 +597,7 @@
                 <!-- L'explosion : l'objet que tout ce qui meurt fait naitre.  -->
                 <!--                                                           -->
                 <!-- Ses treize sprites pesent 17 Ko : ils sont ranges par le  -->
-                <!-- builder sur les deux pages du pageset, declare AVANT      -->
+                <!-- builder dans l'arene, declares AVANT                      -->
                 <!-- l'objet puisque son index les designe. Une image sur deux  -->
                 <!-- seulement — c'est ce que la cible disquette de la v1       -->
                 <!-- compile (obj.d7.properties), le code rattache les          -->
@@ -988,7 +988,7 @@
 
                 <!-- LE CAST COMMUN : les ennemis que plusieurs stages partagent, -->
                 <!-- ranges par le builder. Un <unit> par ennemi — corps + images -->
-                <!-- — et le pageset comble ses pages en first-fit. Chargé au     -->
+                <!-- — et le packer comble les pages de l'arene. Chargé au        -->
                 <!-- boot, résident : une seule copie sur disquette et en RAM,    -->
                 <!-- quelle que soit la liste des stages qui s'en servent.        -->
                 <!-- ******************************************************** -->

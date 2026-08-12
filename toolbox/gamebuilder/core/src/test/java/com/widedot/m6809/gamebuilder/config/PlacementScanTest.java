@@ -110,19 +110,4 @@ public class PlacementScanTest {
 		assertTrue(e.getMessage().contains("more than one"), e.getMessage());
 	}
 
-	@Test
-	void aPagesetsDeclaredRegionIsItsAttributedPlace() throws Exception {
-		BuildContext ctx = ctx();
-		ImmutableNode tree = target(
-				node("layout").addChild(pinnedRegion("tiles", "$06", "$0000")).create(),
-				node("pageset", "name", "set", "region", "tiles").create(),
-				node("scene", "name", "s").addChild(node("load", "name", "set").create()).create());
-
-		PlacementScan.run(tree, ctx);
-
-		// the set is placed at its region's base, exactly as an explicit
-		// region= on the load recorded it before
-		assertEquals(0x0000, ctx.staticLink.addressOf("set"));
-		assertEquals(0x06, ctx.staticLink.resolvePage("set"));
-	}
 }

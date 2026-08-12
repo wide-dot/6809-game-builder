@@ -102,8 +102,8 @@ public class LayoutPlugin {
 			java.nio.file.Files.createDirectories(
 					java.nio.file.Paths.get(com.widedot.m6809.util.FileUtil.getDir(path)));
 			StringBuilder out = new StringBuilder();
-			// include guard : several units of one pageset member may each
-			// include this file — a header has to survive double inclusion
+			// include guard : several units of one member may each include
+			// this file — a header has to survive double inclusion
 			out.append(" IFNDEF LAYOUT_SYMBOLS").append(System.lineSeparator());
 			out.append("LAYOUT_SYMBOLS equ 1").append(System.lineSeparator());
 			for (Regions.Reserved r : ctx.regions.reservedRanges()) {

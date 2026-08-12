@@ -380,8 +380,11 @@ sont authorées (la table d'objets, prouvée le 11/08).
   reconfirmée sur les 59. Gain mesuré du tri unique : les deux tilesets d'un
   stage partagent désormais les queues de pages (even coule dans ce que odd
   laisse), là où deux pagesets ne savaient remplir que des pages disjointes.
-  Le retrait de la machinerie `<pageset>` est le commit B, prouvé par
-  identité, séparément.
+  Le retrait de la machinerie `<pageset>` (commit B) est FAIT aussi :
+  élément, plugin (685 lignes), specs, `arenaGaps`, `memberNames` — le
+  `<unit>` relogé dans son propre plugin, les 6 scénarios de flux
+  retargetés sur `ArenaPacker.cut`, docs alignées. Preuve : 59 images
+  identiques à l'octet.
 - **5d — `<unit>` sur son vrai rôle.** Fiche réécrite (grouper pour la
   continuité), refus dans la forme arène levé, cas composite documenté.
   À spécifier après 5c.

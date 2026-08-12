@@ -1,22 +1,18 @@
 package com.widedot.m6809.gamebuilder.spi.globals;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Datasets spread over the pages of a multi-page region.
+ * The members a CUT collection expands to.
  *
- * A pageset is one authored declaration that becomes several direntries — one
- * per page of its region — because no single file may exceed a page. The
- * members are what the scenes actually load, so this is where the scene
- * generator looks up what a single {@code <load>} of a pageset expands to.
- *
- * The member count is the packing's result : the directory measures and packs
- * the set at the moment it reserves file ids, so only filled pages become
- * members. A budget the packing does not fill simply yields fewer members —
- * the build says how many zones could be given back.
+ * A collection the arena packer could not place whole becomes several
+ * direntries — {@code <file>.0}, {@code .1}… — one per free run its elements
+ * flowed into. The members are what the scenes actually load, so this is
+ * where the scene generator looks up what a single {@code <load>} of the
+ * file expands to. The member count is the packing's result, decided once
+ * by the placement scan and read everywhere else.
  */
 public class PageSets {
 
@@ -34,20 +30,11 @@ public class PageSets {
 
 	private final Map<String, List<Member>> sets = new LinkedHashMap<String, List<Member>>();
 
-	/** the member names a pageset of this many pages will produce, in page order */
-	public static List<String> memberNames(String set, int pages) {
-		List<String> names = new ArrayList<String>();
-		for (int i = 0; i < pages; i++) {
-			names.add(set + "." + i);
-		}
-		return names;
-	}
-
 	public void declare(String set, List<Member> members) {
 		sets.put(set, members);
 	}
 
-	/** null when the name is an ordinary file rather than a pageset */
+	/** null when the name is an ordinary, uncut file */
 	public List<Member> get(String set) {
 		return sets.get(set);
 	}

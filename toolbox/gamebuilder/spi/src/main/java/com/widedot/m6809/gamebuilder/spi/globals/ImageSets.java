@@ -9,7 +9,7 @@ import java.util.Map;
  *
  * The two halves of an imageset do not always live in the same file. The
  * compiled drawing code of a big set does not fit in one page — R-Type's
- * explosion is 17 KB of sprites — so it is declared as a pageset and spread,
+ * explosion is 17 KB of sprites — so it is cut by the packer and spread,
  * while the index that describes it must stay in one page, the one
  * {@code Img_Page_Index} mounts to read it. Compiling and indexing therefore
  * become two elements, and this is what passes between them : the geometry

@@ -86,14 +86,12 @@ public final class ArenaPacker {
 	 * @param divisibles the collections the scan measured, by file name
 	 */
 	public static void pack(ImmutableNode target, BuildContext ctx,
-			Map<String, Regions.Region> regions, java.util.Set<String> pagesets,
+			Map<String, Regions.Region> regions,
 			Map<String, Divisible> divisibles) throws Exception {
 
-		// file order per arena, as the scenes declare them. Pageset names are
-		// excluded while the legacy element still exists : they flow on their
-		// own, after this packing.
+		// file order per arena, as the scenes declare them
 		Map<String, List<String>> wanted = new LinkedHashMap<String, List<String>>();
-		collect(target, ctx, wanted, pagesets);
+		collect(target, ctx, wanted);
 		if (wanted.isEmpty()) {
 			return;
 		}
@@ -109,11 +107,11 @@ public final class ArenaPacker {
 	}
 
 	private static void collect(ImmutableNode node, BuildContext ctx,
-			Map<String, List<String>> wanted, java.util.Set<String> pagesets) throws Exception {
+			Map<String, List<String>> wanted) throws Exception {
 		if ("load".equals(node.getNodeName())) {
 			String arena = Attribute.getStringOpt(node, ctx, "arena");
 			String name = Attribute.getStringOpt(node, ctx, "name");
-			if (name == null || pagesets.contains(name)) {
+			if (name == null) {
 				return; // malformed loads are the scene plugin's report
 			}
 			if (arena == null
@@ -135,7 +133,7 @@ public final class ArenaPacker {
 			}
 		}
 		for (ImmutableNode child : node.getChildren()) {
-			collect(child, ctx, wanted, pagesets);
+			collect(child, ctx, wanted);
 		}
 	}
 
@@ -246,26 +244,16 @@ public final class ArenaPacker {
 			// cut if it cannot : the fallback the author asked for
 			cut(arena, f, d, free, ctx);
 		}
-
-		// what the rigid placement leaves is recorded for whoever asks — the
-		// legacy pageset flow while it lasts, reports later
-		List<int[]> gaps = new ArrayList<int[]>();
-		for (int i = 0; i < free.length; i++) {
-			if (free[i] > 0) {
-				Regions.Zone z = arena.zones.get(i);
-				gaps.add(new int[] { z.page, z.end() - free[i], free[i] });
-			}
-		}
-		ctx.regions.setArenaGaps(arena.name, gaps);
 	}
 
 	/**
 	 * Flow a collection's elements into the zones' free tails, in element
 	 * order : one member per tail used, as big as the tail allows, tails
 	 * under {@link #GAP_MIN} left empty. Mutates {@code free} — the next
-	 * file of the sort sees what the cut consumed.
+	 * file of the sort sees what the cut consumed. Package-private so the
+	 * flow scenarios stay tested without a full build.
 	 */
-	private static void cut(Regions.Region arena, String file, Divisible d, int[] free,
+	static void cut(Regions.Region arena, String file, Divisible d, int[] free,
 			BuildContext ctx) throws Exception {
 
 		int biggest = 0;

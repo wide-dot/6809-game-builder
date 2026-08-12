@@ -1,5 +1,14 @@
 # An imageset bigger than a page is spread, and its index carries a page per image
 
+> **Update (2026-08-12).** The `<pageset>` element this case uses was retired
+> with the single-sort placement (5c) : its behaviour — whole if it fits, cut
+> between elements if it cannot — is now what any arena `<file>` gets by
+> default, and the explosion's images are ordinary arena files. The account
+> below is kept as written : the two-element split (compile vs index) and
+> the page-per-image index are unchanged, only the spelling of the spread
+> declaration moved. Current form : [sprites.md](../sprites.md) § When the
+> code outgrows a page.
+
 ## Symptom
 
 ```

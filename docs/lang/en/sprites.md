@@ -196,30 +196,32 @@ One relocation for the whole set holds only while every image is compiled into
 the same file. A big set is not : R-Type's explosion is thirteen sprites, five
 of them 24x48, for 17 881 bytes — more than a page.
 
-The code is then declared as a `<pageset>`, which the builder measures and
-packs, while the **index stays in one page** : `CheckSpritesRefresh` mounts
-`Img_Page_Index[id]` before dereferencing `image_set,u`, so the descriptors
-cannot be spread. Compiling and indexing become two elements.
+The code is then split over ordinary arena files — the packer places each
+whole if it fits and cuts between images if it cannot — while the **index
+stays in one page** : `CheckSpritesRefresh` mounts `Img_Page_Index[id]`
+before dereferencing `image_set,u`, so the descriptors cannot be spread.
+Compiling and indexing become two elements.
 
 ```xml
-<pageset name="explosion.images" region="explosion.images"
-         gendir="gen/fx/explosion-pages" loadtimelink="LINK">
-    <gfxcomp gendir="gen/fx/explosion"
-             gensource="gen/fx/explosion/includes.asm"
-             imageset="explosion">          <!-- names the geometry it measures -->
-        <image name="expBig_0" filename="…/blast_big_0.png" index="8">
-            <encoder name="bdraw" mirror="none" shift="0"/>
-        </image>
-        …
-    </gfxcomp>
-</pageset>
+<file name="common.explosion.imgSmall" linkdata="LINK" arena="objects">
+    <lwasm gensource="gen/fx/explosion-imgsmall.asm">
+        <gfxcomp gendir="gen/fx/explosion"
+                 gensource="gen/fx/explosion/includesSmall.asm"
+                 imageset="explosion">      <!-- names the geometry it measures -->
+            <image name="expSmall_0" filename="…/blast_small_0.png" index="0">
+                <encoder name="bdraw" mirror="none" shift="0"/>
+            </image>
+            …
+        </gfxcomp>
+    </lwasm>
+</file>
 
-<direntry name="common.explosion" loadtimelink="LINK">
+<file name="common.explosion" linkdata="LINK" arena="objects">
     <lwasm gensource="gen/fx/explosion.asm">
         <asm filename="src/common/fx/explosion/explosion.asm"/>
         <imageset name="explosion" gensource="gen/fx/explosion/index.asm"/>
     </lwasm>
-</direntry>
+</file>
 ```
 
 `<imageset>` writes the same table, with two differences : the page is **asked
@@ -230,7 +232,7 @@ are baked too and the set costs no link data at all.
 
 The images must be declared **before** the index, for the same reason a
 `<tilemap>` comes after its tileset : the page of a symbol is known once the
-file holding it is placed. The scene loads both, the pageset by its set name.
+file holding it is placed. The scene loads both by name.
 
 This is the shape v1's index had all along — a page byte per frame, its builder
 having placed the pages itself. See

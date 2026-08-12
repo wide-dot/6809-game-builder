@@ -16,7 +16,6 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
 import com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin;
 import com.widedot.m6809.gamebuilder.plugin.direntry.util.DirEntryDecoder;
-import com.widedot.m6809.gamebuilder.plugin.pageset.PageSetPlugin;
 import com.widedot.m6809.gamebuilder.plugin.scene.SceneCheck;
 import com.widedot.m6809.gamebuilder.plugin.scene.SceneChecks;
 import com.widedot.m6809.gamebuilder.plugin.scene.ScenePlugin;
@@ -69,38 +68,15 @@ public class DirectoryPlugin {
 		// the compact %11 encoding when a list follows the id chain the
 		// loader walks (id += blocks)
 		java.util.Map<String, int[]> idBlocks = new java.util.HashMap<String, int[]>();
-		// what each pageset's reservation-time packing produced, reused by the
-		// emission : measuring twice would let the two disagree, which the
-		// reserved==emitted assertion below would refuse
-		java.util.Map<String, PageSetPlugin.Packing> packings =
-				new java.util.HashMap<String, PageSetPlugin.Packing>();
-		// packing assembles content, so it has to see the directory's own
-		// <default>/<define> elements exactly as the emission will : replay
-		// the pure configuration children into a scratch context as we walk
+		// a defaulted attribute can change the block count, so the reservation
+		// has to see the directory's own <default>/<define> elements exactly as
+		// the emission will : replay the pure configuration children into a
+		// scratch context as we walk
 		BuildContext resCtx = ctx.child();
 		for (ImmutableNode child : node.getChildren()) {
 			String plugin = child.getNodeName();
 			if (plugin.equals("default") || plugin.equals("define")) {
 				Handlers.getDefault(plugin).run(child, resCtx);
-				continue;
-			}
-			if (plugin.equals("pageset")) {
-				// a pageset becomes one entry per FILLED page of its region :
-				// ids are handed out here, so the set is measured and packed
-				// here — the member count is the packing's result, and a scene
-				// declared before its pageset finds the members already known
-				PageSetPlugin.Packing packing = PageSetPlugin.pack(child, resCtx);
-				int blocks = DirEntryPlugin.blockCount(packing.codec, packing.linkSection);
-				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member
-						: packing.members) {
-					writer.write(member.name + " equ " + fileId + System.lineSeparator());
-					directoryNames.add(member.name);
-					idBlocks.put(member.name, new int[] { fileId, blocks });
-					fileId += blocks;
-				}
-				directoryNames.add(packing.name);
-				ctx.pageSets.declare(packing.name, packing.members);
-				packings.put(packing.name, packing);
 				continue;
 			}
 			if (plugin.equals("file") || plugin.equals("scene")) {
@@ -189,16 +165,6 @@ public class DirectoryPlugin {
 			if (plugin.equals("scene")) {
 				log.debug("Running handler: {}", plugin);
 				ScenePlugin.run(child, localCtx, media, gensymbols, directoryNames, idBlocks, pendingScenes);
-				ctx.publish(localCtx);
-				continue;
-			}
-
-			// pagesets too : their members are directory entries, packed when
-			// the ids were reserved above — the emission reuses that packing
-			if (plugin.equals("pageset")) {
-				log.debug("Running handler: {}", plugin);
-				PageSetPlugin.run(child, localCtx, media,
-						packings.get(Attribute.getString(child, ctx, "name")));
 				ctx.publish(localCtx);
 				continue;
 			}

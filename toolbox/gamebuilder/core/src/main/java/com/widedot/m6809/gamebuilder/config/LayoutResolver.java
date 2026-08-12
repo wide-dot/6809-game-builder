@@ -39,7 +39,7 @@ import com.widedot.m6809.gamebuilder.spi.globals.Regions;
  * it describes equates that live in the game's source, and the builder cannot
  * measure what it does not produce. And {@code pages="N"} on a multi-page
  * region stays a declared budget — an {@code auto} size there means one whole
- * page, since a pageset's per-page capacity is what it asks for.
+ * page, since whole pages are what the budget offers.
  */
 public final class LayoutResolver {
 
@@ -154,7 +154,7 @@ public final class LayoutResolver {
 				// outgrows it, which is the whole point of writing it down
 				size = Attribute.getIntegerOpt(child, ctx, "size");
 			} else if (pages > 1) {
-				// a pageset asks for whole pages ; its per-page capacity is the page
+				// a multi-page budget offers whole pages ; each zone's capacity is the page
 				size = PAGE_SIZE;
 			} else {
 				Integer m = ctx.regions.measured(name);

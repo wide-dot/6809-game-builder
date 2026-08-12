@@ -580,8 +580,14 @@ Fonctionnel :
         PREUVE : 4 images r-type changent (annoncé), 55 identiques,
         JUnit vert, banc r-type 5/5 sous toje, reproductibilité 59/59.
         Piège Java consigné : ternaire int/Integer qui déboxe un null.
-        Reste 5c : commit B — retrait de la machinerie <pageset>
-        (élément, plugin, specs, arenaGaps), prouvé par identité.
+        Commit B FAIT dans la foulée : PageSetPlugin (685 l.) supprimé,
+        <unit> relogé dans plugin/unit/UnitPlugin, spec <pageset> +
+        branches directory/scan + arenaGaps + memberNames retirés,
+        PageSetFlowTest retargeté en ArenaPackerCutTest (les 6 scénarios
+        de flux, sur ArenaPacker.cut), XSD −132 lignes, docs alignées
+        (scenes.md, sprites.md, symbols.md ; note de mise à jour dans le
+        cas imageset-pages.md). PREUVE : 59 images identiques à l'octet,
+        JUnit vert, reproductibilité.
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de
