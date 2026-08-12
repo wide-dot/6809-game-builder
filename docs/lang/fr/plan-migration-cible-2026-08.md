@@ -417,16 +417,38 @@ littéral ; `StaticLink.pageOf` n'est plus appelé depuis Java, l'interface
 `ImageSets.PageOf` et son câblage disparaissent, la branche à deux formes de
 `ImageSet.pageSymbol` se réduit à une ligne.
 
-*Point ouvert à trancher dans cette validation.* `map.RAM_OVER_CART` vaut
-`%01100000` et vit dans le `map.const.asm` de CHAQUE machine
-(`engine/system/to8/`, `engine/system/mo6/`). Une table générée qui l'écrit
-doit donc voir cet include. `<tilemap>` l'a déjà (le config le pose avant
-lui) ; l'index d'imageset ne l'a pas, et c'est précisément pourquoi il plie
-`+$60` en dur aujourd'hui. Deux sorties : le config pose l'include devant
-l'index (le pattern existant), ou le générateur continue d'écrire `+$60`
-et l'on renonce à normaliser les bits. **La première est cohérente avec le
-§26 (le builder ne répond jamais les bits d'un registre machine), la seconde
-ne demande rien à personne.**
+*Point tranché avec l'auteur le 11/08 : l'expression se configure, elle ne
+se code pas.* Mes deux premières sorties étaient toutes deux mauvaises, et
+la mesure le montre — **le builder connaît DÉJÀ la machine, à huit endroits
+et dans deux orthographes** : `ObjectIndexPlugin` écrit le NOM
+`map.RAM_OVER_CART+` (5 sites), `TilemapPlugin` aussi (1 site), et
+`ImageSet` écrit la VALEUR `0x60` (2 sites). « Ne rien changer » ne coûtait
+donc pas zéro : ça gardait une fuite existante.
+
+État des définitions externes : il y en a **une seule**,
+`engine/config/storage.xml`, tirée par un `<default name="floppydisk.storage">`
+que chaque config pose. **Il n'existe aucun équivalent machine** — la
+machine n'est jamais nommée dans le config, elle n'existe qu'implicitement,
+par les chemins `engine/system/to8|mo6/` que les includes visent.
+`<target name="fd">` nomme la cible média, pas la machine.
+
+Forme retenue : une **définition machine** sur le modèle de `storage.xml`,
+portant deux entrées qui se répondent —
+- l'**expression** du préfixe de page (`map.RAM_OVER_CART+`),
+- l'**include** qui la définit (`engine/system/to8/map.const.asm`).
+
+Le générateur émet la ligne d'include PUIS l'expression, sans rien savoir.
+Ça ferme les deux défauts d'un coup : plus de valeur dupliquée entre le XML
+et l'asm (c'est un nom, pas un nombre), et plus d'include à poser à la main
+config par config (le générateur l'écrit depuis la déclaration). Les huit
+sites en dur tombent.
+
+*Reste à trancher* : la portée de la définition machine — un fichier XML
+dédié (l'analogue exact de `storage.xml`, une entrée aujourd'hui, la règle
+du dépôt « capitaliser à la première occurrence » y pousse) ou un simple
+`<default>` dans le config. Candidats à y rejoindre plus tard : le nombre
+de pages RAM par défaut (aujourd'hui un défaut Java de 32, déjà
+surchargeable par `<layout pages=>`).
 
 *Preuve.* Identité binaire sur les 59 images — le littéral cuit aujourd'hui
 vaut exactement ce que le symbole résoudra — plus JUnit, plus le contrôle de
