@@ -815,6 +815,21 @@ MÊMES png en `mirror=x`). La forme compacte proposée, UN élément :
   Recommandation : **(ii) d'abord** — l'identité reste la preuve — et (i)
   en phase de renommage finale, où il a sa place.
 
+**Complément demandé par l'auteur (12/08) : le match exige de renommer les
+ressources et de traiter proprement d7/t2.** L'étude de la référence v1
+(properties de game-mode et d7/t2) et la proposition d'organisation —
+un répertoire = une série homogène, noms `NN[-label].png` (l'ordre est le
+nom, assigné depuis l'ordre des properties d7 : l'inversion rship est
+absorbée par le renommage), une ligne `<images>` par série (`mirror=`
+re-liste le répertoire, les index continuent), et le profil d'encodage en
+défaut de target (`images.profile` : `B0` en fd, `B0,B1` en t2 — les
+déclarations d'objets deviennent identiques entre targets, vocabulaire de
+variantes v1 conservé) — vivent dans
+[`analyse-images-7b-2026-08.md`](analyse-images-7b-2026-08.md), avec la
+table de renommage committée, la mise à jour de v1-map.csv et de
+check_variants, et trois points ouverts (étendue du renommage, défaut de
+`names=`, profil des tuiles). EN ATTENTE DE VALIDATION.
+
 *Preuve 7b : réécrire les 52 gfxcomp du config en forme compacte, 59+4
 images identiques à l'octet (option ii). Le banc : le config perd ~500
 lignes, le bloc d'un ennemi tient en ~8 lignes.*
