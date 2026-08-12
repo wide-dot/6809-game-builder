@@ -369,9 +369,7 @@ sont authorées (la table d'objets, prouvée le 11/08).
   garde-fous LUS pour de vrai — « 'overlay$PAGE' is ambiguous : … » et
   « 'nowhere$PAGE' resolves to nothing : … ».
 - **5c — le flux par élément, sur tout fichier.** Retire `<pageset>` du
-  vocabulaire. Les images changent (les 48 fichiers `lwasm`+`gfxcomp`
-  deviennent des collections : 1 élément de code + N éléments d'images) ;
-  la preuve devient le banc, plus l'identité. À spécifier après 5b.
+  vocabulaire. Spec détaillée ci-dessous, EN ATTENTE DE VALIDATION.
 - **5d — `<unit>` sur son vrai rôle.** Fiche réécrite (grouper pour la
   continuité), refus dans la forme arène levé, cas composite documenté.
   À spécifier après 5c.
@@ -406,6 +404,66 @@ spécifiée ci-dessous. (Note d'instrument : ne pas mesurer ça avec
 dont personne n'importe l'entrée y paraît sans export alors qu'il en
 déclare un. La table de `StaticLink`, elle, porte tous les exports
 déclarés, ce qui est bien ce que `pageOf` interroge.)
+
+### 5c — spécification détaillée (à valider)
+
+*Le modèle.* Le packer d'arène ne range plus des FICHIERS mais des
+**éléments**. Un élément est ce qu'un plugin produit : `lwasm` en rend un
+(une assemblée, d'un tenant), `gfxcomp` en expose N (il sait nommer ses
+parties), `bin` un, `<unit>` un — il groupe justement des plugins dont la
+sortie doit rester continue. C'est déjà la frontière que le code connaît
+(`PartsPluginInterface`, un seul inscrit).
+
+*La règle de découpe : **entier s'il rentre, coupé sinon**.* Un fichier qui
+tient dans un creux reste UNE entrée et **garde son nom**, sans suffixe —
+c'est ce qui préserve les 84 loads, les équates de place et les scènes. Un
+fichier qui ne rentre pas coule dans les creux et donne une entrée par creux
+utilisé, nommée `<fichier>.0`, `.1`… : la règle des membres d'aujourd'hui,
+généralisée. La coupe devient donc un **repli**, pas une politique — là où
+le build s'arrêtait sur « l'arène ne peut pas tenir X », il range.
+
+*Ce qui disparaît.* `<pageset>` et ses quatre déclarations, qui deviennent
+des `<file>` (attributs réellement employés, mesurés : `name`, `arena`,
+`linkdata`, `gendir` — `gensymbols`, `gapmin`, `codec`, `section` et `bake`
+n'ont aucun usage). La forme `region=` meurt avec lui : **zéro utilisateur**
+depuis le re-rangement du 11/08. Et le refus de `<unit>` dans la forme arène
+tombe — les fichiers mixtes deviennent exprimables.
+
+*Pourquoi couper est sûr.* Un fichier mixte porte déjà ses moitiés en
+assemblées séparées : le code d'un ennemi référence ses images par symbole,
+qu'elles soient dans la même entrée ou non. Couper entre deux éléments ne
+change donc rien à la résolution — cuite ou liée — et une référence
+*interne* à un élément ne peut pas être coupée, puisque l'élément est
+l'unité. Le contrat est tenu par l'assembleur, pas par la confiance.
+
+*Un effet à traiter explicitement : la place publiée.* Un fichier d'arène
+reçoit aujourd'hui son équate `<fichier>.page`. Un fichier COUPÉ n'a plus
+une page unique : publier l'équate serait un mensonge. Elle n'est donc pas
+émise pour lui, et le code qui a besoin d'une page demande `symbole$PAGE`
+(5b) — c'est exactement ce que l'attribut résout.
+
+*LE POINT À TRANCHER, et il décide de la preuve.* Un fichier divisible qui
+tient entier participe-t-il à la phase « plus gros d'abord » avec les
+indivisibles ?
+
+- **(i) oui — un seul tri.** Meilleur remplissage possible, modèle plus pur.
+  MAIS l'ordre de pose change pour les 48 fichiers `lwasm`+`gfxcomp` : les
+  adresses bougent, **les images changent**, et la preuve devient le banc.
+- **(ii) non — les divisibles coulent après les indivisibles**, comme les
+  pagesets aujourd'hui. L'ordre de pose est inchangé, **les 59 images
+  restent identiques à l'octet**, et la coupe n'apparaît que là où elle est
+  nécessaire.
+
+**Recommandation : (ii).** Le gain de (i) est un remplissage meilleur — non
+mesuré, non demandé — et son coût est de perdre la preuve par identité sur
+un changement structurel de vocabulaire : mauvais échange. (ii) généralise
+ce qui marche déjà, et laisse (i) mesurable plus tard, isolément, quand une
+arène serrera vraiment.
+
+*Preuve attendue (option ii)* : 59 images identiques à l'octet — les quatre
+pagesets deviennent des fichiers de même contenu, même ordre, même découpe —
+JUnit, et le banc r-type 5/5 par sécurité, le vocabulaire changeant même si
+le placement ne change pas.
 
 ### 5b — spécification détaillée (à valider)
 
