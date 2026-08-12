@@ -2298,10 +2298,11 @@
                 <!-- entre deux alternatives c'est la dernière déclarée qui     -->
                 <!-- fournit. D'où le groupement par stage plutôt que par type. -->
                 <!-- ******************************************************** -->
-                <!-- Le tileset pair ne rentre pas forcement dans une page :   -->
-                <!-- on declare un budget de pages et un contenu, le builder    -->
-                <!-- mesure, range et emet un direntry par page. L'auteur       -->
-                <!-- n'affecte jamais une tuile a une page.                     -->
+                <!-- Les tilesets sont des fichiers ORDINAIRES de l'arene :     -->
+                <!-- gfxcomp sait nommer ses elements, donc le packer les pose  -->
+                <!-- entiers s'ils rentrent et les coupe entre elements sinon.  -->
+                <!-- La coupe est un repli du placement, jamais un reglage :    -->
+                <!-- rien ici ne dit combien de morceaux, ni ou.                -->
                 <!-- La vague est un fichier rigide de l'arene : posee AVANT    -->
                 <!-- que les tuiles coulent, elle n'a plus besoin d'etre un     -->
                 <!-- <unit> de comblement — les creux se remplissent tout      -->
@@ -2315,25 +2316,25 @@
                     </unit>
                 </file>
 
-                <pageset name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
-                         gendir="gen/stages/01/tiles-even">
+                <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
+                      gendir="gen/stages/01/tiles-even">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                </pageset>
+                </file>
 
-                <pageset name="stage1.tiles.odd" linkdata="LINK" arena="stage1.gfx"
-                         gendir="gen/stages/01/tiles-odd">
+                <file name="stage1.tiles.odd" linkdata="LINK" arena="stage1.gfx"
+                      gendir="gen/stages/01/tiles-odd">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                </pageset>
+                </file>
 
                 <!-- Les deux tables de carte : rigides, posees par le packer   -->
                 <!-- dans la meme arene que les tuiles                          -->
@@ -2386,25 +2387,25 @@
                     </unit>
                 </file>
 
-                <pageset name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
-                         gendir="gen/stages/02/tiles-even">
+                <file name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
                         <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                </pageset>
+                </file>
 
-                <pageset name="stage2.tiles.odd" linkdata="LINK" arena="stage2.gfx"
-                         gendir="gen/stages/02/tiles-odd">
+                <file name="stage2.tiles.odd" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/tiles-odd">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
                         <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
-                </pageset>
+                </file>
 
                 <!-- Les deux tables de carte : rigides, posees par le packer   -->
                 <file name="stage2.maps" linkdata="LINK" bake="all" arena="stage2.gfx">

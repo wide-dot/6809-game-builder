@@ -553,6 +553,35 @@ Fonctionnel :
         de lien inchangé par construction. Verdict au §24. Reste si
         adopté : retirer l'élément <objectindex> et son plugin (plus de
         consommateur) ; l'inversion §23 ne porte plus que sur le généré.
+  - [x] Phase 5b — symbole$PAGE (11/08) : X$PAGE accepte un symbole OU un
+        nom de fichier (StaticLink.pageOfName, collision refusée en
+        nommant les deux, jamais de repli silencieux) ; les générateurs
+        (<tilemap>, imageset réparti) émettent <expr machine><sym>$PAGE
+        au lieu d'un littéral Java. Préalable fait dans la foulée
+        (décision auteur) : la machine se déclare —
+        engine/config/machine.xml sur le modèle storage.xml (pages de
+        RAM, expression de bits cartouche + include), sélectionnée par
+        <machine name=…/>. Le builder répond le numéro de page, jamais
+        les bits $60. PREUVE : 59 images identiques à l'octet, JUnit
+        142/142, banc r-type 5/5, les deux garde-fous cassés et LUS.
+  - [x] Phase 5c — un seul tri, le flux par élément sur tout fichier
+        (12/08, option (i) tranchée par l'auteur) : les 4 <pageset>
+        deviennent des <file> ordinaires (attrs name/arena/linkdata/
+        gendir) ; le packer trie TOUT plus-gros-d'abord, pose entier ce
+        qui rentre (le fichier garde son nom), coule en <fichier>.N ce
+        qui ne rentre pas — la coupe est un repli, pas une politique.
+        Mécanique : Cuts (registre des découpes), CollectionPlugin
+        (mesure par offsets d'export + émission par morceau),
+        collectDivisibles dans PlacementScan (defaults rejoués),
+        réservation par membres dans DirectoryPlugin. La prémisse « les
+        48 fichiers ennemis changent » était fausse : leur gfxcomp est
+        imbriqué dans lwasm → un seul élément → tri inchangé. Gain : les
+        tilesets even/odd d'un stage partagent les queues de pages.
+        PREUVE : 4 images r-type changent (annoncé), 55 identiques,
+        JUnit vert, banc r-type 5/5 sous toje, reproductibilité 59/59.
+        Piège Java consigné : ternaire int/Integer qui déboxe un null.
+        Reste 5c : commit B — retrait de la machinerie <pageset>
+        (élément, plugin, specs, arenaGaps), prouvé par identité.
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de

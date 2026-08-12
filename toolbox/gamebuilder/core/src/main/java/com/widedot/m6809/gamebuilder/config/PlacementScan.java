@@ -40,13 +40,82 @@ public final class PlacementScan {
 		ctx.filePlaces.clear();
 		java.util.Set<String> pagesets = new java.util.LinkedHashSet<String>();
 		collectFilePlaces(targetNode, ctx, pagesets);
-		// arenas next : where an arena-bound file lands depends on all the
+		// collections next : a file whose top-level children can all name
+		// their parts is an element list to the placement. Its elements are
+		// measured HERE, before the sort — with the defaults its directory
+		// declares, replayed exactly as the reservation will replay them
+		// (lwasm.format=obj is what the measure assembly needs)
+		ctx.cuts.clear();
+		java.util.Map<String, ArenaPacker.Divisible> divisibles =
+				new java.util.LinkedHashMap<String, ArenaPacker.Divisible>();
+		collectDivisibles(targetNode, ctx, divisibles);
+		// arenas last : where an arena-bound file lands depends on all the
 		// files bound to that arena, so it cannot be decided region by region.
-		// The pageset names are passed so the packer leaves the collections
-		// out : they flow into the gaps the rigid placement leaves.
+		// One sort, whole if it fits, cut if it cannot (5c).
 		ctx.regions.clearFilePlacements();
-		ArenaPacker.pack(targetNode, ctx, resolved, pagesets);
+		ArenaPacker.pack(targetNode, ctx, resolved, pagesets, divisibles);
 		collectLoads(targetNode, ctx, regions);
+	}
+
+	/**
+	 * Finds and measures the collections : arena-bound files whose top-level
+	 * children can ALL name their parts (the plugin is the frontier — lwasm
+	 * yields one element, gfxcomp exposes N). The walk replays each
+	 * container's <default>/<define> into a scratch context so the measure
+	 * assembles under the same configuration the emission will see.
+	 */
+	private static void collectDivisibles(ImmutableNode node, BuildContext ctx,
+			java.util.Map<String, ArenaPacker.Divisible> divisibles) throws Exception {
+		BuildContext scope = ctx.child();
+		for (ImmutableNode child : node.getChildren()) {
+			String kind = child.getNodeName();
+			if ("default".equals(kind) || "define".equals(kind)) {
+				com.widedot.m6809.gamebuilder.Handlers.getDefault(kind).run(child, scope);
+				continue;
+			}
+			if ("file".equals(kind)) {
+				String name = raw(child, "name");
+				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
+						name == null ? null : scope.filePlaces.get(name);
+				if (place == null || place.arena == null) {
+					continue;
+				}
+				java.util.List<String[]> parts = null;
+				boolean allParts = false;
+				for (ImmutableNode content : child.getChildren()) {
+					com.widedot.m6809.gamebuilder.spi.PartsPluginInterface handler =
+							com.widedot.m6809.gamebuilder.Handlers.getParts(content.getNodeName());
+					if (handler == null) {
+						allParts = false;
+						break;
+					}
+					// generated part symbols are qualified by the FILE : the
+					// member split is the packing's result, and a symbol name
+					// must not change when the packing does
+					scope.staticLink.setCurrentHost(name);
+					if (parts == null) {
+						parts = new java.util.ArrayList<String[]>();
+					}
+					parts.addAll(handler.getParts(content, scope));
+					allParts = true;
+				}
+				if (!allParts || parts == null || parts.isEmpty()) {
+					continue;
+				}
+				String gendir = raw(child, "gendir");
+				if (gendir == null) {
+					throw new Exception(scope.sources.locate(child) + ": collection '" + name
+							+ "' needs gendir= : its member sources are generated");
+				}
+				int[] sizes = com.widedot.m6809.gamebuilder.plugin.collection.CollectionPlugin
+						.measure(name, parts, scope, gendir);
+				divisibles.put(name, new ArenaPacker.Divisible(parts, sizes, gendir));
+				continue;
+			}
+			// recurse with the SCOPE : a directory's defaults stack on its
+			// floppydisk's, exactly as the real walk nests its contexts
+			collectDivisibles(child, scope, divisibles);
+		}
 	}
 
 	/**

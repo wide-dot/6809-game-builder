@@ -110,6 +110,28 @@ public class DirectoryPlugin {
 				// that changes the block count (file.codec) must be seen here
 				// exactly as the emission will see it
 				String name = Attribute.getString(child, resCtx, "name");
+
+				// a collection the packer CUT : one entry per member, ids in
+				// member order — the count is the packing's result, decided
+				// once by the placement scan and read here
+				java.util.List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member>
+						cutMembers = plugin.equals("file") ? ctx.pageSets.get(name) : null;
+				if (cutMembers != null) {
+					String codec = DirEntryPlugin.effectiveCodec(
+							Attribute.getStringOpt(child, resCtx, "codec"));
+					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
+					int blocks = DirEntryPlugin.blockCount(codec, linkSection);
+					for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member
+							: cutMembers) {
+						writer.write(member.name + " equ " + fileId + System.lineSeparator());
+						directoryNames.add(member.name);
+						idBlocks.put(member.name, new int[] { fileId, blocks });
+						fileId += blocks;
+					}
+					directoryNames.add(name);
+					continue;
+				}
+
 				writer.write(name + " equ " + fileId + System.lineSeparator());
 				directoryNames.add(name);
 
@@ -179,6 +201,19 @@ public class DirectoryPlugin {
 						packings.get(Attribute.getString(child, ctx, "name")));
 				ctx.publish(localCtx);
 				continue;
+			}
+
+			// a collection — a file whose parts the packer measured — is
+			// emitted from its cut, one entry per chunk, never through the
+			// generic file path (its children are parts, not objects)
+			if (plugin.equals("file")) {
+				String name = Attribute.getString(child, localCtx, "name");
+				if (ctx.cuts.get(name) != null) {
+					com.widedot.m6809.gamebuilder.plugin.collection.CollectionPlugin
+							.emit(child, localCtx, media);
+					ctx.publish(localCtx);
+					continue;
+				}
 			}
 
 			DefaultPluginInterface defaultHandler = Handlers.getDefault(plugin);

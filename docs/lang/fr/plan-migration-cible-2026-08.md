@@ -368,8 +368,20 @@ sont authorées (la table d'objets, prouvée le 11/08).
   ce que le symbole résout), JUnit 142/142, banc r-type 5/5, et les deux
   garde-fous LUS pour de vrai — « 'overlay$PAGE' is ambiguous : … » et
   « 'nowhere$PAGE' resolves to nothing : … ».
-- **5c — le flux par élément, sur tout fichier.** Retire `<pageset>` du
-  vocabulaire. Spec détaillée ci-dessous, EN ATTENTE DE VALIDATION.
+- **5c — le flux par élément, sur tout fichier. FAIT (12/08), option (i)
+  tranchée par l'auteur (« un seul tri »).** Les quatre `<pageset>` sont des
+  `<file>` ordinaires ; le packer trie TOUT plus-gros-d'abord, pose entier ce
+  qui rentre (le fichier garde son nom), et coule en membres `<fichier>.N` ce
+  qui ne rentre pas. PREUVE : seules les 4 images r-type changent — les 48
+  fichiers ennemis ont leur `gfxcomp` IMBRIQUÉ dans `lwasm`, donc un seul
+  élément, donc un tri inchangé ; le dilemme (i)/(ii) ne portait en réalité
+  que sur les 4 tilesets. 55 images identiques à l'octet, JUnit vert, banc
+  r-type 5/5 sous toje (caméra à 1440, échange réversible), reproductibilité
+  reconfirmée sur les 59. Gain mesuré du tri unique : les deux tilesets d'un
+  stage partagent désormais les queues de pages (even coule dans ce que odd
+  laisse), là où deux pagesets ne savaient remplir que des pages disjointes.
+  Le retrait de la machinerie `<pageset>` est le commit B, prouvé par
+  identité, séparément.
 - **5d — `<unit>` sur son vrai rôle.** Fiche réécrite (grouper pour la
   continuité), refus dans la forme arène levé, cas composite documenté.
   À spécifier après 5c.
@@ -405,7 +417,7 @@ dont personne n'importe l'entrée y paraît sans export alors qu'il en
 déclare un. La table de `StaticLink`, elle, porte tous les exports
 déclarés, ce qui est bien ce que `pageOf` interroge.)
 
-### 5c — spécification détaillée (à valider)
+### 5c — spécification détaillée (VALIDÉE le 11/08, réalisée le 12/08 en option (i))
 
 *Le modèle.* Le packer d'arène ne range plus des FICHIERS mais des
 **éléments**. Un élément est ce qu'un plugin produit : `lwasm` en rend un
@@ -460,10 +472,20 @@ un changement structurel de vocabulaire : mauvais échange. (ii) généralise
 ce qui marche déjà, et laisse (i) mesurable plus tard, isolément, quand une
 arène serrera vraiment.
 
-*Preuve attendue (option ii)* : 59 images identiques à l'octet — les quatre
-pagesets deviennent des fichiers de même contenu, même ordre, même découpe —
-JUnit, et le banc r-type 5/5 par sécurité, le vocabulaire changeant même si
-le placement ne change pas.
+**Tranché par l'auteur le 12/08 : (i), « un seul tri, maintenant ».** Et la
+mesure a dissous le dilemme : ma prémisse « les 48 fichiers changent
+d'adresses » était fausse. Leur `gfxcomp` est imbriqué DANS le `<lwasm>` —
+un seul élément au sens du modèle, donc un fichier indivisible, donc un tri
+identique à avant. Seuls les 4 tilesets (gfxcomp au premier niveau) sont
+divisibles ; l'écart entre (i) et (ii) se réduisait à eux, qui changeaient
+de toute façon.
+
+*Preuve rendue (option i, 12/08)* : 4 images r-type changées, 55 identiques
+à l'octet ; JUnit vert ; banc r-type 5/5 sous toje ; reproductibilité
+reconfirmée (deux corpus consécutifs identiques). Un piège Java attrapé au
+premier build : le ternaire `d != null ? d.total : fileSize(f)` mélange
+`int` et `Integer`, la promotion numérique déboxe le null AVANT le test —
+NPE dans la passe de découverte, corrigé en `if/else` commenté.
 
 ### 5b — spécification détaillée (à valider)
 

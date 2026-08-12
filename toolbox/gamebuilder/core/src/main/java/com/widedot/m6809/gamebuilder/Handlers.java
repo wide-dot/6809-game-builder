@@ -100,7 +100,8 @@ public final class Handlers {
 			.opt("arena", STRING, "attributed place : arena to range this file into ; loads of it become bare names")
 			.opt("region", STRING, "attributed place : destination region of the layout ; loads of it become bare names")
 			.opt("page", INT, "attributed place : raw destination page, needs address")
-			.opt("address", INT, "attributed place : raw destination address, needs page"));
+			.opt("address", INT, "attributed place : raw destination address, needs page")
+			.opt("gendir", STRING, "collection form (every child names its parts) : directory receiving the generated member sources"));
 		spec(element("pageset").doc("a collection the builder packs and emits as several files : whole pages of a region, or chunks flowed into the gaps an arena's rigid placement leaves")
 			.req("name", STRING, "set name ; members are <name>.0 .. <name>.<pages-1>")
 			.opt("region", STRING, "multi-page region receiving the set, one member per filled page (one of region or arena)")

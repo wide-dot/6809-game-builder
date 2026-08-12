@@ -10,6 +10,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
+import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +31,47 @@ import lombok.extern.slf4j.Slf4j;
  * arenas declaring the same zones : the layout allows contenders to overlap,
  * and the per-scene check is what verifies they never coexist.
  *
- * <p><b>Largest first.</b> Small files then fill what the big ones leave, which
- * is the difference between reaching the theoretical page count and wasting one
- * page in three (measured on r-type : 8 pages against 12 for the same content).
- * Ties keep declaration order, so a build stays reproducible.
+ * <p><b>One sort, whole if it fits, cut if it cannot</b> (author's decision,
+ * 11/08). Every file — divisible or not — joins a single largest-first sort.
+ * A file that fits a zone's free run is placed whole and keeps its name. A
+ * file that does not fit and whose elements the builder knows (a collection :
+ * every top-level child can name its parts) FLOWS into the free tails, one
+ * member per tail used — cutting is a fallback, not a policy : where the
+ * build used to stop on "the arena cannot hold X", it now ranges. Largest
+ * first is what reaches the theoretical page count instead of wasting one
+ * page in three (measured on r-type : 8 pages against 12) ; ties keep
+ * declaration order, so a build stays reproducible.
  */
 @Slf4j
 public final class ArenaPacker {
+
+	/**
+	 * A free tail smaller than this is left empty rather than crumbling a
+	 * collection into it : a member costs a directory entry, a scene table
+	 * entry and a load call, and a small block compresses badly. The manual's
+	 * "seuil de creux" — a setting some day, a sane constant until someone
+	 * needs to tune it.
+	 */
+	private static final int GAP_MIN = 256;
+
+	/** a divisible file, measured : its parts, their sizes, its generation dir */
+	public static class Divisible {
+		public final List<String[]> parts;
+		public final int[] sizes;
+		public final String gendir;
+		public final int total;
+
+		public Divisible(List<String[]> parts, int[] sizes, String gendir) {
+			this.parts = parts;
+			this.sizes = sizes;
+			this.gendir = gendir;
+			int sum = 0;
+			for (int s : sizes) {
+				sum += s;
+			}
+			this.total = sum;
+		}
+	}
 
 	private ArenaPacker() {
 	}
@@ -47,15 +83,15 @@ public final class ArenaPacker {
 	 *
 	 * @param target the target node, walked for its scene loads
 	 * @param regions the resolved layout
+	 * @param divisibles the collections the scan measured, by file name
 	 */
 	public static void pack(ImmutableNode target, BuildContext ctx,
-			Map<String, Regions.Region> regions, java.util.Set<String> pagesets)
-			throws Exception {
+			Map<String, Regions.Region> regions, java.util.Set<String> pagesets,
+			Map<String, Divisible> divisibles) throws Exception {
 
-		// file order per arena, as the scenes declare them. Pagesets are NOT
-		// rigid files : they are the collections that will flow into whatever
-		// this packing leaves, so they must not be ranged here — their names
-		// are excluded from the collection below.
+		// file order per arena, as the scenes declare them. Pageset names are
+		// excluded while the legacy element still exists : they flow on their
+		// own, after this packing.
 		Map<String, List<String>> wanted = new LinkedHashMap<String, List<String>>();
 		collect(target, ctx, wanted, pagesets);
 		if (wanted.isEmpty()) {
@@ -68,7 +104,7 @@ public final class ArenaPacker {
 				throw new Exception("unknown arena '" + e.getKey() + "' (layout declares: "
 						+ regions.keySet() + ")");
 			}
-			place(arena, e.getValue(), ctx);
+			place(arena, e.getValue(), ctx, divisibles);
 		}
 	}
 
@@ -78,8 +114,7 @@ public final class ArenaPacker {
 			String arena = Attribute.getStringOpt(node, ctx, "arena");
 			String name = Attribute.getStringOpt(node, ctx, "name");
 			if (name == null || pagesets.contains(name)) {
-				return; // malformed loads are the scene plugin's report ;
-						// pagesets flow into the gaps, they are not ranged
+				return; // malformed loads are the scene plugin's report
 			}
 			if (arena == null
 					&& Attribute.getStringOpt(node, ctx, "region") == null
@@ -104,8 +139,8 @@ public final class ArenaPacker {
 		}
 	}
 
-	private static void place(Regions.Region arena, List<String> files, BuildContext ctx)
-			throws Exception {
+	private static void place(Regions.Region arena, List<String> files, BuildContext ctx,
+			Map<String, Divisible> divisibles) throws Exception {
 
 		// how much room each zone has left, in declaration order
 		int[] free = new int[arena.zones.size()];
@@ -113,11 +148,20 @@ public final class ArenaPacker {
 			free[i] = arena.zones.get(i).size;
 		}
 
+		// a collection's size is the sum of its measured elements ; anything
+		// else was measured by the discovery pass
 		List<String> order = new ArrayList<String>(files);
 		final Map<String, Integer> sizes = new LinkedHashMap<String, Integer>();
 		boolean measured = true;
 		for (String f : files) {
-			Integer s = ctx.regions.fileSize(f);
+			Divisible d = divisibles.get(f);
+			// no ternary here : int alongside Integer would unbox a null size
+			Integer s;
+			if (d != null) {
+				s = d.total;
+			} else {
+				s = ctx.regions.fileSize(f);
+			}
 			if (s == null) {
 				measured = false;
 			}
@@ -131,10 +175,20 @@ public final class ArenaPacker {
 			// other — a scene's own writes are checked for overlap, and a pile
 			// of files at one address would fail a check that means nothing
 			// yet. No refusal either : the pass has to reach the end for
-			// anything to be measured at all.
+			// anything to be measured at all. Collections are cut against the
+			// FULL zones so the id reservation has a member count to work with.
 			Regions.Zone head = arena.zones.get(0);
 			int at = head.address;
 			for (String f : files) {
+				Divisible d = divisibles.get(f);
+				if (d != null) {
+					int[] fullFree = new int[arena.zones.size()];
+					for (int i = 0; i < fullFree.length; i++) {
+						fullFree[i] = arena.zones.get(i).size;
+					}
+					cut(arena, f, d, fullFree, ctx);
+					continue;
+				}
 				ctx.regions.placeFile(f, head.page, at);
 				Integer known = ctx.regions.fileSize(f);
 				at += known == null ? 1 : known;
@@ -142,7 +196,8 @@ public final class ArenaPacker {
 			return;
 		}
 
-		// largest first ; ties keep the order the scenes declared them in
+		// ONE SORT : largest first, divisible or not ; ties keep the order
+		// the scenes declared them in
 		final List<String> declared = files;
 		order.sort(Comparator
 				.comparingInt((String f) -> -sizes.get(f))
@@ -157,7 +212,29 @@ public final class ArenaPacker {
 					break;
 				}
 			}
-			if (chosen < 0) {
+			Divisible d = divisibles.get(f);
+			if (chosen >= 0) {
+				// whole if it fits — and it keeps its name, whoever it is
+				Regions.Zone z = arena.zones.get(chosen);
+				int at = z.end() - free[chosen];
+				free[chosen] -= need;
+				ctx.regions.placeFile(f, z.page, at);
+				if (d != null) {
+					// a collection placed whole is still emitted from its
+					// parts : one chunk, all elements
+					List<Integer> all = new ArrayList<Integer>();
+					for (int i = 0; i < d.parts.size(); i++) {
+						all.add(i);
+					}
+					List<List<Integer>> one = new ArrayList<List<Integer>>();
+					one.add(all);
+					ctx.cuts.declare(f, new Cuts.Cut(d.parts, one, d.gendir));
+				}
+				log.debug("arena {} : {} -> page {} ${}", arena.name, f, z.page,
+						Integer.toHexString(at).toUpperCase());
+				continue;
+			}
+			if (d == null) {
 				int biggest = 0;
 				for (int r : free) {
 					biggest = Math.max(biggest, r);
@@ -166,17 +243,12 @@ public final class ArenaPacker {
 						+ need + " bytes in one run, the roomiest zone has " + biggest
 						+ " left — give the arena another <zone>, or make the file smaller");
 			}
-			Regions.Zone z = arena.zones.get(chosen);
-			int at = z.end() - free[chosen];
-			free[chosen] -= need;
-			ctx.regions.placeFile(f, z.page, at);
-			log.debug("arena {} : {} -> page {} ${}", arena.name, f, z.page,
-					Integer.toHexString(at).toUpperCase());
+			// cut if it cannot : the fallback the author asked for
+			cut(arena, f, d, free, ctx);
 		}
 
-		// what the rigid placement leaves is the raw material of the fluid
-		// one : each zone's tail is a gap a collection can flow into. Recorded
-		// in zone order so the flow stays deterministic.
+		// what the rigid placement leaves is recorded for whoever asks — the
+		// legacy pageset flow while it lasts, reports later
 		List<int[]> gaps = new ArrayList<int[]>();
 		for (int i = 0; i < free.length; i++) {
 			if (free[i] > 0) {
@@ -185,5 +257,83 @@ public final class ArenaPacker {
 			}
 		}
 		ctx.regions.setArenaGaps(arena.name, gaps);
+	}
+
+	/**
+	 * Flow a collection's elements into the zones' free tails, in element
+	 * order : one member per tail used, as big as the tail allows, tails
+	 * under {@link #GAP_MIN} left empty. Mutates {@code free} — the next
+	 * file of the sort sees what the cut consumed.
+	 */
+	private static void cut(Regions.Region arena, String file, Divisible d, int[] free,
+			BuildContext ctx) throws Exception {
+
+		int biggest = 0;
+		for (int i = 0; i < free.length; i++) {
+			biggest = Math.max(biggest, free[i]);
+		}
+
+		List<PageSets.Member> members = new ArrayList<PageSets.Member>();
+		List<List<Integer>> chunks = new ArrayList<List<Integer>>();
+		int zi = 0;
+		int used = 0;
+		List<Integer> chunk = new ArrayList<Integer>();
+		for (int e = 0; e < d.sizes.length; e++) {
+			if (d.sizes[e] > biggest) {
+				throw new Exception("collection '" + file + "' : '" + d.parts.get(e)[1] + "' is "
+						+ d.sizes[e] + " bytes, more than the " + biggest
+						+ " bytes of the roomiest free run — an element is never split, it has"
+						+ " to be made smaller (or the arena needs a roomier zone)");
+			}
+			while (zi < free.length
+					&& (free[zi] < GAP_MIN || used + d.sizes[e] > free[zi])) {
+				if (!chunk.isEmpty()) {
+					closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx);
+					chunk = new ArrayList<Integer>();
+				}
+				zi++;
+				used = 0;
+			}
+			if (zi == free.length) {
+				int remaining = 0;
+				for (int r = e; r < d.sizes.length; r++) {
+					remaining += d.sizes[r];
+				}
+				throw new Exception("collection '" + file + "' does not fit : " + remaining
+						+ " bytes of elements remain and every free run is used — give the"
+						+ " arena another <zone>, or put less in the collection");
+			}
+			chunk.add(e);
+			used += d.sizes[e];
+		}
+		if (!chunk.isEmpty()) {
+			closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx);
+		}
+
+		if (members.size() == 1) {
+			// one tail held everything : a whole placement wearing a cut's
+			// clothes — the file keeps its name and gets a plain placement
+			// (reachable in the measured pass only through the blind one,
+			// where the whole-fit test did not run)
+			ctx.regions.placeFile(file, members.get(0).page, members.get(0).address);
+		} else {
+			ctx.pageSets.declare(file, members);
+		}
+		ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir));
+		log.info("collection {} : {} member(s) flowed into arena '{}'", file, members.size(),
+				arena.name);
+	}
+
+	private static void closeChunk(Regions.Region arena, String file,
+			List<PageSets.Member> members, List<List<Integer>> chunks, List<Integer> chunk,
+			int zi, int used, int[] free, BuildContext ctx) {
+		Regions.Zone z = arena.zones.get(zi);
+		int at = z.end() - free[zi];
+		free[zi] -= used;
+		String memberName = file + "." + members.size();
+		members.add(new PageSets.Member(memberName, z.page, at));
+		chunks.add(new ArrayList<Integer>(chunk));
+		log.debug("arena {} : {} -> page {} ${} ({} elements)", arena.name, memberName,
+				z.page, Integer.toHexString(at).toUpperCase(), chunk.size());
 	}
 }
