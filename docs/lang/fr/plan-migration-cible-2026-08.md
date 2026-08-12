@@ -317,10 +317,90 @@ plutôt que l'identité binaire — les places bougent, le comportement non.
 ## Phase 5 — Les collections fluides (la coupe par les creux)
 
 Le placement en deux temps (§15) : rigide posé, fluide coulé, morceaux
-taillés par les creux, seuil de creux avec ses deux plateaux au rapport. Le
-`<pageset>` se dissout dans la contribution (§23) : un fichier `index=` à
-contenu divisible EST la collection ; `<block>` devient un fichier ordinaire
-que l'écoulement contourne.
+taillés par les creux, seuil de creux avec ses deux plateaux au rapport.
+~~Le `<pageset>` se dissout dans la contribution (§23) : un fichier `index=`
+à contenu divisible EST la collection~~ — **périmé, voir le modèle arrêté
+ci-dessous** : la contribution par `index=` est morte avec la sortie des
+objets du XML (11/08), et la divisibilité ne se déclare pas.
+
+### Le modèle, arrêté avec l'auteur le 11/08 (§28)
+
+Quatre phrases, et rien d'autre :
+
+1. **Un plugin déclare combien d'éléments il produit.** `lwasm` en rend UN
+   (une assemblée, d'un tenant) ; `gfxcomp` en expose N. La frontière du
+   découpage est le PLUGIN, jamais le fichier — donc aucun mot à écrire, et
+   les quatre options du §27 tombent avec la question qu'elles posaient.
+2. **Les éléments coulent dans les creux** que les indivisibles ont laissés
+   (la coupe par les creux, déjà faite).
+3. **Tout ce qui référence un élément passe par une table.** C'est ce marché
+   qui autorise le builder à poser l'élément où il veut : un élément est
+   coupable PARCE QU'il est indexé.
+4. **Toute table demande la page d'un élément en écrivant `élément$PAGE`** —
+   générée ou manuscrite, même question, même résolution. L'adresse est déjà
+   le symbole ; le numéro est authoré ou porté par la donnée.
+
+Plus `<unit>`, qui **groupe des plugins dont la sortie doit rester
+continue** (objet composite ; absent de r-type, prévisible). Qui ÉCRIT une
+table dépend d'une seule chose — qui connaît les entrées : le builder quand
+lui seul les connaît (`<tilemap>`, `<imageset>`), le développeur quand elles
+sont authorées (la table d'objets, prouvée le 11/08).
+
+### Les trois étapes restantes, et la règle de travail
+
+> **Règle actée le 11/08 : chaque étape est spécifiée EN DÉTAIL et validée
+> par l'auteur AVANT son implémentation.** Le plan porte la spec ; le commit
+> porte la preuve.
+
+- **5b — l'attribut de page d'un élément.** Isolé, prouvable par identité.
+  Spec détaillée ci-dessous, EN ATTENTE DE VALIDATION.
+- **5c — le flux par élément, sur tout fichier.** Retire `<pageset>` du
+  vocabulaire. Les images changent (les 48 fichiers `lwasm`+`gfxcomp`
+  deviennent des collections : 1 élément de code + N éléments d'images) ;
+  la preuve devient le banc, plus l'identité. À spécifier après 5b.
+- **5d — `<unit>` sur son vrai rôle.** Fiche réécrite (grouper pour la
+  continuité), refus dans la forme arène levé, cas composite documenté.
+  À spécifier après 5c.
+
+### 5b — spécification détaillée (à valider)
+
+*Ce que ça ajoute.* `X$PAGE` accepte un **symbole** là où il n'accepte
+aujourd'hui qu'un nom de fichier. La valeur rendue est le **numéro de page
+nu** — jamais les bits du registre cartouche.
+
+*Résolution.* À la cuisson uniquement : `pageOf(symbole)` élit le
+fournisseur puis lit son placement (le service existe, deux appelants Java
+aujourd'hui). Les DEUX tables sont consultées, symboles et fichiers ; si les
+deux répondent, **erreur nommant les deux** — jamais de repli silencieux
+(c'est la règle du comptage nu, et ça corrige le §25(a)).
+
+*Ce qui ne change pas.* La forme LIÉE reste sur un id de fichier
+(`externPg`) : un symbole dont le fournisseur n'est pas placé au build est
+donc une erreur, pas une relocation. L'étage load-time par symbole est
+possible et bon marché (§25) mais relève de la phase 8. Une référence
+`$PAGE` sur 16 bits reste l'erreur nommée qu'elle est déjà.
+
+*Ce que les générateurs deviennent.* `<tilemap>` et la forme répartie de
+`<imageset>` émettent `map.RAM_OVER_CART+<symbole>$PAGE` au lieu d'un
+littéral ; `StaticLink.pageOf` n'est plus appelé depuis Java, l'interface
+`ImageSets.PageOf` et son câblage disparaissent, la branche à deux formes de
+`ImageSet.pageSymbol` se réduit à une ligne.
+
+*Point ouvert à trancher dans cette validation.* `map.RAM_OVER_CART` vaut
+`%01100000` et vit dans le `map.const.asm` de CHAQUE machine
+(`engine/system/to8/`, `engine/system/mo6/`). Une table générée qui l'écrit
+doit donc voir cet include. `<tilemap>` l'a déjà (le config le pose avant
+lui) ; l'index d'imageset ne l'a pas, et c'est précisément pourquoi il plie
+`+$60` en dur aujourd'hui. Deux sorties : le config pose l'include devant
+l'index (le pattern existant), ou le générateur continue d'écrire `+$60`
+et l'on renonce à normaliser les bits. **La première est cohérente avec le
+§26 (le builder ne répond jamais les bits d'un registre machine), la seconde
+ne demande rien à personne.**
+
+*Preuve.* Identité binaire sur les 59 images — le littéral cuit aujourd'hui
+vaut exactement ce que le symbole résoudra — plus JUnit, plus le contrôle de
+collision cassé exprès pour le lire (règle du dépôt : un garde-fou qui n'a
+jamais échoué est un garde-fou que personne n'a lu).
 
 *Preuve : r-type re-rangé — attendu mesurable : moins de morceaux que de
 membres actuels (2 au lieu de 5 sur l'exemple des tuiles), pages rendues
