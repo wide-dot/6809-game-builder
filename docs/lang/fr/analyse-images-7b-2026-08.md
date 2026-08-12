@@ -116,27 +116,45 @@ src/common/player/
   l'identité binaire reste donc la preuve sur eux. Les rares bases multiples
   (explosion : expSmall/expFwk) posent `names=` par ligne.
 
-### 2.4 d7/t2 : le profil d'encodage est un défaut de target
+### 2.4 d7/t2 : le défaut de target ne porte que les DÉCALAGES
 
-La différence d7/t2 mesurée tient en un mot : le **profil** — `B0` en
-disquette, `B0,B1` en cartouche (draw : `D0`/`D0,D1`). Proposition :
+Corrigé sur l'avertissement de l'auteur (12/08) — « le défaut d7 en B0 ne
+veut pas dire qu'on n'aura pas des B1 aussi » — et la mesure lui donne
+raison : **les d7 contiennent 39 NB1 et 13 ND1** (player1, tout
+dobkeratops, foefire…). La comparaison objet par objet donne le motif
+complet :
+
+- 22 objets suivent « t2 = d7 + pré-décalées » (le gros des ennemis et
+  projectiles) ;
+- player1 et dobkeratops sont IDENTIQUES entre d7 et t2 — déjà décalés en
+  disquette : le vaisseau et le boss bougent pixel par pixel, la d7 paie le
+  surcoût pour eux seuls ;
+- l'inverse existe aussi : l'explosion du player reste `NB0` même en t2.
+- **Toutes les exceptions par image sont invariantes entre cibles** — aucun
+  cas mesuré où une même image porte des jeux différents ET non déductibles
+  du défaut dans les deux cibles.
+
+Le défaut de target ne porte donc QUE la liste de décalages ; l'encodeur et
+le miroir restent sur la ligne :
 
 ```xml
 <target name="fd">
-    <default name="images.profile" value="B0"/>      <!-- d7 : sans pré-décalé -->
+    <default name="images.shifts" value="0"/>      <!-- d7 : sans pré-décalé PAR DÉFAUT -->
     …
 <target name="t2">
-    <default name="images.profile" value="B0,B1"/>   <!-- t2 : avec -->
+    <default name="images.shifts" value="0,1"/>    <!-- t2 : avec, par défaut -->
 ```
 
-Une ligne `<images mirror="x"/>` compose sa variante complète :
-`X` + chaque code du profil → `XB0` (fd) ou `XB0,XB1` (t2). **Les
-déclarations d'objets deviennent identiques entre targets** — les mêmes
-lignes, les mêmes fichiers ; la différence d7/t2 tient en UNE ligne de
-défaut par target. Le vocabulaire est celui de la v1 (`NB0`, `XB1`…), déjà
-parlé par les deux mondes et par check_variants. Une ligne peut toujours
-donner son code complet (`encoders="ND0,ND1"`) quand elle échappe au profil
-(les tuiles draw au milieu d'un projet bdraw).
+Une ligne compose sa variante : miroir de la ligne + encodeur de la ligne
+(`bdraw` si absent, `encoder="draw"` pour les tuiles) + décalages du
+target → `XB0` (fd) ou `XB0,XB1` (t2). Une ligne peut dire `shifts=` en
+dur, dans les deux sens : `shifts="0,1"` (player1, dobkeratops — décalés
+même en d7) ou `shifts="0"` (l'explosion du player — jamais décalée, même
+en t2). Ces exceptions étant invariantes entre cibles, **les déclarations
+d'objets restent identiques d'un target à l'autre** ; seule la ligne de
+défaut change. Le même défaut sert les sprites (B) et les tuiles (D)
+puisqu'il ne parle plus d'encodeur — la question « profil des tuiles » du
+§4 se dissout.
 
 ## 3. Ce que ça change, chiffré
 
@@ -149,16 +167,19 @@ donner son code complet (`encoders="ND0,ND1"`) quand elle échappe au profil
 - le futur target t2 : dupliquer l'arbre du target (structure v2 normale)
   avec UNE ligne de profil différente — aucune liste d'images à réécrire.
 
-## 4. Points ouverts (à trancher avec la validation)
+## 4. Points ouverts et décisions
 
-1. **Étendue du renommage maintenant** : seulement les objets déjà portés
-   (12 ennemis + explosion + armes, geste borné, prouvé par identité), les
-   ~60 restants étant nommés AU portage ? Ou tout le stock v1 d'un coup ?
-   Recommandation : les portés maintenant, la règle pour la suite.
-2. **`names=` par défaut** : le nom du fichier hôte (`stage1.scant` →
-   `set_stage1.scant_N` ?) ou un attribut toujours explicite ? Les noms
-   actuels (`set_scant_0`) plaident pour `names=` déduit du répertoire
-   d'images (`scant`) — à confirmer sur les 52 blocs réels.
-3. **Le profil et les tuiles** : les tilesets (draw, `ND0/ND1`) suivent-ils
-   le même défaut de target (`images.profile`) ou un profil séparé
-   (`tiles.profile`) ? Les deux existent dans les mêmes targets.
+1. **Étendue du renommage : TOUT le stock v1 d'un coup** (décision auteur,
+   12/08). La table de renommage couvre les ~60 objets non portés en plus
+   des portés : leurs répertoires et noms v2 sont assignés dès maintenant
+   depuis l'ordre des properties d7, pour que chaque portage à venir trouve
+   ses fichiers déjà en place.
+2. **`names=` par défaut** : d'où vient le « scant » de `set_scant_0` quand
+   plus personne ne l'écrit par image ? Proposition : du RÉPERTOIRE de la
+   série — `…/scant/images/` → `scant`, `…/player/images/ship/` → `ship` —
+   ce qui redonne exactement les noms actuels des ennemis ; `names=`
+   explicite quand le nom voulu ne s'en déduit pas (`names="expSmall"` sur
+   la famille small de l'explosion). EN ATTENTE de validation.
+3. ~~Le profil et les tuiles~~ — dissous par la correction du §2.4 : le
+   défaut ne portant que les décalages, sprites (bdraw) et tuiles (draw)
+   partagent la même ligne de défaut.
