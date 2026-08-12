@@ -1183,6 +1183,9 @@
       <xs:attribute name="names" type="xs:string">
         <xs:annotation><xs:documentation>symbol base, &lt;base&gt;_&lt;n&gt; ; derived from the series directory if omitted (its parent when the directory is a plain images/)</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="index" type="xs:string">
+        <xs:annotation><xs:documentation>none : the images are reached by name only — no imageset index is assigned, no idx byte grows the descriptors. Default auto : indexes continue when the gfxcomp carries genindex or imageset</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="position" type="xs:string">
         <xs:annotation><xs:documentation>center, top-left or 3qtr-center, forwarded to every encoder of the row</xs:documentation></xs:annotation>
       </xs:attribute>

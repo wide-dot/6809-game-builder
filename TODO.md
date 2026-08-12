@@ -593,6 +593,20 @@ Fonctionnel :
         specs <objectindex>/<entry>, XSD −219 lignes. Plus aucune
         constante machine hors machine.xml. PREUVE : 59 images
         identiques à l'octet, JUnit vert.
+  - [x] Phase 7b — la déclaration d'images compacte (12/08, décisions
+        auteur : « tout le stock d'un coup », défaut = décalages seuls,
+        names= déduit du répertoire de série) : élément <images> (une
+        ligne = une série, ordre = préfixe NN, index continus, un
+        encodeur par décalage, images.shifts par target, index="none"
+        pour l'adressé-par-nom) ; 355 fichiers renommés (autorité :
+        config v2 puis properties d7, familles en sous-répertoires,
+        v1-map suivi) ; 17 gfxcomp compactés vérifiés par expansion,
+        31 littéraux conservés, config −375 lignes ; check_variants au
+        hash de contenu → 14 divergences v1↔v2 PRÉEXISTANTES enfin
+        visibles (consignées, à arbitrer au portage). PREUVE : 63
+        images identiques à l'octet, JUnit vert, banc r-type 5/5.
+        Piège attrapé par l'identité : l'index inventé sur les séries
+        adressées par nom (+38 octets sur dobkeratops).
   - [x] Phase 5d — <unit> sur son vrai rôle (12/08, décision auteur :
         « b tout de suite, builder générique ») : unit au registre PARTS
         (UN élément, jamais coupé en son intérieur), mesuré et assemblé

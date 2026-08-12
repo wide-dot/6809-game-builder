@@ -215,6 +215,7 @@ public final class Handlers {
 			.opt("mirror", STRING, "none (default), x, y or xy — applied to every file of the row")
 			.opt("shifts", STRING, "comma list of pre-shifts, one compiled variant each ; defaults through <default name=\"images.shifts\"> — the target's one-line d7/t2 decision — then to 0. A row may pin its own (the player and the boss pre-shift even on floppy)")
 			.opt("names", STRING, "symbol base, <base>_<n> ; derived from the series directory if omitted (its parent when the directory is a plain images/)")
+			.opt("index", STRING, "none : the images are reached by name only — no imageset index is assigned, no idx byte grows the descriptors. Default auto : indexes continue when the gfxcomp carries genindex or imageset")
 			.opt("position", STRING, "center, top-left or 3qtr-center, forwarded to every encoder of the row")
 			.opt("planes", STRING, "pointer or offset, forwarded to every encoder of the row"));
 		spec(element("encoder").doc("one compiled rendering of an image")

@@ -124,6 +124,19 @@ class ImagesExpansionTest {
 	}
 
 	@Test
+	void indexNoneKeepsAnIndexedSetsSeriesUnindexed(@TempDir Path root) throws Exception {
+		// the jaw shape : images reached by name inside a genindex set — an
+		// invented index would grow every descriptor by its idx byte
+		series(root, "jaw/images", "00.png");
+		ImmutableNode gfxcomp = node("gfxcomp", "genindex", "gen/x.asm", "gendir", "gen")
+				.addChild(node("images", "dir", "jaw/images", "index", "none").create())
+				.create();
+
+		List<ImmutableNode> images = GfxcompPlugin.imageNodes(gfxcomp, ctx(root));
+		assertEquals(null, attr(images.get(0), "index"));
+	}
+
+	@Test
 	void filesSortByNumericPrefixNotLexically(@TempDir Path root) throws Exception {
 		// 2 before 10 : the prefix is a number, not a string
 		series(root, "foe/images", "10.png", "2.png");
@@ -139,15 +152,31 @@ class ImagesExpansionTest {
 
 	@Test
 	void aFileWithoutOrderPrefixIsANamedError(@TempDir Path root) throws Exception {
+		// the default match [0-9]*.png would skip it silently — an explicit
+		// match that catches a prefixless file is refused with its name
 		series(root, "foe/images", "sprite.png");
 		ImmutableNode gfxcomp = node("gfxcomp", "gendir", "gen")
-				.addChild(node("images", "dir", "foe/images").create())
+				.addChild(node("images", "dir", "foe/images", "match", "*.png").create())
 				.create();
 
 		Exception e = assertThrows(Exception.class,
 				() -> GfxcompPlugin.imageNodes(gfxcomp, ctx(root)));
 		assertTrue(e.getMessage().contains("sprite.png"), e.getMessage());
 		assertTrue(e.getMessage().contains("order prefix"), e.getMessage());
+	}
+
+	@Test
+	void unreferencedLeftoversAreSkippedByTheDefaultMatch(@TempDir Path root) throws Exception {
+		// a series directory may host a font glyph or a work file : the
+		// default match reads only the NN-prefixed series
+		series(root, "foe/images", "00.png", "letter_a.png");
+		ImmutableNode gfxcomp = node("gfxcomp", "gendir", "gen")
+				.addChild(node("images", "dir", "foe/images").create())
+				.create();
+
+		List<ImmutableNode> images = GfxcompPlugin.imageNodes(gfxcomp, ctx(root));
+		assertEquals(1, images.size());
+		assertEquals("foe/images/00.png", attr(images.get(0), "filename"));
 	}
 
 	@Test

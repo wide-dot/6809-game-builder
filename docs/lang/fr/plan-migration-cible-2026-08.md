@@ -815,6 +815,31 @@ MÊMES png en `mirror=x`). La forme compacte proposée, UN élément :
   Recommandation : **(ii) d'abord** — l'identité reste la preuve — et (i)
   en phase de renommage finale, où il a sa place.
 
+**7b FAIT (12/08), en deux commits.** (A) L'élément `<images>` : expansion
+en nœuds `<image>` (tri par préfixe NN, index continus à travers lignes et
+exceptions littérales, compteurs de noms par base, un encodeur par décalage
+de `shifts=` — cascade `<default name="images.shifts">` = la décision d7/t2
+en une ligne par target), `match` par défaut `[0-9]*.png` (les restes d'un
+répertoire n'entrent jamais dans une série), erreurs nommées sur préfixe
+manquant ou dupliqué, `index="none"` pour les séries adressées par nom dans
+un set indexé (la mâchoire du boss — un index inventé grossirait chaque
+descripteur de son octet idx, ATTRAPÉ par l'identité avant commit : +38/+4/+3
+octets sur trois entrées dobkeratops). 9 tests d'expansion.
+(B) **355 fichiers renommés** (autorité : le config v2 pour le porté —
+c'est son ordre que l'identité protège — puis les properties d7 pour le
+reste ; familles par préfixe de basename, sous-répertoire par famille
+plurielle, singletons à plat avec label `NN-<nom>.png`), v1-map.csv suivi,
+**17 gfxcomp compactés** (vérifiés par expansion python == déclaration
+littérale, au tuple près) et 31 gardés littéraux avec chemins renommés
+(numérotations irrégulières, singletons, commentaires authorés) — le config
+perd 375 lignes net. `check_variants.py` refait au **hash de contenu**
+(les renommages n'ont pas changé un octet) et il VOIT enfin : **14
+divergences v1↔v2 préexistantes** détectées (pow sans ses XB0/NB1,
+scantfire avec des décalées que la d7 v1 n'a pas…) — l'ancien rapprochement
+par chemin les manquait ; consignées, à arbitrer au portage, pas touchées
+ici. PREUVE : **63 images identiques à l'octet** (jusqu'au hash exact),
+JUnit vert, banc r-type 5/5 sous toje.
+
 **Complément demandé par l'auteur (12/08) : le match exige de renommer les
 ressources et de traiter proprement d7/t2.** L'étude de la référence v1
 (properties de game-mode et d7/t2) et la proposition d'organisation —

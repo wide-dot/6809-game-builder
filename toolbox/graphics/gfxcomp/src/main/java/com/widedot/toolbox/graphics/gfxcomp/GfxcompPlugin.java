@@ -256,8 +256,16 @@ public class GfxcompPlugin {
 				throw new Exception("Element <" + child.getNodeName() + "> is not valid inside <gfxcomp>");
 			}
 
+			// an indexed set may hold UNINDEXED series : the jaw's images are
+			// reached by name, and an invented index would grow every
+			// descriptor by its idx byte — index="none" says so
+			boolean rowIndexed = indexed
+					&& !"none".equals(Attribute.getString(child, ctx, "index", "auto"));
 			String dir = Attribute.getString(child, ctx, "dir");
-			String match = Attribute.getString(child, ctx, "match", "*.png");
+			// the default match only takes NN-prefixed files : a series
+			// directory may host unreferenced leftovers (fonts, work files)
+			// without breaking the rows that read it
+			String match = Attribute.getString(child, ctx, "match", "[0-9]*.png");
 			String encoder = Attribute.getString(child, ctx, "encoder", Image.TYPE_BDRAW);
 			String mirror = Attribute.getString(child, ctx, "mirror", Mirror.NONE);
 			String shifts = Attribute.getString(child, ctx, "shifts", "0");
@@ -308,7 +316,7 @@ public class GfxcompPlugin {
 				image.name("image")
 					 .addAttribute("name", base + "_" + n)
 					 .addAttribute("filename", dir + "/" + file);
-				if (indexed) {
+				if (rowIndexed) {
 					image.addAttribute("index", String.valueOf(nextIndex++));
 				}
 				for (String shift : shifts.split(",")) {
