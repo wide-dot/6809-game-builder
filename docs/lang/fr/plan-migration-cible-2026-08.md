@@ -362,6 +362,37 @@ sont authorées (la table d'objets, prouvée le 11/08).
   continuité), refus dans la forme arène levé, cas composite documenté.
   À spécifier après 5c.
 
+- **5e — retrait de `<objectindex>`.** Son unique consommateur est parti le
+  11/08 (les tables d'objets sont manuscrites) : l'élément, son plugin et
+  ses specs n'ont plus personne. Retrait mécanique, prouvé par identité.
+
+### Prérequis mesuré : les éléments portent-ils déjà un nom ?
+
+Question d'auteur, préalable à `X$PAGE` — vérifié sur le corpus :
+
+- **Éléments générés : oui, tous.** Un membre de pageset ouvre par
+  `adr_stage1.tiles.even_0_ND0 EXPORT` (un par tuile) ; un index d'imageset
+  réparti déclare `adr_dobkeratops_eye102_NB0 EXTERNAL` (un par image, plus
+  sa variante d'effacement). Le nommage a été normalisé le 10/08
+  (`adr_<hôte>_<id>_<variante>`).
+- **Éléments `<unit>` : oui, par construction** — l'attribut `symbol` est
+  REQUIS par la spec de l'élément.
+- **Éléments `<lwasm>` : oui en pratique, par convention.** Ils exportent
+  leur point d'entrée parce que c'est ainsi qu'on les atteint
+  (`patapata.Object EXPORT`). Rien ne l'impose : un lwasm qui n'exporte
+  rien n'aurait pas de poignée.
+- **Binaires bruts `<bin>` : non, et c'est structurel** — pas de symbole
+  possible. Un seul cas dans tout le corpus (`prefix-256.bin`, loader-ut).
+
+*Conséquence pour 5b, et elle est déjà dans la spec* : `X$PAGE` doit
+accepter **un symbole OU un nom de fichier**, la forme fichier restant la
+réponse pour ce qui n'a pas de nom. C'est exactement la double consultation
+spécifiée ci-dessous. (Note d'instrument : ne pas mesurer ça avec
+`link-report-*.csv` — il compte les exports APRÈS élagage, donc un fichier
+dont personne n'importe l'entrée y paraît sans export alors qu'il en
+déclare un. La table de `StaticLink`, elle, porte tous les exports
+déclarés, ce qui est bien ce que `pageOf` interroge.)
+
 ### 5b — spécification détaillée (à valider)
 
 *Ce que ça ajoute.* `X$PAGE` accepte un **symbole** là où il n'accepte
@@ -534,9 +565,30 @@ attente côté runtime. Les 12+ images changent une dernière fois.
 *Preuve : loader-ut complet sous toje (chemins link compris), échanges de
 disquettes, banc r-type, mplus/tlsf/sound — la totale.*
 
-## Phase 9 — La passe documentaire finale
+## Phase 9 — La passe finale : code mort, puis documentation
 
-Le manuel cible et le workflow perdent leur bandeau « modèle en
+**Le contrôle du code mort d'abord** (demande d'auteur, 11/08). La campagne
+a été additive par principe (principe 3) : chaque mécanisme a cohabité avec
+celui qu'il remplaçait. En fin de course, on passe une fois sur tout ce que
+plus personne n'utilise, en le PROUVANT plutôt qu'en le supposant — pour
+chaque candidat, l'absence de consommateur est mesurée avant le retrait, et
+le retrait est prouvé par identité binaire. Candidats déjà identifiés :
+
+- `<objectindex>` et son plugin, si 5e ne l'a pas déjà retiré ;
+- la publication `.address` et `.size` du layout — **zéro consommateur
+  mesuré** (§27), seul `.page` sert ;
+- `ImageSets.PageOf` et son câblage, la branche à deux formes de
+  `ImageSet.pageSymbol` — morts avec 5b ;
+- `<pageset>` et ce qui n'en sert plus — mort avec 5c ;
+- les restes des mécanismes retirés en cours de route (comptage nu,
+  `interface=`, forme par-load) : vérifier qu'aucune souche ne traîne.
+
+*Preuve : identité binaire à chaque retrait, JUnit, et la méthode standard
+en clôture. Un candidat dont l'absence de consommateur n'est pas mesurable
+n'est pas retiré — il est consigné.*
+
+**Puis la documentation.** Le manuel cible et le workflow perdent leur
+bandeau « modèle en
 discussion » et sont rehomés en normatif ; la version anglaise
 (`docs/lang/en/`) est refaite en une passe (règle du dépôt) ; les documents
 d'étude de la campagne (`analyse-placement`, esquisses) sont fermés avec
