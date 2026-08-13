@@ -264,6 +264,28 @@ pleine frappe : le déclencheur vit dans toutes les phases), corpus 59
 images hors r-type identiques. Le fade v1 reste non porté (écran de
 chargement, différé).
 
+**Écran de chargement RÉALISÉ (13/08/2026)** — la v1 en faisait un
+game mode entier (image épinglée sur la page visible pendant que son
+loader saccageait l'autre) ; le loader v2 n'écrit pas dans les tampons
+vidéo, un OBJET suffit : `title.loading` (unité paginée, motif ennemi,
+image gfxcomp + `Pal_loading` par png2pal), dessiné par
+`title.launchGame` dans les deux tampons après nettoyage, palette
+rallumée — l'image reste visible pendant tout le `scene.load` synchrone
+jusqu'à l'effacement d'ouverture du stage. Deux leçons payées : le
+créneau d'échange fait 2010 octets UTILES ($8000-$87DA, la base du pool
+d'objets est fixe) — title.main à 2037 octets a fait déborder ses
+tables d'index SUR le pool, premier OST monté = tables écrasées =
+saut sauvage (le builder n'a PAS de contrôle fichier-vs-reserved :
+manque relevé) ; factorisation des quatre blocs d'effacement en
+`title.clearBuffers` → 1876 octets. Et un DÉFAUT PRÉEXISTANT isolé au
+passage : un appui unique à une trame précise (2300 au boot, image du
+commit attract AUSSI) laisse le loader en attente FDC infinie dans le
+moniteur (DP=$60, $E3xx) pendant l'échange — reproductible, la lane
+(appuis répétés) ne le voit pas ; à instruire séparément (toje ou
+retry loader). Preuves : écran LOADING (vaisseau + « LOADING... »)
+vérifié en captures pendant le chargement, lane C1..C5 5/5, corpus 59
+images hors r-type identiques.
+
 **CŒUR RÉALISÉ (13/08/2026)** — D1 à D5 en un geste, prouvés
 ensemble : lane **C1..C5 5/5 au premier passage** de l'image
 dé-banc-ifiée — title → press start → stage 1 entier (1440 px, fin

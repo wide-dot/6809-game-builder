@@ -2062,6 +2062,7 @@
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
                     <load name="title.text"/>
+                    <load name="title.loading"/>
                     <load name="title.music.ymm"/>
                     <load name="title.sound.vgc"/>
                     <load name="engine.sound.sn.const"/>
@@ -2174,6 +2175,23 @@
                     </lwasm>
                 </file>
 
+                <!-- L'image LOADING du changement de mode (v1 : un game mode
+                     entier ; v2 : un objet dessine avant l'echange, qui reste
+                     visible pendant le scene.load — le loader n'ecrit pas
+                     dans les tampons video). -->
+                <file name="title.loading" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/loading.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/flow/loading/loading.unit.asm"/>
+                        <gfxcomp gendir="gen/title/loading"
+                                 gensource="gen/title/loading/includes.asm"
+                                 genindex="gen/title/loading/index.asm"
+                                 file="title.loading">
+                            <images dir="src/common/flow/loading/images" names="loading"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- Les musiques du title (T2) : deux flux, comme la v1. -->
                 <!-- YMM : le lecteur est resident ($1A) et ne monte qu'une
                      page — les donnees d'un morceau vivent avec lui. La place
@@ -2223,6 +2241,7 @@
                         <!-- La palette du tableau des scores : la v1 la tire
                              de number_01.png (main.properties du mode 00). -->
                         <png2pal section="palette" symbol="Pal_scores" filename="src/title/scores/images/00.png"/>
+                        <png2pal section="palette" symbol="Pal_loading" filename="src/common/flow/loading/images/00.png"/>
                     </lwasm>
                 </file>
 
@@ -2232,6 +2251,7 @@
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
                     <load name="title.text"/>
+                    <load name="title.loading"/>
                     <load name="title.music.ymm"/>
                     <load name="title.sound.vgc"/>
                     <load name="engine.sound.sn.const"/>

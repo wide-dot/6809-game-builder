@@ -8,6 +8,7 @@
 title.text.Object       EXTERNAL
 title.pushbutton.Object EXTERNAL
 title.scores.Object     EXTERNAL
+title.loading.Object    EXTERNAL
 
 Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -44,6 +45,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.text.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+title.loading.page ; ObjID_loading
 
 Obj_Index_Address
         fdb   title.placeholder ; id 0 : reserved slot, never run
@@ -80,6 +82,7 @@ Obj_Index_Address
         fdb   title.text.Object ; ObjID_text
         fdb   title.pushbutton.Object ; ObjID_push_button
         fdb   title.scores.Object ; ObjID_scores
+        fdb   title.loading.Object ; ObjID_loading
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -116,6 +119,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loading
 
 Ani_Asd_Index
         fdb   Ani_Asd_none ; id 0 : reserved slot, never run
@@ -152,6 +156,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_text
         fdb   Ani_Asd_none ; ObjID_push_button
         fdb   Ani_Asd_none ; ObjID_scores
+        fdb   Ani_Asd_none ; ObjID_loading
 
 Ani_Asd_none
         fdb   0
@@ -191,4 +196,5 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+title.loading.page ; ObjID_loading
 

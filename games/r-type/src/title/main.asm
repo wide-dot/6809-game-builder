@@ -169,17 +169,7 @@ title.mountScore
 ; tampons sales (vecu ici : un octet de residu de boot en pixel fantome) —
 ; bufferSwap.do ne monte rien, seul _gfxlock.on pose la fenetre en boucle de
 ; jeu. Cas : docs/lang/en/migration/relative-toggles-on-shared-registers.md
-        _ram.data.set #2
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
+        jsr   title.clearBuffers
 
 ; une trame d'amorce, comme le stage : le double tampon bascule une fois et
 ; les objets deja montes tournent, avant que l'IRQ ne prenne la main
@@ -430,17 +420,7 @@ title.p7.init
 ; des chiffres, le texte en mode tableau (routine 0, sous-type 2)
 ; ---------------------------------------------------------------------------
 title.p8.init
-        _ram.data.set #2
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
+        jsr   title.clearBuffers
 
         ldd   #Pal_scores
         std   Pal_current
@@ -473,17 +453,7 @@ title.p8.live
 ; logo et le bouton rallumes ($A6 : leur premier octet, lda routine,u)
 ; ---------------------------------------------------------------------------
 title.p9.init
-        _ram.data.set #2
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
+        jsr   title.clearBuffers
 
         ldd   #Pal_title
         std   Pal_current
@@ -523,6 +493,26 @@ title.p9.live
         bra   title.p9.live
 
 ; ---------------------------------------------------------------------------
+; Les deux tampons video au noir — l'idiome du checkpoint (on POSE la fenetre
+; donnees, on ne bascule pas un registre qu'on ne possede pas ; cas :
+; relative-toggles-on-shared-registers.md). Quatre appelants : l'ouverture,
+; les phases 8 et 9, le depart.
+; ---------------------------------------------------------------------------
+title.clearBuffers
+        _ram.data.set #2
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+        _SwitchScreenBuffer
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+        _SwitchScreenBuffer
+        rts
+
+; ---------------------------------------------------------------------------
 ; Le declencheur de depart, partage par toutes les phases a musique : les
 ; manettes d'abord (v1 : Fire_Press), boutons A et B des DEUX ports, le
 ; clavier passant par le test integre de joypad.readKbd (bouton B du port
@@ -560,6 +550,32 @@ title.checkStart
 ; ---------------------------------------------------------------------------
 title.launchGame
         ldd   #Pal_black
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow
+
+        ; L'ECRAN DE CHARGEMENT (v1 : le game mode loading entier). Ecran
+        ; nettoye, les objets de l'attract effaces, l'image LOADING dessinee
+        ; dans les DEUX tampons (deux trames), palette rallumee : elle reste
+        ; visible pendant tout le scene.load synchrone qui suit — le loader
+        ; v2 n'ecrit pas dans les tampons video —, jusqu'a l'effacement
+        ; d'ouverture du stage.
+        jsr   title.clearBuffers
+
+        jsr   ManagedObjects_ClearAll
+        jsr   InitDrawSprites
+
+        jsr   LoadObject_x
+        lda   #ObjID_loading
+        sta   id,x
+        ldd   #80
+        std   x_pos,x
+        ldd   #100
+        std   y_pos,x
+        jsr   title.frame
+        jsr   title.frame
+
+        ldd   #Pal_loading
         std   Pal_current
         clr   PalRefresh
         jsr   PalUpdateNow

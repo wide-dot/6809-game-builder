@@ -6,7 +6,8 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
+; Include v1 retire (porte par l'unite — loading.unit.asm) :
+; INCLUDE "./engine/macros.asm"
 
 Object
         ldd   #Img_loading

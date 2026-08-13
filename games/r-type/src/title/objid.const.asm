@@ -12,8 +12,9 @@ ObjID_logo        equ 30
 ObjID_text        equ 31
 ObjID_push_button equ 32
 ObjID_scores      equ 33
+ObjID_loading     equ 34
 
-objid.count equ 33
+objid.count equ 34
 objid.animation equ ObjID_animation
 
  ENDC
