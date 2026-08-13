@@ -968,6 +968,136 @@ attente côté runtime. Les 12+ images changent une dernière fois.
 *Preuve : loader-ut complet sous toje (chemins link compris), échanges de
 disquettes, banc r-type, mplus/tlsf/sound — la totale.*
 
+### Phase 8 — spécification détaillée (13/08, à valider)
+
+**Mesure préalable (faite le 13/08, sur les tables générées du corpus).**
+Les 24 tables de scènes émises par les 15 configs contiennent exactement
+4 blocs séquentiels, TOUS export-only à la pseudo-destination (0,0) :
+
+| Scène | Type | Fichiers |
+|---|---|---|
+| r-type `scenes.boot` | %10 | 1 (`engine.sound.ym.const` — un singleton ne chaîne pas) |
+| sound `title` (TO8) | %11 | 2 (`ym.const` + suivant) |
+| loader-ut `stress-iface` | %11 | 6 |
+| loader-ut `stress-pad` | %11 | 16 |
+
+Deux conséquences. D'abord la confirmation de l'analyse placement §
+« mort en pratique » : toute l'arithmétique de la marche (lecture de
+taille, test $ff00, accumulation, franchissement de page) tourne pour
+produire (0,0) constant — plus aucune table manuscrite n'existe, plus
+aucun empilage de données ne subsiste (les arènes les ont résorbés).
+Ensuite, et c'est la bonne surprise : **les DEUX chemins sont déjà
+exercés par les bancs verts** — le banc r-type 5/5 passe par le %10 du
+boot à chaque exécution, loader-ut T12/T14 par les %11 (la croissance
+d'index de stress-pad EST un bloc %11 de 16). Aucun test à inventer
+pour couvrir le retrait.
+
+**Pas A — préparation, prouvée par identité (le binaire ne bouge pas).**
+
+1. *Verrou builder.* `SceneGenerator` refuse un bloc séquentiel
+   contenant un fichier NON vide (erreur nommant le fichier et la
+   scène). C'est le contrat sur lequel le pas B s'appuie — après lui,
+   « séquentiel = export-only » n'est plus une convention du générateur
+   mais une propriété vérifiée à chaque build. Le corpus le satisfait
+   déjà (mesure ci-dessus) : preuve par le build lui-même, plus un test
+   JUnit qui provoque l'erreur et la lit.
+2. *Trois `sizeof{}` d'une autre struct corrigés* — la dette « même
+   taille aujourd'hui, fragile » consignée depuis juillet :
+   `extern16.link` avance de `sizeof{linkData.content.extern8}`
+   (loader.asm:1464), `symbol.search` avance deux fois de
+   `sizeof{linkData.content.intern}` (:1582, :1601). Mêmes valeurs
+   numériques, binaire identique — c'est ce qui rend le correctif
+   prouvable par identité, et c'est maintenant qu'il faut le passer,
+   avant qu'une struct ne bouge un jour.
+3. *Dépoussiérage des commentaires.* L'éviction par destination a été
+   retirée (9c176a3, remplacée par le rapport d'occupation — « the
+   scene that ENDS declares what it drops ») mais des commentaires la
+   racontent encore au présent : `examples/loader-ut/to8.config.xml:11`
+   (« is what makes the loader's implicit unload evict… »), le récit
+   T8 de `main.asm`, et les justifications $ff00 du loader qui motivent
+   l'exemption d'un mécanisme disparu. Inventaire exhaustif à
+   l'implémentation ; règle de tri : ce qui décrit le comportement
+   ACTUEL reste, ce qui est de l'histoire va au README de loader-ut
+   (qui la raconte déjà) ou tombe. Les commentaires ne changent pas un
+   octet assemblé.
+
+*Preuve pas A : 63 images identiques à l'octet, JUnit (dont le nouveau
+test du verrou, cassé et lu).*
+
+**Pas B — la marche tombe (le binaire du loader change ; la totale).**
+
+Le FORMAT de scène ne change pas — triplets %01, liste %10, bloc %11 de
+7 octets, repli silencieux %11→%10 du générateur : les tables restent
+identiques à l'octet. Seuls les handlers changent :
+
+- `loader.scene.apply.type10` : la destination devient constante (le
+  page/adresse du bloc, passé tel quel à chaque appel). Tombent : le
+  `dir.getFile` par fichier (il ne servait qu'à lire la taille), la
+  lecture de taille 14 bits, le test $ff00, l'accumulation
+  `leau size,u`, le franchissement de page (`CART_END`/`CART_START`,
+  `incb`, garde 15/31, `bra *` plein) et le commentaire V2-FIX MO6 qui
+  n'annotait que cette marche. Le handler devient un %01 à destination
+  partagée.
+- `loader.scene.apply.type11` : mêmes retraits ; RESTENT le
+  `dir.getFile` par fichier et la dérivation d'id par les flags
+  (`+1 +compressed +linked`, l'`abx`) — le cœur du %11.
+- Ce qui ne bouge pas ailleurs : la convention $ff00 partout où elle
+  est vivante (`fileSize`, `loadByPtr`, l'indexation des link data), le
+  choix %01/%10/%11 côté générateur.
+- `map.ram.CART_START`/`CART_END` et `boot.CHECK_MEMORY_EXT` perdent
+  leurs seuls consommateurs DANS loader.asm (vérifié : lignes
+  409-479 uniquement) ; les équates restent — elles appartiennent à la
+  carte machine (`map.const.asm`), seules les références de la marche
+  tombent.
+
+Bilan attendu : ~50 lignes en moins, et la dernière décision de
+placement prise à l'exécution disparaît — l'auteur déclare, le builder
+mesure et place, le runtime ne place rien. Le gain est la simplicité,
+pas les octets (le loader a de la marge depuis l'INDEX au secteur 4).
+
+*Preuve pas B — la totale, payée une fois :*
+- toutes les images portant le loader changent (annoncé ; seule
+  `to8-disk1.fd` de loader-ut, sans loader, reste identique — à
+  vérifier au build) ; reproductibilité : deux corpus consécutifs
+  identiques ; hashes de référence réenregistrés ;
+- JUnit complet ;
+- la lane toje entière : loader-ut 17/17 + `$0D` + T18 `$8301`
+  échanges de disquettes compris (exerce les %11), banc r-type 5/5
+  (exerce le %10 du boot), collection 4/4, objects 18/18, sprites,
+  tilescroll, hscroll, sound TO8 (mainLoop + data.page=$66 + bascule
+  title→level1), mplus-test + mplus-pcm (séquences), tlsf-ut ;
+- MO6 : au build, sur la foi du jumeau TO8 (même binaire de loader,
+  même générateur de tables).
+
+**Décisions jointes (rien à coder — consignées pour ne pas y revenir).**
+
+- *L'étage load-time de `symbole$PAGE`* (analyse placement §25) : NON
+  RETENU. Aucun consommateur mesuré — le fluide est toujours placé,
+  donc toujours cuisible ; la forme liée reste `externPg` sur id de
+  fichier. Rouvrir sur besoin réel uniquement.
+- *Les différés loader du TODO* (suivi des tailles / recouvrement
+  partiel, paginated groups, `unloadAll`) : restent différés, besoin
+  réel.
+- *`loader.CHECK_UNRESOLVED_SYMBOLS`* : reste opt-in — incompatible
+  avec les références en avant (consigné depuis M2), inchangé.
+
+**Questions ouvertes à l'auteur.**
+
+1. Le verrou du pas A (builder) suffit-il, ou veux-tu AUSSI un piège
+   loader (fichier non vide rencontré dans un bloc séquentiel →
+   `bra *`) ? Recommandation : builder seul. Dans le %10 le piège
+   réintroduirait exactement ce qu'on retire (le `dir.getFile` + test
+   de taille par fichier) ; dans le %11 il serait presque gratuit
+   (`dir.getFile` déjà là) mais asymétrique. Le générateur étant le
+   seul émetteur de tables depuis la phase C de 2026-07, le verrou
+   builder couvre tout ce qui peut atteindre le loader.
+2. Autre chose à embarquer dans ce dernier changement du binaire
+   loader ? La revalidation complète est payée une fois ; mon
+   inventaire (défauts annexes de juillet, différés, files d'attente
+   des phases 3-7) ne trouve rien d'autre de mûr — les trois
+   `sizeof{}` passent au pas A précisément parce qu'ils n'ont pas
+   besoin d'attendre le pas B.
+
 ## Phase 9 — La passe finale : code mort, puis documentation
 
 **Le contrôle du code mort d'abord** (demande d'auteur, 11/08). La campagne

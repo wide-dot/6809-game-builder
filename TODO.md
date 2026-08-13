@@ -648,6 +648,17 @@ Fonctionnel :
         coupés en 4 membres, 4/4 sous toje (contenu du unit via son
         membre, pages distinctes, pointeur inter-membres dans le unit),
         erreur « does not fit » lue en vrai.
+  - [ ] Phase 8 — campagne loader : SPEC ÉCRITE (13/08), en attente de
+        validation auteur (plan § Phase 8 — spécification détaillée).
+        Mesure préalable faite : 4 blocs séquentiels sur le corpus, tous
+        export-only à (0,0), et les DEUX chemins (%10 via r-type boot,
+        %11 via loader-ut stress-pad/iface) déjà exercés par les bancs.
+        Pas A par identité (verrou builder « séquentiel = export-only »,
+        3 sizeof{} d'une autre struct, dépoussiérage éviction/$ff00) ;
+        pas B = retrait de la marche mémoire des handlers %10/%11
+        (dérivation d'ids par flags CONSERVÉE, format de scène inchangé)
+        avec la revalidation complète. Deux questions ouvertes : piège
+        loader en plus du verrou builder ? autre chose à embarquer ?
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de
