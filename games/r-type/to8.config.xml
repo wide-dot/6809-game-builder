@@ -2147,7 +2147,18 @@
                      l'unite main + les musiques (ymm00 + vgc00, player VGC a
                      rebrancher) la completeront en T1b/T2. Chargee par
                      personne au boot tant que T3 n'a pas cable la bascule. -->
+                <!-- L'unite du title : la troisieme alternative du creneau
+                     d'echange ($01/$8000, comme stage1 et stage2). Squelette
+                     T1b — la boucle v1 arrive en T1c. -->
+                <file name="title.main" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/title/title-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/main.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
+                    <load name="title.main"/>
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
