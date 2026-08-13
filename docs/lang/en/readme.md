@@ -2,70 +2,79 @@
 ## Description
 The wide-dot 6809 game builder is a multiplatform (Windows, macOS, Linux) toolset and game engine for 6809 computers.
 
-**WARNING**: This is the next generation of the builder and game engine. However, this version is still under development and should not be used.
-Please use [this repository](https://github.com/wide-dot/thomson-to8-game-engine) instead.
+**Status** : this is the next generation of the builder and game engine.
+The toolchain is mature — every change is proven against an identity corpus
+(15 configurations, 63 disk images compared byte for byte) and replayed
+headless under an emulator. The game runtime is being migrated 1:1 from the
+[first generation](https://github.com/wide-dot/thomson-to8-game-engine),
+which remains the complete-game reference (it runs R-Type level 1 in full,
+boss included) ; the R-Type port on this generation already runs its stages
+1 and 2 end to end.
 
 [![CodeFactor](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder/badge?s=8289592f61057a9492abfadaf23c94fe1bb4e60b)](https://www.codefactor.io/repository/github/wide-dot/6809-game-builder) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e77ba840d36c43bf8c4e839bac1bde06)](https://www.codacy.com/gh/wide-dot/6809-game-builder/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wide-dot/6809-game-builder&amp;utm_campaign=Badge_Grade)
 
 ### Currently supported computers
 
-- Thomson TO8
-- Thomson TO8D
-- Thomson TO9+
+- Thomson TO8 (primary target)
+- Thomson MO6 / Olivetti Prodest PC128
 
 ### Candidates for future releases
 
 - Thomson MO5
-- Thomson MO6 / Olivetti Prodest PC128
 - Tandy Color Computer 3 (CoCo 3)
 
 ### Demos
 
-![sonic2][sonic2] ![dott][dott] 
+(from the first generation of the engine)
+
+![sonic2][sonic2] ![dott][dott]
 
 ### Main features
 
 #### Tools
 
-- generate compilated images from png files or tilesets
-- convert Tiled tmx tilemaps in asm data
-- convert pcm, vgm, midi, smps audio data
-- compress code and data
-- build bootable cartridge or floppy disk
-- color conversion
+- build bootable floppy disk images (`.fd`, `.sd`, `.sap`, `.hfe`)
+- declarative memory model : zones, arenas, attributed places — the
+  builder measures, places and publishes, the runtime places nothing
+- generate compiled sprites from png files (four encoders, mirror and
+  pre-shift variants) and their image-set indexes
+- generate tile maps and the whole level-map chain (leanscroll)
+- convert pcm, vgm audio data (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`)
+- compress code and data (zx0)
+- validate the configuration against a generated XSD, and report RAM
+  occupancy per scene, link cost and disk seeks
 
 #### Engine
-- boot loader
-- load time linker on files
-- zx0 compression on files
-- load code and data to RAM pages
-- link at load time
-- manage objects
-- manage collisions
-- display sprites by priority
-- animate sprites
-- display tilemaps (tile groups, animation, buffering, ...)
-- multiple software scroll engines
-- play audio with dpcm, svgm, smid, smps, psg, ymm, vgc audio formats
-- support ym2413 and sn76489 sound chips
-- play midi files (EF6850 ACIA)
+- boot loader, file and scene loader, hot scene swap from disk
+- load time linker on files, with a full lifecycle : reload dedup,
+  explicit unload, overlap trap, multi-disk
+- zx0 decompression in place
+- dynamic memory allocator (16-bit TLSF)
+- manage objects, animate sprites, move scripts
+- manage collisions (AABB and terrain)
+- display sprites by priority (compiled sprites, background erase)
+- display tilemaps : 1 px scroll on pre-buffered maps, looping band scroll
+- camera / autoscroll, enemy waves
+- play audio with the ymm (YM2413) and vgc (SN76489) formats, sound FX
+  under IRQ
+- MEA8000 speech synthesis and MIDI (EF6850 ACIA) test benches
 
 ## Building the 6809-game-builder
 
 Download the latest release if you don't want to build the project.
 
-You need to have Java 8 (or newer) and Maven to be installed first.
+You need to have Java 11 (or newer) and Maven installed first.
 
-To produce the packager which contains all the tools and all their dependencies, including engine (asm) and tools (lwasm, etc.) :
+To produce the packager which contains all the tools and all their dependencies, including the asm engine and the bundled third-party binaries (lwasm, etc.) :
 
 ```bash
 $ mvn clean package
 ```
 
-Then plateform distrubutions are generated in .\package\target :
+Platform distributions are then generated in `package/target` :
 
-- gamebuilder-package.exe (for windows, obviously)
-- gamebuilder-package (for Linux and MacOS)
+- `gamebuilder-package.exe` (for Windows, obviously)
+- `gamebuilder-package` (for Linux and macOS)
 
 ## Documentation
 
@@ -75,6 +84,12 @@ Then plateform distrubutions are generated in .\package\target :
 
 [build a project][project-build]
 
+[the memory and scene model][scenes]
+
+[symbols and link cost][symbols]
+
+[groups and loading model][groups]
+
 [objects][objects]
 
 [sprites][sprites]
@@ -83,6 +98,7 @@ Then plateform distrubutions are generated in .\package\target :
 
 [audio][audio]
 
+[migrating from the first generation — the casebook][migration]
 
 ## Toolbox
 
@@ -98,9 +114,13 @@ Then plateform distrubutions are generated in .\package\target :
 [unpack-tools]: unpack-tools.md
 [project-setup]: project-setup.md
 [project-build]: project-build.md
+[scenes]: scenes.md
+[symbols]: symbols.md
+[groups]: groups.md
 [objects]: objects.md
 [sprites]: sprites.md
 [tilemaps]: tilemaps.md
 [audio]: audio.md
+[migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md
