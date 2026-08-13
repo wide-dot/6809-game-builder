@@ -1298,15 +1298,12 @@ phase (rien d'autre que des docs n'a bougé).*
    preuve par identité), puis retirer les branches par-load de
    ScenePlugin, la spec et le XSD. Recommandation : exécuter 4c dans la
    passe 1, le test vit.
-2. **`PageSets`/`Cuts`** : d'accord pour fusionner ou renommer ces
-   registres Java internes si la mesure montre le recouvrement (prouvé
-   par identité) ?
-3. **`rom t2`** : aucun média cartouche n'existe dans le registre v2 —
-   retirer la mention de la doc (recommandé, le portage ROM restant au
-   backlog), ou le laisser annoncé ?
-4. **`examples/timing` + `timing.md`** : supprimer (l'API `wait.*`
-   n'existe pas — recommandé, la trace du besoin reste dans l'état des
-   lieux), ou garder comme spécification d'une API à venir ?
+2. **`PageSets`/`Cuts`** : fusionner ou renommer selon la mesure —
+   **VALIDÉ auteur (13/08)**.
+3. **`rom t2`** : retirer la mention de la doc, le portage ROM reste au
+   backlog — **VALIDÉ auteur (13/08)**.
+4. **`examples/timing` + `timing.md`** : supprimer, la trace du besoin
+   reste dans l'état des lieux — **VALIDÉ auteur (13/08)**.
 
 ## Ce que le plan ne couvre pas, à dessein
 
