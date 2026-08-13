@@ -435,8 +435,14 @@ Fonctionnel :
       `<pageset>`, marche de destination %10/%11 morte en pratique côté
       loader, adresse de membre lue du scalaire `region.address` au lieu de
       la zone. (M)
-- [ ] **Migration vers le modèle cible « file maître »** — plan complet en
-      neuf phases écrit le 09/08 :
+- [x] **Migration vers le modèle cible « file maître » — CAMPAGNE CLOSE
+      (13/08/2026)**. Les neuf phases sont réalisées et prouvées (le plan
+      porte une annotation de preuve par phase) ; le manuel cible est
+      normatif, master est à jour. Restent OUVERTES, hors campagne, les
+      trois études adjacentes listées plus bas (5-normalisation,
+      5-nomenclature, 5-arbitrage du modèle de numérotation) — à reprendre
+      sur besoin, au portage des ennemis. Plan d'origine en neuf phases
+      écrit le 09/08 :
       [`plan-migration-cible-2026-08.md`](docs/lang/fr/plan-migration-cible-2026-08.md)
       (0 retraits sans risque, 1 émetteur d'index + contributions —
       remplace gen_objid.py byte à byte, 2 membres de pageset dérivés,
@@ -648,6 +654,18 @@ Fonctionnel :
         coupés en 4 membres, 4/4 sous toje (contenu du unit via son
         membre, pages distinctes, pointeur inter-membres dans le unit),
         erreur « does not fit » lue en vrai.
+  - [x] Phase 9 passe 2 — documentation FAITE (13/08) : manuel anglais mis
+        au vrai (bandeau « not yet implemented » de scenes.md, validation
+        au corpus courant, mention interface= de project-build) ; manuel
+        cible + workflow rehomés NORMATIFS avec la divergence d'index
+        résolue dans le corps (§3.5/§5/§6 réécrits au modèle implémenté :
+        tables de jeu en asm, symboles cuits + $PAGE, équates d'ids
+        partagées) ; statuts des études remis au vrai (analyse-placement
+        close, plan RÉALISÉ, reste-cible photographie, modele-zones) ;
+        CLAUDE.md réaligné (convertisseurs sans ServiceLoader, validation
+        13/08, encart « état courant » sur la section loader, rom t2
+        retiré) ; readme racine : liens remplis, lien FR mort retiré.
+        LA CAMPAGNE EST CLOSE.
   - [x] Phase 9 passe 1 — code mort FAIT (13/08, 4 commits, chacun
         prouvé identité 63/63 + JUnit 84/84) : équates de layout
         `.size`/`.pages`/`.page.last` (zéro consommateur) ; 4c exécuté

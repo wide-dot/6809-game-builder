@@ -1,4 +1,4 @@
-[EN](/docs/lang/en/readme.md) | [FR](/docs/lang/fr/readme.md)
+[EN](/docs/lang/en/readme.md)
 
 # 6809 Game Builder
 ![](/docs/assets/images/banner.png)
@@ -13,7 +13,7 @@
 ### Main features
 Many plugins and asm libraries are being migrated from the early version of this game builder ... more to come !
 
-#### Plugin based builder
+#### Builder
 - floppy disk image generator
 - custom file directory generator
 - lwasm assembler (raw, obj, ...)
@@ -45,9 +45,9 @@ Many plugins and asm libraries are being migrated from the early version of this
 
 Download the latest release if you want to skip this step !
 
-You need to have Java 8 (or newer) and Maven to be installed first.
+You need to have Java 11 (or newer) and Maven installed first.
 
-To produce the packager which contains all the tools and all their dependencies, including engine (asm) and plugins (lwasm, etc.) :
+To produce the packager which contains all the tools and all their dependencies, including the asm engine and the bundled third-party binaries (lwasm, etc.) :
 
 ```bash
 $ mvn clean package
@@ -60,10 +60,11 @@ Then plateform distrubutions are generated in .\package\target :
 
 ## Documentation
 
-- [project examples]()
-- [setup a new project]()
-- [builder plugin reference]()
-- [assembly framework reference]()
+- [project examples](examples/)
+- [setup a new project](docs/lang/en/project-setup.md)
+- [build a project](docs/lang/en/project-build.md)
+- [the memory and scene model](docs/lang/en/scenes.md)
+- [symbols and link cost](docs/lang/en/symbols.md)
 
 ## Credits
 - [third-party tools](docs/lang/en/credits.md)

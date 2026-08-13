@@ -19,14 +19,14 @@ MO5, Tandy CoCo 3.
   CI GitHub Actions sur `master`). Pour le seul builder :
   `mvn -pl toolbox/gamebuilder/core -am package` (jars déposés dans `repo/`).
 - Construire un jeu/une démo : `gamebuilder -f <config.xml> [-t <target>] [-v] [-c]`
-  (config XML : cible → média (`floppydisk fd640/fd320/fd158`, `rom t2`) → sections →
-  `direntry` avec codec `zx0` et `loadtimelink` → sorties `<fd/> <sd/> <sap/> <hfe/>`).
-- **Plugins de conversion** (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`, `pcm`, `png2pal`,
-  `phoneme`, `txt2bas`) : ce sont des modules Maven séparés dont le jar est déposé
-  dans **`plugins/<nom>/`** (pas dans `target/`) et chargé au runtime par
-  ServiceLoader. Un `mvn package` **à la racine** les produit tous les 7 ; un build
-  ciblé (`-pl toolbox/gamebuilder/core -am`) ne les inclut pas, d'où des
-  « Unknown Plugin: vgm2ymm » sur les projets qui les utilisent.
+  (config XML : cible → média disquette (`floppydisk fd640/fd320/fd158`) → sections →
+  fichiers/scènes → sorties `<fd/> <sd/> <sap/> <hfe/>` ; aucun média cartouche
+  dans le registre — le portage ROM est au backlog).
+- **Convertisseurs** (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`, `pcm`, `png2pal`,
+  `phoneme`, `txt2bas`) : des dépendances Maven ordinaires du cœur,
+  enregistrées une ligne chacune dans `core/Handlers.java` (le mécanisme
+  ServiceLoader/`plugins/` a été supprimé le 31/07 — voir la section revue
+  Java). `mvn install` à la racine suffit.
 - **Procédure validée sur macOS (07/2026)** : depuis le répertoire du projet/exemple,
   `java -Dbasedir=<racine du repo> -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml`.
   Prérequis : (1) un lien `engine → ../../engine` dans le répertoire du projet (les
@@ -59,14 +59,16 @@ MO5, Tandy CoCo 3.
   object manager, 12/12 — sans affichage, résultats en `$9C00`),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
-- **État de validation au 30/07/2026** : les **8 configs** des exemples buildent
-  (`mplus/to8-mplus-test`, `mplus/to8-mplus-pcm`, `mplus/mo6-mplus-test`, `sound/to8`,
-  `sound/mo6`, `tlsf-ut/to8`, `tlsf-ut/mo6`, `loader-ut/to8`). Exécution vérifiée sous
-  toje pour toutes les images **TO8** (sound : changement de scène à chaud + données
-  musicales correctes en RAM ; mplus factory test : affiche son écran, les tests timer
-  sortent « KO » car toje n'émule pas la carte MPLUS ; mplus pcm : boucle principale ;
-  tlsf-ut et loader-ut : verts). Les images **MO6 ne sont validées qu'au build** — pas
-  d'émulateur MO6 disponible ici (toje est TO8 uniquement).
+- **État de validation au 13/08/2026** : le corpus compte **15 configs et
+  63 images** (11 exemples dont collection/stacked-overflow/hscroll/
+  tilescroll/objects/sprites, plus `games/r-type`), construits et empreintés
+  en une commande par `ci/build-corpus.sh <out.hashes>` — c'est le banc
+  d'identité de toutes les campagnes. Exécution rejouée **sans écran** par la
+  lane toje (`ci/toje-bench/` : loader-ut 17/17 + piège T18 avec échanges de
+  disquettes, banc r-type 5/5, collection 4/4 ; sondes des autres exemples
+  dans les scripts de session). Les images **MO6 ne sont validées qu'au
+  build** — pas d'émulateur MO6 ici (toje est TO8 uniquement). Le mplus
+  factory test affiche « KO » sur les timers : toje n'émule pas la carte.
 - Assembleur : LWASM (LWTOOLS, binaires dans `toolbox/third-party/bin/<os>/`).
 - Debug : `toolbox/debug` (**wddebug**) — GUI ImGui qui s'attache à DCMOTO/Teo en cours
   d'exécution (Windows + macOS) et lit la RAM émulée en direct.
@@ -89,7 +91,7 @@ MO5, Tandy CoCo 3.
 | Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) | `engine/system/thomson/graphics/buffer/` | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
 | Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
-| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Un set trop gros pour une page se déclare en `<pageset>` et s'indexe par l'élément `<imageset>`, qui grave une page **par image** (03/08/2026, comme la v1). Doc : [`sprites.md`](docs/lang/en/sprites.md) |
+| Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Un set trop gros pour une page est une **collection** (le packer la coule dans les creux d'une arène) et s'indexe par l'élément `<imageset>`, qui grave une page **par image** (comme la v1). Doc : [`sprites.md`](docs/lang/en/sprites.md) |
 | Autres outils graphiques : `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | Substantiels mais sans consommateur runtime |
 | wddebug | `toolbox/debug/` | Très actif ; ses vues sprites/collisions/objets débuggent les structures v1 en attendant la v2 |
 
@@ -338,7 +340,22 @@ et chaque module a été comparé séparément à son original exécuté sous Jy
 (jamais activé par cette chaîne, et le player 6809 n'a pas le décodeur correspondant) :
 il lève une erreur explicite.
 
-## Analyse détaillée : loader — cycle de vie incomplet (juillet 2026)
+## Analyse détaillée : loader (récit de juillet 2026 — lire l'encart d'abord)
+
+> **État courant (13/08/2026).** Cette section est le journal du travail de
+> juillet ; trois de ses mécanismes ont changé depuis et son « ce qui
+> manque » est traité. L'**unload implicite décrit plus bas a été REMPLACÉ** :
+> charger sur les octets d'un fichier encore indexé (destination exacte OU
+> recouvrement partiel, étendues relues du répertoire en cache) **fige** avec
+> `log.scene.LOAD_OVERLAP` — la scène qui finit déclare ce qu'elle lâche
+> (`scene.unload`, table de scène gardée en cache). L'exemption des fichiers
+> vides est devenue « ils n'occupent aucun octet ». La **marche de placement
+> des blocs %10/%11 a été retirée** (phase 8) : le runtime ne place plus
+> rien, les blocs séquentiels ne portent que de l'export-only. Le banc est à
+> **17/17 + T18** (le piège provoqué et lu). Le modèle à jour :
+> [`groups.md`](docs/lang/en/groups.md) et
+> [`scenes.md`](docs/lang/en/scenes.md) ; les différés restants (suivi des
+> tailles, paginated groups, unloadAll) sont au TODO.
 
 Source : `engine/system/thomson/bootloader/loader.asm`. Le **chemin de chargement**
 (scène complète, premier chargement) est terminé et validé sur machine
@@ -713,5 +730,3 @@ Cas de migration (la v1 écrivait `$E7DC` en direct) :
   tous deux reconstruits depuis les sources versionnées ; Windows en 4.22,
   Linux-arm encore en 4.18 — procédure dans
   `toolbox/third-party/src/asm/readme.md`.
-- `rom t2` cité plus haut : aucun média cartouche n'existe dans le registre v2
-  (fd/sd/sap/hfe seulement) — à porter ou à retirer de la doc.
