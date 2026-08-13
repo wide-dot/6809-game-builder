@@ -47,7 +47,7 @@
                 <default name="file.codec"        value="none"/>
                 <default name="lwasm.format"          value="obj"/>
 
-                <file name="d1.marker" codec="zx0" linkdata="LINK">
+                <file name="d1.marker" region="disk1.marker" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-d1.asm">
                         <asm filename="src/assets/markers/marker-d1.asm"/>
                     </lwasm>
@@ -55,7 +55,7 @@
 
                 <!-- disk 1 scene : the disk 1 marker -->
                 <scene name="d1.scenes.main" section="SCENE" gensource="gen/scenes/d1-main.asm">
-                    <load name="d1.marker" region="disk1.marker"/>
+                    <load name="d1.marker"/>
                 </scene>
 
             </directory>
@@ -89,7 +89,7 @@
 
                 <!-- Loader unit test - game mode -->
                 <!-- ******************************************************* -->
-                <file name="assets.gm.loaderut" codec="zx0" linkdata="LINK">
+                <file name="assets.gm.loaderut" region="gamemode" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/assets/game-modes/to8/main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/disk1/entries.asm"/>
@@ -102,19 +102,19 @@
                 <!-- bb : raw                                                -->
                 <!-- cc : zx0 compressed, loaded by scene "second" OVER bb   -->
                 <!-- ******************************************************* -->
-                <file name="data.marker.aa" codec="zx0" linkdata="LINK">
+                <file name="data.marker.aa" region="marker.a" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-aa.asm">
                         <asm filename="src/assets/markers/marker-aa.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="data.marker.bb" linkdata="LINK">
+                <file name="data.marker.bb" region="marker.b" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-bb.asm">
                         <asm filename="src/assets/markers/marker-bb.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="data.marker.cc" codec="zx0" linkdata="LINK">
+                <file name="data.marker.cc" region="marker.b" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-cc.asm">
                         <asm filename="src/assets/markers/marker-cc.asm"/>
                     </lwasm>
@@ -125,19 +125,19 @@
                 <!-- dd/ee  : variants swapped at the same destination       -->
                 <!-- iface.*: export-only files (index growth / realloc)     -->
                 <!-- ******************************************************* -->
-                <file name="data.marker.hub" linkdata="LINK">
+                <file name="data.marker.hub" region="stress.hub" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-hub.asm">
                         <asm filename="src/assets/markers/marker-hub.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="data.marker.dd" codec="zx0" linkdata="LINK">
+                <file name="data.marker.dd" region="stress.swap" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-dd.asm">
                         <asm filename="src/assets/markers/marker-dd.asm"/>
                     </lwasm>
                 </file>
 
-                <file name="data.marker.ee" codec="zx0" linkdata="LINK">
+                <file name="data.marker.ee" region="stress.swap" codec="zx0" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-ee.asm">
                         <asm filename="src/assets/markers/marker-ee.asm"/>
                     </lwasm>
@@ -347,7 +347,7 @@
                 <!-- Declared last on purpose : its directory entry lives -->
                 <!-- in the last INDEX sector (multi-sector dir.load)     -->
                 <!-- ******************************************************* -->
-                <file name="data.marker.zz" linkdata="LINK">
+                <file name="data.marker.zz" region="stress.zz" linkdata="LINK">
                     <lwasm gensource="gen/markers/marker-zz.asm">
                         <asm filename="src/assets/markers/marker-zz.asm"/>
                     </lwasm>
@@ -359,7 +359,7 @@
                      This is the case that used to silently produce wrong link
                      data, and the reason a group could only hold one member
                      that mattered. -->
-                <file name="data.group.multi" linkdata="LINK">
+                <file name="data.group.multi" region="group" linkdata="LINK">
                     <bin filename="src/assets/markers/prefix-256.bin"/>
                     <lwasm gensource="gen/markers/marker-grp.asm">
                         <asm filename="src/assets/markers/marker-grp.asm"/>
@@ -370,40 +370,40 @@
                 <!-- ******************************************************* -->
                 <!-- main scene : game mode + two marker files -->
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
-                    <load name="assets.gm.loaderut" region="gamemode"/>
-                    <load name="data.marker.aa"     region="marker.a"/>
-                    <load name="data.marker.bb"     region="marker.b"/>
+                    <load name="assets.gm.loaderut"/>
+                    <load name="data.marker.aa"/>
+                    <load name="data.marker.bb"/>
                 </scene>
 
                 <!-- second scene : marker cc takes over marker bb's region -->
                 <scene name="scenes.second" section="SCENE" gensource="gen/scenes/second.asm">
-                    <load name="data.marker.cc" region="marker.b"/>
+                    <load name="data.marker.cc"/>
                 </scene>
 
                 <!-- T18's provocation : bb over cc, same region, no unload.
                      A DIFFERENT file is required — reloading the same file is
                      a dedup (slot reuse) and never reaches the overlap check. -->
                 <scene name="scenes.trap" section="SCENE" gensource="gen/scenes/trap.asm">
-                    <load name="data.marker.bb" region="marker.b"/>
+                    <load name="data.marker.bb"/>
                 </scene>
 
                 <!-- stress : stable hub file, holds refs re-patched at link -->
                 <scene name="scenes.stress.hub" section="SCENE" gensource="gen/scenes/stress-hub.asm">
-                    <load name="data.marker.hub" region="stress.hub"/>
+                    <load name="data.marker.hub"/>
                 </scene>
 
                 <!-- stress : dd and ee take turns on the swap region -->
                 <scene name="scenes.stress.dd" section="SCENE" gensource="gen/scenes/stress-dd.asm">
-                    <load name="data.marker.dd" region="stress.swap"/>
+                    <load name="data.marker.dd"/>
                 </scene>
 
                 <scene name="scenes.stress.ee" section="SCENE" gensource="gen/scenes/stress-ee.asm">
-                    <load name="data.marker.ee" region="stress.swap"/>
+                    <load name="data.marker.ee"/>
                 </scene>
 
                 <!-- multi object group : blob + asm member, one direntry -->
                 <scene name="scenes.group" section="SCENE" gensource="gen/scenes/group.asm">
-                    <load name="data.group.multi" region="group"/>
+                    <load name="data.group.multi"/>
                 </scene>
 
                 <!-- stress : 16 export-only padding files (link data only) -->
@@ -430,7 +430,7 @@
 
                 <!-- stress : marker zz, the last directory entry -->
                 <scene name="scenes.stress.zz" section="SCENE" gensource="gen/scenes/stress-zz.asm">
-                    <load name="data.marker.zz" region="stress.zz"/>
+                    <load name="data.marker.zz"/>
                 </scene>
 
                 <!-- stress : 6 export-only interface files (link data only) -->
