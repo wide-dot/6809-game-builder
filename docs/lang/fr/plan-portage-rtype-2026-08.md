@@ -108,6 +108,24 @@ sort d'abord DIRECTEMENT sur le stage 1.
   chargée par un define de dev (le boot du banc reste par défaut).
   Preuve : build vert, banc r-type 5/5 inchangé sur les images
   annoncées, logo à l'écran sous toje ;
+
+  **RÉALISÉ (13/08/2026)** en trois pas. T1a : graphismes (logo en
+  collection de premier niveau — 21,8 Ko, coupé en 2 morceaux d'arène
+  sur $18/$19 —, push_button et scores), arène `title` déclarée en
+  alternative des tuiles de stage. T1b : unité squelette (entrée
+  `stage.main` — le nom de fichier `title.main` en équate interdit un
+  label homonyme —, 5 tables exportées, bouchons). T1c : les phases 0-4
+  de l'attract v1 adaptées 1:1 sur le moteur résident (verrou gfxlock,
+  imageset `titlelogo`, palette par png2pal du PNG du logo), l'objet
+  logo intégré à l'unité. Le logo s'anime et tient à l'écran sous toje,
+  vérifié par captures ET par diff des deux parités de tampon (zéro
+  octet d'écart). Deux leçons payées : une ligne d'index oubliée sur
+  `logo.Object` (l'objet monté ne fait RIEN — pas de plantage, l'index
+  bouchonné est silencieux), et la répétition du cas
+  `relative-toggles-on-shared-registers.md` — l'effacement d'ouverture
+  fait avant toute pose de fenêtre données a effacé la page du loader
+  et laissé un octet de boot en pixel fantôme (le cas est enrichi de ce
+  symptôme « un octet »). Restent T2-T4.
 - T2 — la musique : `engine.sound.vgc` + `title.music.ymm/vgc`
   colocalisés dans l'arène title, `resetym`/`resetsn` au démarrage.
   Preuve : données musicales relues en RAM, player vivant ;

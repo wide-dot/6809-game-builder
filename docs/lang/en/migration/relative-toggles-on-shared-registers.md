@@ -12,6 +12,16 @@ the six `*_Clear*` calls, the two `ClearDataMem` calls — completes normally an
 returns. Nothing reports an error, because nothing detected one : two screen
 buffers were faithfully cleared. They just were not the screen buffers.
 
+The title (T1c) hit the same trap with a **smaller symptom** : its opening
+cleared "both buffers" before anything had anchored the data window, so both
+passes wiped the loader's page instead — a delayed time bomb for the next
+`scene.load` — and the real buffers kept their boot residue. Almost all of it
+happened to be black already ; what remained was a **single stray byte**, two
+white pixels hanging over the logo, visible on one buffer parity only. A
+one-byte ghost on screen is this case until proven otherwise : diff the two
+buffer parities, the orphan byte gives you the address, and the address tells
+you which clear never reached a real buffer.
+
 ## The v1 idiom
 
 v1 alternates the two video buffers with a **relative toggle** on the data

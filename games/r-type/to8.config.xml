@@ -2113,7 +2113,7 @@
                      <imageset> avec l'unite title.main (T1b). -->
                 <file name="title.logo" linkdata="LINK" arena="title"
                       gendir="gen/title/logo">
-                    <gfxcomp gendir="gen/title/logo"
+                    <gfxcomp gendir="gen/title/logo" imageset="titlelogo"
                              gensource="gen/title/logo/includes.asm">
                         <images dir="src/title/logo/images" shifts="0,1"/>
                     </gfxcomp>
@@ -2154,6 +2154,11 @@
                     <lwasm gensource="gen/title/title-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/title/main.asm"/>
+                        <!-- L'index du logo : une page par image, le set est
+                             coupe en deux morceaux d'arene. -->
+                        <imageset name="titlelogo" gensource="gen/title/logo-index.asm"/>
+                        <png2pal section="palette" symbol="Pal_title" filename="src/title/logo/images/logo_pal.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                     </lwasm>
                 </file>
 

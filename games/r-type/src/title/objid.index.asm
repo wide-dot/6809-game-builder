@@ -1,8 +1,9 @@
 * Object index of the title — hand-maintained, same rules as the stages :
 * id N is row N of every table, keep the rows aligned with objid.const.asm.
-* SKELETON (T1b) : every row points at the title's placeholder — the real
-* objects (logo, text, push_button, scores) arrive with the ported main
-* (T1c) ; the common rows will then cite the resident units they use (fade).
+* Only the title's own live objects cite a real routine ; every other row
+* points at the placeholder (an invoked object that is never carried does
+* nothing). Still placeholders : text, push_button, scores (T2), and the
+* common rows that will cite resident units (fade).
 
 Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -71,7 +72,7 @@ Obj_Index_Address
         fdb   title.placeholder ; ObjID_commonmissileflame
         fdb   title.placeholder ; ObjID_dobkeratops_saw
         fdb   title.placeholder ; ObjID_dobkeratops_explosion
-        fdb   title.placeholder ; ObjID_logo
+        fdb   logo.Object       ; ObjID_logo
         fdb   title.placeholder ; ObjID_text
         fdb   title.placeholder ; ObjID_push_button
         fdb   title.placeholder ; ObjID_scores
