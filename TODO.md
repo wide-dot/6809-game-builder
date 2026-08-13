@@ -648,6 +648,18 @@ Fonctionnel :
         coupés en 4 membres, 4/4 sous toje (contenu du unit via son
         membre, pages distinctes, pointeur inter-membres dans le unit),
         erreur « does not fit » lue en vrai.
+  - [x] Phase 9 passe 1 — code mort FAIT (13/08, 4 commits, chacun
+        prouvé identité 63/63 + JUnit 84/84) : équates de layout
+        `.size`/`.pages`/`.page.last` (zéro consommateur) ; 4c exécuté
+        (loader-ut migré aux places attitrées — T18 intact, la
+        re-mesure ayant montré que chaque fichier n'a qu'UNE
+        destination —, forme par-load retirée des 3 lecteurs + spec +
+        XSD, section pédagogique « who/where » au manuel) ; PageSets
+        fusionné dans Cuts (le nom du <pageset> disparu quitte le
+        code) ; orphelins supprimés (data.asm, mub.o, gfx.memset..,
+        examples/timing + timing.md — validé auteur) ; grep de clôture
+        des mécanismes disparus : zéro hors historique. Restent :
+        passe 2 (documentation).
   - [x] Phase 8 — campagne loader FAITE (13/08, décisions auteur : pas
         de piège loader, rien d'autre à embarquer). Pas A par identité
         (63/63) : le verrou « séquentiel = export-only » EXISTAIT déjà

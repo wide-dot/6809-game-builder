@@ -1240,6 +1240,30 @@ est consigné.
 *Preuve passe 1 : identité 63/63 à chaque retrait, JUnit ; grep de clôture
 du point 5 archivé dans le commit.*
 
+*Passe 1 RÉALISÉE (13/08, quatre commits, chacun prouvé identité 63/63 +
+JUnit 84/84)* :
+1. Équates de layout : `.size`/`.pages`/`.page.last` retirées (zéro
+   consommateur), `.page`/`.address` conservées partout — précision au
+   passage : les consommateurs `.address` du corpus lisent la publication
+   du répertoire et des arènes, les groupes du layout étaient bien à zéro
+   comme le §27 le disait.
+2. 4c EXÉCUTÉ en deux temps : loader-ut migré aux places attitrées
+   (10 fichiers annotés, 11 loads réduits au nom, T18 intact, tables
+   identiques à l'octet), puis la forme par-load retirée des trois
+   lecteurs (ScenePlugin, PlacementScan, ArenaPacker), de la spec et du
+   XSD (−13 lignes) — une destination sur un `<load>` est rejetée par le
+   schéma avec position. Le manuel gagne la section « The scene says
+   who, the file says where » (pédagogie demandée par l'auteur : le même
+   ennemi aux stages 1/3/7).
+3. `PageSets` fusionné dans `Cuts` (`Member` déménage, un Cut porte ses
+   membres, null = posé entier) — le nom du `<pageset>` disparu quitte le
+   code ; les deux moitiés d'une décision de packing ne font plus qu'un
+   enregistrement.
+4. Orphelins supprimés (`data.asm`/`mub.o` racine, `gfx.memset..asm`,
+   `examples/timing` + `timing.md`) ; grep de clôture des mécanismes
+   disparus : zéro occurrence hors historique daté. `mub.asm` consigné
+   non-mort (MUCOM88 écrit non branché).
+
 #### Passe 2 — la documentation
 
 1. **Le modèle cible devient LE modèle.** `manuel-cible-2026-08.md` et
