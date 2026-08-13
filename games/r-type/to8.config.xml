@@ -276,6 +276,14 @@
             <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
             <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
             <reserved name="framebuffer.3.forme"   page="$03" address="$2000" size="$1F40"/>
+            <!-- L'ARENE DU TITLE : le title ne coexiste jamais avec un stage,
+                 il se relaie avec eux sur la page $18 (scene.unload a la
+                 bascule, comme entre stages). -->
+            <arena name="title">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+            </arena>
+
         </layout>
 
             <!-- Les index d'objets des stages : l'espace d'ids que les waves
@@ -2090,6 +2098,59 @@
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
                     <load name="stage1"/>
+                </scene>
+
+
+                <!-- ===== TITLE (chantier 1 du plan de portage) ============ -->
+                <!-- T1a : les graphismes seuls — l'unite title.main viendra
+                     avec l'adaptation du main v1 (849 l.). Encodeurs releves
+                     dans les .properties v1 : logo NB0+NB1 (pre-decale),
+                     push_button et chiffres NB0. Les lettres etaient
+                     commentees en v1 (cible disquette) : non compilees. -->
+                <!-- Le logo pese 21,8 Ko avec ses deux decalages : une
+                     COLLECTION (gfxcomp au premier niveau), le packer la coupe
+                     sur les pages de l'arene ; son index viendra par
+                     <imageset> avec l'unite title.main (T1b). -->
+                <file name="title.logo" linkdata="LINK" arena="title"
+                      gendir="gen/title/logo">
+                    <gfxcomp gendir="gen/title/logo"
+                             gensource="gen/title/logo/includes.asm">
+                        <images dir="src/title/logo/images" shifts="0,1"/>
+                    </gfxcomp>
+                </file>
+
+                <file name="title.pushbutton" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/pushbutton.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/title/pushbutton"
+                                 gensource="gen/title/pushbutton/includes.asm"
+                                 genindex="gen/title/pushbutton/index.asm"
+                                 file="title.pushbutton">
+                            <images dir="src/title/text/images" names="push_button"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="title.scores" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/scores.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/title/scores"
+                                 gensource="gen/title/scores/includes.asm"
+                                 genindex="gen/title/scores/index.asm"
+                                 file="title.scores">
+                            <images dir="src/title/scores/images" names="number"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La scene du title : pour l'instant ses seuls graphismes ;
+                     l'unite main + les musiques (ymm00 + vgc00, player VGC a
+                     rebrancher) la completeront en T1b/T2. Chargee par
+                     personne au boot tant que T3 n'a pas cable la bascule. -->
+                <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
+                    <load name="title.logo"/>
+                    <load name="title.pushbutton"/>
+                    <load name="title.scores"/>
                 </scene>
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
