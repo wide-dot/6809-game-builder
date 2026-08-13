@@ -2097,6 +2097,12 @@
                     <load name="stage1.maps"/>
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
+                    <!-- La musique aussi : le title a pris ses octets (les
+                         deux fichiers sont des alternatives en $1A/$20BC).
+                         Venant du boot ou du stage 2 le rechargement est
+                         dedup-idempotent ; venant du title il est ce qui
+                         rend sa musique au stage. -->
+                    <load name="stage1.music.ymm"/>
                     <load name="stage1"/>
                 </scene>
 

@@ -41,6 +41,7 @@ mainloop.state    EXPORT
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/system/to8/controller/joypad.const.asm"
         INCLUDE "engine/pack/ymm.asm"
         INCLUDE "engine/pack/vgc.asm"
 
@@ -322,8 +323,54 @@ title.hold.set
         _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         jsr   IrqOn
 title.hold.live
+        ; press start — la v1 teste le tir dans ses phases a musique
+        ; (Phase5Live : `Fire_Press & c1_button_A_mask`) : la manette d'abord
+        lda   joypad.pressed.fire
+        anda  #joypad.0.FIRE
+        bne   title.launchGame
+        ; ... et le clavier par le bit KTEST du PIA (une touche est enfoncee),
+        ; avec son propre front — l'idiome du modele sound, style R-Type.
+        ; L'injection clavier de joypad.readKbd ne suffit pas ici : sans
+        ; extension manette le port se lit tout « tenu » (vecu sous toje),
+        ; le bit injecte tombe dans un bit deja a 1 et l'arete ne vient jamais.
+        lda   map.MC6821.PRA
+        lsra
+        bcs   @keyDown
+        clr   title.keydown            ; touche relachee : le front se rearme
+        bra   @noKey
+@keyDown
+        tst   title.keydown
+        bne   @noKey                   ; toujours tenue : un seul depart
+        inc   title.keydown
+        bra   title.launchGame
+@noKey
         jsr   title.frame
         bra   title.hold.live
+
+; ---------------------------------------------------------------------------
+; DEPART : la sequence LaunchGame de la v1 (palette au noir, IRQ coupee,
+; puces au silence), puis l'echange v2 — le title rend SA scene et charge
+; celle du stage 1, exactement le geste de stage.gameOver. `game.stage` a
+; zero fait de cette entree une premiere entree : le stage reseme les vies
+; et le score.
+; ---------------------------------------------------------------------------
+title.launchGame
+        ldd   #Pal_black
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow
+
+        jsr   IrqOff
+        _ram.cart.set #page.vgc
+        _sn76489.init
+        _ram.cart.set #page.ymm
+        _ym2413.init
+
+        clr   game.stage
+        ldx   #STAGE_SCENE
+        jsr   game.stage.unload
+        ldx   #scenes.stage1
+        jmp   game.stage.switch
 
 ; ---------------------------------------------------------------------------
 ; La trame : la boucle v1 (WaitVBL + dessins) devient le tour de verrou v2 —
@@ -394,6 +441,7 @@ title.placeholder
         rts
 
 mainloop.state fcb 0
+title.keydown  fcb 0                   ; front du declencheur clavier
 
 addr_logo
         fdb   0                        ; R

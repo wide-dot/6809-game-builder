@@ -157,6 +157,28 @@ sort d'abord DIRECTEMENT sur le stage 1.
   stage 1 tourne (caméra avance), et retour au title à la mort finale
   quand le flow du chantier 2 arrivera. Preuve : scénario complet
   title → stage 1 sous toje, banc 5/5 conservé ;
+
+  **RÉALISÉ (13/08/2026).** La sortie du title est la séquence
+  LaunchGame de la v1 (palette au noir, IRQ coupée, puces au silence)
+  suivie du geste v2 de `stage.gameOver` : `game.stage` à zéro (une
+  entrée depuis le title est une première entrée — vies et score
+  resemés), `game.stage.unload` de SA scène, `game.stage.switch` vers
+  `scenes.stage1` — le mécanisme du banc, déjà validé 5/5, sans une
+  ligne nouvelle côté moteur. `scenes.stage1` recharge désormais
+  `stage1.music.ymm` (le title a pris ses octets — alternatives en
+  $1A/$20BC) : dédup-idempotent depuis le boot ou le stage 2, et c'est
+  ce qui rend sa musique au stage en venant du title. Le déclencheur :
+  la manette d'abord (v1 : `Fire_Press`), PLUS le bit KTEST du PIA
+  avec son propre front (l'idiome du modèle sound, style R-Type) —
+  découverte au passage : sans extension manette le port joypad se lit
+  tout « tenu » (vécu sous toje), l'injection clavier de
+  `joypad.readKbd` tombe dans un bit déjà à 1 et l'arête ne vient
+  jamais ; le bit matériel, lui, fait front. Preuve sous toje :
+  scénario complet title (logo tenu, musiques armées) → appui touche →
+  stage 1 vivant — `bench.magic` $CA, stage 01, caméra 12→68 en 300
+  trames (la vitesse R-Type), musique du stage 1 relue en RAM à la
+  place de celle du title ; banc 5/5 conservé sur le boot par défaut.
+  Reste T4.
 - T4 — le boot par défaut passe au title, le banc reste accessible par
   define.
 
