@@ -1280,11 +1280,24 @@ phase (rien d'autre que des docs n'a bougé).*
 
 #### Questions ouvertes à l'auteur
 
-1. **La forme par-load** : l'acter comme forme de test permanente
-   (recommandé — le gardien loader-ut couvre le chemin %01 à destinations
-   explicites, c'est une couverture, pas une dette ; une ligne au manuel
-   la réserve aux bancs), ou exécuter 4c (la retirer du format et migrer
-   loader-ut vers les places attitrées) ?
+1. **La forme par-load** — recommandation INVERSÉE après re-mesure
+   (13/08, question de l'auteur : « le test mérite-t-il de vivre ? »).
+   Le relevé exhaustif des 19 destinations par-load de loader-ut montre
+   que **chaque fichier n'a qu'UNE destination à travers toutes les
+   scènes** — y compris T18 : la provocation charge `bb` à sa propre
+   place habituelle (`marker.b`, où `cc` se trouve alors) ; bb/cc et
+   dd/ee sont des ALTERNATIVES à une place partagée, forme que le modèle
+   cible autorise déjà. La première justification du gardien (« même
+   fichier, deux destinations, inexprimable en place attitrée ») était
+   un artefact de mesure — consigné ici pour la méthode. Conséquences :
+   T18 se garde TEL QUEL (c'est le « casse le garde-fou » du piège
+   LOAD_OVERLAP, la seule protection contre une erreur que le builder ne
+   peut pas voir — il ne connaît pas l'ordre des scènes) et **4c devient
+   bon marché** : migrer loader-ut vers les places attitrées (les
+   destinations ne bougent pas → tables générées identiques à l'octet,
+   preuve par identité), puis retirer les branches par-load de
+   ScenePlugin, la spec et le XSD. Recommandation : exécuter 4c dans la
+   passe 1, le test vit.
 2. **`PageSets`/`Cuts`** : d'accord pour fusionner ou renommer ces
    registres Java internes si la mesure montre le recouvrement (prouvé
    par identité) ?
