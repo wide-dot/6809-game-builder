@@ -144,12 +144,8 @@ public final class Handlers {
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("section", STRING, "section receiving the table")
 			.opt("gensource", STRING, "generated table source, defaults to gen/scenes/<name>.asm"));
-		spec(element("load").doc("one file loaded by the scene ; no destination means the file's attributed place, or link data only when it declares none")
-			.req("name", STRING, "file or scene to load")
-			.opt("region", STRING, "destination region of the layout")
-			.opt("arena", STRING, "arena to range this file into ; the builder picks the page and address, and publishes them as <file>.page / <file>.address")
-			.opt("page", INT, "raw destination page, needs address")
-			.opt("address", INT, "raw destination address, needs page"));
+		spec(element("load").doc("one file loaded by the scene, by name only : where it lands is the file's attributed place ; a file that declares none is export-only (link data, nothing written)")
+			.req("name", STRING, "file or scene to load"));
 
 		// configuration handlers
 		spec(element("default").doc("scoped default for an attribute, key is <element>.<attribute>")

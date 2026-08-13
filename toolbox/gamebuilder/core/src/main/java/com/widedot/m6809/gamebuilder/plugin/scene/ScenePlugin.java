@@ -64,10 +64,6 @@ public class ScenePlugin {
 			String where = ctx.sources.locate(child);
 
 			String loadName = Attribute.getString(child, ctx, "name");
-			String regionName = Attribute.getStringOpt(child, ctx, "region");
-			String arenaName = Attribute.getStringOpt(child, ctx, "arena");
-			Integer page = Attribute.getIntegerOpt(child, ctx, "page");
-			Integer address = Attribute.getIntegerOpt(child, ctx, "address");
 
 			if (!directoryNames.contains(loadName)) {
 				errors.add(where + ": scene " + name + ": load '" + loadName
@@ -75,26 +71,12 @@ public class ScenePlugin {
 				continue;
 			}
 
-			// the attributed place : the file declared its own destination,
-			// and the load reduces to the name. Any destination
-			// on the load is refused, redundant or not — a file has ONE
-			// source of truth for where it lives, and the corpus migration
-			// that needed the transitional repeat form is over (4c).
+			// the scene says WHO is in memory ; the file says WHERE it lives.
+			// A load is a name — its destination is the file's attributed
+			// place (arena / region / page+address), the same in every scene
+			// that loads it. The per-load destination form is gone (4c).
 			com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
 					ctx.filePlaces.get(loadName);
-			if (attributed != null) {
-				if (regionName != null || arenaName != null || page != null || address != null) {
-					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' gives a destination, but the file already declares "
-							+ attributed.describe() + " (" + attributed.where
-							+ ") — the load reduces to the name");
-					continue;
-				}
-				arenaName = attributed.arena;
-				regionName = attributed.region;
-				page = attributed.page;
-				address = attributed.address;
-			}
 
 			// a collection the packer CUT is one authored load and several
 			// entries : the scene simply places each member where the packing
@@ -102,12 +84,8 @@ public class ScenePlugin {
 			List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member> members =
 					ctx.pageSets.get(loadName);
 			if (members != null) {
-				String setPlace = regionName != null ? regionName : arenaName;
-				if (setPlace == null) {
-					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' was cut by the packer, which needs its arena");
-					continue;
-				}
+				String setPlace = attributed == null ? null
+						: (attributed.region != null ? attributed.region : attributed.arena);
 				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member : members) {
 					placed.add(new SceneGenerator.Placed(member.page, member.address, member.name));
 					check.loads.add(new SceneCheck.Load(member.name, SceneCheck.Kind.PLACED,
@@ -116,60 +94,47 @@ public class ScenePlugin {
 				continue;
 			}
 
-			if (arenaName != null) {
-				if (regionName != null || page != null || address != null) {
-					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' gives an arena and another destination");
-					continue;
-				}
-				Regions.Region arena = ctx.regions.get(arenaName);
+			if (attributed != null && attributed.arena != null) {
+				Regions.Region arena = ctx.regions.get(attributed.arena);
 				if (arena == null || !arena.packed) {
-					errors.add(where + ": scene " + name + ": unknown arena '" + arenaName
+					errors.add(where + ": scene " + name + ": '" + loadName
+							+ "' declares unknown arena '" + attributed.arena
 							+ "' (layout declares: " + ctx.regions.names() + ")");
 					continue;
 				}
 				int[] at = ctx.regions.filePlacement(loadName);
 				if (at == null) {
 					errors.add(where + ": scene " + name + ": '" + loadName
-							+ "' was not ranged into arena '" + arenaName + "'");
+							+ "' was not ranged into arena '" + attributed.arena + "'");
 					continue;
 				}
 				placed.add(new SceneGenerator.Placed(at[0], at[1], loadName));
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
-						at[0], at[1], null, arenaName, where));
+						at[0], at[1], null, attributed.arena, where));
 				continue;
 			}
 
-			if (regionName != null) {
-				if (page != null || address != null) {
-					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' gives both a region and a raw destination");
-					continue;
-				}
-				Regions.Region region = ctx.regions.get(regionName);
+			if (attributed != null && attributed.region != null) {
+				Regions.Region region = ctx.regions.get(attributed.region);
 				if (region == null) {
-					errors.add(where + ": scene " + name + ": unknown region '" + regionName
+					errors.add(where + ": scene " + name + ": '" + loadName
+							+ "' declares unknown region '" + attributed.region
 							+ "' (layout declares: " + ctx.regions.names() + ")");
 					continue;
 				}
-				if (!usedRegions.add(regionName)) {
-					errors.add(where + ": scene " + name + ": region '" + regionName
+				if (!usedRegions.add(attributed.region)) {
+					errors.add(where + ": scene " + name + ": region '" + attributed.region
 							+ "' is loaded twice ; a region takes one file per scene, make it"
 							+ " a multi-asm file — or use an <arena> if it takes a list");
 					continue;
 				}
 				placed.add(new SceneGenerator.Placed(region.page, region.address, loadName));
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
-						region.page, region.address, region.size, regionName, where));
-			} else if (page != null || address != null) {
-				if (page == null || address == null) {
-					errors.add(where + ": scene " + name + ": load '" + loadName
-							+ "' needs both page and address");
-					continue;
-				}
-				placed.add(new SceneGenerator.Placed(page, address, loadName));
+						region.page, region.address, region.size, attributed.region, where));
+			} else if (attributed != null && attributed.page != null) {
+				placed.add(new SceneGenerator.Placed(attributed.page, attributed.address, loadName));
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
-						page, address, null, null, where));
+						attributed.page, attributed.address, null, null, where));
 			} else {
 				exportOnly.add(loadName);
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.EXPORT_ONLY,

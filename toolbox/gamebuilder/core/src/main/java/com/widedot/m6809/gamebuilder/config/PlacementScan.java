@@ -201,21 +201,19 @@ public final class PlacementScan {
 				if (name == null) {
 					continue; // the scene plugin reports malformed loads itself
 				}
-				String arenaName = raw(load, "arena");
-				String regionName = raw(load, "region");
-				Integer page = number(load, "page");
-				Integer address = number(load, "address");
-				if (arenaName == null && regionName == null && page == null
-						&& address == null) {
-					// a bare load : the file's attributed place, when it has one
-					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
-							ctx.filePlaces.get(name);
-					if (attributed != null) {
-						arenaName = attributed.arena;
-						regionName = attributed.region;
-						page = attributed.page;
-						address = attributed.address;
-					}
+				// a load is a name : its destination is the file's attributed
+				// place, when it has one (per-load destinations are gone, 4c)
+				String arenaName = null;
+				String regionName = null;
+				Integer page = null;
+				Integer address = null;
+				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
+						ctx.filePlaces.get(name);
+				if (attributed != null) {
+					arenaName = attributed.arena;
+					regionName = attributed.region;
+					page = attributed.page;
+					address = attributed.address;
 				}
 				if (arenaName != null) {
 					int[] at = ctx.regions.filePlacement(name);

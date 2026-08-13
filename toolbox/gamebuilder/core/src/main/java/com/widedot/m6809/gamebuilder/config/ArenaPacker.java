@@ -113,21 +113,17 @@ public final class ArenaPacker {
 	private static void collect(ImmutableNode node, BuildContext ctx,
 			Map<String, List<String>> wanted) throws Exception {
 		if ("load".equals(node.getNodeName())) {
-			String arena = Attribute.getStringOpt(node, ctx, "arena");
 			String name = Attribute.getStringOpt(node, ctx, "name");
 			if (name == null) {
 				return; // malformed loads are the scene plugin's report
 			}
-			if (arena == null
-					&& Attribute.getStringOpt(node, ctx, "region") == null
-					&& Attribute.getStringOpt(node, ctx, "page") == null
-					&& Attribute.getStringOpt(node, ctx, "address") == null) {
-				// a bare load joins the arena its file declared, if any
-				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
-						ctx.filePlaces.get(name);
-				if (attributed != null) {
-					arena = attributed.arena;
-				}
+			// a load is a name : it joins the arena its file declared, if any
+			// (per-load destinations are gone, 4c)
+			String arena = null;
+			com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place attributed =
+					ctx.filePlaces.get(name);
+			if (attributed != null) {
+				arena = attributed.arena;
 			}
 			if (arena != null) {
 				List<String> files = wanted.computeIfAbsent(arena, k -> new ArrayList<String>());

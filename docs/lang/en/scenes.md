@@ -175,17 +175,45 @@ resolve references into it at build time.
 
 The rules :
 
-- a **bare load** of a file with an attributed place loads it there ; a bare
-  load of a file without one stays what it always was, link data only ;
-- a load that gives **any destination** for a file with an attributed
-  place is a build error naming both declarations, redundant or not — the
-  transitional repeat form died with the corpus migration (4c) ;
+- a **load is a name**, nothing else : the file's attributed place says
+  where it lands, and a file that declares none is export-only (link data,
+  nothing written) ;
+- a load that carries a destination attribute is rejected by the schema —
+  the per-load form is gone (4c) ;
 - declaring a **different place** for the same file name twice is a build
   error.
 
-The per-load destination keeps working for files that declare nothing — the
-attributed place is additive, and the target model (where `<load>` is only
-ever a name) is reached by migrating file by file.
+### The scene says who, the file says where
+
+The question that decides whether the model has been understood : *the
+same enemy is used by stages 1, 3 and 7 — how is it loaded three times ?*
+
+It is declared once, loaded by name three times, and lands at the **same
+address in all three stages** :
+
+```xml
+<file name="enemies.patapata" arena="stage.enemies">…</file>
+
+<scene name="scenes.stage1"> … <load name="enemies.patapata"/> … </scene>
+<scene name="scenes.stage3"> … <load name="enemies.patapata"/> … </scene>
+<scene name="scenes.stage7"> … <load name="enemies.patapata"/> … </scene>
+```
+
+The packer sees **every scene** before placing : the file gets one
+address that is free in each composition it appears in — its
+*co-tenants* differ per stage, the place must collide with none of them.
+Space is not wasted for it : two enemies that never share a stage are
+never in memory together, so the packer may give them the **same**
+address (alternatives). When no address satisfies every composition, the
+build fails with *does not fit* — the budget is raised at build time,
+never discovered on the machine.
+
+Nothing in the game needs the file anywhere else : no code reaches it
+"by position", everything links through its symbols, resolved at load
+time. And the constant address is what keeps the runtime lifecycle
+simple — the swap to stage 3 reloads the file **onto its own bytes**
+(dedup reuses its index slot), the overlap trap and the unload
+discipline reason per file, not per stage.
 
 ## The model in one rule
 
@@ -315,7 +343,7 @@ still link it — and the answers are independent.
 | `<region>` | `name`, `page`, `address` (required) ; `size` : byte budget, checked ; `bulk` : the region takes an ordered list per scene, laid out one after the other — the list is the unit of replacement, members are not individually replaceable |
 | `<reserved>` | `name`, `page`, `address`, `size` (all required) : a range the game occupies without loading anything into it — object pool, globals, stack, direct page. Nothing may be loaded on top, and the check is on the *declarations*, so a region declared over the pool is an error even while its content stays small |
 | `<scene>` | `name` (required), `section`, `gensource` (defaults to `gen/scenes/<name>.asm`) |
-| `<load>` | `name` (required) ; either `region`, `arena`, or `page`+`address` (raw escape hatch), or nothing — which means the file's attributed place when it declares one, link data only otherwise (the file must then be export-only) |
+| `<load>` | `name` (required), nothing else : the file's attributed place says where it lands ; a file that declares none is export-only (it must then carry no data) |
 
 ## Block encoding is automatic
 
