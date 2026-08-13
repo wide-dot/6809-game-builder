@@ -13,17 +13,14 @@
 > A `<file>` may declare its **attributed place** (`arena=`, `region=`, or
 > `page=`+`address=`) — then every `<load>` of it reduces to the name.
 
-> **Next model, decided 2026-08-06, not yet implemented** : regions gain
-> `<zone>` children (a continuous range in one page), `<arena>` arrives for
-> automatic placement, and `<window>` / `size="auto"` / `address="auto"` /
-> `pages="auto"` / `stacked` all go away. See
-> [`modele-zones-2026-08.md`](../fr/modele-zones-2026-08.md) — decision and
-> implementation plan.
-
-Status : implemented and validated (July 2026). French design records :
-[`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) (doctrine),
-[`scenes-declaratives-2026-07.md`](../fr/scenes-declaratives-2026-07.md)
-(implementation plan). Runtime model : [`groups.md`](groups.md).
+Status : implemented and validated — the declarative layer in July 2026,
+the target model (zones, arenas, attributed places, collections, one load
+form) by the August 2026 campaign. French design records :
+[`modele-regions-2026-07.md`](../fr/modele-regions-2026-07.md) and
+[`modele-zones-2026-08.md`](../fr/modele-zones-2026-08.md) (doctrine),
+[`plan-migration-cible-2026-08.md`](../fr/plan-migration-cible-2026-08.md)
+(the campaign, phase by phase, with proofs). Runtime model :
+[`groups.md`](groups.md).
 
 ## Declare the constraints, not the decisions
 
@@ -371,9 +368,10 @@ memory ; that arithmetic is the builder's, at build time.
 
 ## Validation
 
-The whole example corpus (17 scene tables across 8 configurations) is
-declarative. The migration was proven **byte for byte** against the
-handwritten tables, and the `%11` encoding step was validated by execution :
-`examples/loader-ut` replayed 16/16 under the toje emulator (multi-disk swaps
-included), `examples/sound` title music verified in RAM and hot-swapped to
-level1.
+The whole corpus — 15 configurations, 24 generated scene tables, 63 disk
+images — is declarative ; no handwritten table remains. Every step of the
+model was proven either by **byte identity** of the full corpus (syntax
+moves, bytes must not) or by execution under the toje emulator :
+`examples/loader-ut` 17/17 with multi-disk swaps and the deliberate
+LOAD_OVERLAP trap, the r-type exchange bench 5/5, `examples/collection`
+4/4 on the cut-collection flow.

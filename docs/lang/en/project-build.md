@@ -155,11 +155,11 @@ Additionnal parameters :
 
 ## What a failed target leaves behind : nothing
 
-The disk and cartridge images are written as a target runs, but several checks
-only close it — the `interface` region promises, and whether anything still
-imports a direntry that stopped emitting link data. A target that fails one of
-them **deletes every file it wrote**, plus the link report of the previous
-build, and says so :
+The disk images are written as a target runs, but several checks only close
+it — the scene coherence pass (budgets, in-scene overlaps, export-only
+files carrying data), and whether anything still imports a direntry that
+stopped emitting link data. A target that fails one of them **deletes every
+file it wrote**, plus the link report of the previous build, and says so :
 
 ```
 removed …/dist/to8.fd : the target did not complete
