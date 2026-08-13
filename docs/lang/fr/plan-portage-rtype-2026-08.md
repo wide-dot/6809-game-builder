@@ -204,6 +204,57 @@ zéro, `fill` v1 → équates, `setdp` interdit, pont `irq.on/off`
 PRÉSERVANT (l'equ nu a mordu deux fois), coordonnées écran, palette du
 game mode et non de l'art, `_gfxmode.setBM16` obligatoire.
 
+## 3bis. La spec du chantier 2 — dé-banc-ification (13/08/2026)
+
+**La mesure d'abord.** Le « main de banc » n'existe pas : la structure
+réelle est en place (séquence endstage du niveau 1 — musique de boss par
+marqueur de wave, bandes noires, jingle, autopilote, compte à rebours
+d'arcade —, mort/READY/checkpoint, game over). Le banc vit dans QUATRE
+endroits précis : les verdicts t1-t5 et le scénario forcé des deux
+`stage.handOver` (aller simple + boucle infinie au retour), la
+destination du game over (stage 1, V2-DEVIATION d'avant-title), la
+graine de score de test ($1234), et le harnais de la lane qui lit ces
+verdicts. Il n'y a pas de define `invincible` : le vaisseau du banc
+survit parce que son tir continu (port flottant) fauche tout.
+
+**Les gestes** :
+
+- D1 — game over → **title** (le geste v1 restauré, la déviation
+  documentée tombe) ;
+- D2 — `handOver` du stage 1 : la séquence de fin décide, l'échange
+  part sur le stage 2, sans verdicts ni second passage ni boucle ;
+- D3 — `handOver` du stage 2 : retour au **title** (fin de la
+  campagne à deux stages — la v1 enchaînait sur le niveau 3, non
+  porté ; re-arbitrable au chantier 3) ;
+- D4 — la graine de score passe à 0 (celle de la v1) ; les témoins
+  (magic/stage/frames/camera/spawns) RESTENT — c'est la fenêtre
+  d'observation de la lane, pas du banc — et le title s'y inscrit
+  (magic + stage 0) : « qui tourne » devient observable de bout en
+  bout ;
+- D5 — la lane dérive ses cinq contrôles de l'état observable, plus
+  aucun drapeau côté jeu : passation title→stage 1, progression
+  caméra, bascule stage 01→02 par la vraie séquence de fin, bouchons
+  du stage 2 exécutés (la preuve du re-link, ex-t2), retour au title
+  (stage 00 + magic).
+
+**Différé, à vérifier empiriquement** : la couverture du chemin de
+mort par la lane (le vaisseau du banc ne meurt jamais — son tir
+continu nettoie l'écran avant tout contact) ; l'écran de chargement
+v1 (`flow/loading`) ; text/scores/push_button du title. Le banc
+d'échange synthétique à deux stages reste disponible dans l'histoire
+git si un besoin de re-couverture fine apparaît.
+
+**CŒUR RÉALISÉ (13/08/2026)** — D1 à D5 en un geste, prouvés
+ensemble : lane **C1..C5 5/5 au premier passage** de l'image
+dé-banc-ifiée — title → press start → stage 1 entier (1440 px, fin
+par la vraie séquence endstage) → stage 2 sur ses propres données
+(bouchons exécutés, la preuve du re-link) → retour au title, en
+21 515 trames. Le vaisseau n'est pas mort du run, confirmant la
+mesure : le chemin mort/READY/checkpoint/game-over reste hors-lane
+pour l'instant. Corpus 59 images hors r-type identiques. Restent du
+chantier : text/scores/push_button du title, l'écran de chargement,
+et la décision de couverture du chemin de mort.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

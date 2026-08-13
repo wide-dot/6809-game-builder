@@ -199,8 +199,10 @@ stage.setup
         sta   object_wave_data_page
         rts
 
-; Un seul passage : on vérifie que l'état persistant a traversé l'échange, on
-; laisse la trace du passage, et on rend la main au stage 1.
+; La fin de la campagne à deux stages : retour au title. La v1 enchaînait sur
+; le niveau 3 — non porté, l'arbitrage reviendra au chantier 3. (Les verdicts
+; t2/t3 du banc sont partis avec la dé-banc-ification ; la preuve du re-link
+; reste observable par bench.spawns/spawnStage, que les bouchons écrivent.)
 stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
@@ -209,30 +211,10 @@ stage.handOver
         ldx   #ymm.stop
         jsr   paged.call
 
-        ldd   game.score
-        cmpd  #bench.SCORE
-        bne   stage2.stateLost
-        lda   globals.lives
-        cmpa  #2
-        bne   stage2.stateLost
-        lda   #$01
-        sta   bench.t3
-stage2.stateLost
-
-        ; le bouchon qui a tourné doit être CELUI de ce stage : le moteur ne
-        ; peut l'atteindre qu'en lisant l'index que ce stage vient d'exporter
-        lda   bench.spawnStage
-        cmpa  #2
-        bne   stage2.notRelinked
-        lda   #$01
-        sta   bench.t2
-stage2.notRelinked
-
-        lda   #2
-        sta   game.stage
+        clr   game.stage                   ; la partie est finie
         ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
         jsr   game.stage.unload
-        ldx   #scenes.stage1
+        ldx   #scenes.title
         jmp   game.stage.switch
 
 ;*******************************************************************************

@@ -24,7 +24,9 @@
 * doit regarder CE fichier aussi.
 
 bench.MAGIC        equ $CA
-bench.SCORE        equ $1234        ; l'état semé au premier stage
+bench.SCORE        equ $0000        ; l'état semé au premier stage — le zéro
+                                    ; de la v1 (le $1234 de test est parti
+                                    ; avec la dé-banc-ification)
 * Plus d'horloge de niveau : le stage passe la main quand la CAMERA atteint
 * scroll_max, la fin de sa carte. Un compteur de trames demandait un recalage
 * a chaque changement de longueur de niveau ou de vitesse de scroll, et a la

@@ -95,6 +95,13 @@ stage.main
         jsr   ManagedObjects_ClearAll
         jsr   InitDrawSprites
 
+        ; le title s'inscrit dans les temoins : « qui tourne » est observable
+        ; de bout en bout par la lane (le title est l'unite 0 du creneau)
+        lda   #bench.MAGIC
+        sta   bench.magic
+        lda   #STAGE_ID
+        sta   bench.stage
+
 ; ---------------------------------------------------------------------------
 ; PHASE 0 : les six lettres du logo, montees avec leur sous-type (v1 phase 0)
 ; ---------------------------------------------------------------------------
@@ -466,5 +473,6 @@ logo_finalpos
 ;*******************************************************************************
         INCLUDE "src/title/objid.const.asm"
         INCLUDE "src/title/objid.index.asm"
+        INCLUDE "src/common/bench.const.asm"
 
  ENDSECTION

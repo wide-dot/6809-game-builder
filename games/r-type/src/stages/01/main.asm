@@ -341,8 +341,10 @@ stage.setup
         ; checkpoint, c'est le bon moment pour les deux.
         _Obj_RunB ObjID_endstage,#endstage.INIT
         rts
-; Deux passages : à l'aller on sème l'état et on part sur le stage 2 ; au
-; retour on constate que l'échange est réversible et on exerce le checkpoint.
+; La fin du niveau : la séquence endstage a dit DONE, on part sur le stage 2.
+; (Le scénario aller-retour du banc — verdicts t1/t4/t5, second passage,
+; boucle d'arrêt — est parti avec le chantier 2 de dé-banc-ification : la
+; lane dérive désormais ses contrôles des témoins observables.)
 stage.handOver
         jsr   IrqOff
         ; La musique s'arrête AVANT l'échange : relancer `ymm.obj.play` sur un
@@ -355,23 +357,6 @@ stage.handOver
         ldx   #ymm.stop
         jsr   paged.call
 
-        lda   game.stage
-        cmpa  #2
-        beq   stage1.secondVisit
-
-        ; --- premier passage ---
-        ; t1 : la wave a tourné. Le témoin est sa PROGRESSION (le pointeur de
-        ; lecture a avancé), plus bench.spawns : ce compteur ne compte que les
-        ; bouchons, et le cast du stage 1 est entièrement porté — il restait à
-        ; zéro pendant que cinq patapata traversaient l'écran. L'exécution
-        ; réelle du chemin de spawn par l'index reste prouvée par t2, dont le
-        ; bouchon du stage 2 est précisément l'instrument.
-        ldd   object_wave_data
-        cmpd  object_wave_data_start
-        beq   stage1.noSpawn                     ; la wave n'a rien lu : témoin muet
-        lda   #$01
-        sta   bench.t1
-stage1.noSpawn
         lda   #1
         sta   game.stage
         ; Ce stage rend ce qu'il avait pris, AVANT que le suivant ne charge :
@@ -382,29 +367,6 @@ stage1.noSpawn
         jsr   game.stage.unload
         ldx   #scenes.stage2
         jmp   game.stage.switch
-
-        ; --- retour, après le stage 2 ---
-stage1.secondVisit
-        lda   #$01
-        sta   bench.t4
-
-        ; Checkpoint sans disque : on rembobine la wave et on demande à
-        ; ObjectWave_Init de la recaler sur l'horloge de jeu. Elle doit
-        ; retrouver exactement la position que la lecture normale avait
-        ; atteinte — c'est le mécanisme de reprise en cours de niveau.
-        ldd   object_wave_data
-        pshs  d
-        ldd   object_wave_data_start
-        std   object_wave_data
-        jsr   ObjectWave_Init
-        ldd   object_wave_data
-        cmpd  ,s++
-        bne   stage1.noCheckpoint
-        lda   #$01
-        sta   bench.t5
-stage1.noCheckpoint
-
-stage1.idle   bra   stage1.idle
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 1

@@ -594,27 +594,22 @@ stage.state.checkpoint
 ;   jsr   IrqOff
 ;   jmp   Level01_Start           ; GAME OVER: restart level 1
 ;
-; La v1 sautait DANS son main de niveau 1, qui etait deja charge : un game mode
-; portait son moteur avec lui, et y revenir suffisait a tout re-semer. En v2 le
-; moteur est RESIDENT et le stage est une scene : le geste equivalent est de
-; recharger la scene du stage 1, ce que fait game.stage.switch.
+; La v1 revient a l'ecran-titre au bout des vies — et le title est porte
+; (chantier 1) : le geste v1 est restaure. L'ancienne V2-DEVIATION (recharger
+; le stage 1 faute de title) tombe avec le chantier 2.
 ;
-; V2-DEVIATION assumee, a la demande : la v1 revient a l'ecran-titre au bout des
-; vies, et le titre n'est pas porte. On recharge donc le stage 1 directement.
-; `game.stage` remis a zero est ce qui rend le rechargement EQUIVALENT a une
-; premiere entree : stage.main teste cette variable pour decider s'il resseme
-; l'etat de partie (score, vies) ou s'il le laisse traverser l'echange.
+; `game.stage` remis a zero par acquit : c'est le press start du title
+; (title.launchGame) qui le fait foi pour la partie suivante.
 ;*******************************************************************************
 stage.gameOver
         jsr   IrqOff
         clr   game.stage
         ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
-        ; chaque stage a nommé sa scène. Décharger la sienne avant de recharger
-        ; le stage 1 vaut aussi quand c'est le stage 1 qui meurt — l'index
-        ; rendu puis repris est la séquence honnête, pas un cas particulier.
+        ; chaque stage a nommé sa scène. Décharger la sienne avant de charger
+        ; celle du title — l'index rendu puis repris est la séquence honnête.
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
-        ldx   #scenes.stage1
+        ldx   #scenes.title
         jmp   game.stage.switch
 
 ;*******************************************************************************
