@@ -196,7 +196,7 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
-        INCLUDE "src/stages/01/map/intro/map.const.asm"
+        INCLUDE "gen/stages/01/map/map.const.asm"
         ; La chronologie du boss : le stage la partage avec ses six objets.
         INCLUDE "src/stages/01/timestamps.const.asm"
         ; Le systeme de log : registre moteur, registre programme, macros.

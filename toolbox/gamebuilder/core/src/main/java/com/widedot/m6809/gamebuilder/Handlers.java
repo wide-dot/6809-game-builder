@@ -208,6 +208,15 @@ public final class Handlers {
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
 			.opt("index", INT, "index in the imageset, emitted as idx_<name>")
 			.opt("grid", STRING, "tile size <width>x<height> : the png is a tileset, sliced into tiles named <name>_<id> in reading order, each compiled with the declared encoders"));
+		spec(element("leanscroll").doc("the level-map chain, run by the build : from one level picture, the two scroll planes (the odd one pre-shifted by a pixel) as tileset strips plus column-major 16 bit maps, windowed and renumbered under gendir — even.png/even.bin/odd.png/odd.bin, consumed by a <gfxcomp grid> and a <tilemap>. Cached on the picture and the parameters")
+			.req("image", STRING, "the level picture, one tile row per map row")
+			.req("gendir", STRING, "directory receiving the planes and the windowed outputs")
+			.opt("tile", STRING, "tile size <width>x<height>, 12x12 if omitted")
+			.opt("columns", INT, "window width in columns — the whole level if omitted")
+			.opt("first", INT, "window's first column, 0 if omitted")
+			.opt("gensymbols", STRING, "generated equates of the window's geometry (map.COLS, map.ROWS)")
+			.opt("scrollstep", STRING, "the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll")
+			.opt("nbsteps", STRING, "the module's sub-step counts, default 0,0,4,0,0,0,0,0"));
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
 			.opt("match", STRING, "glob filter on the file names, *.png if omitted")
@@ -266,6 +275,8 @@ public final class Handlers {
 		DEFAULTS.put("floppydisk", FloppyDiskPlugin::run);
 		DEFAULTS.put("layout", LayoutPlugin::run);
 		DEFAULTS.put("machine", com.widedot.m6809.gamebuilder.plugin.machine.MachinePlugin::run);
+		DEFAULTS.put("leanscroll",
+				com.widedot.toolbox.graphics.tilemap.leanscroll.LeanscrollPlugin::run);
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);

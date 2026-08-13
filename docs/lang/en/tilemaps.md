@@ -47,10 +47,24 @@ The same chain v1 used — its map cutter is a v2 tool, and its tiles were
 compiled by the sprite encoder :
 
 1. **Draw the level as one PNG** (`in.png`, one row of tiles = 12 px).
-2. **`leanscroll`** (`toolbox/graphics/tilemap/leanscroll`) cuts it : a
-   vertical strip of unique tiles, the same strip pre-shifted one pixel, the
-   tile index map (16 bit big endian, transposed to column major), and the
-   initial viewport image. Index 0 is reserved for "nothing to draw".
+2. **`<leanscroll>`** runs the cut as part of the build — no hand-run tool,
+   no committed intermediate :
+
+   ```xml
+   <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
+               gensymbols="gen/stages/01/map/map.const.asm"/>
+   ```
+
+   From the level picture it derives both scroll planes (the odd one
+   pre-shifted a pixel), each as a strip of unique tiles plus the tile index
+   map (16 bit big endian, transposed to column major, index 0 reserved for
+   "nothing to draw"), then windows and renumbers them — `columns=`/`first=`
+   select an opening section, the whole level when omitted — into
+   `even.png / even.bin / odd.png / odd.bin` under `gendir`. The geometry
+   comes out as equates (`map.COLS`, `map.ROWS`) in `gensymbols`. Results
+   are cached on the picture and the parameters, so the chain runs once per
+   art change, not once per build pass. The module itself stays callable by
+   hand (`toolbox/graphics/tilemap/leanscroll`).
 3. **`<gfxcomp>` with `grid`** slices the strip and compiles every tile :
 
    ```xml

@@ -859,7 +859,40 @@ check_variants, et trois points ouverts (étendue du renommage, défaut de
 images identiques à l'octet (option ii). Le banc : le config perd ~500
 lignes, le bloc d'un ennemi tient en ~8 lignes.*
 
-### 7c — leanscroll + crop orchestrés (spec à valider)
+### 7c — leanscroll + crop orchestrés — FAIT (13/08)
+
+Réalisé comme spécifié : élément `<leanscroll>` (module en JVM, cache sur
+l'image + les paramètres, `crop_stage.py` absorbé — fenêtre, renumérotation,
+strips even/odd, cartes 16 bits colonne-major, géométrie en équates
+`map.COLS`/`map.ROWS`), rejoué par la passe de placement (les tuiles qu'une
+collection mesure sont tranchées dans ses sorties). Les stages 01 et 02 sont
+câblés dessus ; `crop_stage.py`, `leanscroll-01.txt`, les `intro/` et les
+plans committés `0/`,`1/` des deux stages câblés sont supprimés (les stages
+03-08 gardent leurs plans committés en attendant leur câblage — candidats de
+la passe 9). La palette du stage 2 (`png2pal`) lit le strip généré.
+
+PREUVE en trois étages : (1) reproduction — les strips régénérés sont
+identiques AU PIXEL aux committés sur les deux stages, les cartes du stage 2
+identiques À L'OCTET ; (2) l'écart résiduel est mesuré et expliqué — les
+cartes du stage 1 diffèrent de **6 octets** (3 cellules × 2 plans) : trois
+cellules d'aplat magenta-255 pur (marqueur d'extraction arcade, col 48,
+lignes 6-8) que le module ACTUEL met à vide là où la génération d'époque
+(v1, Windows) les rattachait à la tuile 1 — rejouer l'invocation historique
+avec les drapeaux `-lean*` d'époque ne reproduit PAS l'ancien résultat : le
+module a évolué depuis, et le stage 06 (généré au module actuel) porte déjà
+la sémantique moderne. Décision : la sortie du module actuel fait foi ;
+(3) 4 images r-type changent (annoncé, confinées aux tables de carte du
+stage 1), 59 autres identiques, banc r-type **5/5** sous toje, JUnit vert,
+reproductibilité corpus reconfirmée avec le chemin du CACHE exercé, rebuild
+propre sans les intermédiaires supprimés au même hash exact.
+
+Deux pièges attrapés en route : `drawImage` vers une image indexée REMAPPE
+les couleurs par proximité (les deux magentas fusionnaient, chaque index
+glissait — débordements d'octets dans les tuiles compilées ; remplacé par
+une copie de raster brute) ; et un cache qui survit à un correctif du code
+ressert les sorties corrompues — la version de cache se bumpe avec le code.
+
+*Spec d'origine :*
 
 État : la chaîne carte est la DERNIÈRE où le build dépend d'un geste hors
 builder — `tools/leanscroll-NN.txt` (invocations manuelles, chemins Windows

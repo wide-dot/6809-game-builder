@@ -28,25 +28,20 @@ que l'auteur avait rattache au gris 3 la ou la distance RGB donne l'olive 13.
 2. leanscroll — decoupe en tuiles et en carte
 ---------------------------------------------
 
-    CP="toolbox/graphics/tilemap/leanscroll/target/leanscroll-0.0.1.jar:$(ls repo/*.jar | paste -sd: -)"
-    G=games/r-type/src/stages/06/map
-    java -cp "$CP" com.widedot.toolbox.graphics.tilemap.leanscroll.MainCommand \
-        -image=$G/in.png \
-        -outtileset=$G/0/0.png  -outtilemap=$G/0/0.bin \
-        -outtileset1=$G/1/1.png -outtilemap1=$G/1/1.bin \
-        -scrollstep=0,0,1,0,0,0,0,0 -nbsteps=0,0,4,0,0,0,0,0 \
-        -outtilewidth=12 -outtileheight=12 \
-        -outmapbitdepth=16 -outmaptranspose
+Depuis 7c la chaine est courue par le BUILD : declarer dans le config, avant
+les fichiers de tuiles du stage,
 
-A lancer depuis la racine du depot (le classpath est relatif a repo/). Note :
-bin/unix/leanscroll ne porte pas le jar du module, d'ou le classpath explicite.
-Omettre -outtilewidth/-outtileheight fait echouer l'outil sur un NPE — avec
--image il dereference tout de meme la description de tilemap d'entree.
+    <leanscroll image="src/stages/06/map/in.png" gendir="gen/stages/06/map"
+                gensymbols="gen/stages/06/map/map.const.asm"/>
 
-Rien d'autre n'est conserve : ni -leanC (init.png, plus utilise en v2 — les
-autres stages en portent encore un, herite de la v1), ni -lean / -leanS (les
-fullLean intermediaires), ni -outimage. Verifie : retirer -leanC ne change pas
-un octet des quatre fichiers utiles.
+et consommer gen/stages/06/map/{even,odd}.{png,bin}. Plus d'invocation
+manuelle, plus de sorties committees (les stages 01 et 02, cables, n'en ont
+plus). L'invocation historique reste possible pour un essai a la main —
+module toolbox/graphics/tilemap/leanscroll, options -image/-outtileset/
+-outtilemap/-outtileset1/-outtilemap1/-scrollstep/-nbsteps/-outtilewidth/
+-outtileheight/-outmapbitdepth/-outmaptranspose (les -lean*/-outimage
+n'apportent rien : verifie sur ce stage, les retirer ne change pas un octet
+des quatre fichiers utiles).
 
 Resultat
 --------

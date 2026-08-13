@@ -56,7 +56,7 @@ Pal_black                      EXTERNAL
         ; Les pas de deplacement en 8.8 : l'autopilote s'en sert.
         INCLUDE "src/common/lib/scale.asm"
         ; La geometrie de la carte de CE stage.
-        INCLUDE "src/stages/01/map/intro/map.const.asm"
+        INCLUDE "gen/stages/01/map/map.const.asm"
 
 ; V2-DEVIATION : la v1 declare ces deux constantes dans son main ; en v2 la
 ; largeur de carte vit dans les constantes de la carte du stage, et la boucle

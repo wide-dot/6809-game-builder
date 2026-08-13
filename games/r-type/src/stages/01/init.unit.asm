@@ -31,7 +31,7 @@ initlevel1.Object EXPORT
         INCLUDE "engine/objects/palette/fade/fade.equ"
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/bench.const.asm"
-        INCLUDE "src/stages/01/map/intro/map.const.asm"
+        INCLUDE "gen/stages/01/map/map.const.asm"
 
 STAGE_ID equ 1
 

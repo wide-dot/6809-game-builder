@@ -35,6 +35,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -102,6 +103,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -157,6 +159,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -213,6 +216,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -268,6 +272,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -320,6 +325,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -372,6 +378,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -439,6 +446,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -497,6 +505,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -555,6 +564,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -619,6 +629,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -686,6 +697,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -741,6 +753,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -826,6 +839,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -884,6 +898,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -939,6 +954,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1024,6 +1040,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1079,6 +1096,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1143,6 +1161,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1222,6 +1241,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1283,6 +1303,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1338,6 +1359,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1393,6 +1415,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1424,6 +1447,83 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- the level-map chain, run by the build : from one level picture, the two scroll planes (the odd one pre-shifted by a pixel) as tileset strips plus column-major 16 bit maps, windowed and renumbered under gendir — even.png/even.bin/odd.png/odd.bin, consumed by a <gfxcomp grid> and a <tilemap>. Cached on the picture and the parameters -->
+  <xs:element name="leanscroll">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="image" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the level picture, one tile row per map row</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>directory receiving the planes and the windowed outputs</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="tile" type="xs:string">
+        <xs:annotation><xs:documentation>tile size &lt;width&gt;x&lt;height&gt;, 12x12 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="columns" type="int6809">
+        <xs:annotation><xs:documentation>window width in columns — the whole level if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="first" type="int6809">
+        <xs:annotation><xs:documentation>window's first column, 0 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensymbols" type="xs:string">
+        <xs:annotation><xs:documentation>generated equates of the window's geometry (map.COLS, map.ROWS)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="scrollstep" type="xs:string">
+        <xs:annotation><xs:documentation>the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="nbsteps" type="xs:string">
+        <xs:annotation><xs:documentation>the module's sub-step counts, default 0,0,4,0,0,0,0,0</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- one file loaded by the scene ; no destination means the file's attributed place, or link data only when it declares none -->
   <xs:element name="load">
     <xs:complexType>
@@ -1451,6 +1551,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1518,6 +1619,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1579,6 +1681,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1637,6 +1740,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1698,6 +1802,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1759,6 +1864,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1853,6 +1959,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1929,6 +2036,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -1996,6 +2104,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2060,6 +2169,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2118,6 +2228,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2179,6 +2290,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2234,6 +2346,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2298,6 +2411,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2353,6 +2467,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2426,6 +2541,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2484,6 +2600,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2551,6 +2668,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2609,6 +2727,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2667,6 +2786,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
@@ -2731,6 +2851,7 @@
         <xs:element ref="includebin"/>
         <xs:element ref="label"/>
         <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>

@@ -72,6 +72,13 @@ public final class PlacementScan {
 				com.widedot.m6809.gamebuilder.Handlers.getDefault(kind).run(child, scope);
 				continue;
 			}
+			// leanscroll PRODUCES build inputs : the tiles a collection
+			// measures are sliced from its outputs, so the chain has to run
+			// before the first measure. Cached — the real pass reuses it.
+			if ("leanscroll".equals(kind)) {
+				com.widedot.m6809.gamebuilder.Handlers.getDefault(kind).run(child, scope);
+				continue;
+			}
 			if ("file".equals(kind)) {
 				String name = raw(child, "name");
 				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =

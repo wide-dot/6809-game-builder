@@ -1947,11 +1947,19 @@
                     </unit>
                 </file>
 
+                <!-- La chaine carte, courue par le build : les deux plans de -->
+                <!-- scroll depuis l'image du niveau, fenetres et renumerotes -->
+                <!-- sous gen/ — tools/crop_stage.py et les invocations       -->
+                <!-- manuelles de leanscroll sont absorbes. La geometrie sort -->
+                <!-- en equates. Mis en cache sur l'image et les parametres.  -->
+                <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
+                            gensymbols="gen/stages/01/map/map.const.asm"/>
+
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
                       gendir="gen/stages/01/tiles-even">
                     <gfxcomp gendir="gen/stages/01/tiles-even"
                              gensource="gen/stages/01/tiles-even/includes.asm">
-                        <image name="tilesEven" filename="src/stages/01/map/intro/even.png" grid="12x12">
+                        <image name="tilesEven" filename="gen/stages/01/map/even.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
@@ -1961,7 +1969,7 @@
                       gendir="gen/stages/01/tiles-odd">
                     <gfxcomp gendir="gen/stages/01/tiles-odd"
                              gensource="gen/stages/01/tiles-odd/includes.asm">
-                        <image name="tilesOdd" filename="src/stages/01/map/intro/odd.png" grid="12x12">
+                        <image name="tilesOdd" filename="gen/stages/01/map/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
@@ -1972,10 +1980,10 @@
                 <file name="stage1.maps" linkdata="LINK" bake="all" arena="stage1.gfx">
                     <lwasm gensource="gen/stages/01/stage1-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="src/stages/01/map/intro/even.bin" label="map.even"
+                        <tilemap map="gen/stages/01/map/even.bin" label="map.even"
                                  tiles="stage1.tiles.even" variant="ND0"
                                  gensource="gen/stages/01/map-even.asm"/>
-                        <tilemap map="src/stages/01/map/intro/odd.bin" label="map.odd"
+                        <tilemap map="gen/stages/01/map/odd.bin" label="map.odd"
                                  tiles="stage1.tiles.odd" variant="ND0"
                                  gensource="gen/stages/01/map-odd.asm"/>
                     </lwasm>
@@ -2018,11 +2026,14 @@
                     </unit>
                 </file>
 
+                <leanscroll image="src/stages/02/map/in.png" gendir="gen/stages/02/map"
+                            gensymbols="gen/stages/02/map/map.const.asm"/>
+
                 <file name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
                       gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
                              gensource="gen/stages/02/tiles-even/includes.asm">
-                        <image name="tilesEven" filename="src/stages/02/map/intro/even.png" grid="12x12">
+                        <image name="tilesEven" filename="gen/stages/02/map/even.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
@@ -2032,7 +2043,7 @@
                       gendir="gen/stages/02/tiles-odd">
                     <gfxcomp gendir="gen/stages/02/tiles-odd"
                              gensource="gen/stages/02/tiles-odd/includes.asm">
-                        <image name="tilesOdd" filename="src/stages/02/map/intro/odd.png" grid="12x12">
+                        <image name="tilesOdd" filename="gen/stages/02/map/odd.png" grid="12x12">
                             <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                         </image>
                     </gfxcomp>
@@ -2042,10 +2053,10 @@
                 <file name="stage2.maps" linkdata="LINK" bake="all" arena="stage2.gfx">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="src/stages/02/map/intro/even.bin" label="map.even"
+                        <tilemap map="gen/stages/02/map/even.bin" label="map.even"
                                  tiles="stage2.tiles.even" variant="ND0"
                                  gensource="gen/stages/02/map-even.asm"/>
-                        <tilemap map="src/stages/02/map/intro/odd.bin" label="map.odd"
+                        <tilemap map="gen/stages/02/map/odd.bin" label="map.odd"
                                  tiles="stage2.tiles.odd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
                     </lwasm>
@@ -2055,7 +2066,7 @@
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/02/map/intro/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/02/map/even.png"/>
                         <!-- La palette de la section souterraine (palette.Pal_tunnel
                              de la v1, game-mode/01/images/pal-inside.png). -->
                         <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>

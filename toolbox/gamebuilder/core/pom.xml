@@ -44,6 +44,11 @@
     </dependency>
     <dependency>
       <groupId>com.wide-dot</groupId>
+      <artifactId>leanscroll</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.wide-dot</groupId>
       <artifactId>png2pal</artifactId>
       <version>${project.version}</version>
     </dependency>
