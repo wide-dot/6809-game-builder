@@ -100,8 +100,9 @@ MO5, Tandy CoCo 3.
   `ym2608.init/detect/reset` et le handler IRQ manquent ; `engine/pack/mub.asm` pointe
   vers de mauvais chemins. Non requis pour R-Type.
 - **MPLUS** (carte d'extension son + VHDL) : bancs de test, expérimental. Non requis pour R-Type.
-- **Timing** : embryonnaire (`time.ms.wait` seul) ; `docs/lang/fr/timing.md` et
-  `examples/timing/` documentent une API `wait.*` **qui n'existe pas**.
+- **Timing** : embryonnaire (`time.ms.wait` seul). L'ancienne doc d'une API
+  `wait.*` jamais écrite (`timing.md`, `examples/timing/`) est supprimée
+  (13/08/2026) — concevoir l'API le jour où un consommateur réel arrive.
 - **Math** : RNG seul (`random.asm`). La v1 a en plus sinus, atan2, Mul9x16 (mais R-Type
   niveau 1 n'utilise que le RNG).
 
@@ -697,10 +698,9 @@ Cas de migration (la v1 écrivait `$E7DC` en direct) :
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
-- `engine/system/mo6/graphics/gfx.memset..asm` : double point dans le nom, orphelin.
-- `examples/timing/` + `docs/lang/fr/timing.md` : API `wait.*` inexistante.
-- `data.asm` et `mub.o` à la racine : artefacts orphelins (table clavier extraite de ROM ;
-  objet LWOBJ16 issu de `mub.asm`), à déplacer/supprimer.
+  (Les orphelins de cette liste — `data.asm`/`mub.o` racine, `gfx.memset..asm`,
+  `examples/timing` + `timing.md` — sont supprimés le 13/08/2026, phase 9 ;
+  le besoin d'une API de timing reste tracé dans l'état des lieux plus haut.)
 - Liens cassés : `readme.md` racine (4 liens doc vides), renvoi vers
   `docs/lang/fr/readme.md` inexistant. (`docs/lang/en/readme.md` corrigé le
   01/08/2026 : ses cibles pointaient encore sur l'ancien layout `docs/`.)
