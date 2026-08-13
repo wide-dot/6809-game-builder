@@ -1024,6 +1024,27 @@ pour couvrir le retrait.
 *Preuve pas A : 63 images identiques à l'octet, JUnit (dont le nouveau
 test du verrou, cassé et lu).*
 
+*RÉALISÉ (13/08, décisions auteur : pas de piège loader, rien d'autre à
+embarquer).* Deux trouvailles à l'implémentation :
+1. **Le verrou existait déjà** — `SceneChecks` (cas `EXPORT_ONLY`) refuse
+   depuis la phase B des scènes déclaratives un load sans destination qui
+   porte des données, tailles connues, et son test JUnit
+   (`exportOnlyCoherence`) le casse et le lit. Le pas A s'est réduit à
+   reformuler le message (il conseillait « make it export-only » à un load
+   qui l'était déjà) et à documenter en commentaire que ce contrôle est ce
+   qui autorise les handlers séquentiels à ne rien placer.
+2. **Le dépoussiérage débordait des commentaires du loader** : deux docs
+   NORMATIVES racontaient l'éviction au présent (`scenes.md` § The model
+   in one rule, `groups.md` — règle cœur, table du cycle de vie, deux
+   puces), plus la ligne T8 du README loader-ut (« implicit unload » alors
+   que le test est devenu l'unload explicite) et le commentaire de layout
+   de son config. Tous réécrits sur le modèle actuel (piège LOAD_OVERLAP,
+   « la scène qui finit déclare ce qu'elle lâche », recouvrement partiel
+   détecté même-disque, exemption des fichiers vides devenue « n'occupent
+   aucun octet ») ; les récits au passé (T5, liste des bugs) restent.
+Les trois `sizeof{}` corrigés (extern16:1464, symbol.search:1582/1601).
+Preuve rendue : **63 images identiques à l'octet**, JUnit 84/84.
+
 **Pas B — la marche tombe (le binaire du loader change ; la totale).**
 
 Le FORMAT de scène ne change pas — triplets %01, liste %10, bloc %11 de

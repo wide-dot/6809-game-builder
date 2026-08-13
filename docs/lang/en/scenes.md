@@ -190,16 +190,20 @@ ever a name) is reached by migrating file by file.
 
 ## The model in one rule
 
-The loader evicts a stale link data slot on an **exact destination match**
-(page + address). Two resources can therefore only take turns at a shared
-fixed address — which is precisely what a region is. Hence :
+The loader never deduces a replacement. Loading over the bytes of a
+still-indexed file — exact destination or partial cover alike, extents read
+back from the cached directory — freezes with `log.scene.LOAD_OVERLAP` :
+**the scene that ends declares what it drops** (explicit
+`loader.file.linkData.unload`), and a missing declaration is reported, not
+silently resolved. Reloading the *same* file at the same place costs
+nothing (dedup does the bookkeeping). Two resources therefore take turns at
+a shared fixed address by unloading one before loading the other — and a
+shared fixed address is precisely what a region is. Hence :
 
 > **The region, not the file, is the unit of replacement.**
 
 Declaring a layout is answering *"how many things do I need to replace
-independently ?"*. Reloading into the same region costs nothing (implicit
-unload does the bookkeeping) ; loading at a different address over live
-content requires an explicit `loader.file.linkData.unload` first.
+independently ?"*.
 
 ## What the builder checks — and what it does not
 

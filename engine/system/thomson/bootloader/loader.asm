@@ -1461,7 +1461,7 @@ loader.file.extern16.link
         leax  d,x                                 ; add external symbol value
         ldd   linkData.content.extern16.offset,y  ; load offset to symbol reference
         stx   d,u                                 ; update address
-        leay  sizeof{linkData.content.extern8},y  ; move to next symbol
+        leay  sizeof{linkData.content.extern16},y ; move to next symbol
         ldd   #0
 @counter equ *-2
         subd  #1
@@ -1579,7 +1579,7 @@ linkData.symbol.search
         bne   >
         ldd   linkData.content.exportAbs.value,y ; this value is absolute
         puls  y,u,pc
-!       leay  sizeof{linkData.content.intern},y  ; move to next symbol
+!       leay  sizeof{linkData.content.exportAbs},y ; move to next symbol
         ldd   #0
 @absSymbolCounter equ *-2
         subd  #1
@@ -1598,7 +1598,7 @@ linkData.symbol.search
         tfr   u,d                                ; get base section offset
         addd  linkData.content.exportRel.value,y ; add symbol value (relative address)
         puls  y,u,pc
-!       leay  sizeof{linkData.content.intern},y  ; move to next symbol
+!       leay  sizeof{linkData.content.exportRel},y ; move to next symbol
         ldd   #0
 @relSymbolCounter equ *-2
         subd  #1

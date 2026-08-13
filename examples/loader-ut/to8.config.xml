@@ -7,9 +7,10 @@
         <!-- ================================================================ -->
         <!-- Memory layout : every destination the bench loads into.          -->
         <!-- marker.b and stress.swap are the swap points the stress test     -->
-        <!-- hammers : two files taking turns at one fixed destination, which  -->
-        <!-- is what makes the loader's implicit unload evict the previous    -->
-        <!-- content instead of leaving a stale link data slot behind.        -->
+        <!-- hammers : two files taking turns at one fixed destination,       -->
+        <!-- exercising the unload/reload cycle of the link data index —      -->
+        <!-- dedup on reload, explicit unload of what a scene drops, and the  -->
+        <!-- LOAD_OVERLAP trap when a covered file is still indexed (T18).    -->
         <!-- ================================================================ -->
         <layout>
             <region name="gamemode"     page="$01" address="$6100" size="$1F00"/>

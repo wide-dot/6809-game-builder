@@ -107,10 +107,14 @@ public final class SceneChecks {
 					break;
 
 				case EXPORT_ONLY:
+					// this is what lets the loader's sequential blocks skip the
+					// whole placement arithmetic : a load without a place is
+					// export-only, and an export-only file never writes a byte
 					if (size > 0) {
 						errors.add(load.where + ": scene " + scene.sceneName + ": '" + load.name
 								+ "' carries " + size + " bytes of data but no destination ;"
-								+ " give it a region, or make it export-only");
+								+ " a load without a place is export-only and loads nothing —"
+								+ " give the file a place, or strip its data");
 					}
 					break;
 				}

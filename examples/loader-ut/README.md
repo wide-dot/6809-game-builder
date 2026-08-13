@@ -33,7 +33,7 @@ operation — see the loader analysis in the repository `CLAUDE.md`.
 | +5 | T5 runtime `loader.scene.load` of scene "second", cc content |
 | +6 | T6 full re-link patched `#marker.cc.begin` (forward reference) |
 | +7 | T7 `loader.file.getPageID` for cc |
-| +8 | T8 implicit unload : loading cc at bb's destination deindexed bb (`isLoaded` false, explicit unload reports not found) |
+| +8 | T8 explicit unload : dropping bb before loading cc took it out of the index (`isLoaded` false, replaying the unload reports not found) |
 | +9 | T9 dedup : reloading scene "second" keeps `linkData.count` stable, cc content and link intact |
 | +10 | T10 explicit `linkData.unload` of aa : success, `isLoaded` false, count drops by one |
 | +11 | T11 stress : 128 load/unload/relink cycles of the dd/ee variants over one destination — fresh extern fixups ($F1), content ($F2), symbol flips in the gm ($F3) and in the stable hub file ($F4), index steady at 4 ($F5) ; explicit unload every 16th cycle ; the whole loop must live within the 4 KB pool |
@@ -78,21 +78,22 @@ needs the disk swaps described below.
   following slots, decrements `occupiedSlots`, returns `B=$00` / `$FF` not found.
 - reload dedup in `linkData.load` (T9) : a reloaded disk/file reuses its
   existing index slot (old buffer freed) instead of appending a duplicate.
-- implicit unload (T8) : registering a **different** file at the exact
-  destination (page+address) of an indexed file removes the stale entry, so
-  the global re-link cannot patch stale offsets over the new binary.
+- the overlap trap (T18) : loading over the bytes of a still-indexed file —
+  same destination or partial cover alike, extents are read back from the
+  cached directory — freezes with `log.scene.LOAD_OVERLAP` ($8301). The
+  scene that ENDS declares what it drops (explicit `linkData.unload`, T5/T8) ;
+  the loader reports the missing declaration instead of deducing it.
 - `loader.file.linkData.count` : jump table entry (index 30) so tests and
   diagnostics can observe the index size.
 - `_loader.file.isLoaded` macro : `getPageID != $FF`, result in CC (ne=loaded).
 
-Limitation : implicit unload only matches the exact same destination ;
-loading a file that *partially overlaps* an indexed file's memory (different
-start address) still leaves a stale entry — sizes are not tracked in the
-index. Use explicit `linkData.unload` in that case.
+Limitation : the overlap check skips slots of another disk (file ids restart
+per disk, so a foreign id would read a phantom extent from the cached
+directory) — cross-disk overlaps are the caller's declarations to make.
 
 Convention : export-only files (empty binary, link data only) are loaded at
-the (0,0) pseudo-destination ; several of them share it, so they are exempt
-from destination-based implicit unload.
+the (0,0) pseudo-destination ; several of them share it, and they occupy no
+bytes, so they neither cover nor get covered in the overlap check.
 
 ## Running the multi-disk test (T15)
 
@@ -117,8 +118,10 @@ disk 0 continues at 4..76 (see below).
   no previous project had a directory larger than one sector.
 - the destination-based implicit unload evicted export-only files from the
   index one after the other (they all share destination (0,0)) — a
-  regression introduced with the implicit unload itself, now fixed by the
-  empty-file exemption above.
+  regression introduced with the implicit unload itself, fixed at the time
+  by exempting empty files. Both the implicit unload and its exemption are
+  gone since : covering a still-indexed file traps (`LOAD_OVERLAP`, T18)
+  instead of being silently resolved.
 - `loader.dir.load` carried the sector index in B across its retry loop,
   but the "insert disk" prompt calls the monitor (PUTC/KTST) which clobbers
   B : the self-modifying save/restore ended up storing `$30`, the last

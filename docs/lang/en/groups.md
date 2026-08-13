@@ -54,8 +54,9 @@ resolve to 0, symbols of the loaded one to their real address).
 
 Since July 2026 scenes and regions are **declared in the configuration file**
 and the tables are generated — see [scenes.md](scenes.md). The core rule the
-declarative layer is built on : the loader evicts on an exact destination
-match, so **the region, not the file, is the unit of replacement**. The
+declarative layer is built on : covering a still-indexed group traps
+(`log.scene.LOAD_OVERLAP` — the scene that ends unloads what it drops),
+so **the region, not the file, is the unit of replacement**. The
 builder verifies each scene as one self-coherent composition (budgets,
 disjoint writes, export-only coherence) ; sequencing compositions belongs to
 the game code, so regions may overlap freely across scenes.
@@ -80,7 +81,7 @@ Use-case mapping :
 | is a group loaded ? | `_loader.file.isLoaded` (`getPageID != $ff`) |
 | unload by request | `loader.file.linkData.unload` |
 | reload without duplicate | dedup in `linkData.load` |
-| replacement at same destination | implicit unload (`linkData.slot.findByDest`) |
+| covering a still-indexed group | `LOAD_OVERLAP` trap (`linkData.slot.findOverlap`) — unload first |
 | observability | `loader.file.linkData.count` |
 | multi-disk | `loader.dir.load` (prompts for the disk), slots keyed by `[disk id][file id]`, cross-disk symbol resolution |
 
@@ -112,13 +113,17 @@ adding a disk qualifier to the link data format.
 - groups tracked by the lifecycle must be `loadtimelink="LINK"` ; non-LINK
   files are fire-and-forget (always reloaded, never indexed) ;
 - **export-only groups** (constants/interfaces, empty binary flag `$ff00`)
-  are loaded at the (0,0) pseudo-destination ; several of them share it and
-  they are exempt from destination-based implicit unload ;
-- variants of a region must share exact destinations — the implicit unload
-  only matches identical (page, address) ; declaring the destination once in
-  a `<region>` makes this structural. A load partially overlapping a *live*
-  group at a different address is not detected at run time (sizes are not
-  tracked) : unload explicitly before recomposing overlapping memory ;
+  are loaded at the (0,0) pseudo-destination ; several of them share it,
+  and occupying no bytes they neither cover nor get covered by the overlap
+  check ;
+- replacing a group is a two-step authored sequence : unload the outgoing
+  group, then load the incoming one. Covering a still-indexed group — same
+  destination or partial overlap alike, extents read back from the cached
+  directory — freezes with `log.scene.LOAD_OVERLAP`. Declaring the
+  destination once in a `<region>` keeps variants naturally aligned. The
+  overlap check skips slots of another disk (their extent is unknowable
+  from the cached directory) : cross-disk overlaps are the author's
+  declarations to make ;
 - unresolved symbols silently resolve to 0 (define
   `loader.CHECK_UNRESOLVED_SYMBOLS` to trap instead) — forward references
   across regions rely on this and converge at the next scene load ;
