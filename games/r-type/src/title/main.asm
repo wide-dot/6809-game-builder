@@ -324,9 +324,11 @@ title.hold.set
         jsr   IrqOn
 title.hold.live
         ; press start — la v1 teste le tir dans ses phases a musique
-        ; (Phase5Live : `Fire_Press & c1_button_A_mask`) : la manette d'abord
+        ; (Phase5Live : `Fire_Press & c1_button_A_mask`) : les manettes
+        ; d'abord, boutons A et B des DEUX ports (le clavier passe deja par
+        ; le test integre de joypad.readKbd — bouton B du port 0)
         lda   joypad.pressed.fire
-        anda  #joypad.0.FIRE
+        anda  #joypad.x.A+joypad.x.B
         bne   title.launchGame
         ; ... et le clavier par le bit KTEST du PIA (une touche est enfoncee),
         ; avec son propre front — l'idiome du modele sound, style R-Type.

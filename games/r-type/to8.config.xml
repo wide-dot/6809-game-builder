@@ -2029,17 +2029,45 @@
                     <load name="common.engineflames"/>
                     <load name="engine.sound.ym.const"/>
                     <load name="engine.sound.ymm"/>
-                    <load name="stage1.music.ymm"/>
                     <load name="common.soundfx"/>
                     <load name="common.collisionpass"/>
                     <load name="common.messages"/>
                     <load name="common.checkpoint"/>
-                    <load name="stage1.init"/>
-                    <!-- VGC debranche : recharger engine.sound.vgc + stage1.music.vgc ici. -->
+                    <!-- VGC debranche cote stage : recharger engine.sound.vgc + stage1.music.vgc ici. -->
                     <load name="common.hud"/>
                     <load name="common.pow"/>
                     <load name="common.optionbox"/>
                     <load name="common.bitdevice"/>
+                    <load name="common.missile"/>
+                    <load name="common.missileflame"/>
+                    <load name="common.bossmusic"/>
+                    <load name="common.forcepod"/>
+                    <load name="common.reboundlaser"/>
+                    <load name="common.counterairlaser"/>
+                    <load name="common.simplefire"/>
+                    <load name="common.firechain"/>
+                    <load name="common.foefire"/>
+                    <!-- T4 : le boot par defaut ouvre sur le TITLE. Tout le
+                         contenu stage 1 est parti dans scenes.stage1 — c'est
+                         la scene que le press start charge, et celle que les
+                         retours de stage rechargent. Le banc traverse le
+                         title : son harnais presse une touche. -->
+                    <load name="title.main"/>
+                    <load name="title.logo"/>
+                    <load name="title.pushbutton"/>
+                    <load name="title.scores"/>
+                    <load name="title.music.ymm"/>
+                    <load name="title.sound.vgc"/>
+                    <load name="engine.sound.sn.const"/>
+                </scene>
+
+                <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
+                    <!-- Le stage 1 ENTIER : son cast, son ouverture, ses
+                         plans, sa wave, sa collision, sa musique, son main.
+                         Charge par le press start du title, et par les
+                         retours (stage 2, game over) — la dedup du loader
+                         rend les rechargements idempotents. -->
+                    <load name="stage1.init"/>
                     <load name="stage1.patapata"/>
                     <load name="stage1.bug"/>
                     <load name="stage1.bink"/>
@@ -2053,11 +2081,8 @@
                     <load name="stage1.tabrok.imgGround"/>
                     <load name="stage1.tabrok.imgWalk"/>
                     <load name="stage1.tabrokcanon"/>
-                    <load name="common.missile"/>
-                    <load name="common.missileflame"/>
                     <load name="stage1.scant"/>
                     <load name="stage1.scantfire"/>
-                    <load name="common.bossmusic"/>
                     <load name="stage1.fadetotunnel"/>
                     <load name="stage1.endstage"/>
                     <load name="stage1.dobkeratops.imgFace"/>
@@ -2077,31 +2102,11 @@
                     <load name="stage1.dobkeratopsmonster"/>
                     <load name="stage1.dobkeratopssaw"/>
                     <load name="stage1.dobkeratopsexplosion"/>
-                    <load name="common.forcepod"/>
-                    <load name="common.reboundlaser"/>
-                    <load name="common.counterairlaser"/>
-                    <load name="common.simplefire"/>
-                    <load name="common.firechain"/>
-                    <load name="common.foefire"/>
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>
                     <load name="stage1.maps"/>
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
-                    <load name="stage1"/>
-                </scene>
-
-                <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
-                    <load name="stage1.tiles.even"/>
-                    <load name="stage1.tiles.odd"/>
-                    <load name="stage1.maps"/>
-                    <load name="stage1.wave"/>
-                    <load name="stage1.collision"/>
-                    <!-- La musique aussi : le title a pris ses octets (les
-                         deux fichiers sont des alternatives en $1A/$20BC).
-                         Venant du boot ou du stage 2 le rechargement est
-                         dedup-idempotent ; venant du title il est ce qui
-                         rend sa musique au stage. -->
                     <load name="stage1.music.ymm"/>
                     <load name="stage1"/>
                 </scene>
@@ -2264,11 +2269,12 @@
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
                     <!-- L'adresse d'execution de la scene de boot EST la place -->
-                    <!-- attitree du stage 1 : la dupliquer en litteral, c'est    -->
-                    <!-- demarrer dans le vide le jour ou la frontiere bouge.     -->
-                    <!-- entries.asm la publie, le loader la lit.                 -->
+                    <!-- attitree du creneau d'echange, ou vit le TITLE (T4) :   -->
+                    <!-- la dupliquer en litteral, c'est demarrer dans le vide   -->
+                    <!-- le jour ou la frontiere bouge. entries.asm la publie,   -->
+                    <!-- le loader la lit.                                       -->
                     <asm filename="gen/layout.asm"/>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ stage1.address</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ title.main.address</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.boot</asm>
                     <asm filename="engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>

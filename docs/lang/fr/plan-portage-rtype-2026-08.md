@@ -182,6 +182,23 @@ sort d'abord DIRECTEMENT sur le stage 1.
 - T4 — le boot par défaut passe au title, le banc reste accessible par
   define.
 
+  **RÉALISÉ (13/08/2026)**, avec deux écarts au libellé, tous deux
+  dans le sens du jeu réel. (1) Déclencheur élargi (demande auteur) :
+  boutons A et B des DEUX ports manette (`joypad.x.A+joypad.x.B`), le
+  clavier passant par le test intégré de `joypad.readKbd` (bouton B du
+  port 0) plus le front KTEST posé en T3. (2) Pas de « boot banc par
+  define » : le contenu d'une scène n'est pas conditionnel côté
+  builder, et un second boot dupliquerait la liste stage 1 — le banc
+  TRAVERSE le title à la place (son harnais presse une touche jusqu'à
+  la levée du magic $CA) : une seule image, une seule vérité, et la
+  chaîne d'attract est couverte par la même lane. `scenes.boot` charge
+  le commun + les fichiers title et s'exécute sur le title ;
+  `scenes.stage1` porte désormais le stage 1 ENTIER (cast, ouverture,
+  plans, wave, collision, musique, main) — chargé au press start et
+  aux retours, rechargements dédup-idempotents. Preuve : banc r-type
+  5/5 à travers le title (passation mesurée), corpus 59 images hors
+  r-type identiques.
+
 **Pièges attendus** (du recueil de cas) : entrée d'unité à l'offset
 zéro, `fill` v1 → équates, `setdp` interdit, pont `irq.on/off`
 PRÉSERVANT (l'equ nu a mordu deux fois), coordonnées écran, palette du
