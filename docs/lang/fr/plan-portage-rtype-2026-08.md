@@ -286,6 +286,22 @@ retry loader). Preuves : écran LOADING (vaisseau + « LOADING... »)
 vérifié en captures pendant le chargement, lane C1..C5 5/5, corpus 59
 images hors r-type identiques.
 
+**Couverture du chemin de mort RÉALISÉE (13/08/2026)** — le bloc
+témoins gagne son pendant : une fenêtre de COMMANDE (`bench.request`,
+bench.BLOCK+12), un octet que le harnais écrit et que `stage.loop`
+consomme une fois par tour (7 cycles) — non nul = mort du joueur, le
+geste exact de la fin d'explosion. C'est ce qui rend exerçable un
+chemin de 467 octets qui ne tourne qu'à la mort : le vaisseau de la
+lane ne meurt jamais (son tir continu fauche tout avant contact). La
+lane passe à SEPT contrôles : mort → une vie perdue + caméra
+rembobinée au checkpoint + retour RUNNING ; deux morts de plus → game
+over → retour au TITLE ; press start → partie fraîche (vies ressemées
+à 2) ; puis le tour complet stage 1 → stage 2 → title. Lane C1..C7
+7/7 au premier passage (mort à caméra 1021 → reprise à 942), corpus
+59 images hors r-type identiques. Limite documentée : la fenêtre
+couvre la machine à états, pas la collision joueur-ennemi (le chemin
+d'impact réel reste aux tests manuels).
+
 **CŒUR RÉALISÉ (13/08/2026)** — D1 à D5 en un geste, prouvés
 ensemble : lane **C1..C5 5/5 au premier passage** de l'image
 dé-banc-ifiée — title → press start → stage 1 entier (1440 px, fin

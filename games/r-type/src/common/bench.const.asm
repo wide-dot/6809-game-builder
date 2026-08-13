@@ -49,6 +49,17 @@ bench.frames       equ bench.BLOCK+2   ; compteur de trames, un blocage se voit
 bench.camera       equ bench.BLOCK+3   ; (mot) position caméra du stage courant
 bench.spawns       equ bench.BLOCK+5   ; (mot) BOUCHONS exécutés — le stage 1 n'en a
                                        ; plus (cast porté), seul le stage 2 compte ici
+bench.request      equ bench.BLOCK+12  ; la fenêtre de COMMANDE de la lane — le
+                                       ; pendant des témoins : un octet que le
+                                       ; harnais écrit, lu une fois par tour de
+                                       ; stage.loop. Non nul = mort du joueur
+                                       ; (le geste de la fin d'explosion) ;
+                                       ; remis à zéro en le consommant. C'est
+                                       ; ce qui rend le chemin mort/READY/
+                                       ; checkpoint/game-over exerçable par la
+                                       ; lane : son vaisseau ne meurt jamais —
+                                       ; le tir continu du port flottant fauche
+                                       ; tout avant contact.
 bench.t1           equ bench.BLOCK+7   ; $01 le stage 1 a tourné, sa wave a progressé
 bench.t2           equ bench.BLOCK+8   ; $01 le stage 2 a tourné sur SES données
 bench.t3           equ bench.BLOCK+9   ; $01 l'état persistant a survécu à l'échange

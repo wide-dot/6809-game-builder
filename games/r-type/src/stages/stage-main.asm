@@ -276,6 +276,15 @@ statics.SIZE  equ nb_static_objects*object_size
 ; Cas de migration : docs/lang/en/migration/loop-fallthrough.md
 ;*******************************************************************************
 stage.loop
+        ; la fenetre de commande de la lane (bench.request, cf. bench.const) :
+        ; non nul = mort du joueur, le geste exact de la fin d'explosion. Sept
+        ; cycles par tour, la controlabilite du chemin de mort en echange.
+        lda   bench.request
+        beq   >
+        clr   bench.request
+        lda   #mainloop.state.DEAD
+        sta   mainloop.state
+!
         lda   mainloop.state
         ldx   #stage.states
         jmp   [a,x]
