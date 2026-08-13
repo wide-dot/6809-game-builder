@@ -8,8 +8,7 @@
 > a page, which is how the builder knows where one begins and ends. A `<file>` is one loadable file, placed in a region. A `<unit>` is one
 > indivisible object — entry symbol plus content, code and images alike ; its
 > container decides its dressing. A `<scene>` says
-> what is in memory at a time, `<load>` by `<load>`. `stacked` on a region
-> lays a scene's loads end to end at run time. `linkdata="LINK"` sends a
+> what is in memory at a time, `<load>` by `<load>`. `linkdata="LINK"` sends a
 > file's link block to the LINK section ; `bake` decides what never needs one.
 > A `<file>` may declare its **attributed place** (`arena=`, `region=`, or
 > `page=`+`address=`) — then every `<load>` of it reduces to the name.
@@ -327,12 +326,20 @@ generator selects them :
 | shape | encoding | bytes |
 |---|---|---|
 | loads with their own destination | `%01` explicit triplets | 2 + 5n |
-| bulk list / export-only lot | `%10` base + ids | 5 + 2n |
-| same, when the ids chain (next id = id + blocks) | `%11` base + start id | **7 flat** |
+| export-only lot | `%10` shared destination + ids | 5 + 2n |
+| same, when the ids chain (next id = id + blocks) | `%11` shared destination + start id | **7 flat** |
 
 The id chain is re-checked at every build ; reordering the configuration
 silently falls back to `%10`. Declaring the files of a lot consecutively
 and listing them in the same order is what makes `%11` kick in.
+
+A sequential block (`%10`/`%11`) only ever carries **export-only files** —
+files that write no byte, whose shared destination is the (0,0)
+pseudo-destination. The build enforces it (a data-carrying load without a
+place is an error), and the loader relies on it : it hands the block's
+destination to each file unchanged, no size is read and no placement
+happens at run time. The loader once stacked such lists end to end in
+memory ; that arithmetic is the builder's, at build time.
 
 ## Validation
 

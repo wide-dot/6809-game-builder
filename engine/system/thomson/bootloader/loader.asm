@@ -381,54 +381,35 @@ loader.scene.apply.type01
 ; dest addr
 ; file id - n times (for each file)
 ;-----------------------------------------------------------------
+; A sequential block carries ONE destination for all its files. The
+; builder only emits sequential blocks for export-only files — files
+; that write no byte (SceneChecks refuses data without a place) — so
+; there is nothing to place here : the block's destination is handed
+; to the routine as-is. The loader used to stack the files by reading
+; each size and crossing page boundaries ; that placement arithmetic
+; is the builder's job now, at build time.
 loader.scene.apply.type10
         ldd   scene.header.nbfiles,y
         leay  sizeof{scene.header},y
         anda  #%00111111
         std   loader.scene.fileCount
         ldb   scene.page,y
-        ldu   scene.address,y
+        stb   @page
+        ldd   scene.address,y
+        std   @addr
         leay  scene.fileid,y
 @loop
         ldx   ,y++               ; Read file id
-        pshs  b,y                ; Save page id [b] and current scene data cursor [y]
-;
-        jsr   loader.dir.getFile
-        ldd   dir.entry.sizea,y  ; check empty file flag
-        cmpd  #$ff00
-        bne   @notEmpty
-        clra                     ; b is already set to 0
-        bra   >
-@notEmpty
-        ldd   dir.entry.sizeu,y  ; Read file data size
-        anda  #%00111111         ; File size is stored in 14 bits
-        addd  #1                 ; File size is stored as size-1
-!       std   @size
-        leay  d,u                ; Will the file fit the page ?
-        puls  b                  ; Restore page id
-        cmpy  #map.ram.CART_END  ; Branch if data fits memory page
-        bls   >
-* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
-* the cartridge window starts at $0000 and the two were the same, so nothing
-* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
-* boundary wrote 45 KB below its window, over the system RAM.
-        ldu   #map.ram.CART_START ; else move to next page
-        incb
- IFDEF boot.CHECK_MEMORY_EXT
-        cmpb  #31
- ELSE
-        cmpb  #15
- ENDC
-        bls   >
-        bra   *                  ; no more memory !
-!
+        pshs  y                  ; the routine owns b, u and y
+        ldb   #0                 ; the block's destination, every file
+@page   equ   *-1
+        ldu   #0
+@addr   equ   *-2
         jsr   [loader.scene.routine]
-        leau  $1234,u
-@size   equ   *-2
         puls  y
-        ldx   loader.scene.fileCount
-        leax  -1,x
-        stx   loader.scene.fileCount
+        ldd   loader.scene.fileCount
+        subd  #1
+        std   loader.scene.fileCount
         bne   @loop
         rts
 
@@ -440,66 +421,38 @@ loader.scene.apply.type10
 ; dest addr
 ; start file id
 ;-----------------------------------------------------------------
+; Same single destination as %10 (export-only files, nothing written).
+; Only the START id is stored : the id of the next file is derived
+; from the current file's directory flags (+1, +1 if compressed, +1 if
+; dynamically linked) — that derivation is what the directory lookup
+; is for, no size is read.
 loader.scene.apply.type11
         ldd   scene.header.nbfiles,y
         leay  sizeof{scene.header},y
         anda  #%00111111
         std   loader.scene.fileCount
         ldb   scene.page,y
-        ldu   scene.address,y
+        stb   @page
+        ldd   scene.address,y
+        std   @addr
         ldx   scene.fileid,y
         leay  sizeof{scene},y
         pshs  y
 @loop
-        stb   @b1                ; Save page id [b]
-;
-        jsr   loader.dir.getFile
-        sty   @y
-        ldd   dir.entry.sizea,y  ; check empty file flag
-        cmpd  #$ff00
-        bne   @notEmpty
-        clra                     ; b is already set to 0
-        bra   >
-@notEmpty
-        ldd   dir.entry.sizeu,y  ; Read file data size
-        anda  #%00111111         ; File size is stored in 14 bits
-        addd  #1                 ; File size is stored as size-1
-!       std   @size
-        leay  d,u                ; Will the file fit the page ?
-        ldb   #0                 ; Restore page id
-@b1     equ   *-1
-        cmpy  #map.ram.CART_END  ; Branch if data fits memory page
-        bls   >
-* V2-FIX : the next page opens where the WINDOW opens, not at zero. On a TO8
-* the cartridge window starts at $0000 and the two were the same, so nothing
-* ever showed ; on a MO6 it starts at $B000 and a stacked list crossing a page
-* boundary wrote 45 KB below its window, over the system RAM.
-        ldu   #map.ram.CART_START ; else move to next page
-        incb
- IFDEF boot.CHECK_MEMORY_EXT
-        cmpb  #31
- ELSE
-        cmpb  #15
- ENDC
-        bls   >
-        bra   *                  ; no more memory !
-!
+        ldb   #0                 ; the block's destination, every file
+@page   equ   *-1
+        ldu   #0
+@addr   equ   *-2
         jsr   [loader.scene.routine]
-        leau  $1234,u
-@size   equ   *-2
 ;
-        ldy   #0
-@y      equ   *-2
-        stb   @b
+        jsr   loader.dir.getFile ; the routine preserves x (the file id)
         ldb   #1                ; move to next file id, offset of 1
         lda   dir.entry.bitfld,y
         lsla
-        adcb  #0                ; add one offset if file is compressed 
+        adcb  #0                ; add one offset if file is compressed
         lsla
         adcb  #0                ; add one offset if file is dynamically linked
         abx                     ; apply new file id
-        ldb   #0
-@b      equ   *-1
 ;
         tst   loader.scene.fileCount+1
         bne   >

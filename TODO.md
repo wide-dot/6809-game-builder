@@ -648,17 +648,25 @@ Fonctionnel :
         coupés en 4 membres, 4/4 sous toje (contenu du unit via son
         membre, pages distinctes, pointeur inter-membres dans le unit),
         erreur « does not fit » lue en vrai.
-  - [ ] Phase 8 — campagne loader : SPEC ÉCRITE (13/08), en attente de
-        validation auteur (plan § Phase 8 — spécification détaillée).
-        Mesure préalable faite : 4 blocs séquentiels sur le corpus, tous
-        export-only à (0,0), et les DEUX chemins (%10 via r-type boot,
-        %11 via loader-ut stress-pad/iface) déjà exercés par les bancs.
-        Pas A par identité (verrou builder « séquentiel = export-only »,
-        3 sizeof{} d'une autre struct, dépoussiérage éviction/$ff00) ;
-        pas B = retrait de la marche mémoire des handlers %10/%11
-        (dérivation d'ids par flags CONSERVÉE, format de scène inchangé)
-        avec la revalidation complète. Deux questions ouvertes : piège
-        loader en plus du verrou builder ? autre chose à embarquer ?
+  - [x] Phase 8 — campagne loader FAITE (13/08, décisions auteur : pas
+        de piège loader, rien d'autre à embarquer). Pas A par identité
+        (63/63) : le verrou « séquentiel = export-only » EXISTAIT déjà
+        (SceneChecks + test — message reformulé), 3 sizeof{} d'une autre
+        struct corrigés, et le dépoussiérage éviction/$ff00 débordait
+        sur deux docs normatives (scenes.md, groups.md) qui racontaient
+        l'éviction au présent. Pas B : la marche mémoire des handlers
+        %10/%11 est retirée (~50 lignes), destination constante,
+        dérivation d'ids par flags conservée, format de scène inchangé
+        (24 tables identiques à l'octet) — plus AUCUNE décision de
+        placement à l'exécution. PREUVE : 62 images changent (annoncé),
+        to8-disk1.fd intacte, reproductibilité, JUnit 84/84, et la lane
+        toje entière verte (loader-ut 17/17+T18 avec disquettes, r-type
+        5/5 — le %10 du boot —, collection 4/4, objects 18/18, sprites,
+        tilescroll, hscroll k=−13, tlsf 10k trames, stacked 10/10,
+        sound title→level1 à chaud, mplus-test séquence identique
+        pré/post, mplus-pcm vivant). Pièges consignés au plan : image
+        pas toujours nommée to8.fd (écran « No Disk » = faux échec
+        total), contre-épreuve invalide si le build n'est pas exit=0.
   - [ ] Phase 5-normalisation (11/08) — ÉTUDE ÉCRITE (§26), suite du §25 :
         inventaire exhaustif (4 orthographes de page vivantes, 3 conventions
         pour les bits cartouche) et fait dur mesuré — `.` est l'espace de

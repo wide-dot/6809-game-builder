@@ -1090,6 +1090,37 @@ pas les octets (le loader a de la marge depuis l'INDEX au secteur 4).
 - MO6 : au build, sur la foi du jumeau TO8 (même binaire de loader,
   même générateur de tables).
 
+*RÉALISÉ (13/08).* Conforme à la spec : destination constante dans les
+deux handlers, `dir.getFile` conservé dans le seul %11 (dérivation d'ids
+par flags), format de scène inchangé — **les 24 tables générées sont
+identiques à l'octet** (aucun diff sur les `.table.asm`), les références
+`CART_START`/`CART_END`/`CHECK_MEMORY_EXT` sont tombées à zéro dans
+loader.asm (les équates restent à la carte machine). Preuve rendue :
+**62 images changent, `to8-disk1.fd` (sans loader) identique à l'octet**
+— exactement l'annonce ; reproductibilité (2 corpus consécutifs
+identiques) ; et la lane toje entière : loader-ut 17/17 `$0D` +
+T18 `$8301` avec échanges de disquettes, r-type 5/5, collection 4/4,
+objects 18/18 `$0D`, sprites 7/7 tête de liste stable, tilescroll
+caméra + terrain 3/3, hscroll aligné k=−13 sur le témoin de référence,
+tlsf-ut 10 000 trames de stress aléatoire sans piège, stacked-overflow
+10 marqueurs justes à cheval sur deux pages, sound TO8 (title joué,
+bascule à chaud vers level1 prouvée dans les deux flux, player intact),
+mplus-test séquence d'écrans **identique pré/post aux mêmes créneaux**,
+mplus-pcm boucle principale vivante. Les hashes de référence sont
+réenregistrés.
+
+Deux leçons de banc, payées pendant la revalidation : une image
+d'exemple ne s'appelle pas toujours `to8.fd` (le banc stacked a d'abord
+« échoué » sur un émulateur démarré SANS disquette — écran « No Disk »,
+tout à zéro ; le hash de l'écran No Disk, `030f4c…`, est désormais
+reconnaissable) ; et un build de contre-épreuve doit être vérifié
+`exit=0` avant de croire sa sonde (deux faux échecs successifs :
+`-Dbasedir` manquant, puis `<hfe/>` sans hxcfe Linux — le script corpus
+retire ces sorties, un build manuel doit faire pareil).
+
+**La phase 8 est close.** Reste la phase 9 (code mort prouvé, puis
+passe documentaire).
+
 **Décisions jointes (rien à coder — consignées pour ne pas y revenir).**
 
 - *L'étage load-time de `symbole$PAGE`* (analyse placement §25) : NON
