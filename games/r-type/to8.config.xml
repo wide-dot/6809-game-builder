@@ -282,6 +282,11 @@
             <arena name="title">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
+                <!-- Une page de tuiles de stage en plus : libre quand le
+                     title tourne (l'echange decharge une scene avant de
+                     charger l'autre), prise quand l'attract complet —
+                     machine a ecrire comprise — a depasse 32 Ko. -->
+                <zone page="$1B" address="$0000" size="$4000"/>
             </arena>
 
         </layout>
@@ -2056,6 +2061,7 @@
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
+                    <load name="title.text"/>
                     <load name="title.music.ymm"/>
                     <load name="title.sound.vgc"/>
                     <load name="engine.sound.sn.const"/>
@@ -2130,9 +2136,13 @@
                     </gfxcomp>
                 </file>
 
+                <!-- Chaque objet du title est colocalise avec ses images et
+                     leur index dans SON direntry (le motif des ennemis) ;
+                     RunObjects lit page et adresse dans l'index du title. -->
                 <file name="title.pushbutton" linkdata="LINK" arena="title">
                     <lwasm gensource="gen/title/pushbutton.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/text/push_button.unit.asm"/>
                         <gfxcomp gendir="gen/title/pushbutton"
                                  gensource="gen/title/pushbutton/includes.asm"
                                  genindex="gen/title/pushbutton/index.asm"
@@ -2145,12 +2155,22 @@
                 <file name="title.scores" linkdata="LINK" arena="title">
                     <lwasm gensource="gen/title/scores.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/scores/scores.unit.asm"/>
                         <gfxcomp gendir="gen/title/scores"
                                  gensource="gen/title/scores/includes.asm"
                                  genindex="gen/title/scores/index.asm"
                                  file="title.scores">
                             <images dir="src/title/scores/images" names="number"/>
                         </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La machine a ecrire : pas d'images, elle dessine ses
+                     lettres en direct dans la fenetre donnees. -->
+                <file name="title.text" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/text.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/text/text.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -2200,6 +2220,9 @@
                         <imageset name="titlelogo" gensource="gen/title/logo-index.asm"/>
                         <png2pal section="palette" symbol="Pal_title" filename="src/title/logo/images/logo_pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <!-- La palette du tableau des scores : la v1 la tire
+                             de number_01.png (main.properties du mode 00). -->
+                        <png2pal section="palette" symbol="Pal_scores" filename="src/title/scores/images/00.png"/>
                     </lwasm>
                 </file>
 
@@ -2208,6 +2231,7 @@
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
+                    <load name="title.text"/>
                     <load name="title.music.ymm"/>
                     <load name="title.sound.vgc"/>
                     <load name="engine.sound.sn.const"/>

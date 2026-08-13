@@ -244,6 +244,26 @@ v1 (`flow/loading`) ; text/scores/push_button du title. Le banc
 d'échange synthétique à deux stages reste disponible dans l'histoire
 git si un besoin de re-couverture fine apparaît.
 
+**text/scores/push_button RÉALISÉS (13/08/2026)** — l'attract v1
+COMPLET tourne : trois unités paginées de l'arène title (le motif des
+ennemis — export préfixé, INCLUDE du v1 tel quel, alias `Img_`),
+atteintes par l'index d'objets ; la machine à écrire dessine en absolu
+dans la fenêtre données et REDESSINE tout à chaque trame — compatible
+double-tampon par construction ; le script d'animation du push_button
+vient des properties v1 (durée avant l'étiquette). Le main porte les
+phases 5-9 : frappe du texte, PUSH FIRE BUTTON, puis la boucle
+d'attract extinction → tableau des scores → logo + texte rapide. La
+palette des scores sort de png2pal sur 00.png (le geste v1 :
+number_01.png) ; `Pal_game` v1 EST `Pal_title` (même PNG source).
+L'arène title gagne la page $1B (l'attract complet dépasse 32 Ko) — le
+contrôle de scène du builder a rejeté ma première page candidate ($06,
+prise par l'arène commune) : le filet a payé. Preuves : RANKING et
+écran complet (BLAST OFF… / PUSH FIRE BUTTON / FREE PLAY / © IREM)
+vérifiés en captures, la boucle cycle, lane C1..C5 5/5 (départ pris en
+pleine frappe : le déclencheur vit dans toutes les phases), corpus 59
+images hors r-type identiques. Le fade v1 reste non porté (écran de
+chargement, différé).
+
 **CŒUR RÉALISÉ (13/08/2026)** — D1 à D5 en un geste, prouvés
 ensemble : lane **C1..C5 5/5 au premier passage** de l'image
 dé-banc-ifiée — title → press start → stage 1 entier (1440 px, fin

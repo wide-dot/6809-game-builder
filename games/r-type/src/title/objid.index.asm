@@ -2,8 +2,12 @@
 * id N is row N of every table, keep the rows aligned with objid.const.asm.
 * Only the title's own live objects cite a real routine ; every other row
 * points at the placeholder (an invoked object that is never carried does
-* nothing). Still placeholders : text, push_button, scores (T2), and the
-* common rows that will cite resident units (fade).
+* nothing). Still placeholders : the common rows that will cite resident
+* units (fade).
+
+title.text.Object       EXTERNAL
+title.pushbutton.Object EXTERNAL
+title.scores.Object     EXTERNAL
 
 Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -37,9 +41,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_push_button
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+title.text.page ; ObjID_text
+        fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
+        fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
 
 Obj_Index_Address
         fdb   title.placeholder ; id 0 : reserved slot, never run
@@ -73,9 +77,9 @@ Obj_Index_Address
         fdb   title.placeholder ; ObjID_dobkeratops_saw
         fdb   title.placeholder ; ObjID_dobkeratops_explosion
         fdb   logo.Object       ; ObjID_logo
-        fdb   title.placeholder ; ObjID_text
-        fdb   title.placeholder ; ObjID_push_button
-        fdb   title.placeholder ; ObjID_scores
+        fdb   title.text.Object ; ObjID_text
+        fdb   title.pushbutton.Object ; ObjID_push_button
+        fdb   title.scores.Object ; ObjID_scores
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -110,7 +114,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_push_button
+        fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
 
 Ani_Asd_Index
@@ -185,6 +189,6 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_push_button
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
+        fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
 

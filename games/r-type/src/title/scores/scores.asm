@@ -7,7 +7,8 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./engine/macros.asm"
+; Include v1 retire (porte par l'unite — xxx.unit.asm) :
+; INCLUDE "./engine/macros.asm"
 
 Object
         lda   routine,u
