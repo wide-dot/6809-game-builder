@@ -98,6 +98,10 @@ practice; this is a reading order, not a schedule.
 21. [An imageset bigger than a page is spread, and its index carries a page per
     image](imageset-pages.md) — the one that stops the build dead, with nothing
     wrong in the game.
+21b. [A hand edit of a generated map is data — declare it, or regeneration
+    loses it](checkpoint-refresh-cells.md) — the checkpoint refresh cells,
+    and the general rule for every committed generated file the build
+    absorbs.
 
 **Reading a v1 main loop** — what to port, and what existed only for v1.
 

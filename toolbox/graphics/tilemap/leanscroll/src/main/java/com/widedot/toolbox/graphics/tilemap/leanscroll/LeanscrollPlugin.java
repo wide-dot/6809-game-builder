@@ -43,7 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LeanscrollPlugin {
 
-	private static final String CACHE_VERSION = "2";
+	private static final String CACHE_VERSION = "3";
+
 
 	public static void run(ImmutableNode node, BuildContext ctx) throws Exception {
 
@@ -57,6 +58,7 @@ public class LeanscrollPlugin {
 		// pre-shifted copy, 4 sub-steps — override for another scroll model
 		String scrollstep = Attribute.getString(node, ctx, "scrollstep", "0,0,1,0,0,0,0,0");
 		String nbsteps = Attribute.getString(node, ctx, "nbsteps", "0,0,4,0,0,0,0,0");
+		String refresh = Attribute.getStringOpt(node, ctx, "refresh");
 
 		String[] dims = tile.split("x");
 		if (dims.length != 2) {
@@ -84,10 +86,36 @@ public class LeanscrollPlugin {
 					+ totalCols + " columns only, asked " + first + ".." + (first + cols - 1));
 		}
 
+		// the refresh cells, DECLARED : the buffered scroll never repaints a
+		// zero cell — that is the lean's point — but a checkpoint restart
+		// repaints the playfield from the map, so a band the scroll cannot
+		// rebuild from its start-of-stage blocks must stay a DRAWN cell.
+		// This is authored data the level picture cannot carry (v1 held it
+		// as a hand edit of the generated map, lost on regeneration) ; see
+		// docs/lang/en/migration/checkpoint-refresh-cells.md
+		java.util.Set<Integer> forced = new java.util.HashSet<>();
+		if (refresh != null) {
+			for (String part : refresh.trim().split("[,\\s]+")) {
+				String[] cr = part.split(":");
+				if (cr.length != 2) {
+					throw new Exception(ctx.sources.locate(node) + ": <leanscroll> refresh"
+							+ " entry '" + part + "' — expected <col>:<row> or"
+							+ " <col>:<rowFirst>-<rowLast>");
+				}
+				int col = Integer.parseInt(cr[0]);
+				String[] span = cr[1].split("-");
+				int r0 = Integer.parseInt(span[0]);
+				int r1 = span.length > 1 ? Integer.parseInt(span[1]) : r0;
+				for (int r = r0; r <= r1; r++) {
+					forced.add(col * rows + r);
+				}
+			}
+		}
+
 		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
 				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("leanscroll", CACHE_VERSION)
 						.keyString(tile + "|" + columns + "|" + first + "|" + scrollstep
-								+ "|" + nbsteps)
+								+ "|" + nbsteps + "|" + refresh)
 						.keyBytes(Files.readAllBytes(in));
 		Path cached = entry.find();
 		String[] finals = { "even.png", "even.bin", "odd.png", "odd.bin" };
@@ -119,8 +147,8 @@ public class LeanscrollPlugin {
 			}
 
 			// stage 2 : the window, renumbered — crop_stage.py, absorbed
-			window(out.resolve("0"), "0", out, "even", tileW, tileH, rows, cols, first);
-			window(out.resolve("1"), "1", out, "odd", tileW, tileH, rows, cols, first);
+			window(out.resolve("0"), "0", out, "even", tileW, tileH, rows, cols, first, forced);
+			window(out.resolve("1"), "1", out, "odd", tileW, tileH, rows, cols, first, forced);
 
 			entry.store(staging -> {
 				for (String f : finals) {
@@ -148,9 +176,13 @@ public class LeanscrollPlugin {
 	 * the used tiles consecutively (0 stays 0), write the strip and the
 	 * column-major 16 bit map. The strip's position 0 is the source tileset's
 	 * own empty tile, kept so the sheet stays readable against its source.
+	 * A {@code forced} cell the module left empty is bound to tile 1 — the
+	 * set's first tile — so the scroll keeps repainting it (the declared
+	 * checkpoint refresh contract, {@code refresh=}).
 	 */
 	private static void window(Path planeDir, String plane, Path out, String name,
-			int tileW, int tileH, int rows, int cols, int first) throws Exception {
+			int tileW, int tileH, int rows, int cols, int first,
+			java.util.Set<Integer> forced) throws Exception {
 
 		// the module suffixes each scroll step's map ; step 0 is the resting
 		// map the engine's buffered scroll consumes
@@ -194,6 +226,9 @@ public class LeanscrollPlugin {
 		byte[] bin = new byte[kept.size() * 2];
 		for (int i = 0; i < kept.size(); i++) {
 			int v = renum.getOrDefault(kept.get(i), 0);
+			if (v == 0 && forced.contains((first + i / rows) * rows + i % rows)) {
+				v = 1;
+			}
 			bin[i * 2] = (byte) (v >> 8);
 			bin[i * 2 + 1] = (byte) v;
 		}

@@ -1952,8 +1952,14 @@
                 <!-- sous gen/ — tools/crop_stage.py et les invocations       -->
                 <!-- manuelles de leanscroll sont absorbes. La geometrie sort -->
                 <!-- en equates. Mis en cache sur l'image et les parametres.  -->
+                <!-- refresh : la bande centrale que le scroll ne reconstruit -->
+                <!-- pas depuis ses blocs de debut de stage — le checkpoint    -->
+                <!-- repeint depuis la carte, ces cellules doivent rester      -->
+                <!-- DESSINEES (v1 les retouchait a la main dans la carte      -->
+                <!-- generee ; ici c'est une donnee declaree).                 -->
                 <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
-                            gensymbols="gen/stages/01/map/map.const.asm"/>
+                            gensymbols="gen/stages/01/map/map.const.asm"
+                            refresh="48:6-8"/>
 
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
                       gendir="gen/stages/01/tiles-even">

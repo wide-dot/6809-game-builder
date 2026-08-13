@@ -1521,6 +1521,9 @@
       <xs:attribute name="nbsteps" type="xs:string">
         <xs:annotation><xs:documentation>the module's sub-step counts, default 0,0,4,0,0,0,0,0</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="refresh" type="xs:string">
+        <xs:annotation><xs:documentation>cells forced to stay DRAWN (bound to the set's first tile) though the lean would empty them : a checkpoint restart repaints from the map, so a band the scroll cannot rebuild from its start-of-stage blocks needs them. Space or comma list of &lt;col&gt;:&lt;row&gt; or &lt;col&gt;:&lt;rowFirst&gt;-&lt;rowLast&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

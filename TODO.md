@@ -605,15 +605,24 @@ Fonctionnel :
         <leanscroll> (module en JVM, cache, crop absorbé, géométrie en
         équates), rejoué par la passe de placement ; stages 01-02 câblés,
         crop_stage.py + leanscroll-01.txt + intro/ + plans committés des
-        stages câblés supprimés. PREUVE : strips identiques au pixel,
-        cartes stage 2 à l'octet ; l'écart = 6 octets mesurés du stage 1
-        (3 cellules d'aplat magenta-255, marqueur arcade — le module a
-        évolué depuis la génération d'époque, l'invocation historique ne
-        reproduit pas l'ancien résultat, le stage 06 porte déjà la
-        sémantique moderne) ; 4 images r-type changent (annoncé), banc
-        5/5, JUnit vert, reproductibilité avec cache exercé. Pièges :
-        drawImage remappe les couleurs d'une image indexée (copie de
-        raster brute), un cache survit aux correctifs (version bumpée).
+        stages câblés supprimés. Le résidu de 6 octets du stage 1 (3
+        cellules à 0 là où la carte v1 lit 1) a été RENDU À L'AUTEUR
+        (rendu PNG de la zone) et adjugé : c'est une retouche manuelle
+        NÉCESSAIRE — la bande centrale n'est pas rafraîchie par le scroll
+        depuis les mêmes blocs qu'au début du stage, le checkpoint
+        repeint depuis la carte. Devenue donnée déclarée :
+        `refresh="48:6-8"` sur le <leanscroll> (cellules forcées à la
+        première tuile du set). Cas :
+        docs/lang/en/migration/checkpoint-refresh-cells.md.
+        PREUVE FINALE : **IDENTITÉ TOTALE 63/63** — toutes les images au
+        hash exact d'avant 7c (la chaîne reproduit les octets livrés,
+        banc r-type 5/5 déjà acquis sur ces octets), JUnit vert,
+        reproductibilité avec cache exercé. Pièges : drawImage remappe
+        les couleurs d'une image indexée (copie de raster brute), un
+        cache survit aux correctifs (version bumpée), un résidu
+        inexpliqué entre généré committé et régénération peut être une
+        décision authorée NON DÉCLARÉE — la faire adjuger avant
+        d'adopter un côté.
   - [x] Phase 7b — la déclaration d'images compacte (12/08, décisions
         auteur : « tout le stock d'un coup », défaut = décalages seuls,
         names= déduit du répertoire de série) : élément <images> (une

@@ -886,18 +886,27 @@ la passe 9). La palette du stage 2 (`png2pal`) lit le strip généré.
 
 PREUVE en trois étages : (1) reproduction — les strips régénérés sont
 identiques AU PIXEL aux committés sur les deux stages, les cartes du stage 2
-identiques À L'OCTET ; (2) l'écart résiduel est mesuré et expliqué — les
-cartes du stage 1 diffèrent de **6 octets** (3 cellules × 2 plans) : trois
-cellules d'aplat magenta-255 pur (marqueur d'extraction arcade, col 48,
-lignes 6-8) que le module ACTUEL met à vide là où la génération d'époque
-(v1, Windows) les rattachait à la tuile 1 — rejouer l'invocation historique
-avec les drapeaux `-lean*` d'époque ne reproduit PAS l'ancien résultat : le
-module a évolué depuis, et le stage 06 (généré au module actuel) porte déjà
-la sémantique moderne. Décision : la sortie du module actuel fait foi ;
-(3) 4 images r-type changent (annoncé, confinées aux tables de carte du
-stage 1), 59 autres identiques, banc r-type **5/5** sous toje, JUnit vert,
-reproductibilité corpus reconfirmée avec le chemin du CACHE exercé, rebuild
-propre sans les intermédiaires supprimés au même hash exact.
+identiques À L'OCTET ; (2) l'écart résiduel est mesuré, RENDU À L'AUTEUR en
+image, et adjugé — les cartes du stage 1 différaient de **6 octets**
+(3 cellules × 2 plans, col 48 lignes 6-8) : le rendu de la zone a montré que
+l'image source n'y porte RIEN de distinctif (fond, bords et cellules
+divergentes sont le même index de palette), ce qui excluait un marqueur
+d'art et désignait une retouche directe de la carte générée — confirmé par
+l'auteur : **une modification nécessaire au checkpoint** (la bande centrale
+n'est pas reconstruite par le scroll depuis ses blocs de début de stage ;
+le checkpoint repeint depuis la carte, ces cellules doivent rester
+dessinées). La retouche devient une donnée DÉCLARÉE : attribut
+`refresh="48:6-8"` sur `<leanscroll>` (cellules liées à la première tuile
+du set). Cas au recueil :
+[`checkpoint-refresh-cells.md`](../en/migration/checkpoint-refresh-cells.md)
+— avec sa règle générale : un résidu inexpliqué entre un généré committé et
+sa régénération peut être une décision d'auteur non déclarée, à faire
+remonter avant d'adopter l'un ou l'autre ; (3) **identité TOTALE : les 63
+images du corpus sont identiques à l'octet à la référence d'avant 7c** —
+la chaîne entière reproduit les octets livrés, retouche comprise — JUnit
+vert, reproductibilité avec le chemin du CACHE exercé, rebuild propre sans
+les intermédiaires supprimés au même hash exact (l'image r-type est
+byte-identique à celle déjà validée 5/5 au banc).
 
 Deux pièges attrapés en route : `drawImage` vers une image indexée REMAPPE
 les couleurs par proximité (les deux magentas fusionnaient, chaque index
