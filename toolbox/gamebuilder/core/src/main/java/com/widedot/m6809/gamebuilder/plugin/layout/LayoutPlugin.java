@@ -106,25 +106,19 @@ public class LayoutPlugin {
 			// this file — a header has to survive double inclusion
 			out.append(" IFNDEF LAYOUT_SYMBOLS").append(System.lineSeparator());
 			out.append("LAYOUT_SYMBOLS equ 1").append(System.lineSeparator());
+			// one name publishes page and address, nothing else : .size,
+			// .pages and .page.last were emitted too and measured at zero
+			// consumers over the whole corpus (phase 9 sweep, 2026-08-13) —
+			// re-add one the day a game reads it, not before
 			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
 				out.append(r.name).append(".address equ $")
 				   .append(String.format("%04X", r.address)).append(System.lineSeparator());
-				out.append(r.name).append(".size equ ").append(r.size)
-				   .append(System.lineSeparator());
 			}
 			for (Regions.Region region : ctx.regions.all()) {
 				out.append(region.name).append(".page equ ").append(region.page)
 				   .append(System.lineSeparator());
 				out.append(region.name).append(".address equ $")
 				   .append(String.format("%04X", region.address)).append(System.lineSeparator());
-				if (region.pages > 1) {
-					// a multi-page region : the game may need to know how wide
-					// its budget is, and its last page
-					out.append(region.name).append(".pages equ ").append(region.pages)
-					   .append(System.lineSeparator());
-					out.append(region.name).append(".page.last equ ")
-					   .append(region.page + region.pages - 1).append(System.lineSeparator());
-				}
 			}
 			// What the packer decided, published per FILE : an arena holds
 			// several of them, so <region>.page would name nothing. This is

@@ -1203,14 +1203,16 @@ est consigné.
    `<objectindex>` et son plugin (5e), `ImageSets.PageOf` et la branche à
    deux formes de `pageSymbol` (5b), `interface=` et le comptage nu
    (arbitrage), `PageSetPlugin` (5c), `stacked=` (modèle zones).
-2. **Publication des équates de layout — le seul vrai retrait Java.** La
-   mesure d'origine (§27 : « `.address`/`.size` zéro consommateur ») est
-   PÉRIMÉE pour `.address` : `stage1.address` sert de
-   `loader.DEFAULT_SCENE_EXEC_ADDR` dans r-type, `samples.address` est lu
-   par mplus — `.address` RESTE. `.size` : zéro consommateur au grep frais
-   → retirer l'émission. `.pages`/`.page.last` : à mesurer à
-   l'implémentation, même règle. Le §27 est corrigé au passage (une mesure
-   citée doit porter sa date).
+2. **Publication des équates de layout — le seul vrai retrait Java.**
+   Précision d'implémentation (13/08) : les consommateurs `.address` du
+   corpus (`stage1.address` = `DEFAULT_SCENE_EXEC_ADDR` de r-type,
+   `samples.address` de mplus) lisent la publication du **répertoire**
+   (places littérales) et celle des placements d'arène — pas les groupes
+   reserved/region du layout, conformes au « zéro consommateur » du §27.
+   Décision : `.address`/`.page` restent partout (une interface uniforme
+   nom → page+adresse, déjà consommée par deux de ses trois émetteurs) ;
+   `.size`, `.pages` et `.page.last` tombent — zéro consommateur au grep
+   frais sur les trois.
 3. **Le registre `PageSets` n'est PAS mort** — il porte les membres coupés
    du packer vers scène/répertoire/collection ; seul son NOM est un
    vestige du `<pageset>` disparu. À l'implémentation : mesurer son
