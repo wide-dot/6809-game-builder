@@ -363,12 +363,22 @@ intermédiaires leanscroll (`out.png`, `fullLean.png`, `*-color/`).
 
 ## La chaîne map
 
-`src/stages/NN/map/` porte les sorties leanscroll committées (tileset normal
-`0/0.png`, pré-décalé `1/1.png`, indexes `*.0.bin`, viewport `init.png`) et
-`in.png` la source. L'invocation est committée dans `tools/leanscroll-NN.txt`
-— régénération manuelle quand `in.png` change. Le build v2 compile les strips
-par `<gfxcomp grid>` et génère les tables par `<tilemap>` (voir
-`docs/lang/en/tilemaps.md`).
+`src/stages/NN/map/in.png` est la source ; le BUILD fait le reste (7c) :
+l'élément `<leanscroll>` du config dérive les deux plans, fenêtre et
+renumérote sous `gen/stages/NN/map/`, et la géométrie sort en équates. Les
+stages câblés (01, 02) n'ont plus de sorties committées ; les stages 03-08
+gardent leurs plans committés (`0/0.png`, `1/1.png`, `*.0.bin`) en attendant
+leur câblage. Voir `docs/lang/en/tilemaps.md`, et `tools/leanscroll-06.txt`
+pour la recette de reconstitution d'un `in.png` depuis l'arcade.
+
+## Porter un ennemi
+
+Le geste est court depuis 7b : les images sont DÉJÀ en place et numérotées
+(le renommage du stock complet suit l'ordre des properties d7 v1) — écrire
+l'unité hôte en copiant celle d'un ennemi voisin (`scant.unit.asm` : entrée
+exportée, INCLUDE api, en-têtes communs, table de liaison `Img_* equ set_*`),
+et déclarer le `<file>` avec une ou deux lignes `<images>`. `check_variants.py`
+rapproche le résultat des properties v1 par contenu.
 
 ## Référence
 

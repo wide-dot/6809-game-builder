@@ -771,7 +771,20 @@ depuis :
   via la macro `_api`. La propriété que le générateur devait apporter est
   acquise sans machinerie.
 
-### 7a — les contrats d'interface : rien à générer (à valider comme décision)
+### 7a — les contrats d'interface : rien à générer — FAIT (13/08)
+
+Clos comme proposé : l'idiome du contrat à liste unique est au manuel
+(symbols.md § The single-list contract, avec le générateur `.external.asm`
+REJETÉ et son pourquoi — la circularité), zéro mécanisme.
+`gen_enemy_unit.py` est retiré dans la foulée (son moule XML a fondu avec
+7b ; le geste de portage restant est documenté dans games/r-type/readme.md
+§ Porter un ennemi). **Le critère de fin de la phase 7 est atteint :
+`games/r-type/tools/` ne contient plus que des outils de contenu**
+(arcade_to_in, sync_waves, check_variants, remap_font_colors, fade_preview,
+la recette leanscroll-06) — plus aucun script dont la sortie est requise
+par le build.
+
+*Analyse d'origine :*
 
 Le générateur imaginé (`.external.asm` émis du registre d'exports) porte une
 circularité : la liste des exports du moteur EST le contrat authoré —

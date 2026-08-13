@@ -313,6 +313,41 @@ the loader appears in the caused list with its providers named — a name
 duplicated by accident reads as a surprising line there — and the dangling
 check still refuses a linked reference whose export no file emits.
 
+## The single-list contract
+
+An interface between a resident engine and swappable content is a LIST of
+names — and the way to keep its two sides from drifting is to have only one
+list. The idiom, from `games/r-type/src/common/engine/api.asm` :
+
+```
+_api    macro
+  ifdef ENGINE_RESIDENT
+\1 EXPORT
+  else
+\1 EXTERNAL
+  endif
+        endm
+
+        _api InitGlobals
+        _api Scroll
+        …
+```
+
+The engine unit defines `ENGINE_RESIDENT` before including the file and
+gets the EXPORT lines ; every stage includes the same file and gets the
+EXTERNAL lines for the same names. Drift is impossible because there is
+nothing to keep in sync. The reverse direction — the tables the engine
+reads back from the stage — is the same idiom inverted (`stage-tables.asm`).
+
+The list itself is AUTHORED, deliberately : each name costs four bytes of
+link data and a linear search per reference at load time, so what crosses
+the boundary is a design decision, not an inventory. A builder-generated
+`.external.asm` emitted from the export registry was considered and
+REJECTED (7a, 2026-08) : the export list IS the contract — generating it
+from "what the engine exports" would invert the causality, since this very
+file is what decides the engine's exports. The single-list macro delivers
+the no-drift property with zero machinery.
+
 ## Where this bites next
 
 The audit that prompted this note: across the examples, 1948 symbols are

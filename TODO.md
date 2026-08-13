@@ -593,6 +593,14 @@ Fonctionnel :
         specs <objectindex>/<entry>, XSD −219 lignes. Plus aucune
         constante machine hors machine.xml. PREUVE : 59 images
         identiques à l'octet, JUnit vert.
+  - [x] Phase 7a — les contrats d'interface : rien à générer (13/08) :
+        l'idiome du contrat à liste unique au manuel (symbols.md § The
+        single-list contract), le générateur .external.asm REJETÉ et
+        consigné (circularité : la liste des exports EST le contrat
+        authoré) ; gen_enemy_unit.py retiré (moule XML fondu avec 7b,
+        geste de portage documenté dans games/r-type/readme.md).
+        CRITÈRE DE FIN DE LA PHASE 7 ATTEINT : tools/ ne contient plus
+        que des outils de contenu.
   - [x] Phase 7c — leanscroll + crop orchestrés (13/08) : élément
         <leanscroll> (module en JVM, cache, crop absorbé, géométrie en
         équates), rejoué par la passe de placement ; stages 01-02 câblés,
