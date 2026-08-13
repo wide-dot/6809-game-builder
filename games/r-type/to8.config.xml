@@ -23,19 +23,11 @@
             <!--                                                                 -->
             <!-- La borne haute est le pool d'objets, en $90B0 : common + stage   -->
             <!-- disposent de $6100-$90AF, soit 12 208 octets, et rien d'autre.   -->
-            <!-- La frontiere recule de 48 octets : le stage 1 porte desormais la
-                 table d'effacement de la rotonde (56 octets de RAM propres au
-                 niveau, comme en v1).
-                 Puis de 254 de plus, pris au POOL cette fois (le moteur n'avait
-                 que 20 octets de marge) : le stage 1 porte le sequencement du
-                 boss — le pas de deplacement commun a ses six objets et les
-                 drapeaux de mort. Ce code doit etre RESIDENT : cinq objets
-                 pagines l'appellent, et deux pages ne peuvent pas etre montees
-                 en meme temps par la fenetre cartouche. La v1 le range dans son
-                 main pour la meme raison. La place vient du POOL D'OBJETS, qui
-                 passe de 50 a 47 emplacements — voir nb_dynamic_objects dans
-                 src/common/engine/ram.const.asm, qui est ce qui le place
-                 REELLEMENT ; ce layout ne fait que le decrire. -->
+            <!-- Le stage 1 porte la table d'effacement de la rotonde et le
+                 sequencement du boss (residents : appeles par plusieurs pages).
+                 La place vient du pool d'objets (50 -> 47) — nb_dynamic_objects
+                 dans src/common/engine/ram.const.asm est ce qui place REELLEMENT,
+                 ce layout ne fait que decrire. -->
             <!-- Le niveau 1 entier : 244 tuiles paires et 303 impaires, soit -->
             <!-- bien plus qu'une page. On offre des zones, le packer range.   -->
             <!-- La memoire graphique du stage : un seul tri, plus gros        -->
@@ -47,9 +39,8 @@
             <arena name="stage1.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : les musiques permanentes (lecteur YMM + musique,
-                     chargees au boot, jamais echangees) occupent $1C9B-$3736 ;
-                     l'arene offre les deux fenetres libres autour. -->
+                <!-- $1A : musiques permanentes (lecteur YMM + musique, chargees au
+                     boot, jamais echangees) en $1C9B-$3736 ; deux fenetres libres. -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1A" address="$3736" size="$08CA"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
@@ -61,9 +52,7 @@
             <arena name="stage2.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : les musiques permanentes (lecteur YMM + musique,
-                     chargees au boot, jamais echangees) occupent $1C9B-$3736 ;
-                     l'arene offre les deux fenetres libres autour. -->
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1A" address="$3736" size="$08CA"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
@@ -162,17 +151,11 @@
             <!-- plus petit, sur les pages qu'on lui ouvre. Leur page et leur   -->
             <!-- adresse sont publiees par fichier — c'est l'index d'objets qui -->
             <!-- les lit, personne ne grave d'adresse vers ici.                 -->
-            <!-- L'ARENE COMMUNE : ce qui sert a TOUT le jeu — le vaisseau et
-                 son armement, les bonus, les explosions, l'interface, les
-                 mecanismes (animation, son, collision, checkpoint) et la
-                 chaine de tir ennemi, qu'aucun stage ne possede en propre.
-                 Chargee une fois au boot et jamais rechargee.
-
-                 Les zones dans l'ordre de remplissage : la queue de la page 4
-                 d'abord — le loader tient l'autre moitie, et le quirk TO8
-                 impose de ne pas melanger les deux moities — puis des pages
-                 entieres. Si le loader grossit au-dela de $2000, le
-                 chevauchement zone/reserved refuse le build. -->
+            <!-- L'ARENE COMMUNE : tout ce qui sert au jeu entier, chargee une fois
+                 au boot. Queue de la page 4 d'abord (l'autre moitie est au loader —
+                 quirk TO8 : ne pas melanger les moities), puis des pages entieres.
+                 Loader au-dela de $2000 = refus du build (chevauchement
+                 zone/reserved). -->
             <arena name="objects">
                 <zone page="$04" address="$2000" size="$2000"/>
                 <zone page="$05" address="$0000" size="$4000"/>
@@ -182,22 +165,17 @@
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <!-- La tete de $0C, jusqu'a la frontiere relevee a la main
-                     avec l'arene du stage 1 : $0769, l'octet exact ou le
-                     commun s'arrete aujourd'hui. Zero marge, donc les deux
-                     arenes ne peuvent pas se recouvrir — c'est le controle de
-                     scene qui refusera le build si le commun grossit, plutot
-                     qu'un ennemi ecrase en silence. -->
+                <!-- Tete de $0C jusqu'a $0769, frontiere relevee a la main avec l'arene
+                     du stage 1, zero marge : si le commun grossit, le controle de scene
+                     refuse le build. -->
                 <zone page="$0C" address="$0000" size="$0769"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete. Ces objets sont nommes
                  stage1.* parce qu'ils appartiennent au niveau ; le jour ou un
                  ennemi servira deux stages, ce sera une autre etape. -->
-            <!-- Elle demarre a la FIN REELLE du domaine commun, relevee a la
-                 main sur la carte : $0D59 sur la page $0C (le debordement du
-                 commun, derriere les images d'explosion). Marge a $0E00 —
-                 si le commun grossit au-dela, le controle de scene refuse le
+            <!-- Demarre a la fin reelle du commun, relevee a la main : $0D59 en page
+                 $0C, marge a $0E00 — au-dela le controle de scene refuse le
                  chevauchement. -->
             <arena name="stage1.enemies">
                 <zone page="$0C" address="$0769" size="$3897"/>
@@ -243,16 +221,12 @@
             <!-- variables inter-main, puis la pile, puis la page directe en    -->
             <!-- $9F00. La pile a donc un budget FIXE, et la zone DP est        -->
             <!-- protegee comme le reste.                                       -->
-            <!-- ATTENTION : cette adresse n'est PAS ce qui place le pool. Le pool
-                 est pose par des equates de l'assembleur (ram.const.asm), ancrees
-                 sur GLOBALS_BASE et croissant VERS LE BAS :
-                   Dynamic_Object_RAM = $9E40 - nb_static*117 - nb_dynamic*117
-                 Ce <reserved> ne fait que le DECRIRE au builder. Les deux se
-                 croient, rien ne verifie leur accord — le deplacer seul fait
-                 grandir le stage par-dessus les premiers OST, qui ecrasent sa
-                 queue (tables d'index, table d'effacement) des le premier objet
-                 cree : ecran noir au chargement, vecu le 2026-08-07.
-                 nb_dynamic_objects = 44 -> $9BF7 - $141C = $87DB. -->
+            <!-- ATTENTION : cette adresse ne place PAS le pool — il est pose par
+                 ram.const.asm (ancre GLOBALS_BASE, croissant vers le bas :
+                 Dynamic_Object_RAM = $9E40 - nb_static*117 - nb_dynamic*117) ;
+                 ce <reserved> le DECRIT, rien ne verifie l'accord des deux. Le
+                 deplacer seul = OST par-dessus la queue du stage, ecran noir.
+                 nb_dynamic_objects = 44 -> $87DB. -->
             <!-- Les 16 premiers octets du slot rendu par le 45e objet logent  -->
             <!-- les temoins du banc (bench.const.asm) : nulle part ailleurs en -->
             <!-- page 1 — globals est plein a +147, au-dessus c'est la pile, et -->
@@ -352,7 +326,6 @@
                 <default name="images.shifts"    value="0"/>
 
                 <!-- Le moteur résident                                        -->
-                <!-- ******************************************************** -->
                 <file name="common.engine" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -378,7 +351,6 @@
                 <!-- aucun OST, une seule entree — donc pas un objet, mais une -->
                 <!-- routine appelee par paged.call. Declare AVANT le stage    -->
                 <!-- qui le consomme.                                          -->
-                <!-- ******************************************************** -->
                 <file name="common.overlay" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -400,7 +372,6 @@
 
                 <!-- Le joueur. Ses images d'abord dans le meme direntry : -->
                 <!-- l'index d'imageset resout leur page par <file>$PAGE.   -->
-                <!-- ******************************************************** -->
                 <file name="common.player" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/player/player.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -416,7 +387,6 @@
                 </file>
 
                 <!-- L'armement du joueur : quatre unites, une par objet       -->
-                <!-- ******************************************************** -->
                 <file name="common.weapon" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/weapon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -515,20 +485,9 @@
 
                 <!-- L'explosion : l'objet que tout ce qui meurt fait naitre.  -->
                 <!--                                                           -->
-                <!-- Ses treize sprites pesent 17 Ko : ils sont ranges par le  -->
-                <!-- builder dans l'arene, declares AVANT                      -->
-                <!-- l'objet puisque son index les designe. Une image sur deux  -->
-                <!-- seulement — c'est ce que la cible disquette de la v1       -->
-                <!-- compile (obj.d7.properties), le code rattache les          -->
-                <!-- manquantes a la suivante.                                  -->
-                <!-- ******************************************************** -->
-                <!-- Ses treize sprites pesent 17 Ko : TROIS TRANCHES d'arene,
-                     une par type d'explosion (petite, firework, grande), que
-                     le rangement glisse dans les creux du commun. L'index
-                     unique reste dans l'objet, chaque descripteur portant la
-                     page de SA tranche. Une image sur deux seulement — c'est
-                     ce que la cible disquette de la v1 compile
-                     (obj.d7.properties), le code rattache les manquantes a la
+                <!-- 17 Ko en trois tranches d'arene (une par type d'explosion), index
+                     unique dans l'objet, une page par descripteur. Une image sur deux,
+                     comme la cible disquette v1 — le code rattache les manquantes a la
                      suivante. -->
                 <file name="common.explosion.imgSmall" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/explosion-imgsmall.asm">
@@ -606,7 +565,6 @@
                 </file>
 
                 <!-- Le HUD                                                    -->
-                <!-- ******************************************************** -->
                 <file name="common.hud" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/hud.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -658,7 +616,6 @@
                 </file>
 
                 <!-- Le son : lecteur YMM, musiques, et pilote de bruitages   -->
-                <!-- ******************************************************** -->
                 <!-- Le port du YM2413 : le lecteur v2 le prend PAR LE LIEN,   -->
                 <!-- c'est ce qui lui permet de servir TO8 et MO6 sans           -->
                 <!-- recompilation. Une unite sans donnees, deux equates.        -->
@@ -712,25 +669,11 @@
                     </lwasm>
                 </file>
 
-                <!-- MIGRE MAIS DEBRANCHE — voir la region vgc.* du layout.
-                <file name="engine.sound.vgc" linkdata="LINK" region="vgc.player">
-                    <lwasm gensource="gen/sound/vgc.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="engine/sound/vgc.buffers.asm"/>
-                        <asm filename="engine/sound/vgc.asm"/>
-                    </lwasm>
-                </file>
-
-                <file name="stage1.music.vgc" linkdata="LINK" region="vgc.data">
-                    <lwasm gensource="gen/sound/vgc-data.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/stages/01/music/vgc.unit.asm"/>
-                    </lwasm>
-                </file>
-                -->
+                <!-- VGC migre mais debranche : rebrancher engine.sound.vgc (region
+                     vgc.player, engine/sound/vgc[.buffers].asm) et stage1.music.vgc
+                     (region vgc.data, music/vgc.unit.asm). -->
 
                 <!-- Les flammes de reacteur de la sequence d'ouverture        -->
-                <!-- ******************************************************** -->
                 <file name="common.engineflames" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/player/engineflames.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -748,7 +691,6 @@
                 </file>
 
                 <!-- Le fondu de palette, objet monte                          -->
-                <!-- ******************************************************** -->
                 <file name="common.fade" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/fx/fade.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -758,7 +700,6 @@
 
                 <!-- La chaine de tir ennemi : les deux sous-routines         -->
                 <!-- paginees, puis le projectile qu'elles font naitre.       -->
-                <!-- ******************************************************** -->
                 <!-- Les BONUS : le POW et sa boite a option.                  -->
                 <!--                                                           -->
                 <!-- Six sprites pour le POW, cinq pour la boite. Pas           -->
@@ -768,7 +709,6 @@
                 <!-- chaines `animation.Ani_pow_*` du .properties v1, terminaison -->
                 <!-- comprise : _nextRoutine rend la main a l'objet, _resetAnim  -->
                 <!-- reboucle.                                                  -->
-                <!-- ******************************************************** -->
                 <file name="common.pow" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/pickups/pow.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -879,7 +819,6 @@
                 <!-- nomment leur entree Object, leurs tables Routines, et      -->
                 <!-- posent tous AABB_0 equ ext_variables. La v1 en fait quatre -->
                 <!-- objets, nous en faisons quatre unites.                     -->
-                <!-- ******************************************************** -->
 
 
 
@@ -888,7 +827,6 @@
                 <!-- — et le packer comble les pages de l'arene. Chargé au        -->
                 <!-- boot, résident : une seule copie sur disquette et en RAM,    -->
                 <!-- quelle que soit la liste des stages qui s'en servent.        -->
-                <!-- ******************************************************** -->
 
                 <!-- LE CAST D'ENNEMIS, un direntry PAR objet, range par l'arene. -->
                 <!-- Ils etaient empaquetes dans un pageset : sept pages entieres  -->
@@ -1153,13 +1091,9 @@
                     </lwasm>
                 </file>
 
-                <!-- Les douze poses du tabrok, en TROIS TRANCHES d'arene nommees
-                     par la PHASE qui les joue — le verrou "un imageset = un
-                     gfxcomp" etant leve, le grain redevient celui du jeu. Aucun
-                     mode n'en joue deux a la fois (releve dans obj.asm), et une
-                     table d'animation peut de toute facon citer une pose d'une
-                     autre tranche : chaque descripteur de l'index unique porte
-                     la page de SON image. -->
+                <!-- Douze poses en trois tranches d'arene, une par phase de jeu (aucun
+                     mode n'en joue deux a la fois — releve dans obj.asm) ; index unique,
+                     chaque descripteur porte la page de SON image. -->
                 <!-- Vol et chute (modes 1, 5-10) : deux poses alternees a chaque tick par
                      tabrok_flameToggle, la flamme du reacteur. Poses 6-7 et leurs
                      miroirs 14-15 — le tank vole dans les deux sens -->
@@ -1383,7 +1317,6 @@
                     </lwasm>
                 </file>
 
-                <!-- ===================================================== -->
                 <!-- LE BOSS : dobkeratops et ses cinq satellites.          -->
                 <!--                                                        -->
                 <!-- Le corps mene la sequence ; la machoire, les queues,   -->
@@ -1391,7 +1324,6 @@
                 <!-- qui les accorde (le pas de deplacement commun, les     -->
                 <!-- drapeaux de mort) est resident dans le stage, qui      -->
                 <!-- l'EXPORTe — voir src/stages/01/main.asm.               -->
-                <!-- ===================================================== -->
                 <!-- Le visage du boss, un etat par fichier : chaque pose est un sprite
                      geant (~6 Ko avec ses deux decalages), les six ensemble depassent
                      deux pages. Un etat = une tranche, le rangement les etale. -->
@@ -1528,10 +1460,9 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le nettoyage, bande 0 : 16 tranches. Le boss est trop large pour que le
-                     moteur restaure son fond par sprite — il se nettoie par bandes,
-                     une par tranche de decor decouverte. Une bande par fichier :
-                     les quarante-cinq ensemble depassent la page -->
+                <!-- Le nettoyage du boss, bande 0 : 16 tranches. Trop large pour un
+                     effacement par sprite — une bande par tranche de decor, un fichier
+                     par bande (les 45 ensemble depassent la page). -->
                 <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1541,10 +1472,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le nettoyage, bande 1 : 7 tranches. Le boss est trop large pour que le
-                     moteur restaure son fond par sprite — il se nettoie par bandes,
-                     une par tranche de decor decouverte. Une bande par fichier :
-                     les quarante-cinq ensemble depassent la page -->
+                <!-- Bande 1 : 7 tranches (meme mecanisme que la bande 0). -->
                 <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1574,10 +1502,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le nettoyage, bande 2 : 12 tranches. Le boss est trop large pour que le
-                     moteur restaure son fond par sprite — il se nettoie par bandes,
-                     une par tranche de decor decouverte. Une bande par fichier :
-                     les quarante-cinq ensemble depassent la page -->
+                <!-- Bande 2 : 12 tranches (meme mecanisme que la bande 0). -->
                 <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1587,10 +1512,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le nettoyage, bande 3 : 10 tranches. Le boss est trop large pour que le
-                     moteur restaure son fond par sprite — il se nettoie par bandes,
-                     une par tranche de decor decouverte. Une bande par fichier :
-                     les quarante-cinq ensemble depassent la page -->
+                <!-- Bande 3 : 10 tranches (meme mecanisme que la bande 0). -->
                 <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1913,7 +1835,6 @@
                 </file>
 
                 <!-- La collision terrain du stage 1                           -->
-                <!-- ******************************************************** -->
                 <file name="stage1.collision" linkdata="LINK" region="collision">
                     <lwasm gensource="gen/stages/01/collision.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1928,7 +1849,6 @@
                 <!-- fournisseur doit être déclaré avant son consommateur, et  -->
                 <!-- entre deux alternatives c'est la dernière déclarée qui     -->
                 <!-- fournit. D'où le groupement par stage plutôt que par type. -->
-                <!-- ******************************************************** -->
                 <!-- Les tilesets sont des fichiers ORDINAIRES de l'arene :     -->
                 <!-- gfxcomp sait nommer ses elements, donc le packer les pose  -->
                 <!-- entiers s'ils rentrent et les coupe entre elements sinon.  -->
@@ -2015,16 +1935,13 @@
                         <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
-                        <!-- La palette des messages READY / GAME OVER, du meme
-                             PNG que la v1 (palette.Pal_messages). Le stage la
-                             pose le temps d'afficher le message, puis rend la
-                             sienne. -->
+                        <!-- Palette des messages READY / GAME OVER (PNG v1) : posee le
+                             temps du message, puis rendue. -->
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
                 </file>
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
-                <!-- ******************************************************** -->
                 <file name="stage2.wave" linkdata="LINK" arena="stage2.gfx">
                     <unit name="stage2.wave" symbol="stage.wave" section="code">
                         <asm filename="src/stages/02/objid.const.asm"/>
@@ -2078,10 +1995,8 @@
                         <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
-                        <!-- La palette des messages READY / GAME OVER, du meme
-                             PNG que la v1 (palette.Pal_messages). Le stage la
-                             pose le temps d'afficher le message, puis rend la
-                             sienne. -->
+                        <!-- Palette des messages READY / GAME OVER (PNG v1) : posee le
+                             temps du message, puis rendue. -->
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
                 </file>
@@ -2089,7 +2004,6 @@
                 <!-- Les scènes. Celle du boot charge le moteur ET le stage 1 ; -->
                 <!-- les deux autres ne rechargent que ce qui change, le        -->
                 <!-- moteur restant en place par simple absence de la liste.    -->
-                <!-- ******************************************************** -->
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.engine"/>
                     <load name="common.anim"/>
@@ -2113,10 +2027,7 @@
                     <load name="common.messages"/>
                     <load name="common.checkpoint"/>
                     <load name="stage1.init"/>
-                    <!-- MIGRE MAIS DEBRANCHE :
-                    <load name="engine.sound.vgc"/>
-                    <load name="stage1.music.vgc"/>
-                    -->
+                    <!-- VGC debranche : recharger engine.sound.vgc + stage1.music.vgc ici. -->
                     <load name="common.hud"/>
                     <load name="common.pow"/>
                     <load name="common.optionbox"/>
@@ -2192,7 +2103,6 @@
             </directory>
 
             <!-- Boot loader -->
-            <!-- *********************************************************** -->
             <!-- Le pool porte les donnees de lien de tout ce qui est charge. Le    -->
             <!-- moteur en pese 2,5 Ko a lui seul depuis qu'il embarque la chaine   -->
             <!-- sprites, et un echange de stage alloue le nouveau avant de         -->
