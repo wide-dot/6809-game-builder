@@ -1180,6 +1180,121 @@ d'étude de la campagne (`analyse-placement`, esquisses) sont fermés avec
 leurs variantes rejetées — c'est leur rôle ; `CLAUDE.md` et `TODO.md` sont
 réalignés.
 
+### Phase 9 — spécification détaillée (13/08, à valider)
+
+**Périmètre et ordre.** Deux passes, dans cet ordre : le code mort d'abord
+(le code doit être dans son état final avant que la doc le décrive), la
+documentation ensuite. Restent HORS phase 9 : le renommage de l'engine ASM
+(`docs/engine-naming.csv` — phase finale post-jeux, inchangé) et la version
+FRANÇAISE du recueil de cas (liée à la fin de la migration v1, pas à la
+campagne).
+
+#### Passe 1 — le code mort, candidat par candidat
+
+Méthode par candidat : mesurer les consommateurs (grep + build), retirer,
+prouver par **identité 63/63 + JUnit**. Un retrait qui bouge une image se
+requalifie en changement de comportement et SORT de la passe. Un candidat
+dont l'absence de consommateur n'est pas mesurable n'est pas retiré — il
+est consigné.
+
+État des candidats, re-mesuré le 13/08 (la liste d'origine avait vieilli) :
+
+1. **Déjà tombés en route — rien à faire, consigné** (vérifié par grep) :
+   `<objectindex>` et son plugin (5e), `ImageSets.PageOf` et la branche à
+   deux formes de `pageSymbol` (5b), `interface=` et le comptage nu
+   (arbitrage), `PageSetPlugin` (5c), `stacked=` (modèle zones).
+2. **Publication des équates de layout — le seul vrai retrait Java.** La
+   mesure d'origine (§27 : « `.address`/`.size` zéro consommateur ») est
+   PÉRIMÉE pour `.address` : `stage1.address` sert de
+   `loader.DEFAULT_SCENE_EXEC_ADDR` dans r-type, `samples.address` est lu
+   par mplus — `.address` RESTE. `.size` : zéro consommateur au grep frais
+   → retirer l'émission. `.pages`/`.page.last` : à mesurer à
+   l'implémentation, même règle. Le §27 est corrigé au passage (une mesure
+   citée doit porter sa date).
+3. **Le registre `PageSets` n'est PAS mort** — il porte les membres coupés
+   du packer vers scène/répertoire/collection ; seul son NOM est un
+   vestige du `<pageset>` disparu. À l'implémentation : mesurer son
+   recouvrement avec le registre `Cuts` (né en 5c) — s'ils se recouvrent,
+   fusion ; sinon renommage au vocabulaire de la collection (les deux
+   prouvables par identité, c'est du Java interne).
+4. **Les orphelins du dépôt** (les « Dettes » de CLAUDE.md rejoignent la
+   passe — c'est la même passe) : `data.asm` et `mub.o` à la racine,
+   `engine/system/mo6/graphics/gfx.memset..asm` (double point, orphelin),
+   `examples/timing/` + `docs/lang/fr/timing.md` (API `wait.*`
+   inexistante — supprimer, le besoin réel vit déjà dans l'état des lieux
+   de CLAUDE.md). `engine/pack/mub.asm` (chemins d'INCLUDE invalides) :
+   NON retiré — c'est du MUCOM88 « écrit non branché », pas du mort ;
+   consigné tel quel.
+5. **Souches des mécanismes retirés** : grep de clôture sur les mots des
+   mécanismes disparus (éviction/`findByDest`, `stacked`, budget=membres,
+   `pages="auto"`, `range=` gfxcomp, `member()`) — le grep doit rendre
+   ZÉRO occurrence hors historique daté.
+6. **La forme par-load** (destination portée par le `<load>`) n'est pas
+   une souche : conservée À DESSEIN, loader-ut en est le gardien désigné
+   (elle exerce le chemin %01 du loader avec destinations explicites).
+   À STATUER (question 1 ci-dessous) : l'acter comme forme de test
+   permanente, ou exécuter 4c (retrait + migration de loader-ut).
+
+*Preuve passe 1 : identité 63/63 à chaque retrait, JUnit ; grep de clôture
+du point 5 archivé dans le commit.*
+
+#### Passe 2 — la documentation
+
+1. **Le modèle cible devient LE modèle.** `manuel-cible-2026-08.md` et
+   `manuel-cible-workflow-2026-08.md` perdent leur bandeau « brouillon
+   d'étude … DISCUSSION » ; leur contenu normatif passe dans le manuel
+   anglais (la règle du dépôt : `docs/lang/en/*.md` décrit le modèle v2
+   pour qui n'a jamais vu ni la v1 ni la campagne), et les deux fichiers
+   français sont fermés en études (statut + renvoi vers le manuel).
+2. **La passe anglaise** couvre les fichiers du MODÈLE : `scenes.md`
+   (zones/arènes/places attitrées/collections — déjà partiellement à
+   jour), `symbols.md`, `tilemaps.md`, `sprites.md`, `objects.md`,
+   `groups.md`, `config.md`, `project-setup.md`/`project-build.md`,
+   `readme.md`/`toc.md`. Les pages outillage (`toolbox.md`,
+   `file-format-stm.md`, `unpack-tools.md`…) ne sont reprises que si
+   elles sont FAUSSES. Critère de fin : un grep de `pageset|interface=|
+   stacked|évict` sur `docs/lang/en/` ne rend que de l'historique daté.
+3. **Les études de la campagne sont fermées, variantes rejetées
+   CONSERVÉES** (c'est le rôle du tiers) : `analyse-placement` (statut
+   « rien d'implémenté » → clos + renvoi), `analyse-reste-cible`,
+   `analyse-multipage` (la note datée du § « membre non rempli », dérive
+   déjà consignée), `analyse-frontiere-stage`, `modele-zones`,
+   `scenes-declaratives`. Chaque en-tête `statut:` redevient VRAI.
+4. **CLAUDE.md réaligné** : les sections périmées mesurées aujourd'hui —
+   « Plugins de conversion … ServiceLoader » (contredit par le retrait du
+   mécanisme, raconté 200 lignes plus bas), « État de validation au
+   30/07 » (8 configs → 15, corpus 63 images, lane toje headless),
+   la ligne sprites « un set trop gros se déclare en `<pageset>` », la
+   section loader « cycle de vie incomplet » (l'éviction implicite y est
+   racontée comme actuelle ; le pas B n'y est pas), les Dettes purgées
+   par la passe 1, `rom t2` (décision : porter ou retirer de la doc —
+   question 3). TODO.md : la campagne fermée, les reliquats reversés aux
+   bonnes sections.
+5. **Liens** : les 4 liens vides du `readme.md` racine, le renvoi
+   `docs/lang/fr/readme.md` inexistant.
+
+*Preuve passe 2 : les docs ne touchent pas les images — la preuve est la
+COHÉRENCE : greps de clôture (point 2), liens résolus (un script one-shot
+suffit), statuts d'en-tête tous vrais, et l'identité 63/63 en clôture de
+phase (rien d'autre que des docs n'a bougé).*
+
+#### Questions ouvertes à l'auteur
+
+1. **La forme par-load** : l'acter comme forme de test permanente
+   (recommandé — le gardien loader-ut couvre le chemin %01 à destinations
+   explicites, c'est une couverture, pas une dette ; une ligne au manuel
+   la réserve aux bancs), ou exécuter 4c (la retirer du format et migrer
+   loader-ut vers les places attitrées) ?
+2. **`PageSets`/`Cuts`** : d'accord pour fusionner ou renommer ces
+   registres Java internes si la mesure montre le recouvrement (prouvé
+   par identité) ?
+3. **`rom t2`** : aucun média cartouche n'existe dans le registre v2 —
+   retirer la mention de la doc (recommandé, le portage ROM restant au
+   backlog), ou le laisser annoncé ?
+4. **`examples/timing` + `timing.md`** : supprimer (l'API `wait.*`
+   n'existe pas — recommandé, la trace du besoin reste dans l'état des
+   lieux), ou garder comme spécification d'une API à venir ?
+
 ## Ce que le plan ne couvre pas, à dessein
 
 Le portage des ennemis et des game modes continue EN PARALLÈLE des phases
