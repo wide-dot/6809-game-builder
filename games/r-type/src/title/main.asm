@@ -41,8 +41,25 @@ mainloop.state    EXPORT
         INCLUDE "engine/system/thomson/graphics/mode/gfxmode.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/pack/ymm.asm"
+        INCLUDE "engine/pack/vgc.asm"
 
         INCLUDE "gen/layout.asm"
+
+; le son : lecteurs et donnees, resolus par le lien (dialecte v2 des lecteurs
+; conserves — kept-v2-api.md). Le YMM est resident, le VGC est charge par la
+; scene du title dans son arene, donnees colocalisees dans le meme direntry.
+ymm.obj.play     EXTERNAL
+ymm.frame.play   EXTERNAL
+ym2413.init      EXTERNAL
+vgc.obj.play     EXTERNAL
+vgc.frame.play   EXTERNAL
+sn76489.init     EXTERNAL
+sounds.title.ymm EXTERNAL
+sounds.title.vgc EXTERNAL
+
+page.ymm equ map.RAM_OVER_CART+engine.sound.ymm.page
+page.vgc equ map.RAM_OVER_CART+title.sound.vgc.page
 
 ; l'entree est le premier octet de l'unite (cf. unit-entry-point.md) ; le
 ; moteur resident y saute par le LIEN (`jmp stage.main` dans
@@ -58,6 +75,14 @@ stage.main
         ; 160x200 en 16 couleurs : sans ca la machine reste dans son mode de
         ; demarrage et lit les sprites comme du 320x200 deux couleurs
         _gfxmode.setBM16
+
+        ; les deux puces au silence — l'etat connu du demarrage (v1 :
+        ; resetsn/resetym ; v2 : les routines init des lecteurs, montees
+        ; chacune avec sa page)
+        _ram.cart.set #page.vgc
+        _sn76489.init
+        _ram.cart.set #page.ymm
+        _ym2413.init
 
         ; palette au noir le temps de composer la premiere trame
         ldd   #Pal_black
@@ -286,6 +311,16 @@ title.hold.set
         ldx   addr_tm
         ldd   #0
         std   y_vel,x
+
+        ; la musique, au moment v1 (phase 5 : l'arret du logo) : les DEUX
+        ; flux, armes sous masque IRQ comme la v1 (v1-main.asm:445-451) —
+        ; frame.play tourne deja dans l'IRQ, obj.play remet le flux a zero
+        jsr   IrqOff
+        _ram.cart.set #page.ymm
+        _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ram.cart.set #page.vgc
+        _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
+        jsr   IrqOn
 title.hold.live
         jsr   title.frame
         bra   title.hold.live
@@ -308,7 +343,12 @@ title.frame
 
 title.userIRQ
         jsr   gfxlock.bufferSwap.check
-        jmp   PalUpdateNow
+        jsr   PalUpdateNow
+        ; le son dans l'IRQ, comme la v1 (UserIRQ : une trame de chaque flux) ;
+        ; sans morceau arme les lecteurs ressortent d'eux-memes
+        _ymm.frame.play #page.ymm
+        _vgc.frame.play #page.vgc
+        rts
 
 ; ---------------------------------------------------------------------------
 ; L'objet logo — logo.asm v1 repris tel quel, ses images par l'index

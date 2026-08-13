@@ -129,6 +129,30 @@ sort d'abord DIRECTEMENT sur le stage 1.
 - T2 — la musique : `engine.sound.vgc` + `title.music.ymm/vgc`
   colocalisés dans l'arène title, `resetym`/`resetsn` au démarrage.
   Preuve : données musicales relues en RAM, player vivant ;
+
+  **RÉALISÉ (13/08/2026).** Les deux flux de la v1, chacun à sa place :
+  les données YMM (`title.music.ymm`) vont avec le lecteur résident —
+  donc en $1A/$20BC, l'alternative du bloc musical des stages, comme
+  les graphismes du title occupent les pages des tuiles ; le VGC
+  (`title.sound.vgc`) est rebranché pour son premier consommateur v2 —
+  lecteur, tampons et données dans UN direntry coulé dans l'arène
+  title, la colocalisation exigée par le montage unique sous IRQ est
+  structurelle (un direntry tient sur une page). Le port SN passe par
+  le lien (`engine.sound.sn.const`, variante 2 comme le modèle sound).
+  Les resets v1 (`resetsn`/`resetym`) deviennent les init des lecteurs
+  (`_sn76489.init`/`_ym2413.init`, dialecte kept-v2) au démarrage ;
+  l'armement garde le moment ET le masque IRQ de la v1 (phase 5,
+  l'arrêt du logo) ; l'IRQ joue une trame de chaque flux. Les sons
+  sont cuits statiquement (fournisseur unique à destination connue —
+  zéro coût de lien). Preuve sous toje : les deux blocs de données
+  relus en RAM identiques aux sources octet pour octet, YMM vivant
+  (`data.pos` avance, status=1, boucle), VGC vivant (58 octets d'état
+  de flux changent en 37 trames, finished=0, loop=1), banc 5/5,
+  corpus 59 images hors r-type identiques. Leçon de sonde : un
+  échantillonnage à période fixe peut tomber sur la période de boucle
+  d'un morceau court, et l'état du VGC vit dans les opérandes
+  auto-modifiées, pas dans ses variables déclarées — diffuser large
+  avant de conclure « gelé ». Restent T3-T4.
 - T3 — la bascule : press start sous toje (injection clavier) →
   stage 1 tourne (caméra avance), et retour au title à la mort finale
   quand le flow du chantier 2 arrivera. Preuve : scénario complet

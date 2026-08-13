@@ -2143,13 +2143,43 @@
                     </lwasm>
                 </file>
 
-                <!-- La scene du title : pour l'instant ses seuls graphismes ;
-                     l'unite main + les musiques (ymm00 + vgc00, player VGC a
-                     rebrancher) la completeront en T1b/T2. Chargee par
-                     personne au boot tant que T3 n'a pas cable la bascule. -->
+                <!-- Les musiques du title (T2) : deux flux, comme la v1. -->
+                <!-- YMM : le lecteur est resident ($1A) et ne monte qu'une
+                     page — les donnees d'un morceau vivent avec lui. La place
+                     du title est CELLE du bloc musical des stages (alternative
+                     a stage1.music.ymm : un title ne coexiste jamais avec un
+                     stage). -->
+                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/title-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- VGC : premier consommateur v2 du lecteur (debranche cote
+                     stage, decision decouplee). Lecteur, tampons et donnees
+                     dans UN direntry : un direntry tient sur une page, la
+                     colocalisation exigee par le montage unique sous IRQ est
+                     structurelle. Le packer le coule dans l'arene title. -->
+                <file name="title.sound.vgc" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/sound/title-vgc.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="engine/sound/vgc.buffers.asm"/>
+                        <asm filename="engine/sound/vgc.asm"/>
+                        <asm filename="src/title/music/vgc.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le port du SN76489 par le lien, comme le YM : la variante
+                     2 ($E7F7), celle du modele sound. -->
+                <file name="engine.sound.sn.const" linkdata="LINK">
+                    <lwasm gensource="gen/sound/sn-const.asm">
+                        <asm filename="engine/system/to8/sound/sn.2.const.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- L'unite du title : la troisieme alternative du creneau
-                     d'echange ($01/$8000, comme stage1 et stage2). Squelette
-                     T1b — la boucle v1 arrive en T1c. -->
+                     d'echange ($01/$8000, comme stage1 et stage2). -->
                 <file name="title.main" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/title/title-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -2167,6 +2197,9 @@
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
+                    <load name="title.music.ymm"/>
+                    <load name="title.sound.vgc"/>
+                    <load name="engine.sound.sn.const"/>
                 </scene>
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
