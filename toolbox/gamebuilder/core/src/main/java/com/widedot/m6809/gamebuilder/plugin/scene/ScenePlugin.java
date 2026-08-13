@@ -81,12 +81,12 @@ public class ScenePlugin {
 			// a collection the packer CUT is one authored load and several
 			// entries : the scene simply places each member where the packing
 			// put it (the flow already guarantees the chunks never overlap)
-			List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member> members =
-					ctx.pageSets.get(loadName);
+			List<com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member> members =
+					ctx.cuts.members(loadName);
 			if (members != null) {
 				String setPlace = attributed == null ? null
 						: (attributed.region != null ? attributed.region : attributed.arena);
-				for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member : members) {
+				for (com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member member : members) {
 					placed.add(new SceneGenerator.Placed(member.page, member.address, member.name));
 					check.loads.add(new SceneCheck.Load(member.name, SceneCheck.Kind.PLACED,
 							member.page, member.address, null, setPlace, where));

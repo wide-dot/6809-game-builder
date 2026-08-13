@@ -90,14 +90,14 @@ public class DirectoryPlugin {
 				// a collection the packer CUT : one entry per member, ids in
 				// member order — the count is the packing's result, decided
 				// once by the placement scan and read here
-				java.util.List<com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member>
-						cutMembers = plugin.equals("file") ? ctx.pageSets.get(name) : null;
+				java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member>
+						cutMembers = plugin.equals("file") ? ctx.cuts.members(name) : null;
 				if (cutMembers != null) {
 					String codec = DirEntryPlugin.effectiveCodec(
 							Attribute.getStringOpt(child, resCtx, "codec"));
 					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
 					int blocks = DirEntryPlugin.blockCount(codec, linkSection);
-					for (com.widedot.m6809.gamebuilder.spi.globals.PageSets.Member member
+					for (com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member member
 							: cutMembers) {
 						writer.write(member.name + " equ " + fileId + System.lineSeparator());
 						directoryNames.add(member.name);

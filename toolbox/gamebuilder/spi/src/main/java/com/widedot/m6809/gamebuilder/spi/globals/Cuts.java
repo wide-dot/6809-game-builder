@@ -5,19 +5,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * How each divisible file was cut by the arena packer — the other half of
- * what {@link PageSets} records.
+ * How the arena packer placed each divisible file, in full.
  *
  * A file whose top-level children can all name their parts (a tileset) is an
  * ELEMENT LIST to the placement : whole if it fits, cut between elements if
  * it does not ("entier s'il rentre, coupé sinon" — the author's rule, 5c).
- * PageSets carries the members a scene expands to ; this registry carries
- * what the EMISSION needs to build them — which parts, grouped how, and
- * where the generated member sources go. One decision, taken once by the
- * packer, read by the directory : deciding twice would let the passes
- * disagree, which the reserved==emitted assertion refuses.
+ * One record carries both halves of that one decision : the MEMBERS a
+ * scene's load expands to (name, page, address — null when the file was
+ * placed whole and keeps its name), and what the EMISSION needs to build
+ * them — which parts, grouped how, and where the generated member sources
+ * go. Taken once by the packer, read by the scenes and the directory :
+ * deciding twice would let the passes disagree, which the
+ * reserved==emitted assertion refuses.
  */
 public class Cuts {
+
+	/** one direntry a cut collection expands to */
+	public static class Member {
+		public final String name;
+		public final int page;
+		public final int address;
+
+		public Member(String name, int page, int address) {
+			this.name = name;
+			this.page = page;
+			this.address = address;
+		}
+	}
 
 	public static class Cut {
 		/** every part of the file, {generated source path, exported symbol} */
@@ -37,13 +51,26 @@ public class Cuts {
 		 * the packing knows. Empty for a file of divisible content only.
 		 */
 		public final Map<Integer, org.apache.commons.configuration2.tree.ImmutableNode> units;
+		/**
+		 * The direntries a scene's load expands to, in member order — null
+		 * when the file was placed whole (it keeps its name and gets a plain
+		 * placement instead).
+		 */
+		public final List<Member> members;
 
 		public Cut(List<String[]> parts, List<List<Integer>> chunks, String gendir,
 				Map<Integer, org.apache.commons.configuration2.tree.ImmutableNode> units) {
+			this(parts, chunks, gendir, units, null);
+		}
+
+		public Cut(List<String[]> parts, List<List<Integer>> chunks, String gendir,
+				Map<Integer, org.apache.commons.configuration2.tree.ImmutableNode> units,
+				List<Member> members) {
 			this.parts = parts;
 			this.chunks = chunks;
 			this.gendir = gendir;
 			this.units = units;
+			this.members = members;
 		}
 	}
 
@@ -56,6 +83,15 @@ public class Cuts {
 	/** null when the name is not a divisible file the packer cut or placed */
 	public Cut get(String file) {
 		return cuts.get(file);
+	}
+
+	/**
+	 * The members a load of this name expands to — null for an ordinary or
+	 * whole-placed file, which keeps its own name.
+	 */
+	public List<Member> members(String file) {
+		Cut cut = cuts.get(file);
+		return cut == null ? null : cut.members;
 	}
 
 	public void clear() {

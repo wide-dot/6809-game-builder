@@ -17,7 +17,6 @@ import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
-import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.media.MediaDataInterface;
 import com.widedot.m6809.util.FileUtil;
 
@@ -164,7 +163,7 @@ public class CollectionPlugin {
 		String section = Attribute.getStringOpt(node, ctx, "section");
 		String bake = Attribute.getStringOpt(node, ctx, "bake");
 
-		List<PageSets.Member> members = ctx.pageSets.get(name);
+		List<Cuts.Member> members = cut.members;
 		for (int c = 0; c < cut.chunks.size(); c++) {
 			String memberName;
 			int page;
@@ -179,7 +178,7 @@ public class CollectionPlugin {
 				page = at[0];
 				address = at[1];
 			} else {
-				PageSets.Member member = members.get(c);
+				Cuts.Member member = members.get(c);
 				memberName = member.name;
 				page = member.page;
 				address = member.address;

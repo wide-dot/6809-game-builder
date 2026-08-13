@@ -14,8 +14,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
+import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
-import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 /**
@@ -61,7 +61,7 @@ class ArenaPackerCutTest {
 		BuildContext c = ctx();
 		int[] free = { 9834, 16384, 16384 };
 		ArenaPacker.cut(arena(9834, 16384, 16384), "tiles", divisible(sizes), free, c);
-		List<PageSets.Member> members = c.pageSets.get("tiles");
+		List<Cuts.Member> members = c.cuts.members("tiles");
 		assertEquals(2, members.size());
 		assertEquals(4, members.get(0).page);
 		assertEquals(5, members.get(1).page);
@@ -76,7 +76,7 @@ class ArenaPackerCutTest {
 		int[] free = { 200, 16384 };
 		ArenaPacker.cut(arena(200, 16384), "s", divisible(100, 100), free, c);
 		// one tail held everything : a whole placement, no members
-		assertNull(c.pageSets.get("s"));
+		assertNull(c.cuts.members("s"));
 		int[] at = c.regions.filePlacement("s");
 		assertNotNull(at);
 		assertEquals(5, at[0]);
@@ -91,7 +91,7 @@ class ArenaPackerCutTest {
 		BuildContext c = ctx();
 		int[] free = { 1000, 16384 };
 		ArenaPacker.cut(arena(1000, 16384), "s", divisible(300, 300, 500), free, c);
-		assertEquals(2, c.pageSets.get("s").size());
+		assertEquals(2, c.cuts.members("s").size());
 		assertEquals(400, free[0]);
 	}
 
@@ -101,7 +101,7 @@ class ArenaPackerCutTest {
 		BuildContext c = ctx();
 		int[] free = { 500, 16384 };
 		ArenaPacker.cut(arena(500, 16384), "s", divisible(800), free, c);
-		assertNull(c.pageSets.get("s"));
+		assertNull(c.cuts.members("s"));
 		assertEquals(5, c.regions.filePlacement("s")[0]);
 		assertEquals(500, free[0]);
 	}

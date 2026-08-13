@@ -11,7 +11,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
-import com.widedot.m6809.gamebuilder.spi.globals.PageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 import lombok.extern.slf4j.Slf4j;
@@ -261,7 +260,7 @@ public final class ArenaPacker {
 			biggest = Math.max(biggest, free[i]);
 		}
 
-		List<PageSets.Member> members = new ArrayList<PageSets.Member>();
+		List<Cuts.Member> members = new ArrayList<Cuts.Member>();
 		List<List<Integer>> chunks = new ArrayList<List<Integer>>();
 		int zi = 0;
 		int used = 0;
@@ -304,22 +303,22 @@ public final class ArenaPacker {
 			// (reachable in the measured pass only through the blind one,
 			// where the whole-fit test did not run)
 			ctx.regions.placeFile(file, members.get(0).page, members.get(0).address);
+			ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units));
 		} else {
-			ctx.pageSets.declare(file, members);
+			ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units, members));
 		}
-		ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units));
 		log.info("collection {} : {} member(s) flowed into arena '{}'", file, members.size(),
 				arena.name);
 	}
 
 	private static void closeChunk(Regions.Region arena, String file,
-			List<PageSets.Member> members, List<List<Integer>> chunks, List<Integer> chunk,
+			List<Cuts.Member> members, List<List<Integer>> chunks, List<Integer> chunk,
 			int zi, int used, int[] free, BuildContext ctx) {
 		Regions.Zone z = arena.zones.get(zi);
 		int at = z.end() - free[zi];
 		free[zi] -= used;
 		String memberName = file + "." + members.size();
-		members.add(new PageSets.Member(memberName, z.page, at));
+		members.add(new Cuts.Member(memberName, z.page, at));
 		chunks.add(new ArrayList<Integer>(chunk));
 		log.debug("arena {} : {} -> page {} ${} ({} elements)", arena.name, memberName,
 				z.page, Integer.toHexString(at).toUpperCase(), chunk.size());
