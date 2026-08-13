@@ -2,7 +2,9 @@
 date: 2026-08-08
 sujet: Le dernier héritage v1 du placement — un membre de pageset par zone déclarée —
   et inventaire des mécanismes de placement morts ou en dérive.
-statut: analyse, rien d'implémenté
+statut: étude CLOSE (13/08/2026) — le modèle des §12-§27 a été implémenté
+  par la campagne (plan-migration-cible-2026-08.md, phases 0-9, chacune
+  avec sa preuve). Les variantes rejetées restent : c'est le rôle du tiers.
 s'appuie sur: modele-zones-2026-08.md, analyse-multipage-2026-08.md
 ---
 

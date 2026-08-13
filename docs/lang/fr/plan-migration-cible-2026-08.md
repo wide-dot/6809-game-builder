@@ -2,8 +2,9 @@
 date: 2026-08-09
 sujet: Plan de migration complet du builder/loader/configs vers le modèle cible
   « file maître » (analyse-placement-2026-08.md §12-§23).
-statut: plan, rien d'implémenté. Remplace l'« ordre suggéré » en queue de
-  l'analyse.
+statut: RÉALISÉ (13/08/2026) — les neuf phases sont closes, chacune porte
+  son annotation de preuve dans le corps du document. Remplace l'« ordre
+  suggéré » en queue de l'analyse.
 s'appuie sur: analyse-placement-2026-08.md, analyse-charge-manuelle-2026-08.md,
   manuel-cible-2026-08.md, manuel-cible-workflow-2026-08.md
 ---

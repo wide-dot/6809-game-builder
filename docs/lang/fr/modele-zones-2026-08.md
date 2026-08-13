@@ -1,7 +1,8 @@
 ---
 date: 2026-08-06
 sujet: Modèle mémoire — zones, régions, arènes. Décision de conception et plan d'implémentation.
-statut: les six étapes sont faites ; le rapport (étape 6) est en v1, design à itérer
+statut: les six étapes sont faites ; le rapport d'occupation a depuis été
+  refondu (occupancy-<cible>.html, 03/08)
 succède à: modele-regions-2026-07.md (doctrine des régions)
 ---
 

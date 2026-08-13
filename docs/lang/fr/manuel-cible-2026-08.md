@@ -1,11 +1,14 @@
 ---
 date: 2026-08-09
-sujet: Manuel utilisateur complet du modèle cible « file maître » — la disquette
-  ET la mémoire, tous les cas d'usage.
-statut: brouillon d'étude, écrit pour éprouver le modèle du §12 de
-  analyse-placement-2026-08.md. La syntaxe montrée est CELLE DU MODÈLE EN
-  DISCUSSION, pas celle du builder d'aujourd'hui. Ce que l'écriture a révélé
-  est consigné au §13 de l'analyse.
+maj: 2026-08-13
+sujet: Manuel utilisateur du modèle « file maître » — la disquette ET la
+  mémoire, tous les cas d'usage.
+statut: NORMATIF (rehomé le 13/08/2026, phase 9 de la campagne). La syntaxe
+  montrée est celle du builder. Écart historique résolu à la relecture — le
+  modèle d'index déclaratif (<index>/index=) du brouillon a été testé puis
+  inversé en phase 5-objets : les tables de jeu s'écrivent en assembleur,
+  §3.5/§5/§6 le racontent tel que c'est. La référence anglaise :
+  docs/lang/en/scenes.md et symbols.md.
 supersède: esquisse-manuel-placement-2026-08.md (modèle intermédiaire)
 ---
 
@@ -239,55 +242,61 @@ Le builder vérifie chaque liste en elle-même (rien ne s'y écrase, tout
 rentre). Il ne connaît pas l'ordre de vos écrans et ne prétend pas le
 vérifier : l'enchaînement est votre code.
 
-### 3.5 Les collections et leur table d'accès
+### 3.5 Les collections et leurs tables d'accès
 
 Certains contenus sont des **collections** : des tuiles, des images, des
 ennemis — des dizaines d'éléments du même genre, que le code désigne par un
-numéro et n'atteint jamais autrement que par sa table. La référence va du
-producteur vers la table : **un fichier contribue à un index en le
-nommant**, et l'index se déclare, nu, dans le fichier qui l'héberge :
+numéro et n'atteint jamais autrement que par une table.
+
+**Ce qui fait la collection, c'est la forme du fichier.** Un fichier
+ordinaire est **rigide** : un seul tenant, une seule place. Un fichier dont
+chaque enfant de premier niveau sait **nommer ses parts** — un tileset
+`<gfxcomp>`, des `<unit>` — est une **collection**, fluide : le builder
+connaît chaque élément un par un, et peut la faire couler dans plusieurs
+creux. Au placement, les fichiers rigides se posent d'abord, du plus gros au
+plus petit ; puis les collections coulent dans ce qui reste. Sur la
+disquette, une collection devient un ou plusieurs **morceaux** — aussi peu
+que possible, chacun aussi gros que son creux le permet, chacun d'un seul
+tenant et compressé. Vous n'en choisissez ni le nombre ni la taille : les
+creux décident, le rapport les montre.
 
 ```xml
-<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
-    <gfxcomp ...les tuiles du niveau.../>
-</file>
-
-<file name="stage1.tables" arena="stage.fixe">
-    <index name="stage1.tiles.idx"/>
+<file name="stage1.tiles" arena="stage">
+    <gfxcomp ...les tuiles du niveau.../>   <!-- chaque tuile se nomme -->
 </file>
 ```
 
-**Contribuer à un index change la nature du fichier.** Un fichier ordinaire
-est **rigide** : un seul tenant, une seule place. Un contributeur est une
-**collection**, fluide : le builder connaît chaque élément un par un, et
-peut la faire couler dans plusieurs creux. Au placement, les fichiers
-rigides se posent d'abord, du plus gros au plus petit ; puis les collections
-coulent dans ce qui reste. Sur la disquette, une collection devient un ou
-plusieurs **morceaux** — aussi peu que possible, chacun aussi gros que son
-creux le permet, chacun d'un seul tenant et compressé. Vous n'en choisissez
-ni le nombre ni la taille : les creux décident, le rapport les montre.
+**La table d'accès a deux origines, selon qui la possède.**
 
-**Plusieurs fichiers peuvent contribuer au même index** — les objets communs
-et les ennemis du stage nourrissent ensemble la table des objets. Ajouter un
-ennemi est une déclaration locale : l'index, lui, n'est jamais retouché. Les
-numéros suivent l'ordre de déclaration des contributeurs puis de leurs
-éléments, et un élément peut fixer le sien. La table est générée une fois
-tout placé, dans son hôte — sa place et sa durée de vie sont celles de
-l'hôte. Quand deux écrans alternatifs déclarent chacun un index du même nom
-(l'interface du stage 1, celle du stage 2), chaque instance contient les
-contributeurs **chargés avec elle**. Votre code n'atteint une collection QUE
-par sa table : c'est le marché qui autorise le builder à couler librement.
+- Les tables de **format** sont générées par leur élément : la carte de
+  tuiles (`<tilemap>`) écrit un pointeur cuit par case, l'index d'images
+  (`<imageset>`) grave la géométrie et une page **par image**. Vous
+  déclarez le générateur ; il remplit les adresses une fois tout placé.
+- Les tables de **jeu** — quels contenus portent quels numéros d'objets,
+  d'animations — s'écrivent **en assembleur, dans vos sources**. C'est une
+  décision de la campagne, testée avant d'être actée : la liste des numéros
+  est du gameplay, pas de la tuyauterie, et l'écrire en asm rend chaque
+  ajout visible et diffable. Le builder vous donne de quoi l'écrire sans
+  adresse en dur : l'adresse d'une entrée est le **symbole** exporté du
+  contenu (écrite à l'avance dès que son fournisseur est placé), sa page
+  s'écrit `nom$PAGE` ou se lit dans les équates publiées (`nom.page`). Les
+  numéros partagés vivent dans des **équates incluses des deux côtés** — le
+  résident et chaque stage incluent le même préfixe, l'invariant est
+  structurel, pas promis.
 
-**Où vit la table : là où vit son hôte.** Lire une table qui vit dans une
+Ajouter un ennemi est donc une retouche **locale et visible** : son équate
+de numéro, sa ligne dans les tables des stages qui l'emploient — le builder
+cuit l'adresse au placement, et le re-link du chargement repointe les tables
+du moteur à chaque échange de stage.
+
+**Où vit une table : là où vit son hôte.** Lire une table qui vit dans une
 page coûte double — monter la page de la table pour lire l'entrée, puis
 monter la page de l'élément pour y aller. Une table lue **à chaque trame** —
-l'index des images, celui des objets — gagne donc à être déclarée dans un
-fichier de **mémoire fixe**, celle qui est toujours visible : une seule
-bascule par accès. C'est l'exemple ci-dessus (`stage1.tables` dans
-`stage.fixe`), et c'est ainsi que le moteur groupe ses tables chaudes —
-objets, images, animations — dans un seul fichier hôte : plusieurs index
-dans un fichier, c'est le cas normal, pas l'exception (voir le
-deuxième exemple, section 6).
+l'index des images, celui des objets — gagne donc à vivre dans un fichier de
+**mémoire fixe**, celle qui est toujours visible : une seule bascule par
+accès. C'est ainsi que le moteur groupe ses tables chaudes — objets, images,
+animations — dans l'interface du stage (voir le deuxième exemple,
+section 6).
 
 La mémoire fixe est la ressource la plus rare de la machine — le moteur y
 vit déjà. La règle simple : lue à chaque trame → hôte au fixe ; lue au
@@ -306,10 +315,11 @@ jusqu'à 24 octets, et un petit bloc se compresse mal — reste vide plutôt que
 d'émietter la collection ; le seuil se règle, le rapport montre ce qu'il
 laisse.
 
-Attention aux numéros : ils suivent l'ordre de déclaration des éléments. Tout
-est régénéré ensemble à chaque build, donc rien ne se décale — mais ne
-stockez jamais un numéro dans une sauvegarde ou un mot de passe qui doit
-survivre à une nouvelle version du jeu.
+Attention aux numéros : ceux des tables de jeu sont vos équates (stables
+tant que vous ne les renumérotez pas), ceux des tables générées suivent
+l'ordre de déclaration des éléments. Dans les deux cas, ne stockez jamais un
+numéro dans une sauvegarde ou un mot de passe qui doit survivre à une
+nouvelle version du jeu.
 
 **Qui monte les pages.** La fenêtre ne montre qu'une page à la fois : du code
 qui s'exécute *dans* la fenêtre ne peut pas en monter une autre — il
@@ -487,43 +497,37 @@ sur le cas réel du niveau 1. (Les tailles sont illustratives.)
 </layout>
 
 <!-- une collection : 244 tuiles, ~17,8 Ko compilés — trop pour une page -->
-<file name="stage1.tiles" arena="stage" index="stage1.tiles.idx">
+<file name="stage1.tiles" arena="stage">
     <gfxcomp>
         <image name="tiles" filename="src/stages/01/tiles.png" grid="12x12"/>
     </gfxcomp>
 </file>
 
-<!-- sa table, lue à chaque trame : hébergée dans un fichier au fixe -->
-<file name="stage1.tables" arena="stage.fixe">
-    <index name="stage1.tiles.idx"/>
-</file>
-
-<!-- des fichiers rigides, même durée de vie -->
+<!-- la porte d'entrée des tuiles EST la carte : une table générée,
+     un pointeur cuit par case -->
 <file name="stage1.map"  arena="stage"> <tilemap .../> </file>
 <file name="stage1.wave" arena="stage"> <lwasm .../>   </file>
 
 <scene name="scenes.stage1">
     <load name="stage1.tiles"/>     <!-- la collection, par son nom -->
-    <load name="stage1.tables"/>
     <load name="stage1.map"/>
     <load name="stage1.wave"/>
 </scene>
 ```
 
-Quatre lignes de `<load>`. Aucune adresse, aucune page, aucun mode, aucune
+Trois lignes de `<load>`. Aucune adresse, aucune page, aucun mode, aucune
 taille de coupe.
 
 ### Ce que le builder en fait
 
 1. **Il mesure.** Chaque tuile est compilée seule : 244 éléments de 30 à
-   120 octets, 17 810 octets en tout. La table se mesure sans être remplie :
-   244 entrées de 3 octets, 734 o.
-2. **Il pose le rigide.** Le fichier des tables au fixe ; les autres
-   fichiers rigides dans `stage`, du plus gros au plus petit :
+   120 octets, 17 810 octets en tout. La carte se mesure sans être
+   remplie : ses cases sont à largeur fixe, sa taille ne dépend que du
+   compte — 5 940 o.
+2. **Il pose le rigide** dans `stage`, du plus gros au plus petit :
 
    | fichier | page | adresse |
    |---|---|---|
-   | stage1.tables (734 o)     | $01 | $8000 |
    | stage1.map (5 940 o)      | $18 | $0000 |
    | stage1.wave (610 o)       | $18 | $1734 |
 
@@ -533,44 +537,43 @@ taille de coupe.
    un morceau de 7 984 o (tuiles 136–243) en $19. Deux morceaux — pas
    cinq : les creux ont décidé de la coupe. La page $1A n'a pas servi ; le
    rapport le montre, la zone peut être rendue.
-4. **Il génère, maintenant que tout est placé.** La table `.idx` est
-   remplie : l'entrée 137 dit « page $19, adresse $002E » — la place du
-   morceau qui porte la tuile 137, plus son décalage dedans. La carte
-   `stage1.map` écrit ses pointeurs de tuiles de la même façon. Tout est
-   écrit à l'avance : zéro donnée de liaison pour tout ça.
-5. **Il écrit la disquette.** Cinq entrées de répertoire — la carte, la
-   table, la vague, les deux morceaux — les cinq contenus compressés collés
-   bout à bout dans l'ordre de la liste, et la liste elle-même devient une
-   petite table sur disque : cinq fois (page, adresse, numéro).
+4. **Il génère, maintenant que tout est placé.** La carte est remplie :
+   chaque case écrit la page et l'adresse **cuites** de sa tuile — celle de
+   la tuile 137 dit « page $19, adresse $002E », la place du morceau qui la
+   porte, où que la coupe l'ait mise. Tout est écrit à l'avance : zéro
+   donnée de liaison pour tout ça.
+5. **Il écrit la disquette.** Quatre entrées de répertoire — la carte, la
+   vague, les deux morceaux — les quatre contenus compressés collés bout à
+   bout dans l'ordre de la liste, et la liste elle-même devient une petite
+   table sur disque : quatre fois (page, adresse, numéro).
 
 ### Ce qui se passe en jeu
 
-- `charge(scenes.stage1)` : le chargeur lit la liste et charge les cinq
+- `charge(scenes.stage1)` : le chargeur lit la liste et charge les quatre
   contenus en un seul balayage de tête — chacun lu directement à sa place
   attitrée, les octets compressés calés en fin d'emplacement. Puis il les
   déplie sur place, l'un après l'autre, et résout les quelques références
-  « au chargement » — ici, celle du moteur vers `stage.tiles.idx`, car le
+  « au chargement » — ici, celle du moteur vers la carte du stage, car le
   niveau 2 exporte le même nom (le cas 4.6, la frontière).
-- Le code veut la tuile 137 : la table est en mémoire fixe, toujours
-  visible — il lit l'entrée 137 → page $19, $002E → monte cette seule page,
-  y va. Une bascule, pas deux. Il ne sait pas — et n'a pas à savoir — dans
-  quel morceau la coupe l'a mise.
+- Le défilement veut la tuile de la case 137 : il lit la case dans la
+  carte → page $19, $002E → monte cette seule page, dessine. Il ne sait
+  pas — et n'a pas à savoir — dans quel morceau la coupe l'a mise.
 - Fin du niveau : `décharge(scenes.stage1)`, `charge(scenes.stage2)`. Le
-  niveau 2 a sa propre collection, ses propres morceaux, sa propre table qui
+  niveau 2 a sa propre collection, ses propres morceaux, sa propre carte qui
   exporte le même nom — la référence du moteur pointe maintenant sur elle.
   Mêmes numéros de tuiles, autres dessins, autre coupe : le code ne voit
   pas la différence.
 
 ### L'articulation en quatre phrases
 
-La **collection** est un fichier qui contribue à un index : au build, elle
-devient des **morceaux** — taillés par les creux — et sa table, qui est la
-porte d'entrée. Les morceaux et la table sont ce que connaissent la
-disquette, le répertoire et le chargeur ; vous ne les voyez que dans les
-rapports. Le **rangement** est l'endroit où tout ça reçoit sa place
-attitrée — et la durée de vie que ça partage. La **liste** ne manipule que
-des noms : charger le nom d'une collection, c'est charger ses morceaux et sa
-table ; la décharger, c'est tout lâcher d'un coup.
+La **collection** est un fichier dont chaque élément sait se nommer : au
+build, elle devient des **morceaux** — taillés par les creux — et sa table
+d'accès (ici la carte, générée) est la porte d'entrée. Les morceaux sont ce
+que connaissent la disquette, le répertoire et le chargeur ; vous ne les
+voyez que dans les rapports. Le **rangement** est l'endroit où tout ça
+reçoit sa place attitrée — et la durée de vie que ça partage. La **liste**
+ne manipule que des noms : charger le nom d'une collection, c'est charger
+ses morceaux ; la décharger, c'est tout lâcher d'un coup.
 
 ## 6. Deuxième exemple : cinq tables, deux mondes
 
@@ -594,30 +597,33 @@ du moteur, le voici en entier.
     <zone page="$0D" .../> <zone page="$0E" .../> <zone page="$12" .../>
 </arena>
 
-<!-- les collections, dans les pages — chacune nomme son index -->
-<file name="common.objects" arena="common" index="Obj_Index">  ...joueur, armes... </file>
-<file name="common.images"  arena="common" index="Img_Page_Index"> <gfxcomp .../> </file>
-<file name="common.anims"   arena="common" index="Ani_Index"> <animation .../> </file>
-<file name="stage1.objects" arena="stage"  index="Obj_Index">  ...les ennemis... </file>
+<!-- les collections, dans les pages -->
+<file name="common.objects"  arena="common"> ...joueur, armes (des unités)... </file>
+<file name="common.images"   arena="common"> <gfxcomp .../> </file>
+<file name="common.anims"    arena="common"> <animation .../> </file>
+<file name="stage1.enemies"  arena="stage">  ...les ennemis du stage... </file>
 
-<!-- l'interface du stage : la boucle, l'état, et LES TABLES, déclarées nues -->
+<!-- l'interface du stage : la boucle, l'état, ET LES TABLES — en asm -->
 <file name="stage1.interface" arena="stage.fixe">
-    <lwasm> ...la boucle du stage, son état... </lwasm>
-    <index name="Obj_Index"/>
-    <index name="Img_Page_Index"/>
-    <index name="Ani_Index"/>
+    <lwasm>
+        <asm filename="src/common/objid-common.const.asm"/> <!-- numéros partagés -->
+        <asm filename="src/stages/01/tables.asm"/>  <!-- Obj/Img/Ani du stage 1 -->
+        <asm filename="src/stages/01/main.asm"/>    <!-- la boucle, l'état -->
+    </lwasm>
 </file>
 ```
 
-Un fichier peut héberger **plusieurs index** ; chaque index reçoit ce que
-ses contributeurs lui apportent, d'où qu'ils viennent — les objets communs
-ET les ennemis du stage nourrissent `Obj_Index`, c'est ce que la table du
-vrai jeu fait déjà (le joueur est le numéro 4, le pata-pata quelques numéros
-plus loin). Ajouter un ennemi ne retouche jamais l'interface : une
-déclaration locale suffit. Les tables ont la durée de vie de leur hôte :
-ici, elles se rechargent avec le stage — et l'interface du stage 2, qui
-déclare les mêmes noms, reçoit d'office les contributeurs chargés avec ELLE
-(les communs, plus SES ennemis).
+Les tables s'écrivent **dans vos sources** : chaque entrée est le symbole du
+contenu (l'adresse, cuite au placement) et sa page (`nom$PAGE`, ou l'équate
+`nom.page` publiée). Les numéros communs — le joueur est le 4, ses armes
+suivent — vivent dans un include **partagé par le résident et chaque
+stage** : l'invariant est structurel, une divergence ne peut pas
+s'exprimer. Ajouter un ennemi est une retouche locale et visible : son
+équate de numéro, sa ligne dans les tables des stages qui l'emploient (le
+pata-pata quelques numéros après le joueur, dans la table du stage 1 ET
+celle du stage 3 s'il y revient). Les tables ont la durée de vie de leur
+hôte : ici, elles se rechargent avec le stage — celles du stage 2 exportent
+les **mêmes noms** avec SES contenus (les communs, plus ses ennemis).
 
 ### Pourquoi cet étage-là
 
@@ -681,8 +687,8 @@ Trois familles, toujours avec le fichier, la ligne et le geste à faire :
 |---|---|
 | **fichier** (`<file>`) | l'unité qu'on nomme et qu'on charge ; contenu produit par des modules |
 | **élément** | un contenu nommé DANS un fichier ; jamais coupé ; hérite de la destination du fichier |
-| **collection** | un fichier qui contribue à un index (`index="…"`) — ses éléments coulent dans les creux |
-| **index** (`<index name="…">`) | la table numéro → page + adresse, déclarée nue dans son fichier hôte (sa place, sa durée de vie) ; remplie par ses contributeurs |
+| **collection** | un fichier dont chaque élément sait se nommer (tuiles, unités) — ses éléments coulent dans les creux |
+| **table d'accès** | la table numéro → page + adresse ; générée par son élément (carte, index d'images) ou écrite en asm dans son fichier hôte (objets, animations) |
 | **morceau** | un bout de fichier à UNE destination contiguë = une unité de compression ; visible aux rapports seulement |
 | **zone** (`<zone>`) | de la place : une page, une adresse, une taille |
 | **rangement** (`<arena>`) | un nom sur des zones ; le builder y place ; c'est aussi une durée de vie |

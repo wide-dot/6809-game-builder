@@ -1,10 +1,10 @@
 ---
 date: 2026-08-09
-sujet: Le déroulé du builder dans le modèle cible — les mécanismes implicites,
-  de la configuration à la disquette, et leur miroir au chargement.
-statut: brouillon d'étude, compagnon de manuel-cible-2026-08.md. Même
-  convention — la syntaxe et les mécanismes décrits sont ceux du MODÈLE EN
-  DISCUSSION (analyse-placement-2026-08.md §12-§21), pas du builder actuel.
+maj: 2026-08-13
+sujet: Le déroulé du builder — les mécanismes implicites, de la configuration
+  à la disquette, et leur miroir au chargement.
+statut: NORMATIF (rehomé le 13/08/2026, phase 9 de la campagne), compagnon de
+  manuel-cible-2026-08.md. Les mécanismes décrits sont ceux du builder.
 ---
 
 # Le builder, de la déclaration à la disquette
@@ -37,10 +37,11 @@ Chaque contenu est produit par ses modules (assembleur, convertisseurs,
 générateurs) et mesuré. Les éléments d'une collection sont mesurés **un par
 un** — c'est ce qui permettra de les couler dans les creux.
 
-Les tables générées (les index, les cartes) se mesurent **sans être
-remplies** : leurs enregistrements sont à largeur fixe, donc leur taille ne
-dépend que de comptes — 244 entrées de 3 octets font 732 octets, où que tout
-atterrisse. C'est l'invariant qui permet de tout placer en une seule passe.
+Les tables générées (les cartes de tuiles, les index d'images, les tables
+de scène) se mesurent **sans être remplies** : leurs enregistrements sont à
+largeur fixe, donc leur taille ne dépend que de comptes — 244 entrées de
+3 octets font 732 octets, où que tout atterrisse. C'est l'invariant qui
+permet de tout placer en une seule passe.
 
 ## 2. Résoudre les noms
 
@@ -84,12 +85,12 @@ encore écrit.
 ## 5. Remplir
 
 Maintenant que tout est placé, tout ce qui contient des adresses s'écrit :
-les tables d'accès (numéro → page + adresse), les cartes de tuiles, les
-descripteurs de sprites, et chaque référence « écrite à l'avance ». Ces
-remplissages ne lisent que des **places** — jamais le contenu d'une autre
-table — donc leur ordre est indifférent, quel que soit leur nombre : un
-fichier peut héberger cinq index, un index peut pointer des descripteurs
-eux-mêmes générés, rien ne boucle.
+les cartes de tuiles, les index d'images, les descripteurs de sprites, et
+chaque référence « écrite à l'avance » — y compris celles de vos tables asm
+vers les contenus placés. Ces remplissages ne lisent que des **places** —
+jamais le contenu d'une autre table — donc leur ordre est indifférent, quel
+que soit leur nombre : un index peut pointer des descripteurs eux-mêmes
+générés, rien ne boucle.
 
 ## 6. Écrire la disquette
 

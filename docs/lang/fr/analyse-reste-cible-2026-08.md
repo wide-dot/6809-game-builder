@@ -3,7 +3,8 @@ date: 2026-08-10
 sujet: Ce qui manque, mesuré dans le code, pour atteindre le modèle cible
   « file maître » — confrontation du plan (phases 0-9) avec l'état réel du
   builder au lendemain du banc r-type 5/5.
-statut: état des lieux ; ne remplace pas le plan, il le chiffre.
+statut: état des lieux du 10/08, CLOS (13/08/2026) — la campagne s'est
+  achevée depuis ; photographie historique d'un point médian.
 s'appuie sur: plan-migration-cible-2026-08.md, analyse-placement-2026-08.md,
   manuel-cible-2026-08.md, analyse-charge-manuelle-2026-08.md
 ---
