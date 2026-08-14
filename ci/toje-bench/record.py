@@ -8,9 +8,9 @@
 Composition pure des outils MCP existants : les trames avancent en TURBO
 (run_frames fast=true — mêmes instructions, mêmes cycles), et une trame sur
 `every` est rendue à la demande par `screenshot` (re-rastérisée depuis la
-VRAM courante, donc juste même en turbo). Le GIF rejoue en temps réel :
-chaque vignette dure every*20 ms. Le TO8 affiche 16 couleurs — le GIF est
-sans perte.
+VRAM courante, donc juste même en turbo). Le GIF garde la VITESSE DE
+CAPTURE (25 img/s quel que soit `every`) : le film est accéléré d'un
+facteur every/2. Le TO8 affiche 16 couleurs — le GIF est sans perte.
 
   --skip N        avance de N trames en turbo avant d'enregistrer (défaut 0)
   --frames N      durée de l'enregistrement en trames machine (défaut 1500)
@@ -76,8 +76,12 @@ with tempfile.TemporaryDirectory() as tmp:
             print(f"  {i}/{a.frames} trames", flush=True)
 t.close()
 
-ms = a.every * 20                            # rejoue en temps réel (50 Hz)
+# Pas de recalage temps réel (décision auteur) : le GIF garde la vitesse de
+# capture — une vignette = un pas de lecture à 25 img/s, quel que soit
+# `every`. Le film est donc accéléré d'un facteur every*20/40.
+ms = 40
 shots[0].save(a.out, save_all=True, append_images=shots[1:],
               duration=ms, loop=0, optimize=True)
 size = os.path.getsize(a.out)
-print(f"{a.out}: {len(shots)} vignettes, {a.frames*20/1000:.1f}s de machine, {size/1024:.0f} Ko")
+print(f"{a.out}: {len(shots)} vignettes, {a.frames*20/1000:.1f}s de machine "
+      f"en {len(shots)*ms/1000:.1f}s de film (x{a.every*20/ms:.1f}), {size/1024:.0f} Ko")
