@@ -507,6 +507,28 @@ stage aurait monté les pages du stage 2 — dérivée d'un gabarit, une
 copie se relit sur TOUTES ses références au modèle, pas seulement sur
 les chemins et l'identifiant.
 
+**La bibliothèque d'ennemis en LOTS (14/08/2026)** — décision auteur :
+pas de duplication par stage, pas de « tout résident » — des lots taillés
+au plus juste par la matrice arcade (routine×stage, 51 routines croisées
+avec les 8 waves). Six lots (bink / patapata / cancer / bug+pstaff /
+scant+scantfire / mid en squelette), données sur disque UNE fois dans le
+répertoire commun, une scène par lot, un masque de bits par stage
+(`cast.const.asm`) : la convergence résidente (`common.cast`, région
+`cast` dans la marge de la page 1) décharge l'excédent et charge le
+manquant à chaque échange — ce que deux stages consécutifs partagent
+traverse sans relecture disque, et un retour au title décharge tout,
+depuis n'importe quel stage. Les 240 lignes de waves des ennemis partagés
+sont réactivées (03 : 5, 04 : 59, 05 : 17, 06 : 35, 07 : 124, dont mid
+renommé depuis la routine 19) ; cyclingPalette ne sera jamais portée
+(décision auteur). Le chantier a débusqué un défaut d'échange indépendant
+des lots : la trame d'amorce de l'entrée de stage tournait sur le pool
+résident encore peuplé des objets VIVANTS du stage sortant (la v1
+rechargeait sa RAM objets à zéro ; le title v2 purgeait déjà) — purge
+remontée avant la trame d'amorce dans stage-main. Lane tour complet 7/7,
+stage 7 à ~530 spawns de bibliothèque, stage 8 à +0 exactement ; corpus
+63/0, diff confiné aux 4 images r-type. Analyse et récit complets :
+`analyse-lots-ennemis-2026-08.md`.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

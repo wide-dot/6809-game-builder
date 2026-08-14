@@ -38,6 +38,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
 
 Obj_Index_Address
         fdb   0
@@ -73,6 +75,8 @@ Obj_Index_Address
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   stage.placeholder ; ObjID_bossmusic
+        fdb   cancer.Object ; ObjID_cancer
+        fdb   mid.Object ; ObjID_mid
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage5.page
@@ -108,6 +112,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -143,6 +149,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
+        fdb   Ani_Asd_none ; ObjID_cancer
+        fdb   Ani_Asd_none ; ObjID_mid
 
 Ani_Asd_none
         fdb   0
@@ -181,3 +189,5 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage5.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid

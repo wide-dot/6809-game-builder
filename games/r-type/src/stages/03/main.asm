@@ -117,6 +117,7 @@ emitterFlash.Object EXTERNAL
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
+        INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -215,6 +216,7 @@ stage.handOver
         jsr   game.stage.unload
         ldx   #scenes.stage4
         ldy   #scenes.stage4.dir
+        ldu   #cast.stage4                  ; les lots d'ennemis de la cible
         jmp   game.stage.switch
 
 ;*******************************************************************************

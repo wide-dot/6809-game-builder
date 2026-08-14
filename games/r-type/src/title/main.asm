@@ -34,6 +34,7 @@ mainloop.state    EXPORT
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
+        INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -591,6 +592,7 @@ title.launchGame
         jsr   game.stage.unload
         ldx   #scenes.stage1
         ldy   #scenes.stage1.dir
+        ldu   #cast.stage1                  ; les lots d'ennemis de la cible
         jmp   game.stage.switch
 
 ; ---------------------------------------------------------------------------

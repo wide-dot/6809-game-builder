@@ -1,6 +1,12 @@
 # Lots d'ennemis modulaires : charger dans un stage exactement son cast
 
-Statut : ANALYSE — à valider avant toute réalisation.
+Statut : RÉALISÉ (14/08/2026) — décisions auteur : cyclingPalette ne sera
+jamais portée (hors lots, lignes laissées commentées) ; TOUS les lots de
+vrais ennemis préparés d'emblée, mid compris (squelette, comme le cast du
+stage 2). Réalisation : §« Ce que la réalisation a tranché » en fin de
+document — deux points diffèrent de la proposition initiale (scènes DE LOT
+au lieu de scènes de cast par stage ; convergence dans une unité résidente
+de la marge, pas dans le moteur).
 Source des données : la matrice routine×stage du repo d'extraction arcade
 (`re.arcade.r-type`, `data/routines.yaml` + les waves extraites, qui sont
 reprises verbatim dans `src/stages/*/wave.asm`). Les tailles viennent du
@@ -173,6 +179,55 @@ murée.
 
 - Récupération de la place des lots non chargés par les casts spécifiques
   (l'exclusivité existe, on l'activera quand un stage débordera).
-- Lots futurs : mid (5,7), la routine 39 (2,4,5,6,7) à identifier,
-  cyclingPalette au commun résident.
+- Lots futurs : la routine 39 (2,4,5,6,7) à identifier. cyclingPalette ne
+  sera PAS portée (décision auteur, 14/08) — ses 44 lignes restent
+  commentées.
 - L'identification des routines encore sans nom (33wave, 46, 47, 34…).
+
+## 9. Ce que la réalisation a tranché (14/08/2026)
+
+**Une scène PAR LOT, pas une scène de cast par stage.** Décharger puis
+recharger une scène de cast entière aurait relu du disque tout ce qu'elle
+conservait — la déduplication du loader évite le double index, pas la
+relecture. Avec une scène par lot et un masque de bits par stage
+(`src/common/cast.const.asm`), la convergence décharge lot par lot
+l'excédent et charge le manquant : ce que deux stages consécutifs
+partagent n'est PAS touché. La convergence est par PAIRE de masques (état
+présent contre cible), sans connaissance de l'enchaînement : un retour au
+title depuis n'importe quel stage (masque 0) décharge tout, un « stage
+select » futur ne demanderait rien de plus. La vérité de la RAM est le
+masque, tenu par le moteur résident, écrit en fin de convergence réussie.
+
+**La convergence vit dans la marge visible de la page résidente.** La
+fenêtre du moteur ($6100-$7FFF) était pleine à 45 octets près — les ~90
+octets de `cast.converge` (deux passes sur une marche de bits, état en
+mémoire car les scènes détruisent tout) logent dans la région `cast`
+($8776-$87DA, entre les témoins du banc et le pool), unité `common.cast`
+chargée au boot. Elle DOIT être en RAM fixe : pendant un scene.load le
+loader monte des pages dans les deux fenêtres commutées.
+
+**Le placement des lots est sûr par construction, mais aveugle.** Le
+packer place tous les fichiers d'une arène de façon disjointe tant
+qu'aucune exclusivité n'est déclarée — les lots ne chevauchent donc rien,
+alors même que le builder ignore que les scènes de lot se co-chargent
+(aucune scène ne déclare « bink ET cancer ensemble » ; c'est le masque,
+côté runtime, qui le sait). Le jour où l'exclusivité lots/spécifiques
+s'activera (différé n°1), cette co-chargeabilité devra être déclarée au
+builder — noter que la source de vérité en est `cast.const.asm`.
+
+**Deux défauts découverts par la lane, aucun dans la mécanique des lots :**
+1. L'entrée de stage faisait tourner la trame d'amorce (`RunObjects`) sur
+   le pool RÉSIDENT encore peuplé des objets vivants du stage sortant,
+   contre les tables du stage entrant — identités croisées, et un id
+   au-delà d'une table courte lit n'importe quoi. Vécu à l'échange 4→5 :
+   la liste de priorité du dessin devenait circulaire, DrawSprites ne
+   rendait plus la main (diagnostic par anneau de trace toje : boucle
+   fermée dans le sprite compilé de cancer). La v1 n'avait pas ce trou —
+   sa RAM objets arrivait du disque, à zéro, à chaque game mode ; le
+   title v2 purgeait déjà avant sa trame d'amorce. Correctif :
+   `InitStack`/`ManagedObjects_ClearAll`/`InitDrawSprites` remontés AVANT
+   la trame d'amorce dans stage-main.
+2. Les diagnostics intermédiaires ont d'abord accusé la convergence — les
+   points d'arrêt posés à son entrée ont montré des masques EXACTS à
+   chaque transition (1→2 : B=0, 2→3 : 3, 3→4 : $0F, 4→5 : $24), la
+   disculpant : mesurer avant d'accuser, même son propre code.

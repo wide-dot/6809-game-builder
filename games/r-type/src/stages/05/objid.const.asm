@@ -10,8 +10,12 @@ OBJID_CONST_05 equ 1
 ObjID_pow equ 30
 ObjID_checkpoint equ 31
 ObjID_bossmusic equ 32
+* La bibliotheque d'ennemis que CE stage charge (ses lots — voir
+* src/common/cast.const.asm et l'analyse des lots).
+ObjID_cancer equ 33
+ObjID_mid equ 34
 
-objid.count equ 32
+objid.count equ 34
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

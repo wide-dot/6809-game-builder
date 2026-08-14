@@ -172,6 +172,19 @@ statics.SIZE  equ nb_static_objects*object_size
         ldx   #starfield.init
         jsr   paged.call
 
+        ; PURGER le pool AVANT la trame d'amorce. La v1 n'avait pas ce geste :
+        ; sa RAM objets faisait partie du binaire du game mode, rechargee a
+        ; zero a chaque entree. Le pool v2 est RESIDENT — un echange de stage
+        ; arrive avec les objets VIVANTS du stage sortant, et la trame d'amorce
+        ; les ferait tourner contre les tables du NOUVEAU stage : identites
+        ; croisees, et un id au-dela de la table courte lit n'importe quoi
+        ; (vecu a l'echange 4->5 : la liste de priorite du dessin devenait
+        ; circulaire, DrawSprites ne rendait plus la main — le title, lui,
+        ; purgeait deja avant sa trame d'amorce).
+        jsr   InitStack
+        jsr   ManagedObjects_ClearAll
+        jsr   InitDrawSprites
+
         ; une trame d'amorce avant le scroll, comme la v1 : le double tampon
         ; bascule une fois et les objets deja inscrits tournent, de sorte que
         ; InitScroll parte d'un etat coherent
@@ -193,12 +206,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ldb   #objid.animation
         jsr   moveByScript.register
 
-        jsr   InitStack
-        jsr   ManagedObjects_ClearAll
         jsr   InitRNG
-
-        ; les structures de priorite du dessin de sprites, une par tampon
-        jsr   InitDrawSprites
 
         ; LE CHECKPOINT, dernier geste de l'init — la v1 fait exactement le meme
         ; (`_Obj_Run ObjID_checkpoint`, main.asm:145), et c'est LUI qui rend
@@ -633,6 +641,7 @@ stage.gameOver
         jsr   game.stage.unload
         ldx   #scenes.title
         ldy   #scenes.title.dir
+        ldu   #cast.title                  ; les lots d'ennemis de la cible
         jmp   game.stage.switch
 
 ;*******************************************************************************

@@ -179,19 +179,37 @@ game.stage.unload
 ; L'échange de stage — la suite du commentaire ci-dessus
 ;*******************************************************************************
 stage.main EXTERNAL
+cast.converge EXTERNAL
 ; X = id de la scène cible, Y = id de son RÉPERTOIRE (l'equate <scène>.dir
-; du fichier d'ids généré). Les répertoires sont partitionnés par unité de
-; chargement : la scène cible se résout dans le sien, qu'il faut monter en
-; mémoire AVANT scene.load — l'appelant a déjà déchargé l'ancienne scène,
-; pendant que l'ancien répertoire était encore là (l'ordre qui permet au
-; loader de relire les étendues à rendre). Y et pas A ou B : la macro de
-; montage de page les détruit tous les deux.
+; du fichier d'ids généré), U = masque des lots de la bibliothèque d'ennemis
+; que la cible charge (src/common/cast.const.asm — 0 : aucun cast commun).
+; Les répertoires sont partitionnés par unité de chargement : la scène cible
+; se résout dans le sien, qu'il faut monter en mémoire AVANT scene.load —
+; l'appelant a déjà déchargé l'ancienne scène, pendant que l'ancien
+; répertoire était encore là (l'ordre qui permet au loader de relire les
+; étendues à rendre). Y et pas A ou B : la macro de montage de page les
+; détruit tous les deux ; U pour le masque, même raison.
+;
+; La phase de cast converge la bibliothèque AVANT le montage du répertoire
+; cible : les lots vivent dans le répertoire 0, un lot = une scène de lot.
+; On décharge les lots que la cible ne veut pas, on charge ceux qui lui
+; manquent — ce que deux stages consécutifs partagent reste en RAM, sans
+; relecture disque. C'est le point qui a fait choisir le masque contre une
+; scène de cast par stage : décharger puis recharger une scène entière
+; aurait relu du disque tout ce qu'elle conservait.
 game.stage.switch
         jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
         ; monter pour l'atteindre. Le stage vient d'y effacer ses tampons
         ; d'écran, donc c'est une autre page qui est en place.
         _ram.data.set #loader.PAGE
+        ; La convergence vit dans sa propre unité résidente (région `cast`,
+        ; marge de la page résidente) : la fenêtre du moteur est pleine à
+        ; 45 octets près, seul l'appel loge ici.
+        pshs  x,y                          ; la cible attendra la fin de la phase
+        tfr   u,d                          ; B = masque des lots de la cible
+        jsr   cast.converge
+        puls  x,y
         tfr   y,d                          ; l'id de répertoire, bas de Y
         tfr   b,a
         pshs  x                            ; dir.load ne préserve pas X

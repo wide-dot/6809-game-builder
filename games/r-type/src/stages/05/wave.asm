@@ -20,22 +20,22 @@
 ;$08,$34,ObjID_30,$00,$49
 ;$08,$D4,ObjID_30,$00,$61
 ;$08,$F2,ObjID_30,$00,$53
-;$08,$F2,ObjID_cancer,$00,$46
-;$09,$5E,ObjID_19,$00,$0A
-;$09,$70,ObjID_19,$00,$03
-;$09,$74,ObjID_19,$00,$09
-;$09,$88,ObjID_19,$00,$02
-;$09,$B0,ObjID_19,$00,$0B
-;$09,$BA,ObjID_19,$00,$0A
-;$09,$BC,ObjID_19,$00,$04
+	fcb   $08,$F2,ObjID_cancer,$00,$46
+	fcb   $09,$5E,ObjID_mid,$00,$0A
+	fcb   $09,$70,ObjID_mid,$00,$03
+	fcb   $09,$74,ObjID_mid,$00,$09
+	fcb   $09,$88,ObjID_mid,$00,$02
+	fcb   $09,$B0,ObjID_mid,$00,$0B
+	fcb   $09,$BA,ObjID_mid,$00,$0A
+	fcb   $09,$BC,ObjID_mid,$00,$04
 ;$09,$BC,ObjID_7,$00,$1B
-;$09,$C4,ObjID_19,$00,$0B
-;$09,$CC,ObjID_19,$00,$03
-;$09,$E4,ObjID_19,$00,$0A
-;$09,$F0,ObjID_19,$00,$01
-;$0A,$00,ObjID_19,$00,$09
-;$0A,$14,ObjID_19,$00,$02
-;$0A,$28,ObjID_19,$00,$0B
+	fcb   $09,$C4,ObjID_mid,$00,$0B
+	fcb   $09,$CC,ObjID_mid,$00,$03
+	fcb   $09,$E4,ObjID_mid,$00,$0A
+	fcb   $09,$F0,ObjID_mid,$00,$01
+	fcb   $0A,$00,ObjID_mid,$00,$09
+	fcb   $0A,$14,ObjID_mid,$00,$02
+	fcb   $0A,$28,ObjID_mid,$00,$0B
 ;$0A,$28,ObjID_7,$01,$1A
 ;$0A,$DC,ObjID_7,$03,$48
 ;$0A,$DC,ObjID_7,$02,$53
@@ -49,7 +49,7 @@
 ;$0C,$C8,ObjID_45,$00,$0A
 	fcb   $0D,$1C,ObjID_pow,$00,$74
 ;$0D,$E8,ObjID_45,$00,$03
-;$0E,$14,ObjID_cancer,$00,$5A
+	fcb   $0E,$14,ObjID_cancer,$00,$5A
 ;$0E,$1A,ObjID_30,$00,$67
 ;$0E,$24,ObjID_30,$00,$52
 	fcb   $0E,$AE,ObjID_pow,$00,$34
@@ -62,7 +62,7 @@
 ;$10,$B8,ObjID_30,$00,$42
 ;$10,$B8,ObjID_45,$00,$05
 ;$10,$F4,ObjID_30,$00,$59
-;$11,$94,ObjID_cancer,$00,$49
+	fcb   $11,$94,ObjID_cancer,$00,$49
 ;$11,$A8,ObjID_30,$00,$60
 ;$11,$D0,ObjID_30,$00,$59
 ;$12,$20,ObjID_45,$00,$04

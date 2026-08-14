@@ -24,12 +24,12 @@
 ;$04,$0A,ObjID_8,$00,$27
 ;$04,$44,ObjID_8,$01,$2E
 ;$04,$7A,ObjID_8,$01,$20
-;$04,$C8,ObjID_bink,$00,$67
+	fcb   $04,$C8,ObjID_bink,$00,$67
 ;$04,$DA,ObjID_8,$00,$29
-;$04,$DC,ObjID_bink,$00,$64
+	fcb   $04,$DC,ObjID_bink,$00,$64
 ;$05,$00,ObjID_8,$00,$2D
-;$05,$08,ObjID_bink,$00,$64
-;$05,$14,ObjID_bink,$00,$64
+	fcb   $05,$08,ObjID_bink,$00,$64
+	fcb   $05,$14,ObjID_bink,$00,$64
 ;$05,$28,ObjID_8,$00,$29
 ;$05,$66,ObjID_31,$00,$10
 ;$05,$78,ObjID_8,$01,$20
@@ -50,46 +50,46 @@
 ;$09,$6C,ObjID_8,$00,$26
 ;$09,$7C,ObjID_8,$01,$25
 ;$0A,$46,ObjID_8,$01,$2F
-;$0B,$18,ObjID_bink,$00,$62
+	fcb   $0B,$18,ObjID_bink,$00,$62
 ;$0B,$5E,ObjID_8,$01,$26
-;$0C,$10,ObjID_bink,$00,$61
-;$0C,$16,ObjID_bink,$01,$60
-;$0C,$30,ObjID_bink,$00,$62
-;$0C,$3A,ObjID_bink,$01,$60
-;$0C,$40,ObjID_bink,$00,$62
-;$0C,$56,ObjID_bink,$01,$60
+	fcb   $0C,$10,ObjID_bink,$00,$61
+	fcb   $0C,$16,ObjID_bink,$01,$60
+	fcb   $0C,$30,ObjID_bink,$00,$62
+	fcb   $0C,$3A,ObjID_bink,$01,$60
+	fcb   $0C,$40,ObjID_bink,$00,$62
+	fcb   $0C,$56,ObjID_bink,$01,$60
 	fcb   $0C,$80,ObjID_checkpoint,$00,$0C
-;$0C,$80,ObjID_bink,$01,$60
-;$0C,$96,ObjID_bink,$01,$60
+	fcb   $0C,$80,ObjID_bink,$01,$60
+	fcb   $0C,$96,ObjID_bink,$01,$60
 ;$0C,$A8,ObjID_cyclingPalette,$00,$12
 ;$0C,$A8,ObjID_cyclingPalette,$00,$13
 ;$0C,$A8,ObjID_cyclingPalette,$00,$14
 ;$0C,$A8,ObjID_cyclingPalette,$00,$15
 ;$0C,$A8,ObjID_cyclingPalette,$00,$16
-;$0C,$AC,ObjID_bink,$01,$60
+	fcb   $0C,$AC,ObjID_bink,$01,$60
 ;$0C,$C0,ObjID_8,$00,$21
-;$0C,$C2,ObjID_bink,$01,$60
-;$0C,$D8,ObjID_bink,$01,$70
-;$0C,$EE,ObjID_bink,$01,$60
-;$0D,$04,ObjID_bink,$01,$50
-;$0D,$1A,ObjID_bink,$01,$60
-;$0D,$30,ObjID_bink,$01,$50
-;$0D,$46,ObjID_bink,$01,$60
-;$0D,$48,ObjID_bink,$01,$60
+	fcb   $0C,$C2,ObjID_bink,$01,$60
+	fcb   $0C,$D8,ObjID_bink,$01,$70
+	fcb   $0C,$EE,ObjID_bink,$01,$60
+	fcb   $0D,$04,ObjID_bink,$01,$50
+	fcb   $0D,$1A,ObjID_bink,$01,$60
+	fcb   $0D,$30,ObjID_bink,$01,$50
+	fcb   $0D,$46,ObjID_bink,$01,$60
+	fcb   $0D,$48,ObjID_bink,$01,$60
 	fcb   $0D,$4A,ObjID_pow,$00,$15
-;$0D,$5E,ObjID_bink,$01,$50
-;$0D,$74,ObjID_bink,$01,$60
-;$0D,$8A,ObjID_bink,$01,$50
-;$0D,$A0,ObjID_bink,$01,$50
-;$0D,$B6,ObjID_bink,$01,$50
-;$0D,$CC,ObjID_bink,$01,$60
-;$0D,$E2,ObjID_bink,$01,$50
-;$0D,$F8,ObjID_bink,$01,$50
-;$0E,$0E,ObjID_bink,$01,$50
-;$0E,$10,ObjID_bink,$01,$60
-;$0E,$26,ObjID_bink,$01,$40
-;$0E,$3C,ObjID_bink,$01,$50
-;$0E,$52,ObjID_bink,$01,$50
+	fcb   $0D,$5E,ObjID_bink,$01,$50
+	fcb   $0D,$74,ObjID_bink,$01,$60
+	fcb   $0D,$8A,ObjID_bink,$01,$50
+	fcb   $0D,$A0,ObjID_bink,$01,$50
+	fcb   $0D,$B6,ObjID_bink,$01,$50
+	fcb   $0D,$CC,ObjID_bink,$01,$60
+	fcb   $0D,$E2,ObjID_bink,$01,$50
+	fcb   $0D,$F8,ObjID_bink,$01,$50
+	fcb   $0E,$0E,ObjID_bink,$01,$50
+	fcb   $0E,$10,ObjID_bink,$01,$60
+	fcb   $0E,$26,ObjID_bink,$01,$40
+	fcb   $0E,$3C,ObjID_bink,$01,$50
+	fcb   $0E,$52,ObjID_bink,$01,$50
 ;$0E,$68,ObjID_8,$01,$24
 ;$0E,$74,ObjID_31,$00,$17
 ;$0E,$9C,ObjID_8,$01,$24

@@ -38,6 +38,11 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
+        fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+        fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
 
 Obj_Index_Address
         fdb   0
@@ -73,6 +78,11 @@ Obj_Index_Address
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   stage.placeholder ; ObjID_bossmusic
+        fdb   patapata.Object ; ObjID_patapata
+        fdb   bink.Object ; ObjID_bink
+        fdb   cancer.Object ; ObjID_cancer
+        fdb   bug.Object ; ObjID_bug
+        fdb   pstaff.Object ; ObjID_pstaff
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page
@@ -108,6 +118,11 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
+        fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+        fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -143,6 +158,11 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
+        fdb   Ani_Asd_none ; ObjID_patapata
+        fdb   Ani_Asd_none ; ObjID_bink
+        fdb   Ani_Asd_none ; ObjID_cancer
+        fdb   Ani_Asd_none ; ObjID_bug
+        fdb   Ani_Asd_none ; ObjID_pstaff
 
 Ani_Asd_none
         fdb   0
@@ -181,3 +201,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
+        fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+        fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
