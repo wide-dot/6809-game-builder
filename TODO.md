@@ -907,6 +907,12 @@ En veille sur décision (31/07/2026) :
 - [x] Contrat d'attributs : analyses (XML vs YAML, DSL), loader StAX +
       positions source, specs typées + Validator, XSD généré (option `-x`)
 
+- r-type : la musique du stage 6 est un CHOIX EN ATTENTE de l'auteur —
+  aucun asset ni en v1 ni en v2 (pas de dossier music dans le niveau 06),
+  le direntry `stage6.music.ymm` rejoue l'unité du stage 1 en attendant.
+  Candidats si un jour : le `theme.ymm` partagé des dossiers 04/07, ou une
+  conversion vgm2ymm dédiée.
+
 - Loader : le tampon de répertoire vit dans le pool et exige jusqu'à
   1540 octets CONTIGUS à chaque échange — le game over de r-type est passé
   à 83 octets du gel par simple fragmentation (14/08/2026, récit dans le

@@ -69,10 +69,11 @@ engineflames.Object   EXTERNAL
 ymm.obj.play      EXTERNAL
 ymm.frame.play    EXTERNAL
 soundfx.frame     EXTERNAL
-; Ce stage n'a pas de musique a lui : il rejoue celle du niveau 1, seule
-; chargee par la scene de boot.
-sounds.level1.ymm EXTERNAL
-stage.music       equ sounds.level1.ymm
+; Le niveau 6 n'a de musique ni en v2 ni en v1 : son bloc rejoue les octets
+; du niveau 1 sous SON nom, en attendant un choix de l'auteur (voir
+; music/ymm.unit.asm — un fournisseur par nom).
+sounds.level6.ymm EXTERNAL
+stage.music       equ sounds.level6.ymm
 
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.

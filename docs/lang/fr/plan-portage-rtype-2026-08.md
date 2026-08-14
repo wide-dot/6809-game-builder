@@ -557,6 +557,39 @@ zéro fichier indexé, le pool retrouve sa forme. Lane tour complet 7/7
 r-type. Dette exposée au TODO : le game over vit au bord du pool — un
 tampon de répertoire statique hors pool l'en sortirait définitivement.
 
+**Musiques par stage (14/08/2026)** — chaque stage charge SON morceau au
+créneau musical de la page $1A ($20BC, alternative de `stage1.music.ymm`
+et du title). Choix des fichiers MESURÉ contre les `ymm.asm` v1, pas
+contre les noms : 02 `music.ymm`, 03 `music.ymm` (le ymm.asm v1 du 03 est
+un copié-collé cassé qui cite un fichier inexistant — l'asset réel du
+dossier tranche), 04 `theme.ymm` (décompressé du `.zx0` v1, mode zx0
+« classic » ; identique octet pour octet au `theme.ymm` du dossier 07),
+05 `music.ymm`, 07 `rtype-stage4.ymm` (celui que le ymm.asm v1 joue —
+`theme.ymm` et `music.ymm` du même dossier sont des non-retenus), 08
+`theme.ymm` (7762 o, décompressé ; l'`intro.ymm` v1 n'a pas d'accroche
+dans le flow v2). Le 06 n'a de musique ni en v1 ni en v2 : son direntry
+rejoue l'unité du stage 1 (un `<load>` inter-répertoires ne marcherait
+pas, le loader ne lit que le répertoire courant) en attendant un choix
+de l'auteur, sous SON nom `sounds.level6.ymm`. Boss + jingle ne
+voyagent qu'avec le stage 1 — la première version les embarquait dans
+02-07 et a REJOUÉ la panne du chantier collision à l'identique : trois
+noms partagés (`sounds.boss/clearstage/level1.ymm`) devenus
+multi-fournisseurs, chaque bloc musical redevenu fichier indexé, et le
+game over gelé au tlsf erreur 3 (C4 rouge, trap `bra *` code $8101).
+Correctif : UN fournisseur par nom, même quand les octets sont les
+mêmes — tous les exports musicaux sont cuits-élagués, `grep music
+pool-map` rend zéro ligne, le pool retrouve sa forme d'avant. Les blocs
+04 (5816 o) et 08 (7762 o) débordent le créneau de 5754 : la zone
+d'arène $3736-$4000 de la page $1A leur est rendue (retirée de
+`stage4.gfx`/`stage8.gfx` — le 4 n'y posait rien, les 2126 o de tuiles
+du 8 se recasent seuls ailleurs). Preuve : sonde
+`ci/toje-bench/music_probe.py` 8/8 (à chaque entrée de stage, octets du
+thème — et du boss au stage 1 — relus en page $1A offset $20BC et
+comparés aux fichiers ; montage par la fenêtre DATA machine en pause,
+en sachant que cette fenêtre CROISE les moitiés de 8 Ko de la page :
+l'offset $20BC se lit en $A0BC), lane tour complet 7/7 game over
+compris, corpus confiné aux images r-type.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

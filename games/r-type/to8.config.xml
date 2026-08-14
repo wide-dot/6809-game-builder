@@ -80,9 +80,9 @@
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <!-- $1A : fenetre de tete seule — la musique de ce stage deborde
+                     le creneau standard et prend $3736-$4000 (music/ymm.unit.asm). -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -136,9 +136,9 @@
             <arena name="stage8.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <!-- $1A : fenetre de tete seule — la musique de ce stage deborde
+                     le creneau standard et prend $3736-$4000 (music/ymm.unit.asm). -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -2457,6 +2457,16 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage2.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage2-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/02/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
                     <load name="stage2.tiles.even"/>
@@ -2464,6 +2474,7 @@
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>
+                    <load name="stage2.music.ymm"/>
                     <load name="stage2"/>
                 </scene>
             </directory>
@@ -2541,12 +2552,23 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage3.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage3-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/03/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage3" section="SCENE" gensource="gen/scenes/stage3.asm">
                     <load name="stage3.tiles.even"/>
                     <load name="stage3.tiles.odd"/>
                     <load name="stage3.maps"/>
                     <load name="stage3.wave"/>
                     <load name="stage3.collision"/>
+                    <load name="stage3.music.ymm"/>
                     <load name="stage3"/>
                 </scene>
             </directory>
@@ -2624,12 +2646,23 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage4.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage4-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/04/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
+                    <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                 </scene>
             </directory>
@@ -2707,12 +2740,23 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage5.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage5-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/05/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage5" section="SCENE" gensource="gen/scenes/stage5.asm">
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
                     <load name="stage5.maps"/>
                     <load name="stage5.wave"/>
                     <load name="stage5.collision"/>
+                    <load name="stage5.music.ymm"/>
                     <load name="stage5"/>
                 </scene>
             </directory>
@@ -2790,12 +2834,25 @@
                     </lwasm>
                 </file>
 
+                <!-- Le niveau 6 n'a de musique ni en v2 ni en v1 : son unite
+                     rejoue les octets du niveau 1 sous SON nom (un fournisseur
+                     par nom — voir l'unite). Un <load> inter-repertoires ne
+                     marcherait pas : le loader ne lit que le repertoire
+                     courant. -->
+                <file name="stage6.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage6-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/06/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage6" section="SCENE" gensource="gen/scenes/stage6.asm">
                     <load name="stage6.tiles.even"/>
                     <load name="stage6.tiles.odd"/>
                     <load name="stage6.maps"/>
                     <load name="stage6.wave"/>
                     <load name="stage6.collision"/>
+                    <load name="stage6.music.ymm"/>
                     <load name="stage6"/>
                 </scene>
             </directory>
@@ -2873,12 +2930,23 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage7.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage7-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/07/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage7" section="SCENE" gensource="gen/scenes/stage7.asm">
                     <load name="stage7.tiles.even"/>
                     <load name="stage7.tiles.odd"/>
                     <load name="stage7.maps"/>
                     <load name="stage7.wave"/>
                     <load name="stage7.collision"/>
+                    <load name="stage7.music.ymm"/>
                     <load name="stage7"/>
                 </scene>
             </directory>
@@ -2955,12 +3023,23 @@
                     </lwasm>
                 </file>
 
+                <!-- La musique de CE stage, au creneau musical de la page $1A
+                     (alternative a stage1.music.ymm — le choix du morceau v1
+                     est justifie dans l'unite). -->
+                <file name="stage8.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/stage8-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/08/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage8" section="SCENE" gensource="gen/scenes/stage8.asm">
                     <load name="stage8.tiles.even"/>
                     <load name="stage8.tiles.odd"/>
                     <load name="stage8.maps"/>
                     <load name="stage8.wave"/>
                     <load name="stage8.collision"/>
+                    <load name="stage8.music.ymm"/>
                     <load name="stage8"/>
                 </scene>
             </directory>
