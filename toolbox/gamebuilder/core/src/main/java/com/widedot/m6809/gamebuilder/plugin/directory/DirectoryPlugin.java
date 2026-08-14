@@ -111,6 +111,15 @@ public class DirectoryPlugin {
 				writer.write(name + " equ " + fileId + System.lineSeparator());
 				directoryNames.add(name);
 
+				// a scene's directory travels with its id : the game code
+				// passes it to loader.dir.load before loader.scene.load, so
+				// the right directory is in memory when the scene resolves
+				// its file ids (partitioned directories, see
+				// docs/lang/fr/analyse-repertoires-partitionnes-2026-08.md)
+				if (plugin.equals("scene")) {
+					writer.write(name + ".dir equ " + id + System.lineSeparator());
+				}
+
 				// a literal attributed place is published next to the file id :
 				// resident code that reaches a raw binary by page and address
 				// (a scroll buffer, a bitmap) reads it from the same include it
@@ -350,6 +359,14 @@ public class DirectoryPlugin {
 			textWriter.close();
 		}
 		
+		// the entries are consumed : their blocks are inside `bin` and their
+		// payloads were flushed above. Clearing them is what lets a SECOND
+		// <directory> on the same disk start from an empty list instead of
+		// re-emitting these — and the floppydisk's end-of-walk check still
+		// catches a file declared outside any directory, since nothing
+		// consumes that one
+		media.getDirEntries().clear();
+
 		log.debug("End of processing directory");
 	}
 

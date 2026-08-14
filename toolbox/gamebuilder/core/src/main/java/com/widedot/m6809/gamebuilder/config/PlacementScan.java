@@ -54,6 +54,10 @@ public final class PlacementScan {
 		ctx.regions.clearFilePlacements();
 		ArenaPacker.pack(targetNode, ctx, resolved, divisibles);
 		collectLoads(targetNode, ctx, regions);
+		// directory locations last : pure configuration too (a directory's
+		// spot is its section declaration), written now so the loader — built
+		// long before the directories are emitted — can embed the table
+		DirectoryLocations.generate(targetNode, ctx);
 	}
 
 	/**
