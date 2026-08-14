@@ -39,7 +39,14 @@ class Toje:
                 return msg["result"]
 
     def call(self, name, args=None):
-        res = self.request("tools/call", {"name": name, "arguments": args or {}})
+        args = dict(args or {})
+        # TOJE_FAST=1 : chaque run_frames passe en TURBO (exécution débridée
+        # sans rendu — mêmes instructions, mêmes cycles ; voir run_frames dans
+        # teo-mcp). Opt-in par environnement pour que les lanes restent
+        # compatibles avec un toje antérieur au paramètre.
+        if name == "run_frames" and os.environ.get("TOJE_FAST") == "1":
+            args.setdefault("fast", True)
+        res = self.request("tools/call", {"name": name, "arguments": args})
         txt = "".join(c.get("text", "") for c in res.get("content", []))
         try:
             return json.loads(txt)
