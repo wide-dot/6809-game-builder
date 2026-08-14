@@ -281,8 +281,8 @@ manque relevé) ; factorisation des quatre blocs d'effacement en
 passage : un appui unique à une trame précise (2300 au boot, image du
 commit attract AUSSI) laisse le loader en attente FDC infinie dans le
 moniteur (DP=$60, $E3xx) pendant l'échange — reproductible, la lane
-(appuis répétés) ne le voit pas ; à instruire séparément (toje ou
-retry loader). Preuves : écran LOADING (vaisseau + « LOADING... »)
+(appuis répétés) ne le voit pas ; instruit le 14/08 : c'était le jar
+toje périmé, voir « Gel FDC » plus bas. Preuves : écran LOADING (vaisseau + « LOADING... »)
 vérifié en captures pendant le chargement, lane C1..C5 5/5, corpus 59
 images hors r-type identiques.
 
@@ -301,6 +301,31 @@ over → retour au TITLE ; press start → partie fraîche (vies ressemées
 59 images hors r-type identiques. Limite documentée : la fenêtre
 couvre la machine à états, pas la collision joueur-ennemi (le chemin
 d'impact réel reste aux tests manuels).
+
+**Gel FDC INSTRUIT ET RÉSOLU (14/08/2026)** — le « défaut
+préexistant » relevé à l'écran de chargement n'était ni le jeu ni le
+loader : c'était l'ÉMULATEUR. Le jar toje déployé (`teo-domain` du
+09/08 dans `~/.m2`) était antérieur à un correctif déjà présent dans
+les SOURCES de toje : dans `THMFC1.flushBus`, la position angulaire de
+la disquette se calculait en multipliant le compteur de cycles brut
+(non borné) par `trackSize*65536` — le produit déborde le 64 bits
+signé après ~37 secondes de machine émulée (~1850 trames), la tête se
+figeait et TOUTE lecture disque échouait ensuite. Le loader repartait
+alors dans ses retries et son invite « I/O error » du moniteur —
+invisibles pour la lane (headless + appuis répétés qui acquittent les
+invites, exactement le masquage déjà noté). Le correctif source
+(réduire la phase modulo la période de révolution AVANT la
+multiplication) manquait juste au jar : `mvn -pl teo-domain clean
+install` et vérification du bytecode (`lrem` présent dans `flushBus`).
+Rien à changer dans le jeu, l'image commitée est saine. Preuves sur
+l'émulateur reconstruit : boot SANS AUCUN appui jusqu'au titre vivant
+(l'image de la couverture de mort ne bootait pas sans appuis sur le
+jar périmé), attract déroulé au-delà des 37 s puis échange sur un
+appui ISOLÉ (le scénario gelant exact), et lane C1..C7 7/7. Leçon,
+même famille que « mesurer la référence » : quand la machine de test
+elle-même est suspecte, vérifier que son BINAIRE porte bien les
+correctifs de ses sources — un `git log` de l'outil ne prouve rien
+sur le jar qui tourne.
 
 **CŒUR RÉALISÉ (13/08/2026)** — D1 à D5 en un geste, prouvés
 ensemble : lane **C1..C5 5/5 au premier passage** de l'image
