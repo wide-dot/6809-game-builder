@@ -283,6 +283,18 @@ n'a jamais couvert, et ne couvre toujours pas, ce que deux unités
   C'était déjà le contrat — l'appelant choisit le bon répertoire. La
   partition ne l'aggrave ni ne l'améliore ; le contrôle d'appartenance
   reste un différé connu.
+- **Un répertoire hors de la piste 0** (trouvé APRÈS la mise en service,
+  par la lane étendue aux stages 3-8 dont les répertoires sont en piste
+  79) : le média décale sa carte d'entrelacement à chaque piste, et la
+  conversion secteur logique → secteur physique doit ajouter ce décalage
+  (`(piste×2)&6`, la règle de `ldsec`) avant d'indexer `sclist`. La
+  lecture de répertoire ne le faisait pas — invisible tant que tous les
+  répertoires étaient en piste 0, où le décalage vaut zéro : le moniteur
+  cherchait des secteurs qui ne contenaient pas le répertoire et bouclait
+  sur le contrôleur. Corrigé aux deux points de lecture (premier secteur
+  et boucle multi-secteurs, avec le rebouclage `&15` de l'index). Leçon :
+  un chemin « qui marche » peut ne devoir sa survie qu'à une valeur
+  particulière (piste 0) que toutes les configurations partageaient.
 
 ## 8. Validation prévue
 
