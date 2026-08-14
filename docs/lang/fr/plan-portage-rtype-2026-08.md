@@ -529,6 +529,34 @@ stage 7 à ~530 spawns de bibliothèque, stage 8 à +0 exactement ; corpus
 63/0, diff confiné aux 4 images r-type. Analyse et récit complets :
 `analyse-lots-ennemis-2026-08.md`.
 
+**La collision terrain dans les huit stages (14/08/2026)** — constat
+auteur sur la vidéo du tour : seuls les stages 1 la portaient, on volait à
+travers le décor ailleurs. Les données v1 étaient déjà importées ; leur
+vérité par stage est dans les `terrain.asm` v1 (stages 2, 4-8 : le plan
+`fc` sert les DEUX plans — les `bc` courts de 2 et 7 sont des orphelins
+v1 jamais consommés, à ne pas utiliser ; stage 3 : deux plans distincts ;
+largeurs 48 sauf stage 8 à 31). Réalisation au gabarit du stage 1 : une
+unité montée par stage dans la région partagée `collision`, la ligne 10
+de l'index (`ObjID_collision`), l'armement dans `stage.setup`.
+
+La validation a payé une leçon de doctrine : citer l'unité par SYMBOLE
+(`terrainCollision.unit EXTERNAL`, le geste du stage 1) est passé de
+gratuit à coûteux au moment où la région a gagné 7 fournisseurs — la
+référence unique se bakait, la multi-fournisseurs reste liée au
+chargement, chaque unité collision s'est mise à porter un export et le
+stage 1 a indexé UN fichier de plus. Conséquence en chaîne, diagnostiquée
+à la carte des blocs du pool : l'index des slots realloue (16→24, 132→196
+octets déplacés en queue), la queue libre passe de 1683 à 1457 octets, et
+le tampon du répertoire 0 (1536+4 contigus) ne trouve plus sa place au
+game over — gel `tlsf` erreur 3, alors que 3,2 Ko étaient libres mais
+morcelés. Correctif conforme à « ce que le builder place, le builder peut
+l'adresser en dur » : la région étant une destination fixe, la ligne
+d'index porte le littéral `collision.address` — zéro export, zéro lien,
+zéro fichier indexé, le pool retrouve sa forme. Lane tour complet 7/7
+(le vaisseau du banc survit au décor), corpus 63/0 confiné aux 4 images
+r-type. Dette exposée au TODO : le game over vit au bord du pool — un
+tampon de répertoire statique hors pool l'en sortirait définitivement.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

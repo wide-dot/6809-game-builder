@@ -63,7 +63,13 @@ Obj_Index_Address
         fdb   Beamcharge ; ObjID_beamcharge
         fdb   Beam ; ObjID_beamp
         fdb   emitterFlash.Object ; ObjID_emitter_flash
-        fdb   terrainCollision.unit ; ObjID_collision
+        ; l'adresse de la region collision, en dur : la region est une
+        ; destination fixe placee par le builder — la citer par symbole
+        ; couterait un export par stage et un fichier indexe de plus
+        ; (vecu : l'index des slots realloue, le pool se fragmente, et
+        ; le tampon du repertoire 0 ne trouve plus 1536 octets contigus
+        ; au game over)
+        fdb   collision.address ; ObjID_collision
         fdb   createFoeFire ; ObjID_createFoeFire
         fdb   loadFirePreset.Object ; ObjID_loadFirePreset
         fdb   foefire.Object ; ObjID_foefire

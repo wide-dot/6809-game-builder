@@ -73,10 +73,6 @@ starfield.draw    EXTERNAL
 ; trois tables — objet, animation et images.
 Player            EXTERNAL
 
-; L'unite de collision terrain du stage, dans sa page : quatre points d'entree
-; a +0/+3/+6/+9, que terrainCollision.init.do adresse par l'index d'objets.
-terrainCollision.unit EXTERNAL
-
 ; Les flammes de reacteur de la sequence d'ouverture, dans leur page.
 engineflames.Object   EXTERNAL
 

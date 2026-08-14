@@ -15,7 +15,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+stage2.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
@@ -55,7 +55,13 @@ Obj_Index_Address
         fdb   Beamcharge ; ObjID_beamcharge
         fdb   Beam ; ObjID_beamp
         fdb   emitterFlash.Object ; ObjID_emitter_flash
-        fdb   stage.placeholder ; ObjID_collision
+        ; l'adresse de la region collision, en dur : la region est une
+        ; destination fixe placee par le builder — la citer par symbole
+        ; couterait un export par stage et un fichier indexe de plus
+        ; (vecu : l'index des slots realloue, le pool se fragmente, et
+        ; le tampon du repertoire 0 ne trouve plus 1536 octets contigus
+        ; au game over)
+        fdb   collision.address ; ObjID_collision
         fdb   createFoeFire ; ObjID_createFoeFire
         fdb   loadFirePreset.Object ; ObjID_loadFirePreset
         fdb   foefire.Object ; ObjID_foefire
@@ -95,7 +101,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+stage2.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
@@ -178,7 +184,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+stage2.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire

@@ -2448,12 +2448,22 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 2 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage2.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/02/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/02/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
+                    <load name="stage2.collision"/>
                     <load name="stage2"/>
                 </scene>
             </directory>
@@ -2522,11 +2532,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 3 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage3.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/03/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/03/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage3" section="SCENE" gensource="gen/scenes/stage3.asm">
                     <load name="stage3.tiles.even"/>
                     <load name="stage3.tiles.odd"/>
                     <load name="stage3.maps"/>
                     <load name="stage3.wave"/>
+                    <load name="stage3.collision"/>
                     <load name="stage3"/>
                 </scene>
             </directory>
@@ -2595,11 +2615,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 4 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage4.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/04/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/04/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
+                    <load name="stage4.collision"/>
                     <load name="stage4"/>
                 </scene>
             </directory>
@@ -2668,11 +2698,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 5 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage5.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/05/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/05/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage5" section="SCENE" gensource="gen/scenes/stage5.asm">
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
                     <load name="stage5.maps"/>
                     <load name="stage5.wave"/>
+                    <load name="stage5.collision"/>
                     <load name="stage5"/>
                 </scene>
             </directory>
@@ -2741,11 +2781,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 6 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage6.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/06/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/06/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage6" section="SCENE" gensource="gen/scenes/stage6.asm">
                     <load name="stage6.tiles.even"/>
                     <load name="stage6.tiles.odd"/>
                     <load name="stage6.maps"/>
                     <load name="stage6.wave"/>
+                    <load name="stage6.collision"/>
                     <load name="stage6"/>
                 </scene>
             </directory>
@@ -2814,11 +2864,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 7 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage7.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/07/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/07/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage7" section="SCENE" gensource="gen/scenes/stage7.asm">
                     <load name="stage7.tiles.even"/>
                     <load name="stage7.tiles.odd"/>
                     <load name="stage7.maps"/>
                     <load name="stage7.wave"/>
+                    <load name="stage7.collision"/>
                     <load name="stage7"/>
                 </scene>
             </directory>
@@ -2886,11 +2946,21 @@
                     </lwasm>
                 </file>
 
+                <!-- La collision terrain du stage 8 (region partagee `collision`,
+                     les stages y sont des alternatives) -->
+                <file name="stage8.collision" linkdata="LINK" region="collision">
+                    <lwasm gensource="gen/stages/08/collision.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/08/collision/collision.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage8" section="SCENE" gensource="gen/scenes/stage8.asm">
                     <load name="stage8.tiles.even"/>
                     <load name="stage8.tiles.odd"/>
                     <load name="stage8.maps"/>
                     <load name="stage8.wave"/>
+                    <load name="stage8.collision"/>
                     <load name="stage8"/>
                 </scene>
             </directory>

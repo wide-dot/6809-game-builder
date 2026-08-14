@@ -906,3 +906,10 @@ En veille sur décision (31/07/2026) :
 - [x] Mécanisme de plugins supprimé → registre explicite `Handlers` (−2 400 l.)
 - [x] Contrat d'attributs : analyses (XML vs YAML, DSL), loader StAX +
       positions source, specs typées + Validator, XSD généré (option `-x`)
+
+- Loader : le tampon de répertoire vit dans le pool et exige jusqu'à
+  1540 octets CONTIGUS à chaque échange — le game over de r-type est passé
+  à 83 octets du gel par simple fragmentation (14/08/2026, récit dans le
+  plan r-type). Correctif de fond : tampon de répertoire STATIQUE hors
+  pool, dimensionné par le builder (max des répertoires du target, équate
+  dans gen/directories/locations.asm).
