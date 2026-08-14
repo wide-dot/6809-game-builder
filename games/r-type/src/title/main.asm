@@ -590,6 +590,7 @@ title.launchGame
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
         ldx   #scenes.stage1
+        ldy   #scenes.stage1.dir
         jmp   game.stage.switch
 
 ; ---------------------------------------------------------------------------

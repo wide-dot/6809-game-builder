@@ -5,6 +5,7 @@ import com.widedot.m6809.gamebuilder.spi.configuration.Defines;
 import com.widedot.m6809.gamebuilder.spi.configuration.Settings;
 import com.widedot.m6809.gamebuilder.spi.configuration.SourceMap;
 import com.widedot.m6809.gamebuilder.spi.globals.FileIds;
+import com.widedot.m6809.gamebuilder.spi.globals.DirReservations;
 import com.widedot.m6809.gamebuilder.spi.globals.FilePlaces;
 import com.widedot.m6809.gamebuilder.spi.globals.ImageSets;
 import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
@@ -48,6 +49,9 @@ public class BuildContext {
 	/** file id allocator, shared across a target */
 	public final FileIds fileIds;
 
+	/** File-id reservations of every directory, computed by the placement scan. */
+	public final DirReservations dirReservations;
+
 	/** memory layout declared by the target, referenced by scene loads */
 	public final Regions regions;
 
@@ -89,11 +93,11 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new Regions(), new Machines(), new Cuts(), new StaticLink(), new FilePlaces(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new DirReservations(), new Regions(), new Machines(), new Cuts(), new StaticLink(), new FilePlaces(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
-			FileIds fileIds, Regions regions, Machines machines, Cuts cuts, StaticLink staticLink,
+			FileIds fileIds, DirReservations dirReservations, Regions regions, Machines machines, Cuts cuts, StaticLink staticLink,
 			FilePlaces filePlaces, ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Occupancy occupancy,
 			Outputs outputs, Defaults defaults, Defines defines) {
 		this.path = path;
@@ -101,6 +105,7 @@ public class BuildContext {
 		this.sources = sources;
 		this.linkSymbols = linkSymbols;
 		this.fileIds = fileIds;
+		this.dirReservations = dirReservations;
 		this.regions = regions;
 		this.machines = machines;
 		this.cuts = cuts;
@@ -120,7 +125,7 @@ public class BuildContext {
 	 *         everything else shared
 	 */
 	public BuildContext child() {
-		return new BuildContext(path, settings, sources, linkSymbols, fileIds, regions, machines, cuts, staticLink,
+		return new BuildContext(path, settings, sources, linkSymbols, fileIds, dirReservations, regions, machines, cuts, staticLink,
 				filePlaces, imageSets, linkReport, ramMap, occupancy, outputs,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
@@ -136,6 +141,7 @@ public class BuildContext {
 	 */
 	public void resetTarget() {
 		fileIds.clear();
+		dirReservations.clear();
 		linkSymbols.clear();
 		regions.clear();
 		machines.clear();

@@ -306,6 +306,16 @@
             <!-- entre l'INDEX et la fin de piste. Les scenes ont grandi avec   -->
             <!-- les unites chargees et debordaient sur le debut de LINK : elle -->
             <!-- prend une piste libre a elle.                                  -->
+            <!-- Les repertoires de stages, derriere le repertoire 0 retreci
+                 (5 secteurs au lieu de 10) sur la face 1 de la piste 0 :
+                 dir1 en 9-13, dir2 en 14-15. Les stages 3-8 prendront une
+                 piste d'INDEX a eux le moment venu. Leurs emplacements
+                 partent dans la table du loader
+                 (gen/directories/locations.asm). La piste 3 face 0 essayee
+                 d'abord etait occupee — le controle d'occupation du media
+                 l'a refuse au build, c'est lui qui garde ces choix.        -->
+            <section name="INDEX1" track="0" face="1" sector="9"/>
+            <section name="INDEX2" track="0" face="1" sector="14"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
             <section name="DATA"  track="4" face="0" sector="1"/>
@@ -645,13 +655,6 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
-                    <lwasm gensource="gen/sound/ymm-data.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/stages/01/music/ymm.unit.asm"/>
-                    </lwasm>
-                </file>
-
                 <file name="common.soundfx" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/sound/soundfx.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -823,6 +826,527 @@
                             <frame image="bitdevice_1"/>
                             <frame image="bitdevice_0"/>
                         </animation>
+                    </lwasm>
+                </file>
+
+                <file name="common.missile" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/enemies/missile.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/_shared/commonmissile.unit.asm"/>
+                                <gfxcomp file="common.missile" gendir="gen/enemies/commonmissile"
+                                         gensource="gen/enemies/commonmissile/includes.asm"
+                                         genindex="gen/enemies/commonmissile/index.asm">
+                                    <image name="missile_0" filename="src/enemies/_shared/images/missile/00.png" index="0">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="missile_1" filename="src/enemies/_shared/images/missile/01.png" index="1">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="missile_2" filename="src/enemies/_shared/images/missile/02.png" index="2">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="missile_3" filename="src/enemies/_shared/images/missile/03.png" index="3">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="missile_4" filename="src/enemies/_shared/images/missile/04.png" index="4">
+                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="missile_5" filename="src/enemies/_shared/images/missile/03.png" index="5">
+                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                    </image>
+                                    <image name="missile_6" filename="src/enemies/_shared/images/missile/02.png" index="6">
+                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                    </image>
+                                    <image name="missile_7" filename="src/enemies/_shared/images/missile/01.png" index="7">
+                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                    </image>
+                                    <image name="missile_8" filename="src/enemies/_shared/images/missile/00.png" index="8">
+                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                    </image>
+                                    <image name="missile_9" filename="src/enemies/_shared/images/missile/01.png" index="9">
+                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                    </image>
+                                    <image name="missile_10" filename="src/enemies/_shared/images/missile/02.png" index="10">
+                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                    </image>
+                                    <image name="missile_11" filename="src/enemies/_shared/images/missile/03.png" index="11">
+                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                    </image>
+                                    <image name="missile_12" filename="src/enemies/_shared/images/missile/04.png" index="12">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="missile_13" filename="src/enemies/_shared/images/missile/03.png" index="13">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="missile_14" filename="src/enemies/_shared/images/missile/02.png" index="14">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="missile_15" filename="src/enemies/_shared/images/missile/01.png" index="15">
+                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="common.missileflame" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/enemies/missileflame.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/_shared/commonmissileflame.unit.asm"/>
+                                <gfxcomp file="common.missileflame" gendir="gen/enemies/commonmissileflame"
+                                         gensource="gen/enemies/commonmissileflame/includes.asm"
+                                         genindex="gen/enemies/commonmissileflame/index.asm">
+                                    <images dir="src/enemies/_shared/images/boost" names="missileflame"/>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Le marqueur de musique du boss : la wave le seme, il pose le
+                     drapeau que la boucle du stage releve, puis se supprime.
+                     Commun a tous les niveaux qui ont un boss. -->
+                <file name="common.bossmusic" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/flow/bossmusic.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/flow/bossmusic/bossmusic.unit.asm"/>
+                    </lwasm>
+                </file>
+                <file name="common.forcepod" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/forcepod.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/forcepod.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/forcepod"
+                                 gensource="gen/weapons/forcepod/includes.asm"
+                                 genindex="gen/weapons/forcepod/index.asm"
+                                 file="common.forcepod">
+                            <image name="forcepod_0_0" filename="src/common/weapons/forcepods/images/forcepod_0/00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_1" filename="src/common/weapons/forcepods/images/forcepod_0/01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_2" filename="src/common/weapons/forcepods/images/forcepod_0/02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_3" filename="src/common/weapons/forcepods/images/forcepod_0/03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_4" filename="src/common/weapons/forcepods/images/forcepod_0/04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_0_5" filename="src/common/weapons/forcepods/images/forcepod_0/05.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_0" filename="src/common/weapons/forcepods/images/forcepod_1/00.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_1" filename="src/common/weapons/forcepods/images/forcepod_1/01.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_2" filename="src/common/weapons/forcepods/images/forcepod_1/02.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_3" filename="src/common/weapons/forcepods/images/forcepod_1/03.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_4" filename="src/common/weapons/forcepods/images/forcepod_1/04.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_1_5" filename="src/common/weapons/forcepods/images/forcepod_1/05.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_0" filename="src/common/weapons/forcepods/images/forcepod_2/00.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_1" filename="src/common/weapons/forcepods/images/forcepod_2/01.png" index="13">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_2" filename="src/common/weapons/forcepods/images/forcepod_2/02.png" index="14">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="forcepod_2_3" filename="src/common/weapons/forcepods/images/forcepod_2/03.png" index="15">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="common.reboundlaser" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/reboundlaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/reboundlaser.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/reboundlaser"
+                                 gensource="gen/weapons/reboundlaser/includes.asm"
+                                 genindex="gen/weapons/reboundlaser/index.asm"
+                                 file="common.reboundlaser">
+                            <image name="reboundlaser_angle_0" filename="src/common/weapons/forcepods/images/reboundlaser/00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_1" filename="src/common/weapons/forcepods/images/reboundlaser/01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_2" filename="src/common/weapons/forcepods/images/reboundlaser/02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_3" filename="src/common/weapons/forcepods/images/reboundlaser/03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_4" filename="src/common/weapons/forcepods/images/reboundlaser/04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_5" filename="src/common/weapons/forcepods/images/reboundlaser/05.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_6" filename="src/common/weapons/forcepods/images/reboundlaser/06.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_angle_7" filename="src/common/weapons/forcepods/images/reboundlaser/07.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_0" filename="src/common/weapons/forcepods/images/reboundlaser/08.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_1" filename="src/common/weapons/forcepods/images/reboundlaser/09.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_2" filename="src/common/weapons/forcepods/images/reboundlaser/10.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_diagonal_3" filename="src/common/weapons/forcepods/images/reboundlaser/11.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_horizontal" filename="src/common/weapons/forcepods/images/reboundlaser/12.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_0" filename="src/common/weapons/forcepods/images/reboundlaser/13.png" index="13">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_1" filename="src/common/weapons/forcepods/images/reboundlaser/14.png" index="14">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_2" filename="src/common/weapons/forcepods/images/reboundlaser/15.png" index="15">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="reboundlaser_explosion_3" filename="src/common/weapons/forcepods/images/reboundlaser/16.png" index="16">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="common.counterairlaser" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/counterairlaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/counterairlaser.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/counterairlaser"
+                                 gensource="gen/weapons/counterairlaser/includes.asm"
+                                 genindex="gen/weapons/counterairlaser/index.asm"
+                                 file="common.counterairlaser">
+                            <image name="counterairlaser_0" filename="src/common/weapons/forcepods/images/counterairlaser-4/00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_1" filename="src/common/weapons/forcepods/images/counterairlaser-4/01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_2" filename="src/common/weapons/forcepods/images/counterairlaser-4/02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_3" filename="src/common/weapons/forcepods/images/counterairlaser-4/03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_4" filename="src/common/weapons/forcepods/images/counterairlaser-4/04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_5" filename="src/common/weapons/forcepods/images/counterairlaser-4/05.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_6" filename="src/common/weapons/forcepods/images/counterairlaser-4/06.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="counterairlaser_7" filename="src/common/weapons/forcepods/images/counterairlaser-4/07.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="common.simplefire" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/simplefire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/simplefire.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/simplefire"
+                                 gensource="gen/weapons/simplefire/includes.asm"
+                                 genindex="gen/weapons/simplefire/index.asm"
+                                 file="common.simplefire">
+                            <image name="shootup" filename="src/common/weapons/forcepods/images/shootpod/00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootupright" filename="src/common/weapons/forcepods/images/shootpod/01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootright" filename="src/common/weapons/forcepods/images/shootpod/02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootdownright" filename="src/common/weapons/forcepods/images/shootpod/03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="shootdown" filename="src/common/weapons/forcepods/images/shootpod/04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="simplefire_impact0" filename="src/common/weapons/weapon/images/impact/00.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="simplefire_impact3" filename="src/common/weapons/weapon/images/impact/01.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="common.firechain" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/firechain.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/lib/firechain.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="common.foefire" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/foefire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/_shared/foefire.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/foefire"
+                                 gensource="gen/weapons/foefire/includes.asm"
+                                 genindex="gen/weapons/foefire/index.asm"
+                                 file="common.foefire">
+                            <images dir="src/enemies/_shared/images/foefire" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+
+
+                <!-- Les scènes. Celle du boot charge le moteur ET le stage 1 ; -->
+                <!-- les deux autres ne rechargent que ce qui change, le        -->
+                <!-- moteur restant en place par simple absence de la liste.    -->
+                <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
+                    <load name="common.engine"/>
+                    <load name="common.anim"/>
+                    <load name="common.overlay"/>
+                    <load name="common.player"/>
+                    <load name="common.weapon"/>
+                    <load name="common.beamcharge"/>
+                    <load name="common.beamp"/>
+                    <load name="common.emflash"/>
+                    <load name="common.explosion.imgSmall"/>
+                    <load name="common.explosion.imgFwk"/>
+                    <load name="common.explosion.imgBig"/>
+                    <load name="common.explosion"/>
+                    <load name="common.fade"/>
+                    <load name="common.engineflames"/>
+                    <load name="engine.sound.ym.const"/>
+                    <load name="engine.sound.ymm"/>
+                    <load name="common.soundfx"/>
+                    <load name="common.collisionpass"/>
+                    <load name="common.messages"/>
+                    <load name="common.checkpoint"/>
+                    <!-- VGC debranche cote stage : recharger engine.sound.vgc + stage1.music.vgc ici. -->
+                    <load name="common.hud"/>
+                    <load name="common.pow"/>
+                    <load name="common.optionbox"/>
+                    <load name="common.bitdevice"/>
+                    <load name="common.missile"/>
+                    <load name="common.missileflame"/>
+                    <load name="common.bossmusic"/>
+                    <load name="common.forcepod"/>
+                    <load name="common.reboundlaser"/>
+                    <load name="common.counterairlaser"/>
+                    <load name="common.simplefire"/>
+                    <load name="common.firechain"/>
+                    <load name="common.foefire"/>
+                    <!-- T4 : le boot par defaut ouvre sur le TITLE. Tout le
+                         contenu stage 1 est parti dans scenes.stage1 — c'est
+                         la scene que le press start charge, et celle que les
+                         retours de stage rechargent. Le banc traverse le
+                         title : son harnais presse une touche. -->
+                    <load name="title.main"/>
+                    <load name="title.logo"/>
+                    <load name="title.pushbutton"/>
+                    <load name="title.scores"/>
+                    <load name="title.text"/>
+                    <load name="title.loading"/>
+                    <load name="title.music.ymm"/>
+                    <load name="title.sound.vgc"/>
+                    <load name="engine.sound.sn.const"/>
+                </scene>
+
+
+                <!-- ===== TITLE (chantier 1 du plan de portage) ============ -->
+                <!-- T1a : les graphismes seuls — l'unite title.main viendra
+                     avec l'adaptation du main v1 (849 l.). Encodeurs releves
+                     dans les .properties v1 : logo NB0+NB1 (pre-decale),
+                     push_button et chiffres NB0. Les lettres etaient
+                     commentees en v1 (cible disquette) : non compilees. -->
+                <!-- Le logo pese 21,8 Ko avec ses deux decalages : une
+                     COLLECTION (gfxcomp au premier niveau), le packer la coupe
+                     sur les pages de l'arene ; son index viendra par
+                     <imageset> avec l'unite title.main (T1b). -->
+                <file name="title.logo" linkdata="LINK" arena="title"
+                      gendir="gen/title/logo">
+                    <gfxcomp gendir="gen/title/logo" imageset="titlelogo"
+                             gensource="gen/title/logo/includes.asm">
+                        <images dir="src/title/logo/images" shifts="0,1"/>
+                    </gfxcomp>
+                </file>
+
+                <!-- Chaque objet du title est colocalise avec ses images et
+                     leur index dans SON direntry (le motif des ennemis) ;
+                     RunObjects lit page et adresse dans l'index du title. -->
+                <file name="title.pushbutton" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/pushbutton.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/text/push_button.unit.asm"/>
+                        <gfxcomp gendir="gen/title/pushbutton"
+                                 gensource="gen/title/pushbutton/includes.asm"
+                                 genindex="gen/title/pushbutton/index.asm"
+                                 file="title.pushbutton">
+                            <images dir="src/title/text/images" names="push_button"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="title.scores" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/scores.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/scores/scores.unit.asm"/>
+                        <gfxcomp gendir="gen/title/scores"
+                                 gensource="gen/title/scores/includes.asm"
+                                 genindex="gen/title/scores/index.asm"
+                                 file="title.scores">
+                            <images dir="src/title/scores/images" names="number"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La machine a ecrire : pas d'images, elle dessine ses
+                     lettres en direct dans la fenetre donnees. -->
+                <file name="title.text" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/text.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/text/text.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- L'image LOADING du changement de mode (v1 : un game mode
+                     entier ; v2 : un objet dessine avant l'echange, qui reste
+                     visible pendant le scene.load — le loader n'ecrit pas
+                     dans les tampons video). -->
+                <file name="title.loading" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/loading.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/flow/loading/loading.unit.asm"/>
+                        <gfxcomp gendir="gen/title/loading"
+                                 gensource="gen/title/loading/includes.asm"
+                                 genindex="gen/title/loading/index.asm"
+                                 file="title.loading">
+                            <images dir="src/common/flow/loading/images" names="loading"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Les musiques du title (T2) : deux flux, comme la v1. -->
+                <!-- YMM : le lecteur est resident ($1A) et ne monte qu'une
+                     page — les donnees d'un morceau vivent avec lui. La place
+                     du title est CELLE du bloc musical des stages (alternative
+                     a stage1.music.ymm : un title ne coexiste jamais avec un
+                     stage). -->
+                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/title-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/title/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- VGC : premier consommateur v2 du lecteur (debranche cote
+                     stage, decision decouplee). Lecteur, tampons et donnees
+                     dans UN direntry : un direntry tient sur une page, la
+                     colocalisation exigee par le montage unique sous IRQ est
+                     structurelle. Le packer le coule dans l'arene title. -->
+                <file name="title.sound.vgc" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/sound/title-vgc.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="engine/sound/vgc.buffers.asm"/>
+                        <asm filename="engine/sound/vgc.asm"/>
+                        <asm filename="src/title/music/vgc.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le port du SN76489 par le lien, comme le YM : la variante
+                     2 ($E7F7), celle du modele sound. -->
+                <file name="engine.sound.sn.const" linkdata="LINK">
+                    <lwasm gensource="gen/sound/sn-const.asm">
+                        <asm filename="engine/system/to8/sound/sn.2.const.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- L'unite du title : la troisieme alternative du creneau
+                     d'echange ($01/$8000, comme stage1 et stage2). -->
+                <file name="title.main" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/title/title-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir1/entries.asm"/>
+                        <asm filename="src/title/main.asm"/>
+                        <!-- L'index du logo : une page par image, le set est
+                             coupe en deux morceaux d'arene. -->
+                        <imageset name="titlelogo" gensource="gen/title/logo-index.asm"/>
+                        <png2pal section="palette" symbol="Pal_title" filename="src/title/logo/images/logo_pal.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <!-- La palette du tableau des scores : la v1 la tire
+                             de number_01.png (main.properties du mode 00). -->
+                        <png2pal section="palette" symbol="Pal_scores" filename="src/title/scores/images/00.png"/>
+                        <png2pal section="palette" symbol="Pal_loading" filename="src/common/flow/loading/images/00.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
+                    <load name="title.main"/>
+                    <load name="title.logo"/>
+                    <load name="title.pushbutton"/>
+                    <load name="title.scores"/>
+                    <load name="title.text"/>
+                    <load name="title.loading"/>
+                    <load name="title.music.ymm"/>
+                    <load name="title.sound.vgc"/>
+                    <load name="engine.sound.sn.const"/>
+                </scene>
+
+            </directory>
+
+            <!-- Les repertoires par unite de chargement : le pool du loader ne
+                 porte que le repertoire COURANT, chaque stage ne grossit que le
+                 sien. Spec : analyse-repertoires-partitionnes-2026-08.md -->
+            <directory id="1" section="INDEX1" gensymbols="gen/directories/dir1/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+
+                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/ymm-data.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/music/ymm.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -1183,77 +1707,6 @@
                     </lwasm>
                 </file>
 
-                <file name="common.missile" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/enemies/missile.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/_shared/commonmissile.unit.asm"/>
-                                <gfxcomp file="common.missile" gendir="gen/enemies/commonmissile"
-                                         gensource="gen/enemies/commonmissile/includes.asm"
-                                         genindex="gen/enemies/commonmissile/index.asm">
-                                    <image name="missile_0" filename="src/enemies/_shared/images/missile/00.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="missile_1" filename="src/enemies/_shared/images/missile/01.png" index="1">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="missile_2" filename="src/enemies/_shared/images/missile/02.png" index="2">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="missile_3" filename="src/enemies/_shared/images/missile/03.png" index="3">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="missile_4" filename="src/enemies/_shared/images/missile/04.png" index="4">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="missile_5" filename="src/enemies/_shared/images/missile/03.png" index="5">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
-                                    </image>
-                                    <image name="missile_6" filename="src/enemies/_shared/images/missile/02.png" index="6">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
-                                    </image>
-                                    <image name="missile_7" filename="src/enemies/_shared/images/missile/01.png" index="7">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
-                                    </image>
-                                    <image name="missile_8" filename="src/enemies/_shared/images/missile/00.png" index="8">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
-                                    </image>
-                                    <image name="missile_9" filename="src/enemies/_shared/images/missile/01.png" index="9">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
-                                    </image>
-                                    <image name="missile_10" filename="src/enemies/_shared/images/missile/02.png" index="10">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
-                                    </image>
-                                    <image name="missile_11" filename="src/enemies/_shared/images/missile/03.png" index="11">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
-                                    </image>
-                                    <image name="missile_12" filename="src/enemies/_shared/images/missile/04.png" index="12">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
-                                    </image>
-                                    <image name="missile_13" filename="src/enemies/_shared/images/missile/03.png" index="13">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
-                                    </image>
-                                    <image name="missile_14" filename="src/enemies/_shared/images/missile/02.png" index="14">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
-                                    </image>
-                                    <image name="missile_15" filename="src/enemies/_shared/images/missile/01.png" index="15">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
-                                    </image>
-                                </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="common.missileflame" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/enemies/missileflame.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/_shared/commonmissileflame.unit.asm"/>
-                                <gfxcomp file="common.missileflame" gendir="gen/enemies/commonmissileflame"
-                                         gensource="gen/enemies/commonmissileflame/includes.asm"
-                                         genindex="gen/enemies/commonmissileflame/index.asm">
-                                    <images dir="src/enemies/_shared/images/boost" names="missileflame"/>
-                                </gfxcomp>
-                    </lwasm>
-                </file>
-
                 <file name="stage1.tabrokcanon" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrokcanon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1295,16 +1748,6 @@
                             <images dir="src/enemies/_shared/images/scantfire" shifts="0,1"/>
                             <images dir="src/enemies/_shared/images/scantfire" mirror="x" shifts="0,1"/>
                         </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <!-- Le marqueur de musique du boss : la wave le seme, il pose le
-                     drapeau que la boucle du stage releve, puis se supprime.
-                     Commun a tous les niveaux qui ont un boss. -->
-                <file name="common.bossmusic" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/flow/bossmusic.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/flow/bossmusic/bossmusic.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -1621,231 +2064,6 @@
                         <asm filename="src/enemies/dobkeratops/explosion.unit.asm"/>
                     </lwasm>
                 </file>
-                <file name="common.forcepod" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/forcepod.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/weapons/forcepods/forcepod.unit.asm"/>
-                        <gfxcomp gendir="gen/weapons/forcepod"
-                                 gensource="gen/weapons/forcepod/includes.asm"
-                                 genindex="gen/weapons/forcepod/index.asm"
-                                 file="common.forcepod">
-                            <image name="forcepod_0_0" filename="src/common/weapons/forcepods/images/forcepod_0/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_0_1" filename="src/common/weapons/forcepods/images/forcepod_0/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_0_2" filename="src/common/weapons/forcepods/images/forcepod_0/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_0_3" filename="src/common/weapons/forcepods/images/forcepod_0/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_0_4" filename="src/common/weapons/forcepods/images/forcepod_0/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_0_5" filename="src/common/weapons/forcepods/images/forcepod_0/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_0" filename="src/common/weapons/forcepods/images/forcepod_1/00.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_1" filename="src/common/weapons/forcepods/images/forcepod_1/01.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_2" filename="src/common/weapons/forcepods/images/forcepod_1/02.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_3" filename="src/common/weapons/forcepods/images/forcepod_1/03.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_4" filename="src/common/weapons/forcepods/images/forcepod_1/04.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_1_5" filename="src/common/weapons/forcepods/images/forcepod_1/05.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="forcepod_2_0" filename="src/common/weapons/forcepods/images/forcepod_2/00.png" index="12">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_2_1" filename="src/common/weapons/forcepods/images/forcepod_2/01.png" index="13">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_2_2" filename="src/common/weapons/forcepods/images/forcepod_2/02.png" index="14">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="forcepod_2_3" filename="src/common/weapons/forcepods/images/forcepod_2/03.png" index="15">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="common.reboundlaser" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/reboundlaser.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/weapons/forcepods/reboundlaser.unit.asm"/>
-                        <gfxcomp gendir="gen/weapons/reboundlaser"
-                                 gensource="gen/weapons/reboundlaser/includes.asm"
-                                 genindex="gen/weapons/reboundlaser/index.asm"
-                                 file="common.reboundlaser">
-                            <image name="reboundlaser_angle_0" filename="src/common/weapons/forcepods/images/reboundlaser/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_1" filename="src/common/weapons/forcepods/images/reboundlaser/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_2" filename="src/common/weapons/forcepods/images/reboundlaser/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_3" filename="src/common/weapons/forcepods/images/reboundlaser/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_4" filename="src/common/weapons/forcepods/images/reboundlaser/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_5" filename="src/common/weapons/forcepods/images/reboundlaser/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_6" filename="src/common/weapons/forcepods/images/reboundlaser/06.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_angle_7" filename="src/common/weapons/forcepods/images/reboundlaser/07.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_diagonal_0" filename="src/common/weapons/forcepods/images/reboundlaser/08.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_diagonal_1" filename="src/common/weapons/forcepods/images/reboundlaser/09.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_diagonal_2" filename="src/common/weapons/forcepods/images/reboundlaser/10.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_diagonal_3" filename="src/common/weapons/forcepods/images/reboundlaser/11.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_horizontal" filename="src/common/weapons/forcepods/images/reboundlaser/12.png" index="12">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_explosion_0" filename="src/common/weapons/forcepods/images/reboundlaser/13.png" index="13">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_explosion_1" filename="src/common/weapons/forcepods/images/reboundlaser/14.png" index="14">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_explosion_2" filename="src/common/weapons/forcepods/images/reboundlaser/15.png" index="15">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="reboundlaser_explosion_3" filename="src/common/weapons/forcepods/images/reboundlaser/16.png" index="16">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="common.counterairlaser" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/counterairlaser.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/weapons/forcepods/counterairlaser.unit.asm"/>
-                        <gfxcomp gendir="gen/weapons/counterairlaser"
-                                 gensource="gen/weapons/counterairlaser/includes.asm"
-                                 genindex="gen/weapons/counterairlaser/index.asm"
-                                 file="common.counterairlaser">
-                            <image name="counterairlaser_0" filename="src/common/weapons/forcepods/images/counterairlaser-4/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_1" filename="src/common/weapons/forcepods/images/counterairlaser-4/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_2" filename="src/common/weapons/forcepods/images/counterairlaser-4/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_3" filename="src/common/weapons/forcepods/images/counterairlaser-4/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_4" filename="src/common/weapons/forcepods/images/counterairlaser-4/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_5" filename="src/common/weapons/forcepods/images/counterairlaser-4/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_6" filename="src/common/weapons/forcepods/images/counterairlaser-4/06.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                            <image name="counterairlaser_7" filename="src/common/weapons/forcepods/images/counterairlaser-4/07.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="common.simplefire" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/simplefire.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/weapons/forcepods/simplefire.unit.asm"/>
-                        <gfxcomp gendir="gen/weapons/simplefire"
-                                 gensource="gen/weapons/simplefire/includes.asm"
-                                 genindex="gen/weapons/simplefire/index.asm"
-                                 file="common.simplefire">
-                            <image name="shootup" filename="src/common/weapons/forcepods/images/shootpod/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="shootupright" filename="src/common/weapons/forcepods/images/shootpod/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="shootright" filename="src/common/weapons/forcepods/images/shootpod/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="shootdownright" filename="src/common/weapons/forcepods/images/shootpod/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="shootdown" filename="src/common/weapons/forcepods/images/shootpod/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="simplefire_impact0" filename="src/common/weapons/weapon/images/impact/00.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                            <image name="simplefire_impact3" filename="src/common/weapons/weapon/images/impact/01.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="common.firechain" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/firechain.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/lib/firechain.asm"/>
-                    </lwasm>
-                </file>
-
-                <file name="common.foefire" linkdata="LINK" arena="objects">
-                    <lwasm gensource="gen/weapons/foefire.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/_shared/foefire.unit.asm"/>
-                        <gfxcomp gendir="gen/weapons/foefire"
-                                 gensource="gen/weapons/foefire/includes.asm"
-                                 genindex="gen/weapons/foefire/index.asm"
-                                 file="common.foefire">
-                            <images dir="src/enemies/_shared/images/foefire" shifts="0,1"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
 
                 <!-- La collision terrain du stage 1                           -->
                 <file name="stage1.collision" linkdata="LINK" region="collision">
@@ -1938,6 +2156,8 @@
                 <file name="stage1" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir1/entries.asm"/>
+                        <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
                         <!-- La palette du JEU, pas celle des tuiles : c'est   -->
                         <!-- palette.Pal_game de la v1 (game-mode/01/images).  -->
@@ -1953,6 +2173,64 @@
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
                 </file>
+
+                <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
+                    <!-- Le stage 1 ENTIER : son cast, son ouverture, ses
+                         plans, sa wave, sa collision, sa musique, son main.
+                         Charge par le press start du title, et par les
+                         retours (stage 2, game over) — la dedup du loader
+                         rend les rechargements idempotents. -->
+                    <load name="stage1.init"/>
+                    <load name="stage1.patapata"/>
+                    <load name="stage1.bug"/>
+                    <load name="stage1.bink"/>
+                    <load name="stage1.blaster"/>
+                    <load name="stage1.pstaff"/>
+                    <load name="stage1.cancer"/>
+                    <load name="stage1.shell"/>
+                    <load name="stage1.shelleraser"/>
+                    <load name="stage1.tabrok"/>
+                    <load name="stage1.tabrok.imgFlight"/>
+                    <load name="stage1.tabrok.imgGround"/>
+                    <load name="stage1.tabrok.imgWalk"/>
+                    <load name="stage1.tabrokcanon"/>
+                    <load name="stage1.scant"/>
+                    <load name="stage1.scantfire"/>
+                    <load name="stage1.fadetotunnel"/>
+                    <load name="stage1.endstage"/>
+                    <load name="stage1.dobkeratops.imgFace"/>
+                    <load name="stage1.dobkeratops.imgNerves0"/>
+                    <load name="stage1.dobkeratops.imgNerves1"/>
+                    <load name="stage1.dobkeratops.imgNerves2"/>
+                    <load name="stage1.dobkeratops.imgNerves3"/>
+                    <load name="stage1.dobkeratops.imgNerves4"/>
+                    <load name="stage1.dobkeratops.imgEyes"/>
+                    <load name="stage1.dobkeratops.imgWipe0"/>
+                    <load name="stage1.dobkeratops.imgWipe1"/>
+                    <load name="stage1.dobkeratops.imgWipe2"/>
+                    <load name="stage1.dobkeratops.imgWipe3"/>
+                    <load name="stage1.dobkeratops"/>
+                    <load name="stage1.dobkeratopsjaw"/>
+                    <load name="stage1.tailmgr"/>
+                    <load name="stage1.dobkeratopsmonster"/>
+                    <load name="stage1.dobkeratopssaw"/>
+                    <load name="stage1.dobkeratopsexplosion"/>
+                    <load name="stage1.tiles.even"/>
+                    <load name="stage1.tiles.odd"/>
+                    <load name="stage1.maps"/>
+                    <load name="stage1.wave"/>
+                    <load name="stage1.collision"/>
+                    <load name="stage1.music.ymm"/>
+                    <load name="stage1"/>
+                </scene>
+            </directory>
+
+            <directory id="2" section="INDEX2" gensymbols="gen/directories/dir2/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
                 <file name="stage2.wave" linkdata="LINK" arena="stage2.gfx">
@@ -2012,6 +2290,7 @@
                 <file name="stage2" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/02/map/even.png"/>
                         <!-- La palette de la section souterraine (palette.Pal_tunnel
@@ -2025,249 +2304,6 @@
                     </lwasm>
                 </file>
 
-                <!-- Les scènes. Celle du boot charge le moteur ET le stage 1 ; -->
-                <!-- les deux autres ne rechargent que ce qui change, le        -->
-                <!-- moteur restant en place par simple absence de la liste.    -->
-                <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
-                    <load name="common.engine"/>
-                    <load name="common.anim"/>
-                    <load name="common.overlay"/>
-                    <load name="common.player"/>
-                    <load name="common.weapon"/>
-                    <load name="common.beamcharge"/>
-                    <load name="common.beamp"/>
-                    <load name="common.emflash"/>
-                    <load name="common.explosion.imgSmall"/>
-                    <load name="common.explosion.imgFwk"/>
-                    <load name="common.explosion.imgBig"/>
-                    <load name="common.explosion"/>
-                    <load name="common.fade"/>
-                    <load name="common.engineflames"/>
-                    <load name="engine.sound.ym.const"/>
-                    <load name="engine.sound.ymm"/>
-                    <load name="common.soundfx"/>
-                    <load name="common.collisionpass"/>
-                    <load name="common.messages"/>
-                    <load name="common.checkpoint"/>
-                    <!-- VGC debranche cote stage : recharger engine.sound.vgc + stage1.music.vgc ici. -->
-                    <load name="common.hud"/>
-                    <load name="common.pow"/>
-                    <load name="common.optionbox"/>
-                    <load name="common.bitdevice"/>
-                    <load name="common.missile"/>
-                    <load name="common.missileflame"/>
-                    <load name="common.bossmusic"/>
-                    <load name="common.forcepod"/>
-                    <load name="common.reboundlaser"/>
-                    <load name="common.counterairlaser"/>
-                    <load name="common.simplefire"/>
-                    <load name="common.firechain"/>
-                    <load name="common.foefire"/>
-                    <!-- T4 : le boot par defaut ouvre sur le TITLE. Tout le
-                         contenu stage 1 est parti dans scenes.stage1 — c'est
-                         la scene que le press start charge, et celle que les
-                         retours de stage rechargent. Le banc traverse le
-                         title : son harnais presse une touche. -->
-                    <load name="title.main"/>
-                    <load name="title.logo"/>
-                    <load name="title.pushbutton"/>
-                    <load name="title.scores"/>
-                    <load name="title.text"/>
-                    <load name="title.loading"/>
-                    <load name="title.music.ymm"/>
-                    <load name="title.sound.vgc"/>
-                    <load name="engine.sound.sn.const"/>
-                </scene>
-
-                <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
-                    <!-- Le stage 1 ENTIER : son cast, son ouverture, ses
-                         plans, sa wave, sa collision, sa musique, son main.
-                         Charge par le press start du title, et par les
-                         retours (stage 2, game over) — la dedup du loader
-                         rend les rechargements idempotents. -->
-                    <load name="stage1.init"/>
-                    <load name="stage1.patapata"/>
-                    <load name="stage1.bug"/>
-                    <load name="stage1.bink"/>
-                    <load name="stage1.blaster"/>
-                    <load name="stage1.pstaff"/>
-                    <load name="stage1.cancer"/>
-                    <load name="stage1.shell"/>
-                    <load name="stage1.shelleraser"/>
-                    <load name="stage1.tabrok"/>
-                    <load name="stage1.tabrok.imgFlight"/>
-                    <load name="stage1.tabrok.imgGround"/>
-                    <load name="stage1.tabrok.imgWalk"/>
-                    <load name="stage1.tabrokcanon"/>
-                    <load name="stage1.scant"/>
-                    <load name="stage1.scantfire"/>
-                    <load name="stage1.fadetotunnel"/>
-                    <load name="stage1.endstage"/>
-                    <load name="stage1.dobkeratops.imgFace"/>
-                    <load name="stage1.dobkeratops.imgNerves0"/>
-                    <load name="stage1.dobkeratops.imgNerves1"/>
-                    <load name="stage1.dobkeratops.imgNerves2"/>
-                    <load name="stage1.dobkeratops.imgNerves3"/>
-                    <load name="stage1.dobkeratops.imgNerves4"/>
-                    <load name="stage1.dobkeratops.imgEyes"/>
-                    <load name="stage1.dobkeratops.imgWipe0"/>
-                    <load name="stage1.dobkeratops.imgWipe1"/>
-                    <load name="stage1.dobkeratops.imgWipe2"/>
-                    <load name="stage1.dobkeratops.imgWipe3"/>
-                    <load name="stage1.dobkeratops"/>
-                    <load name="stage1.dobkeratopsjaw"/>
-                    <load name="stage1.tailmgr"/>
-                    <load name="stage1.dobkeratopsmonster"/>
-                    <load name="stage1.dobkeratopssaw"/>
-                    <load name="stage1.dobkeratopsexplosion"/>
-                    <load name="stage1.tiles.even"/>
-                    <load name="stage1.tiles.odd"/>
-                    <load name="stage1.maps"/>
-                    <load name="stage1.wave"/>
-                    <load name="stage1.collision"/>
-                    <load name="stage1.music.ymm"/>
-                    <load name="stage1"/>
-                </scene>
-
-
-                <!-- ===== TITLE (chantier 1 du plan de portage) ============ -->
-                <!-- T1a : les graphismes seuls — l'unite title.main viendra
-                     avec l'adaptation du main v1 (849 l.). Encodeurs releves
-                     dans les .properties v1 : logo NB0+NB1 (pre-decale),
-                     push_button et chiffres NB0. Les lettres etaient
-                     commentees en v1 (cible disquette) : non compilees. -->
-                <!-- Le logo pese 21,8 Ko avec ses deux decalages : une
-                     COLLECTION (gfxcomp au premier niveau), le packer la coupe
-                     sur les pages de l'arene ; son index viendra par
-                     <imageset> avec l'unite title.main (T1b). -->
-                <file name="title.logo" linkdata="LINK" arena="title"
-                      gendir="gen/title/logo">
-                    <gfxcomp gendir="gen/title/logo" imageset="titlelogo"
-                             gensource="gen/title/logo/includes.asm">
-                        <images dir="src/title/logo/images" shifts="0,1"/>
-                    </gfxcomp>
-                </file>
-
-                <!-- Chaque objet du title est colocalise avec ses images et
-                     leur index dans SON direntry (le motif des ennemis) ;
-                     RunObjects lit page et adresse dans l'index du title. -->
-                <file name="title.pushbutton" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/title/pushbutton.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/title/text/push_button.unit.asm"/>
-                        <gfxcomp gendir="gen/title/pushbutton"
-                                 gensource="gen/title/pushbutton/includes.asm"
-                                 genindex="gen/title/pushbutton/index.asm"
-                                 file="title.pushbutton">
-                            <images dir="src/title/text/images" names="push_button"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="title.scores" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/title/scores.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/title/scores/scores.unit.asm"/>
-                        <gfxcomp gendir="gen/title/scores"
-                                 gensource="gen/title/scores/includes.asm"
-                                 genindex="gen/title/scores/index.asm"
-                                 file="title.scores">
-                            <images dir="src/title/scores/images" names="number"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <!-- La machine a ecrire : pas d'images, elle dessine ses
-                     lettres en direct dans la fenetre donnees. -->
-                <file name="title.text" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/title/text.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/title/text/text.unit.asm"/>
-                    </lwasm>
-                </file>
-
-                <!-- L'image LOADING du changement de mode (v1 : un game mode
-                     entier ; v2 : un objet dessine avant l'echange, qui reste
-                     visible pendant le scene.load — le loader n'ecrit pas
-                     dans les tampons video). -->
-                <file name="title.loading" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/title/loading.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/flow/loading/loading.unit.asm"/>
-                        <gfxcomp gendir="gen/title/loading"
-                                 gensource="gen/title/loading/includes.asm"
-                                 genindex="gen/title/loading/index.asm"
-                                 file="title.loading">
-                            <images dir="src/common/flow/loading/images" names="loading"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <!-- Les musiques du title (T2) : deux flux, comme la v1. -->
-                <!-- YMM : le lecteur est resident ($1A) et ne monte qu'une
-                     page — les donnees d'un morceau vivent avec lui. La place
-                     du title est CELLE du bloc musical des stages (alternative
-                     a stage1.music.ymm : un title ne coexiste jamais avec un
-                     stage). -->
-                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
-                    <lwasm gensource="gen/sound/title-ymm.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/title/music/ymm.unit.asm"/>
-                    </lwasm>
-                </file>
-
-                <!-- VGC : premier consommateur v2 du lecteur (debranche cote
-                     stage, decision decouplee). Lecteur, tampons et donnees
-                     dans UN direntry : un direntry tient sur une page, la
-                     colocalisation exigee par le montage unique sous IRQ est
-                     structurelle. Le packer le coule dans l'arene title. -->
-                <file name="title.sound.vgc" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/sound/title-vgc.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="engine/sound/vgc.buffers.asm"/>
-                        <asm filename="engine/sound/vgc.asm"/>
-                        <asm filename="src/title/music/vgc.unit.asm"/>
-                    </lwasm>
-                </file>
-
-                <!-- Le port du SN76489 par le lien, comme le YM : la variante
-                     2 ($E7F7), celle du modele sound. -->
-                <file name="engine.sound.sn.const" linkdata="LINK">
-                    <lwasm gensource="gen/sound/sn-const.asm">
-                        <asm filename="engine/system/to8/sound/sn.2.const.asm"/>
-                    </lwasm>
-                </file>
-
-                <!-- L'unite du title : la troisieme alternative du creneau
-                     d'echange ($01/$8000, comme stage1 et stage2). -->
-                <file name="title.main" linkdata="LINK" page="$01" address="$8000">
-                    <lwasm gensource="gen/title/title-main.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/title/main.asm"/>
-                        <!-- L'index du logo : une page par image, le set est
-                             coupe en deux morceaux d'arene. -->
-                        <imageset name="titlelogo" gensource="gen/title/logo-index.asm"/>
-                        <png2pal section="palette" symbol="Pal_title" filename="src/title/logo/images/logo_pal.png"/>
-                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
-                        <!-- La palette du tableau des scores : la v1 la tire
-                             de number_01.png (main.properties du mode 00). -->
-                        <png2pal section="palette" symbol="Pal_scores" filename="src/title/scores/images/00.png"/>
-                        <png2pal section="palette" symbol="Pal_loading" filename="src/common/flow/loading/images/00.png"/>
-                    </lwasm>
-                </file>
-
-                <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
-                    <load name="title.main"/>
-                    <load name="title.logo"/>
-                    <load name="title.pushbutton"/>
-                    <load name="title.scores"/>
-                    <load name="title.text"/>
-                    <load name="title.loading"/>
-                    <load name="title.music.ymm"/>
-                    <load name="title.sound.vgc"/>
-                    <load name="engine.sound.sn.const"/>
-                </scene>
-
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
                     <load name="stage2.tiles.even"/>
@@ -2276,7 +2312,6 @@
                     <load name="stage2.wave"/>
                     <load name="stage2"/>
                 </scene>
-
             </directory>
 
             <!-- Boot loader -->

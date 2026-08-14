@@ -54,110 +54,22 @@ public class DirectoryPlugin {
 		String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
 	    String gensymbols = Attribute.getString(node, ctx, "gensymbols");
 
-		// generate symbols file
-		String gensymbolsPath = ctx.path + File.separator + gensymbols;
-		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbolsPath)));
-		FileWriter writer = new FileWriter(gensymbolsPath);
-
-		// file ids are global to the target : keep numbering where the
-		// previous directory left off, and record the base in the header
-		int baseId = ctx.fileIds.peek();
-		int fileId = baseId;
-		java.util.Set<String> directoryNames = new java.util.HashSet<String>();
-		// id and block count of every entry : lets the scene generator emit
-		// the compact %11 encoding when a list follows the id chain the
-		// loader walks (id += blocks)
-		java.util.Map<String, int[]> idBlocks = new java.util.HashMap<String, int[]>();
-		// a defaulted attribute can change the block count, so the reservation
-		// has to see the directory's own <default>/<define> elements exactly as
-		// the emission will : replay the pure configuration children into a
-		// scratch context as we walk
-		BuildContext resCtx = ctx.child();
-		for (ImmutableNode child : node.getChildren()) {
-			String plugin = child.getNodeName();
-			if (plugin.equals("default") || plugin.equals("define")) {
-				Handlers.getDefault(plugin).run(child, resCtx);
-				continue;
-			}
-			if (plugin.equals("file") || plugin.equals("scene")) {
-
-				// resCtx, not ctx : the directory's own <default> elements are
-				// replayed into it as this loop walks, and a defaulted attribute
-				// that changes the block count (file.codec) must be seen here
-				// exactly as the emission will see it
-				String name = Attribute.getString(child, resCtx, "name");
-
-				// a collection the packer CUT : one entry per member, ids in
-				// member order — the count is the packing's result, decided
-				// once by the placement scan and read here
-				java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member>
-						cutMembers = plugin.equals("file") ? ctx.cuts.members(name) : null;
-				if (cutMembers != null) {
-					String codec = DirEntryPlugin.effectiveCodec(
-							Attribute.getStringOpt(child, resCtx, "codec"));
-					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
-					int blocks = DirEntryPlugin.blockCount(codec, linkSection);
-					for (com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member member
-							: cutMembers) {
-						writer.write(member.name + " equ " + fileId + System.lineSeparator());
-						directoryNames.add(member.name);
-						idBlocks.put(member.name, new int[] { fileId, blocks });
-						fileId += blocks;
-					}
-					directoryNames.add(name);
-					continue;
-				}
-
-				writer.write(name + " equ " + fileId + System.lineSeparator());
-				directoryNames.add(name);
-
-				// a scene's directory travels with its id : the game code
-				// passes it to loader.dir.load before loader.scene.load, so
-				// the right directory is in memory when the scene resolves
-				// its file ids (partitioned directories, see
-				// docs/lang/fr/analyse-repertoires-partitionnes-2026-08.md)
-				if (plugin.equals("scene")) {
-					writer.write(name + ".dir equ " + id + System.lineSeparator());
-				}
-
-				// a literal attributed place is published next to the file id :
-				// resident code that reaches a raw binary by page and address
-				// (a scroll buffer, a bitmap) reads it from the same include it
-				// already needs for the id — the value has one source, the
-				// declaration. Arena places are published by the LAYOUT
-				// gensymbols (the packer's decisions live with the layout) ;
-				// region places are not published at all : their content is
-				// linkable, so references resolve through the symbols
-				if (plugin.equals("file")) {
-					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
-							ctx.filePlaces.get(name);
-					if (place != null && place.page != null && place.address != null) {
-						writer.write(name + ".page equ " + place.page
-								+ System.lineSeparator());
-						writer.write(name + ".address equ $"
-								+ String.format("%04X", place.address)
-								+ System.lineSeparator());
-					}
-				}
-
-				int blocks;
-				if (plugin.equals("file")) {
-					String codec = DirEntryPlugin.effectiveCodec(
-							Attribute.getStringOpt(child, resCtx, "codec"));
-					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
-					blocks = DirEntryPlugin.blockCount(codec, linkSection);
-				} else {
-					// a scene table is raw, uncompressed and carries no link data
-					blocks = 1;
-				}
-				idBlocks.put(name, new int[] { fileId, blocks });
-				fileId += blocks;
-			}
+		// the reservation — ids, names, gensymbols — was computed for every
+		// directory by the placement scan, BEFORE anything assembled : the id
+		// equates of one directory feed units that live in another (title,
+		// stages : a cycle), so they must all exist first. See
+		// spi/globals/DirReservations.
+		com.widedot.m6809.gamebuilder.spi.globals.DirReservations.Reservation reservation =
+				ctx.dirReservations.get(id);
+		if (reservation == null) {
+			throw new Exception("directory " + id + " has no reservation — the placement"
+					+ " scan did not see it");
 		}
-		writer.close();
-		ctx.fileIds.next = fileId;
-		log.debug("directory {} : file ids {} to {}", id, baseId, fileId-1);
-		
+		int baseId = reservation.baseId;
+		int fileId = reservation.endId;
+		java.util.Set<String> directoryNames = reservation.names;
+		java.util.Map<String, int[]> idBlocks = reservation.idBlocks;
+
 		// instanciate local definitions
 		// nested containers get their own defaults and defines
 		BuildContext localCtx = ctx.child();
@@ -368,6 +280,128 @@ public class DirectoryPlugin {
 		media.getDirEntries().clear();
 
 		log.debug("End of processing directory");
+	}
+
+
+	/**
+	 * Reserves this directory's file ids and writes its gensymbols file.
+	 * Called by the placement scan for EVERY directory of the target, in
+	 * declaration order, before anything assembles ; {@link #run} reads the
+	 * result back from {@code ctx.dirReservations}. Ids stay global and
+	 * continuous across directories, exactly as when the emission computed
+	 * them itself.
+	 */
+	public static void reserve(ImmutableNode node, BuildContext ctx) throws Exception {
+
+		Integer id = Attribute.getInteger(node, ctx, "id");
+	    String gensymbols = Attribute.getString(node, ctx, "gensymbols");
+
+		// generate symbols file
+		String gensymbolsPath = ctx.path + File.separator + gensymbols;
+		Files.createDirectories(Paths.get(FileUtil.getDir(gensymbolsPath)));
+		FileWriter writer = new FileWriter(gensymbolsPath);
+
+		// file ids are global to the target : keep numbering where the
+		// previous directory left off, and record the base in the header
+		int baseId = ctx.fileIds.peek();
+		int fileId = baseId;
+		java.util.Set<String> directoryNames = new java.util.HashSet<String>();
+		// id and block count of every entry : lets the scene generator emit
+		// the compact %11 encoding when a list follows the id chain the
+		// loader walks (id += blocks)
+		java.util.Map<String, int[]> idBlocks = new java.util.HashMap<String, int[]>();
+		// a defaulted attribute can change the block count, so the reservation
+		// has to see the directory's own <default>/<define> elements exactly as
+		// the emission will : replay the pure configuration children into a
+		// scratch context as we walk
+		BuildContext resCtx = ctx.child();
+		for (ImmutableNode child : node.getChildren()) {
+			String plugin = child.getNodeName();
+			if (plugin.equals("default") || plugin.equals("define")) {
+				Handlers.getDefault(plugin).run(child, resCtx);
+				continue;
+			}
+			if (plugin.equals("file") || plugin.equals("scene")) {
+
+				// resCtx, not ctx : the directory's own <default> elements are
+				// replayed into it as this loop walks, and a defaulted attribute
+				// that changes the block count (file.codec) must be seen here
+				// exactly as the emission will see it
+				String name = Attribute.getString(child, resCtx, "name");
+
+				// a collection the packer CUT : one entry per member, ids in
+				// member order — the count is the packing's result, decided
+				// once by the placement scan and read here
+				java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member>
+						cutMembers = plugin.equals("file") ? ctx.cuts.members(name) : null;
+				if (cutMembers != null) {
+					String codec = DirEntryPlugin.effectiveCodec(
+							Attribute.getStringOpt(child, resCtx, "codec"));
+					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
+					int blocks = DirEntryPlugin.blockCount(codec, linkSection);
+					for (com.widedot.m6809.gamebuilder.spi.globals.Cuts.Member member
+							: cutMembers) {
+						writer.write(member.name + " equ " + fileId + System.lineSeparator());
+						directoryNames.add(member.name);
+						idBlocks.put(member.name, new int[] { fileId, blocks });
+						fileId += blocks;
+					}
+					directoryNames.add(name);
+					continue;
+				}
+
+				writer.write(name + " equ " + fileId + System.lineSeparator());
+				directoryNames.add(name);
+
+				// a scene's directory travels with its id : the game code
+				// passes it to loader.dir.load before loader.scene.load, so
+				// the right directory is in memory when the scene resolves
+				// its file ids (partitioned directories, see
+				// docs/lang/fr/analyse-repertoires-partitionnes-2026-08.md)
+				if (plugin.equals("scene")) {
+					writer.write(name + ".dir equ " + id + System.lineSeparator());
+				}
+
+				// a literal attributed place is published next to the file id :
+				// resident code that reaches a raw binary by page and address
+				// (a scroll buffer, a bitmap) reads it from the same include it
+				// already needs for the id — the value has one source, the
+				// declaration. Arena places are published by the LAYOUT
+				// gensymbols (the packer's decisions live with the layout) ;
+				// region places are not published at all : their content is
+				// linkable, so references resolve through the symbols
+				if (plugin.equals("file")) {
+					com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
+							ctx.filePlaces.get(name);
+					if (place != null && place.page != null && place.address != null) {
+						writer.write(name + ".page equ " + place.page
+								+ System.lineSeparator());
+						writer.write(name + ".address equ $"
+								+ String.format("%04X", place.address)
+								+ System.lineSeparator());
+					}
+				}
+
+				int blocks;
+				if (plugin.equals("file")) {
+					String codec = DirEntryPlugin.effectiveCodec(
+							Attribute.getStringOpt(child, resCtx, "codec"));
+					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
+					blocks = DirEntryPlugin.blockCount(codec, linkSection);
+				} else {
+					// a scene table is raw, uncompressed and carries no link data
+					blocks = 1;
+				}
+				idBlocks.put(name, new int[] { fileId, blocks });
+				fileId += blocks;
+			}
+		}
+		writer.close();
+		ctx.fileIds.next = fileId;
+		log.debug("directory {} : file ids {} to {}", id, baseId, fileId-1);
+
+		ctx.dirReservations.declare(id, new com.widedot.m6809.gamebuilder.spi.globals
+				.DirReservations.Reservation(baseId, fileId, idBlocks, directoryNames));
 	}
 
 }

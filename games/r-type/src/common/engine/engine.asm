@@ -179,12 +179,24 @@ game.stage.unload
 ; L'échange de stage — la suite du commentaire ci-dessus
 ;*******************************************************************************
 stage.main EXTERNAL
+; X = id de la scène cible, Y = id de son RÉPERTOIRE (l'equate <scène>.dir
+; du fichier d'ids généré). Les répertoires sont partitionnés par unité de
+; chargement : la scène cible se résout dans le sien, qu'il faut monter en
+; mémoire AVANT scene.load — l'appelant a déjà déchargé l'ancienne scène,
+; pendant que l'ancien répertoire était encore là (l'ordre qui permet au
+; loader de relire les étendues à rendre). Y et pas A ou B : la macro de
+; montage de page les détruit tous les deux.
 game.stage.switch
         jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
         ; monter pour l'atteindre. Le stage vient d'y effacer ses tampons
         ; d'écran, donc c'est une autre page qui est en place.
         _ram.data.set #loader.PAGE
+        tfr   y,d                          ; l'id de répertoire, bas de Y
+        tfr   b,a
+        pshs  x                            ; dir.load ne préserve pas X
+        jsr   loader.ADDRESS+loader.dir.load.IDX
+        puls  x
         jsr   loader.ADDRESS+loader.scene.load.IDX
         ; nom commun exporté par les deux mains : la référence reste au lien
         ; (plusieurs fournisseurs), le re-link du scene.load ci-dessus vient

@@ -366,6 +366,7 @@ stage.handOver
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
         ldx   #scenes.stage2
+        ldy   #scenes.stage2.dir
         jmp   game.stage.switch
 
 ;*******************************************************************************

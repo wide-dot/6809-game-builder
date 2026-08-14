@@ -222,6 +222,7 @@ stage.handOver
         ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
         jsr   game.stage.unload
         ldx   #scenes.title
+        ldy   #scenes.title.dir
         jmp   game.stage.switch
 
 ;*******************************************************************************

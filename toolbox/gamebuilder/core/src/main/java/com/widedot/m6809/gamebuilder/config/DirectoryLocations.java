@@ -157,6 +157,12 @@ public final class DirectoryLocations {
 				// sections declare sectors 1-based, the loader indexes its
 				// interleave list 0-based (DIR_DEFAULT_SECTOR was $04-1)
 				rows.set(id, new Row(diskIndex, s.face, s.track, s.sector - 1, sectionName));
+				// reserve the directory's file ids and write its gensymbols
+				// NOW : the id equates of one directory feed units that live
+				// in another (a dependency cycle between title and stages),
+				// so every equate file must exist before anything assembles
+				com.widedot.m6809.gamebuilder.plugin.directory.DirectoryPlugin
+						.reserve(child, scope.child());
 			}
 		}
 	}

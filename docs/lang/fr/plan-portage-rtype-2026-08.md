@@ -413,6 +413,61 @@ blocs émis » verrouille — mais toutes les images du corpus changent ;
 (2) LOADER — sortir le répertoire du pool (buffer fixe pris sur la
 moitié arène de la page 4). À arbitrer avant le vrai cast.
 
+**Répertoires partitionnés RÉALISÉS (14/08/2026)** — la spec
+`analyse-repertoires-partitionnes-2026-08.md` (validée par l'auteur)
+exécutée en trois commits. (1) BUILDER : la table des emplacements de
+répertoires est générée depuis la configuration pure (une entrée par
+`<directory>` : disquette physique, face, piste, secteur), chaque
+scène gagne son equate `.dir`, et les entrées du média sont consommées
+en fin de répertoire — corpus 63/63 identique à l'octet, r-type
+reconstruit de zéro à l'ancien jar pour la contre-preuve. (2) LOADER :
+les trois constantes DIR_DEFAULT_* remplacées par la table ; l'invite
+« Insert disk » naît toujours du contrôle d'en-tête IDX+id, aucun état
+nouveau — loader-ut 17/17 + T18 avec ses deux changements de
+disquettes, collection 4/4, lane 7/7, les 62 images bootables changent
+et la seule sans loader est identique. Leçon payée : la première table
+était émise en DONNÉES avant l'org du loader — assemblée à l'adresse
+0, hors du binaire brut, toutes les images bootaient dans le vide avec
+un build vert ; c'est une MACRO désormais, invoquée dans la zone de
+variables du loader. (3) R-TYPE : trois répertoires — n°0 commun+title
+(5 secteurs, baseId 0), n°1 stage 1 entier (5 secteurs, baseId 130),
+n°2 stage 2 (2 secteurs, baseId 281) — sections INDEX1/INDEX2 en face
+1 de la piste 0 derrière le répertoire 0 rétréci (la piste 3 visée
+d'abord était occupée : le contrôle d'occupation du média l'a refusée
+au build — le filet de la preuve 8.5, rendu sans le provoquer) ;
+`game.stage.switch` prend l'id de répertoire dans Y (la macro de
+montage détruit A et B) et fait dir.load avant scene.load, les quatre
+appelants passent l'equate `.dir` de leur cible. Découverte
+structurante en chemin : les equates d'ids d'un répertoire nourrissent
+des unités d'AUTRES répertoires (title→stage1→stage2→title, un cycle)
+— la réservation des ids de TOUS les répertoires est donc partie dans
+la pré-passe de placement (`DirectoryPlugin.reserve`, résultat dans
+`ctx.dirReservations`, l'émission le relit), l'aboutissement du
+mouvement du 09/08 « mesurer et ranger à la réservation ». Le pool du
+loader ne porte plus que le répertoire courant : 1280 octets au pire
+contre 2560, et un stage ajouté ne grossit que le sien.
+
+Le filet a encore payé, et gros : la lane du build partitionné cassait
+en C3 (mort → checkpoint), et l'instruction a déterré un bug LATENT
+PRÉEXISTANT sans aucun rapport avec les répertoires. Après le premier
+`DrawTiles`, `glb_Page` reste à zéro (mode spécial) et l'IRQ ne
+restaure alors PAS la fenêtre cartouche ; le rejeu de la vague du
+checkpoint (`ObjectWave_Init`) y marche pendant plus d'une trame —
+l'interruption qui tombe au milieu laisse la page du SON montée, la
+marche continue sur une page étrangère et le contenu de celle-ci
+décide de la suite. Vécu, tracé au watchpoint : la vague est sortie de
+la fenêtre ($2E68 → $8772), a semé des objets dans le bloc témoins
+(magic $CA→$C8, culprit `std subtype_w,u` du spawner) et la machine
+est partie dans le décor. Une ROULETTE de phase d'IRQ : la partition
+n'a fait que déplacer le tirage — le build mono-répertoire gagnait par
+chance de timing, données et layout parfaitement identiques des deux
+côtés (prouvé par diff des pages en machine). La v1 n'a jamais eu le
+problème : sa mort rechargeait tout le game mode et `checkpoint.load`
+y tournait AVANT l'armement de l'IRQ ; l'entrée de stage v2 fait
+pareil, seul le chemin de mort (checkpoint sans disque, main résident)
+l'appelait IRQ allumée. Correctif fidèle v1 : IrqOff/IrqOn autour du
+rechargement de checkpoint dans stage-main. Lane C1..C7 7/7.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

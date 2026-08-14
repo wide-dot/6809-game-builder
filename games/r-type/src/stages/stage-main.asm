@@ -578,6 +578,18 @@ stage.state.checkpoint
         bpl   >
         jmp   stage.gameOver
 !
+        ; IRQ COUPEE le temps du rechargement, comme la v1 — qui rechargeait
+        ; tout le game mode et ne rearmait l'IRQ qu'a la fin de son init. Le
+        ; rejeu de la vague (ObjectWave_Init) marche PLUS D'UNE TRAME dans la
+        ; fenetre cartouche ; or apres le premier DrawTiles, glb_Page reste a
+        ; zero (mode special) et l'IRQ ne restaure PAS cette fenetre : une
+        ; interruption au milieu du rejeu laisse la page du son montee, la
+        ; marche continue sur une page etrangere et le contenu de celle-ci
+        ; decide de la suite — vecu : la vague est sortie de la fenetre, a
+        ; seme des objets dans les temoins du banc et la machine est partie
+        ; dans le decor. Une roulette de phase d'IRQ : la partition des
+        ; repertoires n'a fait que deplacer le tirage perdant.
+        jsr   IrqOff
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
@@ -593,6 +605,7 @@ stage.state.checkpoint
         lda   #map.RAM_OVER_CART+engine.sound.ymm.page
         ldx   #ymm.restart
         jsr   paged.call
+        jsr   IrqOn
         lbra  stage.loop
 
 ;*******************************************************************************
@@ -619,6 +632,7 @@ stage.gameOver
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
         ldx   #scenes.title
+        ldy   #scenes.title.dir
         jmp   game.stage.switch
 
 ;*******************************************************************************
