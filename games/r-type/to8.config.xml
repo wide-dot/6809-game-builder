@@ -61,6 +61,90 @@
                 <zone page="$1E" address="$0000" size="$4000"/>
                 <zone page="$1F" address="$0000" size="$4000"/>
             </arena>
+            <!-- stage 3 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage3.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
+            <!-- stage 4 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage4.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
+            <!-- stage 5 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage5.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
+            <!-- stage 6 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage6.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
+            <!-- stage 7 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage7.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
+            <!-- stage 8 : memes pages que stage2.gfx — les stages sont
+                 exclusifs a l'echange, jamais co-charges. -->
+            <arena name="stage8.gfx">
+                <zone page="$18" address="$0000" size="$4000"/>
+                <zone page="$19" address="$0000" size="$4000"/>
+                <!-- $1A : memes fenetres autour des musiques permanentes. -->
+                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1B" address="$0000" size="$4000"/>
+                <zone page="$1C" address="$0000" size="$4000"/>
+                <zone page="$1D" address="$0000" size="$4000"/>
+                <zone page="$1E" address="$0000" size="$4000"/>
+                <zone page="$1F" address="$0000" size="$4000"/>
+            </arena>
             <!-- Les tables de carte : 132x15 cases sur deux plans font 11880  -->
             <!-- octets, hors de portee de la RAM residente. Elles vivent donc  -->
             <!-- dans une page a elles, ce que le scroll sait faire — il porte  -->
@@ -316,9 +400,22 @@
                  l'a refuse au build, c'est lui qui garde ces choix.        -->
             <section name="INDEX1" track="0" face="1" sector="9"/>
             <section name="INDEX2" track="0" face="1" sector="14"/>
+            <!-- Les repertoires des stages 3-8 : une piste a eux en fin de
+                 disque, 2 secteurs chacun (mesure stage 2). Le controle
+                 d'occupation du media refuse tout chevauchement au build.  -->
+            <section name="INDEX3" track="79" face="0" sector="1"/>
+            <section name="INDEX4" track="79" face="0" sector="3"/>
+            <section name="INDEX5" track="79" face="0" sector="5"/>
+            <section name="INDEX6" track="79" face="0" sector="7"/>
+            <section name="INDEX7" track="79" face="0" sector="9"/>
+            <section name="INDEX8" track="79" face="0" sector="11"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
-            <section name="DATA"  track="4" face="0" sector="1"/>
+            <!-- DATA reculee de la piste 4 a la 8 : LINK (piste 2) portait
+                 deja la piste 3 en silence, et six stages de plus l'ont fait
+                 deborder sur DATA — le controle d'occupation l'a refuse au
+                 build. Elle a maintenant les pistes 2 a 7.                 -->
+            <section name="DATA"  track="8" face="0" sector="1"/>
 
             <!-- Les defines DESCENDENT dans les conteneurs mais ne REMONTENT -->
             <!-- pas : declares ici, avant le directory, ils servent a la fois -->
@@ -2291,6 +2388,7 @@
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir2/entries.asm"/>
+                        <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/02/map/even.png"/>
                         <!-- La palette de la section souterraine (palette.Pal_tunnel
@@ -2313,6 +2411,444 @@
                     <load name="stage2"/>
                 </scene>
             </directory>
+
+            <directory id="3" section="INDEX3" gensymbols="gen/directories/dir3/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 3 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage3.wave" linkdata="LINK" arena="stage3.gfx">
+                    <unit name="stage3.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/03/objid.const.asm"/>
+                        <asm filename="src/stages/03/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/03/map/in.png" gendir="gen/stages/03/map"
+                            gensymbols="gen/stages/03/map/map.const.asm"/>
+
+                <file name="stage3.tiles.even" linkdata="LINK" arena="stage3.gfx"
+                      gendir="gen/stages/03/tiles-even">
+                    <gfxcomp gendir="gen/stages/03/tiles-even"
+                             gensource="gen/stages/03/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/03/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage3.tiles.odd" linkdata="LINK" arena="stage3.gfx"
+                      gendir="gen/stages/03/tiles-odd">
+                    <gfxcomp gendir="gen/stages/03/tiles-odd"
+                             gensource="gen/stages/03/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/03/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage3.maps" linkdata="LINK" bake="all" arena="stage3.gfx">
+                    <lwasm gensource="gen/stages/03/stage3-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/03/map/even.bin" label="map.even"
+                                 tiles="stage3.tiles.even" variant="ND0"
+                                 gensource="gen/stages/03/map-even.asm"/>
+                        <tilemap map="gen/stages/03/map/odd.bin" label="map.odd"
+                                 tiles="stage3.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/03/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage3" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/03/stage03-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir3/entries.asm"/>
+                        <asm filename="gen/directories/dir4/entries.asm"/>
+                        <asm filename="src/stages/03/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/03/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage3" section="SCENE" gensource="gen/scenes/stage3.asm">
+                    <load name="stage3.tiles.even"/>
+                    <load name="stage3.tiles.odd"/>
+                    <load name="stage3.maps"/>
+                    <load name="stage3.wave"/>
+                    <load name="stage3"/>
+                </scene>
+            </directory>
+
+            <directory id="4" section="INDEX4" gensymbols="gen/directories/dir4/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 4 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage4.wave" linkdata="LINK" arena="stage4.gfx">
+                    <unit name="stage4.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/04/objid.const.asm"/>
+                        <asm filename="src/stages/04/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/04/map/in.png" gendir="gen/stages/04/map"
+                            gensymbols="gen/stages/04/map/map.const.asm"/>
+
+                <file name="stage4.tiles.even" linkdata="LINK" arena="stage4.gfx"
+                      gendir="gen/stages/04/tiles-even">
+                    <gfxcomp gendir="gen/stages/04/tiles-even"
+                             gensource="gen/stages/04/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/04/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage4.tiles.odd" linkdata="LINK" arena="stage4.gfx"
+                      gendir="gen/stages/04/tiles-odd">
+                    <gfxcomp gendir="gen/stages/04/tiles-odd"
+                             gensource="gen/stages/04/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/04/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage4.maps" linkdata="LINK" bake="all" arena="stage4.gfx">
+                    <lwasm gensource="gen/stages/04/stage4-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/04/map/even.bin" label="map.even"
+                                 tiles="stage4.tiles.even" variant="ND0"
+                                 gensource="gen/stages/04/map-even.asm"/>
+                        <tilemap map="gen/stages/04/map/odd.bin" label="map.odd"
+                                 tiles="stage4.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/04/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage4" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/04/stage04-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir4/entries.asm"/>
+                        <asm filename="gen/directories/dir5/entries.asm"/>
+                        <asm filename="src/stages/04/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/04/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
+                    <load name="stage4.tiles.even"/>
+                    <load name="stage4.tiles.odd"/>
+                    <load name="stage4.maps"/>
+                    <load name="stage4.wave"/>
+                    <load name="stage4"/>
+                </scene>
+            </directory>
+
+            <directory id="5" section="INDEX5" gensymbols="gen/directories/dir5/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 5 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage5.wave" linkdata="LINK" arena="stage5.gfx">
+                    <unit name="stage5.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/05/objid.const.asm"/>
+                        <asm filename="src/stages/05/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/05/map/in.png" gendir="gen/stages/05/map"
+                            gensymbols="gen/stages/05/map/map.const.asm"/>
+
+                <file name="stage5.tiles.even" linkdata="LINK" arena="stage5.gfx"
+                      gendir="gen/stages/05/tiles-even">
+                    <gfxcomp gendir="gen/stages/05/tiles-even"
+                             gensource="gen/stages/05/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/05/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage5.tiles.odd" linkdata="LINK" arena="stage5.gfx"
+                      gendir="gen/stages/05/tiles-odd">
+                    <gfxcomp gendir="gen/stages/05/tiles-odd"
+                             gensource="gen/stages/05/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/05/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage5.maps" linkdata="LINK" bake="all" arena="stage5.gfx">
+                    <lwasm gensource="gen/stages/05/stage5-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/05/map/even.bin" label="map.even"
+                                 tiles="stage5.tiles.even" variant="ND0"
+                                 gensource="gen/stages/05/map-even.asm"/>
+                        <tilemap map="gen/stages/05/map/odd.bin" label="map.odd"
+                                 tiles="stage5.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/05/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage5" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/05/stage05-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir5/entries.asm"/>
+                        <asm filename="gen/directories/dir6/entries.asm"/>
+                        <asm filename="src/stages/05/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/05/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage5" section="SCENE" gensource="gen/scenes/stage5.asm">
+                    <load name="stage5.tiles.even"/>
+                    <load name="stage5.tiles.odd"/>
+                    <load name="stage5.maps"/>
+                    <load name="stage5.wave"/>
+                    <load name="stage5"/>
+                </scene>
+            </directory>
+
+            <directory id="6" section="INDEX6" gensymbols="gen/directories/dir6/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 6 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage6.wave" linkdata="LINK" arena="stage6.gfx">
+                    <unit name="stage6.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/06/objid.const.asm"/>
+                        <asm filename="src/stages/06/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/06/map/in.png" gendir="gen/stages/06/map"
+                            gensymbols="gen/stages/06/map/map.const.asm"/>
+
+                <file name="stage6.tiles.even" linkdata="LINK" arena="stage6.gfx"
+                      gendir="gen/stages/06/tiles-even">
+                    <gfxcomp gendir="gen/stages/06/tiles-even"
+                             gensource="gen/stages/06/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/06/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage6.tiles.odd" linkdata="LINK" arena="stage6.gfx"
+                      gendir="gen/stages/06/tiles-odd">
+                    <gfxcomp gendir="gen/stages/06/tiles-odd"
+                             gensource="gen/stages/06/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/06/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage6.maps" linkdata="LINK" bake="all" arena="stage6.gfx">
+                    <lwasm gensource="gen/stages/06/stage6-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/06/map/even.bin" label="map.even"
+                                 tiles="stage6.tiles.even" variant="ND0"
+                                 gensource="gen/stages/06/map-even.asm"/>
+                        <tilemap map="gen/stages/06/map/odd.bin" label="map.odd"
+                                 tiles="stage6.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/06/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage6" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/06/stage06-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir6/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="src/stages/06/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/06/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage6" section="SCENE" gensource="gen/scenes/stage6.asm">
+                    <load name="stage6.tiles.even"/>
+                    <load name="stage6.tiles.odd"/>
+                    <load name="stage6.maps"/>
+                    <load name="stage6.wave"/>
+                    <load name="stage6"/>
+                </scene>
+            </directory>
+
+            <directory id="7" section="INDEX7" gensymbols="gen/directories/dir7/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 7 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage7.wave" linkdata="LINK" arena="stage7.gfx">
+                    <unit name="stage7.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/07/objid.const.asm"/>
+                        <asm filename="src/stages/07/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/07/map/in.png" gendir="gen/stages/07/map"
+                            gensymbols="gen/stages/07/map/map.const.asm"/>
+
+                <file name="stage7.tiles.even" linkdata="LINK" arena="stage7.gfx"
+                      gendir="gen/stages/07/tiles-even">
+                    <gfxcomp gendir="gen/stages/07/tiles-even"
+                             gensource="gen/stages/07/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/07/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage7.tiles.odd" linkdata="LINK" arena="stage7.gfx"
+                      gendir="gen/stages/07/tiles-odd">
+                    <gfxcomp gendir="gen/stages/07/tiles-odd"
+                             gensource="gen/stages/07/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/07/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage7.maps" linkdata="LINK" bake="all" arena="stage7.gfx">
+                    <lwasm gensource="gen/stages/07/stage7-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/07/map/even.bin" label="map.even"
+                                 tiles="stage7.tiles.even" variant="ND0"
+                                 gensource="gen/stages/07/map-even.asm"/>
+                        <tilemap map="gen/stages/07/map/odd.bin" label="map.odd"
+                                 tiles="stage7.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/07/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage7" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/07/stage07-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/stages/07/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/07/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage7" section="SCENE" gensource="gen/scenes/stage7.asm">
+                    <load name="stage7.tiles.even"/>
+                    <load name="stage7.tiles.odd"/>
+                    <load name="stage7.maps"/>
+                    <load name="stage7.wave"/>
+                    <load name="stage7"/>
+                </scene>
+            </directory>
+
+            <directory id="8" section="INDEX8" gensymbols="gen/directories/dir8/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <default name="images.shifts"    value="0"/>
+
+                <!-- Stage 8 : en place avec sa carte (chantier stages 3-8).
+                     Wave curee — seuls les objets communs sont actifs, le
+                     cast attend son chantier. -->
+                <file name="stage8.wave" linkdata="LINK" arena="stage8.gfx">
+                    <unit name="stage8.wave" symbol="stage.wave" section="code">
+                        <asm filename="src/stages/08/objid.const.asm"/>
+                        <asm filename="src/stages/08/wave.asm"/>
+                    </unit>
+                </file>
+
+                <leanscroll image="src/stages/08/map/in.png" gendir="gen/stages/08/map"
+                            gensymbols="gen/stages/08/map/map.const.asm"/>
+
+                <file name="stage8.tiles.even" linkdata="LINK" arena="stage8.gfx"
+                      gendir="gen/stages/08/tiles-even">
+                    <gfxcomp gendir="gen/stages/08/tiles-even"
+                             gensource="gen/stages/08/tiles-even/includes.asm">
+                        <image name="tilesEven" filename="gen/stages/08/map/even.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage8.tiles.odd" linkdata="LINK" arena="stage8.gfx"
+                      gendir="gen/stages/08/tiles-odd">
+                    <gfxcomp gendir="gen/stages/08/tiles-odd"
+                             gensource="gen/stages/08/tiles-odd/includes.asm">
+                        <image name="tilesOdd" filename="gen/stages/08/map/odd.png" grid="12x12">
+                            <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                        </image>
+                    </gfxcomp>
+                </file>
+
+                <file name="stage8.maps" linkdata="LINK" bake="all" arena="stage8.gfx">
+                    <lwasm gensource="gen/stages/08/stage8-maps.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <tilemap map="gen/stages/08/map/even.bin" label="map.even"
+                                 tiles="stage8.tiles.even" variant="ND0"
+                                 gensource="gen/stages/08/map-even.asm"/>
+                        <tilemap map="gen/stages/08/map/odd.bin" label="map.odd"
+                                 tiles="stage8.tiles.odd" variant="ND0"
+                                 gensource="gen/stages/08/map-odd.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage8" linkdata="LINK" page="$01" address="$8000">
+                    <lwasm gensource="gen/stages/08/stage08-main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/stages/08/main.asm"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/08/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
+                        <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.stage8" section="SCENE" gensource="gen/scenes/stage8.asm">
+                    <load name="stage8.tiles.even"/>
+                    <load name="stage8.tiles.odd"/>
+                    <load name="stage8.maps"/>
+                    <load name="stage8.wave"/>
+                    <load name="stage8"/>
+                </scene>
+            </directory>
+
 
             <!-- Boot loader -->
             <!-- Le pool porte les donnees de lien de tout ce qui est charge. Le    -->

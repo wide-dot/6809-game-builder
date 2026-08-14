@@ -1,5 +1,5 @@
 ;*******************************************************************************
-; Stage 2 — l'autre unité de la région interface
+; Stage 5 — mis en place avec sa carte (chantier stages 3-8)
 ;
 ; Même structure que le stage 1, mêmes exports, contenu entièrement différent :
 ; sa carte est celle du niveau 2 (une caverne, bien plus dense en tuiles), sa
@@ -11,9 +11,9 @@
 ; stage, il lirait un index de seize entrées là où il n'y en a que deux.
 ;*******************************************************************************
 
-STAGE_ID equ 2
+STAGE_ID equ 5
 ; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
-STAGE_SCENE equ scenes.stage2
+STAGE_SCENE equ scenes.stage5
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -33,13 +33,6 @@ map.odd           EXTERNAL
 ; celle que le rangement lui a donnee, et le builder l'ecrit en equate.
 stage.wave        EXTERNAL
 patapata.Object   EXTERNAL
-
-; Le cast du stage 2 — squelettes du chantier 3, une unité paginée chacun.
-gouger.Object     EXTERNAL
-wick.Object       EXTERNAL
-brood.Object      EXTERNAL
-outslay.Object    EXTERNAL
-gomander.Object   EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
 ; propre page : moveByScript la lit par page montee.
@@ -152,7 +145,7 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "gen/layout.asm"
         INCLUDE "src/common/bench.const.asm"
-        INCLUDE "gen/stages/02/map/map.const.asm"
+        INCLUDE "gen/stages/05/map/map.const.asm"
 
  opt c,ct
 
@@ -195,19 +188,19 @@ stage.setup
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+stage2.maps.page
+        lda   #map.RAM_OVER_CART+stage5.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 
         ldd   #stage.wave
         std   object_wave_data
         std   object_wave_data_start
-        lda   #map.RAM_OVER_CART+stage2.wave.page
+        lda   #map.RAM_OVER_CART+stage5.wave.page
         sta   object_wave_data_page
         rts
 
-; Fin du stage 2 : on enchaîne sur le stage 3, comme la v1 enchaînait ses
-; game modes. La campagne remonte jusqu'au stage 8, qui rend la main au title.
+; Fin du stage 5 : on enchaîne sur le stage 6. La campagne remonte
+; jusqu'au stage 8, qui rend la main au title.
 stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
@@ -216,19 +209,19 @@ stage.handOver
         ldx   #ymm.stop
         jsr   paged.call
 
-        lda   #2
+        lda   #5
         sta   game.stage
         ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
         jsr   game.stage.unload
-        ldx   #scenes.stage3
-        ldy   #scenes.stage3.dir
+        ldx   #scenes.stage6
+        ldy   #scenes.stage6.dir
         jmp   game.stage.switch
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 2
 ;*******************************************************************************
-        INCLUDE "src/stages/02/objid.const.asm"
-        INCLUDE "src/stages/02/objid.index.asm"
+        INCLUDE "src/stages/05/objid.const.asm"
+        INCLUDE "src/stages/05/objid.index.asm"
 
 
  ENDSECTION

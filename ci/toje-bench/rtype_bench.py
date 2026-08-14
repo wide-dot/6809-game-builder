@@ -38,7 +38,7 @@ import os, sys, time
 from mcp import Toje
 
 image = sys.argv[1]
-max_frames = int(sys.argv[2]) if len(sys.argv) > 2 else 80000
+max_frames = int(sys.argv[2]) if len(sys.argv) > 2 else 140000
 
 t = Toje()
 t.boot_floppy(image)
@@ -144,23 +144,28 @@ if lives() != 2:
     fail(f"C5 FAIL — lives not reseeded (got {lives()})")
 print(f"C5 fresh game: lives reseeded to {lives()}", flush=True)
 
-# C6/C7 — the full run: stage 2 on its own data, then back to the title
+# C6/C7 — the full run: every stage in order (2..8, each on its own
+# directory and map — spawns > 0 at stage 2 proves the re-linked index
+# reaches the skeleton cast), then back to the title.
 c6 = c7 = 0
+top_stage = 1
 last = None
 stuck = 0
 verdict = 2
 while frames < max_frames:
     r = run(500)
     w = witnesses()
+    if w["magic"] == 0xCA and 2 <= w["stage"] <= 8 and w["stage"] >= top_stage:
+        top_stage = w["stage"]
     if w["stage"] == 0x02 and w["spawns"] > 0:
         c6 = 1
-    if c6 and w["stage"] == 0x00 and w["magic"] == 0xCA:
+    if c6 and top_stage == 8 and w["stage"] == 0x00 and w["magic"] == 0xCA:
         c7 = 1
     print(f"f={frames:6d} wall={time.time() - t0:5.0f}s magic={w['magic']:02X} "
           f"stage={w['stage']:02X} cam={w['cam']:5d} spawns={w['spawns']} "
-          f"c6={c6} c7={c7}", flush=True)
+          f"top={top_stage} c6={c6} c7={c7}", flush=True)
     if c6 and c7:
-        print("R-TYPE LANE C1..C7 7/7 PASS")
+        print("R-TYPE LANE C1..C7 7/7 PASS (tour complet stages 1..8)")
         verdict = 0
         break
     key = (w["magic"], w["stage"], w["cam"], c6, c7)

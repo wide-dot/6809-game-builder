@@ -468,6 +468,45 @@ pareil, seul le chemin de mort (checkpoint sans disque, main résident)
 l'appelait IRQ allumée. Correctif fidèle v1 : IrqOff/IrqOn autour du
 rechargement de checkpoint dans stage-main. Lane C1..C7 7/7.
 
+**Stages 3-8 EN PLACE avec leurs tilemaps (14/08/2026)** — l'objet de
+la demande, rendu possible par la partition. La réorganisation de
+games/r-type portait déjà tout : cartes leanscroll (06 comprise),
+waves v1 curées, musiques. Chaque stage suit le gabarit compact du
+stage 2 : une arène `stageN.gfx` aux MÊMES pages que stage2.gfx (les
+stages sont exclusifs à l'échange, jamais co-chargés), la chaîne
+leanscroll → gfxcomp grid 12x12 → tilemap ND0, un main dérivé du 02
+(STAGE_ID, scène, handOver vers le suivant — le 8 rend au title), un
+index d'objets sans cast (count 32), et SON répertoire (2 secteurs,
+sections INDEX3-8 sur la piste 79). Les waves gardent actives les
+seules lignes des objets communs (pow/checkpoint/bossmusic) : les
+lignes des ennemis de la bibliothèque (bink, patapata, cancer, bug,
+pstaff, scant — 224 lignes) sont commentées en attendant le chantier
+du cast par stage, décision auteur « implémentation plus tard,
+tilemaps d'abord ». Le chaînage 1→2→…→8→title est réel (game.stage
+porté de proche en proche). Au passage, le mystère de la piste 3
+s'explique : la section LINK débordait déjà de sa piste 2 en silence,
+et six stages de plus l'ont fait mordre DATA — refus du contrôle
+d'occupation au build, DATA reculée à la piste 8 (LINK a les pistes
+2-7). La lane étend C6/C7 au TOUR COMPLET : montée 2..8 suivie du
+retour au title. Ce chantier ne touche ni builder ni engine — le
+corpus hors r-type ne peut pas changer par construction.
+
+Trois leçons payées pendant la validation. (1) Un « blocage au boot »
+sur le build complet n'était PAS un défaut du chantier : un `gen/`
+mélangé (restes d'un build précédent + `t.xml` périmé — le piège déjà
+connu, frappé une troisième fois) fabriquait une image incohérente qui
+plantait très loin de la cause. Un `rm -rf gen dist` + régénération de
+`t.xml` juste avant le build a rendu une image saine du premier coup :
+devant un symptôme absurde sur un build incrémental, prouver d'abord
+le build PROPRE. (2) Un `git checkout --` de bissection avait annulé
+en silence le handOver du stage 2 vers le stage 3 — la lane le voit
+(top=2, retour au title), c'est exactement son travail. (3) La
+dérivation des mains 03-08 depuis le 02 avait laissé les équates
+`stage2.maps.page`/`stage2.wave.page` dans leur `stage.setup` : chaque
+stage aurait monté les pages du stage 2 — dérivée d'un gabarit, une
+copie se relit sur TOUTES ses références au modèle, pas seulement sur
+les chemins et l'identifiant.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà
