@@ -41,6 +41,7 @@
             <data section="LOADER">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/00/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
                     <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
                     <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $2100</asm>

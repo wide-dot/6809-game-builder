@@ -78,7 +78,11 @@ public final class DirectoryLocations {
 		   .append(System.lineSeparator());
 		out.append("loader.dir.location.SIZE equ 4").append(System.lineSeparator());
 		out.append("loader.dir.count equ ").append(rows.size()).append(System.lineSeparator());
-		out.append("loader.dir.locations").append(System.lineSeparator());
+		// a MACRO, not data : this file is included at the top of the loader
+		// assembly, BEFORE its org — bytes emitted here would land outside
+		// the raw binary (measured at address 0). The loader invokes the
+		// macro where its own layout wants the table.
+		out.append("_loader.dir.locations.table MACRO").append(System.lineSeparator());
 		for (int id = 0; id < rows.size(); id++) {
 			Row r = rows.get(id);
 			out.append("        fcb   ").append(r.disk).append(',').append(r.face)
@@ -87,6 +91,7 @@ public final class DirectoryLocations {
 			   .append(" (").append(r.sectionName).append(')')
 			   .append(System.lineSeparator());
 		}
+		out.append("        ENDM").append(System.lineSeparator());
 		// the loader's current-disk variable starts on the disk that booted :
 		// the one holding directory 0
 		out.append("loader.dir.bootPhysicalDisk equ ").append(rows.get(0).disk)
