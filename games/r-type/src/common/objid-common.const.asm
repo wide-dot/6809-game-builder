@@ -44,4 +44,11 @@ ObjID_dobkeratops_explosion equ 29
 
 objid.common.count equ 29
 
+* The specific ids of every co-loadable set (stage/title objid.const.asm)
+* start at 30 : the shared prefix must stay below that base. Growing past
+* it would silently collide with every set's first specific id.
+ IFGE objid.common.count-30
+        ERROR common object ids overflow the specific base (30)
+ ENDC
+
  ENDC

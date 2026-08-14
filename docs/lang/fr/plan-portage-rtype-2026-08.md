@@ -53,8 +53,9 @@ collisions AABB + terrain, le joueur tire, les ennemis meurent.
 
 - les 14 divergences `check_variants` (variantes de sprites v1↔v2) — à
   arbitrer ennemi par ennemi au moment où on le porte ;
-- l'arbitrage §24 (modèle de numérotation des objets : résident figé /
-  clusters / local libre) — à trancher AVANT le cast du stage 2 ;
+- ~~l'arbitrage §24 (modèle de numérotation des objets : résident figé /
+  clusters / local libre) — à trancher AVANT le cast du stage 2~~ —
+  **RENDU le 14/08**, voir « Modèle de numérotation ACTÉ » plus bas ;
 - les études ouvertes : normalisation `$`, nomenclature.
 
 ## 2. L'ordre des chantiers
@@ -337,6 +338,33 @@ mesure : le chemin mort/READY/checkpoint/game-over reste hors-lane
 pour l'instant. Corpus 59 images hors r-type identiques. Restent du
 chantier : text/scores/push_button du title, l'écran de chargement,
 et la décision de couverture du chemin de mort.
+
+**Modèle de numérotation des objets ACTÉ (14/08/2026)** — l'arbitrage
+§24, rendu sur MESURE avant le cast du stage 2. Les chiffres : le
+game-mode 01 v1 complet déclare **55 ids** (source de vérité
+`main.t2.properties`), qui se découpent selon la frontière v2 en ~31
+communs (joueur 13, tirs/FX génériques 7, flow/HUD 10) et ~24
+spécifiques au stage (infra 6, ennemis+tirs 12, Dobkeratops en 6
+objets — le multiplicateur boss est réel). Côté arcade, les 8 waves
+citent 46 types dédoublonnés sur les 51 slots de la table
+(`re.arcade.r-type`, `data/routines.yaml` — le générateur de wave lit
+désormais ce catalogue, commit 4276f7c de ce dépôt : 45 entrées
+nommées sur 51 contre 16 avant). Le plafond : `RunObjects` monte l'id
+dans B puis `aslb`+`abx` — **id ≤ 127**, au-delà le bit fort part dans
+la retenue et l'index pointe ailleurs, silencieusement. Une
+numérotation GLOBALE unique sur les 8 stages (~31 communs + 8×15-25
+spécifiques ≈ 150-200) dépasse ce plafond : exclue d'office. Le modèle
+acté est celui déjà en place dans les fichiers : **préfixe commun figé
+(1..29) + spécifiques par ensemble co-chargeable à partir de 30,
+réutilisés d'un ensemble à l'autre** (stage 1 à 45, stage 2 à 32,
+title à 34 — le max attendu ~60 laisse deux fois la marge). Ce qui
+manquait, ce sont les VERROUS, posés ce jour : `IFGE 30` sur
+`objid.common.count` (un commun qui grossit collisionnerait le premier
+spécifique de chaque ensemble) et `IFGT 127` sur `objid.count` de
+chaque ensemble, avec l'instruction fautive citée en commentaire.
+Les deux prouvés par cassage (le 213 de test aboutit à « Build
+Aborted ! » depuis lwasm jusqu'au builder), image `to8.fd` inchangée
+à l'octet après restauration — le verrou est purement compile-time.
 
 ## 4. Ce que ce plan ne couvre pas
 

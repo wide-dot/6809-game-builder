@@ -17,4 +17,11 @@ ObjID_loading     equ 34
 objid.count equ 34
 objid.animation equ ObjID_animation
 
+* RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
+* past 127 loses its top bit in the shift and indexes the wrong entry,
+* silently. Ceiling for the whole co-loadable set, shared prefix included.
+ IFGT objid.count-127
+        ERROR object ids exceed the RunObjects ceiling (127)
+ ENDC
+
  ENDC
