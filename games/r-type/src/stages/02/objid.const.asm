@@ -10,8 +10,15 @@ OBJID_CONST_02 equ 1
 ObjID_pow equ 30
 ObjID_checkpoint equ 31
 ObjID_bossmusic equ 32
+* Le cast du chantier 3 — squelettes (spawn + delete immédiat), les
+* implémentations viendront de la référence arcade, ennemi par ennemi.
+ObjID_gouger equ 33
+ObjID_wick equ 34
+ObjID_brood equ 35
+ObjID_outslay equ 36
+ObjID_gomander equ 37
 
-objid.count equ 32
+objid.count equ 37
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

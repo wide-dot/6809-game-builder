@@ -366,6 +366,53 @@ Les deux prouvés par cassage (le 213 de test aboutit à « Build
 Aborted ! » depuis lwasm jusqu'au builder), image `to8.fd` inchangée
 à l'octet après restauration — le verrou est purement compile-time.
 
+**Chantier 3 OUVERT — squelettes du cast stage 2 (14/08/2026).** La
+mesure d'ouverture a montré que « cast à porter » était mal nommé : la
+v1 n'a AUCUN ennemi du stage 2 (`objects/enemies/` s'arrête au cast du
+niveau 1 ; il ne reste que les équates de score et la wave extraite).
+Le cast est donc à CRÉER depuis la référence arcade — pivot de méthode,
+plus de 1:1 ni de manifest pour ces objets. Décision auteur : d'abord
+des SQUELETTES — chaque objet de la wave a son unité, son id et ses
+lignes de wave actives ; l'implémentation vide compte son spawn dans
+les témoins puis se supprime (`UnloadObject_u`), le pool n'est jamais
+bloqué. Réalisé : 5 unités (`src/enemies/{gouger,wick,brood,outslay,
+gomander}/`, en-têtes portant le comportement bestiaire à implémenter,
+la routine arcade — 1000:6f89/875d/7d68/915b/a22e — et l'entité
+sprites du catalog), ids 33-37, 4×5 lignes d'index, 34 lignes de wave
+dé-commentées (29 gouger, 1 wick, 2 brood, 1 outslay, 1 gomander —
+`baldur` renommé `brood`, le nom du catalog), l'arène `stage1.enemies`
+renommée `enemies` (elle cesse d'être propre au stage 1), 5 direntries
+chargés par `scenes.stage2`. Le zoid (enfant de brood, jamais dans la
+wave) viendra avec l'implémentation de brood. Restent du chantier :
+les comportements réels ennemi par ennemi (fidélité à arbitrer au cas
+par cas : bestiaire+observation d'abord, RE x86 si besoin), leurs
+sprites depuis la ROM arcade via la chaîne gfxcomp, et le boss.
+
+Le filet a payé À l'ouverture : la première image à squelettes gelait
+la lane en C4 (game over → title), `tlsf.err=3` piégé dans le loader.
+Bissection au worktree : l'état commité + 5 direntries TRIVIAUX
+reproduit le gel à l'identique — le cast n'y était pour rien. La
+cause : **le pool du loader fait 4060 octets** (`loader.ADDRESS-
+memoryPool+$2000` — le commentaire « $307F » du config datait d'avant
+le partage de la page 4 avec l'arène objects, corrigé), et le
+RÉPERTOIRE y vit à demeure : une entrée = des slots de 8 octets
+(principal + compression + linker), un fichier linkdata+zx0 en coûte
+3 — l'image commitée était à 318 slots, un de moins que le seuil des
+10 secteurs. +1 secteur de répertoire (256 o) = pool crevé au premier
+échange qui tient deux scènes. Sortie immédiate : le cast en UN
+direntry groupé (`cast.unit.asm`, exports fusionnés, chaque ennemi
+garde son fichier source) SANS `linkdata` (tout est cuit — le banc de
+pool l'a montré : zéro coût de lien) et `codec="none"` → 1 slot, le
+répertoire revient à 10 secteurs. MARGE NULLE : le prochain fichier
+refait déborder. Deux leviers structurels relevés pour la suite, par
+ordre de rendement : (1) BUILDER — n'émettre les blocs compression/
+linker que s'ils servent : **85 fichiers du disque paient un slot
+linker pour zéro octet de lien** (mesure), soit ~85 slots rendus, le
+format est déjà à blocs variables et l'assertion « ids réservés ==
+blocs émis » verrouille — mais toutes les images du corpus changent ;
+(2) LOADER — sortir le répertoire du pool (buffer fixe pris sur la
+moitié arène de la page 4). À arbitrer avant le vrai cast.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

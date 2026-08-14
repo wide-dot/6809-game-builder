@@ -38,6 +38,11 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
 
 Obj_Index_Address
         fdb   0
@@ -73,6 +78,11 @@ Obj_Index_Address
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   stage.placeholder ; ObjID_bossmusic
+        fdb   gouger.Object ; ObjID_gouger
+        fdb   wick.Object ; ObjID_wick
+        fdb   brood.Object ; ObjID_brood
+        fdb   outslay.Object ; ObjID_outslay
+        fdb   gomander.Object ; ObjID_gomander
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page
@@ -108,6 +118,11 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -143,6 +158,11 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
+        fdb   Ani_Asd_none ; ObjID_gouger
+        fdb   Ani_Asd_none ; ObjID_wick
+        fdb   Ani_Asd_none ; ObjID_brood
+        fdb   Ani_Asd_none ; ObjID_outslay
+        fdb   Ani_Asd_none ; ObjID_gomander
 
 Ani_Asd_none
         fdb   0

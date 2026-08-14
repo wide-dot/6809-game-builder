@@ -177,7 +177,7 @@
             <!-- Demarre a la fin reelle du commun, relevee a la main : $0D59 en page
                  $0C, marge a $0E00 — au-dela le controle de scene refuse le
                  chevauchement. -->
-            <arena name="stage1.enemies">
+            <arena name="enemies">
                 <zone page="$0C" address="$0769" size="$3897"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
@@ -848,7 +848,7 @@
                 <!-- qu'un autre laisse. Un fichier par objet coute un bloc de     -->
                 <!-- liaison de plus dans le pool (mesure : 362 octets servis sur  -->
                 <!-- 4223 disponibles), et rend au rangement toute sa liberte.     -->
-                <file name="stage1.patapata" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.patapata" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/patapata.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/pata-pata/enemy.asm"/>
@@ -860,7 +860,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.bug" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
@@ -895,7 +895,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.bink" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.bink" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bink.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bink/bink.unit.asm"/>
@@ -908,7 +908,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.blaster" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.blaster" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/blaster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/blaster/blaster.unit.asm"/>
@@ -959,7 +959,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.pstaff" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.pstaff" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/pstaff.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/p-staff/pstaff.unit.asm"/>
@@ -1006,7 +1006,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.cancer" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.cancer" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/cancer.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/cancer/cancer.unit.asm"/>
@@ -1019,7 +1019,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.shell" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.shell" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/shell.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/shell/shell.unit.asm"/>
@@ -1097,7 +1097,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.shelleraser" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.shelleraser" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/shelleraser.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/shell/shelleraser.unit.asm"/>
@@ -1110,7 +1110,7 @@
                 <!-- Vol et chute (modes 1, 5-10) : deux poses alternees a chaque tick par
                      tabrok_flameToggle, la flamme du reacteur. Poses 6-7 et leurs
                      miroirs 14-15 — le tank vole dans les deux sens -->
-                <file name="stage1.tabrok.imgFlight" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgFlight" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgflight.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1132,7 +1132,7 @@
                 </file>
                 <!-- Pose au sol, visee et tir (modes 2, 3, 11) : la posture immobile et son
                      leger cycle de repos 4,4,5,4. Poses 4-5 et miroirs 12-13 -->
-                <file name="stage1.tabrok.imgGround" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgGround" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgground.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1155,7 +1155,7 @@
                 <!-- Marche (mode 4) : le cycle de huit pas indexe sur le compteur global,
                      seul consommateur des poses 0-3. Sans miroir — la table 2b70
                      n'existe que dans un sens -->
-                <file name="stage1.tabrok.imgWalk" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok.imgWalk" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrok-imgwalk.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1175,7 +1175,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <file name="stage1.tabrok" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrok" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrok.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrok.unit.asm"/>
@@ -1254,7 +1254,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.tabrokcanon" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tabrokcanon" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tabrokcanon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrokcanon.unit.asm"/>
@@ -1272,7 +1272,7 @@
                 </file>
 
 
-                <file name="stage1.scant" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.scant" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/scant.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/scant/scant.unit.asm"/>
@@ -1285,7 +1285,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.scantfire" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.scantfire" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/scantfire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/scant/scantfire.unit.asm"/>
@@ -1312,7 +1312,7 @@
                      bouts de la section souterraine. Il arme le fondu resident
                      vers la palette du tunnel, ou vers celle du jeu au retour
                      (subtype), attend la fin, puis se supprime. -->
-                <file name="stage1.fadetotunnel" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.fadetotunnel" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/stages/01/fadetotunnel.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/background/fadetotunnel.unit.asm"/>
@@ -1323,7 +1323,7 @@
                      boucle du stage avec une commande en B. Il porte le compte a
                      rebours, l'autopilote du vaisseau, le fondu pixel et le
                      releve de score — hors de la RAM residente, qui est saturee. -->
-                <file name="stage1.endstage" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.endstage" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/stages/01/endstage.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/endstage/endstage.unit.asm"/>
@@ -1341,7 +1341,7 @@
                      geant (~6 Ko avec ses deux decalages), les six ensemble depassent
                      deux pages. Un etat = une tranche, le rangement les etale. -->
                 <!-- Le visage intact, tant qu'aucun nerf n'a cede -->
-                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgface.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1354,7 +1354,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 0 -->
-                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1367,7 +1367,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 1 -->
-                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1380,7 +1380,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 2 -->
-                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1393,7 +1393,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 3 -->
-                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1406,7 +1406,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 4 -->
-                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves4.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1419,7 +1419,7 @@
                     </lwasm>
                 </file>
                 <!-- Les yeux : les quatre nerfs optiques, la seule cible du joueur -->
-                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgeyes.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1476,7 +1476,7 @@
                 <!-- Le nettoyage du boss, bande 0 : 16 tranches. Trop large pour un
                      effacement par sprite — une bande par tranche de decor, un fichier
                      par bande (les 45 ensemble depassent la page). -->
-                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1486,7 +1486,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 1 : 7 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1516,7 +1516,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 2 : 12 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1526,7 +1526,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 3 : 10 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -1537,7 +1537,7 @@
                 </file>
                 <!-- Le corps : le code et l'INDEX de ses images, qui doit rester dans la
                      page que Img_Page_Index monte -->
-                <file name="stage1.dobkeratops" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratops" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratops.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/dobkeratops.unit.asm"/>
@@ -1545,7 +1545,7 @@
                     </lwasm>
                 </file>
                 <!-- La machoire, dont le monstre sort -->
-                <file name="stage1.dobkeratopsjaw" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsjaw" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsjaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/jaw.unit.asm"/>
@@ -1559,14 +1559,14 @@
                 </file>
                 <!-- Les dix-neuf queues, gerees par un seul objet maitre : il ECRIT sa
                      propre page dans Img_Page_Index, ses blits vivant avec lui -->
-                <file name="stage1.tailmgr" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.tailmgr" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/tailmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
                     </lwasm>
                 </file>
                 <!-- Le monstre qui emerge de la bouche -->
-                <file name="stage1.dobkeratopsmonster" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsmonster" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsmonster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/monster.unit.asm"/>
@@ -1602,7 +1602,7 @@
                     </lwasm>
                 </file>
                 <!-- Ses scies -->
-                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratopssaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/saw.unit.asm"/>
@@ -1615,7 +1615,7 @@
                     </lwasm>
                 </file>
                 <!-- Ses explosions : un preset partage, pas d'images propres -->
-                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="stage1.enemies">
+                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/dobkeratopsexplosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/explosion.unit.asm"/>
@@ -1998,6 +1998,17 @@
                     </lwasm>
                 </file>
 
+                <!-- Le cast du stage 2 : SQUELETTES du chantier 3 (pas de source
+                     v1 — creation depuis la reference arcade a venir). Chaque
+                     ennemi a deja son unite, son id et ses lignes de wave ;
+                     l'implementation vide se supprime au premier tour. -->
+                <file name="stage2.cast" arena="enemies" codec="none">
+                    <lwasm gensource="gen/enemies/stage2-cast.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/02/cast.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <file name="stage2" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -2258,6 +2269,7 @@
                 </scene>
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
+                    <load name="stage2.cast"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
                     <load name="stage2.maps"/>
@@ -2273,19 +2285,26 @@
             <!-- sprites, et un echange de stage alloue le nouveau avant de         -->
             <!-- liberer l'ancien : 4 Ko ne suffisent plus.                          -->
             <!--                                                                    -->
-            <!-- PLAFOND REEL : le pool commence a la fin du code du loader          -->
-            <!-- ($AF81) et la fenetre donnees finit a $E000, soit $307F de place.   -->
+            <!-- PLAFOND REEL (mesure 14/08/2026) : le loader loge a $C000 et le    -->
+            <!-- pool va de sa fin ($D024) a $E000 — 4060 octets ($0FDC), PAS le    -->
+            <!-- $307F d'avant le partage de la page 4 (l'autre moitie est a        -->
+            <!-- l'arene objects, cf. la note du <data> LOADER plus bas).           -->
             <!-- Le build affiche « link data: N direntries, X bytes » : si X plus   -->
             <!-- les en-tetes de l'allocateur passent cette valeur, le loader ne     -->
             <!-- rend jamais la main et la machine reste au menu du moniteur.        -->
             <!-- Le pool ne porte PAS que les donnees de lien : le loader y range    -->
-            <!-- aussi le repertoire, le fichier de scene et un tableau de slots      -->
-            <!-- qu'il realloc. La ligne « link data » du build est donc un           -->
-            <!-- INDICATEUR, pas le total — la ligne "link data" du build          -->
-            <!-- sous-estime la demande reelle : le pool porte aussi le repertoire, -->
-            <!-- le fichier de scene et la table de slots du loader, et un echange  -->
-            <!-- de scene tient les deux scenes a la fois. Le seul controle sur :   -->
-            <!-- `tlsf.err` ($A138) apres le boot. 0 = tout va bien, 3 = OUT_OF_MEMORY. -->
+            <!-- aussi le REPERTOIRE A DEMEURE (10 secteurs = 2560 octets, 63 % du  -->
+            <!-- pool — son passage a 11 secteurs a creve le pool au premier        -->
+            <!-- echange de scene, gel tlsf.err=3), le fichier de scene et un       -->
+            <!-- tableau de slots qu'il realloc ; un echange tient les deux scenes  -->
+            <!-- a la fois. La ligne « link data » du build sous-estime donc la     -->
+            <!-- demande reelle. Le seul controle sur machine :                     -->
+            <!-- `tlsf.err` ($C13F) apres le boot. 0 = tout va bien, 3 = OUT_OF_MEMORY. -->
+            <!-- Economie du repertoire : une entree = des SLOTS de 8 octets        -->
+            <!-- (principal + compression si comprime + linker si linkdata) ; un    -->
+            <!-- fichier linkdata+zx0 coute 3 slots. 85 fichiers du disque paient   -->
+            <!-- un slot linker pour ZERO octet de lien — le jour ou le builder     -->
+            <!-- n'emet plus les blocs vides, le repertoire rend ~85 slots.         -->
             <!--                                                                    -->
             <!-- 2048 est un PLANCHER, pas un ajustement : depuis que les entrees   -->
             <!-- cuisent leurs references (bake), la scene de boot ne demande plus  -->

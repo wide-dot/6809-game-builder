@@ -319,6 +319,20 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
 
 Fonctionnel :
 
+- [ ] **N'émettre les blocs compression/linker d'une entrée de répertoire que
+      s'ils servent** (relevé 14/08/2026, r-type). Une entrée = des slots de
+      8 octets (principal + compression si comprimé + linker si linkdata) ;
+      **85 fichiers du disque r-type paient un slot linker pour ZÉRO octet de
+      lien** — ~680 octets de répertoire gaspillés, et le répertoire vit À
+      DEMEURE dans le pool du loader (4060 octets) : son passage de 10 à 11
+      secteurs a gelé l'échange de scène (tlsf.err=3, bissection au worktree).
+      Le format est déjà à blocs variables (bits dans sizeu, ids = index de
+      slot), l'assertion « ids réservés == blocs émis » verrouille — mais
+      TOUTES les images changent : méthode standard complète. Détail :
+      plan-portage-rtype §chantier 3. Alternative loader (plus lourde) :
+      sortir le répertoire du pool (buffer fixe sur la moitié arène de la
+      page 4).
+
 - [x] **Tri alphabétique des ids de symboles de link** (31/07/2026) — passe de
       découverte par target puis réémission avec ids préseedés triés : les ids
       ne dépendent plus que des NOMS. Renumérotation unique effectuée, validée
