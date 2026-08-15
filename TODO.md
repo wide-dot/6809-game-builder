@@ -915,6 +915,23 @@ En veille sur décision (31/07/2026) :
       n'avait l'air juste que parce que sa sequence de boss noircissait
       l'index 15 au moment du releve.
 
+- r-type : **trois index de palette gelés par le commun changent de couleur
+  selon le stage** (15/08/2026) — relevé par `tools/palette_usage.py`, qui
+  lit le config, expanse les images comme le builder et couvre AUSSI le
+  dessin écrit à la main (`LDA #$xy` + `STA n,U`, la police du relevé).
+  Le commun consomme 15 des 16 index ; seul le **15 est libre** depuis le
+  correctif de la police. Les défauts : **index 6** (le cyan du vaisseau,
+  des armes et du starfield — 12 unités communes) devient kaki au stage 3
+  et vert sombre au stage 6 ; **index 14** (explosions, missiles, tir
+  ennemi) varie sur six stages ; **index 4** ne bouge que d'un cran de bleu
+  entre le stage 1 et les autres. Cause : les palettes des stages 2-8 sont
+  DÉRIVÉES du PNG de tileset (`gen/stages/NN/map/even.png`), personne ne
+  leur impose les index du commun. Deux issues, à trancher : accorder les
+  palettes de stage sur les index gelés (authorer un vrai `pal.png` par
+  stage, comme le stage 1), ou réserver au décor les index que le commun
+  n'utilise pas. À faire avant le portage des gfx d'ennemis, qui va élargir
+  la contrainte.
+
 - r-type : la musique du stage 6 est un CHOIX EN ATTENTE de l'auteur —
   aucun asset ni en v1 ni en v2 (pas de dossier music dans le niveau 06),
   le direntry `stage6.music.ymm` rejoue l'unité du stage 1 en attendant.
