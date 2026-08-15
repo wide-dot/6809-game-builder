@@ -203,10 +203,83 @@ def palette_de(path):
     return out
 
 
+def planche(sortie, palettes, contraints, px_img, px_code, defauts):
+    """La planche de pastilles : un index par ligne, une palette de stage par
+    colonne. On y lit d'un coup ce qu'un tableau de chiffres fait deviner —
+    une ligne d'une seule couleur est un index sur lequel les huit stages
+    s'accordent, une ligne bariolee est un index qui bouge. Quand c'est un
+    index GELE, la ligne bariolee EST le defaut."""
+    from PIL import ImageDraw, ImageFont
+
+    def police(taille, gras=False):
+        chemin = ('/usr/share/fonts/truetype/dejavu/DejaVuSansMono'
+                  + ('-Bold' if gras else '') + '.ttf')
+        try:
+            return ImageFont.truetype(chemin, taille)
+        except OSError:
+            return ImageFont.load_default()
+
+    f, fb = police(13), police(14, True)
+    noms = list(palettes)
+    MARGE, LIG, PAST = 16, 30, 46      # marge, hauteur de ligne, largeur pastille
+    GAUCHE, ENTETE = 250, 56           # colonne des libelles, bandeau du haut
+    titre = ("Index de palette — objets communs contre les palettes de stage")
+    legende = ("ligne d'une seule couleur = les 8 stages s'accordent",
+               "ligne bariolee sur un index GELE = defaut")
+    # la planche s'elargit pour son texte : une legende coupee ne se lit pas
+    mesure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+    besoin = max([mesure.textlength(titre, font=fb)]
+                 + [mesure.textlength(t, font=f) for t in legende])
+    L = max(GAUCHE + PAST * len(noms), int(besoin)) + 2 * MARGE
+    H = ENTETE + LIG * NB_INDEX + MARGE + 20 * len(legende) + 8
+
+    im = Image.new('RGB', (L, H), (18, 20, 24))
+    d = ImageDraw.Draw(im)
+    d.text((MARGE, 14), titre, font=fb, fill=(228, 232, 240))
+    for k, n in enumerate(noms):
+        d.text((GAUCHE + k * PAST + 10, 38), n.replace('stage', ''),
+               font=f, fill=(150, 158, 172))
+
+    total = sum(px_img.values()) + sum(px_code.values()) or 1
+    for i in range(NB_INDEX):
+        y = ENTETE + i * LIG
+        gele = i in contraints
+        px = px_img[i] + px_code[i]
+        if i in defauts:                       # la ligne qui coute
+            d.rectangle([MARGE - 6, y - 3, L - MARGE + 6, y + LIG - 7],
+                        fill=(58, 26, 30))
+        libelle = (200, 206, 216) if gele else (120, 128, 140)
+        d.text((MARGE, y + 4), f"index {i:2}", font=fb, fill=libelle)
+        etat = "GELE" if gele else "libre"
+        d.text((MARGE + 86, y + 5), etat, font=f,
+               fill=(232, 120, 130) if i in defauts else
+                    (200, 206, 216) if gele else (110, 118, 130))
+        d.text((MARGE + 140, y + 5), f"{px:5} px" if px else "    -",
+               font=f, fill=(140, 148, 162))
+        # la barre de poids, sous le libelle : le cout de l'index en un trait
+        larg = round(78 * px / max(px_img[j] + px_code[j] for j in range(NB_INDEX)))
+        if larg:
+            d.rectangle([MARGE + 140, y + LIG - 9, MARGE + 140 + larg, y + LIG - 7],
+                        fill=(90, 100, 118))
+        for k, n in enumerate(noms):
+            r, g, b = palettes[n][i]
+            x = GAUCHE + k * PAST
+            d.rectangle([x, y, x + PAST - 6, y + LIG - 8],
+                        fill=(r * 17, g * 17, b * 17), outline=(60, 66, 78))
+
+    bas = ENTETE + NB_INDEX * LIG + 8
+    for k, t in enumerate(legende):
+        d.text((MARGE, bas + 20 * k), t, font=f, fill=(150, 158, 172))
+    im.save(sortie)
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--detail', action='store_true')
     ap.add_argument('--histogramme', action='store_true')
+    ap.add_argument('--planche', metavar='SORTIE.PNG',
+                    help="ecrit une planche de pastilles : les 16 index en "
+                         "lignes, les palettes de stage en colonnes")
     ap.add_argument('--config', default='to8.config.xml')
     args = ap.parse_args()
 
@@ -352,6 +425,10 @@ def main():
                 "libre, varie          ")
         rgb = ' '.join('%X%X%X' % tuple(pal[i]) for pal in lues.values())
         print(f"  index {i:2} : {etat} {rgb}")
+    if args.planche:
+        planche(args.planche, lues, contraints, px_img, px_code, defauts)
+        print(f"planche ecrite : {args.planche}")
+
     print()
     if defauts:
         print(f"DEFAUT : {len(defauts)} index geles par un objet commun changent "
