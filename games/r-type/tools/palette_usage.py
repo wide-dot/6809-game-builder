@@ -102,17 +102,36 @@ def expanse(gfx, base):
     return png
 
 
-def index_utilises(path):
-    """Les index MATÉRIELS qu'une image consomme (transparence exclue)."""
+def pixels_par_index(path):
+    """Le POIDS d'une image, index matériel par index matériel : combien de
+    pixels chacun porte. Rend aussi le compte des pixels transparents, qui ne
+    sont d'aucune couleur mais disent la part de vide du sprite."""
     im = Image.open(path)
     if im.mode != 'P':
         raise ValueError(f"{path} : attendu un PNG indexe 8 bits, trouve {im.mode}")
-    vus = {v for _, v in (im.getcolors(1 << 20) or [])}
-    return {v - 1 for v in vus if v != TRANSPARENT}
+    poids, vide = {}, 0
+    for n, v in (im.getcolors(1 << 20) or []):
+        if v == TRANSPARENT:
+            vide += n
+        else:
+            poids[v - 1] = poids.get(v - 1, 0) + n
+    return poids, vide
+
+
+def index_utilises(path):
+    """Les index MATÉRIELS qu'une image consomme (transparence exclue)."""
+    return set(pixels_par_index(path)[0])
 
 
 LDA_IMM = re.compile(r'^\s*lda\s+#\$([0-9a-f]{1,2})\s*(;.*)?$', re.I)
-STA_U = re.compile(r'^\s*sta\s+[^,;]*,\s*u\b', re.I)
+# Le deplacement doit etre un NOMBRE (ou rien) : c'est ce qui separe un octet
+# deverse a l'ecran d'une ecriture dans un OST, ou U pointe l'objet et le
+# deplacement est un champ nomme. Sans cette exigence, `sta o_fade_idx,u` et
+# `sta nb_cells,u` passaient pour des pixels — releve et corrige le 15/08.
+# Le SIGNE compte : une police dessine au-dessus de son ancre (`STA -80,U`),
+# et l'oublier coutait 171 appariements sur les 400 — vu parce que le compte
+# avait bouge PLUS que les deux faux positifs ne l'expliquaient.
+STA_U = re.compile(r'^\s*sta\s+(?:-?\$?[0-9a-f]+)?\s*,\s*u\b', re.I)
 INCLUDE = re.compile(r'^\s*INCLUDE\s+"([^"]+)"', re.I)
 
 
@@ -137,15 +156,13 @@ def sources_de(fichier, base):
     return vus
 
 
-def index_ecrits_main(path):
-    """Les index qu'un dessin ÉCRIT À LA MAIN pose : un `LDA #$xy` dont le
-    STA qui suit vise l'écran (`,U`) est un octet BM16, soit deux pixels —
-    les deux nibbles sont des index matériels, le 0 compris (le mode n'a pas
-    de transparence). Un `lda #$..` qui ne se déverse pas à l'écran est une
-    constante ordinaire et ne compte pas : c'est l'idiome, pas l'opcode, qui
-    fait la couleur."""
+def pixels_ecrits_main(path):
+    """Idem pour le dessin écrit à la main : chaque octet BM16 déversé à
+    l'écran vaut DEUX pixels, un par nibble. Ce sont des pixels statiques —
+    ceux que le code pose à chaque appel — donc comparables à ceux d'une
+    image, à ceci près qu'un glyphe appelé dix fois les pose dix fois."""
     lignes = open(path, errors='replace').read().split('\n')
-    trouves = set()
+    poids = {}
     for i, l in enumerate(lignes):
         m = LDA_IMM.match(l)
         if not m:
@@ -156,9 +173,20 @@ def index_ecrits_main(path):
                 continue
             if STA_U.match(lignes[j]):
                 v = int(m.group(1), 16)
-                trouves |= {v >> 4, v & 0x0F}
+                for nib in (v >> 4, v & 0x0F):
+                    poids[nib] = poids.get(nib, 0) + 1
             break
-    return trouves
+    return poids
+
+
+def index_ecrits_main(path):
+    """Les index qu'un dessin ÉCRIT À LA MAIN pose : un `LDA #$xy` dont le
+    STA qui suit vise l'écran (`,U`) est un octet BM16, soit deux pixels —
+    les deux nibbles sont des index matériels, le 0 compris (le mode n'a pas
+    de transparence). Un `lda #$..` qui ne se déverse pas à l'écran est une
+    constante ordinaire et ne compte pas : c'est l'idiome, pas l'opcode, qui
+    fait la couleur."""
+    return set(pixels_ecrits_main(path))
 
 
 def palette_de(path):
@@ -178,6 +206,7 @@ def palette_de(path):
 def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--detail', action='store_true')
+    ap.add_argument('--histogramme', action='store_true')
     ap.add_argument('--config', default='to8.config.xml')
     args = ap.parse_args()
 
@@ -218,21 +247,28 @@ def main():
 
     # --- relevé
     par_index = {i: [] for i in range(NB_INDEX)}
+    px_img = {i: 0 for i in range(NB_INDEX)}       # pixels venus des png
+    px_code = {i: 0 for i in range(NB_INDEX)}      # pixels venus du code
+    px_vide = 0
     nb_png = 0
     for nom in communs:
         for p in images.get(nom, []):
             nb_png += 1
-            for i in index_utilises(p):
+            poids, vide = pixels_par_index(p)
+            px_vide += vide
+            for i, n in poids.items():
+                px_img[i] += n
                 par_index[i].append((nom, os.path.relpath(p, base)))
 
     # le dessin ecrit a la main, deuxieme source d'index
     main_par_fichier = {}
     for nom in communs:
         for p in sorted(sources.get(nom, ())):
-            trouves = index_ecrits_main(p)
-            if trouves:
-                main_par_fichier[os.path.relpath(p, base)] = (nom, trouves)
-                for i in trouves:
+            poids = pixels_ecrits_main(p)
+            if poids:
+                main_par_fichier[os.path.relpath(p, base)] = (nom, set(poids))
+                for i, n in poids.items():
+                    px_code[i] += n
                     par_index[i].append((nom, os.path.relpath(p, base)))
 
     contraints = sorted(i for i in par_index if par_index[i])
@@ -263,6 +299,22 @@ def main():
     print(f"  index utilises : " + ' '.join(str(i) for i in sorted(lots_index)))
     print(f"  dont pris SUR LES LIBRES : "
           + (' '.join(str(i) for i in ajout) if ajout else "aucun"))
+
+    if args.histogramme:
+        total = sum(px_img.values()) + sum(px_code.values())
+        print()
+        print(f"HISTOGRAMME — pixels par index sur les objets communs "
+              f"({total} px poses, {px_vide} px transparents dans les png)")
+        large = max(px_img[i] + px_code[i] for i in range(NB_INDEX)) or 1
+        for i in range(NB_INDEX):
+            n = px_img[i] + px_code[i]
+            barre = '#' * round(40 * n / large)
+            part = 100 * n / total if total else 0
+            venu = f"  (dont {px_code[i]} en code)" if px_code[i] else ""
+            etat = "libre" if not par_index[i] else "gele "
+            print(f"  index {i:2} {etat} {n:7} px {part:5.1f} %  {barre}{venu}")
+        print("  Un index gele mais leger se libere a peu de frais ; un index"
+              " lourd, non — c'est ce que ce classement sert a trancher.")
 
     if args.detail:
         print()
