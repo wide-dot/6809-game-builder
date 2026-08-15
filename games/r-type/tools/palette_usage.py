@@ -226,6 +226,83 @@ def lots_du_stage(stage, base):
     return None
 
 
+def contact(sortie, idx, communs, images, base, pal_ref):
+    """La planche contact d'un index : chaque image commune qui l'utilise,
+    telle quelle a gauche, l'index surligne a droite sur le reste eteint.
+    Un chiffre dit combien de pixels ; ceci dit LESQUELS — c'est ce qui
+    permet de voir qu'un index est la teinte d'un corps entier plutot que
+    des eclats disperses, et donc ce que couterait de s'en passer.
+
+    Les declarations en double (une ligne miroir redeclare son png) sont
+    reduites : ici on regarde des DESSINS, pas des sprites compiles."""
+    from PIL import ImageDraw, ImageFont
+
+    trouves = []
+    for nom in communs:
+        for p in dict.fromkeys(images.get(nom, [])):
+            poids, _ = pixels_par_index(p)
+            if idx in poids:
+                trouves.append((nom, p, poids[idx]))
+    trouves.sort(key=lambda t: (-t[2], t[1]))
+    if not trouves:
+        print(f"index {idx} : aucune image commune ne l'utilise")
+        return
+
+    def police(taille, gras=False):
+        c = ('/usr/share/fonts/truetype/dejavu/DejaVuSansMono'
+             + ('-Bold' if gras else '') + '.ttf')
+        try:
+            return ImageFont.truetype(c, taille)
+        except OSError:
+            return ImageFont.load_default()
+
+    FOND, VIF, Z, COLS = (18, 20, 24), (255, 0, 170), 5, 6
+    pal = [tuple(c * 17 for c in t) for t in pal_ref]
+
+    def rendu(p, marquer):
+        im = Image.open(p)
+        w, h = im.size
+        src, out = im.load(), Image.new('RGB', (w, h), FOND)
+        dst = out.load()
+        for y in range(h):
+            for x in range(w):
+                v = src[x, y]
+                if v == TRANSPARENT:
+                    dst[x, y] = FOND
+                elif v - 1 == idx:
+                    dst[x, y] = VIF if marquer else pal[idx]
+                else:
+                    r, g, b = pal[v - 1]
+                    dst[x, y] = (r // 4, g // 4, b // 4) if marquer else (r, g, b)
+        return out
+
+    mw = max(Image.open(p).size[0] for _, p, _ in trouves)
+    mh = max(Image.open(p).size[1] for _, p, _ in trouves)
+    CW, CH = mw * Z * 2 + 18, mh * Z + 40
+    lignes = (len(trouves) + COLS - 1) // COLS
+    f, fb = police(11), police(14, True)
+    im = Image.new('RGB', (COLS * CW + 24, 70 + lignes * CH), FOND)
+    d = ImageDraw.Draw(im)
+    d.text((14, 14), f"Index {idx} — {len(trouves)} images communes, "
+                     f"{sum(t[2] for t in trouves)} px", font=fb,
+           fill=(228, 232, 240))
+    d.text((14, 36), "a gauche le sprite tel quel ; a droite l'index surligne, "
+                     "le reste eteint", font=f, fill=(150, 158, 172))
+    for k, (nom, p, n) in enumerate(trouves):
+        x, y = 12 + (k % COLS) * CW, 70 + (k // COLS) * CH
+        a, b = rendu(p, False), rendu(p, True)
+        w, h = a.size
+        im.paste(a.resize((w * Z, h * Z), Image.NEAREST), (x, y))
+        im.paste(b.resize((w * Z, h * Z), Image.NEAREST), (x + w * Z + 8, y))
+        d.text((x, y + mh * Z + 6), f"{n} px  {nom}", font=f,
+               fill=(200, 206, 216))
+        d.text((x, y + mh * Z + 19), os.path.basename(p), font=f,
+               fill=(130, 138, 152))
+    im.save(sortie)
+    print(f"planche contact ecrite : {sortie} ({len(trouves)} images, "
+          f"{sum(t[2] for t in trouves)} px)")
+
+
 def planche(sortie, palettes, contraints, px_img, px_code, defauts):
     """La planche de pastilles : un index par ligne, une palette de stage par
     colonne. On y lit d'un coup ce qu'un tableau de chiffres fait deviner —
@@ -305,6 +382,11 @@ def main():
                          "(defaut stage1, dont le cast est le plus large) : le "
                          "masque vient de cast.const.asm, les unites de la "
                          "scene de lot correspondante")
+    ap.add_argument('--contact', nargs=2, metavar=('INDEX', 'SORTIE.PNG'),
+                    help="planche contact d'UN index : toutes les images "
+                         "communes qui l'utilisent, telles quelles a gauche et "
+                         "l'index surligne a droite — pour voir ce qu'il peint "
+                         "avant de decider de s'en passer")
     ap.add_argument('--sources', action='store_true',
                     help="l'inventaire exhaustif de ce qui entre dans "
                          "l'analyse : unites, images, sources de code, palettes")
@@ -519,6 +601,14 @@ def main():
                 "libre, varie          ")
         rgb = ' '.join('%X%X%X' % tuple(pal[i]) for pal in lues.values())
         print(f"  index {i:2} : {etat} {rgb}")
+    if args.contact:
+        ref = palettes.get('stage1') or (palettes and sorted(palettes)[0])
+        if not ref or not os.path.exists(ref):
+            sys.exit("planche contact : la palette de reference manque "
+                     "(construire une fois)")
+        contact(args.contact[1], int(args.contact[0]), communs, images, base,
+                palette_de(ref))
+
     if args.planche:
         planche(args.planche, lues, contraints, px_img, px_code, defauts)
         print(f"planche ecrite : {args.planche}")
