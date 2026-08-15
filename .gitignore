@@ -33,3 +33,6 @@ hs_err_pid*
 examples/*/dist/
 examples/*/gen/
 __pycache__/
+
+# config de build genere par les sessions (copie sans <hfe/>) — jamais commite
+t.xml
