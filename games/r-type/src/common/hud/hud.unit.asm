@@ -37,6 +37,9 @@ soundFX.newSound        EXTERNAL
 ; Les deux drapeaux du décompte, résidents dans le stage.
 main.endstage.scoreArmed EXTERNAL
 main.endstage.scoreDone  EXTERNAL
+; Le numero du stage courant (- 1) : le releve de fin l'ecrit dans la
+; chaine STAGE n CLEARED — variable residente de l'engine, via le lien.
+game.stage               EXTERNAL
 
  SECTION code
 

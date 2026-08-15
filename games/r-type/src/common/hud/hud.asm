@@ -461,6 +461,10 @@ hud.scoreReadout
 @storeHold
         stb   hud.readout.holdTimer
 @draw
+        lda   game.stage                      ; le numero du stage COURANT :
+        inca                                  ;   game.stage garde le dernier
+        adda  #'0'                            ;   stage acheve (0 en stage 1)
+        sta   hud.str.stageNum
         ldu   #hud.line1U                     ; "STAGE n CLEARED" (static; redrawn each frame so
         ldy   #hud.str.cleared                ;   both video buffers carry it)
         jsr   hud.drawStr
@@ -522,8 +526,14 @@ hud.drawStr
         bra   @l
 @r      rts
 
-hud.str.cleared fcc 'S T A G E   1   C L E A R E D'
-                fcb 0
+; Le chiffre est PATCHE a chaque affichage depuis game.stage (courant - 1,
+; pose par le handOver du stage precedent, remis a zero par le title) : le
+; HUD est commun aux huit stages, la chaine ne peut pas porter un numero
+; d'assemblage. La police a tous les chiffres (numbers_addr).
+hud.str.cleared  fcc 'S T A G E   '
+hud.str.stageNum fcc '1'
+                 fcc '   C L E A R E D'
+                 fcb 0
 hud.str.score   fcc 'STAGE SCORE '
                 fcb 0
 
