@@ -931,6 +931,13 @@ En veille sur décision (31/07/2026) :
   stage, comme le stage 1), ou réserver au décor les index que le commun
   n'utilise pas. À faire avant le portage des gfx d'ennemis, qui va élargir
   la contrainte.
+  **Suite (15/08) : l'auteur propose une palette 12 communs + 4 par stage, et
+  l'étude est chiffrée dans `docs/lang/fr/analyse-palette-migration-2026-08.md`
+  (palette proposée dans le dépôt, `src/stages/01/palette/pal-next.png`, non
+  branchée). Quatre arbitrages pris : vert du scant accordé, index 15 abandonné
+  pour le fond du stage 1, étoiles tolérées sur les noirs des tuiles, et
+  migration par objet avec planche de prévisualisation et validation manuelle.
+  RIEN N'EST IMPLÉMENTÉ — le protocole du §7 gouverne le jour où ça démarre.**
 
 - r-type : la musique du stage 6 est un CHOIX EN ATTENTE de l'auteur —
   aucun asset ni en v1 ni en v2 (pas de dossier music dans le niveau 06),

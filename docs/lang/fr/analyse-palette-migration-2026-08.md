@@ -1,6 +1,21 @@
 # Palette 12 communs + 4 par stage : ce que coûterait la migration
 
-Statut : ÉTUDE (15/08/2026) — proposition de l'auteur, rien n'est réalisé.
+Statut : ÉTUDE (15/08/2026) — **rien n'est réalisé, et rien ne doit l'être sans
+le protocole du §7**. Les arbitrages de l'auteur pris en séance sont consignés
+au fil du texte et récapitulés ici :
+
+1. **Le vert du scant est accordé** : l'olive reste, sur un index propre au
+   stage, réservé par les stages 1 et 7 seulement (§3).
+2. **L'index 15 est abandonné pour le fond du stage 1**, et avec lui la
+   possibilité de changer la couleur de fond en cours de stage — perte assumée.
+3. **Le champ d'étoiles a le droit de scintiller sur les pixels noirs des
+   tuiles** : l'effet est jugé peu visible, le décor n'a donc PAS à quitter
+   l'index 0. Ce qui était le point dur de l'étude devient un compromis accepté
+   (§4).
+4. En cas de migration : **un mapping par objet**, une **planche PNG de
+   prévisualisation par objet**, et **validation manuelle de l'auteur** avant
+   de rien graver (§7).
+
 Intention : réindexer les assets pour que **les index 0-11 soient communs aux
 huit stages et les index 12-15 propres à chacun**. Les assets communs passent
 du beige au gris ; les tuiles gagnent le contraste que la conversion ne peut
@@ -128,72 +143,113 @@ est le seul à préférer A**, parce qu'il est le seul à utiliser massivement l
 gris moyen (82 px). Le choix est donc par sprite, ce qui est cohérent avec un
 geste manuel assumé.
 
-**Le vrai perdant est le scant**, et pas à cause du beige : il perd AUSSI son
-olive (index 12, 236 px sur trois poses), qui devient propre au stage. Rendu
-tout en gris, il perd son caractère organique. À noter puisque ça ouvre une
-option : le scant n'apparaît **qu'aux stages 1 et 7** — si ces deux stages
-réservaient le même index propre pour l'olive, il pourrait le garder. C'est le
-seul cas du corpus où un ennemi de lot justifierait qu'on accorde deux stages
-sur une couleur propre.
+### Le scant : ARBITRÉ — il garde son vert, et ne perd que 4 px
 
-## 4. Le point dur : après la fusion, il n'y a plus qu'UN noir
+Le scant était le cas le plus lourd : il perdait le beige comme les autres,
+mais AUSSI son olive (236 px, sa teinte de corps), qui devient propre au stage.
+Rendu tout en gris il perdait son caractère organique.
 
-C'est la contrainte à connaître avant de commencer, pas à découvrir à l'écran.
+**Décision de l'auteur : l'olive est accordée**, sur un index propre au stage.
+Le scant n'apparaissant qu'aux **stages 1 et 7**, seuls ces deux-là ont à la
+réserver ; les six autres gardent leurs quatre couleurs propres intactes.
 
-La palette du stage 1 porte aujourd'hui **deux noirs** — l'index 0 et l'index
-15, tous deux `000`. Aucun autre stage n'a ça. Ce n'est pas un gaspillage :
-c'est **ce qui rend le champ d'étoiles possible**.
+Reste sa rampe neutre : quatre valeurs pour trois gris disponibles, une fusion
+est donc inévitable. La moins chère saute aux yeux une fois les comptes posés —
+le scant n'utilise le blanc que sur **4 px**. En faisant monter le beige clair
+(135 px) jusqu'au blanc, la fusion ne coûte que ces 4 px et la rampe garde ses
+trois marches réelles :
 
-Le champ d'étoiles ne dessine que sur le « ciel vierge », qu'il reconnaît au
-nibble `$F` (`obj.asm`, macros `STAR_DH`/`STAR_DL`) ; le décor, lui, est en
-nibble 0 et se trouve ignoré — ce qui est le rendu voulu, **pas d'étoile dans
-la silhouette de la ville**. Les tampons sont donc effacés à `$FFFF` et non à
+| rôle | actuel | après |
+|---|---|---|
+| corps | olive `670`, 236 px | **olive, index propre au stage** |
+| médian sombre | gris `666`, 197 px | `666` |
+| médian clair | beige `987`, 221 px | `AAA` |
+| clair | beige `CCA`, 135 px | `FFF` |
+| plus clair | blanc `FFF`, 4 px | `FFF` — fusionné, **4 px** |
+
+Soit olive + trois gris + noir : **la même structure tonale qu'aujourd'hui**.
+Le scant passe donc de « le plus dégradé du lot » à « le moins abîmé ».
+
+## 4. Le fond du stage 1 et le champ d'étoiles : ce qu'on accepte de perdre
+
+Ce paragraphe était le point dur de l'étude. **Deux décisions de l'auteur le
+referment**, en assumant les pertes plutôt qu'en les évitant.
+
+Le contexte, d'abord, parce qu'il explique pourquoi la question se posait. La
+palette du stage 1 porte aujourd'hui **deux noirs** — l'index 0 et l'index 15,
+tous deux `000`, et aucun autre stage n'a ça. Ce n'était pas un gaspillage :
+le champ d'étoiles ne dessine que sur le « ciel vierge », qu'il reconnaît au
+nibble `$F` (`starfield/obj.asm`, macros `STAR_DH`/`STAR_DL`), et ignore le
+décor qui est en nibble 0 — d'où l'effacement des tampons à `$FFFF` et non
 `$0000` (`checkpoint.unit.asm`, dont le commentaire raconte le bug : un
-effacement à zéro et plus une étoile ne revenait après une mort).
+effacement à zéro, et plus une étoile ne revenait après une mort).
 
 Or les tuiles du stage 1 utilisent **les deux**, et la nouvelle palette les
-envoie toutes deux sur le même index 0 :
+envoie sur le même index 0 :
 
-| | ancien index | pixels | nouveau index |
+| | ancien index | pixels | nouveau |
 |---|---|---|---|
 | noir du décor, dans les tuiles | 0 | 6 793 | 0 |
 | ciel, dans les tuiles | 15 | 8 037 | 0 |
 
-**Conséquence : le décor doit cesser d'utiliser le noir.** Le nouvel index 0
-appartient au ciel ; si les tuiles y peignent encore leurs ombres, les étoiles
-scintilleront à l'intérieur des bâtiments. Et il n'y a plus de second noir où
-se replier : le décor devra rendre ses noirs en `666` (gris), `068` (bleu nuit)
-ou `600` (rouge sombre), ou avec une des quatre couleurs propres au stage si
-l'une d'elles est choisie sombre — les quatre actuellement proposées
-(`987`, `CCA`, `670`, `9C0`) ne le sont pas. Ce sont 6 793 px de tuiles, déjà
-sur la table puisque leur contraste est repris à la main, mais c'est une
-contrainte de conception, pas un détail de conversion.
+**Décision 1 — l'index 15 quitte le fond du stage 1.** On perd avec lui la
+possibilité de changer la couleur de fond en cours de stage. Assumé : le
+stage 1 n'en use pas.
 
-En compensation, une fois le ciel à zéro le **champ d'étoiles se simplifie et
-accélère**. Ses masques XOR sont aujourd'hui `$F0 ^ couleur` et `$0F ^ couleur` ;
-avec un ciel à zéro le masque EST la couleur (`0 ^ c = c`, `c ^ c = 0`), donc la
-table de plans se simplifie, le test du nibble haut passe de `cmpa #$F0 / blo`
-à `cmpa #$10 / bhs`, et le nibble bas **perd ses deux `coma`** par étoile et par
-passe.
+**Décision 2 — les étoiles ont le droit d'apparaître sur les pixels noirs des
+tuiles.** Le décor n'a donc PAS à quitter l'index 0, et les 6 793 px de noir
+des tuiles ne sont plus un chantier. L'effet est jugé peu visible : le décor du
+niveau 1 est majoritairement clair, ses aplats noirs sont des ombres étroites,
+et une étoile qui y passe le fait à la vitesse du plan le plus lent.
+
+Ce qui reste à faire de ce côté est donc **mécanique et petit** :
+
+- `checkpoint.unit.asm` : les deux `ldx #$FFFF` d'effacement deviennent `#$0000` ;
+- `starfield/obj.asm` : le test du ciel passe du nibble `$F` au nibble 0. Le
+  code y **gagne** — les masques XOR valent aujourd'hui `$F0 ^ couleur` et
+  `$0F ^ couleur` ; avec un ciel à zéro le masque EST la couleur (`0 ^ c = c`,
+  `c ^ c = 0`), donc la table de plans se simplifie (`$B0→$40`, `$D0→$20`,
+  `$A0→$50`), le test du nibble haut passe de `cmpa #$F0 / blo` à
+  `cmpa #$10 / bhs`, et le nibble bas **perd ses deux `coma`** par étoile et par
+  passe.
 
 ## 5. Ce qui est automatique, ce qui ne l'est pas
 
 **Automatique** — une table de correspondance appliquée aux PNG : les douze
 couleurs conservées, soit la très grande majorité des pixels. Vérifiable au
-pixel près (l'image reconstruite doit rendre exactement les mêmes couleurs).
+pixel près.
 
 **Manuel, par construction** :
 - les 2 580 px du §2 : trois couleurs à réattribuer à l'œil ;
-- les 6 793 px de noir du décor des tuiles, §4 ;
-- le contraste des tuiles, que l'auteur a déjà annoncé ;
-- rien dans le code de dessin écrit à la main : la police passe automatiquement.
+- le contraste des tuiles, que l'auteur reprend de toute façon à la main ;
+- les tuiles sont à **régénérer** (leanscroll → `<gfxcomp grid>` → `<tilemap>`),
+  pas seulement à remapper : la chaîne repart de l'image du niveau.
 
-**Code à toucher** (peu, et localisé) :
-- `checkpoint.unit.asm` : les deux `ldx #$FFFF` d'effacement des tampons
-  deviennent `#$0000` ;
-- `starfield/obj.asm` : les quatre macros de test et la table de plans (§4) ;
-- rien côté builder — `png2pal`, `gfxcomp` et le linker sont indifférents au
-  choix des index.
+### Le code de dessin écrit en dur — le piège d'un remap global
+
+Un remap qui ne toucherait que les PNG **raterait quatre fichiers**, et un
+remap qui toucherait tout indistinctement en **casserait un**. Relevé exhaustif
+(idiome `LDA #$xy` suivi d'un `STA <nombre>,U`) :
+
+| fichier | px | index employés | verdict |
+|---|---|---|---|
+| `src/common/hud/hud.asm` — police du relevé | 796 | 0, 1, 5, 6, 13 | **automatique** : tous tombent dans 0-11 |
+| `src/enemies/dobkeratops/tailmgr_blits.asm` | 102 | 1, 7, 9, 11, 12, 13, 14 | **à traiter** : l'index 12 (2 px) et l'index 14 (31 px) |
+| `src/title/text/text.asm` — machine à écrire | 796 | 0, 1, 4, 8, 9, **15 (419 px)** | **NE PAS TOUCHER** : le title a sa palette |
+| `src/common/hud/mask/Img_mask_0_ND0.asm` | 18 | 0 | mort — aucun INCLUDE ne l'atteint |
+
+Le title est le piège : il se dessine sur `Pal_title`, une palette
+complètement distincte (`0DD DDD C9C CFF …`), et son index 15 y est SA couleur.
+Il est chargé au boot comme les communs, mais il ne participe pas à la palette
+de jeu — un outil de migration doit l'exclure explicitement, pas par oubli.
+
+`tailmgr_blits.asm` est le seul vrai travail : les queues du boss, dont
+31 px d'ancien index 14 (renumérotation simple vers 10) et 2 px d'olive à
+arbitrer. Le boss n'appartenant qu'au stage 1, il pourrait prendre l'index
+propre — pour 2 px, le gris fera l'affaire.
+
+**Rien côté builder** : `png2pal`, `gfxcomp` et le linker sont indifférents au
+choix des index.
 
 **Le garde-fou existe déjà** : `palette_usage.py` sort en erreur si un index
 gelé par un commun varie entre stages. Après migration il doit rendre
@@ -221,13 +277,34 @@ geste manuel avait déjà été fait. Le **stage 2 est le cas extrême** avec qu
 index distincts : sa palette est dérivée de son tileset, personne ne l'a
 arbitrée. C'est lui qui dira si douze communs suffisent.
 
-## 7. Ordre proposé
+## 7. Protocole de migration — décidé, à respecter
 
-1. **Le stage 1 seul**, de bout en bout : remap automatique des douze couleurs
-   conservées, puis les quatre à la main, le noir du décor des tuiles, le champ
-   d'étoiles et l'effacement des tampons. Critère : visuel ET mesuré
-   (`palette_usage.py` sans défaut, lane 7/7, corpus confiné aux images r-type).
-2. **Le stage 2 ensuite**, parce qu'il est le pire cas : s'il passe, les six
-   autres passent.
-3. Les stages 3-8, qui n'ont aujourd'hui aucune palette authorée — la migration
+L'auteur a tranché la MÉTHODE avant le contenu, et c'est elle qui gouverne :
+
+> **Un mapping par objet, une planche PNG de prévisualisation par objet, et
+> validation manuelle de l'auteur avant de graver quoi que ce soit.**
+
+Ce n'est pas une précaution de style. Le §3 l'a montré trois fois : le meilleur
+mapping n'est PAS le même d'un objet à l'autre — le vaisseau veut le beige
+foncé versé dans le gris (19 px perdus contre 91), le scant veut l'inverse plus
+son olive conservé, le POW est indifférent. Une table globale trancherait mal
+pour presque tout le monde.
+
+La forme de la planche existe déjà : `palette_usage.py --contact` sait aligner
+un sprite tel quel à gauche et sa version transformée à droite. Il lui manque
+de prendre une table de mapping en entrée — c'est l'outil à écrire le jour où
+la campagne démarre, pas avant.
+
+Le reste-à-faire, dans l'ordre :
+
+1. **Le stage 1 seul**, objet par objet, avec sa planche et sa validation.
+2. **Les tuiles du stage 1**, régénérées depuis l'image du niveau (leanscroll →
+   `<gfxcomp grid>` → `<tilemap>`), contraste repris à la main.
+3. **Le code écrit en dur** du §5 — deux fichiers à toucher, un à laisser.
+4. **Le stage 2 ensuite**, parce qu'il est le pire cas (quinze index distincts
+   dans ses tuiles) : s'il passe, les six autres passent.
+5. Les stages 3-8, qui n'ont aujourd'hui aucune palette authorée — la migration
    est l'occasion de leur en donner une au lieu de la dériver du tileset.
+
+Critère à chaque étape : validation visuelle de l'auteur, `palette_usage.py`
+sans défaut, lane r-type 7/7, corpus confiné aux images r-type.
