@@ -30,51 +30,57 @@ Source des mesures : `games/r-type/tools/palette_usage.py` sur le build du
 | 7 | `600` rouge sombre | **7** | `600` rouge sombre | inchangé |
 | 8 | `A00` rouge | **8** | `A00` rouge | inchangé |
 | 9 | `C53` saumon | **9** | `C53` saumon | inchangé |
-| 10 | `FA0` orange | — | — | **supprimé** |
+| 10 | `FA0` orange | **10** | `F96` saumon clair | **fusion de barreau** |
 | 11 | `FF6` jaune pâle | **11** | `FF6` jaune pâle | inchangé |
 | 12 | `670` olive | **14** | `670` olive | **devient propre au stage** |
 | 13 | `0DE` cyan | **6** | `0DE` cyan | déplacé |
-| 14 | `F96` saumon clair | **10** | `F96` saumon clair | déplacé |
+| 14 | `F96` saumon clair | **10** | `F96` saumon clair | rejoint le même |
 | 15 | `000` noir (ciel) | **0** | `000` noir | **fusionne avec le noir** |
 | — | | **2** | `AAA` gris clair | **nouveau** |
 | — | | **15** | `9C0` vert clair | **nouveau** |
 
 **Douze couleurs sur seize survivent à l'identique** : la migration est d'abord
-une renumérotation, mécanisable et vérifiable au pixel près. Quatre cas
-seulement demandent la main, et deux couleurs neuves apparaissent — le gris
-clair `AAA`, qui est précisément ce avec quoi les communs remplacent le beige,
-et le vert clair `9C0`, propre au stage.
+une renumérotation, mécanisable et vérifiable au pixel près. Trois cas seulement
+demandent la main, et deux couleurs neuves apparaissent — le gris clair `AAA`,
+qui est précisément ce avec quoi les communs remplacent le beige, et le vert
+clair `9C0`, propre au stage.
 
-## 2. Le reste-à-faire dans le commun : 87 images, 3 269 px
+**L'orange n'est pas perdu, il est dédoublonné** (précision de l'auteur,
+vérifiée). Classée par luminance, l'ancienne rampe chaude était
+`600` 1,8 → `A00` 3,0 → `C53` 6,9 → `FA0` **10,4** → `F96` **10,5** → `FF6`
+14,0 : l'orange et le saumon clair occupaient le MÊME barreau, à 0,1 de
+luminance et 10,6 d'écart colorimétrique — moins que rouge↔saumon (11,6), deux
+couleurs que personne ne songe à fusionner. La nouvelle rampe garde donc ses
+cinq échelons, et son pas devient plus régulier : +5,7 / +11,6 / +10,4 / +12,0.
+Les deux anciens index tombent sur le même nouvel index 10.
 
-Un commun ne peut plus utiliser que 0-11. Quatre anciens index sortent de cette
-plage — les deux beiges et l'olive, qui deviennent propres au stage, et
-l'orange, qui disparaît.
+## 2. Le reste-à-faire dans le commun : 78 images, 2 580 px
+
+Un commun ne peut plus utiliser que 0-11. Trois anciens index sortent de cette
+plage : les deux beiges et l'olive, qui deviennent propres au stage.
 
 | ancien index | devient | images | pixels |
 |---|---|---|---|
 | 4 `CCA` beige clair | propre au stage (13) | 68 | 1 157 |
 | 3 `987` beige foncé | propre au stage (12) | 49 | 1 042 |
-| 10 `FA0` orange | **supprimé** | 39 | 689 |
 | 12 `670` olive | propre au stage (14) | 24 | 381 |
-| **total (images distinctes)** | | **87** | **3 269** |
+| **total (images distinctes)** | | **78** | **2 580** |
 
-Par unité, du plus lourd au plus léger : `lib.scant` 592 px, `forcepod` 525,
-`explosion.imgBig` 353 (tout en orange), `lib.bink` 339, `pow` 329, `player`
-244, `lib.cancer` 219, `optionbox` 150, `bitdevice` 111, `lib.pstaff` 94,
-`overlay` 92, `lib.bug` 91, `lib.patapata` 57, `explosion.imgSmall` 44,
-`missile` 25, `hud` 4.
+Par unité : `lib.scant` 592 px, `forcepod` 438, `pow` 329, `player` 231,
+`lib.cancer` 219, `lib.bink` 173, `optionbox` 134, `bitdevice` 101,
+`lib.pstaff` 94, `overlay` 92, `lib.bug` 91, `lib.patapata` 57, `missile` 25,
+`hud` 4.
 
-Deux remarques que la mesure a rendues :
+**Automatique mais à regarder** : les 689 px d'ancien orange (39 images, dont
+353 px dans la grosse explosion) changent de teinte en gardant leur index — la
+fusion de barreau du §1. Aucune décision à prendre, mais un coup d'œil vaut
+mieux qu'une confiance aveugle, la saturation baissant un peu.
 
-* **La police du relevé ne coûte rien.** Elle peint les anciens index 0, 1, 5,
-  6 et 13, qui tombent tous dans 0-11 : c'est une renumérotation automatique,
-  pas une reprise. (Mon premier chiffrage, fait avant d'avoir la palette,
-  supposait qu'on viderait 12-14 et l'annonçait à repeindre — c'était une
-  hypothèse, pas une mesure.)
-* **L'orange est le seul vrai deuil.** 689 px sans équivalent, dont 353 dans la
-  grosse explosion. Le saumon clair `F96` et le jaune pâle `FF6` l'encadrent ;
-  c'est un arbitrage à l'œil, image par image.
+Une remarque que la mesure a rendue : **la police du relevé ne coûte rien.**
+Elle peint les anciens index 0, 1, 5, 6 et 13, qui tombent tous dans 0-11 :
+renumérotation automatique, pas une reprise. (Mon premier chiffrage, fait avant
+d'avoir la palette, supposait qu'on viderait 12-14 et l'annonçait à repeindre —
+c'était une hypothèse, pas une mesure.)
 
 ## 3. Le point dur : après la fusion, il n'y a plus qu'UN noir
 
@@ -123,7 +129,7 @@ couleurs conservées, soit la très grande majorité des pixels. Vérifiable au
 pixel près (l'image reconstruite doit rendre exactement les mêmes couleurs).
 
 **Manuel, par construction** :
-- les 3 269 px du §2 : quatre couleurs à réattribuer à l'œil ;
+- les 2 580 px du §2 : trois couleurs à réattribuer à l'œil ;
 - les 6 793 px de noir du décor des tuiles, §3 ;
 - le contraste des tuiles, que l'auteur a déjà annoncé ;
 - rien dans le code de dessin écrit à la main : la police passe automatiquement.
