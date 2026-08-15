@@ -82,7 +82,61 @@ renumérotation automatique, pas une reprise. (Mon premier chiffrage, fait avant
 d'avoir la palette, supposait qu'on viderait 12-14 et l'annonçait à repeindre —
 c'était une hypothèse, pas une mesure.)
 
-## 3. Le point dur : après la fusion, il n'y a plus qu'UN noir
+## 3. Le beige devient gris : qui le sent vraiment ?
+
+La question n'est pas la teinte — un beige qui devient gris reste un gris de la
+bonne valeur — mais **l'échelon perdu**. Un commun n'aura plus que quatre
+neutres là où il en avait cinq, et la finesse se perdait justement dans les
+clairs :
+
+| avant, accessible à un commun | après |
+|---|---|
+| `000` 0,0 → `666` 6,0 → `987` 8,2 → `CCA` 11,8 → `FFF` 15,0 | `000` 0,0 → `666` 6,0 → `AAA` 10,0 → `FFF` 15,0 |
+| pas : +6,0 / +2,2 / +3,6 / +3,2 | pas : +6,0 / +4,0 / +5,0 |
+
+Mais **presque personne n'empilait les cinq**. Sur les 168 images communes qui
+touchent au moins un neutre :
+
+| neutres simultanés | images | |
+|---|---|---|
+| 1 | 87 | tiennent |
+| 2 | 11 | tiennent |
+| 3 | 17 | tiennent |
+| 4 | 38 | tiennent |
+| **5** | **15** | **perdent un échelon** |
+
+**153 images sur 168 (91 %) ne perdent rien** : elles changent de teinte, pas de
+modelé. Les quinze qui restent sont, hélas, les plus regardées — le **vaisseau**
+du joueur (5 poses), le **POW** (4), l'**optionbox** (4) et le **scant** (2).
+
+Reste à choisir COMMENT caser cinq niveaux dans quatre. Deux fusions possibles,
+et le coût (le plus petit des deux tons fusionnés, qui disparaît dans l'autre)
+se mesure sprite par sprite :
+
+| | A : les deux beiges → `AAA` | B : beige foncé → `666`, beige clair → `AAA` |
+|---|---|---|
+| vaisseau (5 poses) | 91 px perdus | **19 px** |
+| POW (4) | 111 px | **89 px** |
+| optionbox (4) | 30 px | 30 px |
+| scant (2) | **96 px** | 141 px |
+| **total** | 328 px | **279 px** |
+
+**B est le meilleur choix général, et il est excellent pour le vaisseau** : le
+vaisseau n'utilise presque pas le gris `666` (1 à 6 px selon la pose), donc y
+verser le beige foncé ne coûte quasiment rien — 3 à 6 px par pose. Le **scant
+est le seul à préférer A**, parce qu'il est le seul à utiliser massivement le
+gris moyen (82 px). Le choix est donc par sprite, ce qui est cohérent avec un
+geste manuel assumé.
+
+**Le vrai perdant est le scant**, et pas à cause du beige : il perd AUSSI son
+olive (index 12, 236 px sur trois poses), qui devient propre au stage. Rendu
+tout en gris, il perd son caractère organique. À noter puisque ça ouvre une
+option : le scant n'apparaît **qu'aux stages 1 et 7** — si ces deux stages
+réservaient le même index propre pour l'olive, il pourrait le garder. C'est le
+seul cas du corpus où un ennemi de lot justifierait qu'on accorde deux stages
+sur une couleur propre.
+
+## 4. Le point dur : après la fusion, il n'y a plus qu'UN noir
 
 C'est la contrainte à connaître avant de commencer, pas à découvrir à l'écran.
 
@@ -122,7 +176,7 @@ table de plans se simplifie, le test du nibble haut passe de `cmpa #$F0 / blo`
 à `cmpa #$10 / bhs`, et le nibble bas **perd ses deux `coma`** par étoile et par
 passe.
 
-## 4. Ce qui est automatique, ce qui ne l'est pas
+## 5. Ce qui est automatique, ce qui ne l'est pas
 
 **Automatique** — une table de correspondance appliquée aux PNG : les douze
 couleurs conservées, soit la très grande majorité des pixels. Vérifiable au
@@ -130,14 +184,14 @@ pixel près (l'image reconstruite doit rendre exactement les mêmes couleurs).
 
 **Manuel, par construction** :
 - les 2 580 px du §2 : trois couleurs à réattribuer à l'œil ;
-- les 6 793 px de noir du décor des tuiles, §3 ;
+- les 6 793 px de noir du décor des tuiles, §4 ;
 - le contraste des tuiles, que l'auteur a déjà annoncé ;
 - rien dans le code de dessin écrit à la main : la police passe automatiquement.
 
 **Code à toucher** (peu, et localisé) :
 - `checkpoint.unit.asm` : les deux `ldx #$FFFF` d'effacement des tampons
   deviennent `#$0000` ;
-- `starfield/obj.asm` : les quatre macros de test et la table de plans (§3) ;
+- `starfield/obj.asm` : les quatre macros de test et la table de plans (§4) ;
 - rien côté builder — `png2pal`, `gfxcomp` et le linker sont indifférents au
   choix des index.
 
@@ -146,7 +200,7 @@ gelé par un commun varie entre stages. Après migration il doit rendre
 « index CONTRAINTS 0-11, LIBRES 12-15 » et zéro défaut. C'est le critère
 d'acceptation de la campagne, vérifiable en une commande.
 
-## 5. Les tuiles des autres stages, pour mémoire
+## 6. Les tuiles des autres stages, pour mémoire
 
 Le schéma donne aux tuiles douze couleurs imposées et quatre choisies, là où
 elles choisissaient les seize. Ce qu'elles utilisent aujourd'hui :
@@ -167,7 +221,7 @@ geste manuel avait déjà été fait. Le **stage 2 est le cas extrême** avec qu
 index distincts : sa palette est dérivée de son tileset, personne ne l'a
 arbitrée. C'est lui qui dira si douze communs suffisent.
 
-## 6. Ordre proposé
+## 7. Ordre proposé
 
 1. **Le stage 1 seul**, de bout en bout : remap automatique des douze couleurs
    conservées, puis les quatre à la main, le noir du décor des tuiles, le champ
