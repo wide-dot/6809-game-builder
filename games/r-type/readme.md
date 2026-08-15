@@ -384,3 +384,17 @@ rapproche le résultat des properties v1 par contenu.
 
 `reference/` : matériel arcade et SMS (sprites, niveaux, musiques) servant de
 source d'authoring. `doc/` : notes de référence arcade (combat, scoring).
+
+`src/enemies/<ennemi>/images/original/` : les sprites arcade d'origine de CET
+ennemi, rangés par pose comme l'extracteur les sort (`<pose>/<n>_<adresse
+rom>.png` — l'adresse est le lien vers la ROM). Ce sont des images de
+**référence** pour le portage graphique, jamais une entrée de build : le
+`config.xml` ne lit que les PNG convertis à côté.
+
+Source : `re.arcade.r-type`, `out/sprites/` (l'extracteur les pose sur un
+plan 256×256 palettisé). Le 15/08/2026, le cast des stages 2-8 encore sans
+graphismes et les deux boss exportés ont été importés tels quels — 590 images,
+19 ennemis. Manquent, faute d'export amont : **gomander** (boss du stage 2 ;
+au catalogue de l'extracteur, mais son moteur `tile_grid indirect` ne sort
+pas), et **bellmite** (5), **bronco** (7), **bydo** (8), qui n'ont qu'une
+routine identifiée et aucune entrée de catalogue.
