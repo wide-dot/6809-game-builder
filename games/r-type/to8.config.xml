@@ -249,20 +249,20 @@
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <!-- Tete de $0C jusqu'a $0769, frontiere relevee a la main avec l'arene
-                     du stage 1, zero marge : si le commun grossit, le controle de scene
-                     refuse le build. -->
-                <zone page="$0C" address="$0000" size="$0769"/>
+                <!-- Tete de $0C jusqu'a $0A80, frontiere relevee a la main avec
+                     l'arene du stage 1 (relevee de $0769 le 15/08 pour loger le
+                     sequenceur endlevel) : si le commun grossit, le controle de
+                     scene refuse le build. -->
+                <zone page="$0C" address="$0000" size="$0A80"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete. Ces objets sont nommes
                  stage1.* parce qu'ils appartiennent au niveau ; le jour ou un
                  ennemi servira deux stages, ce sera une autre etape. -->
-            <!-- Demarre a la fin reelle du commun, relevee a la main : $0D59 en page
-                 $0C, marge a $0E00 — au-dela le controle de scene refuse le
-                 chevauchement. -->
+            <!-- Demarre ou la commune s'arrete ($0A80 depuis le 15/08) — au-dela
+                 le controle de scene refuse le chevauchement. -->
             <arena name="enemies">
-                <zone page="$0C" address="$0769" size="$3897"/>
+                <zone page="$0C" address="$0A80" size="$3580"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
@@ -1017,6 +1017,15 @@
                         <asm filename="src/common/flow/bossmusic/bossmusic.unit.asm"/>
                     </lwasm>
                 </file>
+                <!-- Le sequenceur de fin generique : le protocole du stage 1
+                     (timeout de boss, jingle, autopilote, fondu, releve de
+                     score) servi aux stages sans vrai boss. -->
+                <file name="common.endlevel" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/flow/endlevel.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/flow/endlevel/endlevel.unit.asm"/>
+                    </lwasm>
+                </file>
                 <file name="common.forcepod" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/forcepod.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1432,6 +1441,7 @@
                     <load name="common.missile"/>
                     <load name="common.missileflame"/>
                     <load name="common.bossmusic"/>
+                    <load name="common.endlevel"/>
                     <load name="common.forcepod"/>
                     <load name="common.reboundlaser"/>
                     <load name="common.counterairlaser"/>

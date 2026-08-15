@@ -22,7 +22,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page ; ObjID_forcepod
@@ -64,7 +64,7 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_initlevel1
         fdb   engineflames.Object ; ObjID_engineflames
         fdb   messages.Object ; ObjID_messages
-        fdb   stage.placeholder ; ObjID_endstage
+        fdb   endlevel.Object ; ObjID_endstage
         fdb   powOptionbox.Object ; ObjID_pow_optionbox
         fdb   bitdevice.Object ; ObjID_bitdevice
         fdb   forcepod.Object ; ObjID_forcepod
@@ -100,7 +100,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page ; ObjID_forcepod
@@ -175,7 +175,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
         fcb   map.RAM_OVER_CART+common.optionbox.page ; ObjID_pow_optionbox
         fcb   map.RAM_OVER_CART+common.bitdevice.page ; ObjID_bitdevice
         fcb   map.RAM_OVER_CART+common.forcepod.page ; ObjID_forcepod

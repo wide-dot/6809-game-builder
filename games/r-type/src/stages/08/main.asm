@@ -22,6 +22,9 @@ Ani_Asd_Index     EXPORT
 Img_Page_Index    EXPORT
 ; L'etat de la boucle : le joueur (page $11) l'ecrit a travers le lien.
 mainloop.state    EXPORT
+; La palette de noir, membre palette de CE direntry : la sequence de fin
+; commune l'installe avant de rendre la main.
+Pal_black         EXPORT
 
 ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
 ; residente des que le niveau est entier. Le scroll porte deja une page par
@@ -74,6 +77,10 @@ soundfx.frame     EXTERNAL
 sounds.level8.ymm EXTERNAL
 stage.music       equ sounds.level8.ymm
 
+; Le sequenceur de fin generique (protocole du stage 1, objet commun monte
+; au boot). Pas de jingle au stage 8 : son bloc musical n'a pas la place.
+endlevel.Object       EXTERNAL
+
 ; Le marqueur de musique du boss, seme par la wave : il pose le drapeau que
 ; stage.endTick releve pour changer de morceau.
 bossmusic.Object      EXTERNAL
@@ -122,6 +129,7 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "src/common/engine/api.asm"
         INCLUDE "src/common/cast.const.asm"
+        INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -173,20 +181,61 @@ stage.openingSequence
         rts
 
 ; ---------------------------------------------------------------------------
-; Les trois rendez-vous de la boucle commune. Le stage 2 n'a ni boss ni
-; sequence de fin : il ne peint rien de plus dans le verrou, ne change pas de
-; surimpression, et se termine au bout de la carte.
+; Les trois rendez-vous de la boucle commune, servis par l'objet commun
+; endlevel (le protocole du stage 1) : le fondu pixel dans le verrou, la
+; phase de surimpression publiée, et la fin décidée par la séquence —
+; combat de substitution (caméra au bout + timeout → boss réputé battu),
+; jingle, autopilote, fondu, relevé de score.
 ; ---------------------------------------------------------------------------
 stage.frameBlit
+        _Obj_RunB ObjID_endstage,#endstage.BLIT
         rts
 
-stage.overlayPhase fcb 0
+; La phase publiée est directement la variable résidente que l'objet écrit.
+stage.overlayPhase equ main.endstage.phase
+
+; L'état résident de la séquence : l'objet endlevel l'écrit, la boucle
+; commune lit la phase, le HUD arme et rend le relevé de score. Les noms
+; sont ceux du stage 1 — les mains sont des alternatives à la même
+; destination, leurs exports partagent les noms.
+main.endstage.counter    EXPORT
+main.endstage.phase      EXPORT
+main.endstage.scoreArmed EXPORT
+main.endstage.scoreDone  EXPORT
+main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
+main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
+main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
+main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
 
 stage.endTick
-        ldd   glb_camera_x_pos
-        cmpd  scroll_max
-        lbhs  stage.handOver
+        ; La sequence de fin decide, pas la camera — voir le commentaire des
+        ; trois rendez-vous. Pas de bloc musique de boss : la wave v1 du
+        ; niveau 8 n'a pas le marqueur, et son bloc musical n'a pas la place
+        ; des donnees.
+        _Obj_RunB ObjID_endstage,#endstage.TICK
+        cmpb  #endstage.STATUS_JINGLE
+        beq   stage.endTick.jingle
+        cmpb  #endstage.STATUS_DONE
+        beq   stage.endTick.done
         rts
+
+stage.endTick.jingle
+        ; Pas de jingle non plus (l'index v1 du niveau 8 ne portait ni boss
+        ; ni jingle) : on arrete simplement le theme, le fondu et le releve
+        ; de score se font en silence.
+        jsr   IrqOff
+        _GetCartPageB
+        pshs  b
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
+        ldx   #ymm.stop
+        jsr   paged.call
+        puls  b
+        _SetCartPageB
+        jsr   IrqOn
+        rts
+
+stage.endTick.done
+        jmp   stage.handOver
 
 stage.setup
         ; La collision terrain : le resident pointe ses operandes sur l'unite
@@ -208,6 +257,11 @@ stage.setup
         std   object_wave_data_start
         lda   #map.RAM_OVER_CART+stage8.wave.page
         sta   object_wave_data_page
+
+        ; Le sequencement de fin : remis a zero par l'objet commun, a
+        ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
+        ; les deux, comme au stage 1.
+        _Obj_RunB ObjID_endstage,#endstage.INIT
         rts
 
 ; Fin du stage 8 : la campagne est finie, retour au title.

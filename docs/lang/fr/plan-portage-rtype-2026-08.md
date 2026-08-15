@@ -590,6 +590,47 @@ en sachant que cette fenêtre CROISE les moitiés de 8 Ko de la page :
 l'offset $20BC se lit en $A0BC), lane tour complet 7/7 game over
 compris, corpus confiné aux images r-type.
 
+**Structure commune de fin de niveau (15/08/2026)** — demande auteur :
+« la structure commune propre, les ennemis en dernier ». Trois chantiers
+prouvés séparément. (A) Le tampon de répertoire est STATIQUE hors pool
+(la dette du 14/08) : le builder émet `loader.dir.buffer.SECTORS`, le
+loader le taille en tête de zone mémoire, `dir.load` n'alloue plus rien —
+le game over cesse de vivre au bord du gel. (B) La musique de boss se
+déclenche dans les stages 2-7 : les index désignent l'objet commun
+`bossmusic` (les waves 2/4/5/6/7 ont le marqueur v1 ; 3 et 8 n'en ont
+pas en v1 non plus), le endTick relève le drapeau, boss + jingle
+revoyagent avec chaque bloc musical 2-7 (le 8 n'a pas la place, son
+index v1 ne les avait pas). (C) La séquence de fin est GÉNÉRIQUE :
+l'objet commun `endlevel` (arène objects, +783 o — frontière
+commun/ennemis relevée à $0A80) parle le protocole du stage 1 — combat
+de substitution (caméra au bout + `endlevel.BOSS_HOLD` 500 trames, le
+timeout vaut victoire : le geste BOSS_ESCAPE), jingle + autopilote,
+fondu pixel, pause noire, RELEVÉ DE SCORE (hud.readout), silence des
+puces, DONE. Les mains 2-8 exportent `main.endstage.*` (alternatives,
+noms partagés), la ligne d'index `ObjID_endstage` pointe l'objet commun,
+`stage.setup` fait l'INIT (ouverture + checkpoint).
+
+La validation a débusqué un DORMANT de première grandeur, deux fois mal
+diagnostiqué : le dépaqueteur du lecteur YMM travaille sur une pile
+privée de 32 octets, sûre en v1 (tout tournait sous la VInt, IRQ
+masquées d'office) mais pas en v2 (frame.play tourne dans la boucle
+principale, IRQ ouvertes) — la 50 Hz qui tombe pendant la production y
+empile son état machine + la profondeur du handler et écrase
+`@stackContextPos`/`@flip` juste dessous : parité cassée, plus un wait
+vu en phase, ~1 trame/s. Une roulette de phase à CHAQUE lancement de
+morceau, retirée par tout changement d'implantation — les `ymm.stop`
+« correctifs » d'hier étaient des placebos de phase (retirés, les
+déclencheurs reprennent la forme nue du stage 1). Correctif engine : IRQ
+masquées tant que S est sur la pile privée, cas écrit
+(`docs/lang/en/migration/ymm-private-stack-irq.md`). Effet mesurable :
+les lanes sont redevenues REPRODUCTIBLES au frame près entre deux runs.
+Preuves : sonde musique 8/8, lane tour complet 7/7 deux fois avec fins
+identiques (76 415 trames — chaque stage joue désormais sa séquence
+complète), corpus confiné aux 20 images des trois consommateurs du
+lecteur (sound, mplus-test, r-type). En attente auteur : la durée du
+timeout (500 trames), et l'écran de score qui est celui du stage 1 tel
+quel.
+
 ## 4. Ce que ce plan ne couvre pas
 
 Le pipeline « projet de jeu » au-delà de ce que le modèle cible a déjà

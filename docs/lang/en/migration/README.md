@@ -73,6 +73,9 @@ practice; this is a reading order, not a schedule.
 10. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
 11. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
 12. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)
+12b. [The YMM private stack vs. the main-loop IRQ](ymm-private-stack-irq.md)
+    — a KEPT-V2 module lifted out of its interrupt context must re-establish
+    every guarantee that context gave it implicitly.
 
 **Getting a picture** — in the order that a wrong one is worth investigating.
 

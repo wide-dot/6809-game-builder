@@ -246,6 +246,18 @@ YVGM_do_MusicFrame
 ;------------------------------------------------------------------------------
 ymm.decompress
 ; initialize variables
+; IRQs MUST be masked while S sits on the private stack : the v1 ran this
+; whole player under the VInt (IRQs implicitly masked), the v2 streaming
+; adaptation runs it from the main loop — a 50 Hz IRQ landing here pushes
+; its 12-byte machine state plus the handler's own depth onto the 32-byte
+; private stack and smashes @stackContextPos/@flip/@zx0_bit right below it
+; (flip parity broken -> no wait byte ever seen in phase, the exact symptom
+; already fixed twice for other state this adaptation forgot). Phase decides
+; whether it hits : a coin flip on every launch. The caller's mask is
+; restored on every exit path (both funnel through @zx0_eof).
+; Migration case : docs/lang/en/migration/ymm-private-stack-irq.md
+                   pshs cc
+                   orcc #$50
                    sts @saveS1
                    lds #@stackContext
                    ldd #$80ff
@@ -341,9 +353,11 @@ ymm.decompress
                    sts @stackContextPos
 @zx0_eof           lds #0
 @saveS1            equ *-2
-                   rts
+                   puls cc,pc            ; restore the caller's IRQ mask (see entry)
 ; next call will resume here ...
 ymm.frame.resume   com @flip
+                   pshs cc               ; same private-stack IRQ contract as
+                   orcc #$50             ; ymm.decompress — see the entry note
                    sts @saveS1
                    lds @stackContextPos
                    puls d,x,y,u

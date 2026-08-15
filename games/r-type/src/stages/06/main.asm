@@ -22,6 +22,9 @@ Ani_Asd_Index     EXPORT
 Img_Page_Index    EXPORT
 ; L'etat de la boucle : le joueur (page $11) l'ecrit a travers le lien.
 mainloop.state    EXPORT
+; La palette de noir, membre palette de CE direntry : la sequence de fin
+; commune l'installe avant de rendre la main.
+Pal_black         EXPORT
 
 ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
 ; residente des que le niveau est entier. Le scroll porte deja une page par
@@ -74,7 +77,12 @@ soundfx.frame     EXTERNAL
 ; music/ymm.unit.asm — un fournisseur par nom).
 sounds.level6.ymm EXTERNAL
 sounds.boss.ymm   EXTERNAL
+sounds.clearstage.ymm EXTERNAL
 stage.music       equ sounds.level6.ymm
+
+; Le sequenceur de fin generique et le jingle qu'il demande au stage de
+; jouer (protocole du stage 1, objet commun monte au boot).
+endlevel.Object       EXTERNAL
 
 ; Le marqueur de musique du boss, seme par la wave : il pose le drapeau que
 ; stage.endTick releve pour changer de morceau.
@@ -124,6 +132,7 @@ emitterFlash.Object EXTERNAL
 
         INCLUDE "src/common/engine/api.asm"
         INCLUDE "src/common/cast.const.asm"
+        INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -175,14 +184,31 @@ stage.openingSequence
         rts
 
 ; ---------------------------------------------------------------------------
-; Les trois rendez-vous de la boucle commune. Le stage 2 n'a ni boss ni
-; sequence de fin : il ne peint rien de plus dans le verrou, ne change pas de
-; surimpression, et se termine au bout de la carte.
+; Les trois rendez-vous de la boucle commune, servis par l'objet commun
+; endlevel (le protocole du stage 1) : le fondu pixel dans le verrou, la
+; phase de surimpression publiée, et la fin décidée par la séquence —
+; combat de substitution (caméra au bout + timeout → boss réputé battu),
+; jingle, autopilote, fondu, relevé de score.
 ; ---------------------------------------------------------------------------
 stage.frameBlit
+        _Obj_RunB ObjID_endstage,#endstage.BLIT
         rts
 
-stage.overlayPhase fcb 0
+; La phase publiée est directement la variable résidente que l'objet écrit.
+stage.overlayPhase equ main.endstage.phase
+
+; L'état résident de la séquence : l'objet endlevel l'écrit, la boucle
+; commune lit la phase, le HUD arme et rend le relevé de score. Les noms
+; sont ceux du stage 1 — les mains sont des alternatives à la même
+; destination, leurs exports partagent les noms.
+main.endstage.counter    EXPORT
+main.endstage.phase      EXPORT
+main.endstage.scoreArmed EXPORT
+main.endstage.scoreDone  EXPORT
+main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
+main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
+main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
+main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
 
 stage.endTick
         ; La musique du boss : le marqueur seme par la wave pose ce drapeau, et
@@ -193,23 +219,39 @@ stage.endTick
         jsr   IrqOff
         _GetCartPageB
         pshs  b
-        ; Arreter le flux AVANT de relancer : le stage 4 a montre que relancer
-        ; `ymm.obj.play` sur un lecteur en cours de flux desynchronise l'anneau
-        ; (plus aucun wait vu, ~1 trame/s) — le meme phenomene que le handOver.
-        ; Le stage 1 s'en passe sur SON boss : roulette de phase, pas un modele.
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.stop
-        jsr   paged.call
+        ; Relancer en plein flux est SAIN : ymm.obj.play fait table rase
+        ; complete. Les gels attribues un temps au relancement etaient l'IRQ
+        ; tombant dans la pile privee du depaqueteur — corrige dans le module
+        ; (docs/lang/en/migration/ymm-private-stack-irq.md).
         _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
         jsr   IrqOn
         clr   globals.nextGameMode
 stage.endTick.noBossMusic
-        ldd   glb_camera_x_pos
-        cmpd  scroll_max
-        lbhs  stage.handOver
+        ; La sequence de fin decide, pas la camera — voir le commentaire des
+        ; trois rendez-vous.
+        _Obj_RunB ObjID_endstage,#endstage.TICK
+        cmpb  #endstage.STATUS_JINGLE
+        beq   stage.endTick.jingle
+        cmpb  #endstage.STATUS_DONE
+        beq   stage.endTick.done
         rts
+
+stage.endTick.jingle
+        ; Le jingle de fin — l'objet ne peut pas monter le lecteur depuis sa
+        ; page, donc c'est le stage qui le fait, comme au stage 1.
+        jsr   IrqOff
+        _GetCartPageB
+        pshs  b
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.clearstage.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
+        puls  b
+        _SetCartPageB
+        jsr   IrqOn
+        rts
+
+stage.endTick.done
+        jmp   stage.handOver
 
 stage.setup
         ; La collision terrain : le resident pointe ses operandes sur l'unite
@@ -231,6 +273,11 @@ stage.setup
         std   object_wave_data_start
         lda   #map.RAM_OVER_CART+stage6.wave.page
         sta   object_wave_data_page
+
+        ; Le sequencement de fin : remis a zero par l'objet commun, a
+        ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
+        ; les deux, comme au stage 1.
+        _Obj_RunB ObjID_endstage,#endstage.INIT
         rts
 
 ; Fin du stage 6 : on enchaîne sur le stage 7. La campagne remonte
