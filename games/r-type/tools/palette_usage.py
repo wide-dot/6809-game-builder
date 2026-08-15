@@ -203,6 +203,29 @@ def palette_de(path):
     return out
 
 
+CAST_LOT = re.compile(r'^cast\.lot\.(\w+)\s+equ\b', re.M)
+CAST_STAGE = re.compile(r'^cast\.(\w+)\s+equ\s+(.+)$', re.M)
+
+
+def lots_du_stage(stage, base):
+    """Les lots que CE stage charge, lus dans cast.const.asm — la table qui
+    fait foi au runtime. Un lot n'est pas une unite : `bugpstaff` en porte
+    deux. La correspondance vit dans la scene `scenes.lot.<lot>` du config,
+    donc on ne la redit pas ici, on la lira la-bas."""
+    p = os.path.join(base, 'src/common/cast.const.asm')
+    if not os.path.isfile(p):
+        return None
+    txt = open(p, errors='replace').read()
+    connus = set(CAST_LOT.findall(txt))
+    for nom, expr in CAST_STAGE.findall(txt):
+        if nom != stage:
+            continue
+        if expr.strip() == '0':
+            return set()
+        return {m for m in re.findall(r'cast\.lot\.(\w+)', expr) if m in connus}
+    return None
+
+
 def planche(sortie, palettes, contraints, px_img, px_code, defauts):
     """La planche de pastilles : un index par ligne, une palette de stage par
     colonne. On y lit d'un coup ce qu'un tableau de chiffres fait deviner —
@@ -277,6 +300,11 @@ def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--detail', action='store_true')
     ap.add_argument('--histogramme', action='store_true')
+    ap.add_argument('--avec-lots', metavar='STAGE', nargs='?', const='stage1',
+                    help="replie dans les communs les lots que CE stage charge "
+                         "(defaut stage1, dont le cast est le plus large) : le "
+                         "masque vient de cast.const.asm, les unites de la "
+                         "scene de lot correspondante")
     ap.add_argument('--sources', action='store_true',
                     help="l'inventaire exhaustif de ce qui entre dans "
                          "l'analyse : unites, images, sources de code, palettes")
@@ -321,6 +349,22 @@ def main():
     if not communs:
         sys.exit("aucun objet commun trouve : le config a-t-il change de forme ?")
 
+    # Les lots repliés dans les communs, sur demande : un ennemi de la
+    # bibliotheque que le stage le plus fourni charge contraint la palette
+    # partout ou il reparait, ce qui en fait un commun de fait.
+    replies = []
+    if args.avec_lots:
+        noms_lots = lots_du_stage(args.avec_lots, base)
+        if noms_lots is None:
+            sys.exit(f"cast.{args.avec_lots} introuvable dans "
+                     "src/common/cast.const.asm")
+        for lot in sorted(noms_lots):
+            for u in scenes.get(f'scenes.lot.{lot}', []):
+                if u in images and u not in communs and u not in replies:
+                    replies.append(u)
+        communs = communs + replies
+        lots = [n for n in lots if n not in replies]
+
     # --- relevé
     par_index = {i: [] for i in range(NB_INDEX)}
     px_img = {i: 0 for i in range(NB_INDEX)}       # pixels venus des png
@@ -361,6 +405,9 @@ def main():
     print(f"OBJETS COMMUNS — {len(communs)} unites, {nb_png} png"
           + (f", {len(main_par_fichier)} source(s) de dessin ecrit a la main"
              if main_par_fichier else ", aucun dessin ecrit a la main"))
+    if replies:
+        print(f"    dont {len(replies)} lot(s) replie(s) depuis le cast de "
+              f"{args.avec_lots} : " + ' '.join(replies))
     for f, (nom, ix) in sorted(main_par_fichier.items()):
         print(f"    a la main : {f} ({nom}) -> "
               + ' '.join(str(i) for i in sorted(ix)))
