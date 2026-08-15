@@ -122,6 +122,15 @@ dirSkew   fcb 0    ; Interleave skew of that directory's track ((track*2)&6,
 ; directory id : [physical disk] [face] [track] [sector 0-based].
 loader.dir.locations
         _loader.dir.locations.table
+
+; The static directory buffer : carved from the HEAD of the memory pool at
+; init (see loader.scene.loadDefault), sized by the builder to the biggest
+; directory of the target (loader.dir.buffer.SECTORS, generated in
+; gen/directories/locations.asm). Reading a directory never allocates :
+; the swap used to need up to (sectors*256)+4 CONTIGUOUS pool bytes and
+; froze on fragmentation (r-type game over, 14/08/2026).
+loader.dir.buffer      equ loader.memoryPool
+loader.dir.buffer.SIZE equ loader.dir.buffer.SECTORS*256
 nsect  fcb   0     ; Sector counter
 track  fcb   0     ; Track number
 sector fcb   0     ; Sector number
@@ -159,9 +168,10 @@ linkData.currentSymbol  fdb   0
 ;-----------------------------------------------------------------
 loader.scene.loadDefault
 
-        ; init allocator
-        ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
-        ldx   #loader.memoryPool
+        ; init allocator - the pool starts AFTER the static directory
+        ; buffer, which owns the head of the memory area
+        ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE-loader.dir.buffer.SIZE
+        ldx   #loader.memoryPool+loader.dir.buffer.SIZE
         jsr   tlsf.init
         ; route tlsf errors through the log block instead of the anonymous
         ; tlsf.err.loop : A carries the legacy code at callback time
@@ -504,10 +514,9 @@ loader.dir.load.do
         ldu   >loader.dir
         beq   >
         cmpa  dir.header.diskId,u
-        bne   @free
+        bne   >                   ; Requested diskId is different : reload into
+                                  ; the static buffer, nothing to free
         rts                       ; Requested diskId is already loaded, return
-@free   
-        jsr   tlsf.free           ; Requested diskId is different, free actual directory
 !
         ldd   #ptsec
         std   >loader.dir
@@ -572,9 +581,12 @@ loader.dir.load.do
 ; read remaining directory entries
         lda   dir.header.nsector,y ; init nb sectors to read      
         sta   >nsect
-; allocate memory
-        clrb                      ; D = nb of sectors * 256
-        jsr   tlsf.malloc
+; the static buffer receives the whole directory ; a bigger one can only be
+; a foreign or corrupt disk - route it through the insert prompt like a
+; failed id check (A still holds dir.header.nsector here)
+        cmpa  #loader.dir.buffer.SECTORS
+        bhi   @info
+        ldu   #loader.dir.buffer
         stu   >loader.dir
         stu   <map.DK.BUF         ; Next sectors will be read into the new
                                   ; buffer (BUF MSB is pre-incremented by the
@@ -599,7 +611,7 @@ loader.dir.load.do
         andb  #$0f                ; wrap the sclist index like ldsec does
         dec   >nsect              ; Next
         bne   @load               ; sector
-; copy first sector into allocated memory
+; copy first sector into the static buffer
         lda   #128
         ldx   #ptsec
         ldy   loader.dir

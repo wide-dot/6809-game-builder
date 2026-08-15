@@ -97,6 +97,31 @@ public final class DirectoryLocations {
 		out.append("loader.dir.bootPhysicalDisk equ ").append(rows.get(0).disk)
 		   .append(System.lineSeparator());
 
+		// static directory buffer sizing : the loader reads a directory into
+		// a buffer carved out of the head of its pool, never allocated — a
+		// fragmented pool used to freeze the game-over swap, which needed up
+		// to (sectors*256)+4 CONTIGUOUS bytes. The buffer is the biggest
+		// directory of the target ; sizes come from the reservations the
+		// placement scan just made (7-byte header + blocks * BLOCK_SIZE,
+		// the exact formula the emission asserts against).
+		int maxSectors = 1;
+		for (int id = 0; id < rows.size(); id++) {
+			com.widedot.m6809.gamebuilder.spi.globals.DirReservations.Reservation r =
+					ctx.dirReservations.get(id);
+			if (r == null) {
+				throw new Exception("directory " + id + " has no reservation — "
+						+ "the placement scan must reserve before locations are generated");
+			}
+			int size = 7 + (r.endId - r.baseId)
+					* com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin.BLOCK_SIZE;
+			int nsector = (int) Math.ceil(size / 256.0);
+			if (nsector > maxSectors) {
+				maxSectors = nsector;
+			}
+		}
+		out.append("loader.dir.buffer.SECTORS equ ").append(maxSectors)
+		   .append(System.lineSeparator());
+
 		String path = ctx.path + File.separator + "gen" + File.separator
 				+ "directories" + File.separator + "locations.asm";
 		Files.createDirectories(Paths.get(FileUtil.getDir(path)));

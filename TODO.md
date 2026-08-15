@@ -913,9 +913,11 @@ En veille sur décision (31/07/2026) :
   Candidats si un jour : le `theme.ymm` partagé des dossiers 04/07, ou une
   conversion vgm2ymm dédiée.
 
-- Loader : le tampon de répertoire vit dans le pool et exige jusqu'à
-  1540 octets CONTIGUS à chaque échange — le game over de r-type est passé
-  à 83 octets du gel par simple fragmentation (14/08/2026, récit dans le
-  plan r-type). Correctif de fond : tampon de répertoire STATIQUE hors
-  pool, dimensionné par le builder (max des répertoires du target, équate
-  dans gen/directories/locations.asm).
+- [x] Loader : tampon de répertoire STATIQUE hors pool (15/08/2026) — le
+      builder émet `loader.dir.buffer.SECTORS` (max des répertoires du
+      target) dans gen/directories/locations.asm, le loader taille le
+      tampon en tête de la zone mémoire et démarre le pool juste après ;
+      `dir.load` n'alloue plus rien. Le game over de r-type était passé à
+      83 octets du gel par simple fragmentation (le tampon exigeait
+      jusqu'à 1540 octets CONTIGUS à chaque échange), et le chantier
+      musique l'a fait franchir une fois — plus possible par construction.

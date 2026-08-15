@@ -79,8 +79,9 @@ public final class PoolMapReport {
 		out.append(nl);
 		out.append("  served = the block TLSF really reserves : ")
 		   .append(BLOCK_HEADER).append(" bytes of header, rounded up to the size class.").append(nl);
-		out.append("  NOT counted : the directory, the scene file and the loader's slot table,").append(nl);
-		out.append("  which share this pool ; and a scene swap holds both scenes at once.").append(nl);
+		out.append("  NOT counted : the scene file and the loader's slot table, which share").append(nl);
+		out.append("  this pool ; and a scene swap holds both scenes at once. (The directory").append(nl);
+		out.append("  lives in its own static buffer, carved off the pool head since 15/08.)").append(nl);
 		out.append("  A scene's total is therefore a FLOOR. Confirm on the machine with tlsf.err").append(nl);
 		out.append("  (0 = fine, 3 = out of memory).").append(nl);
 		out.append(nl);
