@@ -611,7 +611,7 @@ hud.curDigit     fcb 0
 hud.scoreDigPos  fcb 0
 
 ; ===========================================================================
-; STAGE-CLEARED FONT  (duplicated verbatim from objects/levels/00/text/text.asm)
+; STAGE-CLEARED FONT  (duplicated from objects/levels/00/text/text.asm)
 ; ---------------------------------------------------------------------------
 ; Full title-screen glyph set, copied here so the phase-4 STAGE CLEARED / STAGE
 ; SCORE text draws letters without depending on the title objects bank.
@@ -619,6 +619,13 @@ hud.scoreDigPos  fcb 0
 ; ~8px-tall glyph at U (RAMA $C000-$DFFF), both banks via LEAU -$2000, the caller
 ; advancing leau 1,u per char. Same 4px scale as the HUD digits (DRAW_Img_hud_*).
 ; Object-local labels -> the title copy and this one do not clash at link.
+; V2-DEVIATION (15/08/2026, decision auteur) : le fond des cellules peint
+; l'INDEX 0, jamais le 15 — la copie v1 posait $F, noir sur la palette du
+; title mais une couleur de jeu (saumon) sur celles des stages : des paves
+; derriere chaque lettre du releve. L'index 0 est noir dans TOUTES les
+; palettes (convention transparence/bordure). Transformation mecanique
+; F->0 sur les immediats LDA des 104 glyphes, l'espace devenant tout noir
+; (son role : effacer sous les chiffres qui tournent).
 ; ===========================================================================
 letter_addr     fdb DRAW_text_space                * 32 = space
                 fdb DRAW_text_exclam               * 33 = !
@@ -685,13 +692,17 @@ DRAW_text_dot
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$fd
+	LDA #$0d
+
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA ,U
 	STA -40,U
 	STA -80,U
@@ -703,7 +714,8 @@ DRAW_text_dot
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -719,19 +731,24 @@ DRAW_text_z
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f6
+	LDA #$06
+
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
 	LEAU -40,U
 
@@ -741,20 +758,25 @@ DRAW_text_z
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
 	STA -40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -762,13 +784,16 @@ DRAW_text_3
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
-	LDA #$f6
+	LDA #$06
+
 	STA -40,U
-	LDA #$ff
+	LDA #$00
+
 	STA -80,U
 	STA -120,U
 	LDA #$55
@@ -781,20 +806,25 @@ DRAW_text_3
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -802,40 +832,51 @@ DRAW_text_o
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -846,38 +887,48 @@ DRAW_text_w
 	LDA #$66
 	STA ,U
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	LDA #$55
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -885,19 +936,24 @@ DRAW_text_b
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
 	LEAU -40,U
 
@@ -907,10 +963,12 @@ DRAW_text_b
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
-	LDA #$f0
+	LDA #$00
+
 	STA -40,U
 	LDA #$d0
 	STA -120,U
@@ -921,7 +979,8 @@ DRAW_text_b
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -929,26 +988,32 @@ DRAW_text_i
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$fd
+	LDA #$0d
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$f0
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -965,7 +1030,8 @@ DRAW_text_5
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
@@ -973,9 +1039,11 @@ DRAW_text_5
 	STA 80,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -985,19 +1053,23 @@ DRAW_text_5
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA -80,U
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1007,15 +1079,19 @@ DRAW_text_d
 
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1025,20 +1101,25 @@ DRAW_text_d
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -1048,39 +1129,49 @@ DRAW_text_q
 
 	LDA #$65
 	STA ,U
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
 	LDA #$55
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f6
+	LDA #$06
+
 	STA 80,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -1088,38 +1179,48 @@ DRAW_text_8
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1130,15 +1231,18 @@ DRAW_text_2
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA -80,U
 	STA -120,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
@@ -1150,16 +1254,20 @@ DRAW_text_2
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1170,12 +1278,15 @@ DRAW_text_n
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LDA #$65
 	STA ,U
@@ -1184,22 +1295,27 @@ DRAW_text_n
 	STA -80,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1210,35 +1326,43 @@ DRAW_text_v
         pshs u
 	LEAU 40,U
 
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	LDA #$55
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1249,16 +1373,20 @@ DRAW_text_exclam
         pshs u
 	LEAU 40,U
 
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1270,7 +1398,8 @@ DRAW_text_exclam
 	LDA #$60
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -1287,33 +1416,43 @@ DRAW_text_c
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$0f
+	LDA #$00
+
 	STA ,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA -40,U
@@ -1327,37 +1466,47 @@ DRAW_text_h
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1368,35 +1517,43 @@ DRAW_text_4
         pshs u
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LDA #$66
 	STA ,U
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1407,19 +1564,24 @@ DRAW_text_e
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
 	LEAU -40,U
 
@@ -1429,7 +1591,8 @@ DRAW_text_e
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$f0
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA -80,U
@@ -1449,7 +1612,8 @@ DRAW_text_9
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
@@ -1457,9 +1621,11 @@ DRAW_text_9
 	STA 80,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1469,16 +1635,20 @@ DRAW_text_9
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1489,17 +1659,22 @@ DRAW_text_p
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
@@ -1510,19 +1685,23 @@ DRAW_text_p
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
 	STA ,U
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -1530,36 +1709,44 @@ DRAW_text_m
         pshs u
 	LEAU 40,U
 
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	LDA #$66
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	LDA #$dd
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1570,40 +1757,50 @@ DRAW_text_x
         pshs u
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LDA #$66
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1611,26 +1808,32 @@ DRAW_text_1
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$fd
+	LDA #$0d
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$f0
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -1647,42 +1850,53 @@ DRAW_text_copy
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LDA #$65
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA -40,U
-	LDA #$fd
+	LDA #$0d
+
 	STA -120,U
 	LDA #$66
 	STA ,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1690,40 +1904,51 @@ DRAW_text_u
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1731,7 +1956,8 @@ DRAW_text_7
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -1747,20 +1973,25 @@ DRAW_text_7
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1768,40 +1999,50 @@ DRAW_text_k
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LDA #$66
 	STA ,U
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA ,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -1815,33 +2056,40 @@ DRAW_text_s
 	STA 80,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA -40,U
 	STA -80,U
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1849,18 +2097,23 @@ DRAW_text_f
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -1870,7 +2123,8 @@ DRAW_text_f
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -1880,7 +2134,8 @@ DRAW_text_f
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1888,38 +2143,46 @@ DRAW_text_l
         pshs u
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 40,U
 	STA ,U
 	STA -40,U
 	STA -80,U
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -1927,40 +2190,50 @@ DRAW_text_0
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -1968,39 +2241,49 @@ DRAW_text_y
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
 	STA ,U
 	STA -40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -2008,27 +2291,33 @@ DRAW_text_a
         pshs u
 	LEAU 40,U
 
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 	LDA #$66
 	STA ,U
-	LDA #$6f
+	LDA #$60
+
 	STA -40,U
 	STA -80,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$f0
+	LDA #$00
+
 	STA 120,U
 	LDA #$50
 	STA 80,U
@@ -2049,16 +2338,20 @@ DRAW_text_t
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
 	STA 40,U
-	LDA #$f6
+	LDA #$06
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$fd
+	LDA #$0d
+
 	STA -120,U
 	LEAU -40,U
 
@@ -2068,7 +2361,8 @@ DRAW_text_t
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -2078,7 +2372,8 @@ DRAW_text_t
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -2086,7 +2381,8 @@ DRAW_text_space
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -2101,7 +2397,8 @@ DRAW_text_space
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	STA 40,U
@@ -2118,19 +2415,24 @@ DRAW_text_6
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	LDA #$55
 	STA 80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$66
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
@@ -2140,19 +2442,23 @@ DRAW_text_6
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA -80,U
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
 
@@ -2160,40 +2466,50 @@ DRAW_text_j
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
-	LDA #$ff
+	LDA #$00
+
 	STA -40,U
 	STA -80,U
 	STA -120,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	LDA #$55
 	STA 40,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
 	puls u,pc
 
@@ -2201,16 +2517,20 @@ DRAW_text_r
         pshs u
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LDA #$66
 	STA ,U
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
 	LEAU -40,U
@@ -2221,20 +2541,25 @@ DRAW_text_r
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA ,U
 	STA -40,U
-	LDA #$6f
+	LDA #$60
+
 	STA -80,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$ff
+	LDA #$00
+
 	STA -120,U
 	puls u,pc
 
@@ -2242,38 +2567,48 @@ DRAW_text_g
         pshs u
 	LEAU 40,U
 
-	LDA #$1f
+	LDA #$10
+
 	STA -120,U
-	LDA #$5f
+	LDA #$50
+
 	STA 40,U
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
 	STA -80,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
-	LDA #$f5
+	LDA #$05
+
 	STA 80,U
 	LEAU -40,U
 
-	LDA #$f1
+	LDA #$01
+
 	STA -120,U
 
 	LEAU -$2000,U
 	LEAU 40,U
 
-	LDA #$6f
+	LDA #$60
+
 	STA ,U
 	STA -40,U
-	LDA #$5f
+	LDA #$50
+
 	STA 80,U
 	STA 40,U
-	LDA #$ff
+	LDA #$00
+
 	STA 120,U
 	STA -80,U
 	STA -120,U
 	LEAU -40,U
 
-	LDA #$df
+	LDA #$d0
+
 	STA -120,U
 	puls u,pc
