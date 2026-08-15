@@ -11,17 +11,24 @@
 ; niveau 7 joue. Le dossier contient aussi `theme.ymm` (le thème partagé du
 ; niveau 4) et `music.ymm` (copie de celui du niveau 2), non retenus.
 ;
-; Le boss et le jingle de fin ne sont PAS embarqués : seul le main du
-; stage 1 les joue aujourd'hui, et les exporter d'ici rendrait leurs noms
-; multi-fournisseurs — chaque bloc musical redeviendrait un fichier indexé
-; du pool, la fragilité exacte du game over (leçon du chantier collision).
+; Le boss et le jingle de fin voyagent avec le morceau, comme au stage 1 :
+; rien ne les rechargera au moment où ils serviront. Leurs noms sont
+; multi-fournisseurs (chaque bloc les porte), donc ce fichier reste indexé
+; le temps du stage — ~40 octets de pool, sans danger depuis que le tampon
+; de répertoire est statique hors pool (15/08).
 ;*******************************************************************************
 
 sounds.level7.ymm     EXPORT
+sounds.boss.ymm       EXPORT
+sounds.clearstage.ymm EXPORT
 
  SECTION code
 
 sounds.level7.ymm
         INCLUDEBIN "src/stages/07/music/adnz/ymm/rtype-stage4.ymm"
+sounds.boss.ymm
+        INCLUDEBIN "src/common/flow/bossmusic/music/ymm/music.ymm"
+sounds.clearstage.ymm
+        INCLUDEBIN "src/common/flow/clearstage/music/ymm/music.ymm"
 
  ENDSECTION

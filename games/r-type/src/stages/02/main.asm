@@ -79,7 +79,12 @@ soundfx.frame     EXTERNAL
 ; Le morceau de CE stage, charge par sa scene au creneau musical de la page
 ; $1A (music/ymm.unit.asm — le choix du fichier v1 y est justifie).
 sounds.level2.ymm EXTERNAL
+sounds.boss.ymm   EXTERNAL
 stage.music       equ sounds.level2.ymm
+
+; Le marqueur de musique du boss, seme par la wave : il pose le drapeau que
+; stage.endTick releve pour changer de morceau.
+bossmusic.Object      EXTERNAL
 
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
@@ -186,6 +191,27 @@ stage.frameBlit
 stage.overlayPhase fcb 0
 
 stage.endTick
+        ; La musique du boss : le marqueur seme par la wave pose ce drapeau, et
+        ; c'est ici qu'on change de morceau — la v1 fait de meme (main.asm:270),
+        ; le lecteur ne pouvant pas etre monte depuis l'objet marqueur.
+        lda   globals.nextGameMode
+        beq   stage.endTick.noBossMusic
+        jsr   IrqOff
+        _GetCartPageB
+        pshs  b
+        ; Arreter le flux AVANT de relancer : le stage 4 a montre que relancer
+        ; `ymm.obj.play` sur un lecteur en cours de flux desynchronise l'anneau
+        ; (plus aucun wait vu, ~1 trame/s) — le meme phenomene que le handOver.
+        ; Le stage 1 s'en passe sur SON boss : roulette de phase, pas un modele.
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
+        ldx   #ymm.stop
+        jsr   paged.call
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        puls  b
+        _SetCartPageB
+        jsr   IrqOn
+        clr   globals.nextGameMode
+stage.endTick.noBossMusic
         ldd   glb_camera_x_pos
         cmpd  scroll_max
         lbhs  stage.handOver

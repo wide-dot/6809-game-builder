@@ -74,6 +74,10 @@ soundfx.frame     EXTERNAL
 sounds.level8.ymm EXTERNAL
 stage.music       equ sounds.level8.ymm
 
+; Le marqueur de musique du boss, seme par la wave : il pose le drapeau que
+; stage.endTick releve pour changer de morceau.
+bossmusic.Object      EXTERNAL
+
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
 PaletteFade           EXTERNAL

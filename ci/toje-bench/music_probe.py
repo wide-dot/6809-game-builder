@@ -32,10 +32,10 @@ MUSIC = {
     8: "stages/08/music/adnz/ymm/theme.ymm",
 }
 BOSS = "common/flow/bossmusic/music/ymm/music.ymm"
-# Only stage 1's block carries boss+clearstage : the other stages don't play
-# them, and exporting the shared names from every block would make each one
-# an indexed pool file (the collision-chantier lesson).
-HAS_BOSS = {1}
+# Every stage block up to 7 carries boss+clearstage (the shared names make
+# each block an indexed pool file — affordable since the directory buffer
+# went static). Stage 8 has no room for them, and its v1 index had neither.
+HAS_BOSS = {1, 2, 3, 4, 5, 6, 7}
 
 t = Toje()
 t.boot_floppy(image)

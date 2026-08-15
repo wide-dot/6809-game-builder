@@ -37,7 +37,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
 
 Obj_Index_Address
@@ -79,7 +79,7 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_dobkeratops_explosion
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
-        fdb   stage.placeholder ; ObjID_bossmusic
+        fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   bink.Object ; ObjID_bink
 
 Ani_Page_Index
@@ -115,7 +115,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
 
 Ani_Asd_Index
@@ -190,5 +190,5 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
-        fcb   map.RAM_OVER_CART+stage6.page ; ObjID_bossmusic
+        fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
