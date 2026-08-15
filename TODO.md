@@ -907,6 +907,27 @@ En veille sur décision (31/07/2026) :
 - [x] Contrat d'attributs : analyses (XML vs YAML, DSL), loader StAX +
       positions source, specs typées + Validator, XSD généré (option `-x`)
 
+- r-type : COULEURS de l'ecran STAGE n CLEARED faussees dans les stages
+  2-8 (constat auteur 15/08). Enquete menee, a reprendre avec un oeil
+  frais — faits MESURES : (1) les cellules des glyphes de la police du
+  title portent un fond en index 15 (632 pixels releves en VRAM sur les
+  lignes de texte) ; (2) le stage 1 n'a l'air juste que par effet de
+  bord : sa sequence de boss (fadetotunnel / pal-inside-*) laisse au
+  moment du releve une palette aux index de fond NOIRCIS, que les stages
+  sans boss n'ont pas ; (3) au releve des stages 2-8, Pal_current est
+  reste sur Pal_black jamais pousse (l'entree de stage le pose, la
+  sequence generique ne re-arme rien) et le materiel garde un reliquat ;
+  (4) pousser Pal_stage au moment du releve rend les fonds de glyphes
+  VISIBLES (jaune $0C90/index 12 et suivants) au lieu de les cacher.
+  Pistes, dans l'ordre : une PALETTE DE RELEVE dediee (texte + HUD +
+  vaisseau, fonds noirs — l'equivalent de ce que la fin de boss du
+  stage 1 produit par accident), installee par hud.readout au seed ;
+  verifier au passage qui pousse la palette de gameplay des stages 2-8
+  (leur openingSequence est vide, l'armement passe par checkpoint.load)
+  et si l'IRQ re-pousse [Pal_current] chaque trame (mes pokes registre
+  n'ont pas tenu). Les essais de cette nuit sont REVERTES, l'arbre est
+  au corpus.
+
 - r-type : la musique du stage 6 est un CHOIX EN ATTENTE de l'auteur —
   aucun asset ni en v1 ni en v2 (pas de dossier music dans le niveau 06),
   le direntry `stage6.music.ymm` rejoue l'unité du stage 1 en attendant.
