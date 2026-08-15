@@ -66,6 +66,12 @@ ext_variables_size           equ 20  ; per dynamic object
 * puis la fenetre cartouche (gel au 2e passage du stage 1). Le pool rend un
 * objet (nb_dynamic_objects 45 -> 44) : sa BASE ne bouge pas ($87DB), tout le
 * haut descend de 117 et la pile passe a 145 octets ($9E5F-$9EF0).
+* 2026-08-15 : profondeur MESUREE sous toje (sentinelle $55 sous S, campagne
+* complete : morts, rechargements de checkpoint, game over, sequences de fin,
+* stages 1..8) : 84 octets au pic. Le debordement de 28 etait donc reel, pas
+* un bug annexe ; et les 145 gardent ~60 octets de marge — a re-mesurer quand
+* les casts d'ennemis reels (chaines RunPgSubRoutine plus profondes) seront
+* branches, avant d'envisager de rendre le pas de 117 au pool.
 GLOBALS_BASE                 equ $9DCB
 Dynamic_Object_RAM_End       equ GLOBALS_BASE-nb_static_objects*object_size
 Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size

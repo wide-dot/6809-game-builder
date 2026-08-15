@@ -168,7 +168,9 @@ emitterFlash.Object EXTERNAL
 ; Ce qui distingue ce stage
 ;*******************************************************************************
 ; Les points de reprise de CE stage, en tuiles de collision (24 px), la
-; sentinelle -1 en butoir — la table du game mode v1.
+; sentinelle -1 en butoir. La wave arcade de ce stage ne seme AUCUN objet
+; checkpoint (comme sa table de reference v1, reduite au point de depart) :
+; on repart du debut du niveau a chaque mort.
 checkpoint.positions EXPORT
 checkpoint.positions
         fcb   0

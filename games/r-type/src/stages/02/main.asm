@@ -177,10 +177,15 @@ emitterFlash.Object EXTERNAL
 ; Ce qui distingue ce stage
 ;*******************************************************************************
 ; Les points de reprise de CE stage, en tuiles de collision (24 px), la
-; sentinelle -1 en butoir — la table du game mode v1.
+; sentinelle -1 en butoir. La source est la WAVE : l'arcade seme un objet
+; checkpoint ($0A80,ObjID_checkpoint dans wave.asm) et sa position est son
+; horodatage divise par 128 — 128 trames par tuile, l'inverse exact de la
+; vitesse de scroll (cf. src/common/flow/checkpoint.unit.asm). La table de
+; reference v1 (src/common/state/checkpoint/checkpoint-data.asm) concorde.
 checkpoint.positions EXPORT
 checkpoint.positions
         fcb   0
+        fcb   21
         fcb   -1
 
 ; Ce stage n'a pas de sequence d'ouverture : le banc y entre par un echange,
