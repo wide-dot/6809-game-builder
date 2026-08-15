@@ -277,6 +277,9 @@ def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--detail', action='store_true')
     ap.add_argument('--histogramme', action='store_true')
+    ap.add_argument('--sources', action='store_true',
+                    help="l'inventaire exhaustif de ce qui entre dans "
+                         "l'analyse : unites, images, sources de code, palettes")
     ap.add_argument('--planche', metavar='SORTIE.PNG',
                     help="ecrit une planche de pastilles : les 16 index en "
                          "lignes, les palettes de stage en colonnes")
@@ -372,6 +375,50 @@ def main():
     print(f"  index utilises : " + ' '.join(str(i) for i in sorted(lots_index)))
     print(f"  dont pris SUR LES LIBRES : "
           + (' '.join(str(i) for i in ajout) if ajout else "aucun"))
+
+    if args.sources:
+        # L'inventaire se lit pour VERIFIER : on regroupe par repertoire pour
+        # que l'oeil voie ce qui manque, pas pour raccourcir la liste — chaque
+        # fichier retenu y figure.
+        def inventaire(titre, noms):
+            print()
+            print(titre)
+            for nom in noms:
+                png = images.get(nom, [])
+                code = [f for f, (u, _) in main_par_fichier.items() if u == nom]
+                print(f"  {nom}  ({len(png)} png"
+                      + (f", {len(code)} source de code" if code else "") + ")")
+                dossiers = {}
+                for p in png:
+                    r = os.path.relpath(p, base)
+                    dossiers.setdefault(os.path.dirname(r), []).append(
+                        os.path.basename(r))
+                for d in sorted(dossiers):
+                    print(f"      {d}/ : " + ' '.join(sorted(dossiers[d])))
+                for c in sorted(code):
+                    print(f"      {c}  [dessin ecrit a la main]")
+
+        # Un meme png peut etre DECLARE deux fois — une ligne <images> droite
+        # et sa miroir : deux sprites compiles, deux fois les pixels a l'ecran.
+        # Le compte de declarations est donc le bon pour le poids ; celui des
+        # fichiers distincts dit ce qu'il y a a redessiner. Les deux sont dits.
+        distincts = len({p for n in communs for p in images.get(n, [])})
+        distincts_lots = len({p for n in lots for p in images.get(n, [])})
+        inventaire(f"SOURCES — objets communs ({len(communs)} unites, "
+                   f"{nb_png} declarations d'image pour {distincts} fichiers "
+                   f"distincts — une ligne miroir redeclare son png)", communs)
+        inventaire(f"SOURCES — lots d'ennemis, hors verdict ({len(lots)} "
+                   f"unites, {nb_png_lots} declarations pour {distincts_lots} "
+                   f"fichiers distincts)", lots)
+        print()
+        print(f"SOURCES — palettes de stage ({len(palettes)})")
+        for nom in sorted(palettes):
+            print(f"  {nom} : {os.path.relpath(palettes[nom], base)}")
+        print()
+        print(f"ECARTES — {len([n for n in scenes.get('scenes.boot', []) if n.startswith('title.')])} "
+              "unites de title (palette Pal_title, elles ne gelent rien du jeu) : "
+              + ' '.join(n for n in scenes.get('scenes.boot', [])
+                         if n.startswith('title.')))
 
     if args.histogramme:
         total = sum(px_img.values()) + sum(px_code.values())
