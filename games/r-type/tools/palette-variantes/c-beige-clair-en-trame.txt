@@ -1,0 +1,15 @@
+# Recette candidate pour les NEUTRES — surcouche, par-dessus palette-map.txt.
+#
+# Meme depart que la precedente, mais le beige clair devient un DAMIER de
+# blanc et de gris clair (`4>3~2`) au lieu d'un aplat. La teinte percue tombe
+# entre les deux, la ou la palette n'a plus de barreau libre :
+#
+#   000000 (0) · 616161 (97) · A8A8A8 (168) · trame ~208 · FAFAF2 (249)
+#
+# Cinq marches percues, aucune perdue, et sans emprunter a une autre famille
+# de teinte comme le faisait le jaune.
+#
+# A juger en sachant que le TO8 est en 160x200 : le pixel est deux fois plus
+# large que haut, donc un damier (x+y)&1 se lit en fines rayures diagonales,
+# pas en grain neutre.
+*  3>2 4>3~2

@@ -8,7 +8,17 @@
 #   *           « la ressource en cours » — reserve aux surcouches de comparaison
 #               (palette-variantes/), qui expriment une recette sans prejuger
 #               a qui elle convient ; jamais dans ce fichier-ci ;
-#   fusion-ok   sur une ligne de ressource (ou `*`) : autorise une collision.
+#   fusion-ok   sur une ligne de ressource (ou `*`) : autorise une collision ;
+#   a>b~c       TRAME : l'ancien index `a` ne devient pas une couleur mais un
+#               DAMIER de `b` et `c`, une case sur deux, alterne sur (x+y).
+#               Le motif est porte par l'image, donc il suit le sprite.
+#               Une trame compte comme UNE VALEUR A ELLE SEULE dans le controle
+#               de rampe : c'est une teinte percue distincte de ses deux
+#               composantes, et c'est le moyen de fabriquer un barreau
+#               intermediaire quand la palette n'en a plus de libre.
+#               Attention au rendu reel : le TO8 est en 160x200, le pixel est
+#               deux fois plus large que haut, donc un damier se lit en fines
+#               rayures diagonales et non en grain neutre.
 #
 # Ce fichier declare les decisions ; `palette-replay.sh` declare celles qui ont
 # ete APPLIQUEES, et dans quel ordre. Une ligne ici sans sa ressource la-bas est

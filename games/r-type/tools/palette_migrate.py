@@ -128,8 +128,23 @@ def table(chemins, ressource):
                 fusion_ok = cle != 'defaut'    # jamais autorisable en masse
                 continue
             a, _, b = c.partition('>')
-            corr[int(a)] = int(b)
+            # `b~c` = TRAME : l'ancien index ne devient pas une couleur mais un
+            # damier de deux, une case sur deux. C'est le moyen de fabriquer un
+            # barreau intermediaire quand la palette n'en a plus de libre.
+            corr[int(a)] = (tuple(int(x) for x in b.split('~'))
+                            if '~' in b else int(b))
     return corr, fusion_ok
+
+
+def cible(v):
+    """Les nouveaux index qu'une cible occupe — un seul, ou les deux d'une trame."""
+    return v if isinstance(v, tuple) else (v,)
+
+
+def _dit(v, x, y):
+    """L'index effectif d'un pixel : la trame alterne sur (x+y), donc le motif
+    est porte par l'IMAGE et suit le sprite quand il bouge."""
+    return v[(x + y) & 1] if isinstance(v, tuple) else v
 
 
 def luminance(rvb):
@@ -143,7 +158,8 @@ def couleurs_changees(corr, employes, rvb_a, rvb_b):
     mêmes, au bit près. Distinction posée par l'auteur le 16/08 — une planche
     ne se justifie que là où l'œil a quelque chose à voir."""
     return [(a, corr[a]) for a in sorted(employes)
-            if rvb_a[a + 1] != rvb_b[corr[a] + 1]]
+            if isinstance(corr[a], tuple)
+            or rvb_a[a + 1] != rvb_b[corr[a] + 1]]
 
 
 def fusions(corr, employes):
@@ -151,20 +167,22 @@ def fusions(corr, employes):
     collisions. Un dégradé de N valeurs qui en rend N-1 se voit ici."""
     vers = {}
     for a in sorted(employes):
-        vers.setdefault(corr[a], []).append(a)
+        vers.setdefault(corr[a], []).append(a)   # cle = int OU couple trame
     return {b: anc for b, anc in vers.items() if len(anc) > 1}
 
 
 def dire_fusions(nom, coll, employes, corr, pal_a, pal_b):
     """Nommer ce qui se perd, et montrer où le remettre."""
     h = lambda t: '#%02X%02X%02X' % t
+    dis = lambda b: ('trame ' + '~'.join(h(pal_b[i + 1]) for i in b)
+                     if isinstance(b, tuple) else h(pal_b[b + 1]))
     print(f"{nom} : ARRET — {len(coll)} niveau(x) de degrade disparaitrait(ent).")
-    for b, anc in sorted(coll.items()):
+    for b, anc in sorted(coll.items(), key=lambda kv: str(kv[0])):
         quoi = ', '.join(f"{a} {h(pal_a[a + 1])} (lum {luminance(pal_a[a + 1]):.0f})"
                          for a in anc)
         print(f"  anciens {quoi}")
-        print(f"      tombent tous sur le nouvel index {b} {h(pal_b[b + 1])}")
-    pris = {corr[a] for a in employes}
+        print(f"      tombent tous sur {dis(b)}")
+    pris = {i for a in employes for i in cible(corr[a])}
     libres = [i for i in range(16) if i not in pris]
     print("  emplacements encore libres dans la nouvelle palette, par luminance :")
     for i in sorted(libres, key=lambda i: luminance(pal_b[i + 1])):
@@ -197,7 +215,8 @@ def migrer(png, corr, pal_neuve):
     for y in range(h):
         for x in range(w):
             v = src[x, y]
-            dst[x, y] = TRANSPARENT if v == TRANSPARENT else corr[v - 1] + 1
+            dst[x, y] = (TRANSPARENT if v == TRANSPARENT
+                         else _dit(corr[v - 1], x, y) + 1)
     return out, vus, []
 
 
@@ -355,9 +374,11 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
     chg = couleurs_changees(corr, employes, rvb_a, rvb_b)
     h = lambda t: '#%02X%02X%02X' % t
     if chg:
+        dis = lambda b: ('trame ' + '~'.join(h(rvb_b[i + 1]) for i in b)
+                         if isinstance(b, tuple) else h(rvb_b[b + 1]))
         print(f"{nom} : {len(resultats)} images, {len(chg)} couleur(s) changent — "
               "une planche est utile : "
-              + ', '.join(f"{a} {h(rvb_a[a + 1])}>{h(rvb_b[b + 1])}" for a, b in chg))
+              + ', '.join(f"{a} {h(rvb_a[a + 1])}>{dis(b)}" for a, b in chg))
     else:
         # renumerotation pure : plutot que de demander a l'oeil de confirmer
         # que rien n'a bouge, on le PROUVE — pixel par pixel, rendu contre rendu.
@@ -419,9 +440,10 @@ def main():
                                                 or []) if v != TRANSPARENT}
             sans = sorted(a for a in employes if a not in corr)
             chg = couleurs_changees(corr, employes - set(sans), rvb_a, rvb_b)
+            dis = lambda b: ('trame ' + '~'.join(h(rvb_b[i + 1]) for i in b)
+                             if isinstance(b, tuple) else h(rvb_b[b + 1]))
             quoi = ', '.join([f"{a} {h(rvb_a[a + 1])} A TRANCHER" for a in sans]
-                             + [f"{a} {h(rvb_a[a + 1])}>{h(rvb_b[b + 1])}"
-                                for a, b in chg])
+                             + [f"{a} {h(rvb_a[a + 1])}>{dis(b)}" for a, b in chg])
             print(f"  [ ] {n:26} {len(res[n]):3} img   "
                   + (quoi if quoi else "renumerotation pure, pas de planche"))
         return 0
@@ -534,7 +556,8 @@ def main():
                 if palette_brute(p) != pal_b:
                     mauvais.append((p, 'table de couleurs non installee'))
                     continue
-                attendu = {corr[v - 1] + 1 for v in vus if v != TRANSPARENT}
+                attendu = {i + 1 for v in vus if v != TRANSPARENT
+                           for i in cible(corr[v - 1])}
                 attendu |= ({TRANSPARENT} if TRANSPARENT in vus else set())
                 obtenu = {v for _, v in (relu.getcolors(1 << 20) or [])}
                 if obtenu != attendu:
@@ -553,7 +576,9 @@ def main():
 def _resume(corr, employes):
     """Le sous-titre d'une section : ce que la table fait bouger POUR CETTE
     ressource — pas la table entière, seulement les index qu'elle emploie."""
-    bouge = [f"{a}>{corr[a]}" for a in sorted(employes) if corr[a] != a]
+    bouge = [f"{a}>" + ('~'.join(str(i) for i in corr[a])
+                        if isinstance(corr[a], tuple) else str(corr[a]))
+             for a in sorted(employes) if corr[a] != a]
     return ' '.join(bouge) if bouge else 'renumerotation nulle'
 
 

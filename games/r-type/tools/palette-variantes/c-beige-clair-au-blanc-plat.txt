@@ -1,0 +1,6 @@
+# Recette candidate pour les NEUTRES — surcouche, par-dessus palette-map.txt.
+#
+# Le beige fonce prend le gris clair A8A8A8, et le beige clair — le reflet —
+# devient du BLANC FRANC. Le blanc deja present s'y fond : quatre marches au
+# lieu de cinq, mais la plus claire est nette.
+*  3>2 4>3 fusion-ok
