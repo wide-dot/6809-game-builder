@@ -1,0 +1,8 @@
+# Recette candidate pour la planche 3/3 — surcouche, par-dessus palette-map.txt.
+#
+#     palette_migrate.py RESSOURCE… --sans-base --variante <ce fichier>
+#
+# Fusion blanche, olive GARDE sur l'index propre au stage.
+#
+# `*` = la ressource en cours : une recette ne prejuge de rien.
+*  3>2 4>3 12>14 fusion-ok
