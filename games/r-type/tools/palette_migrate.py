@@ -289,10 +289,10 @@ def _police(t, gras=False):
         return ImageFont.load_default()
 
 
-FOND, LARGEUR_MAX = (18, 20, 24), 1360
+FOND, LARGEUR_DEFAUT = (18, 20, 24), 1360
 
 
-def _geometrie(paires, nb_col, Zmax):
+def _geometrie(paires, nb_col, Zmax, largeur_max):
     """Géométrie d'un bloc : chaque ressource a sa propre échelle — un sprite
     de 12 px ne mérite pas la cellule d'un sprite de 48 — et le nombre de
     vignettes par ligne se déduit de la largeur disponible.
@@ -302,15 +302,15 @@ def _geometrie(paires, nb_col, Zmax):
     pixels et réduit les sprites voisins à des timbres."""
     mw = max(Image.open(p).size[0] for p, _ in paires)
     mh = max(Image.open(p).size[1] for p, _ in paires)
-    Z = max(1, min(Zmax, (LARGEUR_MAX - 54 - 14 * (nb_col - 1))
+    Z = max(1, min(Zmax, (largeur_max - 54 - 14 * (nb_col - 1))
                    // (mw * RATIO * nb_col)))
     cw = mw * Z * RATIO * nb_col + 14 * (nb_col - 1) + 30
-    par_ligne = max(1, min(len(paires), (LARGEUR_MAX - 24) // cw))
+    par_ligne = max(1, min(len(paires), (largeur_max - 24) // cw))
     return (cw, mh * Z + 50, (len(paires) + par_ligne - 1) // par_ligne,
             mw, mh, par_ligne, Z)
 
 
-def planche(sortie, blocs, colonnes, Z=6):
+def planche(sortie, blocs, colonnes, Z=6, largeur_max=LARGEUR_DEFAUT):
     """La planche de validation : chaque image telle quelle à gauche, puis une
     vignette par candidat. C'est ce que l'auteur regarde, et rien d'autre ne
     l'engage. Chaque vignette porte SA table de couleurs — une image déjà
@@ -318,7 +318,7 @@ def planche(sortie, blocs, colonnes, Z=6):
     colonne « actuel » doit donc se rendre avec la nouvelle palette."""
     f, fp, fb, ft = _police(11), _police(10), _police(15, True), _police(13, True)
     nb = len(colonnes)
-    geo = [_geometrie(p, nb, Z) for _, _, p in blocs]
+    geo = [_geometrie(p, nb, Z, largeur_max) for _, _, p in blocs]
     largeur = max([640] + [cw * pl for (cw, _, _, _, _, pl, _) in geo]) + 24
     hauteur = 62 + sum(34 + ch * li for (_, ch, li, _, _, _, _) in geo)
     im = Image.new('RGB', (largeur, hauteur), FOND)
@@ -446,6 +446,12 @@ def main():
                     help='ne garder sur la planche que les images dont le RENDU '
                          'change. Le reste est une renumerotation pure : '
                          'montrer deux fois la meme chose noie la decision.')
+    ap.add_argument('--largeur', type=int, default=LARGEUR_DEFAUT,
+                    help='largeur maximale de la planche en pixels (defaut '
+                         f'{LARGEUR_DEFAUT}). A elargir quand on compare '
+                         'beaucoup de candidats : le zoom est rabattu pour '
+                         'tenir dedans, et six colonnes etroites ne montrent '
+                         'plus rien d\'une trame.')
     ap.add_argument('--zoom', type=int, default=6,
                     help='pixels par pixel sur la planche (defaut 6).')
     ap.add_argument('--sans-base', action='store_true',
@@ -538,7 +544,7 @@ def main():
         blocs, resumes = [], {}
         for nom in args.ressource:
             paires, ordre = {}, []
-            for etiquette, n, corr, resultats, deja, employes in tour:
+            for etiquette, n, corr, resultats, deja, employes, _, _ in tour:
                 if n != nom:
                     continue
                 # un sous-dossier PAR CANDIDAT ET PAR RESSOURCE : deux
@@ -590,7 +596,7 @@ def main():
             print("rien a montrer : tout est deja migre.")
             return 0
         planche(args.apercu, blocs, ['actuel'] + [e for e, _ in candidats],
-                Z=args.zoom)
+                Z=args.zoom, largeur_max=args.largeur)
         print(f"planche ecrite : {args.apercu}  (rien n'a ete modifie)")
 
     if args.ecrire:
