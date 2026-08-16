@@ -239,16 +239,21 @@ def _police(t, gras=False):
 FOND, LARGEUR_MAX = (18, 20, 24), 1360
 
 
-def _geometrie(paires, nb_col, Z):
+def _geometrie(paires, nb_col, Zmax):
     """Géométrie d'un bloc : chaque ressource a sa propre échelle — un sprite
     de 12 px ne mérite pas la cellule d'un sprite de 48 — et le nombre de
-    vignettes par ligne se déduit de la largeur disponible."""
+    vignettes par ligne se déduit de la largeur disponible.
+
+    Le zoom est RABATTU pour que la cellule tienne dans la page : sans ça, une
+    bannière de 320 px de large au zoom 10 étale la planche sur six mille
+    pixels et réduit les sprites voisins à des timbres."""
     mw = max(Image.open(p).size[0] for p, _ in paires)
     mh = max(Image.open(p).size[1] for p, _ in paires)
+    Z = max(1, min(Zmax, (LARGEUR_MAX - 54 - 14 * (nb_col - 1)) // (mw * nb_col)))
     cw = mw * Z * nb_col + 14 * (nb_col - 1) + 30
     par_ligne = max(1, min(len(paires), (LARGEUR_MAX - 24) // cw))
     return (cw, mh * Z + 50, (len(paires) + par_ligne - 1) // par_ligne,
-            mw, mh, par_ligne)
+            mw, mh, par_ligne, Z)
 
 
 def planche(sortie, blocs, colonnes, Z=6):
@@ -260,8 +265,8 @@ def planche(sortie, blocs, colonnes, Z=6):
     f, fp, fb, ft = _police(11), _police(10), _police(15, True), _police(13, True)
     nb = len(colonnes)
     geo = [_geometrie(p, nb, Z) for _, _, p in blocs]
-    largeur = max([640] + [cw * pl for (cw, _, _, _, _, pl) in geo]) + 24
-    hauteur = 62 + sum(34 + ch * li for (_, ch, li, _, _, _) in geo)
+    largeur = max([640] + [cw * pl for (cw, _, _, _, _, pl, _) in geo]) + 24
+    hauteur = 62 + sum(34 + ch * li for (_, ch, li, _, _, _, _) in geo)
     im = Image.new('RGB', (largeur, hauteur), FOND)
     d = ImageDraw.Draw(im)
     d.text((14, 12), "migration de palette — planche de validation", font=fb,
@@ -271,7 +276,7 @@ def planche(sortie, blocs, colonnes, Z=6):
         f"{l} = {n}" for l, n in zip(lettres, colonnes)),
         font=f, fill=(150, 158, 172))
     y0 = 62
-    for (nom, soustitre, paires), (cw, ch, li, mw, mh, par_ligne) in zip(blocs, geo):
+    for (nom, soustitre, paires), (cw, ch, li, mw, mh, par_ligne, Z) in zip(blocs, geo):
         d.text((14, y0 + 6), nom, font=ft, fill=(228, 232, 240))
         d.text((14 + len(nom) * 8 + 18, y0 + 8), soustitre, font=f,
                fill=(150, 158, 172))
@@ -373,6 +378,10 @@ def main():
     ap.add_argument('--apercu', metavar='SORTIE.PNG')
     ap.add_argument('--ecrire', action='store_true')
     ap.add_argument('--map', default=os.path.join(ICI, 'palette-map.txt'))
+    ap.add_argument('--impactees', action='store_true',
+                    help='ne garder sur la planche que les images dont le RENDU '
+                         'change. Le reste est une renumerotation pure : '
+                         'montrer deux fois la meme chose noie la decision.')
     ap.add_argument('--zoom', type=int, default=6,
                     help='pixels par pixel sur la planche (defaut 6).')
     ap.add_argument('--sans-base', action='store_true',
@@ -484,6 +493,20 @@ def main():
                     if p not in ordre:
                         ordre.append(p)
                 resumes.setdefault(nom, _resume(corr, employes))
+            if args.impactees:
+                # une image ne merite sa place que si l'oeil y voit quelque
+                # chose : on compare le rendu, pas les index — c'est le seul
+                # critere honnete quand plusieurs candidats sont en lice.
+                garde = []
+                for p in ordre:
+                    ref = _rendu_brut(p, rvb_b if palette_brute(p) == pal_b
+                                      else rvb_a)
+                    if any(_rendu_brut(c, rvb_b) != ref for _, c, _ in paires[p]):
+                        garde.append(p)
+                if len(garde) < len(ordre):
+                    print(f"{nom} : {len(ordre) - len(garde)} image(s) au rendu "
+                          f"inchange retiree(s) de la planche, {len(garde)} gardee(s)")
+                ordre = garde
             if ordre:
                 # une image heritee n'a plus d'original : sa colonne « actuel »
                 # se rend avec la NOUVELLE palette, sinon on montrerait un
