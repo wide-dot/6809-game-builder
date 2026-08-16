@@ -207,14 +207,24 @@ def main():
     if not corr:
         sys.exit(f"aucune correspondance pour {nom} dans {args.map}")
 
+    # Une image peut appartenir a DEUX ressources — les impacts de `weapon`
+    # sont aussi ceux de `simplefire`. La regle du plan est qu'elle se decide
+    # une fois : la seconde ressource en HERITE, on ne la remappe pas (ce qui
+    # decalerait ses index une seconde fois). Reste a le dire, pas a le subir.
     deja = [p for p in res[nom] if palette_brute(p) == pal_b]
-    if deja and args.ecrire:
-        sys.exit(f"{nom} : {len(deja)} image(s) portent deja la nouvelle "
-                 "palette — migration deja faite, on ne remappe pas deux fois")
+    reste = [p for p in res[nom] if p not in deja]
+    if deja:
+        print(f"{nom} : {len(deja)} image(s) deja migree(s), heritee(s) d'une "
+              "autre ressource — laissee(s) telle(s) quelle(s) :")
+        for p in deja:
+            print(f"    {os.path.relpath(p, base)}")
+    if not reste:
+        print(f"{nom} : rien a faire, tout est deja migre.")
+        return 0
 
     # --- passe a blanc : tout doit passer avant que rien ne soit ecrit
     resultats, refus = [], []
-    for p in res[nom]:
+    for p in reste:
         img, vus, orphelins = migrer(p, corr, pal_b)
         if orphelins:
             refus.append((p, orphelins))
@@ -240,6 +250,10 @@ def main():
             t = os.path.join(tmp, os.path.basename(p))
             img.save(t)
             paires.append((p, t))
+        # les heritees figurent aussi : la planche montre la ressource ENTIERE
+        # telle qu'elle sera, pas seulement ce qui reste a faire.
+        for p in deja:
+            paires.append((p, p))
         planche(args.apercu, nom, paires, rgb(pal_a), rgb(pal_b))
         print(f"planche ecrite : {args.apercu}  (rien n'a ete modifie)")
 

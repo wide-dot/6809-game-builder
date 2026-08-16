@@ -15,11 +15,18 @@ en dernier** (décision auteur).
 
 ## État
 
-- [ ] **0. L'outil** — `palette_usage.py --contact` sait déjà aligner un sprite
-      tel quel et sa version transformée ; il lui manque de **prendre une table
-      de correspondance en entrée** et d'**écrire les PNG migrés**. Deux ajouts
-      au même outil, pas un second script. Critère : sur une ressource du
-      groupe A, l'image reconstruite rend exactement les mêmes couleurs qu'avant.
+- [x] **0. L'outil** — `tools/palette_migrate.py`, qui **importe** le relevé de
+      `palette_usage.py` (une seule source pour la liste des ressources et de
+      leurs images) et y ajoute les deux pièces qui manquaient : une **table de
+      correspondance en entrée** (`tools/palette-map.txt`) et l'**écriture des
+      PNG migrés**. Outil séparé assumé : le relevé reste en lecture seule.
+      Trois modes — `--liste` (le reste à faire), `--apercu` (la planche, rien
+      d'écrit), `--ecrire` (applique, puis **relit chaque fichier** pour vérifier
+      que la table et les index sont bien ceux prévus). Un index présent dans une
+      image mais absent de la table **arrête** l'outil : aucune couleur ne peut
+      être migrée par inadvertance.
+      Une image déjà migrée par une autre ressource est **héritée**, pas refusée
+      ni ré-appliquée (cas des deux impacts partagés `weapon`/`simplefire`).
 
 ### Groupe A — renumérotation pure, aucune décision (12 ressources, 75 images)
 
@@ -27,10 +34,13 @@ Ces ressources n'emploient que des couleurs conservées : la table de
 correspondance suffit, la planche ne sert qu'à confirmer que l'outil ne ment
 pas. À traiter d'un bloc, en un seul aller-retour de validation.
 
-- [ ] `common.weapon` (3 img) · `common.beamcharge` (8) · `common.beamp` (12)
-- [ ] `common.reboundlaser` (17) · `common.counterairlaser` (8) · `common.simplefire` (7)
-- [ ] `common.emflash` (4) · `common.foefire` (4) · `common.missileflame` (4)
-- [ ] `common.engineflames` (2) · `common.explosion.imgFwk` (4) · `lib.scantfire` (2)
+**Validé par l'auteur le 16/08/2026, appliqué** (73 fichiers distincts réécrits,
+dont 2 hérités) :
+
+- [x] `common.weapon` (3 img) · `common.beamcharge` (8) · `common.beamp` (12)
+- [x] `common.reboundlaser` (17) · `common.counterairlaser` (8) · `common.simplefire` (7)
+- [x] `common.emflash` (4) · `common.foefire` (4) · `common.missileflame` (4)
+- [x] `common.engineflames` (2) · `common.explosion.imgFwk` (4) · `lib.scantfire` (2)
 
 ### Groupe B — renumérotation + l'orange à regarder (2 ressources, 9 images)
 
@@ -122,3 +132,14 @@ PNG : les comptes ci-dessus sont en fichiers distincts par ressource. Sur les
 tout doit bouger. À chaque ressource : la planche validée par l'auteur,
 `palette_usage.py` sans défaut, et la lane r-type 7/7 dès que l'image est
 jouable. Le corpus reprend son rôle à la réunification, contre `master`.
+
+**Conséquence de l'ordre choisi : le jeu est FAUX à l'écran entre A et E.**
+La bascule de palette est en groupe E ; d'ici là les images migrées portent les
+nouveaux index face à l'ancien `pal.png`, donc de mauvaises couleurs en jeu. Le
+verdict visuel se lit sur les **planches** (rendu contre la palette cible), pas
+sous toje, et la lane r-type ne juge sur cette période que la mécanique (7/7),
+pas les couleurs. Alternative écartée : basculer la palette dès maintenant
+rendrait chaque ressource validée immédiatement juste, mais rendrait fausses
+toutes celles qui ne sont pas encore migrées — dont les tuiles, c'est-à-dire
+tout l'écran. Mieux vaut un écran faux et des planches justes qu'un écran à
+moitié faux tout du long.
