@@ -3,8 +3,13 @@
 # Plan et suivi                : docs/lang/fr/plan-migration-palette.md
 #
 # Format : un mot-cle ou un nom de ressource, puis des couples `ancien>nouveau`.
-#   defaut     s'applique a TOUTE ressource ;
-#   <ressource> ajoute ou REMPLACE des couples pour cette ressource seule.
+#   defaut      s'applique a TOUTE ressource ;
+#   <ressource> ajoute ou REMPLACE des couples pour cette ressource seule ;
+#   fusion-ok   sur une ligne de ressource : autorise une collision, cf. plus bas.
+#
+# Ce fichier declare les decisions ; `palette-replay.sh` declare celles qui ont
+# ete APPLIQUEES, et dans quel ordre. Une ligne ici sans sa ressource la-bas est
+# une proposition en attente de la validation de l'auteur.
 #
 # Un index present dans une image mais absent de la table est une ERREUR, pas
 # une identite silencieuse : l'outil refuse d'ecrire tant qu'il n'est pas
@@ -19,5 +24,30 @@
 # fait — c'est tout l'objet de la validation par planche.
 defaut  0>0 1>3 2>1 5>4 6>5 7>7 8>8 9>9 10>10 11>11 13>6 14>10 15>0
 
+# --- la regle qui prime, posee par l'auteur le 16/08 -----------------------
+# CONSERVER LES NIVEAUX DE DEGRADE. Une ressource qui montre N valeurs doit en
+# montrer N apres migration ; deux index employes qui tombent sur le meme sont
+# une marche perdue, et l'outil ARRETE plutot que de la laisser passer.
+# La nouvelle palette offre cinq marches du rouge au jaune — 7 610000,
+# 8 AC0000, 9 CC5A3C, 10 F99B68, 11 FAF261 — plus le blanc 3 FFF au-dessus.
+# L'ancienne en avait six dans la meme plage, dont DEUX a la meme hauteur
+# (10 F2AB00 lum 173 et 14 F99B68 lum 177) : c'est la seule vraie perte, et
+# elle se rattrape en glissant la rampe d'un cran, pas en fusionnant.
+#
+# Methode, quand la table par defaut provoque une collision : classer les
+# index EMPLOYES par luminance et les poser sur autant de marches de la
+# nouvelle palette, dans le meme ordre. L'outil liste les marches libres.
+
 # --- par ressource, au fil des validations de l'auteur ----------------------
-# (rien encore : le groupe A n'emploie que des couleurs conservees)
+
+# Explosions (groupe B). Six valeurs employees de chaque cote, donc une
+# bijection par rang — aucune fusion. L'orange descend sur CC5A3C, le brun
+# rouge qui manquait entre le rouge et le saumon : la marche 51->173, beante,
+# devient 51->121->177.
+common.explosion.imgBig    10>9
+
+# Meme ressource, meme rampe, mais imgSmall emploie DEJA CC5A3C (39 px) : la
+# place ou l'orange devait descendre est prise. Tout le bas de la rampe glisse
+# donc d'un cran pour degager la marche — le 610000 de la nouvelle palette,
+# inutilise ici, sert de nouveau plancher.
+common.explosion.imgSmall  8>7 9>8 10>9

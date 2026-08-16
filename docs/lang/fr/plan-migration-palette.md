@@ -9,6 +9,37 @@ y sont ; on ne les redit pas ici.
 ressource se termine par une planche PNG soumise à l'auteur ; rien n'est
 committé sans sa validation.
 
+## Les deux règles du protocole
+
+**1. Conserver les niveaux de dégradé** (auteur, 16/08). Une ressource qui
+montre N valeurs doit en montrer N après migration. Deux index employés qui
+tombent sur le même sont une marche de rampe perdue, et l'outil **arrête**
+plutôt que de la laisser passer : il nomme les coupables et liste les marches
+encore libres dans la nouvelle palette. La méthode, quand la table par défaut
+provoque une collision : classer les index *employés par cette ressource* par
+luminance et les poser sur autant de marches de la nouvelle palette, dans le
+même ordre — une bijection par rang, pas une fusion. Une fusion réellement
+voulue et mesurée se déclare par le mot `fusion-ok` sur la ligne de la
+ressource ; jamais par omission.
+
+**2. Toute conversion est un script** (auteur, 16/08). Rien ne se fait à la
+main. Deux fichiers portent la campagne, et rien d'autre :
+
+| fichier | ce qu'il porte |
+|---|---|
+| `tools/palette-map.txt` | **les paramètres** — ce que devient chaque index, ressource par ressource, avec le pourquoi |
+| `tools/palette-replay.sh` | **les commandes** — quelles ressources ont été validées, dans quel ordre |
+
+Une ligne dans la table sans sa ressource dans le script est une *proposition* ;
+elle devient une décision appliquée quand l'auteur valide et que le script la
+nomme. L'ordre du script compte : une image déclarée par deux ressources est
+décidée par la première nommée.
+
+`sh tools/palette-replay.sh --verifier` est la preuve que ce couple **est** la
+campagne et non son récit : il crée une copie fraîche de `origin/master`, y
+rejoue tout, et compare `src/` à l'arbre courant. Un écart signifie qu'un geste
+manuel s'est glissé quelque part. À rejouer avant chaque commit de migration.
+
 Ordre général : l'outil d'abord, puis les ressources qui ne demandent aucune
 décision (elles valident la chaîne), puis celles qui en demandent, **les tuiles
 en dernier** (décision auteur).
@@ -26,7 +57,13 @@ en dernier** (décision auteur).
       image mais absent de la table **arrête** l'outil : aucune couleur ne peut
       être migrée par inadvertance.
       Une image déjà migrée par une autre ressource est **héritée**, pas refusée
-      ni ré-appliquée (cas des deux impacts partagés `weapon`/`simplefire`).
+      ni ré-appliquée (cas des deux impacts partagés `weapon`/`simplefire`) —
+      y compris entre deux ressources d'une même commande, où la première
+      nommée décide.
+      Plusieurs ressources en une commande donnent **une seule planche**, une
+      section par ressource : un tour de validation = un fichier à regarder.
+      Les deux règles du protocole ci-dessus sont dans l'outil : la collision
+      de rampe arrête, et `palette-replay.sh --verifier` prouve le rejeu.
 
 ### Groupe A — renumérotation pure, aucune décision (12 ressources, 75 images)
 
@@ -42,14 +79,26 @@ dont 2 hérités) :
 - [x] `common.emflash` (4) · `common.foefire` (4) · `common.missileflame` (4)
 - [x] `common.engineflames` (2) · `common.explosion.imgFwk` (4) · `lib.scantfire` (2)
 
-### Groupe B — renumérotation + l'orange à regarder (2 ressources, 9 images)
+### Groupe B — l'orange, et la première application de la règle 1 (2 ress., 9 img)
 
-L'ancien orange `FA0` garde son index 10 mais devient le saumon clair `F96` :
-rien à décider, mais la saturation baisse et ces deux-là en sont les plus gros
-porteurs.
+Ces deux-là emploient **à la fois** l'ancien orange `F2AB00` et l'ancien saumon
+`F99B68`, les deux barreaux que la nouvelle palette réduit à un. C'est le
+premier cas où la table par défaut ferait perdre une marche, et c'est ce qui a
+fait naître la règle 1. La rampe chaude compte cinq marches de chaque côté —
+`610000` `AC0000` `CC5A3C` `F99B68` `FAF261`, plus le blanc au-dessus — donc
+la place existe : il suffit de re-répartir.
 
-- [ ] `common.explosion.imgBig` (5 img, **353 px d'orange** — le plus gros du jeu)
-- [ ] `common.explosion.imgSmall` (4 img, 44 px)
+- [ ] `common.explosion.imgBig` (5 img) — l'orange descend sur `CC5A3C`, le
+      brun-rouge qui manquait : le saut 51→173 en luminance devient 51→121→177.
+      Une seule ligne : `10>9`.
+- [ ] `common.explosion.imgSmall` (4 img) — même rampe, mais cette ressource
+      **emploie déjà** `CC5A3C` (39 px) : la place est prise. Tout le bas de la
+      rampe glisse d'un cran (`8>7 9>8 10>9`) et prend appui sur le `610000` de
+      la nouvelle palette, qu'elle n'utilisait pas.
+
+*Vérifié avant de s'en inquiéter : les douze ressources du groupe A, déjà
+écrites, n'emploient aucune paire en collision — la règle 1 ne les aurait pas
+arrêtées. Rien à refaire derrière.*
 
 ### Groupe C — une décision de fusion à prendre (14 ressources, 98 images)
 
