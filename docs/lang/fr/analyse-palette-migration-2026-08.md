@@ -15,6 +15,10 @@ au fil du texte et récapitulés ici :
 4. En cas de migration : **un mapping par objet**, une **planche PNG de
    prévisualisation par objet**, et **validation manuelle de l'auteur** avant
    de rien graver (§7).
+5. **Tout se fait sur une branche `new-color`, jamais fusionnée vers `master`
+   avant la fin** — la migration prendra du temps et `master` doit rester
+   jouable. C'est une suspension explicite de la règle de campagne qui veut
+   que chaque commit parte aussi sur `master` (§7).
 
 Intention : réindexer les assets pour que **les index 0-11 soient communs aux
 huit stages et les index 12-15 propres à chacun**. Les assets communs passent
@@ -283,6 +287,30 @@ L'auteur a tranché la MÉTHODE avant le contenu, et c'est elle qui gouverne :
 
 > **Un mapping par objet, une planche PNG de prévisualisation par objet, et
 > validation manuelle de l'auteur avant de graver quoi que ce soit.**
+>
+> **Tout vit sur une branche dédiée — `new-color` — dans laquelle les
+> modifications sont fusionnées au fur et à mesure. JAMAIS de fusion vers
+> `master` tant que la migration n'est pas finie : elle prendra du temps, et
+> `master` doit rester jouable pendant ce temps.**
+
+Cette seconde règle **suspend la pratique courante de la campagne**, où chaque
+commit part sur la branche de travail ET sur `master` dans la foulée. Pour la
+palette, c'est l'inverse : `master` ne voit rien jusqu'au bout.
+
+Deux conséquences pratiques à ne pas découvrir en route :
+
+* **`master` continue d'avancer** sur le reste du portage. La branche doit donc
+  ravaler `master` régulièrement (fusion ou rebasage), sinon la réunification
+  finale se fera sur des mois d'écart. Le coût d'un ravalement régulier est
+  faible ; celui d'un seul à la fin ne l'est pas.
+* **Le banc d'identité change de sens sur cette branche.** Notre critère
+  habituel — « les images du corpus sont inchangées, ou le mouvement est
+  expliqué » — ne veut plus rien dire quand le but même est de changer toutes
+  les images. Sur `new-color`, la preuve devient : la planche validée par
+  l'auteur pour chaque objet, `palette_usage.py` sans défaut, et la lane
+  r-type 7/7 (qui, elle, garde tout son sens : elle vérifie que le jeu tourne,
+  pas qu'il est identique). Le corpus reprend son rôle de garde-fou au moment
+  de la réunification, contre l'état de `master`.
 
 Ce n'est pas une précaution de style. Le §3 l'a montré trois fois : le meilleur
 mapping n'est PAS le même d'un objet à l'autre — le vaisseau veut le beige
