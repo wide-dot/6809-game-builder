@@ -163,18 +163,26 @@ décroissant, puis les lots.
 - [ ] `common.player` (13 img, 231 px sur 5) — le vaisseau. Le §3 de l'étude
       recommande d'y verser le beige foncé dans le gris `666` : 19 px perdus
       contre 91 par l'autre fusion.
-- [ ] `common.hud` (12 img, 4 px) — quasi gratuit, mais c'est l'autre chose
-      qu'on regarde à chaque trame. À faire avec le vaisseau pour juger les
-      deux ensemble.
+- [x] `common.hud` (12 img, 4 px) — recette A. Une seule de ses douze images
+      porte du beige (`01-life`) : les onze autres sont une renumérotation pure.
+
+*Découverte du 16/08, à garder en méthode :* quand les gris sont en déficit,
+un **barreau chaud inutilisé peut servir de rallonge**. `common.pow` n'emploie
+aucun chaud au-dessus de `CC5A3C`, donc le jaune `FAF261` (luminance 224) est
+libre chez elle et s'intercale entre `A8A8A8` (168) et le blanc (249) — cinq
+marches claires au lieu de quatre, aucune perte. C'est le premier cas où on
+sort de la famille de teinte pour récupérer une marche.
 
 **Les communs, par poids**
 
 - [ ] `common.forcepod` (16 img, 438 px)
-- [ ] `common.pow` (6 img, 329 px)
+- [ ] `common.pow` (6 img, 329 px) — **recette A écartée par l'auteur** ;
+      candidat en cours : le beige clair sur le **jaune** `FAF261`, qui
+      rallonge la rampe claire à cinq marches et ne perd rien
 - [ ] `common.optionbox` (5 img, 134 px)
 - [ ] `common.bitdevice` (6 img, 101 px)
-- [ ] `common.overlay` (1 img, 92 px) — le masque du champ de jeu
-- [ ] `common.missile` (5 img, 25 px)
+- [x] `common.overlay` (1 img, 92 px) — le masque du champ de jeu — recette A
+- [x] `common.missile` (5 img, 25 px) — recette A
 
 **Les lots** (chargés par combinaison de stage, mêmes règles)
 
@@ -182,7 +190,7 @@ décroissant, puis les lots.
       l'index propre au stage, beige clair monté au blanc, 4 px perdus en tout.
 - [ ] `lib.cancer` (3 img, 219 px)
 - [ ] `lib.bink` (6 img, 173 px)
-- [ ] `lib.pstaff` (6 img, 94 px)
+- [x] `lib.pstaff` (6 img, 94 px) — recette A
 - [ ] `lib.bug` (8 img, 91 px)
 - [ ] `lib.patapata` (8 img, 57 px)
 

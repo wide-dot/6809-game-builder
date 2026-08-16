@@ -83,3 +83,13 @@ $M lib.scantfire           --ecrire
 # =========================================================================
 $M common.explosion.imgBig   --ecrire
 $M common.explosion.imgSmall --ecrire
+
+# =========================================================================
+# Groupe C, planche 1/3 « beiges seuls » — valide par l'auteur le 16/08/2026.
+# Recette A : le beige clair prend le gris clair A8A8A8. Ces quatre-la
+# n'emploient pas le beige fonce ; common.pow, qui le porte, est traite a part.
+# =========================================================================
+$M common.hud      --ecrire
+$M common.missile  --ecrire
+$M common.overlay  --ecrire
+$M lib.pstaff      --ecrire

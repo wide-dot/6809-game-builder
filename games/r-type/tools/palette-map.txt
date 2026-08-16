@@ -104,3 +104,14 @@ common.explosion.imgSmall  8>7 9>8 10>10 14>9
 # saumon qui descend sur CC5A3C. Le sort de SES beiges se decide a part, sur
 # planche, et ne vaudra que pour lui : chaque ressource a les siens.
 common.player  10>10 14>9
+
+# --- Les beiges, planche 1/3 « beiges seuls » — auteur, 16/08/2026 ----------
+# Recette A retenue : le beige clair prend le gris clair A8A8A8. Ces quatre-la
+# n'emploient PAS le beige fonce, donc les recettes A et B leur donnaient le
+# meme resultat ; la recette C (beige clair au blanc) leur coutait une marche
+# de gris — deux d'entre elles seraient tombees a deux gris.
+# Rien sur 3 : ce qu'une ressource n'emploie pas n'a pas a etre declare.
+common.hud      4>2
+common.missile  4>2
+common.overlay  4>2
+lib.pstaff      4>2
