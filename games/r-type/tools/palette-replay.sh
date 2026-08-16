@@ -94,3 +94,10 @@ $M common.missile  --ecrire     # idem
 $M common.overlay  --ecrire     # idem
 $M lib.pstaff      --ecrire     # idem
 $M common.pow      --ecrire     # fusion blanche : le reflet rejoint le blanc
+
+# =========================================================================
+# Groupe C, planche 3/3 — l'olive. Regle etendue par l'auteur le 16/08 : le
+# vert occupe un index propre au stage sur 1, 3, 4, 5 et 7. lib.patapata
+# n'emploie que lui : garder l'olive en fait une renumerotation PURE.
+# =========================================================================
+$M lib.patapata    --ecrire
