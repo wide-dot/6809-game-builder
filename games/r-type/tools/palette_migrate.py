@@ -61,6 +61,10 @@ PROJET = os.path.dirname(ICI)
 PAL_ANCIENNE = 'src/stages/01/palette/pal.png'
 PAL_NOUVELLE = 'src/stages/01/palette/pal-next.png'
 TRANSPARENT = 0
+# Le TO8 affiche 160x200 : le pixel est DEUX FOIS PLUS LARGE QUE HAUT. Une
+# planche en pixels carres ment sur les proportions et surtout sur les trames,
+# qu'elle montre en grain neutre la ou l'ecran donnera des rayures diagonales.
+RATIO = 2
 
 
 def _releve():
@@ -232,7 +236,7 @@ def _rendu_brut(source, pal):
                            else pal[src[x, y]]))
 
 
-def rendu(png, pal, Z, fond):
+def rendu(png, pal, Z, fond, ratio=RATIO):
     """Un aperçu couleur d'un PNG indexé, avec la palette donnée."""
     im = Image.open(png)
     w, h = im.size
@@ -243,7 +247,7 @@ def rendu(png, pal, Z, fond):
         for x in range(w):
             v = src[x, y]
             dst[x, y] = fond if v == TRANSPARENT else pal[v]
-    return out.resize((w * Z, h * Z), Image.NEAREST)
+    return out.resize((w * Z * ratio, h * Z), Image.NEAREST)
 
 
 def _police(t, gras=False):
@@ -268,8 +272,9 @@ def _geometrie(paires, nb_col, Zmax):
     pixels et réduit les sprites voisins à des timbres."""
     mw = max(Image.open(p).size[0] for p, _ in paires)
     mh = max(Image.open(p).size[1] for p, _ in paires)
-    Z = max(1, min(Zmax, (LARGEUR_MAX - 54 - 14 * (nb_col - 1)) // (mw * nb_col)))
-    cw = mw * Z * nb_col + 14 * (nb_col - 1) + 30
+    Z = max(1, min(Zmax, (LARGEUR_MAX - 54 - 14 * (nb_col - 1))
+                   // (mw * RATIO * nb_col)))
+    cw = mw * Z * RATIO * nb_col + 14 * (nb_col - 1) + 30
     par_ligne = max(1, min(len(paires), (LARGEUR_MAX - 24) // cw))
     return (cw, mh * Z + 50, (len(paires) + par_ligne - 1) // par_ligne,
             mw, mh, par_ligne, Z)
@@ -306,7 +311,7 @@ def planche(sortie, blocs, colonnes, Z=6):
                 vue = rendu(chemin, pal, Z, FOND)
                 # pas de colonne fixe (mw), pas la largeur de CETTE vignette :
                 # sinon les colonnes se decalent d'une image a l'autre
-                xj = x + j * (mw * Z + 14)
+                xj = x + j * (mw * Z * RATIO + 14)
                 im.paste(vue, (xj, y + mh * Z - vue.size[1]))
                 # une LETTRE, pas le nom du candidat : un nom de fichier de
                 # surcouche est plus large qu'une vignette et les etiquettes
