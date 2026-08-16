@@ -189,3 +189,11 @@ lib.cancer  12>14 3>2 4>2 fusion-ok
 #          libre au beige clair — aurait pousse le fonce dans un 616161 deja
 #          charge a 121 px par le gris et l'olive.
 common.optionbox  12>1 14>10 3>2 4>3 fusion-ok
+
+# lib.bug : AUCUN choix a faire, et c'est mesure. Elle emploie quatre neutres
+# (0 noir, 2 gris moyen, 4 beige clair, 1 blanc) pour les quatre gris de la
+# nouvelle palette : la bijection par rang est complete, `4>2` est le seul
+# placement qui ne perde rien. La recette « fusion blanche » (`4>3`) n'aurait
+# deplace que 31 px — invisible a l'oeil, mais une marche en moins.
+# Son olive est gardee, comme les trois autres lots (regle etendue 1-3-4-5-7).
+lib.bug  12>14 4>2

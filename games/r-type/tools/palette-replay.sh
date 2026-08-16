@@ -104,3 +104,4 @@ $M lib.patapata    --ecrire     # que l'olive : renumerotation pure
 $M lib.scant       --ecrire     # beiges fusionnes, olive gardee
 $M lib.cancer      --ecrire     # idem
 $M common.optionbox --ecrire    # fusion blanche + olive au gris (c'est un commun)
+$M lib.bug         --ecrire     # aucun choix : 4 neutres pour 4 gris, bijection forcee
