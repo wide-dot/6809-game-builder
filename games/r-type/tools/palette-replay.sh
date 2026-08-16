@@ -37,9 +37,10 @@ verifier() {
     tmp=$(mktemp -d)
     echo "== copie fraiche de origin/master dans $tmp"
     git -C "$racine" worktree add --detach --quiet "$tmp/arbre" origin/master
-    # les outils vivent sur new-color, pas sur master : on les y depose
-    cp tools/palette_migrate.py tools/palette-map.txt tools/palette-replay.sh \
-       "$tmp/arbre/games/r-type/tools/"
+    # les outils vivent sur new-color, pas sur master : on les y depose. TOUT
+    # ce qui s'appelle palette*, sans liste a tenir a jour — une liste oubliee
+    # fait echouer le rejeu loin de sa cause (vecu avec palette_code.py).
+    cp -R tools/palette* "$tmp/arbre/games/r-type/tools/"
     echo "== rejeu"
     (cd "$tmp/arbre/games/r-type" && sh tools/palette-replay.sh)
     echo "== comparaison de src/ avec l'arbre courant"
@@ -115,3 +116,10 @@ $M common.forcepod  --ecrire
 $M common.player    --ecrire
 $M common.bitdevice --ecrire
 $M lib.bink         --ecrire
+
+# =========================================================================
+# Groupe D — les couleurs ecrites en dur dans le code 6809. Renumerotation
+# PURE des deux cotes : aucun pixel ne change de couleur, l'outil le mesure.
+# La declaration de ce qui porte une couleur est dans tools/palette-code.txt.
+# =========================================================================
+python3 tools/palette_code.py --ecrire

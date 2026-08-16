@@ -1,3 +1,4 @@
+; PALETTE-MIGREE — voir games/r-type/tools/palette-code.txt
 ; GENERE par tools/gen_tailmgr_blits.py - NE PAS EDITER.
 ; Corps des vrais blits bg-erase de la tail, page master.
 ; Tables indexees [img*4 + parite*2] (img: 0,2,4,6 ; par: 0/1).
@@ -28,7 +29,7 @@ TMDraw_0_NB0
 	PSHS D
 	ANDA #$F0
 	ANDB #$0F
-	ADDD #$0e90
+	ADDD #$0a90
 	STD -80,U
 	LDX -40,U
 	LDY ,U
@@ -40,7 +41,7 @@ TMDraw_0_NB0
 	LDD #$9b97
 	STD -40,U
 	STD ,U
-	LDA #$9e
+	LDA #$9a
 	STD 40,U
 	STD 80,U
 	LDA #$79
@@ -76,12 +77,12 @@ TMDraw_0_NB0
 	STA -120,U
 	LDA -80,U
 	PSHS U,A
-	LDA #$be
+	LDA #$ba
 	STA -40,U
 	STA ,U
-	LDA #$e9
+	LDA #$a9
 	STA -80,U
-	LDA #$ee
+	LDA #$aa
 	STA 40,U
 	STA 80,U
 	STA 120,U
@@ -90,7 +91,7 @@ TMDraw_0_NB0
 	LDA -60,U
 	LDB -20,U
 	PSHS B,A
-	LDA #$e9
+	LDA #$a9
 	STA -60,U
 	LDA 20,U
 	LDB 60,U
@@ -169,25 +170,25 @@ TMDraw_0_NB1
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e9
+	LDB #$a9
 	STD -1,U
 	LDD 39,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e9
+	LDB #$a9
 	STD 39,U
 	LDD 79,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e9
+	LDB #$a9
 	STD 79,U
 	LDD 119,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e9
+	LDB #$a9
 	STD 119,U
 	LDA -40,U
 	STB -40,U
@@ -231,34 +232,34 @@ TMDraw_0_NB1
 	STD ,U
 	LDD 40,U
 	PSHS D
-	LDA #$be
+	LDA #$ba
 	ANDB #$0F
 	ORB #$70
 	STD 40,U
 	LDD 80,U
 	PSHS D
-	LDA #$ee
+	LDA #$aa
 	ANDB #$0F
 	ORB #$70
 	STD 80,U
 	LDD 120,U
 	PSHS D
-	LDA #$ee
+	LDA #$aa
 	ANDB #$0F
 	ORB #$70
 	STD 120,U
 	LDA -80,U
 	LDB -40,U
 	PSHS U,B,A
-	LDA #$9e
+	LDA #$9a
 	STA -80,U
-	LDA #$eb
+	LDA #$ab
 	STA -40,U
 	LEAU 220,U
 
 	LDD -60,U
 	PSHS D
-	LDA #$9e
+	LDA #$9a
 	ANDB #$0F
 	ORB #$70
 	STD -60,U
@@ -338,7 +339,7 @@ TMDraw_1_NB0
 	LEAS ,Y
 	LDD -80,U
 	PSHS D
-	LDA #$9e
+	LDA #$9a
 	ANDB #$0F
 	ORB #$70
 	STD -80,U
@@ -356,13 +357,13 @@ TMDraw_1_NB0
 	STD ,U
 	LDD 40,U
 	PSHS D
-	LDA #$9e
+	LDA #$9a
 	ANDB #$0F
 	ORB #$70
 	STD 40,U
 	LDD 80,U
 	PSHS D
-	LDA #$7e
+	LDA #$7a
 	ANDB #$0F
 	ORB #$70
 	STD 80,U
@@ -399,15 +400,15 @@ TMDraw_1_NB0
 	ANDB #$0F
 	ORB #$90
 	STB -120,U
-	LDA #$e9
+	LDA #$a9
 	STA -80,U
 	STA 120,U
 	LDA 80,U
 	PSHS U,A
-	LDA #$ee
+	LDA #$aa
 	STA 40,U
 	STA 80,U
-	LDA #$be
+	LDA #$ba
 	STA -40,U
 	STA ,U
 	LEAU 200,U
@@ -484,25 +485,25 @@ TMDraw_1_NB1
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e7
+	LDB #$a7
 	STD -81,U
 	LDD -41,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e7
+	LDB #$a7
 	STD -41,U
 	LDD -1,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e7
+	LDB #$a7
 	STD -1,U
 	LDD 39,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e7
+	LDB #$a7
 	STD 39,U
 	LDD 79,U
 	PSHS D
@@ -538,7 +539,7 @@ TMDraw_1_NB1
 	PSHS A
 	LDA #$bb
 	STA ,U
-	LDA #$be
+	LDA #$ba
 	STA 40,U
 	LDA -80,U
 	LDB -40,U
@@ -549,12 +550,12 @@ TMDraw_1_NB1
 	ANDB #$F0
 	ORB #$09
 	STB -120,U
-	LDA #$eb
+	LDA #$ab
 	STA -40,U
-	LDA #$ee
+	LDA #$aa
 	STA 80,U
 	STA 120,U
-	LDA #$9e
+	LDA #$9a
 	STA -80,U
 	LEAU 200,U
 
@@ -667,15 +668,15 @@ TMDraw_2_NB0
 	PSHS B,A
 	LDA 120,U
 	PSHS U,A
-	LDA #$e9
+	LDA #$a9
 	STA 80,U
-	LDA #$ee
+	LDA #$aa
 	STA ,U
 	STA 40,U
 	LDA #$99
 	STA -120,U
 	STA 120,U
-	LDA #$be
+	LDA #$ba
 	STA -80,U
 	STA -40,U
 	LEAU 160,U
@@ -748,7 +749,7 @@ TMDraw_2_NB1
 	LDA 40,U
 	LDB 80,U
 	PSHS U,B,A
-	LDA #$e7
+	LDA #$a7
 	STA -80,U
 	STA -40,U
 	STA ,U
@@ -784,10 +785,10 @@ TMDraw_2_NB1
 	LDA 40,U
 	LDB 80,U
 	PSHS U,B,A
-	LDA #$9e
+	LDA #$9a
 	STA ,U
 	STA 40,U
-	LDA #$7e
+	LDA #$7a
 	STA 80,U
 	LEAU 160,U
 
@@ -860,7 +861,7 @@ TMDraw_end_NB0
 	PSHS D
 	ANDA #$F0
 	ANDB #$0F
-	ADDD #$0e90
+	ADDD #$0a90
 	STD -80,U
 	LDX -40,U
 	LDY ,U
@@ -871,7 +872,7 @@ TMDraw_end_NB0
 	PSHS U,Y,X,D
 	LDD #$9b97
 	STD -40,U
-	LDA #$9e
+	LDA #$9a
 	STD ,U
 	STD 40,U
 	STD 80,U
@@ -903,28 +904,28 @@ TMDraw_end_NB0
 	PSHS B,A
 	LDA 40,U
 	PSHS A
-	LDA #$cd
+	LDA #$e6
 	STA 80,U
 	STA 120,U
 	LDA ,U
 	LDB -40,U
 	PSHS U,B,A
-	LDA #$e9
+	LDA #$a9
 	STA -80,U
-	LDA #$1c
+	LDA #$3e
 	STA 40,U
-	LDA #$be
+	LDA #$ba
 	STA -40,U
 	LDA #$99
 	STA -120,U
-	LDA #$ee
+	LDA #$aa
 	STA ,U
 	LEAU 220,U
 
 	LDA -60,U
 	LDB -20,U
 	PSHS B,A
-	LDA #$e9
+	LDA #$a9
 	STA -60,U
 	LDA 20,U
 	LDB 60,U
@@ -1003,32 +1004,32 @@ TMDraw_end_NB1
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$e9
+	LDB #$a9
 	STD -1,U
 	LDD 39,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$c9
+	LDB #$e9
 	STD 39,U
 	LDD 79,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$d9
+	LDB #$69
 	STD 79,U
 	LDD 119,U
 	PSHS D
 	ANDA #$F0
 	ORA #$09
-	LDB #$d9
+	LDB #$69
 	STD 119,U
 	LDA -80,U
 	LDB -40,U
 	PSHS U,B,A
 	LDA #$97
 	STA -80,U
-	LDA #$e9
+	LDA #$a9
 	STA -40,U
 	LEAU 220,U
 
@@ -1060,40 +1061,40 @@ TMDraw_end_NB1
 	STA -120,U
 	LDD ,U
 	PSHS D
-	LDA #$be
+	LDA #$ba
 	ANDB #$0F
 	ORB #$70
 	STD ,U
 	LDD 40,U
 	PSHS D
-	LDA #$e1
+	LDA #$a3
 	ANDB #$0F
 	ORB #$70
 	STD 40,U
 	LDD 80,U
 	PSHS D
-	LDA #$ec
+	LDA #$ae
 	ANDB #$0F
 	ORB #$70
 	STD 80,U
 	LDD 120,U
 	PSHS D
-	LDA #$ec
+	LDA #$ae
 	ANDB #$0F
 	ORB #$70
 	STD 120,U
 	LDA -80,U
 	LDB -40,U
 	PSHS U,B,A
-	LDA #$9e
+	LDA #$9a
 	STA -80,U
-	LDA #$eb
+	LDA #$ab
 	STA -40,U
 	LEAU 220,U
 
 	LDD -60,U
 	PSHS D
-	LDA #$9e
+	LDA #$9a
 	ANDB #$0F
 	ORB #$70
 	STD -60,U

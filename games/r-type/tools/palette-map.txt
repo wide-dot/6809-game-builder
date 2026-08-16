@@ -215,3 +215,11 @@ common.forcepod  3>2 4>2 fusion-ok
 # fonce rejoint le gris moyen 616161, le clair prend le gris clair A8A8A8.
 common.bitdevice  3>1 4>2 fusion-ok
 lib.bink          3>1 4>2 fusion-ok
+
+# --- Groupe D : les couleurs ecrites en dur dans le code 6809 ---------------
+# `code.dobkeratops` n'est pas une ressource d'images : c'est la ligne que
+# `palette-code.txt` associe a src/enemies/dobkeratops/tailmgr_blits.asm. Le
+# boss est du contenu de STAGE (stage 1), il a donc droit a l'index propre au
+# stage — son olive reste l'olive, comme pour les quatre lots d'ennemis.
+# common.hud, lui, prend la ligne qu'il a deja plus haut.
+code.dobkeratops  12>14
