@@ -1688,15 +1688,6 @@
                 </file>
 
 
-                <!-- Le passage de palette du tunnel : la wave le seme aux deux bouts
-                     de la section souterraine (subtype = aller ou retour). -->
-                <file name="stage1.fadetotunnel" linkdata="LINK" arena="enemies">
-                    <lwasm gensource="gen/stages/01/fadetotunnel.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/stages/01/background/fadetotunnel.unit.asm"/>
-                    </lwasm>
-                </file>
-
                 <!-- Le sequenceur de fin du niveau 1 : objet monte, commande en B —
                      hors de la RAM residente, qui est saturee. -->
                 <file name="stage1.endstage" linkdata="LINK" arena="enemies">
@@ -2067,13 +2058,10 @@
                         <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
                         <!-- La palette du JEU (Pal_game v1), pas celle des tuiles.
-                             Les deux fichiers sont DERIVES de pal-next.png par
-                             tools/palette_stage.py : la case 15 du stage 1 porte le
-                             ciel, pas la couleur generique de la nouvelle palette. -->
-                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal-next-stage.png"/>
-                        <!-- La palette de la section souterraine (Pal_tunnel v1) :
-                             la meme, ciel recolore — le fondu vers le tunnel EST ca. -->
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-next-inside.png"/>
+                             La nouvelle palette telle quelle : 12 index communs et
+                             4 propres au stage, dont la case 15 (vert clair) reservee
+                             a des sprites du stage 1. -->
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal-next.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- Palette des messages READY / GAME OVER, posee le temps du message. -->
@@ -2093,7 +2081,6 @@
                     <load name="stage1.tabrok.imgGround"/>
                     <load name="stage1.tabrok.imgWalk"/>
                     <load name="stage1.tabrokcanon"/>
-                    <load name="stage1.fadetotunnel"/>
                     <load name="stage1.endstage"/>
                     <load name="stage1.dobkeratops.imgFace"/>
                     <load name="stage1.dobkeratops.imgNerves0"/>
@@ -2188,7 +2175,6 @@
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/02/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2275,7 +2261,6 @@
                         <asm filename="gen/directories/dir4/entries.asm"/>
                         <asm filename="src/stages/03/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/03/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2361,7 +2346,6 @@
                         <asm filename="gen/directories/dir5/entries.asm"/>
                         <asm filename="src/stages/04/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/04/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2447,7 +2431,6 @@
                         <asm filename="gen/directories/dir6/entries.asm"/>
                         <asm filename="src/stages/05/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/05/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2533,7 +2516,6 @@
                         <asm filename="gen/directories/dir7/entries.asm"/>
                         <asm filename="src/stages/06/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/06/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2622,7 +2604,6 @@
                         <asm filename="gen/directories/dir8/entries.asm"/>
                         <asm filename="src/stages/07/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/07/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2707,7 +2688,6 @@
                         <asm filename="gen/directories/dir8/entries.asm"/>
                         <asm filename="src/stages/08/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/08/map/even.png"/>
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>

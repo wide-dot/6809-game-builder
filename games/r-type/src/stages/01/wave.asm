@@ -56,12 +56,6 @@
  	fcb   $06,$3E,ObjID_patapata,$00,$0A
  	fcb   $06,$98,ObjID_patapata,$00,$04
  	fcb   $06,$AC,ObjID_patapata,$00,$05
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$03
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$04
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$05
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$06
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$07
- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$08
  	fcb   $06,$C0,ObjID_bink,$00,$08
  	fcb   $06,$FC,ObjID_scant,$00,$05
  	fcb   $07,$24,ObjID_bink,$00,$08
@@ -107,7 +101,6 @@
 	fcb   $0C,$50,ObjID_blaster,$00,$03
 	fcb   $0C,$5C,ObjID_cancer,$00,$24
  	fcb   $0C,$5E,ObjID_bink,$00,$17
-	fcb   $0C,$80,ObjID_fadetotunnel,$00,$00
 	fcb   $0C,$F8,ObjID_cancer,$00,$27
 	fcb   $0C,$FC,ObjID_pstaff,$00,$08
  	fcb   $0D,$88,ObjID_pow,$00,$35
@@ -153,8 +146,6 @@
 	fcb   $17,$50,ObjID_blaster,$00,$11
  	fcb   $18,$22,ObjID_pow,$00,$04
 	fcb   $18,$6A,ObjID_tabrok,$00,$06
-	fcb   $19,$68,ObjID_fadetotunnel,$00,$01
-	fcb   $19,$68,ObjID_fadetotunnel,$00,$02
 	fcb   $1B,$40,ObjID_bossmusic,$00,$00
 	fcb   $1B,$40,ObjID_tailmgr,$00,$00 ; master fan-out remplace les 19 objets tail (hors-pool)
 

@@ -28,9 +28,6 @@ mainloop.state    EXPORT
 Pal_stage         EXPORT
 ; Le noir dont part le fondu d'ouverture, et ou finit la sequence de fin.
 Pal_black         EXPORT
-; La palette de la section souterraine : l'objet fadetotunnel y fond aux deux
-; bouts du tunnel, et revient a Pal_stage au retour.
-Pal_tunnel        EXPORT
 
 ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
 ; residente des que le niveau est entier. Le scroll porte deja une page par
@@ -149,8 +146,6 @@ endstage.Object             EXTERNAL
 ; stage.endTick releve pour changer de morceau.
 bossmusic.Object            EXTERNAL
 
-; Le passage de palette du tunnel, seme par la wave a ses deux bouts.
-fadetotunnel.Object         EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
         INCLUDE "src/common/hud/messages/messages.const.asm"
 

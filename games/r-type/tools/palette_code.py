@@ -91,13 +91,19 @@ def declaration(chemin):
         elif mots[0] == 'couleur':
             cour.couleurs.update(m.lower() for m in mots[1:])
         elif mots[0] == 'masque':
-            # `masque <opcode> ciel=$F lignes=N` : les octets de cette directive
-            # sont `ciel ^ couleur`, cadres a gauche ($X0) ou a droite ($0X).
+            # `masque <opcode> ciel=$F [cible=$0] lignes=N` : les octets de cette
+            # directive sont `ciel ^ couleur`, cadres a gauche ($X0) ou a droite
+            # ($0X). `cible` permet de RE-ENCODER sur un autre ciel que celui
+            # qu'on decode — c'est ce qui a servi quand le ciel du niveau 1 est
+            # passe de l'index 15 a l'index 0 : meme table, meme passe, un XOR
+            # different en sortie. Par defaut la cible est le ciel d'entree.
             # `lignes=N` est le garde-fou du silence : une table qu'on cesse de
             # reconnaitre (un operande ecrit autrement) ferait 0 ligne et ne
             # dirait rien — ici elle ARRETE.
             opts = dict(m.split('=') for m in mots[2:])
-            cour.masque = (mots[1].lower(), int(opts['ciel'].lstrip('$'), 16),
+            ciel = int(opts['ciel'].lstrip('$'), 16)
+            cour.masque = (mots[1].lower(), ciel,
+                           int(opts.get('cible', '$%X' % ciel).lstrip('$'), 16),
                            int(opts['lignes']))
         elif mots[0] == 'exclut':
             # `exclut <op>` exclut tout l'opcode ; `exclut <op> $val` une valeur
@@ -182,7 +188,7 @@ def main():
         # deuxieme forme : les tables de masques XOR
         lignes_masque, indecodables, compte_faux = 0, [], False
         if f.masque:
-            _, ciel, attendues = f.masque
+            _, ciel, cible, attendues = f.masque
             for m in MASQUE.finditer(src):
                 if not f.masque_ici(m.group(2).lower()):
                     continue
@@ -205,11 +211,13 @@ def main():
 
         print(f"\n{fich}   (table : {ressource})")
         if f.masque:
-            print(f"  {lignes_masque} ligne(s) de masques XOR sur un ciel ${f.masque[1]:X}")
+            vers = '' if f.masque[1] == f.masque[2] else f" -> ciel ${f.masque[2]:X}"
+            print(f"  {lignes_masque} ligne(s) de masques XOR sur un ciel"
+                  f" ${f.masque[1]:X}{vers}")
         if indecodables or compte_faux:
             if compte_faux:
                 print(f"  ARRET — {lignes_masque} ligne(s) de masques reconnue(s),"
-                      f" {f.masque[2]} declaree(s) dans palette-code.txt.")
+                      f" {f.masque[3]} declaree(s) dans palette-code.txt.")
                 print("  Une table cesse d'etre reconnue en silence : c'est le cas"
                       " que ce compte existe pour attraper.")
             for o in sorted(set(indecodables)):
@@ -250,12 +258,12 @@ def main():
                 op = m.group(2).lower()
                 if not f.masque_ici(op):
                     return m.group(0)
-                ciel = f.masque[1]
+                ciel, cible = f.masque[1], f.masque[2]
                 neufs = []
                 for o in octets_masque(m.group(4)):
                     d = None if (op, '%02x' % o) in exclus else decode_masque(o, ciel)
                     neufs.append(o if d is None
-                                 else encode_masque(corr[d[0]], d[1], ciel))
+                                 else encode_masque(corr[d[0]], d[1], cible))
                 return (m.group(1) + m.group(2) + m.group(3)
                         + ','.join('$%02X' % o for o in neufs) + m.group(5))
 
@@ -280,7 +288,8 @@ def main():
                     for o in octets_masque(m.group(4)):
                         if (op, '%02x' % o) in exclus:
                             continue
-                        d = decode_masque(o, f.masque[1])
+                        # relire avec le ciel CIBLE : c'est celui de l'octet ecrit
+                        d = decode_masque(o, f.masque[2])
                         if d is not None:
                             obtenu.add(d[0])
             if obtenu != attendu:

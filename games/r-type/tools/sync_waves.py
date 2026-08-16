@@ -36,11 +36,12 @@ import sys
 
 # Objets réellement portés en v2, donc activables depuis une wave.
 # Ennemis : src/enemies/*. Reste : src/common/pickups/pow,
-# src/common/state/checkpoint, src/common/flow/bossmusic, et fadetotunnel qui
-# est le fondu propre au stage 01 (src/stages/01/background).
+# src/common/state/checkpoint et src/common/flow/bossmusic.
+# `fadetotunnel` en faisait partie ; l'objet est retiré depuis le 16/08/2026
+# (la nouvelle palette n'a plus d'index de tunnel à faire fondre).
 PORTED = ['bink', 'blaster', 'bug', 'cancer', 'checkpoint', 'bossmusic',
           'dobkeratops', 'dobkeratops_jaw', 'dobkeratops_monster',
-          'fadetotunnel', 'patapata', 'pow', 'pstaff', 'scant', 'shell',
+          'patapata', 'pow', 'pstaff', 'scant', 'shell',
           'tabrok', 'tailmgr']
 
 STAGES = ['02', '03', '04', '05', '06', '07', '08']

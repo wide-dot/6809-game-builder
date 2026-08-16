@@ -11,7 +11,9 @@ ObjID_patapata equ 30
 ObjID_bug equ 31
 ObjID_bink equ 32
 ObjID_pow equ 33
-ObjID_fadetotunnel equ 34
+* 34 : libre — ex-ObjID_fadetotunnel, retire le 16/08/2026 avec la palette
+*      de tunnel. L'id n'est PAS recycle : les tables d'index sont indexees
+*      par id, renumeroter les suivants les casserait toutes.
 ObjID_scant equ 35
 ObjID_pstaff equ 36
 ObjID_cancer equ 37

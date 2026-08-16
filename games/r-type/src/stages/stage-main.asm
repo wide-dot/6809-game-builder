@@ -673,9 +673,9 @@ stage.paletteFadeCommon
         std   o_fade_callback,u
         rts
 
-; EXPORTe : l'objet fadetotunnel, pagine, arme le meme fondu et doit lui
-; donner le meme rappel de fin.
-stage.paletteFadeDone EXPORT
+; Le rappel de fin du fondu. Il etait EXPORTe pour l'objet fadetotunnel, retire
+; le 16/08/2026 avec la palette de tunnel ; il reste le point de sortie commun
+; des fondus du stage.
 stage.paletteFadeDone
         rts
 

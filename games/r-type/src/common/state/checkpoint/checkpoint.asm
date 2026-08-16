@@ -25,17 +25,17 @@ checkpoint.load
         jsr   EraseSprites_ClearAll
         jsr   Collision_ClearLists
 ;
-        ; clear the two screen buffers to black -- in nibble 15 ($FF), NOT nibble 0.
-        ; Both render as black (level-1 palette has two blacks), but the never-drawn
-        ; sky MUST be nibble 15: the starfield only draws on "virgin sky" pixels
-        ; (high/low nibble == $F). A $0000 clear made the sky nibble 0 after every
-        ; checkpoint reload, so the stars could never draw again after a death.
-        ; The empty (sky) tiles are SKIPPED by DrawTiles, so whatever value is
-        ; cleared here IS the sky for the rest of the level.
-        ldx   #$FFFF
+        ; clear the two screen buffers to black -- nibble 0. The empty (sky) tiles
+        ; are SKIPPED by DrawTiles, so whatever value is cleared here IS the sky
+        ; for the rest of the level, and the starfield only draws on "virgin sky"
+        ; pixels, i.e. nibble 0 (see starfield/obj.asm).
+        ; The old palette had TWO blacks and the sky used the second one (index
+        ; 15), hence the former $FFFF clear; the new one has a single black --
+        ; index 15 now carries a light green reserved for stage-1 sprites.
+        ldx   #$0000
         jsr   ClearDataMem
         _SwitchScreenBuffer
-        ldx   #$FFFF
+        ldx   #$0000
         jsr   ClearDataMem
         _SwitchScreenBuffer
 ;

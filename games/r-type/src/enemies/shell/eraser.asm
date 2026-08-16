@@ -30,14 +30,16 @@ Object
 
 ; --- blit compile, copie de generated-code/shellmask/Img_shell_mask_0_ND0.asm
 ; --- entree: U = adresse ecran ; stamp uniforme ; auto-suffisant ; RTS
+; Le stamp est du CIEL : nibble 0 depuis le 16/08/2026 (l'ancienne palette
+; donnait au ciel un noir a elle, l'index 15, d'ou les $ffff d'origine).
 ShellMaskBlit
 	LEAU 322,U
 
-	LDD #$ffff
+	LDD #$0000
 	STD 118,U
 	STD 78,U
 	STD 38,U
-	LDX #$ffff
+	LDX #$0000
 	PSHU A,X
 	LEAU -37,U
 
@@ -91,11 +93,11 @@ ShellMaskBlit
 	LDU <glb_screen_location_1
 	LEAU 322,U
 
-	LDD #$ffff
+	LDD #$0000
 	STD 117,U
 	STD 77,U
 	STD 37,U
-	LDX #$ffff
+	LDX #$0000
 	PSHU A,X
 	LEAU -37,U
 

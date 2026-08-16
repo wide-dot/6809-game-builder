@@ -39,7 +39,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
+        fcb   0 ; id 34 : libre, jamais lance
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
@@ -93,7 +93,7 @@ Obj_Index_Address
         fdb   bug.Object ; ObjID_bug
         fdb   bink.Object ; ObjID_bink
         fdb   pow.Object ; ObjID_pow
-        fdb   fadetotunnel.Object ; ObjID_fadetotunnel
+        fdb   0 ; id 34 : libre, jamais lance
         fdb   scant.Object ; ObjID_scant
         fdb   pstaff.Object ; ObjID_pstaff
         fdb   cancer.Object ; ObjID_cancer
@@ -141,7 +141,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
+        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
@@ -189,7 +189,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bug
         fdb   Ani_Asd_none ; ObjID_bink
         fdb   Ani_Asd_none ; ObjID_pow
-        fdb   Ani_Asd_none ; ObjID_fadetotunnel
+        fdb   Ani_Asd_none ; id 34 : libre
         fdb   Ani_Asd_none ; ObjID_scant
         fdb   Ani_Asd_none ; ObjID_pstaff
         fdb   Ani_Asd_none ; ObjID_cancer
@@ -240,7 +240,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
+        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer

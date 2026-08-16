@@ -20,20 +20,24 @@
 ; transparence comme dans les PNG) : 1 = gris moyen #616161, 2 = gris clair
 ; #A8A8A8, 4 = bleu fonce #00618F. Les valeurs qui font foi sont les masques du
 ; descripteur, plus bas ; celles-ci n'en sont que le rappel.
-; 0 comme $F sont NOIRS a l'ecran, donc indiscernables sur une capture.
 ;
-; Invariant central (MESURE, pas suppose) : le ciel jamais dessine est
-; uniformement $FF (nibble 15), le decor peint son noir en nibble 0.
-;   tracer  : si notre nibble == $F -> ecrire la couleur
-;   effacer : si notre nibble == notre couleur -> reecrire $F
-; -> on ne touche QUE du ciel ; le decor (nibble 0) est ignore, ce qui est aussi
-;    le rendu voulu (pas d'etoile dans la silhouette de la ville).
+; Invariant central : le ciel est le nibble 0.
+;   tracer  : si notre nibble == 0 -> ecrire la couleur
+;   effacer : si notre nibble == notre couleur -> remettre 0
 ;
 ; Les deux operations sont le MEME XOR, dans l'ordre inverse :
-;   tracer  = tester $F puis XOR   ($F ^ masque = couleur)
-;   effacer = XOR puis tester $F   (couleur ^ masque = $F)
-; avec masque = $F0 ^ couleur_haut (resp. $0F ^ couleur_bas). Et pour le nibble
-; haut le test se reduit a `cmpa #$F0` : (octet AND $F0) == $F0 <=> octet >= $F0.
+;   tracer  = tester 0 puis XOR   (0 ^ couleur = couleur)
+;   effacer = XOR puis tester 0   (couleur ^ couleur = 0)
+; et le masque n'est plus qu'un XOR de convenance : il VAUT la couleur.
+;
+; CE QUE CA COUTE, et c'est assume (auteur, 16/08) : le decor peint AUSSI son
+; noir en nibble 0. Le ciel et le noir du decor sont donc le meme index, et une
+; etoile peut desormais s'allumer dans une zone noire du decor ou d'un sprite.
+; C'est mesure et petit — ~0,8 % de la bande d'etoiles cote decor, 26 px noirs
+; sur les 1561 px du vaisseau — mais ce n'est pas nul. Avant, le ciel avait son
+; propre noir (l'index 15) ; cet index porte maintenant un vert clair reserve
+; aux sprites propres au stage 1, et le fondu de tunnel qui l'exploitait est
+; retire.
 ;
 ; Deux passes par trame (cf. main.asm et le commentaire de StarfieldErase) :
 ;   ERASE entre DrawTiles et DrawSprites (le fond vient d'etre restaure),
@@ -75,40 +79,36 @@
 STAR_DH MACRO                           ; tracer, nibble haut
 sfdh\1  ldx   \1,u
         lda   ,x
-        cmpa  #$F0                      ; ciel vierge ? (octet AND $F0)==$F0
-        blo   sfdh\2                    ;   <=> octet >= $F0
-        eora  \1/2-16,y                 ; $F -> couleur de CETTE etoile
+        bita  #$F0                      ; ciel vierge ? notre nibble a 0
+        bne   sfdh\2
+        eora  \1/2-16,y                 ; 0 -> couleur de CETTE etoile
         sta   ,x
  ENDM
 
 STAR_DL MACRO                           ; tracer, nibble bas
 sfdl\1  ldx   \1,u
         lda   ,x
-        coma                            ; ciel vierge <=> les 4 bits bas de
-        bita  #$0F                      ;   ~octet sont tous a 0
+        bita  #$0F                      ; le meme test sur l'autre nibble
         bne   sfdl\2
-        coma                            ; retour a l'octet
-        eora  \1/2-8,y  
+        eora  \1/2-8,y
         sta   ,x
  ENDM
 
 STAR_EH MACRO                           ; effacer, nibble haut
 sfeh\1  ldx   \1,u
         lda   ,x
-        eora  \1/2-16,y                 ; notre couleur -> $F
-        cmpa  #$F0
-        blo   sfeh\2                    ; ce n'etait pas notre couleur
+        eora  \1/2-16,y                 ; notre couleur -> 0
+        bita  #$F0
+        bne   sfeh\2                    ; ce n'etait pas notre couleur
         sta   ,x
  ENDM
 
 STAR_EL MACRO                           ; effacer, nibble bas
 sfel\1  ldx   \1,u
         lda   ,x
-        eora  \1/2-8,y  
-        coma
+        eora  \1/2-8,y
         bita  #$0F
         bne   sfel\2
-        coma
         sta   ,x
  ENDM
 
@@ -125,8 +125,8 @@ sfel\1  ldx   \1,u
 ; ---------------------------------------------------------------------------
 ; Descripteurs de plan - 25 octets : 16 masques DEVANT le point d'entree Y,
 ; puis 9 octets de parametres.
-;   -16..-9,y  masques XOR nibble haut, un par etoile ($F0 ^ couleur<<4)
-;    -8..-1,y  masques XOR nibble bas,  un par etoile ($0F ^ couleur)
+;   -16..-9,y  masques XOR nibble haut, un par etoile (couleur<<4)
+;    -8..-1,y  masques XOR nibble bas,  un par etoile (couleur)
 ;    0,y  table (2)          adresse de starTab_pN
 ;    2,y  vitesse 8.8 (2)
 ;    4,y  pas (1)            nb_etoiles*2 (14 ou 16)
@@ -137,28 +137,27 @@ sfel\1  ldx   \1,u
 ;
 ; Les masques sont PAR ETOILE (le corps deroule lit -16+i,y / -8+i,y, cf. les
 ; macros) : la couleur de chaque etoile est un octet ici, cout zero en cycles.
-; Couleurs (index materiel, cf. pal-next-stage.png decale de 1) : 1 = gris moyen
-; #616161, 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les masques sont
-; renumerotes par tools/palette_code.py, jamais a la main : l'octet range est
-; `$F ^ couleur`, le $F etant le ciel. L'etoile 8 (offset 14) = slot 7.
+; Le ciel valant 0, le masque VAUT la couleur : 1 = gris moyen #616161,
+; 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les octets sont renumerotes
+; par tools/palette_code.py, jamais a la main. L'etoile 8 (offset 14) = slot 7.
 ; ---------------------------------------------------------------------------
-        fcb   $D0,$E0,$D0,$D0,$E0,$D0,$E0,$D0   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
-        fcb   $0D,$0E,$0D,$0D,$0E,$0D,$0E,$0D
+        fcb   $20,$10,$20,$20,$10,$20,$10,$20   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
+        fcb   $02,$01,$02,$02,$01,$02,$01,$02
 planeTable
         fdb   starTab_p0
         fdb   $0100                     ; 1.0 px/trame (plan rapide)
         fcb   16,1                      ; 8 etoiles (2 amas de 4) -> pas 16
         fcb   2                         ; 2 tours : hauteurs differentes a chaque passage
         fdb   16*144                    ; lapStride = 2304
-        fcb   $E0,$B0,$E0,$E0,$B0,$E0,$B0,$00   ; p1 : moyen,bleu,moyen,moyen,bleu,moyen,bleu (7 etoiles)
-        fcb   $0E,$0B,$0E,$0E,$0B,$0E,$0B,$00
+        fcb   $10,$40,$10,$10,$40,$10,$40,$00   ; p1 : moyen,bleu,moyen,moyen,bleu,moyen,bleu (7 etoiles)
+        fcb   $01,$04,$01,$01,$04,$01,$04,$00
         fdb   starTab_p1
         fdb   $0080                     ; 0.5 px/trame
         fcb   14,0                      ; 7 etoiles -> pas 14
         fcb   1                         ; 1 tour (plan lent, ne repasse pas dans l'intro)
         fdb   14*144                    ; lapStride (inutilise a 1 tour)
-        fcb   $B0,$B0,$E0,$B0,$B0,$E0,$B0,$00   ; p2 : bleu fonce dominant, 2 grises moyennes (7 etoiles)
-        fcb   $0B,$0B,$0E,$0B,$0B,$0E,$0B,$00
+        fcb   $40,$40,$10,$40,$40,$10,$40,$00   ; p2 : bleu fonce dominant, 2 grises moyennes (7 etoiles)
+        fcb   $04,$04,$01,$04,$04,$01,$04,$00
         fdb   starTab_p2
         fdb   $0040                     ; 0.25 px/trame (plan lointain, le plus sombre)
         fcb   14,0                      ; 7 etoiles -> pas 14

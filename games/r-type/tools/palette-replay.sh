@@ -118,19 +118,6 @@ $M common.bitdevice --ecrire
 $M lib.bink         --ecrire
 
 # =========================================================================
-# La PROSE que la migration rend fausse. Un commentaire qui nomme une couleur
-# ment des que l'index bouge, et aucun outil de renumerotation ne peut le
-# reecrire — mais il doit quand meme se rejouer, sinon `--verifier` signale un
-# ecart a chaque fois qu'on corrige un commentaire. D'ou ce patch, applique
-# AVANT les outils : ses contextes sont ceux de `master`.
-# =========================================================================
-if git apply -p1 -R --check tools/palette-prose.patch 2>/dev/null; then
-    echo "prose : deja appliquee, rien a faire."
-else
-    git apply -p1 tools/palette-prose.patch
-fi
-
-# =========================================================================
 # Groupe D — les couleurs ecrites en dur dans le code 6809. Renumerotation
 # PURE des deux cotes : aucun pixel ne change de couleur, l'outil le mesure.
 # La declaration de ce qui porte une couleur est dans tools/palette-code.txt.
@@ -143,15 +130,42 @@ fi
 python3 tools/palette_code.py --ecrire
 
 # =========================================================================
-# Groupe E — la bascule. Le stage 1 charge DEUX palettes (le jeu et le
-# tunnel) ; toutes deux sont derivees de pal-next.png, qui n'est jamais
-# reecrit. La seule chose que la derivation change est la case 15 : sur le
-# stage 1 elle ne porte pas une couleur mais un ROLE, le ciel — le fondu vers
-# le tunnel n'est que son recoloriage. Le detail et les trois garde-fous sont
-# en tete de tools/palette_stage.py.
+# Groupe E — la bascule. Le stage 1 charge `pal-next.png` telle quelle : la
+# nouvelle palette entiere, 12 index communs et 4 propres au stage, dont la
+# case 15 (vert clair) que l'auteur reserve a des sprites du stage 1.
 #
-# Ce que le groupe E ne fait PAS, contrairement a ce que le plan annoncait :
-# toucher au starfield, aux effacements $FFFF ou a l'effaceur de shells. Le
-# ciel reste l'index 15, donc ils sont deja justes.
+# L'ancienne palette avait DEUX noirs et le ciel du niveau occupait le second
+# (index 15) ; le fondu vers le tunnel n'etait que le recoloriage de cette
+# case. La nouvelle n'a qu'un noir : le ciel devient le nibble 0, et le fondu
+# de tunnel est retire (decision auteur, 16/08).
+#
+# Ce que ca entraine, et que les OUTILS ne savent pas ecrire — le patch
+# ci-dessous s'en charge :
+#   * les quatre macros du starfield testent le ciel sur 0 (deux `coma` en
+#     moins par etoile sur les nibbles bas) ; ses six tables de masques, elles,
+#     sont bien reencodees par palette_code.py (`cible=$0`) ;
+#   * les effacements de tampon passent de $FFFF a $0000 (checkpoint, x2) et
+#     l'effaceur de shells tamponne du ciel a $0000 ;
+#   * l'objet fadetotunnel, ses 9 lignes de wave et son id d'objet s'en vont.
 # =========================================================================
-python3 tools/palette_stage.py --ecrire
+
+# Les modifications que les deux outils ne peuvent pas exprimer : du CODE (les
+# tests de ciel, les effacements, le retrait du fondu de tunnel) et de la PROSE
+# (un commentaire qui nomme une couleur ment des que l'index bouge). Elles
+# doivent se rejouer comme le reste, sinon `--verifier` signale un ecart a
+# chaque correction. Applique APRES les outils : ses contextes sont ceux de
+# l'arbre migre.
+if git apply -p1 -R --check tools/palette-edits.patch 2>/dev/null; then
+    echo "edits : deja appliques, rien a faire."
+else
+    git apply -p1 tools/palette-edits.patch
+fi
+
+# Les fichiers que la campagne SUPPRIME. Une suppression s'enonce en commande,
+# pas en patch : c'est le role de ce ledger.
+rm -f src/stages/01/background/fadetotunnel.unit.asm \
+      src/stages/01/background/obj_fadetotunnel.asm \
+      src/stages/01/palette/pal-inside.png \
+      src/stages/01/palette/pal-inside-black.png \
+      src/stages/01/palette/pal-inside-blue.png \
+      src/stages/01/palette/pal-inside-grey.png

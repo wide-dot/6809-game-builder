@@ -18,13 +18,15 @@
 #   fichier <chemin> <ressource>   la ressource dont la ligne de palette-map
 #                                  s'applique a ce code
 #   couleur <opcode>…              ces opcodes portent des quartets de couleur
-#   masque  <opcode> ciel=$X lignes=N
+#   masque  <opcode> ciel=$X [cible=$Y] lignes=N
 #                                  les octets de cette directive sont des
 #                                  MASQUES XOR sur un ciel uniforme : l'octet
 #                                  vaut `ciel ^ couleur`, cadre a gauche ($X0)
-#                                  ou a droite ($0X). `lignes=N` est le compte
-#                                  attendu — une table qu'on cesse de
-#                                  reconnaitre ferait zero ligne en silence.
+#                                  ou a droite ($0X). `cible` re-encode sur un
+#                                  AUTRE ciel que celui qu'on decode (defaut :
+#                                  le meme). `lignes=N` est le compte attendu —
+#                                  une table qu'on cesse de reconnaitre ferait
+#                                  zero ligne en silence.
 #   exclut  <opcode> [valeur]      ces immediats n'en portent pas ; sans valeur,
 #                                  tout l'opcode est exclu
 
@@ -56,11 +58,15 @@ exclut  andb            # idem
 # droite pour le quartet bas. Aucun `#$` : ni cet outil (qui lisait les
 # immediats) ni `palette_usage.py` (qui cherche `LDA #$xy` + `STA ,U`) ne le
 # voyaient. C'est la bascule de palette qui l'a fait sortir.
-# Les deux `cmpa #$F0` et les deux `bita #$0F` des macros testent le CIEL, pas
-# une couleur : ils ne bougent pas — le ciel reste l'index 15, cf. le
-# commentaire de tete de tools/palette_stage.py.
+# Le ciel du niveau 1 PASSE de l'index 15 a l'index 0 (decision auteur, 16/08 :
+# la case 15 devient un vert clair pour des sprites propres au stage). D'ou le
+# `cible=$0` : la table est decodee sur l'ancien ciel $F et re-encodee sur le
+# neuf, en une passe. Le masque devient donc la couleur elle-meme.
+# Les tests du ciel dans les macros (`cmpa #$F0` / `bita #$0F`) sont reecrits a
+# la main dans la meme foulee — ce sont des instructions, pas des donnees, et
+# ils vivent dans tools/palette-edits.patch.
 fichier src/common/fx/starfield/obj.asm  common.starfield
-masque  fcb ciel=$F lignes=6
+masque  fcb ciel=$F cible=$0 lignes=6
 exclut  fcb $00         # bourrage du 8e slot des plans a 7 etoiles : jamais lu
-exclut  cmpa            # $F0 : le test du ciel vierge, quartet haut
-exclut  bita            # $0F : le meme test, quartet bas
+exclut  cmpa            # le test du ciel vierge, quartet haut
+exclut  bita            # le meme test, quartet bas

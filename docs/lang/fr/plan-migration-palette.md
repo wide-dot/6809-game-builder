@@ -216,53 +216,59 @@ INCLUDE ne l'atteint.
 
 ### Groupe E — la palette et le fond (bascule) — FAIT le 16/08/2026
 
-- [x] le stage 1 charge ses **deux** palettes depuis `pal-next.png`, dérivées
-      par `tools/palette_stage.py` : `pal-next-stage.png` (le jeu) et
-      `pal-next-inside.png` (le tunnel)
-- [x] `starfield/obj.asm` : les six tables de masques renumérotées par
-      `palette_code.py`, étendu à cette deuxième forme de couleur en dur
-- [x] la prose que la migration rendait fausse, rejouable
-      (`tools/palette-prose.patch`)
+- [x] le stage 1 charge **`pal-next.png` telle quelle** — la nouvelle palette
+      entière, sans dérivation
+- [x] le **ciel du niveau passe sur l'index 0** : les quatre macros du
+      starfield testent le ciel sur 0, ses six tables de masques sont
+      ré-encodées par `palette_code.py` (`cible=$0`), les deux effacements de
+      tampon passent de `$FFFF` à `$0000`, l'effaceur de shells tamponne `$0000`
+- [x] le **fondu de tunnel est retiré** : les deux fichiers de l'objet, ses
+      9 lignes de wave, son bloc de config, son `<load>`, les 8 `Pal_tunnel`
+      et les quatre `pal-inside*.png`
 
-**Les deux dernières lignes de ce groupe étaient FAUSSES et ont été retirées**
-(« les `ldx #$FFFF` deviennent `#$0000` », « test du ciel sur le nibble 0 »).
-Elles reposaient sur une lecture, pas sur une mesure : la nouvelle palette
-n'ayant qu'un noir, j'en avais conclu que le ciel devait rejoindre l'index 0.
-Deux mesures indépendantes disent le contraire :
+**Décision auteur (16/08)** : la case 15 est un **vert clair**, réservé à des
+sprites propres au stage 1. Elle ne peut donc plus héberger le ciel.
 
-* `pal.png` et `pal-inside.png` ne diffèrent que d'**une** entrée, la 15
-  (`#000000` → `#617A7A`). Le fondu vers le tunnel **est** le recoloriage de
-  cette seule case : la verser dans l'index 0 aurait recoloré du même coup tout
-  le noir du décor et des sprites, et privé `Pal_tunnel` de son objet ;
-* l'image du niveau pose **234 652 px** sur l'index 15 — tout le ciel — contre
-  9 061 px de vrai noir sur l'index 0, qui est le noir du décor.
+L'ancienne palette avait **deux noirs** et le ciel du niveau occupait le second
+(index 15) — l'image du niveau y pose 234 652 px. Cette case dédiée était ce
+qui faisait marcher le fondu de tunnel : `pal.png` et `pal-inside.png` ne
+diffèrent que d'une entrée, la 15 (`#000000` → `#617A7A`), autrement dit le
+fondu **était** le recoloriage du ciel. La nouvelle palette n'ayant qu'un noir,
+les deux vont ensemble : le ciel devient le nibble 0, et le fondu de tunnel
+n'a plus d'objet.
 
-Sur le stage 1, l'index 15 n'est donc pas une couleur, c'est un **rôle**. Il
-occupe la quatrième case propre au stage ; le `#9ECC00` que `pal-next.png` y
-porte n'a aucun consommateur dans le dépôt, et le stage 1 ne peut pas
-l'héberger. `pal-next.png` n'est pas réécrit pour autant — c'est la palette de
-référence de la campagne, les deux fichiers du jeu en sont **dérivés**, et les
-trois autres cases propres (12, 13, 14 : les deux beiges et l'olive) y sont
-déjà justes. Si l'auteur veut ce vert sur le stage 1, il faudra d'abord donner
-un autre toit au ciel — il n'y en a pas aujourd'hui.
+**Ce que ça coûte, mesuré et assumé** : le décor peint aussi son noir en
+nibble 0. Ciel et noir de décor sont donc le même index, et une étoile peut
+désormais s'allumer dans une zone noire du décor ou d'un sprite — ~0,8 % de la
+bande d'étoiles côté décor, 26 px noirs sur les 1561 px du vaisseau. Petit,
+mais pas nul ; à revoir au groupe F si ça se voit, puisque les tuiles y sont
+reprises à la main.
 
-Conséquence : le champ d'étoiles, les deux effacements `$FFFF` et l'effaceur de
-shells (`enemies/shell/eraser.asm`, qui tamponne du ciel) sont **déjà justes**
-et n'ont pas été touchés. Un commentaire l'a été, dans `checkpoint.unit.asm` :
-c'est exactement le piège où je suis tombé, il est signalé sur place.
+**L'id d'objet 34 n'est pas recyclé.** `objid.index.asm` est indexé *par id* :
+renuméroter les suivants casserait les cinq tables. La rangée 34 prend donc le
+motif réservé de la rangée 0, et `objid.const.asm` déclare l'id libre.
 
-**Trou du groupe D révélé au passage.** Le starfield ne charge pas ses
-couleurs, il les XOR-e sur un ciel de nibble `$F` : ses six `fcb` rangent
-`$F ^ couleur`. Ni `palette_code.py` (qui lisait les immédiats) ni le relevé de
+**Trou du groupe D révélé par la bascule.** Le starfield ne charge pas ses
+couleurs, il les XOR-e sur le ciel : ses six `fcb` rangeaient `$F ^ couleur`.
+Ni `palette_code.py` (qui lisait les immédiats) ni le relevé de
 `palette_usage.py` (qui cherche `LDA #$xy` suivi d'un `STA ,U`) ne pouvaient le
 voir — un **troisième** site de couleur en dur, d'une forme que rien
-n'inspectait. `palette_code.py` sait désormais le traiter, déclaré par
-`masque <opcode> ciel=$X lignes=N` dans `palette-code.txt` ; le compte de
-lignes est là pour que la table ne puisse pas cesser d'être reconnue en
-silence, et les quatre garde-fous ont été cassés exprès avant d'être crus.
-Décision appliquée : `4>2`, le beige clair des étoiles prend le gris clair
-(auteur, 16/08), soit la recette A des quatre autres communs. `palette_usage.py`
-reste aveugle à cette forme — il ne lit pas `palette-code.txt`.
+n'inspectait. L'outil sait désormais le traiter, déclaré par
+`masque <opcode> ciel=$X [cible=$Y] lignes=N` ; `cible` est ce qui a permis de
+décoder sur l'ancien ciel et de ré-encoder sur le neuf **en une passe depuis
+`master`**. Le compte de lignes est là pour qu'une table ne puisse pas cesser
+d'être reconnue en silence, et les garde-fous ont été cassés exprès avant
+d'être crus — dont le contrôle de relecture, qui a attrapé une vraie erreur de
+ma part (il relisait avec l'ancien ciel). Décision appliquée `4>2` : le beige
+clair des étoiles prend le gris clair, la recette A des quatre autres communs.
+`palette_usage.py` reste aveugle à cette forme — il ne lit pas
+`palette-code.txt`.
+
+**Le ledger a désormais trois natures d'acte**, et c'est complet : les
+commandes d'outil, un patch (`tools/palette-edits.patch`) pour ce que les
+outils ne savent pas écrire — du code et de la prose — et des `rm` pour les
+suppressions. `--verifier` garde donc son sens exact : `src/` entier est
+reproductible depuis `master`.
 
 ### Groupe F — les tuiles, EN DERNIER (décision auteur)
 

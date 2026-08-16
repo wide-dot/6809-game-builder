@@ -1,0 +1,383 @@
+--- a/src/common/flow/checkpoint.unit.asm	2026-08-16 18:44:15.300004415 +0000
++++ b/src/common/flow/checkpoint.unit.asm	2026-08-16 18:42:20.429402797 +0000
+@@ -83,14 +83,16 @@
+         jsr   EraseSprites_ClearAll
+         jsr   Collision_ClearLists
+ 
+-        ; LES DEUX TAMPONS AU NOIR — en nibble 15 ($FF), PAS en nibble 0. Les
+-        ; deux rendent du noir (la palette du niveau 1 a deux noirs), mais le
+-        ; ciel jamais dessiné DOIT être en nibble 15 : le champ d'étoiles ne
+-        ; dessine que sur les pixels de « ciel vierge » (nibble haut/bas == $F).
+-        ; Un effacement à $0000 rendait le ciel nibble 0 après chaque reprise,
+-        ; et plus une seule étoile ne réapparaissait après une mort. Les tuiles
+-        ; vides (le ciel) sont SAUTÉES par DrawTiles : ce qu'on efface ici EST
+-        ; le ciel pour tout le reste du niveau.
++        ; LES DEUX TAMPONS AU NOIR — en nibble 0. Les tuiles vides (le ciel)
++        ; sont SAUTÉES par DrawTiles : ce qu'on efface ici EST le ciel pour tout
++        ; le reste du niveau, et le champ d'étoiles ne dessine que sur les pixels
++        ; de « ciel vierge », c'est-à-dire de nibble 0 (cf. starfield/obj.asm).
++        ;
++        ; L'ancienne palette avait DEUX noirs et le ciel occupait le second
++        ; (index 15) : on effaçait alors à $FFFF, ce qui distinguait le ciel du
++        ; noir du décor. La nouvelle palette n'en a qu'un — l'index 15 porte un
++        ; vert clair réservé aux sprites propres au stage 1 (décision auteur,
++        ; 16/08) — donc le ciel est le noir tout court.
+         ;
+         ; V2-DEVIATION : ancrage ABSOLU de la fenêtre données avant le premier
+         ; effacement. `_SwitchScreenBuffer` est un toggle RELATIF (eor #1 /
+@@ -105,10 +107,10 @@
+         ; registre matériel dont on n'est pas propriétaire, on pose, on ne
+         ; bascule pas.
+         _ram.data.set #2
+-        ldx   #$FFFF
++        ldx   #$0000
+         jsr   ClearDataMem
+         _SwitchScreenBuffer
+-        ldx   #$FFFF
++        ldx   #$0000
+         jsr   ClearDataMem
+         _SwitchScreenBuffer
+ 
+@@ -156,9 +158,9 @@
+ ; Rejoue le défilement jusqu'à la position demandée, de sorte que le viewport
+ ; soit peint EN ENTIER dans LES DEUX tampons. Le premier DrawTiles ordinaire ne
+ ; trace que les colonnes de la position courante ; sans ce rejeu, la rangée
+-; verticale de fond — celle qui porte le ciel en nibble $F — n'atteint jamais
+-; l'écran, et le champ d'étoiles, dont tout le test tient sur « ce pixel
+-; vaut-il $F », ne dessine rien.
++; verticale de fond — celle qui porte le ciel — n'atteint jamais l'écran, et le
++; champ d'étoiles, dont tout le test tient sur « ce pixel est-il du ciel »,
++; ne dessine rien.
+ ;
+ ; Le principe : on part d'un viewport large de zéro colonne, calé à droite, et
+ ; on avance de 4 px vers la gauche en élargissant d'une colonne tous les trois
+--- a/src/common/fx/starfield/obj.asm	2026-08-16 18:44:18.582772119 +0000
++++ b/src/common/fx/starfield/obj.asm	2026-08-16 18:41:40.252862999 +0000
+@@ -16,22 +16,28 @@
+ ; le nibble est connu une fois par PLAN et par passe, pas par etoile. D'ou deux
+ ; boucles specialisees (nibble haut / nibble bas) et 2 o par entree de table.
+ ;
+-; Couleurs = nibbles palette (cf. generated-code/level01/BuilderMainGenCode.asm ;
+-; la palette est decalee de 1 vs le PNG) : 1 = blanc, 2 = gris, 5 = bleu fonce.
+-; 0 comme $F sont NOIRS a l'ecran, donc indiscernables sur une capture.
+-;
+-; Invariant central (MESURE, pas suppose) : le ciel jamais dessine est
+-; uniformement $FF (nibble 15), le decor peint son noir en nibble 0.
+-;   tracer  : si notre nibble == $F -> ecrire la couleur
+-;   effacer : si notre nibble == notre couleur -> reecrire $F
+-; -> on ne touche QUE du ciel ; le decor (nibble 0) est ignore, ce qui est aussi
+-;    le rendu voulu (pas d'etoile dans la silhouette de la ville).
++; Couleurs = index materiels (un nibble EST un index : pas de decalage de
++; transparence comme dans les PNG) : 1 = gris moyen #616161, 2 = gris clair
++; #A8A8A8, 4 = bleu fonce #00618F. Les valeurs qui font foi sont les masques du
++; descripteur, plus bas ; celles-ci n'en sont que le rappel.
++;
++; Invariant central : le ciel est le nibble 0.
++;   tracer  : si notre nibble == 0 -> ecrire la couleur
++;   effacer : si notre nibble == notre couleur -> remettre 0
+ ;
+ ; Les deux operations sont le MEME XOR, dans l'ordre inverse :
+-;   tracer  = tester $F puis XOR   ($F ^ masque = couleur)
+-;   effacer = XOR puis tester $F   (couleur ^ masque = $F)
+-; avec masque = $F0 ^ couleur_haut (resp. $0F ^ couleur_bas). Et pour le nibble
+-; haut le test se reduit a `cmpa #$F0` : (octet AND $F0) == $F0 <=> octet >= $F0.
++;   tracer  = tester 0 puis XOR   (0 ^ couleur = couleur)
++;   effacer = XOR puis tester 0   (couleur ^ couleur = 0)
++; et le masque n'est plus qu'un XOR de convenance : il VAUT la couleur.
++;
++; CE QUE CA COUTE, et c'est assume (auteur, 16/08) : le decor peint AUSSI son
++; noir en nibble 0. Le ciel et le noir du decor sont donc le meme index, et une
++; etoile peut desormais s'allumer dans une zone noire du decor ou d'un sprite.
++; C'est mesure et petit — ~0,8 % de la bande d'etoiles cote decor, 26 px noirs
++; sur les 1561 px du vaisseau — mais ce n'est pas nul. Avant, le ciel avait son
++; propre noir (l'index 15) ; cet index porte maintenant un vert clair reserve
++; aux sprites propres au stage 1, et le fondu de tunnel qui l'exploitait est
++; retire.
+ ;
+ ; Deux passes par trame (cf. main.asm et le commentaire de StarfieldErase) :
+ ;   ERASE entre DrawTiles et DrawSprites (le fond vient d'etre restaure),
+@@ -73,40 +79,36 @@
+ STAR_DH MACRO                           ; tracer, nibble haut
+ sfdh\1  ldx   \1,u
+         lda   ,x
+-        cmpa  #$F0                      ; ciel vierge ? (octet AND $F0)==$F0
+-        blo   sfdh\2                    ;   <=> octet >= $F0
+-        eora  \1/2-16,y                 ; $F -> couleur de CETTE etoile
++        bita  #$F0                      ; ciel vierge ? notre nibble a 0
++        bne   sfdh\2
++        eora  \1/2-16,y                 ; 0 -> couleur de CETTE etoile
+         sta   ,x
+  ENDM
+ 
+ STAR_DL MACRO                           ; tracer, nibble bas
+ sfdl\1  ldx   \1,u
+         lda   ,x
+-        coma                            ; ciel vierge <=> les 4 bits bas de
+-        bita  #$0F                      ;   ~octet sont tous a 0
++        bita  #$0F                      ; le meme test sur l'autre nibble
+         bne   sfdl\2
+-        coma                            ; retour a l'octet
+-        eora  \1/2-8,y  
++        eora  \1/2-8,y
+         sta   ,x
+  ENDM
+ 
+ STAR_EH MACRO                           ; effacer, nibble haut
+ sfeh\1  ldx   \1,u
+         lda   ,x
+-        eora  \1/2-16,y                 ; notre couleur -> $F
+-        cmpa  #$F0
+-        blo   sfeh\2                    ; ce n'etait pas notre couleur
++        eora  \1/2-16,y                 ; notre couleur -> 0
++        bita  #$F0
++        bne   sfeh\2                    ; ce n'etait pas notre couleur
+         sta   ,x
+  ENDM
+ 
+ STAR_EL MACRO                           ; effacer, nibble bas
+ sfel\1  ldx   \1,u
+         lda   ,x
+-        eora  \1/2-8,y  
+-        coma
++        eora  \1/2-8,y
+         bita  #$0F
+         bne   sfel\2
+-        coma
+         sta   ,x
+  ENDM
+ 
+@@ -123,8 +125,8 @@
+ ; ---------------------------------------------------------------------------
+ ; Descripteurs de plan - 25 octets : 16 masques DEVANT le point d'entree Y,
+ ; puis 9 octets de parametres.
+-;   -16..-9,y  masques XOR nibble haut, un par etoile ($F0 ^ couleur<<4)
+-;    -8..-1,y  masques XOR nibble bas,  un par etoile ($0F ^ couleur)
++;   -16..-9,y  masques XOR nibble haut, un par etoile (couleur<<4)
++;    -8..-1,y  masques XOR nibble bas,  un par etoile (couleur)
+ ;    0,y  table (2)          adresse de starTab_pN
+ ;    2,y  vitesse 8.8 (2)
+ ;    4,y  pas (1)            nb_etoiles*2 (14 ou 16)
+@@ -135,10 +137,11 @@
+ ;
+ ; Les masques sont PAR ETOILE (le corps deroule lit -16+i,y / -8+i,y, cf. les
+ ; macros) : la couleur de chaque etoile est un octet ici, cout zero en cycles.
+-; Couleurs (nibble palette, cf. pal.png decale de 1) : 2 = gris #616161,
+-; 4 = beige #CCC2AB, 5 = bleu fonce #00618F. L'etoile 8 (offset 14) = slot 7.
++; Le ciel valant 0, le masque VAUT la couleur : 1 = gris moyen #616161,
++; 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les octets sont renumerotes
++; par tools/palette_code.py, jamais a la main. L'etoile 8 (offset 14) = slot 7.
+ ; ---------------------------------------------------------------------------
+-        fcb   $20,$10,$20,$20,$10,$20,$10,$20   ; p0 : beige,gris,beige,beige,gris,beige,gris,beige
++        fcb   $20,$10,$20,$20,$10,$20,$10,$20   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
+         fcb   $02,$01,$02,$02,$01,$02,$01,$02
+ planeTable
+         fdb   starTab_p0
+@@ -146,14 +149,14 @@
+         fcb   16,1                      ; 8 etoiles (2 amas de 4) -> pas 16
+         fcb   2                         ; 2 tours : hauteurs differentes a chaque passage
+         fdb   16*144                    ; lapStride = 2304
+-        fcb   $10,$40,$10,$10,$40,$10,$40,$00   ; p1 : gris,bleu,gris,gris,bleu,gris,bleu (7 etoiles)
++        fcb   $10,$40,$10,$10,$40,$10,$40,$00   ; p1 : moyen,bleu,moyen,moyen,bleu,moyen,bleu (7 etoiles)
+         fcb   $01,$04,$01,$01,$04,$01,$04,$00
+         fdb   starTab_p1
+         fdb   $0080                     ; 0.5 px/trame
+         fcb   14,0                      ; 7 etoiles -> pas 14
+         fcb   1                         ; 1 tour (plan lent, ne repasse pas dans l'intro)
+         fdb   14*144                    ; lapStride (inutilise a 1 tour)
+-        fcb   $40,$40,$10,$40,$40,$10,$40,$00   ; p2 : bleu fonce dominant, 2 grises (7 etoiles)
++        fcb   $40,$40,$10,$40,$40,$10,$40,$00   ; p2 : bleu fonce dominant, 2 grises moyennes (7 etoiles)
+         fcb   $04,$04,$01,$04,$04,$01,$04,$00
+         fdb   starTab_p2
+         fdb   $0040                     ; 0.25 px/trame (plan lointain, le plus sombre)
+--- a/src/common/state/checkpoint/checkpoint.asm	2026-08-16 18:44:15.309908525 +0000
++++ b/src/common/state/checkpoint/checkpoint.asm	2026-08-16 18:42:04.579160197 +0000
+@@ -25,17 +25,17 @@
+         jsr   EraseSprites_ClearAll
+         jsr   Collision_ClearLists
+ ;
+-        ; clear the two screen buffers to black -- in nibble 15 ($FF), NOT nibble 0.
+-        ; Both render as black (level-1 palette has two blacks), but the never-drawn
+-        ; sky MUST be nibble 15: the starfield only draws on "virgin sky" pixels
+-        ; (high/low nibble == $F). A $0000 clear made the sky nibble 0 after every
+-        ; checkpoint reload, so the stars could never draw again after a death.
+-        ; The empty (sky) tiles are SKIPPED by DrawTiles, so whatever value is
+-        ; cleared here IS the sky for the rest of the level.
+-        ldx   #$FFFF
++        ; clear the two screen buffers to black -- nibble 0. The empty (sky) tiles
++        ; are SKIPPED by DrawTiles, so whatever value is cleared here IS the sky
++        ; for the rest of the level, and the starfield only draws on "virgin sky"
++        ; pixels, i.e. nibble 0 (see starfield/obj.asm).
++        ; The old palette had TWO blacks and the sky used the second one (index
++        ; 15), hence the former $FFFF clear; the new one has a single black --
++        ; index 15 now carries a light green reserved for stage-1 sprites.
++        ldx   #$0000
+         jsr   ClearDataMem
+         _SwitchScreenBuffer
+-        ldx   #$FFFF
++        ldx   #$0000
+         jsr   ClearDataMem
+         _SwitchScreenBuffer
+ ;
+--- a/src/enemies/shell/eraser.asm	2026-08-16 18:44:15.346333812 +0000
++++ b/src/enemies/shell/eraser.asm	2026-08-16 18:42:20.451474421 +0000
+@@ -30,14 +30,16 @@
+ 
+ ; --- blit compile, copie de generated-code/shellmask/Img_shell_mask_0_ND0.asm
+ ; --- entree: U = adresse ecran ; stamp uniforme ; auto-suffisant ; RTS
++; Le stamp est du CIEL : nibble 0 depuis le 16/08/2026 (l'ancienne palette
++; donnait au ciel un noir a elle, l'index 15, d'ou les $ffff d'origine).
+ ShellMaskBlit
+ 	LEAU 322,U
+ 
+-	LDD #$ffff
++	LDD #$0000
+ 	STD 118,U
+ 	STD 78,U
+ 	STD 38,U
+-	LDX #$ffff
++	LDX #$0000
+ 	PSHU A,X
+ 	LEAU -37,U
+ 
+@@ -91,11 +93,11 @@
+ 	LDU <glb_screen_location_1
+ 	LEAU 322,U
+ 
+-	LDD #$ffff
++	LDD #$0000
+ 	STD 117,U
+ 	STD 77,U
+ 	STD 37,U
+-	LDX #$ffff
++	LDX #$0000
+ 	PSHU A,X
+ 	LEAU -37,U
+ 
+--- a/src/stages/01/main.asm	2026-08-16 18:44:15.371021452 +0000
++++ b/src/stages/01/main.asm	2026-08-16 18:42:38.975524813 +0000
+@@ -28,9 +28,6 @@
+ Pal_stage         EXPORT
+ ; Le noir dont part le fondu d'ouverture, et ou finit la sequence de fin.
+ Pal_black         EXPORT
+-; La palette de la section souterraine : l'objet fadetotunnel y fond aux deux
+-; bouts du tunnel, et revient a Pal_stage au retour.
+-Pal_tunnel        EXPORT
+ 
+ ; Les tables de carte vivent dans une page a elles : trop grosses pour la RAM
+ ; residente des que le niveau est entier. Le scroll porte deja une page par
+@@ -149,8 +146,6 @@
+ ; stage.endTick releve pour changer de morceau.
+ bossmusic.Object            EXTERNAL
+ 
+-; Le passage de palette du tunnel, seme par la wave a ses deux bouts.
+-fadetotunnel.Object         EXTERNAL
+ messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount
+         INCLUDE "src/common/hud/messages/messages.const.asm"
+ 
+--- a/src/stages/01/objid.const.asm	2026-08-16 18:44:15.371989585 +0000
++++ b/src/stages/01/objid.const.asm	2026-08-16 18:42:52.349543380 +0000
+@@ -11,7 +11,9 @@
+ ObjID_bug equ 31
+ ObjID_bink equ 32
+ ObjID_pow equ 33
+-ObjID_fadetotunnel equ 34
++* 34 : libre — ex-ObjID_fadetotunnel, retire le 16/08/2026 avec la palette
++*      de tunnel. L'id n'est PAS recycle : les tables d'index sont indexees
++*      par id, renumeroter les suivants les casserait toutes.
+ ObjID_scant equ 35
+ ObjID_pstaff equ 36
+ ObjID_cancer equ 37
+--- a/src/stages/01/objid.index.asm	2026-08-16 18:44:15.371989585 +0000
++++ b/src/stages/01/objid.index.asm	2026-08-16 18:43:06.634815407 +0000
+@@ -39,7 +39,7 @@
+         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
+-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
++        fcb   0 ; id 34 : libre, jamais lance
+         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
+         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+@@ -93,7 +93,7 @@
+         fdb   bug.Object ; ObjID_bug
+         fdb   bink.Object ; ObjID_bink
+         fdb   pow.Object ; ObjID_pow
+-        fdb   fadetotunnel.Object ; ObjID_fadetotunnel
++        fdb   0 ; id 34 : libre, jamais lance
+         fdb   scant.Object ; ObjID_scant
+         fdb   pstaff.Object ; ObjID_pstaff
+         fdb   cancer.Object ; ObjID_cancer
+@@ -141,7 +141,7 @@
+         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
+-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
++        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
+         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
+         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+@@ -189,7 +189,7 @@
+         fdb   Ani_Asd_none ; ObjID_bug
+         fdb   Ani_Asd_none ; ObjID_bink
+         fdb   Ani_Asd_none ; ObjID_pow
+-        fdb   Ani_Asd_none ; ObjID_fadetotunnel
++        fdb   Ani_Asd_none ; id 34 : libre
+         fdb   Ani_Asd_none ; ObjID_scant
+         fdb   Ani_Asd_none ; ObjID_pstaff
+         fdb   Ani_Asd_none ; ObjID_cancer
+@@ -240,7 +240,7 @@
+         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
+         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
+-        fcb   map.RAM_OVER_CART+stage1.fadetotunnel.page ; ObjID_fadetotunnel
++        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
+         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
+         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
+--- a/src/stages/01/wave.asm	2026-08-16 18:44:15.372950125 +0000
++++ b/src/stages/01/wave.asm	2026-08-16 18:42:52.349219180 +0000
+@@ -56,12 +56,6 @@
+  	fcb   $06,$3E,ObjID_patapata,$00,$0A
+  	fcb   $06,$98,ObjID_patapata,$00,$04
+  	fcb   $06,$AC,ObjID_patapata,$00,$05
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$03
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$04
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$05
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$06
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$07
+- 	fcb   $06,$AC,ObjID_fadetotunnel,$00,$08
+  	fcb   $06,$C0,ObjID_bink,$00,$08
+  	fcb   $06,$FC,ObjID_scant,$00,$05
+  	fcb   $07,$24,ObjID_bink,$00,$08
+@@ -107,7 +101,6 @@
+ 	fcb   $0C,$50,ObjID_blaster,$00,$03
+ 	fcb   $0C,$5C,ObjID_cancer,$00,$24
+  	fcb   $0C,$5E,ObjID_bink,$00,$17
+-	fcb   $0C,$80,ObjID_fadetotunnel,$00,$00
+ 	fcb   $0C,$F8,ObjID_cancer,$00,$27
+ 	fcb   $0C,$FC,ObjID_pstaff,$00,$08
+  	fcb   $0D,$88,ObjID_pow,$00,$35
+@@ -153,8 +146,6 @@
+ 	fcb   $17,$50,ObjID_blaster,$00,$11
+  	fcb   $18,$22,ObjID_pow,$00,$04
+ 	fcb   $18,$6A,ObjID_tabrok,$00,$06
+-	fcb   $19,$68,ObjID_fadetotunnel,$00,$01
+-	fcb   $19,$68,ObjID_fadetotunnel,$00,$02
+ 	fcb   $1B,$40,ObjID_bossmusic,$00,$00
+ 	fcb   $1B,$40,ObjID_tailmgr,$00,$00 ; master fan-out remplace les 19 objets tail (hors-pool)
+ 
+--- a/src/stages/stage-main.asm	2026-08-16 18:44:15.385670880 +0000
++++ b/src/stages/stage-main.asm	2026-08-16 18:42:38.975043297 +0000
+@@ -673,9 +673,9 @@
+         std   o_fade_callback,u
+         rts
+ 
+-; EXPORTe : l'objet fadetotunnel, pagine, arme le meme fondu et doit lui
+-; donner le meme rappel de fin.
+-stage.paletteFadeDone EXPORT
++; Le rappel de fin du fondu. Il etait EXPORTe pour l'objet fadetotunnel, retire
++; le 16/08/2026 avec la palette de tunnel ; il reste le point de sortie commun
++; des fondus du stage.
+ stage.paletteFadeDone
+         rts
+ 

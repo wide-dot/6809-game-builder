@@ -83,22 +83,16 @@ checkpoint.load
         jsr   EraseSprites_ClearAll
         jsr   Collision_ClearLists
 
-        ; LES DEUX TAMPONS AU NOIR — en nibble 15 ($FF), PAS en nibble 0. Les
-        ; deux rendent du noir (la palette du niveau 1 a deux noirs), mais le
-        ; ciel jamais dessiné DOIT être en nibble 15 : le champ d'étoiles ne
-        ; dessine que sur les pixels de « ciel vierge » (nibble haut/bas == $F).
-        ; Un effacement à $0000 rendait le ciel nibble 0 après chaque reprise,
-        ; et plus une seule étoile ne réapparaissait après une mort. Les tuiles
-        ; vides (le ciel) sont SAUTÉES par DrawTiles : ce qu'on efface ici EST
-        ; le ciel pour tout le reste du niveau.
+        ; LES DEUX TAMPONS AU NOIR — en nibble 0. Les tuiles vides (le ciel)
+        ; sont SAUTÉES par DrawTiles : ce qu'on efface ici EST le ciel pour tout
+        ; le reste du niveau, et le champ d'étoiles ne dessine que sur les pixels
+        ; de « ciel vierge », c'est-à-dire de nibble 0 (cf. starfield/obj.asm).
         ;
-        ; La nouvelle palette n'y change RIEN, et c'est délibéré : sur le stage 1
-        ; la case 15 reste un noir, parce qu'elle porte le ciel et rien d'autre —
-        ; le fondu vers le tunnel n'est que le recoloriage de cette seule case
-        ; (cf. tools/palette_stage.py, qui dérive les deux palettes du stage).
-        ; Ne PAS « corriger » ce $FFFF en $0000 en voyant un seul noir dans
-        ; pal-next.png : ça remettrait les étoiles dans le noir du décor et des
-        ; sprites, et priverait le tunnel de sa case.
+        ; L'ancienne palette avait DEUX noirs et le ciel occupait le second
+        ; (index 15) : on effaçait alors à $FFFF, ce qui distinguait le ciel du
+        ; noir du décor. La nouvelle palette n'en a qu'un — l'index 15 porte un
+        ; vert clair réservé aux sprites propres au stage 1 (décision auteur,
+        ; 16/08) — donc le ciel est le noir tout court.
         ;
         ; V2-DEVIATION : ancrage ABSOLU de la fenêtre données avant le premier
         ; effacement. `_SwitchScreenBuffer` est un toggle RELATIF (eor #1 /
@@ -113,10 +107,10 @@ checkpoint.load
         ; registre matériel dont on n'est pas propriétaire, on pose, on ne
         ; bascule pas.
         _ram.data.set #2
-        ldx   #$FFFF
+        ldx   #$0000
         jsr   ClearDataMem
         _SwitchScreenBuffer
-        ldx   #$FFFF
+        ldx   #$0000
         jsr   ClearDataMem
         _SwitchScreenBuffer
 
@@ -164,9 +158,9 @@ checkpoint.clearData
 ; Rejoue le défilement jusqu'à la position demandée, de sorte que le viewport
 ; soit peint EN ENTIER dans LES DEUX tampons. Le premier DrawTiles ordinaire ne
 ; trace que les colonnes de la position courante ; sans ce rejeu, la rangée
-; verticale de fond — celle qui porte le ciel en nibble $F — n'atteint jamais
-; l'écran, et le champ d'étoiles, dont tout le test tient sur « ce pixel
-; vaut-il $F », ne dessine rien.
+; verticale de fond — celle qui porte le ciel — n'atteint jamais l'écran, et le
+; champ d'étoiles, dont tout le test tient sur « ce pixel est-il du ciel »,
+; ne dessine rien.
 ;
 ; Le principe : on part d'un viewport large de zéro colonne, calé à droite, et
 ; on avance de 4 px vers la gauche en élargissant d'une colonne tous les trois
