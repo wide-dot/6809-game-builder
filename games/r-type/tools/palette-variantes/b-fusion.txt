@@ -1,5 +1,9 @@
-# Candidat pour le groupe B — SURCOUCHE, a lire par-dessus palette-map.txt
-# (`palette_migrate.py … --variante tools/palette-variantes/b-fusion.txt`).
+# Candidat ECARTE pour le groupe B — SURCOUCHE, a lire par-dessus
+# palette-map.txt. Conserve expres : c'est l'alternative rejetee, et elle
+# permet de rejouer la comparaison qui a fonde la decision du 16/08/2026
+# (l'arbitrage lui-meme est note dans palette-map.txt) :
+#
+#     palette_migrate.py RESSOURCE… --variante tools/palette-variantes/b-fusion.txt
 #
 # « On perd l'orange » — la premiere solution proposee, celle que la table par
 # defaut donnait toute seule : l'ancien orange F2AB00 et l'ancien saumon

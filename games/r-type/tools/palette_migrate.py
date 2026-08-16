@@ -360,7 +360,7 @@ def main():
 
     # Une colonne de planche par candidat : la table de base, puis chaque
     # surcouche lue par-dessus. La colonne 0 est toujours l'image actuelle.
-    candidats = [('table de base', [args.map])]
+    candidats = [('migre' if not args.variante else 'table de base', [args.map])]
     for v in (args.variante or []):
         candidats.append((os.path.basename(v).rsplit('.', 1)[0], [args.map, v]))
 
@@ -373,7 +373,7 @@ def main():
             corr, fusion_ok = table(pile, nom)
             if not corr:
                 sys.exit(f"aucune correspondance pour {nom} dans {pile}")
-            if etiquette != 'table de base':
+            if args.variante:
                 print(f"[{etiquette}]", end=' ')
             resultats, deja, employes, c = preparer(nom, res[nom], corr, fusion_ok,
                                                     pal_b, rvb_a, rvb_b, base, pris)

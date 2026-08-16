@@ -40,14 +40,33 @@ defaut  0>0 1>3 2>1 5>4 6>5 7>7 8>8 9>9 10>10 11>11 13>6 14>10 15>0
 
 # --- par ressource, au fil des validations de l'auteur ----------------------
 
-# Explosions (groupe B). Six valeurs employees de chaque cote, donc une
-# bijection par rang — aucune fusion. L'orange descend sur CC5A3C, le brun
-# rouge qui manquait entre le rouge et le saumon : la marche 51->173, beante,
-# devient 51->121->177.
-common.explosion.imgBig    10>9
+# --- Explosions (groupe B) — arbitre a l'oeil par l'auteur le 16/08/2026 ---
+#
+# Six valeurs employees de chaque cote, donc une bijection par rang : aucune
+# fusion. Le seul choix reel etait LEQUEL des deux anciens barreaux de meme
+# hauteur (10 F2AB00 lum 173, 14 F99B68 lum 177) descend sur le CC5A3C qui
+# comble le trou de la rampe. Trois candidats compares sur planche :
+#
+#   perte de l'orange   les deux barreaux fusionnent — CINQ valeurs au lieu de
+#                       six. ECARTE. Conserve dans palette-variantes/b-fusion.txt,
+#                       c'est l'alternative rejetee, elle a le droit de survivre.
+#   descente de l'orange   `10>9 14>10` — l'orange descend (353 px sur imgBig).
+#                       ECARTE a l'oeil.
+#   descente du rose    `10>10 14>9` — c'est le saumon qui descend (470 px).
+#                       RETENU.
+#
+# Le retenu avait ete demande sous la forme « inverser orange et rose dans les
+# images source, puis appliquer la conversion qui conserve les niveaux ».
+# C'est la meme chose ecrite en une passe, et il vaut mieux l'ecrire ainsi :
+#
+#     un pixel 10 devient 14 par l'echange, puis 10 par la table 10>9 14>10 ;
+#     un pixel 14 devient 10 par l'echange, puis  9 par la meme table.
+#
+# Soit `10>10 14>9`. Les sources ne sont donc pas touchees — le rejeu depuis
+# origin/master reste UNE transformation, et les PNG d'origine gardent leur sens.
+common.explosion.imgBig    10>10 14>9
 
-# Meme ressource, meme rampe, mais imgSmall emploie DEJA CC5A3C (39 px) : la
-# place ou l'orange devait descendre est prise. Tout le bas de la rampe glisse
-# donc d'un cran pour degager la marche — le 610000 de la nouvelle palette,
-# inutilise ici, sert de nouveau plancher.
-common.explosion.imgSmall  8>7 9>8 10>9
+# Meme rampe, mais imgSmall emploie DEJA CC5A3C (39 px) : la marche visee est
+# prise. Tout le bas glisse donc d'un cran pour la degager — le 610000 de la
+# nouvelle palette, inutilise ici, sert de nouveau plancher.
+common.explosion.imgSmall  8>7 9>8 10>10 14>9

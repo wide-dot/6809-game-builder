@@ -88,13 +88,30 @@ fait naître la règle 1. La rampe chaude compte cinq marches de chaque côté �
 `610000` `AC0000` `CC5A3C` `F99B68` `FAF261`, plus le blanc au-dessus — donc
 la place existe : il suffit de re-répartir.
 
-- [ ] `common.explosion.imgBig` (5 img) — l'orange descend sur `CC5A3C`, le
-      brun-rouge qui manquait : le saut 51→173 en luminance devient 51→121→177.
-      Une seule ligne : `10>9`.
-- [ ] `common.explosion.imgSmall` (4 img) — même rampe, mais cette ressource
-      **emploie déjà** `CC5A3C` (39 px) : la place est prise. Tout le bas de la
-      rampe glisse d'un cran (`8>7 9>8 10>9`) et prend appui sur le `610000` de
-      la nouvelle palette, qu'elle n'utilisait pas.
+**Trois candidats comparés sur une planche à quatre colonnes**, arbitrés à l'œil
+par l'auteur le 16/08 :
+
+| candidat | ce qu'il fait | verdict |
+|---|---|---|
+| *perte de l'orange* | les deux barreaux fusionnent — **5** valeurs au lieu de 6 | écarté |
+| *descente de l'orange* | `10>9 14>10` — l'orange descend (353 px sur imgBig) | écarté |
+| *descente du rose* | `10>10 14>9` — c'est le saumon qui descend (470 px) | **retenu** |
+
+Le retenu avait été demandé sous la forme « inverser orange et rose dans les
+images source, puis appliquer la conversion qui conserve les niveaux ». C'est
+la même chose écrite en une passe — un pixel 10 devient 14 puis 10, un pixel 14
+devient 10 puis 9, soit `10>10 14>9` — et il vaut mieux l'écrire ainsi : **les
+sources ne sont pas touchées**, donc le rejeu depuis `origin/master` reste une
+seule transformation et les PNG d'origine gardent leur sens.
+
+L'alternative rejetée survit dans `tools/palette-variantes/b-fusion.txt`, qui
+permet de rejouer la comparaison.
+
+- [x] `common.explosion.imgBig` (5 img) — `10>10 14>9`
+- [x] `common.explosion.imgSmall` (4 img) — même rampe, mais cette ressource
+      **emploie déjà** `CC5A3C` (39 px) : tout le bas glisse d'un cran pour
+      dégager la marche et prend appui sur le `610000` qu'elle n'utilisait pas
+      (`8>7 9>8 10>10 14>9`).
 
 *Vérifié avant de s'en inquiéter : les douze ressources du groupe A, déjà
 écrites, n'emploient aucune paire en collision — la règle 1 ne les aurait pas

@@ -74,3 +74,12 @@ $M common.missileflame     --ecrire
 $M common.engineflames     --ecrire
 $M common.explosion.imgFwk --ecrire
 $M lib.scantfire           --ecrire
+
+# =========================================================================
+# Groupe B — les deux explosions. Valide par l'auteur le 16/08/2026, sur
+# planche, apres comparaison de trois candidats. Six valeurs employees de
+# chaque cote : aucune fusion. Le detail de l'arbitrage est dans
+# palette-map.txt, l'alternative rejetee dans palette-variantes/b-fusion.txt.
+# =========================================================================
+$M common.explosion.imgBig   --ecrire
+$M common.explosion.imgSmall --ecrire
