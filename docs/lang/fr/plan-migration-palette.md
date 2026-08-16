@@ -9,7 +9,35 @@ y sont ; on ne les redit pas ici.
 ressource se termine par une planche PNG soumise à l'auteur ; rien n'est
 committé sans sa validation.
 
-## Les deux règles du protocole
+## Les règles du protocole
+
+**0. Une planche pour chaque décision, et une planche seulement là où l'œil a
+quelque chose à voir** (auteur, 16/08). Rien ne se valide sans planche — mais
+mesure faite, **seuls quatre anciens index changent de couleur** :
+
+| ancien | | |
+|---|---|---|
+| 3 `#9E8F7A` | beige foncé | pas de cible : à trancher, ressource par ressource |
+| 4 `#CCC2AB` | beige clair | idem |
+| 12 `#617A00` | olive | idem (index propre au stage) |
+| 10 `#F2AB00` | orange | devient le saumon `#F99B68` |
+
+Tout le reste de la migration est une **renumérotation pure** : mêmes couleurs
+rendues, au pixel près. L'outil le dit dans `--liste`, et pour ces
+ressources-là il ne demande pas de planche — il **prouve** l'égalité, en
+comparant le rendu RVB de l'original et celui du migré pixel par pixel. C'est
+plus fort qu'un coup d'œil, et ça a été vérifié en cassant la table de report
+exprès : le contrôle s'arrête sur la première image. Les douze ressources du
+groupe A sont dans ce cas — leurs planches n'ont validé que l'outil.
+
+**0 bis. Une recette retenue vaut pour SA ressource, pas pour les autres**
+(auteur, 16/08). Ce qui convient au vaisseau ne convient pas forcément au pow :
+une décision s'écrit toujours sous le **nom** de la ressource, jamais sur la
+ligne `defaut`. Les fichiers de `tools/palette-variantes/` expriment une
+*recette* (quel neutre fusionne) avec la clé `*`, « la ressource en cours » :
+ils servent à comparer, ils ne décident pour personne.
+
+## Les deux règles de conversion
 
 **1. Conserver les niveaux de dégradé** (auteur, 16/08). Une ressource qui
 montre N valeurs doit en montrer N après migration. Deux index employés qui

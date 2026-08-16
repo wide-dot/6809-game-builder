@@ -11,6 +11,11 @@
 # ete APPLIQUEES, et dans quel ordre. Une ligne ici sans sa ressource la-bas est
 # une proposition en attente de la validation de l'auteur.
 #
+# REGLE (auteur, 16/08) : une decision de couleur s'ecrit sous le NOM de sa
+# ressource, JAMAIS en `defaut`. Ce qui convient au vaisseau ne convient pas
+# forcement au pow. La ligne `defaut` ne porte que ce qui ne se discute pas :
+# les reports d'index a couleur identique.
+#
 # Un index present dans une image mais absent de la table est une ERREUR, pas
 # une identite silencieuse : l'outil refuse d'ecrire tant qu'il n'est pas
 # tranche. C'est ce qui empeche une couleur d'etre migree par inadvertance.
@@ -22,6 +27,11 @@
 # Les index 3 (beige fonce), 4 (beige clair) et 12 (olive) ne sont PAS ici :
 # ils deviennent propres au stage, chaque ressource doit dire ce qu'elle en
 # fait — c'est tout l'objet de la validation par planche.
+#
+# Avec 10 F2AB00 (le seul report ci-dessous qui change de couleur), ces trois-la
+# sont les SEULS index ou l'oeil a quelque chose a voir. Tout le reste de cette
+# ligne reporte un index sur une entree de MEME couleur : le rendu est identique
+# au pixel pres, et l'outil le prouve au lieu de le faire regarder.
 defaut  0>0 1>3 2>1 5>4 6>5 7>7 8>8 9>9 10>10 11>11 13>6 14>10 15>0
 
 # --- la regle qui prime, posee par l'auteur le 16/08 -----------------------

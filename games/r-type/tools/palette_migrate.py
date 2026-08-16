@@ -116,11 +116,16 @@ def table(chemins, ressource):
             continue
         mots = ligne.split()
         cle, jetons = mots[0], mots[1:]
-        if cle not in ('defaut', ressource):
+        # `*` = « la ressource en cours de traitement ». Sert aux SURCOUCHES de
+        # comparaison : un candidat exprime une recette (quel neutre fusionne)
+        # sans prejuger a quelle ressource elle convient. Une recette retenue
+        # s'ecrit ensuite sous le NOM de la ressource — jamais en `defaut` :
+        # ce qui va au vaisseau ne va pas forcement au pow (auteur, 16/08).
+        if cle not in ('defaut', '*', ressource):
             continue
         for c in jetons:
             if c == 'fusion-ok':
-                fusion_ok = cle == ressource   # jamais autorisable en masse
+                fusion_ok = cle != 'defaut'    # jamais autorisable en masse
                 continue
             a, _, b = c.partition('>')
             corr[int(a)] = int(b)
@@ -130,6 +135,15 @@ def table(chemins, ressource):
 def luminance(rvb):
     r, v, b = rvb
     return 0.299 * r + 0.587 * v + 0.114 * b
+
+
+def couleurs_changees(corr, employes, rvb_a, rvb_b):
+    """[(ancien, nouveau)] pour les seuls index dont la COULEUR bouge. Le reste
+    de la migration est une renumerotation pure : les pixels rendus sont les
+    mêmes, au bit près. Distinction posée par l'auteur le 16/08 — une planche
+    ne se justifie que là où l'œil a quelque chose à voir."""
+    return [(a, corr[a]) for a in sorted(employes)
+            if rvb_a[a + 1] != rvb_b[corr[a] + 1]]
 
 
 def fusions(corr, employes):
@@ -185,6 +199,18 @@ def migrer(png, corr, pal_neuve):
             v = src[x, y]
             dst[x, y] = TRANSPARENT if v == TRANSPARENT else corr[v - 1] + 1
     return out, vus, []
+
+
+def _rendu_brut(source, pal):
+    """Les octets RVB d'une image indexée, transparence comprise. Deux images
+    qui rendent la même chose donnent la même chaîne — c'est la preuve qu'une
+    renumérotation n'a rien changé pour l'œil."""
+    im = source if isinstance(source, Image.Image) else Image.open(source)
+    src = im.load()
+    w, h = im.size
+    return bytes(b for y in range(h) for x in range(w)
+                 for b in ((255, 0, 255) if src[x, y] == TRANSPARENT
+                           else pal[src[x, y]]))
 
 
 def rendu(png, pal, Z, fond):
@@ -321,9 +347,22 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
         print(f"{nom} : fusion DECLAREE (fusion-ok) — "
               + ' ; '.join(f"anciens {anc} -> {b}" for b, anc in sorted(coll.items())))
 
-    bouge = sum(1 for _, _, vus in resultats
-                if any(corr[v - 1] != v - 1 for v in vus if v != TRANSPARENT))
-    print(f"{nom} : {len(resultats)} images, {bouge} dont au moins un index change")
+    chg = couleurs_changees(corr, employes, rvb_a, rvb_b)
+    h = lambda t: '#%02X%02X%02X' % t
+    if chg:
+        print(f"{nom} : {len(resultats)} images, {len(chg)} couleur(s) changent — "
+              "une planche est utile : "
+              + ', '.join(f"{a} {h(rvb_a[a + 1])}>{h(rvb_b[b + 1])}" for a, b in chg))
+    else:
+        # renumerotation pure : plutot que de demander a l'oeil de confirmer
+        # que rien n'a bouge, on le PROUVE — pixel par pixel, rendu contre rendu.
+        for p, img, _ in resultats:
+            if _rendu_brut(p, rvb_a) != _rendu_brut(img, rvb_b):
+                print(f"{nom} : ARRET — {os.path.relpath(p, base)} devait rendre "
+                      "exactement les memes couleurs et n'y arrive pas.")
+                return [], deja, employes, 1
+        print(f"{nom} : {len(resultats)} images, renumerotation PURE — rendu "
+              "prouve identique pixel par pixel, pas de planche a faire.")
     return resultats, deja, employes, 0
 
 
@@ -355,10 +394,27 @@ def main():
     rvb_a, rvb_b = rgb(pal_a), rgb(pal_b)
 
     if args.liste or not args.ressource:
+        # la colonne qui compte n'est pas « combien d'images » mais « est-ce que
+        # l'oeil a quelque chose a voir » : une renumerotation pure se prouve,
+        # elle ne se regarde pas.
+        h = lambda t: '#%02X%02X%02X' % t
         print(f"{len(res)} ressources dans le perimetre :")
         for n in sorted(res):
-            fait = all(palette_brute(p) == pal_b for p in res[n])
-            print(f"  [{'x' if fait else ' '}] {n:26} {len(res[n]):3} images")
+            if all(palette_brute(p) == pal_b for p in res[n]):
+                print(f"  [x] {n:26} {len(res[n]):3} img")
+                continue
+            corr, _ = table([args.map], n)
+            employes = set()
+            for p in res[n]:
+                employes |= {v - 1 for _, v in (Image.open(p).getcolors(1 << 20)
+                                                or []) if v != TRANSPARENT}
+            sans = sorted(a for a in employes if a not in corr)
+            chg = couleurs_changees(corr, employes - set(sans), rvb_a, rvb_b)
+            quoi = ', '.join([f"{a} {h(rvb_a[a + 1])} A TRANCHER" for a in sans]
+                             + [f"{a} {h(rvb_a[a + 1])}>{h(rvb_b[b + 1])}"
+                                for a, b in chg])
+            print(f"  [ ] {n:26} {len(res[n]):3} img   "
+                  + (quoi if quoi else "renumerotation pure, pas de planche"))
         return 0
 
     inconnues = [n for n in args.ressource if n not in res]
