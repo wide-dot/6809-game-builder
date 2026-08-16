@@ -2066,10 +2066,14 @@
                         <asm filename="gen/directories/dir1/entries.asm"/>
                         <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="src/stages/01/main.asm"/>
-                        <!-- La palette du JEU (Pal_game v1), pas celle des tuiles. -->
-                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
-                        <!-- La palette de la section souterraine (Pal_tunnel v1). -->
-                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-inside.png"/>
+                        <!-- La palette du JEU (Pal_game v1), pas celle des tuiles.
+                             Les deux fichiers sont DERIVES de pal-next.png par
+                             tools/palette_stage.py : la case 15 du stage 1 porte le
+                             ciel, pas la couleur generique de la nouvelle palette. -->
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal-next-stage.png"/>
+                        <!-- La palette de la section souterraine (Pal_tunnel v1) :
+                             la meme, ciel recolore — le fondu vers le tunnel EST ca. -->
+                        <png2pal section="palette" symbol="Pal_tunnel" filename="src/stages/01/palette/pal-next-inside.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- Palette des messages READY / GAME OVER, posee le temps du message. -->

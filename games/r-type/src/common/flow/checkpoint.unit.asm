@@ -92,6 +92,14 @@ checkpoint.load
         ; vides (le ciel) sont SAUTÉES par DrawTiles : ce qu'on efface ici EST
         ; le ciel pour tout le reste du niveau.
         ;
+        ; La nouvelle palette n'y change RIEN, et c'est délibéré : sur le stage 1
+        ; la case 15 reste un noir, parce qu'elle porte le ciel et rien d'autre —
+        ; le fondu vers le tunnel n'est que le recoloriage de cette seule case
+        ; (cf. tools/palette_stage.py, qui dérive les deux palettes du stage).
+        ; Ne PAS « corriger » ce $FFFF en $0000 en voyant un seul noir dans
+        ; pal-next.png : ça remettrait les étoiles dans le noir du décor et des
+        ; sprites, et priverait le tunnel de sa case.
+        ;
         ; V2-DEVIATION : ancrage ABSOLU de la fenêtre données avant le premier
         ; effacement. `_SwitchScreenBuffer` est un toggle RELATIF (eor #1 /
         ; or #2) : il ne rend 2 ou 3 que si le registre porte déjà 2 ou 3. En v1

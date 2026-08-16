@@ -18,6 +18,13 @@
 #   fichier <chemin> <ressource>   la ressource dont la ligne de palette-map
 #                                  s'applique a ce code
 #   couleur <opcode>…              ces opcodes portent des quartets de couleur
+#   masque  <opcode> ciel=$X lignes=N
+#                                  les octets de cette directive sont des
+#                                  MASQUES XOR sur un ciel uniforme : l'octet
+#                                  vaut `ciel ^ couleur`, cadre a gauche ($X0)
+#                                  ou a droite ($0X). `lignes=N` est le compte
+#                                  attendu — une table qu'on cesse de
+#                                  reconnaitre ferait zero ligne en silence.
 #   exclut  <opcode> [valeur]      ces immediats n'en portent pas ; sans valeur,
 #                                  tout l'opcode est exclu
 
@@ -41,3 +48,19 @@ fichier src/enemies/dobkeratops/tailmgr_blits.asm  code.dobkeratops
 couleur lda ldb ora orb addd ldd
 exclut  anda            # $0f / $f0 : masques de quartet
 exclut  andb            # idem
+
+# --- le champ d'etoiles (groupe E) -----------------------------------------
+# Troisieme site de couleur en dur, et le seul d'une autre FORME : le starfield
+# ne charge pas ses couleurs, il les XOR-e sur un ciel de nibble $F. Ses six
+# `fcb` rangent donc `$F ^ couleur`, cadre a gauche pour le quartet haut, a
+# droite pour le quartet bas. Aucun `#$` : ni cet outil (qui lisait les
+# immediats) ni `palette_usage.py` (qui cherche `LDA #$xy` + `STA ,U`) ne le
+# voyaient. C'est la bascule de palette qui l'a fait sortir.
+# Les deux `cmpa #$F0` et les deux `bita #$0F` des macros testent le CIEL, pas
+# une couleur : ils ne bougent pas — le ciel reste l'index 15, cf. le
+# commentaire de tete de tools/palette_stage.py.
+fichier src/common/fx/starfield/obj.asm  common.starfield
+masque  fcb ciel=$F lignes=6
+exclut  fcb $00         # bourrage du 8e slot des plans a 7 etoiles : jamais lu
+exclut  cmpa            # $F0 : le test du ciel vierge, quartet haut
+exclut  bita            # $0F : le meme test, quartet bas

@@ -214,14 +214,55 @@ Le title se dessine sur `Pal_title`, une palette distincte ; il ne participe pas
 à la palette de jeu. `src/common/hud/mask/Img_mask_0_ND0.asm` est mort — aucun
 INCLUDE ne l'atteint.
 
-### Groupe E — la palette et le fond (bascule)
+### Groupe E — la palette et le fond (bascule) — FAIT le 16/08/2026
 
-Quand A à D sont validés, on bascule pour de bon :
+- [x] le stage 1 charge ses **deux** palettes depuis `pal-next.png`, dérivées
+      par `tools/palette_stage.py` : `pal-next-stage.png` (le jeu) et
+      `pal-next-inside.png` (le tunnel)
+- [x] `starfield/obj.asm` : les six tables de masques renumérotées par
+      `palette_code.py`, étendu à cette deuxième forme de couleur en dur
+- [x] la prose que la migration rendait fausse, rejouable
+      (`tools/palette-prose.patch`)
 
-- [ ] `pal-next.png` devient la palette du stage 1 dans le config
-- [ ] `checkpoint.unit.asm` : les deux `ldx #$FFFF` deviennent `#$0000`
-- [ ] `starfield/obj.asm` : test du ciel sur le nibble 0, masques XOR = la
-      couleur, deux `coma` en moins par étoile et par passe
+**Les deux dernières lignes de ce groupe étaient FAUSSES et ont été retirées**
+(« les `ldx #$FFFF` deviennent `#$0000` », « test du ciel sur le nibble 0 »).
+Elles reposaient sur une lecture, pas sur une mesure : la nouvelle palette
+n'ayant qu'un noir, j'en avais conclu que le ciel devait rejoindre l'index 0.
+Deux mesures indépendantes disent le contraire :
+
+* `pal.png` et `pal-inside.png` ne diffèrent que d'**une** entrée, la 15
+  (`#000000` → `#617A7A`). Le fondu vers le tunnel **est** le recoloriage de
+  cette seule case : la verser dans l'index 0 aurait recoloré du même coup tout
+  le noir du décor et des sprites, et privé `Pal_tunnel` de son objet ;
+* l'image du niveau pose **234 652 px** sur l'index 15 — tout le ciel — contre
+  9 061 px de vrai noir sur l'index 0, qui est le noir du décor.
+
+Sur le stage 1, l'index 15 n'est donc pas une couleur, c'est un **rôle**. Il
+occupe la quatrième case propre au stage ; le `#9ECC00` que `pal-next.png` y
+porte n'a aucun consommateur dans le dépôt, et le stage 1 ne peut pas
+l'héberger. `pal-next.png` n'est pas réécrit pour autant — c'est la palette de
+référence de la campagne, les deux fichiers du jeu en sont **dérivés**, et les
+trois autres cases propres (12, 13, 14 : les deux beiges et l'olive) y sont
+déjà justes. Si l'auteur veut ce vert sur le stage 1, il faudra d'abord donner
+un autre toit au ciel — il n'y en a pas aujourd'hui.
+
+Conséquence : le champ d'étoiles, les deux effacements `$FFFF` et l'effaceur de
+shells (`enemies/shell/eraser.asm`, qui tamponne du ciel) sont **déjà justes**
+et n'ont pas été touchés. Un commentaire l'a été, dans `checkpoint.unit.asm` :
+c'est exactement le piège où je suis tombé, il est signalé sur place.
+
+**Trou du groupe D révélé au passage.** Le starfield ne charge pas ses
+couleurs, il les XOR-e sur un ciel de nibble `$F` : ses six `fcb` rangent
+`$F ^ couleur`. Ni `palette_code.py` (qui lisait les immédiats) ni le relevé de
+`palette_usage.py` (qui cherche `LDA #$xy` suivi d'un `STA ,U`) ne pouvaient le
+voir — un **troisième** site de couleur en dur, d'une forme que rien
+n'inspectait. `palette_code.py` sait désormais le traiter, déclaré par
+`masque <opcode> ciel=$X lignes=N` dans `palette-code.txt` ; le compte de
+lignes est là pour que la table ne puisse pas cesser d'être reconnue en
+silence, et les quatre garde-fous ont été cassés exprès avant d'être crus.
+Décision appliquée : `4>2`, le beige clair des étoiles prend le gris clair
+(auteur, 16/08), soit la recette A des quatre autres communs. `palette_usage.py`
+reste aveugle à cette forme — il ne lit pas `palette-code.txt`.
 
 ### Groupe F — les tuiles, EN DERNIER (décision auteur)
 

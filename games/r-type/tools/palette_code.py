@@ -39,6 +39,15 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 PROJET = os.path.dirname(ICI)
 IMM = re.compile(r'(^[^\n;]*?\b)(\w+)(\s+#\$)([0-9A-Fa-f]{1,4})\b', re.M)
 
+# Deuxieme forme de couleur en dur, trouvee le 16/08 en basculant la palette :
+# une TABLE de masques XOR. Le champ d'etoiles ne charge pas ses couleurs, il
+# les XOR-e sur un ciel de nibble uniforme — l'octet range est donc
+# `ciel ^ couleur`, pas la couleur. Aucun `#$` la-dedans : ni cet outil ni le
+# releve de `palette_usage.py` (qui cherche `LDA #$xy` suivi d'un `STA ,U`)
+# ne pouvaient la voir. C'est le trou que la bascule a revele, d'ou cette forme.
+MASQUE = re.compile(r'^(\s*)(\w+)(\s+)(\$[0-9A-Fa-f]{2}(?:\s*,\s*\$[0-9A-Fa-f]{2})*)'
+                    r'(\s*(?:;.*)?)$', re.M)
+
 # Un ASM migre ne porte AUCUNE trace de son etat — contrairement a un PNG, dont
 # la table de couleurs dit tout de suite si les index sont les neufs. Sans
 # marqueur, un second `--ecrire` renumeroterait une seconde fois, en silence.
@@ -56,8 +65,20 @@ def _mig():
     return mod
 
 
+class Fichier:
+    """Un fichier declare : ce qui y porte une couleur, et sous quelle forme."""
+
+    def __init__(self, chemin, ressource):
+        self.chemin, self.ressource = chemin, ressource
+        self.couleurs, self.exclus = set(), set()
+        self.masque = None          # (opcode, ciel, nb de lignes attendu) ou None
+
+    def masque_ici(self, op):
+        return self.masque is not None and op == self.masque[0]
+
+
 def declaration(chemin):
-    """[(fichier, ressource, {opcodes porteurs}, {exclusions})] dans l'ordre."""
+    """Les fichiers declares, dans l'ordre."""
     out, cour = [], None
     for ligne in open(chemin, encoding='utf-8'):
         ligne = ligne.split('#')[0].strip()
@@ -65,15 +86,49 @@ def declaration(chemin):
             continue
         mots = ligne.split()
         if mots[0] == 'fichier':
-            cour = (mots[1], mots[2], set(), set())
+            cour = Fichier(mots[1], mots[2])
             out.append(cour)
         elif mots[0] == 'couleur':
-            cour[2].update(m.lower() for m in mots[1:])
+            cour.couleurs.update(m.lower() for m in mots[1:])
+        elif mots[0] == 'masque':
+            # `masque <opcode> ciel=$F lignes=N` : les octets de cette directive
+            # sont `ciel ^ couleur`, cadres a gauche ($X0) ou a droite ($0X).
+            # `lignes=N` est le garde-fou du silence : une table qu'on cesse de
+            # reconnaitre (un operande ecrit autrement) ferait 0 ligne et ne
+            # dirait rien — ici elle ARRETE.
+            opts = dict(m.split('=') for m in mots[2:])
+            cour.masque = (mots[1].lower(), int(opts['ciel'].lstrip('$'), 16),
+                           int(opts['lignes']))
         elif mots[0] == 'exclut':
             # `exclut <op>` exclut tout l'opcode ; `exclut <op> $val` une valeur
-            cour[3].add((mots[1].lower(),
-                         mots[2].lstrip('$').lower() if len(mots) > 2 else None))
+            cour.exclus.add((mots[1].lower(),
+                             mots[2].lstrip('$').lower() if len(mots) > 2 else None))
     return out
+
+
+def octets_masque(operande):
+    return [int(t.strip().lstrip('$'), 16) for t in operande.split(',')]
+
+
+def decode_masque(octet, ciel):
+    """(quartet employe, cadrage) d'un octet de masque, ou None si indecodable.
+
+    Cadre a gauche  ($X0) -> quartet haut  : couleur = (octet>>4) ^ ciel
+    Cadre a droite  ($0X) -> quartet bas   : couleur = (octet&$F) ^ ciel
+    $00 a les deux quartets nuls : ambigu, donc indecodable — c'est voulu, ca
+    force le bourrage a se declarer au lieu d'etre devine.
+    """
+    haut, bas = octet >> 4, octet & 0x0F
+    if haut and not bas:
+        return haut ^ ciel, 'haut'
+    if bas and not haut:
+        return bas ^ ciel, 'bas'
+    return None
+
+
+def encode_masque(couleur, cadrage, ciel):
+    v = couleur ^ ciel
+    return v << 4 if cadrage == 'haut' else v
 
 
 def porte_couleur(op, val, couleurs, exclus):
@@ -102,7 +157,8 @@ def main():
     h = lambda t: '#%02X%02X%02X' % t
     code = 0
 
-    for fich, ressource, couleurs, exclus in declaration(args.decl):
+    for f in declaration(args.decl):
+        fich, ressource, couleurs, exclus = f.chemin, f.ressource, f.couleurs, f.exclus
         chemin = os.path.join(PROJET, fich)
         src = open(chemin, encoding='utf-8', errors='surrogateescape').read()
         if MARQUE in src:
@@ -123,7 +179,44 @@ def main():
                     orphelins.add(q)
                 vus[q] = vus.get(q, 0) + 1
 
+        # deuxieme forme : les tables de masques XOR
+        lignes_masque, indecodables, compte_faux = 0, [], False
+        if f.masque:
+            _, ciel, attendues = f.masque
+            for m in MASQUE.finditer(src):
+                if not f.masque_ici(m.group(2).lower()):
+                    continue
+                octets = octets_masque(m.group(4))
+                if all((m.group(2).lower(), '%02x' % o) in exclus for o in octets):
+                    continue
+                lignes_masque += 1
+                for o in octets:
+                    if (m.group(2).lower(), '%02x' % o) in exclus:
+                        continue
+                    d = decode_masque(o, ciel)
+                    if d is None:
+                        indecodables.append(o)
+                        continue
+                    q = d[0]
+                    if q not in corr:
+                        orphelins.add(q)
+                    vus[q] = vus.get(q, 0) + 1
+            compte_faux = lignes_masque != attendues
+
         print(f"\n{fich}   (table : {ressource})")
+        if f.masque:
+            print(f"  {lignes_masque} ligne(s) de masques XOR sur un ciel ${f.masque[1]:X}")
+        if indecodables or compte_faux:
+            if compte_faux:
+                print(f"  ARRET — {lignes_masque} ligne(s) de masques reconnue(s),"
+                      f" {f.masque[2]} declaree(s) dans palette-code.txt.")
+                print("  Une table cesse d'etre reconnue en silence : c'est le cas"
+                      " que ce compte existe pour attraper.")
+            for o in sorted(set(indecodables)):
+                print(f"  ARRET — octet de masque indecodable : ${o:02X} (les deux"
+                      " quartets porteurs, ou aucun). L'exclure s'il est du bourrage.")
+            code = 1
+            continue
         if inconnus:
             print("  ARRET — des immediats ne sont ni porteurs ni exclus :")
             for op, val in sorted(set(inconnus)):
@@ -152,8 +245,25 @@ def main():
                     return m.group(0)
                 neuf = ''.join('%x' % corr[q] for q in quartets(val))
                 return m.group(1) + m.group(2) + m.group(3) + neuf
+
+            def sub_masque(m):
+                op = m.group(2).lower()
+                if not f.masque_ici(op):
+                    return m.group(0)
+                ciel = f.masque[1]
+                neufs = []
+                for o in octets_masque(m.group(4)):
+                    d = None if (op, '%02x' % o) in exclus else decode_masque(o, ciel)
+                    neufs.append(o if d is None
+                                 else encode_masque(corr[d[0]], d[1], ciel))
+                return (m.group(1) + m.group(2) + m.group(3)
+                        + ','.join('$%02X' % o for o in neufs) + m.group(5))
+
+            neuf = IMM.sub(sub, src)
+            if f.masque:
+                neuf = MASQUE.sub(sub_masque, neuf)
             open(chemin, 'w', encoding='utf-8', errors='surrogateescape').write(
-                MARQUE + '\n' + IMM.sub(sub, src))
+                MARQUE + '\n' + neuf)
             # relecture : les quartets porteurs doivent tous etre des cibles
             relu = open(chemin, encoding='utf-8', errors='surrogateescape').read()
             attendu = {corr[q] for q in vus}
@@ -162,6 +272,17 @@ def main():
                 op, val = m.group(2).lower(), m.group(4).lower()
                 if porte_couleur(op, val, couleurs, exclus):
                     obtenu |= set(quartets(val))
+            if f.masque:
+                for m in MASQUE.finditer(relu):
+                    op = m.group(2).lower()
+                    if not f.masque_ici(op):
+                        continue
+                    for o in octets_masque(m.group(4)):
+                        if (op, '%02x' % o) in exclus:
+                            continue
+                        d = decode_masque(o, f.masque[1])
+                        if d is not None:
+                            obtenu.add(d[0])
             if obtenu != attendu:
                 print(f"  ECRITURE VERIFIEE : ECART — quartets {sorted(obtenu)}"
                       f" au lieu de {sorted(attendu)}")

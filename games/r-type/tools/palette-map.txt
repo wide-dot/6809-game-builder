@@ -223,3 +223,16 @@ lib.bink          3>1 4>2 fusion-ok
 # stage — son olive reste l'olive, comme pour les quatre lots d'ennemis.
 # common.hud, lui, prend la ligne qu'il a deja plus haut.
 code.dobkeratops  12>14
+
+# --- Groupe E : le champ d'etoiles ------------------------------------------
+# Trouve en basculant la palette, pas par l'audit : ses couleurs sont des
+# MASQUES XOR dans un `fcb`, ni un PNG ni un `LDA #$xy`. Trois couleurs, une
+# par role : le beige clair des etoiles du plan proche, le gris du plan median,
+# le bleu fonce du plan lointain.
+#   2 -> 1  et  5 -> 4  viennent de la ligne `defaut` : renumerotation pure.
+#   4 -> 2  est la decision de l'auteur (16/08) : le beige clair des etoiles
+#           prend le gris clair A8A8A8, comme les quatre autres communs qui
+#           n'emploient pas le beige fonce (recette A). Pas de fusion : le gris
+#           du plan median part sur 1, le beige clair sur 2, les deux plans
+#           restent distincts et l'etagement proche/median/lointain tient.
+common.starfield  4>2

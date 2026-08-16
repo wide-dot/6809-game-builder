@@ -1,0 +1,65 @@
+--- a/src/common/flow/checkpoint.unit.asm	2026-08-16 17:03:59.825494116 +0000
++++ b/src/common/flow/checkpoint.unit.asm	2026-08-16 17:03:52.194255004 +0000
+@@ -92,6 +92,14 @@
+         ; vides (le ciel) sont SAUTÉES par DrawTiles : ce qu'on efface ici EST
+         ; le ciel pour tout le reste du niveau.
+         ;
++        ; La nouvelle palette n'y change RIEN, et c'est délibéré : sur le stage 1
++        ; la case 15 reste un noir, parce qu'elle porte le ciel et rien d'autre —
++        ; le fondu vers le tunnel n'est que le recoloriage de cette seule case
++        ; (cf. tools/palette_stage.py, qui dérive les deux palettes du stage).
++        ; Ne PAS « corriger » ce $FFFF en $0000 en voyant un seul noir dans
++        ; pal-next.png : ça remettrait les étoiles dans le noir du décor et des
++        ; sprites, et priverait le tunnel de sa case.
++        ;
+         ; V2-DEVIATION : ancrage ABSOLU de la fenêtre données avant le premier
+         ; effacement. `_SwitchScreenBuffer` est un toggle RELATIF (eor #1 /
+         ; or #2) : il ne rend 2 ou 3 que si le registre porte déjà 2 ou 3. En v1
+--- a/src/common/fx/starfield/obj.asm	2026-08-16 17:03:59.821494117 +0000
++++ b/src/common/fx/starfield/obj.asm	2026-08-16 17:03:52.194042016 +0000
+@@ -15,8 +15,10 @@
+ ; le nibble est connu une fois par PLAN et par passe, pas par etoile. D'ou deux
+ ; boucles specialisees (nibble haut / nibble bas) et 2 o par entree de table.
+ ;
+-; Couleurs = nibbles palette (cf. generated-code/level01/BuilderMainGenCode.asm ;
+-; la palette est decalee de 1 vs le PNG) : 1 = blanc, 2 = gris, 5 = bleu fonce.
++; Couleurs = index materiels (un nibble EST un index : pas de decalage de
++; transparence comme dans les PNG) : 1 = gris moyen #616161, 2 = gris clair
++; #A8A8A8, 4 = bleu fonce #00618F. Les valeurs qui font foi sont les masques du
++; descripteur, plus bas ; celles-ci n'en sont que le rappel.
+ ; 0 comme $F sont NOIRS a l'ecran, donc indiscernables sur une capture.
+ ;
+ ; Invariant central (MESURE, pas suppose) : le ciel jamais dessine est
+@@ -134,10 +136,12 @@
+ ;
+ ; Les masques sont PAR ETOILE (le corps deroule lit -16+i,y / -8+i,y, cf. les
+ ; macros) : la couleur de chaque etoile est un octet ici, cout zero en cycles.
+-; Couleurs (nibble palette, cf. pal.png decale de 1) : 2 = gris #616161,
+-; 4 = beige #CCC2AB, 5 = bleu fonce #00618F. L'etoile 8 (offset 14) = slot 7.
++; Couleurs (index materiel, cf. pal-next-stage.png decale de 1) : 1 = gris moyen
++; #616161, 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les masques sont
++; renumerotes par tools/palette_code.py, jamais a la main : l'octet range est
++; `$F ^ couleur`, le $F etant le ciel. L'etoile 8 (offset 14) = slot 7.
+ ; ---------------------------------------------------------------------------
+-        fcb   $B0,$D0,$B0,$B0,$D0,$B0,$D0,$B0   ; p0 : beige,gris,beige,beige,gris,beige,gris,beige
++        fcb   $B0,$D0,$B0,$B0,$D0,$B0,$D0,$B0   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
+         fcb   $0B,$0D,$0B,$0B,$0D,$0B,$0D,$0B
+ planeTable
+         fdb   starTab_p0
+@@ -145,14 +149,14 @@
+         fcb   16,1                      ; 8 etoiles (2 amas de 4) -> pas 16
+         fcb   2                         ; 2 tours : hauteurs differentes a chaque passage
+         fdb   16*144                    ; lapStride = 2304
+-        fcb   $D0,$A0,$D0,$D0,$A0,$D0,$A0,$00   ; p1 : gris,bleu,gris,gris,bleu,gris,bleu (7 etoiles)
++        fcb   $D0,$A0,$D0,$D0,$A0,$D0,$A0,$00   ; p1 : moyen,bleu,moyen,moyen,bleu,moyen,bleu (7 etoiles)
+         fcb   $0D,$0A,$0D,$0D,$0A,$0D,$0A,$00
+         fdb   starTab_p1
+         fdb   $0080                     ; 0.5 px/trame
+         fcb   14,0                      ; 7 etoiles -> pas 14
+         fcb   1                         ; 1 tour (plan lent, ne repasse pas dans l'intro)
+         fdb   14*144                    ; lapStride (inutilise a 1 tour)
+-        fcb   $A0,$A0,$D0,$A0,$A0,$D0,$A0,$00   ; p2 : bleu fonce dominant, 2 grises (7 etoiles)
++        fcb   $A0,$A0,$D0,$A0,$A0,$D0,$A0,$00   ; p2 : bleu fonce dominant, 2 grises moyennes (7 etoiles)
+         fcb   $0A,$0A,$0D,$0A,$0A,$0D,$0A,$00
+         fdb   starTab_p2
+         fdb   $0040                     ; 0.25 px/trame (plan lointain, le plus sombre)

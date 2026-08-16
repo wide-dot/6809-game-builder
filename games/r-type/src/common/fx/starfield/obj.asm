@@ -1,3 +1,4 @@
+; PALETTE-MIGREE — voir games/r-type/tools/palette-code.txt
 ; ===========================================================================
 ; Starfield - 22 etoiles sur le ciel ouvert du niveau 1 : 8 sur le plan 0,
 ; 7 sur les plans 1 et 2.
@@ -15,8 +16,10 @@
 ; le nibble est connu une fois par PLAN et par passe, pas par etoile. D'ou deux
 ; boucles specialisees (nibble haut / nibble bas) et 2 o par entree de table.
 ;
-; Couleurs = nibbles palette (cf. generated-code/level01/BuilderMainGenCode.asm ;
-; la palette est decalee de 1 vs le PNG) : 1 = blanc, 2 = gris, 5 = bleu fonce.
+; Couleurs = index materiels (un nibble EST un index : pas de decalage de
+; transparence comme dans les PNG) : 1 = gris moyen #616161, 2 = gris clair
+; #A8A8A8, 4 = bleu fonce #00618F. Les valeurs qui font foi sont les masques du
+; descripteur, plus bas ; celles-ci n'en sont que le rappel.
 ; 0 comme $F sont NOIRS a l'ecran, donc indiscernables sur une capture.
 ;
 ; Invariant central (MESURE, pas suppose) : le ciel jamais dessine est
@@ -134,26 +137,28 @@ sfel\1  ldx   \1,u
 ;
 ; Les masques sont PAR ETOILE (le corps deroule lit -16+i,y / -8+i,y, cf. les
 ; macros) : la couleur de chaque etoile est un octet ici, cout zero en cycles.
-; Couleurs (nibble palette, cf. pal.png decale de 1) : 2 = gris #616161,
-; 4 = beige #CCC2AB, 5 = bleu fonce #00618F. L'etoile 8 (offset 14) = slot 7.
+; Couleurs (index materiel, cf. pal-next-stage.png decale de 1) : 1 = gris moyen
+; #616161, 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les masques sont
+; renumerotes par tools/palette_code.py, jamais a la main : l'octet range est
+; `$F ^ couleur`, le $F etant le ciel. L'etoile 8 (offset 14) = slot 7.
 ; ---------------------------------------------------------------------------
-        fcb   $B0,$D0,$B0,$B0,$D0,$B0,$D0,$B0   ; p0 : beige,gris,beige,beige,gris,beige,gris,beige
-        fcb   $0B,$0D,$0B,$0B,$0D,$0B,$0D,$0B
+        fcb   $D0,$E0,$D0,$D0,$E0,$D0,$E0,$D0   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
+        fcb   $0D,$0E,$0D,$0D,$0E,$0D,$0E,$0D
 planeTable
         fdb   starTab_p0
         fdb   $0100                     ; 1.0 px/trame (plan rapide)
         fcb   16,1                      ; 8 etoiles (2 amas de 4) -> pas 16
         fcb   2                         ; 2 tours : hauteurs differentes a chaque passage
         fdb   16*144                    ; lapStride = 2304
-        fcb   $D0,$A0,$D0,$D0,$A0,$D0,$A0,$00   ; p1 : gris,bleu,gris,gris,bleu,gris,bleu (7 etoiles)
-        fcb   $0D,$0A,$0D,$0D,$0A,$0D,$0A,$00
+        fcb   $E0,$B0,$E0,$E0,$B0,$E0,$B0,$00   ; p1 : moyen,bleu,moyen,moyen,bleu,moyen,bleu (7 etoiles)
+        fcb   $0E,$0B,$0E,$0E,$0B,$0E,$0B,$00
         fdb   starTab_p1
         fdb   $0080                     ; 0.5 px/trame
         fcb   14,0                      ; 7 etoiles -> pas 14
         fcb   1                         ; 1 tour (plan lent, ne repasse pas dans l'intro)
         fdb   14*144                    ; lapStride (inutilise a 1 tour)
-        fcb   $A0,$A0,$D0,$A0,$A0,$D0,$A0,$00   ; p2 : bleu fonce dominant, 2 grises (7 etoiles)
-        fcb   $0A,$0A,$0D,$0A,$0A,$0D,$0A,$00
+        fcb   $B0,$B0,$E0,$B0,$B0,$E0,$B0,$00   ; p2 : bleu fonce dominant, 2 grises moyennes (7 etoiles)
+        fcb   $0B,$0B,$0E,$0B,$0B,$0E,$0B,$00
         fdb   starTab_p2
         fdb   $0040                     ; 0.25 px/trame (plan lointain, le plus sombre)
         fcb   14,0                      ; 7 etoiles -> pas 14
