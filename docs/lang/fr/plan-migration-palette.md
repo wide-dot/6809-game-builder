@@ -199,15 +199,18 @@ sort de la famille de teinte pour récupérer une marche.
 - [x] `lib.bug` (8 img, 91 px)
 - [x] `lib.patapata` (8 img, 57 px)
 
-### Groupe D — le code de dessin écrit en dur (2 fichiers)
+### Groupe D — le code de dessin écrit en dur — FAIT le 16/08/2026
 
 Ni un remap de PNG ni un remap global ne les traitent : ce sont des immédiats
 `LDA #$xy` à réécrire nibble par nibble.
 
-- [ ] `src/common/hud/hud.asm` — 796 px, renumérotation pure (indices 0, 1, 5,
+- [x] `src/common/hud/hud.asm` — 796 px, renumérotation pure (indices 0, 1, 5,
       6, 13, tous conservés). Mécanisable comme la transformation F→0 du 15/08.
-- [ ] `src/enemies/dobkeratops/tailmgr_blits.asm` — 102 px, dont 31 px d'ancien
-      index 14 (renumérotation) et **2 px d'olive à décider**.
+- [x] `src/enemies/dobkeratops/tailmgr_blits.asm` — 102 px, dont 31 px d'ancien
+      index 14 (renumérotation) et 2 px d'olive, gardée sur l'index propre au
+      stage. **Un troisième site est apparu au groupe E** : les tables de
+      masques du starfield (`src/common/fx/starfield/obj.asm`), invisibles aux
+      deux relevés parce qu'elles ne sont ni un PNG ni un `LDA #$xy`.
 
 **À NE PAS TOUCHER** : `src/title/text/text.asm` (796 px dont 419 d'index 15).
 Le title se dessine sur `Pal_title`, une palette distincte ; il ne participe pas
