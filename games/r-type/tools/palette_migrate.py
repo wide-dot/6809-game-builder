@@ -99,6 +99,15 @@ def ressources(pu, base):
         png = [p for g in f.iter('gfxcomp') for p in pu.expanse(g, base)]
         if png:
             images[nom] = list(dict.fromkeys(png))   # une ligne miroir redéclare
+    # Les CARTES de niveau (groupe F). Elles n'entrent pas par un <gfxcomp> :
+    # `<leanscroll image=...>` est leur source, le build en derive les tuiles et
+    # la carte, et le <gfxcomp> qui suit consomme du genere. La ressource est
+    # donc l'image du niveau elle-meme, une par stage.
+    for ls in root.iter('leanscroll'):
+        img = ls.get('image')          # src/stages/NN/map/in.png
+        if img:
+            stage = int(img.split('/')[2])
+            images['stage%d.map' % stage] = [os.path.join(base, img)]
     scenes = {s.get('name'): [l.get('name') for l in s.iter('load')]
               for s in root.iter('scene')}
     dedans = [n for n in scenes.get('scenes.boot', [])
@@ -107,6 +116,9 @@ def ressources(pu, base):
         for u in scenes.get(f'scenes.lot.{lot}', []):
             if u in images and u not in dedans:
                 dedans.append(u)
+    # les cartes s'ajoutent au perimetre commun : ce sont du contenu de STAGE,
+    # elles ne passent pas par scenes.boot.
+    dedans += [n for n in images if n.endswith('.map')]
     return {n: images[n] for n in dedans}
 
 
@@ -141,6 +153,8 @@ def table(chemins, ressource):
             if c == 'fusion-ok':
                 fusion_ok = cle != 'defaut'    # jamais autorisable en masse
                 continue
+            if c.startswith('marqueur='):
+                continue                       # lu par marqueurs(), pas ici
             a, _, b = c.partition('>')
             # `b~c` = TRAME : l'ancien index ne devient pas une couleur mais un
             # damier de deux, une case sur deux. C'est le moyen de fabriquer un
@@ -229,6 +243,45 @@ def index_migres(chemin, pal_b):
     de la ressource (magenta ou non), et la question posee ici est « faut-il
     encore renumeroter », pas « la table est-elle a jour »."""
     return palette_brute(chemin)[:13 * 3] == pal_b[:13 * 3]
+
+
+def marqueurs(chemins, ressource):
+    """Les anciens index qu'UNE ressource declare comme MARQUEURS.
+
+    Un marqueur est un index dont la couleur, dans le fichier source, n'est pas
+    celle de la palette de jeu : il sert a le reperer a l'oeil dans un editeur.
+    Le cas fondateur est le ciel des cartes de niveau — `in.png` le peint en
+    magenta #FF00FF la ou la palette machine rend du noir, pour qu'il saute aux
+    yeux. Un marqueur n'a donc pas de couleur a preserver, et le controle de
+    palette source doit le laisser passer. Il se declare, jamais il ne se
+    devine : `marqueur=15` sur la ligne de la ressource.
+    """
+    out = set()
+    for ligne in _lignes(chemins):
+        mots = ligne.split('#')[0].split()
+        if mots and mots[0] == ressource:
+            out |= {int(m.split('=')[1]) for m in mots[1:]
+                    if m.startswith('marqueur=')}
+    return out
+
+
+def desaccords(png, rvb_a, marques=()):
+    """Les index EMPLOYES dont la couleur, dans ce fichier, n'est pas celle de
+    l'ancienne palette de reference.
+
+    La table de correspondance parle d'index ANCIENS ; l'appliquer a un fichier
+    dont l'index 4 ne porte pas la meme couleur, c'est renumeroter contre la
+    mauvaise table — et en silence, puisque rien d'autre ne le remarquerait.
+    C'est le cas des cartes des stages 2-8 : elles reaffectent quelques
+    emplacements a des teintes propres a leur niveau."""
+    im = Image.open(png)
+    if im.mode != 'P':
+        return []
+    pal = palette_brute(png)
+    vus = {v for _, v in (im.getcolors(1 << 20) or [])}
+    return sorted(v - 1 for v in vus if v != TRANSPARENT
+                  and (v - 1) not in marques
+                  and tuple(pal[v * 3:v * 3 + 3]) != rvb_a[v])
 
 
 def migrer(png, corr, pal_neuve):
@@ -356,7 +409,7 @@ def planche(sortie, blocs, colonnes, Z=6, largeur_max=LARGEUR_DEFAUT):
 
 
 def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris,
-             pal_res):
+             pal_res, tables_map=()):
     """La passe à blanc d'UNE ressource. Rend (résultats, héritées, code) ; un
     code non nul veut dire qu'il ne faut rien écrire, ni pour elle ni pour les
     autres — un tour de validation se valide en entier."""
@@ -387,6 +440,30 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris,
               "autre ressource — laissee(s) telle(s) quelle(s) :")
         for p in deja:
             print(f"    {os.path.relpath(p, base)}")
+
+    # Controle de palette source, reserve aux CARTES DE NIVEAU. Mesure faite
+    # (16/08) : 1195 fichiers du corpus ne portent pas pal.png — masques de
+    # terrain a deux couleurs, sprites enregistres avec la palette du moment.
+    # La campagne travaille donc par INDEX, et c'est valide : les planches sont
+    # rendues contre la palette cible, pas contre celle du fichier.
+    # Les cartes sont l'exception qui compte : elles REAFFECTENT des
+    # emplacements a des teintes propres au niveau (mesure : stage 2 sur 4 et
+    # 15, stage 3 sur 4, 6, 14 et 15…). Appliquer la table du stage 1 a l'une
+    # d'elles renumeroterait contre la mauvaise table, en silence. D'ou ce
+    # controle ici et nulle part ailleurs.
+    marques = marqueurs(tables_map, nom)
+    ecarts = ([(p, d) for p in reste
+               for d in [desaccords(p, rvb_a, marques)] if d]
+              if nom.endswith('.map') else [])
+    if ecarts:
+        print(f"{nom} : ARRET — la palette source n'est pas l'ancienne de"
+              " reference sur des index employes.")
+        for p, d in ecarts:
+            print(f"  {os.path.relpath(p, base)} : index {d}")
+        print("La table parle d'index ANCIENS : l'appliquer ici renumeroterait")
+        print("contre la mauvaise table. Declarer l'ancienne palette de CE")
+        print("fichier avant de le migrer.")
+        return [], deja, set(), 1, tables
 
     resultats, refus, employes = [], [], set()
     for p in reste:
@@ -531,7 +608,7 @@ def main():
                 print(f"[{etiquette}]", end=' ')
             resultats, deja, employes, c, tables = preparer(
                 nom, res[nom], corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris,
-                pal_res)
+                pal_res, pile)
             code |= c
             pris |= {p for p, _, _ in resultats}
             tour.append((etiquette, nom, corr, resultats, deja, employes,

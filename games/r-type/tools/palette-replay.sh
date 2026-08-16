@@ -161,6 +161,22 @@ else
     git apply -p1 tools/palette-edits.patch
 fi
 
+# =========================================================================
+# Groupe F — les tuiles. La source est l'image du niveau : le BUILD en derive
+# tout le reste (leanscroll -> tuiles + carte -> gfxcomp -> tilemap), donc il
+# n'y a qu'un fichier a migrer par stage.
+#
+# Le stage 1 est une renumerotation PURE, prouvee au pixel : les deux beiges
+# retrouvent leur couleur exacte dans les cases propres au stage (12 et 13), et
+# le ciel — un MARQUEUR magenta dans la source, du noir sur la machine — rejoint
+# le noir 0. Pas de planche : il n'y a rien a arbitrer.
+#
+# Les stages 2 a 8 ARRETENT l'outil : leurs cartes reaffectent des emplacements
+# a des teintes propres au niveau, donc la table des anciens index ne leur
+# convient pas telle quelle. C'est leur tour de travail, pas un defaut.
+# =========================================================================
+$M stage1.map --ecrire
+
 # Les fichiers que la campagne SUPPRIME. Une suppression s'enonce en commande,
 # pas en patch : c'est le role de ce ledger.
 rm -f src/stages/01/background/fadetotunnel.unit.asm \

@@ -224,6 +224,28 @@ lib.bink          3>1 4>2 fusion-ok
 # common.hud, lui, prend la ligne qu'il a deja plus haut.
 code.dobkeratops  12>14
 
+# --- Groupe F : la carte du niveau 1 ----------------------------------------
+# Mesure : la carte n'emploie que 0, 1, 2, 3, 4, 7, 8, 9 et 15. La ligne
+# `defaut` en place huit ; restent les deux beiges, et ils n'ont RIEN a decider
+# ici — la nouvelle palette les porte tels quels dans les cases propres au
+# stage : 12 = #9E8F7A (beige fonce), 13 = #CCC2AB (beige clair). Les tuiles
+# sont du contenu de stage, elles y ont droit. Aucune planche : la conversion
+# est prouvable au pixel.
+#
+# `fusion-ok` couvre UNE fusion, voulue et demandee par l'auteur : l'ancien
+# index 15 (le ciel, 234 652 px) rejoint le noir 0. Les deux etaient noirs dans
+# l'ancienne palette, donc rien ne bouge a l'ecran ; ce qui change est en
+# dessous — le ciel cesse d'avoir un index a lui, ce qui est tout l'objet du
+# groupe E. Effet de bord mesure et bienvenu : la ou le ciel touchait le noir
+# du decor, leanscroll voyait une frontiere et gardait des pixels ; les deux
+# valeurs devenant egales, il en garde moins. Moins de tuiles a dessiner.
+# `marqueur=15` : dans in.png, l'ancien index 15 n'est pas peint de sa couleur
+# machine (le noir) mais en MAGENTA #FF00FF — c'est la traînee de masquage, un
+# reperage a l'oeil pour l'auteur. Le controle de palette source doit donc le
+# laisser passer : un marqueur n'a pas de couleur a preserver. Apres migration
+# il n'existe plus, ses pixels sont du noir 0 comme le reste.
+stage1.map  3>12 4>13 marqueur=15 fusion-ok
+
 # --- Groupe E : le champ d'etoiles ------------------------------------------
 # Trouve en basculant la palette, pas par l'audit : ses couleurs sont des
 # MASQUES XOR dans un `fcb`, ni un PNG ni un `LDA #$xy`. Trois couleurs, une
