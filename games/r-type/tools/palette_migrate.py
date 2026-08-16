@@ -66,6 +66,16 @@ TRANSPARENT = 0
 # qu'elle montre en grain neutre la ou l'ecran donnera des rayures diagonales.
 RATIO = 2
 
+# Les index MATERIELS 12 a 15 sont propres au stage : un commun n'a pas le
+# droit de s'en servir, et un lot ne peut employer que celui que sa table lui
+# accorde. La table de couleurs ecrite dans le PNG peint les autres en MAGENTA
+# (decision auteur, 16/08) — un pixel egare y devient criard dans n'importe
+# quel editeur, au lieu de passer pour une couleur plausible.
+# Seule exception connue : le vert du scant, grave dans la palette
+# stage-specifique des stages 1 et 7 (les deux seuls qui chargent ce lot).
+STAGE_SPECIFIQUES = (12, 13, 14, 15)
+MAGENTA = (255, 0, 255)
+
 
 def _releve():
     """Les primitives de l'outil de relevé — une seule définition de « quelles
@@ -201,6 +211,26 @@ def palette_brute(chemin):
     return b[:17 * 3]
 
 
+def palette_ecrite(pal_b, cibles):
+    """La table de couleurs a graver dans les PNG d'UNE ressource : la nouvelle
+    palette, sauf les emplacements propres au stage qu'elle n'emploie pas —
+    ceux-la passent en magenta."""
+    out = list(pal_b)
+    for i in STAGE_SPECIFIQUES:
+        if i not in cibles:
+            out[(i + 1) * 3:(i + 1) * 3 + 3] = list(MAGENTA)
+    return out
+
+
+def index_migres(chemin, pal_b):
+    """Les index de CE fichier sont-ils deja ceux de la nouvelle palette ?
+    On compare les treize premieres entrees — transparence plus les douze
+    couleurs communes. Les quatre suivantes ne comptent pas : elles dependent
+    de la ressource (magenta ou non), et la question posee ici est « faut-il
+    encore renumeroter », pas « la table est-elle a jour »."""
+    return palette_brute(chemin)[:13 * 3] == pal_b[:13 * 3]
+
+
 def migrer(png, corr, pal_neuve):
     """Rend (image migrée, index rencontrés, index sans correspondance)."""
     im = Image.open(png)
@@ -325,7 +355,8 @@ def planche(sortie, blocs, colonnes, Z=6):
     im.save(sortie)
 
 
-def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
+def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris,
+             pal_res):
     """La passe à blanc d'UNE ressource. Rend (résultats, héritées, code) ; un
     code non nul veut dire qu'il ne faut rien écrire, ni pour elle ni pour les
     autres — un tour de validation se valide en entier."""
@@ -337,13 +368,20 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
     # commande revendique deja : sans ca, deux ressources partageant une image
     # la prepareraient chacune depuis l'original et la derniere ecriture
     # gagnerait en silence. La premiere nommee decide, les autres heritent.
-    deja = [p for p in images if palette_brute(p) == pal_b or p in pris]
+    deja = [p for p in images if index_migres(p, pal_b) or p in pris]
     reste = [p for p in images if p not in deja]
+    # une image deja renumerotee peut porter une table PERIMEE (la regle du
+    # magenta est arrivee apres). Ce n'est pas une migration, c'est une
+    # reecriture de table : les index n'y sont pas touches.
+    tables = [p for p in deja if p not in pris
+              and palette_brute(p) != pal_res]
     if not reste:
-        # tout est fait : c'est un rejeu, pas un heritage. Ne pas dresser une
-        # liste qui donnerait a croire qu'une autre ressource a tranche.
+        if tables:
+            print(f"{nom} : index deja migres, {len(tables)} table(s) de "
+                  "couleurs a rafraichir.")
+            return [], deja, set(), 0, tables
         print(f"{nom} : rien a faire, tout est deja migre.")
-        return [], deja, set(), 0
+        return [], deja, set(), 0, []
     if deja:
         print(f"{nom} : {len(deja)} image(s) deja migree(s), heritee(s) d'une "
               "autre ressource — laissee(s) telle(s) quelle(s) :")
@@ -352,7 +390,7 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
 
     resultats, refus, employes = [], [], set()
     for p in reste:
-        img, vus, orphelins = migrer(p, corr, pal_b)
+        img, vus, orphelins = migrer(p, corr, pal_res)
         if orphelins:
             refus.append((p, orphelins))
         else:
@@ -364,14 +402,14 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
             print(f"  {os.path.relpath(p, base)} : index {o}")
         print("Trancher leur sort dans palette-map.txt — une identite"
               " silencieuse serait pire.")
-        return [], deja, employes, 1
+        return [], deja, employes, 1, tables
 
     # Priorite auteur (16/08) : conserver les niveaux de degrade. Deux index
     # employes qui tombent sur le meme, c'est une marche de rampe perdue.
     coll = fusions(corr, employes)
     if coll and not fusion_ok:
         dire_fusions(nom, coll, employes, corr, rvb_a, rvb_b)
-        return [], deja, employes, 1
+        return [], deja, employes, 1, tables
     if coll:
         print(f"{nom} : fusion DECLAREE (fusion-ok) — "
               + ' ; '.join(f"anciens {anc} -> {b}" for b, anc in sorted(coll.items())))
@@ -391,10 +429,10 @@ def preparer(nom, images, corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris):
             if _rendu_brut(p, rvb_a) != _rendu_brut(img, rvb_b):
                 print(f"{nom} : ARRET — {os.path.relpath(p, base)} devait rendre "
                       "exactement les memes couleurs et n'y arrive pas.")
-                return [], deja, employes, 1
+                return [], deja, employes, 1, tables
         print(f"{nom} : {len(resultats)} images, renumerotation PURE — rendu "
               "prouve identique pixel par pixel, pas de planche a faire.")
-    return resultats, deja, employes, 0
+    return resultats, deja, employes, 0, tables
 
 
 def main():
@@ -435,7 +473,7 @@ def main():
         h = lambda t: '#%02X%02X%02X' % t
         print(f"{len(res)} ressources dans le perimetre :")
         for n in sorted(res):
-            if all(palette_brute(p) == pal_b for p in res[n]):
+            if all(index_migres(p, pal_b) for p in res[n]):
                 print(f"  [x] {n:26} {len(res[n]):3} img")
                 continue
             corr, _ = table([args.map], n)
@@ -479,13 +517,19 @@ def main():
             corr, fusion_ok = table(pile, nom)
             if not corr:
                 sys.exit(f"aucune correspondance pour {nom} dans {pile}")
+            # ce que CETTE ressource a le droit d'occuper dans les quatre
+            # emplacements propres au stage : ce que sa table y envoie, rien de plus
+            pal_res = palette_ecrite(pal_b, {i for v in corr.values()
+                                             for i in cible(v)})
             if args.variante:
                 print(f"[{etiquette}]", end=' ')
-            resultats, deja, employes, c = preparer(nom, res[nom], corr, fusion_ok,
-                                                    pal_b, rvb_a, rvb_b, base, pris)
+            resultats, deja, employes, c, tables = preparer(
+                nom, res[nom], corr, fusion_ok, pal_b, rvb_a, rvb_b, base, pris,
+                pal_res)
             code |= c
             pris |= {p for p, _, _ in resultats}
-            tour.append((etiquette, nom, corr, resultats, deja, employes))
+            tour.append((etiquette, nom, corr, resultats, deja, employes,
+                         pal_res, tables))
     if code:
         return 1
 
@@ -526,7 +570,7 @@ def main():
                 # critere honnete quand plusieurs candidats sont en lice.
                 garde = []
                 for p in ordre:
-                    ref = _rendu_brut(p, rvb_b if palette_brute(p) == pal_b
+                    ref = _rendu_brut(p, rvb_b if index_migres(p, pal_b)
                                       else rvb_a)
                     if any(_rendu_brut(c, rvb_b) != ref for _, c, _ in paires[p]):
                         garde.append(p)
@@ -540,7 +584,7 @@ def main():
                 # charabia et on croirait a un defaut de conversion
                 blocs.append((nom, resumes[nom], [
                     (p, [('actuel', p,
-                          rvb_b if palette_brute(p) == pal_b else rvb_a)]
+                          rvb_b if index_migres(p, pal_b) else rvb_a)]
                      + paires[p]) for p in ordre]))
         if not blocs:
             print("rien a montrer : tout est deja migre.")
@@ -551,14 +595,21 @@ def main():
 
     if args.ecrire:
         tour = [t[1:] for t in tour]        # une seule colonne quand on ecrit
-        ecrites, mauvais = 0, []
-        for nom, corr, resultats, _, _ in tour:
+        ecrites, rafraichies, mauvais = 0, 0, []
+        for nom, corr, resultats, _, _, pal_res, tables in tour:
             for p, img, _ in resultats:
                 img.save(p)
+            for p in tables:                 # table perimee : les index restent
+                im = Image.open(p)
+                im.putpalette(pal_res)
+                im.save(p)
+                if palette_brute(p) != pal_res:
+                    mauvais.append((p, 'table de couleurs non rafraichie'))
+                rafraichies += 1
             # --- relecture : ce qui est sur le disque est-il ce qu'on voulait ?
             for (p, img, vus) in resultats:
                 relu = Image.open(p)
-                if palette_brute(p) != pal_b:
+                if palette_brute(p) != pal_res:
                     mauvais.append((p, 'table de couleurs non installee'))
                     continue
                 attendu = {i + 1 for v in vus if v != TRANSPARENT
@@ -574,7 +625,10 @@ def main():
             for p, m in mauvais:
                 print(f"  {os.path.relpath(p, base)} : {m}")
             return 1
-        print(f"{ecrites} images reecrites et relues : conformes.")
+        quoi = f"{ecrites} images reecrites"
+        if rafraichies:
+            quoi += f", {rafraichies} tables rafraichies"
+        print(f"{quoi} et relues : conformes.")
     return 0
 
 

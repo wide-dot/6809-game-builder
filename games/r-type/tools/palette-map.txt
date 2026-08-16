@@ -32,6 +32,18 @@
 # Un index present dans une image mais absent de la table est une ERREUR, pas
 # une identite silencieuse : l'outil refuse d'ecrire tant qu'il n'est pas
 # tranche. C'est ce qui empeche une couleur d'etre migree par inadvertance.
+#
+# LE MAGENTA (regle auteur, 16/08) -------------------------------------------
+# Les index MATERIELS 12 a 15 (entrees PNG 13 a 16) sont propres au STAGE. Un
+# commun n'a pas le droit de s'en servir : la table de couleurs gravee dans ses
+# PNG les peint donc en MAGENTA #FF00FF. Un pixel egare y devient criard dans
+# n'importe quel editeur au lieu de passer pour une couleur plausible — et il
+# le reste quel que soit le stage, puisque la vraie couleur vient de png2pal.
+#
+# L'exception se declare toute seule : ce qu'une ressource ENVOIE dans 12-15
+# par sa ligne ci-dessous garde sa vraie couleur, le reste est magenta. Cas
+# connu — le vert du scant, grave dans la palette stage-specifique des stages
+# 1 et 7, les deux seuls qui chargent ce lot (verifie sur les scenes de cast).
 
 # --- la table de base : les douze couleurs conservees, plus le ciel ---------
 # 1 FFF->3, 2 666->1, 5 068->4, 6 09C->5, 13 0DE->6, 14 F96->10 : deplacements
@@ -125,3 +137,13 @@ common.hud      4>2
 common.missile  4>2
 common.overlay  4>2
 lib.pstaff      4>2
+
+# --- common.pow — arbitre a l'oeil le 16/08/2026, sur six candidats ---------
+# « Fusion blanche » : le beige fonce prend le gris clair A8A8A8, le beige
+# clair — le reflet — devient du BLANC FRANC et se fond dans le blanc deja
+# present. Quatre marches au lieu de cinq, assume : les cinq-marches passaient
+# soit par le jaune (hors famille, ecarte), soit par une trame (l'outil sait
+# les faire depuis ce jour, cf. la syntaxe `a>b~c` plus haut).
+# Ecartees et rejouables : palette-variantes/c-beige-fonce-au-gris (fusion du
+# sombre), c-beige-clair-en-trame, c-beige-fonce-en-trame, c-les-deux-en-trame.
+common.pow  3>2 4>3 fusion-ok

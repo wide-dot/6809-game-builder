@@ -85,11 +85,12 @@ $M common.explosion.imgBig   --ecrire
 $M common.explosion.imgSmall --ecrire
 
 # =========================================================================
-# Groupe C, planche 1/3 « beiges seuls » — valide par l'auteur le 16/08/2026.
-# Recette A : le beige clair prend le gris clair A8A8A8. Ces quatre-la
-# n'emploient pas le beige fonce ; common.pow, qui le porte, est traite a part.
+# Groupe C — les beiges, planche par planche. Valide par l'auteur le
+# 16/08/2026. Chaque ligne porte SA decision : ce qui va au pow ne va pas au
+# HUD, le detail et les recettes ecartees sont dans palette-map.txt.
 # =========================================================================
-$M common.hud      --ecrire
-$M common.missile  --ecrire
-$M common.overlay  --ecrire
-$M lib.pstaff      --ecrire
+$M common.hud      --ecrire     # beige clair au gris clair
+$M common.missile  --ecrire     # idem
+$M common.overlay  --ecrire     # idem
+$M lib.pstaff      --ecrire     # idem
+$M common.pow      --ecrire     # fusion blanche : le reflet rejoint le blanc
