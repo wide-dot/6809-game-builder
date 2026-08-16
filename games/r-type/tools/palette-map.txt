@@ -160,3 +160,22 @@ common.pow  3>2 4>3 fusion-ok
 # lots gardent donc leur olive a l'identique : `12>14` est la MEME couleur
 # que l'ancien 617A00, c'est une renumerotation pure.
 lib.patapata  12>14
+
+# lib.scant et lib.cancer gardent leur olive (regle etendue ci-dessus). Le sort
+# de LEURS beiges se decide a part, sur planche — ces deux lignes ne portent
+# que ce qui est acquis.
+lib.scant   12>14
+lib.cancer  12>14
+
+# common.optionbox est le cas le plus contraint du jeu : 15 valeurs employees
+# pour 12 places. TROIS fusions sont arithmetiques, pas des choix de gout.
+# Deux sont ici, la troisieme (quel beige prend la seule place libre) est sur
+# planche :
+#   12>1   l'olive rejoint le gris 616161 — decision auteur : c'est un COMMUN
+#          charge sur les huit stages, lui laisser un index de stage
+#          obligerait tous les stages a graver un vert. Luminance 101 contre
+#          97, c'est la meilleure place disponible.
+#   14>10  l'orange (16 px) et le saumon (2 px) fusionnent. Contrairement a
+#          imgSmall, impossible de glisser la rampe chaude d'un cran pour les
+#          separer : optionbox emploie DEJA le 610000 du bas, et le CC5A3C.
+common.optionbox  12>1 14>10 fusion-ok

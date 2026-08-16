@@ -2,7 +2,7 @@
 #
 #     palette_migrate.py RESSOURCE… --sans-base --variante <ce fichier>
 #
-# Fusion blanche, olive GARDE sur l'index propre au stage.
+# Fusion du sombre — l'olive et les autres index sont deja tranches dans palette-map.txt, cette recette ne porte QUE les deux beiges.
 #
 # `*` = la ressource en cours : une recette ne prejuge de rien.
-*  3>2 4>3 12>14 fusion-ok
+*  3>1 4>2 fusion-ok
