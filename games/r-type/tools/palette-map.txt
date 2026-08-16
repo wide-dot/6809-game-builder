@@ -5,7 +5,10 @@
 # Format : un mot-cle ou un nom de ressource, puis des couples `ancien>nouveau`.
 #   defaut      s'applique a TOUTE ressource ;
 #   <ressource> ajoute ou REMPLACE des couples pour cette ressource seule ;
-#   fusion-ok   sur une ligne de ressource : autorise une collision, cf. plus bas.
+#   *           « la ressource en cours » — reserve aux surcouches de comparaison
+#               (palette-variantes/), qui expriment une recette sans prejuger
+#               a qui elle convient ; jamais dans ce fichier-ci ;
+#   fusion-ok   sur une ligne de ressource (ou `*`) : autorise une collision.
 #
 # Ce fichier declare les decisions ; `palette-replay.sh` declare celles qui ont
 # ete APPLIQUEES, et dans quel ordre. Une ligne ici sans sa ressource la-bas est
@@ -98,6 +101,6 @@ common.explosion.imgSmall  8>7 9>8 10>10 14>9
 # --- Le vaisseau (groupe C). La paire chaude d'abord ------------------------
 # common.player emploie l'ancien orange (13 px) ET l'ancien saumon (4 px) :
 # meme situation que les explosions, meme recette retenue le 16/08 — c'est le
-# saumon qui descend sur CC5A3C. Le sort des beiges se decide a part, il touche
-# TOUS les communs et vit donc sur la ligne `defaut`.
+# saumon qui descend sur CC5A3C. Le sort de SES beiges se decide a part, sur
+# planche, et ne vaudra que pour lui : chaque ressource a les siens.
 common.player  10>10 14>9
