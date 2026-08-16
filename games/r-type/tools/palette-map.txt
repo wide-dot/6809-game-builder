@@ -130,7 +130,12 @@ common.explosion.imgSmall  8>7 9>8 10>10 14>9
 # meme situation que les explosions, meme recette retenue le 16/08 — c'est le
 # saumon qui descend sur CC5A3C. Le sort de SES beiges se decide a part, sur
 # planche, et ne vaudra que pour lui : chaque ressource a les siens.
-common.player  10>10 14>9
+#
+# Beiges : « fusion du sombre » (planche 2, arbitre a l'oeil le 16/08). C'est
+# la ressource ou cette recette se defend le mieux — elle n'a que 19 px de
+# 616161 d'origine, donc la fusion REPARTIT au lieu d'ecraser : 128 / 122 /
+# 144, une rampe grise presque plate.
+common.player  10>10 14>9 3>1 4>2 fusion-ok
 
 # --- Les beiges, planche 1/3 « beiges seuls » — auteur, 16/08/2026 ----------
 # Recette A retenue : le beige clair prend le gris clair A8A8A8. Ces quatre-la
@@ -197,3 +202,16 @@ common.optionbox  12>1 14>10 3>2 4>3 fusion-ok
 # deplace que 31 px — invisible a l'oeil, mais une marche en moins.
 # Son olive est gardee, comme les trois autres lots (regle etendue 1-3-4-5-7).
 lib.bug  12>14 4>2
+
+# --- Planche 2 — arbitre a l'oeil par l'auteur le 16/08/2026 ----------------
+# Le forcepod prend les BEIGES FUSIONNES : ils tombent ensemble sur A8A8A8
+# (438 px), et le gris moyen reste a 274. C'est le plus gros porteur de beige
+# du jeu (258 + 180 px) et le plus sensible des quatre — la fusion du sombre en
+# aurait fait une masse gris moyen (532 px sur 800), la fusion blanche l'aurait
+# blanchi presque autant (268 px de blanc contre 88).
+common.forcepod  3>2 4>2 fusion-ok
+
+# bitdevice et bink prennent la FUSION DU SOMBRE, comme le vaisseau : le beige
+# fonce rejoint le gris moyen 616161, le clair prend le gris clair A8A8A8.
+common.bitdevice  3>1 4>2 fusion-ok
+lib.bink          3>1 4>2 fusion-ok

@@ -152,7 +152,12 @@ permet de rejouer la comparaison.
 écrites, n'emploient aucune paire en collision — la règle 1 ne les aurait pas
 arrêtées. Rien à refaire derrière.*
 
-### Groupe C — une décision de fusion à prendre (14 ressources, 98 images)
+### Groupe C — CLOS le 16/08/2026 (14 ressources, 98 images)
+
+Trois planches, une décision par ressource. Les recettes retenues et les
+alternatives écartées sont dans `tools/palette-map.txt`, à côté de chaque
+ligne ; les surcouches de comparaison survivent dans
+`tools/palette-variantes/` pour rejouer les arbitrages.
 
 Ordre choisi : **les deux ancres d'abord** — ce qui est à l'écran en
 permanence et contre quoi tout le reste sera jugé — puis les communs par poids
@@ -160,7 +165,7 @@ décroissant, puis les lots.
 
 **Les ancres**
 
-- [ ] `common.player` (13 img, 231 px sur 5) — le vaisseau. Le §3 de l'étude
+- [x] `common.player` (13 img, 231 px sur 5) — le vaisseau. Le §3 de l'étude
       recommande d'y verser le beige foncé dans le gris `666` : 19 px perdus
       contre 91 par l'autre fusion.
 - [x] `common.hud` (12 img, 4 px) — recette A. Une seule de ses douze images
@@ -175,24 +180,24 @@ sort de la famille de teinte pour récupérer une marche.
 
 **Les communs, par poids**
 
-- [ ] `common.forcepod` (16 img, 438 px)
-- [ ] `common.pow` (6 img, 329 px) — **recette A écartée par l'auteur** ;
+- [x] `common.forcepod` (16 img, 438 px)
+- [x] `common.pow` (6 img, 329 px) — **recette A écartée par l'auteur** ;
       candidat en cours : le beige clair sur le **jaune** `FAF261`, qui
       rallonge la rampe claire à cinq marches et ne perd rien
-- [ ] `common.optionbox` (5 img, 134 px)
-- [ ] `common.bitdevice` (6 img, 101 px)
+- [x] `common.optionbox` (5 img, 134 px)
+- [x] `common.bitdevice` (6 img, 101 px)
 - [x] `common.overlay` (1 img, 92 px) — le masque du champ de jeu — recette A
 - [x] `common.missile` (5 img, 25 px) — recette A
 
 **Les lots** (chargés par combinaison de stage, mêmes règles)
 
-- [ ] `lib.scant` (3 img, 592 px) — **le cas arbitré** : garde son olive sur
+- [x] `lib.scant` (3 img, 592 px) — **le cas arbitré** : garde son olive sur
       l'index propre au stage, beige clair monté au blanc, 4 px perdus en tout.
-- [ ] `lib.cancer` (3 img, 219 px)
-- [ ] `lib.bink` (6 img, 173 px)
+- [x] `lib.cancer` (3 img, 219 px)
+- [x] `lib.bink` (6 img, 173 px)
 - [x] `lib.pstaff` (6 img, 94 px) — recette A
-- [ ] `lib.bug` (8 img, 91 px)
-- [ ] `lib.patapata` (8 img, 57 px)
+- [x] `lib.bug` (8 img, 91 px)
+- [x] `lib.patapata` (8 img, 57 px)
 
 ### Groupe D — le code de dessin écrit en dur (2 fichiers)
 

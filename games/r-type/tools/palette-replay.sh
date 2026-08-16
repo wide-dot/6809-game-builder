@@ -105,3 +105,13 @@ $M lib.scant       --ecrire     # beiges fusionnes, olive gardee
 $M lib.cancer      --ecrire     # idem
 $M common.optionbox --ecrire    # fusion blanche + olive au gris (c'est un commun)
 $M lib.bug         --ecrire     # aucun choix : 4 neutres pour 4 gris, bijection forcee
+
+# =========================================================================
+# Groupe C, planche 2/3 — beiges + orange. Valide par l'auteur le 16/08/2026.
+# Le forcepod fusionne ses deux beiges sur le gris clair ; les trois autres
+# versent le beige fonce dans le gris moyen (« fusion du sombre »).
+# =========================================================================
+$M common.forcepod  --ecrire
+$M common.player    --ecrire
+$M common.bitdevice --ecrire
+$M lib.bink         --ecrire
