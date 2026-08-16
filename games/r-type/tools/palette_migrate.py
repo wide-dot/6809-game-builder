@@ -96,11 +96,21 @@ def ressources(pu, base):
     return {n: images[n] for n in dedans}
 
 
-def table(chemin, ressource):
+def _lignes(chemins):
+    for chemin in chemins:
+        for ligne in open(chemin, encoding='utf-8'):
+            yield ligne
+
+
+def table(chemins, ressource):
     """La correspondance applicable à CETTE ressource : le défaut, puis ce que
-    sa ligne ajoute ou remplace. Rend (correspondance, fusion autorisée)."""
+    sa ligne ajoute ou remplace. Rend (correspondance, fusion autorisée).
+
+    `chemins` est une PILE : la table de base, puis d'éventuelles surcouches
+    (`--variante`) lues par-dessus. C'est ce qui permet de comparer plusieurs
+    candidats sans dupliquer la table de base — donc sans qu'elle dérive."""
     corr, fusion_ok = {}, False
-    for ligne in open(chemin, encoding='utf-8'):
+    for ligne in _lignes(chemins):
         ligne = ligne.split('#')[0].strip()
         if not ligne:
             continue
@@ -200,46 +210,55 @@ def _police(t, gras=False):
         return ImageFont.load_default()
 
 
-FOND, Z, COLS = (18, 20, 24), 6, 4
+FOND, Z, LARGEUR_MAX = (18, 20, 24), 6, 1360
 
 
-def _geometrie(paires):
-    """(largeur de cellule, hauteur de cellule, nb de lignes) pour un bloc.
-    Chaque ressource a sa propre échelle : un sprite de 12 px ne mérite pas la
-    cellule d'un sprite de 48."""
+def _geometrie(paires, nb_col):
+    """Géométrie d'un bloc : chaque ressource a sa propre échelle — un sprite
+    de 12 px ne mérite pas la cellule d'un sprite de 48 — et le nombre de
+    vignettes par ligne se déduit de la largeur disponible."""
     mw = max(Image.open(p).size[0] for p, _ in paires)
     mh = max(Image.open(p).size[1] for p, _ in paires)
-    return (mw * Z * 2 + 30, mh * Z + 34, (len(paires) + COLS - 1) // COLS, mh)
+    cw = mw * Z * nb_col + 14 * (nb_col - 1) + 30
+    par_ligne = max(1, min(len(paires), (LARGEUR_MAX - 24) // cw))
+    return (cw, mh * Z + 50, (len(paires) + par_ligne - 1) // par_ligne,
+            mw, mh, par_ligne)
 
 
-def planche(sortie, blocs, avant, apres):
-    """La planche de validation : chaque image telle quelle à gauche, migrée à
-    droite, une section par ressource. C'est ce que l'auteur regarde, et rien
-    d'autre ne l'engage."""
-    f, fb, ft = _police(11), _police(15, True), _police(13, True)
-    geo = [_geometrie(p) for _, _, p in blocs]
-    largeur = max([640] + [cw * min(COLS, len(paires))
-                           for (cw, _, _, _), (_, _, paires) in zip(geo, blocs)]) + 24
-    hauteur = 62 + sum(34 + ch * li for (_, ch, li, _) in geo)
+def planche(sortie, blocs, colonnes):
+    """La planche de validation : chaque image telle quelle à gauche, puis une
+    vignette par candidat. C'est ce que l'auteur regarde, et rien d'autre ne
+    l'engage. Chaque vignette porte SA table de couleurs — une image déjà
+    migrée par une autre ressource n'a plus d'original dans l'arbre, sa
+    colonne « actuel » doit donc se rendre avec la nouvelle palette."""
+    f, fp, fb, ft = _police(11), _police(10), _police(15, True), _police(13, True)
+    nb = len(colonnes)
+    geo = [_geometrie(p, nb) for _, _, p in blocs]
+    largeur = max([640] + [cw * pl for (cw, _, _, _, _, pl) in geo]) + 24
+    hauteur = 62 + sum(34 + ch * li for (_, ch, li, _, _, _) in geo)
     im = Image.new('RGB', (largeur, hauteur), FOND)
     d = ImageDraw.Draw(im)
     d.text((14, 12), "migration de palette — planche de validation", font=fb,
            fill=(228, 232, 240))
-    d.text((14, 36), "a gauche l'image actuelle, a droite la migration proposee",
+    d.text((14, 36), "colonnes, de gauche a droite : " + "  |  ".join(colonnes),
            font=f, fill=(150, 158, 172))
     y0 = 62
-    for (nom, soustitre, paires), (cw, ch, li, mh) in zip(blocs, geo):
+    for (nom, soustitre, paires), (cw, ch, li, mw, mh, par_ligne) in zip(blocs, geo):
         d.text((14, y0 + 6), nom, font=ft, fill=(228, 232, 240))
         d.text((14 + len(nom) * 8 + 18, y0 + 8), soustitre, font=f,
                fill=(150, 158, 172))
         y0 += 34
-        for k, (src, tmp) in enumerate(paires):
-            x, y = 12 + (k % COLS) * cw, y0 + (k // COLS) * ch
-            a, b = rendu(src, avant, Z, FOND), rendu(tmp, apres, Z, FOND)
-            base = y + mh * Z - a.size[1]      # les sprites reposent sur la même ligne
-            im.paste(a, (x, base))
-            im.paste(b, (x + a.size[0] + 14, base))
-            d.text((x, y + mh * Z + 6),
+        for k, (src, versions) in enumerate(paires):
+            x, y = 12 + (k % par_ligne) * cw, y0 + (k // par_ligne) * ch
+            for j, (etiquette, chemin, pal) in enumerate(versions):
+                vue = rendu(chemin, pal, Z, FOND)
+                # pas de colonne fixe (mw), pas la largeur de CETTE vignette :
+                # sinon les colonnes se decalent d'une image a l'autre
+                xj = x + j * (mw * Z + 14)
+                im.paste(vue, (xj, y + mh * Z - vue.size[1]))
+                d.text((xj, y + mh * Z + 6), etiquette, font=fp,
+                       fill=(120, 128, 142))
+            d.text((x, y + mh * Z + 22),
                    os.path.relpath(src, PROJET).split('/')[-1], font=f,
                    fill=(200, 206, 216))
         y0 += ch * li
@@ -310,6 +329,10 @@ def main():
     ap.add_argument('--apercu', metavar='SORTIE.PNG')
     ap.add_argument('--ecrire', action='store_true')
     ap.add_argument('--map', default=os.path.join(ICI, 'palette-map.txt'))
+    ap.add_argument('--variante', action='append', metavar='SURCOUCHE.TXT',
+                    help='une colonne de plus sur la planche : une table lue '
+                         'PAR-DESSUS la table de base. Repetable. Sert a '
+                         'comparer des candidats a l\'oeil, pas a ecrire.')
     args = ap.parse_args()
 
     base = PROJET
@@ -330,48 +353,78 @@ def main():
     inconnues = [n for n in args.ressource if n not in res]
     if inconnues:
         sys.exit(f"ressource(s) inconnue(s) : {', '.join(inconnues)} (voir --liste)")
+    if args.ecrire and args.variante:
+        sys.exit("--variante ne sert qu'a REGARDER. Le candidat retenu se"
+                 " recopie dans palette-map.txt, puis s'ecrit sans surcouche :"
+                 " c'est la table de base qui fait foi pour le rejeu.")
+
+    # Une colonne de planche par candidat : la table de base, puis chaque
+    # surcouche lue par-dessus. La colonne 0 est toujours l'image actuelle.
+    candidats = [('table de base', [args.map])]
+    for v in (args.variante or []):
+        candidats.append((os.path.basename(v).rsplit('.', 1)[0], [args.map, v]))
 
     # --- passe a blanc SUR TOUT LE TOUR : rien n'est ecrit tant qu'une seule
     # ressource bloque. Un lot de validation se prend ou se laisse en entier.
-    tour, code, pris = [], 0, set()
-    for nom in args.ressource:
-        corr, fusion_ok = table(args.map, nom)
-        if not corr:
-            sys.exit(f"aucune correspondance pour {nom} dans {args.map}")
-        resultats, deja, employes, c = preparer(nom, res[nom], corr, fusion_ok,
-                                                pal_b, rvb_a, rvb_b, base, pris)
-        code |= c
-        pris |= {p for p, _, _ in resultats}
-        tour.append((nom, corr, resultats, deja, employes))
+    tour, code = [], 0
+    for etiquette, pile in candidats:
+        pris = set()          # le partage d'images se rejoue dans CHAQUE colonne
+        for nom in args.ressource:
+            corr, fusion_ok = table(pile, nom)
+            if not corr:
+                sys.exit(f"aucune correspondance pour {nom} dans {pile}")
+            if etiquette != 'table de base':
+                print(f"[{etiquette}]", end=' ')
+            resultats, deja, employes, c = preparer(nom, res[nom], corr, fusion_ok,
+                                                    pal_b, rvb_a, rvb_b, base, pris)
+            code |= c
+            pris |= {p for p, _, _ in resultats}
+            tour.append((etiquette, nom, corr, resultats, deja, employes))
     if code:
         return 1
 
     if args.apercu:
         tmp = os.path.join('/tmp', f'.mig-{os.getpid()}')
-        os.makedirs(tmp, exist_ok=True)
-        blocs = []
-        for nom, corr, resultats, deja, employes in tour:
-            # un sous-dossier PAR RESSOURCE : deux ressources ont les memes
-            # noms de fichiers (00.png, 01.png…) et s'ecraseraient l'une l'autre
-            coin = os.path.join(tmp, nom)
-            os.makedirs(coin, exist_ok=True)
-            paires = []
-            for p, img, _ in resultats:
-                t = os.path.join(coin, f'{len(paires):02d}-{os.path.basename(p)}')
-                img.save(t)
-                paires.append((p, t))
-            # les heritees figurent aussi : la planche montre la ressource
-            # ENTIERE telle qu'elle sera, pas seulement ce qui reste a faire.
-            paires += [(p, p) for p in deja]
-            if paires:
-                blocs.append((nom, _resume(corr, employes), paires))
+        blocs, resumes = [], {}
+        for nom in args.ressource:
+            paires, ordre = {}, []
+            for etiquette, n, corr, resultats, deja, employes in tour:
+                if n != nom:
+                    continue
+                # un sous-dossier PAR CANDIDAT ET PAR RESSOURCE : deux
+                # ressources ont les memes noms de fichiers (00.png, 01.png…)
+                # et s'ecraseraient l'une l'autre
+                coin = os.path.join(tmp, etiquette, nom)
+                os.makedirs(coin, exist_ok=True)
+                for p, img, _ in resultats:
+                    t = os.path.join(coin, os.path.basename(p))
+                    img.save(t)
+                    paires.setdefault(p, []).append((etiquette, t, rvb_b))
+                    if p not in ordre:
+                        ordre.append(p)
+                # les heritees figurent aussi : la planche montre la ressource
+                # ENTIERE telle qu'elle sera, pas seulement ce qui reste a faire
+                for p in deja:
+                    paires.setdefault(p, []).append((etiquette, p, rvb_b))
+                    if p not in ordre:
+                        ordre.append(p)
+                resumes.setdefault(nom, _resume(corr, employes))
+            if ordre:
+                # une image heritee n'a plus d'original : sa colonne « actuel »
+                # se rend avec la NOUVELLE palette, sinon on montrerait un
+                # charabia et on croirait a un defaut de conversion
+                blocs.append((nom, resumes[nom], [
+                    (p, [('actuel', p,
+                          rvb_b if palette_brute(p) == pal_b else rvb_a)]
+                     + paires[p]) for p in ordre]))
         if not blocs:
             print("rien a montrer : tout est deja migre.")
             return 0
-        planche(args.apercu, blocs, rvb_a, rvb_b)
+        planche(args.apercu, blocs, ['actuel'] + [e for e, _ in candidats])
         print(f"planche ecrite : {args.apercu}  (rien n'a ete modifie)")
 
     if args.ecrire:
+        tour = [t[1:] for t in tour]        # une seule colonne quand on ecrit
         ecrites, mauvais = 0, []
         for nom, corr, resultats, _, _ in tour:
             for p, img, _ in resultats:

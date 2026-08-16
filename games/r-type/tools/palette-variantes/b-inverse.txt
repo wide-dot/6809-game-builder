@@ -1,0 +1,24 @@
+# Candidat pour le groupe B — SURCOUCHE, a lire par-dessus palette-map.txt
+# (`palette_migrate.py … --variante tools/palette-variantes/b-inverse.txt`).
+#
+# « On inverse orange et rose dans la source, PUIS on applique la conversion
+# qui conserve les niveaux ». Demande de l'auteur le 16/08.
+#
+# Une remarque avant le detail : echanger deux index dans l'image puis
+# appliquer une table revient EXACTEMENT a appliquer une autre table. Inutile
+# donc de toucher aux sources — ce qui vaut mieux : le rejeu depuis
+# origin/master reste une seule transformation, et les PNG d'origine gardent
+# leur sens. La demonstration, sur la table de base 10>9 14>10 :
+#
+#     un pixel 10 (orange) devient 14 par l'echange, puis 10 par la table ;
+#     un pixel 14 (saumon) devient 10 par l'echange, puis  9 par la table.
+#
+# Soit, sans echange : 10>10 et 14>9. C'est ce que ce fichier declare.
+#
+# Ce qui se joue a l'oeil : le nouveau CC5A3C (le brun-rouge qui comble le
+# trou de la rampe) tombe sur les pixels de saumon au lieu des pixels
+# d'orange. Autrement dit, on choisit LEQUEL des deux anciens barreaux
+# descend d'un cran. Les six valeurs sont conservees dans les deux cas.
+
+common.explosion.imgBig    10>10 14>9
+common.explosion.imgSmall  10>10 14>9
