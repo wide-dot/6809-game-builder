@@ -161,11 +161,16 @@ common.pow  3>2 4>3 fusion-ok
 # que l'ancien 617A00, c'est une renumerotation pure.
 lib.patapata  12>14
 
-# lib.scant et lib.cancer gardent leur olive (regle etendue ci-dessus). Le sort
-# de LEURS beiges se decide a part, sur planche — ces deux lignes ne portent
-# que ce qui est acquis.
-lib.scant   12>14
-lib.cancer  12>14
+# lib.scant et lib.cancer gardent leur olive (regle etendue ci-dessus) et
+# prennent toutes deux la recette « beiges fusionnes » — arbitre a l'oeil par
+# l'auteur le 16/08/2026 : les deux beiges tombent ensemble sur le gris clair
+# A8A8A8, la marche perdue est au MILIEU de la rampe grise.
+#   scant  : 616161 reste a 197 px, A8A8A8 monte a 356, le blanc garde ses 4
+#   cancer : 616161 reste a 121 px, A8A8A8 monte a 213, le blanc garde ses 91
+# Ecartees : la fusion du sombre (`3>1`, qui aurait porte le gris moyen du
+# scant a 418 px) et la fusion blanche (`4>3`).
+lib.scant   12>14 3>2 4>2 fusion-ok
+lib.cancer  12>14 3>2 4>2 fusion-ok
 
 # common.optionbox est le cas le plus contraint du jeu : 15 valeurs employees
 # pour 12 places. TROIS fusions sont arithmetiques, pas des choix de gout.
@@ -178,4 +183,9 @@ lib.cancer  12>14
 #   14>10  l'orange (16 px) et le saumon (2 px) fusionnent. Contrairement a
 #          imgSmall, impossible de glisser la rampe chaude d'un cran pour les
 #          separer : optionbox emploie DEJA le 610000 du bas, et le CC5A3C.
-common.optionbox  12>1 14>10 fusion-ok
+#   3>2 4>3  « fusion blanche », arbitre a l'oeil le 16/08 : la seule place
+#          libre (A8A8A8) va au beige FONCE, et le beige clair monte au blanc.
+#          94 px de blancs fusionnes (73 + 21). L'autre repartition — la place
+#          libre au beige clair — aurait pousse le fonce dans un 616161 deja
+#          charge a 121 px par le gris et l'olive.
+common.optionbox  12>1 14>10 3>2 4>3 fusion-ok

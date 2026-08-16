@@ -100,4 +100,7 @@ $M common.pow      --ecrire     # fusion blanche : le reflet rejoint le blanc
 # vert occupe un index propre au stage sur 1, 3, 4, 5 et 7. lib.patapata
 # n'emploie que lui : garder l'olive en fait une renumerotation PURE.
 # =========================================================================
-$M lib.patapata    --ecrire
+$M lib.patapata    --ecrire     # que l'olive : renumerotation pure
+$M lib.scant       --ecrire     # beiges fusionnes, olive gardee
+$M lib.cancer      --ecrire     # idem
+$M common.optionbox --ecrire    # fusion blanche + olive au gris (c'est un commun)
