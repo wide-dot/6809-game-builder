@@ -210,10 +210,10 @@ def _police(t, gras=False):
         return ImageFont.load_default()
 
 
-FOND, Z, LARGEUR_MAX = (18, 20, 24), 6, 1360
+FOND, LARGEUR_MAX = (18, 20, 24), 1360
 
 
-def _geometrie(paires, nb_col):
+def _geometrie(paires, nb_col, Z):
     """Géométrie d'un bloc : chaque ressource a sa propre échelle — un sprite
     de 12 px ne mérite pas la cellule d'un sprite de 48 — et le nombre de
     vignettes par ligne se déduit de la largeur disponible."""
@@ -225,7 +225,7 @@ def _geometrie(paires, nb_col):
             mw, mh, par_ligne)
 
 
-def planche(sortie, blocs, colonnes):
+def planche(sortie, blocs, colonnes, Z=6):
     """La planche de validation : chaque image telle quelle à gauche, puis une
     vignette par candidat. C'est ce que l'auteur regarde, et rien d'autre ne
     l'engage. Chaque vignette porte SA table de couleurs — une image déjà
@@ -233,15 +233,17 @@ def planche(sortie, blocs, colonnes):
     colonne « actuel » doit donc se rendre avec la nouvelle palette."""
     f, fp, fb, ft = _police(11), _police(10), _police(15, True), _police(13, True)
     nb = len(colonnes)
-    geo = [_geometrie(p, nb) for _, _, p in blocs]
+    geo = [_geometrie(p, nb, Z) for _, _, p in blocs]
     largeur = max([640] + [cw * pl for (cw, _, _, _, _, pl) in geo]) + 24
     hauteur = 62 + sum(34 + ch * li for (_, ch, li, _, _, _) in geo)
     im = Image.new('RGB', (largeur, hauteur), FOND)
     d = ImageDraw.Draw(im)
     d.text((14, 12), "migration de palette — planche de validation", font=fb,
            fill=(228, 232, 240))
-    d.text((14, 36), "colonnes, de gauche a droite : " + "  |  ".join(colonnes),
-           font=f, fill=(150, 158, 172))
+    lettres = ['ref'] + [chr(ord('A') + i) for i in range(len(colonnes) - 1)]
+    d.text((14, 36), "colonnes : " + "   ".join(
+        f"{l} = {n}" for l, n in zip(lettres, colonnes)),
+        font=f, fill=(150, 158, 172))
     y0 = 62
     for (nom, soustitre, paires), (cw, ch, li, mw, mh, par_ligne) in zip(blocs, geo):
         d.text((14, y0 + 6), nom, font=ft, fill=(228, 232, 240))
@@ -256,11 +258,14 @@ def planche(sortie, blocs, colonnes):
                 # sinon les colonnes se decalent d'une image a l'autre
                 xj = x + j * (mw * Z + 14)
                 im.paste(vue, (xj, y + mh * Z - vue.size[1]))
-                d.text((xj, y + mh * Z + 6), etiquette, font=fp,
+                # une LETTRE, pas le nom du candidat : un nom de fichier de
+                # surcouche est plus large qu'une vignette et les etiquettes
+                # se chevauchaient d'une colonne a l'autre
+                d.text((xj, y + mh * Z + 6), lettres[j], font=fp,
                        fill=(120, 128, 142))
             d.text((x, y + mh * Z + 22),
-                   os.path.relpath(src, PROJET).split('/')[-1], font=f,
-                   fill=(200, 206, 216))
+                   '/'.join(os.path.relpath(src, PROJET).split('/')[-2:]),
+                   font=f, fill=(200, 206, 216))
         y0 += ch * li
     im.save(sortie)
 
@@ -329,6 +334,12 @@ def main():
     ap.add_argument('--apercu', metavar='SORTIE.PNG')
     ap.add_argument('--ecrire', action='store_true')
     ap.add_argument('--map', default=os.path.join(ICI, 'palette-map.txt'))
+    ap.add_argument('--zoom', type=int, default=6,
+                    help='pixels par pixel sur la planche (defaut 6).')
+    ap.add_argument('--sans-base', action='store_true',
+                    help='ne pas montrer la colonne de la table de base. Utile '
+                         'quand la decision en cours est justement ce qui lui '
+                         'manque : la base ARRETE, et c\'est normal.')
     ap.add_argument('--variante', action='append', metavar='SURCOUCHE.TXT',
                     help='une colonne de plus sur la planche : une table lue '
                          'PAR-DESSUS la table de base. Repetable. Sert a '
@@ -360,7 +371,10 @@ def main():
 
     # Une colonne de planche par candidat : la table de base, puis chaque
     # surcouche lue par-dessus. La colonne 0 est toujours l'image actuelle.
-    candidats = [('migre' if not args.variante else 'table de base', [args.map])]
+    candidats = []
+    if not (args.sans_base and args.variante):
+        candidats.append(('migre' if not args.variante else 'table de base',
+                          [args.map]))
     for v in (args.variante or []):
         candidats.append((os.path.basename(v).rsplit('.', 1)[0], [args.map, v]))
 
@@ -396,8 +410,13 @@ def main():
                 # et s'ecraseraient l'une l'autre
                 coin = os.path.join(tmp, etiquette, nom)
                 os.makedirs(coin, exist_ok=True)
-                for p, img, _ in resultats:
-                    t = os.path.join(coin, os.path.basename(p))
+                for k, (p, img, _) in enumerate(resultats):
+                    # index en tete : UNE ressource peut porter deux series aux
+                    # memes noms (player/images/rship/00.png et une autre 00.png)
+                    # et l'une ecraserait l'autre dans le dossier temporaire —
+                    # la planche montrerait alors une image en reference et une
+                    # AUTRE dans les colonnes de candidats.
+                    t = os.path.join(coin, f'{k:02d}-{os.path.basename(p)}')
                     img.save(t)
                     paires.setdefault(p, []).append((etiquette, t, rvb_b))
                     if p not in ordre:
@@ -420,7 +439,8 @@ def main():
         if not blocs:
             print("rien a montrer : tout est deja migre.")
             return 0
-        planche(args.apercu, blocs, ['actuel'] + [e for e, _ in candidats])
+        planche(args.apercu, blocs, ['actuel'] + [e for e, _ in candidats],
+                Z=args.zoom)
         print(f"planche ecrite : {args.apercu}  (rien n'a ete modifie)")
 
     if args.ecrire:

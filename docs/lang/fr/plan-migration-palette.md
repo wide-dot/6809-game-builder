@@ -22,6 +22,13 @@ même ordre — une bijection par rang, pas une fusion. Une fusion réellement
 voulue et mesurée se déclare par le mot `fusion-ok` sur la ligne de la
 ressource ; jamais par omission.
 
+*Limite trouvée sur `common.player` le 16/08 :* le classement par luminance ne
+vaut **qu'à l'intérieur d'une famille de teinte**. Appliqué en bloc à une
+ressource qui mêle bleus, chauds et neutres, il enverrait le bleu `00618F` sur
+le rouge `AC0000` — même rang, autre monde. Les trois familles sont énumérées
+en tête de `palette-map.txt`. Une seule est en déficit : les **neutres**, six
+anciennes valeurs (dont les deux beiges) pour quatre gris.
+
 **2. Toute conversion est un script** (auteur, 16/08). Rien ne se fait à la
 main. Deux fichiers portent la campagne, et rien d'autre :
 

@@ -1,0 +1,9 @@
+# Candidat B pour les beiges des COMMUNS — surcouche, par-dessus palette-map.txt.
+#
+# Les deux beiges tombent ensemble sur le gris clair A8A8A8. La marche perdue
+# est au MILIEU : le degrade beige a deux etages devient un aplat.
+#
+# Le gris 616161 existant reste intact, et rien ne s'assombrit : le beige fonce
+# monte (145 -> 168), le beige clair descend a peine (194 -> 168).
+defaut  3>2 4>2
+common.player  fusion-ok

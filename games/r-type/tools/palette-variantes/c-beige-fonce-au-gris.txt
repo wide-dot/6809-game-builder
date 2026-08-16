@@ -1,0 +1,10 @@
+# Candidat A pour les beiges des COMMUNS — surcouche, par-dessus palette-map.txt.
+#
+# Le beige foncé 9E8F7A rejoint le gris moyen 616161 qui existe deja ; le beige
+# clair CCC2AB prend le gris clair A8A8A8. La marche perdue est donc en BAS de
+# la rampe grise : deux valeurs sombres n'en font plus qu'une.
+#
+# C'est la recommandation du §3 de l'etude — elle assombrit le beige fonce
+# (145 -> 97) mais laisse le beige clair a peu pres ou il etait (194 -> 168).
+defaut  3>1 4>2
+common.player  fusion-ok

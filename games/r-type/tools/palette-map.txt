@@ -37,6 +37,20 @@ defaut  0>0 1>3 2>1 5>4 6>5 7>7 8>8 9>9 10>10 11>11 13>6 14>10 15>0
 # Methode, quand la table par defaut provoque une collision : classer les
 # index EMPLOYES par luminance et les poser sur autant de marches de la
 # nouvelle palette, dans le meme ordre. L'outil liste les marches libres.
+#
+# LIMITE DE LA METHODE, trouvee sur common.player le 16/08 : le classement par
+# luminance ne vaut QU'A L'INTERIEUR D'UNE FAMILLE DE TEINTE. Applique en bloc
+# a une ressource qui melange bleus, chauds et neutres, il enverrait le bleu
+# 00618F sur le rouge AC0000 — meme rang, autre monde. Les trois familles de
+# cette palette, a traiter separement :
+#
+#   neutres  0 000000  1 616161  2 A8A8A8  3 FAFAF2          (4 marches)
+#   bleus    4 00618F  5 009ECC  6 08D4EB                    (3 marches)
+#   chauds   7 610000  8 AC0000  9 CC5A3C  10 F99B68  11 FAF261  (5 marches)
+#
+# L'ancienne palette avait 3 bleus (exact), 5 chauds hors doublon (large) et
+# SIX neutres avec les deux beiges. C'est la seule famille en deficit, et donc
+# le seul endroit ou une marche se perd pour de bon.
 
 # --- par ressource, au fil des validations de l'auteur ----------------------
 
@@ -70,3 +84,10 @@ common.explosion.imgBig    10>10 14>9
 # prise. Tout le bas glisse donc d'un cran pour la degager — le 610000 de la
 # nouvelle palette, inutilise ici, sert de nouveau plancher.
 common.explosion.imgSmall  8>7 9>8 10>10 14>9
+
+# --- Le vaisseau (groupe C). La paire chaude d'abord ------------------------
+# common.player emploie l'ancien orange (13 px) ET l'ancien saumon (4 px) :
+# meme situation que les explosions, meme recette retenue le 16/08 — c'est le
+# saumon qui descend sur CC5A3C. Le sort des beiges se decide a part, il touche
+# TOUS les communs et vit donc sur la ligne `defaut`.
+common.player  10>10 14>9

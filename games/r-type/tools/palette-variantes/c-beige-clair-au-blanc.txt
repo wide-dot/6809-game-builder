@@ -1,0 +1,11 @@
+# Candidat C pour les beiges des COMMUNS — surcouche, par-dessus palette-map.txt.
+#
+# Le beige fonce prend le gris clair A8A8A8, le beige clair monte au BLANC. La
+# marche perdue est donc en HAUT : les hautes lumieres se confondent.
+#
+# C'est le geste deja retenu pour lib.scant dans l'etude (« beige clair monte au
+# blanc »), mais scant n'avait que 4 px de blanc a perdre ; le vaisseau en a 144
+# et le HUD 132. A regarder de pres avant de generaliser.
+defaut  3>2 4>3
+common.player  fusion-ok
+common.hud     fusion-ok
