@@ -337,6 +337,65 @@ et le dernier ennemi de lot avant lui est un cancer à `$12,$34` — il peut enc
 **Pas encore fait** : le `png2pal` de cette palette et le code qui l'échange à
 l'entrée de l'arène. Le fichier existe et se rejoue ; le runtime, non.
 
+## 11. Un index RÉSERVÉ, et les rouges communs recentrés (17/08/2026)
+
+### 11.1 Réserver un index pour un effet de palette
+
+Constat auteur : pendant le combat du compiler, **le matériel 14 n'est employé
+par aucun sprite commun** — c'est la case de l'olive des lots, et aucun lot
+n'est à l'écran. Il peut donc lui être dédié. Et il **doit lui être réservé** :
+le runtime y fera un clignotement/fondu, et un effet de palette doit savoir
+**où** taper — il lui faut une case connue d'avance que personne ne partage.
+
+`--reserver R,G,B:MATÉRIEL` pose une couleur à un index précis et la **retire du
+calcul**. Le dôme du compiler — son œil — y va : matériel 14 = `00D000`.
+
+### 11.2 Les deux rouges purs, recentrés sur la masse arcade
+
+Constat auteur : « les rouges de la palette commune sont trop éloignés ».
+Mesuré sur **tout** le corpus arcade (16 plans de carte + 20 exports de sprites,
+réduits) : la rampe rouge de l'arcade est **pure**, huit barreaux `X,0,0` de 72
+à 192, **195 904 px** à eux seuls. Nos deux communs étaient à 97 et 172 — sur
+les extrémités de la masse, pas sur elle.
+
+| deux valeurs | dE moyen de la rampe pure |
+|---|---|
+| `610000` / `AC0000` (avant) | 10,94 |
+| **`580000` / `880000` (retenu)** | **8,61** |
+| `580000` / `900000` | 9,02 |
+| `600000` / `980000` | 9,65 |
+
+Les deux valeurs retenues tombent **exactement sur des barreaux de l'arcade**
+(88,0,0 et 136,0,0). Le reste du corpus ne bouge pas (18,61 → 18,52).
+
+**Ce que ça coûte**, mesuré et visible sur planche : 582 fichiers déjà migrés
+emploient ces deux index, dont le texte du HUD — 63 282 px sur le matériel 8 —
+donc « READY » et « GAME OVER » s'assombrissent. Et le **haut** de la rampe
+s'éloigne : les barreaux 168 et 192 tombaient sur `AC0000`, ils tombent
+maintenant sur `880000`, plus terne. C'est le prix du recentrage sur la masse ;
+les deux variantes ci-dessus rendent du punch au haut si l'auteur le veut.
+
+### 11.3 Le défaut que ce réglage a fait sortir
+
+Régler la valeur d'un commun a **cassé le rejeu** : `index_migres` répondait
+« ce fichier est-il déjà renuméroté ? » par une **égalité exacte** avec la
+nouvelle palette. Deux rouges changés, et 524 fichiers déjà migrés se sont
+déclarés non migrés d'un coup — l'arrêt sortait au groupe A sur des index « sans
+correspondance », très loin de la cause.
+
+La question posée est celle de l'**ordre** des index, pas de la valeur d'une
+couleur. Un critère de **distance** (plus proche de la nouvelle que de
+l'ancienne) semblait la réponse : il reclassait **51 fichiers à tort**, ceux qui
+ne portent aucune des deux tables — le logo du titre et ses lettres. Mesure
+faite avant de le croire.
+
+La réponse retenue garde l'égalité exacte et l'accepte aussi contre les tables
+**supersédées**, déclarées une par ligne dans
+`tools/palette-reference/precedentes.txt`. Vérifié : la classification des
+**918 PNG** du dépôt est reproduite **à l'identique**, 524 migrés, zéro écart.
+**Règle** : régler un commun dans `nouvelle.png`, c'est ajouter là la ligne
+qu'on quitte.
+
 ## Annexe — pourquoi pas « olive partout en 14 dès qu'un lot l'exige » en dur
 
 La liste 1-3-4-5-7 est vraie aujourd'hui parce que les scènes de cast la

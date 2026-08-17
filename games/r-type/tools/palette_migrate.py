@@ -236,13 +236,54 @@ def palette_ecrite(pal_b, cibles):
     return out
 
 
-def index_migres(chemin, pal_b):
+_PRECEDENTES = None
+
+
+def _tables_precedentes(pal_b):
+    """Les tables de communs superseedees, lues une fois. Chacune est rendue
+    au meme format que `palette_brute(...)[:13*3]` : transparence + 12 communs,
+    la transparence reprise de la table courante (elle n'a jamais bouge)."""
+    global _PRECEDENTES
+    if _PRECEDENTES is None:
+        _PRECEDENTES = []
+        chemin = os.path.join(os.path.dirname(PAL_NOUVELLE), 'precedentes.txt')
+        if os.path.exists(chemin):
+            for ligne in open(chemin, encoding='utf-8'):
+                if ligne.startswith('#') or not ligne.strip():
+                    continue
+                t = list(pal_b[:3])
+                for h in ligne.split():
+                    t += [int(h[i:i + 2], 16) for i in (0, 2, 4)]
+                _PRECEDENTES.append(t)
+    return _PRECEDENTES
+
+
+def index_migres(chemin, pal_b, pal_a=None):
     """Les index de CE fichier sont-ils deja ceux de la nouvelle palette ?
-    On compare les treize premieres entrees — transparence plus les douze
+
+    On regarde les treize premieres entrees — transparence plus les douze
     couleurs communes. Les quatre suivantes ne comptent pas : elles dependent
     de la ressource (magenta ou non), et la question posee ici est « faut-il
-    encore renumeroter », pas « la table est-elle a jour »."""
-    return palette_brute(chemin)[:13 * 3] == pal_b[:13 * 3]
+    encore renumeroter », pas « la table est-elle a jour ».
+
+    Le test etait une EGALITE avec la nouvelle palette. Il s'est casse le
+    17/08, le jour ou l'auteur a fait rapprocher deux rouges communs de
+    l'arcade : une valeur commune reglee, et 524 fichiers deja migres se
+    declaraient d'un coup non migres — le rejeu s'arretait au groupe A sur des
+    index « sans correspondance », tres loin de la cause.
+
+    La question est celle de l'ORDRE des index, pas de la valeur exacte d'une
+    couleur — mais un critere de DISTANCE ne convient pas : essaye le 17/08, il
+    reclassait a tort 51 fichiers qui ne portent aucune des deux tables (le logo
+    du titre et ses lettres). On garde donc l'egalite exacte, et on l'accepte
+    aussi contre les tables SUPERSEDEES declarees dans
+    tools/palette-reference/precedentes.txt — une ligne par reglage.
+
+    Verifie en reproduisant a l'identique la classification des 918 PNG du
+    depot sous l'ancien predicat exact — 524 migres, aucun ecart.
+    """
+    b = palette_brute(chemin)[:13 * 3]
+    return b == pal_b[:13 * 3] or b in _tables_precedentes(pal_b)
 
 
 def marqueurs(chemins, ressource):

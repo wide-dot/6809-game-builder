@@ -358,8 +358,13 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 #   L'olive reste GELEE : elle ne coute presque rien (13,5 contre 13,1 en la
 #   liberant) et c'est elle qui laisse un sprite COMMUN affiche pendant le
 #   combat garder sa couleur. Les 12 communs ne bougent pas non plus.
+#   Le DOME est reserve au materiel 14 (decision auteur) : le runtime y fera
+#   un clignotement/fondu, et un effet de palette doit savoir OU taper — il lui
+#   faut une case connue d'avance que personne d'autre ne partage. Le materiel
+#   14 est libre pendant ce combat : c'est la case de l'olive des lots, et
+#   aucun lot n'est a l'ecran a ce moment (constat auteur).
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
-    --ecrire-palette src/stages/04/palette/pal-boss.png
+    --ecrire-palette src/stages/04/palette/pal-boss.png --reserver 0,208,0:14
 python3 tools/arcade_to_sprites.py slither  --palette 05
 python3 tools/arcade_to_sprites.py pursuer  --palette 05
 python3 tools/arcade_to_sprites.py cheetah  --palette 05
