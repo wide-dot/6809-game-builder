@@ -132,6 +132,81 @@ puis 8 (la planche orange), puis 3 et 4 (les planches de déficit), puis 5, 6,
 7. Chaque stage : conversion → palette dédiée → build → lane → planche si
 décision.
 
+## 7. Deux constats de l'auteur sur planche, et ce qu'ils ont révélé (17/08/2026)
+
+La première passe (§5-6) a été livrée en planche. L'auteur a relevé deux
+défauts. Les deux viennent du **même endroit** : le critère d'attribution.
+
+### 7.1 « Le boss du stage 8 devient gris »
+
+Mesuré. Le boss est en fin de niveau (x 1792..1983 du plan arrière, où la
+teinte verte passe de ~700 px par bande de 64 à 6 603). Ses deux verts
+dominants, `(136,136,80)` 1 981 px et `(96,96,56)` 1 886 px, tombaient tous
+deux sur le **gris commun** `#616161`, à distance RGB 58 et 41. Les quatre
+cases propres du stage étaient parties aux oranges de la zone de feu.
+
+Cause : le coût se mesurait en **distance RGB euclidienne**, qui met sur le
+même pied « un orange un peu faux » (l'orange garde sa teinte, il change de
+ton) et « un vert qui devient gris » (la teinte est détruite). En chiffres :
+l'orange `(248,80,0)` était à 75 de son plus proche commun, le vert
+`(136,136,80)` à 58 — l'orange gagnait, alors que sa perte perceptive est bien
+moindre.
+
+Correctif : la métrique par défaut devient **CIE Lab, ΔE76**, qui sépare la
+clarté de la chroma. Elle ne corrige pas que le stage 8 — écart moyen pondéré
+sur les sept stages, plus bas = mieux :
+
+| stage | 02 | 03 | 04 | 05 | 06 | 07 | 08 |
+|---|---|---|---|---|---|---|---|
+| RGB | 11,2 | 6,8 | 6,7 | 4,8 | 7,4 | 3,6 | 11,4 |
+| Lab | **9,7** | **6,3** | **5,0** | **4,1** | **6,1** | **3,3** | **9,1** |
+
+Effet sur le stage 8 : deux cases vertes (`136,136,80` et `64,64,16`), toute la
+rampe verte reste verte. Ce que ça coûte, et c'est assumé : la rampe orange
+perd un niveau, `(192,64,0)` glisse vers le rouge `#AC0000` (ΔE 15,9).
+
+**Effet de bord mesuré, et le garde-fou qu'il a imposé.** En Lab, une teinte
+isolée dans l'espace des couleurs voit son erreur amplifiée — au point qu'une
+poussière peut rafler une case. Le magenta du stage 6 (89 px réduits, 0,04 %)
+prenait la quatrième case devant un niveau de dégradé teal à 1 331 px. D'où
+`--plancher`, part minimale pour prétendre à une case, à 0,1 % par défaut : le
+premier prétendant légitime du corpus est 15 fois au-dessus.
+
+### 7.2 « Le stage 3 doit prendre en compte en priorité le battleship de
+l'autre plan »
+
+Le plan arrière `level3_b.png` porte un **battleship** (boîte non noire
+x 576..1167, y 16..191) que du code à part affichera hors tilemap. Il n'était
+dans aucun calcul : la conversion ne regardait que `level3_f.png`. Résultat
+mesuré — son vert de coque `(136,144,96)` sortait en tan `(184,152,96)`, son
+vert sombre `(48,64,32)` en gris, et sa rampe jaune s'étalait sur le jaune
+commun et l'olive. Un vaisseau vert-et-jaune rendu beige.
+
+Deux mécanismes, parce qu'un seul ne suffit pas — les deux mesurés :
+
+* **`--plan`** : un plan supplémentaire, avec boîte et poids, qui compte dans
+  le **choix des couleurs** mais n'est jamais écrit dans l'`in.png`. Les deux
+  ne servent pas le même but : la palette est celle du stage, l'`in.png` est
+  celui de la tilemap. À poids 3 les deux verts du vaisseau prennent leurs
+  cases, et le choix est stable de 2 à 5.
+* **`--epingle`** : une case réservée avant le calcul. C'est le **seul** moyen
+  d'exprimer une priorité que le nombre de pixels ne porte pas. La rampe jaune
+  du vaisseau pèse ~1 200 px réduits contre 17 000 px de terrain : balayé de
+  poids 1 à 5, aucun réglage ne la fait gagner. La demande de l'auteur (« vert
+  et jaune avant tout ») n'est pas exprimable en poids, elle s'écrit.
+
+Affectation obtenue : 13 = jaune `(208,192,0)`, 14 = vert moyen `(136,144,96)`,
+15 = olive (gelée par les lots), 16 = vert sombre `(48,64,32)`.
+
+**Ce que ça coûte, mesuré et assumé.** Les trois teintes du terrain — 71 % des
+pixels opaques du plan avant — perdent leurs cases : beige clair → blanc
+(ΔE 17), tan → vert moyen (19,3), brun → gris (18,9). C'est le prix direct de
+la priorité demandée ; l'alternative chiffrée (garder le beige clair, laisser
+les jaunes du vaisseau au jaune commun) coûtait 12 088 dE·px au vaisseau pour
+en économiser 129 574 au terrain. Le ratio est de 10 contre 1 **en faveur du
+terrain** — c'est bien un arbitrage d'auteur, pas un optimum, et il est écrit
+comme tel dans le ledger.
+
 ## Annexe — pourquoi pas « olive partout en 14 dès qu'un lot l'exige » en dur
 
 La liste 1-3-4-5-7 est vraie aujourd'hui parce que les scènes de cast la

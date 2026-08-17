@@ -258,3 +258,43 @@ stage1.map  3>12 4>13 marqueur=15 fusion-ok
 #           du plan median part sur 1, le beige clair sur 2, les deux plans
 #           restent distincts et l'etagement proche/median/lointain tient.
 common.starfield  4>2
+
+# --- Groupe F, stages 2-8 : deux constats de l'auteur sur planche (17/08) ----
+# Ces stages ne sont pas remappes index par index : ils sont RECONVERTIS depuis
+# le plan arcade par tools/arcade_to_in.py, qui choisit lui-meme les quatre
+# cases propres au stage. Ce qui se declare ici, ce sont donc les PARAMETRES de
+# ce choix — les commandes completes sont dans tools/palette-replay.sh.
+#
+# metrique=lab (defaut depuis le 17/08). L'ancienne distance RGB mettait sur le
+# meme pied « un orange un peu faux » et « un vert qui devient gris ». Constat
+# auteur : le boss du stage 8 devenait gris. Mesure : ses deux verts dominants
+# (136,136,80) 1981 px et (96,96,56) 1886 px tombaient sur le gris commun
+# #616161 (distances 58 et 41) pendant que les oranges de la zone de feu
+# prenaient les quatre cases. En Lab, clarte et chroma sont separees : le stage
+# 8 recupere deux cases vertes, et l'ecart moyen baisse sur les SEPT stages
+# (tableau dans analyse-palettes-stages-2026-08.md §7.1).
+#   Cout assume, mesure : la rampe orange perd un niveau, (192,64,0) glisse
+#   vers le rouge #AC0000 (dE 15,9).
+#
+# plancher=0.1% (defaut). Vient avec Lab, qui amplifie l'erreur d'une teinte
+# isolee au point qu'une poussiere rafle une case : 89 px de magenta au stage 6
+# (0,04 %) passaient devant un niveau de degrade teal a 1331 px.
+stage2-8.map  metrique=lab plancher=0.1
+
+# Stage 3 : le battleship vit dans le plan ARRIERE (level3_b.png, boite non
+# noire x 576..1167 y 16..191) et sera affiche par du code a part, hors
+# tilemap — mais il peint avec Pal_stage. Decision auteur : « vert et jaune
+# avant tout ».
+#   plan=arriere*3 : le plan arriere compte dans le CHOIX des couleurs, pas
+#     dans l'in.png (qui reste le plan avant, c'est la tilemap). Poids 3 = le
+#     palier ou les deux verts de coque prennent leurs cases ; stable de 2 a 5.
+#   epingle=208,192,0 : la rampe jaune du vaisseau pese ~1200 px reduits contre
+#     17 000 px de terrain. Balayee de poids 1 a 5, elle ne gagne JAMAIS — le
+#     nombre de pixels ne porte pas cette priorite, il faut l'ecrire.
+#   Cout assume, mesure : les trois teintes du terrain (71 % des pixels opaques
+#     du plan avant) perdent leurs cases — beige clair vers le blanc (dE 17),
+#     tan vers le vert moyen (19,3), brun vers le gris (18,9). L'alternative
+#     chiffree (garder le beige clair) economisait 129 574 dE.px au terrain
+#     pour en coûter 12 088 au vaisseau : 10 contre 1 en faveur du terrain.
+#     C'est un arbitrage d'auteur, pas un optimum, et il s'ecrit comme tel.
+stage3.map  plan=arriere:576,16,1168,192*3 epingle=208,192,0

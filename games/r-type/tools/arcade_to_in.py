@@ -15,7 +15,7 @@ Palette : les stages partagent les index 1 à 4, 6, 8 à 14. Restent quatre
 emplacements libres — 5, 7, 15, 16 — que chaque stage attribue à ses propres
 teintes. L'attribution est faite ici par coût : à chaque tour, l'emplacement va
 à la couleur source dont le rattachement au reste de la palette coûte le plus
-cher (nombre de pixels x distance RGB), puis les distances sont recalculées.
+cher (nombre de pixels x distance), puis les distances sont recalculées.
 Les couleurs retenues gardent leur valeur arcade telle quelle — c'est déjà le
 cas des emplacements libres des autres stages, et png2pal quantifie au moment
 du build.
@@ -37,6 +37,49 @@ du build.
                     AUSSI la palette dédiée src/stages/<NN>/palette/pal.png,
                     depuis la même affectation : les deux ne peuvent pas
                     diverger. --ref et --free sont ignorés dans ce mode.
+
+    --metrique M    `lab` (défaut) ou `rgb`. Voir « La métrique » ci-dessous.
+    --plancher PCT  part minimale, en % des pixels, pour qu'une couleur ait le
+                    droit de prendre un emplacement (défaut 0.1). Une teinte
+                    plus rare que ça est servie par le plus proche voisin.
+    --plan CHEMIN[:x0,y0,x1,y1][*POIDS]
+                    plan SUPPLÉMENTAIRE compté dans le choix des couleurs, mais
+                    jamais écrit dans l'in.png. Répétable. Sert à faire porter à
+                    la palette du stage un élément qui n'est pas dans la
+                    tilemap — le battleship du plan arrière du stage 3 est
+                    affiché par du code à part, mais il peint avec Pal_stage.
+    --epingle R,G,B couleur à qui on donne un emplacement AVANT le calcul.
+                    Répétable. C'est le seul moyen d'exprimer une priorité que
+                    le nombre de pixels ne porte pas : une rampe courte mais
+                    signifiante (les jaunes du battleship, 1 200 px) perd contre
+                    n'importe quelle grande surface, et aucun réglage de poids
+                    ne renverse ça — mesuré, poids 1 à 5.
+
+## La métrique (17/08/2026)
+
+Le coût se mesurait en distance RGB euclidienne. Elle traite « un orange un peu
+faux » et « un vert qui devient gris » comme comparables, alors que le second
+détruit la teinte. Conséquence vue sur le stage 8 : les trois oranges de la
+zone de feu ont pris trois emplacements sur quatre, et les deux verts du boss
+(1 981 et 1 886 px) sont tombés sur le gris commun — le boss devenait gris.
+
+La métrique par défaut est maintenant **CIE Lab, ΔE76**, qui sépare la clarté
+de la chroma. Mesure sur les sept stages, écart moyen pondéré (dE, plus bas =
+mieux) — elle gagne partout :
+
+    stage    02    03    04    05    06    07    08
+    RGB    11.2   6.8   6.7   4.8   7.4   3.6  11.4
+    Lab     9.7   6.3   5.0   4.1   6.1   3.3   9.1
+
+Et le boss du stage 8 récupère un emplacement vert. Le mode `rgb` reste
+disponible : c'est lui qui a produit les stages avant cette date.
+
+Effet de bord mesuré du passage en Lab, et raison du `--plancher` : une teinte
+isolée dans l'espace des couleurs voit son erreur amplifiée, au point qu'une
+poussière peut rafler un emplacement. Le magenta du stage 6 (89 px réduits,
+0,04 %) prenait le quatrième emplacement devant un niveau de dégradé teal à
+1 331 px. Le plancher à 0,1 % l'écarte ; le premier prétendant légitime est
+15 fois au-dessus.
 
 Entrée type : re.arcade.r-type/out/tiles/level<N>_f.png
 """
@@ -68,26 +111,71 @@ def dist(a, b):
     return sum((u - v) ** 2 for u, v in zip(a, b))
 
 
-def assign(colors, palette, free):
+def _lab(c):
+    """sRGB 8 bits -> CIE Lab, illuminant D65. Table de conversion standard."""
+    def lin(u):
+        u /= 255.0
+        return u / 12.92 if u <= 0.04045 else ((u + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(v) for v in c)
+    x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+    y = (0.2126 * r + 0.7152 * g + 0.0722 * b)
+    z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+
+    def f(t):
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+    fx, fy, fz = f(x), f(y), f(z)
+    return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+
+
+_LAB_CACHE = {}
+
+
+def dist_lab(a, b):
+    """ΔE76 au carré — homogène à `dist`, donc interchangeable dans les coûts."""
+    for c in (a, b):
+        if c not in _LAB_CACHE:
+            _LAB_CACHE[c] = _lab(c)
+    return sum((u - v) ** 2 for u, v in zip(_LAB_CACHE[a], _LAB_CACHE[b]))
+
+
+METRIQUES = {'rgb': dist, 'lab': dist_lab}
+
+
+def assign(colors, palette, free, d=dist, plancher=0.0, epingles=()):
     """Attribue les emplacements libres, puis rend la correspondance complète.
 
     `colors` : Counter {rgb: nb_pixels}. `palette` : liste de 256 rgb.
+    `d`      : la métrique (voir METRIQUES).
+    `plancher` : part minimale des pixels pour prétendre à un emplacement.
+    `epingles` : couleurs servies AVANT le calcul, dans l'ordre.
+
     Les emplacements libres partent non attribués ; ils sont pris un par un par
     la couleur au coût résiduel le plus élevé.
     """
     fixed = [i for i in range(1, 17) if i not in free]
     chosen = {}
+    slots = list(fixed)
+    libres = list(free)
 
     def nearest(c, slots):
-        return min(slots, key=lambda i: dist(c, palette[i]))
+        return min(slots, key=lambda i: d(c, palette[i]))
 
-    slots = list(fixed)
-    for slot in free:
-        candidates = [c for c in colors if c not in chosen.values()]
+    for couleur in epingles:
+        if not libres:
+            raise SystemExit('epingle %s : plus d\'emplacement libre' % (couleur,))
+        slot = libres.pop(0)
+        palette[slot] = couleur
+        chosen[slot] = couleur
+        slots.append(slot)
+
+    seuil = plancher * sum(colors.values())
+    for slot in libres:
+        candidates = [c for c in colors
+                      if c not in chosen.values() and colors[c] >= seuil]
         if not candidates:
             break
-        worst = max(candidates, key=lambda c: colors[c] * dist(c, palette[nearest(c, slots)]))
-        if dist(worst, palette[nearest(worst, slots)]) == 0:
+        worst = max(candidates, key=lambda c: colors[c] * d(c, palette[nearest(c, slots)]))
+        if d(worst, palette[nearest(worst, slots)]) == 0:
             break  # déjà exactement représentée : l'emplacement ne sert à rien
         palette[slot] = worst
         chosen[slot] = worst
@@ -167,6 +255,30 @@ def ecrire_pal(stage, palette, chosen):
     return out
 
 
+def plan_supplementaire(spec):
+    """`chemin[:x0,y0,x1,y1][*poids]` -> Counter des pixels opaques réduits.
+
+    Le noir est retiré : c'est la transparence du plan arcade, elle ne dit rien
+    du choix des couleurs et écraserait tout le reste par son nombre.
+    """
+    poids = 1
+    if '*' in spec:
+        spec, p = spec.rsplit('*', 1)
+        poids = int(p)
+    boite = None
+    if ':' in spec:
+        spec, b = spec.rsplit(':', 1)
+        boite = tuple(int(v) for v in b.split(','))
+    src = Image.open(spec).convert('RGB')
+    if boite:
+        src = src.crop(boite)
+    w, h = src.size
+    petit = downscale(src, round(w * SCALE_X), round(h * SCALE_Y))
+    cnt = Counter(petit.get_flattened_data())
+    cnt.pop((0, 0, 0), None)
+    return Counter({c: n * poids for c, n in cnt.items()}), spec, boite, poids
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument('stage')
@@ -176,6 +288,10 @@ def main():
     ap.add_argument('--out', default=None)
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--pal-next', action='store_true')
+    ap.add_argument('--metrique', default='lab', choices=sorted(METRIQUES))
+    ap.add_argument('--plancher', type=float, default=0.1)
+    ap.add_argument('--plan', action='append', default=[])
+    ap.add_argument('--epingle', action='append', default=[])
     ap.add_argument('-h', '--help', action='store_true')
     args = ap.parse_args()
     if args.help:
@@ -184,6 +300,8 @@ def main():
 
     free = [int(v) for v in args.free.split(',') if v]
     out_path = args.out or f'src/stages/{args.stage}/map/in.png'
+    d = METRIQUES[args.metrique]
+    epingles = [tuple(int(v) for v in e.split(',')) for e in args.epingle]
 
     src = Image.open(args.plane).convert('RGB')
     w, h = src.size
@@ -203,7 +321,23 @@ def main():
         palette = [tuple(palette[i * 3:i * 3 + 3]) for i in range(256)]
 
     colors = Counter(small.get_flattened_data())
-    mapping, chosen = assign(colors, palette, free)
+
+    # Le choix des couleurs voit AUSSI les plans supplémentaires ; l'in.png,
+    # lui, ne recevra que `small`. Les deux ne servent pas le même but : la
+    # palette est celle du stage, l'in.png est celui de la tilemap.
+    vote = Counter(colors)
+    for spec in args.plan:
+        sup, chemin, boite, poids = plan_supplementaire(spec)
+        vote.update(sup)
+        print('plan supplementaire %s%s, poids %d : %d px, %d couleurs '
+              '(compte dans la palette, pas dans l\'in.png)'
+              % (chemin, ' %s' % (boite,) if boite else '', poids,
+                 sum(sup.values()) // poids, len(sup)))
+    for e in epingles:
+        print('epingle %s : emplacement reserve avant calcul' % (e,))
+    print('metrique %s ; plancher %.2f%% des pixels' % (args.metrique, args.plancher))
+
+    mapping, chosen = assign(vote, palette, free, d, args.plancher / 100.0, epingles)
 
     print(f'{args.plane}  {w}x{h}  ->  {out_path}  {width}x{height}')
     if not args.pal_next:
@@ -215,7 +349,15 @@ def main():
         i = mapping[c]
         tag = '  <= emplacement pris' if i in chosen and chosen[i] == c else ''
         print(f'  {str(c):16} {n:8} {100 * n / total:5.2f}%  {i:3}  {str(palette[i]):18} '
-              f'{dist(c, palette[i]) ** 0.5:5.0f}{tag}')
+              f'{d(c, palette[i]) ** 0.5:5.1f}{tag}')
+    hors = [(c, n) for c, n in vote.most_common() if c not in colors]
+    if hors:
+        print('\n  couleurs vues seulement dans les plans supplementaires :')
+        for c, n in hors:
+            i = mapping[c]
+            tag = '  <= emplacement pris' if i in chosen and chosen[i] == c else ''
+            print(f'  {str(c):16} {n:8} {"":6}  {i:3}  {str(palette[i]):18} '
+                  f'{d(c, palette[i]) ** 0.5:5.1f}{tag}')
 
     if args.dry_run:
         return 0

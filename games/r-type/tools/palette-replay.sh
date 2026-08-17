@@ -193,6 +193,13 @@ $M stage1.map --ecrire
 # l'in.png ET la palette dediee src/stages/NN/palette/pal.png depuis la meme
 # affectation. L'olive est pre-chargee en materiel 14 quand un lot du stage la
 # porte — mesure dans le cast, jamais une liste.
+#
+# Metrique Lab par defaut depuis le 17/08 (constat auteur : le boss du stage 8
+# devenait gris). La distance RGB traitait « orange un peu faux » et « vert qui
+# devient gris » comme comparables ; Lab separe la clarte de la chroma. Elle
+# gagne sur les SEPT stages, pas seulement sur le 8 — le tableau des ecarts est
+# dans l'en-tete de arcade_to_in.py. Le plancher de 0,1 % vient avec : en Lab
+# une poussiere isolee (89 px de magenta au stage 6) raflait un emplacement.
 # =========================================================================
 python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next
 # Stage 8 : l'art est dans le plan ARRIERE. Mesure — le plan avant reduit
@@ -200,7 +207,21 @@ python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png 
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b
 # qui portait deja la carte du stage 8, et qui la porte encore.
 python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next
-python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png --pal-next
+# Stage 3 : le battleship vit dans le plan ARRIERE (boite x 576..1167,
+# y 16..191 mesuree sur les pixels non noirs) et sera affiche par du code a
+# part, hors tilemap — mais il peint avec Pal_stage, donc la palette du stage
+# doit le porter. Decision auteur (17/08) : « vert et jaune avant tout ».
+#   * le plan arriere entre dans le CHOIX des couleurs a poids 3 — c'est le
+#     palier ou les deux verts du vaisseau prennent leurs emplacements, et il
+#     est stable jusqu'a 5 (mesure) ; l'in.png reste le plan avant ;
+#   * le jaune est EPINGLE : sa rampe pese 1 200 px reduits face aux 17 000 px
+#     du terrain, aucun poids ne la fait gagner (mesure, poids 1 a 5).
+# Ce que ca coute, mesure : les trois teintes du terrain (71 % des pixels
+# opaques du plan avant) perdent leurs emplacements — beige clair vers le
+# blanc (dE 17), tan vers le vert moyen (19), brun vers le gris (19).
+python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png --pal-next \
+    --plan 'src/stages/03/map/images/original/level3_b.png:576,16,1168,192*3' \
+    --epingle 208,192,0
 python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
 python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next
 python3 tools/arcade_to_in.py 06 src/stages/06/map/images/original/level6_f.png --pal-next

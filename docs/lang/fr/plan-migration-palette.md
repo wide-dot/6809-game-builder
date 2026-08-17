@@ -304,6 +304,29 @@ reproductible depuis `master`.
       L'olive est gelée en 14 sur 3, 4, 5, 7 — lue dans le cast à chaque
       exécution, jamais dans une liste. Les stages 2, 6 et 8 disposent de leurs
       quatre cases.
+- [x] **deux constats de l'auteur sur planche, corrigés le 17/08** — détail
+      mesuré en [§7 de l'étude](analyse-palettes-stages-2026-08.md). Les deux
+      venaient du critère d'attribution, pas du stage :
+
+      * *« le boss du stage 8 devient gris »* → la distance **RGB** mettait sur
+        le même pied « un orange un peu faux » et « un vert qui devient gris ».
+        La métrique passe en **CIE Lab ΔE76** : le boss récupère deux cases
+        vertes, et l'écart moyen baisse sur les **sept** stages (11,2→9,7 ·
+        6,8→6,3 · 6,7→5,0 · 4,8→4,1 · 7,4→6,1 · 3,6→3,3 · 11,4→9,1). Le
+        `--plancher` de 0,1 % vient avec : en Lab, 89 px de magenta au stage 6
+        raflaient une case ;
+      * *« le stage 3 doit prendre en compte en priorité le battleship de
+        l'autre plan… vert et jaune avant tout »* → deux mécanismes, parce
+        qu'un seul ne suffit pas. **`--plan`** fait entrer le plan arrière dans
+        le choix des couleurs sans toucher l'`in.png` (poids 3, stable de 2 à
+        5) ; **`--epingle`** réserve la case du jaune, que ~1 200 px ne font
+        gagner à aucun poids balayé de 1 à 5. Coût mesuré et assumé : les trois
+        teintes du terrain (71 % des pixels opaques) perdent leurs cases.
+
+      Ce que ces deux constats disent du reste de la campagne : **les trois
+      prédictions du §3 de l'étude étaient fausses**, et une planche a suffi à
+      le montrer là où trois relevés chiffrés ne l'avaient pas vu. Le pixel
+      compte les surfaces ; il ne dit pas ce que le joueur regarde.
 
 ## Ce qu'il faut savoir avant de commencer
 
