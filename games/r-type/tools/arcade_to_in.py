@@ -27,6 +27,17 @@ du build.
     --out chemin    sortie (défaut src/stages/<NN>/map/in.png)
     --dry-run       n'écrit rien, affiche seulement la correspondance
 
+    --pal-next      convertit contre la NOUVELLE palette (campagne 08/2026) :
+                    base = les 12 communs de pal-next.png, emplacements
+                    attribuables = les cases propres au stage (13, 14, 16 PNG,
+                    plus 15 si l'olive n'y est pas gelée). L'olive 617A00 est
+                    PRÉ-CHARGÉE en 15 PNG (matériel 14) quand un lot d'ennemis
+                    du stage la porte — le gel se mesure dans cast.const.asm et
+                    les images des lots, jamais dans une liste écrite. Écrit
+                    AUSSI la palette dédiée src/stages/<NN>/palette/pal.png,
+                    depuis la même affectation : les deux ne peuvent pas
+                    diverger. --ref et --free sont ignorés dans ce mode.
+
 Entrée type : re.arcade.r-type/out/tiles/level<N>_f.png
 """
 import argparse
@@ -85,6 +96,77 @@ def assign(colors, palette, free):
     return {c: nearest(c, slots) for c in colors}, chosen
 
 
+PAL_NEXT = 'src/stages/01/palette/pal-next.png'
+OLIVE = (0x61, 0x7A, 0x00)
+MAGENTA = (0xCC, 0x00, 0xFF)
+
+
+def _usage_mod():
+    """Le releve palette_usage, importe comme module — une seule source pour
+    « quels lots ce stage charge » et « quelles images porte un lot »."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'palette_usage', os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      'palette_usage.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def olive_gelee(stage):
+    """L'olive est-elle gravee en materiel 14 sur ce stage ? Vrai si un LOT
+    charge par le stage a une image qui emploie l'index materiel 14. Mesure —
+    cast.const.asm + scenes du config + PNG des lots — parce que la liste
+    « 1, 3, 4, 5, 7 » n'est vraie que tant que le cast la rend vraie."""
+    import xml.etree.ElementTree as ET
+    pu = _usage_mod()
+    lots = pu.lots_du_stage('stage%d' % int(stage), '.')
+    if not lots:
+        return False
+    root = ET.parse('to8.config.xml').getroot()
+    scenes = {sc.get('name'): [l.get('name') for l in sc.iter('load')]
+              for sc in root.iter('scene')}
+    unites = {u for lot in lots for u in scenes.get('scenes.lot.%s' % lot, [])}
+    for f in root.iter('file'):
+        if f.get('name') not in unites:
+            continue
+        for g in f.iter('gfxcomp'):
+            for png in pu.expanse(g, '.'):
+                if Image.open(png).histogram()[15]:      # PNG 15 = materiel 14
+                    return True
+    return False
+
+
+def palette_pal_next(stage):
+    """(palette 256 rgb, emplacements attribuables) du mode --pal-next.
+    PNG 1..12 = les 12 communs de pal-next ; 13..16 = les cases du stage,
+    attribuables — sauf 15 (materiel 14), pre-chargee olive si gelee."""
+    p = Image.open(PAL_NEXT).getpalette()
+    communs = [tuple(p[i * 3:i * 3 + 3]) for i in range(1, 13)]
+    palette = [MAGENTA] + communs + [(0, 0, 0)] * 243
+    free = [13, 14, 15, 16]
+    if olive_gelee(stage):
+        palette[15] = OLIVE
+        free = [13, 14, 16]
+    return palette, free
+
+
+def ecrire_pal(stage, palette, chosen):
+    """La palette dediee du stage, depuis la MEME affectation que l'in.png.
+    Les cases propres restees sans teinte sortent en noir — visible dans le
+    fichier, et le noir est la valeur la moins intrusive si un pixel egare
+    les touche."""
+    out = os.path.join('src/stages/%s/palette' % stage, 'pal.png')
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    im = Image.new('P', (1, 1))
+    flat = []
+    for i in range(256):
+        flat += list(palette[i] if i <= 16 else (0, 0, 0))
+    im.putpalette(flat)
+    im.save(out)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument('stage')
@@ -93,6 +175,7 @@ def main():
     ap.add_argument('--free', default=','.join(map(str, FREE_DEFAULT)))
     ap.add_argument('--out', default=None)
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--pal-next', action='store_true')
     ap.add_argument('-h', '--help', action='store_true')
     args = ap.parse_args()
     if args.help:
@@ -107,15 +190,24 @@ def main():
     width, height = round(w * SCALE_X), round(h * SCALE_Y)
     small = downscale(src, width, height)
 
-    ref = Image.open(f'src/stages/{args.ref}/map/in.png')
-    palette = ref.getpalette()
-    palette = [tuple(palette[i * 3:i * 3 + 3]) for i in range(256)]
+    if args.pal_next:
+        palette, free = palette_pal_next(args.stage)
+        gel = 15 not in free
+        print('mode pal-next : communs de %s ; cases attribuables (PNG) %s%s'
+              % (PAL_NEXT, free,
+                 ' ; olive GELEE en 15 (materiel 14), mesuree sur les lots'
+                 if gel else ''))
+    else:
+        ref = Image.open(f'src/stages/{args.ref}/map/in.png')
+        palette = ref.getpalette()
+        palette = [tuple(palette[i * 3:i * 3 + 3]) for i in range(256)]
 
     colors = Counter(small.get_flattened_data())
     mapping, chosen = assign(colors, palette, free)
 
     print(f'{args.plane}  {w}x{h}  ->  {out_path}  {width}x{height}')
-    print(f'palette de base : stage {args.ref} ; emplacements attribuables {free}')
+    if not args.pal_next:
+        print(f'palette de base : stage {args.ref} ; emplacements attribuables {free}')
     print()
     print(f'{"couleur arcade":18} {"pixels":>8} {"%":>6}  idx  {"couleur TO8":18} ecart')
     total = width * height
@@ -140,6 +232,9 @@ def main():
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     out.save(out_path)
     print(f'\necrit {out_path}')
+    if args.pal_next:
+        pal_path = ecrire_pal(args.stage, palette, chosen)
+        print(f'ecrit {pal_path} (la meme affectation : accord garanti)')
     return 0
 
 

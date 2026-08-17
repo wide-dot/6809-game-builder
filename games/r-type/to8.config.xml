@@ -2175,7 +2175,10 @@
                         <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/02/map/even.png"/>
+                        <!-- La palette dediee du stage : 12 communs + 4 cases propres,
+                             ecrite par arcade_to_in.py (mode pal-next) depuis la MEME
+                             affectation que map/in.png : l'accord est garanti. -->
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/02/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>

@@ -40,7 +40,16 @@ verifier() {
     # les outils vivent sur new-color, pas sur master : on les y depose. TOUT
     # ce qui s'appelle palette*, sans liste a tenir a jour — une liste oubliee
     # fait echouer le rejeu loin de sa cause (vecu avec palette_code.py).
-    cp -R tools/palette* "$tmp/arbre/games/r-type/tools/"
+    # arcade_to_in.py est sur master mais SANS le mode --pal-next : on depose
+    # aussi la version de la campagne.
+    cp -R tools/palette* tools/arcade_to_in.py "$tmp/arbre/games/r-type/tools/"
+    # Les plans arcade sont des ENTREES de la campagne, au meme titre que les
+    # outils : identiques octet pour octet a wide-dot/re.arcade.r-type@4276f7c
+    # (verifie par cmp au commit d'entree), absents de master. On les seme.
+    for d in src/stages/*/map/images/original; do
+        mkdir -p "$tmp/arbre/games/r-type/$d"
+        cp "$d"/* "$tmp/arbre/games/r-type/$d/"
+    done
     echo "== rejeu"
     (cd "$tmp/arbre/games/r-type" && sh tools/palette-replay.sh)
     echo "== comparaison de src/ avec l'arbre courant"
@@ -176,6 +185,16 @@ fi
 # convient pas telle quelle. C'est leur tour de travail, pas un defaut.
 # =========================================================================
 $M stage1.map --ecrire
+
+# =========================================================================
+# Groupe F, stages 2-8 — reconversion depuis les plans arcade contre la
+# nouvelle palette (etude : analyse-palettes-stages-2026-08.md). La source de
+# chaque stage vit dans src/stages/NN/map/images/original/ ; l'outil ecrit
+# l'in.png ET la palette dediee src/stages/NN/palette/pal.png depuis la meme
+# affectation. L'olive est pre-chargee en materiel 14 quand un lot du stage la
+# porte — mesure dans le cast, jamais une liste.
+# =========================================================================
+python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next
 
 # Les fichiers que la campagne SUPPRIME. Une suppression s'enonce en commande,
 # pas en patch : c'est le role de ce ledger.
