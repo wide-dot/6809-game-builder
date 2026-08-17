@@ -423,7 +423,10 @@ rect.Y0       equ 23
 rect.Y1       equ 178
 rect.RAMB_END equ $A000+rect.Y1*40+rect.G1+1 ; bottom line: exclusive end of the run
 rect.LINES    equ rect.Y1-rect.Y0+1          ; 156 scanlines
-rect.FILL     equ $ffff                      ; index 15 (alignment check); black = $0000
+rect.FILL     equ $0000                      ; index 0, le noir. L'index 15 ($ffff) servait
+                                             ; de repere d'alignement et ne se voyait pas :
+                                             ; il etait noir lui aussi dans l'ancienne
+                                             ; palette. Il vaut #9ECC00 dans la nouvelle.
 
 BigBlackRect
         ldx   #rect.FILL

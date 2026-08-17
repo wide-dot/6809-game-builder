@@ -634,7 +634,7 @@ objects/levels/clearstage/music/dmf/rtype-clearstage.dmf,src/common/flow/clearst
 objects/levels/clearstage/music/vgc/music.vgc,src/common/flow/clearstage/music/vgc/music.vgc
 objects/levels/clearstage/music/vgm/music.vgm,src/common/flow/clearstage/music/vgm/music.vgm
 objects/levels/clearstage/music/ymm/music.ymm,src/common/flow/clearstage/music/ymm/music.ymm
-objects/levels/endstage/obj_endstage.asm,src/common/flow/endstage.asm
+objects/levels/endstage/obj_endstage.asm,src/stages/01/endstage/obj_endstage.asm
 objects/levels/hud/dummy.asm,src/common/hud/dummy.asm
 objects/levels/hud/hud.asm,src/common/hud/hud.asm
 objects/levels/hud/images/0.png,src/common/hud/images/hud/00.png

@@ -245,12 +245,12 @@ UpdateHitBox
         ; palette buffer + clear PalRefresh); the IRQ PalUpdateNow applies it at
         ; the next VBL. A direct $E7DA poke here tears (mid-frame). In game
         ; Pal_current = Pal_buffer (set by the fade object), so we edit Pal_buffer.
-        ; undo last frame's white on index 12
+        ; undo last frame's white on index 14
         lda   hitFlash.active
         beq   @noUnflash
         clr   hitFlash.active
-        ldd   Pal_game+24                  ; index 12 normal colour
-        std   Pal_buffer+24
+        ldd   Pal_game+28                  ; index 14 normal colour
+        std   Pal_buffer+28
         clr   PalRefresh                   ; queue -> IRQ PalUpdateNow at next VBL
 @noUnflash
         lda   AABB_0+AABB.p,u
@@ -258,13 +258,17 @@ UpdateHitBox
         ; hit this frame? the boss damage potential dropped since last frame
         cmpa  hitFlash.prevP
         bhs   @noHit
-        ldd   #$ff0f                        ; flash index 12 white (max), queued
-        std   Pal_buffer+24
+        ; L'index qui porte la teinte du boss a change a la migration de
+        ; palette : son olive #617A00 est passee de la case 12 a la case 14.
+        ; Mesure sur ses images : 248 px en 14, ZERO en 12 — le flash sur 12
+        ; ne peignait donc plus rien.
+        ldd   #$ff0f                        ; flash index 14 white (max), queued
+        std   Pal_buffer+28
         clr   PalRefresh
         lda   #1
         sta   hitFlash.active
-        ldb   #1
-        jsr   gfxlock.screenBorder.update
+        ldb   #3                            ; bordure blanche : le blanc est
+        jsr   gfxlock.screenBorder.update   ; l'index 3 desormais (c'etait le 1)
 @noHit  lda   AABB_0+AABB.p,u
         sta   hitFlash.prevP
         cmpa  #dobkeratops_monster_hitdamage/2

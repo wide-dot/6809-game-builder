@@ -316,8 +316,8 @@ destroy
         beq   display
 
  IFDEF invincible
-        ldb   #1
-        jsr   gfxlock.screenBorder.update
+        ldb   #3                          ; bordure blanche : le blanc est l'index 3
+        jsr   gfxlock.screenBorder.update  ; dans la nouvelle palette (c'etait le 1)
  ELSE
         ldd   #0
         std   player1+beam_value
