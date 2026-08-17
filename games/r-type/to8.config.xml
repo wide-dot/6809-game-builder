@@ -2009,6 +2009,7 @@
                      blocs de debut de stage — le checkpoint repeint depuis la carte. -->
                 <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
                             gensymbols="gen/stages/01/map/map.const.asm"
+                            nbsteps="0,0,6,0,0,0,0,0"
                             refresh="48:6-8"/>
 
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
