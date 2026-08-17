@@ -195,6 +195,16 @@ $M stage1.map --ecrire
 # porte — mesure dans le cast, jamais une liste.
 # =========================================================================
 python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next
+# Stage 8 : l'art est dans le plan ARRIERE. Mesure — le plan avant reduit
+# n'a qu'UNE couleur (tout noir), l'arriere en a 30, et les deux collent a
+# 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b
+# qui portait deja la carte du stage 8, et qui la porte encore.
+python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next
+python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png --pal-next
+python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
+python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next
+python3 tools/arcade_to_in.py 06 src/stages/06/map/images/original/level6_f.png --pal-next
+python3 tools/arcade_to_in.py 07 src/stages/07/map/images/original/level7_f.png --pal-next
 
 # Les fichiers que la campagne SUPPRIME. Une suppression s'enonce en commande,
 # pas en patch : c'est le role de ce ledger.

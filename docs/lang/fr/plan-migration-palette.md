@@ -278,15 +278,32 @@ reproductible depuis `master`.
 - [x] carte du stage 1 — renumérotation pure prouvée au pixel (`stage1.map`
       dans le ledger), `nbsteps=6` mesuré comme seul réglage qui tient dans
       l'arène (réglage auteur, courbe complète au commit 3f5ea49f)
-- [ ] stages 2-8 : **étude faite le 17/08** —
+- [x] **stages 2-8 CONVERTIS le 17/08** depuis les plans arcade, avec leurs
+      palettes dédiées. Étude fondatrice :
       [`analyse-palettes-stages-2026-08.md`](analyse-palettes-stages-2026-08.md).
-      L'essentiel : palettes dédiées `src/stages/NN/palette/pal.png` (12 communs
-      + 4 cases du stage), reconversion depuis l'arcade recommandée (la seule
-      qui exploite le nouveau gris `A8A8A8`), olive gelée en 14 sur 1-3-4-5-7
-      **lue dans le cast** et non dans une liste, deux déficits à trancher sur
-      planche (stages 3 et 4 — la recette A est la sortie la moins chère dans
-      les deux cas), l'orange du stage 8 (4115 px) à voir sur planche aussi.
-      Ordre : 2, 8, 3, 4, puis 5-6-7.
+
+      Ce que la reconversion a apporté par rapport au remap envisagé :
+
+      * **les 12 index communs sont enfin STABLES sur les huit stages**
+        (`palette_usage` : « Aucun index gelé ne varie »). C'était le défaut de
+        fond signalé depuis le 15/08 — un objet commun changeait de couleur
+        selon le stage. Il est fermé ;
+      * **les deux déficits annoncés (3 et 4) ne se sont pas produits comme
+        prévu.** L'algorithme de coût attribue les cases aux teintes les plus
+        chères et quantifie le reste : sur le stage 3 les verts secondaires
+        tombent sur les gris communs, sur le stage 4 deux verts fusionnent
+        (5296 px à distance 39). Ce sont des pertes réelles mais mesurées, pas
+        des arbitrages à faire à la main ;
+      * **la planche « orange du stage 8 » n'a plus lieu d'être.** La vraie
+        couleur arcade est `#F8A068`, à distance **5** du saumon commun ;
+        l'ancienne conversion la forçait sur `F2AB00`, à distance 104. La
+        nouvelle palette rend cette zone plus juste, pas moins ;
+      * **le stage 8 se convertit depuis son plan ARRIÈRE** — son plan avant
+        réduit n'a qu'une couleur (tout noir). Mesuré, pas supposé.
+
+      L'olive est gelée en 14 sur 3, 4, 5, 7 — lue dans le cast à chaque
+      exécution, jamais dans une liste. Les stages 2, 6 et 8 disposent de leurs
+      quatre cases.
 
 ## Ce qu'il faut savoir avant de commencer
 

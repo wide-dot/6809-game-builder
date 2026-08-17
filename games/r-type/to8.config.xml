@@ -2264,7 +2264,7 @@
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="gen/directories/dir4/entries.asm"/>
                         <asm filename="src/stages/03/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/03/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/03/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2349,7 +2349,7 @@
                         <asm filename="gen/directories/dir4/entries.asm"/>
                         <asm filename="gen/directories/dir5/entries.asm"/>
                         <asm filename="src/stages/04/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/04/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/04/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2434,7 +2434,7 @@
                         <asm filename="gen/directories/dir5/entries.asm"/>
                         <asm filename="gen/directories/dir6/entries.asm"/>
                         <asm filename="src/stages/05/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/05/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/05/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2519,7 +2519,7 @@
                         <asm filename="gen/directories/dir6/entries.asm"/>
                         <asm filename="gen/directories/dir7/entries.asm"/>
                         <asm filename="src/stages/06/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/06/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/06/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2607,7 +2607,7 @@
                         <asm filename="gen/directories/dir7/entries.asm"/>
                         <asm filename="gen/directories/dir8/entries.asm"/>
                         <asm filename="src/stages/07/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/07/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/07/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
@@ -2691,7 +2691,7 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir8/entries.asm"/>
                         <asm filename="src/stages/08/main.asm"/>
-                        <png2pal section="palette" symbol="Pal_stage" filename="gen/stages/08/map/even.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/08/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>
