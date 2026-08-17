@@ -330,3 +330,22 @@ python3 tools/arcade_to_sprites.py outslay --palette 02
 # un seul ecart tolere et declare (`Geld` -> `geld`, la casse du dossier).
 # =========================================================================
 python3 tools/objid_rename.py
+
+# Les onze ennemis nommes au groupe I qui ont leur export arcade. Chacun est
+# EXCLUSIF a un stage (mesure sur les waves, colonne `stages` de
+# tools/objid-arcade.csv) : sa palette peut donc etre celle du stage, cases
+# propres comprises. Un ennemi partage aurait `--palette communs`.
+# Ils ne VOTENT pas pour la palette de leur stage — c'est une decision separee,
+# et la lecon du brood est qu'un votant peut depenser une case pour des pixels
+# qu'on ne voit pas.
+python3 tools/arcade_to_sprites.py cytron   --palette 04
+python3 tools/arcade_to_sprites.py geld     --palette 04
+python3 tools/arcade_to_sprites.py compiler --palette 04
+python3 tools/arcade_to_sprites.py slither  --palette 05
+python3 tools/arcade_to_sprites.py pursuer  --palette 05
+python3 tools/arcade_to_sprites.py cheetah  --palette 05
+python3 tools/arcade_to_sprites.py dop      --palette 06
+python3 tools/arcade_to_sprites.py newt     --palette 06
+python3 tools/arcade_to_sprites.py fast     --palette 07
+python3 tools/arcade_to_sprites.py boldo    --palette 07
+python3 tools/arcade_to_sprites.py mikun    --palette 08

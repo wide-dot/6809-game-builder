@@ -386,11 +386,23 @@ de **traçabilité** (quel fichier v1 est devenu quel fichier v2) ; la mention
       pas non plus** : 1, 2, 34, 39, 46, 47 — leurs adresses ROM sont dans le
       CSV, et 1/2/39 voisinent `checkpoint` (0xf0f3), donc probablement des
       objets de flux plutôt que des ennemis.
-- [ ] **les 15 autres ennemis exportés attendent leur stage.** L'affectation
-      ennemi → stage n'existe que pour le stage 2 (`objid.const.asm` le nomme) ;
-      les stages 3 à 8 citent encore des ObjID **numériques** sans ennemi
-      derrière. Les convertir à l'aveugle serait à refaire. **Prochain point de
-      décision auteur.**
+- [x] **les onze ennemis nommés qui ont leur export sont convertis** (17/08) —
+      cytron, geld, compiler (stage 4) · slither, pursuer, cheetah (5) ·
+      dop, newt (6) · fast, boldo (7) · mikun (8). **199 frames.** Le nommage du
+      groupe I a levé le blocage : la colonne `stages` de `objid-arcade.csv`
+      montre que les onze sont **exclusifs à un seul stage**, donc chacun se
+      convertit avec la palette de ce stage, cases propres comprises.
+      Ils ne **votent** pas pour la palette de leur stage — décision séparée, et
+      la leçon du brood est qu'un votant peut dépenser une case pour des pixels
+      qu'on ne voit pas.
+- [ ] **les sprites ne sont pas encore CÂBLÉS** : aucune ligne `<gfxcomp>` dans
+      le config, donc ils n'entrent dans aucune image. Ce qui reste, par ennemi :
+      les rangées `<images>`/`<gfxcomp>`, un ObjID dans `objid.const.asm`, une
+      unité de cast et son lot — le patron est celui du stage 2.
+- [ ] **quatre ennemis exportés restent sans stage** : blaster, win, zoid,
+      warship-elements. Aucune wave de 2-8 ne les nomme ; ils viennent
+      probablement du stage 1 ou d'un ObjID encore anonyme (1, 2, 34, 39, 46,
+      47). À trancher avec l'auteur.
 
 ## Ce qu'il faut savoir avant de commencer
 
