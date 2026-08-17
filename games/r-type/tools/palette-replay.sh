@@ -363,15 +363,18 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 #   faut une case connue d'avance que personne d'autre ne partage. Le materiel
 #   14 est libre pendant ce combat : c'est la case de l'olive des lots, et
 #   aucun lot n'est a l'ecran a ce moment (constat auteur).
-#   Les ROUGES aussi sont ajustes pour ce combat (--ajuster 7,8, auteur 17/08 :
-#   « en phase de boss on utilise une palette ajustee, c'est tout » — les
-#   communs du jeu, eux, ne bougent PAS). Chaque index ajuste garde son role :
-#   sa valeur est choisie parmi les couleurs du compiler qui tombaient deja sur
-#   lui. Le mat 7 prend le cramoisi A00038 (1184 px), ce qui libere une case
-#   propre au passage.
+#   La rampe CHAUDE entiere est ajustee pour ce combat (--ajuster 7,8,9,10,
+#   auteur 17/08 : « en phase de boss on utilise une palette ajustee, c'est
+#   tout » — les communs du jeu, eux, ne bougent PAS). Chaque index garde son
+#   role, sa valeur est choisie parmi les couleurs du compiler qui tombaient
+#   deja sur lui. 7,8 ne suffisaient pas : les tons CLAIRS tiraient encore sur
+#   le rose-orange (constat auteur) — le rose (200,88,88) tombait sur l'orange
+#   CC5A3C et l'or (208,144,56) sur le saumon F99B68. Avec 9 et 10 ajustes, le
+#   rose obtient sa case (C85858), l'or la sienne (D09038).
+#   dE : stage 19,1 -> boss 7,8 : 10,6 -> boss 7,8,9,10 : 8,4 (12 index).
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
     --ecrire-palette src/stages/04/palette/pal-boss.png \
-    --reserver 0,208,0:14 --ajuster 7,8
+    --reserver 0,208,0:14 --ajuster 7,8,9,10
 python3 tools/arcade_to_sprites.py slither  --palette 05
 python3 tools/arcade_to_sprites.py pursuer  --palette 05
 python3 tools/arcade_to_sprites.py cheetah  --palette 05

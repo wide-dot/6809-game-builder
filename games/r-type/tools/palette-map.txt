@@ -357,11 +357,13 @@ stage6.map  plan=sprites:dop,newt*1
 #   Mesure sur la wave — le compiler est le dernier spawn ($14,$F8) et le
 #   dernier ennemi de lot avant lui est un cancer a $12,$34, qui peut encore
 #   etre a l'ecran. `--garder-olive` rend l'ancien comportement si ca se voit.
-#   Rouges ajustes DANS CETTE PALETTE SEULE (--ajuster 7,8, auteur 17/08) :
-#   chaque index garde son role, sa valeur est choisie parmi les couleurs du
-#   compiler qui tombaient deja sur lui. Mat 7 610000 -> A00038 (le cramoisi,
-#   1184 px), mat 8 AC0000 -> F80000 (37 px). dE 13,2 -> 10,6, 12 index.
-stage4.boss  palette-dediee=compiler quatre-cases ajuster=7,8
+#   Rampe chaude ajustee DANS CETTE PALETTE SEULE (--ajuster 7,8,9,10) :
+#   chaque index garde son role, sa valeur vient des couleurs du compiler qui
+#   tombaient deja sur lui. 7 -> A00038 (cramoisi), 8 -> F80000, 9 -> 905818,
+#   10 -> D09038 (l'or). 7,8 seuls laissaient les tons clairs tirer sur le
+#   rose-orange (constat auteur) : le rose (200,88,88) tombait sur l'orange
+#   commun, l'or sur le saumon. dE 13,2 -> 10,6 -> 8,4, 12 index.
+stage4.boss  palette-dediee=compiler quatre-cases ajuster=7,8,9,10
 
 # --- Rouges communs : reglage ANNULE (17/08) ---------------------------------
 # J'avais rapproche les deux rouges purs communs de l'arcade (610000->580000,
