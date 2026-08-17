@@ -382,8 +382,24 @@ defaut.rouges  7=610000 8=AC0000 (retabli)
 # 18,9 -> 21,1, cheetah stable. Poids 2 ecarte (carte a 12,2).
 stage5.map  plan=sprites:slither,pursuer,cheetah*1
 
-# Stage 8 : PAS de levier — decision auteur en attente. L'epingle sauvait le
-# mikun (24,3 -> 10,3) mais degradait les verts du boss de la CARTE, premier
-# constat de l'auteur sur ce stage (zone boss 11,4 -> 17,3 quel que soit le
-# vert epingle). Boldo (stage 7) : epingle ecartee aussi (menthe clair perdu).
-stage8.map  (aucun changement — arbitrage mikun/boss soumis sur planche)
+# Stage 8 : trois temps. (1) Une seule epingle sauvait le mikun (24,3 -> 10,3)
+# mais degradait les verts du boss de la CARTE (zone boss 11,4 -> 17,3 quel que
+# soit le vert) — retiree, arbitrage soumis. (2) Regle auteur : le mikun garde
+# au minimum 2, idealement 3 niveaux de vert et ses 3 bleus — LE NOMBRE DE
+# NIVEAUX d'un degrade prime sur la proximite Lab. TRIPLE epingle (les 2 kakis
+# du boss + le vert mikun) : boss inchange a 11,4, mais la rampe verte du mikun
+# melangait kaki (~65 de teinte) et vert bleute (~150) — « le vert ajoure
+# tranche trop » (auteur) : une rampe lisible vit dans UNE famille de teinte.
+# (3) Planche a 5 variantes, l'auteur choisit V3 : vert clair 508868 /
+# vert 387050 / olive 404010, une seule famille, du clair au sombre. Deux cases
+# vertes pour le mikun, donc le kaki clair 888850 SORT de la palette — cout
+# mesure et accepte : zone boss 11,4 -> 19,5 (ses kakis glissent vers les
+# verts : le boss devient plus VERT, ce qui rejoint le constat d'origine de
+# l'auteur), carte 10,9 -> 13,4 (le tan part sur le saumon).
+stage8.map  epingle=64,64,16+80,136,104+56,112,80 plan=sprites:mikun*1
+
+# Le mikun lui-meme est force par RANG (--forcer R,G,B:MAT, hors Lab) : ses
+# 4 verts arcade sur les 3 niveaux V3 (les 2 plus sombres fusionnent sur
+# l'olive), ses 3 bleus sur les 3 bleus communs 4/5/6. Le plus proche voisin
+# ecrasait les 4 verts sur UNE case et sautait le bleu profond 00618F.
+sprite.mikun  forcer=verts:13,14,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)
