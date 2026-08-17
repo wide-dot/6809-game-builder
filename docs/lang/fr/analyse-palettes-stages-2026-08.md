@@ -271,11 +271,22 @@ rien (mesuré).
 | dE moyen | carte | gouger | wick | brood | outslay |
 |---|---|---|---|---|---|
 | carte seule | **9,7** | 8,8 | **28,5** | 15,3 | 14,4 |
-| + sprites ×1 | 11,3 | **6,2** | 30,7 | **11,1** | 14,5 |
+| les 4 votent | 11,3 | **6,2** | 30,7 | **11,1** | 14,5 |
+| **sans le brood** | 11,1 | 6,4 | 28,8 | 14,6 | 14,5 |
 
-La case verte passe de `(48,136,64)`, un vert gazon, à `(32,136,96)`, le teal
-de la coque du brood. Le `wick` se dégrade (783 px, déjà mauvais avant) : c'est
-le prix, et il est petit.
+**Le brood ne vote pas** — seul écart à la règle, et il vient d'une chose que
+l'outil ne peut pas voir : sa base verte est **cachée à 95 % sous le décor**
+dans le jeu arcade (observation de l'auteur ; l'export livre chaque sprite
+isolé, l'occlusion n'est nulle part dans les données). Or c'était le **seul**
+votant qui déplaçait la case verte : avec lui elle passait de `308840` à
+`208860`, une case sur quatre dépensée pour des pixels invisibles. La ligne
+« sans le brood » est celle qui est appliquée — aucun votant n'y perd.
+
+**Combien de verts a un stage ?** Un seul, s'il en veut un. Les 12 index
+communs n'en portent **aucun** : tout vert sort forcément d'une des quatre
+cases propres au stage. Le stage 2 en dépense une (matériel 14 = `308840`) ; il
+pourrait en dépenser deux, au prix d'une autre teinte. Le vote n'ajoute pas de
+vert, il choisit lequel.
 
 **Portée.** Ça ne vaut que pour un cast **exclusif** au stage. Un ennemi que
 plusieurs stages chargent se convertit sur les 12 communs et n'a pas voix ici —

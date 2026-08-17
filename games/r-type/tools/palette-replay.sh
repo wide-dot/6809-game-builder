@@ -214,12 +214,16 @@ $M stage1.map --ecrire
 # sur l'unique vert du stage. Poids 1 : les sprites pesent leur propre nombre de
 # pixels reduits (29 650 face aux 49 356 de la carte), aucun pouce sur la
 # balance, et le poids 2 n'apporte plus rien (mesure).
-#   Ce que ca change, mesure en dE moyen : brood 15,3 -> 11,1 et gouger
-#   8,8 -> 6,2 ; la carte paie 9,7 -> 11,3 et le wick 28,5 -> 30,7 (783 px,
-#   deja mauvais avant). La case verte passe de (48,136,64) a (32,136,96).
+#   Le BROOD ne vote PAS, et c'est le seul ecart a la regle : sa base verte est
+#   cachee a 95 % sous le decor dans le jeu arcade (observation de l'auteur —
+#   l'export livre chaque sprite isole, l'outil ne peut pas voir l'occlusion).
+#   Or c'etait le SEUL votant qui deplacait la case verte, mesure : avec lui
+#   elle passait de 308840 a 208860, soit une case depensee pour des pixels
+#   qu'on ne voit pas. Sans lui le vert reste celui de la carte.
+#   Ce que le vote change, dE moyen : gouger 8,8 -> 6,4 ; la carte paie
+#   9,7 -> 11,1 ; wick 28,5 -> 28,8 et brood 15,3 -> 14,6 (aucun ne perd).
 python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next \
-    --plan sprites:gouger --plan sprites:wick \
-    --plan sprites:brood  --plan sprites:outslay
+    --plan sprites:gouger --plan sprites:wick --plan sprites:outslay
 # Stage 8 : l'art est dans le plan ARRIERE. Mesure — le plan avant reduit
 # n'a qu'UNE couleur (tout noir), l'arriere en a 30, et les deux collent a
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b

@@ -309,10 +309,21 @@ stage3.map  plan=arriere:576,16,1168,192*3 epingle=208,192,0
 #   poids 1 : les sprites pesent leur propre nombre de pixels (29 650 face aux
 #   49 356 de la carte). Aucun pouce sur la balance, et le poids 2 n'apporte
 #   plus rien — mesure.
-#   Effet mesure, dE moyen : brood 15,3 -> 11,1, gouger 8,8 -> 6,2 ; la carte
-#   paie 9,7 -> 11,3 et le wick 28,5 -> 30,7 (783 px, deja mauvais avant).
-#   La case verte passe de (48,136,64) — un vert gazon — a (32,136,96), le teal
-#   de la coque du brood.
+#
+# LE BROOD NE VOTE PAS — seul ecart a la regle, et il est motive. Sa base verte
+# est cachee a 95 % sous le decor dans le jeu arcade (observation de l'auteur ;
+# l'export livre chaque sprite ISOLE, l'outil ne peut pas voir l'occlusion et
+# ne la verra jamais). Or c'etait le SEUL votant qui deplacait la case verte —
+# mesure : avec lui elle passait de 308840 a 208860, une case sur quatre
+# depensee pour des pixels qu'on ne voit pas. Sans lui, le vert reste celui de
+# la carte.
+#   Effet du vote, dE moyen : gouger 8,8 -> 6,4 ; la carte paie 9,7 -> 11,1 ;
+#   wick 28,5 -> 28,8 et brood 15,3 -> 14,6 — aucun votant ne perd.
+#
+# Rappel de ce que le stage 2 a : UN seul vert, le materiel 14. Les 12 index
+# communs n'en portent aucun ; tout vert d'un stage sort forcement d'une de ses
+# quatre cases propres. Le vote n'en ajoute pas, il choisit lequel.
+#
 # Ne vaut QUE pour un cast exclusif au stage : un ennemi partage se convertit
 # sur les 12 communs et n'a pas voix ici.
-stage2.map  plan=sprites:gouger,wick,brood,outslay*1
+stage2.map  plan=sprites:gouger,wick,outslay*1  brood=exclu
