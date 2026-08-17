@@ -375,3 +375,9 @@ stage4.boss  palette-dediee=compiler quatre-cases ajuster=7,8,9,10
 # palette-reference/precedentes.txt pour que le rejeu rafraichisse les fichiers
 # qui l'ont portee un temps.
 defaut.rouges  7=610000 8=AC0000 (retabli)
+
+# Stage 5 : le cast vote (regle des stages 2 et 6, poids 1). Le slither etait
+# le pire du corpus (dE 24,2, 10 915 px) : ses bruns tombaient sur l'or.
+# Vote : slither 24,2 -> 17,4, carte 4,1 -> 6,5 (D09030 -> 583810), pursuer
+# 18,9 -> 21,1, cheetah stable. Poids 2 ecarte (carte a 12,2).
+stage5.map  plan=sprites:slither,pursuer,cheetah*1

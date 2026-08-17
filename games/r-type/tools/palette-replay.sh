@@ -241,7 +241,14 @@ python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png 
     --plan 'src/stages/03/map/images/original/level3_b.png:576,16,1168,192*3' \
     --epingle 208,192,0
 python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
-python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next
+# Stage 5 : son cast vote (regle actee aux stages 2 et 6, poids 1). Le slither
+# — 10 915 px reduits, le plus gros ennemi converti — etait le pire du corpus a
+# dE 24,2 : ses bruns tombaient sur l'or de la carte. Mesure du vote :
+# slither 24,2 -> 17,4, la carte paie 4,1 -> 6,5 (une case passe de D09030 au
+# brun 583810 du serpent), pursuer 18,9 -> 21,1, cheetah stable. Le poids 2
+# gagnait plus au slither mais coutait 12,2 a la carte — ecarte.
+python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next \
+    --plan sprites:slither --plan sprites:pursuer --plan sprites:cheetah
 # Stage 6 : son cast vote (constat auteur sur planche — le dop ne va pas).
 # Mesure : SEPT couleurs arcade du dop s'ecrasaient sur le seul 144,168,136
 # (3570 px sur 10 832). Le vote lui donne une case a lui (808018) et la carte ne
