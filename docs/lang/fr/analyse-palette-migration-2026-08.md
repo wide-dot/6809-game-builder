@@ -28,7 +28,8 @@ le masque du champ d'étoiles passe de l'index 15 à l'index 0, l'usage de
 l'index 15 disparaît du fond du stage 1 (pas de changement de fond en cours de
 stage), et la traînée des tuiles se gère en noir.
 
-La palette proposée est dans le dépôt : `src/stages/01/palette/pal-next.png`
+La palette proposée est dans le dépôt : `tools/palette-reference/nouvelle.png` (elle etait a
+`src/stages/01/palette/pal-next.png` jusqu'au 17/08)
 (même forme que `pal.png` — 1×1, seule sa table compte). Elle n'est branchée
 sur rien : le config lit toujours `pal.png`, le build est inchangé.
 

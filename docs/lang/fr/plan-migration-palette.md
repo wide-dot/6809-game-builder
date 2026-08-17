@@ -219,8 +219,9 @@ INCLUDE ne l'atteint.
 
 ### Groupe E — la palette et le fond (bascule) — FAIT le 16/08/2026
 
-- [x] le stage 1 charge **`pal-next.png` telle quelle** — la nouvelle palette
-      entière, sans dérivation
+- [x] le stage 1 charge **la nouvelle palette telle quelle**, entière et sans
+      dérivation — depuis le 17/08 dans `src/stages/01/palette/pal.png`, comme
+      les sept autres stages (groupe G)
 - [x] le **ciel du niveau passe sur l'index 0** : les quatre macros du
       starfield testent le ciel sur 0, ses six tables de masques sont
       ré-encodées par `palette_code.py` (`cible=$0`), les deux effacements de
@@ -327,6 +328,33 @@ reproductible depuis `master`.
       prédictions du §3 de l'étude étaient fausses**, et une planche a suffi à
       le montrer là où trois relevés chiffrés ne l'avaient pas vu. Le pixel
       compte les surfaces ; il ne dit pas ce que le joueur regarde.
+
+### Groupe G — les huit palettes dédiées — FAIT le 17/08/2026
+
+- [x] **sept l'étaient déjà** (groupe F) : `arcade_to_in.py` écrit
+      `src/stages/NN/palette/pal.png` depuis la MÊME affectation que l'`in.png`,
+      donc les deux ne peuvent pas diverger.
+- [x] **le stage 1 rejoint la convention.** Il était seul dehors parce que
+      `src/stages/01/palette/pal.png` portait l'ANCIENNE palette — l'entrée de
+      `palette_migrate.py` — pendant que le stage lisait la sienne dans
+      `pal-next.png`. Un fichier, deux rôles, et le rôle visible depuis le
+      config était le faux. Les deux palettes de référence de la campagne vont
+      dans `tools/palette-reference/{ancienne,nouvelle}.png`, avec le reste du
+      paramétrage ; le `cp -R tools/palette*` du vérificateur les sème déjà.
+      Détail et pièges dans [§8 de l'étude](analyse-palettes-stages-2026-08.md).
+- [x] preuve : l'étape neuve du ledger **cassée exprès** sort `ECART` en
+      nommant `src/stages/01/palette/pal.png` ; remise, `--verifier` sort
+      `IDENTIQUE`. L'image ne bouge pas d'un octet — le fichier change de nom,
+      pas de contenu (`cmp` le dit, et le build repart à 100 % de cache).
+
+**Dette relevée au passage, PAS traitée** (elle dépasse la campagne) :
+`games/r-type/v1-map.csv` annonce 1308 fichiers « contenu byte-identique » à la
+v1. C'est faux depuis le groupe A — la campagne a réécrit une centaine de PNG.
+Les lignes que ce commit invalidait directement sont corrigées (les quatre
+`pal-inside*` supprimés au groupe E, et `pal.png` qui pointe maintenant vers
+`tools/palette-reference/ancienne.png`) ; le reste du fichier reste à statuer :
+soit une colonne « migré palette 08/2026 », soit l'abandon de la promesse
+d'identité pour les images. **À trancher avec l'auteur avant la fusion.**
 
 ## Ce qu'il faut savoir avant de commencer
 

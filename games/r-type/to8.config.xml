@@ -2062,7 +2062,7 @@
                              La nouvelle palette telle quelle : 12 index communs et
                              4 propres au stage, dont la case 15 (vert clair) reservee
                              a des sprites du stage 1. -->
-                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal-next.png"/>
+                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>
                         <!-- Le noir dont part le fondu d'ouverture. -->
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <!-- Palette des messages READY / GAME OVER, posee le temps du message. -->

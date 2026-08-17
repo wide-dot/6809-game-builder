@@ -28,7 +28,8 @@ du build.
     --dry-run       n'écrit rien, affiche seulement la correspondance
 
     --pal-next      convertit contre la NOUVELLE palette (campagne 08/2026) :
-                    base = les 12 communs de pal-next.png, emplacements
+                    base = les 12 communs de tools/palette-reference/
+                    nouvelle.png, emplacements
                     attribuables = les cases propres au stage (13, 14, 16 PNG,
                     plus 15 si l'olive n'y est pas gelée). L'olive 617A00 est
                     PRÉ-CHARGÉE en 15 PNG (matériel 14) quand un lot d'ennemis
@@ -184,7 +185,12 @@ def assign(colors, palette, free, d=dist, plancher=0.0, epingles=()):
     return {c: nearest(c, slots) for c in colors}, chosen
 
 
-PAL_NEXT = 'src/stages/01/palette/pal-next.png'
+# Les 12 communs de la campagne. SEULS les index PNG 1..13 font
+# contrat : les quatre cases suivantes sont celles du stage 1, qui
+# prend cette palette telle quelle (voir le ledger). Le garde-fou
+# que les communs ne derivent pas est palette_usage.py, qui les
+# recoupe sur les huit palettes de stage a chaque execution.
+PAL_NEXT = 'tools/palette-reference/nouvelle.png'
 OLIVE = (0x61, 0x7A, 0x00)
 MAGENTA = (0xCC, 0x00, 0xFF)
 

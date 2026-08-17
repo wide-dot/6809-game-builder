@@ -933,7 +933,7 @@ En veille sur décision (31/07/2026) :
   la contrainte.
   **Suite (15/08) : l'auteur propose une palette 12 communs + 4 par stage, et
   l'étude est chiffrée dans `docs/lang/fr/analyse-palette-migration-2026-08.md`
-  (palette proposée dans le dépôt, `src/stages/01/palette/pal-next.png`, non
+  (palette proposée dans le dépôt, `games/r-type/tools/palette-reference/nouvelle.png`, non
   branchée). Quatre arbitrages pris : vert du scant accordé, index 15 abandonné
   pour le fond du stage 1, étoiles tolérées sur les noirs des tuiles, et
   migration par objet avec planche de prévisualisation et validation manuelle.

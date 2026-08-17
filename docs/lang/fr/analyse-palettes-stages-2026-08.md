@@ -108,7 +108,8 @@ dans `tools/` (le pattern `leanscroll-06.txt` déjà en place).
 
 ## 5. Ce qu'il faut construire
 
-1. **`arcade_to_in.py --pal-next`** : base = les 12 communs de `pal-next.png` ;
+1. **`arcade_to_in.py --pal-next`** : base = les 12 communs de
+   `tools/palette-reference/nouvelle.png` ;
    cases attribuables = 13, 14, 16 PNG (12, 13, 15 matériel) + 15 PNG (14) si
    le stage n'est pas gelé olive ; l'olive `617A00` **épinglée en 14** dès que
    la source en approche ; l'affectation par coût inchangée. Le gel olive par
@@ -206,6 +207,46 @@ les jaunes du vaisseau au jaune commun) coûtait 12 088 dE·px au vaisseau pour
 en économiser 129 574 au terrain. Le ratio est de 10 contre 1 **en faveur du
 terrain** — c'est bien un arbitrage d'auteur, pas un optimum, et il est écrit
 comme tel dans le ledger.
+
+## 8. Les huit palettes dédiées, et le fichier à deux rôles (17/08/2026)
+
+Demande de l'auteur après validation du §7 : *« produit les palettes de stage
+avec png dédié si c'est pas déjà fait »*. Relevé : **sept l'étaient**, écrites
+par `arcade_to_in.py` depuis la même affectation que l'`in.png` — les deux ne
+peuvent donc pas diverger. Le huitième, le **stage 1**, était le seul hors
+convention, et pour une raison qui valait d'être corrigée.
+
+`src/stages/01/palette/pal.png` ne portait pas la palette du stage 1 : il
+portait l'**ancienne palette du jeu**, l'entrée de `palette_migrate.py`, le
+« avant » de toute la campagne. Le stage 1, lui, lisait sa palette dans
+`pal-next.png` — un nom de campagne, pas un nom de stage. Un fichier pour deux
+rôles, et le rôle visible depuis le config était le faux.
+
+Démêlé ainsi :
+
+| fichier | rôle |
+|---|---|
+| `tools/palette-reference/ancienne.png` | le « avant » de la campagne — entrée de `palette_migrate.py` |
+| `tools/palette-reference/nouvelle.png` | les 12 communs — entrée de `arcade_to_in.py` |
+| `src/stages/01/palette/pal.png` | la palette du stage 1, comme les sept autres |
+
+Les références vivent avec le reste du paramétrage, dans `tools/`, et le
+`cp -R tools/palette*` du vérificateur les sème déjà sur l'arbre master sans
+qu'aucune liste soit à tenir. **Elles ne sont jamais réécrites par le ledger** :
+l'ancienne palette ne peut plus être écrasée par la nouvelle, ce qui était le
+piège latent de l'ancien agencement (le rejeu n'était idempotent que parce que
+rien ne touchait ce fichier).
+
+La palette du stage 1 est une **copie**, pas un calcul : contrairement aux
+stages 2-8, ses quatre cases propres ne sortent d'aucune mesure — ce sont
+celles que l'auteur a choisies au groupe E. Le ledger l'écrit comme telle.
+Seuls les index PNG 1..13 de `nouvelle.png` font contrat pour les autres
+stages ; le garde-fou que les communs ne dérivent nulle part est
+`palette_usage.py`, qui les recoupe sur les huit palettes à chaque exécution.
+
+L'étape neuve du ledger a été **cassée exprès** avant d'être crue : sans son
+`cp`, `--verifier` sort `ECART` en nommant exactement
+`src/stages/01/palette/pal.png`.
 
 ## Annexe — pourquoi pas « olive partout en 14 dès qu'un lot l'exige » en dur
 

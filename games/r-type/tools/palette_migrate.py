@@ -58,8 +58,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 PROJET = os.path.dirname(ICI)
-PAL_ANCIENNE = 'src/stages/01/palette/pal.png'
-PAL_NOUVELLE = 'src/stages/01/palette/pal-next.png'
+PAL_ANCIENNE = 'tools/palette-reference/ancienne.png'
+PAL_NOUVELLE = 'tools/palette-reference/nouvelle.png'
 TRANSPARENT = 0
 # Le TO8 affiche 160x200 : le pixel est DEUX FOIS PLUS LARGE QUE HAUT. Une
 # planche en pixels carres ment sur les proportions et surtout sur les trames,

@@ -42,6 +42,10 @@ verifier() {
     # fait echouer le rejeu loin de sa cause (vecu avec palette_code.py).
     # arcade_to_in.py est sur master mais SANS le mode --pal-next : on depose
     # aussi la version de la campagne.
+    # `tools/palette*` attrape aussi tools/palette-reference/, ou vivent les
+    # deux palettes de reference de la campagne (l'ancienne et la nouvelle).
+    # C'est voulu : ce sont des ENTREES, elles doivent etre en place avant que
+    # le ledger tourne, et elles ne sont jamais reecrites par lui.
     cp -R tools/palette* tools/arcade_to_in.py "$tmp/arbre/games/r-type/tools/"
     # Les plans arcade sont des ENTREES de la campagne, au meme titre que les
     # outils : identiques octet pour octet a wide-dot/re.arcade.r-type@4276f7c
@@ -139,9 +143,10 @@ $M lib.bink         --ecrire
 python3 tools/palette_code.py --ecrire
 
 # =========================================================================
-# Groupe E — la bascule. Le stage 1 charge `pal-next.png` telle quelle : la
-# nouvelle palette entiere, 12 index communs et 4 propres au stage, dont la
-# case 15 (vert clair) que l'auteur reserve a des sprites du stage 1.
+# Groupe E — la bascule. Le stage 1 charge la nouvelle palette telle quelle :
+# 12 index communs et 4 propres au stage, dont la case 15 (vert clair) que
+# l'auteur reserve a des sprites du stage 1. Le fichier lui-meme est pose au
+# groupe G, avec les palettes dediees des sept autres stages.
 #
 # L'ancienne palette avait DEUX noirs et le ciel du niveau occupait le second
 # (index 15) ; le fondu vers le tunnel n'etait que le recoloriage de cette
@@ -227,6 +232,38 @@ python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png 
 python3 tools/arcade_to_in.py 06 src/stages/06/map/images/original/level6_f.png --pal-next
 python3 tools/arcade_to_in.py 07 src/stages/07/map/images/original/level7_f.png --pal-next
 
+# =========================================================================
+# Groupe G — la palette dediee de chaque stage (demande auteur, 17/08).
+#
+# Les stages 2 a 8 ont la leur depuis le groupe F : arcade_to_in.py ecrit
+# src/stages/NN/palette/pal.png depuis la MEME affectation que l'in.png, donc
+# les deux ne peuvent pas diverger. Restait le stage 1, seul hors convention.
+#
+# Pourquoi il l'etait : `src/stages/01/palette/pal.png` ne portait pas la
+# palette du stage 1 mais l'ANCIENNE palette du jeu — l'entree de
+# palette_migrate.py, le « avant » de toute la campagne — et le stage 1 lisait
+# sa palette dans `pal-next.png`, un nom de campagne, pas de stage. Un fichier
+# pour deux roles, et le role visible etait le faux.
+#
+# Demele : les deux palettes de REFERENCE de la campagne (l'ancienne, la
+# nouvelle) vivent desormais dans tools/palette-reference/, avec le reste du
+# parametrage ; `src/stages/01/palette/pal.png` porte la palette du stage 1,
+# comme les sept autres. Le config pointe dessus.
+#
+# La palette du stage 1 EST la nouvelle palette : ses quatre cases propres sont
+# celles que l'auteur a choisies au groupe E (12 beige fonce, 13 beige clair,
+# 14 olive, 15 vert clair reserve a de futurs sprites du stage 1). Ce n'est pas
+# une mesure comme pour les stages 2-8, c'est une decision — d'ou une copie et
+# pas un calcul. Le garde-fou que les 12 communs ne derivent nulle part est
+# palette_usage.py, qui les recoupe sur les huit palettes.
+#
+# Les deux `git mv` sont hors ledger : ce sont des deplacements versionnes, ils
+# vivent dans l'historique. Ce que le ledger doit garantir, c'est que l'arbre
+# migre porte le bon CONTENU a `src/stages/01/palette/pal.png` — que l'on parte
+# de master (ou il porte l'ancienne palette) ou d'un arbre deja migre.
+# =========================================================================
+cp tools/palette-reference/nouvelle.png src/stages/01/palette/pal.png
+
 # Les fichiers que la campagne SUPPRIME. Une suppression s'enonce en commande,
 # pas en patch : c'est le role de ce ledger.
 rm -f src/stages/01/background/fadetotunnel.unit.asm \
@@ -234,4 +271,5 @@ rm -f src/stages/01/background/fadetotunnel.unit.asm \
       src/stages/01/palette/pal-inside.png \
       src/stages/01/palette/pal-inside-black.png \
       src/stages/01/palette/pal-inside-blue.png \
-      src/stages/01/palette/pal-inside-grey.png
+      src/stages/01/palette/pal-inside-grey.png \
+      src/stages/01/palette/pal-next.png
