@@ -381,3 +381,9 @@ defaut.rouges  7=610000 8=AC0000 (retabli)
 # Vote : slither 24,2 -> 17,4, carte 4,1 -> 6,5 (D09030 -> 583810), pursuer
 # 18,9 -> 21,1, cheetah stable. Poids 2 ecarte (carte a 12,2).
 stage5.map  plan=sprites:slither,pursuer,cheetah*1
+
+# Stage 8 : PAS de levier — decision auteur en attente. L'epingle sauvait le
+# mikun (24,3 -> 10,3) mais degradait les verts du boss de la CARTE, premier
+# constat de l'auteur sur ce stage (zone boss 11,4 -> 17,3 quel que soit le
+# vert epingle). Boldo (stage 7) : epingle ecartee aussi (menthe clair perdu).
+stage8.map  (aucun changement — arbitrage mikun/boss soumis sur planche)

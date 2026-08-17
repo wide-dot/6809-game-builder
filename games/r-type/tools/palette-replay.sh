@@ -224,6 +224,16 @@ python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png 
 # n'a qu'UNE couleur (tout noir), l'arriere en a 30, et les deux collent a
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b
 # qui portait deja la carte du stage 8, et qui la porte encore.
+# Stage 8 : AUCUN levier applique, decision auteur en attente. Le mikun est
+# une creature VERTE (rampe de 4 verts, 1543/1776 px) sur un stage tout feu :
+# dE 24,3, ses verts tombent sur le kaki et l'olive sombre de la carte. Le
+# vote ne change RIEN (mesure). L'epingle marche pour lui (24,3 -> 10,3 avec
+# (32,88,56), la meilleure des trois) mais DEGRADE les verts du boss de la
+# carte — le premier constat de l'auteur sur ce stage : dE de la zone boss
+# 11,4 -> 17,3, quelle que soit l'epingle (17-20 sur les trois candidats).
+# Les quatre cases du 8 sont toutes necessaires a sa carte. Planche de
+# decision soumise ; boldo (stage 7) reste tel quel pour la meme raison
+# (l'epingle d'or coutait le menthe clair, 4274 px, pour une frame unique).
 python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next
 # Stage 3 : le battleship vit dans le plan ARRIERE (boite x 576..1167,
 # y 16..191 mesuree sur les pixels non noirs) et sera affiche par du code a
