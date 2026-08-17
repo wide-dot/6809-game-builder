@@ -166,11 +166,25 @@ statics.SIZE  equ nb_static_objects*object_size
 
         jsr   stage.setup                  ; cartes, largeur, wave, collision : le stage
 
+        ; LE CHAMP D'ETOILES — stage 1 SEULEMENT pour l'instant (18/08).
+        ;
+        ; En v1 il n'etait pas dans le main : c'etait un OBJET, seme par la wave
+        ; du niveau qui en voulait (`ObjID_starfield`, encore visible en
+        ; commentaire dans src/stages/04/wave.asm). Chaque niveau decidait donc
+        ; tout seul. La v2 l'a remonte ici, dans le main COMMUN aux huit stages,
+        ; et il s'est mis a tourner partout — d'ou la garde ci-dessous.
+        ;
+        ; Elle est a l'assemblage : chaque stage a son propre main, donc un
+        ; stage sans etoiles n'emporte meme pas les appels. Pour l'activer
+        ; ailleurs, elargir les trois `IFEQ` (init, erase, draw) — ils vont
+        ; ensemble, effacer sans dessiner ou l'inverse laisse des trainees.
+ IFEQ STAGE_ID-1
         ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
         ; avant la trame d'amorce et InitScroll.
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.init
         jsr   paged.call
+ ENDC
 
         ; PURGER le pool AVANT la trame d'amorce. La v1 n'avait pas ce geste :
         ; sa RAM objets faisait partie du binaire du game mode, rechargee a
@@ -350,9 +364,11 @@ stage.state.running
         ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
         ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
         ; immobile puis remis en mouvement reinjecte des etoiles perimees.
+ IFEQ STAGE_ID-1
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.erase
         jsr   paged.call
+ ENDC
 
         ; L'effaceur de la rotonde, ICI comme en v1 (main.asm:243) : entre les
         ; etoiles et DrawSprites, le fond venant d'etre restaure. C'est un
@@ -363,9 +379,11 @@ stage.state.running
 
         jsr   DrawSprites
 
+ IFEQ STAGE_ID-1
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #starfield.draw
         jsr   paged.call
+ ENDC
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
