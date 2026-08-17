@@ -43,7 +43,13 @@ ressort en index 0, jamais quantifié.
 
     <objet>          nom sous src/enemies/ (ex. gouger) ou chemin d'un
                      répertoire contenant images/original/
-    --palette P      `communs` (défaut) ou un numéro de stage (ex. 02)
+    --palette P      `communs` (défaut), un numéro de stage (ex. 02), ou un
+                     chemin de PNG — utile pour une palette dédiée à un boss.
+    --ecrire-palette CHEMIN
+                     calcule d'abord une palette DÉDIÉE à cet objet (12 communs
+                     + les cases propres du stage attribuées à lui seul, olive
+                     gelée comprise), l'écrit là, et convertit dessus. Voir
+                     `palette_dediee()`.
     --dry-run        n'écrit rien, affiche la géométrie et les couleurs
     --out-suffixe S  suffixe de sortie (défaut : aucun, écrit dans images/)
 """
@@ -151,6 +157,9 @@ def palette_cible(spec):
     if spec == 'communs':
         src = 'tools/palette-reference/nouvelle.png'
         libres = []
+    elif spec.endswith('.png'):
+        src = spec
+        libres = [13, 14, 15, 16]
     else:
         src = 'src/stages/%s/palette/pal.png' % spec
         libres = [13, 14, 15, 16]
@@ -263,16 +272,22 @@ def main():
     ap.add_argument('--palette', default='communs')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--out-suffixe', default='')
+    ap.add_argument('--ecrire-palette', default=None)
+    ap.add_argument('--stage', default=None)
+    ap.add_argument('--garder-olive', action='store_true')
     ap.add_argument('-h', '--help', action='store_true')
     a = ap.parse_args()
     if a.help:
         print(__doc__)
         return 0
+    if a.ecrire_palette:
+        if not a.stage:
+            sys.exit('--ecrire-palette demande --stage NN (le gel olive en depend)')
+        palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive)
+        return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe)
     return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe)
 
 
-if __name__ == '__main__':
-    sys.exit(main())
 
 
 def recensement(objet):
@@ -308,3 +323,46 @@ def recensement(objet):
                 if n and i:
                     cnt[tuple(pal[i * 3:i * 3 + 3])] += n
     return cnt
+
+
+def palette_dediee(objet, stage, sortie, garder_olive=False):
+    """Calculer et ecrire une palette dediee a UN objet, puis la rendre.
+
+    Cas d'emploi (auteur, 17/08) : un boss de fin de stage combat dans une zone
+    ou la TILEMAP N'EXISTE PLUS — mesure sur le stage 4, ses 144 derniers pixels
+    (12 colonnes, presque un ecran) sont entierement noirs. Les quatre cases
+    propres au stage n'y sont donc disputees par personne : elles peuvent servir
+    le boss seul, chargees par un echange de palette a l'entree de l'arene.
+
+Les QUATRE cases vont au boss par defaut (decision auteur) : les 12 index
+    communs ne bougent pas, mais l'olive du stage n'est plus gelee ici. Le gain
+    moyen est faible — dE 13,5 en gardant l'olive, 13,1 en la liberant — mais la
+    moyenne ne dit pas ce qu'on regarde : la quatrieme case porte le DOME du
+    compiler, son oeil, 396 px de vert que rien d'autre ne peut rendre. C'est la
+    lecon du boss du stage 8, la meme a l'echelle d'un sprite.
+
+    Ce que ca coute, et il faut le savoir : un sprite d'un LOT affiche pendant le
+    combat perd son olive. Mesure sur la wave du stage 4 — le compiler apparait
+    au dernier spawn ($14,$F8), et le dernier ennemi de lot avant lui est un
+    cancer a $12,$34 : il peut encore etre a l'ecran. `garder_olive=True` rend
+    l'ancien comportement si ca se voit.
+    """
+    cnt = recensement(objet)
+    palette, free = A.palette_pal_next(stage)
+    if not garder_olive and 15 not in free:
+        free = sorted(free + [15])
+    palette[0] = MARQUEUR_TRANSP
+    _, chosen = A.assign(cnt, palette, free, A.dist_lab, 0.001)
+    os.makedirs(os.path.dirname(sortie), exist_ok=True)
+    im = Image.new('P', (1, 1))
+    im.putpalette([v for i in range(256)
+                   for v in (palette[i] if i < 17 else (0, 0, 0))])
+    im.save(sortie)
+    print('palette dediee a %s : %s' % (objet, sortie))
+    print('  cases propres : %s'
+          % ' '.join('PNG %d = %02X%02X%02X' % (s, *chosen[s]) for s in sorted(chosen)))
+    return palette, free
+
+
+if __name__ == '__main__':
+    sys.exit(main())

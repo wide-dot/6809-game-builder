@@ -293,6 +293,50 @@ plusieurs stages chargent se convertit sur les 12 communs et n'a pas voix ici �
 sinon sa couleur dépendrait du stage, ce que toute la campagne cherche à
 éviter.
 
+## 10. Une palette par BOSS, quand la tilemap n'est plus là (17/08/2026)
+
+Constat auteur sur la planche des onze : « compiler et dop ne vont pas ».
+
+**Le dop (stage 6) : le vote suffit.** Sept couleurs arcade s'écrasaient sur le
+seul `144,168,136` — 3 570 px sur 10 832. Le cast du stage vote comme au
+stage 2 : dE carte 6,1 → 6,3 (presque rien), dop 19,5 → **14,3**, newt
+22,9 → **18,7**.
+
+**Le compiler (stage 4) : le vote ne peut RIEN**, et c'est mesuré — les quatre
+combinaisons de votants donnent les **mêmes trois cases**. Le compiler est une
+machine rouge/rose/brune ; les cases du stage 4 sont toutes vertes, sa carte
+étant une jungle. Ses 6 116 px ne battront jamais les 36 928 px de la carte.
+Épingler une de ses couleurs coûte à la carte 5,0 → 8,1 de dE pour lui rendre
+19,2 → 16,3 : **6 contre 1 en défaveur du jeu**.
+
+La sortie est venue de l'auteur, et elle n'était pas dans les données que je
+regardais : **le compiler est le boss de fin, et il combat là où la tilemap
+n'existe plus**. Vérifiable, une fois qu'on sait où chercher — les **144
+derniers pixels** de l'`in.png` du stage 4 (12 colonnes de tuiles, presque un
+écran) sont entièrement noirs. Personne ne dispute donc les quatre cases : le
+boss a **sa** palette, `src/stages/04/palette/pal-boss.png`, échangée à l'entrée
+de l'arène.
+
+| | dE | index employés (sur 22 couleurs arcade) |
+|---|---|---|
+| palette du stage 4 | 19,2 | 10 |
+| palette dédiée, 3 cases (olive gelée) | 13,5 | 12 |
+| **palette dédiée, 4 cases** | **13,1** | 11 |
+
+Les **quatre** cases lui vont (décision auteur). La quatrième ne pèse que 0,4 de
+dE moyen — j'avais d'abord gardé l'olive gelée pour ça — mais elle porte le
+**dôme**, l'œil du boss, 396 px de vert que rien d'autre ne rend. C'est la leçon
+du boss du stage 8 à l'échelle d'un sprite : **la moyenne ne dit pas ce qu'on
+regarde**, et je l'ai refaite une fois de plus avant de la corriger.
+
+Ce que ça coûte, mesuré : un sprite de **lot** affiché pendant le combat perd
+son olive. Sur la wave du stage 4, le compiler est le dernier spawn (`$14,$F8`)
+et le dernier ennemi de lot avant lui est un cancer à `$12,$34` — il peut encore
+être à l'écran. `--garder-olive` rend l'ancien comportement si ça se voit.
+
+**Pas encore fait** : le `png2pal` de cette palette et le code qui l'échange à
+l'entrée de l'arène. Le fichier existe et se rejoue ; le runtime, non.
+
 ## Annexe — pourquoi pas « olive partout en 14 dès qu'un lot l'exige » en dur
 
 La liste 1-3-4-5-7 est vraie aujourd'hui parce que les scènes de cast la

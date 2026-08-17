@@ -327,3 +327,34 @@ stage3.map  plan=arriere:576,16,1168,192*3 epingle=208,192,0
 # Ne vaut QUE pour un cast exclusif au stage : un ennemi partage se convertit
 # sur les 12 communs et n'a pas voix ici.
 stage2.map  plan=sprites:gouger,wick,outslay*1  brood=exclu
+
+# --- Groupe H, deux constats de l'auteur sur planche (17/08) ------------------
+#
+# stage 6 / dop : SEPT couleurs arcade du dop s'ecrasaient sur le seul
+# (144,168,136) — 3570 px sur 10 832. Le cast du stage vote, comme au stage 2.
+# Mesure : dE carte 6,1 -> 6,3 (presque rien), dop 19,5 -> 14,3, newt
+# 22,9 -> 18,7. La case (808018) qui apparait est celle du dop.
+stage6.map  plan=sprites:dop,newt*1
+#
+# stage 4 / compiler : le vote NE PEUT RIEN, mesure — les quatre combinaisons de
+# votants donnent les MEMES trois cases. Le compiler est une machine rouge/rose/
+# brune et les cases du stage 4 sont toutes vertes (sa carte est une jungle) ;
+# ses 6116 px ne battront jamais les 36 928 px de la carte. Epingler une de ses
+# couleurs coute a la carte 5,0 -> 8,1 de dE pour lui rendre 19,2 -> 16,3, soit
+# 6 contre 1 en defaveur du jeu.
+#
+# La vraie sortie vient de l'auteur : le compiler est le BOSS DE FIN, et il
+# combat la ou la tilemap n'existe plus. Verifie sur les donnees — les 144
+# derniers pixels de l'in.png du stage 4 (12 colonnes de tuiles, presque un
+# ecran) sont entierement noirs. Personne ne dispute donc les cases : il a SA
+# palette, src/stages/04/palette/pal-boss.png, echangee a l'entree de l'arene.
+#   dE 19,2 -> 13,1 ; 12 index employes au lieu de 10 sur ses 22 couleurs.
+#   Les QUATRE cases lui vont (decision auteur). Les 12 communs ne bougent pas.
+#   La quatrieme ne pese que 0,4 de dE moyen mais porte le DOME — son oeil,
+#   396 px de vert que rien d'autre ne rend. Meme lecon que le boss du stage 8 :
+#   la moyenne ne dit pas ce qu'on regarde.
+#   Ce que ca coute : un sprite de LOT affiche pendant le combat perd son olive.
+#   Mesure sur la wave — le compiler est le dernier spawn ($14,$F8) et le
+#   dernier ennemi de lot avant lui est un cancer a $12,$34, qui peut encore
+#   etre a l'ecran. `--garder-olive` rend l'ancien comportement si ca se voit.
+stage4.boss  palette-dediee=compiler quatre-cases

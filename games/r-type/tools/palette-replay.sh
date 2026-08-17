@@ -242,7 +242,15 @@ python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png 
     --epingle 208,192,0
 python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
 python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next
-python3 tools/arcade_to_in.py 06 src/stages/06/map/images/original/level6_f.png --pal-next
+# Stage 6 : son cast vote (constat auteur sur planche — le dop ne va pas).
+# Mesure : SEPT couleurs arcade du dop s'ecrasaient sur le seul 144,168,136
+# (3570 px sur 10 832). Le vote lui donne une case a lui (808018) et la carte ne
+# paie presque rien : dE carte 6,1 -> 6,3, dop 19,5 -> 14,3, newt 22,9 -> 18,7.
+# Le newt profite sans avoir rien demande — il vote quand meme, la regle est
+# « le cast exclusif vote », et ici il ne coute rien (son vote seul ne change
+# aucune case, mesure).
+python3 tools/arcade_to_in.py 06 src/stages/06/map/images/original/level6_f.png --pal-next \
+    --plan sprites:dop --plan sprites:newt
 python3 tools/arcade_to_in.py 07 src/stages/07/map/images/original/level7_f.png --pal-next
 
 # =========================================================================
@@ -340,7 +348,18 @@ python3 tools/objid_rename.py
 # qu'on ne voit pas.
 python3 tools/arcade_to_sprites.py cytron   --palette 04
 python3 tools/arcade_to_sprites.py geld     --palette 04
-python3 tools/arcade_to_sprites.py compiler --palette 04
+# Le compiler est le BOSS de fin du stage 4, et il combat dans une zone ou la
+# tilemap n'existe plus — mesure : les 144 derniers pixels de l'in.png du
+# stage 4 (12 colonnes de tuiles, presque un ecran) sont entierement noirs.
+# Les cases propres au stage n'y sont donc disputees par personne : il a sa
+# palette a lui, chargee par un echange a l'entree de l'arene.
+#   Mesure : dE 19,2 avec la palette du stage -> 13,5 avec la sienne, et
+#   12 index employes au lieu de 10 sur ses 22 couleurs arcade.
+#   L'olive reste GELEE : elle ne coute presque rien (13,5 contre 13,1 en la
+#   liberant) et c'est elle qui laisse un sprite COMMUN affiche pendant le
+#   combat garder sa couleur. Les 12 communs ne bougent pas non plus.
+python3 tools/arcade_to_sprites.py compiler --stage 04 \
+    --ecrire-palette src/stages/04/palette/pal-boss.png
 python3 tools/arcade_to_sprites.py slither  --palette 05
 python3 tools/arcade_to_sprites.py pursuer  --palette 05
 python3 tools/arcade_to_sprites.py cheetah  --palette 05
