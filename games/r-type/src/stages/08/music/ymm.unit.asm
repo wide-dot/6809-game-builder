@@ -7,13 +7,15 @@
 ; fichiers stageN.music.ymm sont des alternatives à la même destination,
 ; comme le title.
 ;
-; Le morceau est `theme.ymm`, décompressé du `theme.ymm.zx0` que le ymm.asm
-; v1 du niveau 8 désigne (zx0 « classic »). Le thème seul fait 7762 octets :
-; il déborde le créneau de 5754 et continue sur $3736-$4000 — zone rendue par
-; l'arène stage8.gfx (voir to8.config.xml). Pas de place pour le boss ni le
-; jingle, et l'index v1 du niveau 8 ne les avait pas non plus (intro + thème,
-; rien d'autre) ; l'intro (`intro.ymm.zx0`), sans accroche dans le flow v2,
-; n'est pas câblée.
+; Le morceau est `music.ymm`, produit par `music.xml` depuis le VGM du stage :
+; c'est la version définitive de la musique, et elle remplace le `theme.ymm`
+; v1 (7762 o) que ce bloc jouait jusqu'au 18/08. Nom normalisé comme partout
+; ailleurs.
+;
+; Le bloc ne fait plus que 289 octets et tient donc largement dans le créneau
+; de 5754 : le débordement sur $3736-$4000 que le thème v1 imposait — zone
+; rendue par l'arène stage8.gfx — n'a plus lieu d'être. Pas de boss ni de
+; jingle ici, comme l'index v1 du niveau 8 qui n'en avait pas non plus.
 ;*******************************************************************************
 
 sounds.level8.ymm     EXPORT
@@ -21,6 +23,6 @@ sounds.level8.ymm     EXPORT
  SECTION code
 
 sounds.level8.ymm
-        INCLUDEBIN "src/stages/08/music/adnz/ymm/theme.ymm"
+        INCLUDEBIN "src/stages/08/music/adnz/ymm/music.ymm"
 
  ENDSECTION

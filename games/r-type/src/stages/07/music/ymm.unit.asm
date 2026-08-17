@@ -7,9 +7,13 @@
 ; fichiers stageN.music.ymm sont des alternatives à la même destination,
 ; comme le title.
 ;
-; Le morceau est `rtype-stage4.ymm` : c'est celui que le ymm.asm v1 du
-; niveau 7 joue. Le dossier contient aussi `theme.ymm` (le thème partagé du
-; niveau 4) et `music.ymm` (copie de celui du niveau 2), non retenus.
+; La musique du stage 7 n'est pas prête : `music.ymm` est un PLACEHOLDER en
+; attendant. Le nom est celui de la convention — chaque stage nomme sa musique
+; `music.ymm` — pour que le branchement du vrai morceau ne soit qu'un
+; remplacement de fichier, sans toucher à cette unité.
+;
+; C'est le seul stage sans VGM source dans le dépôt, donc le seul absent de
+; `music.xml` : il n'y a rien à régénérer tant que le morceau n'est pas fait.
 ;
 ; Le boss et le jingle de fin voyagent avec le morceau, comme au stage 1 :
 ; rien ne les rechargera au moment où ils serviront. Leurs noms sont
@@ -25,7 +29,7 @@ sounds.clearstage.ymm EXPORT
  SECTION code
 
 sounds.level7.ymm
-        INCLUDEBIN "src/stages/07/music/adnz/ymm/rtype-stage4.ymm"
+        INCLUDEBIN "src/stages/07/music/adnz/ymm/music.ymm"
 sounds.boss.ymm
         INCLUDEBIN "src/common/flow/bossmusic/music/ymm/music.ymm"
 sounds.clearstage.ymm

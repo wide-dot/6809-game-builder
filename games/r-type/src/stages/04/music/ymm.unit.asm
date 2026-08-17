@@ -7,10 +7,16 @@
 ; fichiers stageN.music.ymm sont des alternatives à la même destination,
 ; comme le title.
 ;
-; Le morceau est `theme.ymm`, décompressé du `theme.ymm.zx0` que le ymm.asm
-; v1 du niveau 4 désigne (zx0 « classic » ; le lecteur lit du YMM nu, la
-; compression du direntry appartient au codec du builder). C'est le même
-; thème, octet pour octet, que celui du dossier du niveau 7.
+; Le morceau est `music.ymm`, produit par `music.xml` depuis le VGM du stage
+; (le lecteur lit du YMM nu ; la compression du direntry appartient au codec
+; du builder). Convention uniforme depuis le 18/08 : chaque stage nomme sa
+; musique `music.ymm`, quel que soit le nom que le dossier v1 lui donnait.
+;
+; Ce que la régénération prouve : `music.ymm` sort du VGM **byte-identique**
+; au `rtype-stage4.ymm` que la v1 rangeait dans le dossier du niveau 7. Le
+; nom v1 disait donc vrai sur le morceau (le thème arcade du stage 4) et faux
+; sur son dossier. Le `theme.ymm` v1 du niveau 4 (5816 o) est un autre
+; morceau, non retenu.
 ;
 ; Le boss et le jingle de fin voyagent avec le morceau, comme au stage 1 :
 ; rien ne les rechargera au moment où ils serviront. Leurs noms sont
@@ -31,7 +37,7 @@ sounds.clearstage.ymm EXPORT
  SECTION code
 
 sounds.level4.ymm
-        INCLUDEBIN "src/stages/04/music/adnz/ymm/theme.ymm"
+        INCLUDEBIN "src/stages/04/music/adnz/ymm/music.ymm"
 sounds.boss.ymm
         INCLUDEBIN "src/common/flow/bossmusic/music/ymm/music.ymm"
 sounds.clearstage.ymm
