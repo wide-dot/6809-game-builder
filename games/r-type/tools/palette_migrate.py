@@ -88,8 +88,9 @@ def _releve():
 
 
 def ressources(pu, base):
-    """{nom: [png…]} pour les communs et les lots du cast du stage 1 — le
-    périmètre de la campagne, tel que le config le décrit."""
+    """{nom: [png…]} pour les communs, les lots du cast du stage 1 et les
+    unités propres au stage 1 — le périmètre de la campagne, tel que le
+    config le décrit."""
     root = ET.parse(os.path.join(base, 'to8.config.xml')).getroot()
     images = {}
     for f in root.iter('file'):
@@ -116,6 +117,15 @@ def ressources(pu, base):
         for u in scenes.get(f'scenes.lot.{lot}', []):
             if u in images and u not in dedans:
                 dedans.append(u)
+    # Les unites PROPRES au stage 1 : ni communes, ni membres d'un lot de la
+    # bibliotheque, elles n'entrent que par `scenes.stage1` (le blaster, la
+    # coquille, le tabrok, tout le dobkeratops). Elles sont dans le perimetre
+    # au meme titre que le reste — et c'est la seule famille qui a le droit de
+    # peindre les index PROPRES au stage, le vert clair 15 en tete : leur
+    # palette est `src/stages/01/palette/pal.png`, pas celle des communs.
+    for u in scenes.get('scenes.stage1', []):
+        if u in images and u not in dedans:
+            dedans.append(u)
     # les cartes s'ajoutent au perimetre commun : ce sont du contenu de STAGE,
     # elles ne passent pas par scenes.boot.
     dedans += [n for n in images if n.endswith('.map')]

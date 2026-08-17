@@ -435,3 +435,51 @@ python3 tools/arcade_to_sprites.py win --palette 08 \
 # warship-elements : Lab suffit — ses bleus acier tombent sur la rampe des
 # gris communs (3 niveaux, une famille), rien a forcer.
 python3 tools/arcade_to_sprites.py warship-elements --palette 03
+
+# =========================================================================
+# Groupe H — les sprites PROPRES au stage 1 (18/08).
+#
+# Ils etaient hors du perimetre de palette_migrate.py, qui ne connaissait que
+# les communs, les lots du cast et les cartes : ces unites-la n'entrent que par
+# `scenes.stage1`. Perimetre etendu, et c'est tout ce qu'il a fallu — leur
+# migration ne se decide pas, elle se lit dans la palette du stage.
+#
+# Les trois couleurs que la nouvelle palette a chassees des communs sont
+# precisement ce que le stage 1 a mis dans ses cases propres : 12 #9E8F7A,
+# 13 #CCC2AB, 14 #617A00. Un sprite du stage 1 les garde donc TOUTES, a la
+# couleur exacte — `3>12 4>13 12>14`, un report d'index, pas un arbitrage.
+# 17 des 20 ressources sont des renumerotations pures, prouvees identiques
+# pixel par pixel par l'outil.
+#
+# Le seul pixel qui bouge est l'ancien orange #F2AB00, que la nouvelle palette
+# n'a plus : 54 px sur le blaster (-> #F99B68 par `defaut`), 6 px sur imgFace
+# et 6 px sur imgNerves1 (-> #CC5A3C).
+#
+# Ces deux dernieres prennent `10>9 14>10` et NON la recette du groupe B :
+# elles sont faites de saumon (793 et 118 px), et faire descendre le saumon les
+# repeindrait entierement. Arbitrage auteur a l'oeil le 18/08 — la recette suit
+# les PIXELS, pas le rang dans la rampe. Detail dans palette-map.txt.
+#
+# Le bleu #00618F du blaster, de la coquille et du tabrok est de l'art v1
+# assume (auteur, 18/08) : `defaut 5>4` le reporte a couleur identique. Les
+# 114 images sont byte-identiques a la v1 avant comme apres renumerotation.
+$M stage1.blaster                   --ecrire
+$M stage1.dobkeratops.imgEyes       --ecrire
+$M stage1.dobkeratops.imgFace       --ecrire   # 6 px d'orange, le saumon intact
+$M stage1.dobkeratops.imgNerves0    --ecrire
+$M stage1.dobkeratops.imgNerves1    --ecrire   # idem
+$M stage1.dobkeratops.imgNerves2    --ecrire
+$M stage1.dobkeratops.imgNerves3    --ecrire
+$M stage1.dobkeratops.imgNerves4    --ecrire
+$M stage1.dobkeratops.imgWipe0      --ecrire
+$M stage1.dobkeratops.imgWipe1      --ecrire
+$M stage1.dobkeratops.imgWipe2      --ecrire
+$M stage1.dobkeratops.imgWipe3      --ecrire
+$M stage1.dobkeratopsjaw            --ecrire
+$M stage1.dobkeratopsmonster        --ecrire
+$M stage1.dobkeratopssaw            --ecrire
+$M stage1.shell                     --ecrire
+$M stage1.tabrok.imgFlight          --ecrire
+$M stage1.tabrok.imgGround          --ecrire
+$M stage1.tabrok.imgWalk            --ecrire
+$M stage1.tabrokcanon               --ecrire

@@ -426,3 +426,57 @@ sprite.mikun  forcer=verts:14,13,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)
 sprite.zoid  forcer=15,15~13,15~13,13 (vert + trame, oeuf garde ses rouges)
 sprite.win   forcer=bleus:4,4,5,6 (3 bleus + blanc)
 sprite.warship-elements  (aucun levier)
+
+# --- Les sprites PROPRES au stage 1 (18/08) ---------------------------------
+# Ni communs, ni membres d'un lot : ils n'entrent que par `scenes.stage1`, et
+# ils sont donc les seuls a avoir le droit de peindre les index PROPRES du
+# stage. Or `src/stages/01/palette/pal.png` porte precisement, dans ces cases,
+# les trois couleurs que la nouvelle palette a chassees des communs :
+#
+#     ancien  3 #9E8F7A  ->  nouveau 12 #9E8F7A     le beige fonce
+#     ancien  4 #CCC2AB  ->  nouveau 13 #CCC2AB     le beige clair
+#     ancien 12 #617A00  ->  nouveau 14 #617A00     l'olive
+#
+# MEME COULEUR, autre numero. Ce n'est donc pas un arbitrage mais un report
+# d'index a couleur identique — et pourtant ca ne peut PAS aller en `defaut` :
+# `defaut` vaut aussi pour les communs, a qui les cases 12-15 sont interdites
+# (ils les peignent en magenta). D'ou une ligne par ressource, malgre la
+# repetition. L'outil prouve le rendu identique pixel par pixel.
+#
+# `fusion-ok` la ou l'ancien 0 (#000000) et l'ancien 15 (le ciel, #000000)
+# cohabitent : `defaut` les envoie tous deux sur le noir, ce qui compte pour
+# une marche perdue alors que les deux couleurs sont LA MEME. Rien a voir a
+# l'oeil, mesure a 0 de distance.
+#
+# LA RAMPE CHAUDE, arbitree a l'oeil par l'auteur le 18/08 : imgFace et
+# imgNerves1 sont les deux seules a porter l'ancien orange ET l'ancien saumon.
+# La recette du groupe B (`10>10 14>9`, le saumon descend) repeindrait ici 793
+# et 118 px — le saumon est le fond de ces images. C'est l'INVERSE qui conserve
+# le rendu : `10>9 14>10` laisse le saumon a sa couleur exacte et ne deplace
+# que les 6 px d'orange, qui rejoignent le #CC5A3C deja present. Contre-exemple
+# utile : une recette vaut pour SA ressource, jamais par precedent — ici c'est
+# la ou sont les PIXELS qui tranche, pas le rang dans la rampe.
+#
+# Le bleu #00618F du blaster, de la coquille et du tabrok est de l'art v1
+# assume (verifie avec l'auteur le 18/08) : `defaut 5>4` le reporte a couleur
+# identique, rien a decider. Les 114 images sont byte-identiques a la v1.
+stage1.blaster                     3>12 4>13 12>14
+stage1.dobkeratops.imgEyes         3>12 4>13 12>14
+stage1.dobkeratops.imgFace         3>12 4>13 12>14 10>9 14>10 fusion-ok
+stage1.dobkeratops.imgNerves0      3>12 4>13 12>14
+stage1.dobkeratops.imgNerves1      3>12 4>13 12>14 10>9 14>10 fusion-ok
+stage1.dobkeratops.imgNerves2      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgNerves3      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgNerves4      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe0        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe1        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe2        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe3        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratopsjaw              3>12 4>13 12>14
+stage1.dobkeratopsmonster          3>12 4>13 12>14 fusion-ok
+stage1.dobkeratopssaw              3>12 4>13 12>14
+stage1.shell                       3>12 4>13 12>14 fusion-ok
+stage1.tabrok.imgFlight            3>12 4>13 12>14
+stage1.tabrok.imgGround            3>12 4>13 12>14
+stage1.tabrok.imgWalk              3>12 4>13 12>14
+stage1.tabrokcanon                 3>12 4>13 12>14
