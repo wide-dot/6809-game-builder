@@ -419,12 +419,14 @@ python3 tools/arcade_to_sprites.py mikun --palette 08 \
 # warship-elements sont les pieces du battleship (stage 3, dont la palette a
 # ete choisie pour lui). Les ObjID anonymes 1/2/34/39/46/47 sont des objets de
 # flux, pas ces ennemis. Blaster reste art v1 comme tout le stage 1.
-# zoid : 4 verts arcade, une seule case verte au stage 2 -> rampe BRUNE du
-# stage par rang (regle generale : une famille, la teinte derive) —
-# clair B8A068 / moyens 886838 / sombre 503810. L'oeuf garde ses rouges.
+# zoid : 4 verts arcade, une seule case verte au stage 2 (308840). La rampe
+# brune (V1) perdait le vert ; l'auteur le veut. Choix auteur sur planche a
+# 4 variantes (18/08) : V4 — vert pur en clair, TRAME vert~brun sombre en
+# moyen (le barreau fabrique, damier 15~13), brun sombre 503810 en ombre.
+# 3 niveaux percus ancres sur le vert, l'oeuf garde ses rouges.
 python3 tools/arcade_to_sprites.py zoid --palette 02 \
-    --forcer 88,192,104:12 --forcer 56,144,80:14 \
-    --forcer 16,120,56:14  --forcer 0,80,8:13
+    --forcer 88,192,104:15 --forcer 56,144,80:15~13 \
+    --forcer 16,120,56:15~13 --forcer 0,80,8:13
 # win : 5 turquoises dont 2 partaient sur le GRIS commun ; par rang sur les
 # 3 bleus communs, la plus claire va d'elle-meme au blanc (4 niveaux).
 python3 tools/arcade_to_sprites.py win --palette 08 \
