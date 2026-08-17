@@ -275,6 +275,8 @@ def main():
     ap.add_argument('--ecrire-palette', default=None)
     ap.add_argument('--stage', default=None)
     ap.add_argument('--garder-olive', action='store_true')
+    ap.add_argument('--ajuster', default=None,
+                    help='index materiels COMMUNS re-regles pour ce combat, ex. 7,8')
     ap.add_argument('--reserver', default=None,
                     help='R,G,B:MATERIEL — couleur posee a un index precis, hors calcul')
     ap.add_argument('-h', '--help', action='store_true')
@@ -289,7 +291,8 @@ def main():
         if a.reserver:
             v = [int(x) for x in a.reserver.replace(':', ',').split(',')]
             res = tuple(v)
-        palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res)
+        aj = [int(x) for x in a.ajuster.split(',') if x] if a.ajuster else []
+        palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj)
         return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe)
     return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe)
 
@@ -331,7 +334,8 @@ def recensement(objet):
     return cnt
 
 
-def palette_dediee(objet, stage, sortie, garder_olive=False, reserver=None):
+def palette_dediee(objet, stage, sortie, garder_olive=False, reserver=None,
+                   ajuster=()):
     """Calculer et ecrire une palette dediee a UN objet, puis la rendre.
 
     Cas d'emploi (auteur, 17/08) : un boss de fin de stage combat dans une zone
@@ -371,6 +375,28 @@ Les QUATRE cases vont au boss par defaut (decision auteur) : les 12 index
         free = [i for i in free if i != png]
         print('reserve : materiel %d = %02X%02X%02X (effet de palette du runtime)'
               % (mat, r, v, b))
+    # `ajuster` : des index COMMUNS re-regles pour CE combat (auteur, 17/08 —
+    # « en phase de boss on utilise une palette ajustee »). Chaque index garde
+    # son ROLE : sa nouvelle valeur est choisie parmi les couleurs de l'objet
+    # qui tombaient deja sur lui, celle qui minimise leur erreur ponderee. Un
+    # sprite commun affiche pendant le combat voit donc un rouge un peu
+    # different, jamais une autre teinte a la place du rouge.
+    for mat in ajuster:
+        png = mat + 1
+        if not 1 <= png <= 12:
+            sys.exit('ajuster : %d n\'est pas un index commun' % mat)
+        rat = [c for c in cnt
+               if min(range(1, 13), key=lambda j: A.dist_lab(c, palette[j])) == png]
+        if not rat:
+            print('ajuste : materiel %d — aucune couleur de l\'objet ne s\'y '
+                  'rattache, valeur commune conservee' % mat)
+            continue
+        avant = palette[png]
+        palette[png] = min(rat, key=lambda cand:
+                           sum(cnt[c] * A.dist_lab(c, cand) for c in rat))
+        print('ajuste : materiel %d  %02X%02X%02X -> %02X%02X%02X '
+              '(%d px de l\'objet s\'y rattachent)'
+              % (mat, *avant, *palette[png], sum(cnt[c] for c in rat)))
     palette[0] = MARQUEUR_TRANSP
     _, chosen = A.assign(cnt, palette, free, A.dist_lab, 0.001)
     os.makedirs(os.path.dirname(sortie), exist_ok=True)

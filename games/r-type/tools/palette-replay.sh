@@ -363,8 +363,15 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 #   faut une case connue d'avance que personne d'autre ne partage. Le materiel
 #   14 est libre pendant ce combat : c'est la case de l'olive des lots, et
 #   aucun lot n'est a l'ecran a ce moment (constat auteur).
+#   Les ROUGES aussi sont ajustes pour ce combat (--ajuster 7,8, auteur 17/08 :
+#   « en phase de boss on utilise une palette ajustee, c'est tout » — les
+#   communs du jeu, eux, ne bougent PAS). Chaque index ajuste garde son role :
+#   sa valeur est choisie parmi les couleurs du compiler qui tombaient deja sur
+#   lui. Le mat 7 prend le cramoisi A00038 (1184 px), ce qui libere une case
+#   propre au passage.
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
-    --ecrire-palette src/stages/04/palette/pal-boss.png --reserver 0,208,0:14
+    --ecrire-palette src/stages/04/palette/pal-boss.png \
+    --reserver 0,208,0:14 --ajuster 7,8
 python3 tools/arcade_to_sprites.py slither  --palette 05
 python3 tools/arcade_to_sprites.py pursuer  --palette 05
 python3 tools/arcade_to_sprites.py cheetah  --palette 05

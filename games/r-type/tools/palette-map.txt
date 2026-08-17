@@ -357,28 +357,19 @@ stage6.map  plan=sprites:dop,newt*1
 #   Mesure sur la wave — le compiler est le dernier spawn ($14,$F8) et le
 #   dernier ennemi de lot avant lui est un cancer a $12,$34, qui peut encore
 #   etre a l'ecran. `--garder-olive` rend l'ancien comportement si ca se voit.
-stage4.boss  palette-dediee=compiler quatre-cases
+#   Rouges ajustes DANS CETTE PALETTE SEULE (--ajuster 7,8, auteur 17/08) :
+#   chaque index garde son role, sa valeur est choisie parmi les couleurs du
+#   compiler qui tombaient deja sur lui. Mat 7 610000 -> A00038 (le cramoisi,
+#   1184 px), mat 8 AC0000 -> F80000 (37 px). dE 13,2 -> 10,6, 12 index.
+stage4.boss  palette-dediee=compiler quatre-cases ajuster=7,8
 
-# --- Les deux rouges purs communs, rapproches de l'arcade (auteur, 17/08) -----
-#
-# Constat auteur : « les rouges de la palette commune sont trop eloignes ».
-# Mesure sur TOUT le corpus arcade (les 16 plans de carte + les 20 exports de
-# sprites, reduits) : la rampe rouge de l'arcade est PURE — huit barreaux
-# (72,0,0) (88,0,0) (104,0,0) (120,0,0) (136,0,0) (152,0,0) (168,0,0) (192,0,0),
-# 195 904 px a eux seuls. Nos deux communs etaient a 97 et 172, donc places sur
-# les extremites de la masse, pas sur elle.
-#
-# Balayage des deux valeurs sur la grille de l'arcade, dE moyen de la rampe :
-#   610000 / AC0000 (avant)   10,94
-#   580000 / 880000 (retenu)   8,61   <- l'optimum, et DEUX BARREAUX EXACTS
-#   580000 / 900000            9,02
-#   600000 / 980000            9,65
-# Le reste du corpus ne bouge pas (18,61 -> 18,52).
-#
-# Ce que ca coute, mesure et visible sur planche : 582 fichiers deja migres
-# emploient ces deux index, dont le texte du HUD (63 282 px sur le materiel 8) —
-# « READY » et « GAME OVER » s'assombrissent. Et le HAUT de la rampe s'eloigne :
-# les barreaux (168,0,0) et (192,0,0) tombaient sur AC0000, ils tombent
-# maintenant sur 880000, plus terne. C'est le prix du recentrage sur la masse.
-# Les variantes ci-dessus sont la si l'auteur veut rendre du punch au haut.
-defaut.rouges  7=580000 8=880000
+# --- Rouges communs : reglage ANNULE (17/08) ---------------------------------
+# J'avais rapproche les deux rouges purs communs de l'arcade (610000->580000,
+# AC0000->880000) en lisant la demande comme un reglage GLOBAL. L'auteur ne
+# visait que la phase du boss compiler : « on considere qu'en phase de boss on
+# utilise une palette ajustee, c'est tout ». Les communs sont RETABLIS a
+# 610000/AC0000 ; l'ajustement des rouges vit dans pal-boss.png seule (ligne
+# stage4.boss ci-dessus, option --ajuster). La table fautive est consignee dans
+# palette-reference/precedentes.txt pour que le rejeu rafraichisse les fichiers
+# qui l'ont portee un temps.
+defaut.rouges  7=610000 8=AC0000 (retabli)

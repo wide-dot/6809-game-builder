@@ -16,7 +16,8 @@
 # REGLE : regler un commun dans nouvelle.png, c'est ajouter ici la ligne qu'on
 # quitte. Sinon le rejeu casse au prochain passage.
 #
-# 17/08/2026 — les deux rouges purs rapproches de l'arcade, sur demande de
-# l'auteur : 610000 -> 580000 et AC0000 -> 880000. Les deux nouvelles valeurs
-# tombent exactement sur des barreaux de la rampe arcade (88,0,0 et 136,0,0).
-000000 616161 A8A8A8 FAFAF2 00618F 009ECC 08D4EB 610000 AC0000 CC5A3C F99B68 FAF261
+# 17/08/2026 — rouges 580000/880000 poses par erreur sur les COMMUNS (mauvaise
+# lecture d'une demande qui ne visait que la palette du boss compiler), annules
+# le meme jour. La table fautive reste ici pour que les fichiers qui l'ont
+# portee un temps soient reconnus et rafraichis au rejeu.
+000000 616161 A8A8A8 FAFAF2 00618F 009ECC 08D4EB 580000 880000 CC5A3C F99B68 FAF261

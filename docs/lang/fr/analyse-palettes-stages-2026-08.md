@@ -350,30 +350,17 @@ le runtime y fera un clignotement/fondu, et un effet de palette doit savoir
 `--reserver R,G,B:MATÉRIEL` pose une couleur à un index précis et la **retire du
 calcul**. Le dôme du compiler — son œil — y va : matériel 14 = `00D000`.
 
-### 11.2 Les deux rouges purs, recentrés sur la masse arcade
+### 11.2 Les rouges — un réglage global posé PAR ERREUR, puis annulé
 
-Constat auteur : « les rouges de la palette commune sont trop éloignés ».
-Mesuré sur **tout** le corpus arcade (16 plans de carte + 20 exports de sprites,
-réduits) : la rampe rouge de l'arcade est **pure**, huit barreaux `X,0,0` de 72
-à 192, **195 904 px** à eux seuls. Nos deux communs étaient à 97 et 172 — sur
-les extrémités de la masse, pas sur elle.
-
-| deux valeurs | dE moyen de la rampe pure |
-|---|---|
-| `610000` / `AC0000` (avant) | 10,94 |
-| **`580000` / `880000` (retenu)** | **8,61** |
-| `580000` / `900000` | 9,02 |
-| `600000` / `980000` | 9,65 |
-
-Les deux valeurs retenues tombent **exactement sur des barreaux de l'arcade**
-(88,0,0 et 136,0,0). Le reste du corpus ne bouge pas (18,61 → 18,52).
-
-**Ce que ça coûte**, mesuré et visible sur planche : 582 fichiers déjà migrés
-emploient ces deux index, dont le texte du HUD — 63 282 px sur le matériel 8 —
-donc « READY » et « GAME OVER » s'assombrissent. Et le **haut** de la rampe
-s'éloigne : les barreaux 168 et 192 tombaient sur `AC0000`, ils tombent
-maintenant sur `880000`, plus terne. C'est le prix du recentrage sur la masse ;
-les deux variantes ci-dessus rendent du punch au haut si l'auteur le veut.
+J'ai lu « ajuste les rouges de la palette commune » comme un réglage global et
+j'ai déplacé les deux rouges purs communs (610000→580000, AC0000→880000, commit
+`b6bc4abc`). **L'auteur ne visait que la phase du boss compiler** : « on
+considère qu'en phase de boss on utilise une palette ajustée, c'est tout ». Les
+communs sont **rétablis** ; l'ajustement des rouges vit dans `pal-boss.png`
+seule (option `--ajuster` de `arcade_to_sprites.py`). Les mesures du balayage
+(580000/880000 optimum sur la rampe arcade, dE 10,94 → 8,61) restent dans
+l'historique du commit annulé si un réglage global redevenait un jour désiré —
+ce jour-là, c'est une décision d'auteur, pas une lecture élargie.
 
 ### 11.3 Le défaut que ce réglage a fait sortir
 
