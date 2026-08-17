@@ -390,16 +390,21 @@ stage5.map  plan=sprites:slither,pursuer,cheetah*1
 # du boss + le vert mikun) : boss inchange a 11,4, mais la rampe verte du mikun
 # melangait kaki (~65 de teinte) et vert bleute (~150) — « le vert ajoure
 # tranche trop » (auteur) : une rampe lisible vit dans UNE famille de teinte.
-# (3) Planche a 5 variantes, l'auteur choisit V3 : vert clair 508868 /
-# vert 387050 / olive 404010, une seule famille, du clair au sombre. Deux cases
-# vertes pour le mikun, donc le kaki clair 888850 SORT de la palette — cout
-# mesure et accepte : zone boss 11,4 -> 19,5 (ses kakis glissent vers les
-# verts : le boss devient plus VERT, ce qui rejoint le constat d'origine de
-# l'auteur), carte 10,9 -> 13,4 (le tan part sur le saumon).
-stage8.map  epingle=64,64,16+80,136,104+56,112,80 plan=sprites:mikun*1
+# (3) Planche a 5 variantes, l'auteur choisit V3 (vert clair 508868 / vert
+# 387050 / olive 404010) — puis, V3 coutant deux cases au boss (11,4 -> 19,5),
+# (4) DERNIER ARBITRAGE auteur : la teinte de la rampe se choisit pour le
+# BOSS, et le mikun la reprend — « l'important est le degrade, pas grave si
+# la teinte mikun derive de l'arcade ». La rampe est donc les trois kakis du
+# boss lui-meme : clair A8B870 (168,184,112) / moyen 888850 (136,136,80) /
+# sombre 404010 (64,64,16). Balayage de triples : les couleurs propres du
+# boss battent toute variante interpolee. Boss dE 15,1 -> 10,5 et carte
+# 13,3 -> 9,7 (mieux qu'avant toute epingle : le boss retrouve 3 niveaux au
+# lieu de 2). Le mikun ne vote plus dans la palette : sa rampe lui est
+# imposee par rang a la conversion (dE 10,8 -> 27,6, assume par l'arbitrage).
+stage8.map  epingle=64,64,16+136,136,80+168,184,112
 
 # Le mikun lui-meme est force par RANG (--forcer R,G,B:MAT, hors Lab) : ses
-# 4 verts arcade sur les 3 niveaux V3 (les 2 plus sombres fusionnent sur
-# l'olive), ses 3 bleus sur les 3 bleus communs 4/5/6. Le plus proche voisin
-# ecrasait les 4 verts sur UNE case et sautait le bleu profond 00618F.
-sprite.mikun  forcer=verts:13,14,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)
+# 4 verts arcade sur les 3 kakis du boss (les 2 plus sombres fusionnent sur
+# le sombre), ses 3 bleus sur les 3 bleus communs 4/5/6. Le plus proche
+# voisin ecrasait les 4 verts sur UNE case et sautait le bleu profond 00618F.
+sprite.mikun  forcer=verts:14,13,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)

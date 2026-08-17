@@ -225,18 +225,19 @@ python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png 
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b
 # qui portait deja la carte du stage 8, et qui la porte encore.
 # Stage 8, arbitrages de l'auteur (18/08) : le mikun garde 3 niveaux de vert
-# et 3 de bleu, et c'est la rampe V3 de la planche qui est retenue — vert
-# clair 508868 / vert 387050 / olive 404010 en ombre. Elle demande DEUX cases
-# vertes : le kaki clair 888850 de la carte SORT, en connaissance de cause
-# (planche « V3 demande 2 cases vertes, la carte perd un kaki du boss »).
-# Mesure du prix : zone boss 11,4 -> 19,5 — ses kakis glissent vers les verts,
-# donc le boss devient plus VERT, ce qui rejoint le constat d'origine de
-# l'auteur sur ce stage ; carte 10,9 -> 13,4 (le tan part sur le saumon).
-# L'olive 64,64,16 reste epinglee : c'est l'ombre commune de la carte, du boss
-# et du mikun. La quatrieme case va d'elle-meme au feu F85000.
+# et 3 de bleu (le NOMBRE de niveaux prime sur la proximite Lab), la rampe
+# vit dans UNE famille de teinte, et — dernier arbitrage — la teinte de la
+# rampe est choisie pour le BOSS, pas pour le mikun : « l'important est le
+# degrade, pas grave si la teinte mikun derive de l'arcade ». La rampe est
+# donc les TROIS kakis du boss lui-meme : clair 168,184,112 / moyen
+# 136,136,80 / sombre 64,64,16 (A8B870/888850/404010) — un balayage de
+# triples a confirme que les couleurs propres du boss battent toute variante
+# interpolee (boss dE 15,1 -> 10,5, carte 13,3 -> 9,7, mieux qu'avant toute
+# epingle : le boss retrouve ses 3 niveaux au lieu de 2). Le mikun ne vote
+# plus (--plan retire) : sa rampe lui est imposee par rang a la conversion.
+# La quatrieme case va d'elle-meme au feu F85000.
 python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next \
-    --plan sprites:mikun \
-    --epingle 64,64,16 --epingle 80,136,104 --epingle 56,112,80
+    --epingle 64,64,16 --epingle 136,136,80 --epingle 168,184,112
 # Stage 3 : le battleship vit dans le plan ARRIERE (boite x 576..1167,
 # y 16..191 mesuree sur les pixels non noirs) et sera affiche par du code a
 # part, hors tilemap — mais il peint avec Pal_stage, donc la palette du stage
@@ -403,11 +404,12 @@ python3 tools/arcade_to_sprites.py fast     --palette 07
 python3 tools/arcade_to_sprites.py boldo    --palette 07
 # Le mikun se convertit par RANG, pas par proximite (regle auteur, 18/08 : le
 # nombre de niveaux d'un degrade compte plus que Lab, et un degrade se lit
-# dans UNE famille de teinte). Rampe V3, choisie par l'auteur sur planche :
-# vert clair 508868 (mat13) / vert 387050 (mat14) / olive 404010 (mat12, les
-# 2 verts sombres arcade fusionnent dessus). Les 3 bleus vont sur les 3 bleus
+# dans UNE famille de teinte). La rampe est celle du BOSS (arbitrage auteur :
+# la teinte mikun peut deriver de l'arcade) : ses 4 verts tombent par rang sur
+# clair A8B870 (mat14) / moyen 888850 (mat13) / sombre 404010 (mat12, les 2
+# verts sombres arcade fusionnent dessus). Les 3 bleus vont sur les 3 bleus
 # communs, que Lab reduisait a 2 en sautant le bleu profond 00618F.
 python3 tools/arcade_to_sprites.py mikun --palette 08 \
-    --forcer 80,136,104:13 --forcer 56,112,80:14 \
+    --forcer 80,136,104:14 --forcer 56,112,80:13 \
     --forcer 32,88,56:12   --forcer 8,64,32:12 \
     --forcer 0,128,160:4   --forcer 0,176,192:5 --forcer 0,248,248:6
