@@ -198,13 +198,20 @@ def reduire(im, u):
 def correspondance(im_src, pal, dispo, forcer=None):
     """{index arcade -> index TO8}, en Lab — SAUF les couleurs forcees.
 
-    `forcer` : {rgb arcade: index materiel}. Regle de l'auteur (18/08) : en
-    pixel art le NOMBRE DE NIVEAUX d'un degrade compte plus que la proximite
-    Lab. Le plus proche voisin ecrase volontiers une rampe de 4 verts sur une
-    seule case ; le forcage pose chaque marche sur SA case, par rang — la
-    bijection par rang de la regle 1 du protocole, appliquee aux sprites.
-    Le cas fondateur est le mikun : 4 verts et 3 bleus arcade, que Lab
-    reduisait a 2 et 2.
+    `forcer` : {rgb arcade: index materiel OU (a, b) trame}. Regle de l'auteur
+    (18/08) : en pixel art le NOMBRE DE NIVEAUX d'un degrade compte plus que
+    la proximite Lab. Le plus proche voisin ecrase volontiers une rampe de
+    4 verts sur une seule case ; le forcage pose chaque marche sur SA case,
+    par rang — la bijection par rang de la regle 1 du protocole, appliquee
+    aux sprites. Le cas fondateur est le mikun : 4 verts et 3 bleus arcade,
+    que Lab reduisait a 2 et 2.
+
+    Une TRAME (a, b) est un damier des deux index, alterne sur (x+y) — meme
+    notation `A~B` et meme sens que dans palette-map.txt : elle compte comme
+    UNE valeur percue, et c'est le moyen de fabriquer un barreau intermediaire
+    quand la palette n'a plus de case libre. Attention au rendu reel : le TO8
+    est en 160x200, le pixel est deux fois plus large que haut, donc un damier
+    se lit en fines rayures diagonales.
     """
     ps = im_src.getpalette()
     m = {0: 0}
@@ -213,7 +220,8 @@ def correspondance(im_src, pal, dispo, forcer=None):
             continue
         c = tuple(ps[i * 3:i * 3 + 3])
         if forcer and c in forcer:
-            m[i] = forcer[c] + 1
+            v = forcer[c]
+            m[i] = (v[0] + 1, v[1] + 1) if isinstance(v, tuple) else v + 1
         else:
             m[i] = min(dispo, key=lambda j: A.dist_lab(c, pal[j]))
     return m
@@ -259,7 +267,8 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None):
             px = petit.load()
             for y in range(h):
                 for x in range(w):
-                    px[x, y] = m[px[x, y]]
+                    v = m[px[x, y]]
+                    px[x, y] = v[(x + y) & 1] if isinstance(v, tuple) else v
             petit.putpalette(plat)
             if not dry:
                 os.makedirs(dst, exist_ok=True)
@@ -288,7 +297,8 @@ def main():
     ap.add_argument('--stage', default=None)
     ap.add_argument('--garder-olive', action='store_true')
     ap.add_argument('--forcer', action='append', default=[],
-                    help='R,G,B:MAT — couleur arcade posee sur un index, hors '
+                    help='R,G,B:MAT ou R,G,B:A~B (trame) — couleur arcade '
+                         'posee sur un index (ou un damier de deux), hors '
                          'Lab. Repetable. Preserve les niveaux d\'un degrade.')
     ap.add_argument('--ajuster', default=None,
                     help='index materiels COMMUNS re-regles pour ce combat, ex. 7,8')
@@ -302,7 +312,12 @@ def main():
     forcer = {}
     for f in a.forcer:
         rgb, mat = f.rsplit(':', 1)
-        forcer[tuple(int(x) for x in rgb.split(','))] = int(mat)
+        cle = tuple(int(x) for x in rgb.split(','))
+        if '~' in mat:
+            va, vb = mat.split('~')
+            forcer[cle] = (int(va), int(vb))
+        else:
+            forcer[cle] = int(mat)
     if a.ecrire_palette:
         if not a.stage:
             sys.exit('--ecrire-palette demande --stage NN (le gel olive en depend)')
