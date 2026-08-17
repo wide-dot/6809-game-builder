@@ -355,7 +355,10 @@ code peut s'y référer au lieu de redéclarer les mêmes adresses.
 ## Traçabilité v1
 
 `v1-map.csv` : chaque fichier repris, chemin v1 → chemin v2, contenu
-byte-identique à la migration (02/08/2026). Non repris, consultables en v1 :
+identique à la migration (02/08/2026), le contenu ne l'est plus : la campagne
+palette de 08/2026 a réécrit une centaine de PNG et la promesse d'identité
+octet pour octet est abandonnée (décision auteur, 17/08). Le CSV garde son rôle
+de traçabilité. Non repris, consultables en v1 :
 les `.properties` (~600, remplacés par le config.xml), les variantes
 `.t2.asm` (le média cartouche n'existe pas encore en v2), les mains 02..08,
 les bancs `test-fire`/`fadetest`/`objects/test`, `generated-code/` et les

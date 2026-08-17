@@ -208,7 +208,18 @@ $M stage1.map --ecrire
 # dans l'en-tete de arcade_to_in.py. Le plancher de 0,1 % vient avec : en Lab
 # une poussiere isolee (89 px de magenta au stage 6) raflait un emplacement.
 # =========================================================================
-python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next
+# Stage 2 : ses quatre cases sont choisies sur la carte ET sur les sprites de
+# son cast (--plan sprites:, decision auteur 17/08). Sans ca elles sortaient de
+# la carte seule, et le brood — SIX verts arcade — les perdait tous d'un coup
+# sur l'unique vert du stage. Poids 1 : les sprites pesent leur propre nombre de
+# pixels reduits (29 650 face aux 49 356 de la carte), aucun pouce sur la
+# balance, et le poids 2 n'apporte plus rien (mesure).
+#   Ce que ca change, mesure en dE moyen : brood 15,3 -> 11,1 et gouger
+#   8,8 -> 6,2 ; la carte paie 9,7 -> 11,3 et le wick 28,5 -> 30,7 (783 px,
+#   deja mauvais avant). La case verte passe de (48,136,64) a (32,136,96).
+python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png --pal-next \
+    --plan sprites:gouger --plan sprites:wick \
+    --plan sprites:brood  --plan sprites:outslay
 # Stage 8 : l'art est dans le plan ARRIERE. Mesure — le plan avant reduit
 # n'a qu'UNE couleur (tout noir), l'arriere en a 30, et les deux collent a
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b

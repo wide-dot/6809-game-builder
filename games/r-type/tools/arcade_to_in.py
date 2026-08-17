@@ -44,11 +44,16 @@ du build.
                     droit de prendre un emplacement (défaut 0.1). Une teinte
                     plus rare que ça est servie par le plus proche voisin.
     --plan CHEMIN[:x0,y0,x1,y1][*POIDS]
-                    plan SUPPLÉMENTAIRE compté dans le choix des couleurs, mais
-                    jamais écrit dans l'in.png. Répétable. Sert à faire porter à
-                    la palette du stage un élément qui n'est pas dans la
-                    tilemap — le battleship du plan arrière du stage 3 est
-                    affiché par du code à part, mais il peint avec Pal_stage.
+    --plan sprites:OBJET[*POIDS]
+                    source SUPPLÉMENTAIRE comptée dans le choix des couleurs,
+                    mais jamais écrite dans l'in.png. Répétable. Sert à faire
+                    porter à la palette du stage ce qui n'est pas dans la
+                    tilemap et peint quand même avec Pal_stage : le battleship
+                    du plan arrière du stage 3 (forme CHEMIN, avec sa boîte),
+                    et les sprites d'un ennemi EXCLUSIF au stage (forme
+                    `sprites:`, qui recense les pixels réduits de l'objet).
+                    Un ennemi partagé entre stages n'a pas voix ici — il se
+                    convertit sur les 12 communs.
     --epingle R,G,B couleur à qui on donne un emplacement AVANT le calcul.
                     Répétable. C'est le seul moyen d'exprimer une priorité que
                     le nombre de pixels ne porte pas : une rampe courte mais
@@ -85,6 +90,7 @@ poussière peut rafler un emplacement. Le magenta du stage 6 (89 px réduits,
 Entrée type : re.arcade.r-type/out/tiles/level<N>_f.png
 """
 import argparse
+import importlib.util
 import os
 import sys
 from collections import Counter
@@ -264,6 +270,12 @@ def ecrire_pal(stage, palette, chosen):
 def plan_supplementaire(spec):
     """`chemin[:x0,y0,x1,y1][*poids]` -> Counter des pixels opaques réduits.
 
+    Forme `sprites:<objet>[*poids]` : au lieu d'un plan, les SPRITES arcade
+    d'un objet — cadrés, réduits, comptés par arcade_to_sprites.recensement().
+    Sert à faire peser les ennemis d'un stage dans le choix de ses quatre cases
+    propres. Sans ça, elles sortent de la carte seule : le brood du stage 2 y
+    perdait ses six verts d'un coup, faute d'avoir eu voix au chapitre.
+
     Le noir est retiré : c'est la transparence du plan arcade, elle ne dit rien
     du choix des couleurs et écraserait tout le reste par son nombre.
     """
@@ -271,6 +283,16 @@ def plan_supplementaire(spec):
     if '*' in spec:
         spec, p = spec.rsplit('*', 1)
         poids = int(p)
+    if spec.startswith('sprites:'):
+        objet = spec[len('sprites:'):]
+        s = importlib.util.spec_from_file_location(
+            'arcade_to_sprites',
+            os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         'arcade_to_sprites.py'))
+        mod = importlib.util.module_from_spec(s)
+        s.loader.exec_module(mod)
+        cnt = mod.recensement(objet)
+        return Counter({c: n * poids for c, n in cnt.items()}), spec, None, poids
     boite = None
     if ':' in spec:
         spec, b = spec.rsplit(':', 1)

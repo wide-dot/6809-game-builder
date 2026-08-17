@@ -52,6 +52,7 @@ import os
 import sys
 import glob
 import importlib.util
+from collections import Counter
 
 from PIL import Image
 
@@ -272,3 +273,38 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
+
+def recensement(objet):
+    """Counter {rgb: nb_px} des pixels OPAQUES d'un objet, apres cadrage et
+    reduction — exactement les pixels que la conversion produira.
+
+    Sert a `arcade_to_in.py --plan sprites:<objet>` : faire peser les sprites
+    d'un stage dans le choix de ses quatre cases propres. Le besoin est venu du
+    brood, dont les SIX verts arcade tombaient tous sur l'unique vert du stage 2
+    parce que ces cases avaient ete choisies sur la carte seule.
+
+    Le comptage se fait sur les pixels REDUITS, pas sur le canevas arcade : un
+    sprite de 64x64 ne pese pas 4096 px a l'ecran mais 24x48. Compter la source
+    surestimerait les sprites d'un facteur 3,6 face a la carte.
+    """
+    base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
+    orig = os.path.join(base, 'images/original')
+    jeux = {}
+    for p in sorted(glob.glob(os.path.join(orig, '*/*.png'))):
+        jeux.setdefault(os.path.dirname(p), []).append(p)
+    for p in sorted(glob.glob(os.path.join(orig, '*.png'))):
+        jeux.setdefault(orig, []).append(p)
+    cnt = Counter()
+    for chemins in jeux.values():
+        u = cadre(chemins, Image.open(chemins[0]).size)
+        if u is None:
+            continue
+        for p in chemins:
+            im = Image.open(p)
+            pal = im.getpalette()
+            petit, _ = reduire(im, u)
+            for i, n in enumerate(petit.histogram()):
+                if n and i:
+                    cnt[tuple(pal[i * 3:i * 3 + 3])] += n
+    return cnt

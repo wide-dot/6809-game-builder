@@ -248,6 +248,40 @@ L'étape neuve du ledger a été **cassée exprès** avant d'être crue : sans s
 `cp`, `--verifier` sort `ECART` en nommant exactement
 `src/stages/01/palette/pal.png`.
 
+## 9. Les sprites ont voix au chapitre (17/08/2026)
+
+Constat de l'auteur sur la planche du cast du stage 2 : le **brood** porte six
+verts arcade — `005828 208860 40C888 305848 609070 C8F8D8` — qui tombaient
+tous sur l'unique vert du stage. Teinte juste, dégradé entièrement plat.
+
+Cause structurelle, pas accidentelle : les quatre cases propres d'un stage
+étaient choisies sur sa **carte seule**. Un ennemi exclusif à ce stage peint
+pourtant avec la même `Pal_stage`, et n'avait aucune voix.
+
+Le mécanisme existait déjà — c'est le `--plan` du battleship du stage 3, étendu
+aux sprites : `--plan sprites:<objet>` recense les pixels **réduits** de
+l'objet (via `arcade_to_sprites.recensement()`) et les fait entrer dans le
+choix des couleurs sans jamais toucher l'`in.png`. Compter le canevas arcade
+plutôt que le sprite réduit les surestimerait d'un facteur 3,6.
+
+Poids **1** : les sprites pèsent leur propre nombre de pixels — 29 650 face aux
+49 356 de la carte. Aucun pouce sur la balance, et le poids 2 n'apporte plus
+rien (mesuré).
+
+| dE moyen | carte | gouger | wick | brood | outslay |
+|---|---|---|---|---|---|
+| carte seule | **9,7** | 8,8 | **28,5** | 15,3 | 14,4 |
+| + sprites ×1 | 11,3 | **6,2** | 30,7 | **11,1** | 14,5 |
+
+La case verte passe de `(48,136,64)`, un vert gazon, à `(32,136,96)`, le teal
+de la coque du brood. Le `wick` se dégrade (783 px, déjà mauvais avant) : c'est
+le prix, et il est petit.
+
+**Portée.** Ça ne vaut que pour un cast **exclusif** au stage. Un ennemi que
+plusieurs stages chargent se convertit sur les 12 communs et n'a pas voix ici —
+sinon sa couleur dépendrait du stage, ce que toute la campagne cherche à
+éviter.
+
 ## Annexe — pourquoi pas « olive partout en 14 dès qu'un lot l'exige » en dur
 
 La liste 1-3-4-5-7 est vraie aujourd'hui parce que les scènes de cast la

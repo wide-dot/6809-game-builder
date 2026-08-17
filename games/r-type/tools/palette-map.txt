@@ -298,3 +298,21 @@ stage2-8.map  metrique=lab plancher=0.1
 #     pour en coûter 12 088 au vaisseau : 10 contre 1 en faveur du terrain.
 #     C'est un arbitrage d'auteur, pas un optimum, et il s'ecrit comme tel.
 stage3.map  plan=arriere:576,16,1168,192*3 epingle=208,192,0
+
+# Stage 2 : les quatre cases voient AUSSI les sprites de son cast (17/08).
+# Constat sur planche : le brood porte SIX verts arcade qui tombaient tous sur
+# l'unique vert du stage, choisi sur la carte seule — teinte juste, degrade
+# plat. Le mecanisme est celui du battleship du stage 3, applique aux sprites :
+# `--plan sprites:<objet>` recense les pixels REDUITS de l'objet (pas le
+# canevas arcade, qui les surestimerait d'un facteur 3,6) et les fait entrer
+# dans le choix des couleurs sans toucher l'in.png.
+#   poids 1 : les sprites pesent leur propre nombre de pixels (29 650 face aux
+#   49 356 de la carte). Aucun pouce sur la balance, et le poids 2 n'apporte
+#   plus rien — mesure.
+#   Effet mesure, dE moyen : brood 15,3 -> 11,1, gouger 8,8 -> 6,2 ; la carte
+#   paie 9,7 -> 11,3 et le wick 28,5 -> 30,7 (783 px, deja mauvais avant).
+#   La case verte passe de (48,136,64) — un vert gazon — a (32,136,96), le teal
+#   de la coque du brood.
+# Ne vaut QUE pour un cast exclusif au stage : un ennemi partage se convertit
+# sur les 12 communs et n'a pas voix ici.
+stage2.map  plan=sprites:gouger,wick,brood,outslay*1

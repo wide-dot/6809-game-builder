@@ -353,8 +353,30 @@ v1. C'est faux depuis le groupe A — la campagne a réécrit une centaine de PN
 Les lignes que ce commit invalidait directement sont corrigées (les quatre
 `pal-inside*` supprimés au groupe E, et `pal.png` qui pointe maintenant vers
 `tools/palette-reference/ancienne.png`) ; le reste du fichier reste à statuer :
-soit une colonne « migré palette 08/2026 », soit l'abandon de la promesse
-d'identité pour les images. **À trancher avec l'auteur avant la fusion.**
+**Tranché par l'auteur le 17/08 : on abandonne la promesse.** La migration v1
+est finie et `new-color` est une branche d'expérimentation — l'identité octet
+pour octet avec la v1 n'y a plus de sens pour les images. Le CSV garde son rôle
+de **traçabilité** (quel fichier v1 est devenu quel fichier v2) ; la mention
+« contenu byte-identique » est à retirer du CSV et de `CLAUDE.md`.
+
+### Groupe H — les sprites arcade des ennemis — EN COURS (17/08/2026)
+
+- [x] **`tools/arcade_to_sprites.py`** — cadre = union des boîtes de
+      l'animation, réduit 3/8 × 3/4 (ratio prouvé exactement sur le `pow` :
+      union arcade 32×32, PNG TO8 12×24), calé sur la **demi**-étendue pour que
+      l'ancre tombe juste. Palette `communs` par défaut (objet partagé) ou
+      `NN` (objet exclusif à un stage). Garde-fou de transparence cassé exprès.
+- [x] **cast du stage 2 converti** — gouger, wick, brood, outslay : 111 sprites.
+      `gomander` n'a pas d'export arcade.
+- [x] **les sprites votent pour la palette de leur stage** (constat auteur sur
+      planche : le brood perdait ses six verts d'un coup). `--plan
+      sprites:<objet>`, poids 1 —
+      [§9 de l'étude](analyse-palettes-stages-2026-08.md).
+- [ ] **les 15 autres ennemis exportés attendent leur stage.** L'affectation
+      ennemi → stage n'existe que pour le stage 2 (`objid.const.asm` le nomme) ;
+      les stages 3 à 8 citent encore des ObjID **numériques** sans ennemi
+      derrière. Les convertir à l'aveugle serait à refaire. **Prochain point de
+      décision auteur.**
 
 ## Ce qu'il faut savoir avant de commencer
 

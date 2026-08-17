@@ -638,8 +638,10 @@ Ordre de migration suggéré (dépendances croissantes) :
    `src/common/` (résident : player, weapons, pickups, hud, fx, flow, state,
    lib), `src/enemies/` (bibliothèque, un ennemi = un dossier avec SES tirs),
    `src/stages/NN/` (main+stage+wave+map+terrain+musique ; 02..08 données
-   seules), `src/title/`. Traçabilité : `games/r-type/v1-map.csv` (1308
-   fichiers, contenu byte-identique) ; non repris : .properties, .t2.asm,
+   seules), `src/title/`. Traçabilité : `games/r-type/v1-map.csv` (quel
+   fichier v1 est devenu quel fichier v2 ; la promesse d'identité octet pour
+   octet est ABANDONNÉE depuis le 17/08/2026 — la campagne palette a réécrit
+   une centaine de PNG, et la migration v1 est close) ; non repris : .properties, .t2.asm,
    mains 02..08, bancs v1, intermédiaires leanscroll. Sorties leanscroll
    committées + invocations dans tools/ (décision auteur). Détail :
    `games/r-type/readme.md`.
