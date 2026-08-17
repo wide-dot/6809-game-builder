@@ -224,17 +224,18 @@ python3 tools/arcade_to_in.py 02 src/stages/02/map/images/original/level2_f.png 
 # n'a qu'UNE couleur (tout noir), l'arriere en a 30, et les deux collent a
 # 75,9 % avec l'ancien in.png : exactement ses pixels noirs. C'est donc _b
 # qui portait deja la carte du stage 8, et qui la porte encore.
-# Stage 8 : AUCUN levier applique, decision auteur en attente. Le mikun est
-# une creature VERTE (rampe de 4 verts, 1543/1776 px) sur un stage tout feu :
-# dE 24,3, ses verts tombent sur le kaki et l'olive sombre de la carte. Le
-# vote ne change RIEN (mesure). L'epingle marche pour lui (24,3 -> 10,3 avec
-# (32,88,56), la meilleure des trois) mais DEGRADE les verts du boss de la
-# carte — le premier constat de l'auteur sur ce stage : dE de la zone boss
-# 11,4 -> 17,3, quelle que soit l'epingle (17-20 sur les trois candidats).
-# Les quatre cases du 8 sont toutes necessaires a sa carte. Planche de
-# decision soumise ; boldo (stage 7) reste tel quel pour la meme raison
-# (l'epingle d'or coutait le menthe clair, 4274 px, pour une frame unique).
-python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next
+# Stage 8, arbitrage tranche par l'auteur (18/08) : le mikun doit garder au
+# moins 2 — idealement 3 — niveaux de vert, et ses 3 bleus. TROIS epingles :
+# les DEUX kakis du boss de la carte (les garder est ce qui avait fait retirer
+# la premiere epingle — zone boss dE 11,4, INCHANGEE) plus le vert (56,112,80)
+# du mikun. La quatrieme case va d'elle-meme au feu F85000. Ce que la carte
+# paie, en tout et pour tout : son tan (168,120,88), 2349 px, glisse sur le
+# kaki (dE 24) — carte 9,1 -> 10,9.
+# Boldo (stage 7) reste tel quel : son epingle d'or coutait le menthe clair
+# (4274 px) pour une frame unique ; fast (131 px) sous tout seuil.
+python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png --pal-next \
+    --plan sprites:mikun \
+    --epingle 136,136,80 --epingle 64,64,16 --epingle 56,112,80
 # Stage 3 : le battleship vit dans le plan ARRIERE (boite x 576..1167,
 # y 16..191 mesuree sur les pixels non noirs) et sera affiche par du code a
 # part, hors tilemap — mais il peint avec Pal_stage, donc la palette du stage
@@ -399,4 +400,13 @@ python3 tools/arcade_to_sprites.py dop      --palette 06
 python3 tools/arcade_to_sprites.py newt     --palette 06
 python3 tools/arcade_to_sprites.py fast     --palette 07
 python3 tools/arcade_to_sprites.py boldo    --palette 07
-python3 tools/arcade_to_sprites.py mikun    --palette 08
+# Le mikun se convertit par RANG, pas par proximite (regle auteur, 18/08 : le
+# nombre de niveaux d'un degrade compte plus que Lab en pixel art). Ses 4
+# verts arcade tiennent sur 3 niveaux — kaki clair, vert, olive sombre (les 2
+# plus sombres fusionnent) — et ses 3 bleus sur les 3 bleus communs, que Lab
+# reduisait a 2 en sautant le bleu profond 00618F. Sans forcage, Lab ecrasait
+# meme les 4 verts sur la SEULE case 387050.
+python3 tools/arcade_to_sprites.py mikun --palette 08 \
+    --forcer 80,136,104:12 --forcer 56,112,80:14 \
+    --forcer 32,88,56:13   --forcer 8,64,32:13 \
+    --forcer 0,128,160:4   --forcer 0,176,192:5 --forcer 0,248,248:6

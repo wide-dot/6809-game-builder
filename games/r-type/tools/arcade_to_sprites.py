@@ -195,19 +195,31 @@ def reduire(im, u):
     return out, (w, h)
 
 
-def correspondance(im_src, pal, dispo):
-    """{index arcade -> index TO8}, en Lab. L'index 0 ne se quantifie pas."""
+def correspondance(im_src, pal, dispo, forcer=None):
+    """{index arcade -> index TO8}, en Lab — SAUF les couleurs forcees.
+
+    `forcer` : {rgb arcade: index materiel}. Regle de l'auteur (18/08) : en
+    pixel art le NOMBRE DE NIVEAUX d'un degrade compte plus que la proximite
+    Lab. Le plus proche voisin ecrase volontiers une rampe de 4 verts sur une
+    seule case ; le forcage pose chaque marche sur SA case, par rang — la
+    bijection par rang de la regle 1 du protocole, appliquee aux sprites.
+    Le cas fondateur est le mikun : 4 verts et 3 bleus arcade, que Lab
+    reduisait a 2 et 2.
+    """
     ps = im_src.getpalette()
     m = {0: 0}
     for i, n in enumerate(im_src.histogram()):
         if not n or i == 0:
             continue
         c = tuple(ps[i * 3:i * 3 + 3])
-        m[i] = min(dispo, key=lambda j: A.dist_lab(c, pal[j]))
+        if forcer and c in forcer:
+            m[i] = forcer[c] + 1
+        else:
+            m[i] = min(dispo, key=lambda j: A.dist_lab(c, pal[j]))
     return m
 
 
-def convertir(objet, spec_pal, dry, suffixe):
+def convertir(objet, spec_pal, dry, suffixe, forcer=None):
     base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
     orig = os.path.join(base, 'images/original')
     if not os.path.isdir(orig):
@@ -243,7 +255,7 @@ def convertir(objet, spec_pal, dry, suffixe):
         for n, p in enumerate(chemins):
             im = Image.open(p)
             petit, _ = reduire(im, u)
-            m = correspondance(im, pal, dispo)
+            m = correspondance(im, pal, dispo, forcer)
             px = petit.load()
             for y in range(h):
                 for x in range(w):
@@ -275,6 +287,9 @@ def main():
     ap.add_argument('--ecrire-palette', default=None)
     ap.add_argument('--stage', default=None)
     ap.add_argument('--garder-olive', action='store_true')
+    ap.add_argument('--forcer', action='append', default=[],
+                    help='R,G,B:MAT — couleur arcade posee sur un index, hors '
+                         'Lab. Repetable. Preserve les niveaux d\'un degrade.')
     ap.add_argument('--ajuster', default=None,
                     help='index materiels COMMUNS re-regles pour ce combat, ex. 7,8')
     ap.add_argument('--reserver', default=None,
@@ -284,6 +299,10 @@ def main():
     if a.help:
         print(__doc__)
         return 0
+    forcer = {}
+    for f in a.forcer:
+        rgb, mat = f.rsplit(':', 1)
+        forcer[tuple(int(x) for x in rgb.split(','))] = int(mat)
     if a.ecrire_palette:
         if not a.stage:
             sys.exit('--ecrire-palette demande --stage NN (le gel olive en depend)')
@@ -293,8 +312,8 @@ def main():
             res = tuple(v)
         aj = [int(x) for x in a.ajuster.split(',') if x] if a.ajuster else []
         palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj)
-        return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe)
-    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe)
+        return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe, forcer)
+    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer)
 
 
 
