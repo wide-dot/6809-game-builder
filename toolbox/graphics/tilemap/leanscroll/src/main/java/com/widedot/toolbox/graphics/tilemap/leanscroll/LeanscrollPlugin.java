@@ -235,5 +235,76 @@ public class LeanscrollPlugin {
 		Files.write(out.resolve(name + ".bin"), bin);
 		log.info("leanscroll {} : columns {}..{}, {} tiles used", name, first,
 				first + cols - 1, used.size());
+		census(name, strip, tileW, tileH, bin);
+	}
+
+	/**
+	 * What the tileset is MADE OF, logged per plane.
+	 *
+	 * Two numbers per class, and they answer different questions : distinct
+	 * tiles is what the class costs in SPACE (a tile is compiled once),
+	 * placements is what it costs in CYCLES (a tile is played once per cell
+	 * that names it). A class can be cheap in one and dear in the other.
+	 *
+	 * The classes split on index 1 — hardware colour 0, the black that the
+	 * level map is now overwhelmingly made of since the sky joined it :
+	 *
+	 *   EMPTY    no opaque pixel. The map addresses it as id 0 and the scroll
+	 *            skips it, so it is free in both space and cycles.
+	 *   BLACK    transparent and black only. The candidate for a cheaper path
+	 *            than a compiled routine — measure before believing it.
+	 *   MIXED    black AND colour.
+	 *   COLOUR   no black at all.
+	 *
+	 * Measured on r-type stage 1 (17/08/2026) : EMPTY covers 74 % of the
+	 * cells, BLACK weighs 5.7 % of the compiled bytes and 7.8 % of the
+	 * cycles, MIXED carries all the rest. The compiled sizes and the cycle
+	 * counts are NOT known here — they only exist after gfxcomp — and live in
+	 * games/r-type/tools/tile_stats.py, which crosses this census with the
+	 * generated 6809 code.
+	 */
+	private static void census(String name, BufferedImage strip, int tileW, int tileH,
+			byte[] bin) {
+		int n = strip.getHeight() / tileH;
+		java.awt.image.Raster r = strip.getRaster();
+		String[] cls = new String[n];
+		for (int t = 0; t < n; t++) {
+			boolean black = false, colour = false;
+			for (int y = 0; y < tileH; y++) {
+				for (int x = 0; x < tileW; x++) {
+					int v = r.getSample(x, t * tileH + y, 0);
+					if (v == 1) {
+						black = true;
+					} else if (v != 0) {
+						colour = true;
+					}
+				}
+			}
+			cls[t] = !black && !colour ? "EMPTY"
+					: colour ? (black ? "MIXED" : "COLOUR") : "BLACK";
+		}
+		Map<String, int[]> tally = new LinkedHashMap<>();
+		for (String k : new String[] { "EMPTY", "BLACK", "MIXED", "COLOUR" }) {
+			tally.put(k, new int[2]);
+		}
+		for (int t = 0; t < n; t++) {
+			tally.get(cls[t])[0]++;
+		}
+		for (int i = 0; i + 1 < bin.length; i += 2) {
+			int id = ((bin[i] & 0xFF) << 8) | (bin[i + 1] & 0xFF);
+			if (id < n) {
+				tally.get(cls[id])[1]++;
+			}
+		}
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, int[]> e : tally.entrySet()) {
+			if (e.getValue()[0] == 0 && e.getValue()[1] == 0) {
+				continue;
+			}
+			sb.append(sb.length() == 0 ? "" : ", ").append(e.getKey()).append(' ')
+			  .append(e.getValue()[0]).append(" tiles/").append(e.getValue()[1])
+			  .append(" placed");
+		}
+		log.info("leanscroll {} : {}", name, sb);
 	}
 }
