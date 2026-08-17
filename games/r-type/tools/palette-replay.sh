@@ -40,13 +40,15 @@ verifier() {
     # les outils vivent sur new-color, pas sur master : on les y depose. TOUT
     # ce qui s'appelle palette*, sans liste a tenir a jour — une liste oubliee
     # fait echouer le rejeu loin de sa cause (vecu avec palette_code.py).
-    # arcade_to_in.py est sur master mais SANS le mode --pal-next : on depose
-    # aussi la version de la campagne.
+    # Idem pour `tools/arcade_*` : arcade_to_in.py est sur master mais sans le
+    # mode --pal-next, et arcade_to_sprites.py n'y est pas du tout. Un GLOB des
+    # deux cotes, jamais une liste — oublier arcade_to_sprites.py dans une liste
+    # a coute un tour de rejeu le jour ou il est arrive.
     # `tools/palette*` attrape aussi tools/palette-reference/, ou vivent les
     # deux palettes de reference de la campagne (l'ancienne et la nouvelle).
     # C'est voulu : ce sont des ENTREES, elles doivent etre en place avant que
     # le ledger tourne, et elles ne sont jamais reecrites par lui.
-    cp -R tools/palette* tools/arcade_to_in.py "$tmp/arbre/games/r-type/tools/"
+    cp -R tools/palette* tools/arcade_* "$tmp/arbre/games/r-type/tools/"
     # Les plans arcade sont des ENTREES de la campagne, au meme titre que les
     # outils : identiques octet pour octet a wide-dot/re.arcade.r-type@4276f7c
     # (verifie par cmp au commit d'entree), absents de master. On les seme.
@@ -273,3 +275,27 @@ rm -f src/stages/01/background/fadetotunnel.unit.asm \
       src/stages/01/palette/pal-inside-blue.png \
       src/stages/01/palette/pal-inside-grey.png \
       src/stages/01/palette/pal-next.png
+
+# =========================================================================
+# Groupe H — les sprites arcade des ennemis (demande auteur, 17/08).
+#
+# L'export arcade vit dans src/enemies/<e>/images/original/ (605 PNG, deja sur
+# master : rien a semer). arcade_to_sprites.py les rogne au cadre commun de
+# l'animation, reduit 3/8 x 3/4 et quantifie en Lab. Geometrie et metrique
+# mesurees, pas supposees — voir l'en-tete de l'outil.
+#
+# Pourquoi SEULEMENT ces quatre : la palette de sortie depend du stage, et
+# l'affectation ennemi -> stage n'existe aujourd'hui que pour le stage 2, dont
+# le cast est nomme (objid.const.asm : gouger, wick, brood, outslay, gomander).
+# Les stages 3 a 8 citent encore des ObjID NUMERIQUES sans ennemi derriere.
+# gomander n'a pas d'export arcade. Les 15 autres ennemis exportes attendent
+# leur affectation ; les convertir a l'aveugle serait a refaire.
+#
+# Un ennemi charge par PLUSIEURS stages se convertira en `--palette communs`
+# (12 index communs, cases de stage en magenta, couleur donnee par Pal_stage) :
+# c'est le defaut de l'outil, et ca ne se refait jamais.
+# =========================================================================
+python3 tools/arcade_to_sprites.py gouger  --palette 02
+python3 tools/arcade_to_sprites.py wick    --palette 02
+python3 tools/arcade_to_sprites.py brood   --palette 02
+python3 tools/arcade_to_sprites.py outslay --palette 02
