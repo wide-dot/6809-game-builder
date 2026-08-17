@@ -275,10 +275,18 @@ reproductible depuis `master`.
 
 ### Groupe F — les tuiles, EN DERNIER (décision auteur)
 
-- [ ] tuiles du stage 1 — **régénérées** depuis l'image du niveau (leanscroll →
-      `<gfxcomp grid>` → `<tilemap>`), contraste repris à la main
-- [ ] les stages 2-8 ensuite, en commençant par le **stage 2** (quinze index
-      distincts dans ses tuiles : le pire cas, s'il passe les autres passent)
+- [x] carte du stage 1 — renumérotation pure prouvée au pixel (`stage1.map`
+      dans le ledger), `nbsteps=6` mesuré comme seul réglage qui tient dans
+      l'arène (réglage auteur, courbe complète au commit 3f5ea49f)
+- [ ] stages 2-8 : **étude faite le 17/08** —
+      [`analyse-palettes-stages-2026-08.md`](analyse-palettes-stages-2026-08.md).
+      L'essentiel : palettes dédiées `src/stages/NN/palette/pal.png` (12 communs
+      + 4 cases du stage), reconversion depuis l'arcade recommandée (la seule
+      qui exploite le nouveau gris `A8A8A8`), olive gelée en 14 sur 1-3-4-5-7
+      **lue dans le cast** et non dans une liste, deux déficits à trancher sur
+      planche (stages 3 et 4 — la recette A est la sortie la moins chère dans
+      les deux cas), l'orange du stage 8 (4115 px) à voir sur planche aussi.
+      Ordre : 2, 8, 3, 4, puis 5-6-7.
 
 ## Ce qu'il faut savoir avant de commencer
 
