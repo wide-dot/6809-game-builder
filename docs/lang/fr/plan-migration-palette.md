@@ -372,6 +372,20 @@ de **traçabilité** (quel fichier v1 est devenu quel fichier v2) ; la mention
       planche : le brood perdait ses six verts d'un coup). `--plan
       sprites:<objet>`, poids 1 —
       [§9 de l'étude](analyse-palettes-stages-2026-08.md).
+- [x] **les objets numériques des waves sont NOMMÉS** (17/08) — la table vient
+      de `data/routines.yaml` du dépôt arcade, une **liste dont l'index EST
+      l'ObjID**, figée dans `src/enemies/objid-arcade.csv` avec l'adresse ROM
+      de chaque routine. 243 références nommées + une corruption d'import
+      corrigée (`ObjID_33wave` → `ObjID_starfield`).
+      Contrôle : `objid_rename.py --verifier` compare **chaque ligne** portant
+      un ObjID à la ligne de même rang du fichier arcade — les deux fichiers
+      sont le même document. **626 lignes, 626 conformes**, un seul écart
+      toléré et déclaré (`Geld` → `geld`, la casse du dossier). Cassé exprès
+      avant d'être cru.
+      Six objets restent numériques parce que **le dépôt arcade ne les nomme
+      pas non plus** : 1, 2, 34, 39, 46, 47 — leurs adresses ROM sont dans le
+      CSV, et 1/2/39 voisinent `checkpoint` (0xf0f3), donc probablement des
+      objets de flux plutôt que des ennemis.
 - [ ] **les 15 autres ennemis exportés attendent leur stage.** L'affectation
       ennemi → stage n'existe que pour le stage 2 (`objid.const.asm` le nomme) ;
       les stages 3 à 8 citent encore des ObjID **numériques** sans ennemi

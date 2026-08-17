@@ -1,0 +1,42 @@
+« Qui est l'objet numero N ? » — la table, tiree du depot arcade.
+#
+# Source : wide-dot/re.arcade.r-type, data/routines.yaml. C'est une LISTE, et
+# son index EST l'ObjID de l'arcade — les waves du portage citent ces numeros.
+# Le champ `addr` est l'adresse de la routine dans la ROM ; c'est lui qui
+# identifie l'objet quand le nom manque encore cote arcade.
+#
+# Ne contient QUE les ids que les waves des stages 2-8 citent encore en
+# commentaire, c'est-a-dire le reste-a-faire. Les objets deja nommes dans les
+# waves (pow, bink, patapata, cancer, bug, pstaff, scant, mid, gouger, wick,
+# brood, outslay, gomander, checkpoint, bossmusic, stageInit) n'y sont pas.
+#
+# `sprites` : le portage a-t-il l'export arcade dans src/enemies/<nom>/images/
+# original/ ? C'est ce qui decide si l'objet peut etre converti aujourd'hui.
+# `stages`  : ou la wave le convoque. Les onze qui ont leurs sprites sont TOUS
+# exclusifs a un seul stage — donc convertibles avec la palette de ce stage.
+#
+id,nom_arcade,addr_rom,stages,sprites,note
+1,,0xf461,"2,3,4,5,6,7,8",non,sans nom cote arcade ; voisin de checkpoint (0xf0f3) — probablement un objet de flux
+2,,0xf429,"3,4",non,sans nom cote arcade ; meme zone que 1 et 39
+7,slither,0x78f8,5,oui,
+8,dop,0x5eed,6,oui,
+14,cytron,0x696e,4,oui,
+16,city-panel,0x8c12,7,non,decor du niveau 7 — pas dans src/enemies/
+18,fast,0x8469,7,oui,
+20,geld,0x8f5e,4,oui,arcade ecrit « Geld » avec une majuscule ; le dossier est `geld`
+23,warship-core,0xc46e,3,non,a rapprocher de src/enemies/warship-elements/ (non verifie)
+26,palette_blackout_15_bg_cadence3,0x5596,7,non,effet de palette, pas un ennemi
+30,pursuer,0x7182,5,oui,
+31,newt,0x7294,6,oui,
+33,starfield,0xe430,"4,8",non,le portage a deja son starfield dans src/common/fx/starfield/
+34,,0xb0e1,6,non,sans nom cote arcade
+35,compiler,0xa71d,4,oui,
+38,boldo,0x6e9b,7,oui,
+39,,0xf366,"2,4,5,6,7",non,sans nom cote arcade ; meme zone que 1 et 2
+41,bellmite,0xb1d8,5,non,pas d'export sprite
+42,bronco,0xb7fb,7,non,pas d'export sprite
+43,mikun,0x9660,8,oui,
+44,bydo,0xc0a9,8,non,pas d'export sprite
+45,cheetah,0x8561,5,oui,
+46,,0xfb10,8,non,sans nom cote arcade
+47,,0xeeab,8,non,sans nom cote arcade

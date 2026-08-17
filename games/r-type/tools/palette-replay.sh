@@ -37,18 +37,14 @@ verifier() {
     tmp=$(mktemp -d)
     echo "== copie fraiche de origin/master dans $tmp"
     git -C "$racine" worktree add --detach --quiet "$tmp/arbre" origin/master
-    # les outils vivent sur new-color, pas sur master : on les y depose. TOUT
-    # ce qui s'appelle palette*, sans liste a tenir a jour — une liste oubliee
-    # fait echouer le rejeu loin de sa cause (vecu avec palette_code.py).
-    # Idem pour `tools/arcade_*` : arcade_to_in.py est sur master mais sans le
-    # mode --pal-next, et arcade_to_sprites.py n'y est pas du tout. Un GLOB des
-    # deux cotes, jamais une liste — oublier arcade_to_sprites.py dans une liste
-    # a coute un tour de rejeu le jour ou il est arrive.
-    # `tools/palette*` attrape aussi tools/palette-reference/, ou vivent les
-    # deux palettes de reference de la campagne (l'ancienne et la nouvelle).
-    # C'est voulu : ce sont des ENTREES, elles doivent etre en place avant que
-    # le ledger tourne, et elles ne sont jamais reecrites par lui.
-    cp -R tools/palette* tools/arcade_* "$tmp/arbre/games/r-type/tools/"
+    # Les outils et leurs tables vivent sur new-color, pas sur master : on
+    # depose TOUT `tools/`. Pas un glob, pas une liste — les deux ont echoue
+    # une fois chacun (palette_code.py oublie d'une liste, puis objid_rename.py
+    # rate par le glob `arcade_*`), et a chaque fois l'erreur sort tres loin de
+    # sa cause. `tools/` contient les outils ET leurs entrees : les deux
+    # palettes de reference, la table des ObjID arcade, les tables de
+    # correspondance. Le ledger ne reecrit jamais aucune d'elles.
+    cp -R tools/. "$tmp/arbre/games/r-type/tools/"
     # Les plans arcade sont des ENTREES de la campagne, au meme titre que les
     # outils : identiques octet pour octet a wide-dot/re.arcade.r-type@4276f7c
     # (verifie par cmp au commit d'entree), absents de master. On les seme.
@@ -314,3 +310,23 @@ python3 tools/arcade_to_sprites.py gouger  --palette 02
 python3 tools/arcade_to_sprites.py wick    --palette 02
 python3 tools/arcade_to_sprites.py brood   --palette 02
 python3 tools/arcade_to_sprites.py outslay --palette 02
+
+# =========================================================================
+# Groupe I — nommer les ObjID numeriques des waves (demande auteur, 17/08).
+#
+# Hors campagne palette, mais DANS ce ledger pour une raison mecanique : le
+# `--verifier` compare tout `src/` a un rejeu depuis master. Une edition de
+# source qui ne s'y rejoue pas casserait le garde-fou pour toutes les autres.
+# Le ledger est donc devenu le rejeu de la BRANCHE, pas seulement de la palette.
+#
+# La table vient de `data/routines.yaml` du depot arcade (une liste dont
+# l'index EST l'ObjID) et vit dans src/enemies/objid-arcade.csv, avec l'adresse
+# ROM de chaque routine — seule identite disponible pour les six objets que
+# l'arcade ne nomme pas lui-meme (1, 2, 34, 39, 46, 47).
+#
+# Le controle est plus fort qu'une relecture : `objid_rename.py --verifier`
+# compare CHAQUE ligne portant un ObjID a la ligne de meme rang du fichier
+# arcade — les deux fichiers sont le meme document. 626 lignes, 626 conformes,
+# un seul ecart tolere et declare (`Geld` -> `geld`, la casse du dossier).
+# =========================================================================
+python3 tools/objid_rename.py

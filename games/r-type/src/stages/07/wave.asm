@@ -11,23 +11,23 @@
 	fcb   $01,$08,ObjID_patapata,$00,$38
 	fcb   $01,$20,ObjID_patapata,$00,$37
 	fcb   $01,$48,ObjID_patapata,$00,$47
-;$01,$48,ObjID_16,$00,$05
+;$01,$48,ObjID_city_panel,$00,$05
 	fcb   $01,$66,ObjID_patapata,$00,$38
 	fcb   $01,$8E,ObjID_patapata,$00,$57
 	fcb   $01,$A4,ObjID_pstaff,$00,$08
-;$01,$C8,ObjID_16,$00,$05
+;$01,$C8,ObjID_city_panel,$00,$05
 	fcb   $01,$D2,ObjID_patapata,$00,$48
 	fcb   $02,$06,ObjID_patapata,$00,$37
 	fcb   $02,$44,ObjID_patapata,$00,$58
 	fcb   $02,$44,ObjID_cancer,$00,$44
-;$02,$48,ObjID_16,$00,$05
-;$02,$48,ObjID_16,$00,$04
+;$02,$48,ObjID_city_panel,$00,$05
+;$02,$48,ObjID_city_panel,$00,$04
 	fcb   $02,$58,ObjID_cancer,$00,$54
 	fcb   $02,$6C,ObjID_pstaff,$00,$08
 	fcb   $02,$7E,ObjID_cancer,$00,$4F
 	fcb   $02,$80,ObjID_bink,$00,$46
 	fcb   $02,$80,ObjID_bink,$00,$58
-;$02,$C8,ObjID_16,$00,$04
+;$02,$C8,ObjID_city_panel,$00,$04
 	fcb   $02,$DE,ObjID_pow,$00,$75
 	fcb   $03,$0C,ObjID_cancer,$00,$4E
 	fcb   $03,$34,ObjID_cancer,$00,$3E
@@ -35,58 +35,58 @@
 	fcb   $03,$50,ObjID_bug,$02,$22
 	fcb   $03,$92,ObjID_pow,$00,$07
 	fcb   $03,$D0,ObjID_pstaff,$00,$08
-;$03,$D0,ObjID_18,$00,$3A
+;$03,$D0,ObjID_fast,$00,$3A
 	fcb   $03,$D4,ObjID_cancer,$00,$44
-;$03,$E8,ObjID_18,$00,$3A
-;$04,$08,ObjID_16,$00,$01
-;$04,$18,ObjID_18,$00,$37
+;$03,$E8,ObjID_fast,$00,$3A
+;$04,$08,ObjID_city_panel,$00,$01
+;$04,$18,ObjID_fast,$00,$37
 	fcb   $04,$3A,ObjID_bink,$00,$56
-;$04,$46,ObjID_18,$00,$3A
+;$04,$46,ObjID_fast,$00,$3A
 	fcb   $04,$72,ObjID_cancer,$00,$41
 	fcb   $04,$74,ObjID_cancer,$00,$37
-;$04,$78,ObjID_16,$00,$03
-;$04,$88,ObjID_16,$00,$00
+;$04,$78,ObjID_city_panel,$00,$03
+;$04,$88,ObjID_city_panel,$00,$00
 	fcb   $04,$EC,ObjID_bink,$00,$46
-;$04,$F8,ObjID_16,$00,$02
+;$04,$F8,ObjID_city_panel,$00,$02
 	fcb   $05,$1A,ObjID_cancer,$00,$30
-;$05,$48,ObjID_16,$00,$05
+;$05,$48,ObjID_city_panel,$00,$05
 	fcb   $05,$48,ObjID_pow,$00,$0E
 	fcb   $05,$64,ObjID_bink,$00,$54
-;$05,$F0,ObjID_38,$00,$00
-;$06,$08,ObjID_16,$00,$01
-;$06,$48,ObjID_16,$00,$04
-;$06,$68,ObjID_18,$00,$47
-;$06,$A0,ObjID_16,$00,$03
-;$06,$A2,ObjID_18,$00,$37
+;$05,$F0,ObjID_boldo,$00,$00
+;$06,$08,ObjID_city_panel,$00,$01
+;$06,$48,ObjID_city_panel,$00,$04
+;$06,$68,ObjID_fast,$00,$47
+;$06,$A0,ObjID_city_panel,$00,$03
+;$06,$A2,ObjID_fast,$00,$37
 	fcb   $06,$E0,ObjID_bink,$00,$46
 	fcb   $06,$E0,ObjID_bink,$00,$58
-;$07,$48,ObjID_16,$00,$05
+;$07,$48,ObjID_city_panel,$00,$05
 	fcb   $07,$6C,ObjID_bink,$00,$63
 	fcb   $07,$6C,ObjID_bink,$00,$56
 	fcb   $07,$6C,ObjID_bink,$00,$48
 	fcb   $07,$B8,ObjID_bink,$00,$53
-;$07,$C8,ObjID_16,$00,$05
-;$07,$C8,ObjID_16,$00,$04
+;$07,$C8,ObjID_city_panel,$00,$05
+;$07,$C8,ObjID_city_panel,$00,$04
 	fcb   $07,$D0,ObjID_bink,$00,$33
 	fcb   $08,$38,ObjID_pow,$00,$45
 	fcb   $08,$4E,ObjID_cancer,$00,$35
-;$08,$88,ObjID_16,$00,$01
-;$08,$88,ObjID_16,$00,$00
+;$08,$88,ObjID_city_panel,$00,$01
+;$08,$88,ObjID_city_panel,$00,$00
 	fcb   $08,$98,ObjID_mid,$00,$07
 	fcb   $08,$D4,ObjID_mid,$00,$07
 	fcb   $08,$E8,ObjID_bink,$00,$45
-;$08,$F8,ObjID_16,$00,$02
-;$08,$F8,ObjID_16,$00,$03
+;$08,$F8,ObjID_city_panel,$00,$02
+;$08,$F8,ObjID_city_panel,$00,$03
 	fcb   $09,$50,ObjID_pstaff,$00,$08
-;$09,$C8,ObjID_16,$00,$05
+;$09,$C8,ObjID_city_panel,$00,$05
 	fcb   $09,$D8,ObjID_bink,$01,$3E
 	fcb   $0A,$0C,ObjID_cancer,$00,$5F
 	fcb   $0A,$26,ObjID_cancer,$00,$3E
-;$0A,$48,ObjID_16,$00,$05
+;$0A,$48,ObjID_city_panel,$00,$05
 	fcb   $0A,$48,ObjID_cancer,$00,$33
 	fcb   $0A,$8C,ObjID_cancer,$00,$45
 	fcb   $0A,$B2,ObjID_cancer,$00,$3C
-;$0A,$C8,ObjID_16,$00,$05
+;$0A,$C8,ObjID_city_panel,$00,$05
 	fcb   $0A,$DC,ObjID_cancer,$00,$48
 	fcb   $0B,$00,ObjID_checkpoint,$00,$0E
 ;$0B,$30,ObjID_cyclingPalette,$00,$03
@@ -98,12 +98,12 @@
 	fcb   $0B,$E8,ObjID_bink,$00,$38
 	fcb   $0C,$10,ObjID_bink,$00,$58
 	fcb   $0C,$38,ObjID_bink,$00,$48
-;$0C,$48,ObjID_16,$00,$04
+;$0C,$48,ObjID_city_panel,$00,$04
 	fcb   $0C,$60,ObjID_bink,$00,$38
 	fcb   $0C,$80,ObjID_bink,$00,$38
 	fcb   $0C,$80,ObjID_cancer,$00,$33
 	fcb   $0C,$BC,ObjID_bink,$00,$38
-;$0C,$C8,ObjID_16,$00,$04
+;$0C,$C8,ObjID_city_panel,$00,$04
 	fcb   $0D,$0E,ObjID_cancer,$00,$38
 	fcb   $0D,$30,ObjID_bug,$02,$12
 	fcb   $0D,$48,ObjID_bink,$00,$55
@@ -111,17 +111,17 @@
 	fcb   $0D,$70,ObjID_cancer,$00,$3E
 	fcb   $0D,$96,ObjID_pow,$00,$38
 	fcb   $0D,$98,ObjID_cancer,$00,$4F
-;$0D,$C8,ObjID_16,$00,$05
+;$0D,$C8,ObjID_city_panel,$00,$05
 	fcb   $0D,$D4,ObjID_cancer,$00,$53
 	fcb   $0D,$E8,ObjID_cancer,$00,$56
 	fcb   $0E,$0E,ObjID_cancer,$00,$54
 	fcb   $0F,$28,ObjID_pstaff,$00,$08
-;$0F,$48,ObjID_16,$00,$05
+;$0F,$48,ObjID_city_panel,$00,$05
 	fcb   $0F,$88,ObjID_pstaff,$00,$08
 	fcb   $0F,$92,ObjID_patapata,$00,$64
 	fcb   $0F,$B4,ObjID_patapata,$00,$46
-;$0F,$C8,ObjID_16,$00,$04
-;$0F,$C8,ObjID_16,$00,$05
+;$0F,$C8,ObjID_city_panel,$00,$04
+;$0F,$C8,ObjID_city_panel,$00,$05
 	fcb   $0F,$D4,ObjID_pstaff,$00,$08
 	fcb   $0F,$F6,ObjID_patapata,$00,$46
 	fcb   $10,$10,ObjID_patapata,$00,$04
@@ -129,7 +129,7 @@
 	fcb   $10,$22,ObjID_patapata,$00,$47
 	fcb   $10,$30,ObjID_patapata,$00,$83
 	fcb   $10,$48,ObjID_patapata,$00,$05
-;$10,$48,ObjID_16,$00,$05
+;$10,$48,ObjID_city_panel,$00,$05
 	fcb   $10,$66,ObjID_patapata,$00,$06
 	fcb   $10,$7C,ObjID_patapata,$00,$04
 	fcb   $10,$88,ObjID_pstaff,$00,$08
@@ -144,7 +144,7 @@
 	fcb   $11,$58,ObjID_patapata,$00,$54
 	fcb   $11,$74,ObjID_patapata,$00,$06
 	fcb   $11,$88,ObjID_patapata,$00,$74
-;$11,$A0,ObjID_42,$00,$00
+;$11,$A0,ObjID_bronco,$00,$00
 	fcb   $11,$A0,ObjID_patapata,$00,$37
 	fcb   $11,$B4,ObjID_patapata,$00,$42
 	fcb   $11,$C2,ObjID_patapata,$00,$04
@@ -173,6 +173,6 @@
 	fcb   $13,$6C,ObjID_patapata,$00,$64
 	fcb   $13,$76,ObjID_patapata,$00,$43
 	fcb   $13,$88,ObjID_scant,$00,$06
-;$14,$88,ObjID_26,$00,$00
+;$14,$88,ObjID_palette_blackout_15_bg_cadence3,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
 	fdb   $FFFF
