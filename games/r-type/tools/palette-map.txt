@@ -408,3 +408,18 @@ stage8.map  epingle=64,64,16+136,136,80+168,184,112
 # le sombre), ses 3 bleus sur les 3 bleus communs 4/5/6. Le plus proche
 # voisin ecrasait les 4 verts sur UNE case et sautait le bleu profond 00618F.
 sprite.mikun  forcer=verts:14,13,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)
+
+# --- Enfants d'objets : zoid, win, warship-elements (18/08) ------------------
+# Jamais cites par une wave (spawnes par leur parent), donc hors inventaire de
+# cast. Attribution mesuree : zoid = eclot du brood (create_zoid dans sa zone
+# de code) -> stage 2 ; win = la spirale du kit mikun (images contigues en
+# ROM) -> stage 8 ; warship-elements = pieces du battleship -> stage 3. Les
+# ObjID anonymes 1/2/34/39/46/47 sont des objets de flux, pas ces ennemis ;
+# blaster est deja vivant au stage 1 en art v1, rien a convertir.
+# zoid : 4 verts, une seule case verte au stage 2 -> rampe BRUNE par rang
+# (regle : une famille, la teinte derive). win : 2 turquoises partaient sur le
+# gris -> par rang sur les 3 bleus communs + blanc. warship-elements : Lab
+# suffit, bleus acier sur la rampe des gris (dE moyen 13,6 sur 42 138 px).
+sprite.zoid  forcer=bruns:12,14,14,13 (rampe 3 niveaux, oeuf garde ses rouges)
+sprite.win   forcer=bleus:4,4,5,6 (3 bleus + blanc)
+sprite.warship-elements  (aucun levier)

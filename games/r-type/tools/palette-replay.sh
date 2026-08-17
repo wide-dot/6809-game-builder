@@ -413,3 +413,23 @@ python3 tools/arcade_to_sprites.py mikun --palette 08 \
     --forcer 80,136,104:14 --forcer 56,112,80:13 \
     --forcer 32,88,56:12   --forcer 8,64,32:12 \
     --forcer 0,128,160:4   --forcer 0,176,192:5 --forcer 0,248,248:6
+# Les enfants d'objets (jamais cites par une wave, donc absents de l'inventaire
+# de cast) : le zoid eclot du brood (stage 2), le win est la spirale du kit
+# mikun (stage 8, ses images suivent celles du mikun en ROM), les
+# warship-elements sont les pieces du battleship (stage 3, dont la palette a
+# ete choisie pour lui). Les ObjID anonymes 1/2/34/39/46/47 sont des objets de
+# flux, pas ces ennemis. Blaster reste art v1 comme tout le stage 1.
+# zoid : 4 verts arcade, une seule case verte au stage 2 -> rampe BRUNE du
+# stage par rang (regle generale : une famille, la teinte derive) —
+# clair B8A068 / moyens 886838 / sombre 503810. L'oeuf garde ses rouges.
+python3 tools/arcade_to_sprites.py zoid --palette 02 \
+    --forcer 88,192,104:12 --forcer 56,144,80:14 \
+    --forcer 16,120,56:14  --forcer 0,80,8:13
+# win : 5 turquoises dont 2 partaient sur le GRIS commun ; par rang sur les
+# 3 bleus communs, la plus claire va d'elle-meme au blanc (4 niveaux).
+python3 tools/arcade_to_sprites.py win --palette 08 \
+    --forcer 8,72,72:4 --forcer 8,96,96:4 \
+    --forcer 56,152,152:5 --forcer 136,208,208:6
+# warship-elements : Lab suffit — ses bleus acier tombent sur la rampe des
+# gris communs (3 niveaux, une famille), rien a forcer.
+python3 tools/arcade_to_sprites.py warship-elements --palette 03
