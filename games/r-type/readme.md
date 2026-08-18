@@ -383,6 +383,13 @@ exportée, INCLUDE api, en-têtes communs, table de liaison `Img_* equ set_*`),
 et déclarer le `<file>` avec une ou deux lignes `<images>`. `check_variants.py`
 rapproche le résultat des properties v1 par contenu.
 
+Ce paragraphe vaut pour un ennemi qui a une source v1 (stage 1). Pour tout
+le reste — les casts des stages 2-8, sans source v1 — la référence est le
+code arcade et le mode opératoire est le skill **`enemy-port`**
+(`.claude/skills/enemy-port/` : extraction de la spec depuis la base Ghidra,
+table de correspondance arcade→v2, choix de l'exemplaire, intégration,
+validation).
+
 ## Référence
 
 `reference/` : matériel arcade et SMS (sprites, niveaux, musiques) servant de
