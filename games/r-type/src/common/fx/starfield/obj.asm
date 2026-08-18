@@ -141,6 +141,12 @@ sfel\1  ldx   \1,u
 ; 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les octets sont renumerotes
 ; par tools/palette_code.py, jamais a la main. L'etoile 8 (offset 14) = slot 7.
 ; ---------------------------------------------------------------------------
+; Les masques de la table sont REECRITS par le fondu de sortie, et
+; l'effacement XOR doit toujours employer la couleur TRACEE dans son buffer :
+; StarfieldErase rebatit donc les masques au palier du buffer AVANT son
+; effacement, et au palier courant apres (starBufPal / starTblPal). Les
+; valeurs nominales font foi dans starMasksNominal ; celles ci-dessous n'en
+; sont que l'etat de depart.
         fcb   $20,$10,$20,$20,$10,$20,$10,$20   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
         fcb   $02,$01,$02,$02,$01,$02,$01,$02
 planeTable
@@ -165,16 +171,105 @@ planeTable
         fdb   14*144                    ; lapStride (inutilise)
 
 ; ---------------------------------------------------------------------------
-; StarfieldInit - remet les offsets a zero. Les positions etant precalculees,
-; il n'y a rien a semer.
+; Les masques NOMINAUX — 48 octets (p0 haut+bas, p1, p2), la reference que
+; StarMasksApply transforme au palier courant. Les paliers n'existent pas en
+; donnees : chaque octet nominal se transforme SEUL (cf. StarMasksApply), et
+; un masque a zero eteint l'etoile — XOR nul, le trace n'ecrit plus rien,
+; l'effacement ne matche que le ciel deja vide.
+; ---------------------------------------------------------------------------
+starMasksNominal
+        fcb   $20,$10,$20,$20,$10,$20,$10,$20
+        fcb   $02,$01,$02,$02,$01,$02,$01,$02
+        fcb   $10,$40,$10,$10,$40,$10,$40,$00
+        fcb   $01,$04,$01,$01,$04,$01,$04,$00
+        fcb   $40,$40,$10,$40,$40,$10,$40,$00
+        fcb   $04,$04,$01,$04,$04,$01,$04,$00
+; ---------------------------------------------------------------------------
+; Les durees par variant — la transposition de starfield_variant_dispatch
+; (arcade 0x1000:8314), en trames de jeu TO8. L'horloge de wave v2 vaut 2x
+; l'unite arcade (rate 2.0 de l'extraction), d'ou :
+;   0  depart du stage 1     arcade 352x2 = 704. Suffisant : l'entree du
+;      variant 2 prolonge le champ bien avant le terme (t=396 < 8+704).
+;   1  boss du stage 4       arcade $8000, "jamais" — le combat finit avant.
+;      $FFFF chez nous ($10000 ne tient pas sur 16 bits), meme intention.
+;   2  apres le checkpoint 1 du stage 1. PAS la valeur arcade (2192x2 = 4384) :
+;      sa carte est plus longue que la notre. Le ciel de NOTRE carte finit au
+;      point que la v1 avait regle a l'oeil — camera 436 px, soit
+;      436/24*128 = 2325 trames — et l'entree de wave est a t=396 :
+;      2325-396 = 1929. Le variant 0, prolonge par celui-ci, meurt au meme
+;      point : le compte est le meme qu'en jeu normal qu'au respawn.
+;   3  cinematique finale du stage 8   arcade 2192x2 = 4384, garde tel quel.
+; ---------------------------------------------------------------------------
+starLifetimes
+        fdb   704                       ; 0 : stage 1, depart
+        fdb   $FFFF                     ; 1 : stage 4, boss Compiler
+        fdb   1929                      ; 2 : stage 1, apres le checkpoint 1
+        fdb   4384                      ; 3 : stage 8, cinematique finale
+
+; ---------------------------------------------------------------------------
+; StarfieldInit - naissance ou PROLONGATION, sur le modele de l'arcade.
+;
+; Y = variant 0..3, l'octet 5 de l'entree de wave (l'arcade lit CL & 3 dans
+; starfield_spawner, 0x40:E430). Il indexe starLifetimes, la transposition de
+; starfield_variant_dispatch (0x1000:8314) — reduite a son seul champ utile :
+; nous n'avons ni naissances d'etoiles (spawn_period) ni vitesse par etoile
+; (velocity_lut), nos 22 etoiles sont permanentes et leurs vitesses par plan.
+;
+; CHAMP MORT : naissance complete — offsets a zero, masques nominaux, duree.
+; CHAMP VIVANT : prolongation seule — la duree devient max(restante, nouvelle),
+; les offsets ne bougent PAS (les 22 etoiles ne sautent pas), et les masques
+; redeviennent nominaux par le mecanisme de bascule par buffer (un fondu
+; entame par une vie precedente serait fige la, sinon). C'est ce qui absorbe
+; le chevauchement arcade des variants 0 et 2 au stage 1 : la 2e entree de
+; wave etend le champ unique la ou l'arcade empile un second spawner.
+;
+; Le respawn au checkpoint est couvert par la WAVE, comme l'arcade : le recale
+; d'ObjectWave_Init rejoue l'entree starfield posee apres le checkpoint —
+; aucun code dedie ici (cf. wave1_starfield_boot/postintro dans le Ghidra).
 ; ---------------------------------------------------------------------------
 StarfieldInit
+        tfr   y,d
+        andb  #3                        ; variant 0..3 (meme masque que l'arcade)
+        aslb
+        ldx   #starLifetimes
+        ldd   b,x                       ; D = duree du variant, en trames de jeu
+        ; les masques repartent au nominal par le differentiel de StarfieldErase
+        ; (starBufPal / starTblPal) : jamais en direct — l'ecran peut encore
+        ; porter des etoiles aux couleurs d'un fondu entame.
+        clr   starPalier
+        ; dans les deux cas la prolongation ou la naissance rendent le droit
+        ; de tracer (starNoDraw peut etre leve par un dernier palier ou une
+        ; queue d'extinction en cours)
+        clr   starNoDraw
+        clr   starOffCnt
+        tst   starDead
+        beq   sf_extend
+        ; mort -> naissance complete : offsets et tours a zero
+        std   starLifetime
         ldx   #starCurOff
         ldb   #27                       ; 6 (starCurOff) + 12 (starPrevOff)
                                         ; + 3 (starCurLap) + 6 (starPrevLap)
 sf_ini  clr   ,x+
         decb
         bne   sf_ini
+        clr   starDead
+        rts
+sf_extend
+        cmpd  starLifetime              ; vivant -> prolonger : max des deux
+        bls   >
+        std   starLifetime
+!       rts
+
+; ---------------------------------------------------------------------------
+; StarfieldKill - remise a mort inconditionnelle, SANS effacement : chaque
+; entree de stage l'appelle avant sa trame d'amorce, ou les deux tampons
+; viennent d'etre noircis de toute facon. L'etat du champ vit en page overlay
+; chargee au boot : il SURVIT aux echanges de stage, et sans ce geste un
+; retour au stage 1 heriterait de la vie d'un passage precedent.
+; ---------------------------------------------------------------------------
+StarfieldKill
+        lda   #1
+        sta   starDead
         rts
 
 ; ---------------------------------------------------------------------------
@@ -207,44 +302,84 @@ StarPlaneIdx
 
 ; ---------------------------------------------------------------------------
 ; StarfieldErase - passe 1 : effacer chaque plan a l'offset et au tour du
-; dernier trace DANS CE BUFFER. Porte aussi l'extinction au mur : passe
-; star_cam_max on cesse de tracer mais on continue d'effacer 4 rendus (les
-; 2 buffers nettoyes 2x), puis starDead coupe tout definitivement.
+; dernier trace DANS CE BUFFER. Porte aussi l'horloge de vie et l'extinction.
+;
+; LE MODELE EST CELUI DE L'ARCADE (tick_starfield, 0x40:E4A5) : un compte a
+; rebours arme par la wave, un fondu avant le terme, puis la mort. Le mur
+; camera de la v1 (star_cam_max, reglage a l'oeil) est retire : la duree du
+; variant donne le meme point de coupe, et le respawn au checkpoint — que la
+; camera revenue en arriere signalait ici — est couvert par le rejeu de la
+; wave, exactement comme l'arcade (l'entree starfield est posee quelques
+; trames apres chaque checkpoint du ciel).
+;
+; L'arcade fond sa sortie par la palette (62 trames vers le noir). Sans slots
+; de palette a nous, le fondu est une echelle de MASQUES par etoile, validee
+; par l'auteur (18/08) : les claires descendent au gris moyen, puis les bleues
+; s'eteignent, puis les grises d'origine, puis les survivantes — un palier
+; toutes les 12 trames sur les 48 dernieres, puis 4 rendus d'effacement pur et
+; starDead coupe tout. Un masque ne change JAMAIS en direct : l'effacement
+; XOR exige d'effacer avec la couleur TRACEE, donc chaque buffer a sa table
+; de plans (planeTableA/B) et une recette en attente s'applique a la table
+; d'un buffer APRES son effacement, AVANT son trace (starMaskPend, par
+; buffer — robuste aussi quand une trame sautee fait repasser le meme buffer).
 ; ---------------------------------------------------------------------------
 StarfieldErase
-        ldd   glb_camera_x_pos
-        cmpd  #star_cam_max
-        bhs   sfe_dying
-; camera en-deca du mur : VIVANT. Les clr reaniment aussi le starfield apres un
-; respawn post-extinction (mort apres le mur -> reload au checkpoint 432, encore
-; dans le ciel) : la camera revenue en arriere est le SEUL signal du respawn ici,
-; et main.asm ne doit pas etre touche (toute insertion dans le module resident a
-; corrompu le rendu, cause non identifiee). En regime normal ces clr sont des
-; no-op idempotents. Seule sequelle : au 1er ERASE post-reanimation, prevOff/
-; prevLap sont perimes -> l'effacement vise ~22 adresses arbitraires du ciel
-; frais ($FF, cf. checkpoint.asm) ou du decor ; le XOR conditionnel n'ecrit que
-; si le pixel vaut exactement une couleur d'etoile (rare, 1 seule fois, borne).
-        clr   starDead
-        clr   starNoDraw
-        clr   starOffCnt
-        bra   sfe_alive
-sfe_dying
         lda   starDead
-        lbne  sfe_done                  ; extinction finie : cout nul jusqu'au respawn
+        lbne  sfe_done                  ; mort : cout nul jusqu'a la prochaine wave
+; l'horloge de vie, en trames de JEU : les trames sautees comptent, meme
+; convention que l'avance des offsets dans StarfieldDraw.
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb                            ; 0 -> compter 1 trame
+!       clra
+        pshs  d
+        ldd   starLifetime
+        subd  ,s++
+        bhi   sfe_countdown
+; terme atteint : on cesse de tracer, on efface encore 4 rendus (les 2
+; buffers nettoyes 2x), puis starDead coupe tout definitivement.
+        ldd   #0
+        std   starLifetime
         lda   #1
         sta   starNoDraw
         inc   starOffCnt
         lda   starOffCnt
-        cmpa  #4                        ; 4 rendus = les 2 buffers nettoyes 2x
-        blo   sfe_alive
+        cmpa  #4
+        blo   sfe_buf
         sta   starDead                  ; A != 0
-sfe_alive
+        bra   sfe_buf
+sfe_countdown
+        std   starLifetime
+        cmpd  #48                       ; l'echelle des paliers : 48 dernieres trames
+        bhi   sfe_buf
+        ldb   #1                        ; 37..48 -> palier 1 : les claires en gris moyen
+        cmpd  #36
+        bhi   sfe_pal
+        incb                            ; 25..36 -> palier 2 : les bleues s'eteignent
+        cmpd  #24
+        bhi   sfe_pal
+        incb                            ; 13..24 -> palier 3 : les grises d'origine
+        cmpd  #12
+        bhi   sfe_pal
+        lda   #1                        ; 1..12 -> les survivantes s'eteignent
+        sta   starNoDraw                ;         (l'effacement continue, lui)
+sfe_pal cmpb  starPalier
+        bls   sfe_buf                   ; palier deja atteint
+        stb   starPalier                ; la resynchronisation par buffer suit
+sfe_buf
         lda   gfxlock.backBuffer.id
         beq   >
         lda   #2
 !       sta   starBufOff                ; sert aussi a la passe DRAW (meme trame)
         clr   starPlaneIdx
-        ldy   #planeTable
+; les masques au palier ou CE buffer avait TRACE, avant de l'effacer
+        ldx   #starBufPal
+        ldb   gfxlock.backBuffer.id
+        lda   b,x
+        cmpa  starTblPal
+        beq   >
+        jsr   StarMasksApply            ; A = palier vise
+!       ldy   #planeTable
 sfe_plane
         jsr   StarPlaneIdx
 ; Deplacement de tour de l'effacement = le tour trace dans CE buffer. On efface
@@ -260,7 +395,70 @@ sfe_plane
         lda   starPlaneIdx
         cmpa  #3
         blo   sfe_plane
+; l'effacement a employe les couleurs TRACEES dans ce buffer ; le trace qui
+; suit emploiera celles du palier courant — rebatir si elles different, et
+; noter que ce buffer trace desormais au palier courant.
+        lda   starTblPal
+        cmpa  starPalier
+        beq   sfe_sync
+        lda   starPalier
+        jsr   StarMasksApply
+sfe_sync
+        ldx   #starBufPal
+        ldb   gfxlock.backBuffer.id
+        lda   starPalier
+        sta   b,x
 sfe_done
+        rts
+
+; ---------------------------------------------------------------------------
+; StarMasksApply - rebatit les masques de planeTable depuis les NOMINAUX,
+; transformes au palier demande dans A (et note starTblPal = A). L'echelle
+; validee par l'auteur (18/08) est une fonction PURE de l'octet nominal —
+; les paliers n'existent donc pas en donnees :
+;   palier >= 1 : une claire ($20/$02) descend au gris moyen — un lsra
+;   palier >= 2 : une bleue ($40/$04) s'eteint
+;   palier >= 3 : une grise moyenne D'ORIGINE ($10/$01) s'eteint ;
+;                 les ex-claires, elles, restent (leur nominal est $20/$02)
+;   palier 0    : identite — la remise au nominal
+; Les masques d'un plan vivent dans les 16 octets qui PRECEDENT ses
+; parametres (cf. les macros). Clobber : A, B, X, U. Preserve Y.
+; ---------------------------------------------------------------------------
+StarMasksApply
+        sta   starApplyLvl
+        sta   starTblPal                ; la table portera ce palier
+        ldu   #planeTable-16            ; masques du plan 0
+        ldx   #starMasksNominal
+        lda   #3
+        sta   starApplyPl               ; plans restants
+sfm_pl  ldb   #16
+sfm_by  lda   ,x+
+        beq   sfm_st                    ; eteinte reste eteinte
+        bita  #$22                      ; une claire ?
+        beq   >
+        tst   starApplyLvl
+        beq   sfm_st                    ; palier 0 : nominal tel quel
+        lsra                            ; $20->$10, $02->$01
+        bra   sfm_st
+!       bita  #$44                      ; une bleue ?
+        beq   sfm_moy
+        lda   starApplyLvl
+        cmpa  #2
+        blo   sfm_kp                    ; avant le palier 2, elle vit
+        clra
+        bra   sfm_st
+sfm_moy lda   starApplyLvl              ; une grise moyenne d'origine
+        cmpa  #3
+        blo   sfm_kp
+        clra
+        bra   sfm_st
+sfm_kp  lda   -1,x                      ; retablir l'octet nominal
+sfm_st  sta   ,u+
+        decb
+        bne   sfm_by
+        leau  9,u                       ; sauter les 9 octets de parametres
+        dec   starApplyPl
+        bne   sfm_pl
         rts
 
 ; ---------------------------------------------------------------------------
@@ -274,7 +472,7 @@ StarfieldDraw
         lda   starNoDraw
         lbne  sfd_done                  ; extinction : on efface encore, on ne trace plus
         clr   starPlaneIdx
-        ldy   #planeTable
+        ldy   #planeTable               ; ERASE a laisse la table au palier courant
 sfd_plane
         jsr   StarPlaneIdx
 

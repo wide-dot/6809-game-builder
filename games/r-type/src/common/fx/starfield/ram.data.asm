@@ -34,9 +34,21 @@ starOffInt                  fcb   0    ; partie entiere de l'offset du plan
 starFrameCnt                fcb   0    ; compteur de la boucle frame-drop
 starNoDraw                  fcb   0    ; !=0 : extinction en cours
 starOffCnt                  fcb   0    ; rendus d'effacement pendant l'extinction
-starDead                    fcb   0    ; !=0 : terminee, l'objet ne coute plus rien
+starDead                    fcb   1    ; !=0 : terminee, l'objet ne coute plus rien.
+                                       ; NE MORT : c'est la wave qui le fait naitre
+                                       ; (ObjID_starfield -> StarfieldInit), et une
+                                       ; entree de stage sans etoiles ne doit rien
+                                       ; dessiner — meme au tout premier boot.
 
-* Les deux constantes de reglage, reprises telles quelles de la v1.
+* L'horloge de vie et le fondu de sortie (modele arcade, cf. obj.asm).
+starLifetime                fdb   0    ; trames de jeu restantes ; 0 = terme
+starPalier                  fcb   0    ; dernier palier de fondu atteint (0..3)
+starTblPal                  fcb   0    ; le palier que planeTable porte
+starBufPal                  fcb   0,0  ; le palier au dernier TRACE, par buffer
+starApplyLvl                fcb   0    ; scratch de StarMasksApply (palier vise)
+starApplyPl                 fcb   0    ; scratch de StarMasksApply (plans restants)
+
+* La constante de reglage, reprise telle quelle de la v1. (star_cam_max, le
+* mur camera regle a l'oeil, est retire : la duree du variant — armee par la
+* wave comme dans l'arcade — donne le meme point de coupe.)
 star_x_span                 equ   144  ; 8..151 inclus -> 144 colonnes
-star_cam_max                equ   436  ; extinction quand l'entree du vaisseau
-                                       ; touche le bord droit (reglage a l'oeil)

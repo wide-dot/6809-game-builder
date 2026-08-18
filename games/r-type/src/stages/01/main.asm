@@ -63,6 +63,7 @@ hud.normal        EXTERNAL
 hud.readout       EXTERNAL
 
 starfield.init    EXTERNAL
+starfield.kill    EXTERNAL
 starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 

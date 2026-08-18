@@ -166,25 +166,16 @@ statics.SIZE  equ nb_static_objects*object_size
 
         jsr   stage.setup                  ; cartes, largeur, wave, collision : le stage
 
-        ; LE CHAMP D'ETOILES — stage 1 SEULEMENT pour l'instant (18/08).
-        ;
-        ; En v1 il n'etait pas dans le main : c'etait un OBJET, seme par la wave
-        ; du niveau qui en voulait (`ObjID_starfield`, encore visible en
-        ; commentaire dans src/stages/04/wave.asm). Chaque niveau decidait donc
-        ; tout seul. La v2 l'a remonte ici, dans le main COMMUN aux huit stages,
-        ; et il s'est mis a tourner partout — d'ou la garde ci-dessous.
-        ;
-        ; Elle est a l'assemblage : chaque stage a son propre main, donc un
-        ; stage sans etoiles n'emporte meme pas les appels. Pour l'activer
-        ; ailleurs, elargir les trois `IFEQ` (init, erase, draw) — ils vont
-        ; ensemble, effacer sans dessiner ou l'inverse laisse des trainees.
- IFEQ STAGE_ID-1
-        ; Le champ d'etoiles remet ses offsets a zero. La v1 l'initialise ici,
-        ; avant la trame d'amorce et InitScroll.
-        lda   #map.RAM_OVER_CART+common.overlay.page
-        ldx   #starfield.init
+        ; LE CHAMP D'ETOILES est arme par la WAVE, comme dans l'arcade :
+        ; ObjID_starfield -> stage.starfieldSpawner -> starfield.init, le
+        ; variant dans l'entree de wave. L'entree de stage, elle, le REMET A
+        ; MORT : son etat vit en page overlay chargee au boot et survit aux
+        ; echanges — sans ce geste, revenir au stage 1 herite de la vie d'un
+        ; passage precedent. Tous les stages le font, meme sans etoiles :
+        ; c'est precisement eux qui ont un etat etranger a neutraliser.
+        lda   #map.RAM_OVER_CART+common.starfield.page
+        ldx   #starfield.kill
         jsr   paged.call
- ENDC
 
         ; PURGER le pool AVANT la trame d'amorce. La v1 n'avait pas ce geste :
         ; sa RAM objets faisait partie du binaire du game mode, rechargee a
@@ -364,8 +355,12 @@ stage.state.running
         ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
         ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
         ; immobile puis remis en mouvement reinjecte des etoiles perimees.
+        ;
+        ; Garde a l'assemblage : stage 1 seulement pour l'instant. Les stages 4
+        ; et 8 ont leurs entrees de wave (commentees) ; les activer = elargir
+        ; les DEUX gardes erase/draw + celle du spawner, et decommenter la wave.
  IFEQ STAGE_ID-1
-        lda   #map.RAM_OVER_CART+common.overlay.page
+        lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.erase
         jsr   paged.call
  ENDC
@@ -380,7 +375,7 @@ stage.state.running
         jsr   DrawSprites
 
  IFEQ STAGE_ID-1
-        lda   #map.RAM_OVER_CART+common.overlay.page
+        lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.draw
         jsr   paged.call
  ENDC
@@ -476,6 +471,25 @@ stage.placeholder
         std   bench.spawns
         jsr   UnloadObject_u
         rts
+
+; L'objet ephemere de la wave pour le champ d'etoiles : il nait comme un
+; ennemi (slot du pool, identifiant, subtype), transmet le variant au module
+; pagine et rend son slot dans la meme trame. C'est la transposition du
+; starfield_spawner de l'arcade (0x40:E430) — a ceci pres que l'arcade garde
+; son orchestrateur vivant (il fait naitre les etoiles une a une), quand le
+; notre passe la main a un champ permanent : l'objet n'a donc plus rien a
+; faire une fois la duree armee.
+ IFEQ STAGE_ID-1
+stage.starfieldSpawner
+        ldb   subtype_w+1,u            ; le variant, seme par l'octet 5 de la wave
+        clra
+        tfr   d,y                      ; via Y : paged.call detruit B, preserve Y
+        lda   #map.RAM_OVER_CART+common.starfield.page
+        ldx   #starfield.init
+        jsr   paged.call
+        jsr   UnloadObject_u           ; one-shot : le slot est rendu
+        rts
+ ENDC
 
 ; Le bouchon des invocations À CRU : pour les identifiants que le moteur ou la
 ; boucle appellent SANS OST (le shellEraser tourne chaque trame entre DrawTiles

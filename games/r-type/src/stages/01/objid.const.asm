@@ -25,8 +25,12 @@ ObjID_tailmgr equ 42
 ObjID_dobkeratops equ 43
 ObjID_dobkeratops_jaw equ 44
 ObjID_dobkeratops_monster equ 45
+* Le champ d'etoiles, arme par la WAVE comme dans l'arcade (type 0x84 de sa
+* table de createurs -> ObjID_33 -> ce nom). L'objet est ephemere : il passe
+* le variant au module pagine et rend son slot (stage.starfieldSpawner).
+ObjID_starfield equ 46
 
-objid.count equ 45
+objid.count equ 46
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

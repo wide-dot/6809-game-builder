@@ -186,8 +186,20 @@
                 <zone page="$0B" address="$0000" size="$4000"/>
                 <!-- Tete de $0C jusqu'a $0A80, frontiere relevee a la main avec
                      l'arene du stage 1 : si le commun grossit, le controle de scene
-                     refuse le build. -->
+                     refuse le build. Elle ne PEUT pas monter : le visage du
+                     Dobkeratops (13 443 o) tient dans la zone ennemis de cette page
+                     a 3 octets pres — la bouger l'evince et fait casser l'arene
+                     ennemis en cascade (mesure le 18/08). -->
                 <zone page="$0C" address="$0000" size="$0A80"/>
+                <!-- La queue de la page collision ($17) : les collisions des huit
+                     stages sont des ALTERNATIVES a $0000 (la plus grosse, stage 1,
+                     finit a $136F, l'init du stage a $13F7) — au-dela de $1400 la
+                     page est libre sur TOUTES les scenes. Ouverte au commun le
+                     18/08, quand les gfx etoffes de pow/optionbox et la duree+fondu
+                     arcade du champ d'etoiles (~280 o) ont depasse le mou de
+                     l'arene. Derniere zone : le packer n'y deborde que ce qui ne
+                     tient plus ailleurs. -->
+                <zone page="$17" address="$1400" size="$2C00"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete ($0A80). -->
@@ -335,9 +347,6 @@
                 <file name="common.overlay" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <!-- Le champ d'etoiles : sans etat, 6 Ko de tables VRAM
-                             precalculees, trois routines visees par paged.call. -->
-                        <asm filename="src/common/fx/starfield/starfield.asm"/>
                         <gfxcomp gendir="gen/overlay"
                                  gensource="gen/overlay/includes.asm"
                                  genindex="gen/overlay/index.asm"
@@ -346,6 +355,19 @@
                                 <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                             </image>
                         </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Le champ d'etoiles : 6 Ko de tables VRAM precalculees et les
+                     routines visees par paged.call. Il partageait le direntry du
+                     masque ; separe le 18/08 quand la duree et le fondu arcade
+                     l'ont fait grossir — a deux, le bloc de 12,5 Ko ne laissait
+                     plus au packer de quoi ranger l'arene (deux fichiers plus
+                     petits se glissent la ou un gros ne rentre pas). -->
+                <file name="common.starfield" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/starfield/starfield.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/fx/starfield/starfield.asm"/>
                     </lwasm>
                 </file>
 
@@ -674,22 +696,22 @@
                                  genindex="gen/pickups/pow/index.asm"
                                  file="common.pow">
                             <image name="pow_fly" filename="src/common/pickups/pow/images/pow/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_1" filename="src/common/pickups/pow/images/pow/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_2" filename="src/common/pickups/pow/images/pow/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_3" filename="src/common/pickups/pow/images/pow/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_4" filename="src/common/pickups/pow/images/pow/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_5" filename="src/common/pickups/pow/images/pow/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
                         <animation name="Ani_pow_land" duration="7" end="nextroutine">
@@ -723,18 +745,23 @@
                                  file="common.optionbox">
                             <image name="pow_optionbox_0" filename="src/common/pickups/pow/images/00-lasercrystal_blue_0.png" index="0">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_1" filename="src/common/pickups/pow/images/01-lasercrystal_yellow_0.png" index="1">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_3" filename="src/common/pickups/pow/images/02-option_speedup_0.png" index="2">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_4" filename="src/common/pickups/pow/images/03-lasercrystal_red_0.png" index="3">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_7" filename="src/common/pickups/pow/images/04-option_missiles_0.png" index="4">
                                 <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="bdraw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1239,6 +1266,7 @@
                     <load name="common.engine"/>
                     <load name="common.anim"/>
                     <load name="common.overlay"/>
+                    <load name="common.starfield"/>
                     <load name="common.player"/>
                     <load name="common.weapon"/>
                     <load name="common.beamcharge"/>

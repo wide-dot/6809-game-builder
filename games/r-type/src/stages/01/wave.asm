@@ -1,5 +1,5 @@
 	;fcb   $00,$00,ObjID_checkpoint,$00,$00
-;$00,$08,ObjID_starfield,$00,$00
+	fcb   $00,$08,ObjID_starfield,$00,$00 ; variant 0 : 4 trames apres le checkpoint 0, comme l'arcade
 ;$00,$08,ObjID_cyclingPalette,$00,$04
 ;$00,$08,ObjID_cyclingPalette,$00,$05
 ;$00,$08,ObjID_cyclingPalette,$00,$06
@@ -8,7 +8,7 @@
 ;$00,$08,ObjID_cyclingPalette,$00,$09
 	;fcb   $01,$80,ObjID_checkpoint,$00,$01
 ;$01,$80,ObjID_objectPurge,$00,$00
-;$01,$8C,ObjID_starfield,$00,$02
+	fcb   $01,$8C,ObjID_starfield,$00,$02 ; variant 2 : apres le checkpoint 1 — c'est LUI qui porte le respawn
 ;$01,$8C,ObjID_cyclingPalette,$00,$0A
 ;$01,$8C,ObjID_cyclingPalette,$00,$0B
 ;$01,$8C,ObjID_cyclingPalette,$00,$0C

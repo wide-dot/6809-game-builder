@@ -51,6 +51,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
 
 Obj_Index_Address
         fdb   0
@@ -105,6 +106,7 @@ Obj_Index_Address
         fdb   dobkeratops.Object ; ObjID_dobkeratops
         fdb   dobkeratopsJaw.Object ; ObjID_dobkeratops_jaw
         fdb   dobkeratopsMonster.Object ; ObjID_dobkeratops_monster
+        fdb   stage.starfieldSpawner ; ObjID_starfield
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.page
@@ -153,6 +155,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -201,6 +204,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops
         fdb   Ani_Asd_none ; ObjID_dobkeratops_jaw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_monster
+        fdb   Ani_Asd_none ; ObjID_starfield
 
 Ani_Asd_none
         fdb   0
@@ -252,3 +256,4 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
