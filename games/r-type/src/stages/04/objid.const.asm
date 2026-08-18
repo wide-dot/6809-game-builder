@@ -17,8 +17,13 @@ ObjID_bink equ 34
 ObjID_cancer equ 35
 ObjID_bug equ 36
 ObjID_pstaff equ 37
+* Le champ d'etoiles du boss Compiler, arme par la WAVE comme dans l'arcade
+* (variant 1 — la sequence gauche classique, le sens droite arcade est mis de
+* cote). L'objet est ephemere : il passe le variant au module pagine et rend
+* son slot (stage.starfieldSpawner).
+ObjID_starfield equ 38
 
-objid.count equ 37
+objid.count equ 38
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

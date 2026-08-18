@@ -356,10 +356,12 @@ stage.state.running
         ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
         ; immobile puis remis en mouvement reinjecte des etoiles perimees.
         ;
-        ; Garde a l'assemblage : stage 1 seulement pour l'instant. Les stages 4
-        ; et 8 ont leurs entrees de wave (commentees) ; les activer = elargir
-        ; les DEUX gardes erase/draw + celle du spawner, et decommenter la wave.
- IFEQ STAGE_ID-1
+        ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
+        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
+        ; elargir les DEUX gardes erase/draw + celle du spawner (le produit
+        ; est nul si STAGE_ID vaut l'un des stages a etoiles), et decommenter
+        ; sa wave.
+ IFEQ (STAGE_ID-1)*(STAGE_ID-4)
         lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.erase
         jsr   paged.call
@@ -374,7 +376,7 @@ stage.state.running
 
         jsr   DrawSprites
 
- IFEQ STAGE_ID-1
+ IFEQ (STAGE_ID-1)*(STAGE_ID-4)
         lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.draw
         jsr   paged.call
@@ -479,7 +481,7 @@ stage.placeholder
 ; son orchestrateur vivant (il fait naitre les etoiles une a une), quand le
 ; notre passe la main a un champ permanent : l'objet n'a donc plus rien a
 ; faire une fois la duree armee.
- IFEQ STAGE_ID-1
+ IFEQ (STAGE_ID-1)*(STAGE_ID-4)
 stage.starfieldSpawner
         ldb   subtype_w+1,u            ; le variant, seme par l'octet 5 de la wave
         clra

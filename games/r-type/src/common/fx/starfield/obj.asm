@@ -242,6 +242,7 @@ StarfieldInit
         ; queue d'extinction en cours)
         clr   starNoDraw
         clr   starOffCnt
+        clr   starFade
         tst   starDead
         beq   sf_extend
         ; mort -> naissance complete : offsets et tours a zero
@@ -326,8 +327,13 @@ StarPlaneIdx
 StarfieldErase
         lda   starDead
         lbne  sfe_done                  ; mort : cout nul jusqu'a la prochaine wave
-; l'horloge de vie, en trames de JEU : les trames sautees comptent, meme
-; convention que l'avance des offsets dans StarfieldDraw.
+        lda   starOffCnt
+        bne   sfe_wipe                  ; queue d'extinction entamee
+        lda   starFade
+        bne   sfe_fade                  ; fondu entame : il compte en RENDUS
+; l'horloge de VIE, en trames de JEU : les trames sautees comptent, meme
+; convention que l'avance des offsets dans StarfieldDraw — c'est elle qui
+; ancre la fin du champ a une POSITION de la carte.
         ldb   gfxlock.frameDrop.count
         bne   >
         incb                            ; 0 -> compter 1 trame
@@ -335,11 +341,40 @@ StarfieldErase
         pshs  d
         ldd   starLifetime
         subd  ,s++
-        bhi   sfe_countdown
-; terme atteint : on cesse de tracer, on efface encore 4 rendus (les 2
-; buffers nettoyes 2x), puis starDead coupe tout definitivement.
-        ldd   #0
-        std   starLifetime
+        bhi   >
+        ldd   #0                        ; terme deja depasse (grosse rafale de
+!       std   starLifetime              ; drops) : le fondu part quand meme
+        cmpd  #48
+        bhi   sfe_buf                   ; loin du terme
+; Le FONDU, lui, compte en RENDUS (decision auteur, 19/08) : en trames de
+; jeu, une periode de frame-drop le comprimait — 48 trames avalees en 16
+; rendus, des paliers sautes, et les etoiles disparaissaient d'un coup. Un
+; palier a besoin de 2 rendus pour se propager aux deux buffers ; 12 rendus
+; par palier le garantissent quel que soit le drop.
+        lda   #48
+        sta   starFade
+sfe_fade
+        dec   starFade
+        beq   sfe_wipe                  ; fondu fini -> queue d'extinction
+        ldb   #1                        ; 37..48 -> palier 1 : les claires en gris moyen
+        lda   starFade
+        cmpa  #36
+        bhi   sfe_pal
+        incb                            ; 25..36 -> palier 2 : les bleues s'eteignent
+        cmpa  #24
+        bhi   sfe_pal
+        incb                            ; 13..24 -> palier 3 : les grises d'origine
+        cmpa  #12
+        bhi   sfe_pal
+        lda   #1                        ; 1..12 -> les survivantes s'eteignent
+        sta   starNoDraw                ;         (l'effacement continue, lui)
+sfe_pal cmpb  starPalier
+        bls   sfe_buf                   ; palier deja atteint
+        stb   starPalier                ; la resynchronisation par buffer suit
+        bra   sfe_buf
+; la queue : on ne trace plus, on efface encore 4 rendus (les 2 buffers
+; nettoyes 2x), puis starDead coupe tout definitivement.
+sfe_wipe
         lda   #1
         sta   starNoDraw
         inc   starOffCnt
@@ -347,25 +382,6 @@ StarfieldErase
         cmpa  #4
         blo   sfe_buf
         sta   starDead                  ; A != 0
-        bra   sfe_buf
-sfe_countdown
-        std   starLifetime
-        cmpd  #48                       ; l'echelle des paliers : 48 dernieres trames
-        bhi   sfe_buf
-        ldb   #1                        ; 37..48 -> palier 1 : les claires en gris moyen
-        cmpd  #36
-        bhi   sfe_pal
-        incb                            ; 25..36 -> palier 2 : les bleues s'eteignent
-        cmpd  #24
-        bhi   sfe_pal
-        incb                            ; 13..24 -> palier 3 : les grises d'origine
-        cmpd  #12
-        bhi   sfe_pal
-        lda   #1                        ; 1..12 -> les survivantes s'eteignent
-        sta   starNoDraw                ;         (l'effacement continue, lui)
-sfe_pal cmpb  starPalier
-        bls   sfe_buf                   ; palier deja atteint
-        stb   starPalier                ; la resynchronisation par buffer suit
 sfe_buf
         lda   gfxlock.backBuffer.id
         beq   >

@@ -43,6 +43,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
 
 Obj_Index_Address
         fdb   0
@@ -89,6 +90,7 @@ Obj_Index_Address
         fdb   cancer.Object ; ObjID_cancer
         fdb   bug.Object ; ObjID_bug
         fdb   pstaff.Object ; ObjID_pstaff
+        fdb   stage.starfieldSpawner ; ObjID_starfield
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page
@@ -129,6 +131,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -169,6 +172,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_cancer
         fdb   Ani_Asd_none ; ObjID_bug
         fdb   Ani_Asd_none ; ObjID_pstaff
+        fdb   Ani_Asd_none ; ObjID_starfield
 
 Ani_Asd_none
         fdb   0
@@ -212,3 +216,4 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
+        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield

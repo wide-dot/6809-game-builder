@@ -42,6 +42,7 @@ starDead                    fcb   1    ; !=0 : terminee, l'objet ne coute plus r
 
 * L'horloge de vie et le fondu de sortie (modele arcade, cf. obj.asm).
 starLifetime                fdb   0    ; trames de jeu restantes ; 0 = terme
+starFade                    fcb   0    ; !=0 : fondu en cours, compte en RENDUS
 starPalier                  fcb   0    ; dernier palier de fondu atteint (0..3)
 starTblPal                  fcb   0    ; le palier que planeTable porte
 starBufPal                  fcb   0,0  ; le palier au dernier TRACE, par buffer
