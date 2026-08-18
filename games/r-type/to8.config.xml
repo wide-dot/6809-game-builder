@@ -299,10 +299,13 @@
             <!-- Les defines DESCENDENT dans les conteneurs mais ne REMONTENT pas :
                  declares avant le directory, ils servent a ses fichiers ET aux
                  <data> LOADER/BOOT plus bas. -->
-            <!-- BANC D'ESSAI : le joueur ne meurt pas, la bordure vire au rouge
+            <!-- BANC D'ESSAI : le joueur ne meurt pas, la bordure vire au blanc
                  a l'impact. A RETIRER avant toute mesure de jouabilite — c'est
-                 la garde IFDEF invincible de player1.asm. -->
-            <define symbol="invincible"/>
+                 la garde IFDEF invincible de player1.asm.
+                 RETIRE le 19/08 pour tester la mort et le rechargement de
+                 checkpoint (le champ d'etoiles doit reapparaitre au respawn en
+                 zone de ciel, et rester eteint au-dela). -->
+            <!-- <define symbol="invincible"/> -->
             <!-- Sondes info compilees : un build de DEV. Retirer cette ligne les
                  fait disparaitre (les sondes error restent toujours). -->
             <define symbol="LOG_INFO"/>
