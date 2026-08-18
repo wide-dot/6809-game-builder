@@ -1,5 +1,5 @@
 ;$00,$00,ObjID_stageInit,$00,$0F
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 ;$00,$40,ObjID_bydo,$00,$00
 ;$00,$50,ObjID_mikun,$00,$12
 ;$00,$6E,ObjID_mikun,$00,$01

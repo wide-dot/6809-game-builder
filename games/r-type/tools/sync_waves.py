@@ -3,7 +3,7 @@
 
 La table de vagues de chaque stage sort de re.arcade.r-type (ObjectWave.java,
 table ROM $1B993-$1C5DB). L'extraction a progressé depuis l'import initial :
-elle sait désormais nommer checkpoint, stageInit, 33wave, bink, cancer, pstaff
+elle sait désormais nommer checkpoint, stageInit, starfield, bink, cancer, pstaff
 et bossmusic là où elle n'avait que des numéros. Les waves du dépôt, elles,
 portent des noms que l'extracteur ignore — gouger, baldur, gomander, outslay,
 wick au stage 02 — trouvés à la main pendant le RE.

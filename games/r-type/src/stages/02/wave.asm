@@ -1,5 +1,5 @@
 ;$00,$00,ObjID_stageInit,$00,$04
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 	fcb   $00,$C8,ObjID_gouger,$00,$0A
 	fcb   $01,$90,ObjID_gouger,$00,$00
 	fcb   $02,$06,ObjID_pow,$00,$35

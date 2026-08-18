@@ -1,6 +1,6 @@
 ;$FF,$88,ObjID_2,$00,$00
 ;$00,$00,ObjID_stageInit,$00,$07
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 ;$00,$10,ObjID_cyclingPalette,$00,$04
 ;$00,$10,ObjID_cyclingPalette,$00,$05
 ;$00,$10,ObjID_cyclingPalette,$00,$06

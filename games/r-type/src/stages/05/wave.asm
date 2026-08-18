@@ -1,5 +1,5 @@
 ;$00,$00,ObjID_stageInit,$00,$09
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 ;$00,$B2,ObjID_slither,$00,$26
 ;$01,$32,ObjID_slither,$03,$74
 	fcb   $01,$D6,ObjID_pow,$00,$36

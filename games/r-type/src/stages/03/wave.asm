@@ -1,5 +1,5 @@
 ;$00,$00,ObjID_stageInit,$00,$06
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 ;$01,$00,ObjID_warship_core,$00,$00
 	fcb   $01,$90,ObjID_pow,$00,$14
 	fcb   $03,$86,ObjID_pow,$00,$16

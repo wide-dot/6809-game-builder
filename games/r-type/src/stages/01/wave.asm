@@ -1,20 +1,20 @@
 	;fcb   $00,$00,ObjID_checkpoint,$00,$00
-;$00,$08,ObjID_33,$00,$00
-;$00,$08,ObjID_32,$00,$04
-;$00,$08,ObjID_32,$00,$05
-;$00,$08,ObjID_32,$00,$06
-;$00,$08,ObjID_32,$00,$07
-;$00,$08,ObjID_32,$00,$08
-;$00,$08,ObjID_32,$00,$09
+;$00,$08,ObjID_starfield,$00,$00
+;$00,$08,ObjID_cyclingPalette,$00,$04
+;$00,$08,ObjID_cyclingPalette,$00,$05
+;$00,$08,ObjID_cyclingPalette,$00,$06
+;$00,$08,ObjID_cyclingPalette,$00,$07
+;$00,$08,ObjID_cyclingPalette,$00,$08
+;$00,$08,ObjID_cyclingPalette,$00,$09
 	;fcb   $01,$80,ObjID_checkpoint,$00,$01
-;$01,$80,ObjID_1,$00,$00
-;$01,$8C,ObjID_33,$00,$02
-;$01,$8C,ObjID_32,$00,$0A
-;$01,$8C,ObjID_32,$00,$0B
-;$01,$8C,ObjID_32,$00,$0C
-;$01,$8C,ObjID_32,$00,$0D
-;$01,$8C,ObjID_32,$00,$0E
-;$01,$8C,ObjID_32,$00,$0F
+;$01,$80,ObjID_objectPurge,$00,$00
+;$01,$8C,ObjID_starfield,$00,$02
+;$01,$8C,ObjID_cyclingPalette,$00,$0A
+;$01,$8C,ObjID_cyclingPalette,$00,$0B
+;$01,$8C,ObjID_cyclingPalette,$00,$0C
+;$01,$8C,ObjID_cyclingPalette,$00,$0D
+;$01,$8C,ObjID_cyclingPalette,$00,$0E
+;$01,$8C,ObjID_cyclingPalette,$00,$0F
 
 	;fcb   $00,$10,ObjID_tailmgr,$00,$00 ; (ancien test precoce - master spawne au boss $1B40)
  	fcb   $01,$F8,ObjID_patapata,$00,$04
@@ -109,7 +109,7 @@
 	fcb   $0E,$50,ObjID_bug,$01,$22
 	fcb   $0E,$50,ObjID_blaster,$00,$00
  	fcb   $0E,$58,ObjID_shell,$00,$00
-;$0E,$80,ObjID_32,$00,$00
+;$0E,$80,ObjID_cyclingPalette,$00,$00
 	fcb   $11,$10,ObjID_blaster,$00,$01
 	fcb   $11,$50,ObjID_blaster,$00,$01
  	fcb   $11,$5C,ObjID_bink,$00,$27
@@ -131,7 +131,7 @@
 	fcb   $13,$90,ObjID_blaster,$00,$02
 	fcb   $13,$90,ObjID_blaster,$00,$03
  	fcb   $13,$9E,ObjID_bink,$00,$16
-;$13,$C0,ObjID_32,$00,$01
+;$13,$C0,ObjID_cyclingPalette,$00,$01
 	fcb   $13,$C8,ObjID_bug,$02,$22
 	fcb   $13,$D0,ObjID_blaster,$00,$02
 	fcb   $13,$D0,ObjID_blaster,$00,$13

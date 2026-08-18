@@ -1,5 +1,5 @@
 ;$00,$00,ObjID_stageInit,$00,$0D
-;$00,$00,ObjID_1,$00,$00
+;$00,$00,ObjID_objectPurge,$00,$00
 ;$00,$30,ObjID_cyclingPalette,$00,$02
 	fcb   $00,$7C,ObjID_patapata,$00,$47
 	fcb   $00,$8C,ObjID_patapata,$00,$38
