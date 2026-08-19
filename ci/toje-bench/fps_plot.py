@@ -16,8 +16,8 @@ sont au meme endroit du decor.
 """
 import argparse, csv, os
 
-PALETTE = ["#BE3620", "#0F6C6F", "#8A6912", "#5A3E8A"]
-PALETTE_DARK = ["#EB6544", "#3FA8A8", "#CBA544", "#A78BD0"]
+PALETTE = ["#BE3620", "#0F6C6F", "#5A3E8A", "#4A6B2A"]
+PALETTE_DARK = ["#EB6544", "#3FA8A8", "#A78BD0", "#8FBF5A"]
 
 
 def load(path):

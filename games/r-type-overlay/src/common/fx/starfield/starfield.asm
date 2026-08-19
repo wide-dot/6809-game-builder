@@ -25,7 +25,6 @@ gfxlock.frameDrop.count EXTERNAL
 
 starfield.init   EXPORT
 starfield.kill   EXPORT
-starfield.erase  EXPORT
 starfield.draw   EXPORT
 
  SECTION code
@@ -35,7 +34,6 @@ starfield.draw   EXPORT
 
 starfield.init   equ StarfieldInit
 starfield.kill   equ StarfieldKill
-starfield.erase  equ StarfieldErase
 starfield.draw   equ StarfieldDraw
 
  ENDSECTION

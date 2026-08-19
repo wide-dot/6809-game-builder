@@ -25,8 +25,22 @@ Etat de cette base (etape 1 du chantier) :
   bandes Wipe de la mort du boss (animation scriptee, pas de la
   comptabilite d'effacement), les talons EraseSprites_ClearAll et les
   ecritures glb_force_sprite_refresh (inertes) ;
-- mesure : 16,1 img/s de moyenne sur le niveau 1 contre 12,0 en reference
-  (+34 %) — la borne haute, avant de payer l'effacement ;
+- l'EFFACEMENT DE FOND est en place (19/08) : `playfield.clearBlast`
+  (src/common/fx/clearblast.asm), stack-blast maison PSHS 9 octets/14 cy
+  entierement deroule, pleine largeur, lignes 9-178 — 21 215 cycles exacts
+  (la version generee par gfxcomp : 25 596, gardee dans la page pour
+  comparaison). La rangee de tuiles du BAS n'est pas effacee : in.png la
+  garde toujours peinte, et tools/sky_transparent.py (blocs 3x6, la maille
+  arcade) l'exclut du remap. DrawTiles repeint chaque trame ; le starfield
+  est passe a UNE passe (ecriture directe entre effacement et tuiles, la
+  passe ERASE et ses tables par buffer sont supprimees). Deux pieges 6809
+  payes et documentes dans clearblast.asm : pas de bsr/rts quand S est le
+  pointeur d'ecriture, et CC inpoussable sous IRQ ouvertes (le RTI restaure
+  E=1) ;
+- mesure : defilement 9,2 img/s contre 8,8 en reference — la zone de jeu
+  principale est PLUS RAPIDE que le mode background-erase, a rendu complet
+  et sans trainees. Ouverture 15,2 (23,2 ref), boss 7,7 (9,3), sequence de
+  fin 12,7 (40,5 — elle efface pour rien, optimisation connue) ;
 - PIEGE APPRIS (19/08) : la convention des offsets camera CHANGE avec le
   pack. En background-erase ils portent le cadre ecran (48/28) ; le
   BuildSprites overlay les traite en MARGE hors-ecran et veut ZERO ici —

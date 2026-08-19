@@ -53,6 +53,9 @@ Ani_Asd_common    EXTERNAL
 ; ce symbole — paged.call suffit a l'atteindre. Les deux stages partagent
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
+; L'effacement du champ de jeu, meme page : peint en tete de trame.
+adr_playfield_clear_ND0 EXTERNAL
+playfield.clearBlast    EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -69,7 +72,6 @@ hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL
-starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
 ; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les

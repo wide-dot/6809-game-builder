@@ -368,11 +368,25 @@
                 <file name="common.overlay" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <!-- OVERLAY : l'effacement maison (PSHS 10 registres,
+                             pleine largeur) — cf. clearblast.asm. La version
+                             generee (playfield_clear plus bas) reste dans la
+                             page le temps de la comparaison des deux. -->
+                        <asm filename="src/common/fx/clearblast.asm"/>
                         <gfxcomp gendir="gen/overlay"
                                  gensource="gen/overlay/includes.asm"
                                  genindex="gen/overlay/index.asm"
                                  file="common.overlay">
                             <image name="playfield_mask" filename="src/common/hud/mask/images/00.png" index="0" >
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                            <!-- OVERLAY : l'effacement du champ de jeu (144x180 de
+                                 noir plein), peint en TETE de trame, avant tout le
+                                 reste. Le generateur reconnait l'uni et sort du
+                                 stack-blast (PSHU D,X,Y) : 25 596 cycles mesures.
+                                 Version chaine standard — l'optimum hardcode
+                                 (PSHS 10 registres, boucle) viendra la remplacer. -->
+                            <image name="playfield_clear" filename="src/common/hud/mask/images/01.png" index="1" >
                                 <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                             </image>
                         </gfxcomp>
@@ -2094,10 +2108,17 @@
                      du niveau, geometrie en equates, cache sur image+parametres.
                      refresh : cellules que le scroll ne reconstruit pas depuis ses
                      blocs de debut de stage — le checkpoint repeint depuis la carte. -->
+                <!-- OVERLAY : nbsteps au-dela de la largeur du niveau, donc
+                     chaque balayage du lean atteint le bord et TOUT pixel du
+                     decor est conserve — le lean n'a plus de sens quand le champ
+                     est efface puis repeint chaque trame. Le ciel, lui, est
+                     TRANSPARENT dans in.png (tools/sky_transparent.py) : les
+                     cellules de ciel restent des tuiles id 0 jamais dessinees,
+                     c'est le stackblast (playfield_clear) qui porte le noir.
+                     refresh= sans objet : DrawTiles repeint chaque trame. -->
                 <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
                             gensymbols="gen/stages/01/map/map.const.asm"
-                            nbsteps="0,0,6,0,0,0,0,0"
-                            refresh="48:6-8"/>
+                            nbsteps="0,0,2048,0,0,0,0,0"/>
 
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
                       gendir="gen/stages/01/tiles-even">
@@ -2120,12 +2141,22 @@
                 </file>
 
                 <!-- Les deux tables de carte, cuites contre le placement des tuiles -->
-                <file name="stage1.maps" linkdata="LINK" bake="all" arena="stage1.gfx">
-                    <lwasm gensource="gen/stages/01/stage1-maps.asm">
+                <!-- OVERLAY : les deux tables de carte etaient UN direntry de
+                     11 880 o d'un tenant. Les tuiles pleines (+5 140 o au total)
+                     ont mange le trou qui le logeait ; en deux direntries de
+                     5 940, chaque table se glisse dans un trou existant — deux
+                     fichiers plus petits rentrent la ou un gros ne rentre pas. -->
+                <file name="stage1.maps.even" linkdata="LINK" bake="all" arena="stage1.gfx">
+                    <lwasm gensource="gen/stages/01/stage1-maps-even.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="gen/stages/01/map/even.bin" label="map.even"
                                  tiles="stage1.tiles.even" variant="ND0"
                                  gensource="gen/stages/01/map-even.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage1.maps.odd" linkdata="LINK" bake="all" arena="stage1.gfx">
+                    <lwasm gensource="gen/stages/01/stage1-maps-odd.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="gen/stages/01/map/odd.bin" label="map.odd"
                                  tiles="stage1.tiles.odd" variant="ND0"
                                  gensource="gen/stages/01/map-odd.asm"/>
@@ -2188,7 +2219,8 @@
                     <load name="stage1.dobkeratopsexplosion"/>
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>
-                    <load name="stage1.maps"/>
+                    <load name="stage1.maps.even"/>
+                    <load name="stage1.maps.odd"/>
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
                     <load name="stage1.music.ymm"/>

@@ -347,40 +347,48 @@ stage.state.running
         jsr   RunObjects
         jsr   gfxlock.on
 
+        ; OVERLAY : l'effacement du champ de jeu, en TETE de trame, avant tout
+        ; le reste — version MAISON (PSHS 10 registres, pleine largeur,
+        ; lignes 9-190 des deux plans, cf. clearblast.asm). Elle adresse les
+        ; deux plans elle-meme : rien a poser avant l'appel.
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlast
+        jsr   paged.call
+
+        ; Les etoiles TOUT DE SUITE apres l'effacement : le champ est noir
+        ; vierge, le trace ecrit sans lire ni tester (cf. starfield/obj.asm),
+        ; et tuiles puis sprites recouvrent tout ce qu'ils traversent —
+        ; fond, decor, jeu, dans cet ordre. Une seule passe : la passe ERASE
+        ; est partie avec le chantier effacement.
+        ;
+        ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
+        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
+        ; elargir CETTE garde et celle du spawner (le produit est nul si
+        ; STAGE_ID vaut l'un des stages a etoiles), et decommenter sa wave.
+ IFEQ (STAGE_ID-1)*(STAGE_ID-4)
+        lda   #map.RAM_OVER_CART+common.starfield.page
+        ldx   #starfield.draw
+        jsr   paged.call
+ ENDC
+
         ; Ce que CE stage peint dans le verrou graphique, avant les tuiles :
         ; sur le niveau 1, les bandes noires du boss et le rectangle de la
         ; salle. OVERLAY : plus de sauvegardes de fond a faire capturer — le
         ; noir doit juste preceder les tuiles et les sprites de la trame.
         jsr   stage.frameBlit
 
+        ; OVERLAY : le champ vient d'etre efface, le decor DOIT se repeindre
+        ; chaque trame (tuiles pleines, ciel transparent — cf. leanscroll du
+        ; config). Scroll ne leve glb_camera_move que quand la camera a bouge :
+        ; on le force.
+        lda   #1
+        sta   glb_camera_move
         jsr   DrawTiles
-
-        ; Les etoiles s'effacent ICI, entre les tuiles et les sprites : le fond
-        ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
-        ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
-        ; immobile puis remis en mouvement reinjecte des etoiles perimees.
-        ;
-        ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
-        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
-        ; elargir les DEUX gardes erase/draw + celle du spawner (le produit
-        ; est nul si STAGE_ID vaut l'un des stages a etoiles), et decommenter
-        ; sa wave.
- IFEQ (STAGE_ID-1)*(STAGE_ID-4)
-        lda   #map.RAM_OVER_CART+common.starfield.page
-        ldx   #starfield.erase
-        jsr   paged.call
- ENDC
 
         ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
         ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
         ; le verrou, comme la v1 overlay (goldorak main.asm:47).
         jsr   BuildSprites
-
- IFEQ (STAGE_ID-1)*(STAGE_ID-4)
-        lda   #map.RAM_OVER_CART+common.starfield.page
-        ldx   #starfield.draw
-        jsr   paged.call
- ENDC
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main

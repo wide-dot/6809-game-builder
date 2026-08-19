@@ -53,6 +53,9 @@ Ani_Asd_common    EXTERNAL
 ; il n'a ni etat ni OST, sa page est une equate (common.overlay.page) et son adresse
 ; ce symbole — paged.call suffit a l'atteindre.
 adr_playfield_mask_ND0 EXTERNAL
+; L'effacement du champ de jeu, meme page : peint en tete de trame.
+adr_playfield_clear_ND0 EXTERNAL
+playfield.clearBlast    EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -68,7 +71,6 @@ hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL
-starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
 ; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les
@@ -304,12 +306,15 @@ stage.setup
         jsr   terrainCollision.init.do
         clr   terrainCollision.disabled
 
+        ; OVERLAY : les deux tables de carte sont deux direntries (les tuiles
+        ; pleines ont mange le trou du direntry unique) — chacune sa page.
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+stage1.maps.page
+        lda   #map.RAM_OVER_CART+stage1.maps.even.page
         sta   scroll_map_page_even
+        lda   #map.RAM_OVER_CART+stage1.maps.odd.page
         sta   scroll_map_page_odd
 
         ldd   #stage.wave
