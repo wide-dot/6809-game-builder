@@ -27,6 +27,39 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
+## Relevé de cadence — `fps_curve.py` + `fps_plot.py`
+
+Deux scripts hors verdict : ils ne disent pas pass/fail, ils **mesurent**.
+Servent à comparer deux modes de rendu sur le même niveau (chantier overlay,
+08/2026).
+
+```bash
+cd games/r-type
+python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv
+python3 ../../ci/toje-bench/fps_plot.py courbes.svg \
+    reference.csv="sauvegarde de fond" overlay.csv="overlay"
+```
+
+Le jeu ne porte aucune sonde ajoutée : `bench.frames` s'incrémente déjà une
+fois par tour de `stage.loop`, et `read_memory` le lit **sans coûter un
+cycle** au programme mesuré — une sonde écrite par le jeu fausserait
+exactement ce qu'on compare. L'échantillonnage est à la trame machine
+(50 Hz) : `run_frames(1)` coûte 4,1 ms, soit la vitesse d'émulation
+elle-même, donc l'aller-retour MCP est gratuit et **toje n'a rien à
+gagner d'un outil d'échantillonnage dédié**. Un niveau 1 complet (12 631
+trames, 252 s émulées) se relève en une minute.
+
+Conditions à tenir identiques des deux côtés d'une comparaison :
+`<define symbol="invincible"/>` (sans lui le vaisseau meurt faute d'entrée
+manette et le relevé s'arrête — vécu à la trame 3835), aucune entrée
+manette, `bench.SCROLL_VEL` inchangé. Le traceur écarte de la moyenne la
+queue muette du relevé : c'est le chargement de la scène suivante, dont la
+durée dépend de la taille des fichiers et pas du rendu.
+
+Référence mesurée le 19/08/2026 sur `games/r-type` @ 886fda9c : **12,0 img/s
+de moyenne**, de 27 img/s à l'ouverture à **3,9 img/s au creux** (caméra 552),
+plateau à 8,4 dans la salle du boss.
+
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
 
 Le dossier ci-dessous s'est conclu le jour même, et la bissection était un
