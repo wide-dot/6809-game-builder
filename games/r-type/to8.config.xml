@@ -21,23 +21,24 @@
             <arena name="stage1.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : musiques permanentes (lecteur YMM + musique, chargees au
-                     boot, jamais echangees) en $1C9B-$3736 ; deux fenetres libres. -->
+                <!-- $1A : bloc musical en $1C9B-$3C00 — lecteur YMM (résident) puis
+                     les musiques communes (résidentes) puis la piste du stage
+                     (alternative). Deux fenetres libres de part et d'autre. -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
                 <zone page="$1E" address="$0000" size="$4000"/>
                 <zone page="$1F" address="$0000" size="$4000"/>
             </arena>
-            <!-- Arenes des stages 2-8 : memes pages ($1A ampute du creneau
-                 musical $1C9B-$3736) — les stages sont exclusifs a l'echange. -->
+            <!-- Arenes des stages 2-8 : memes pages ($1A ampute du bloc
+                 musical $1C9B-$3C00) — les stages sont exclusifs a l'echange. -->
             <arena name="stage2.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -48,7 +49,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -58,7 +59,7 @@
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : fenetre de tete seule, la musique prend $3736-$4000 -->
+                <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
@@ -70,7 +71,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -81,7 +82,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -92,7 +93,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3736" size="$08CA"/>
+                <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -102,7 +103,7 @@
             <arena name="stage8.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <!-- $1A : fenetre de tete seule, la musique prend $3736-$4000 -->
+                <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
@@ -151,10 +152,11 @@
             <!-- _ymm.frame.play n'en monte qu'une. Les bruitages ont la leur,  -->
             <!-- l'IRQ montant deja la page du lecteur juste avant.             -->
             <!-- Le son vit dans la QUEUE du tileset pair $1A (fin mesuree
-                 $1C9B) : lecteur puis musique, colocalises — _ymm.frame.play
-                 ne monte qu'une page. Le lecteur est commun mais voyage avec
-                 les donnees ; les stages suivants ne rechargeront que
-                 ymm.data. -->
+                 $1C9B) : lecteur, musiques communes et piste du stage
+                 colocalises — _ymm.frame.play ne monte qu'une page. Seule la
+                 piste du stage est rechargee a l'echange ($2C09) ; le lecteur
+                 et les quatre morceaux communs restent en place depuis le
+                 boot. -->
             <!-- La passe de collision : le `obj_mainext` de la v1. Calcul pur -->
             <!-- sur des listes residentes, donc page-neutre ; elle partage la -->
             <!-- page des bruitages, qui n'en occupait que le quart.           -->
@@ -305,6 +307,10 @@
                  checkpoint (le champ d'etoiles doit reapparaitre au respawn en
                  zone de ciel, et rester eteint au-dela). -->
             <!-- <define symbol="invincible"/> -->
+            <!-- Le quota de continues par partie (garde de hud.continueScreen) :
+                 0 = jamais, N = quota, $FF = infini. Sans define : 1, la regle
+                 arcade. -->
+            <!-- <define symbol="game.continue.MAX" value="$FF"/> -->
             <!-- Sondes info compilees : un build de DEV. Retirer cette ligne les
                  fait disparaitre (les sondes error restent toujours). -->
             <define symbol="LOG_INFO"/>
@@ -626,6 +632,20 @@
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Les musiques COMMUNES : boss, jingle de fin, continue et game
+                     over. Elles etaient recopiees dans les sept unites de stage
+                     (1 722 o de boss+clearstage sept fois sur la disquette) et la
+                     fenetre musicale du stage 1 etait pleine a l'octet pres. Un
+                     seul exemplaire, charge au boot, jamais echange : il tient
+                     juste apres le lecteur ($1C9B+1057 = $20BC) et les pistes de
+                     stage commencent apres lui ($2C09). -->
+                <file name="common.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                    <lwasm gensource="gen/sound/common-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/music/ymm.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -1282,6 +1302,7 @@
                     <load name="common.engineflames"/>
                     <load name="engine.sound.ym.const"/>
                     <load name="engine.sound.ymm"/>
+                    <load name="common.music.ymm"/>
                     <load name="common.soundfx"/>
                     <load name="common.collisionpass"/>
                     <load name="common.messages"/>
@@ -1383,7 +1404,7 @@
                 <!-- Musiques du title. YMM : le lecteur resident ne monte qu'une page,
                      les donnees d'un morceau vivent avec lui — la place du title est
                      CELLE du bloc musical des stages (alternative). -->
-                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/title-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/title/music/ymm.unit.asm"/>
@@ -1477,7 +1498,7 @@
                 <default name="images.shifts"    value="0"/>
 
 
-                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>
@@ -2221,7 +2242,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage2.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage2-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/music/ymm.unit.asm"/>
@@ -2307,7 +2328,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage3.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage3.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage3-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/03/music/ymm.unit.asm"/>
@@ -2392,7 +2413,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage4.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage4.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage4-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/04/music/ymm.unit.asm"/>
@@ -2477,7 +2498,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage5.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage5.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage5-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/05/music/ymm.unit.asm"/>
@@ -2565,7 +2586,7 @@
                 <!-- Pas de musique de niveau 6 en v1 : l'unite rejoue les octets du
                      niveau 1 sous SON nom. Un <load> inter-repertoires ne marcherait
                      pas — le loader ne lit que le repertoire courant. -->
-                <file name="stage6.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage6.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage6-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/06/music/ymm.unit.asm"/>
@@ -2650,7 +2671,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage7.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage7.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage7-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/07/music/ymm.unit.asm"/>
@@ -2734,7 +2755,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage8.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="stage8.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
                     <lwasm gensource="gen/sound/stage8-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/08/music/ymm.unit.asm"/>

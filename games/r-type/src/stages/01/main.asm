@@ -61,6 +61,10 @@ adr_playfield_mask_ND0 EXTERNAL
 hud.normal        EXTERNAL
 ; Le releve de score de fin de niveau, meme page : la phase 4 de la sequence.
 hud.readout       EXTERNAL
+; L'ecran CONTINUE, meme page : il partage la police du releve de fin.
+hud.continue      EXTERNAL
+; L'attente qui tient GAME OVER a l'ecran le temps de son morceau.
+hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL

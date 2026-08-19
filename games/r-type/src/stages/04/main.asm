@@ -55,6 +55,10 @@ hud.normal        EXTERNAL
 ; Cite par la boucle commune (phase 4 de la sequence de fin) ; le stage 2 n'y
 ; passe jamais, mais le symbole doit se resoudre.
 hud.readout       EXTERNAL
+; L'ecran CONTINUE, meme page : il partage la police du releve de fin.
+hud.continue      EXTERNAL
+; L'attente qui tient GAME OVER a l'ecran le temps de son morceau.
+hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL

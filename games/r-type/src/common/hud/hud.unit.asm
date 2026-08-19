@@ -25,8 +25,15 @@
 ; by the code above »). Ils ne passent donc pas par gfxcomp.
 ;*******************************************************************************
 
-hud.normal  EXPORT
-hud.readout EXPORT
+hud.normal   EXPORT
+hud.readout  EXPORT
+; L'ecran continue, propose au bout des vies. Il vit ici pour partager la
+; police et `hud.drawStr` avec le releve de fin de stage.
+hud.continue EXPORT
+; L'attente de fin de morceau qui tient GAME OVER a l'ecran. Elle vit ici, pas
+; dans le corps de stage : le main du stage n'a que quelques octets de marge,
+; et l'attente est la meme pour les huit.
+hud.gameOverWait EXPORT
 
 ; Ce que l'unité emprunte au moteur résident.
 RandomNumber            EXTERNAL
@@ -40,6 +47,28 @@ main.endstage.scoreDone  EXTERNAL
 ; Le numero du stage courant (- 1) : le releve de fin l'ecrit dans la
 ; chaine STAGE n CLEARED — variable residente de l'engine, via le lien.
 game.stage               EXTERNAL
+; La limite arcade du continue : un seul par partie. Residente dans le moteur
+; a cote de game.stage, remise a zero en meme temps que lui.
+game.continueUsed        EXTERNAL
+; Ce que l'ecran continue emprunte au moteur resident : la manette, la palette.
+joypad.readKbd           EXTERNAL
+joypad.pressed.fire      EXTERNAL
+Pal_current              EXTERNAL
+PalRefresh               EXTERNAL
+PalUpdateNow             EXTERNAL
+; Les deux palettes du moment, exportees par le main du stage courant.
+Pal_stage                EXTERNAL
+Pal_black                EXTERNAL
+; Les deux morceaux communs et le relais qui les arme : le lecteur vit dans
+; une autre page, et une unite paginee ne peut pas commuter la fenetre ou son
+; propre code s'execute.
+game.music.play          EXTERNAL
+sounds.continue.ymm      EXTERNAL
+sounds.gameover.ymm      EXTERNAL
+; Interroger le lecteur — il vit dans sa page, on y va par `paged.call`, qui
+; est reentrant (sa page d'origine vit sur la pile).
+paged.call               EXTERNAL
+ymm.playing              EXTERNAL
 
  SECTION code
 
@@ -48,6 +77,12 @@ game.stage               EXTERNAL
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
+        ; Les masques de boutons du declencheur de l'ecran continue.
+        INCLUDE "engine/system/to8/controller/joypad.const.asm"
+        ; ymm.LOOP / ymm.NO_LOOP, pour game.music.play.
+        INCLUDE "engine/sound/ymm.const.asm"
+        ; `engine.sound.ymm.page` : la page du lecteur, pour l'interroger.
+        INCLUDE "gen/layout.asm"
         ; Les variables inter-main : vies, score 24 bits, index de vie
         ; supplémentaire. Équates absolues du bloc réservé `globals`.
         INCLUDE "src/common/state/variables.asm"
@@ -86,7 +121,9 @@ DRAW_Img_hud_life equ adr_hud_life_ND0
 
 ; Les deux entrées, nommées pour la frontière : à l'intérieur le fichier v1
 ; garde ses noms.
-hud.normal  equ hud.drawNormal
-hud.readout equ hud.scoreReadout
+hud.normal   equ hud.drawNormal
+hud.readout  equ hud.scoreReadout
+hud.continue equ hud.continueScreen
+hud.gameOverWait equ hud.cont.gameOverWait
 
  ENDSECTION

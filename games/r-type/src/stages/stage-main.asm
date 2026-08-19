@@ -188,6 +188,14 @@ statics.SIZE  equ nb_static_objects*object_size
         ; purgeait deja avant sa trame d'amorce).
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
+        ; Et les structures de rendu avec, pour la meme raison : elles nomment
+        ; les objets qu'on vient d'effacer. Une entree de priorite laissee
+        ; derriere EMPOISONNE son niveau pour de bon — `DisplaySprite` ne
+        ; reecrit `Tbl_Priority_First_Entry` que par `DSP_addFirstNode`, qui
+        ; est hors d'atteinte tant que `Tbl_Priority_Last_Entry` n'est pas nul.
+        ; Voir docs/lang/en/migration/resident-render-structures.md
+        jsr   DisplaySprite_ClearAll
+        jsr   EraseSprites_ClearAll
         jsr   InitDrawSprites
 
         ; une trame d'amorce avant le scroll, comme la v1 : le double tampon
@@ -583,13 +591,47 @@ stage.state.checkpoint
         ; rend son adresse dans X, l'index du message va dans B.
         _Obj_Mount ObjID_messages
         dec   globals.lives
-        bmi   >
-        ldb   #messages.READY
-        jsr   ,x
-        bra   @displaymessage
-!       ldb   #messages.GAME           ; deux mots a poser, GAME puis OVER
+        bpl   @ready
+        ; PLUS DE VIE : l'ecran CONTINUE avant d'annoncer GAME OVER, l'ordre
+        ; de l'arcade. Il ne rend pas de statut — `paged.call` ecrase B — il
+        ; REND SES VIES au joueur qui reprend, et le test juste apres prend
+        ; alors la branche READY puis le rechargement de checkpoint. Il
+        ; s'efface tout seul avant de rendre la main : la suite repasse en
+        ; 320x200 pour les messages. X porte l'objet messages, que l'appel
+        ; ecrase.
+        pshs  x
+        lda   #map.RAM_OVER_CART+common.hud.page
+        ldx   #hud.continue
+        jsr   paged.call
+        puls  x
+        tst   globals.lives
+        bmi   @gameOverMsg
+        ; CONTINUE ACCEPTE. L'ecran a arme sa propre musique : il faut rendre
+        ; sa place a celle du stage, sans quoi le `ymm.restart` du
+        ; rechargement de checkpoint relancerait le continue avec le niveau.
+        ; `_ymm.obj.play` coupe l'IRQ et ne la rend pas — c'est ce qui nous
+        ; laisse le READY en silence, exactement comme une mort ordinaire,
+        ; jusqu'a ce que le rechargement rallume l'IRQ sur le point de
+        ; bouclage.
+        ; Le macro ecrase DEUX choses que le READY attend : X (`ldx <donnees>`)
+        ; et la fenetre cartouche (`_ram.cart.set` monte la page du lecteur et
+        ; ne rend rien — seul le relais resident `game.music.play` la rend, et
+        ; il rallume l'IRQ, ce qu'on ne veut pas ici). Re-monter l'objet
+        ; messages refait les deux ; sans ca le `jsr ,x` du READY tombe a la
+        ; meme adresse dans la page du lecteur — la queue de tuiles compilees —
+        ; et peint de la bouillie a la place du message (vecu : ecran corrompu
+        ; le temps du READY, puis reprise normale une fois les tampons
+        ; repeints par le rechargement).
+        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
+        _Obj_Mount ObjID_messages
+        bra   @ready
+@gameOverMsg
+        ldb   #messages.GAME           ; deux mots a poser, GAME puis OVER
         jsr   ,x
         ldb   #messages.OVER
+        jsr   ,x
+        bra   @displaymessage
+@ready  ldb   #messages.READY
         jsr   ,x
 @displaymessage
         clra                           ; le message est en 320x200x16c
@@ -603,7 +645,14 @@ stage.state.checkpoint
         _waitFrames #50                ; READY : une seconde
         bra   @msgBlackout
 @waitGameOver
-        _waitFrames #150
+        ; GAME OVER reste affiche jusqu'a la FIN de son morceau, pas trois
+        ; secondes : `stage.gameOver` commence par `IrqOff`, qui fige le
+        ; lecteur. L'attente vit dans la page du HUD — voir
+        ; `hud.cont.gameOverWait` — et tient dans moins d'octets que la macro
+        ; d'attente qu'elle remplace, ce qui compte ici.
+        lda   #map.RAM_OVER_CART+common.hud.page
+        ldx   #hud.gameOverWait
+        jsr   paged.call
 @msgBlackout
         ldd   #Pal_black
         std   Pal_current
@@ -668,6 +717,7 @@ stage.state.checkpoint
 stage.gameOver
         jsr   IrqOff
         clr   game.stage
+        clr   game.continueUsed        ; la partie est finie : le continue se rearme
         ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
         ; chaque stage a nommé sa scène. Décharger la sienne avant de charger
         ; celle du title — l'index rendu puis repris est la séquence honnête.

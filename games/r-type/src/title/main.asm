@@ -87,7 +87,15 @@ stage.main
         _ram.cart.set #page.vgc
         _sn76489.init
         _ram.cart.set #page.ymm
-        _ym2413.init
+        ; DESARMER le morceau du mode precedent, PAS SEULEMENT faire taire la
+        ; puce. `_ym2413.init` coupe le son a l'instant t ; il ne coupe pas la
+        ; LECTURE, dont le statut est resident — des que l'IRQ du title tourne,
+        ; `_ymm.frame.play` reprend le morceau ou il en etait. Vecu ici : la
+        ; musique de game over debordait sur le title.
+        ; `ymm.stop` fait les deux : `clr ymm.status` puis `jmp ym2413.init`,
+        ; d'ou l'absence de `_ym2413.init` ici — ce serait le meme appel deux
+        ; fois.
+        jsr   ymm.stop
 
         ; palette au noir le temps de composer la premiere trame
         ldd   #Pal_black
@@ -97,6 +105,13 @@ stage.main
 
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
+        ; PURGER AUSSI LES STRUCTURES DE RENDU. Elles nomment des objets, et
+        ; `ManagedObjects_ClearAll` vient de tous les effacer : sans ce geste
+        ; la liste de priorite et la liste de cellules de fond survivent a
+        ; l'echange en designant des morts.
+        ; Voir docs/lang/en/migration/resident-render-structures.md
+        jsr   DisplaySprite_ClearAll
+        jsr   EraseSprites_ClearAll
         jsr   InitDrawSprites
 
         ; le title s'inscrit dans les temoins : « qui tourne » est observable
@@ -564,6 +579,8 @@ title.launchGame
         jsr   title.clearBuffers
 
         jsr   ManagedObjects_ClearAll
+        jsr   DisplaySprite_ClearAll   ; meme raison qu'a l'entree du mode
+        jsr   EraseSprites_ClearAll
         jsr   InitDrawSprites
 
         jsr   LoadObject_x

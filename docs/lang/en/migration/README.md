@@ -110,6 +110,10 @@ practice; this is a reading order, not a schedule.
 
 22. [A v1 object that only existed to get code out of the resident page becomes
     a resident routine](main-private-object.md)
+23. [The render structures are resident — a mode entry must purge
+    them](resident-render-structures.md) — v1 reloaded them with its game
+    mode binary; in v2 they outlive the pool they name, and a stale priority
+    level stays poisoned for good.
 
 
 ## Not cases, but next door

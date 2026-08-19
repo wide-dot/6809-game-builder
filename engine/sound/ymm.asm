@@ -16,6 +16,7 @@ ymm.obj.play   EXPORT
 ymm.frame.play EXPORT
 ymm.stop       EXPORT
 ymm.restart    EXPORT
+ymm.playing    EXPORT
 
         IFNDEF  engine.sound.ym2413.macro.asm
         INCLUDE "engine/sound/ym2413.macro.asm"
@@ -128,6 +129,25 @@ ymm.buffer.reset
 ymm.stop
         clr   ymm.status
         jmp   ym2413.init
+
+; ------------------------------------------------------------------------------
+; ymm.playing - le morceau tourne-t-il encore ?
+; ------------------------------------------------------------------------------
+; Un morceau NO_LOOP se termine tout seul : la branche @no_looping de
+; `ymm.frame.play` pose `ymm.status` a zero et fait taire la puce. Cet
+; accesseur est ce qui permet a un appelant d'ATTENDRE la fin d'un morceau au
+; lieu de le couper — sans lui, le statut n'est lisible que depuis cette page,
+; ou le code appelant ne peut pas se tenir.
+;
+; Le resultat sort en A, pas en B : l'appelant vient par `paged.call`, qui
+; ecrase B, et dont le retour de page ecrase aussi les drapeaux. Un `tsta`
+; apres l'appel, donc.
+;
+; Sortie : A = 0 morceau fini (ou jamais arme), != 0 en cours.
+; ------------------------------------------------------------------------------
+ymm.playing
+        lda   ymm.status
+        rts
 
 ; ------------------------------------------------------------------------------
 ; ymm.restart - reprend la musique a son point de bouclage

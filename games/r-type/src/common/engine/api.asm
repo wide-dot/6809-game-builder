@@ -311,6 +311,10 @@ Collision_Run EXTERNAL
         ; swap cannot take it with it ---
         _api game.score
         _api game.stage
+        _api game.continueUsed
+        ; Armer un morceau depuis une unite paginee : le relais qui commute la
+        ; page du lecteur et la rend. Voir engine.asm.
+        _api game.music.play
 
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---

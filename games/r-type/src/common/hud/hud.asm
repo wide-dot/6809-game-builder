@@ -612,6 +612,330 @@ hud.curDigit     fcb 0
 hud.scoreDigPos  fcb 0
 
 ; ===========================================================================
+; L'ECRAN CONTINUE  (arcade : stage_cleared_flow @ 0x4012a7)
+; ---------------------------------------------------------------------------
+; Il vit ICI, avec le releve de fin de stage, parce qu'il n'a besoin de rien
+; d'autre : la police du title dupliquee plus bas, `hud.drawStr`, et la meme
+; convention de placement $C000 + ligne*40 + colonne. Un ecran de plus dans
+; l'unite qui porte deja le seul autre ecran de texte du jeu.
+;
+; CE QUE FAIT L'ARCADE (releve au connecteur Ghidra) : `continue_prompt_gate`
+; gele le tick, verifie le DIP « Allow Continue » et `stage_score_index >= 2`
+; (un seul continue par joueur), puis affiche par un routeur de tuiles unique
+; (0xED58) des enregistrements « palette | largeur | hauteur | destination |
+; codes ASCII » :
+;     0x0E06  palette 5, 16x1  " C O N T I N U E "  (pas de « ? » : la ROM
+;                              n'en a pas, et notre police non plus)
+;     0x0E1C  palette 6, 22x1  " I N S E R T   C O I N "
+;     0x0E38  palette 6, 22x2  efface la ligne, puis " PUSH START BUTTON "
+;     0x0E6A..0x1086  palette 5, 6x9 : les dix chiffres, dessines avec le
+;                              CARACTERE 'O' ($4F) — pas le chiffre zero.
+; Le decompte descend de 9 a 0, 0x3E ticks par chiffre, avec un bip par
+; chiffre pris dans la table 0x0DDE.
+;
+; NOS ECARTS, tous decides avec l'auteur :
+;   - free play : ni DIP, ni credits, ni « INSERT COIN », ni la phase piece
+;     acceptee. Un seul ecran, « PUSH FIRE BUTTON » d'emblee. L'evenement
+;     0xEC14 que le poll arcade repostait toutes les 8 trames n'etait pas un
+;     clignotement mais la ligne d'etat des credits (« FREE PLAY » ou
+;     « CREDIT nn ») : rien a porter.
+;   - pas de bip par chiffre : la musique `sounds.continue.ymm` les integre.
+;   - la limite arcade est la REGLE PAR DEFAUT : un continue par partie
+;     (`game.continueUsed` compte les continues consommes, resident dans le
+;     moteur, remis a zero en meme temps que `game.stage`). Le quota se regle
+;     au build par le define `game.continue.MAX` — voir sa declaration plus
+;     bas.
+;   - les dix grilles sont BIT-PACKEES : 6 colonnes tiennent dans un octet,
+;     9 rangees par chiffre, 90 octets pour les dix la ou l'arcade en depense
+;     540 en grilles de caracteres.
+;
+; CE QU'IL REND : rien, au sens d'un registre — `paged.call` ecrase B. Le
+; continue accepte REND SES VIES au joueur (`globals.lives`), et le test
+; `tst globals.lives` que le corps de stage fait deja juste apres prend
+; naturellement la branche de rechargement de checkpoint. Le refus laisse les
+; vies negatives et le GAME OVER suit son cours. Aucune variable de statut.
+;
+; Il ne prend PAS le verrou de double tampon : rien ne bouge a l'ecran entre
+; deux chiffres, et sans `gfxlock.off` aucun echange de tampon n'est arme —
+; c'est la discipline de la sequence READY / GAME OVER juste a cote, qui
+; peint elle aussi en absolu et attend a `_waitFrames`.
+;
+; Le score n'est PAS remis a zero, contrairement a l'arcade : sans table de
+; classement il n'y a rien a proteger, et le HUD comme le seuil de vie
+; supplementaire lisent ce compteur.
+; ===========================================================================
+
+; Trames par chiffre. L'arcade en met 0x3E a 55 Hz, soit 1,13 s ; on prend
+; 60 trames — 1,20 s — pour que les DIX chiffres couvrent exactement la duree
+; de `sounds.continue.ymm` : 529 200 echantillons a 44,1 kHz = 12,00 s = 600
+; trames a 50 Hz. Decompte et morceau finissent donc ensemble, et le morceau
+; n'est jamais coupe au milieu d'une phrase (decision auteur, 18/08).
+CONTINUE_TICKS equ 60
+
+; Le nombre de continues par partie, reglable au build sans toucher au code :
+;     <define symbol="game.continue.MAX" value="N"/>   (cote target du config)
+;   0   : pas de continue — l'ecran ne s'affiche jamais, GAME OVER direct ;
+;   N   : quota par partie (`game.continueUsed` compte, GAME OVER le remet a 0) ;
+;   $FF : infini — le compte disparait de l'assemblage, l'ecran revient toujours.
+; Sans define, la regle arcade : un seul.
+ IFNDEF game.continue.MAX
+game.continue.MAX equ 1
+ ENDC
+
+; Placement : cellule = 1 octet = 4 px de large, glyphe haut de 8 lignes.
+hud.cont.line1U equ $C000+48*40+12    ; "C O N T I N U E"  (15 cellules)
+hud.cont.digitU equ $C000+72*40+17    ; le gros chiffre : 6 cellules x 9 rangees
+hud.cont.line2U equ $C000+160*40+12   ; "PUSH FIRE BUTTON" (16 cellules)
+hud.cont.line3U equ $C000+184*40+11   ; " F R E E   P L A Y" (18 cellules)
+
+hud.continueScreen
+ IFNE game.continue.MAX-$FF           ; $FF : infini, aucun compte a tenir
+        lda   game.continueUsed
+        cmpa  #game.continue.MAX      ; avec MAX=0 le test est toujours vrai :
+        lbhs  hud.cont.refuse         ;   quota consomme, la partie est finie
+ ENDC
+
+        clr   hud.cont.keydown        ; le front clavier part desarme
+        ; La musique du continue, commune aux huit stages : elle porte les bips
+        ; de decompte que l'arcade jouait chiffre par chiffre (table 0x0DDE),
+        ; d'ou l'absence de bruitage ici.
+        ;
+        ; ELLE NE BOUCLE PAS, et c'est structurel : le decompte dure exactement
+        ; un passage (CONTINUE_TICKS ci-dessus), et un morceau qui boucle ne se
+        ; termine jamais — donc personne ne pourrait ATTENDRE sa fin. Le refus
+        ; passe par `hud.cont.musicWait` juste pour absorber le decalage des
+        ; quelques trames que le decompte a prises en plus.
+        ;
+        ; Le joueur qui reprend, lui, la voit remplacee par celle du stage, que
+        ; le rechargement de checkpoint relance (`ymm.restart`).
+        ldx   #sounds.continue.ymm
+        ldb   #ymm.NO_LOOP
+        jsr   game.music.play
+        ldx   #hud.cont.screenOn
+        jsr   hud.cont.paintLines
+        ldd   #Pal_stage              ; le texte doit se voir : l'ecran vient
+        std   Pal_current             ;   d'etre noirci par le fondu de mort
+        clr   PalRefresh
+        jsr   PalUpdateNow
+
+        ; DEUX TRAMES avant le premier chiffre : le morceau part sur son
+        ; attaque, et le decompte visuel se cale dessus (reglage auteur au
+        ; rendu, 18/08). Elles s'ajoutent aux 600 trames du decompte, donc le
+        ; morceau finit deux trames avant le dernier chiffre — `musicWait` les
+        ; absorbe sans rien attendre.
+        _waitFrames #2
+        ldb   #9                      ; le decompte, de 9 a 0
+@digit  stb   hud.cont.digit
+        lda   #9                      ; l'octet 9 rangees plus loin dans la table
+        mul
+        ldx   #hud.cont.digits
+        leax  d,x
+        jsr   hud.cont.paintDigit
+        lda   #CONTINUE_TICKS
+        sta   hud.cont.ticks
+@frame  _waitFrames #1
+        jsr   joypad.readKbd
+        jsr   hud.cont.checkFire
+        bne   hud.cont.accept
+        dec   hud.cont.ticks
+        bne   @frame
+        ldb   hud.cont.digit
+        decb
+        bpl   @digit
+        ; Le decompte est alle au bout sans reponse : pas de continue. On laisse
+        ; d'abord le morceau finir sa phrase — il tombe a la meme trame a
+        ; quelques unites pres, donc l'attente est nulle ou tres courte.
+        jsr   hud.cont.musicWait
+        bra   hud.cont.refuse
+
+; ---------------------------------------------------------------------------
+; Le joueur reprend : la limite arcade se consomme, les vies reviennent au
+; compte d'ouverture de partie (corps de stage : `ldb #2 / stb globals.lives`)
+; et l'appelant retrouve un `globals.lives` positif.
+; ---------------------------------------------------------------------------
+hud.cont.accept
+        ; La musique du continue reste armee en sortant : c'est le stage qui
+        ; reprend la sienne, lui seul sait laquelle. Voir stage-main.asm.
+        ; Le compte tourne aussi en continues infinis : il n'est alors jamais
+        ; lu, et son bouclage a 256 est sans consequence.
+        inc   game.continueUsed
+        ldb   #2
+        stb   globals.lives
+        bra   hud.cont.leave
+
+hud.cont.refuse
+        ; Les vies restent negatives : GAME OVER suit chez l'appelant. On lui
+        ; pose sa musique au passage — c'est le meme geste, et le chemin
+        ; « continue deja consomme » passe ici sans avoir rien affiche.
+        ldx   #sounds.gameover.ymm
+        ldb   #ymm.NO_LOOP
+        jsr   game.music.play
+
+; L'ecran s'efface lui-meme avant de rendre la main — la suite repasse en
+; 320x200 pour READY / GAME OVER, ou nos octets BM16 se reliraient en bouillie.
+hud.cont.leave
+        ldd   #Pal_black
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow
+        ldx   #hud.cont.screenOff
+        jsr   hud.cont.paintLines
+        ldx   #hud.cont.blank
+        jmp   hud.cont.paintDigit
+
+; ---------------------------------------------------------------------------
+; hud.cont.gameOverWait — tenir GAME OVER a l'ecran jusqu'a la fin du morceau
+;
+; Le corps de stage affichait le message trois secondes (`_waitFrames #150`, la
+; duree v1, quand aucune musique n'accompagnait le message). `sounds.gameover`
+; en dure six et demie, et elle etait coupee net : c'est l'IRQ utilisateur qui
+; appelle `_ymm.frame.play`, et `stage.gameOver` commence par `IrqOff`.
+;
+; L'attente vit ICI et pas dans le corps de stage pour deux raisons : le main
+; d'un stage n'a que quelques octets de marge, et elle est la meme pour les
+; huit. Elle y coute d'ailleurs MOINS que ce qu'elle remplace — trois
+; instructions de `paged.call` contre les quinze octets de la macro d'attente.
+;
+; Le plancher de trois secondes est garde avant le sondage : si le morceau
+; n'etait pas arme, le message ne doit pas passer en un eclair.
+;
+; `paged.call` est reentrant et nous sommes deja dedans (le stage nous a
+; atteints par lui) : sa page d'origine vit sur la pile, pas dans un operande.
+; Il ecrase B et les drapeaux, d'ou le `tsta` sur le retour de `ymm.playing`.
+;
+; `hud.cont.musicWait` est le sondage seul, partage avec la fin du decompte.
+; Un morceau non arme, ou deja fini, le traverse en une trame — donc les deux
+; appelants sont sûrs de rendre la main.
+; ---------------------------------------------------------------------------
+hud.cont.gameOverWait
+        _waitFrames #150               ; le plancher v1 : trois secondes
+hud.cont.musicWait
+@wait   _waitFrames #1
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
+        ldx   #ymm.playing
+        jsr   paged.call
+        tsta
+        bne   @wait
+        rts
+
+; ---------------------------------------------------------------------------
+; Les trois lignes de texte. X = table de trois paires (adresse ecran, chaine).
+; `hud.drawStr` ecrase A, X, Y et U : la table et le compteur passent par la
+; pile.
+; ---------------------------------------------------------------------------
+hud.cont.paintLines
+        ldb   #3
+@l      ldu   ,x++
+        ldy   ,x++
+        pshs  b,x
+        jsr   hud.drawStr
+        puls  b,x
+        decb
+        bne   @l
+        rts
+
+hud.cont.screenOn
+        fdb   hud.cont.line1U,hud.cont.strTitle
+        fdb   hud.cont.line2U,hud.cont.strPush
+        fdb   hud.cont.line3U,hud.cont.strFree
+hud.cont.screenOff
+        fdb   hud.cont.line1U,hud.cont.strBlank
+        fdb   hud.cont.line2U,hud.cont.strBlank
+        fdb   hud.cont.line3U,hud.cont.strBlank
+
+; ---------------------------------------------------------------------------
+; Le gros chiffre. X = 9 octets de motif, un par rangee, bits 5..0 = colonnes
+; 0..5. Chaque cellule est un glyphe de la police : 'O' ou l'espace, qui peint
+; l'index 0 — c'est lui qui efface.
+; ---------------------------------------------------------------------------
+hud.cont.paintDigit
+        ldu   #hud.cont.digitU
+        lda   #9
+        sta   hud.cont.rows
+@row    ldb   ,x+
+        aslb                          ; colonne 0 (bit 5) amenee en bit 7
+        aslb
+        lda   #6
+        sta   hud.cont.cols
+@cell   aslb                          ; la colonne courante part dans la retenue
+        pshs  b
+        bcc   @blank
+        jsr   DRAW_text_o
+        bra   @next
+@blank  jsr   DRAW_text_space
+@next   puls  b
+        leau  1,u
+        dec   hud.cont.cols
+        bne   @cell
+        leau  314,u                   ; rangee suivante : 8 lignes, moins les 6 cellules
+        dec   hud.cont.rows
+        bne   @row
+        rts
+
+; ---------------------------------------------------------------------------
+; Le declencheur, copie de `title.checkStart` (v1 : Fire_Press) : boutons A et
+; B des deux ports, PLUS le bit KTEST du PIA avec son propre front. Sans
+; extension manette le port se lit tout « tenu » (vecu sous toje), donc le
+; front clavier ne peut pas se deduire du seul `joypad.pressed.fire`.
+; Sortie : Z=0 si le joueur reprend.
+; ---------------------------------------------------------------------------
+hud.cont.checkFire
+        lda   joypad.pressed.fire
+        anda  #joypad.x.A+joypad.x.B
+        bne   @go
+        lda   map.MC6821.PRA
+        lsra
+        bcs   @keyDown
+        clr   hud.cont.keydown        ; touche relachee : le front se rearme
+        clra                          ; Z=1 : on continue d'attendre
+        rts
+@keyDown
+        tst   hud.cont.keydown
+        bne   @held                   ; toujours tenue : elle a deja servi
+        inc   hud.cont.keydown
+        lda   #1                      ; Z=0 : le joueur reprend
+        rts
+@held   clra
+@go     rts
+
+hud.cont.digit   fcb 0                ; le chiffre affiche (9..0)
+hud.cont.ticks   fcb 0                ; trames restantes sur ce chiffre
+hud.cont.rows    fcb 0
+hud.cont.cols    fcb 0
+hud.cont.keydown fcb 0                ; front du declencheur clavier
+
+; Les chaines sont espacees comme dans l'arcade (" C O N T I N U E "), sauf
+; l'invite : la ROM ecrit « PUSH START BUTTON » d'un seul tenant, et la v1
+; porte deja « PUSH FIRE BUTTON » mot pour mot dans le texte du title.
+hud.cont.strTitle fcc 'C O N T I N U E'
+                  fcb 0
+hud.cont.strPush  fcc 'PUSH FIRE BUTTON'
+                  fcb 0
+; L'arcade la pose sous l'invite (enregistrement 0x878C, palette 5, 18x1 en
+; $2B5C) quand `coinage_row_slot1` est nul — c'est-a-dire en free play, notre
+; cas. La variante a credits (0x87B0 « C R E D I T » + cinq chiffres) n'a pas
+; d'objet ici.
+hud.cont.strFree  fcc ' F R E E   P L A Y'
+                  fcb 0
+hud.cont.strBlank fcc '                  '
+                  fcb 0
+
+; Les dix chiffres, releves dans la ROM arcade (0x0E6A..0x1086) et bit-packes :
+; un octet par rangee, bits 5..0 = les six colonnes.
+hud.cont.blank  fcb %000000,%000000,%000000,%000000,%000000,%000000,%000000,%000000,%000000
+hud.cont.digits
+        fcb   %011110,%100001,%100001,%100001,%100001,%100001,%100001,%100001,%011110   * 0
+        fcb   %000100,%001100,%000100,%000100,%000100,%000100,%000100,%000100,%001110   * 1
+        fcb   %011110,%100001,%100001,%000001,%001110,%010000,%100000,%100000,%111111   * 2
+        fcb   %011110,%100001,%100001,%000001,%000110,%000001,%100001,%100001,%011110   * 3
+        fcb   %000110,%001010,%010010,%100010,%100010,%100010,%111111,%000010,%000010   * 4
+        fcb   %011111,%100000,%100000,%100000,%011110,%000001,%000001,%100001,%011110   * 5
+        fcb   %011110,%100001,%100000,%100000,%011110,%100001,%100001,%100001,%011110   * 6
+        fcb   %011110,%000001,%000001,%000001,%000010,%000100,%001000,%001000,%001000   * 7
+        fcb   %011110,%100001,%100001,%100001,%011110,%100001,%100001,%100001,%011110   * 8
+        fcb   %011110,%100001,%100001,%100001,%011110,%000001,%000001,%000001,%011110   * 9
+
+; ===========================================================================
 ; STAGE-CLEARED FONT  (duplicated from objects/levels/00/text/text.asm)
 ; ---------------------------------------------------------------------------
 ; Full title-screen glyph set, copied here so the phase-4 STAGE CLEARED / STAGE

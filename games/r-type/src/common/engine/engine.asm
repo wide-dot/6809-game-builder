@@ -36,6 +36,7 @@ ENGINE_RESIDENT equ 1
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
         INCLUDE "gen/layout.asm"
+        INCLUDE "engine/sound/ymm.const.asm"
 
 ; The scroll reads these two when InitScroll works out its default camera cap.
 ; A stage overrides the cap by writing scroll_max afterwards, which is how a
@@ -60,6 +61,59 @@ map_width       equ 24*tile_size
 ; compteurs de vies dans deux endroits n'en font pas un.
 game.score      fdb   0
 game.stage      fcb   0
+; Les continues consommes de la partie en cours. Le quota est fixe a
+; l'assemblage du HUD par le define `game.continue.MAX` (defaut 1, la regle
+; arcade ; 0 = jamais, $FF = infini) — voir hud.asm. Le compteur vit ici, avec
+; le stage et le score, pour la meme raison qu'eux — il doit survivre a
+; l'echange de stage, et le bloc reserve `globals` est plein a l'octet pres.
+game.continueUsed fcb 0
+
+;*******************************************************************************
+; game.music.play — armer un morceau DEPUIS DU CODE PAGINE
+;
+; `_ymm.obj.play` monte la page du lecteur. Une unite paginee qui l'appellerait
+; se retirerait le sol sous les pieds : son propre code vit dans la fenetre
+; qu'elle commuterait. Ce relais est RESIDENT, donc il peut commuter la fenetre
+; et la rendre.
+;
+; C'est `paged.call` en sens inverse — mais paged.call ne sait pas passer de
+; parametres : il se sert de X pour l'adresse d'entree et ecrase B. Le lecteur
+; veut les deux. D'ou ce relais plutot qu'un appel generique.
+;
+; Reentrant : la page de l'appelant et le mode de boucle vivent sur la pile,
+; pas dans un operande auto-modifie.
+;
+; L'IRQ EST RENDUE au retour : `ymm.obj.play` la coupe (`jsr irq.off`) et ne la
+; rend jamais — c'est a son appelant de le faire, et les deux sites du corps de
+; stage le font plus loin dans leur sequence. Un appelant qui l'ignore reste
+; muet : c'est l'IRQ utilisateur qui appelle `_ymm.frame.play`, donc le morceau
+; est arme et jamais joue. Vecu sur l'ecran continue.
+;
+; CE RELAIS NE MEMORISE RIEN. `ymm.restart` relance ce qui est ARME, donc un
+; appelant qui arme un morceau de passage doit rendre sa place au precedent —
+; et c'est le STAGE qui le fait, en re-armant `stage.music` : lui seul sait
+; quel morceau est le sien. Voir la branche du continue accepte dans
+; stage-main.asm.
+;
+; Entree : X = donnees du morceau, B = ymm.LOOP ou ymm.NO_LOOP
+; Sortie : A, B, X, Y appartiennent au lecteur ; la page de l'appelant est
+;          rendue, et l'IRQ tourne.
+;*******************************************************************************
+game.music.play EXPORT
+game.music.play
+        pshs  b                        ; 1,s apres le prochain push : le mode
+        _GetCartPageB
+        pshs  b                        ; 0,s : la page de l'appelant
+        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
+        _SetCartPageA                  ; A reste la page des donnees : le lecteur la range
+        ldb   1,s                      ; le mode demande
+        ldy   #ymm.NO_CALLBACK
+        jsr   ymm.obj.play
+        puls  b
+        _SetCartPageB                  ; sa page a l'appelant
+        leas  1,s                      ; le mode, dont personne n'a plus besoin
+        jmp   irq.on
+
 
 ; Le score du jeu, sur 24 bits par centaines de points comme en v1, et sa
 ; table de recompenses. AwardScore vit ici parce que le score survit aux
@@ -178,6 +232,9 @@ game.stage.unload
 ;*******************************************************************************
 ; L'échange de stage — la suite du commentaire ci-dessus
 ;*******************************************************************************
+; Le lecteur YMM, dans sa page : le relais game.music.play l'y atteint.
+ymm.obj.play EXTERNAL
+
 stage.main EXTERNAL
 cast.converge EXTERNAL
 ; X = id de la scène cible, Y = id de son RÉPERTOIRE (l'equate <scène>.dir

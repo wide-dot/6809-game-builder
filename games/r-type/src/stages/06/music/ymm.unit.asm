@@ -7,22 +7,19 @@
 ; VGM, et `music.xml` en tire son `music.ymm` comme pour les autres.
 ;
 ; Le nom suit la convention uniforme : chaque stage nomme sa musique
-; `music.ymm`. Le boss et le
-; jingle voyagent avec, comme partout — sa wave sème le marqueur de musique
-; de boss.
+; `music.ymm`.
+;
+; Le boss, le jingle de fin, le continue et le game over ne sont PLUS ici :
+; ils vivent dans `common.music.ymm`, chargé une fois au boot en $20BC et
+; jamais échangé. Ce bloc-ci ne porte que la piste du stage — d'où l'adresse
+; $2C09, qui commence après le bloc commun.
 ;*******************************************************************************
 
 sounds.level6.ymm     EXPORT
-sounds.boss.ymm       EXPORT
-sounds.clearstage.ymm EXPORT
 
  SECTION code
 
 sounds.level6.ymm
         INCLUDEBIN "src/stages/06/music/adnz/ymm/music.ymm"
-sounds.boss.ymm
-        INCLUDEBIN "src/common/flow/bossmusic/music/ymm/music.ymm"
-sounds.clearstage.ymm
-        INCLUDEBIN "src/common/flow/clearstage/music/ymm/music.ymm"
 
  ENDSECTION

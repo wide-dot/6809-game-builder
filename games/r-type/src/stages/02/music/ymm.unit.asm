@@ -3,28 +3,21 @@
 ;
 ; Le lecteur est résident depuis le boot (engine.sound.ymm) et ne monte
 ; qu'une page sous IRQ : les données d'un morceau vivent avec lui, au créneau
-; musical de la page $1A ($20BC). Chaque stage y charge SON bloc — les
+; musical de la page $1A ($2C09). Chaque stage y charge SON bloc — les
 ; fichiers stageN.music.ymm sont des alternatives à la même destination,
 ; comme le title.
 ;
-; Le boss et le jingle de fin voyagent avec le morceau, comme au stage 1 :
-; rien ne les rechargera au moment où ils serviront. Leurs noms sont
-; multi-fournisseurs (chaque bloc les porte), donc ce fichier reste indexé
-; le temps du stage — ~40 octets de pool, sans danger depuis que le tampon
-; de répertoire est statique hors pool (15/08).
+; Le boss, le jingle de fin, le continue et le game over ne sont PLUS ici :
+; ils vivent dans `common.music.ymm`, chargé une fois au boot en $20BC et
+; jamais échangé. Ce bloc-ci ne porte que la piste du stage — d'où l'adresse
+; $2C09, qui commence après le bloc commun.
 ;*******************************************************************************
 
 sounds.level2.ymm     EXPORT
-sounds.boss.ymm       EXPORT
-sounds.clearstage.ymm EXPORT
 
  SECTION code
 
 sounds.level2.ymm
         INCLUDEBIN "src/stages/02/music/adnz/ymm/music.ymm"
-sounds.boss.ymm
-        INCLUDEBIN "src/common/flow/bossmusic/music/ymm/music.ymm"
-sounds.clearstage.ymm
-        INCLUDEBIN "src/common/flow/clearstage/music/ymm/music.ymm"
 
  ENDSECTION
