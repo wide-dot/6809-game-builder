@@ -1658,13 +1658,6 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.shelleraser" linkdata="LINK" arena="enemies">
-                    <lwasm gensource="gen/enemies/shelleraser.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/shell/shelleraser.unit.asm"/>
-                    </lwasm>
-                </file>
-
                 <!-- Douze poses en trois tranches d'arene, une par phase de jeu ;
                      index unique, chaque descripteur porte la page de SON image.
                      Vol et chute : poses 6-7 + miroirs 14-15. -->
@@ -1994,6 +1987,30 @@
                     <lwasm gensource="gen/enemies/tailmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
+                        <!-- OVERLAY : les quatre segments de queue redeviennent des
+                             PNG compiles par la chaine standard (dessin seul, paires
+                             decalees), a la place des blits bg-erase colles dont le
+                             generateur etait perdu. TMDrawTab (tailmgr.asm) les vise
+                             par leur symbole ; pas d'index, comme le HUD. -->
+                        <gfxcomp gendir="gen/enemies/tail"
+                                 gensource="gen/enemies/tail/includes.asm">
+                            <image name="tail_0" filename="src/enemies/dobkeratops/images/tail/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_1" filename="src/enemies/dobkeratops/images/tail/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_2" filename="src/enemies/dobkeratops/images/tail/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_end" filename="src/enemies/dobkeratops/images/00-end_2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
                     </lwasm>
                 </file>
                 <!-- Le monstre qui emerge de la bouche -->
@@ -2146,7 +2163,6 @@
                     <load name="stage1.init"/>
                     <load name="stage1.blaster"/>
                     <load name="stage1.shell"/>
-                    <load name="stage1.shelleraser"/>
                     <load name="stage1.tabrok"/>
                     <load name="stage1.tabrok.imgFlight"/>
                     <load name="stage1.tabrok.imgGround"/>

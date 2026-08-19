@@ -20,7 +20,6 @@
 
 AABB_0          equ  ext_variables     ; AABB struct (9 bytes)
 angle           equ  ext_variables+9   ; 8.8
-erase_slot      equ  ext_variables+11  ; ptr du slot dans shellEraseTable (pour se desinscrire a la mort)
 son_ptr         equ  ext_variables+13
 dad_ptr         equ  ext_variables+15
 is_destroyed    equ  ext_variables+17
@@ -125,7 +124,6 @@ Init
 Live
         ldx   #Images
 LiveContinue
-        jsr   ShellSavePos              ; ecrit la position du shell dans shellEraseTable (effacement)
         lda   gfxlock.frameDrop.count
         ldb   #$64
         mul
@@ -291,20 +289,10 @@ Delete
         lda   #5
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy
-        lda   subtype,u         ; efface le slot du shell (index = subtype-1) -> plus d'effacement fantome
-        deca
-        ldb   #4
-        mul
-        ldx   #shellEraseTable
-        leax  d,x
-        ldd   #0
-        std   ,x                ; old_pos_0 = 0
-        std   2,x               ; old_pos_1 = 0
-        jmp   DeleteObject
+        jmp   DeleteObject      ; OVERLAY : plus de slot d'effacement a rendre
 AlreadyDeleted
         rts
 Destroyed
-        jsr   ShellSavePos              ; idem en etat detruit (le shell brise est encore dessine)
         lda   gfxlock.frameDrop.count
         ldb   #$64
         mul
@@ -362,56 +350,6 @@ Destroyed
         clr   kill_my_nok,u     ; Cancel order for self, this is taken care of now
         jmp   DisplaySprite
 
-; ---------------------------------------------------------------------------
-; ShellSavePos - ecrit la position ecran du shell (xy_pixel, = frame precedente
-; comme dans mask.asm) dans son slot shellEraseTable[subtype-1], en CROSS-buffer
-; (ecrit l'old_pos du buffer OPPOSE) pour que ObjID_shellEraser efface, sur le
-; buffer courant, la position dessinee il y a 2 frames. Preserve X (table en cours).
-;   in : U = OST shell ; clobbe : D
-; ---------------------------------------------------------------------------
-ShellSavePos
-        pshs  x
-        lda   subtype,u
-        deca
-        ldb   #4
-        mul                     ; D = (subtype-1)*4 = offset du slot
-        ldx   #shellEraseTable
-        leax  d,x               ; X = slot du shell
-        ; OVERLAY : BuildSprites ne reecrit plus xy_pixel dans l'OST pour les
-        ; objets en coordonnees playfield, et rsv_render_flags n'existe plus.
-        ; On refait donc la conversion de CheckSpritesRefresh ici meme, bornee
-        ; au champ visible : hors bornes -> 0, pas d'effacement (le blit du
-        ; stamp wrapperait au bord de ligne).
-        ldd   y_pos,u
-        subd  glb_camera_y_pos
-        blo   @off
-        tsta
-        bne   @off
-        addb  #screen_top           ; cadre 48-207 : constante, PAS l'offset
-                                    ; camera (nul en overlay - marge, pas cadre)
-        cmpb  #screen_top+6
-        blo   @off
-        cmpb  #screen_bottom-12
-        bhi   @off
-        stb   @y+1
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        blo   @off
-        tsta
-        bne   @off
-        addb  #screen_left          ; idem : DRS_XYToAddress retranche 48/28
-        cmpb  #screen_left+4
-        blo   @off
-        cmpb  #screen_right-8
-        bhi   @off
-        tfr   b,a
-@y      ldb   #0
-        bra   @write
-@off    ldd   #0
-@write  tst   gfxlock.backBuffer.id
-        beq   @s0
-        std   ,x                ; buffer 1 -> old_pos_0 (l'effaceur lit old_pos_1)
-        puls  x,pc
 @s0     std   2,x               ; buffer 0 -> old_pos_1 (l'effaceur lit old_pos_0)
         puls  x,pc
 

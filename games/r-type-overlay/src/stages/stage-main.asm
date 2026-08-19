@@ -371,13 +371,6 @@ stage.state.running
         jsr   paged.call
  ENDC
 
-        ; L'effaceur de la rotonde, ICI comme en v1 (main.asm:243) : entre les
-        ; etoiles et DrawSprites, le fond venant d'etre restaure. C'est un
-        ; objet hors pool — pas d'OST, RunObjects ne le voit pas — qui relit la
-        ; table que les shells remplissent. Les stages sans rotonde n'en
-        ; souffrent pas : la table y est vide, la boucle ne blitte rien.
-        _Obj_Run ObjID_shellEraser
-
         ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
         ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
         ; le verrou, comme la v1 overlay (goldorak main.asm:47).

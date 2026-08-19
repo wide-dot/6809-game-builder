@@ -13,11 +13,20 @@ Etat de cette base (etape 1 du chantier) :
 - engine : pack `sprite-overlay-pack` v1 importe (BuildSprites remplace
   CheckSpritesRefresh/EraseSprites/DrawSprites/UnsetDisplayPriority) ;
 - **pas encore d'effacement de fond** : les sprites LAISSENT DES TRAINEES,
-  c'est attendu — les effaceurs a la main (rotonde, etoiles) sont gardes ;
-- la queue du Dobkeratops est INVISIBLE (son imageset fabrique n'a pas de
-  variante D) — sa machinerie de cellules est a re-concevoir en overlay ;
-- mesure : 16,7 img/s de moyenne sur le niveau 1 contre 12,0 en reference
-  (+39 %) — la borne haute, avant de payer l'effacement ;
+  c'est attendu ;
+- les effaceurs a la main sont RETIRES (19/08, valide visuellement) : la
+  rotonde de shells (eraser/shelleraser.unit/mask supprimes, table et hooks
+  purges, l'ObjID 26 garde son numero et pointe le placeholder) et la
+  machinerie bg-erase de la queue du Dobkeratops — TailDrawAll dessine
+  seul, les quatre segments sont recompiles depuis leurs PNG par la chaine
+  gfxcomp (les 703 lignes de blits colles au generateur perdu sont
+  supprimees). Restent, a traiter AVEC le chantier effacement :
+  starfield.erase (sans effacement de fond les etoiles traineraient), les
+  bandes Wipe de la mort du boss (animation scriptee, pas de la
+  comptabilite d'effacement), les talons EraseSprites_ClearAll et les
+  ecritures glb_force_sprite_refresh (inertes) ;
+- mesure : 16,1 img/s de moyenne sur le niveau 1 contre 12,0 en reference
+  (+34 %) — la borne haute, avant de payer l'effacement ;
 - PIEGE APPRIS (19/08) : la convention des offsets camera CHANGE avec le
   pack. En background-erase ils portent le cadre ecran (48/28) ; le
   BuildSprites overlay les traite en MARGE hors-ecran et veut ZERO ici —

@@ -31,7 +31,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.shelleraser.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
@@ -86,7 +86,7 @@ Obj_Index_Address
         fdb   counterairlaser.Object ; ObjID_forcepod_counterairlaser
         fdb   scantfire.Object ; ObjID_scantfire
         fdb   tabrokcanon.Object ; ObjID_tabrokcanon
-        fdb   shellEraser.Object ; ObjID_shellEraser
+        fdb   stage.placeholder.raw ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fdb   commonmissileflame.Object ; ObjID_commonmissileflame
         fdb   dobkeratopsSaw.Object ; ObjID_dobkeratops_saw
         fdb   dobkeratopsExplosion.Object ; ObjID_dobkeratops_explosion
@@ -135,7 +135,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.shelleraser.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
@@ -236,7 +236,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.shelleraser.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
