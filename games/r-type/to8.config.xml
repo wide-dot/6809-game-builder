@@ -718,21 +718,27 @@
                                  genindex="gen/pickups/pow/index.asm"
                                  file="common.pow">
                             <image name="pow_fly" filename="src/common/pickups/pow/images/pow/00.png" index="0">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_1" filename="src/common/pickups/pow/images/pow/01.png" index="1">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_2" filename="src/common/pickups/pow/images/pow/02.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_3" filename="src/common/pickups/pow/images/pow/03.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_4" filename="src/common/pickups/pow/images/pow/04.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_5" filename="src/common/pickups/pow/images/pow/05.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="bdraw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
