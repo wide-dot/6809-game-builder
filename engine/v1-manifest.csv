@@ -79,3 +79,7 @@ games/r-type/src/common/weapons/forcepods/obj_reboundlaser.asm,objects/player1/f
 games/r-type/src/common/weapons/forcepods/obj_counterairlaser.asm,objects/player1/forcepods/obj_counterairlaser.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par counterairlaser.unit.asm
 games/r-type/src/common/weapons/forcepods/obj_simplefire.asm,objects/player1/forcepods/obj_simplefire.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par simplefire.unit.asm ; ses deux eclats d'impact sont recompiles sous simplefire_impact* (l'unite weapon exporte deja weapon_impact*)
 games/r-type/src/common/lib/weaponcollide.asm,global/weaponcollide.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par collisionpass.unit.asm ; cable le 2026-08-05 dans la passe de collision, avec weaponGateAccum declare par l'unite
+engine/graphics/sprite/sprite-overlay-pack.asm,engine/graphics/sprite/sprite-overlay-pack.asm,cf6e765e147b1a17c46e20eabb07bdb9980425ed,2026-08-19,
+engine/graphics/sprite/overlay-mode/DisplaySprite.asm,engine/graphics/sprite/overlay-mode/DisplaySprite.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-19,
+engine/graphics/sprite/overlay-mode/BuildSprites.asm,engine/graphics/sprite/overlay-mode/BuildSprites.asm,a1bda7ebd31ebc3c1c5c96fad4d9fabf34c63277,2026-08-19,setdp neutralized (obj target)
+engine/graphics/sprite/overlay-mode/DeleteObject.asm,engine/graphics/sprite/overlay-mode/DeleteObject.asm,8dd3e92233cd0de1e015a2af5b2f60d72fe2aee1,2026-08-19,

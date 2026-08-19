@@ -1,0 +1,482 @@
+# Correspondance ancien index -> nouveau index, pour la migration de palette.
+# Fondement et arbitrages : docs/lang/fr/analyse-palette-migration-2026-08.md
+# Plan et suivi                : docs/lang/fr/plan-migration-palette.md
+#
+# Format : un mot-cle ou un nom de ressource, puis des couples `ancien>nouveau`.
+#   defaut      s'applique a TOUTE ressource ;
+#   <ressource> ajoute ou REMPLACE des couples pour cette ressource seule ;
+#   *           « la ressource en cours » — reserve aux surcouches de comparaison
+#               (palette-variantes/), qui expriment une recette sans prejuger
+#               a qui elle convient ; jamais dans ce fichier-ci ;
+#   fusion-ok   sur une ligne de ressource (ou `*`) : autorise une collision ;
+#   a>b~c       TRAME : l'ancien index `a` ne devient pas une couleur mais un
+#               DAMIER de `b` et `c`, une case sur deux, alterne sur (x+y).
+#               Le motif est porte par l'image, donc il suit le sprite.
+#               Une trame compte comme UNE VALEUR A ELLE SEULE dans le controle
+#               de rampe : c'est une teinte percue distincte de ses deux
+#               composantes, et c'est le moyen de fabriquer un barreau
+#               intermediaire quand la palette n'en a plus de libre.
+#               Attention au rendu reel : le TO8 est en 160x200, le pixel est
+#               deux fois plus large que haut, donc un damier se lit en fines
+#               rayures diagonales et non en grain neutre.
+#
+# Ce fichier declare les decisions ; `palette-replay.sh` declare celles qui ont
+# ete APPLIQUEES, et dans quel ordre. Une ligne ici sans sa ressource la-bas est
+# une proposition en attente de la validation de l'auteur.
+#
+# REGLE (auteur, 16/08) : une decision de couleur s'ecrit sous le NOM de sa
+# ressource, JAMAIS en `defaut`. Ce qui convient au vaisseau ne convient pas
+# forcement au pow. La ligne `defaut` ne porte que ce qui ne se discute pas :
+# les reports d'index a couleur identique.
+#
+# Un index present dans une image mais absent de la table est une ERREUR, pas
+# une identite silencieuse : l'outil refuse d'ecrire tant qu'il n'est pas
+# tranche. C'est ce qui empeche une couleur d'etre migree par inadvertance.
+#
+# LE MAGENTA (regle auteur, 16/08) -------------------------------------------
+# Les index MATERIELS 12 a 15 (entrees PNG 13 a 16) sont propres au STAGE. Un
+# commun n'a pas le droit de s'en servir : la table de couleurs gravee dans ses
+# PNG les peint donc en MAGENTA #FF00FF. Un pixel egare y devient criard dans
+# n'importe quel editeur au lieu de passer pour une couleur plausible — et il
+# le reste quel que soit le stage, puisque la vraie couleur vient de png2pal.
+#
+# L'exception se declare toute seule : ce qu'une ressource ENVOIE dans 12-15
+# par sa ligne ci-dessous garde sa vraie couleur, le reste est magenta.
+#
+# Le cas connu est le VERT. Regle etendue par l'auteur le 16/08 : il occupe un
+# index propre au stage sur les stages 1, 3, 4, 5 et 7 — l'union des stages qui
+# chargent un lot porteur d'olive (scant 1-7, bugpstaff 1-4-7, patapata
+# 1-3-4-7, cancer 1-4-5-7), releve sur les scenes de cast. Les COMMUNS restent
+# exclus : common.optionbox, chargee sur les huit stages, migre son olive vers
+# le gris au lieu d'imposer un vert a tout le monde.
+
+# --- la table de base : les douze couleurs conservees, plus le ciel ---------
+# 1 FFF->3, 2 666->1, 5 068->4, 6 09C->5, 13 0DE->6, 14 F96->10 : deplacements
+# 10 FA0->10 : fusion de barreau, l'orange devient le saumon clair
+# 15 000->0  : le ciel rejoint le noir (decision auteur)
+# Les index 3 (beige fonce), 4 (beige clair) et 12 (olive) ne sont PAS ici :
+# ils deviennent propres au stage, chaque ressource doit dire ce qu'elle en
+# fait — c'est tout l'objet de la validation par planche.
+#
+# Avec 10 F2AB00 (le seul report ci-dessous qui change de couleur), ces trois-la
+# sont les SEULS index ou l'oeil a quelque chose a voir. Tout le reste de cette
+# ligne reporte un index sur une entree de MEME couleur : le rendu est identique
+# au pixel pres, et l'outil le prouve au lieu de le faire regarder.
+defaut  0>0 1>3 2>1 5>4 6>5 7>7 8>8 9>9 10>10 11>11 13>6 14>10 15>0
+
+# --- la regle qui prime, posee par l'auteur le 16/08 -----------------------
+# CONSERVER LES NIVEAUX DE DEGRADE. Une ressource qui montre N valeurs doit en
+# montrer N apres migration ; deux index employes qui tombent sur le meme sont
+# une marche perdue, et l'outil ARRETE plutot que de la laisser passer.
+# La nouvelle palette offre cinq marches du rouge au jaune — 7 610000,
+# 8 AC0000, 9 CC5A3C, 10 F99B68, 11 FAF261 — plus le blanc 3 FFF au-dessus.
+# L'ancienne en avait six dans la meme plage, dont DEUX a la meme hauteur
+# (10 F2AB00 lum 173 et 14 F99B68 lum 177) : c'est la seule vraie perte, et
+# elle se rattrape en glissant la rampe d'un cran, pas en fusionnant.
+#
+# Methode, quand la table par defaut provoque une collision : classer les
+# index EMPLOYES par luminance et les poser sur autant de marches de la
+# nouvelle palette, dans le meme ordre. L'outil liste les marches libres.
+#
+# LIMITE DE LA METHODE, trouvee sur common.player le 16/08 : le classement par
+# luminance ne vaut QU'A L'INTERIEUR D'UNE FAMILLE DE TEINTE. Applique en bloc
+# a une ressource qui melange bleus, chauds et neutres, il enverrait le bleu
+# 00618F sur le rouge AC0000 — meme rang, autre monde. Les trois familles de
+# cette palette, a traiter separement :
+#
+#   neutres  0 000000  1 616161  2 A8A8A8  3 FAFAF2          (4 marches)
+#   bleus    4 00618F  5 009ECC  6 08D4EB                    (3 marches)
+#   chauds   7 610000  8 AC0000  9 CC5A3C  10 F99B68  11 FAF261  (5 marches)
+#
+# L'ancienne palette avait 3 bleus (exact), 5 chauds hors doublon (large) et
+# SIX neutres avec les deux beiges. C'est la seule famille en deficit, et donc
+# le seul endroit ou une marche se perd pour de bon.
+
+# --- par ressource, au fil des validations de l'auteur ----------------------
+
+# --- Explosions (groupe B) — arbitre a l'oeil par l'auteur le 16/08/2026 ---
+#
+# Six valeurs employees de chaque cote, donc une bijection par rang : aucune
+# fusion. Le seul choix reel etait LEQUEL des deux anciens barreaux de meme
+# hauteur (10 F2AB00 lum 173, 14 F99B68 lum 177) descend sur le CC5A3C qui
+# comble le trou de la rampe. Trois candidats compares sur planche :
+#
+#   perte de l'orange   les deux barreaux fusionnent — CINQ valeurs au lieu de
+#                       six. ECARTE. Conserve dans palette-variantes/b-fusion.txt,
+#                       c'est l'alternative rejetee, elle a le droit de survivre.
+#   descente de l'orange   `10>9 14>10` — l'orange descend (353 px sur imgBig).
+#                       ECARTE a l'oeil.
+#   descente du rose    `10>10 14>9` — c'est le saumon qui descend (470 px).
+#                       RETENU.
+#
+# Le retenu avait ete demande sous la forme « inverser orange et rose dans les
+# images source, puis appliquer la conversion qui conserve les niveaux ».
+# C'est la meme chose ecrite en une passe, et il vaut mieux l'ecrire ainsi :
+#
+#     un pixel 10 devient 14 par l'echange, puis 10 par la table 10>9 14>10 ;
+#     un pixel 14 devient 10 par l'echange, puis  9 par la meme table.
+#
+# Soit `10>10 14>9`. Les sources ne sont donc pas touchees — le rejeu depuis
+# origin/master reste UNE transformation, et les PNG d'origine gardent leur sens.
+common.explosion.imgBig    10>10 14>9
+
+# Meme rampe, mais imgSmall emploie DEJA CC5A3C (39 px) : la marche visee est
+# prise. Tout le bas glisse donc d'un cran pour la degager — le 610000 de la
+# nouvelle palette, inutilise ici, sert de nouveau plancher.
+common.explosion.imgSmall  8>7 9>8 10>10 14>9
+
+# --- Le vaisseau (groupe C). La paire chaude d'abord ------------------------
+# common.player emploie l'ancien orange (13 px) ET l'ancien saumon (4 px) :
+# meme situation que les explosions, meme recette retenue le 16/08 — c'est le
+# saumon qui descend sur CC5A3C. Le sort de SES beiges se decide a part, sur
+# planche, et ne vaudra que pour lui : chaque ressource a les siens.
+#
+# Beiges : « fusion du sombre » (planche 2, arbitre a l'oeil le 16/08). C'est
+# la ressource ou cette recette se defend le mieux — elle n'a que 19 px de
+# 616161 d'origine, donc la fusion REPARTIT au lieu d'ecraser : 128 / 122 /
+# 144, une rampe grise presque plate.
+common.player  10>10 14>9 3>1 4>2 fusion-ok
+
+# --- Les beiges, planche 1/3 « beiges seuls » — auteur, 16/08/2026 ----------
+# Recette A retenue : le beige clair prend le gris clair A8A8A8. Ces quatre-la
+# n'emploient PAS le beige fonce, donc les recettes A et B leur donnaient le
+# meme resultat ; la recette C (beige clair au blanc) leur coutait une marche
+# de gris — deux d'entre elles seraient tombees a deux gris.
+# Rien sur 3 : ce qu'une ressource n'emploie pas n'a pas a etre declare.
+common.hud      4>2
+common.missile  4>2
+common.overlay  4>2
+lib.pstaff      4>2
+
+# --- common.pow — arbitre a l'oeil le 16/08/2026, sur six candidats ---------
+# « Fusion blanche » : le beige fonce prend le gris clair A8A8A8, le beige
+# clair — le reflet — devient du BLANC FRANC et se fond dans le blanc deja
+# present. Quatre marches au lieu de cinq, assume : les cinq-marches passaient
+# soit par le jaune (hors famille, ecarte), soit par une trame (l'outil sait
+# les faire depuis ce jour, cf. la syntaxe `a>b~c` plus haut).
+# Ecartees et rejouables : palette-variantes/c-beige-fonce-au-gris (fusion du
+# sombre), c-beige-clair-en-trame, c-beige-fonce-en-trame, c-les-deux-en-trame.
+common.pow  3>2 4>3 fusion-ok
+
+# --- Planche 3/3, l'olive — auteur, 16/08/2026 ------------------------------
+# REGLE ETENDUE : le vert occupe un index propre au stage sur les stages
+# 1, 3, 4, 5 et 7 — l'union des stages qui chargent un lot porteur d'olive
+# (scant 1-7, bugpstaff 1-4-7, patapata 1-3-4-7, cancer 1-4-5-7). Les quatre
+# lots gardent donc leur olive a l'identique : `12>14` est la MEME couleur
+# que l'ancien 617A00, c'est une renumerotation pure.
+lib.patapata  12>14
+
+# lib.scant et lib.cancer gardent leur olive (regle etendue ci-dessus) et
+# prennent toutes deux la recette « beiges fusionnes » — arbitre a l'oeil par
+# l'auteur le 16/08/2026 : les deux beiges tombent ensemble sur le gris clair
+# A8A8A8, la marche perdue est au MILIEU de la rampe grise.
+#   scant  : 616161 reste a 197 px, A8A8A8 monte a 356, le blanc garde ses 4
+#   cancer : 616161 reste a 121 px, A8A8A8 monte a 213, le blanc garde ses 91
+# Ecartees : la fusion du sombre (`3>1`, qui aurait porte le gris moyen du
+# scant a 418 px) et la fusion blanche (`4>3`).
+lib.scant   12>14 3>2 4>2 fusion-ok
+lib.cancer  12>14 3>2 4>2 fusion-ok
+
+# common.optionbox est le cas le plus contraint du jeu : 15 valeurs employees
+# pour 12 places. TROIS fusions sont arithmetiques, pas des choix de gout.
+# Deux sont ici, la troisieme (quel beige prend la seule place libre) est sur
+# planche :
+#   12>1   l'olive rejoint le gris 616161 — decision auteur : c'est un COMMUN
+#          charge sur les huit stages, lui laisser un index de stage
+#          obligerait tous les stages a graver un vert. Luminance 101 contre
+#          97, c'est la meilleure place disponible.
+#   14>10  l'orange (16 px) et le saumon (2 px) fusionnent. Contrairement a
+#          imgSmall, impossible de glisser la rampe chaude d'un cran pour les
+#          separer : optionbox emploie DEJA le 610000 du bas, et le CC5A3C.
+#   3>2 4>3  « fusion blanche », arbitre a l'oeil le 16/08 : la seule place
+#          libre (A8A8A8) va au beige FONCE, et le beige clair monte au blanc.
+#          94 px de blancs fusionnes (73 + 21). L'autre repartition — la place
+#          libre au beige clair — aurait pousse le fonce dans un 616161 deja
+#          charge a 121 px par le gris et l'olive.
+common.optionbox  12>1 14>10 3>2 4>3 fusion-ok
+
+# lib.bug : AUCUN choix a faire, et c'est mesure. Elle emploie quatre neutres
+# (0 noir, 2 gris moyen, 4 beige clair, 1 blanc) pour les quatre gris de la
+# nouvelle palette : la bijection par rang est complete, `4>2` est le seul
+# placement qui ne perde rien. La recette « fusion blanche » (`4>3`) n'aurait
+# deplace que 31 px — invisible a l'oeil, mais une marche en moins.
+# Son olive est gardee, comme les trois autres lots (regle etendue 1-3-4-5-7).
+lib.bug  12>14 4>2
+
+# --- Planche 2 — arbitre a l'oeil par l'auteur le 16/08/2026 ----------------
+# Le forcepod prend les BEIGES FUSIONNES : ils tombent ensemble sur A8A8A8
+# (438 px), et le gris moyen reste a 274. C'est le plus gros porteur de beige
+# du jeu (258 + 180 px) et le plus sensible des quatre — la fusion du sombre en
+# aurait fait une masse gris moyen (532 px sur 800), la fusion blanche l'aurait
+# blanchi presque autant (268 px de blanc contre 88).
+common.forcepod  3>2 4>2 fusion-ok
+
+# bitdevice et bink prennent la FUSION DU SOMBRE, comme le vaisseau : le beige
+# fonce rejoint le gris moyen 616161, le clair prend le gris clair A8A8A8.
+common.bitdevice  3>1 4>2 fusion-ok
+lib.bink          3>1 4>2 fusion-ok
+
+# --- Groupe D : les couleurs ecrites en dur dans le code 6809 ---------------
+# `code.dobkeratops` n'est pas une ressource d'images : c'est la ligne que
+# `palette-code.txt` associe a src/enemies/dobkeratops/tailmgr_blits.asm. Le
+# boss est du contenu de STAGE (stage 1), il a donc droit a l'index propre au
+# stage — son olive reste l'olive, comme pour les quatre lots d'ennemis.
+# common.hud, lui, prend la ligne qu'il a deja plus haut.
+code.dobkeratops  12>14
+
+# --- Groupe F : la carte du niveau 1 ----------------------------------------
+# Mesure : la carte n'emploie que 0, 1, 2, 3, 4, 7, 8, 9 et 15. La ligne
+# `defaut` en place huit ; restent les deux beiges, et ils n'ont RIEN a decider
+# ici — la nouvelle palette les porte tels quels dans les cases propres au
+# stage : 12 = #9E8F7A (beige fonce), 13 = #CCC2AB (beige clair). Les tuiles
+# sont du contenu de stage, elles y ont droit. Aucune planche : la conversion
+# est prouvable au pixel.
+#
+# `fusion-ok` couvre UNE fusion, voulue et demandee par l'auteur : l'ancien
+# index 15 (le ciel, 234 652 px) rejoint le noir 0. Les deux etaient noirs dans
+# l'ancienne palette, donc rien ne bouge a l'ecran ; ce qui change est en
+# dessous — le ciel cesse d'avoir un index a lui, ce qui est tout l'objet du
+# groupe E. Effet de bord mesure et bienvenu : la ou le ciel touchait le noir
+# du decor, leanscroll voyait une frontiere et gardait des pixels ; les deux
+# valeurs devenant egales, il en garde moins. Moins de tuiles a dessiner.
+# `marqueur=15` : dans in.png, l'ancien index 15 n'est pas peint de sa couleur
+# machine (le noir) mais en MAGENTA #FF00FF — c'est la traînee de masquage, un
+# reperage a l'oeil pour l'auteur. Le controle de palette source doit donc le
+# laisser passer : un marqueur n'a pas de couleur a preserver. Apres migration
+# il n'existe plus, ses pixels sont du noir 0 comme le reste.
+stage1.map  3>12 4>13 marqueur=15 fusion-ok
+
+# --- Groupe E : le champ d'etoiles ------------------------------------------
+# Trouve en basculant la palette, pas par l'audit : ses couleurs sont des
+# MASQUES XOR dans un `fcb`, ni un PNG ni un `LDA #$xy`. Trois couleurs, une
+# par role : le beige clair des etoiles du plan proche, le gris du plan median,
+# le bleu fonce du plan lointain.
+#   2 -> 1  et  5 -> 4  viennent de la ligne `defaut` : renumerotation pure.
+#   4 -> 2  est la decision de l'auteur (16/08) : le beige clair des etoiles
+#           prend le gris clair A8A8A8, comme les quatre autres communs qui
+#           n'emploient pas le beige fonce (recette A). Pas de fusion : le gris
+#           du plan median part sur 1, le beige clair sur 2, les deux plans
+#           restent distincts et l'etagement proche/median/lointain tient.
+common.starfield  4>2
+
+# --- Groupe F, stages 2-8 : deux constats de l'auteur sur planche (17/08) ----
+# Ces stages ne sont pas remappes index par index : ils sont RECONVERTIS depuis
+# le plan arcade par tools/arcade_to_in.py, qui choisit lui-meme les quatre
+# cases propres au stage. Ce qui se declare ici, ce sont donc les PARAMETRES de
+# ce choix — les commandes completes sont dans tools/palette-replay.sh.
+#
+# metrique=lab (defaut depuis le 17/08). L'ancienne distance RGB mettait sur le
+# meme pied « un orange un peu faux » et « un vert qui devient gris ». Constat
+# auteur : le boss du stage 8 devenait gris. Mesure : ses deux verts dominants
+# (136,136,80) 1981 px et (96,96,56) 1886 px tombaient sur le gris commun
+# #616161 (distances 58 et 41) pendant que les oranges de la zone de feu
+# prenaient les quatre cases. En Lab, clarte et chroma sont separees : le stage
+# 8 recupere deux cases vertes, et l'ecart moyen baisse sur les SEPT stages
+# (tableau dans analyse-palettes-stages-2026-08.md §7.1).
+#   Cout assume, mesure : la rampe orange perd un niveau, (192,64,0) glisse
+#   vers le rouge #AC0000 (dE 15,9).
+#
+# plancher=0.1% (defaut). Vient avec Lab, qui amplifie l'erreur d'une teinte
+# isolee au point qu'une poussiere rafle une case : 89 px de magenta au stage 6
+# (0,04 %) passaient devant un niveau de degrade teal a 1331 px.
+stage2-8.map  metrique=lab plancher=0.1
+
+# Stage 3 : le battleship vit dans le plan ARRIERE (level3_b.png, boite non
+# noire x 576..1167 y 16..191) et sera affiche par du code a part, hors
+# tilemap — mais il peint avec Pal_stage. Decision auteur : « vert et jaune
+# avant tout ».
+#   plan=arriere*3 : le plan arriere compte dans le CHOIX des couleurs, pas
+#     dans l'in.png (qui reste le plan avant, c'est la tilemap). Poids 3 = le
+#     palier ou les deux verts de coque prennent leurs cases ; stable de 2 a 5.
+#   epingle=208,192,0 : la rampe jaune du vaisseau pese ~1200 px reduits contre
+#     17 000 px de terrain. Balayee de poids 1 a 5, elle ne gagne JAMAIS — le
+#     nombre de pixels ne porte pas cette priorite, il faut l'ecrire.
+#   Cout assume, mesure : les trois teintes du terrain (71 % des pixels opaques
+#     du plan avant) perdent leurs cases — beige clair vers le blanc (dE 17),
+#     tan vers le vert moyen (19,3), brun vers le gris (18,9). L'alternative
+#     chiffree (garder le beige clair) economisait 129 574 dE.px au terrain
+#     pour en coûter 12 088 au vaisseau : 10 contre 1 en faveur du terrain.
+#     C'est un arbitrage d'auteur, pas un optimum, et il s'ecrit comme tel.
+stage3.map  plan=arriere:576,16,1168,192*3 epingle=208,192,0
+
+# Stage 2 : les quatre cases voient AUSSI les sprites de son cast (17/08).
+# Constat sur planche : le brood porte SIX verts arcade qui tombaient tous sur
+# l'unique vert du stage, choisi sur la carte seule — teinte juste, degrade
+# plat. Le mecanisme est celui du battleship du stage 3, applique aux sprites :
+# `--plan sprites:<objet>` recense les pixels REDUITS de l'objet (pas le
+# canevas arcade, qui les surestimerait d'un facteur 3,6) et les fait entrer
+# dans le choix des couleurs sans toucher l'in.png.
+#   poids 1 : les sprites pesent leur propre nombre de pixels (29 650 face aux
+#   49 356 de la carte). Aucun pouce sur la balance, et le poids 2 n'apporte
+#   plus rien — mesure.
+#
+# LE BROOD NE VOTE PAS — seul ecart a la regle, et il est motive. Sa base verte
+# est cachee a 95 % sous le decor dans le jeu arcade (observation de l'auteur ;
+# l'export livre chaque sprite ISOLE, l'outil ne peut pas voir l'occlusion et
+# ne la verra jamais). Or c'etait le SEUL votant qui deplacait la case verte —
+# mesure : avec lui elle passait de 308840 a 208860, une case sur quatre
+# depensee pour des pixels qu'on ne voit pas. Sans lui, le vert reste celui de
+# la carte.
+#   Effet du vote, dE moyen : gouger 8,8 -> 6,4 ; la carte paie 9,7 -> 11,1 ;
+#   wick 28,5 -> 28,8 et brood 15,3 -> 14,6 — aucun votant ne perd.
+#
+# Rappel de ce que le stage 2 a : UN seul vert, le materiel 14. Les 12 index
+# communs n'en portent aucun ; tout vert d'un stage sort forcement d'une de ses
+# quatre cases propres. Le vote n'en ajoute pas, il choisit lequel.
+#
+# Ne vaut QUE pour un cast exclusif au stage : un ennemi partage se convertit
+# sur les 12 communs et n'a pas voix ici.
+stage2.map  plan=sprites:gouger,wick,outslay*1  brood=exclu
+
+# --- Groupe H, deux constats de l'auteur sur planche (17/08) ------------------
+#
+# stage 6 / dop : SEPT couleurs arcade du dop s'ecrasaient sur le seul
+# (144,168,136) — 3570 px sur 10 832. Le cast du stage vote, comme au stage 2.
+# Mesure : dE carte 6,1 -> 6,3 (presque rien), dop 19,5 -> 14,3, newt
+# 22,9 -> 18,7. La case (808018) qui apparait est celle du dop.
+stage6.map  plan=sprites:dop,newt*1
+#
+# stage 4 / compiler : le vote NE PEUT RIEN, mesure — les quatre combinaisons de
+# votants donnent les MEMES trois cases. Le compiler est une machine rouge/rose/
+# brune et les cases du stage 4 sont toutes vertes (sa carte est une jungle) ;
+# ses 6116 px ne battront jamais les 36 928 px de la carte. Epingler une de ses
+# couleurs coute a la carte 5,0 -> 8,1 de dE pour lui rendre 19,2 -> 16,3, soit
+# 6 contre 1 en defaveur du jeu.
+#
+# La vraie sortie vient de l'auteur : le compiler est le BOSS DE FIN, et il
+# combat la ou la tilemap n'existe plus. Verifie sur les donnees — les 144
+# derniers pixels de l'in.png du stage 4 (12 colonnes de tuiles, presque un
+# ecran) sont entierement noirs. Personne ne dispute donc les cases : il a SA
+# palette, src/stages/04/palette/pal-boss.png, echangee a l'entree de l'arene.
+#   dE 19,2 -> 13,1 ; 12 index employes au lieu de 10 sur ses 22 couleurs.
+#   Les QUATRE cases lui vont (decision auteur). Les 12 communs ne bougent pas.
+#   La quatrieme ne pese que 0,4 de dE moyen mais porte le DOME — son oeil,
+#   396 px de vert que rien d'autre ne rend. Meme lecon que le boss du stage 8 :
+#   la moyenne ne dit pas ce qu'on regarde.
+#   Ce que ca coute : un sprite de LOT affiche pendant le combat perd son olive.
+#   Mesure sur la wave — le compiler est le dernier spawn ($14,$F8) et le
+#   dernier ennemi de lot avant lui est un cancer a $12,$34, qui peut encore
+#   etre a l'ecran. `--garder-olive` rend l'ancien comportement si ca se voit.
+#   Rampe chaude ajustee DANS CETTE PALETTE SEULE (--ajuster 7,8,9,10) :
+#   chaque index garde son role, sa valeur vient des couleurs du compiler qui
+#   tombaient deja sur lui. 7 -> A00038 (cramoisi), 8 -> F80000, 9 -> 905818,
+#   10 -> D09038 (l'or). 7,8 seuls laissaient les tons clairs tirer sur le
+#   rose-orange (constat auteur) : le rose (200,88,88) tombait sur l'orange
+#   commun, l'or sur le saumon. dE 13,2 -> 10,6 -> 8,4, 12 index.
+stage4.boss  palette-dediee=compiler quatre-cases ajuster=7,8,9,10
+
+# --- Rouges communs : reglage ANNULE (17/08) ---------------------------------
+# J'avais rapproche les deux rouges purs communs de l'arcade (610000->580000,
+# AC0000->880000) en lisant la demande comme un reglage GLOBAL. L'auteur ne
+# visait que la phase du boss compiler : « on considere qu'en phase de boss on
+# utilise une palette ajustee, c'est tout ». Les communs sont RETABLIS a
+# 610000/AC0000 ; l'ajustement des rouges vit dans pal-boss.png seule (ligne
+# stage4.boss ci-dessus, option --ajuster). La table fautive est consignee dans
+# palette-reference/precedentes.txt pour que le rejeu rafraichisse les fichiers
+# qui l'ont portee un temps.
+defaut.rouges  7=610000 8=AC0000 (retabli)
+
+# Stage 5 : le cast vote (regle des stages 2 et 6, poids 1). Le slither etait
+# le pire du corpus (dE 24,2, 10 915 px) : ses bruns tombaient sur l'or.
+# Vote : slither 24,2 -> 17,4, carte 4,1 -> 6,5 (D09030 -> 583810), pursuer
+# 18,9 -> 21,1, cheetah stable. Poids 2 ecarte (carte a 12,2).
+stage5.map  plan=sprites:slither,pursuer,cheetah*1
+
+# Stage 8 : trois temps. (1) Une seule epingle sauvait le mikun (24,3 -> 10,3)
+# mais degradait les verts du boss de la CARTE (zone boss 11,4 -> 17,3 quel que
+# soit le vert) — retiree, arbitrage soumis. (2) Regle auteur : le mikun garde
+# au minimum 2, idealement 3 niveaux de vert et ses 3 bleus — LE NOMBRE DE
+# NIVEAUX d'un degrade prime sur la proximite Lab. TRIPLE epingle (les 2 kakis
+# du boss + le vert mikun) : boss inchange a 11,4, mais la rampe verte du mikun
+# melangait kaki (~65 de teinte) et vert bleute (~150) — « le vert ajoure
+# tranche trop » (auteur) : une rampe lisible vit dans UNE famille de teinte.
+# (3) Planche a 5 variantes, l'auteur choisit V3 (vert clair 508868 / vert
+# 387050 / olive 404010) — puis, V3 coutant deux cases au boss (11,4 -> 19,5),
+# (4) DERNIER ARBITRAGE auteur : la teinte de la rampe se choisit pour le
+# BOSS, et le mikun la reprend — « l'important est le degrade, pas grave si
+# la teinte mikun derive de l'arcade ». La rampe est donc les trois kakis du
+# boss lui-meme : clair A8B870 (168,184,112) / moyen 888850 (136,136,80) /
+# sombre 404010 (64,64,16). Balayage de triples : les couleurs propres du
+# boss battent toute variante interpolee. Boss dE 15,1 -> 10,5 et carte
+# 13,3 -> 9,7 (mieux qu'avant toute epingle : le boss retrouve 3 niveaux au
+# lieu de 2). Le mikun ne vote plus dans la palette : sa rampe lui est
+# imposee par rang a la conversion (dE 10,8 -> 27,6, assume par l'arbitrage).
+stage8.map  epingle=64,64,16+136,136,80+168,184,112
+
+# Le mikun lui-meme est force par RANG (--forcer R,G,B:MAT, hors Lab) : ses
+# 4 verts arcade sur les 3 kakis du boss (les 2 plus sombres fusionnent sur
+# le sombre), ses 3 bleus sur les 3 bleus communs 4/5/6. Le plus proche
+# voisin ecrasait les 4 verts sur UNE case et sautait le bleu profond 00618F.
+sprite.mikun  forcer=verts:14,13,12,12 bleus:4,5,6 (3 verts + 3 bleus tenus)
+
+# --- Enfants d'objets : zoid, win, warship-elements (18/08) ------------------
+# Jamais cites par une wave (spawnes par leur parent), donc hors inventaire de
+# cast. Attribution mesuree : zoid = eclot du brood (create_zoid dans sa zone
+# de code) -> stage 2 ; win = la spirale du kit mikun (images contigues en
+# ROM) -> stage 8 ; warship-elements = pieces du battleship -> stage 3. Les
+# ObjID anonymes 1/2/34/39/46/47 sont des objets de flux, pas ces ennemis ;
+# blaster est deja vivant au stage 1 en art v1, rien a convertir.
+# zoid : 4 verts, une seule case verte au stage 2 (308840). La rampe brune
+# perdait le vert — l'auteur le veut. Planche a 4 variantes, choix auteur
+# (18/08) : V4 — vert pur / TRAME vert~brun sombre (15~13, le barreau
+# fabrique) / brun sombre. Premier usage de la trame au forcage sprites.
+# win : 2 turquoises partaient sur le gris -> par rang sur les 3 bleus
+# communs + blanc. warship-elements : Lab suffit, bleus acier sur la rampe
+# des gris (dE moyen 13,6 sur 42 138 px).
+sprite.zoid  forcer=15,15~13,15~13,13 (vert + trame, oeuf garde ses rouges)
+sprite.win   forcer=bleus:4,4,5,6 (3 bleus + blanc)
+sprite.warship-elements  (aucun levier)
+
+# --- Les sprites PROPRES au stage 1 (18/08) ---------------------------------
+# Ni communs, ni membres d'un lot : ils n'entrent que par `scenes.stage1`, et
+# ils sont donc les seuls a avoir le droit de peindre les index PROPRES du
+# stage. Or `src/stages/01/palette/pal.png` porte precisement, dans ces cases,
+# les trois couleurs que la nouvelle palette a chassees des communs :
+#
+#     ancien  3 #9E8F7A  ->  nouveau 12 #9E8F7A     le beige fonce
+#     ancien  4 #CCC2AB  ->  nouveau 13 #CCC2AB     le beige clair
+#     ancien 12 #617A00  ->  nouveau 14 #617A00     l'olive
+#
+# MEME COULEUR, autre numero. Ce n'est donc pas un arbitrage mais un report
+# d'index a couleur identique — et pourtant ca ne peut PAS aller en `defaut` :
+# `defaut` vaut aussi pour les communs, a qui les cases 12-15 sont interdites
+# (ils les peignent en magenta). D'ou une ligne par ressource, malgre la
+# repetition. L'outil prouve le rendu identique pixel par pixel.
+#
+# `fusion-ok` la ou l'ancien 0 (#000000) et l'ancien 15 (le ciel, #000000)
+# cohabitent : `defaut` les envoie tous deux sur le noir, ce qui compte pour
+# une marche perdue alors que les deux couleurs sont LA MEME. Rien a voir a
+# l'oeil, mesure a 0 de distance.
+#
+# LA RAMPE CHAUDE, arbitree a l'oeil par l'auteur le 18/08 : imgFace et
+# imgNerves1 sont les deux seules a porter l'ancien orange ET l'ancien saumon.
+# La recette du groupe B (`10>10 14>9`, le saumon descend) repeindrait ici 793
+# et 118 px — le saumon est le fond de ces images. C'est l'INVERSE qui conserve
+# le rendu : `10>9 14>10` laisse le saumon a sa couleur exacte et ne deplace
+# que les 6 px d'orange, qui rejoignent le #CC5A3C deja present. Contre-exemple
+# utile : une recette vaut pour SA ressource, jamais par precedent — ici c'est
+# la ou sont les PIXELS qui tranche, pas le rang dans la rampe.
+#
+# Le bleu #00618F du blaster, de la coquille et du tabrok est de l'art v1
+# assume (verifie avec l'auteur le 18/08) : `defaut 5>4` le reporte a couleur
+# identique, rien a decider. Les 114 images sont byte-identiques a la v1.
+stage1.blaster                     3>12 4>13 12>14
+stage1.dobkeratops.imgEyes         3>12 4>13 12>14
+stage1.dobkeratops.imgFace         3>12 4>13 12>14 10>9 14>10 fusion-ok
+stage1.dobkeratops.imgNerves0      3>12 4>13 12>14
+stage1.dobkeratops.imgNerves1      3>12 4>13 12>14 10>9 14>10 fusion-ok
+stage1.dobkeratops.imgNerves2      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgNerves3      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgNerves4      3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe0        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe1        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe2        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratops.imgWipe3        3>12 4>13 12>14 fusion-ok
+stage1.dobkeratopsjaw              3>12 4>13 12>14
+stage1.dobkeratopsmonster          3>12 4>13 12>14 fusion-ok
+stage1.dobkeratopssaw              3>12 4>13 12>14
+stage1.shell                       3>12 4>13 12>14 fusion-ok
+stage1.tabrok.imgFlight            3>12 4>13 12>14
+stage1.tabrok.imgGround            3>12 4>13 12>14
+stage1.tabrok.imgWalk              3>12 4>13 12>14
+stage1.tabrokcanon                 3>12 4>13 12>14

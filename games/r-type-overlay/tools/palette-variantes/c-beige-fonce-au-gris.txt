@@ -1,0 +1,12 @@
+# Recette candidate pour les NEUTRES — surcouche, par-dessus palette-map.txt.
+#
+#     palette_migrate.py RESSOURCE… --sans-base --variante <ce fichier>
+#
+# Le beige fonce 9E8F7A rejoint le gris moyen 616161 ; le beige clair CCC2AB
+# prend le gris clair A8A8A8. Si la ressource emploie DEJA 616161, la marche
+# perdue est donc en BAS de sa rampe grise.
+#
+# La cle `*` designe la ressource en cours : cette recette ne prejuge de rien.
+# Ce qui convient au vaisseau ne convient pas forcement au pow — une recette
+# retenue s'ecrit sous le NOM de sa ressource, jamais en `defaut`.
+*  3>1 4>2 fusion-ok

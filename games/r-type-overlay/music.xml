@@ -1,0 +1,49 @@
+<configuration>
+    <!-- Regeneration des musiques depuis les VGM sources. Cible SEPAREE de
+         to8.config.xml, qui consomme les .vgc/.ymm deja produits et commites :
+         ce fichier ne sert qu'a les refaire quand un VGM change, et il ECRASE
+         les binaires du depot.
+
+         Chemins remis a jour apres la reorganisation autour de la frontiere de
+         chargement : `objects/levels/NN/` -> `src/stages/NN/`, le niveau 00
+         etant l'ecran de titre, bossmusic et clearstage etant du commun. La
+         correspondance fait foi dans v1-map.csv.
+
+         Une seule absence : le stage 07. Sa musique n'est pas prete et il n'a
+         pas de VGM dans le depot — il tourne sur un placeholder, qui porte le
+         nom normalise `music.ymm` comme partout ailleurs. Le jour ou son VGM
+         arrive, il prend sa ligne ici et rien d'autre ne bouge.
+    -->
+    <target name="music">
+        <vgm2vgc filename="src/title/music/adnz/vgm/music.vgm" genbinary="src/title/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/title/music/adnz/vgm/music.vgm" genbinary="src/title/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/01/music/adnz/vgm/music.vgm" genbinary="src/stages/01/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/01/music/adnz/vgm/music.vgm" genbinary="src/stages/01/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/02/music/adnz/vgm/music.vgm" genbinary="src/stages/02/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/02/music/adnz/vgm/music.vgm" genbinary="src/stages/02/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/03/music/adnz/vgm/music.vgm" genbinary="src/stages/03/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/03/music/adnz/vgm/music.vgm" genbinary="src/stages/03/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/04/music/adnz/vgm/music.vgm" genbinary="src/stages/04/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/04/music/adnz/vgm/music.vgm" genbinary="src/stages/04/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/05/music/adnz/vgm/music.vgm" genbinary="src/stages/05/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/05/music/adnz/vgm/music.vgm" genbinary="src/stages/05/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/06/music/adnz/vgm/music.vgm" genbinary="src/stages/06/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/06/music/adnz/vgm/music.vgm" genbinary="src/stages/06/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/07/music/adnz/vgm/music.vgm" genbinary="src/stages/07/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/07/music/adnz/vgm/music.vgm" genbinary="src/stages/07/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/stages/08/music/adnz/vgm/music.vgm" genbinary="src/stages/08/music/adnz/vgc/music.vgc"/>
+        <vgm2ymm filename="src/stages/08/music/adnz/vgm/music.vgm" genbinary="src/stages/08/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/common/flow/bossmusic/music/vgm/music.vgm" genbinary="src/common/flow/bossmusic/music/vgc/music.vgc"/>
+        <vgm2ymm filename="src/common/flow/bossmusic/music/vgm/music.vgm" genbinary="src/common/flow/bossmusic/music/ymm/music.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/common/flow/clearstage/music/vgm/music.vgm" genbinary="src/common/flow/clearstage/music/vgc/music.vgc"/>
+        <vgm2ymm filename="src/common/flow/clearstage/music/vgm/music.vgm" genbinary="src/common/flow/clearstage/music/ymm/music.ymm" codec="zx0"/>
+        <!-- CONTINUE et GAME OVER : deux morceaux communs a tous les stages,
+             deposes ensemble dans `src/common/music/adnz/`. Ils sont donc
+             nommes par le morceau (continue.*, gameover.*) et non `music.*`
+             comme partout ailleurs — un repertoire, deux musiques. -->
+        <vgm2vgc filename="src/common/music/adnz/vgm/continue.vgm" genbinary="src/common/music/adnz/vgc/continue.vgc"/>
+        <vgm2ymm filename="src/common/music/adnz/vgm/continue.vgm" genbinary="src/common/music/adnz/ymm/continue.ymm" codec="zx0"/>
+        <vgm2vgc filename="src/common/music/adnz/vgm/gameover.vgm" genbinary="src/common/music/adnz/vgc/gameover.vgc"/>
+        <vgm2ymm filename="src/common/music/adnz/vgm/gameover.vgm" genbinary="src/common/music/adnz/ymm/gameover.ymm" codec="zx0"/>
+    </target>
+</configuration>

@@ -1,0 +1,64 @@
+Stage 06 — reconstitution de la tilemap manquante
+=================================================
+
+Le stage 06 etait le seul sans map/ : ni in.png, ni tuiles, ni carte. Les deux
+etapes ci-dessous la reconstruisent depuis la matiere arcade. Chemins relatifs a
+games/r-type/ ; le depot d'extraction arcade est suppose voisin du depot v2
+(../../../re.arcade.r-type).
+
+1. in.png — plan avant arcade reduit au format TO8
+--------------------------------------------------
+
+    python3 tools/arcade_to_in.py 06 \
+        ../../../re.arcade.r-type/out/tiles/level6_f.png \
+        --ref 03 --free 7,15,16
+
+Reduction 3/8 en X, 3/4 en Y au plus proche voisin : 3072x240 -> 1152x180.
+La palette reprend les index communs a tous les stages ; les emplacements 7, 15
+et 16 recoivent les teintes propres au niveau (7 = (0,96,96), 15 = (0,48,48),
+16 = (144,168,136)). Le stage 03 est le precedent : lui aussi reaffecte 7, 15
+et 16. L'emplacement 5 est laisse a sa valeur commune — le reaffecter changerait
+la couleur des sprites qui s'en servent.
+
+Validation de la recette : rejouee sur le stage 05 (--free 15,16), elle retrouve
+99,24 % des index de l'image du depot, et choisit les memes deux couleurs pour
+les emplacements libres. Le seul ecart porte sur (88,64,0), 0,76 % des pixels,
+que l'auteur avait rattache au gris 3 la ou la distance RGB donne l'olive 13.
+
+2. leanscroll — decoupe en tuiles et en carte
+---------------------------------------------
+
+Depuis 7c la chaine est courue par le BUILD : declarer dans le config, avant
+les fichiers de tuiles du stage,
+
+    <leanscroll image="src/stages/06/map/in.png" gendir="gen/stages/06/map"
+                gensymbols="gen/stages/06/map/map.const.asm"/>
+
+et consommer gen/stages/06/map/{even,odd}.{png,bin}. Plus d'invocation
+manuelle, plus de sorties committees (les stages 01 et 02, cables, n'en ont
+plus). L'invocation historique reste possible pour un essai a la main —
+module toolbox/graphics/tilemap/leanscroll, options -image/-outtileset/
+-outtilemap/-outtileset1/-outtilemap1/-scrollstep/-nbsteps/-outtilewidth/
+-outtileheight/-outmapbitdepth/-outmaptranspose (les -lean*/-outimage
+n'apportent rien : verifie sur ce stage, les retirer ne change pas un octet
+des quatre fichiers utiles).
+
+Resultat
+--------
+
+    plan pair   : 126 tuiles, carte 96 x 15 = 1440 cellules, 71 % vides
+    plan impair : 163 tuiles, carte 96 x 15 = 1440 cellules, 70 % vides
+
+Geometrie conforme aux autres stages (48 groupes arcade x 30 sous-tuiles) et
+taux de vide dans la bande observee ailleurs (60-75 %).
+
+Reste a faire
+-------------
+
+- Passe artistique : la conversion est mecanique. Les teals du niveau tombent
+  sur le bleu 6 par endroits, et le magenta arcade (240,0,248 — 89 pixels) part
+  sur le beige 4. A reprendre a l'oeil si le rendu gene.
+- map/intro/ : la fenetre d'ouverture (tools/crop_stage.py) n'existe que pour
+  les stages 01 et 02, les seuls montes en v2. A produire quand le stage 06 sera
+  wire — 126 et 163 tuiles compilees ne tiennent probablement pas dans une page
+  de 16 Ko, meme contrainte que les stages 01 et 02.

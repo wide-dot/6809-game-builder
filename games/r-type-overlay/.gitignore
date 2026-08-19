@@ -1,0 +1,5 @@
+gen/
+dist/
+/engine
+# config de build genere par les sessions (to8.config.xml sans <hfe/>) — jamais commite
+t.xml

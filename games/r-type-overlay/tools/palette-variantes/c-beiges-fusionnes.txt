@@ -1,0 +1,10 @@
+# Recette candidate pour les NEUTRES — surcouche, par-dessus palette-map.txt.
+#
+#     palette_migrate.py RESSOURCE… --sans-base --variante <ce fichier>
+#
+# Les deux beiges tombent ensemble sur le gris clair A8A8A8 : la marche perdue
+# est au MILIEU, le degrade beige a deux etages devient un aplat. Le gris
+# 616161 existant reste intact et rien ne s'assombrit.
+#
+# `*` = la ressource en cours ; voir l'autre recette pour la regle.
+*  3>2 4>2 fusion-ok
