@@ -36,3 +36,6 @@ __pycache__/
 
 # config de build genere par les sessions (copie sans <hfe/>) — jamais commite
 t.xml
+
+# rebut macOS : le Finder en seme un par dossier visite
+.DS_Store
