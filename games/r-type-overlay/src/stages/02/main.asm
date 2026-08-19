@@ -56,6 +56,7 @@ adr_playfield_mask_ND0 EXTERNAL
 ; L'effacement du champ de jeu, meme page : peint en tete de trame.
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
+playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.

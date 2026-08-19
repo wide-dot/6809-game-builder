@@ -156,6 +156,12 @@ statics.SIZE  equ nb_static_objects*object_size
         ldd   #bench.SCROLL_VEL
         std   scroll_vel
 
+        ; OVERLAY : la timeline d'effacement par defaut — fenetre pleine des
+        ; le premier tick. Un stage qui a SA timeline (generee depuis sa
+        ; carte) re-pointe dans son stage.setup, APRES cet init.
+        ldx   #clear.timeline.none
+        stx   clear.tl.ptr
+
         ; COLLISION TERRAIN : desactivee PAR DEFAUT. Un stage sans unite de
         ; collision laisserait les operandes de terrainCollision.do a zero, et
         ; la routine sauterait en $0000 de la fenetre cartouche, page 0 NUE —
@@ -347,10 +353,31 @@ stage.state.running
         jsr   RunObjects
         jsr   gfxlock.on
 
-        ; OVERLAY : l'effacement du champ de jeu, en TETE de trame, avant tout
-        ; le reste — version MAISON (PSHS 10 registres, pleine largeur,
-        ; lignes 9-190 des deux plans, cf. clearblast.asm). Elle adresse les
-        ; deux plans elle-meme : rien a poser avant l'appel.
+        ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
+        ; fenetre que la camera vient de franchir (plusieurs possibles en une
+        ; trame de frame-drop, d'ou la boucle ; le rejeu au checkpoint est le
+        ; meme mecanisme : stage.setup remet le pointeur au debut, la boucle
+        ; rattrape). Une entree = [camera, operande LDS, offset de saut],
+        ; precalculee par gen_clear_timeline.py. Cout hors changement : un
+        ; cmpd par trame.
+        ldx   clear.tl.ptr
+!       ldd   glb_camera_x_pos
+        cmpd  ,x
+        blo   >
+        ldy   2,x                      ; l'operande LDS du plan couleur
+        ldu   4,x                      ; l'offset de saut dans le deroule
+        leax  6,x
+        stx   clear.tl.ptr
+        pshs  x
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearWindow
+        jsr   paged.call
+        puls  x
+        bra   <
+!
+        ; L'effacement du champ de jeu, en TETE de trame, avant tout le
+        ; reste — stack-blast maison a fenetre pilotee (cf. clearblast.asm).
+        ; Il adresse les deux plans lui-meme : rien a poser avant l'appel.
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #playfield.clearBlast
         jsr   paged.call
@@ -785,3 +812,10 @@ gfxlock.off
 gfxlock.loop
         _gfxlock.loop
         rts
+
+; La timeline d'effacement : le pointeur de lecture, et la table par defaut
+; (fenetre pleine, posee au premier tick). APRES du code, jamais sur un
+; chemin d'execution — cf. loop-fallthrough.md.
+clear.tl.ptr        fdb   clear.timeline.none
+clear.timeline.none fdb   0,$BBF8,0    ; cam 0 : lignes 11-178, saut nul
+                    fdb   $FFFF        ; fin

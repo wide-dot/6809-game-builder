@@ -56,6 +56,7 @@ adr_playfield_mask_ND0 EXTERNAL
 ; L'effacement du champ de jeu, meme page : peint en tete de trame.
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
+playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -317,6 +318,11 @@ stage.setup
         lda   #map.RAM_OVER_CART+stage1.maps.odd.page
         sta   scroll_map_page_odd
 
+        ; La timeline d'effacement de CE stage. stage.setup rejoue a
+        ; l'ouverture ET au checkpoint : le tick rattrape la position.
+        ldx   #clear.timeline
+        stx   clear.tl.ptr
+
         ldd   #stage.wave
         ; SONDE DE TEST du systeme de log : D porte l'adresse de la wave du
         ; stage, connue au build — de quoi verifier la photographie.
@@ -372,6 +378,11 @@ initlevel1.Object EXTERNAL
 
         INCLUDE "src/stages/01/objid.const.asm"
         INCLUDE "src/stages/01/objid.index.asm"
+
+; La timeline d'effacement de CE stage — generee depuis in.png par
+; tools/gen_clear_timeline.py : le bas toujours zappe, le haut sur les
+; sections de plafond continues (rendu aux trous).
+        INCLUDE "src/stages/01/clear-timeline.asm"
 
 ;*******************************************************************************
 ; Le sequencement du boss — repris du main de la v1 (game-mode/01/main.asm)

@@ -1,47 +1,45 @@
 ; ===========================================================================
-; playfield.clearBlast — l'effacement du champ de jeu, version MAISON.
+; playfield.clearBlast — l'effacement du champ de jeu, a fenetre PILOTEE.
 ; ===========================================================================
-; Pleine largeur (40 octets/ligne), lignes 9 a 178 des DEUX plans : 182 lignes
-; x 40 = 7 280 octets par plan, moins la rangee de tuiles du bas — reste
-; 170 lignes, 6 800 octets par plan : 755 poussees de 9 octets plus une de 5. Le
-; debordement sur les lignes 9-10 (bande haute, repeinte par le masque en fin
-; de trame) est ce qui fait tomber la division juste.
+; Le remplissage est un stack-blast PSHS A,B,DP,X,Y,U (9 octets/14 cycles,
+; 1,556 cy/octet), ENTIEREMENT deroule, pleine largeur, qui descend du bas
+; de la fenetre vers le haut. Deux parametres le pilotent, poses par
+; playfield.clearWindow (SMC, la page est de la RAM-sur-cartouche) :
 ;
-; La poussee : PSHS A,B,DP,X,Y,U = 9 octets en 14 cycles, 1,556 cy/octet —
-; contre 1,975 pour la version generee (PSHU D,X,Y, champ strict).
+;   - l'operande du LDS   : OU commence la descente (la borne BASSE) ;
+;   - l'operande du JMP   : ou l'on SAUTE dans le deroule — chaque poussee
+;     zappee retire 9 octets en tete de descente, c'est la borne HAUTE.
 ;
-; CC N'EST PAS DU LOT, et c'est un piege vecu : l'IRQ materielle force E=1
-; dans le CC qu'elle empile, et le RTI restaure CE CC-la — apres la premiere
-; IRQ tombee dans le blast (il dure plus d'une trame machine, une IRQ y tombe
-; toujours), chaque poussee ecrivait $80 au lieu de $00 : colonnes rouges a
-; l'ecran, une par lot, sur toute la fin du remplissage. Un andcc en tete de
-; plan ne protege pas de ca.
+; La fenetre maximale est lignes 11 a 178 : au-dessus (0-10) et en-dessous
+; (191-199) c'est le masque ; la rangee de tuiles du bas (179-190) est
+; TOUJOURS peinte par la tilemap (contrat sky_transparent.py). Le nombre de
+; poussees est arrondi AU-DESSUS : le depassement (<= 8 octets) sort par la
+; borne haute, dans des lignes que la tilemap repeint ou que le masque
+; couvre — jamais sous $A000.
 ;
-; Les autres registres :
-;   - S est le POINTEUR : la stack graphique est concue pour (meme geste que
-;     les sprites bdraw v1) — l'IRQ v2 bascule S en premiere instruction,
-;     seul le push materiel (12 octets) touche la zone SOUS S, pas encore
-;     ecrite, que les poussees suivantes recouvrent ;
-;   - DP passe a zero le temps du remplissage : le moniteur pose son propre
-;     DP en tete d'IRQ (cf. engine/irq/Irq.asm, « set by the monitor »).
+; La TIMELINE par stage (voir gen_clear_timeline.py et le tick dans
+; stage-main.asm) ne stocke que les CHANGEMENTS de fenetre, precalcules :
+; [camera(2), operande LDS plan couleur(2), offset de saut(2)]. Le plan
+; forme se deduit (+$2000, meme offset).
 ;
-; TOUT EST EN LIGNE : zero branchement, zero compteur — et AUCUN bsr/rts
-; interne : S etant le pointeur d'ecriture, une adresse de retour posee par
-; bsr serait depilee 7 280 octets plus bas, dans les zeros fraichement
-; ecrits (vecu aussi : PC=$0000, machine dans le decor).
+; Pieges payes et graves ici (cf. l'historique du fichier) :
+;   - AUCUN bsr/rts quand S est le pointeur d'ecriture (l'adresse de retour
+;     se depile 7 000 octets plus bas, dans les zeros frais) ;
+;   - CC est INPOUSSABLE sous IRQ ouvertes (l'IRQ materielle force E=1 dans
+;     le CC qu'elle empile et le RTI restaure CE CC-la) — d'ou 9 octets ;
+;   - S est legal comme pointeur : l'IRQ v2 bascule S en premiere
+;     instruction, seul le push materiel touche la zone pas encore ecrite ;
+;   - DP passe a zero (le moniteur pose le sien en tete d'IRQ).
 ;
-; Appel : paged.call depuis la boucle de trame, en tete de verrou graphique.
-; Clobbe tout, restaure S et DP. 21 215 cycles, 1,56 cy/octet.
+; Fenetre par defaut (l'etat assemble) : lignes 11-178, 747 poussees.
+; Cout : 21 093 cycles plein cadre ; chaque rangee de tuiles zappee par la
+; timeline rend ~1 494 cycles.
 ; ===========================================================================
 
-ROWTOP   equ 9*40                      ; 360  — debut ligne 9
-ROWEND   equ 179*40                    ; 7160 — fin de la ligne 178 : la rangee
-                                       ; de tuiles du bas (179-190) est TOUJOURS
-                                       ; peinte par la tilemap (in.png ajuste),
-                                       ; l'effacer serait payer deux fois
-NPUSH    equ (ROWEND-ROWTOP-5)/9       ; 755 poussees de 9, puis une de 5
+NPUSH    equ 747                       ; ceil(168 lignes x 40 / 9) — la fenetre max
 
-playfield.clearBlast EXPORT
+playfield.clearBlast   EXPORT
+playfield.clearWindow  EXPORT
 
  SECTION code
 
@@ -56,7 +54,11 @@ playfield.clearBlast
         ldy   #0
         ldu   #0
 
-        lds   #$A000+ROWEND            ; plan couleur
+clr.ldsA
+        lds   #$A000+179*40            ; plan couleur — operande PILOTE (borne basse)
+clr.jmpA
+        jmp   clr.blockA               ; operande PILOTE (borne haute)
+clr.blockA
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
@@ -804,6 +806,11 @@ playfield.clearBlast
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
+clr.ldsB
+        lds   #$C000+179*40            ; plan forme — pose par clearWindow (+$2000)
+clr.jmpB
+        jmp   clr.blockB
+clr.blockB
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
@@ -812,9 +819,6 @@ playfield.clearBlast
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x                 ; le reliquat : 5 octets
-
-        lds   #$C000+ROWEND            ; plan forme
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
@@ -1554,27 +1558,28 @@ playfield.clearBlast
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x,y,u
-        pshs  a,b,dp,x                 ; le reliquat : 5 octets
-
         lda   #dp/256                  ; DP moteur ($9F) — la page directe du jeu
         tfr   a,dp
         lds   >glb_register_s
+        rts
+
+; ---------------------------------------------------------------------------
+; playfield.clearWindow - pose la fenetre d'effacement (les 4 operandes SMC).
+;   in : Y = operande LDS du plan couleur ($A000 + (borne_basse+1)*40)
+;        U = offset de saut dans le bloc deroule (2 x poussees zappees)
+; Appele par paged.call aux changements de la timeline — jamais par trame.
+; ---------------------------------------------------------------------------
+playfield.clearWindow
+        sty   >clr.ldsA+2
+        tfr   y,d
+        addd  #$2000
+        std   >clr.ldsB+2
+        tfr   u,d
+        addd  #clr.blockA
+        std   >clr.jmpA+1
+        tfr   u,d
+        addd  #clr.blockB
+        std   >clr.jmpB+1
         rts
 
  ENDSECTION
