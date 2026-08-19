@@ -81,5 +81,5 @@ games/r-type/src/common/weapons/forcepods/obj_simplefire.asm,objects/player1/for
 games/r-type/src/common/lib/weaponcollide.asm,global/weaponcollide.asm,90fbe787ec431739b215076126a7bc242398255f,2026-08-05,import 1:1 ; includes v1 portes par collisionpass.unit.asm ; cable le 2026-08-05 dans la passe de collision, avec weaponGateAccum declare par l'unite
 engine/graphics/sprite/sprite-overlay-pack.asm,engine/graphics/sprite/sprite-overlay-pack.asm,cf6e765e147b1a17c46e20eabb07bdb9980425ed,2026-08-19,
 engine/graphics/sprite/overlay-mode/DisplaySprite.asm,engine/graphics/sprite/overlay-mode/DisplaySprite.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-19,
-engine/graphics/sprite/overlay-mode/BuildSprites.asm,engine/graphics/sprite/overlay-mode/BuildSprites.asm,a1bda7ebd31ebc3c1c5c96fad4d9fabf34c63277,2026-08-19,setdp neutralized (obj target)
+engine/graphics/sprite/overlay-mode/BuildSprites.asm,engine/graphics/sprite/overlay-mode/BuildSprites.asm,a1bda7ebd31ebc3c1c5c96fad4d9fabf34c63277,2026-08-19,setdp neutralized (obj target) + single-sprite speed pass 19/08/2026 (forced direct, jsr ,y, dead store, abx, shifted-referential bounds) validated by examples/overlay differential bench
 engine/graphics/sprite/overlay-mode/DeleteObject.asm,engine/graphics/sprite/overlay-mode/DeleteObject.asm,8dd3e92233cd0de1e015a2af5b2f60d72fe2aee1,2026-08-19,

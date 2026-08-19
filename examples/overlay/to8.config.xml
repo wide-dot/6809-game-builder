@@ -1,0 +1,103 @@
+<configuration>
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <!-- OVERLAY : the whole example runs on the overlay sprite pack —
+                 BuildSprites draws, nothing saves or restores the background.
+                 The define switches the OST equates too (object_rsvd_size
+                 59 -> 5), so every unit of the target must see it. -->
+            <define symbol="OverlayMode"/>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- Game mode -->
+                <!-- ******************************************************* -->
+                <file name="assets.gm.main" linkdata="LINK" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/assets/game-modes/to8/main/main.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Compiled sprites + their imageset index. Overlay mode :
+                     draw-only encoders, no bdraw anywhere — the bench asserts
+                     the B slots of the index actually read back as zero. -->
+                <!-- ******************************************************* -->
+                <file name="assets.sprites" linkdata="LINK" page="$06" address="$0000">
+                    <lwasm gensource="gen/assets/sprites/sprites.asm">
+                        <!-- entries.asm brings the file id equates the index needs -->
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/assets/sprites" gensource="gen/assets/sprites/includes.asm"
+                                 genindex="gen/assets/sprites/index.asm" file="assets.sprites">
+                            <!-- glyph carries every variant the single-sprite
+                                 path can pick : both shifts of the unmirrored
+                                 subset, and the three mirror subsets (one
+                                 shift each — an odd position on a mirror goes
+                                 through the fallback, which is also a path) -->
+                            <image name="glyph" filename="src/assets/sprites/glyph.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="x"    shift="0"/>
+                                <encoder name="draw" mirror="y"    shift="0"/>
+                                <encoder name="draw" mirror="xy"   shift="0"/>
+                            </image>
+                            <!-- marker has the shift 0 routine only : it is
+                                 the probe for the missing-frame fallback -->
+                            <image name="marker" filename="src/assets/sprites/marker.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="assets.sprites"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.main</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>

@@ -40,12 +40,26 @@ _render_flags            equ dp_engine+24 ; byte
 ; V2-DEVIATION: setdp neutralized, the obj target rejects it. Extended
 ; addressing stays correct, and operands explicitly forced with < are unaffected.
 ;       setdp dp/256
+; V2-DEVIATION (19/08/2026, passe de vitesse sur le chemin single-sprite —
+; le pendant overlay de la campagne v1 b548b310 sur CheckSpritesRefresh) :
+;   - les temporaires dp_engine et les variables glb_* sont adressees en
+;     DIRECT force (<) : le loader v2 pose DP=$9F avant le game mode
+;     (docs/lang/en/direct-page.md), -1 cycle et -1 octet par acces ;
+;   - draw_routine voyage dans Y jusqu'a l'appel (Y est libre sur tout le
+;     chemin single) : jsr ,y remplace le jsr [etendu indirect], et le
+;     store/reload de _draw_routine disparait ;
+;   - _mapping_frame n'a AUCUN lecteur en overlay (pas de rsv_ d'effacement) :
+;     son store, mort, sort du chemin single ;
+;   - le fetch de page d'imageset passe par abx ;
+;   - les bornes ecran se testent en referentiel DECALE : subb #bas puis une
+;     comparaison NON SIGNEE a la largeur remplace chaque paire haut/bas.
+; Le chemin multisprite (inutilise par R-Type) est laisse strictement 1:1.
 
 BuildSprites
         anda  #0         ; init tmp variables
-        sta   _x_size
-        sta   _y_size
-        sta   _image_center_parity
+        sta   <_x_size
+        sta   <_y_size
+        sta   <_image_center_parity
 
         ldu   Tbl_Priority_Last_Entry+16
         beq   >
@@ -82,7 +96,7 @@ BuildSprites
         bne   @nextobject1 
         bita  #render_subobjects_mask       ; is this a child multisprite sprite object?
         lbne  @multisprite
-        sta   _render_flags     
+        sta   <_render_flags
 ;
 ; ****************************************************
 ; SingleSprite rendering
@@ -94,27 +108,27 @@ BuildSprites
 ;
 ;       load image index for this object       
         ldx   #Img_Page_Index
-        anda  #0           
         ldb   id,u                          ; get object id
-        lda   d,x                           ; retrieve page that store imagesets for this object id
-        _SetCartPageA        
+        abx
+        lda   ,x                            ; retrieve page that store imagesets for this object id
+        _SetCartPageA
         ldx   image_set,u                   ; get current imageset associated with this object
 ;
 ;       store image properties in dp
-        ldd   image_x_size,x                
-        sta   _x_size+1
-        stb   _y_size+1
+        ldd   image_x_size,x
+        sta   <_x_size+1
+        stb   <_y_size+1
         ldb   image_center_offset,x
         sex
-        std   _image_center_parity          ; store image center parity
+        std   <_image_center_parity         ; store image center parity
 ;
 ;       set the active image subset based on mirror flags
-        lda   _render_flags
+        lda   <_render_flags
         anda  #render_xmirror_mask|render_ymirror_mask
         ldb   a,x
         beq   @nextobject1                  ; no defined subset images
         leax  b,x                           ; read imageset index that match image mirror
-        stx   _image_subset
+        stx   <_image_subset
 ;
         ; compute mapping frame
         ; ---------------------
@@ -125,42 +139,39 @@ BuildSprites
         ; and select the appropriate routine. If no routine is found, it will select the avaible routine.
         ; -- only use the Draw routine here --
 ;
-        lda   _render_flags
+        lda   <_render_flags
         anda  #render_playfieldcoord_mask
         beq   @a                            ; branch if position is already expressed in screen coordinate
         ldd   x_pos,u 
-        std   _x_pos
-        subd  glb_camera_x_pos
+        std   <_x_pos
+        subd  <glb_camera_x_pos
         bra   @b
 @a      ldb   x_pixel,u                     ; compute mapping_frame 
-@b      eorb  _image_center_parity+1        ; case of odd image center switch shifted image with normal
+@b      eorb  <_image_center_parity+1       ; case of odd image center switch shifted image with normal
         andb  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
         aslb                                ; set bit1 for 1px shifted image  
         orb   #1                            ; set bit0 for overlay sprite
 @c      lda   b,x
         beq   @nodefinedframe
         leax  a,x                           ; read image subset index
-        stx   _mapping_frame
         bra   >
 @nodefinedframe
         eorb  #%00000010                    ; check if there is an alternate shifted image available
         beq   @d
-        inc   _image_center_parity+1        ; ajust offset for alternate
+        inc   <_image_center_parity+1       ; ajust offset for alternate
         bra   @e
-@d      dec   _image_center_parity+1
+@d      dec   <_image_center_parity+1
 @e      lda   b,x
         beq   @nextobject1                  ; no defined frame, nothing will be displayed
         leax  a,x                           ; read image subset index
-        stx   _mapping_frame
 !
         lda   page_draw_routine,x           ; save compiled sprite routine
-        sta   _page_draw_routine
-        ldd   draw_routine,x
-        std   _draw_routine
+        sta   <_page_draw_routine
+        ldy   draw_routine,x                ; Y porte la routine jusqu'a l'appel
 ;
         ; check out of range position 
         ; ---------------------------       
-        lda   _render_flags
+        lda   <_render_flags
         bita  #render_no_range_ctrl_mask
         lbne  @computescreenaddress         ; skip out of range control if option is set
         anda  #render_playfieldcoord_mask
@@ -168,51 +179,51 @@ BuildSprites
 ;
         ; playfield coordinates
         ldd   y_pos,u
-        std   _y_pos
+        std   <_y_pos
 @processPlayfieldCoordinates
-        ldx   _image_subset
+        ldx   <_image_subset
         ldb   image_subset_x1_offset,x
         sex
-        std   _x1_pixel
+        std   <_x1_pixel
         ldb   image_subset_y1_offset,x
         sex
-        std   _y1_pixel
+        std   <_y1_pixel
 ;
-        ldd   _x_pos 
-        addd  _x1_pixel
-        addd  glb_camera_x_offset 
-        addd  glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  glb_camera_x_pos
+        ldd   <_x_pos 
+        addd  <_x1_pixel
+        addd  <glb_camera_x_offset 
+        addd  <glb_camera_x_offset ; use border from other side of the screen 
+        cmpd  <glb_camera_x_pos
         blt   @nextobject
 ;
-        addd  _x_size
+        addd  <_x_size
         subd  #160 ; screen width
-        subd  glb_camera_x_offset ; use border from other side of the screen 
-        subd  glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  glb_camera_x_pos
+        subd  <glb_camera_x_offset ; use border from other side of the screen 
+        subd  <glb_camera_x_offset ; use border from other side of the screen 
+        cmpd  <glb_camera_x_pos
         bge   @nextobject
 ;
-        ldd   _y_pos 
-        addd  _y1_pixel
-        addd  glb_camera_y_offset 
-        cmpd  glb_camera_y_pos
+        ldd   <_y_pos 
+        addd  <_y1_pixel
+        addd  <glb_camera_y_offset 
+        cmpd  <glb_camera_y_pos
         blt   @nextobject
 ;
-        addd  _y_size
+        addd  <_y_size
         subd  #200 ; screen height
-        cmpd  glb_camera_y_pos
+        cmpd  <glb_camera_y_pos
         bge   @nextobject
 ;
 ;       convert playfield position to screen position
 ;       ---------------------------------------------
-        ldd   _y_pos 
-        addd  glb_camera_y_offset
-        subd  glb_camera_y_pos        
+        ldd   <_y_pos 
+        addd  <glb_camera_y_offset
+        subd  <glb_camera_y_pos        
         stb   @ypx
-        ldd   _x_pos                        ; convert playfield position to screen position
-        addd  glb_camera_x_offset
-        subd  _image_center_parity
-        subd  glb_camera_x_pos
+        ldd   <_x_pos                       ; convert playfield position to screen position
+        addd  <glb_camera_x_offset
+        subd  <_image_center_parity
+        subd  <glb_camera_x_pos
         bcc   >                             ; no carry, continue
         subb  #$60                          ; skip x position (ignore 160-255 values )
         dec   @ypx                          ; move y position one line up
@@ -225,45 +236,40 @@ BuildSprites
         lbne  @process   
         rts
 @screencoordinates
-        ; screen coordinates
+        ; screen coordinates — bornes en referentiel DECALE (V2-DEVIATION) :
+        ; b-bas dans [0, haut-bas] se teste d'UNE comparaison non signee, et
+        ; le test de wrap reste valable, les deux operandes etant decales.
         ldb   y_pixel,u                     ; check if sprite is fully in screen vertical range
-        ldx   _image_subset
+        ldx   <_image_subset
         addb  image_subset_y1_offset,x
-        cmpb  #screen_bottom
+        subb  #screen_top
+        cmpb  #screen_bottom-screen_top
         bhi   @nextobject
-        cmpb  #screen_top
-        blo   @nextobject        
-        stb   _y1_pixel+1
-        addb  _y_size+1
-        cmpb  #screen_bottom
+        stb   <_y1_pixel+1
+        addb  <_y_size+1
+        cmpb  #screen_bottom-screen_top
         bhi   @nextobject
-        cmpb  #screen_top
-        blo   @nextobject        
-        cmpb  _y1_pixel+1                    ; check wrapping
+        cmpb  <_y1_pixel+1                  ; check wrapping
         blo   @nextobject
 ;               
-        lda   _render_flags                 ; check if sprite is fully in screen horizontal range
+        lda   <_render_flags                ; check if sprite is fully in screen horizontal range
         bita  #render_xloop_mask
         bne   @setposition
 ;
         ldb   x_pixel,u
-        ldx   _image_subset
-        addb  image_subset_x1_offset,x
-        cmpb  #screen_right
+        addb  image_subset_x1_offset,x      ; X pointe toujours _image_subset
+        subb  #screen_left
+        cmpb  #screen_right-screen_left
         bhi   @nextobject
-        cmpb  #screen_left
-        blo   @nextobject
-        stb   _x1_pixel+1
-        addb  _x_size+1
-        cmpb  #screen_right
+        stb   <_x1_pixel+1
+        addb  <_x_size+1
+        cmpb  #screen_right-screen_left
         bhi   @nextobject
-        cmpb  #screen_left
-        blo   @nextobject
-        cmpb  _x1_pixel+1                   ; check wrapping
+        cmpb  <_x1_pixel+1                  ; check wrapping
         blo   @nextobject 
 @setposition
         ldd   xy_pixel,u                    ; load x position (48-207) and y position (28-227) in one operation
-        suba  _image_center_parity+1
+        suba  <_image_center_parity+1
         suba  #48                           ; move x ref. to 0
         bcc   >                             ; no carry, continue
         suba  #$60                          ; x-loop, skip x_pixel (160-255)
@@ -279,9 +285,9 @@ BuildSprites
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
-        std   glb_screen_location_2
+        std   <glb_screen_location_2
         suba  #$20
-        std   glb_screen_location_1     
+        std   <glb_screen_location_1     
         bra   >
 @ram2
         sta   @lbyte2
@@ -289,19 +295,19 @@ BuildSprites
         mul
         addd  #$A000                        ; (dynamic)
 @lbyte2 equ   *-1      
-        std   glb_screen_location_2
+        std   <glb_screen_location_2
         addd  #$2001
-        std   glb_screen_location_1
+        std   <glb_screen_location_1
 !
-        lda   _page_draw_routine
+        lda   <_page_draw_routine
         _SetCartPageA        
         stu   @u                 
-        ldu   glb_screen_location_2
-        jsr   [_draw_routine]               ; draw compilated sprite on screen
+        ldu   <glb_screen_location_2
+        jsr   ,y                            ; draw compilated sprite on screen (Y pose par le fetch)
         ldu   #0                 
 @u      equ   *-2
 ;
-        lda   _render_flags
+        lda   <_render_flags
         ora   #render_hide_mask             ; set hide flag
         sta   render_flags,u        
 @nextobject2
