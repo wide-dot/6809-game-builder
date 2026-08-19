@@ -10,17 +10,16 @@
 ;   - l'operande du JMP   : ou l'on SAUTE dans le deroule — chaque poussee
 ;     zappee retire 9 octets en tete de descente, c'est la borne HAUTE.
 ;
-; La fenetre maximale est lignes 11 a 178 : au-dessus (0-10) et en-dessous
-; (191-199) c'est le masque ; la rangee de tuiles du bas (179-190) est
-; TOUJOURS peinte par la tilemap (contrat sky_transparent.py). Le nombre de
-; poussees est arrondi AU-DESSUS : le depassement (<= 8 octets) sort par la
-; borne haute, dans des lignes que la tilemap repeint ou que le masque
-; couvre — jamais sous $A000.
-;
-; La TIMELINE par stage (voir gen_clear_timeline.py et le tick dans
-; stage-main.asm) ne stocke que les CHANGEMENTS de fenetre, precalcules :
+; La fenetre maximale est TOUT le champ de jeu, lignes 11 a 190 (au-dessus
+; et en-dessous, c'est le masque) : 7 200 octets par plan, 800 poussees —
+; la division tombe juste. Le blast ne presume RIEN du decor : ce que la
+; tilemap repeint a coup sur (la rangee du bas, un plafond continu...) est
+; l'affaire de la TIMELINE par stage, generee depuis la carte par
+; gen_clear_timeline.py — elle ne stocke que les changements, precalcules :
 ; [camera(2), operande LDS plan couleur(2), offset de saut(2)]. Le plan
-; forme se deduit (+$2000, meme offset).
+; forme se deduit (+$2000, meme offset). Le nombre de poussees d'une
+; fenetre est arrondi AU-DESSUS : le depassement (<= 8 octets) sort par la
+; borne haute, dans des lignes zappees ou masquees — jamais sous $A000.
 ;
 ; Pieges payes et graves ici (cf. l'historique du fichier) :
 ;   - AUCUN bsr/rts quand S est le pointeur d'ecriture (l'adresse de retour
@@ -31,12 +30,11 @@
 ;     instruction, seul le push materiel touche la zone pas encore ecrite ;
 ;   - DP passe a zero (le moniteur pose le sien en tete d'IRQ).
 ;
-; Fenetre par defaut (l'etat assemble) : lignes 11-178, 747 poussees.
-; Cout : 21 093 cycles plein cadre ; chaque rangee de tuiles zappee par la
-; timeline rend ~1 494 cycles.
+; Etat assemble (et defaut des stages sans timeline) : fenetre pleine,
+; 22 455 cycles. Chaque rangee de tuiles zappee rend ~747 cycles de PSHS.
 ; ===========================================================================
 
-NPUSH    equ 747                       ; ceil(168 lignes x 40 / 9) — la fenetre max
+NPUSH    equ 800                       ; 180 lignes x 40 / 9 — tout le champ
 
 playfield.clearBlast   EXPORT
 playfield.clearWindow  EXPORT
@@ -55,7 +53,7 @@ playfield.clearBlast
         ldu   #0
 
 clr.ldsA
-        lds   #$A000+179*40            ; plan couleur — operande PILOTE (borne basse)
+        lds   #$A000+191*40            ; plan couleur — operande PILOTE (borne basse)
 clr.jmpA
         jmp   clr.blockA               ; operande PILOTE (borne haute)
 clr.blockA
@@ -806,11 +804,117 @@ clr.blockA
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
 clr.ldsB
-        lds   #$C000+179*40            ; plan forme — pose par clearWindow (+$2000)
+        lds   #$C000+191*40            ; plan forme — pose par clearWindow (+$2000)
 clr.jmpB
         jmp   clr.blockB
 clr.blockB
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u

@@ -13,16 +13,18 @@ La regle : une rangee n'est zappable a une position camera que si TOUTES
 les cellules de la fenetre visible (12-13 colonnes) y sont pleinement
 peintes — apres la regle overlay (blocs de ciel 3x6 transparents, cf.
 sky_transparent.py), appliquee ici en memoire pour lire les in.png traites
-ou non. Seules les rangees CONSECUTIVES depuis le haut (t) et depuis le bas
-(b, >= 1 : la rangee du bas est toujours peinte par contrat) se zappent :
-la fenetre reste contigue, c'est ce que deux operandes savent dire.
+ou non. Seules les rangees CONSECUTIVES depuis le haut (t) et depuis le
+bas (b) se zappent : la fenetre reste contigue, c'est ce que deux
+operandes savent dire. Le blast ne presume rien : meme la rangee du bas
+(que sky_transparent.py maintient peinte) est DEDUITE de la carte ici —
+elle donne b >= 1 partout, ce n'est pas une regle codee en dur.
 L'analyse est ERODEE d'un pixel de camera de chaque cote : le plan impair
 est l'art decale d'un pixel, une transition ne doit jamais s'appliquer un
 pixel trop tot.
 
 Fenetre emise : lignes ecran [11+12t .. 190-12b], poussees arrondies
-AU-DESSUS (le depassement sort par la borne haute, couverte par la rangee
-zappee ou le masque).
+AU-DESSUS (le depassement, 8 octets au plus, sort par la borne haute,
+couverte par la rangee zappee ou le masque).
 
 Sortie : src/stages/<st>/clear-timeline.asm, inclus par l'unite du stage.
 """
@@ -31,7 +33,7 @@ import sys
 from PIL import Image
 
 TILE, ROWS = 12, 15
-NPUSH = 747                            # le deroule du blast (fenetre max 11-178)
+NPUSH = 800                            # le deroule du blast (tout le champ, 11-190)
 
 def load(stage):
     im = Image.open(f"src/stages/{stage}/map/in.png").convert("P")
@@ -66,7 +68,7 @@ for stage in (sys.argv[1:] or ["01"]):
         t = 0
         while t < ROWS - 1 and row_ok(t):
             t += 1
-        b = 1                          # la rangee du bas : contrat, toujours
+        b = 0
         while b < ROWS - t - 1 and row_ok(ROWS - 1 - b):
             b += 1
         return t, b
@@ -90,7 +92,7 @@ for stage in (sys.argv[1:] or ["01"]):
             count = -(-nbytes // 9)                    # arrondi au-dessus
             assert count <= NPUSH, (stage, cam, cur)
             lds = 0xA000 + (bot_line + 1) * 40
-            assert lds - 9 * count >= 0xA000 + 8 * 40, (stage, cam, cur)
+            assert lds - 9 * count >= 0xA000 + 10 * 40, (stage, cam, cur)
             skip = 2 * (NPUSH - count)
             entries.append((cam, lds, skip, t, b, top_line, bot_line))
             prev = cur

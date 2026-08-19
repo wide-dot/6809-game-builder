@@ -817,5 +817,5 @@ gfxlock.loop
 ; (fenetre pleine, posee au premier tick). APRES du code, jamais sur un
 ; chemin d'execution — cf. loop-fallthrough.md.
 clear.tl.ptr        fdb   clear.timeline.none
-clear.timeline.none fdb   0,$BBF8,0    ; cam 0 : lignes 11-178, saut nul
-                    fdb   $FFFF        ; fin
+clear.timeline.none fdb   0,$BDD8,0    ; cam 0 : TOUT le champ (lignes 11-190) —
+                    fdb   $FFFF        ; le defaut ne presume rien du decor
