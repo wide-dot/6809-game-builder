@@ -157,6 +157,15 @@ public class Target {
 			log.info("{} link symbols discovered ({} imported), ids assigned alphabetically",
 					discovered.symbols.size(), discovered.imported.size());
 
+			// The discovery passes write the same dist/ images the real pass
+			// will, but resetTarget clears their registration : a target
+			// refused BEFORE the real pass rewrote them would leave the
+			// discovery's freshly timestamped images behind — exactly what
+			// discardOutputs promises cannot happen. Keep their paths across
+			// the reset so a refusal removes them too.
+			java.util.List<java.nio.file.Path> discoveryOutputs =
+					new ArrayList<java.nio.file.Path>(ctx.outputs.paths());
+
 			// ids and defines are global to a target : restart them so that two
 			// targets of the same game (fd, t2, ...) get identical ids, and so
 			// that building "-t fd" alone or "-t sd,fd" yields the same image
@@ -187,6 +196,9 @@ public class Target {
 				// a file that dropped linkdata must not still be imported
 				ctx.linkSymbols.checkImportsResolvable();
 			} catch (Exception e) {
+				for (java.nio.file.Path p : discoveryOutputs) {
+					ctx.outputs.record(p);
+				}
 				discardOutputs(targetName);
 				throw e;
 			}

@@ -10,7 +10,8 @@
 ;
 ; RÉSIDENTE et HORS de l'unité engine : la fenêtre $6100-$7FFF du moteur est
 ; pleine à 45 octets près — cette routine loge dans la marge visible de la
-; page résidente ($8776-$87DA, entre les témoins du banc et le pool d'objets),
+; page résidente ($87EB-$884F depuis le 19/08 — pool 44→43, tout remonte ;
+; entre les témoins du banc et le pool d'objets),
 ; déclarée région `cast` du layout. Elle doit être en RAM fixe : pendant un
 ; scene.load le loader monte des pages dans les deux fenêtres commutées, tout
 ; code paginé serait escamoté sous ses propres pieds.

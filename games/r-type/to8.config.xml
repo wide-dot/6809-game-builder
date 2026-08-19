@@ -227,16 +227,15 @@
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
                  que ce soit. $9E80 est la limite haute d'un main.
                  ATTENTION : le pool est POSE par ram.const.asm (ancre GLOBALS_BASE,
-                 nb_dynamic_objects = 44 -> $87DB) ; ce <reserved> le DECRIT, rien ne
-                 verifie l'accord des deux. Les 16 octets en $8766 logent les temoins
-                 du banc (bench.const.asm) ; le reste du slot rendu ($8776-$87DA)
-                 est de la marge visible. -->
-            <!-- La convergence des lots d'ennemis : consomme la marge visible
-                 entre le bench et le pool (101 octets) — la fenetre du moteur
-                 est pleine, voir cast.unit.asm. -->
-            <region name="cast" page="$01" address="$8776" size="$0065"/>
-            <reserved name="bench"        page="$01" address="$8766" size="$0010"/>
-            <reserved name="objects.pool" page="$01" address="$87DB" size="$141C"/>
+                 nb_dynamic_objects = 43 -> $8850) ; ce <reserved> le DECRIT, rien ne
+                 verifie l'accord des deux. Les 16 octets en $87DB logent les temoins
+                 du banc (bench.const.asm) ; les unites title/stage disposent de
+                 $8000-$87DA. -->
+            <!-- La convergence des lots d'ennemis : les 101 octets sous le pool —
+                 la fenetre du moteur est pleine, voir cast.unit.asm. -->
+            <region name="cast" page="$01" address="$87EB" size="$0065"/>
+            <reserved name="bench"        page="$01" address="$87DB" size="$0010"/>
+            <reserved name="objects.pool" page="$01" address="$8850" size="$13A7"/>
             <!-- Les OST hors pool : objets uniques lances par _Obj_RunU (ram.const.asm). -->
             <reserved name="objects.static" page="$01" address="$9BF7" size="$01D4"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le

@@ -137,8 +137,16 @@ public class DirectoryPlugin {
 					pageSpans.put(entry.name, entry.pageSpans);
 				}
 			}
+			// the reserved ranges are only held against the real pass : a
+			// discovery pass stopping on them would abort before its measures
+			// exist, and the refusal would bypass the cleanup that discards
+			// the half-written images of a refused target
 			java.util.List<String> sceneErrors = SceneChecks.verify(pendingScenes, sizes, pageSpans,
-					ctx.regions.hasMeasures());
+					ctx.regions.hasMeasures(),
+					ctx.staticLink.isDiscovery()
+							? java.util.Collections.<com.widedot.m6809.gamebuilder.spi.globals
+									.Regions.Reserved>emptyList()
+							: ctx.regions.reservedRanges());
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}

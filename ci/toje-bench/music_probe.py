@@ -44,7 +44,7 @@ frames = 215
 
 
 def witnesses():
-    b = t.read("8766", 8)
+    b = t.read("87DB", 8)
     return {"magic": b[0], "stage": b[1]}
 
 

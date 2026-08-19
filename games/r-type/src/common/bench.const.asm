@@ -42,7 +42,10 @@ bench.SCROLL_VEL   equ $0030        ; 8.8 : 3/16 de pixel par trame, la vitesse
                                     ; rend toute observation d'un ennemi
                                     ; ininterpretable.
 
-bench.BLOCK        equ $8766        ; <reserved name="bench"> du layout
+bench.BLOCK        equ $87DB        ; <reserved name="bench"> du layout
+                                    ; ($8766 jusqu'au 19/08 : le title a grossi
+                                    ; jusqu'a poser son dernier octet dessus —
+                                    ; pool 44->43, tout le bloc remonte)
 bench.magic        equ bench.BLOCK+0   ; $CA : la partie a démarré
 bench.stage        equ bench.BLOCK+1   ; le numéro du stage qui tourne
 bench.frames       equ bench.BLOCK+2   ; compteur de trames, un blocage se voit

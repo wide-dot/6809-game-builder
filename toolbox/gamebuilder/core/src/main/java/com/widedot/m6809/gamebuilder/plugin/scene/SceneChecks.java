@@ -33,11 +33,14 @@ public final class SceneChecks {
 	 * @param sizes     uncompressed size of every directory entry, by name
 	 * @param pageSpans per entry, the ranges that must stay inside one 256 byte
 	 *                  page, as offsets in the file
+	 * @param reserved  the layout's {@code <reserved>} ranges : bytes the game
+	 *                  occupies without loading into them, that no load may touch
 	 * @return the errors found, empty when all the scenes are coherent
 	 */
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
-			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal) {
-		List<String> errors = verify(scenes, sizes, pageSpans);
+			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal,
+			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved) {
+		List<String> errors = verify(scenes, sizes, pageSpans, reserved);
 		return addressesAreReal ? errors : budgetsOnly(errors);
 	}
 
@@ -46,12 +49,13 @@ public final class SceneChecks {
 	 * provisional addresses : they would look piled on each other. Budgets and
 	 * missing files still mean something, overlaps do not — the pass whose job
 	 * is to produce the real addresses must not be stopped by the absence of
-	 * real addresses.
+	 * real addresses. A reserved range clash reads the same addresses, so it
+	 * waits for the real pass too.
 	 */
 	private static List<String> budgetsOnly(List<String> errors) {
 		List<String> kept = new ArrayList<String>();
 		for (String e : errors) {
-			if (!e.contains("overlap on page")) {
+			if (!e.contains("overlap on page") && !e.contains("runs into the reserved range")) {
 				kept.add(e);
 			}
 		}
@@ -60,7 +64,18 @@ public final class SceneChecks {
 
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
 			Map<String, Map<String, int[]>> pageSpans) {
+		return verify(scenes, sizes, pageSpans,
+				java.util.Collections.<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved>emptyList());
+	}
+
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans,
+			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved) {
 		List<String> errors = new ArrayList<String>();
+		// the same file loaded at the same place by several scenes clashes
+		// identically in each : one report per (file, range) is what a human
+		// needs, so the messages dedup on their text
+		java.util.Set<String> reservedClashes = new java.util.LinkedHashSet<String>();
 
 		for (SceneCheck scene : scenes) {
 			// resolved memory range of every write of this scene, per page
@@ -103,6 +118,25 @@ public final class SceneChecks {
 					if (size > 0) {
 						ranges.add(new int[] { load.page, load.address, load.address + size });
 						owners.add(load.name);
+						// a reserved range is a promise about where loads must
+						// NOT land : the object pool, the globals, the stack —
+						// bytes the game occupies without loading into them.
+						// The r-type title grew one byte past its span and its
+						// last palette byte landed ON the bench witnesses, which
+						// stamped it every frame ; nothing said a word. Refused
+						// here, with the file's real size, whatever the
+						// destination form (raw, region or arena).
+						for (com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved r : reserved) {
+							if (load.page == r.page && load.address < r.address + r.size
+									&& r.address < load.address + size) {
+								reservedClashes.add(load.where + ": '" + load.name + "' ["
+										+ hex(load.address) + "-" + hex(load.address + size - 1)
+										+ "] runs into the reserved range '" + r.name + "' ["
+										+ hex(r.address) + "-" + hex(r.address + r.size - 1)
+										+ "] on page " + load.page + " — those bytes belong to the"
+										+ " game's own equates ; shrink the file or move the range");
+							}
+						}
 					}
 					break;
 
@@ -134,6 +168,7 @@ public final class SceneChecks {
 				}
 			}
 		}
+		errors.addAll(reservedClashes);
 		return errors;
 	}
 

@@ -104,6 +104,60 @@ class SceneChecksTest {
 	}
 
 	@Test
+	@DisplayName("a load running into a reserved range is an error, whatever the overlap size")
+	void reservedOverlap() {
+		// the real incident : the title unit grew to $0767 bytes at $8000 and its
+		// last byte landed ON the bench witnesses reserved at $8766 — one byte
+		java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved =
+				Arrays.asList(new com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved(
+						"bench", 1, 0x8766, 0x0010));
+		List<String> errors = SceneChecks.verify(Arrays.asList(scene("title",
+				new Load("title.main", Kind.PLACED, 1, 0x8000, null, null, "f:1"))),
+				sizes("title.main", 0x0767),
+				java.util.Collections.<String, Map<String, int[]>>emptyMap(), reserved);
+		assertEquals(1, errors.size(), errors.toString());
+		assertTrue(errors.get(0).contains("runs into the reserved range 'bench'"), errors.get(0));
+		assertTrue(errors.get(0).contains("$8766"), errors.get(0));
+
+		// one byte less : the file ends where the range begins, no clash
+		errors = SceneChecks.verify(Arrays.asList(scene("title",
+				new Load("title.main", Kind.PLACED, 1, 0x8000, null, null, "f:1"))),
+				sizes("title.main", 0x0766),
+				java.util.Collections.<String, Map<String, int[]>>emptyMap(), reserved);
+		assertTrue(errors.isEmpty(), errors.toString());
+
+		// same addresses on another page : no clash either
+		errors = SceneChecks.verify(Arrays.asList(scene("title",
+				new Load("title.main", Kind.PLACED, 2, 0x8000, null, null, "f:1"))),
+				sizes("title.main", 0x0767),
+				java.util.Collections.<String, Map<String, int[]>>emptyMap(), reserved);
+		assertTrue(errors.isEmpty(), errors.toString());
+	}
+
+	@Test
+	@DisplayName("a reserved clash waits for real addresses, and reports once for many scenes")
+	void reservedOverlapFiltering() {
+		java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved =
+				Arrays.asList(new com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved(
+						"bench", 1, 0x8766, 0x0010));
+		List<SceneCheck> scenes = Arrays.asList(
+				scene("title", new Load("title.main", Kind.PLACED, 1, 0x8000, null, null, "f:1")),
+				scene("replay", new Load("title.main", Kind.PLACED, 1, 0x8000, null, null, "f:1")));
+
+		// while the layout is being measured the addresses are provisional :
+		// the clash is not reported, the real pass will see it
+		List<String> measuring = SceneChecks.verify(scenes, sizes("title.main", 0x0767),
+				java.util.Collections.<String, Map<String, int[]>>emptyMap(), false, reserved);
+		assertTrue(measuring.isEmpty(), measuring.toString());
+
+		// real pass : two scenes load the same file at the same place, the
+		// identical clash is reported once
+		List<String> real = SceneChecks.verify(scenes, sizes("title.main", 0x0767),
+				java.util.Collections.<String, Map<String, int[]>>emptyMap(), true, reserved);
+		assertEquals(1, real.size(), real.toString());
+	}
+
+	@Test
 	@DisplayName("a data file without destination is an error, an empty file placed is not")
 	void exportOnlyCoherence() {
 		List<String> errors = SceneChecks.verify(Arrays.asList(scene("s",

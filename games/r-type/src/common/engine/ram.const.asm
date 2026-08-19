@@ -38,7 +38,14 @@ moveByScript.POSYSTEP        equ  $00C0
 ; a +147 et au-dessus c'est la pile — donc les temoins EMPRUNTENT un slot
 ; d'objet, rendu quand le banc partira. Le banc ne cree qu'une dizaine
 ; d'objets, la marge reste large.
-nb_dynamic_objects           equ 44
+;
+; 44 -> 43 (2026-08-19, decision auteur) : le title a grossi d'un octet et son
+; dernier octet — l'entree 15 de Pal_loading — atterrissait SUR bench.magic
+; ($8766) : entree 15 bleue a l'ecran LOADING, en silence, jusqu'a ce que la
+; garde <reserved> du builder le refuse. Le pool rend un slot : sa base monte
+; a $8850, bench ($87DB) et cast ($87EB) remontent d'autant, et les unites
+; title/stage disposent de $8000-$87DA (+117 octets).
+nb_dynamic_objects           equ 43
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 

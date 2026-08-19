@@ -164,7 +164,9 @@ Les trois régressions ci-dessous sont **corrigées** :
    qui court-circuite le contrôle) : une scène `scenes.trap` charge bb sur
    cc, et le trap se déclenche. **loader-ut : 17/17, statut `$0D`, T18
    `$8301` — vérifié sous cette lane.**
-3. r-type : témoins du banc relogés dans un bloc réservé à eux (`$8766`,
+3. r-type : témoins du banc relogés dans un bloc réservé à eux (`$8766`
+   alors ; `$87DB` depuis le 19/08 — pool 44→43, le bloc remonte avec la
+   base, voir bench.const.asm ;
    16 octets empruntés au 46e objet du pool — la page 1 n'a pas un octet
    libre par construction), `ymm.stop` posé dans les deux `stage.handOver`
    (la signature YM du gel a disparu), et le layout dit vrai sur

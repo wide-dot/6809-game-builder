@@ -888,6 +888,18 @@ En veille sur décision (31/07/2026) :
         disjointes, export-only, somme `bulk`) ; doctrine « le builder vérifie
         une composition, pas les enchaînements » ; `permanent` retiré ;
         régions `bulk` (listes empilées, remplacées en bloc)
+  - [x] Garde `<reserved>` (19/08) : un load dont l'étendue RÉELLE croise une
+        plage réservée est REFUSÉ (SceneChecks, toutes formes de destination —
+        brute, région, arène ; passe réelle seulement, et un refus vide
+        désormais `dist/` des images des passes de découverte aussi). Trouvé
+        par l'incident palette : `title.main` ($0767 octets à $8000) posait
+        son dernier octet SUR `bench.magic` $8766 → entrée 15 bleue à l'écran
+        LOADING, en silence. Corpus revalidé : 59 images inchangées octet
+        pour octet. Débordement résolu (décision auteur, même jour) : pool
+        44 -> 43 (ram.const.asm), base $87DB -> $8850, bench $87DB, cast
+        $87EB — les unités title/stage disposent de $8000-$87DA (+117).
+        Validé sous toje : entrée 15 NOIRE à l'écran LOADING, stage 1 joue,
+        témoins du banc vivants à la nouvelle adresse.
   - [x] Encodage `%11` automatique quand les ids se suivent (pad 37→7 octets,
         iface 17→7 ; repli silencieux `%10` si la chaîne se brise) — validé
         par exécution : loader-ut 16/16, sound RAM + swap à chaud

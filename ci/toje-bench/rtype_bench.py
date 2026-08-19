@@ -4,7 +4,7 @@
     TOJE_MCP=<toje>/scripts/toje-mcp.sh \
     python3 ci/toje-bench/rtype_bench.py dist/to8.fd [max_frames]
 
-Witnesses at bench.BLOCK = $8766 (src/common/bench.const.asm, the
+Witnesses at bench.BLOCK = $87DB (src/common/bench.const.asm, the
 layout's <reserved name="bench"> block): magic $CA, stage byte (00 =
 title, 01/02 = stages), frame counter, camera (word), spawns (word).
 bench.BLOCK+12 is the lane's COMMAND window (bench.request): writing a
@@ -47,7 +47,7 @@ frames = 215
 
 
 def witnesses():
-    b = t.read("8766", 16)
+    b = t.read("87DB", 16)
     return {"magic": b[0], "stage": b[1],
             "cam": (b[3] << 8) | b[4], "spawns": (b[5] << 8) | b[6]}
 
