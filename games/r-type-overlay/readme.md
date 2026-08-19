@@ -16,8 +16,14 @@ Etat de cette base (etape 1 du chantier) :
   c'est attendu — les effaceurs a la main (rotonde, etoiles) sont gardes ;
 - la queue du Dobkeratops est INVISIBLE (son imageset fabrique n'a pas de
   variante D) — sa machinerie de cellules est a re-concevoir en overlay ;
-- mesure : 17,2 img/s de moyenne sur le niveau 1 contre 12,0 en reference —
-  la borne haute, avant de payer l'effacement.
+- mesure : 16,7 img/s de moyenne sur le niveau 1 contre 12,0 en reference
+  (+39 %) — la borne haute, avant de payer l'effacement ;
+- PIEGE APPRIS (19/08) : la convention des offsets camera CHANGE avec le
+  pack. En background-erase ils portent le cadre ecran (48/28) ; le
+  BuildSprites overlay les traite en MARGE hors-ecran et veut ZERO ici —
+  les poser a 48/28 decale chaque sprite playfield avec wrap au bord.
+  Le cadre 48-207 reste la convention de DRS_XYToAddress : les effaceurs
+  a la main y transposent par les constantes screen_left/screen_top.
 
 Le reste de ce readme est celui du jeu de reference.
 

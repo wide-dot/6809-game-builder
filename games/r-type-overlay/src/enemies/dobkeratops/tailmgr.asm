@@ -270,12 +270,12 @@ TailUpdateAll
         ldd   TS_XHI,y
         subd  glb_camera_x_pos
         stb   TMccx                  ; cx collision (coords camera, SANS +48 - cf tail.asm @end)
-        addb  glb_camera_x_offset+1
-        stb   TMtx
+        addb  #screen_left           ; OVERLAY : l'offset camera est nul (marge,
+        stb   TMtx                   ; pas cadre) — la constante porte le cadre
         ldd   TS_YHI,y
         subd  glb_camera_y_pos
         stb   TMccy                  ; cy collision (SANS +28)
-        addb  glb_camera_y_offset+1
+        addb  #screen_top
         stb   TMty
         ; --- collision : TOUS les elements portent une hitbox, testes un sur
         ; deux en alternance par trame (pairs puis impairs, arcade-style) ---

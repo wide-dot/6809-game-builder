@@ -374,13 +374,19 @@ terrainCollision.init.do
 ; quatre routines ci-dessous couvrent ce que le reste du jeu attend encore.
 ; ---------------------------------------------------------------------------
 
-; La v1 background-erase posait les offsets camera dans InitDrawSprites ;
-; BuildSprites les lit aussi (bornes ecran, conversion playfield->ecran).
-; Meme corps que la v1 (DrawSpritesExtEnc.asm), sans plus.
+; ATTENTION, la convention CHANGE avec le pack. En background-erase les
+; offsets camera portent le cadre ecran (48/28) : CheckSpritesRefresh convertit
+; playfield -> cadre 48-207, puis DRS_XYToAddress retranche 48/28. Le
+; BuildSprites overlay, lui, calcule l'adresse DIRECTEMENT depuis
+; x_pos - camera + offset : l'offset y est une MARGE hors-ecran (sonic v1 met
+; 12/20), et R-Type, dont toute la logique suppose la fenetre visible
+; [camera, camera+160], veut ZERO. Les poser a 48/28 decale chaque sprite
+; playfield de +48/+28 avec wrap au bord (vecu : logo du title coupe en deux).
+; InitGlobals ne les pose que sous ifdef DrawSprites (pack bg-erase) — il
+; savait deja que la convention change ; ce talon les fixe explicitement.
 InitDrawSprites
-        ldd   #screen_left
+        ldd   #0
         std   glb_camera_x_offset
-        ldd   #screen_top
         std   glb_camera_y_offset
         rts
 

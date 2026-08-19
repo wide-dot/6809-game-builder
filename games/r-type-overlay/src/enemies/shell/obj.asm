@@ -387,7 +387,8 @@ ShellSavePos
         blo   @off
         tsta
         bne   @off
-        addb  glb_camera_y_offset+1
+        addb  #screen_top           ; cadre 48-207 : constante, PAS l'offset
+                                    ; camera (nul en overlay - marge, pas cadre)
         cmpb  #screen_top+6
         blo   @off
         cmpb  #screen_bottom-12
@@ -398,7 +399,7 @@ ShellSavePos
         blo   @off
         tsta
         bne   @off
-        addb  glb_camera_x_offset+1
+        addb  #screen_left          ; idem : DRS_XYToAddress retranche 48/28
         cmpb  #screen_left+4
         blo   @off
         cmpb  #screen_right-8
