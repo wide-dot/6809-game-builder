@@ -59,7 +59,6 @@ map_width       equ 24*tile_size
 ; game.lives N'EST PLUS ici : les vies sont `globals.lives`, dans le bloc
 ; reserve, comme en v1 — c'est la variable que le HUD dessine, et deux
 ; compteurs de vies dans deux endroits n'en font pas un.
-game.score      fdb   0
 game.stage      fcb   0
 ; les effets des cheats du title : ecrits par title.cheat.launch a CHAQUE
 ; depart (0 = pas de cheat), lus par player1 (invincible) et par le semis de

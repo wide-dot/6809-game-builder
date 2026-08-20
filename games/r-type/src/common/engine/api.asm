@@ -309,7 +309,6 @@ Collision_Run EXTERNAL
 
         ; --- state that outlives a stage : the engine holds it, so a stage
         ; swap cannot take it with it ---
-        _api game.score
         _api game.stage
         _api cheat.invincible
         _api cheat.extraLives
