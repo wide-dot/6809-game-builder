@@ -3,10 +3,10 @@ engine/constants.asm,engine/constants.asm,1d3db8b7edf02f7a73b55bea8c3eeb0a7fd389
 engine/macros.asm,engine/macros.asm,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-07-31,
 engine/irq/Irq.asm,engine/irq/Irq.asm,ee123fff26f5271f47a83b4a2a5f2fab8151167f,2026-07-31,setdp neutralized (obj target) + Irq_one_frame/Irq_one_line deplacees vers constants.asm (frontiere de lien)
 engine/graphics/buffer/gfxlock.asm,engine/graphics/buffer/gfxlock.asm,ec9d4b60f6fea5d61327409a595e4aeafe3fc464,2026-08-19,
-engine/graphics/buffer/gfxlock.macro.asm,engine/graphics/buffer/gfxlock.macro.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-07-31,
+engine/graphics/buffer/gfxlock.macro.asm,engine/graphics/buffer/gfxlock.macro.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-07-31,OverlayMode: PRC bit 0 epingle a l'init au lieu de suivre la parite buffer (plus de cellules de backup en overlay - la demi-page 0 devient de la RAM stable)
 engine/palette/PalUpdateNow.asm,engine/palette/PalUpdateNow.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-07-31,setdp neutralized (obj target)
 engine/palette/PalUpdateNowLean.asm,engine/palette/PalUpdateNowLean.asm,d5c2811cf01c83c94d0a3000642d83de45dc64fd,2026-07-31,setdp neutralized (obj target)
-engine/InitGlobals.asm,engine/InitGlobals.asm,cf6e765e147b1a17c46e20eabb07bdb9980425ed,2026-07-31,
+engine/InitGlobals.asm,engine/InitGlobals.asm,cf6e765e147b1a17c46e20eabb07bdb9980425ed,2026-07-31,OverlayMode: epingle PRC bit 0 en tete (la demi-page 0 porte le pool d'objets - premier geste avant tout acces OST)
 engine/keyboard/ReadKeyboard.asm,engine/keyboard/ReadKeyboard.asm,054daefca4d714c6c2d018d2e8ac70a89ac20ee6,2026-07-31,
 engine/keyboard/MapKeyboardToJoypads.asm,engine/keyboard/MapKeyboardToJoypads.asm,054daefca4d714c6c2d018d2e8ac70a89ac20ee6,2026-07-31,
 engine/ram/BankSwitch.asm,engine/ram/BankSwitch.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-07-31,
@@ -83,3 +83,6 @@ engine/graphics/sprite/sprite-overlay-pack.asm,engine/graphics/sprite/sprite-ove
 engine/graphics/sprite/overlay-mode/DisplaySprite.asm,engine/graphics/sprite/overlay-mode/DisplaySprite.asm,adfec9e322b38c4cd8fce0a753273f582ea95337,2026-08-19,
 engine/graphics/sprite/overlay-mode/BuildSprites.asm,engine/graphics/sprite/overlay-mode/BuildSprites.asm,4f7d4140ff08fc904ff5436dc1df1bd394aff0d0,2026-08-19,setdp neutralized (obj target) + single-sprite speed pass 19/08/2026 (forced direct, jsr ,y, dead store, abx, shifted-referential bounds) validated by examples/overlay differential bench ; missing-frame fallback bugfix 20/08/2026 (shift-bit direction + word-wide adjust, BSP_parityFallback) SYNCED to v1 4f7d4140 — found by the anchor sweep of examples/overlay
 engine/graphics/sprite/overlay-mode/DeleteObject.asm,engine/graphics/sprite/overlay-mode/DeleteObject.asm,8dd3e92233cd0de1e015a2af5b2f60d72fe2aee1,2026-08-19,
+engine/graphics/tilemap/vscroll/vscroll.asm,engine/graphics/tilemap/vscroll/vscroll.asm,00ae193f7fc24caadcb17f762fb3221aa9bd5bc7,2026-08-20,
+engine/graphics/tilemap/vscroll/vscroll.macro.asm,engine/graphics/tilemap/vscroll/vscroll.macro.asm,ba17ca0e1262da334f7f01cbe9231dc925205eda,2026-08-20,
+engine/graphics/tilemap/vscroll/vscroll.md,engine/graphics/tilemap/vscroll/vscroll.md,1ae62b2907f828fc7f429bca7575f9780ba7aacb,2026-08-20,

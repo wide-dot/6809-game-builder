@@ -9,6 +9,16 @@ _gfxlock.init MACRO
         anda  #%00000001
         sta   gfxlock.backBuffer.id      ; id is 0 or 1
         clr   gfxlock.frameDrop.max      ; no frame-drop cap by default; a game may set it after init
+ IFDEF OverlayMode
+        ; OVERLAY : plus de cellules de fond, la demi-page 0 ($4000-$5FFF)
+        ; devient de la RAM STABLE (pool d'objets…). On epingle PRC bit 0 une
+        ; fois pour toutes — s'il suivait la parite buffer (comportement
+        ; background-erase ci-dessous), tout ce qui y est range n'existerait
+        ; qu'une trame sur deux.
+        ldb   map.MC6846.PRC
+        andb  #%11111110                 ; demi-page 0, moitie fixe (bit 0 = 0)
+        stb   map.MC6846.PRC
+ ENDC
  ENDM
 
 _gfxlock.on MACRO
@@ -19,6 +29,12 @@ _gfxlock.on MACRO
         sta   gfxlock.status
         ldb   gfxlock.backBuffer.status ; always 0 or -1 (flip/flop)
         andb  #%00000001                ; B = parite buffer (bit 0)
+ IFDEF OverlayMode
+        ; OVERLAY : pas de cellules de backup — PRC bit 0 est epingle par
+        ; _gfxlock.init et ne suit plus la parite ($4000-$5FFF est stable).
+        orb   #%00000010                ; value should be 2 or 3
+        stb   map.CF74021.DATA          ; mount working video buffer in RAM ($A000)
+ ELSE
         pshs  b                          ; garde la parite
         orb   #%00000010                ; value should be 2 or 3
         stb   map.CF74021.DATA          ; mount working video buffer in RAM ($A000)
@@ -32,6 +48,7 @@ _gfxlock.on MACRO
         andb  #%11111110                ; preserve les autres bits du 6846, efface bit 0
         orb   ,s+                        ; bit 0 = parite buffer
         stb   map.MC6846.PRC
+ ENDC
  ENDM
 
 _gfxlock.off MACRO
