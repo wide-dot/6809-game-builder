@@ -14,15 +14,23 @@
 ;   run_stage_clear_pilot 0x40:1F1B — installed for the player slot when the
 ;   alive gate [0x10] == 2 (fresh game and stage chaining) ; script cells at
 ;   0x1000:10C2, 8 bytes each: [time_threshold, x_delta 8.8, ship recipe,
-;   flame recipe], advanced against frame_time (0x2F4B). Stage 1 clock epoch
-;   0x600 (object_wave_stage1 first record, checkpoint 0 seed).
+;   flame recipe], advanced against frame_time (0x2F4B). frame_time is a
+;   HALF-FRAME clock (it carries a decimal byte, 0x2F4A): one unit = two
+;   video frames — re.arcade.r-type ObjectWave.java exports the waves with
+;   rate = 2.0 for exactly that reason, and the x_delta applies per VIDEO
+;   frame, every pilot tick. Stage 1 clock epoch 0x600 (lvlTimeStart[0],
+;   object_wave_stage1 first record).
 ;     1F28  MOV word ptr [BP+0x4],0x120   ; spawn X — OFF SCREEN LEFT
-;     1F2D  MOV word ptr [BP+0x8],0x110   ; spawn Y
-;   Timeline (frames from stage start, thresholds 0x640/0x66D/0x672/0x6B1):
-;     hold  64 f  at x=0x120 (screen -4.25 TO8 px), big flame, drawn clipped
-;     zoom  45 f  at +4.0 arcade px/f = +1.5 TO8 px/f  -> screen x ~63
-;     pause  5 f
-;     drift 63 f  at -1.5 arcade px/f = -0.5625 TO8 px/f -> screen x ~28
+;     1F2D  MOV word ptr [BP+0x8],0x110   ; spawn Y (arcade Y axis points UP)
+;   Coordinates: re.arcade.r-type Conv.java — v2 = round((arcade+off)*ratio)
+;   + viewport offset ; x: (x-320)*0.375+8, y: (y-144)*-0.75+190 (axis flip).
+;   Timeline (v2 frames = arcade units x2, thresholds 0x640/0x66D/0x672/0x6B1):
+;     hold  128 f at x=0x120 -> screen -4, big flame, drawn clipped
+;     zoom   90 f at +4.0 arcade px/frame = +1.5 TO8 px/f -> screen x ~131
+;     pause  10 f
+;     drift 126 f at -1.5 arcade px/frame = -0.5625 TO8 px/f -> screen x ~60
+;              (= the v1 LetsStart position: the v1 mimic had the right end
+;              point and total duration, from the author's eye)
 ;     hand-over: [0x10]:=1, run_player_one installed (0x1F66)
 ;   Death respawn (create_player_one 0x1FE5) has NO fly-in: fixed (0x1B0,
 ;   0x100) — the v2 checkpoint blink path is untouched.
@@ -36,11 +44,16 @@
 ;   - the off-screen hold is HIDDEN here (subtype -1): the v2 renderer drops
 ;     a partially visible sprite instead of clipping it, so the arcade's
 ;     7-px nose peek cannot be shown — the ship pops at the left edge a few
-;     frames into the zoom, already at full entry speed.
+;     frames into the zoom, already at full entry speed. Same cause, the
+;     overshoot tip: the arcade ship pushes its nose slightly past screen
+;     x 131 with hardware clipping ; here the whole box stays visible.
+;
+;   The intro Y maps to 94 — one px off the v1 anchor 93, kept as the
+;   Conv.java rounding gives it ; the death respawn keeps the game's 93.
 ;
 ; State, on this object's own OST record:
 ;   subtype,u  sub-phase 0 hold / 1 zoom / 2 pause / 3 drift
-;   x_pos,u    ship screen x, signed 8.8 (the ship is screen-anchored: the
+;   x_pos,u    ship screen x + 4, unsigned 8.8 (the ship is screen-anchored: the
 ;              player's x_pos is rewritten from the camera every tick)
 ;   y_pos,u    phase timer, frames left (byte)
 ;   anim,u     gameCount anchor of the last tick
@@ -59,10 +72,14 @@ Routines
         fdb   IntroTick
         fdb   AlreadyDeleted
 
-intro.SX0     equ   $FBC0              ; screen x 8.8 at hold: -4.25 px (arcade 0x120)
-intro.Y       equ   105                ; arcade 0x110 (respawn 0x100 <-> 93, +16 arcade px * 0.75)
+intro.XBIAS   equ   4                  ; sx is UNSIGNED 8.8, biased +4: the zoom
+                                       ; tip (131) overflows a signed 8.8 ; the
+                                       ; only negative value is the -4 hold
+intro.SX0     equ   $0000              ; screen x -4 px + bias (arcade 0x120: (288-320)*0.375+8)
+intro.Y       equ   94                 ; arcade 0x110, axis UP: (272-144)*-0.75+190
 intro.durations
-        fcb   64,45,5,63               ; hold, zoom, pause, drift (0x640/0x66D/0x672/0x6B1 - 0x600)
+        fcb   128,90,10,126            ; hold, zoom, pause, drift — arcade units
+                                       ; (0x640/0x66D/0x672/0x6B1 - 0x600) x2
 intro.vel
         fdb   $0000                    ; hold
         fdb   $0180                    ; zoom  : +1.5 px/f (arcade +4.0 * 0.375)
@@ -152,9 +169,10 @@ IntroPlace
         ; The arcade pilot holds SCREEN coordinates: re-derive the player's
         ; playfield position from the camera every tick, whatever the scroll
         ; and the Live drift-compensation did in between.
-        ldb   x_pos,u                  ; signed integer part of sx
-        sex
+        ldb   x_pos,u                  ; integer part of sx (unsigned, biased)
+        clra
         addd  glb_camera_x_pos
+        subd  #intro.XBIAS
         std   player1+x_pos
         ldd   #intro.Y
         std   player1+y_pos
