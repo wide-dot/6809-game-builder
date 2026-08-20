@@ -1,18 +1,63 @@
 ; ---------------------------------------------------------------------------
-; Object
+; Object — stage 1 opening sequence (player fly-in)
 ;
 ; input REG : [u] pointer to Object Status Table (OST)
-; ---------
-;
 ; ---------------------------------------------------------------------------
-
-; V2-DEVIATION: les en-tetes communs sont portes par l'unite hote (le stage),
-; comme pour tout fichier v1 enveloppe. player1.equ n'est pas necessaire : cet
-; objet ne touche que des champs generiques de l'OST du joueur.
-;       INCLUDE "./engine/macros.asm"
-;       INCLUDE "./engine/collision/macros.asm"
-;       INCLUDE "./engine/collision/struct_AABB.equ"
-;       INCLUDE "./objects/player1/player1.equ"
+; ARCADE PORT (20/08/2026) — replaces the v1 initlevel1 phases, which were a
+; loose mimic of the arcade entry, paced in RENDER LOOP TOURS: on the overlay
+; renderer (flat full-window clear cost, ~2.9 frames/tour on the empty intro
+; scene) the hidden phase stretched from ~90 to ~145 frames and the whole
+; flight ran at 2/3 speed. This version is paced on gfxlock.frame.gameCount
+; (frame-drop compensated) and follows the arcade script exactly.
+;
+; Arcade source (Ghidra maincpu, MCP asm-ark):
+;   run_stage_clear_pilot 0x40:1F1B — installed for the player slot when the
+;   alive gate [0x10] == 2 (fresh game and stage chaining) ; script cells at
+;   0x1000:10C2, 8 bytes each: [time_threshold, x_delta 8.8, ship recipe,
+;   flame recipe], advanced against frame_time (0x2F4B). frame_time is a
+;   HALF-FRAME clock (it carries a decimal byte, 0x2F4A): one unit = two
+;   video frames — re.arcade.r-type ObjectWave.java exports the waves with
+;   rate = 2.0 for exactly that reason, and the x_delta applies per VIDEO
+;   frame, every pilot tick. Stage 1 clock epoch 0x600 (lvlTimeStart[0],
+;   object_wave_stage1 first record).
+;     1F28  MOV word ptr [BP+0x4],0x120   ; spawn X — OFF SCREEN LEFT
+;     1F2D  MOV word ptr [BP+0x8],0x110   ; spawn Y (arcade Y axis points UP)
+;   Coordinates: re.arcade.r-type Conv.java — v2 = round((arcade+off)*ratio)
+;   + viewport offset ; x: (x-320)*0.375+8, y: (y-144)*-0.75+190 (axis flip).
+;   Timeline (v2 frames = arcade units x2, thresholds 0x640/0x66D/0x672/0x6B1):
+;     hold  128 f at x=0x120 -> screen -4, big flame, drawn clipped
+;     zoom   90 f at +4.0 arcade px/frame = +1.5 TO8 px/f -> screen x ~131
+;     pause  10 f
+;     drift 126 f at -1.5 arcade px/frame = -0.5625 TO8 px/f -> screen x ~60
+;              (= the v1 LetsStart position: the v1 mimic had the right end
+;              point and total duration, from the author's eye)
+;     hand-over: [0x10]:=1, run_player_one installed (0x1F66)
+;   Death respawn (create_player_one 0x1FE5) has NO fly-in: fixed (0x1B0,
+;   0x100) — the v2 checkpoint blink path is untouched.
+;
+; Not ported, visible in the arcade script and left out on purpose:
+;   - the ship pose strip 0x1312->0x12FA stepping every 9 f during the zoom
+;     (v2 SetVerticalAnim keeps the neutral frame, y_vel = 0) ;
+;   - the flame recipe steps 0x1138/0x1150/0x1168 -> off at zoom+36 f : the
+;     v2 engineflames object plays its own strip ; it is loaded at zoom start
+;     and extinguished (routine Delete) at the pause, the v1 gesture ;
+;   - the off-screen hold is HIDDEN here (subtype -1): the v2 renderer drops
+;     a partially visible sprite instead of clipping it, so the arcade's
+;     7-px nose peek cannot be shown — the ship pops at the left edge a few
+;     frames into the zoom, already at full entry speed. Same cause, the
+;     overshoot tip: the arcade ship pushes its nose slightly past screen
+;     x 131 with hardware clipping ; here the whole box stays visible.
+;
+;   The intro Y maps to 94 — one px off the v1 anchor 93, kept as the
+;   Conv.java rounding gives it ; the death respawn keeps the game's 93.
+;
+; State, on this object's own OST record:
+;   subtype,u  sub-phase 0 hold / 1 zoom / 2 pause / 3 drift
+;   x_pos,u    ship screen x + 4, unsigned 8.8 (the ship is screen-anchored: the
+;              player's x_pos is rewritten from the camera every tick)
+;   y_pos,u    phase timer, frames left (byte)
+;   anim,u     gameCount anchor of the last tick
+; ---------------------------------------------------------------------------
 
 ; V2-DEVIATION: l'entree v1 s'appelle Object, un nom trop generique pour la
 ; frontiere de lien — meme ecart que l'eclair d'emission et le HUD.
@@ -23,82 +68,115 @@ initlevel1.Object
         jmp   [a,x]
 
 Routines
-        fdb   LevelInitPhase0
-        fdb   LevelInitPhase0Live
-        fdb   LevelInitPhase1Live
-        fdb   LevelInitPhase2Live
-        fdb   LevelInitPhase3Live
+        fdb   IntroInit
+        fdb   IntroTick
         fdb   AlreadyDeleted
 
+intro.XBIAS   equ   4                  ; sx is UNSIGNED 8.8, biased +4: the zoom
+                                       ; tip (131) overflows a signed 8.8 ; the
+                                       ; only negative value is the -4 hold
+intro.SX0     equ   $0000              ; screen x -4 px + bias (arcade 0x120: (288-320)*0.375+8)
+intro.Y       equ   94                 ; arcade 0x110, axis UP: (272-144)*-0.75+190
+intro.durations
+        fcb   128,90,10,126            ; hold, zoom, pause, drift — arcade units
+                                       ; (0x640/0x66D/0x672/0x6B1 - 0x600) x2
+intro.vel
+        fdb   $0000                    ; hold
+        fdb   $0180                    ; zoom  : +1.5 px/f (arcade +4.0 * 0.375)
+        fdb   $0000                    ; pause
+        fdb   -$0090                   ; drift : -0.5625 px/f (arcade -1.5 * 0.375)
+
 * ---------------------------------------------------------------------------
-* PLAYER 1 LEVEL 1 INIT
+* PLAYER 1 LEVEL 1 INTRO
 * ---------------------------------------------------------------------------
 
-LevelInitPhase0
+IntroInit
         inc   routine,u
-        lda   #50
-        sta   LevelInitPhase0_a
+        clr   subtype,u                ; sub-phase 0 : hold
         lda   #-1
-        sta   player1+subtype  
-LevelInitPhase0Live
-        lda   #0
-LevelInitPhase0_a equ *-1
-        beq   LevelInitPhase1
-        deca
-        sta   LevelInitPhase0_a
+        sta   player1+subtype          ; ship hidden while off screen
+        ldd   #intro.SX0
+        std   x_pos,u
+        lda   intro.durations
+        sta   y_pos,u
+        ldd   gfxlock.frame.gameCount
+        std   anim,u
         rts
 
-LevelInitPhase1
-        inc   routine,u
-        lda   #-2
-        sta   player1+subtype  
+IntroTick
+        ldd   gfxlock.frame.gameCount  ; game frames elapsed since last tick —
+        ldx   anim,u                   ; the whole sequence is frame-drop
+        std   anim,u                   ; compensated by construction
+        pshs  x
+        subd  ,s++
+        tstb
+        beq   IntroPlace               ; no game frame elapsed: just re-anchor
+IntroStep
+        pshs  b
+        dec   y_pos,u                  ; phase timer
+        beq   IntroAdvance
+IntroMove
+        ldb   subtype,u                ; sx += vel[phase]
+        aslb
+        ldx   #intro.vel
+        ldd   b,x
+        addd  x_pos,u
+        std   x_pos,u
+        puls  b
+        decb
+        bne   IntroStep
+        bra   IntroPlace
 
-        ; Load engine flames
-        jsr   LoadObject_x
-        stx   engineflames
-        lda   #ObjID_engineflames
-        sta   id,x    
-        ldd   #280
-        std   player1+x_vel
-
-
-LevelInitPhase1Live
-
-        ldd   player1+x_pos
-        cmpd  #140
-        bgt   LevelInitPhase2
-        rts
-
-LevelInitPhase2
-        inc   routine,u
-
+IntroAdvance
+        inc   subtype,u
+        lda   subtype,u
+        cmpa  #4
+        beq   IntroHandOver
+        ldx   #intro.durations         ; reload the timer for the new phase
+        ldb   a,x
+        stb   y_pos,u
+        cmpa  #1
+        beq   IntroEnterZoom
+        cmpa  #2
+        bne   IntroMove                    ; drift: no side effect
+        ; enter pause : extinguish the engine flames (arcade turns the flame
+        ; recipe off at zoom+36 f ; the v1 gesture is routine := Delete here)
         ldx   #0
 engineflames equ *-2
-        lda   #2
+        beq   IntroMove                    ; pool was full at zoom, no flames
+        lda   #2                       ; engineflames Delete
         sta   routine,x
-        ldd   #150
-        std   player1+x_vel
-LevelInitPhase2Live
-        ldd   player1+x_pos
-        cmpd  #160
-        bgt   LevelInitPhase3
+        bra   IntroMove
+
+IntroEnterZoom
+        lda   #-2
+        sta   player1+subtype          ; visible, not controlled
+        jsr   LoadObject_x             ; the engine flames ride along
+        beq   IntroMove                    ; pool full : enter without flames
+        stx   engineflames
+        lda   #ObjID_engineflames
+        sta   id,x
+        bra   IntroMove
+
+IntroHandOver
+        puls  b                        ; drop the loop counter: the intro ends
+        clr   player1+subtype          ; arcade 0x1F66: gate := 1, control handed
+        bsr   IntroPlace               ; leave the ship at the arcade hand-over
+        inc   routine,u                ; point (screen x ~28, y 105)
+        jmp   DeleteObject
+
+IntroPlace
+        ; The arcade pilot holds SCREEN coordinates: re-derive the player's
+        ; playfield position from the camera every tick, whatever the scroll
+        ; and the Live drift-compensation did in between.
+        ldb   x_pos,u                  ; integer part of sx (unsigned, biased)
+        clra
+        addd  glb_camera_x_pos
+        subd  #intro.XBIAS
+        std   player1+x_pos
+        ldd   #intro.Y
+        std   player1+y_pos
         rts
 
-LevelInitPhase3
-        inc   routine,u
-        ldd   #-180
-        std   player1+x_vel
-LevelInitPhase3Live
-        ldd   player1+x_pos
-        subd  glb_camera_x_pos
-        cmpd  #60
-        blt   LetsStart
-        rts              
-
-LetsStart
-
-        clr   player1+subtype
-        inc   routine,u     
-        jmp   DeleteObject
 AlreadyDeleted
         rts
