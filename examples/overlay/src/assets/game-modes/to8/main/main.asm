@@ -32,6 +32,22 @@
 
 set_glyph  EXTERNAL
 set_marker EXTERNAL
+set_probe_12x12 EXTERNAL
+set_probe_12x13 EXTERNAL
+set_probe_12x14 EXTERNAL
+set_probe_12x15 EXTERNAL
+set_probe_13x12 EXTERNAL
+set_probe_13x13 EXTERNAL
+set_probe_13x14 EXTERNAL
+set_probe_13x15 EXTERNAL
+set_probe_14x12 EXTERNAL
+set_probe_14x13 EXTERNAL
+set_probe_14x14 EXTERNAL
+set_probe_14x15 EXTERNAL
+set_probe_15x12 EXTERNAL
+set_probe_15x13 EXTERNAL
+set_probe_15x14 EXTERNAL
+set_probe_15x15 EXTERNAL
 
  SECTION code
 
@@ -661,7 +677,193 @@ t22
 benchdone
         lda   #$0D
         sta   res.done
+        jsr   bench.sweep
         bra   *
+
+; ---------------------------------------------------------------------------
+; Le balayage d'ancrage : les 16 sondes opaques (largeur ET hauteur 12..15,
+; un pas de 1 px — toutes les classes mod 4), chacune dessinee par sa routine
+; bdraw PUIS par sa routine draw, appelees DIRECTEMENT a la meme adresse
+; ecran fixe (aucun runtime entre les deux). La bbox VRAM mesuree au pixel
+; pres dit ou chaque encodeur ANCRE son image : le diff des deux colonnes,
+; par (l,h), est la loi de centrage. Motif : le PUSH FIRE du title (64 px de
+; large, draw) atterrit 2 px a gauche de la ligne tapee que sa version v1
+; (bdraw) recouvrait exactement.
+; ---------------------------------------------------------------------------
+PROBE.LOC2 equ $C000+100*40+20     ; ligne 100, colonne 20 — loin des bords
+
+bench.sweep
+        ldy   #probe.sets
+        ldx   #res.sweep
+        stx   bench.outp
+        ldx   #res.sweep.hdr
+        stx   bench.hdrp
+        lda   #16
+        sta   bench.count
+@probe
+        ldx   ,y++
+        pshs  y
+        ; l'en-tete de l'imageset : parite du centre, x1, y1
+        _ram.cart.set #assets.sprites.page
+        lda   image_center_offset,x
+        ldy   bench.hdrp
+        sta   ,y+
+        pshs  x
+        lda   ,x                       ; offset du sous-ensemble non miroir
+        leax  a,x
+        lda   image_subset_x1_offset,x
+        sta   ,y+
+        lda   image_subset_y1_offset,x
+        sta   ,y+
+        sty   bench.hdrp
+        puls  x
+        ; le sous-ensemble, puis les deux variantes : B0 (0) et D0 (1)
+        lda   ,x
+        leax  a,x                      ; X = sous-ensemble
+        ldb   #0
+        jsr   probe.one
+        ldb   #1
+        jsr   probe.one
+        puls  y
+        dec   bench.count
+        bne   @probe
+        lda   #$CB
+        sta   res.sweep.done
+        rts
+
+; une variante d'une sonde : VRAM au noir, appel direct de la routine
+; generee a l'adresse fixe, bbox mesuree et rangee (4 octets).
+; in : X = sous-ensemble, B = variante (0 = bdraw, 1 = draw)
+probe.one
+        pshs  b,x
+        jsr   bench.reset
+        _ram.cart.set #assets.sprites.page
+        ldx   1,s                      ; le sous-ensemble
+        ldb   ,s                       ; la variante
+        lda   b,x
+        lbeq  @absent
+        leax  a,x                      ; X = la structure de variante
+        lda   page_draw_routine,x
+        _SetCartPageA
+        ldx   draw_routine,x
+        ; l'adresse ecran fixe, posee comme BuildSprites l'aurait fait (ram1)
+        ldd   #PROBE.LOC2
+        std   glb_screen_location_2
+        subd  #$2000
+        std   glb_screen_location_1
+        ldu   glb_screen_location_2
+        ldy   #bench.bgcell.top        ; bdraw y sauve le fond (S descend de la)
+        jsr   ,x
+        jsr   bench.bbox
+        ldx   bench.outp
+        lda   bench.bb
+        sta   ,x+
+        lda   bench.bb+1
+        sta   ,x+
+        lda   bench.bb+2
+        sta   ,x+
+        lda   bench.bb+3
+        sta   ,x+
+        stx   bench.outp
+        puls  b,x
+        rts
+@absent
+        ldx   bench.outp               ; variante manquante : marqueur, la
+        lda   #$EE                     ; table reste alignee
+        sta   ,x+
+        sta   ,x+
+        sta   ,x+
+        sta   ,x+
+        stx   bench.outp
+        puls  b,x
+        rts
+
+; la bbox de toute la VRAM visible : bench.bb = [premier px, dernier px,
+; premiere ligne, derniere ligne] — $FF/$FF/0/0 si vide. Pixel exact par
+; nibble ; plan $C000 = pixels 4i/4i+1, plan $A000 = 4i+2/4i+3.
+bench.bbox
+        lda   #$FF
+        sta   bench.bb
+        sta   bench.bb+2
+        clr   bench.bb+1
+        clr   bench.bb+3
+        clr   bench.hit
+        ldb   #0
+@l      jsr   bench.bbline
+        incb
+        cmpb  #200
+        blo   @l
+        rts
+
+bench.bbline                           ; B = ligne ; met a jour bench.bb
+        pshs  b
+        lda   #40
+        mul
+        addd  #$C000
+        tfr   d,x
+        ldb   #0
+@lc     lda   ,x+
+        beq   @nc
+        pshs  b,x
+        aslb
+        aslb                           ; px de base du nibble haut : 4i
+        jsr   bench.bbpx
+        puls  b,x
+@nc     incb
+        cmpb  #40
+        blo   @lc
+        ldb   ,s
+        lda   #40
+        mul
+        addd  #$A000
+        tfr   d,x
+        ldb   #0
+@la     lda   ,x+
+        beq   @na
+        pshs  b,x
+        aslb
+        aslb
+        addb  #2                       ; 4i+2
+        jsr   bench.bbpx
+        puls  b,x
+@na     incb
+        cmpb  #40
+        blo   @la
+        puls  b
+        lda   bench.hit                ; la ligne portait un pixel :
+        beq   @rts                     ; etendre les bornes de lignes
+        clr   bench.hit
+        cmpb  bench.bb+2
+        bhs   >
+        stb   bench.bb+2
+!       cmpb  bench.bb+3
+        bls   @rts
+        stb   bench.bb+3
+@rts    rts
+
+bench.bbpx                             ; A = octet non nul, B = px du nibble haut
+        inc   bench.hit
+        pshs  b
+        bita  #$F0
+        bne   >
+        incb                           ; nibble haut vide : le min est le bas
+!       cmpb  bench.bb
+        bhs   >
+        stb   bench.bb
+!       puls  b
+        bita  #$0F
+        beq   >
+        incb                           ; nibble bas occupe : le max est le bas
+!       cmpb  bench.bb+1
+        bls   >
+        stb   bench.bb+1
+!       rts
+
+probe.sets
+        fdb   set_probe_12x12,set_probe_12x13,set_probe_12x14,set_probe_12x15
+        fdb   set_probe_13x12,set_probe_13x13,set_probe_13x14,set_probe_13x15
+        fdb   set_probe_14x12,set_probe_14x13,set_probe_14x14,set_probe_14x15
+        fdb   set_probe_15x12,set_probe_15x13,set_probe_15x14,set_probe_15x15
 
 ; ---------------------------------------------------------------------------
 ; helpers

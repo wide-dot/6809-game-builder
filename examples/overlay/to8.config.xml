@@ -59,6 +59,74 @@
                             <image name="marker" filename="src/assets/sprites/marker.png" index="1">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
+                            <!-- Les sondes du balayage d'ancrage : rectangles
+                                 opaques 12..15 x 12..15, chacun en bdraw ET en
+                                 draw — le banc appelle les DEUX routines a la
+                                 meme adresse et mesure la bbox VRAM. -->
+                            <image name="probe_12x12" filename="src/assets/sprites/probe_12x12.png" index="2">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_12x13" filename="src/assets/sprites/probe_12x13.png" index="3">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_12x14" filename="src/assets/sprites/probe_12x14.png" index="4">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_12x15" filename="src/assets/sprites/probe_12x15.png" index="5">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_13x12" filename="src/assets/sprites/probe_13x12.png" index="6">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_13x13" filename="src/assets/sprites/probe_13x13.png" index="7">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_13x14" filename="src/assets/sprites/probe_13x14.png" index="8">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_13x15" filename="src/assets/sprites/probe_13x15.png" index="9">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_14x12" filename="src/assets/sprites/probe_14x12.png" index="10">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_14x13" filename="src/assets/sprites/probe_14x13.png" index="11">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_14x14" filename="src/assets/sprites/probe_14x14.png" index="12">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_14x15" filename="src/assets/sprites/probe_14x15.png" index="13">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_15x12" filename="src/assets/sprites/probe_15x12.png" index="14">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_15x13" filename="src/assets/sprites/probe_15x13.png" index="15">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_15x14" filename="src/assets/sprites/probe_15x14.png" index="16">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
+                            <image name="probe_15x15" filename="src/assets/sprites/probe_15x15.png" index="17">
+                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw"  mirror="none" shift="0"/>
+                            </image>
                         </gfxcomp>
                     </lwasm>
                 </file>

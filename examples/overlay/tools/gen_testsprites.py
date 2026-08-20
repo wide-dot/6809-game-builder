@@ -41,6 +41,17 @@ mp = m.load()
 mp[0,0] = 3                          # red corner
 m.save('marker.png')
 
+# probes : opaque rectangles, every width and height 12..15 — one pixel
+# steps across a 4 pixel range cover every mod-4 anchoring class of the
+# encoders. The bench draws each one's bdraw AND draw routine at the same
+# screen address and measures the VRAM bounding box : the diff of the two
+# anchors, per (w,h), is the centering law of the encoders.
+for w in range(12, 16):
+    for h in range(12, 16):
+        p = new(w, h, 2)               # colour 1, white — uniform on purpose
+        p.save(f'probe_{w}x{h}.png')
+
 for n in ('glyph.png','marker.png'):
     im = Image.open(n)
     print(f"  {n:<12} {im.size[0]}x{im.size[1]}")
+print("  probes 12..15 x 12..15")

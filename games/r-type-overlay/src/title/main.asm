@@ -62,6 +62,8 @@ vgc.frame.play   EXTERNAL
 sn76489.init     EXTERNAL
 sounds.title.ymm EXTERNAL
 sounds.title.vgc EXTERNAL
+playfield.clearBlast  EXTERNAL
+playfield.clearLines  EXTERNAL
 
 page.ymm equ map.RAM_OVER_CART+engine.sound.ymm.page
 page.vgc equ map.RAM_OVER_CART+title.sound.vgc.page
@@ -113,6 +115,18 @@ stage.main
         jsr   DisplaySprite_ClearAll
         jsr   EraseSprites_ClearAll
         jsr   InitDrawSprites
+
+        ; OVERLAY : l'effacement est SEQUENCE A LA MAIN par les phases. Les
+        ; bandes verticales STRICTES des animations sont calculees ici, des
+        ; hauteurs de sprites (lues dans leurs imagesets) et des positions de
+        ; l'anim ; l'armement ci-dessous pose la bande des lettres, celle des
+        ; phases 1-2. Une fois l'ecran statique : plus d'effacement, plus de
+        ; redessin — l'overlay garde ses pixels, le clignotant se recouvre
+        ; lui-meme (trois frames opaques de meme boite), la machine a ecrire
+        ; est additive, et chaque transition repart d'un title.clearBuffers.
+        jsr   title.initClearBands
+        ldy   title.band.p12
+        jsr   title.clearBand
 
         ; le title s'inscrit dans les temoins : « qui tourne » est observable
         ; de bout en bout par la lane (le title est l'unite 0 du creneau)
@@ -273,6 +287,12 @@ title.p2.live
 ; PHASE 3 : realignement, entree du TM en diagonale (v1 phase 3)
 ; ---------------------------------------------------------------------------
 title.p3.init
+        ; le TM traverse tout le haut de l'ecran : la bande s'elargit et la
+        ; marge 0-10 (hors fenetre du blast) s'ajoute (drapeau a 2)
+        ldy   title.band.p3
+        jsr   title.clearBand
+        inc   title.clear.on
+
         ldu   #addr_logo
         ldy   #logo_finalpos
         lda   #6
@@ -316,6 +336,14 @@ title.p3.live
 ; PHASE 4 : le logo et le TM descendent (v1 phase 4)
 ; ---------------------------------------------------------------------------
 title.p4.init
+        ; la descente : du haut des lettres (celui de la bande p1/p2) au bas
+        ; du champ (le TM finit vers y=156, sous les lettres) ; le TM a
+        ; quitte la marge du haut
+        lda   title.band.p12
+        ldb   #190
+        tfr   d,y
+        jsr   title.clearBand          ; repose le drapeau a 1 : marge finie
+
         ldu   #addr_logo
         lda   #6
         sta   @n
@@ -366,6 +394,19 @@ title.p5.set
         ldx   addr_tm
         ldd   #0
         std   y_vel,x
+
+        ; L'ANIMATION EST FINIE : deux trames posent l'image au repos dans
+        ; les DEUX tampons, puis plus d'effacement ni de redessin — le logo
+        ; passe a rts (l'overlay garde ses pixels a l'ecran), et seul ce qui
+        ; change encore tourne : la machine a ecrire (additive) et, plus
+        ; tard, le clignotant (il se recouvre lui-meme). Sequence AVANT le
+        ; demarrage de la machine a ecrire : la bande p4 chevauche ses
+        ; lignes, une frappe deja posee y serait effacee d'un tampon.
+        jsr   title.frame
+        jsr   title.frame
+        clr   title.clear.on
+        lda   #$39
+        sta   logo.Object
 
         ; la machine a ecrire demarre : entree remise a nop (l'idiome v1)
         _Obj_Mount ObjID_text
@@ -496,6 +537,14 @@ title.p9.hide
         lda   #$A6
         sta   ,x
 
+        ; le logo repart de tampons noirs : deux trames le posent dans les
+        ; deux, puis il se rendort — pas d'effacement ici, rien ne bouge ;
+        ; le clignotant et le texte rapide continuent seuls
+        jsr   title.frame
+        jsr   title.frame
+        lda   #$39
+        sta   logo.Object
+
         ldx   #$100
         stx   title.p9.counter
 title.p9.live
@@ -565,6 +614,8 @@ title.checkStart
 ; et le score.
 ; ---------------------------------------------------------------------------
 title.launchGame
+        ; pas de clr title.clear.on : toutes les phases a checkStart (5, 6,
+        ; 8, 9) tournent deja effacement coupe — le drapeau est a zero ici
         ldd   #Pal_black
         std   Pal_current
         clr   PalRefresh
@@ -620,9 +671,87 @@ title.frame
         jsr   joypad.readKbd
         jsr   RunObjects
         _gfxlock.on
-        jsr   BuildSprites          ; OVERLAY : la passe unique remplace le quatuor
+        ; OVERLAY : l'effacement, seulement quand une phase l'a arme — la
+        ; bande verticale de l'animation en cours (fenetre posee par
+        ; title.clearBand ; 2 = plus la marge 0-10 quand le TM la traverse).
+        ; Ecran statique = drapeau a zero = ce bloc ne coute qu'un test.
+        lda   title.clear.on
+        beq   >
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlast
+        jsr   paged.call
+        lda   title.clear.on
+        cmpa  #2
+        bne   >
+        jsr   title.clearTop
+!       jsr   BuildSprites          ; OVERLAY : la passe unique remplace le quatuor
         _gfxlock.off
         _gfxlock.loop
+        rts
+
+; les lignes 0-10, au-dessus de la fenetre maximale du blast : le stage les
+; laisse au masque, mais le title n'a pas de masque et le TM y passe
+title.clearTop
+        ldd   #0
+        ldx   #$A000
+!       std   ,x++
+        std   $2000-2,x                ; le plan forme, au meme pas
+        cmpx  #$A000+11*40
+        blo   <
+        rts
+
+; ---------------------------------------------------------------------------
+; L'effacement sequence : la bande Y = [premiere:derniere] devient la fenetre
+; du blast, et l'effacement par trame s'allume. Les phases s'en servent a
+; leur init ; title.clear.top s'ajoute quand l'anim traverse les lignes 0-10.
+; ---------------------------------------------------------------------------
+title.clearBand
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearLines
+        jsr   paged.call
+        lda   #1
+        sta   title.clear.on
+        rts
+
+; ---------------------------------------------------------------------------
+; Les bandes, calculees une fois des imagesets (rien de code en dur ne depend
+; de la taille des sprites) :
+;   p1/p2 : les lettres defilent a y=100        -> [100+y1-2 .. 100+y1+h+1]
+;   p3    : le TM traverse depuis (0,0)         -> [11 .. max(bas lettres,
+;           bas du TM a sa cible y=125)+2], la marge 0-10 au clearTop
+;   p4    : derivee sur place (haut p1/p2 .. 190), pas de table
+; ---------------------------------------------------------------------------
+title.initClearBands
+        ; la lettre R : son y1 (signe) et sa hauteur, lus dans l'imageset —
+        ; les images du logo vivent dans CETTE unite, aucune page a monter
+        ldx   #set_logo_1
+        ldb   image_y_size,x
+        lda   ,x                       ; offset du sous-ensemble non miroir
+        leay  a,x
+        lda   image_subset_y1_offset,y
+        pshs  a                        ; y1 lettre
+        adda  #100-2
+        sta   title.band.p12           ; haut p1/p2
+        lda   ,s+                      ; y1 + y_size, l'arithmetique du bas
+        pshs  b
+        adda  ,s+
+        adda  #100+2
+        sta   title.band.p12+1         ; bas p1/p2
+        ; le TM : son bas a la cible p3 (y=125)
+        ldx   #set_logo_0
+        ldb   image_y_size,x
+        lda   ,x
+        leay  a,x
+        lda   image_subset_y1_offset,y
+        pshs  b
+        adda  ,s+
+        adda  #125+2
+        cmpa  title.band.p12+1         ; le bas p3 : le plus bas des deux
+        bhs   >
+        lda   title.band.p12+1
+!       sta   title.band.p3+1
+        lda   #11                      ; la fenetre du blast s'arrete la ;
+        sta   title.band.p3            ; les lignes 0-10 sont au clearTop
         rts
 
 title.userIRQ
@@ -695,6 +824,13 @@ addr_scores     fdb   0,0,0,0,0,0,0,0,0,0
 title.p6.counter fdb  0
 title.p8.counter fdb  0
 title.p9.counter fdb  0
+
+; l'effacement sequence : le drapeau par trame (0 rien, 1 bande, 2 bande +
+; marge 0-10) et les bandes precalculees a l'init (title.initClearBands) —
+; chaque bande = premiere ligne : derniere ligne
+title.clear.on   fcb  0
+title.band.p12   fdb  0
+title.band.p3    fdb  0
 
 logo_startx
         fdb   150,146,150,150,150,149

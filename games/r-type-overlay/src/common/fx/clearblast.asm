@@ -38,6 +38,7 @@ NPUSH    equ 800                       ; 180 lignes x 40 / 9 — tout le champ
 
 playfield.clearBlast   EXPORT
 playfield.clearWindow  EXPORT
+playfield.clearLines   EXPORT
 
  SECTION code
 
@@ -1673,6 +1674,40 @@ clr.blockB
 ;        U = offset de saut dans le bloc deroule (2 x poussees zappees)
 ; Appele par paged.call aux changements de la timeline — jamais par trame.
 ; ---------------------------------------------------------------------------
+; ---------------------------------------------------------------------------
+; playfield.clearLines — la fenetre en LIGNES ecran, convertie en operandes.
+; Les stages gardent leur timeline PRECALCULEE (zero calcul runtime) ; ceci
+; sert les fenetres calculees a l'init d'une phase (le title et ses bandes
+; d'animation). La conversion vit ici, a cote de NPUSH, la seule constante
+; qu'elle partage avec le deroule.
+;
+; Entree : Y = premiere ligne (octet haut) : derniere ligne (octet bas),
+;          lignes ecran 0-199, premiere <= derniere, au plus 180 lignes.
+; L'arrondi AU-DESSUS du nombre de poussees fait deborder <= 8 octets
+; au-dessus de la premiere ligne : l'appelant garde une ligne de marge et ne
+; passe JAMAIS premiere = 0 (le debordement sortirait de la fenetre video).
+; ---------------------------------------------------------------------------
+playfield.clearLines
+        tfr   y,d
+        pshs  d                        ; 0,s = premiere ; 1,s = derniere
+        lda   #40
+        ldb   1,s
+        incb                           ; (derniere+1)*40 : l'operande LDS
+        mul
+        addd  #$A000
+        tfr   d,y
+        lda   1,s
+        suba  ,s
+        inca                           ; nombre de lignes...
+        ldb   #40
+        mul                            ; ...en octets (<= 7200)
+        ldu   #NPUSH*2
+!       leau  -2,u                     ; une poussee de 9 octets a la fois :
+        subd  #9                       ; U descend de 2 (l'offset saute des jmp)
+        bgt   <
+        leas  2,s
+        ; Y = operande LDS, U = offset de saut — la pose standard suit
+
 playfield.clearWindow
         sty   >clr.ldsA+2
         tfr   y,d

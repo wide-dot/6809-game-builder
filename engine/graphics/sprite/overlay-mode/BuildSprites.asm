@@ -157,10 +157,27 @@ BuildSprites
         bra   >
 @nodefinedframe
         eorb  #%00000010                    ; check if there is an alternate shifted image available
+        ; V2-DEVIATION (20/08/2026, bugfix — v1 l'a aussi, dormant) : deux
+        ; defauts du repli. (1) la direction se testait sur Z, qui ne vient
+        ; JAMAIS avec les variantes draw (bit0 toujours pose) : le repli
+        ; decale -> non-decale prenait inc au lieu de dec — tout sprite draw
+        ; sans variante decalee tombait 2 px a gauche aux positions impaires
+        ; (vu sur le PUSH FIRE du title, 64 px, contre sa version bdraw v1).
+        ; Le test porte sur le BIT de decalage. (2) l'ajustement etait un
+        ; inc/dec du seul octet bas d'un mot signe : le wrap ($FF -> $00)
+        ; laissait l'octet haut rassis (-1+1 donnait -256) — l'ajustement
+        ; se fait en mot. Diagnostique par le balayage d'ancrage
+        ; d'examples/overlay (encodeurs et en-tetes innocentes, dX=0).
+        pshs  b
+        bitb  #%00000010
         beq   @d
-        inc   <_image_center_parity+1       ; ajust offset for alternate
-        bra   @e
-@d      dec   <_image_center_parity+1
+        ldd   <_image_center_parity         ; l'alternative est la DECALEE :
+        addd  #1                            ; reculer d'un pixel de plus
+        bra   @e2
+@d      ldd   <_image_center_parity         ; l'alternative est la NON decalee :
+        subd  #1                            ; avancer d'un pixel
+@e2     std   <_image_center_parity
+        puls  b
 @e      lda   b,x
         beq   @nextobject1                  ; no defined frame, nothing will be displayed
         leax  a,x                           ; read image subset index
