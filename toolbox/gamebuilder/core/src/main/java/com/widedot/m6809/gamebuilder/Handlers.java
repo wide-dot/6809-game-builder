@@ -342,6 +342,15 @@ public final class Handlers {
 			.opt("linebytes", INT, "instead of videomode : bytes per line, 0 to fit the image")
 			.opt("planes", INT, "instead of videomode : number of memory planes")
 			.opt("pixeldepth", INT, "instead of videomode : bits per pixel"));
+		spec(element("mscroll").doc("build one mscroll asset (tile-major tileset, map or start buffer) from an indexed map PNG")
+			.req("filename", STRING, "input .png : the whole map, indexed, a whole number of 8x16 tiles")
+			.req("output", STRING, "map, tiles or start — which asset this direntry holds")
+			.opt("gendir", STRING, "where the generated binaries and the .mscroll.equ go")
+			.opt("plane", INT, "memory plane for tiles and start (0 or 1)")
+			.opt("viewheight", INT, "start only : lines of the initial view (default 200)")
+			.opt("symbol", STRING, "prefix of the generated equates (default : the file name)")
+			.opt("shiftcolors", BOOL, "index 0 is transparency and 1..16 are colours 0..15"));
+		OBJECTS.put("mscroll", com.widedot.toolbox.graphics.png.MscrollPlugin::getObject);
 		OBJECTS.put("png2bin", com.widedot.toolbox.graphics.png.Png2BinPlugin::getObject);
 		OBJECTS.put("txt2bas", com.widedot.toolbox.text.txt2bas.Txt2BasPlugin::getObject);
 		OBJECTS.put("phoneme", com.widedot.toolbox.text.phoneme.PhonemePlugin::getObject);

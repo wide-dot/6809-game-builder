@@ -1,0 +1,109 @@
+<configuration>
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- The scroll data, all produced by the <mscroll> element  -->
+                <!-- from the test pattern (tools/gen_mire.py -> mire.png).  -->
+                <!-- The first declaration also writes every generated file  -->
+                <!-- into gen/mire/, where the start buffer units and the    -->
+                <!-- game mode pick what they include.                       -->
+                <!-- ******************************************************* -->
+
+                <!-- tile ids, premultiplied by 32, power-of-two row stride -->
+                <file name="assets.map" page="$05" address="$0000" codec="none">
+                    <mscroll filename="mire.png" gendir="gen/mire" output="map"/>
+                </file>
+
+                <!-- tilesets, one per plane, tile-major -->
+                <file name="assets.tilesA" page="$08" address="$0000">
+                    <mscroll filename="mire.png" gendir="gen/mire" output="tiles" plane="0"/>
+                </file>
+
+                <file name="assets.tilesB" page="$09" address="$0000">
+                    <mscroll filename="mire.png" gendir="gen/mire" output="tiles" plane="1"/>
+                </file>
+
+                <!-- code buffers, one per plane : the generated chunk      -->
+                <!-- stream + extra line + wrap jmp (see src/assets/buffers) -->
+                <file name="assets.bufA" page="$06" address="$0000">
+                    <lwasm format="raw" gensource="gen/assets/bufA.asm">
+                        <asm filename="src/assets/buffers/bufA.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="assets.bufB" page="$07" address="$0000">
+                    <lwasm format="raw" gensource="gen/assets/bufB.asm">
+                        <asm filename="src/assets/buffers/bufB.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Game mode -->
+                <!-- ******************************************************* -->
+                <file name="assets.gm.main" linkdata="LINK" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <!-- map geometry, written by the conversions above -->
+                        <asm filename="gen/mire/mire.mscroll.equ"/>
+                        <asm filename="src/assets/game-modes/to8/main/main.asm"/>
+                        <!-- the test pattern's palette -->
+                        <png2pal symbol="Pal_mire" filename="mire.png"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="assets.map"/>
+                    <load name="assets.tilesA"/>
+                    <load name="assets.tilesB"/>
+                    <load name="assets.bufA"/>
+                    <load name="assets.bufB"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.main</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>
