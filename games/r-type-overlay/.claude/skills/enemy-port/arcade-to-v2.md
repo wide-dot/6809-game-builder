@@ -27,6 +27,12 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
   `render_playfieldcoord_mask` : l'objet ancré au décor **ne bouge pas**, la
   caméra passe. Traduction : supprimer les additions de `scroll_amount`,
   garder seulement le mouvement propre.
+- **La conversion qui fait foi est `re.arcade.r-type` `Conv.java`** :
+  `x_v2 = round((x_arcade − 320) × 0.375) + 8` et
+  `y_v2 = round((y_arcade − 144) × −0.75) + 190` — l'**axe Y arcade pointe
+  VERS LE HAUT** (origine en bas, ratio négatif) : un y arcade plus grand
+  est plus haut à l'écran, et le +8/+190 porte les offsets de viewport v2
+  (8/11). Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
 - Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8/0x2D0` ↔
   v2 `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`). Seuils arcade
   fréquents : `< 0x270` = entré à l'écran, `< 0x130` = sorti à gauche — les
@@ -39,6 +45,15 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
 - **Les comptes de trames arcade se gardent tels quels** (périodes, durées de
   phase, cadences de tir) : la politique v1, conservée, est « mêmes nombres,
   horloge de jeu 50 Hz ». Ne jamais re-chronométrer en temps mur.
+- **EXCEPTION `frame_time` (0x2F4B)** : c'est une horloge **demi-trame**
+  (octet décimal 0x2F4A, +0,5 par trame vidéo) — tout seuil exprimé dessus
+  (waves, scripts type pilote d'intro 0x1F1B/0x10C2, checkpoints) vaut
+  **x2 en trames** ; c'est le `rate = 2.0` de l'exporteur de waves
+  (re.arcade.r-type `ObjectWave.java`), et `lvlTimeStart[]` y donne
+  l'époque de chaque stage (stage 1 : 0x600). Les deltas de mouvement de
+  ces mêmes scripts s'appliquent eux **par trame vidéo** — ne pas les
+  doubler. Appris sur l'intro du stage 1 (vol deux fois trop court et
+  trop tôt au premier décodage).
 - L'horloge de jeu est `gfxlock.frame.gameCount` (compense le frame drop).
   Cadence dérivée de l'horloge globale : `gfxlock.frame.count` (ex. tabrok
   FIX #5, tir quand `count & $7F` franchit 0 ↔ arcade `== 0` tous les $80).
