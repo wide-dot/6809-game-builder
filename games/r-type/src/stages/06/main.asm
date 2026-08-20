@@ -191,7 +191,15 @@ checkpoint.positions
 ; pas par un debut de partie. Le corps commun l'appelle quand meme — chaque
 ; stage repond, quitte a ne rien faire.
 stage.openingSequence
-        rts
+        ; Pas de vol d'intro ici (arcade : le record du joueur survit a la
+        ; transition et garde la position du stage cleared) — l'index de CE
+        ; stage pointe ObjID_initlevel1 sur stage.parked, qui replace le
+        ; vaisseau au point de ralliement une fois l'Init du joueur passe.
+        jsr   LoadObject_x
+        beq   >                            ; pool plein : on ouvre sans repose
+        lda   #ObjID_initlevel1
+        sta   id,x
+!       rts
 
 ; ---------------------------------------------------------------------------
 ; Les trois rendez-vous de la boucle commune, servis par l'objet commun

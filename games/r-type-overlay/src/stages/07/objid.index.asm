@@ -67,7 +67,7 @@ Obj_Index_Address
         fdb   createFoeFire ; ObjID_createFoeFire
         fdb   loadFirePreset.Object ; ObjID_loadFirePreset
         fdb   foefire.Object ; ObjID_foefire
-        fdb   stage.placeholder ; ObjID_initlevel1
+        fdb   stage.parked ; ObjID_initlevel1
         fdb   engineflames.Object ; ObjID_engineflames
         fdb   messages.Object ; ObjID_messages
         fdb   endlevel.Object ; ObjID_endstage

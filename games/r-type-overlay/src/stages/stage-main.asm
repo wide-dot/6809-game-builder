@@ -539,6 +539,26 @@ stage.starfieldSpawner
 stage.placeholder.raw
         rts
 
+; Stages 2-8 : l'entree de stage arcade ne rejoue PAS le vol d'intro — le
+; record du joueur survit a la transition la-bas, et le vaisseau garde la
+; position ou l'autopilote de fin de stage l'a laisse (le point de
+; ralliement, endstage.RALLY_X/Y = arcade 0x200/0xE0). Ici le chargement
+; disquette recree le joueur et son Init le pose a l'ancre de respawn : cet
+; objet, pointe par ObjID_initlevel1 dans l'index des stages 2-8, le
+; repositionne au point de ralliement des que l'Init du joueur est passe,
+; puis rend son slot. L'ecran est encore dans le fondu noir d'ouverture :
+; la retouche est invisible.
+stage.parked
+        lda   player1+routine
+        beq   >                        ; l'Init du joueur n'a pas encore tourne
+        ldd   glb_camera_x_pos
+        addd  #endstage.RALLY_X
+        std   player1+x_pos
+        ldd   #endstage.RALLY_Y
+        std   player1+y_pos
+        jsr   UnloadObject_u
+!       rts
+
 ;*******************************************************************************
 ; La mort et le rechargement de checkpoint
 ;
