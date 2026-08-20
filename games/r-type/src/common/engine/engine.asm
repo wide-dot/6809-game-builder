@@ -63,8 +63,8 @@ game.score      fdb   0
 game.stage      fcb   0
 ; les effets des cheats du title : ecrits par title.cheat.launch a CHAQUE
 ; depart (0 = pas de cheat), lus par player1 (invincible) et par le semis de
-; premiere entree (vies). Le define invincible des builds de banc FORCE le
-; flag au semis — meme semantique qu'avant, devenue runtime.
+; premiere entree (vies). Un banc les force par write_memory — l'ancien
+; define invincible est retire.
 cheat.invincible fcb   0
 cheat.extraLives fcb   0
 ; Les continues consommes de la partie en cours. Le quota est fixe a

@@ -300,20 +300,11 @@
             <!-- Les defines DESCENDENT dans les conteneurs mais ne REMONTENT pas :
                  declares avant le directory, ils servent a ses fichiers ET aux
                  <data> LOADER/BOOT plus bas. -->
-            <!-- BANC D'ESSAI : le joueur ne meurt pas, la bordure vire au blanc
-                 a l'impact. A RETIRER avant toute mesure de jouabilite — c'est
-                 la garde IFDEF invincible de player1.asm.
-                 RETIRE le 19/08 pour tester la mort et le rechargement de
-                 checkpoint (le champ d'etoiles doit reapparaitre au respawn en
-                 zone de ciel, et rester eteint au-dela).
-                 REMIS le 19/08 pour la campagne de mesure de cadence : sans
-                 entree manette le vaisseau finit par mourir, et la boucle passe
-                 en DEAD/CHECKPOINT — le releve s'arrete la (constate a la trame
-                 3835). Le parcours doit etre deterministe et sans rechargement
-                 disque pour que les deux versions soient comparables ; le define
-                 est donc pose des DEUX cotes de la comparaison, ou il ne biaise
-                 rien. Voir ci/toje-bench/fps_curve.py. -->
-            <define symbol="invincible"/>
+            <!-- L'invincibilite est RUNTIME depuis le 20/08 : le cheat du
+                 title (title.cheat, prefixe puis bas) pose cheat.invincible —
+                 l'ancien define invincible et sa garde IFDEF sont retires.
+                 Un banc/une campagne la force par write_memory sur
+                 cheat.invincible (engine.asm), plus par un define. -->
             <!-- Le quota de continues par partie (garde de hud.continueScreen) :
                  0 = jamais, N = quota, $FF = infini. Sans define : 1, la regle
                  arcade. -->

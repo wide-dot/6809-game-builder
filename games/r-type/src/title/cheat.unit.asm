@@ -9,11 +9,14 @@
 ;   N x haut   -> depart au stage N (1..8), un FireSound par haut ;
 ;   bas        -> invincible, ExplosionSound (redite : le son rejoue) ;
 ;   N x gauche -> N vies en plus, un BonusSound par gauche ;
-;   droite     -> reset silencieux.
-; Sequence incomplete, compte nul ou stage > 8 : depart stage 1 normal, et
-; les effets sont TOUJOURS reecrits au depart — un depart sans cheat les
-; remet a zero. Pendant le prefixe, une mauvaise direction remet a zero —
-; haut rouvre.
+;   droite     -> abandon TOTAL, silencieux (cheats acceptes compris).
+; Les cheats sont ACCEPTES a la pression (le son est l'accuse de reception),
+; fire ne fait que lancer — et ils se COMBINENT : une direction hors mode
+; laisse les cheats acceptes en place et repart en prefixe (haut le rouvre).
+; Exemple : h,b,g,d,bas (invincible) puis h,b,g,d,h,h,h (stage 3) puis fire.
+; Compte de stage nul ou > 8 : le depart reste stage 1 (les autres cheats
+; acceptes s'appliquent). Les effets sont TOUJOURS reecrits au depart — un
+; depart sans cheat les remet a zero.
 ;
 ; Tout vit ICI, dans la page (la carte residente est pleine) : l'etat, la
 ; machine et la table des cibles. Le title appelle title.cheat.tick une fois
@@ -58,19 +61,23 @@ tct.scan
         bne   tct.rts
         inc   tct.step
 tct.rts rts
-tct.armed                              ; A = la direction, B libre
-        ldb   tct.mode
+tct.armed                              ; A = la direction
         cmpa  #4
-        beq   tct.reset                ; droite : reset silencieux
+        beq   tct.wipe                 ; droite : abandon total, silencieux
+        ldb   tct.mode
         cmpa  #1
         bne   tct.notUp
         cmpb  #1                       ; haut : le comptage de stage
-        bhi   tct.reset                ; un autre cheat etait choisi
-        ldb   #1
+        beq   tct.moreStage
+        tstb
+        bne   tct.rearm                ; un autre cheat est deja accepte :
+        ldb   #1                       ; il RESTE, la sequence repart
         stb   tct.mode
-        inc   tct.count
-        ldd   #(soundFX.FireSound<<8)|1 ; un FireSound par haut — la
-        std   soundFX.newSound         ; validation sonore du comptage
+        clr   tct.pstage               ; nouvelle selection : compte a zero
+tct.moreStage
+        inc   tct.pstage               ; accepte a la pression — le son est
+        ldd   #(soundFX.FireSound<<8)|1 ; l'accuse de reception
+        std   soundFX.newSound
         rts
 tct.notUp
         cmpa  #2
@@ -78,10 +85,12 @@ tct.notUp
         cmpb  #2                       ; bas : invincible
         beq   tct.dingInv              ; redite : le son rejoue
         tstb
-        bne   tct.reset
+        bne   tct.rearm
         ldb   #2
         stb   tct.mode
 tct.dingInv
+        lda   #1
+        sta   tct.pinv
         ldd   #(soundFX.ExplosionSound<<8)|1
         std   soundFX.newSound
         rts
@@ -89,18 +98,29 @@ tct.left
         cmpb  #3                       ; gauche : le comptage de vies
         beq   tct.oneUp
         tstb
-        bne   tct.reset
+        bne   tct.rearm
         ldb   #3
         stb   tct.mode
+        clr   tct.plives
 tct.oneUp
-        inc   tct.count
+        inc   tct.plives
         ldd   #(soundFX.BonusSound<<8)|1
         std   soundFX.newSound
         rts
-tct.reset
-        clr   tct.step                 ; une autre direction casse tout
-        clr   tct.mode
-        clr   tct.count
+tct.rearm
+        clr   tct.mode                 ; les cheats acceptes restent : seule
+        clr   tct.step                 ; la sequence repart — haut la rouvre
+        cmpa  #1
+        bne   tct.rts2
+        inc   tct.step
+tct.rts2
+        rts
+tct.wipe
+        clr   tct.step                 ; droite : on efface TOUT, y compris
+        clr   tct.mode                 ; les cheats deja acceptes
+        clr   tct.pstage
+        clr   tct.pinv
+        clr   tct.plives
         rts
 
 ; --- la cible du depart : X scene, Y repertoire, U lots — jmp switch ------
@@ -111,31 +131,19 @@ title.cheat.launch
         ; au title resident
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
-        ; les effets, TOUJOURS reecrits : un depart sans cheat les efface
-        clr   cheat.invincible
-        clr   cheat.extraLives
+        ; les effets acceptes s'appliquent, TOUJOURS reecrits : un depart
+        ; sans cheat remet tout a zero
+        lda   tct.pinv
+        sta   cheat.invincible
+        lda   tct.plives
+        sta   cheat.extraLives
         clrb                           ; stage 1 par defaut
-        lda   tct.step
-        cmpa  #4
-        blo   tcl.go                   ; sequence incomplete : depart normal
-        lda   tct.mode
-        cmpa  #2
-        beq   tcl.inv
-        cmpa  #3
-        beq   tcl.lives
-        lda   tct.count                ; mode stage : le compte est la cible
-        beq   tcl.go                   ; arme sans compte : depart normal
+        lda   tct.pstage
+        beq   tcl.go                   ; pas de comptage de stage
         cmpa  #9
-        bhs   tcl.go                   ; plus de 8 hauts : depart normal
+        bhs   tcl.go                   ; plus de 8 hauts : depart stage 1
         tfr   a,b
         decb                           ; l'index de stage 0..7
-        bra   tcl.go
-tcl.inv
-        inc   cheat.invincible
-        bra   tcl.go
-tcl.lives
-        lda   tct.count                ; N gauches = N vies en plus
-        sta   cheat.extraLives
 tcl.go
         stb   game.stage
         aslb                           ; stride 4 : scene, lots
@@ -154,9 +162,12 @@ tcl.go
 
 ; l'etat (la page est de la RAM, et l'unite revient du disque a chaque
 ; entree au title)
-tct.step  fcb 0                        ; 0..4 : progression du prefixe
-tct.mode  fcb 0                        ; 0 rien, 1 stage, 2 invincible, 3 vies
-tct.count fcb 0                        ; le compte (hauts ou gauches) une fois arme
+tct.step   fcb 0                       ; 0..4 : progression du prefixe
+tct.mode   fcb 0                       ; 0 rien, 1 stage, 2 invincible, 3 vies
+; les cheats ACCEPTES (survivent au rearmement, effaces par droite ou au depart)
+tct.pstage fcb 0                       ; 0 aucun, 1..8 le stage compte
+tct.pinv   fcb 0                       ; 1 = invincible accepte
+tct.plives fcb 0                       ; les vies en plus acceptees
 
 ; la table des cibles (une ligne par stage) : les ids de scene viennent des
 ; entries.asm des repertoires 1..8, inclus par l'unite

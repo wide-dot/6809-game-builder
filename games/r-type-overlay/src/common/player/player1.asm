@@ -315,9 +315,9 @@ destroy
         cmpx  #Player1_AnimationSet_Blink
         beq   display
 
-; La garde d'invincibilite est RUNTIME depuis le cheat du title : le flag
-; cheat.invincible remplace l'ancien IFDEF (le define des builds de banc le
-; force toujours, au semis de premiere entree de stage-main).
+; La garde d'invincibilite est RUNTIME : le flag cheat.invincible (pose par
+; le cheat du title, ou par write_memory pour un banc) remplace l'ancien
+; IFDEF invincible, retire du projet le 20/08.
         tst   cheat.invincible
         beq   PlayerDeathReal
         ldb   #3                          ; bordure blanche : le blanc est l'index 3
