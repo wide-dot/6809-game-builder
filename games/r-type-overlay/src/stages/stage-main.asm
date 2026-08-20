@@ -28,10 +28,15 @@ stage.main
         ; démarrage et lit les tuiles comme du 320x200 deux couleurs
         _gfxmode.setBM16
 
-        lda   game.stage
-        bne   stage.stateKept
         ; première entrée de la partie : on sème l'état qui doit survivre aux
         ; échanges. Il vit dans le moteur, donc plus personne n'y touche.
+        ; Le signal est game.fresh (pose par le depart du title), PAS
+        ; game.stage == 0 : un depart cheat vers le stage N est aussi une
+        ; premiere entree — l'ancienne garde sautait le semis et les vies
+        ; partaient de la RAM residuelle (continue a la premiere mort, vecu).
+        tst   game.fresh
+        beq   stage.stateKept
+        clr   game.fresh
         ldd   #bench.SCORE
         std   game.score
         ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la

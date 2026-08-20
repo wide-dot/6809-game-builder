@@ -313,6 +313,7 @@ Collision_Run EXTERNAL
         _api game.stage
         _api cheat.invincible
         _api cheat.extraLives
+        _api game.fresh
         _api game.continueUsed
         ; Armer un morceau depuis une unite paginee : le relais qui commute la
         ; page du lecteur et la rend. Voir engine.asm.

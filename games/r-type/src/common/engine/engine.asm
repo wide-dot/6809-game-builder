@@ -67,6 +67,11 @@ game.stage      fcb   0
 ; define invincible est retire.
 cheat.invincible fcb   0
 cheat.extraLives fcb   0
+; partie fraiche : pose par title.cheat.launch (l'unique sortie du title),
+; consomme par le semis de premiere entree de stage-main. Le numero de stage
+; ne fait plus foi — un depart cheat vers le stage N est AUSSI une premiere
+; entree (vies/score/bench a semer), c'est ce qui manquait.
+game.fresh       fcb   0
 ; Les continues consommes de la partie en cours. Le quota est fixe a
 ; l'assemblage du HUD par le define `game.continue.MAX` (defaut 1, la regle
 ; arcade ; 0 = jamais, $FF = infini) — voir hud.asm. Le compteur vit ici, avec

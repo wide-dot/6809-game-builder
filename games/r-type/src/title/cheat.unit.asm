@@ -137,6 +137,8 @@ title.cheat.launch
         sta   cheat.invincible
         lda   tct.plives
         sta   cheat.extraLives
+        lda   #1                       ; tout depart du title est une partie
+        sta   game.fresh               ; fraiche : le stage semera vies/score
         clrb                           ; stage 1 par defaut
         lda   tct.pstage
         beq   tcl.go                   ; pas de comptage de stage
