@@ -48,6 +48,13 @@ stage.main
         ; game over, mais finir le jeu (stage 8 -> title) ne repassait pas
         ; par la : le quota fuyait d'une partie a l'autre.
         sta   game.continueUsed
+        ; La difficulte est un PARAMETRE GLOBAL de la partie (decision auteur,
+        ; 20/08) : semee ici, plus jamais remise a zero par stage. La RAM
+        ; reservee ne charge rien — sale, elle indexerait la table de presets
+        ; de tir hors de ses donnees. Cote arcade (0x2F2E) elle est globale
+        ; aussi, recalculee de second_loop + DIP + progression (cap 3) — la
+        ; rampe progressive reste a porter le jour venu.
+        sta   globals.difficulty
         ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
@@ -67,13 +74,6 @@ stage.stateKept
         lda   #STAGE_ID
         sta   bench.stage
 
-        ; Les variables inter-main que la chaine de tir lit. Elles vivent dans
-        ; la zone RESERVEE, donc dans de la RAM que rien ne charge : leur
-        ; contenu au demarrage est ce que la machine y avait. La v1 les pose au
-        ; meme endroit, dans l'init de son main (main.asm:103 et 121-130) —
-        ; laisser la difficulte sale ferait indexer la table de presets de
-        ; tir 64 octets plus loin par cran, hors de ses donnees.
-        clr   globals.difficulty
         ; Le drapeau de musique de boss (globals.nextGameMode, seme par le
         ; marqueur de la wave, consomme par stage.endTick) : de la RAM
         ; reservee que rien ne charge — sans ce clr, un residu declencherait
