@@ -255,12 +255,20 @@ CSR_ComputeMappingFrame
         bra   CSR_UpdateMetadata
 CSR_NoDefinedFrame
         eorb  #%00000010                    ; check if there is an alternate shifted image available
+        ; V2-DEVIATION (20/08/2026, bugfix — v1 l'a aussi, dormant) : la
+        ; direction du repli se testait sur Z, qui ne vient JAMAIS avec les
+        ; variantes draw (bit0 pose par render_overlay_mask) : le repli
+        ; decale -> non-decale prenait inc au lieu de dec, 2 px a gauche.
+        ; Le test porte sur le BIT de decalage. (Ici l'ajustement 8 bits est
+        ; sain : suba applique l'offset en modulo, pas de mot a resynchroniser
+        ; — contrairement au pack overlay, cf. BuildSprites.)
+        bitb  #%00000010
         beq   @e
         inc   rsv_image_center_offset,u     ; ajust offset for alternate
         bra   @f
 @e      dec   rsv_image_center_offset,u
 @f      tst   b,y
-        bne   @c        
+        bne   @c
 
         ldy   #0                            ; no defined frame, nothing will be displayed
         sty   rsv_mapping_frame,u
