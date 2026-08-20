@@ -678,8 +678,17 @@ title.frame
         lda   #map.RAM_OVER_CART+title.cheat.page
         ldx   #title.cheat.tick
         jsr   paged.call
-        jsr   RunObjects
+        ; le verrou AVANT RunObjects : la machine a ecrire dessine en absolu
+        ; dans la fenetre donnees PENDANT son run d'objet — hors verrou, elle
+        ; ecrivait dans la fenetre laissee par la trame precedente (toujours
+        ; la page 2 apres un title.clearBuffers), et selon la parite du back
+        ; buffer ses deux passes tombaient dans le MEME tampon : l'autre
+        ; restait noir de texte, d'ou le flicker 25 Hz aux transitions
+        ; scores <-> title. Monter le tampon de travail d'abord rend
+        ; l'alternance deterministe ; les sprites (BuildSprites, en verrou)
+        ; ne changent pas.
         _gfxlock.on
+        jsr   RunObjects
         ; OVERLAY : l'effacement, seulement quand une phase l'a arme — la
         ; bande verticale de l'animation en cours (fenetre posee par
         ; title.clearBand ; 2 = plus la marge 0-10 quand le TM la traverse).
