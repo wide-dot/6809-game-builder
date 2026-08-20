@@ -61,6 +61,12 @@ map_width       equ 24*tile_size
 ; compteurs de vies dans deux endroits n'en font pas un.
 game.score      fdb   0
 game.stage      fcb   0
+; les effets des cheats du title : ecrits par title.cheat.launch a CHAQUE
+; depart (0 = pas de cheat), lus par player1 (invincible) et par le semis de
+; premiere entree (vies). Le define invincible des builds de banc FORCE le
+; flag au semis — meme semantique qu'avant, devenue runtime.
+cheat.invincible fcb   0
+cheat.extraLives fcb   0
 ; Les continues consommes de la partie en cours. Le quota est fixe a
 ; l'assemblage du HUD par le define `game.continue.MAX` (defaut 1, la regle
 ; arcade ; 0 = jamais, $FF = infini) — voir hud.asm. Le compteur vit ici, avec

@@ -315,10 +315,15 @@ destroy
         cmpx  #Player1_AnimationSet_Blink
         beq   display
 
- IFDEF invincible
+; La garde d'invincibilite est RUNTIME depuis le cheat du title : le flag
+; cheat.invincible remplace l'ancien IFDEF (le define des builds de banc le
+; force toujours, au semis de premiere entree de stage-main).
+        tst   cheat.invincible
+        beq   PlayerDeathReal
         ldb   #3                          ; bordure blanche : le blanc est l'index 3
         jsr   gfxlock.screenBorder.update  ; dans la nouvelle palette (c'etait le 1)
- ELSE
+        bra   display
+PlayerDeathReal
         ldd   #0
         std   player1+beam_value
 ; V2-DEVIATION: `_ymm.stop` de la v1 devient un paged.call. Le lecteur v2 vit
@@ -335,7 +340,6 @@ destroy
         sta   player1+routine
         ldd   #$0000
         std   scroll_vel
- ENDC
         bra   display
 
 CheckRange

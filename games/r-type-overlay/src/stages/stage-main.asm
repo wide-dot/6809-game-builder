@@ -38,7 +38,12 @@ stage.main
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
         ldb   #2
+        addb  cheat.extraLives             ; les vies du cheat title, en plus
         stb   globals.lives
+ IFDEF invincible
+        ldb   #1                           ; le define de banc force le flag
+        stb   cheat.invincible             ; runtime (cf. player1.asm)
+ ENDC
         ldx   #bench.magic                 ; cf. bench.SIZE : la zone n'est chargée
         ldb   #bench.SIZE                  ; par personne, un témoin non posé lirait
         clra                               ; sinon $FF au lieu de $00
