@@ -300,13 +300,11 @@
             <!-- Les defines DESCENDENT dans les conteneurs mais ne REMONTENT pas :
                  declares avant le directory, ils servent a ses fichiers ET aux
                  <data> LOADER/BOOT plus bas. -->
-            <!-- BANC D'ESSAI : le joueur ne meurt pas, la bordure vire au blanc
-                 a l'impact. A RETIRER avant toute mesure de jouabilite — c'est
-                 la garde IFDEF invincible de player1.asm.
-                 RETIRE le 19/08 pour tester la mort et le rechargement de
-                 checkpoint (le champ d'etoiles doit reapparaitre au respawn en
-                 zone de ciel, et rester eteint au-dela). -->
-            <!-- <define symbol="invincible"/> -->
+            <!-- L'invincibilite est RUNTIME depuis le 20/08 : le cheat du
+                 title (title.cheat, prefixe puis bas) pose cheat.invincible —
+                 l'ancien define invincible et sa garde IFDEF sont retires.
+                 Un banc/une campagne la force par write_memory sur
+                 cheat.invincible (engine.asm), plus par un define. -->
             <!-- Le quota de continues par partie (garde de hud.continueScreen) :
                  0 = jamais, N = quota, $FF = infini. Sans define : 1, la regle
                  arcade. -->
@@ -1331,6 +1329,7 @@
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
                          scenes.stage1, chargee par le press start et les retours. -->
                     <load name="title.main"/>
+                    <load name="title.cheat"/>
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
@@ -1456,8 +1455,27 @@
                     </lwasm>
                 </file>
 
+                <!-- Le cheat de selection de stage : la machine, son etat et sa
+                     table des cibles, en page (la carte residente est pleine). Les
+                     entries des repertoires 1..8 fournissent les ids de scene. -->
+                <file name="title.cheat" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/cheat.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir1/entries.asm"/>
+                        <asm filename="gen/directories/dir2/entries.asm"/>
+                        <asm filename="gen/directories/dir3/entries.asm"/>
+                        <asm filename="gen/directories/dir4/entries.asm"/>
+                        <asm filename="gen/directories/dir5/entries.asm"/>
+                        <asm filename="gen/directories/dir6/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/title/cheat.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
                     <load name="title.main"/>
+                    <load name="title.cheat"/>
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>

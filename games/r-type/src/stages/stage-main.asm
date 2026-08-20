@@ -28,16 +28,38 @@ stage.main
         ; démarrage et lit les tuiles comme du 320x200 deux couleurs
         _gfxmode.setBM16
 
-        lda   game.stage
-        bne   stage.stateKept
         ; première entrée de la partie : on sème l'état qui doit survivre aux
         ; échanges. Il vit dans le moteur, donc plus personne n'y touche.
-        ldd   #bench.SCORE
-        std   game.score
+        ; Le signal est game.fresh (pose par le depart du title), PAS
+        ; game.stage == 0 : un depart cheat vers le stage N est aussi une
+        ; premiere entree — l'ancienne garde sautait le semis et les vies
+        ; partaient de la RAM residuelle (continue a la premiere mort, vecu).
+        tst   game.fresh
+        beq   stage.stateKept
+        clr   game.fresh
+        ; Le score 24 bits (globals.score, celui du HUD et du decompte) part a
+        ; zero — et SEULEMENT ici : il persiste ensuite a travers les stages,
+        ; c'est l'etat de la partie. L'ancien game.score residant (un doublon
+        ; jamais lu) est supprime.
+        ldd   #0
+        std   globals.score
+        sta   globals.score+2
+        ; Le quota de continues se rearme avec la partie — c'etait fait au
+        ; game over, mais finir le jeu (stage 8 -> title) ne repassait pas
+        ; par la : le quota fuyait d'une partie a l'autre.
+        sta   game.continueUsed
+        ; La difficulte est un PARAMETRE GLOBAL de la partie (decision auteur,
+        ; 20/08) : semee ici, plus jamais remise a zero par stage. La RAM
+        ; reservee ne charge rien — sale, elle indexerait la table de presets
+        ; de tir hors de ses donnees. Cote arcade (0x2F2E) elle est globale
+        ; aussi, recalculee de second_loop + DIP + progression (cap 3) — la
+        ; rampe progressive reste a porter le jour venu.
+        sta   globals.difficulty
         ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
         ldb   #2
+        addb  cheat.extraLives             ; les vies du cheat title, en plus
         stb   globals.lives
         ldx   #bench.magic                 ; cf. bench.SIZE : la zone n'est chargée
         ldb   #bench.SIZE                  ; par personne, un témoin non posé lirait
@@ -52,22 +74,19 @@ stage.stateKept
         lda   #STAGE_ID
         sta   bench.stage
 
-        ; Les variables inter-main que la chaine de tir lit. Elles vivent dans
-        ; la zone RESERVEE, donc dans de la RAM que rien ne charge : leur
-        ; contenu au demarrage est ce que la machine y avait. La v1 les pose au
-        ; meme endroit, dans l'init de son main (main.asm:103 et 121-130) —
-        ; laisser la difficulte sale ferait indexer la table de presets de
-        ; tir 64 octets plus loin par cran, hors de ses donnees.
-        clr   globals.difficulty
-        ldd   #0
-        std   globals.score
-        stb   globals.score+2              ; le 3e octet du score 24 bits
+        ; Le drapeau de musique de boss (globals.nextGameMode, seme par le
+        ; marqueur de la wave, consomme par stage.endTick) : de la RAM
+        ; reservee que rien ne charge — sans ce clr, un residu declencherait
+        ; la musique du boss des l'entree du stage.
+        clr   globals.nextGameMode
         ; La base du score DU STAGE : le decompte de fin affiche
-        ; globals.score moins cette base. La v1 la seme ici meme
-        ; (main.asm:124) ; sans elle le decompte partirait de ce que la RAM
-        ; reservee contenait.
+        ; globals.score moins cette base. C'est le score COURANT a l'entree
+        ; du stage — plus zero : le score persiste a travers les stages (il
+        ; etait ecrase a chaque entree, l'enchainement repartait de rien).
+        ldd   globals.score
         std   globals.stageScoreBase
-        stb   globals.stageScoreBase+2
+        lda   globals.score+2
+        sta   globals.stageScoreBase+2
 
         ; LES OST STATIQUES, mis a zero. La v1 n'a pas ce geste a faire : chez
         ; elle `palettefade` et ses voisins sont de la DONNEE du binaire du game
@@ -737,7 +756,8 @@ stage.state.checkpoint
 stage.gameOver
         jsr   IrqOff
         clr   game.stage
-        clr   game.continueUsed        ; la partie est finie : le continue se rearme
+        ; (le quota de continues se rearme au semis de partie fraiche, plus ici
+        ;  — finir le jeu ne passait pas par le game over et le quota fuyait)
         ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
         ; chaque stage a nommé sa scène. Décharger la sienne avant de charger
         ; celle du title — l'index rendu puis repris est la séquence honnête.

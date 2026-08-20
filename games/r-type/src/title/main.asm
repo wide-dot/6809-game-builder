@@ -34,6 +34,11 @@ mainloop.state    EXPORT
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
+
+; l'unite paginee du cheat de selection de stage (title.cheat)
+title.cheat.tick   EXTERNAL
+title.cheat.launch EXTERNAL
+soundfx.frame      EXTERNAL
         INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -604,13 +609,12 @@ title.launchGame
         _ram.cart.set #page.ymm
         _ym2413.init
 
-        clr   game.stage
-        ldx   #STAGE_SCENE
-        jsr   game.stage.unload
-        ldx   #scenes.stage1
-        ldy   #scenes.stage1.dir
-        ldu   #cast.stage1                  ; les lots d'ennemis de la cible
-        jmp   game.stage.switch
+        ; l'unite paginee rend la scene du title (game.stage.unload), choisit
+        ; la cible du depart — stage 1, ou celle que le cheat a comptee —,
+        ; pose game.stage et saute dans game.stage.switch : on ne revient pas
+        lda   #map.RAM_OVER_CART+title.cheat.page
+        ldx   #title.cheat.launch
+        jsr   paged.call
 
 ; ---------------------------------------------------------------------------
 ; La trame : la boucle v1 (WaitVBL + dessins) devient le tour de verrou v2 —
@@ -618,6 +622,11 @@ title.launchGame
 ; ---------------------------------------------------------------------------
 title.frame
         jsr   joypad.readKbd
+        ; le cheat de selection de stage : etat, machine et table vivent dans
+        ; leur page (la carte residente est pleine) — un paged.call par trame
+        lda   #map.RAM_OVER_CART+title.cheat.page
+        ldx   #title.cheat.tick
+        jsr   paged.call
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         _gfxlock.on
@@ -635,7 +644,12 @@ title.userIRQ
         ; sans morceau arme les lecteurs ressortent d'eux-memes
         _ymm.frame.play #page.ymm
         _vgc.frame.play #page.vgc
-        rts
+        ; le pilote de bruitages, comme stage.userIRQ : sans lui la boite aux
+        ; lettres soundFX.newSound (le bip du cheat) reste muette au title —
+        ; l'unite soundfx est en RAM depuis scenes.boot
+        lda   #map.RAM_OVER_CART+common.soundfx.page
+        ldx   #soundfx.frame
+        jmp   paged.call
 
 ; ---------------------------------------------------------------------------
 ; L'objet logo — logo.asm v1 repris tel quel, ses images par l'index
