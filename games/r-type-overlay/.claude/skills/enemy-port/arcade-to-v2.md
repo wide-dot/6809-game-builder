@@ -40,6 +40,54 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
 - Tables Y arcade : importées déjà recalées (ex.
   `src/common/lib/presets/18db0_preset-y.asm`, valeurs ≤ $B7 < 200).
 
+## Caméras et registres de scroll (vérifié : `auto_scroll` 0x40:0467)
+
+- **Un registre de SCROLL n'est pas une coordonnée d'objet — `Conv.yratio` ne
+  s'y applique PAS avec son signe.** Les caméras arcade
+  (`x_foreground_camera` 0x2EC0, `x_background_camera` 0x2EC8,
+  `y_background_camera` 0x2ECC) indexent la tilemap, et la tilemap s'indexe
+  vers le BAS : c'est exactement la convention de `mscroll.camera.y` en v2.
+  Conversion d'une vitesse de caméra : **magnitude du ratio, sans bascule
+  d'axe** — X : `v*6`, **Y : `v*+12`** (pour un `v` en 1/16 de px arcade).
+  Une coordonnée d'OBJET, elle, garde `Conv.yratio` avec son signe négatif.
+- **Comment les distinguer dans le code, deux indices indépendants :**
+  1. *Le fetch de tuile.* Le lookup de tuile de fond (0x40:1EE0..1F03)
+     calcule sa ligne `row ≈ (cam_y + 0x17F − pos_y) / 8` : un `cam_y` plus
+     GRAND va chercher une tuile plus BAS dans la carte pour le même point
+     d'écran — le contenu monte à l'écran, comme en v2.
+  2. *Le `NEG` manquant.* `auto_scroll` dérive un delta par trame pour chaque
+     caméra et le donne aux objets (pour traîner les sprites fixes du monde).
+     Les deltas X sont négués (0x0490, 0x04C4), **les deltas Y ne le sont
+     pas** (0x04FA, 0x051B). Cette asymétrie EST l'axe Y-vers-le-haut de
+     l'arcade qui annule déjà l'inversion de caméra : appliquer `yratio`
+     par-dessus la compte DEUX FOIS.
+- Le wrap est sur l'ENTIER de la caméra : `AND ...,0x1FF` = 512 px arcade sur
+  les deux axes (le X est un anneau alimenté par streaming de colonnes, le Y
+  boucle vraiment). En v2 : 512 × 0,75 = 384 px = hauteur de la carte.
+- Appris sur la chorégraphie du warship (stage 3, 20/08/2026) : toute la
+  trajectoire verticale était MIROIR. L'arcade tient le cuirassé HAUT dans la
+  bande 27 s durant (33,8 s → 60,9 s du combat) ; sur TO8 il restait en BAS
+  aussi longtemps. Tout le reste concordait — excursion, durées, forme de la
+  danse — ce qui rend l'erreur chère à voir : une trajectoire miroir reste
+  une trajectoire plausible. Corrigé dans `re.arcade.r-type`
+  `extractor/Warship.java` (la source de vérité) et dans l'export commité
+  `src/stages/03/warship/camera-script.asm`.
+- **Méthode qui a débloqué** (à reprendre) : deux campagnes de banc avaient
+  prouvé « la variable suit la référence » puis « l'écran suit la variable » —
+  vrai, et inutile, parce que **la référence portait l'erreur**. Un banc qui
+  confronte le runtime à un modèle converti ne peut que prouver le runtime
+  fidèle à la conversion. C'est un JOURNAL RUNTIME par trame
+  (`tools/warship_log.py` + l'instrumentation `WARSHIP_LOG_PAGE` de
+  `warship/pilot.asm` : un enregistrement de 16 octets par trame vidéo dans un
+  anneau en page libre, drainé par la sonde) qui a tranché : **0 divergence
+  sur 7044 trames** ⇒ plus rien à chercher côté v2, l'erreur est côté arcade.
+  Quand modèle et runtime concordent parfaitement et que le résultat reste
+  faux, arrêter de déboguer le runtime et re-dériver la conversion depuis la
+  MACHINE, pas depuis les annotations Ghidra (le commentaire de l'exporteur
+  portait déjà `; speedy sign follows Conv.yratio — validate at integration`,
+  un drapeau levé jamais abaissé ; et les commentaires de `tick_warship_master`
+  et de `warship_inner_script_step` se contredisaient sur X/Y).
+
 ## Rythme et horloges
 
 - **Les comptes de trames arcade se gardent tels quels** (périodes, durées de

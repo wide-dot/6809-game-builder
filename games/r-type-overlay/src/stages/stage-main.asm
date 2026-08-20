@@ -17,6 +17,16 @@
 ; game.stage.switch) : nom commun aux deux stages, le re-link de chaque
 ; scene.load le repointe sur le stage fraîchement chargé.
 stage.main EXPORT
+
+; Un stage a couche mobile (STAGE_MSCROLL defini par SON main, avant cette
+; inclusion) tire le blast et la camera du module resident — et son champ
+; n'est plus efface par clearblast : le blast mscroll repeint tout (voir la
+; boucle de trame plus bas).
+ IFDEF STAGE_MSCROLL
+mscroll.do   EXTERNAL
+mscroll.move EXTERNAL
+ ENDC
+
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff
@@ -372,6 +382,16 @@ stage.state.running
         jsr   RunObjects
         jsr   gfxlock.on
 
+ IFDEF STAGE_MSCROLL
+        ; STAGE A COUCHE MOBILE (battleship) : le blast mscroll repeint chaque
+        ; pixel de la bande a chaque trame — c'est LUI l'effaceur du champ
+        ; (decision auteur, 2026-08-20). clearblast/clearWindow ne tournent
+        ; pas sur ce stage ; la ligne trash du haut de bande part sous le
+        ; masque HUD. move nourrit le buffer (lignes et colonnes entrantes)
+        ; dans la foulee du blast, comme dans le banc examples/mscroll.
+        jsr   mscroll.do
+        jsr   mscroll.move
+ ELSE
         ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
         ; fenetre que la camera vient de franchir (plusieurs possibles en une
         ; trame de frame-drop, d'ou la boucle ; le rejeu au checkpoint est le
@@ -400,6 +420,7 @@ stage.state.running
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #playfield.clearBlast
         jsr   paged.call
+ ENDC
 
         ; Les etoiles TOUT DE SUITE apres l'effacement : le champ est noir
         ; vierge, le trace ecrit sans lire ni tester (cf. starfield/obj.asm),

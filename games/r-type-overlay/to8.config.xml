@@ -51,10 +51,15 @@
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
-                <zone page="$1C" address="$0000" size="$4000"/>
-                <zone page="$1D" address="$0000" size="$4000"/>
-                <zone page="$1E" address="$0000" size="$4000"/>
-                <zone page="$1F" address="$0000" size="$4000"/>
+                <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
+                     les tilesets doivent partager la meme adresse dans leurs
+                     pages (le LUT de lignes est commun aux deux plans) et les
+                     buffers de code sont pleine page. L'arene garde les
+                     queues. -->
+                <zone page="$1C" address="$0000" size="$2000"/>
+                <zone page="$1D" address="$1800" size="$0800"/>
+                <zone page="$1E" address="$38A0" size="$0760"/>
+                <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
@@ -218,7 +223,10 @@
                 <zone page="$15" address="$0000" size="$4000"/>
                 <!-- La derniere page libre avant la collision ($17) et les
                      tuiles ($18-$1F) : le boss la reclame. -->
-                <zone page="$16" address="$0000" size="$4000"/>
+                <!-- INSTRUMENTATION warship : page prise par le journal de bord
+                     du pilote. Rendre cette zone en retirant WARSHIP_LOG_PAGE.
+                     Rien n'y atterrissait au 20/08 (occupancy : page absente). -->
+                <!-- <zone page="$16" address="$0000" size="$4000"/> -->
             </arena>
             <!-- La musique SN76489, migree mais debranchee (rendre du temps CPU,
                  comme la v1) ; la declaration reste pour ne pas perdre la config. -->
@@ -228,18 +236,15 @@
             <!-- Ce que le jeu occupe sans jamais rien y charger : des equates du
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
                  que ce soit. $9E80 est la limite haute d'un main.
-                 ATTENTION : le pool est POSE par ram.const.asm (ancre GLOBALS_BASE,
-                 nb_dynamic_objects = 43 -> $8850) ; ce <reserved> le DECRIT, rien ne
-                 verifie l'accord des deux. Les 16 octets en $87DB logent les temoins
-                 du banc (bench.const.asm) ; les unites title/stage disposent de
-                 $8000-$87DA. -->
-            <!-- La convergence des lots d'ennemis : les 101 octets sous le pool —
+                 Les 16 octets en $87DB logent les temoins du banc
+                 (bench.const.asm) ; les unites title/stage disposent de
+                 $8000-$87DA. Le pool d'objets a demenage dans la demi-page 0
+                 (2026-08-20) : $8850-$9DCA est redevenu libre en page 1 —
+                 destine au mscroll resident du stage 3. -->
+            <!-- La convergence des lots d'ennemis : les 101 octets sous l'ex-pool —
                  la fenetre du moteur est pleine, voir cast.unit.asm. -->
             <region name="cast" page="$01" address="$87EB" size="$0065"/>
             <reserved name="bench"        page="$01" address="$87DB" size="$0010"/>
-            <reserved name="objects.pool" page="$01" address="$8850" size="$13A7"/>
-            <!-- Les OST hors pool : objets uniques lances par _Obj_RunU (ram.const.asm). -->
-            <reserved name="objects.static" page="$01" address="$9BF7" size="$01D4"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
@@ -251,11 +256,21 @@
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
-            <!-- Ce que la MACHINE occupe : page 0 le background save, pages 2-3 les
-                 deux framebuffers de gfxlock (8000 octets par moitie, 192 octets
-                 libres en fin de chaque moitie — reserves plage par plage pour que
-                 la carte les montre). Le loader se reserve par son <data>. -->
-            <reserved name="background.save"       page="$00" address="$0000" size="$4000"/>
+            <!-- Page 0 : depuis l'overlay il n'y a plus de cellules de fond — la
+                 demi-page vue en $4000-$5FFF (PRC bit 0 epingle a 0 par
+                 _gfxlock.init sous OverlayMode) est de la RAM stable. Le pool
+                 d'objets y vit : 60 slots dynamiques puis les 4 OST statiques
+                 (fondu + 3 slots d'armement), 64 x 117 = $1D40, poses par
+                 ram.const.asm (Dynamic_Object_RAM = $4000) — ce <reserved> les
+                 DECRIT, rien ne verifie l'accord des deux. Le reste de la
+                 demi-page (704 o) et l'autre moitie ($2000-$3FFF, accessible
+                 par montage seulement) sont libres. -->
+            <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
+            <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
+                 moitie, 192 octets libres en fin de chaque moitie — reserves
+                 plage par plage pour que la carte les montre). Le loader se
+                 reserve par son <data>. -->
             <reserved name="framebuffer.2.couleur" page="$02" address="$0000" size="$1F40"/>
             <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
             <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
@@ -316,6 +331,11 @@
                  (object_rsvd_size 59 -> 5) — voir glb.const.asm/constants.asm. -->
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
+            <!-- INSTRUMENTATION warship (a retirer avec le journal du pilote,
+                 src/stages/03/warship/pilot.asm) : la page du journal de bord.
+                 Sa zone d'arene ci-dessous est commentee tant que ce define
+                 existe, sinon le packer pourrait y poser des ennemis. -->
+            <define symbol="WARSHIP_LOG_PAGE" value="$16"/>
             <define symbol="loader.PAGE" value="4"/>
             <define symbol="loader.ADDRESS" value="$C000"/>
 
@@ -342,6 +362,19 @@
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le scroll multidirectionnel, résident : la couche battleship
+                     du stage 3, inerte ailleurs (personne n'appelle do/move).
+                     Résident parce que do/move commutent eux-mêmes la fenêtre
+                     cartouche. Sa place est celle que le pool d'objets a rendue
+                     en déménageant dans la demi-page 0 (2026-08-20) ;
+                     $8850-$9DCA, le budget est la carte d'occupation. -->
+                <file name="common.mscroll" linkdata="LINK" page="$01" address="$8850">
+                    <lwasm gensource="gen/common/mscroll.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/engine/mscroll.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -1310,6 +1343,7 @@
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.cast"/>
                     <load name="common.engine"/>
+                    <load name="common.mscroll"/>
                     <load name="common.anim"/>
                     <load name="common.overlay"/>
                     <load name="common.starfield"/>
@@ -2352,6 +2386,53 @@
                     </unit>
                 </file>
 
+                <!-- La couche battleship (mscroll resident). Cinq direntries
+                     produits par l'element <mscroll> depuis la carte generee
+                     (tools/arcade_to_mscroll.py -> map/battleship.png) : la
+                     premiere declaration materialise aussi gen/stages/03/bship/
+                     (le .equ de geometrie et les flux de depart que les unites
+                     buffers INCLUDEBINent). Places en dur : les tilesets a
+                     l'offset $2000 de leurs pages (le format court <= 256
+                     tuiles couvre la moitie que la fenetre donnees montre en
+                     $A000 — meme adresse dans les deux pages, le LUT de
+                     lignes est commun aux deux plans), les buffers pleine
+                     page, la carte devant le tileset A (montages cart/data
+                     jamais simultanes). La moitie basse de $1C et la queue
+                     de $1D restent a l'arene. -->
+                <file name="stage3.bship.tilesA" page="$1D" address="$2000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="tiles" plane="0" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.tilesB" page="$1C" address="$2000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="tiles" plane="1" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.map" page="$1D" address="$0000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="map" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.bufA" page="$1E" address="$0000">
+                    <lwasm format="raw" gensource="gen/stages/03/bship-bufA.asm">
+                        <asm filename="src/stages/03/bship/bufA.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage3.bship.bufB" page="$1F" address="$0000">
+                    <lwasm format="raw" gensource="gen/stages/03/bship-bufB.asm">
+                        <asm filename="src/stages/03/bship/bufB.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- La choregraphie camera du warship : l'export re.arcade
+                     (out/warship/warship-camera-script.asm, copie commitee dans
+                     warship/camera-script.asm) — consommee par le pilote
+                     (warship/pilot.asm, unite stage3) par page montee, comme la
+                     wave. -->
+                <file name="stage3.camscript" linkdata="LINK" arena="stage3.gfx">
+                    <unit name="stage3.camscript" symbol="warship.camera.script" section="code">
+                        <asm filename="src/stages/03/warship/camera-script.asm"/>
+                    </unit>
+                </file>
+
                 <leanscroll image="src/stages/03/map/in.png" gendir="gen/stages/03/map"
                             gensymbols="gen/stages/03/map/map.const.asm"/>
 
@@ -2392,6 +2473,9 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="gen/directories/dir4/entries.asm"/>
+                        <!-- la geometrie de la couche battleship, ecrite par
+                             les conversions <mscroll> ci-dessus -->
+                        <asm filename="gen/stages/03/bship/battleship.mscroll.equ"/>
                         <asm filename="src/stages/03/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="src/stages/03/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
@@ -2418,6 +2502,12 @@
                     <load name="stage3.tiles.odd"/>
                     <load name="stage3.maps"/>
                     <load name="stage3.wave"/>
+                    <load name="stage3.bship.tilesA"/>
+                    <load name="stage3.bship.tilesB"/>
+                    <load name="stage3.bship.map"/>
+                    <load name="stage3.bship.bufA"/>
+                    <load name="stage3.bship.bufB"/>
+                    <load name="stage3.camscript"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
                     <load name="stage3"/>
