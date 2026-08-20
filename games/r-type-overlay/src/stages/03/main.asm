@@ -26,11 +26,6 @@ mscroll.setup          EXTERNAL
 mscroll.camera.speed   EXTERNAL
 mscroll.camera.speedx  EXTERNAL
 mscroll.camera.impulse EXTERNAL
- IFDEF WARSHIP_LOG_PAGE
-; INSTRUMENTATION : le journal du pilote enregistre la position de la couche
-mscroll.camera.x       EXTERNAL
-mscroll.camera.y       EXTERNAL
- ENDC
 ; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
 ; wave — le pilote la lit par page montée).
 warship.camera.script  EXTERNAL

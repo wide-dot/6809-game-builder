@@ -223,10 +223,7 @@
                 <zone page="$15" address="$0000" size="$4000"/>
                 <!-- La derniere page libre avant la collision ($17) et les
                      tuiles ($18-$1F) : le boss la reclame. -->
-                <!-- INSTRUMENTATION warship : page prise par le journal de bord
-                     du pilote. Rendre cette zone en retirant WARSHIP_LOG_PAGE.
-                     Rien n'y atterrissait au 20/08 (occupancy : page absente). -->
-                <!-- <zone page="$16" address="$0000" size="$4000"/> -->
+                <zone page="$16" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, migree mais debranchee (rendre du temps CPU,
                  comme la v1) ; la declaration reste pour ne pas perdre la config. -->
@@ -331,11 +328,6 @@
                  (object_rsvd_size 59 -> 5) — voir glb.const.asm/constants.asm. -->
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
-            <!-- INSTRUMENTATION warship (a retirer avec le journal du pilote,
-                 src/stages/03/warship/pilot.asm) : la page du journal de bord.
-                 Sa zone d'arene ci-dessous est commentee tant que ce define
-                 existe, sinon le packer pourrait y poser des ennemis. -->
-            <define symbol="WARSHIP_LOG_PAGE" value="$16"/>
             <define symbol="loader.PAGE" value="4"/>
             <define symbol="loader.ADDRESS" value="$C000"/>
 

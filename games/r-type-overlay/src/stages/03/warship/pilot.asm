@@ -40,86 +40,6 @@ pilot.sx       equ ext_variables+4 ; WORD vitesse x du segment courant (8.8)
 pilot.sy       equ ext_variables+6 ; WORD vitesse y du segment courant (8.8)
 
 
- IFDEF WARSHIP_LOG_PAGE
-; ---------------------------------------------------------------------------
-; wlog — le journal de bord du pilote  (INSTRUMENTATION, a retirer avec le
-; define WARSHIP_LOG_PAGE du to8.config.xml et la zone d'arene rendue)
-;
-; Un enregistrement PAR TRAME VIDEO depilee, pas par boucle de jeu : c'est la
-; seule granularite ou l'etat du script se confronte a l'integrale arcade,
-; qui est elle aussi par trame. L'anneau vit dans une page entiere ($16, la
-; derniere page libre de l'arene ennemis, dont la zone est commentee tant que
-; l'instrumentation est la) montee en fenetre cartouche — la meme fenetre que
-; le script, d'ou le va-et-vient de page aux frontieres de segment (295 fois
-; en 9536 trames : le cout est nul devant le releve).
-;
-; En-tete a la base de la page, puis 1008 enregistrements de 16 octets
-; (20 secondes de jeu) : la sonde draine plus vite que ca et se sert du
-; compteur d'ecritures pour detecter tout debordement.
-;
-;   +0  (2) gfxlock.frame.count de la boucle — l'horloge video 50 Hz
-;   +2  (1) gfxlock.frameDrop.count — trames depilees par cette boucle
-;   +3  (1) trames restant a depiler quand cet enregistrement est ecrit
-;   +4  (2) pilot.cursor   — l'entree de script APRES l'avance eventuelle
-;   +6  (2) pilot.counter  — trames restantes du segment courant
-;   +8  (2) pilot.sx       — vitesse x 8.8 de CETTE trame
-;   +10 (2) pilot.sy       — vitesse y 8.8 de CETTE trame
-;   +12 (2) mscroll.camera.x — position de la couche a l'entree de la boucle
-;   +14 (2) mscroll.camera.y
-; ---------------------------------------------------------------------------
-wlog.MAGIC    equ $57DB                 ; 'W' + $DB : la page est a nous
-wlog.magic    equ $0000
-wlog.wptr     equ $0002                 ; adresse d'ecriture courante
-wlog.written  equ $0004                 ; enregistrements ecrits (mot, boucle)
-wlog.START    equ $0100
-wlog.END      equ $4000                 ; 1008 enregistrements de 16 octets
-
-; la page log deja montee ; ecrase A, B, X
-; NOTE : le '>' est OBLIGATOIRE sur chaque acces a l'en-tete. Les adresses
-; sont < 256, et sans setdp lwasm les assemble en ADRESSAGE DIRECT — ce qui,
-; DP valant $9F pendant le jeu, ecrirait dans le bloc dp au lieu de la page
-; du journal. Le releve serait vide et la machine par terre.
-wlog.init
-        ldx   #wlog.START
-        stx   >wlog.wptr
-        ldd   #0
-        std   >wlog.written
-        ldd   #wlog.MAGIC
-        std   >wlog.magic
-        rts
-
-; page log montee, U = OST du pilote, l'appel est un jsr donc les trames
-; restantes poussees par la boucle sont a 2,s. Preserve U et S.
-wlog.record
-        ldx   >wlog.wptr
-        ldd   gfxlock.frame.count
-        std   ,x++
-        lda   gfxlock.frameDrop.count
-        sta   ,x+
-        ldb   2,s
-        stb   ,x+
-        ldd   pilot.cursor,u
-        std   ,x++
-        ldd   pilot.counter,u
-        std   ,x++
-        ldd   pilot.sx,u
-        std   ,x++
-        ldd   pilot.sy,u
-        std   ,x++
-        ldd   mscroll.camera.x
-        std   ,x++
-        ldd   mscroll.camera.y
-        std   ,x++
-        cmpx  #wlog.END
-        blo   >
-        ldx   #wlog.START
-!       stx   >wlog.wptr
-        ldd   >wlog.written
-        addd  #1
-        std   >wlog.written
-        rts
- ENDC
-
 warship.pilot
         lda   routine,u
         asla
@@ -145,11 +65,6 @@ pilotInit
         std   mscroll.camera.speed
         lda   #1
         sta   routine,u
- IFDEF WARSHIP_LOG_PAGE
-        lda   #map.RAM_OVER_CART+WARSHIP_LOG_PAGE
-        _SetCartPageA
-        jsr   wlog.init                ; RunObjects remonte pour l'objet suivant
- ENDC
         rts
 
 pilotLive
@@ -163,14 +78,8 @@ pilotLive
         tst   gfxlock.frameDrop.count
         bne   >
         rts
- IFDEF WARSHIP_LOG_PAGE
-        ; la page du JOURNAL occupe la fenetre pendant tout le depilage ; le
-        ; script n'y est monte qu'aux frontieres de segment (voir plus bas)
-!       lda   #map.RAM_OVER_CART+WARSHIP_LOG_PAGE
- ELSE
         ; la page du script, montee AVANT tout (le mount passe par A)
 !       lda   #map.RAM_OVER_CART+stage3.camscript.page
- ENDC
         _SetCartPageA                  ; RunObjects remonte a l'objet suivant
         ; depiler les trames ecoulees une par une : le decompte de segment et
         ; l'accumulation partagent la meme trame, comme le tick arcade
@@ -183,10 +92,6 @@ pilotLive
         leax  -1,x
         bne   @tick
         ; fin du segment : le suivant est effectif DES cette trame
- IFDEF WARSHIP_LOG_PAGE
-        lda   #map.RAM_OVER_CART+stage3.camscript.page
-        _SetCartPageA                  ; le script, le temps de lire l'entree
- ENDC
         ldx   pilot.cursor,u
         ldy   ,x++
         sty   pilot.sx,u
@@ -198,14 +103,7 @@ pilotLive
         stx   pilot.cursor,u
         clra
         tfr   d,x                      ; X = duree du segment neuf
- IFDEF WARSHIP_LOG_PAGE
-        lda   #map.RAM_OVER_CART+WARSHIP_LOG_PAGE
-        _SetCartPageA                  ; retour au journal
- ENDC
 @tick   stx   pilot.counter,u
- IFDEF WARSHIP_LOG_PAGE
-        jsr   wlog.record              ; UNE ligne par trame video depilee
- ENDC
         ldd   pilot.sx,u
         addd  1,s
         std   1,s
@@ -220,12 +118,7 @@ pilotLive
         puls  a,b                      ; D = dy
         jmp   mscroll.camera.impulse
 ;
-@end    equ   *
- IFDEF WARSHIP_LOG_PAGE
-        lda   #map.RAM_OVER_CART+WARSHIP_LOG_PAGE
-        _SetCartPageA
- ENDC
-        leas  1,s                      ; le decompte n'a plus d'objet : les
+@end    leas  1,s                      ; le decompte n'a plus d'objet : les
                                        ; trames restantes sont a (0,0)
         lda   #2                       ; -> dormance (TODO : la sequence de
         sta   routine,u                ; fin arcade 0xc55d avec le combat)

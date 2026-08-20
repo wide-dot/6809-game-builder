@@ -4,6 +4,13 @@
     TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 \
     python3 tools/warship_log.py dist/to8.fd [out_dir]
 
+ATTENTION : l'instrumentation a ete RETIREE du jeu le 20/08/2026, une fois
+le defaut d'axe Y trouve et prouve (elle prenait la page $16 a l'arene des
+ennemis). Pour rejouer ce releve il faut la remettre — elle est intacte dans
+le commit 89567cbd (`git show 89567cbd -- src/stages/03/warship/pilot.asm`,
+plus le define et la zone d'arene dans to8.config.xml). Sans elle cette sonde
+s'arrete proprement sur « la page $16 ne porte pas le journal ».
+
 Le build doit porter l'instrumentation (define WARSHIP_LOG_PAGE dans
 to8.config.xml, journal dans src/stages/03/warship/pilot.asm) : le pilote
 ecrit UN enregistrement de 16 octets PAR TRAME VIDEO depilee, dans un anneau
