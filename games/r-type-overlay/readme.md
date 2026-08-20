@@ -362,7 +362,10 @@ de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#p
 est la forme d'appel qui l'anime. Les valeurs de la page directe sont la chaîne
 d'équates de `engine/constants.asm`, évaluée depuis `glb_ram_end = $A000-12`.
 
-Hors résident, en pages physiques : `$4000-$5FFF` tampon de fond (page `$00`),
+Hors résident, en pages physiques : `$4000-$5FFF` le pool d'objets (page
+`$00`, demi-page épinglée par PRC bit 0 — 60 slots dynamiques + fondu +
+3 slots d'armement depuis le 20/08/2026 ; c'était le tampon de fond du
+background-erase, sans usager depuis l'overlay),
 vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
 tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
 joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions

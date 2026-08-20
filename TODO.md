@@ -965,3 +965,157 @@ En veille sur décision (31/07/2026) :
       83 octets du gel par simple fragmentation (le tampon exigeait
       jusqu'à 1540 octets CONTIGUS à chaque échange), et le chantier
       musique l'a fait franchir une fois — plus possible par construction.
+
+## mscroll — scroll multidirectionnel par buffer de code (étude 20/08)
+
+- [ ] `engine/graphics/tilemap/mscroll/` + démonstrateur `examples/mscroll`,
+      étapes M1..M4 et critères dans `docs/lang/fr/etude-mscroll-2026-08.md`.
+      Cible : la couche battleship du stage 3 r-type (le rendu tilemap actuel
+      reste la seconde couche par-dessus, sol/plafond) ; bandes de masquage
+      8 px gauche/droite comme le masque playfield existant. L'adaptation
+      r-type est hors périmètre de l'étude.
+  - [x] **M1 (20/08)** : clone vscroll v1 intact, exemple en scroll vertical
+        sur l'art réel du cuirassé (échelle TO8, palette stage 3), validé
+        sous toje dans les deux sens — lignes alimentées relues identiques à
+        la map, capture = rendu TO8-vrai. Pièges corrigés : `jmp` de
+        bouclage en mode direct (lwasm), padding tileset par bloc-ligne.
+  - [x] **vscroll migré 1:1 (20/08)** : import verbatim dans
+        `engine/graphics/tilemap/vscroll/` (manifest, zéro écart) +
+        `examples/vscroll` (l'exemple M1 renommé) — image octet pour octet
+        identique à celle validée sous toje : migration validée par identité.
+  - [x] **M2 (20/08)** : ruban horizontal (h/b/w, chunks 16 px, entrée et
+        sortie décalées de h — pas de ligne de garde nécessaire, la sortie
+        patchée couvre juste). Validé sous toje : rotation 160/160 px,
+        +2 px caméra = −2 px écran linéaire sur toutes les phases, feed
+        vertical octet-parfait en diagonale, couture confinée aux bandes.
+        Piège lwasm consigné : une ligne VIDE termine la portée des labels
+        locaux `@`.
+  - [x] **M3 (20/08)** : feed colonne + map 2D (ids 16 bits prémultipliés,
+        stride en puissance de 2, ≤ 2048 px de large), camera.x entier 16
+        bits + accumulateur de fraction, clamp aux bords. Conventions
+        tranchées à la mesure : h = −window mod 10 (slots inversés, héritage
+        v1) et termes fins en signe opposé à hscroll (bo négué, phase w
+        miroir avec −1 octet côté plan 0). Validé sous toje : D(x) = x
+        pixel-exact à toutes les phases, aller-retour complet 0↔352 avec
+        les deux chemins de feed, 160/160 aux deux butées. Démonstrateur
+        sur map 512×640 avec le vaisseau entier.
+  - [x] **M3-opt (20/08)** : tileset tile-major (ids ×32, `ldd ,y++`),
+        feed par tuile de 8 px cadencé sur les masques — 37 cy/ligne/plan
+        (mesuré 117 avant), plus aucune boucle à 6 trames (min 9,8→10,8 fps
+        à 200 lignes, moyenne bornée par la quantification). Bug grave
+        corrigé : wrap de marche descendante comparé en non signé → la
+        queue du feed arrosait $FFxx puis les E/S $E7xx (gels d'IRQ) ; la
+        v1 borne ses marches en SIGNÉ (`bge`), règle retenue.
+  - [x] **Campagne diagonale + couture supprimée (20/08)** — détail §9 de
+        l'étude. Bug signalé par l'auteur (décalages de tuiles en diagonale)
+        : garde signée `deca/bpl` de l'ancre du tile-feed, fausse pour
+        cursor ∈ [129..200] — deuxième piège signé du module, règle : écrire
+        le cas 0 explicitement. Aussi : buffer de départ passé à 201 lignes
+        ancrées (`setCameraPos` cale le cursor), row-feed montant recalé de
+        +1 (V2-DEVIATION, probablement latent en v1 — jamais contrôlé à
+        l'octet). Puis suppression de la couture par cisaillement map-fixe
+        (proposition auteur : la coupure est FIXE dans la map, tous les
+        160 px) : écritures décalées d'une ligne par couture franchie, cache
+        cuit à id×32−2, rattrapage 1 ligne/16 depuis un cache de la rangée
+        du dessus, cursor±1 au franchissement caméra — zéro re-feed, coût
+        mesuré nul (12,50 vs 12,55 fps). Outils : mire VISUELLE par défaut
+        (règles continues, une marche d'un pixel se voit ; `--coded` garde
+        le motif forensique), `mire.pix` + `diag_check.py` au modèle uniforme
+        — 4 diagonales × 8 000 contrôles octet-exacts, 0 défaut. Élément
+        builder `<mscroll>` (map/tiles/start + .equ) enregistré au cœur.
+        Note d'exemple : débordement de la ligne du haut (36 octets avant la
+        zone, plan B dans la page résidente — réglages viewport + trash,
+        commenté dans main.asm).
+  - [ ] M4 : masque 8 px + DrawTiles par-dessus + banc de cycles
+        (48/96/180) ; arbitrage 8 px/16 px du feed selon la hauteur retenue
+        (5 lignes dans move). Différé : contrôle byte-exact du vscroll v1
+        (le +1 des montées y est probablement latent).
+
+## Stage 3 — battleship sur mscroll (campagne ouverte le 20/08)
+
+- [x] **Analyse arcade** (`docs/lang/fr/analyse-warship-camera-2026-08.md`) :
+      le vaisseau est un objet de wave (priorité 0xff00) qui confisque les
+      deux axes de scroll de la couche background par un script de consignes
+      (vy, vx, trames) de 295 segments — jumeau du couple
+      mscroll.camera.speed*/move. Plates Ghidra corrigées (axes inversés,
+      prouvé par le code). Spawn script positionnel 68 entrées (seuil sur le
+      scroll accumulé). Excursion v2 : x [0..285], y [−66..38] px.
+- [x] **Outils re.arcade.r-type** : `--extract-warship`
+      (`extractor/Warship.java`) → `out/warship/warship-camera-script.asm`
+      (8.8 convertis ×6/−12, durées gardées), spawn skeleton + CSV.
+      `level3_b.png`/`level3_f.png` (3072×240) déjà exportés.
+- [x] **Demi-page 0 récupérée** (décision auteur) : PRC bit 0 épinglé sous
+      `OverlayMode` — dans `InitGlobals` (premier geste, AVANT les inits
+      objets : vécu, le title effaçait une moitié et lisait l'autre) et dans
+      `_gfxlock.init` (écarts au manifest). `background.save` retiré du
+      config.
+- [x] **Pool d'objets déménagé à $4000** : 60 slots dynamiques + fondu +
+      3 slots d'armement (64×117=$1D40, 704 o de marge), ancre
+      `Dynamic_Object_RAM equ $4000` (ram.const.asm), `<reserved>` en page
+      $00. La page 1 rend $8850-$9DCA (~5,5 Ko). Banc : C1 vert, C2 = la
+      signature rouge documentée de master (différentiel propre,
+      code=4001 pc=84FD identique avant/après).
+- [x] **mscroll RÉSIDENT (20/08)** : unité `common.mscroll` à $8850 (2562 o,
+      ~3,4 Ko restent de la zone rendue), BUFFER_LINES=181. Frontière en
+      SEPT noms (discipline api) : setup (façade à bloc de paramètres, les
+      macros restent la source de vérité), do, move, camera.speed/speedx/x/y.
+      Branchement stage-main sous `STAGE_MSCROLL` : do+move remplacent
+      clearblast/clearWindow (le blast mscroll est l'effaceur — décision
+      auteur), avant étoiles/frameBlit/DrawTiles. Inerte ailleurs (aucun
+      appel). Banc différentiel : C1 vert, C2 = la signature rouge
+      documentée de master (code=4001 pc=84FD, identique aux runs de
+      référence) — aucun effet du module inerte.
+- [x] **Assets stage 3 (20/08)** : `tools/arcade_to_mscroll.py` →
+      `map/battleship.png` 640×384 (90,7 % de couleurs exactes sur la
+      palette du stage) ; 5 direntries `<mscroll>` posés en dur $1C-$1F
+      (tilesets format court ≤256 tuiles chargés à l'offset $2000 — la
+      moitié montrée en $A000, optimisation Mscroll.java ; carte 158
+      tuiles avec le tileset A ; buffers pleine page), arène stage3.gfx
+      retaillée en conséquence ; `sky_transparent.py 03` rejoué (9904
+      blocs — il n'avait jamais tourné sur ce stage, la tilemap noire
+      recouvrait la couche).
+- [x] **Pilote `warship_core` (20/08)** : `warship/pilot.asm` dans l'unité
+      stage3 (ObjID 35 + 5 objids d'assets, index 6 tables), script caméra
+      = unité `stage3.camscript` (export re.arcade copié, référence CUITE
+      par le builder), wave décommentée, `mscroll.setup` appelé par
+      stage.setup (bloc de paramètres, viewport 11/180). Deux bugs tués au
+      banc : _SetCartPageA écrasait l'octet fort du reliquat de compteur
+      (pilote muet après son 1er segment) ; les accumulateurs 8.8 partaient
+      en RAM froide (bond caméra +375 px — setup efface tout l'état du
+      module désormais). Outil `tools/warship_traj.py` : trajectoire
+      mesurée vs intégrale du script ROM.
+- [x] **Trajectoire VALIDÉE (20/08, warship_traj.py)** : forme et pentes
+      exactes sur 3 minutes (dx constant ≈ −31 px = la phase de spawn wave
+      ~170 trames ; dy ≤ 15 px, la danse verticale suit, wrap 384 compris).
+      Gel à t≈7400 : le pilote s'éteint avec la fin de vie du stage
+      placeholder (purge/endstage), pas un bug — la timeline réelle du
+      combat viendra avec le portage des parties.
+- [x] **Amorce autoscroll du checkpoint (20/08)** : l'auteur mesure
+      « vaisseau à 6 s en arcade, 24 s chez nous » — la cause n'était ni le
+      crop (curseur bg cp6 0x0528 + base 0x10D68F = pile le début de
+      level3_b.png, enregistrement identité PROUVÉ) ni l'horloge : la table
+      de checkpoint arcade (0x1000:87FA) sème `v_bg=$0080` dès l'entrée du
+      stage, et le script du master (spawn ts $2000 = wave `$01,$00`
+      correcte) PROLONGE cette vitesse (1er segment 8/16 = 0.5 px/trame).
+      Correctif : `mscroll.camera.speedx = $0030` posé par stage.setup après
+      mscroll.setup ; banc warship_traj réécrit (autoscroll avant spawn).
+      Analyse : §5ter de analyse-warship-camera-2026-08.md.
+- [x] **Pilote à la trame près (20/08, décision auteur)** : le mode vitesse
+      intégrait tout un frame-drop à la vitesse de l'ancien segment quand
+      une frontière tombait au milieu — dérive refusée par l'auteur. Le
+      pilote dépile désormais les trames écoulées UNE PAR UNE (chaque trame
+      porte la vitesse de son segment, comme tick_warship_master) et pousse
+      la somme exacte par la nouvelle façade `mscroll.camera.impulse`
+      (X=dx, D=dy 8.8, cumulés dans les reliquats du module — frontière à
+      8 noms). Vitesses module à zéro dès pilotInit ; l'autoscroll du
+      checkpoint reste en mode vitesse avant le spawn. Banc warship_traj :
+      **dx ≤ 2 px, dy ≤ 5 px** sur toute la vie du pilote (avant : jusqu'à
+      48 px — c'était bien la dérive de frontière, pas du jitter de banc).
+      Deux pièges au passage : ldd écrase B (décompte empilé), ligne vide
+      qui ferme la portée des labels @.
+- [ ] Stage 3 restants : jugement visuel auteur (signe Y de la danse à
+      confirmer à l'écran), chemin mort/checkpoint sur stage à mscroll
+      (le rouge connu du chantier checkpoint + la question « le checkpoint
+      re-seme-t-il l'autoscroll ? » — stage.setup le couvre déjà), jalons
+      musique de boss (0x1180/0x12c0), spawn script des 27 parties +
+      ennemis externes (campagne enemy-port), séquence de fin (0xc55d).
