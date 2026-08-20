@@ -255,10 +255,21 @@ CSR_ComputeMappingFrame
         bra   CSR_UpdateMetadata
 CSR_NoDefinedFrame
         eorb  #%00000010                    ; check if there is an alternate shifted image available
+        ; V2-DEVIATION (20/08/2026, bugfix - v1 has it too, dormant): the
+        ; fallback direction was tested on Z, which NEVER comes with draw
+        ; variants (bit0 always set): the shifted -> non-shifted fallback
+        ; took inc instead of dec - any draw sprite missing its shifted
+        ; variant landed 2 px left at odd positions. The test now reads the
+        ; shift BIT, same fix as overlay-mode/BuildSprites.asm (20/08/2026).
+        ; The second BuildSprites defect (low-byte inc/dec of a signed word)
+        ; has no equivalent here: rsv_image_center_offset is a lone byte
+        ; consumed byte-wide (suba in DrawSpritesExtEnc), where $FF is a
+        ; correct -1 modulo 256, so inc/dec stay as they are.
+        bitb  #%00000010
         beq   @e
-        inc   rsv_image_center_offset,u     ; ajust offset for alternate
+        inc   rsv_image_center_offset,u     ; alternate is the SHIFTED one: step back one more pixel
         bra   @f
-@e      dec   rsv_image_center_offset,u
+@e      dec   rsv_image_center_offset,u     ; alternate is the NON-shifted one: step forward one pixel
 @f      tst   b,y
         bne   @c        
 

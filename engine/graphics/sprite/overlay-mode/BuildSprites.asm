@@ -168,16 +168,8 @@ BuildSprites
         ; laissait l'octet haut rassis (-1+1 donnait -256) — l'ajustement
         ; se fait en mot. Diagnostique par le balayage d'ancrage
         ; d'examples/overlay (encodeurs et en-tetes innocentes, dX=0).
-        pshs  b
-        bitb  #%00000010
-        beq   @d
-        ldd   <_image_center_parity         ; l'alternative est la DECALEE :
-        addd  #1                            ; reculer d'un pixel de plus
-        bra   @e2
-@d      ldd   <_image_center_parity         ; l'alternative est la NON decalee :
-        subd  #1                            ; avancer d'un pixel
-@e2     std   <_image_center_parity
-        puls  b
+        ; Code partage avec le chemin multisprite : BSP_parityFallback.
+        jsr   BSP_parityFallback
 @e      lda   b,x
         beq   @nextobject1                  ; no defined frame, nothing will be displayed
         leax  a,x                           ; read image subset index
@@ -392,10 +384,10 @@ BuildSprites
 @rts    rts
 @nodefinedframe
         eorb  #%00000010                    ; check if there is an alternate shifted image available
-        beq   @d
-        inc   _image_center_parity+1        ; ajust offset for alternate
-        bra   @e
-@d      dec   _image_center_parity+1
+        ; V2-DEVIATION (20/08/2026, bugfix) : le meme repli que le chemin
+        ; single — direction sur le bit de decalage et ajustement en MOT,
+        ; voir le commentaire du chemin single et BSP_parityFallback.
+        jsr   BSP_parityFallback
 @e      lda   b,x
         beq   @rts                          ; no defined frame, nothing will be displayed
         leax  a,x                           ; read image subset index
@@ -481,8 +473,25 @@ BuildSprites
         std   glb_screen_location_1
 !
         lda   _page_draw_routine
-        _SetCartPageA        
-        pshs  u,y                 
+        _SetCartPageA
+        pshs  u,y
         ldu   glb_screen_location_2
         jsr   [_draw_routine]               ; draw compilated sprite on screen
-        puls  u,y,pc   
+        puls  u,y,pc
+
+; V2-DEVIATION (20/08/2026, bugfix) : l'ajustement de parite du repli de
+; frame manquante, partage par les deux chemins. B = l'index de variante
+; APRES le eorb #%10 : bit1 pose = on retombe sur la DECALEE (reculer d'un
+; pixel de plus), bit1 efface = sur la NON decalee (avancer d'un pixel).
+; En mot : l'inc/dec du seul octet bas wrappait ($FF -> $00 donnait -256).
+BSP_parityFallback
+        pshs  b
+        bitb  #%00000010
+        beq   @d
+        ldd   <_image_center_parity
+        addd  #1                            ; ajust offset for alternate
+        bra   @e
+@d      ldd   <_image_center_parity
+        subd  #1
+@e      std   <_image_center_parity
+        puls  b,pc   
