@@ -38,6 +38,7 @@ mainloop.state    EXPORT
 ; l'unite paginee du cheat de selection de stage (title.cheat)
 title.cheat.tick   EXTERNAL
 title.cheat.launch EXTERNAL
+soundfx.frame      EXTERNAL
         INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -608,11 +609,9 @@ title.launchGame
         _ram.cart.set #page.ymm
         _ym2413.init
 
-        ldx   #STAGE_SCENE
-        jsr   game.stage.unload
-        ; la cible du depart — stage 1, ou celui que le cheat a compte — est
-        ; choisie par l'unite paginee, qui pose game.stage et saute dans
-        ; game.stage.switch : on ne revient pas
+        ; l'unite paginee rend la scene du title (game.stage.unload), choisit
+        ; la cible du depart — stage 1, ou celle que le cheat a comptee —,
+        ; pose game.stage et saute dans game.stage.switch : on ne revient pas
         lda   #map.RAM_OVER_CART+title.cheat.page
         ldx   #title.cheat.launch
         jsr   paged.call
@@ -645,7 +644,12 @@ title.userIRQ
         ; sans morceau arme les lecteurs ressortent d'eux-memes
         _ymm.frame.play #page.ymm
         _vgc.frame.play #page.vgc
-        rts
+        ; le pilote de bruitages, comme stage.userIRQ : sans lui la boite aux
+        ; lettres soundFX.newSound (le bip du cheat) reste muette au title —
+        ; l'unite soundfx est en RAM depuis scenes.boot
+        lda   #map.RAM_OVER_CART+common.soundfx.page
+        ldx   #soundfx.frame
+        jmp   paged.call
 
 ; ---------------------------------------------------------------------------
 ; L'objet logo — logo.asm v1 repris tel quel, ses images par l'index

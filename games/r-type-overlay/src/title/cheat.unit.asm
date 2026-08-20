@@ -25,6 +25,7 @@ title.cheat.launch EXPORT
 
         INCLUDE "src/common/engine/api.asm"
         INCLUDE "src/common/cast.const.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
 
 STAGE_SCENE equ scenes.title
 
@@ -55,6 +56,8 @@ tct.armed
         cmpa  #1                       ; prefixe arme : haut compte le stage
         bne   tct.reset
         inc   tct.count
+        ldd   #(soundFX.FireSound<<8)|1 ; le bip de comptage : un FireSound par
+        std   soundFX.newSound         ; haut — la validation sonore du cheat
         rts
 tct.reset
         clr   tct.step                 ; une autre direction casse tout
@@ -63,6 +66,12 @@ tct.reset
 
 ; --- la cible du depart : X scene, Y repertoire, U lots — jmp switch ------
 title.cheat.launch
+        ; le title rend sa scene — d'ICI : l'unload ne fait aucune E/S disque
+        ; et ne touche pas la fenetre cartouche (le piege loader connu vise la
+        ; fenetre DONNEES, pour les appels disque) ; ces 6 octets manquaient
+        ; au title resident
+        ldx   #STAGE_SCENE
+        jsr   game.stage.unload
         clrb                           ; stage 1 par defaut
         lda   tct.step
         cmpa  #4
