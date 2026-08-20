@@ -34,6 +34,10 @@ mainloop.state    EXPORT
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
+
+; l'unite paginee du cheat de selection de stage (title.cheat)
+title.cheat.tick   EXTERNAL
+title.cheat.launch EXTERNAL
         INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -604,13 +608,14 @@ title.launchGame
         _ram.cart.set #page.ymm
         _ym2413.init
 
-        clr   game.stage
         ldx   #STAGE_SCENE
         jsr   game.stage.unload
-        ldx   #scenes.stage1
-        ldy   #scenes.stage1.dir
-        ldu   #cast.stage1                  ; les lots d'ennemis de la cible
-        jmp   game.stage.switch
+        ; la cible du depart — stage 1, ou celui que le cheat a compte — est
+        ; choisie par l'unite paginee, qui pose game.stage et saute dans
+        ; game.stage.switch : on ne revient pas
+        lda   #map.RAM_OVER_CART+title.cheat.page
+        ldx   #title.cheat.launch
+        jsr   paged.call
 
 ; ---------------------------------------------------------------------------
 ; La trame : la boucle v1 (WaitVBL + dessins) devient le tour de verrou v2 —
@@ -618,6 +623,11 @@ title.launchGame
 ; ---------------------------------------------------------------------------
 title.frame
         jsr   joypad.readKbd
+        ; le cheat de selection de stage : etat, machine et table vivent dans
+        ; leur page (la carte residente est pleine) — un paged.call par trame
+        lda   #map.RAM_OVER_CART+title.cheat.page
+        ldx   #title.cheat.tick
+        jsr   paged.call
         jsr   RunObjects
         jsr   CheckSpritesRefresh
         _gfxlock.on

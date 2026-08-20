@@ -1358,6 +1358,7 @@
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
                          scenes.stage1, chargee par le press start et les retours. -->
                     <load name="title.main"/>
+                    <load name="title.cheat"/>
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
@@ -1483,8 +1484,27 @@
                     </lwasm>
                 </file>
 
+                <!-- Le cheat de selection de stage : la machine, son etat et sa
+                     table des cibles, en page (la carte residente est pleine). Les
+                     entries des repertoires 1..8 fournissent les ids de scene. -->
+                <file name="title.cheat" linkdata="LINK" arena="title">
+                    <lwasm gensource="gen/title/cheat.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir1/entries.asm"/>
+                        <asm filename="gen/directories/dir2/entries.asm"/>
+                        <asm filename="gen/directories/dir3/entries.asm"/>
+                        <asm filename="gen/directories/dir4/entries.asm"/>
+                        <asm filename="gen/directories/dir5/entries.asm"/>
+                        <asm filename="gen/directories/dir6/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/title/cheat.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.title" section="SCENE" gensource="gen/scenes/title.asm">
                     <load name="title.main"/>
+                    <load name="title.cheat"/>
                     <load name="title.logo"/>
                     <load name="title.pushbutton"/>
                     <load name="title.scores"/>
