@@ -351,6 +351,14 @@ stage.states
 mainloop.state EXPORT
 mainloop.state fcb 0
 
+; LE SEUIL OU LA SEQUENCE DE FIN PREND L'ECRAN. A partir de cette phase, le
+; fondu pixel possede le champ entier : phase 3 il le dissout, phase 4 il le
+; garde noir sous le releve de score. Les deux objets qui ECRIVENT la phase
+; (src/common/flow/endlevel/obj_endlevel.asm pour les stages 2-8, et
+; src/stages/01/endstage/obj_endstage.asm) emploient la meme numerotation ;
+; la boucle est le seul lecteur, la constante vit donc ici.
+endstage.PHASE_FADE equ 3
+
 stage.state.running
         ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) :
         ; joypad.readKbd alimente held/pressed (le tir) et fait de n'importe
@@ -381,6 +389,29 @@ stage.state.running
         _Obj_RunU ObjID_bitdevice,#bitdevBotOST
         jsr   RunObjects
         jsr   gfxlock.on
+
+        ; LA SEQUENCE DE FIN POSSEDE L'ECRAN (21/08/2026, tous stages).
+        ; Des que le fondu pixel demarre, le champ ne doit plus etre ni
+        ; efface ni repeint : la dissolution ACCUMULE son tramage a l'ecran,
+        ; trame apres trame, et ne repasse jamais sur une cellule deja
+        ; traitee. L'effacement du champ le detruisait a chaque trame, et
+        ; DrawTiles — appele APRES le blit — repeignait la tuilerie par-dessus
+        ; les cellules tout juste dissoutes.
+        ;
+        ; Le stage 1 se protegeait deja de la seconde moitie du probleme en
+        ; n'armant le fondu qu'une fois les DEUX tampons rendus a la butee
+        ; (obj_endstage.asm @glide) : glb_camera_move retombait alors a zero
+        ; et DrawTiles ne repeignait plus rien. Le passage en overlay a rendu
+        ; cette precaution caduque — le champ etant efface chaque trame, la
+        ; boucle FORCE desormais glb_camera_move (voir plus bas). D'ou cette
+        ; garde, qui traite la cause au lieu de la contourner.
+        ;
+        ; Ce qui continue de tourner : stage.frameBlit (c'est LUI le fondu) et
+        ; BuildSprites (les phases 3 et 4 posent glb_force_sprite_refresh pour
+        ; garder vaisseau et module peints sur les DEUX pages).
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        lbhs  stage.frame.faded
 
  IFDEF STAGE_MSCROLL
         ; STAGE A COUCHE MOBILE (battleship) : le blast mscroll repeint chaque
@@ -438,6 +469,7 @@ stage.state.running
         jsr   paged.call
  ENDC
 
+stage.frame.faded
         ; Ce que CE stage peint dans le verrou graphique, avant tout le reste :
         ; sur le niveau 1, les bandes noires du boss et le rectangle de la
         ; salle. OVERLAY : plus de sauvegardes de fond a faire capturer — le
@@ -462,9 +494,16 @@ stage.state.running
         ; l'entree, la restaure en sortie, et calcule lui-meme
         ; glb_screen_location_1/2 — passer apres BuildSprites (qui les ecrit
         ; aussi, par sprite) ne lui coute rien.
+        ; Sous le fondu, plus de decor a repeindre : cf. la garde en tete de
+        ; verrou. C'est le second des deux points ou la trame ecrasait la
+        ; dissolution.
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        bhs   stage.frame.noTiles
         lda   #1
         sta   glb_camera_move
         jsr   DrawTiles
+stage.frame.noTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
@@ -472,7 +511,7 @@ stage.state.running
         ; fondu pixel possede l'ecran entier, bandeau compris, et on ne peint
         ; rien ; phase 4, le releve de score centre, seul.
         lda   stage.overlayPhase
-        cmpa  #3
+        cmpa  #endstage.PHASE_FADE
         blo   stage.overlay.normal
         cmpa  #4
         beq   stage.overlay.readout

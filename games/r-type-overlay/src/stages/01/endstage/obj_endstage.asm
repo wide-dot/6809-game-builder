@@ -167,6 +167,19 @@ Tick
         bne   >                             ; un buffer n'a pas encore rattrape
         ; scroll fige sur les deux pages : glb_camera_move sera nul des la trame
         ; suivante, DrawTiles ne repeindra plus rien. On peut dissoudre.
+        ; ... et le VAISSEAU a l'arret. Depuis que la boucle n'efface plus le
+        ; champ sous le fondu (stage-main.asm, garde stage.frame.faded), la
+        ; dissolution est CUMULATIVE : elle masque chaque cellule une seule
+        ; fois par page, et tout ce qui est repeint apres elle y reste grave.
+        ; Un vaisseau encore en vol laisserait donc sa trainee peinte sur le
+        ; noir jusqu'au releve de score. AutoPilot vient de tourner juste
+        ; au-dessus : des vitesses nulles = dans la zone morte, donc arrive.
+        ; L'autopilote converge toujours (1 px par trame, sans obstacle), la
+        ; condition ne peut pas bloquer la sequence.
+        ldd   player1+x_vel
+        bne   >
+        ldd   player1+y_vel
+        bne   >
         inc   main.endstage.phase
         jsr   InitFadeOut
 !       bra   @none
@@ -184,7 +197,7 @@ Tick
         sta   <glb_force_sprite_refresh
 @scoreWait
         lda   main.endstage.scoreDone        ; phase 4: wait for readout + 3 s hold to finish
-        beq   @none                          ; (main loop keeps running -> the pod animates)
+        lbeq  @none                          ; (main loop keeps running -> the pod animates)
         ; readout + hold done: black the palette FIRST so the cut to the loading screen is
         ; hidden -> clean fade-to-black return to the title (same idiom as Level01_Start /
         ; the message black-out). PalUpdateNow writes the hardware registers synchronously,
