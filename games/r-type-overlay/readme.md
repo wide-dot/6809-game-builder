@@ -10,6 +10,15 @@ s'applique DEUX fois tant que les deux vivent.
 Etat de cette base (etape 1 du chantier) :
 - config : `<define symbol="OverlayMode"/>`, tous les encodeurs en `draw`
   (200 explicites + la cascade `images.encoder`) ;
+  **CORRECTIF 21/08/2026** : la cascade n'etait declaree que sur le
+  `<directory id="0">`, et deux entrees du repertoire 1 y echappaient encore —
+  `stage1.dobkeratopsjaw` et `stage1.dobkeratopssaw` sortaient en `bdraw`.
+  Ce n'est pas qu'un gaspillage (3 568 octets de sauvegarde/effacement morts,
+  jaw 3 925 -> 2 200, saw 4 637 -> 2 794) : un sprite `bdraw` ouvre par
+  `STS glb_register_s / LEAS ,Y` pour empiler le fond sauve, et le
+  `BuildSprites` overlay appelle `jsr [_draw_routine]` sans poser le moindre
+  tampon dans Y. La cascade est posee sur les neuf repertoires ; la machoire
+  et les scies du boss du stage 1 sont donc a revoir a l'ecran ;
 - engine : pack `sprite-overlay-pack` v1 importe (BuildSprites remplace
   CheckSpritesRefresh/EraseSprites/DrawSprites/UnsetDisplayPriority) ;
 - **pas encore d'effacement de fond** : les sprites LAISSENT DES TRAINEES,

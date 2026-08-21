@@ -135,6 +135,70 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
 | sonde de tuile terrain (sentinelle `0xFA0` « sur la surface ») | API `terrainCollision.*` (init.do / do / xAxis.doRight-doLeft / update, capteurs `sensor.x/y`, résultat `impact.x`) — la carte de bits est montée par le stage |
 | événements différés (`enqueue_event`) | appel direct (`jsr AwardScore`…) — pas de file d'événements en v2 |
 
+## Chaînes de segments (acté sur l'outslay, 21/08/2026)
+
+Un ennemi « serpent » arcade n'est pas un objet à sous-objets : c'est un
+**émetteur invisible** qui alloue N ObjectRecords indépendants, tous
+initialisés à la MÊME position et avec le MÊME script de mouvement rejoué
+depuis son début. Le décalage temporel des spawns (une table `(handler,
+délai)`) est ce qui fabrique la forme du serpent — aucun segment ne suit
+géométriquement son aîné. Transposition v2 :
+
+- **Deux ObjID** : l'émetteur (celui que la wave cite) et le segment. Le
+  RÔLE du segment voyage dans `subtype` au spawn (`lda #ObjID / std id,x`
+  écrit id+subtype d'un coup), puis devient l'index de routine à l'Init.
+  Ordonner les rôles pour que les tests d'appartenance de l'arcade
+  (« l'aîné est-il body / body_explode / neck ? ») deviennent un encadrement.
+- **Le chaînage frère-à-frère** (`[+0x3c]` arcade) : l'émetteur garde le
+  dernier-né dans ses `ext_variables` et l'écrit dans l'enfant suivant AVANT
+  que celui-ci ne tourne — l'émetteur écrit donc directement dans l'OST du
+  petit, comme l'arcade. Limite héritée : rien n'invalide le pointeur quand
+  l'aîné rend son slot.
+- **La compensation de frame drop** de l'émetteur se fait en déroulant son
+  pas de script `gfxlock.frameDrop.count` fois (et `wave_frame_drop` fois à
+  l'Init) — pas en compensant dans les délais.
+- Un émetteur invisible se déclare `priority = 0` et n'appelle jamais
+  `DisplaySprite` ; il sort par `UnloadObject_u`, pas `DeleteObject`.
+
+## Portée de tir : convertir la distance, pas les coordonnées
+
+Un test de distance arcade est en **pixels arcade**, et les deux axes v2
+n'ont pas la même échelle (X 0.375, Y 0.75 — Y vaut le double de X). Une
+distance de Manhattan `|dx| + |dy| < R` arcade devient donc, en pixels
+larges, `|dx| + |dy|/2 < R * 0.375`. Vérifié sur l'outslay : `< 0x90` (144)
+donne `|dx| + |dy|/2 < 54`.
+
+## Le cast d'un stage est UNE unité : préfixer toutes les étiquettes
+
+Depuis le group `stageN.cast`, tous les `obj.asm` du cast sont assemblés
+dans la même unité. `Object`, `Init`, `Routines`, `Live`, `endCheck`,
+`ImageIndex` — les noms canoniques du patron pata-pata — ne peuvent servir
+qu'une fois. Chaque implémentation préfixe ses étiquettes de son nom
+(`outslay.Init`, `outslay.Routines`…), y compris les équates
+d'`ext_variables` (`outslay.AABB` et non `AABB_0`). Les branches courtes
+deviennent vite trop courtes : un `beq` vers la routine de mort d'un objet
+de 600 lignes veut un `lbeq`.
+
+## Deux pièges de configuration relevés sur ce portage
+
+- **`images.encoder` est une cascade PAR RÉPERTOIRE.** Seul le
+  `<directory id="0">` la portait (`value="draw"`, le mode overlay). Une
+  rangée `<images>` ajoutée dans un autre répertoire retombe silencieusement
+  en `bdraw` : le cast du stage 2 pesait **34 675 octets au lieu de 18 806**.
+  Le piège avait **déjà mordu avant ce portage** — `stage1.dobkeratopsjaw` et
+  `stage1.dobkeratopssaw` (répertoire 1) sortaient encore en `bdraw`, ce qui
+  en mode overlay est pire qu'un gaspillage : un sprite `bdraw` ouvre par
+  `STS glb_register_s / LEAS ,Y` pour empiler le fond sauvé, or `BuildSprites`
+  ne pose aucun tampon de fond dans Y. La cascade est désormais déclarée sur
+  les NEUF répertoires ; c'est là qu'il faut la chercher avant d'ajouter des
+  `<images>`.
+- **16 Ko par direntry, pas par arène.** Un cast de 37 sprites 12x24 en
+  dessin seul pèse ~17,6 Ko : il faut le couper en deux entrées, sur le
+  modèle de `stage1.tabrok.imgWalk` / `dobkeratops.imgFace`. Les symboles
+  qui franchissent la coupure ne coûtent RIEN au chargement tant que les
+  deux entrées vivent dans la même arène — le builder les place, donc il les
+  cuit (`0` octet de données de lien dans le rapport).
+
 ## Le spawn par la wave (vérifié : `ObjectWave-subtype.asm`)
 
 - Format d'une entrée : `AAAA` horodatage (comparé à `frame.gameCount`),

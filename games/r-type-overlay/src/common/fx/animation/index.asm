@@ -23,3 +23,4 @@ ref_1930A	fdb   ref_19CE4 ; bug
                 fdb   ref_19ACE ; pata pata
                 fdb   ref_19AF8 ; bink (jump left)
                 fdb   ref_19B0A ; bink (jump right)
+                fdb   ref_1A652 ; outslay (variante 4 du spawn, stage 2)

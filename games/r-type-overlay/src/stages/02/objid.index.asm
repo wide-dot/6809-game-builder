@@ -43,6 +43,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_head
+Obj_Index_Page.end
 
 Obj_Index_Address
         fdb   0
@@ -89,6 +92,9 @@ Obj_Index_Address
         fdb   brood.Object ; ObjID_brood
         fdb   outslay.Object ; ObjID_outslay
         fdb   gomander.Object ; ObjID_gomander
+        fdb   outslay.Segment ; ObjID_outslay_segment
+        fdb   outslay.Segment ; ObjID_outslay_head
+Obj_Index_Address.end
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page
@@ -129,6 +135,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_head
+Ani_Page_Index.end
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -169,6 +178,9 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_brood
         fdb   Ani_Asd_none ; ObjID_outslay
         fdb   Ani_Asd_none ; ObjID_gomander
+        fdb   Ani_Asd_none ; ObjID_outslay_segment
+        fdb   Ani_Asd_none ; ObjID_outslay_head
+Ani_Asd_Index.end
 
 Ani_Asd_none
         fdb   0
@@ -207,3 +219,43 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
+* Le cast du stage 2. Ces six lignes MANQUAIENT : la table s'arretait a
+* ObjID_bossmusic (32) alors que les autres index allaient jusqu'a 37, parce
+* que les squelettes du cast n'affichaient rien. Le premier ennemi implemente
+* dessine, BuildSprites lit Img_Page_Index[38] hors table, monte une page
+* quelconque et saute dans le vide. Une table indexee par identifiant doit
+* etre DENSE jusqu'a objid.count — le garde-fou en fin de fichier le verifie
+* maintenant.
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
+        fcb   map.RAM_OVER_CART+stage2.cast.imgHead.page ; ObjID_outslay_head
+Img_Page_Index.end
+
+* GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
+* moteur y entre en `abx` sans borne. Une table plus courte que les autres ne
+* casse rien tant qu'aucun objet de la queue n'est atteint, puis fait sauter
+* le jeu dans le vide — vecu le 21/08/2026, Img_Page_Index s'arretait a
+* l'identifiant 32 et le premier segment d'outslay (38) a fige l'ecran.
+* L'en-tete demandait deja de « garder les lignes alignees » ; ceci le
+* verifie au lieu de l'esperer.
+objid.index.expected equ objid.count+1
+
+ IFNE Obj_Index_Page.end-Obj_Index_Page-objid.index.expected
+        ERROR Obj_Index_Page : une ligne par identifiant, de 0 a objid.count
+ ENDC
+ IFNE Obj_Index_Address.end-Obj_Index_Address-objid.index.expected*2
+        ERROR Obj_Index_Address : une ligne par identifiant, de 0 a objid.count
+ ENDC
+ IFNE Ani_Page_Index.end-Ani_Page_Index-objid.index.expected
+        ERROR Ani_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+ IFNE Ani_Asd_Index.end-Ani_Asd_Index-objid.index.expected*2
+        ERROR Ani_Asd_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+ IFNE Img_Page_Index.end-Img_Page_Index-objid.index.expected
+        ERROR Img_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC

@@ -104,6 +104,18 @@ dobkeratops_eye_hitbox_x  equ 3
 dobkeratops_eye_hitbox_y  equ 6
 dobkeratops_eye_hitdamage equ 1
 
+; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
+; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
+; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur
+; utile est celle du sprite (12x24 large-dot), d'ou 6 et 12.
+; Seul le CORPS est vulnerable et il meurt au premier coup (933c zerote
+; [+0x1f] a l'install et body_tick ne le rearme jamais) ; tete, cou, queue,
+; finalizer et cadavre reappliquent l'immunite a chaque trame (929b/929f).
+outslay_hitbox_x	equ 6
+outslay_hitbox_y	equ 12
+outslay_hitdamage	equ 1
+outslay_hitdamage_immune equ -128
+
 ; --- HP set inline in the obj (centralised here for the stage-1 catalogue) ---
 ; Arcade-verified via doc/arcade-combat-reference.md (section 4 roster).
 p_staff_hitdamage         equ 6      ; arcade create_p_staff @0x74b4 : +0x2F = 6 (v2)

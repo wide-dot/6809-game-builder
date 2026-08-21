@@ -1566,6 +1566,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
 
                 <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
@@ -2270,6 +2272,14 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul.
+                     La cascade est declaree par repertoire ; seul le 0 la
+                     portait, parce que lui seul avait des rangees <images>.
+                     Les repertoires 1 et 3..N ne l'ont toujours PAS : une
+                     rangee <images> ajoutee la-bas retomberait en bdraw et
+                     emettrait des routines d'effacement mortes (vecu ici, le
+                     cast du stage 2 pesait 34 675 octets au lieu de 16 383). -->
+                <default name="images.encoder"   value="draw"/>
 
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
@@ -2315,12 +2325,43 @@
                     </lwasm>
                 </file>
 
-                <!-- Cast du stage 2 : squelettes (pas de source v1) — chaque ennemi a
-                     son unite, son id et ses lignes de wave ; implementation a venir. -->
-                <file name="stage2.cast" arena="enemies" codec="none">
+                <!-- Les 16 poses de tete/finalizer sortent du direntry du cast :
+                     37 sprites 12x24 en dessin seul pesent ~17,6 Ko, au-dela des
+                     16 Ko d'une entree. Le cast garde le code, le cou/queue, le
+                     corps et l'epave ; ce direntry-ci porte la tete. Les seize
+                     `set_outslay_head_*` franchissent donc la frontiere : 16
+                     references de lien, resolues au chargement (cf. symbols.md).
+                     Meme decoupe que stage1.tabrok.imgWalk / dobkeratops.imgFace. -->
+                <file name="stage2.cast.imgHead" linkdata="LINK" arena="enemies">
+                    <lwasm gensource="gen/enemies/stage2-cast-imghead.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgHead" gendir="gen/enemies/stage2-cast-imghead"
+                                 gensource="gen/enemies/stage2-cast-imghead/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imghead/index.asm">
+                            <images dir="src/enemies/outslay/images/head" names="outslay_head"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Cast du stage 2 : un direntry pour tout le cast. Les squelettes
+                     (pas de source v1) tombent un par un a mesure que la reference
+                     arcade est portee ; l'outslay est le premier implemente.
+                     Les poses : tete et finalizer partagent le pool de 16 du
+                     `head`, cou et queue celui du `neck` (le bout arriere lit le
+                     meme pool decale de 8) ; le corps a ses 4 images d'animation
+                     et son epave. Pas de `shifts` : 37 sprites 12x24 suffisent a
+                     la page, les doubler pour la precision sous-pixel non. -->
+                <file name="stage2.cast" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/cast.unit.asm"/>
+                        <gfxcomp file="stage2.cast" gendir="gen/enemies/stage2-cast"
+                                 gensource="gen/enemies/stage2-cast/includes.asm"
+                                 genindex="gen/enemies/stage2-cast/index.asm">
+                            <images dir="src/enemies/outslay/images/neck" names="outslay_neck"/>
+                            <images dir="src/enemies/outslay/images/body" names="outslay_body"/>
+                            <images dir="src/enemies/outslay/images/body-broken" names="outslay_broken"/>
+                        </gfxcomp>
                     </lwasm>
                 </file>
 
@@ -2355,6 +2396,7 @@
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
+                    <load name="stage2.cast.imgHead"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
                     <load name="stage2.maps"/>
@@ -2370,6 +2412,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage3.wave" linkdata="LINK" arena="stage3.gfx">
                     <unit name="stage3.wave" symbol="stage.wave" section="code">
@@ -2511,6 +2555,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage4.wave" linkdata="LINK" arena="stage4.gfx">
                     <unit name="stage4.wave" symbol="stage.wave" section="code">
@@ -2596,6 +2642,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage5.wave" linkdata="LINK" arena="stage5.gfx">
                     <unit name="stage5.wave" symbol="stage.wave" section="code">
@@ -2681,6 +2729,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage6.wave" linkdata="LINK" arena="stage6.gfx">
                     <unit name="stage6.wave" symbol="stage.wave" section="code">
@@ -2769,6 +2819,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage7.wave" linkdata="LINK" arena="stage7.gfx">
                     <unit name="stage7.wave" symbol="stage.wave" section="code">
@@ -2854,6 +2906,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage8.wave" linkdata="LINK" arena="stage8.gfx">
                     <unit name="stage8.wave" symbol="stage.wave" section="code">

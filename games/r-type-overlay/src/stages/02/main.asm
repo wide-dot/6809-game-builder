@@ -42,6 +42,10 @@ gouger.Object     EXTERNAL
 wick.Object       EXTERNAL
 brood.Object      EXTERNAL
 outslay.Object    EXTERNAL
+; Le segment de la chaine d'outslay : spawne par l'emetteur et non par la
+; wave. Il porte DEUX identifiants (le corps et la tete/finalizer, dont les
+; images vivent dans un autre direntry) pour une seule entree de code.
+outslay.Segment   EXTERNAL
 gomander.Object   EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
