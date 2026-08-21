@@ -65,6 +65,16 @@ compiled by the sprite encoder :
    are cached on the picture and the parameters, so the chain runs once per
    art change, not once per build pass. The module itself stays callable by
    hand (`toolbox/graphics/tilemap/leanscroll`).
+
+   **`lean="false"`** drops the lean pass and tiles the picture AS IT IS.
+   Everything else is unchanged — both planes, dedup, window, maps, equates.
+   The pass only pays when the engine SCROLLS the playfield : it removes the
+   pixels a sweep is going to repaint anyway, and `scrollstep=`/`nbsteps=`
+   are the vector it sweeps along (declaring either alongside `lean="false"`
+   is an error, they would mean nothing). A renderer that clears the field
+   and repaints every tile every frame has nothing to spare, and the pass
+   would only mask what the art says — there, transparency comes from the
+   picture, not from a scroll model.
 3. **`<gfxcomp>` with `grid`** slices the strip and compiles every tile :
 
    ```xml

@@ -34,6 +34,13 @@ import lombok.extern.slf4j.Slf4j;
  * keeps the source's empty tile at position 0, and the geometry comes out
  * as equates ({@code gensymbols=}) instead of a hand-run script's output.
  *
+ * The lean pass itself — dropping the pixels a scroll sweep repaints anyway —
+ * is switched off by {@code lean="false"}, and then the picture is tiled AS IT
+ * IS. It only ever pays when the engine SCROLLS the playfield ; an overlay
+ * renderer clears the field and repaints every tile every frame, so there is
+ * nothing to spare. Everything else stays : tiling, dedup, the pre-shifted
+ * plane, the window, the maps, the equates.
+ *
  * Everything lands under {@code gendir=} : {@code even.png / even.bin /
  * odd.png / odd.bin} are what a {@code <gfxcomp grid>} and a
  * {@code <tilemap>} consume. The intermediates live in {@code 0/} and
@@ -43,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LeanscrollPlugin {
 
-	private static final String CACHE_VERSION = "3";
+	private static final String CACHE_VERSION = "4";
 
 
 	public static void run(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -59,6 +66,20 @@ public class LeanscrollPlugin {
 		String scrollstep = Attribute.getString(node, ctx, "scrollstep", "0,0,1,0,0,0,0,0");
 		String nbsteps = Attribute.getString(node, ctx, "nbsteps", "0,0,4,0,0,0,0,0");
 		String refresh = Attribute.getStringOpt(node, ctx, "refresh");
+		// lean="false" : the picture is tiled AS IT IS. The lean pass drops
+		// the pixels a scroll sweep is going to repaint anyway, which only
+		// pays when the engine SCROLLS the playfield ; an overlay renderer
+		// clears the field and repaints every tile every frame, so there is
+		// nothing to spare and the pass would only mask what the art says.
+		// Everything else the element does — tiling, dedup, the pre-shifted
+		// plane, the window, the maps, the equates — is unchanged.
+		boolean lean = Attribute.getBoolean(node, ctx, "lean", true);
+		if (!lean && (node.getAttributes().containsKey("scrollstep")
+				|| node.getAttributes().containsKey("nbsteps"))) {
+			throw new Exception(ctx.sources.locate(node) + ": <leanscroll> lean=\"false\""
+					+ " with scrollstep/nbsteps — the scroll vector only feeds the"
+					+ " lean pass, drop it or drop lean=\"false\"");
+		}
 
 		String[] dims = tile.split("x");
 		if (dims.length != 2) {
@@ -114,8 +135,8 @@ public class LeanscrollPlugin {
 
 		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
 				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("leanscroll", CACHE_VERSION)
-						.keyString(tile + "|" + columns + "|" + first + "|" + scrollstep
-								+ "|" + nbsteps + "|" + refresh)
+						.keyString(tile + "|" + columns + "|" + first + "|" + lean
+								+ "|" + (lean ? scrollstep + "|" + nbsteps : "") + "|" + refresh)
 						.keyBytes(Files.readAllBytes(in));
 		Path cached = entry.find();
 		String[] finals = { "even.png", "even.bin", "odd.png", "odd.bin" };
@@ -130,18 +151,24 @@ public class LeanscrollPlugin {
 			for (String plane : new String[] { "0", "1" }) {
 				Files.createDirectories(out.resolve(plane));
 			}
-			int code = new picocli.CommandLine(new MainCommand()).execute(
+			java.util.List<String> argv = new ArrayList<>(java.util.Arrays.asList(
 					"-image=" + in,
 					"-outtileset=" + out.resolve("0/0.png"),
 					"-outtilemap=" + out.resolve("0/0.bin"),
 					"-outtileset1=" + out.resolve("1/1.png"),
 					"-outtilemap1=" + out.resolve("1/1.bin"),
-					"-scrollstep=" + scrollstep,
-					"-nbsteps=" + nbsteps,
 					"-outtilewidth=" + tileW,
 					"-outtileheight=" + tileH,
 					"-outmapbitdepth=16",
-					"-outmaptranspose");
+					"-outmaptranspose"));
+			// the scroll vector is what turns the lean pass on in the module :
+			// no vector, no pass, and the picture is tiled as it is
+			if (lean) {
+				argv.add("-scrollstep=" + scrollstep);
+				argv.add("-nbsteps=" + nbsteps);
+			}
+			int code = new picocli.CommandLine(new MainCommand()).execute(
+					argv.toArray(new String[0]));
 			if (code != 0) {
 				throw new Exception("<leanscroll> failed on '" + image + "' (exit " + code + ")");
 			}
@@ -168,7 +195,8 @@ public class LeanscrollPlugin {
 					+ "map.ROWS  equ " + rows + "\n")
 					.getBytes(StandardCharsets.UTF_8));
 		}
-		log.info("leanscroll {} : planes and window under {}", image, gendir);
+		log.info("leanscroll {} : planes and window under {}{}", image, gendir,
+				lean ? "" : " (lean pass off — the picture is tiled as it is)");
 	}
 
 	/**

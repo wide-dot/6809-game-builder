@@ -39,6 +39,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -107,6 +108,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -163,6 +165,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -220,6 +223,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -276,6 +280,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -329,6 +334,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -382,6 +388,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -450,6 +457,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -509,6 +517,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -568,6 +577,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -633,6 +643,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -701,6 +712,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -757,6 +769,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -843,6 +856,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -902,6 +916,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -958,6 +973,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1044,6 +1060,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1100,6 +1117,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1165,6 +1183,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1245,6 +1264,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1307,6 +1327,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1363,6 +1384,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1419,6 +1441,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1478,6 +1501,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1515,11 +1539,14 @@
       <xs:attribute name="gensymbols" type="xs:string">
         <xs:annotation><xs:documentation>generated equates of the window's geometry (map.COLS, map.ROWS)</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="lean" type="xs:boolean">
+        <xs:annotation><xs:documentation>false : no lean pass, the picture is tiled AS IT IS (everything else is unchanged — tiling, dedup, pre-shifted plane, window, maps, equates). The pass drops the pixels a scroll sweep would repaint anyway, which only pays when the engine SCROLLS the playfield ; an overlay renderer clears the field and repaints every tile every frame. Default true, and then scrollstep/nbsteps apply</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="scrollstep" type="xs:string">
-        <xs:annotation><xs:documentation>the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll. Feeds the lean pass only</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="nbsteps" type="xs:string">
-        <xs:annotation><xs:documentation>the module's sub-step counts, default 0,0,4,0,0,0,0,0</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>the module's sub-step counts, default 0,0,4,0,0,0,0,0. Feeds the lean pass only</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="refresh" type="xs:string">
         <xs:annotation><xs:documentation>cells forced to stay DRAWN (bound to the set's first tile) though the lean would empty them : a checkpoint restart repaints from the map, so a band the scroll cannot rebuild from its start-of-stage blocks needs them. Space or comma list of &lt;col&gt;:&lt;row&gt; or &lt;col&gt;:&lt;rowFirst&gt;-&lt;rowLast&gt;</xs:documentation></xs:annotation>
@@ -1558,6 +1585,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1614,6 +1642,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1676,6 +1705,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1700,6 +1730,81 @@
       </xs:attribute>
       <xs:attribute name="definitions" type="xs:string" use="required">
         <xs:annotation><xs:documentation>path of the machine definitions file</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- build one mscroll asset (tile-major tileset, map or start buffer) from an indexed map PNG -->
+  <xs:element name="mscroll">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>input .png : the whole map, indexed, a whole number of 8x16 tiles</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="output" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>map, tiles or start — which asset this direntry holds</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string">
+        <xs:annotation><xs:documentation>where the generated binaries and the .mscroll.equ go</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="plane" type="int6809">
+        <xs:annotation><xs:documentation>memory plane for tiles and start (0 or 1)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="viewheight" type="int6809">
+        <xs:annotation><xs:documentation>start only : lines of the initial view (default 200)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="symbol" type="xs:string">
+        <xs:annotation><xs:documentation>prefix of the generated equates (default : the file name)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="shiftcolors" type="xs:boolean">
+        <xs:annotation><xs:documentation>index 0 is transparency and 1..16 are colours 0..15</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1735,6 +1840,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1797,6 +1903,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1859,6 +1966,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -1954,6 +2062,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2031,6 +2140,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2099,6 +2209,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2164,6 +2275,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2223,6 +2335,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2285,6 +2398,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2341,6 +2455,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2406,6 +2521,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2462,6 +2578,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2536,6 +2653,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2595,6 +2713,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2663,6 +2782,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2722,6 +2842,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2781,6 +2902,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
@@ -2846,6 +2968,7 @@
         <xs:element ref="load"/>
         <xs:element ref="lwasm"/>
         <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
         <xs:element ref="pcm"/>
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>

@@ -211,8 +211,9 @@ public final class Handlers {
 			.opt("columns", INT, "window width in columns — the whole level if omitted")
 			.opt("first", INT, "window's first column, 0 if omitted")
 			.opt("gensymbols", STRING, "generated equates of the window's geometry (map.COLS, map.ROWS)")
-			.opt("scrollstep", STRING, "the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll")
-			.opt("nbsteps", STRING, "the module's sub-step counts, default 0,0,4,0,0,0,0,0")
+			.opt("lean", BOOL, "false : no lean pass, the picture is tiled AS IT IS (everything else is unchanged — tiling, dedup, pre-shifted plane, window, maps, equates). The pass drops the pixels a scroll sweep would repaint anyway, which only pays when the engine SCROLLS the playfield ; an overlay renderer clears the field and repaints every tile every frame. Default true, and then scrollstep/nbsteps apply")
+			.opt("scrollstep", STRING, "the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll. Feeds the lean pass only")
+			.opt("nbsteps", STRING, "the module's sub-step counts, default 0,0,4,0,0,0,0,0. Feeds the lean pass only")
 			.opt("refresh", STRING, "cells forced to stay DRAWN (bound to the set's first tile) though the lean would empty them : a checkpoint restart repaints from the map, so a band the scroll cannot rebuild from its start-of-stage blocks needs them. Space or comma list of <col>:<row> or <col>:<rowFirst>-<rowLast>"));
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
