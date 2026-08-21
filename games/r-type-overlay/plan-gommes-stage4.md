@@ -241,10 +241,13 @@ et écrit l'écran, les trois en même temps. Mon (b) inventait un relais pour u
 problème qui n'existe pas.
 
 La passe vit dans la **bande résidente par-stage** `$92DB-$9DCA` de la page 1,
-créée le 21/08 et dont l'outslay du stage 2 occupe `$9A00-$9DB3` : il reste
-**1 829 octets** en `$92DB-$99FF`, pour un besoin d'environ 1 020 (432 de
-tables réduites à 3 octets par phase/ligne/plan, 288 de bords, ~300 de code).
-Les stages étant exclusifs, il n'y a pas même de concurrence avec l'outslay.
+créée le 21/08. Elle fait **2 800 octets et ils sont tous au stage 4**, pour un
+besoin d'environ 1 020 (432 de tables réduites à 3 octets par phase/ligne/plan,
+288 de bords, ~300 de code).
+
+La bande ne porte que les données du stage **en cours** : les réservations qu'on
+y lit — `stage.outslay` du stage 2 en `$9A00` — sont des **alternatives à la
+même place**, pas des occupants cumulés. Rien d'un stage passé n'y survit.
 
 Écartée au passage, la piste de l'auteur : basculer `$E7C3` bit 0 pour ouvrir
 les 8 Ko de l'autre demi-page (libre depuis que l'overlay a supprimé les
