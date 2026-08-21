@@ -103,6 +103,83 @@ if os.environ.get('WATCH'):
         if cam >= 980:
             print('combat atteint, camera %d' % cam, flush=True)
             break
+    # LE TUBE 0 : rectangle (83,6). On echantillonne ses cellules et on releve
+    # les SALVES — l'animation ne doit pas etre continue, chaque emission du
+    # script ne vivant qu'environ 272 trames.
+    # L'OBJET D'ANIMATION EST-IL SEULEMENT CREE ? Point d'arret sur son Init.
+    if os.environ.get('SPAWN'):
+        INIT = 0x08A5                  # tilemapanim.Init, page 13 (stage2.cast)
+        print('bp :', t.call('set_breakpoint', {'pc': hex(INIT), 'page': 13}),
+              flush=True)
+        for i in range(8):
+            r = t.call('run_to_breakpoint', {'max_instructions': 40000000})
+            hit = isinstance(r, dict) and (r.get('hit') or r.get('reached'))
+            if not hit:
+                print('arret %d : %s' % (i, r), flush=True); break
+            reg = t.call('read_registers', {})
+            uu = int(reg['u'], 16)
+            ext = uu + 38               # object_base_size
+            v = t.read(hex(ext), 5)     # desc(0,1) phase(2) life(3,4)
+            print('spawn %d : U=%04X  desc=%02X%02X  vie=%d'
+                  % (i, uu, v[0], v[1], (v[3] << 8) | v[4]), flush=True)
+            t.call('step', {'count': 1})   # sortir du point d'arret
+        sys.exit(0)
+
+    # QUELS RECTANGLES SONT REELLEMENT ECRITS ? Point d'arret sur tilemap.patch.
+    if os.environ.get('PATCHLOG'):
+        PATCH = sym('gen/common/build/engine.lwmap', 'tilemap.patch', ENGINE)
+        P = {n: sym('gen/common/build/engine.lwmap', 'tilemap.patch.' + n, ENGINE)
+             for n in ('col', 'row', 'cols', 'rows', 'plane')}
+        LOST = sym('gen/common/build/engine.lwmap', 'tilemap.q.lost', ENGINE)
+        t.call('set_breakpoint', {'pc': hex(PATCH)})
+        vus = {}
+        for i in range(60):
+            r = t.call('run_to_breakpoint', {'max_instructions': 20000000})
+            if not (isinstance(r, dict) and r.get('hit')):
+                print('plus d arret : %s' % r, flush=True); break
+            k = tuple(t.read(hex(P[n]), 1)[0] for n in ('col', 'row', 'cols', 'rows'))
+            vus[k] = vus.get(k, 0) + 1
+            t.call('step', {'count': 1})
+        print('rectangles ecrits (col,row,cols,rows) -> nombre :')
+        for k in sorted(vus): print('   %-16s %d' % (str(k), vus[k]))
+        print('perdus (ring plein) : %d' % t.read(hex(LOST), 1)[0])
+        sys.exit(0)
+
+    if os.environ.get('TUBE'):
+        # LE RECTANGLE ENTIER (4x4). Lire un seul coin ne suffit pas : le
+        # pourtour est du rocher, identique dans les deux poses — seul le
+        # centre s'ouvre.
+        TC, TR, TW, TH = 83, 6, 4, 4
+        def tubecells():
+            out = []
+            for c in range(TW):
+                out += t.read(hex(base + (TC + c) * vr * 3 + TR * 3), TH * 3)
+            return out
+        last = None
+        runs = []
+        cur = None
+        for i in range(240):
+            t.call('run_frames', {'n': 25, 'timeout_ms': 600000})
+            for _ in range(20):
+                r = t.call('run_until_pc', {'pc': '%04X' % SAFE, 'max_instructions': 400000})
+                if isinstance(r, dict) and r.get('reached'): break
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
+            cells = tubecells()
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
+            changed = last is not None and cells != last
+            last = cells
+            if changed:
+                if cur is None: cur = [i, i]
+                else: cur[1] = i
+            elif cur is not None and i - cur[1] > 2:
+                runs.append(tuple(cur)); cur = None
+        if cur is not None: runs.append(tuple(cur))
+        print("salves d'animation du tube 0, en trames depuis le debut du combat :")
+        for a, z in runs:
+            print('   %5d .. %5d   (%d trames)' % (a * 25, z * 25, (z - a + 1) * 25))
+        print('%d salves — une animation continue en donnerait UNE seule' % len(runs))
+        sys.exit(0)
+
     seen = []
     shots = 0
     for i in range(200):
