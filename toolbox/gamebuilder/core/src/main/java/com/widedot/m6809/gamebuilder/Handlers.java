@@ -352,6 +352,8 @@ public final class Handlers {
 			.req("tiles", STRING, "the file hosting the LEVEL's tiles : the restore names those, so nothing is compiled twice")
 			.req("variant", STRING, "compiled tile variant of those tiles")
 			.req("gensource", STRING, "generated source file")
+			.opt("genhead", STRING, "generated source of the TABLE HEAD alone, to assemble into the stage's RESIDENT unit : tilemap.restore reads it without mounting a page, so it must not live with the map")
+			.opt("headsection", STRING, "section of that head, code if omitted")
 			.opt("section", STRING, "section of the table, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("rect").doc("one patchable rectangle of the map, inside <tilereset>")

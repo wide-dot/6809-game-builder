@@ -2419,7 +2419,8 @@
                         <tilereset map="gen/stages/02/map/even.bin" maprows="15"
                                    label="stage2.reset"
                                    tiles="stage2.tiles.even" variant="ND0"
-                                   gensource="gen/stages/02/reset.asm">
+                                   gensource="gen/stages/02/reset.asm"
+                                   genhead="gen/stages/02/reset-head.asm">
                             <rect col="87" row="7"  cols="2" rows="2"/>
                             <rect col="83" row="6"  cols="4" rows="4"/>
                             <rect col="82" row="11" cols="4" rows="4"/>
@@ -2508,6 +2509,12 @@
                         <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
+                        <!-- La TETE de la table de restauration. Elle vit ici,
+                             dans le resident du stage, et non avec la carte :
+                             tilemap.restore la lit sans monter de page. Les
+                             descripteurs qu'elle nomme, eux, restent dans le
+                             direntry de la carte — flush ira les chercher. -->
+                        <asm filename="gen/stages/02/reset-head.asm"/>
                         <!-- La palette dediee du stage : 12 communs + 4 cases propres,
                              ecrite par arcade_to_in.py (mode pal-next) depuis la MEME
                              affectation que map/in.png : l'accord est garanti. -->

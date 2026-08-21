@@ -137,17 +137,13 @@ tilemap.resetTable    fdb   0        ; pose par le setup du stage ; 0 = ce stage
 tilemap.restore
         ldx   tilemap.resetTable
         beq   @rts
-* LA TABLE EST PAGINEE, elle aussi. Elle vit avec les descripteurs qu'elle
-* nomme, donc dans le direntry de la carte : la lire sans monter cette page
-* rend les octets qui trainent la, et le compte comme les entrees sont alors
-* du hasard. Quatrieme fois que ce piege mord — d'ou le montage explicite ici
-* aussi, et non parce que « ca ne coute rien ».
-        _GetCartPageA
-        sta   tilemap.patch.saved
-        lda   scroll_map_page_even
-        _SetCartPageA
+* LA TETE DE TABLE N'EST PAS PAGINEE. Elle vit dans l'unite RESIDENTE du
+* stage (<tilereset genhead>), separee des descripteurs qu'elle nomme : ceux-la
+* restent avec la carte, et c'est tilemap.flush — le seul endroit du module qui
+* monte une page — qui ira les lire. La restauration n'est donc qu'une copie
+* d'octets, et ne peut plus lire le compte a travers la mauvaise page.
         lda   ,x+                      ; le nombre de rectangles
-        beq   @none
+        beq   @rts
         cmpa  #tilemap.q.LEN
         bls   @take
         lda   #tilemap.q.LEN           ; l'anneau borne la restauration ; le
@@ -161,13 +157,9 @@ tilemap.restore
         sta   ,u+
         leay  -1,y
         bne   @copy
-        lda   tilemap.patch.saved      ; rendre la page avant le drain, qui
-        _SetCartPageA                  ; remontera la sienne
         jmp   tilemap.flush            ; applique TOUT DE SUITE : deux trames
                                        ; plus tard, le joueur aurait vu le
                                        ; decor patche sous le READY
-@none   lda   tilemap.patch.saved
-        _SetCartPageA
 @rts    rts
 
 * ---------------------------------------------------------------------------

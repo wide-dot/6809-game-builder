@@ -232,6 +232,46 @@ each.
 `rows` rather than trusting it : an unresolved symbol reads as a silent zero in
 this project, and here that zero would run 256 columns of 256 bytes.
 
+### Putting the level back : `<tilereset>`
+
+The map in RAM is the only copy, and a checkpoint return reloads nothing. Left
+alone, the decor would stay frozen in whatever frame was painted last. So the
+level ships a way back : `<tilereset>` takes a list of map rectangles and emits
+descriptors whose cells are **the level's own tiles** — pointers to what the
+map already carries, nothing compiled twice. `tilemap.restore` copies the
+ready-made entries into the ring and drains it on the spot, because two frames
+later the player would have seen the patched decor under the READY.
+
+**The head and the body do not live together.** The head is a count and one
+ring entry per rectangle ; the body is the descriptors, their tables and their
+blocks. The body belongs with the map, in its direntry, where `tilemap.flush`
+already mounts a page to read descriptors. The head is read by
+`tilemap.restore`, which mounts nothing — so it goes in the stage's **resident**
+unit, named by `genhead` and assembled there:
+
+```xml
+<tilereset map="…/map/even.bin" maprows="15" label="stage2.reset"
+           tiles="stage2.tiles.even" variant="ND0"
+           gensource="gen/stages/02/reset.asm"
+           genhead="gen/stages/02/reset-head.asm">
+    <rect col="87" row="7" cols="2" rows="2"/>
+</tilereset>
+```
+
+```xml
+<asm filename="gen/stages/02/reset-head.asm"/>   <!-- dans l'unité résidente -->
+```
+
+Keeping the head with the body cost a page mount inside `restore` — the fourth
+time in this module that an indirect read was taken on the wrong side of one.
+Splitting it removes the mount rather than working around it, and the reference
+costs nothing at load time : the head names five descriptors that have exactly
+one provider each, so the builder bakes them as literals.
+
+The author decides which rectangles are restorable. Nothing checks that an
+animated rectangle appears in the list — that constraint would tie the two
+declarations together for no gain.
+
 ### Validation
 
 `examples/tilescroll` runs a 2×2 rectangle of four frames over the scrolling

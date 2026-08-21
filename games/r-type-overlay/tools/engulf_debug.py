@@ -125,6 +125,76 @@ if os.environ.get('WATCH'):
             t.call('step', {'count': 1})   # sortir du point d'arret
         sys.exit(0)
 
+    # LA TETE DE TABLE EST-ELLE LISIBLE SANS MONTER DE PAGE ? Elle vit
+    # maintenant dans l'unite residente du stage (page 1, non paginee).
+    if os.environ.get('HEAD'):
+        HEAD = 0x8000 + 0x0668        # stage2.reset, stage02-main.lwmap
+        h = t.read(hex(HEAD), 16)
+        print('tete @%04X : %d rectangles' % (HEAD, h[0]))
+        for k in range(h[0]):
+            d = (h[1 + k * 3] << 8) | h[2 + k * 3]
+            print('   d%d = %04X  image %d' % (k, d, h[3 + k * 3]))
+        sys.exit(0)
+
+    # LA RESTAURATION REMET-ELLE LE DECOR DU NIVEAU ? On note l'etat livre,
+    # on laisse l'animation le salir, puis on APPELLE tilemap.restore — en
+    # posant l'adresse de retour sur la pile — et on recompare.
+    if os.environ.get('RESTORE'):
+        RESTORE = sym('gen/common/build/engine.lwmap', 'tilemap.restore', ENGINE)
+        TC, TR, TW, TH = 83, 6, 4, 4
+        B1 = 0x2208                    # stage2.reset.b1, stage2-maps.lwmap ;
+                                       # map.even y est a l'offset 0, donc la
+                                       # base de l'unite est celle de la carte
+        def mounted(fn):
+            for _ in range(20):
+                r = t.call('run_until_pc', {'pc': '%04X' % SAFE,
+                                            'max_instructions': 400000})
+                if isinstance(r, dict) and r.get('reached'): break
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
+            out = fn()
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
+            return out
+        def cells():
+            return mounted(lambda: [b for c in range(TW)
+                                    for b in t.read(hex(base + (TC + c) * vr * 3
+                                                        + TR * 3), TH * 3)])
+        # LA VERITE DE TERRAIN est le bloc que <tilereset> a rempli depuis le
+        # .bin du niveau : exactement ce que la carte portait a la livraison.
+        # Le lire evite de prendre pour reference un etat deja anime — ce que
+        # faisait ma premiere version de cette sonde, qui comparait donc du
+        # bruit a du bruit.
+        livre = mounted(lambda: t.read(hex(base + B1), TW * TH * 3))
+        sale = None
+        for i in range(200):
+            t.call('run_frames', {'n': 10, 'timeout_ms': 600000})
+            c = cells()
+            if c != livre:
+                sale = c
+                print('le decor est sali apres %d trames' % (i * 10), flush=True)
+                break
+        if sale is None:
+            raise SystemExit('le tube ne s est jamais anime — rien a restaurer')
+        reg = t.call('read_registers', {})
+        pc0, s0 = reg['pc'], int(reg['s'], 16)
+        sp = s0 - 2
+        t.call('write_memory', {'addr': hex(sp), 'bytes': [pc0[0:2], pc0[2:4]]})
+        t.call('set_register', {'reg': 's', 'value': hex(sp)})
+        t.call('set_register', {'reg': 'pc', 'value': hex(RESTORE)})
+        t.call('set_breakpoint', {'pc': pc0, 'page': 1})
+        print('appel de tilemap.restore @%04X, retour en %s' % (RESTORE, pc0),
+              flush=True)
+        print('  ', t.call('run_to_breakpoint', {'max_instructions': 2000000}),
+              flush=True)
+        t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
+        apres = [b for c in range(TW)
+                 for b in t.read(hex(base + (TC + c) * vr * 3 + TR * 3), TH * 3)]
+        t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
+        print('restaure == livre : %s' % (apres == livre))
+        if apres != livre:
+            for n, v in (('livre', livre), ('sale', sale), ('apres', apres)):
+                print('  %-7s %s' % (n, ' '.join('%02X' % c for c in v[:18])))
+        sys.exit(0)
+
     # QUELS RECTANGLES SONT REELLEMENT ECRITS ? Point d'arret sur tilemap.patch.
     if os.environ.get('PATCHLOG'):
         PATCH = sym('gen/common/build/engine.lwmap', 'tilemap.patch', ENGINE)

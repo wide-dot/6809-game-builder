@@ -30,7 +30,6 @@ Pal_black         EXPORT
 ; residente des que le niveau est entier. Le scroll porte deja une page par
 ; plan de carte, donc il suffit de les lui designer.
 map.even          EXTERNAL
-stage2.reset      EXTERNAL
 map.odd           EXTERNAL
 
 ; La wave vit dans le comblement du pageset des tuiles impaires : sa page est
@@ -313,6 +312,9 @@ stage.setup
 
         ; Les zones que les animations de decor peuvent ecraser, et de quoi les
         ; remettre a l'etat du niveau au retour de checkpoint (<tilereset>).
+        ; La tete de table est assemblee DANS cette unite (genhead) : c'est un
+        ; label ordinaire, ni export ni link data, et tilemap.restore la lit
+        ; sans rien monter.
         ldd   #stage2.reset
         std   tilemap.resetTable
 
