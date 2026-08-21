@@ -63,6 +63,20 @@
                         <tilemap map="src/assets/maps/map.bin" label="map.odd"
                                  tiles="assets.tiles" variant="ND1"
                                  gensource="gen/assets/maps/map_odd.asm"/>
+                        <!-- The decor animation : the same index-map shape,  -->
+                        <!-- frames laid side by side, turned into the blocks -->
+                        <!-- tilemap.patch writes into the map and the        -->
+                        <!-- descriptor its sequencer reads. One per plane,   -->
+                        <!-- like the maps above and for the same reason —    -->
+                        <!-- the two planes point at different tiles.         -->
+                        <tilepatch map="src/assets/maps/patch.bin" label="patch.even"
+                                   tiles="assets.tiles" variant="ND0"
+                                   cols="2" rows="2" frames="4" col="4" row="2" hold="8"
+                                   gensource="gen/assets/maps/patch_even.asm"/>
+                        <tilepatch map="src/assets/maps/patch.bin" label="patch.odd"
+                                   tiles="assets.tiles" variant="ND1"
+                                   cols="2" rows="2" frames="4" col="4" row="2" hold="8"
+                                   gensource="gen/assets/maps/patch_odd.asm"/>
                     </lwasm>
                 </file>
 

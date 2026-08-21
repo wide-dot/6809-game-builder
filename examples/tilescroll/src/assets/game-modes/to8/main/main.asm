@@ -125,6 +125,18 @@ main
 
         jsr   InitScroll
 
+        ; L'ANIMATION DE DECOR. Le rectangle 2x2 en (4,2) de la carte cycle sur
+        ; quatre images, huit trames video chacune. Les deux plans sont
+        ; declares : la camera derive ici, donc sa parite change et les deux
+        ; cartes sont lues tour a tour — un seul plan anime clignoterait une
+        ; trame sur deux, ce qui est justement le defaut qu'on veut voir si on
+        ; se trompe. Elle repart en boucle, alternee, dans la boucle de jeu.
+        ldx   #patch.state
+        ldy   #patch.even
+        ldu   #patch.odd
+        clrb                               ; sens avant
+        jsr   tilemap.anim.start
+
         ; terrain collision : point the resident wrappers at the mounted unit
         _terrainCollision.init objid.terrain
 
@@ -205,6 +217,23 @@ mainLoop
         ; DrawTiles does the painting. They sit on either side of the lock,
         ; because only the second one touches the screen.
         jsr   Scroll
+
+        ; Le decor anime, hors du verrou comme Scroll : il ne touche que la
+        ; table de carte, et c'est DrawTiles qui peindra le resultat. Au bout
+        ; de la sequence on repart dans l'autre sens — un aller-retour continu
+        ; rend une image sautee ou repetee visible a l'oeil, et le banc n'a
+        ; pas a etre relance a la main.
+        ldx   #patch.state
+        jsr   tilemap.anim.step
+        bne   >
+        ldx   #patch.state
+        lda   tilemap.anim.dir,x
+        eora  #1
+        tfr   a,b
+        ldy   #patch.even
+        ldu   #patch.odd
+        jsr   tilemap.anim.start
+!
         _gfxlock.on
         jsr   DrawTiles
         _gfxlock.off
@@ -243,6 +272,7 @@ Obj_Index_Address
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
 
  ENDSECTION
@@ -253,6 +283,10 @@ Obj_Index_Address
 ; nothing at load time. The code above reaches map.even/map.odd across
 ; sections, which stays an ordinary intern relocation. Only the geometry
 ; comes from source :
+patch.even  EXTERNAL
+patch.odd   EXTERNAL
+patch.state rmb tilemap.anim.SIZE
+
         INCLUDE "src/assets/maps/map.const.asm"
 
 ; a v2 module, which brings its own section

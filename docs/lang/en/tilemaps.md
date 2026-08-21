@@ -128,3 +128,76 @@ poison tile 0 that must never appear, a diagonal that breaks visibly on any
 The real-data shape is confirmed against r-type : level 1 maps decode to
 132×15 entries over 245/304 tiles, level 2 to 96×15 over 191/230, empties
 dominating both.
+
+## Animating the decor : `tilemap.patch`
+
+A map cell is a pointer, not an id, so animating scenery is rewriting those
+pointers in place — the next `DrawTiles` paints the result. This is what the
+arcade does : R-Type repaints a rectangle of its background tilemap to swallow
+the Outslay into Gomander's tube (`gomander_helper_blit_recipe` at 0x40:A578,
+6×4 cells of `(tile_id, attr)`), and the Warship's wrecks work the same way.
+
+It is also the *only* way to put moving art behind a sprite : the decor is
+painted after the sprites, so a tilemap animation covers them, where a sprite
+never could.
+
+### The runtime
+
+`engine/graphics/tilemap/patch/tilemap-patch.asm` holds two layers.
+
+`tilemap.patch` writes one rectangle into one plane. Because the map is column
+major, a column of the rectangle is contiguous on **both** sides, so each
+column is a straight block copy — that is what keeps the routine short. It
+mounts the map's page and restores the caller's, so the source block must be
+directly addressable : resident, or a page already mounted. That costs
+nothing, since a block is three bytes per cell — eight frames of 2×2 weigh 96
+bytes, while the *tiles* they name weigh kilobytes.
+
+`tilemap.anim.start` / `.step` / `.apply` play a sequence over that primitive.
+The clock advances by `gfxlock.frameDrop.count` and the rectangle is written
+only when the frame actually changes ; a late loop catches up by frames and
+paints once, on the frame it lands on.
+
+**One animation, two planes, one clock.** The scroll reads `map.even` or
+`map.odd` by camera parity and the two point at different tiles, so an
+animation carries a descriptor for each — stepping two states would run the
+clock twice. A boss that stops the scroll freezes the parity and can declare
+the odd descriptor as 0.
+
+Where the arcade keeps a forward table and a reverse table over the same
+payloads, the engine keeps one table and a direction flag : the reading order
+is a property of the reading, not of the data.
+
+### The build chain
+
+Draw the frames **side by side** in one picture, cut it with `<leanscroll>`
+exactly like a level — the frames then land as a contiguous run per frame in
+the column-major index map, which is what lets the builder slice by range.
+Compile the strip with `<gfxcomp grid>`, then :
+
+```xml
+<tilepatch map="gen/engulf/even.bin" label="engulf.even"
+           tiles="stage2.engulf.tiles.even" variant="ND0"
+           cols="2" rows="2" frames="8" col="47" row="5" hold="2"
+           gensource="gen/engulf/even.asm"/>
+```
+
+One invocation per plane, like `<tilemap>` and for the same reason. Each index
+becomes the same three-byte entry, baked against the tiles' declared
+placement, so an animation costs no load-time link data. Index 0 keeps its
+meaning — the cell draws nothing — which on a patch is a usable effect : it
+erases.
+
+**Use a tileset of its own.** Measured on the arcade's engulf : 161 distinct
+tile ids over 192 cells, and only 4 cells frozen across the eight frames. A
+decor animation is bespoke pixels, not a recombination of the level's tiles,
+so it shares almost nothing with the level and a common pool would save
+nothing while coupling the animation's art to the level's tile numbering.
+
+### Validation
+
+`examples/tilescroll` runs a 2×2 rectangle of four frames over the scrolling
+test map, both planes, bouncing forward and back. The pattern is built so both
+properties are readable : the four cells of a frame carry four *different*
+tiles, so a row/column mix-up shows as a transposition, and the four rotate by
+one per frame, so the sequence can be read from any single cell.

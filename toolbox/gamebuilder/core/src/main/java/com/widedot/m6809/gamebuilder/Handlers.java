@@ -304,6 +304,7 @@ public final class Handlers {
 		// output must stay continuous (5d)
 		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
+		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as file content
@@ -323,6 +324,20 @@ public final class Handlers {
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map if omitted")
+			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("tilepatch").doc("generate the animation blocks tilemap.patch writes into a scroll map, and the descriptor its sequencer reads, baked in a .static section")
+			.req("map", STRING, "tile index .bin of the frame strip (leanscroll output), frames laid side by side, column major")
+			.req("label", STRING, "label of the generated descriptor")
+			.req("tiles", STRING, "the file hosting the tiles : entries reference adr_<host>_<id>_<variant>")
+			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
+			.req("cols", INT, "width of one frame, in map cells")
+			.req("rows", INT, "height of one frame, in map cells")
+			.req("frames", INT, "number of frames in the strip")
+			.req("gensource", STRING, "generated source file")
+			.opt("col", INT, "destination column in the map, 0 if omitted")
+			.opt("row", INT, "destination row in the map, 0 if omitted")
+			.opt("hold", INT, "video frames each animation frame is held, 1 if omitted")
+			.opt("section", STRING, "section of the blocks, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("imageset").doc("index of an imageset whose drawing code is spread over pages, baked in a .static section")
 			.req("name", STRING, "imageset name, as declared by the <gfxcomp imageset> that compiled the images")
