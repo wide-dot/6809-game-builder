@@ -111,6 +111,14 @@ dobkeratops_eye_hitdamage equ 1
 ; Seul le CORPS est vulnerable et il meurt au premier coup (933c zerote
 ; [+0x1f] a l'install et body_tick ne le rearme jamais) ; tete, cou, queue,
 ; finalizer et cadavre reappliquent l'immunite a chaque trame (929b/929f).
+; Gomander (boss du stage 2). L'arcade teste la boite de l'ORBE, son point
+; faible : les 8 premiers octets de gomander_orb_sprite_offsets (1000:54ea)
+; donnent -16..+16 en X et -8..+8 en Y, arcade -> 16*0.375 = 6 et 8*0.75 = 6.
+; 8 PV (a256), mais UN coup par exposition : voir gomander/obj.asm.
+gomander_hitbox_x	equ 6
+gomander_hitbox_y	equ 6
+gomander_hitdamage	equ 8
+
 outslay_hitbox_x	equ 6
 outslay_hitbox_y	equ 12
 outslay_hitdamage	equ 1

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Releve de cadence du stage 3, trame video par trame video.
+"""Releve de cadence d'un stage, trame video par trame video.
 
-    TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 \
+    TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 STAGE=2 \
     python3 tools/warship_fps.py dist/to8.fd [out_dir]
+
+Le stage se choisit par la variable STAGE (defaut 3, le releve d'origine du
+cuirasse). STAGE_FRAMES borne le releve, STEP donne la largeur de fenetre.
 
 Aucune instrumentation dans le jeu : le temoin `bench.frames` ($87DD) est
 incremente une fois par TOUR DE BOUCLE de `stage.loop` (stage-main.asm, juste
@@ -56,7 +59,8 @@ def cheat_state_addr():
             return page, addr + int(m2.group(1), 16)
     raise SystemExit('tct.pstage absent')
 
-out = sys.argv[2] if len(sys.argv) > 2 else 'dist/warship-fps'
+STAGE = int(os.environ.get('STAGE', '3'))
+out = sys.argv[2] if len(sys.argv) > 2 else 'dist/stage%d-fps' % STAGE
 os.makedirs(out, exist_ok=True)
 
 t = Toje()
@@ -94,8 +98,8 @@ def safe_point(tries=40):
 
 safe_point()
 t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % (0x60 + page)]})
-t.call('write_memory', {'addr': hex(addr), 'bytes': ['03', '01']})   # stage 3 + invincible
-ok = t.read(hex(addr), 2) == [3, 1]
+t.call('write_memory', {'addr': hex(addr), 'bytes': ['%02X' % STAGE, '01']})  # stage + invincible
+ok = t.read(hex(addr), 2) == [STAGE, 1]
 t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
 if not ok:
     raise SystemExit('le cheat n a pas pris')
@@ -107,16 +111,16 @@ t.call('press_key', {'scancode': '0F', 'down': False})
 for _ in range(12):
     t.call('run_frames', {'n': 500, 'timeout_ms': 600000})
     b = t.read(hex(BENCH), 3)
-    if b[0] == 0xCA and b[1] == 3:
+    if b[0] == 0xCA and b[1] == STAGE:
         break
-    if b[0] == 0xCA and b[1] not in (0, 3):
+    if b[0] == 0xCA and b[1] not in (0, STAGE):
         raise SystemExit('parti au stage %d — le cheat n a pas tenu' % b[1])
 else:
-    raise SystemExit('le stage 3 n a jamais seme son bloc')
+    raise SystemExit('le stage %d n a jamais seme son bloc' % STAGE)
 
 inv = t.read(hex(INV), 1)[0]
-print('stage 3 en place — cheat.invincible = %d %s'
-      % (inv, 'OK' if inv else '*** NON ***'), flush=True)
+print('stage %d en place — cheat.invincible = %d %s'
+      % (STAGE, inv, 'OK' if inv else '*** NON ***'), flush=True)
 if not inv:
     raise SystemExit('invincible non arme')
 
@@ -146,8 +150,8 @@ while n < BUDGET:
     r = t.call('run_frames', {'n': STEP, 'timeout_ms': 600000})
     n += STEP
     b = t.read(hex(BENCH), 5)
-    if b[1] != 3:
-        print('le stage 3 a rendu la main a la trame %d' % n, flush=True)
+    if b[1] != STAGE:
+        print('le stage %d a rendu la main a la trame %d' % (STAGE, n), flush=True)
         break
     inc = (b[2] - prev_loop) & 0xFF
     prev_loop = b[2]
@@ -184,7 +188,7 @@ total = total_loops
 avg = total * 50.0 / span
 serie = [(r['trame'] * 1.0 / 50.0, r['fps']) for r in rows]
 hist = Counter(r['fps'] for r in rows)
-print('\n=== CADENCE DU STAGE 3 ===')
+print('\n=== CADENCE DU STAGE %d ===' % STAGE)
 print('boucles de jeu : %d' % total)
 print('trames video   : %d  (%.1f s)' % (span, span / 50.0))
 print('fps moyen      : %.2f   (soit %.2f trames video par boucle)'
@@ -199,87 +203,10 @@ json.dump(dict(loops=total, frames=span, fps_moyen=avg, step=STEP,
                hist={str(k): v for k, v in hist.items()}),
           open(os.path.join(out, 'resume.json'), 'w'), indent=1)
 
-# --- le graphe (SVG, sans dependance) ------------------------------------
-W, H = 1180, 640
-ML, MR, MT, MB = 66, 26, 96, 262
-PW, PH = W - ML - MR, H - MT - MB
-xmax = max(x for x, _ in serie)
-ymax = 14.0
-
-def X(v): return ML + PW * v / xmax
-def Y(v): return MT + PH * (1 - min(v, ymax) / ymax)
-
-sv = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
-      'viewBox="0 0 %d %d" font-family="ui-sans-serif,system-ui,sans-serif">' % (W, H, W, H),
-      '<rect width="%d" height="%d" fill="#12141a"/>' % (W, H),
-      '<text x="%d" y="34" fill="#e8eaf0" font-size="19" font-weight="600">'
-      'R-Type TO8 — cadence du stage 3 (couche battleship)</text>' % ML,
-      '<text x="%d" y="56" fill="#8b93a7" font-size="12.5">'
-      '%d boucles de jeu sur %d trames video (%.0f s) — mode invincible, sans joueur. '
-      'Moyenne %.2f fps, soit %.2f trames video par boucle.</text>'
-      % (ML, total, span, span / 50.0, avg, 50.0 / avg),
-      '<text x="%d" y="75" fill="#8b93a7" font-size="12.5">'
-      'Une boucle = un tour de stage.loop (temoin bench.frames, $87DD). '
-      'Chaque point = les boucles terminees dans une fenetre de %d trames video.</text>'
-      % (ML, STEP)]
-
-for v in (12.5, 10, 50/6.0, 50/7.0, 50/8.0):
-    y = Y(v)
-    sv.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#2b3040" '
-              'stroke-width="1" stroke-dasharray="4 4"/>' % (ML, y, ML + PW, y))
-    sv.append('<text x="%.1f" y="%.1f" fill="#5d6579" font-size="10.5" text-anchor="end">'
-              '%.1f</text>' % (ML - 8, y + 3.5, v))
-    sv.append('<text x="%.1f" y="%.1f" fill="#3f4657" font-size="10">'
-              '%d trames video / boucle</text>' % (ML + PW - 118, y - 5, round(50.0 / v)))
-
-for sec in range(0, int(xmax) + 1, 15):
-    x = X(sec)
-    sv.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#20242f"/>'
-              % (x, MT, x, MT + PH))
-    sv.append('<text x="%.1f" y="%.1f" fill="#5d6579" font-size="10.5" '
-              'text-anchor="middle">%d s</text>' % (x, MT + PH + 17, sec))
-
-for f in rows_load:
-    x = X(f / 50.0)
-    sv.append('<rect x="%.1f" y="%.1f" width="6" height="%.1f" fill="#ff6b6b" opacity="0.30"/>'
-              % (x - 3, MT, PH))
-sv.append('<text x="%.1f" y="%.1f" fill="#ff6b6b" font-size="10.5">'
-          '| chargement disque (%d)</text>' % (ML + PW - 150, MT - 6, len(rows_load)))
-pts = ' '.join('%.1f,%.1f' % (X(a), Y(b)) for a, b in serie)
-sv.append('<polygon points="%.1f,%.1f %s %.1f,%.1f" fill="#4ea3ff" opacity="0.13"/>'
-          % (ML, MT + PH, pts, ML + PW, MT + PH))
-sv.append('<polyline points="%s" fill="none" stroke="#4ea3ff" stroke-width="1.5" '
-          'stroke-linejoin="round"/>' % pts)
-sv.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#ffb454" stroke-width="1.4"/>'
-          % (ML, Y(avg), ML + PW, Y(avg)))
-sv.append('<text x="%.1f" y="%.1f" fill="#ffb454" font-size="11">moyenne %.2f fps</text>'
-          % (ML + 8, Y(avg) - 7, avg))
-sv.append('<text x="16" y="%.1f" fill="#8b93a7" font-size="11" '
-          'transform="rotate(-90 16 %.1f)" text-anchor="middle">images par seconde</text>'
-          % (MT + PH / 2, MT + PH / 2))
-
-hy = MT + PH + 66
-sv.append('<text x="%d" y="%d" fill="#e8eaf0" font-size="14" font-weight="600">'
-          'Repartition</text>' % (ML, hy))
-sv.append('<text x="%d" y="%d" fill="#8b93a7" font-size="11.5">'
-          'part du temps passe a chaque cadence (fenetres de %d trames)</text>'
-          % (ML, hy + 17, STEP))
-ks = sorted(hist)
-bw = min(132, int(PW / max(1, len(ks))))
-bx = ML
-for k in ks:
-    pct = 100.0 * hist[k] / len(rows)
-    bh = 96 * pct / max(hist.values()) * len(rows) / 100.0
-    bh = 96 * hist[k] / max(hist.values())
-    sv.append('<rect x="%.1f" y="%.1f" width="%d" height="%.1f" fill="#4ea3ff" rx="2"/>'
-              % (bx, hy + 138 - bh, bw - 12, bh))
-    sv.append('<text x="%.1f" y="%.1f" fill="#e8eaf0" font-size="11" text-anchor="middle">'
-              '%.0f %%</text>' % (bx + (bw - 12) / 2, hy + 132 - bh, pct))
-    sv.append('<text x="%.1f" y="%.1f" fill="#8b93a7" font-size="11" text-anchor="middle">'
-              '%.0f</text>' % (bx + (bw - 12) / 2, hy + 155, k))
-    bx += bw
-sv.append('<text x="%.1f" y="%.1f" fill="#5d6579" font-size="10.5">fps</text>'
-          % (ML, hy + 172))
-sv.append('</svg>')
-open(os.path.join(out, 'fps.svg'), 'w').write('\n'.join(sv))
+# --- le graphe : sorti dans tools/fps_plot.py, pour pouvoir le refaire depuis
+# un fps.csv deja pris (comparer deux releves ne doit pas coter deux campagnes)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fps_plot import plot
+plot(rows, os.path.join(out, 'fps.svg'),
+     'R-Type TO8 — cadence du stage %d' % STAGE)
 print('\nfps.csv + fps.svg + resume.json dans', out)

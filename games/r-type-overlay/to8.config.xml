@@ -245,6 +245,15 @@
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
+            <!-- La zone residente PAR-STAGE (decision auteur, 21/08/2026) : la
+                 bande $92DB-$9DCA de la page 1, apres le mscroll, documentee
+                 dans ram.const.asm comme « la zone par-stage ». Premier
+                 locataire : l'outslay du stage 2 — l'anneau d'historique de
+                 la tete (3 plans de 256 octets : x, y, pose) et les 20 boites
+                 de collision statiques de ses segments (20 x 9). Les equates
+                 miroirs vivent dans src/enemies/outslay/obj.asm, avec un
+                 garde-fou d'accord adresse/taille. -->
+            <reserved name="stage.outslay" page="$01" address="$9A00" size="$03B4"/>
             <reserved name="globals"      page="$01" address="$9DCB" size="$0094"/>
             <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 145 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les

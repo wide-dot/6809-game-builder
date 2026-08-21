@@ -46,6 +46,7 @@ outslay.Object    EXTERNAL
 ; wave. Il porte DEUX identifiants (le corps et la tete/finalizer, dont les
 ; images vivent dans un autre direntry) pour une seule entree de code.
 outslay.Segment   EXTERNAL
+outslay.Render    EXTERNAL
 gomander.Object   EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa

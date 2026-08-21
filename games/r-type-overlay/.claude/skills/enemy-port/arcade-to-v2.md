@@ -21,12 +21,40 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
   144 = largeur visible ; 256×0.75 = 192.
 - Une vitesse arcade en px/trame se convertit par cette échelle et se pose en
   8.8 (`x_sub`/`y_sub`, helpers `moveXPos8.8`/`moveYPos8.8`).
-- **Espaces différents** : l'arcade tient ses positions en repère ÉCRAN — un
-  objet posé au sol « dérive de `scroll_amount` » à chaque trame. La v2 tient
-  `x_pos,u`/`y_pos,u` en repère PLAYFIELD avec
-  `render_playfieldcoord_mask` : l'objet ancré au décor **ne bouge pas**, la
-  caméra passe. Traduction : supprimer les additions de `scroll_amount`,
-  garder seulement le mouvement propre.
+- **Espaces différents, et la question se pose POUR CHAQUE ennemi.** Le
+  mouvement de caméra est **explicite** en arcade : `auto_scroll` (0x40:0467)
+  publie un delta par trame en `0x2ED0..0x2ED6`, et chaque tick d'objet décide
+  de se l'appliquer ou non. En v2 il est **implicite** : un `x_pos,u` en repère
+  PLAYFIELD (`render_playfieldcoord_mask`) recule tout seul quand la caméra
+  avance. Les deux cas sont donc inverses l'un de l'autre, et **le test est
+  mécanique — le tick arcade lit-il `0x2ED0` ?** (`bridge_xrefs_to` sur cette
+  adresse donne la liste complète des objets qui s'y accrochent) :
+  - **il le lit** = ancré au décor. En v2 : ne rien faire, supprimer les
+    additions de `scroll_amount`, garder le mouvement propre.
+  - **il ne le lit pas** = ancré à l'ÉCRAN. Deux transpositions possibles,
+    et le choix dépend de ce que l'objet TOUCHE :
+    1. *Il interagit avec le monde* (terrain, ancrage ponctuel — tabrok en
+       `fall_left`, le joueur, `commonmissile`) : rester en playfield et
+       **rendre le scroll explicite** en tirant l'objet avec la caméra —
+       `x_pos += glb_camera_x_pos - glb_camera_x_pos_old`. Frame-drop-aware
+       par construction, et `Scroll` fige `camera_old` avant d'avancer puis
+       tourne avant `RunObjects` : tous les objets d'une trame lisent le
+       même delta.
+    2. *Il est entièrement piloté par script, sans contact avec le monde*
+       (l'outslay) : **vivre en référence écran NATIVE** (décision auteur,
+       21/08/2026). Compenser la caméra à chaque trame pour un objet qui n'en
+       veut pas, c'est payer pour annuler. `x_pos`/`y_pos` directement dans
+       le cadre 48-207 / 28-227 de `DRS_XYToAddress`, `render_flags` sans le
+       masque playfield (le chemin `@screencoordinates` du moteur lit
+       `xy_pixel` = les octets bas de position) ; `moveByScript` s'en moque,
+       il n'ajoute que des deltas. Tout devient moins cher : le cull en
+       octets (référentiel décalé), la boîte de collision en deux
+       soustractions 8 bits, et un renderer groupé publie ses slots **sans
+       aucune conversion**. Seules les FRONTIÈRES convertissent : ce qui en
+       sort vers le playfield (`foefire`, explosions : `x - 48 + caméra`,
+       `y - 28`, une fois par spawn) et ce qui en entre (le joueur dans un
+       test de portée). L'émetteur d'une chaîne vit dans le même repère que
+       ses segments — c'est lui qui fixe le point de ponte.
 - **La conversion qui fait foi est `re.arcade.r-type` `Conv.java`** :
   `x_v2 = round((x_arcade − 320) × 0.375) + 8` et
   `y_v2 = round((y_arcade − 144) × −0.75) + 190` — l'**axe Y arcade pointe
@@ -154,9 +182,24 @@ géométriquement son aîné. Transposition v2 :
   que celui-ci ne tourne — l'émetteur écrit donc directement dans l'OST du
   petit, comme l'arcade. Limite héritée : rien n'invalide le pointeur quand
   l'aîné rend son slot.
-- **La compensation de frame drop** de l'émetteur se fait en déroulant son
-  pas de script `gfxlock.frameDrop.count` fois (et `wave_frame_drop` fois à
-  l'Init) — pas en compensant dans les délais.
+- **LE TIMING, et c'est là que tout se joue.** L'exemplaire est
+  `bug/obj_main.asm` (`LiveCreator` + `Init`), pas pata-pata. L'échéance du
+  prochain enfant se compte en **trames vidéo**, pas en tours de routine :
+  `lda timer,u / suba gfxlock.frameDrop.count`. Ce dont le compteur **dépasse**
+  zéro — le reste négatif — n'est ni jeté ni réabsorbé dans la période
+  (`addb timer,u` pour recharger, jamais `ldb #période`) : il part avec
+  l'enfant dans `anim_frame_duration`, et l'Init de l'enfant le rattrape par
+  `moveByScript.runByB` avant que le champ ne devienne la vitesse d'anim.
+  L'Init entre ensuite dans son rôle **sans refaire un pas de script**, sinon
+  la trame de naissance compte double.
+  Sans ça, sous un frame drop de 5 (ce que donne le rendu overlay), les écarts
+  d'une chaîne à périodes 10/11 dérivent de 16 à 30 pas au lieu de 20/22 — et
+  surtout l'Init, qui consomme le `wave_frame_drop` de la wave, pose d'un coup
+  autant d'enfants **tous à la position zéro** : 33 trames de retard donnent
+  quatre segments exactement superposés. Vécu sur l'outslay le 21/08/2026.
+  Nuance à garder : `runByB` traite `B = 0` comme `B = 1` (sa garde
+  anti-256-tours), donc tester `tstb / beq` avant l'appel si le retard nul doit
+  vraiment valoir zéro pas.
 - Un émetteur invisible se déclare `priority = 0` et n'appelle jamais
   `DisplaySprite` ; il sort par `UnloadObject_u`, pas `DeleteObject`.
 
@@ -199,6 +242,30 @@ de 600 lignes veut un `lbeq`.
   deux entrées vivent dans la même arène — le builder les place, donc il les
   cuit (`0` octet de données de lien dans le rapport).
 
+## Arrêter le scroll pour un boss
+
+Un boss arcade fige la caméra lui-même — `create_gomander` (0x40:a22e) écrit
+zéro dans les deux vitesses d'autoscroll (`0x2eec`, `0x2ef4`) et son
+`_silent_unload` les relance. En v2, **ne pas transposer ça en baissant
+`scroll_max`** comme le fait le stage 1 : la séquence de fin COMMUNE aux
+stages 2-8 (`obj_endlevel`) déclenche sa victoire sur `camera >= scroll_max`,
+donc baisser le plafond termine le niveau en plein combat. Le stage 1 peut se
+le permettre parce qu'il a sa propre séquence. Poser `scroll_vel` à zéro et le
+restaurer à la sortie est à la fois le geste arcade et le geste sans effet de
+bord.
+
+Deux propriétés à connaître avant de figer quoi que ce soit :
+- `Scroll` applique `scroll_vel` **`gfxlock.frameDrop.count` fois** : la caméra
+  suit le temps réel, pas le nombre de tours de boucle.
+- `DrawTiles` ne repeint que si `glb_camera_move` est levé, et `Scroll` ne le
+  lève que quand la caméra a bougé. En mode overlay le champ est effacé chaque
+  trame, donc un scroll figé effacerait le décor sans le redessiner — la
+  boucle overlay force déjà ce drapeau à 1 avant `DrawTiles`. C'est ce qui rend
+  un boss à l'arrêt possible ; ne pas défaire ce forçage.
+
+Et pour armer la fin : un vrai boss lève `globals.bossDefeated` lui-même, ce
+que `obj_endlevel` honore désormais avant son combat de substitution.
+
 ## Le spawn par la wave (vérifié : `ObjectWave-subtype.asm`)
 
 - Format d'une entrée : `AAAA` horodatage (comparé à `frame.gameCount`),
@@ -212,3 +279,71 @@ de 600 lignes veut un `lbeq`.
   dans le subtype.
 - Plafond : les ObjID d'un ensemble co-chargeable ≤ 127 (`RunObjects`
   indexe par `id*2` sur 8 bits).
+
+## L'attribut de SpriteRecipe, et la profondeur (décodé le 21/08/2026)
+
+`write_1_sprite_b` (0x0040_1BE9) construit un sprite matériel depuis un objet
+et une recette de 6 octets :
+
+```
+[SI+0] Y    = obj.pos_y + (int8) recipe[1]
+[SI+2] tile =              recipe[2..3]
+[SI+4] attr =              recipe[4..5], octet bas remplacé par obj.palette_idx
+[SI+6] X    = obj.pos_x + (int8) recipe[0]
+```
+
+Tout ce qui est authoré **par sprite** et non par objet vit donc dans l'octet
+haut de `recipe[4..5]` :
+
+| bits | champ | conversion v2 |
+|---|---|---|
+| 15-14 | code de **largeur** — largeur = `1 << code` tuiles de 16×16 | dimension de l'imageset |
+| 13-12 | code de **hauteur** — hauteur = `1 << code` | idem |
+| 11 | **miroir horizontal** | `render_xmirror_mask` / variante `XD0` |
+| 10 | **miroir vertical** | `render_ymirror_mask` / variante `YD0` |
+| 9-8 | jamais posés par aucune recette de la ROM | — |
+| 7-0 | palette, authorée à 0 et écrasée au blit | palette de l'objet |
+
+Preuves, pas suppositions :
+
+- **bit 11** — `cancer_sprite_recipes_facing_left` (0x1000_3C32) et
+  `..._facing_right` (0x1000_3C44) portent les **mêmes trois identifiants de
+  tuile** et ne diffèrent que par ce bit (`0x5000` / `0x5800`). Le même
+  appariement gauche/droite se retrouve sur pow-armor, dop et gouger.
+- **codes de taille** — cytron lit `0x5?00` (codes 1 et 1 → 2×2 tuiles =
+  32×32 px) et son cadre arcade extrait fait exactement 32×32 ; wick lit
+  `0x0?00` (1×1 = 16×16) pour un sprite d'une tuile. Lequel est la largeur se
+  tranche sur deux cas asymétriques : `bottom-reactor-flame-straight-down` =
+  `0x2000` → 1 large × 4 haut (une flamme vers le bas), et `horizontal-laser`
+  = `0x4400` → 2 large × 1 haut. Donc **15-14 = largeur, 13-12 = hauteur**.
+- **bits 9-8** — recensement des 1 134 recettes référencées par le catalogue :
+  22 valeurs distinctes seulement, ces deux bits nuls partout.
+  (`re.arcade.r-type --extract-spriteattr`)
+
+### Il n'y a AUCUN bit de priorité
+
+C'est la question qui avait ouvert ce décodage, et la réponse est négative des
+deux côtés :
+
+- côté sprite, tous les bits sont expliqués par la taille et les miroirs ;
+- côté tuile, l'octet d'attribut vaut `0x80 | banque_de_palette` sur **toutes
+  les cellules des huit niveaux** (bit 7 toujours armé, donc pas une catégorie
+  par cellule), et les bits 4-5 du mot d'identifiant sont toujours nuls.
+
+**La profondeur n'est donc pas authorée par objet.** Elle découle de la couche
+dans laquelle une entité se dessine :
+
+| couche | entités | profondeur v2 |
+|---|---|---|
+| **sprite** (`meta_sprite`) | les 33 entités du catalogue : bink, boldo, brood, bug, cancer, compiler, cytron, dobkeratops, dop, geld, gouger, mid, mikun, newt, outslay, p-staff, pata-pata, pow-armor, pursuer, scant, shell, slither, tabrok, wick, win, zoid, foefire, bonus, starfield… | `BuildSprites` |
+| **tilemap** (`tile_script`, `tile_grid`, `tile_recipe`) | l'engloutissement du gomander, l'épave du warship, le panneau de ville — plus les écrivains à l'exécution : le mur de la rotonde du shell, les cellules Bydo de cytron, l'effaceur de tilemap du Dobkeratops, le nettoyage de chambre du Bydo core | profondeur du décor |
+
+Règle de portage : **si l'arcade dessine l'entité dans la tilemap, elle va à la
+profondeur du décor ; si elle passe par `write_1_sprite_*`, elle va dans la
+passe sprites.** Un objet qui doit apparaître *derrière* le décor sans être de
+la tilemap est un choix du portage, pas une donnée arcade — le noter comme
+écart.
+
+Non tranché : l'ordre global entre la couche sprite et le plan de premier plan.
+Il n'est pas dans les données du jeu ; il faudra le lire dans le pilote vidéo
+M72 ou l'observer sous MAME.

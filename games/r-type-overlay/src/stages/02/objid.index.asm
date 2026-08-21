@@ -45,6 +45,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_head
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -94,6 +95,7 @@ Obj_Index_Address
         fdb   gomander.Object ; ObjID_gomander
         fdb   outslay.Segment ; ObjID_outslay_segment
         fdb   outslay.Segment ; ObjID_outslay_head
+        fdb   outslay.Render ; ObjID_outslay_render
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -137,6 +139,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_head
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -180,6 +183,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_gomander
         fdb   Ani_Asd_none ; ObjID_outslay_segment
         fdb   Ani_Asd_none ; ObjID_outslay_head
+        fdb   Ani_Asd_none ; ObjID_outslay_render
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -233,6 +237,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
         fcb   map.RAM_OVER_CART+stage2.cast.imgHead.page ; ObjID_outslay_head
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

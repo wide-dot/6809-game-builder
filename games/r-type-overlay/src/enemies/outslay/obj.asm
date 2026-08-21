@@ -3,20 +3,10 @@
 ;
 ; FICHE DE PORTAGE (source : base Ghidra `maincpu`, subsystem actor/outslay)
 ; -------------------------------------------------------------------------
-; L'outslay n'est pas UN objet mais une CHAINE. Un emetteur invisible pose,
-; a intervalles, 22 segments qui partagent le MEME script de mouvement,
-; rejoue chacun depuis son debut a la position de l'emetteur : le segment n
-; refait le chemin avec n x ~10 trames de retard, et le serpent suit sa tete
-; a la file. Rien d'autre ne relie les segments geometriquement.
-;
-;   40:915b create_outslay ............... l'emetteur (outslay.Object)
-;   40:91cc tick_outslay_segment_chain ... deroule le script de chaine
-;   1000:40c6 outslay_segment_spawn_script  (handler, delai) x 22 :
-;             tete(10) cou(10) 17 x corps(11) corps(10) queue(10)
-;             finalizer(0 = terminateur, l'emetteur se decharge ensuite)
-;             ECART DE LA BASE GHIDRA : sa plate annonce 21 entrees / 84
-;             octets ; les octets en donnent 22 / 88 — la table court de
-;             0x40c6 a 0x411e, ou commence outslay_bydo_shot_table_loop1.
+;   40:915b create_outslay ............... le MAITRE (outslay.Object)
+;   40:91cc tick_outslay_segment_chain ... le script de chaine (RecInit ici)
+;   1000:40c6 outslay_segment_spawn_script  22 spawns : tete, cou, 18 corps,
+;             queue, finalizer — delais 10/11, CUMULES dans RecInit
 ;   1000:4086 outslay_spawn_variant_table   8 variantes (script, X, Y)
 ;   40:9246 / 925b  head_install  / head_tick       (invulnerable)
 ;   40:92c3 / 92d8  neck_install  / neck_tick       (invulnerable)
@@ -28,574 +18,1063 @@
 ;   40:9569         silent_unload                   (fin de script)
 ;   1000:427c       outslay_aabb                    16x16 arcade, centree
 ;
-; LA VARIANTE DU STAGE 2. La wave ne cite l'outslay qu'une fois
-; ($0E88, subtype $0004) : bits 0-2 = 4 -> variante 4 du spawn table,
-; script de mouvement 1000:a652 (= anim_1A652), X 0x2c8, Y 0x130 ; bit 2
-; mis -> l'horloge de tir de la tete est forcee a $C0 (91af). Les sept
-; autres variantes servent au combat contre Gomander, qui pose ses outslay
-; par outslay_wavescript_tick (40:a5a4) en coordonnees ECRAN — elles
-; n'ont pas de sens dans le repere playfield de la v2, et attendent le
-; portage du boss. Rangees arcade, pour memoire :
-;   0: a4e6 (452,265)  1: a530 (568,264)  2: a56e (408,176)  3: a626 (619,182)
-;   4: a652 (712,304)  5..7: a7de (619,182)
+; ARCHITECTURE V3 — UN INTERPRETE, DES SUIVEURS PAR HISTORIQUE (21/08/2026,
+; decision auteur ; le patron est le rebound laser — forcepods/
+; obj_reboundlaser.asm : « only the parent object go through collisions,
+; childs follow the parent »).
 ;
-; LE MOUVEMENT EST GRATUIT. Les segments arcade appellent move_by_script
-; (40:f5c1) — la routine que la v2 a deja (moveByScript), MEME format
-; d'octets — et le script 1000:a652 est DEJA dans le build : l'export
-; d'animation de re.arcade.r-type le pose dans
-; src/common/fx/animation/script.asm sous ref_1A652 (197 segments,
-; 70 distincts, ~3370 pas, soit ~34 s a anim_frame_duration = 2). Le
-; portage ne coute qu'une ligne d'index (index.asm + index.equ).
+; Les 22 segments partagent le MEME script de mouvement, decale dans le
+; temps. Les premieres formes le faisaient interpreter par CHAQUE segment
+; (22 OST, 22 moveByScript, 22 dispatches RunObjects avec montage de page) ;
+; a frame drop 5, ~220 pas de script interpretes par boucle. Ici :
+;
+;   - le MAITRE (l'ancien emetteur) est le seul interprete. Son callback
+;     moveByScript — appele une fois par TRAME VIDEO, position a jour, page
+;     du cast remontee — pousse (x, y, pose) dans un ANNEAU RESIDENT de 256
+;     entrees en trois plans d'octets (la reference ecran rend tout octet ;
+;     256 = wrap gratuit, l'index d'anneau est un octet qui deborde seul) ;
+;   - 20 SEGMENTS SANS OST (cou, 18 corps, queue) : un record de 2 octets
+;     (etat, cran de tir) sur la page du cast, une boite AABB STATIQUE dans
+;     la zone residente — la passe de collision du MOTEUR les traite comme
+;     n'importe quelle boite, l'echange de degats reste chez lui. Leur
+;     position = l'anneau, lu a (ecriture - 1 - retard) ; le retard de
+;     chaque record est une CONSTANTE (RecInit, delais arcade cumules) ;
+;   - 2 SUIVEURS A OST (tete, finalizer) : leurs images vivent sur l'AUTRE
+;     page (stage2.cast.imgHead), que seul le moteur — resident — sait
+;     monter. Ils lisent l'anneau (retards 0 et 227), passent par
+;     DisplaySprite, et VALIDENT leur maitre (id + routine, le geste du
+;     rebound laser) avant chaque lecture ;
+;   - le RENDERER GROUPE (outslay.Render) dessine les 20 slots publies par
+;     le maitre via le faux imageset — un seul preambule BuildSprites.
+;
+; Ce que la v3 supprime : 20 slots de pool, 20 dispatches RunObjects (et
+; leurs montages de page), 21 interpreteurs, et les pointeurs d'aines —
+; l'array ordonne EST la chaine, la « limite connue » du pointeur perime
+; meurt ici. Ce qui reste au moteur : la collision et le dessin des bouts.
+;
+; LA VARIANTE. La wave cite l'outslay une fois ($0E88, token $04 -> variante
+; 4, entree par le bord droit) ; le gomander pond les tokens 0..3 pendant
+; son combat (wavescript 1000:4d62). L'horloge de tir de la tete depend du
+; bit 2 du token (91af) : $C0 s'il est mis (la traversee), $50 sinon — les
+; serpents du boss tirent plus souvent. Premiere echeance base+$28 (91a6).
 ;
 ; CE QUI EST ABANDONNE (et pourquoi) :
-; - la mort chainee (40:954b destroy_with_score, ~22 explosions en cascade)
-;   ne se declenche que si le spawner est Gomander (`tick == 0xa523`).
-;   Notre spawn vient de la wave : les segments meurent par la fin de leur
-;   script. A reprendre le jour du boss.
-; - le swap de palette du 2e loop (40:957c) et les palettes par objet :
-;   palette TO8 globale (12 communs + 4 du stage).
-; - le bruitage 0x5d de la salve : le tir ennemi est muet en v2 (aucun
-;   _soundFX dans la chaine tryFoeFire / createFoeFire).
-; - V2-DEVIATION : la parite de collision arcade (`global_counter XOR
-;   priorite`, un segment sur deux par trame, tete sur paire et queue sur
-;   impaire) est une economie de CPU propre a l'arcade. En v2 la passe
-;   Collision_Run est globale et chaque AABB reste dans sa liste : tous les
-;   segments collisionnent a chaque trame. Le serpent est donc legerement
-;   plus mordant qu'en arcade.
-; - V2-DEVIATION : l'arcade decremente la priorite d'affichage a chaque
-;   segment (91e1, depuis $201f) pour que la queue passe derriere la tete.
-;   Les 8 niveaux de priorite v2 ne peuvent pas porter 22 rangs : toute la
-;   chaine est au niveau 6, comme pata-pata.
+; - la mort chainee (40:954b) ne se declenche que sous Gomander (tick ==
+;   0xa523) ; nos serpents meurent par la fin du script. Au boss de la
+;   declencher le jour ou son corps existera.
+; - le swap de palette du 2e loop (40:957c) : palette TO8 globale.
+; - le bruitage 0x5d de la salve : le tir ennemi est muet en v2.
 ;
-; LIMITE CONNUE, heritee de l'arcade : le pointeur d'aine (outslay.elder)
-; n'est pas invalide quand l'aine rend son slot en fin de script. L'arcade
-; vit avec — les slots y sont recycles de meme. En v2 le slot libere peut
-; etre repris par un autre objet, et le cadet lirait alors ses ext_variables
-; a +11 : au pire une salve parasite, dans les ~230 trames qui separent la
-; fin de script du premier segment de celle du dernier, donc en toute fin de
-; vie du serpent. Corriger couterait une passe de fixup a chaque mort.
+; LA PARITE DE COLLISION ARCADE EST PORTEE ((counter XOR priorite) & 1, un
+; segment sur deux par boucle, tete opposee a la queue, finalizer toujours
+; arme — 925b/94f6/93d9/948c). Le gate est le POTENTIEL : Collision_Do saute
+; une boite a p=0 dans les DEUX sens (@skipu/@skipx). La phase bascule par
+; TOUR DE BOUCLE — une parite tiree de frame.count derive sous frame drop
+; pair, la lecon du tailmgr (TMcolPhase). Graine = rang & 1 : voisins
+; opposes. Le verdict d'un coup au corps se lit a la transition armee ->
+; desarmee, la seule ou un p nul veuille dire « touche ».
 ;
-; L'HORLOGE DE GRAINE decompte une fois par appel de routine, la ou l'arcade
-; decompte une fois par tick : le rythme suit donc l'horloge de jeu (frame
-; drop compense) et non l'horloge video. C'est la politique v2 pour les
-; cadences (cf. arcade-to-v2.md, « Rythme et horloges »).
+; REFERENCE ECRAN NATIVE (decision auteur) : x/y vivent dans le cadre
+; 48-207 / 28-227 de DRS_XYToAddress. L'outslay ne lit jamais le delta
+; camera arcade (0x2ED0) : sa choregraphie est ecrite en repere ecran — et
+; c'est elle qui rend l'anneau petit (des octets) et la publication sans
+; conversion. Les FRONTIERES convertissent : foefire et explosions
+; repassent en playfield au spawn, le joueur dans le test de portee.
 ;
-; NOMMAGE : le cast du stage 2 est UN direntry, tous les obj.asm sont
-; assembles dans la MEME unite (cast.unit.asm) — chaque etiquette porte donc
-; le prefixe `outslay.`, sinon le premier ennemi implemente interdit le
-; second.
+; NOMMAGE : tout le cast du stage 2 est une seule unite — prefixe `outslay.`
+; partout (voir cast.unit.asm).
 ;*******************************************************************************
 
-; --- ext_variables (budget ext_variables_size = 20 octets) -------------------
-outslay.AABB      equ ext_variables      ; 0..8  segment : boite de collision
-outslay.elder     equ ext_variables+9    ; 9,10  emetteur : le dernier-ne
-                                         ;       segment  : le frere aine
-                                         ;       (arcade [+0x3c], 91fd/9203)
-outslay.cooldown  equ ext_variables+11   ; 11,12 segment : cran de la cascade
-                                         ;       de tir (arcade [+0x24])
-outslay.clock     equ ext_variables+13   ; 13,14 tete : horloge de graine
-                                         ;       (arcade [+0x20], rechargee
-                                         ;       depuis [+0x22])
-outslay.cursor    equ ext_variables+15   ; 15    emetteur : index dans
-                                         ;       ChainScript (arcade [+0x30])
-outslay.delay     equ ext_variables+16   ; 16    emetteur : compte a rebours
-                                         ;       du prochain segment ([+0x32])
+; --- LA ZONE RESIDENTE (layout : <reserved name="stage.outslay">) ------------
+; Anneau et boites DOIVENT etre residents : le callback pousse depuis la page
+; du cast, la passe de collision suit ses listes sans monter de page, et les
+; suiveurs a OST lisent l'anneau depuis le chemin moteur.
+outslay.res       equ $9A00
+outslay.ringX     equ outslay.res          ; 256 octets — x ecran
+outslay.ringY     equ outslay.res+256      ; 256 octets — y ecran
+outslay.ringP     equ outslay.res+512      ; 256 octets — pose du script
+outslay.boxes     equ outslay.res+768      ; 20 x sizeof{AABB} (9) = 180
+outslay.res.END   equ outslay.res+768+20*9
+ IFNE outslay.res.END-($9A00+$3B4)
+        ERROR zone stage.outslay : accord layout/equates rompu (adresse ou taille)
+ ENDC
 
-; --- les roles de segment ----------------------------------------------------
-; L'ordre n'est pas libre : le test « l'aine tire-t-il encore ? » de
-; outslay_body_tick (9372..9382) accepte {corps, cadavre, cou} et refuse
-; {tete, queue, finalizer}. Les trois roles tirants sont donc contigus, et
-; le test devient un encadrement. Le role voyage par `subtype` au spawn puis
-; devient l'index de routine (role + 1).
-outslay.role.head      equ 0
-outslay.role.neck      equ 1
-outslay.role.body      equ 2
-outslay.role.corpse    equ 3
-outslay.role.tail      equ 4
-outslay.role.finalizer equ 5
+; --- LE MAITRE : ext_variables (l'etat moveByScript vit dans son OST) --------
+outslay.mClock    equ ext_variables+0    ; 0,1  horloge de graine (arcade [+0x20])
+outslay.mClkBase  equ ext_variables+2    ; 2    periode : $C0 (bit2 du token) ou $50
+outslay.mSeed     equ ext_variables+3    ; 3    graine de tir (1..4, 0 sinon)
+outslay.mFrames   equ ext_variables+4    ; 4,5  L'HORLOGE DE LA CHAINE : le compte
+                                         ;      de POUSSEES pendant le script (le
+                                         ;      callback l'incremente — l'octet bas
+                                         ;      EST l'index d'anneau), puis le temps
+                                         ;      qui continue pendant le drain. Une
+                                         ;      lecture s'indexe TOUJOURS dessus :
+                                         ;      indexer sur un curseur d'ecriture
+                                         ;      fige le serpent a la fin du script
+                                         ;      (vecu — gel + effacement remontant)
+outslay.mEndF     equ ext_variables+6    ; 6,7  poussees a la fin du script ($7FFF avant)
+                                         ; 8    (libre — ex-index d'ecriture)
+outslay.mActive   equ ext_variables+9    ; 9    nb de records eveilles (0..20)
+outslay.mState    equ ext_variables+10   ; 10   0 = script en cours, 1 = drain
+outslay.mFinDone  equ ext_variables+11   ; 11   1 = finalizer pose
+outslay.mPhase    equ ext_variables+12   ; 12   parite de collision, bascule par boucle
 
-outslay.rt.head        equ outslay.role.head+1
-outslay.rt.neck        equ outslay.role.neck+1
-outslay.rt.body        equ outslay.role.body+1
-outslay.rt.corpse      equ outslay.role.corpse+1
-outslay.rt.tail        equ outslay.role.tail+1
-outslay.rt.finalizer   equ outslay.role.finalizer+1
-outslay.rt.deleted     equ outslay.role.finalizer+2
+; --- LES SUIVEURS A OST (tete / finalizer) -----------------------------------
+outslay.fMaster   equ ext_variables+0    ; 0,1  l'OST du maitre (valide avant usage)
+outslay.fDelay    equ ext_variables+2    ; 2    retard en trames (0 tete, 227 finalizer)
+outslay.fPhase    equ ext_variables+3    ; 3    parite de collision (tete seulement)
+outslay.fAABB     equ ext_variables+4    ; 4..12
 
-; 9388..93b2 : la salve part si la distance de Manhattan au joueur est sous
-; 0x90 = 144 pixels ARCADE. L'echelle v2 n'est pas la meme sur les deux axes
-; (scale.asm : X 0.375, Y 0.75, soit deux fois X) : 144 px arcade valent 54
-; px larges en X, et un delta Y v2 pese deux fois moins qu'un delta X pour
-; revenir au repere arcade. Le test devient |dx| + |dy| / 2 < 54.
+; --- LES RECORDS (page du cast) : 2 octets par segment sans OST --------------
+outslay.RS        equ 0                  ; etat : 0 inactif, 1 vivant, 2 cadavre, 3 fini
+outslay.RC        equ 1                  ; cran de la cascade de tir
+outslay.RECSZ     equ 2
+outslay.NREC      equ 20
+
+; roles des records (RecInit) et subtypes des suiveurs
+outslay.role.neck equ 0
+outslay.role.body equ 1
+outslay.role.tail equ 2
+outslay.sub.head  equ 0
+outslay.sub.fin   equ 1
+
+; 9388..93b2 : salve si Manhattan(joueur) < 0x90 = 144 px arcade. Echelles v2 :
+; X 0.375, Y 0.75 (le double) -> |dx| + |dy|/2 < 54 en pixels larges.
 outslay.fireRange equ 54
 
 ;*******************************************************************************
-; L'EMETTEUR — arcade create_outslay (40:915b) + tick_outslay_segment_chain
-; (40:91cc). Invisible : ni sprite ni collision, il ne fait que poser les
-; segments, puis se decharge sur le terminateur du script.
+; LE MAITRE — create_outslay (40:915b) + la chaine (40:91cc) + les 20 records
 ;*******************************************************************************
 
 outslay.Object
         lda   routine,u
         asla
-        ldx   #outslay.EmitRoutines
+        ldx   #outslay.MasterTab
         jmp   [a,x]
-
-outslay.EmitRoutines
-        fdb   outslay.EmitInit
-        fdb   outslay.EmitLive
+outslay.MasterTab
+        fdb   outslay.MasterInit
+        fdb   outslay.MasterLive
         fdb   outslay.Deleted
 
-outslay.EmitInit
-        ; 9183 : [+0x04] = 0x2c8 — c'est exactement le bord droit que
-        ; pata-pata cite (arcade fc7e), donc le meme point d'entree v2.
-        ldd   glb_camera_x_pos
-        addd  #144+8+3
-        std   x_pos,u
-        ; 918b : [+0x08] = 0x130 = 304. Conv : (304 - 144) * -0.75 + 190 = 70.
-        ldd   #70
-        std   y_pos,u
-        ; L'emetteur ne dessine rien : priorite 0 = « rien a afficher ».
-        clr   priority,u
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        ldx   #0
-        stx   outslay.elder,u          ; pas encore de dernier-ne
-        clr   outslay.cursor,u         ; 91b4 : curseur en tete de script
-        lda   #1                       ; 91b9 : [+0x32] = 1, premier segment
-        sta   outslay.delay,u          ;        des la trame suivante
-        inc   routine,u
-        ; Les trames perdues avant la creation, deposees par ObjectWave :
-        ; derouler la chaine d'autant pour rester cale sur l'horodatage.
+outslay.MasterInit
+        ; DEUX champs a sauver avant de les recouvrir : le token (subtype_w+1,
+        ; sous render_flags) et le retard de wave — wave_frame_drop ALIASE
+        ; anim_frame_duration (+13), que l'init du script ecrase avec la
+        ; vitesse. Vecu sur machine : le retard lu apres valait toujours 2.
         ldb   wave_frame_drop,u
-        bra   outslay.EmitByB
-
-outslay.EmitLive
-        ldb   gfxlock.frameDrop.count
-outslay.EmitByB
-        tstb
-        bne   outslay.EmitLoop
-        incb                           ; jamais 256 tours si B vaut 0
-outslay.EmitLoop
-        jsr   outslay.EmitStep         ; le terminateur du script ne revient
-        decb                           ; pas ici : il sort par @done
-        bne   outslay.EmitLoop
-        rts
-
-; Un pas du script de chaine — arcade 91d3..923d.
-outslay.EmitStep
-        dec   outslay.delay,u
-        bne   @ret                     ; 91d6 : pas encore
-        ldx   #outslay.ChainScript
-        ldb   outslay.cursor,u
-        abx
-        ldb   ,x                       ; 91db : le role du segment a poser
+        stb   @late
+        ldb   subtype_w+1,u
+        stb   @token
+        andb  #7
+        ldx   #outslay.Variants
+        aslb                           ; 6 octets par rangee, comme l'arcade
         pshs  b
-        jsr   LoadObject_x             ; 91e5 : alloc ; Z = pool plein
-        puls  b
-        beq   @advance                 ; 91e9 : plein -> le script avance quand meme
-        ; Deux identifiants pour un seul code : Img_Page_Index donne UNE page
-        ; d'imagesets par id, et les poses de tete/finalizer vivent dans un
-        ; autre direntry que le reste du corps.
-        lda   #ObjID_outslay_head
-        tstb                           ; role 0 = tete
-        beq   @setid
-        cmpb  #outslay.role.finalizer
-        beq   @setid
-        lda   #ObjID_outslay_segment
-@setid  std   id,x                     ; id + subtype (= le role) d'un coup
-        ldd   x_pos,u                  ; 9206 : l'enfant nait ou est l'emetteur
-        std   x_pos,x
-        ldd   y_pos,u                  ; 920c
-        std   y_pos,x
-        ldd   outslay.elder,u          ; 91fd : son aine = le dernier-ne
-        std   outslay.elder,x
-        stx   outslay.elder,u          ; 9203 : ...qui devient le dernier-ne
-@advance
-        ldx   #outslay.ChainScript
-        ldb   outslay.cursor,u
+        aslb
+        addb  ,s+
         abx
-        ldb   1,x                      ; 9232 : le delai jusqu'au suivant
-        stb   outslay.delay,u
-        beq   @done                    ; 923b : delai 0 = TERMINATEUR — le
-                                       ; segment qu'on vient de poser est le
-                                       ; dernier, l'emetteur a fini
-        ldb   outslay.cursor,u
-        addb  #2                       ; 923d : entree suivante
-        stb   outslay.cursor,u
-@ret    rts
-@done                                  ; 9242 : unload_managed_object
-        lda   #2                       ; l'emetteur passe en Deleted
-        sta   routine,u
-        leas  2,s                      ; NE PAS revenir dans la boucle d'appel :
-                                       ; l'OST est rendue a la ligne suivante, et
-                                       ; la relire (ne serait-ce que `routine,u`)
-                                       ; ferait tourner un tour de plus sur un
-                                       ; slot libre, voire y poser un segment au
-                                       ; role aberrant.
-        jmp   UnloadObject_u           ; rien n'a ete dessine : pas de DeleteObject
-
-;*******************************************************************************
-; UN SEGMENT — les cinq ticks arcade, un role par routine.
-;*******************************************************************************
-
-outslay.Segment
-        lda   routine,u
-        asla
-        ldx   #outslay.Routines
-        jmp   [a,x]
-
-outslay.Routines
-        fdb   outslay.Init
-        fdb   outslay.LiveHead         ; 40:925b
-        fdb   outslay.LiveNeck         ; 40:92d8
-        fdb   outslay.LiveBody         ; 40:9355
-        fdb   outslay.LiveCorpse       ; 40:9425
-        fdb   outslay.LiveTail         ; 40:94f6
-        fdb   outslay.LiveFinalizer    ; 40:948c
-        fdb   outslay.Deleted
-
-outslay.Init
-        ; Le role est arrive par le subtype ; il devient l'index de routine.
-        ldb   subtype,u
-        incb
-        stb   routine,u
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        ldb   #6
-        stb   priority,u
-        ; 92ab / 93e0 : tous les segments portent la meme boite (1000:427c),
-        ; 16x16 arcade centree -> 6 x 12 en large-dot.
-        _Collision_AddAABB outslay.AABB,AABB_list_ennemy
-        _ldd  outslay_hitbox_x,outslay_hitbox_y
-        std   outslay.AABB+AABB.rx,u
-        ; 933c : SEUL le corps est vulnerable, et il meurt au premier coup.
-        ; Les quatre autres roles reappliquent [+0x1f] = 0 / [+0x2f] = $ff a
-        ; chaque trame (929b/929f) : en v2 un potentiel negatif dit la meme
-        ; chose une fois pour toutes.
-        lda   #outslay_hitdamage
-        ldb   subtype,u
-        cmpb  #outslay.role.body
-        beq   >
-        lda   #outslay_hitdamage_immune
-!       sta   outslay.AABB+AABB.p,u
-        ; 921e..922a : le script de mouvement de la tete, rejoue depuis son
-        ; debut, et [+0x17] = 2 pas de deplacement par trame.
-        ldx   #anim_1A652
+        ; 9183 / 918b : X et Y, constantes d'ECRAN (cadre 48/28 cuit en table)
+        ldd   2,x
+        std   x_pos,u
+        ldd   4,x
+        std   y_pos,u
+        ; 917b + 921e..922a : le script de la variante, initialise UNE fois —
+        ; le maitre est le seul interprete. 2 pas de deplacement par trame.
+        ldx   ,x
         jsr   moveByScript.initialize
         lda   #2
         sta   anim_frame_duration,u
-        ; 91a6 / 91af : l'horloge de graine de la tete. L'enfant recoit
-        ; [+0x20] = [+0x20 de l'emetteur] + 0x28 et [+0x22] = [+0x20], soit
-        ; $E8 avant la premiere graine puis $C0 de periode (le subtype $04
-        ; de la wave porte le bit 2, qui force ce $C0).
-        ldd   #$00E8
-        std   outslay.clock,u
-        ldx   #0
-        stx   outslay.cooldown,u
-        ; Repartir dans la routine du role, pour afficher des cette trame.
-        lda   routine,u
-        asla
-        ldx   #outslay.Routines
-        jmp   [a,x]
-
-; --- la tete : 40:925b -------------------------------------------------------
-outslay.LiveHead
-        jsr   outslay.Move
-        ; 926d : la graine est remise a zero a CHAQUE trame, puis semee
-        ; seulement quand l'horloge tombe.
-        ldx   #0
-        stx   outslay.cooldown,u
-        ldd   outslay.clock,u          ; 9272 : DEC [+0x20]
-        subd  #1
-        std   outslay.clock,u
-        bne   @noseed
-        ldd   #$00C0                   ; 9277 : rechargement depuis [+0x22]
-        std   outslay.clock,u
-        jsr   RandomNumber             ; 927d
-        andb  #3                       ; 9280
-        incb                           ; 9283 : graine 1..4
-        clra
-        std   outslay.cooldown,u
-@noseed
-        ldb   anim_frame,u             ; 9287 : la pose vient du script
-        ldx   #outslay.HeadImages
-        jmp   outslay.ShowAndCollide
-
-; --- le cou : 40:92d8 --------------------------------------------------------
-; Le cou herite du cran de son aine — l'arcade le remet a zero quand cet aine
-; est la tete, parce que la tete porte une graine et non un cran propage. La
-; tete mettant deja son propre cran a zero a chaque trame sauf celle de la
-; graine, l'heritage brut donne le meme resultat : le cou porte la graine
-; d'un cran plus bas, et la cascade commence chez lui.
-outslay.LiveNeck
-        jsr   outslay.Move
-        jsr   outslay.InheritCooldown
-        ldb   anim_frame,u
-        ldx   #outslay.NeckImages
-        jmp   outslay.ShowAndCollide
-
-; --- la queue : 40:94f6 ------------------------------------------------------
-; Meme pool que le cou, moitie arriere : ([+0x16] + 8) & 0xf.
-outslay.LiveTail
-        jsr   outslay.Move
-        jsr   outslay.InheritCooldown
-        jsr   outslay.OppositePose
-        ldx   #outslay.NeckImages
-        jmp   outslay.ShowAndCollide
-
-; --- le finalizer : 40:948c --------------------------------------------------
-; Miroir de la tete : meme pool, indexe ([+0x16] + 8) & 0xf.
-outslay.LiveFinalizer
-        jsr   outslay.Move
-        jsr   outslay.InheritCooldown
-        jsr   outslay.OppositePose
-        ldx   #outslay.HeadImages
-        jmp   outslay.ShowAndCollide
-
-; --- le corps : 40:9355 ------------------------------------------------------
-outslay.LiveBody
-        jsr   outslay.Move
-        jsr   outslay.FireChain
-        lda   outslay.AABB+AABB.p,u    ; 93e6 : touche = mort au premier coup
-        lbeq  outslay.Explode
-        jsr   outslay.BodyPose
-        ldx   #outslay.BodyImages
-        jmp   outslay.ShowAndCollide
-
-; --- le cadavre : 40:9425 ----------------------------------------------------
-; L'emplacement n'est PAS rendu : le corps detruit derive le long du meme
-; chemin, collisionne encore (mais immunise) et ne tire plus. Son cran est
-; borne a 1 (9440) : il ne peut plus satisfaire la condition « l'aine portait
-; exactement 1 » qui declenche une salve.
-outslay.LiveCorpse
-        jsr   outslay.Move
-        ldx   outslay.elder,u
+        ; 91a6 / 91af : l'horloge de tir. bit2 du token -> periode $C0, sinon
+        ; $50 ; premiere echeance a periode + $28.
+        ldb   #0
+@token  equ   *-1
+        andb  #4
         beq   >
-        ldd   outslay.cooldown,x
-        subd  #1
+        ldb   #$C0-$50
+!       addb  #$50
+        stb   outslay.mClkBase,u
+        clra
+        addd  #$28
+        std   outslay.mClock,u
+        ; le maitre ne dessine rien
+        clr   priority,u
+        clr   render_flags,u           ; coordonnees ECRAN
+        ; l'etat de chaine a zero — records, slots, compteurs. Les slots du
+        ; serpent precedent s'eteignent ici (le stage en pose neuf).
+        clr   outslay.mSeed,u
+        clr   outslay.mActive,u
+        clr   outslay.mState,u
+        clr   outslay.mFinDone,u
+        clr   outslay.mPhase,u
+        ldd   #0
+        std   outslay.mFrames,u
+        ldd   #$7FFF
+        std   outslay.mEndF,u
+        ldx   #outslay.Recs
+        ldb   #outslay.NREC*outslay.RECSZ
+!       clr   ,x+
+        decb
+        bne   <
+        ldx   #outslay.Slots
+        ldb   #outslay.SLOTS*outslay.SLOTSZ
+!       clr   ,x+
+        decb
+        bne   <
+        ; le renderer groupe, puis le suiveur TETE (retard 0)
+        jsr   LoadObject_x
+        beq   >
+        lda   #ObjID_outslay_render
+        sta   id,x
+!       ldb   #outslay.sub.head
+        jsr   outslay.SpawnFollower
+        inc   routine,u
+        ; le retard de la wave (sauve en tete d'Init) : derouler l'interprete
+        ; d'autant — chaque trame rattrapee pousse SON entree d'anneau via le
+        ; callback, la chaine entiere reste calee sur l'horodatage arcade.
+        ldb   #0
+@late   equ   *-1
+        beq   @done
+        ldd   #outslay.Push            ; chaque poussee du rattrapage avance
+        std   moveByScript.callback    ; l'horloge elle-meme
+        ldb   @late
+        jsr   moveByScript.runByB
+@done   rts
+
+; Le callback de l'interprete : une fois par TRAME VIDEO, position a jour,
+; U = le maitre, page du cast remontee par moveByScript. Le point de poussee.
+outslay.Push
+        ldb   outslay.mFrames+1,u      ; n poussees faites -> la n-ieme s'ecrit
+        lda   x_pos+1,u                ; en n (mod 256, l'octet deborde seul)
+        ldx   #outslay.ringX
+        abx
+        sta   ,x
+        lda   y_pos+1,u
+        ldx   #outslay.ringY
+        abx
+        sta   ,x
+        lda   anim_frame,u
+        ldx   #outslay.ringP
+        abx
+        sta   ,x
+        ldd   outslay.mFrames,u        ; l'horloge avance AVEC la poussee : les
+        addd  #1                       ; deux ne peuvent pas diverger
+        std   outslay.mFrames,u
+        ; fin de script : sortir de la boucle (le geste de l'ancien endCheck)
+        lda   moveByScript.anim.end
+        beq   >
+        clr   moveByScript.anim.loops
+!       rts
+
+outslay.MasterLive
+        ; --- 1) l'horloge. Pendant le script, elle avance PAR LES POUSSEES
+        ; (le callback l'incremente : impossible de diverger de l'anneau) ;
+        ; pendant le drain, plus personne ne pousse — c'est la boucle qui la
+        ; fait avancer, en trames video, et les lectures des suiveurs
+        ; continuent de descendre l'anneau deja ecrit jusqu'a leur fin.
+        ldb   gfxlock.frameDrop.count
         bne   >
-        ldd   #1                       ; 9440 : plancher a 1
-!       std   outslay.cooldown,u
-        ldb   #0                       ; 9444 : outslay_explode_recipe
-        ldx   #outslay.BrokenImages
-        jmp   outslay.ShowAndCollide
+        incb                           ; miroir du garde de runByFrameDrop
+!       clra
+        pshs  d
+        lda   outslay.mState,u
+        beq   @interp
+        ldd   outslay.mFrames,u
+        addd  ,s
+        std   outslay.mFrames,u
+        bra   @seedclk
+@interp
+        ; --- 2) l'interprete unique, et le debut du drain a la fin ----------
+        ldd   #outslay.Push
+        std   moveByScript.callback
+        jsr   moveByScript.runByFrameDrop
+        lda   moveByScript.anim.end
+        beq   @seedclk
+        lda   #1                       ; 9569 : script fini — le maitre ne
+        sta   outslay.mState,u         ; pousse plus, chaque suiveur draine
+        ldd   outslay.mFrames,u        ; l'anneau deja ecrit, a son tour
+        std   outslay.mEndF,u
+@seedclk
+        ; --- 3) la graine de tir de la tete (925b : remise a zero chaque
+        ; boucle, semee quand l'horloge tombe) -------------------------------
+        clr   outslay.mSeed,u
+        ldd   outslay.mClock,u
+        subd  ,s++
+        std   outslay.mClock,u
+        lbgt  @noseed
+        ldb   outslay.mClkBase,u
+        clra
+        addd  outslay.mClock,u
+        bgt   >
+        ldb   outslay.mClkBase,u       ; drop enorme : repartir de la periode
+        clra
+!       std   outslay.mClock,u
+        jsr   RandomNumber             ; 927d..9283 : graine 1..4
+        andb  #3
+        incb
+        stb   outslay.mSeed,u
+@noseed
+        ; --- 4) activation des records, dans l'ordre des retards ------------
+@act    ldb   outslay.mActive,u
+        cmpb  #outslay.NREC
+        bhs   @actEnd
+        aslb
+        ldx   #outslay.RecInit
+        abx
+        ldb   ,x                       ; le retard du prochain (octet)
+        clra
+        pshs  d
+        ldd   outslay.mFrames,u
+        cmpd  ,s++
+        ble   @actEnd                  ; STRICTEMENT superieur : a egalite la
+                                       ; lecture vaudrait -1, soit l'entree 255
+                                       ; — une position rassise d'un serpent
+                                       ; precedent. Le record nait a mFrames =
+                                       ; retard + 1, ou sa lecture vaut 0 : le
+                                       ; point de depart de la tete, ce qui est
+                                       ; exactement le suivi a la file.
+        ldb   1,x                      ; le role, tant que X pointe encore RecInit
+        stb   outslay.wRole
+        ; sa boite statique entre en liste, armee (voir le potentiel plus bas).
+        ; La NETTOYER D'ABORD, prev/next compris : la zone reservee n'est pas
+        ; zeroee (reserved-ram-is-not-zeroed.md — la lecon de la trainee du
+        ; joueur, repayee ici : next residuel $FFFF, et le chemin « liste
+        ; vide » de Collision_AddAABB n'ecrit pas le next de l'inseree — la
+        ; passe partait dans des pseudo-boites a $FFFF et mangeait la boucle).
+        lda   outslay.mActive,u
+        ldb   #sizeof{AABB}
+        mul
+        addd  #outslay.boxes
+        tfr   d,x
+        ldb   #sizeof{AABB}
+!       clr   ,x+
+        decb
+        bne   <
+        leax  -sizeof{AABB},x
+        lda   #outslay_hitbox_x
+        sta   AABB.rx,x
+        lda   #outslay_hitbox_y
+        sta   AABB.ry,x
+        ; LE POTENTIEL DE NAISSANCE — surtout pas zero. La marche de CE tour
+        ; peut tomber sur la phase desarmee, et ce chemin lit p == 0 comme un
+        ; coup encaisse : la phase dependant de (rang XOR mPhase), un segment
+        ; sur deux naissait en CADAVRE (vecu). On le pose donc a sa valeur
+        ; armee ; la parite le reprendra des le tour suivant.
+        lda   #outslay_hitdamage_immune
+        ldb   outslay.wRole            ; le role, releve avant de perdre X
+        cmpb  #outslay.role.body
+        bne   >
+        lda   #outslay_hitdamage
+!       sta   AABB.p,x
+        pshs  u
+        ldy   #AABB_list_ennemy
+        jsr   Collision_AddAABB
+        puls  u
+        ; le record s'eveille
+        ldb   outslay.mActive,u
+        aslb
+        ldx   #outslay.Recs
+        abx
+        lda   #1
+        sta   outslay.RS,x
+        clr   outslay.RC,x
+        inc   outslay.mActive,u
+        bra   @act
+@actEnd
+        ; --- 5) le finalizer, 227 trames apres la tete ----------------------
+        lda   outslay.mFinDone,u
+        bne   @fin
+        ldd   outslay.mFrames,u
+        cmpd  #227
+        blt   @fin
+        inc   outslay.mFinDone,u
+        ldb   #outslay.sub.fin
+        jsr   outslay.SpawnFollower
+@fin
+        ; --- 6) la parite globale et la pose du corps -----------------------
+        lda   outslay.mPhase,u
+        eora  #1
+        sta   outslay.mPhase,u
+        ; 93bc : 4 images, 8 trames de maintien — la MEME pose pour tous les
+        ; corps, calculee une fois par boucle. L'octet BAS du compteur (+1 :
+        ; l'ancienne version lisait l'octet HAUT du fdb, l'animation du corps
+        ; etait quasi figee — bug dormant corrige ici).
+        ldb   gfxlock.frame.count+1
+        andb  #$18
+        lsrb
+        lsrb                           ; (count & $18) >> 3, puis * 2 : table fdb
+        ldx   #outslay.BodySets
+        abx
+        ldd   ,x
+        std   outslay.wBodySet
+        ; --- 7) LA MARCHE DES 20 RECORDS ------------------------------------
+        clr   outslay.wN
+        lbra  outslay.Walk
+
+; --- 8) la fin de vie du maitre (retour de la marche) ------------------------
+outslay.MasterEnd
+        lda   outslay.mState,u
+        beq   @ret
+        ldd   outslay.mFrames,u
+        subd  #227
+        cmpd  outslay.mEndF,u
+        blt   @ret
+        ; le dernier suiveur est passe : tout est eteint, on rend le slot
+        lda   #2
+        sta   routine,u
+        jmp   UnloadObject_u           ; jamais dessine : pas de DeleteObject
+@ret    rts
 
 outslay.Deleted
         rts
 
-;*******************************************************************************
-; Les briques communes
-;*******************************************************************************
-
-; Le script de mouvement, et la fin de vie qu'il commande. Arcade 9265..926a :
-; move_by_script rend CF quand le script est epuise, et le segment sort en
-; silence — ni score ni bruitage.
-outslay.Move
-        ldd   #outslay.endCheck
-        std   moveByScript.callback
-        jsr   moveByScript.runByFrameDrop
-        lda   moveByScript.anim.end
-        beq   >
-        leas  2,s                      ; on ne revient pas a l'appelant
-        jmp   outslay.Unload
-!       rts
-
-outslay.endCheck
-        lda   moveByScript.anim.end
-        beq   >
-        clr   moveByScript.anim.loops  ; sortir de la boucle parente
-!       rts
-
-outslay.Unload                         ; 40:9569 outslay_silent_unload
-        lda   #outslay.rt.deleted
-        sta   routine,u
-        _Collision_RemoveAABB outslay.AABB,AABB_list_ennemy
-        jmp   DeleteObject
-
-; B = index d'image, X = table d'imagesets.
-outslay.ShowAndCollide
+; -----------------------------------------------------------------------------
+; LA MARCHE : un record = position depuis l'anneau, slot, boite, cascade.
+; Tous les pointeurs se recalculent depuis wN — les aides (LoadObject...)
+; ont le droit de tout clobber.
+; -----------------------------------------------------------------------------
+outslay.Walk
+@loop   ldb   outslay.wN
         aslb
-        ldd   b,x
-        std   image_set,u
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   outslay.AABB+AABB.cx,u
-        ldb   y_pos+1,u
-        stb   outslay.AABB+AABB.cy,u
-        jmp   DisplaySprite
-
-; Les deux bouts « arriere » lisent la moitie haute de leur pool.
-outslay.OppositePose
-        ldb   anim_frame,u
-        addb  #8
-        andb  #$0F
-        rts
-
-; 93bc..93cc : 4 images, 8 trames de maintien, periode 32.
-outslay.BodyPose
-        ldb   gfxlock.frame.count
-        andb  #$18
-        lsrb
-        lsrb
-        lsrb
-        rts
-
-; Les roles qui ne decident rien propagent le cran de leur aine, un cran plus
-; bas — c'est ce qui fait descendre la graine le long du serpent.
-outslay.InheritCooldown
-        ldx   outslay.elder,u
-        beq   >
-        ldd   outslay.cooldown,x
-        subd  #1
-        std   outslay.cooldown,u
-!       rts
-
-; La cascade de tir du corps — arcade 9367..93b9.
-; L'aine porte un cran ; on prend cran - 1. S'il ne tombe pas exactement a
-; zero, on le propage tel quel. S'il tombe a zero, c'est notre tour de
-; decider : l'aine doit encore etre un role tirant (cou, corps, cadavre) et
-; le joueur doit etre a portee. Detruire un corps casse donc la chaine a sa
-; position — c'est le « incapable of ranged attacks » du bestiaire.
-outslay.FireChain
-        ldx   outslay.elder,u
-        beq   @ret
-        ldd   outslay.cooldown,x
-        subd  #1
-        bne   @store                   ; 936e : ce n'etait pas notre tour
-        ldb   routine,x                ; 9370..9382 : l'aine tire-t-elle ?
-        cmpb  #outslay.rt.neck
-        blo   @none                    ; la tete ne propage pas
-        cmpb  #outslay.rt.corpse
-        bhi   @none                    ; queue et finalizer non plus
-        ldd   #1                       ; 9387 : l'aine portait exactement 1
-        jsr   outslay.InRange          ; 9388..93b2
-        bcc   @store                   ; hors de portee : on repropage le 1
-        jsr   outslay.Fire8Way         ; 93b4
-        ldd   #0                       ; 93b7 : cran consomme
-        bra   @store
-@none   ldd   #0                       ; 9384 : role refuse, le cran meurt ici
-@store  std   outslay.cooldown,u
-@ret    rts
-
-; C = 1 si le joueur est a portee de salve. D est preserve.
-outslay.InRange
+        ldx   #outslay.Recs
+        abx
+        lda   outslay.RS,x
+        lbeq  @next                    ; inactif
+        cmpa  #3
+        lbeq  @next                    ; fini
+        sta   outslay.wState
+        ; le retard et le role, constants (RecInit)
+        ldb   outslay.wN
+        aslb
+        ldx   #outslay.RecInit
+        abx
+        ldd   ,x                       ; A = retard, B = role
+        sta   outslay.wDelay
+        stb   outslay.wRole
+        ; -- le drain : le record s'eteint quand sa lecture atteint la fin --
+        ldb   outslay.mState,u
+        lbeq  @pos
+        ldb   outslay.wDelay
+        clra
         pshs  d
+        ldd   outslay.mFrames,u
+        subd  ,s++
+        cmpd  outslay.mEndF,u
+        lblt  @pos
+        ; retirer la boite de la liste — les operandes de Remove se patchent
+        ; par appel, comme le fait le macro
+        ldx   #AABB_list_ennemy
+        stx   Collision_Remove_1
+        stx   Collision_Remove_3
+        leax  2,x
+        stx   Collision_Remove_2
+        jsr   outslay.WBoxPtr
+        pshs  u
+        jsr   Collision_RemoveAABB
+        puls  u
+        jsr   outslay.WSlotPtr
+        clr   ,y
+        ldb   outslay.wN
+        aslb
+        ldx   #outslay.Recs
+        abx
+        lda   #3
+        sta   outslay.RS,x
+        lbra  @next
+@pos
+        ; -- la position : l'anneau, a (horloge - 1 - retard) — l'octet bas
+        ; de mFrames, valable script en cours COMME en drain ----------------
+        ldb   outslay.mFrames+1,u
+        decb
+        subb  outslay.wDelay
+        stb   outslay.wIdx
+        ldx   #outslay.ringX
+        abx
+        lda   ,x
+        sta   outslay.wPx
+        ldb   outslay.wIdx
+        ldx   #outslay.ringY
+        abx
+        lda   ,x
+        sta   outslay.wPy
+        ldb   outslay.wIdx
+        ldx   #outslay.ringP
+        abx
+        lda   ,x
+        sta   outslay.wPose
+        ; -- le set d'images du role ----------------------------------------
+        ldb   outslay.wRole
+        beq   @neck
+        cmpb  #outslay.role.tail
+        beq   @tail
+        lda   outslay.wState           ; le corps : vivant ou cadavre
+        cmpa  #2
+        beq   @corpse
+        ldx   #0
+outslay.wBodySet equ *-2
+        bra   @pub
+@corpse ldx   #set_outslay_broken_0
+        bra   @pub
+@neck   ldb   outslay.wPose
+        bra   @nt
+@tail   ldb   outslay.wPose            ; 94f6 : la moitie arriere du pool
+        addb  #8
+@nt     andb  #$0F
+        aslb
+        ldx   #outslay.NeckSets
+        abx
+        ldx   ,x
+@pub    jsr   outslay.WSlotPtr         ; Y = slot
+        lda   outslay.wPx
+        ldb   outslay.wPy
+        jsr   outslay.RecPublish
+        ; -- la boite : position, puis parite -------------------------------
+        jsr   outslay.WBoxPtr          ; X = boite
+        lda   outslay.wPx
+        suba  #screen_left
+        sta   AABB.cx,x
+        lda   outslay.wPy
+        suba  #screen_top
+        sta   AABB.cy,x
+        ldb   outslay.wN
+        eorb  outslay.mPhase,u
+        andb  #1
+        beq   @disarm
+        ; la boucle armee : le corps vivant expose ses PV, le reste l'immunite
+        lda   #outslay_hitdamage_immune
+        ldb   outslay.wRole
+        cmpb  #outslay.role.body
+        bne   @arm
+        ldb   outslay.wState
+        cmpb  #1
+        bne   @arm
+        lda   #outslay_hitdamage
+@arm    sta   AABB.p,x
+        bra   @casc0
+@disarm
+        ; la fenetre armee se ferme : pour un corps vivant, p nul = touche
+        ldb   outslay.wRole
+        cmpb  #outslay.role.body
+        bne   @dis2
+        ldb   outslay.wState
+        cmpb  #1
+        bne   @dis2
+        lda   AABB.p,x
+        bne   @dis2
+        jsr   outslay.RecExplode       ; 93fa : score, sfx, explosion, cadavre
+        lda   #2
+        sta   outslay.wState
+        jsr   outslay.WBoxPtr
+@dis2   clr   AABB.p,x                 ; hors de la passe jusqu'au prochain tour
+@casc0
+        ; -- la cascade de tir (9367..93b9 ; l'ordre d'execution est garde :
+        ; chaque record lit l'aine DEJA mis a jour cette boucle, comme les
+        ; OST couraient dans l'ordre de spawn) -------------------------------
+        ldb   outslay.wN
+        beq   @seed
+        decb
+        aslb
+        ldx   #outslay.Recs
+        abx
+        lda   outslay.RC,x             ; le cran de l'aine (record n-1)
+        ldb   outslay.RS,x
+        stb   outslay.wElderS
+        bra   @casc
+@seed   lda   outslay.mSeed,u          ; l'aine du cou est la tete du maitre
+        ldb   #1
+        stb   outslay.wElderS
+@casc   deca                           ; cran - 1
+        sta   outslay.wCool
+        ldb   outslay.wRole
+        cmpb  #outslay.role.body
+        bne   @cstore                  ; cou et queue : heritage brut
+        ldb   outslay.wState
+        cmpb  #2
+        beq   @cflor                   ; 9440 : le cadavre borne a 1, sans tir
+        tsta                           ; le tour du corps vivant ?
+        bne   @cstore
+        ldb   outslay.wElderS          ; l'aine tire-t-il encore ? (9370..9382)
+        cmpb  #3
+        beq   @cstore                  ; aine eteint : le cran meurt a zero
+        jsr   outslay.RecInRangeFire   ; a portee -> salve, C=1
+        bcc   @cone                    ; hors de portee : repropager le 1
+        clr   outslay.wCool
+        bra   @cstore
+@cone   lda   #1
+        sta   outslay.wCool
+        bra   @cstore
+@cflor  tsta
+        bne   @cstore
+        lda   #1
+        sta   outslay.wCool
+@cstore ldb   outslay.wN
+        aslb
+        ldx   #outslay.Recs
+        abx
+        lda   outslay.wCool
+        sta   outslay.RC,x
+@next   inc   outslay.wN
+        lda   outslay.wN
+        cmpa  #outslay.NREC
+        lblo  @loop
+        lbra  outslay.MasterEnd
+
+; les variables de marche, sur la page (ecrites page montee par RunObjects)
+outslay.wN      fcb 0
+outslay.wState  fcb 0
+outslay.wRole   fcb 0
+outslay.wDelay  fcb 0
+outslay.wIdx    fcb 0
+outslay.wPx     fcb 0
+outslay.wPy     fcb 0
+outslay.wPose   fcb 0
+outslay.wCool   fcb 0
+outslay.wElderS fcb 0
+outslay.wSh     fcb 0
+
+; X = la boite statique du record wN
+outslay.WBoxPtr
+        lda   outslay.wN
+        ldb   #sizeof{AABB}
+        mul
+        addd  #outslay.boxes
+        tfr   d,x
+        rts
+
+; Y = le slot du record wN
+outslay.WSlotPtr
+        lda   outslay.wN
+        ldb   #outslay.SLOTSZ
+        mul
+        addd  #outslay.Slots
+        tfr   d,y
+        rts
+
+; -----------------------------------------------------------------------------
+; Publier un record : le cull « entierement dans le cadre » du moteur, en
+; octets et referentiel decale, puis la recopie. La GEOMETRIE vient de
+; l'imageset, jamais de constantes recopiees.
+;   +4 x_size  +5 y_size  +6 center_offset  +11 x1  +12 y1  +14,15 routine
+; entree : A = x ecran, B = y ecran, X = set, Y = slot
+; -----------------------------------------------------------------------------
+outslay.RecPublish
+        pshs  a,b
+        lda   ,s
+        adda  11,x
+        suba  #screen_left
+        cmpa  #screen_right-screen_left
+        bhi   @off
+        adda  4,x
+        cmpa  #screen_right-screen_left+1
+        bhi   @off
+        lda   1,s
+        adda  12,x
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bhi   @off
+        adda  5,x
+        cmpa  #screen_bottom-screen_top+1
+        bhi   @off
+        lda   ,s
+        suba  6,x                      ; le centre pair/impair, comme le moteur
+        sta   1,y
+        lda   1,s
+        sta   2,y
+        ldd   14,x
+        std   3,y
+        lda   #1
+        sta   ,y
+        puls  a,b,pc
+@off    clr   ,y
+        puls  a,b,pc
+
+; -----------------------------------------------------------------------------
+; La portee puis la salve — 9388..93b2 + 40:95a3. C=1 si la salve est partie.
+; Le joueur (playfield) est amene en ecran ; les tirs repartent en playfield.
+; -----------------------------------------------------------------------------
+outslay.RecInRangeFire
         ldd   player1+x_pos
-        subd  x_pos,u
+        subd  glb_camera_x_pos
+        addd  #screen_left
+        pshs  d
+        ldb   outslay.wPx
+        clra
+        subd  ,s++
         bpl   >
         coma
         comb
         addd  #1                       ; |dx|
 !       pshs  d
         ldd   player1+y_pos
-        subd  y_pos,u
+        addd  #screen_top
+        pshs  d
+        ldb   outslay.wPy
+        clra
+        subd  ,s++
         bpl   >
         coma
         comb
         addd  #1                       ; |dy|
-!       lsra                           ; |dy| / 2 : l'axe Y porte deux fois
-        rorb                           ; l'echelle de l'axe X
+!       lsra                           ; |dy| / 2 : l'axe Y pese double
+        rorb
         addd  ,s++
         cmpd  #outslay.fireRange
-        puls  d,pc
-
-; 40:95a3 : huit tirs bydo en etoile, un par direction de la table.
-; L'arcade met un seul bruitage APRES la boucle (id 0x5d) — le tir ennemi est
-; muet en v2 (ni tryFoeFire ni createFoeFire ne jouent quoi que ce soit), la
-; ligne reste ici pour memoire :
-;   95e9 : enqueue_event(sfx 0x5d)
-outslay.Fire8Way
-        pshs  d,y
-        clrb
-@loop   pshs  b
-        jsr   LoadObject_x
+        bhs   @no
+        ; 95a3 : huit tirs en etoile. FRONTIERE : conversion playfield UNE fois.
+        ldb   outslay.wPx
+        clra
+        subd  #screen_left
+        addd  glb_camera_x_pos
+        std   outslay.wFx
+        ldb   outslay.wPy
+        clra
+        subd  #screen_top
+        std   outslay.wFy
+        clr   outslay.wSh
+@loop   jsr   LoadObject_x
         beq   @full
         lda   #ObjID_foefire
         sta   id,x
-        ldd   x_pos,u
+        ldd   #0
+outslay.wFx equ *-2
         std   x_pos,x
-        ldd   y_pos,u
+        ldd   #0
+outslay.wFy equ *-2
         std   y_pos,x
-        ldb   ,s
-        lslb
-        lslb                           ; 4 octets par direction
+        ldb   outslay.wSh
+        aslb
+        aslb                           ; 4 octets par direction
         ldy   #outslay.ShotVelocity
         leay  b,y
         ldd   ,y
         std   x_vel,x
         ldd   2,y
         std   y_vel,x
-@full   puls  b
-        incb
-        cmpb  #8
-        bne   @loop
-        puls  d,y,pc
+@full   inc   outslay.wSh
+        lda   outslay.wSh
+        cmpa  #8
+        blo   @loop
+        orcc  #1                       ; C = 1 : salve partie
+        rts
+@no     andcc #$FE
+        rts
 
-; Le corps meurt — arcade 40:93fa body_explode_init. Le slot n'est PAS rendu :
-; il passe en cadavre, qui garde le chemin et l'AABB mais ne tire plus. Rien
-; n'est dessine cette trame : comme chez pata-pata, la mort se lit AVANT le
-; dessin, la ou l'arcade dessinait puis testait la collision.
-outslay.Explode
-        ldb   #outslay_scoreIdx        ; 9410 : recompense 0x86ec
+; -----------------------------------------------------------------------------
+; La mort d'un corps — 40:93fa. Score, bruitage, explosion ; le record devient
+; un cadavre qui suit toujours l'anneau (l'emplacement n'est pas rendu).
+; -----------------------------------------------------------------------------
+outslay.RecExplode
+        ldb   #outslay_scoreIdx        ; 9410 : 0x86ec
         jsr   AwardScore
         _soundFX.play soundFX.ExplosionSound,1
         jsr   LoadObject_x
-        beq   >
+        beq   @mark
         _ldd  ObjID_explosion,explosion.subtype.smallx2
         std   id,x
-        ldd   x_pos,u
+        ldb   outslay.wPx              ; FRONTIERE : l'explosion vit en playfield
+        clra
+        subd  #screen_left
+        addd  glb_camera_x_pos
         std   x_pos,x
-        ldd   y_pos,u
+        ldb   outslay.wPy
+        clra
+        subd  #screen_top
         std   y_pos,x
-!       lda   #outslay.rt.corpse
+@mark   ldb   outslay.wN
+        aslb
+        ldx   #outslay.Recs
+        abx
+        lda   #2                       ; cadavre
+        sta   outslay.RS,x
+        rts
+
+; B = subtype (0 tete, 1 finalizer). Le maitre ecrit sa propre adresse dans
+; l'enfant AVANT son premier tour, comme le rebound laser.
+outslay.SpawnFollower
+        pshs  b
+        jsr   LoadObject_x
+        puls  b
+        beq   @rts
+        lda   #ObjID_outslay_head
+        std   id,x                     ; id + subtype d'un coup
+        stu   outslay.fMaster,x
+@rts    rts
+
+;*******************************************************************************
+; LES SUIVEURS A OST — tete et finalizer, images sur stage2.cast.imgHead.
+; Chemin moteur (coordonnees ECRAN, DisplaySprite) ; la position vient de
+; l'anneau, le maitre est valide avant chaque lecture (id + routine).
+;*******************************************************************************
+
+outslay.Segment
+        lda   routine,u
+        asla
+        ldx   #outslay.FolTab
+        jmp   [a,x]
+outslay.FolTab
+        fdb   outslay.FolInit
+        fdb   outslay.FolLive
+        fdb   outslay.Deleted
+
+; PROFONDEUR. BuildSprites parcourt les rangs de 8 vers 1 : 8 est dessine en
+; PREMIER (donc au fond), 1 en dernier (devant). Le serpent tient sur trois
+; rangs pour se recouvrir comme l'arcade — tete dessus, chaque suivant dessous :
+;   5  la tete       dessinee en dernier, au-dessus de tout le corps
+;   6  le renderer   les 20 records, parcourus a rebours (cf. outslay.DrawAll)
+;   7  le finalizer  dessine en premier, tout au fond
+; Les trois vivaient au rang 6 : leur ordre dependait alors de l'ordre
+; d'INSERTION dans la liste du rang (BuildSprites part de la derniere entree et
+; remonte les `prev`), c'est-a-dire de l'ordre de passage dans RunObjects. Ca
+; tombait juste par accident ; c'est maintenant une decision.
+outslay.FolInit
+        lda   subtype,u                ; 0 tete, 1 finalizer — AVANT render_flags
+        beq   @head
+        lda   #227
+        ldb   #7                       ; le finalizer ferme la marche
+        bra   >
+@head   ldb   #5                       ; la tete passe devant (A vaut deja 0)
+!       sta   outslay.fDelay,u
+        stb   priority,u
+        clr   render_flags,u           ; coordonnees ECRAN
+        _Collision_AddAABB outslay.fAABB,AABB_list_ennemy
+        _ldd  outslay_hitbox_x,outslay_hitbox_y
+        std   outslay.fAABB+AABB.rx,u
+        clr   outslay.fAABB+AABB.p,u   ; la parite l'armera (le finalizer des
+        clr   outslay.fPhase,u         ; son premier tour : arme chaque boucle)
+        inc   routine,u
+outslay.FolLive
+        ; le maitre, valide comme le rebound laser valide son parent
+        ldx   outslay.fMaster,u
+        lda   id,x
+        cmpa  #ObjID_outslay
+        lbne  outslay.FolUnload
+        lda   routine,x
+        cmpa  #1
+        lbne  outslay.FolUnload
+        ; ou en est MA lecture ? (horloge du maitre - mon retard)
+        ldb   outslay.fDelay,u
+        clra
+        pshs  d
+        ldd   outslay.mFrames,x
+        subd  ,s++                     ; D = ma lecture ; la pile est rendue ici
+        lble  @hide                    ; pas encore ne : mon entree n'existe pas
+        ; Le drain : mon tour est-il passe ? TST, PAS LDA — A porte l'octet
+        ; HAUT de la lecture, et un LDA ici la tronquait a son octet bas : la
+        ; comparaison passait sur (mState:bas) au lieu de la lecture entiere,
+        ; la tete ne mourait jamais, repartait 256 entrees en arriere dans
+        ; l'anneau — donc DERRIERE la queue, la chaine n'en couvrant que 227
+        ; (vecu, lu dans l'OST : mFrames 1629, mEndF 1542, tete toujours en vie).
+        tst   outslay.mState,x
+        beq   @read
+        cmpd  outslay.mEndF,x
+        lbge  outslay.FolUnload
+@read
+        ; la position, a (horloge - 1 - retard) — voir la marche du maitre
+        ldb   outslay.mFrames+1,x
+        decb
+        subb  outslay.fDelay,u
+        stb   @idx
+        ldx   #outslay.ringX
+        abx
+        lda   ,x
+        ldb   #0
+@idx    equ   *-1
+        ldx   #outslay.ringY
+        abx
+        ldb   ,x
+        std   xy_pixel,u               ; le chemin ecran du moteur lit ces octets
+        ; la boite, dans le repere 0-base des autres
+        suba  #screen_left
+        sta   outslay.fAABB+AABB.cx,u
+        subb  #screen_top
+        stb   outslay.fAABB+AABB.cy,u
+        ; la pose : la tete lit le pool tel quel, le finalizer decale de 8 (948c)
+        ldb   @idx
+        ldx   #outslay.ringP
+        abx
+        ldb   ,x
+        lda   subtype,u
+        beq   >
+        addb  #8
+!       andb  #$0F
+        aslb
+        ldx   #outslay.HeadImages
+        abx
+        ldd   ,x
+        std   image_set,u
+        ; la parite : la tete une boucle sur deux, le finalizer toujours (948c)
+        lda   subtype,u
+        bne   @armed
+        lda   outslay.fPhase,u
+        eora  #1
+        sta   outslay.fPhase,u
+        beq   @off
+@armed  lda   #outslay_hitdamage_immune
+        bra   >
+@off    clra
+!       sta   outslay.fAABB+AABB.p,u
+        jmp   DisplaySprite
+@hide   lda   render_flags,u           ; pas encore ne : rien a montrer
+        ora   #render_hide_mask
+        sta   render_flags,u
+        rts
+
+outslay.FolUnload
+        lda   #2
         sta   routine,u
-        lda   #outslay_hitdamage_immune ; 9457 : le cadavre est immunise
-        sta   outslay.AABB+AABB.p,u
+        _Collision_RemoveAABB outslay.fAABB,AABB_list_ennemy
+        jmp   DeleteObject
+
+;*******************************************************************************
+; LE RENDERER GROUPE — un objet moteur pour les 20 slots (schema du tailmgr) :
+; faux imageset, Img_Page_Index patche avec sa page, un seul preambule
+; BuildSprites, DrawAll dessine tout. Il vit tant qu'un slot est allume.
+;*******************************************************************************
+
+outslay.SLOTS   equ outslay.NREC       ; un slot par record
+outslay.SLOTSZ  equ 5                  ; [vivant, x_pixel, y_pixel, routine(2)]
+
+outslay.FakeImg
+        fcb   outslay.FakeSub-outslay.FakeImg,outslay.FakeSub-outslay.FakeImg
+        fcb   outslay.FakeSub-outslay.FakeImg,outslay.FakeSub-outslay.FakeImg
+        fcb   8,8,0
+outslay.FakeSub
+        fcb   0
+        fcb   outslay.FakeMf-outslay.FakeSub
+        fcb   0
+        fcb   outslay.FakeMf-outslay.FakeSub
+        fcb   0,0
+outslay.FakeMf
+        fcb   0                        ; page, patchee a l'Init
+        fdb   outslay.DrawAll
+
+outslay.Render
+        lda   routine,u
+        bne   outslay.RenderLive
+        _GetCartPageA
+        ldb   id,u
+        ldx   #Img_Page_Index
+        sta   b,x                      ; le moteur montera NOTRE page
+        sta   outslay.FakeMf
+        ldd   #outslay.FakeImg
+        std   image_set,u
+        clr   render_flags,u           ; coordonnees ecran, boite parquee au
+        lda   #120                     ; centre : jamais eliminee hors-champ
+        sta   x_pixel,u
+        lda   #135
+        sta   y_pixel,u
+        ldb   #6
+        stb   priority,u
+        inc   routine,u
+        jmp   DisplaySprite
+outslay.RenderLive
+        bsr   outslay.SlotsLive
+        bne   @seen
+        lda   routine,u
+        cmpa  #2
+        bne   >
+        jmp   DeleteObject
+!       jmp   DisplaySprite
+@seen   lda   #2
+        sta   routine,u
+        jmp   DisplaySprite
+
+; Z = 0 s'il reste au moins un slot allume.
+outslay.SlotsLive
+        ldx   #outslay.Slots
+        ldb   #outslay.SLOTS
+@l      lda   ,x
+        bne   @yes
+        leax  outslay.SLOTSZ,x
+        decb
+        bne   @l
+        clra
+@yes    rts
+
+outslay.Slots   fill 0,outslay.SLOTS*outslay.SLOTSZ
+outslay.Recs    fill 0,outslay.NREC*outslay.RECSZ
+outslay.di      fcb 0
+
+; Le dessin : par slot allume, l'adresse ecran puis la routine compilee.
+; LE RECOUVREMENT DU SERPENT (21/08/2026). Pas de tri par sprite ici : c'est
+; un peintre, le dernier dessine passe DESSUS. Le parcours va donc A REBOURS,
+; de la queue (slot 19) vers le cou (slot 0), pour que chaque segment recouvre
+; celui qui le suit — comme l'arcade, qui DECREMENTE la priorite a chaque
+; enfant engendre (91e1) et met donc la tete devant.
+; La tete et le finalizer ne passent pas par ici (ce sont des sprites moteur) :
+; ils encadrent le lot par leur RANG de priorite, cf. outslay.FolInit.
+outslay.DrawAll
+        lda   #outslay.SLOTS
+        sta   outslay.di
+@loop   dec   outslay.di
+        lda   outslay.di
+        ldb   #outslay.SLOTSZ
+        mul
+        ldx   #outslay.Slots
+        leax  d,x
+        lda   ,x
+        beq   @next
+        ldd   1,x                      ; A = x_pixel, B = y_pixel (cadre DRS)
+        pshs  x
+        jsr   DRS_XYToAddress
+        puls  x
+        ldx   3,x
+        ldu   <glb_screen_location_2
+        jsr   ,x                       ; la routine consomme U
+@next   tst   outslay.di
+        bne   @loop
         rts
 
 ;*******************************************************************************
-; Les tables
+; LES TABLES
 ;*******************************************************************************
 
-; 1000:40c6 outslay_segment_spawn_script — (role, delai) x 22. Les handlers
-; arcade sont remplaces par le role ; les delais sont ceux de la ROM.
-outslay.ChainScript
-        fcb   outslay.role.head,10       ; 40c6 : 9246, delai 10
-        fcb   outslay.role.neck,10       ; 40ca : 92c3, delai 10
-        fcb   outslay.role.body,11       ; 40ce : 933c, delai 11
-        fcb   outslay.role.body,11       ; 40d2
-        fcb   outslay.role.body,11       ; 40d6
-        fcb   outslay.role.body,11       ; 40da
-        fcb   outslay.role.body,11       ; 40de
-        fcb   outslay.role.body,11       ; 40e2
-        fcb   outslay.role.body,11       ; 40e6
-        fcb   outslay.role.body,11       ; 40ea
-        fcb   outslay.role.body,11       ; 40ee
-        fcb   outslay.role.body,11       ; 40f2
-        fcb   outslay.role.body,11       ; 40f6
-        fcb   outslay.role.body,11       ; 40fa
-        fcb   outslay.role.body,11       ; 40fe
-        fcb   outslay.role.body,11       ; 4102
-        fcb   outslay.role.body,11       ; 4106
-        fcb   outslay.role.body,11       ; 410a
-        fcb   outslay.role.body,11       ; 410e
-        fcb   outslay.role.body,10       ; 4112 : le dernier corps attend moins
-        fcb   outslay.role.tail,10       ; 4116 : 94e1, delai 10
-        fcb   outslay.role.finalizer,0   ; 411a : 9477, delai 0 = terminateur
+; 1000:40c6, les delais CUMULES depuis la tete (t = 0) : cou +10, dix-sept
+; corps a +11, le dernier corps a +11 puis +10 avant la queue — b1 20, b2 31,
+; ..., b17 196, b18 207, queue 217 ; le finalizer (227) est un suiveur OST.
+; Chaque paire = (retard, role).
+outslay.RecInit
+        fcb   10,outslay.role.neck
+        fcb   20,outslay.role.body
+        fcb   31,outslay.role.body
+        fcb   42,outslay.role.body
+        fcb   53,outslay.role.body
+        fcb   64,outslay.role.body
+        fcb   75,outslay.role.body
+        fcb   86,outslay.role.body
+        fcb   97,outslay.role.body
+        fcb   108,outslay.role.body
+        fcb   119,outslay.role.body
+        fcb   130,outslay.role.body
+        fcb   141,outslay.role.body
+        fcb   152,outslay.role.body
+        fcb   163,outslay.role.body
+        fcb   174,outslay.role.body
+        fcb   185,outslay.role.body
+        fcb   196,outslay.role.body
+        fcb   207,outslay.role.body
+        fcb   217,outslay.role.tail
 
-; 1000:411e outslay_bydo_shot_table_loop1 — les 8 directions de la salve,
-; converties a l'echelle TO8 en 8.8. Export rejouable de re.arcade.r-type
-; (Preset.PresetWordXYVel, records de 6 octets : tick_handler, vx, vy).
-; La table loop2 (1000:414e), deux fois plus rapide, ne sert qu'au second
-; tour de jeu — la v2 n'a pas de second tour.
+; 1000:4086 outslay_spawn_variant_table — (script, X ecran, Y ecran), la
+; valeur Conv (viewport) gardee en clair, le cadre DRS (+48, +28) cuit.
+; Variantes 0..3 : les serpents du combat contre Gomander ; 4 : la traversee ;
+; 5..7 jamais citees (rangee 3 recopiee pour que le masque & 7 reste sur).
+outslay.Variants
+        fdb   anim_1A4E6,58+screen_left,99+screen_top      ; 0 — arcade (452,265)
+        fdb   anim_1A530,101+screen_left,100+screen_top    ; 1 — arcade (568,264)
+        fdb   anim_1A56E,41+screen_left,166+screen_top     ; 2 — arcade (408,176)
+        fdb   anim_1A626,120+screen_left,162+screen_top    ; 3 — arcade (619,182)
+        fdb   anim_1A652,144+8+3+screen_left,70+screen_top ; 4 — arcade (712,304)
+        fdb   anim_1A626,120+screen_left,162+screen_top    ; 5 — jamais cite
+        fdb   anim_1A626,120+screen_left,162+screen_top    ; 6 — jamais cite
+        fdb   anim_1A626,120+screen_left,162+screen_top    ; 7 — jamais cite
+
+; 1000:411e — les 8 directions de la salve, echelle TO8 en 8.8. Export
+; rejouable de re.arcade.r-type (PresetWordXYVel, records de 6 octets).
 outslay.ShotVelocity
         INCLUDE "src/enemies/outslay/1411e_outslay-shotVelocity.asm"
 
-; Les poses. 40:9294 (tete) et 40:948c (finalizer) partagent un pool de 16
-; (outslay_head_finalizer_sprite_recipes, 1000:419e), le finalizer le lisant
-; decale de 8 ; cou et queue partagent l'autre (1000:41fe). Les 16 poses sont
-; toutes visitees par le script de la variante 4.
+; Les pools de poses. Tete et finalizer partagent 1000:419e (le finalizer
+; decale de 8) — suiveurs OST, chemin moteur, images sur l'autre page. Cou
+; et queue partagent 1000:41fe — records, publies par set.
 outslay.HeadImages
         fdb   set_outslay_head_0,set_outslay_head_1
         fdb   set_outslay_head_2,set_outslay_head_3
@@ -606,7 +1085,7 @@ outslay.HeadImages
         fdb   set_outslay_head_12,set_outslay_head_13
         fdb   set_outslay_head_14,set_outslay_head_15
 
-outslay.NeckImages
+outslay.NeckSets
         fdb   set_outslay_neck_0,set_outslay_neck_1
         fdb   set_outslay_neck_2,set_outslay_neck_3
         fdb   set_outslay_neck_4,set_outslay_neck_5
@@ -616,11 +1095,7 @@ outslay.NeckImages
         fdb   set_outslay_neck_12,set_outslay_neck_13
         fdb   set_outslay_neck_14,set_outslay_neck_15
 
-; 1000:425e outslay_body_sprite_recipes — 4 images d'animation.
-outslay.BodyImages
+; 1000:425e — les 4 images d'animation du corps.
+outslay.BodySets
         fdb   set_outslay_body_0,set_outslay_body_1
         fdb   set_outslay_body_2,set_outslay_body_3
-
-; 1000:4276 outslay_explode_recipe — l'epave du corps detruit.
-outslay.BrokenImages
-        fdb   set_outslay_broken_0

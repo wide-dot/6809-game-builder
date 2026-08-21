@@ -23,6 +23,7 @@ wick.Object      EXPORT
 brood.Object     EXPORT
 outslay.Object   EXPORT
 outslay.Segment  EXPORT
+outslay.Render   EXPORT
 gomander.Object  EXPORT
 
         INCLUDE "src/common/engine/api.asm"
@@ -31,6 +32,9 @@ gomander.Object  EXPORT
 ; que le cast fait naitre (segments d'outslay, tirs, explosions).
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
+; Le renderer groupe de l'outslay y inscrit SA page, pour que BuildSprites la
+; monte avant d'appeler sa routine de dessin (schema du tailmgr).
+Img_Page_Index    EXTERNAL
 
 ; Les poses de tete/finalizer de l'outslay vivent dans leur propre direntry
 ; (stage2.cast.imgHead) : 37 sprites 12x24 ne tiennent pas dans les 16 Ko

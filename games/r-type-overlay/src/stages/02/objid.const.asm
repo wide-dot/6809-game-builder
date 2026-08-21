@@ -27,8 +27,11 @@ ObjID_gomander equ 37
 * d'images differe.
 ObjID_outslay_segment equ 38
 ObjID_outslay_head equ 39
+* Le porteur du rendu groupe des segments : un seul objet moteur pour les 20
+* sprites du corps (schema du tailmgr du Dobkeratops).
+ObjID_outslay_render equ 40
 
-objid.count equ 39
+objid.count equ 40
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

@@ -54,6 +54,12 @@ scoreHold.timer fcb 0  ; phase 3->4: ~0.5 s black-screen hold before the readout
 Tick
         ldd   main.endstage.counter
         lbne  @run                          ; sequence already armed
+        ; a REAL boss has finished : it raises globals.bossDefeated itself and
+        ; that alone arms the sequence (stage 2's gomander does this on both
+        ; its exits). Nothing sets the flag in the stages that still rely on
+        ; the stand-in below, so this test is inert for them.
+        lda   globals.bossDefeated
+        bne   @beaten
         ; no sequence yet : the stand-in boss battle — camera at the end of
         ; the map, then the hold ; its expiry counts as the victory
         ldd   glb_camera_x_pos
