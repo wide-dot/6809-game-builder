@@ -225,16 +225,33 @@ Trois issues, par coût croissant en mémoire :
 | **b** | tables + rendu dans `common.overlay`, un helper dans la page collision, un pilote résident qui alterne | ~60 o résidents + ~2 400 cy/trame de bascules ; **la carte mémoire n'est pas touchée** |
 | **c** | tout dans l'unité de collision | **ne tient pas** : 432 o de tables + ~300 de code contre 711 de marge, et l'unité deviendrait la plus grosse, poussant `stageinit` au-delà de `$1400` |
 
-**Ma recommandation : (b).** Le relais ne transporte que 7 octets à la fois —
-le masque `C AND NOT T` d'UNE rangée de cellules — donc le tampon résident est
-minuscule et les bascules de page sont une soixantaine par trame, à quelques
-cycles chacune. On paie ~2 400 cycles sur un budget mesuré à ~20 000 nets pour
-toute la passe, et on ne négocie pas un octet de la carte mémoire, qui est
-pleine.
+**TRANCHÉ le 21/08 : (d), la zone résidente par-stage.** Ni (a) ni (b) — les
+deux partaient d'une lecture fausse de la carte mémoire, que l'auteur a
+corrigée. Les fenêtres sont **quatre**, pas deux, et elles sont indépendantes :
 
-(a) est plus rapide et plus simple à écrire, mais prend 2 Ko à la zone que le
-config décrit comme « la dernière, celle où le packer ne déborde que ce qui ne
-tient plus ailleurs ». C'est un arbitrage d'auteur, pas de portage.
+| fenêtre | registre | contenu | pendant la passe |
+|---|---|---|---|
+| `$0000-$3FFF` cartouche | `$E7E6` | page `$17` : les cartes `C` et `T` | montée, **lue** |
+| `$4000-$5FFF` demi-page 0 | `$E7C3` bit 0 | le pool d'objets | **intouché** |
+| `$6000-$9FFF` page 1 | fixe | la passe et ses tables | **exécutée** |
+| `$A000-$DFFF` données | `$E7E5` | l'écran (double tampon) | **écrite** |
+
+Il n'y a donc aucun conflit : du code en RAM fixe lit la page cartouche montée
+et écrit l'écran, les trois en même temps. Mon (b) inventait un relais pour un
+problème qui n'existe pas.
+
+La passe vit dans la **bande résidente par-stage** `$92DB-$9DCA` de la page 1,
+créée le 21/08 et dont l'outslay du stage 2 occupe `$9A00-$9DB3` : il reste
+**1 829 octets** en `$92DB-$99FF`, pour un besoin d'environ 1 020 (432 de
+tables réduites à 3 octets par phase/ligne/plan, 288 de bords, ~300 de code).
+Les stages étant exclusifs, il n'y a pas même de concurrence avec l'outslay.
+
+Écartée au passage, la piste de l'auteur : basculer `$E7C3` bit 0 pour ouvrir
+les 8 Ko de l'autre demi-page (libre depuis que l'overlay a supprimé les
+cellules de fond). Elle marche et donne huit fois plus de place, mais elle rend
+le pool d'objets **inadressable** pendant les ~20 000 cycles de la passe — une
+IRQ qui y toucherait lirait du vide. C'est le filet si la passe grossit, pas le
+premier choix.
 
 Une fois l'hébergement tranché, le reste est écrit :
 
