@@ -210,9 +210,33 @@ la convention du projet pour tout art et toute table générée.
 
 ### 3.2 — La passe blast
 
-Dans `src/common/fx/`, à côté de `clearblast.asm`, et hébergée dans le même
-direntry `common.overlay` (appel par `paged.call` avec
-`common.overlay.page`).
+**CONTRAINTE DÉCOUVERTE le 21/08, à trancher avec l'auteur.** Le plan disait
+« dans `common.overlay`, à côté de `clearblast` ». Ça ne marche pas tel quel :
+la passe doit lire le bitfield `C` et le masque `T`, qui vivent en page `$17`,
+et **une seule page est montée à la fois** — le code de la passe ne peut pas
+s'exécuter depuis une autre page pendant qu'il les lit. La VRAM, elle, n'est
+pas paginée : elle ne pose aucun problème.
+
+Trois issues, par coût croissant en mémoire :
+
+| | où vit la passe | coût |
+|---|---|---|
+| **a** | une région à `$17:$1400`, dans la page des cartes | ~2 Ko pris à la zone d'arène de dernier recours ; runtime le plus simple, aucun transfert |
+| **b** | tables + rendu dans `common.overlay`, un helper dans la page collision, un pilote résident qui alterne | ~60 o résidents + ~2 400 cy/trame de bascules ; **la carte mémoire n'est pas touchée** |
+| **c** | tout dans l'unité de collision | **ne tient pas** : 432 o de tables + ~300 de code contre 711 de marge, et l'unité deviendrait la plus grosse, poussant `stageinit` au-delà de `$1400` |
+
+**Ma recommandation : (b).** Le relais ne transporte que 7 octets à la fois —
+le masque `C AND NOT T` d'UNE rangée de cellules — donc le tampon résident est
+minuscule et les bascules de page sont une soixantaine par trame, à quelques
+cycles chacune. On paie ~2 400 cycles sur un budget mesuré à ~20 000 nets pour
+toute la passe, et on ne négocie pas un octet de la carte mémoire, qui est
+pleine.
+
+(a) est plus rapide et plus simple à écrire, mais prend 2 Ko à la zone que le
+config décrit comme « la dernière, celle où le packer ne déborde que ce qui ne
+tient plus ailleurs ». C'est un arbitrage d'auteur, pas de portage.
+
+Une fois l'hébergement tranché, le reste est écrit :
 
 Structure, par rangée de cellules (30) :
 
