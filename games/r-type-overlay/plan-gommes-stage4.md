@@ -146,19 +146,29 @@ d'octet, masque de bit)`, pas sur des pixels :
 | `pellet.set` | `C[i] \|= masque` | ~25 cy |
 | `pellet.reset` | recopie `C0 → C` (1 440 o) | une fois |
 
+`pellet.reset` n'est **pas écrite** : elle attend l'arbitrage 0.1. Tant que le
+champ persiste à la mort, il n'y a pas de `C0` à embarquer et la routine
+n'aurait pas de donnée.
+
 `terrainCollision` **n'est pas modifié** : il lit `C` exactement comme
 aujourd'hui, donc aucun écart au 1:1 v1 à consigner.
 
-### 2.3 — Exposer la cellule touchée
+### 2.3 — ~~Exposer la cellule touchée~~ → reporté en phase 4
 
-`terrainCollision.checkXaxisRight` calcule déjà en interne la colonne d'octet
-(`a`) et le masque de bit (`b`) de la première cellule solide — c'est ce qui
-produit `impact.x`. Il suffit de les ranger dans deux variables au moment de
-`@impact`. C'est un ajout, pas une modification de comportement.
+**Décidé le 21/08 à l'écriture.** Les trois fichiers `terrainCollision*` sont
+importés v1 en 1:1, sans aucun écart consigné au manifeste. Y toucher pour
+exposer la cellule d'impact coûterait une déviation à consigner et un signal
+au drift-check — pour économiser une résolution d'adresse.
 
-Un helper `pellet.at(x,y)` pour les appelants qui partent de coordonnées
-(cytron, le Force pod), bâti sur les tables `xOffset`/`xMask`/`yOffset`
-existantes.
+Les primitives prennent donc leur cellule dans `terrainCollision.sensor.x/y`,
+la convention de `terrainCollision.do`, et la résolvent par `loadMap` : **le
+même calcul d'adresse que la collision**, donc aucune divergence possible entre
+la cellule testée et la cellule effacée. Un appelant qui part d'`impact.x`
+repose le senseur et rappelle — une quarantaine de cycles, contre une déviation
+v1 permanente.
+
+Si la phase 4 montre que le coût compte sur un chemin chaud, la question se
+rouvrira là, avec le vrai appelant sous les yeux.
 
 ### Validation de la phase 2
 

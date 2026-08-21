@@ -35,8 +35,20 @@ terrainCollision.maps
 ; La v1 pointe le MEME bin pour les deux plans de ce stage — le
 ; level4_bc.bin du dossier terrain est un orphelin qu'elle ne
 ; consomme jamais (son pas de ligne ne correspond d'ailleurs pas).
+;
+; CETTE CARTE EST MUTABLE : le champ de gommes y vit, le joueur le creuse et
+; Cytron le fait repousser. C'est deja le cas du mur de la rotonde au stage 1.
 collisionMapBackground
 collisionMapForeground
         INCLUDEBIN "src/stages/04/terrain/level4_fc.bin"
+
+; Le terrain DUR seul — la meme geometrie, gommes exclues. Statique, jamais
+; ecrit : c'est lui qui distingue une gomme destructible d'un mur. Extrait par
+; re.arcade.r-type --extract-ballfield ; verifie : hard OR ball == level4_fc.
+terrainCollision.hard
+        INCLUDEBIN "src/stages/04/terrain/level4_hard.bin"
+
+; Les primitives du champ, au contact des deux cartes (meme page).
+        INCLUDE "src/common/lib/pellet.asm"
 
  ENDSECTION
