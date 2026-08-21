@@ -67,6 +67,7 @@
 pellet.test  EXPORT
 pellet.clear EXPORT
 pellet.set   EXPORT
+pellet.reset EXPORT
 
 ; L'ecart entre les deux cartes, constant a l'assemblage : la meme colonne dans
 ; T se lit a cet offset de la rangee de C que loadMap a calculee.
@@ -131,3 +132,39 @@ pellet.set
 @non    clrb
 @sortie leas  1,s
         rts
+
+; ---------------------------------------------------------------------------
+; pellet.reset — le champ repart INTACT
+;
+; Appelee a la reprise au checkpoint. La raison est le comportement de la
+; vague : elle rejoue le MEME Cytron depuis le point de reprise, et s'il
+; retracait sa ligne par-dessus celle d'avant on accumulerait des traces
+; fantomes a chaque mort. checkpoint.load ne touche pas au disque, la remise a
+; neuf se fait donc en memoire.
+;
+; C := T OR D0, ou D0 (les gommes d'origine) est deroule d'un flux RLE : la
+; region collision est bornee par l'unite du stage 1 ($136F) et une copie brute
+; de 1 440 octets ferait deborder celle du stage 4. Le RLE la ramene a 263.
+;
+; Le flux est fait de paires [compte, valeur], terminees par un compte nul.
+; ~29 000 cycles pour les 1 440 octets — une fois par mort, pas par trame.
+;
+; L'unite hote fournit pellet.ball0, le flux RLE. Pas de ligne vide dans la
+; routine : elle romprait la portee des labels locaux de lwasm.
+; ---------------------------------------------------------------------------
+pellet.reset
+        ldx   #pellet.ball0             ; le flux RLE des gommes d'origine
+        ldy   #collisionMapForeground   ; C, la carte vivante a reconstruire
+        ldu   #terrainCollision.hard    ; T, le terrain dur
+@run    ldb   ,x+                       ; le compte de la sequence
+        beq   @fin                      ; 0 = fin du flux
+        lda   ,x+                       ; la valeur D0 de la sequence
+        sta   @v
+@byte   lda   #0                        ; (auto-modifie) la valeur D0
+@v      equ   *-1
+        ora   ,u+                       ; OR le terrain dur
+        sta   ,y+                       ; -> C
+        decb
+        bne   @byte
+        bra   @run
+@fin    rts

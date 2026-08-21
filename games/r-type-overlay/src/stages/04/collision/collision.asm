@@ -48,6 +48,13 @@ collisionMapForeground
 terrainCollision.hard
         INCLUDEBIN "src/stages/04/terrain/level4_hard.bin"
 
+; Les gommes D'ORIGINE, en RLE (263 o au lieu de 1 440) : pellet.reset
+; recompose C = T OR D0 a la reprise au checkpoint, pour que la vague ne rejoue
+; pas Cytron par-dessus ses propres traces. Genere par tools/rle_mask.py depuis
+; level4_ball.bin ; la region collision est trop bornee pour une copie brute.
+pellet.ball0
+        INCLUDEBIN "src/stages/04/terrain/level4_ball.rle"
+
 ; Les primitives du champ, au contact des deux cartes (meme page).
         INCLUDE "src/common/lib/pellet.asm"
 

@@ -2332,6 +2332,30 @@
                             gensymbols="gen/stages/02/tubes/tubes.const.asm"
                             lean="false"/>
 
+                <!-- LE CLIGNOTEMENT DE DEGATS. L'arcade repointe les bancs de -->
+                <!-- palette 7/8 du corps vers le banc 4 pendant seize trames.  -->
+                <!-- Nous n'avons qu'une palette et aucune case propre au boss,  -->
+                <!-- donc on recolore les tuiles (tools/gen_blink.py) et le     -->
+                <!-- patch ne touche que lui. Dans l'arene ennemis : c'est du    -->
+                <!-- contenu de boss, et la place y est.                         -->
+                <leanscroll image="src/stages/02/blink/in.png"
+                            gendir="gen/stages/02/blink"
+                            gensymbols="gen/stages/02/blink/blink.const.asm"
+                            lean="false"/>
+
+                <file name="stage2.blink.even" linkdata="LINK" arena="enemies"
+                      gendir="gen/stages/02/blink-even">
+                    <lwasm gensource="gen/stages/02/blink-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/blink-even"
+                                 gensource="gen/stages/02/blink-even/includes.asm">
+                            <image name="blinkEven" filename="gen/stages/02/blink/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.tubes.even" linkdata="LINK" arena="stage2.gfx"
                       gendir="gen/stages/02/tubes-even">
                     <lwasm gensource="gen/stages/02/tubes-even.asm">
@@ -2435,6 +2459,13 @@
                                    cols="2" rows="2" frames="8" col="87" row="7" hold="2"
                                    gensymbols="gen/stages/02/engulf/engulf.const.asm"
                                    gensource="gen/stages/02/engulf-map.asm"/>
+                        <tilepatch map="gen/stages/02/blink/even.bin" label="blink"
+                                   tiles="stage2.blink.even" variant="ND0"
+                                   cols="8" rows="9" frames="1"
+                                   col="84" row="6" hold="4"
+                                   gensymbols="gen/stages/02/blink/patch.const.asm"
+                                   gensource="gen/stages/02/blink-map.asm"/>
+
                         <tilepatch map="gen/stages/02/tubes/even.bin" label="tube0"
                                    tiles="stage2.tubes.even" variant="ND0"
                                    cols="4" rows="4" frames="2" first="0"
@@ -2546,6 +2577,7 @@
                     <load name="stage2.engulf.even"/>
                     <load name="stage2.engulf.odd"/>
                     <load name="stage2.tubes.even"/>
+                    <load name="stage2.blink.even"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>

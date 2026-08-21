@@ -27,6 +27,13 @@ mscroll.do   EXTERNAL
 mscroll.move EXTERNAL
  ENDC
 
+; Le champ de gommes du stage 4 vit dans l'unite de collision — un autre
+; direntry, donc un lien resolu au chargement. Un seul nom : le reset appele a
+; la reprise au checkpoint (les primitives, elles, servent aux objets).
+ IFEQ STAGE_ID-4
+pellet.reset EXTERNAL
+ ENDC
+
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff
@@ -930,6 +937,29 @@ stage.gameOver
 ; a l'appelant d'avoir pose le noir avant. o_fade_wait est le nombre de trames
 ; entre deux paliers de couleur ; la v1 monte en 4 et descend en 1.
 ;*******************************************************************************
+;*******************************************************************************
+; stage.checkpointReset — ce que CE stage remet a neuf a la reprise
+;
+; Appelee par checkpoint.load, apres le nettoyage de l'etat objet et le recalage
+; de la vague. Vide pour sept stages sur huit.
+;
+; Le stage 4 y remet son champ de gommes INTACT. La raison est la vague
+; elle-meme : elle rejoue le MEME Cytron depuis le point de reprise, et s'il
+; retracait sa ligne par-dessus celle laissee avant la mort, les traces
+; s'accumuleraient a chaque reprise. Le champ vit dans la carte de collision,
+; que checkpoint.load ne recharge pas (il ne touche pas au disque) — d'ou cette
+; reconstruction en memoire, C = T OR D0. Voir src/common/lib/pellet.asm.
+;*******************************************************************************
+stage.checkpointReset EXPORT
+stage.checkpointReset
+ IFEQ STAGE_ID-4
+        lda   #map.RAM_OVER_CART+collision.page
+        ldx   #pellet.reset
+        jmp   paged.call             ; sa valeur de retour est la notre
+ ELSE
+        rts
+ ENDC
+
 stage.paletteFadeIn EXPORT   ; l'unite checkpoint l'appelle apres rechargement
 stage.paletteFadeIn
         ldu   #palettefade

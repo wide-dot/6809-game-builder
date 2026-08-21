@@ -29,9 +29,21 @@ conséquences opposées :
 La place existe dans les deux cas — le stage 1 occupe jusqu'à `$136F`, le
 stage 4 est bien plus petit, et la page est libre au-delà de `$1400`.
 
-**Sans réponse, j'implémente la persistance** (le moins de code, le moins de
-mémoire) et je laisse `pellet.reset` en place mais non appelé : basculer plus
-tard coûte une ligne.
+**TRANCHÉ le 21/08 : le champ repart à neuf.** La raison est la vague
+elle-même — elle rejoue le *même* Cytron depuis le point de reprise, et s'il
+retraçait sa ligne par-dessus celle laissée avant la mort, les traces
+s'accumuleraient à chaque reprise. Ça n'a pas de sens.
+
+Implémenté en phase 2, avec une contrainte de place qui a demandé un détour :
+la région est bornée par l'unité du stage 1 (`stageinit.address` = `$136F`), et
+une copie pristine brute de 1 440 octets faisait déborder celle du stage 4. Les
+gommes d'origine sont donc stockées en **RLE — 263 octets au lieu de 1 440**
+(`tools/rle_mask.py`), et `pellet.reset` recompose `C = T OR D0` en le
+déroulant. L'unité passe de 3 971 à 4 264 octets, 711 de marge.
+
+Le crochet : `checkpoint.load` appelle `stage.checkpointReset`, exporté par
+`stage-main.asm` — vide pour sept stages sur huit, un `paged.call` vers
+`pellet.reset` pour le stage 4.
 
 ### 0.2 — L'ordre de dessin
 
@@ -50,8 +62,10 @@ défaire.
 ### 0.3 — Cytron entre-t-il dans le lot du stage 4 ?
 
 La repousse (phase 5) n'a de sens que si cytron est porté. Son cast est un
-direntry ; l'ajouter coûte de la page dans l'arène ennemis, et la carte
-mémoire est pleine. **À valider avec toi avant la phase 5**, pas avant.
+direntry ; l'ajouter coûte de la page dans l'arène ennemis.
+
+**TRANCHÉ le 21/08 : oui, cytron entre dans le budget du stage 4.** La phase 5
+est donc au programme, et la phase 2 a livré `pellet.set` pour elle.
 
 Le reste du plan ne dépend pas de cytron : le champ est jouable et creusable
 sans lui, simplement il ne se recomble pas.
