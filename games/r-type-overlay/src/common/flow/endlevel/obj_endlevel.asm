@@ -174,16 +174,16 @@ AutoPilot
         std   player1+y_vel
         ldd   player1+x_pos
         subd  glb_camera_x_pos
-        subd  #endstage.RALLY_X
+        subd  main.endstage.rallyX
         bmi   @shipLeft
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_X
         blo   @yAxis
         ldd   #scale.XN1PX
         bsr   VelScale
         std   player1+x_vel
         bra   @yAxis
 @shipLeft
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_X
         bgt   @yAxis
         ldd   #scale.XP1PX
         bsr   VelScale
@@ -191,16 +191,16 @@ AutoPilot
 @yAxis
         ldd   player1+y_pos
         subd  glb_camera_y_pos
-        subd  #endstage.RALLY_Y
+        subd  main.endstage.rallyY
         bmi   @shipAbove
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_Y
         blo   @done
         ldd   #scale.YN1PX
         bsr   VelScale
         std   player1+y_vel
         rts
 @shipAbove
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_Y
         bgt   @done
         ldd   #scale.YP1PX
         bsr   VelScale

@@ -400,3 +400,54 @@ passer `--palette <un PNG déjà commité de l'objet>` — un chemin de PNG ouvr
 les cases 13-16 et lit la palette réellement employée. Le projectile tombe
 alors exactement sur la palette de l'ennemi qui le tire (ce que l'arcade fait
 aussi : le bydo shot et le corps de l'outslay partagent la palette 0x3f).
+
+## Les xrefs Ghidra ne sont pas exhaustives — balayer les octets (21/08/2026)
+
+En relevant les écritures de `end_level_sequence_flag` (0x2FC1), `bridge_xrefs_to`
+a rendu **4** sites. Le vrai compte est **11**, et l'un des manquants
+(`0x40:B970`, la fin du stage 7) portait justement une information qu'aucun
+autre site ne donnait. Ghidra n'enregistre une xref de donnée que si son
+analyse a typé l'opérande ; sur du 8086 fraîchement désassemblé, beaucoup de
+`MOV byte ptr [imm16], imm8` y échappent.
+
+**Quand une question est de la forme « tous les endroits qui… », balayer le
+binaire.** `out/rom/maincpu.bin` est dans le dépôt d'extraction ; l'adresse
+linéaire d'un `0x0040:offset` y vaut `0x400 + offset`. Chercher le motif
+d'instruction complet, valeur immédiate comprise, révèle du même coup les
+**variantes de valeur** — c'est ainsi qu'est apparu le `0x0F` du stage 8 là où
+les huit autres bosses posent `0xFF`.
+
+```python
+d = open("out/rom/maincpu.bin", "rb").read()
+pat = bytes.fromhex("c606c12f")     # MOV byte ptr [0x2fc1], imm8
+i = 0
+while (i := d.find(pat, i)) >= 0:
+    print("0x%04X <- 0x%02X" % (i - 0x400, d[i+4])); i += 1
+```
+
+Ne pas conclure « aucun autre stage ne fait ça » sur la seule foi des xrefs :
+la conclusion négative demande le balayage.
+
+## Un ratio par axe, y compris pour les seuils (21/08/2026)
+
+`Conv` donne deux rapports, `144/384 = 0,375` en X et `-180/240 = -0,75` en Y.
+Ils s'appliquent aussi aux **grandeurs scalaires** — rayons, seuils, zones
+mortes — et pas seulement aux coordonnées. La zone morte de l'autopilote
+arcade vaut 4 px arcade sur les deux axes, ce qui donne **2 en X et 3 en Y**,
+pas une valeur unique. Elle avait été portée à 3 partout : le chiffre du Y
+appliqué aux deux, soit une bande horizontale deux fois trop large.
+
+Le signe qui aurait dû alerter : la vitesse du même autopilote était, elle,
+déjà convertie par axe (`scale.XN1PX` = 0,375 px/trame contre `scale.YN1PX` =
+0,75). Quand une vitesse est convertie par axe, le seuil qui la gouverne l'est
+aussi.
+
+Formules complètes, vérifiées sur deux valeurs déjà portées :
+
+```
+X_v2 = (X_arcade - 320) * 144/384 + 8
+Y_v2 = (Y_arcade - 128 - 16) * -180/240 + 190     ; axe arcade vers le haut
+```
+
+Le `- 16` du Y est la hauteur du bandeau arcade (`Conv.HeightHUDArcade`) ; on
+l'oublie facilement, et il décale de 12 px v2.

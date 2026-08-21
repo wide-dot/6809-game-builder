@@ -412,6 +412,8 @@ main.endstage.counter         EXPORT
 main.endstage.phase           EXPORT
 main.endstage.scoreArmed      EXPORT
 main.endstage.scoreDone       EXPORT
+main.endstage.rallyX          EXPORT
+main.endstage.rallyY          EXPORT
 
 * The whole boss (face, jaw, the 19 tail parts, the alien) moves left as one
 * body: every part calls this each frame and subtracts the SAME step from its
@@ -489,6 +491,13 @@ main.endstage.counter         fdb 0  ; end of stage countdown (0: not armed)
 main.endstage.phase           fcb 0  ; 0: gameplay, 1: jingle+autopilot, 2: glide, 3: fading, 4: score readout
 main.endstage.scoreArmed      fcb 0  ; 1: tell the HUD readout to (re)seed from the stage score
 main.endstage.scoreDone       fcb 0  ; 1: HUD readout finished -> obj_endstage leaves the level
+; Le point de ralliement de l'autopilote. Le stage 1 a son PROPRE objet de
+; fin, qui lit encore la constante a l'assemblage — mais common.endlevel est
+; RESIDENT (charge au boot) et reference ces deux noms : sans export ici, le
+; re-lien du stage 1 les resoudrait silencieusement a zero. Meme constante des
+; deux cotes, aucune derive possible. Table arcade : endlevel.const.asm.
+main.endstage.rallyX          fdb endstage.RALLY_X
+main.endstage.rallyY          fdb endstage.RALLY_Y
 main.dobkeratops.halfDamage   fcb 0  ; set when the monster is past half damage
 main.dobkeratops.nervesErasing fcb 0 ; orbit-nerve erase animations still playing
 main.dobkeratops.explode       fcb 0 ; 0: boss frozen (bossDefeated) but explosions held

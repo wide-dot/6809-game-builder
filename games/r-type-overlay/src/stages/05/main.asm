@@ -233,10 +233,17 @@ main.endstage.counter    EXPORT
 main.endstage.phase      EXPORT
 main.endstage.scoreArmed EXPORT
 main.endstage.scoreDone  EXPORT
+main.endstage.rallyX     EXPORT
+main.endstage.rallyY     EXPORT
 main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
 main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
 main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
 main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
+; Le point de ralliement de l'autopilote, publie par LE STAGE : l'objet
+; endlevel est un binaire commun, il ne peut pas porter une valeur par stage.
+; Cible commune aux stages 1-7 (drapeau 0xFF). Table arcade complete : endlevel.const.asm.
+main.endstage.rallyX     fdb endstage.RALLY_X
+main.endstage.rallyY     fdb endstage.RALLY_Y
 
 stage.endTick
         ; La musique du boss : le marqueur seme par la wave pose ce drapeau, et

@@ -241,14 +241,14 @@ AutoPilot
         subd  glb_camera_x_pos
         subd  #endstage.RALLY_X
         bmi   @shipLeft
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_X
         blo   @yAxis
         ldd   #scale.XN1PX                  ; ship right of rally point: fly left (0.375 px/frame)
         bsr   VelScale
         std   player1+x_vel
         bra   @yAxis
 @shipLeft
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_X
         bgt   @yAxis
         ldd   #scale.XP1PX                  ; ship left of rally point: fly right (0.375 px/frame)
         bsr   VelScale
@@ -258,14 +258,14 @@ AutoPilot
         subd  glb_camera_y_pos
         subd  #endstage.RALLY_Y
         bmi   @shipAbove
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_Y
         blo   @done
         ldd   #scale.YN1PX                  ; ship below rally point: fly up toward it (0.75 px/frame)
         bsr   VelScale
         std   player1+y_vel
         rts
 @shipAbove
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_Y
         bgt   @done
         ldd   #scale.YP1PX                  ; ship above rally point: fly down toward it (0.75 px/frame)
         bsr   VelScale

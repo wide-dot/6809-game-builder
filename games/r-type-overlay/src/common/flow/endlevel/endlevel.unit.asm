@@ -26,6 +26,8 @@ main.endstage.counter          EXTERNAL
 main.endstage.phase            EXTERNAL
 main.endstage.scoreArmed       EXTERNAL
 main.endstage.scoreDone        EXTERNAL
+main.endstage.rallyX           EXTERNAL
+main.endstage.rallyY           EXTERNAL
 
 ; La palette de noir, dans le main du stage avec celle du jeu : la sequence
 ; l'installe avant de rendre la main, pour que la coupure ne se voie pas.
