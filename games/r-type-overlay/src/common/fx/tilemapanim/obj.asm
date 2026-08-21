@@ -30,6 +30,13 @@
 tanimobj.desc     equ ext_variables      ; 0,1  le descripteur a jouer
 tanimobj.phase    equ ext_variables+2    ; 2    derniere parite posee
 tanimobj.life     equ ext_variables+3    ; 3,4  duree restante, en trames video
+tanimobj.final    equ ext_variables+5    ; 5    trame a poser en mourant, ou $FF
+                                         ;      pour laisser la derniere pose.
+                                         ;      Les tubes laissent ($FF, comme
+                                         ;      l'arcade) ; le flash de degats
+                                         ;      finit sur 0 — le decor normal —
+                                         ;      comme le blackout pulse arcade
+                                         ;      finit sur la palette normale.
 
 tilemapanim.Object
         lda   routine,u
@@ -69,7 +76,13 @@ tilemapanim.Live
 @rts    rts
 
 tilemapanim.Done
-        inc   routine,u
+        lda   tanimobj.final,u
+        cmpa  #$FF
+        beq   >                        ; laisser la derniere pose peinte
+        tfr   a,b
+        ldx   tanimobj.desc,u
+        jsr   tilemap.request          ; la pose d'adieu, appliquee au flush
+!       inc   routine,u
         jmp   DeleteObject
 
 tilemapanim.Deleted

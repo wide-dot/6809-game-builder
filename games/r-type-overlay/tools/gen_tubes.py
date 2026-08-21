@@ -18,25 +18,26 @@ d'un point de reference, et l'oeil en est un, mesure par correlation
 
 Verifie a l'ecran : les quatre rectangles tombent sur les quatre tentacules.
 
-## Un rectangle unique de 4x4, et pourquoi il ne touche pas l'oeil
+## Chaque tube a SA taille
 
-Les quatre ouvertures n'ont pas la meme taille (7x8, 9x8, 7x8 et 10x8 cellules
-arcade). Un seul <tilepatch> impose pourtant une taille de frame unique, la
-bande etant lue par plages : on prend donc 4x4 tuiles pour tout le monde, ce
-qui laisse une marge autour de l'art.
+Les quatre ouvertures n'ont pas la meme largeur (7x8, 9x8, 7x8 et 10x8
+cellules arcade, soit 21, 27, 21 et 30 px chez nous). Le rectangle declare
+est le plus petit qui couvre l'art A SA POSITION : la largeur en cellules
+depend donc aussi de l'alignement — le tube 3, decale de 9 px dans sa
+cellule, en traverse quatre la ou le tube 1, plus etroit d'apparence, n'en
+traverse que trois.
 
-Cette marge n'est PAS neutre : elle recopie des cellules que l'animation ne
-possede pas. Les rectangles sont donc cales en S'ECARTANT de l'oeil (colonnes
-87-88, lignes 7-8), et aucun des quatre ne l'atteint. Les cellules de marge
-recoivent le decor de la carte lui-meme, donc les reecrire ne se voit pas.
+Un premier jet imposait 4x4 a tout le monde (une taille de trame commune
+pour toute la bande). C'etait une contrainte du LECTEUR, pas des donnees :
+<tilepatch firstcol> sait depuis prendre sa fenetre en colonnes, chaque
+animation declare sa propre largeur.
 
-    tube 0 : rectangle (83, 6)   art a l'offset (27, 0)
-    tube 1 : rectangle (82, 11)  art a l'offset (21, 0)
-    tube 2 : rectangle (89, 6)   art a l'offset ( 0, 0)
-    tube 3 : rectangle (89, 11)  art a l'offset ( 9, 0)
+Les cellules de marge restantes (l'alignement en laisse toujours un peu)
+recoivent le decor de la carte lui-meme : les reecrire ne se voit pas.
 
-Sortie : src/stages/02/tubes/in.png, huit images de 48x48 cote a cote —
-tube0.a, tube0.b, tube1.a, tube1.b, ... — d'ou les `first` 0, 2, 4 et 6.
+Sortie : src/stages/02/tubes/in.png, huit images de largeurs inegales cote a
+cote — tube0.a, tube0.b, tube1.a, ... — reperees par `firstcol`. Le script
+imprime les valeurs a reporter dans le config.
 """
 import os
 import subprocess
@@ -49,7 +50,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARCADE = os.path.expanduser('~/Documents/Claude/Projects/re.arcade.r-type')
 
 TUILE = 12
-COLS = ROWS = 4                       # le rectangle commun, en cellules
+ROWS = 4                              # l'art fait 64 px arcade = 48 px = 4 rangees
 
 # L'ancre de l'oeil, mesuree par correlation (gen_engulf.py).
 EYE_ARCADE = (0x1EC, 0x10C)
@@ -64,15 +65,13 @@ TUBES = [(0x1ac, 0x11c, 7, 8),
 
 
 def place(ax, ay, cells_x, cells_y):
-    """Rectangle 4x4 et offset de l'art dedans, en pixels v2."""
+    """Le plus petit rectangle couvrant l'art, et l'offset de l'art dedans."""
     vx = EYE_V2[0] + (ax - EYE_ARCADE[0]) * 0.375
     vy = EYE_V2[1] + (ay - EYE_ARCADE[1]) * -0.75
     w = cells_x * 8 * 0.375
     c0, c1 = int(vx // TUILE), int((vx + w - 1) // TUILE)
     r0 = int(vy // TUILE)
-    # se caler a COLS colonnes en S'ECARTANT de l'oeil, colonnes 87-88
-    base = c1 - (COLS - 1) if c0 < 87 else c0
-    return base, r0, int(vx) - base * TUILE, int(vy) - r0 * TUILE
+    return c0, r0, c1 - c0 + 1, int(vx) - c0 * TUILE, int(vy) - r0 * TUILE
 
 
 def convertir(dst):
@@ -102,17 +101,20 @@ def main():
     ref = carte.getpalette()[:17 * 3]
     src = carte.load()
 
-    w, h = COLS * TUILE, ROWS * TUILE
-    bande = Image.new('P', (w * 8, h), 0)
+    h = ROWS * TUILE
+    places = [place(ax, ay, cx, cy) for ax, ay, cx, cy in TUBES]
+    total = sum(w for _, _, w, _, _ in places) * 2
+    bande = Image.new('P', (total * TUILE, h), 0)
     bande.putpalette(carte.getpalette())
     pix = bande.load()
 
-    print('bande : 8 images de %dx%d cellules (%dx%d px)' % (COLS, ROWS, w, h))
+    print('bande : 8 images de largeurs inegales, %d colonnes en tout' % total)
     slot = 0
     for k, (ax, ay, cx, cy) in enumerate(TUBES):
-        col, row, ox, oy = place(ax, ay, cx, cy)
-        print('  tube %d : rectangle (%2d,%2d)  art a l\'offset (%2d,%2d)  first=%d'
-              % (k, col, row, ox, oy, slot))
+        col, row, wc, ox, oy = places[k]
+        w = wc * TUILE
+        print('  tube %d : cols=%d rows=%d col=%d row=%d firstcol=%d  (art a +%d,+%d)'
+              % (k, wc, ROWS, col, row, slot, ox, oy))
         for f in frames[k][:2]:
             ov = Image.open(f)
             if ov.mode != 'P' or ov.getpalette()[:17 * 3] != ref:
@@ -139,8 +141,8 @@ def main():
                         t = o[px, py]
                         if t != 0:
                             v = t
-                    pix[slot * w + x, y] = v
-            slot += 1
+                    pix[slot * TUILE + x, y] = v
+            slot += wc
 
     dst = os.path.join(RACINE, 'src', 'stages', '02', 'tubes')
     os.makedirs(dst, exist_ok=True)

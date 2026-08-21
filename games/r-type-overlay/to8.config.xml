@@ -2445,10 +2445,11 @@
                                    tiles="stage2.tiles.even" variant="ND0"
                                    gensource="gen/stages/02/reset.asm"
                                    genhead="gen/stages/02/reset-head.asm">
-                            <rect col="87" row="7"  cols="2" rows="2"/>
-                            <rect col="83" row="6"  cols="4" rows="4"/>
-                            <rect col="82" row="11" cols="4" rows="4"/>
-                            <rect col="89" row="6"  cols="4" rows="4"/>
+                            <!-- Le rectangle du flash (84,6 8x9) contient    -->
+                            <!-- l'oeil et les tubes 0 et 2 ; seuls tube1 et    -->
+                            <!-- tube3 en depassent d'une colonne chacun.       -->
+                            <rect col="84" row="6"  cols="8" rows="9"/>
+                            <rect col="83" row="11" cols="3" rows="4"/>
                             <rect col="89" row="11" cols="4" rows="4"/>
                         </tilereset>
 
@@ -2459,34 +2460,44 @@
                                    cols="2" rows="2" frames="8" col="87" row="7" hold="2"
                                    gensymbols="gen/stages/02/engulf/engulf.const.asm"
                                    gensource="gen/stages/02/engulf-map.asm"/>
+                        <!-- Le flash a DEUX trames : la 0 est le decor du    -->
+                        <!-- niveau lui-meme (base : pointe, pas recompile),    -->
+                        <!-- la 1 le blanc/cyan. Alterner 0/1 clignote, finir   -->
+                        <!-- sur 0 remet l'ecran exactement comme avant.        -->
                         <tilepatch map="gen/stages/02/blink/even.bin" label="blink"
                                    tiles="stage2.blink.even" variant="ND0"
-                                   cols="8" rows="9" frames="1"
+                                   base="gen/stages/02/map/even.bin" baserows="15"
+                                   basetiles="stage2.tiles.even"
+                                   cols="8" rows="9" frames="2"
                                    col="84" row="6" hold="4"
                                    gensymbols="gen/stages/02/blink/patch.const.asm"
                                    gensource="gen/stages/02/blink-map.asm"/>
 
+                        <!-- Chaque tube declare SA taille (l'arcade : 7x8,   -->
+                        <!-- 9x8, 7x8, 10x8 cellules) ; firstcol repere sa      -->
+                        <!-- fenetre dans la bande partagee. Les valeurs sont    -->
+                        <!-- imprimees par tools/gen_tubes.py.                   -->
                         <tilepatch map="gen/stages/02/tubes/even.bin" label="tube0"
                                    tiles="stage2.tubes.even" variant="ND0"
-                                   cols="4" rows="4" frames="2" first="0"
-                                   col="83" row="6" hold="4"
+                                   cols="2" rows="4" frames="2" firstcol="0"
+                                   col="85" row="6" hold="4"
                                    gensymbols="gen/stages/02/tubes/tube0.const.asm"
                                    gensource="gen/stages/02/tube0-map.asm"/>
                         <tilepatch map="gen/stages/02/tubes/even.bin" label="tube1"
                                    tiles="stage2.tubes.even" variant="ND0"
-                                   cols="4" rows="4" frames="2" first="2"
-                                   col="82" row="11" hold="4"
+                                   cols="3" rows="4" frames="2" firstcol="4"
+                                   col="83" row="11" hold="4"
                                    gensymbols="gen/stages/02/tubes/tube1.const.asm"
                                    gensource="gen/stages/02/tube1-map.asm"/>
                         <tilepatch map="gen/stages/02/tubes/even.bin" label="tube2"
                                    tiles="stage2.tubes.even" variant="ND0"
-                                   cols="4" rows="4" frames="2" first="4"
+                                   cols="2" rows="4" frames="2" firstcol="10"
                                    col="89" row="6" hold="4"
                                    gensymbols="gen/stages/02/tubes/tube2.const.asm"
                                    gensource="gen/stages/02/tube2-map.asm"/>
                         <tilepatch map="gen/stages/02/tubes/even.bin" label="tube3"
                                    tiles="stage2.tubes.even" variant="ND0"
-                                   cols="4" rows="4" frames="2" first="6"
+                                   cols="4" rows="4" frames="2" firstcol="14"
                                    col="89" row="11" hold="4"
                                    gensymbols="gen/stages/02/tubes/tube3.const.asm"
                                    gensource="gen/stages/02/tube3-map.asm"/>

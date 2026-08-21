@@ -93,6 +93,7 @@ gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
 ; n'ecrit jamais dans la carte — il empile une demande, et tilemap.flush
 ; l'applique une fois par trame depuis la boucle de jeu.
 engulf            EXTERNAL
+blink             EXTERNAL
 tube0             EXTERNAL
 tube1             EXTERNAL
 tube2             EXTERNAL
@@ -315,6 +316,21 @@ gomander.HitCheck
         lda   #gomander.rt.engulf
         sta   routine,u
         jsr   gomander.Shield
+        ; a2e9..a331 : l'arcade seme ici DEUX acteurs de flash de palette
+        ; (bancs 7 et 8 -> banc 4, 16 trames, une peinture sur 4). Une seule
+        ; palette chez nous et aucune case propre au boss : le flash est un
+        ; patch de tuiles recolorees (blink, trame 0 = le decor du niveau,
+        ; trame 1 = le blanc/cyan du banc 4). final=0 : le pulse arcade finit
+        ; lui aussi sur la palette normale.
+        jsr   LoadObject_x
+        beq   @none                    ; pool plein : pas de flash, tant pis
+        lda   #ObjID_tilemapanim
+        sta   id,x
+        ldd   #blink
+        std   tanimobj.desc,x
+        ldd   #16                      ; [SI+10] arcade : 16 trames
+        std   tanimobj.life,x
+        clr   tanimobj.final,x
 @none   rts
 @dead   leas  2,s                      ; on ne revient pas dans l'etat
         lbra  gomander.ArmDeath
@@ -362,6 +378,8 @@ gomander.CombatJoin
         std   tanimobj.desc,x
         ldd   #gomander.ORB_LIFE
         std   tanimobj.life,x
+        lda   #$FF                     ; en mourant, laisser la derniere pose
+        sta   tanimobj.final,x         ; peinte — comme le pellet arcade
 @noSlot puls  u
         ldb   gomander.orbCursor,u     ; le curseur avance meme sans slot : une
         addb  #4                       ; emission ratee ne doit pas bloquer les

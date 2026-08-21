@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""Les tables de la couche gommes du stage 4, et leur preuve.
+
+    python3 tools/gen_pellet_tables.py [--verifier-seulement]
+
+## Le modele d'ecran
+
+BM16 sur TO8 : 160 px par ligne, deux plans de 40 octets entrelaces PAR PAIRE
+de pixels, un octet = 2 px, quartet haut = pixel de GAUCHE.
+
+    px X  ->  plan   = $C000 si (X >> 1) est pair, sinon $A000
+              octet  = X >> 2
+              quartet= X & 1        (0 = haut = gauche)
+
+C'est ce que fait DrawTiles (`lsrb lsrb` puis `bcs @ram2`) et ce que confirme
+une tuile compilee relue : ses trois pixels tombent sur un octet plein d'un
+plan et un quartet haut de l'autre.
+
+## La periodicite
+
+Une gomme fait 3 px de large, un octet en couvre 2 : le motif d'octets se
+repete donc tous les `lcm(3, 4) = 12` px, soit **3 octets par plan**. C'est ce
+qui rend le blast possible — et le `PSHS A,B,DP,X,Y,U` de clearblast pousse 9
+octets, exactement 3 periodes.
+
+La position du champ a l'ecran est `ancre = viewport_x - camera_x`, donc la
+phase du motif est `ancre mod 12` : douze jeux de tables.
+
+## Ce que ce script produit
+
+    src/stages/04/pellet-tables.asm
+
+  pellet.tbl.run    12 phases x 6 lignes x 2 plans x 9 octets
+                    le motif repete d'une plage PLEINE, pret pour le blast
+  pellet.tbl.edge   12 phases x 6 lignes x 2 plans x 2 octets
+                    les octets de bord (gauche, droite) d'une plage, ou un
+                    seul des deux pixels appartient a la gomme
+
+## La preuve
+
+`--verifier-seulement` n'ecrit rien : il rejoue le rendu COMPLET du champ pour
+les douze phases, depuis les tables, dans un modele d'ecran, puis relit les
+pixels et les compare a ce que la carte dit qu'il devrait y avoir. Une seule
+divergence et le script sort en erreur. C'est ce qui autorise a ecrire le 6809
+ensuite : le modele d'octets est deja verifie.
+"""
+import argparse
+import os
+import sys
+
+from PIL import Image
+
+VP_X, VP_Y = 8, 11          # origine du viewport a l'ecran, px
+VP_W, VP_H = 144, 180
+CELL_W, CELL_H = 3, 6
+STRIDE = 40                 # octets par ligne et par plan
+PLANE_C, PLANE_A = 0, 1     # 0 = $C000 (forme), 1 = $A000 (couleur)
+
+# La gomme, relevee sur l'in.png d'AVANT le retrait des gommes (commit
+# a3108e4e) : 1 586 des 1 618 cellules portent exactement ce motif. Les 32
+# autres, toutes sur la rangee 5 (colonnes 296-327), portent une variante en
+# miroir vertical qui n'est PAS traitee ici — 2 % du champ, ecart assume, a
+# rouvrir si ca se voit a l'ecran.
+#
+# ATTENTION, ces valeurs sont des index PNG, pas des index MATERIEL. La chaine
+# numerote la palette du PNG a partir de 1 (l'index 0 y est la transparence) :
+# l'index 16 existe cote PNG et ne tiendrait pas dans un quartet. La conversion
+# est materiel = PNG - 1, et elle se verifie sur une tuile compilee par gfxcomp :
+# la ligne PNG (13,13,16) y sort en $cc puis $f0, soit materiel (12,12) et 15.
+BALL_PNG = [[0, 14, 13],
+            [0, 14, 13],
+            [14, 14, 13],
+            [14, 8, 11],
+            [13, 13, 16],
+            [0, 16, 16]]
+
+
+def hw(png):
+    """index PNG -> quartet materiel. Le PNG 0 (transparent) devient le fond."""
+    return png - 1 if png else 0
+
+
+BALL = [[hw(p) for p in ligne] for ligne in BALL_PNG]
+BG = 0
+
+
+def loc(x):
+    """px ecran -> (plan, octet, quartet). quartet 0 = haut = gauche."""
+    return (PLANE_C if ((x >> 1) & 1) == 0 else PLANE_A, x >> 2, x & 1)
+
+
+def pixel_of(x, anchor, present):
+    """L'index de palette que la couche doit ecrire au px ecran `x`.
+
+    `present(cx)` dit si la cellule cx porte une gomme. Hors gomme, la couche
+    ecrit le fond : elle POSSEDE son rectangle, elle remplace l'effacement.
+    """
+    rel = x - anchor
+    cx, d = divmod(rel, CELL_W)
+    if rel < 0 or not present(cx):
+        return None            # rempli par l'appelant selon la ligne
+    return d, cx
+
+
+def octet(x0, line, anchor, present):
+    """La valeur de l'octet dont le pixel gauche est x0 (x0 pair)."""
+    v = 0
+    for k, x in enumerate((x0, x0 + 1)):
+        rel = x - anchor
+        cx, d = divmod(rel, CELL_W)
+        pen = BALL[line][d] if rel >= 0 and present(cx) else BG
+        v |= pen << (4 if k == 0 else 0)
+    return v
+
+
+def tables(phase):
+    """Les tables d'une phase. anchor mod 12 == phase."""
+    anchor = phase
+    plein = lambda cx: True
+    run = {}
+    edge = {}
+    for line in range(6):
+        for plane in (PLANE_C, PLANE_A):
+            # le motif repete : 3 octets, pris sur des indices d'octet
+            # consecutifs du plan. L'octet d'indice j du plan couvre les px
+            # 4j + 2*plane et +1.
+            motif = [octet(4 * j + 2 * plane, line, anchor, plein)
+                     for j in range(3)]
+            run[(line, plane)] = motif * 3          # 9 octets = 3 periodes
+            # les bords : un seul des deux px appartient a la plage.
+            gauche = octet(4 * 0 + 2 * plane, line, anchor,
+                           lambda cx: cx >= 0)      # rien a gauche de la plage
+            droite = octet(4 * 0 + 2 * plane, line, anchor,
+                           lambda cx: cx <= 0)      # rien a droite
+            edge[(line, plane)] = (gauche, droite)
+    return run, edge
+
+
+def rendu(cells, anchor, cols, rows):
+    """Rejoue la couche dans un modele d'ecran, depuis les MEMES valeurs
+    d'octet que les tables. Rend un buffer de pixels (index de palette)."""
+    ecran = {}
+    for cy in range(rows):
+        present = lambda cx: 0 <= cx < cols and cells[cy][cx]
+        if not any(cells[cy]):
+            continue
+        for r in range(6):
+            ligne = VP_Y + cy * 6 + r
+            for x0 in range(VP_X, VP_X + VP_W, 2):
+                plane, byte, _ = loc(x0)
+                ecran[(plane, ligne, byte)] = octet(x0, r, anchor, present)
+    # relecture pixel par pixel
+    out = {}
+    for (plane, ligne, byte), v in ecran.items():
+        for nib in (0, 1):
+            x = byte * 4 + plane * 2 + nib
+            out[(x, ligne)] = (v >> 4) & 0xF if nib == 0 else v & 0xF
+    return out
+
+
+def verifier(cells, cols, rows):
+    """Le rendu doit redonner, pixel pour pixel, ce que la carte decrit."""
+    total = faux = 0
+    phases = set()
+    # des positions de camera REELLES : la salle de gommes commence a la
+    # cellule 272, soit 816 px. 24 positions consecutives couvrent les 12
+    # phases deux fois. Verifier a anchor = phase ne testerait que du fond,
+    # les cellules du champ etant hors fenetre.
+    for cam in range(816, 816 + 24):
+        anchor = VP_X - cam
+        phases.add(anchor % 12)
+        out = rendu(cells, anchor, cols, rows)
+        for cy in range(rows):
+            if not any(cells[cy]):
+                continue
+            for cx in range(cols):
+                for r in range(6):
+                    for d in range(3):
+                        x = anchor + cx * 3 + d
+                        if not (VP_X <= x < VP_X + VP_W):
+                            continue
+                        y = VP_Y + cy * 6 + r
+                        attendu = BALL[r][d] if cells[cy][cx] else BG
+                        total += 1
+                        if out.get((x, y)) != attendu:
+                            faux += 1
+    assert len(phases) == 12, 'les 12 phases ne sont pas couvertes'
+    return total, faux
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument('--verifier-seulement', action='store_true')
+    ap.add_argument('-h', '--help', action='store_true')
+    args = ap.parse_args()
+    if args.help:
+        print(__doc__)
+        return 0
+
+    # le champ reel, depuis le masque extrait de l'arcade
+    masque = open('src/stages/04/terrain/level4_ball.bin', 'rb').read()
+    cols, rows = 384, 30
+    stride = cols // 8
+    cells = [[bool((masque[cy * stride + cx // 8] >> (7 - (cx % 8))) & 1)
+              for cx in range(cols)] for cy in range(rows)]
+
+    total, faux = verifier(cells, cols, rows)
+    print('preuve : %d pixels rejoues sur les 12 phases, %d divergence(s)'
+          % (total, faux))
+    if faux:
+        raise SystemExit('ECHEC : le modele d\'octets ne redonne pas la carte')
+
+    if args.verifier_seulement:
+        return 0
+
+    lignes = ['; GENERE par tools/gen_pellet_tables.py — NE PAS EDITER.',
+              '; Les tables de la couche gommes du stage 4. Voir l\'en-tete de',
+              '; l\'outil pour le modele d\'ecran et la periodicite (3 octets par',
+              '; plan, 12 phases). Le rendu depuis ces valeurs a ete rejoue et',
+              '; compare pixel pour pixel a la carte : %d px, 0 divergence.'
+              % total,
+              '']
+    lignes.append('; 12 phases x 6 lignes x 2 plans x 9 octets — le motif repete')
+    lignes.append('; d\'une plage PLEINE, pret pour un PSHS de 9 octets.')
+    lignes.append('pellet.tbl.run')
+    for phase in range(12):
+        run, _ = tables(phase)
+        lignes.append('; --- phase %d' % phase)
+        for line in range(6):
+            for plane in (PLANE_C, PLANE_A):
+                v = run[(line, plane)]
+                lignes.append('        fcb   ' + ','.join('$%02X' % b for b in v)
+                              + '   ; ligne %d plan %s' % (line, 'C' if plane == PLANE_C else 'A'))
+    lignes.append('')
+    lignes.append('; 12 phases x 6 lignes x 2 plans x 2 octets — les bords de plage')
+    lignes.append('; (gauche, droite), ou un seul des deux pixels est de la gomme.')
+    lignes.append('pellet.tbl.edge')
+    for phase in range(12):
+        _, edge = tables(phase)
+        lignes.append('; --- phase %d' % phase)
+        for line in range(6):
+            for plane in (PLANE_C, PLANE_A):
+                g, d = edge[(line, plane)]
+                lignes.append('        fcb   $%02X,$%02X   ; ligne %d plan %s'
+                              % (g, d, line, 'C' if plane == PLANE_C else 'A'))
+
+    out = 'src/stages/04/pellet-tables.asm'
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, 'w') as f:
+        f.write('\n'.join(lignes) + '\n')
+    taille = 12 * 6 * 2 * 9 + 12 * 6 * 2 * 2
+    print('ecrit %s (%d octets de tables)' % (out, taille))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

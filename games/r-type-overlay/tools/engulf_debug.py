@@ -231,6 +231,59 @@ if os.environ.get('WATCH'):
                 print('  %-7s %s' % (n, ' '.join('%02X' % c for c in v[:18])))
         sys.exit(0)
 
+    # LE FLASH DE DEGATS. On trouve l'OST du gomander dans le pool (demi-page
+    # 0, toujours adressable), on abaisse sa boite de PV d'un point — c'est un
+    # coup — puis on releve chaque rectangle ecrit et l'etat final du decor.
+    if os.environ.get('FLASH'):
+        PATCH = sym('gen/common/build/engine.lwmap', 'tilemap.patch', ENGINE)
+        P = {n: sym('gen/common/build/engine.lwmap', 'tilemap.patch.' + n, ENGINE)
+             for n in ('col', 'row', 'cols', 'rows')}
+        OBJ_SIZE, NB, POOL, ID_GOM = 63, 60, 0x4000, 37
+        u = None
+        for k in range(NB):
+            if t.read(hex(POOL + k * OBJ_SIZE), 1)[0] == ID_GOM:
+                u = POOL + k * OBJ_SIZE
+                break
+        if u is None:
+            raise SystemExit('gomander introuvable dans le pool')
+        # une cellule du rectangle du flash, non vide : (85,7)
+        boff = 85 * vr * 3 + 7 * 3
+        def cell857():
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
+            v = t.read(hex(base + boff), 3)
+            t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
+            return v
+        avant = cell857()
+        hp = t.read(hex(u + 38), 1)[0]
+        print('gomander en %04X, boite de PV = %d ; cellule (85,7) = %s'
+              % (u, hp, ' '.join('%02X' % c for c in avant)), flush=True)
+        t.call('set_breakpoint', {'pc': hex(PATCH)})
+        t.call('write_memory', {'addr': hex(u + 38),
+                                'bytes': ['%02X' % (hp - 1)]})    # LE COUP
+        vus = {}
+        flashed = False
+        for i in range(40):
+            r = t.call('run_to_breakpoint', {'max_instructions': 4000000})
+            if not (isinstance(r, dict) and r.get('hit')): break
+            k = tuple(t.read(hex(P[n]), 1)[0] for n in ('col', 'row', 'cols', 'rows'))
+            vus[k] = vus.get(k, 0) + 1
+            if k[:2] == (84, 6) and not flashed:
+                flashed = True
+                m = cell857()
+                print('pendant le flash : cellule (85,7) = %s (%s)'
+                      % (' '.join('%02X' % c for c in m),
+                         'CHANGEE' if m != avant else 'inchangee !'), flush=True)
+            t.call('step', {'count': 1})
+        t.call('clear_breakpoint', {'id': 1})
+        t.call('run_frames', {'n': 30})
+        apres = cell857()
+        print('rectangles ecrits apres le coup :')
+        for k in sorted(vus): print('   %-16s x%d' % (str(k), vus[k]))
+        print('apres le flash : cellule (85,7) %s'
+              % ('REVENUE au decor du niveau' if apres == avant
+                 else 'PAS revenue : %s' % ' '.join('%02X' % c for c in apres)))
+        sys.exit(0)
+
     # QUELS RECTANGLES SONT REELLEMENT ECRITS ? Point d'arret sur tilemap.patch.
     if os.environ.get('PATCHLOG'):
         PATCH = sym('gen/common/build/engine.lwmap', 'tilemap.patch', ENGINE)
