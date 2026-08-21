@@ -284,7 +284,24 @@ python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png 
 # raison que ceux des nuages.
 python3 tools/arcade_to_mscroll.py 03 src/stages/03/map/images/original/level3_b.png \
     --force 88,96,72=15 --force 48,64,32=15 --force 104,104,80=15
-python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
+python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next \
+    --masque src/stages/04/terrain/level4_ball.bin
+# Le champ de gommes du stage 4 (1 618 cellules) sort du decor : une couche de
+# rendu dediee le dessine et le detruit au runtime depuis le bitfield de
+# collision, il n'a donc rien a faire dans les tuiles compilees. Le masque ne
+# touche QUE l'image : les gommes restent affichees a l'ecran, donc elles
+# gardent leur voix au choix de la palette (les sortir du vote permuterait les
+# trois emplacements du stage). Le bitfield vient de
+# re.arcade.r-type --extract-ballfield.
+#
+# Sur un in.png DEJA converti, le meme masque s'applique sans rien regenerer :
+#   python3 tools/strip_cells.py src/stages/04/map/in.png \
+#       src/stages/04/terrain/level4_ball.bin
+# C'est ce qui a ete fait au 21/08/2026 : regenerer le stage 4 rejouerait AUSSI
+# la correction « espace d'affichage » du 20/08, pas encore passee sur ce stage
+# — 1 649 px changent d'emplacement de palette (11 -> 10, un peche clair vers un
+# orange soutenu). Legitime, mais c'est une decision de campagne palette, pas de
+# champ de gommes.
 # Stage 5 : son cast vote (regle actee aux stages 2 et 6, poids 1). Le slither
 # — 10 915 px reduits, le plus gros ennemi converti — etait le pire du corpus a
 # dE 24,2 : ses bruns tombaient sur l'or de la carte. Mesure du vote :

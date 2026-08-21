@@ -20,6 +20,20 @@ avertissement. Voir `tools/map_alpha.py`, qui pose la même information sur une
 image DÉJÀ convertie et qui a remplacé l'heuristique par blocs 3x6 de
 `sky_transparent.py`.
 
+## Sortir des cellules du décor (`--masque`)
+
+Une couche de rendu dédiée peut posséder certaines cellules — le champ de
+gommes du stage 4 en est le cas : 1 618 cellules que le runtime dessine et
+détruit, et qui n'ont donc rien à faire dans les tuiles compilées. L'option
+prend un bitfield packé au format des masques de collision (une cellule 3x6
+par bit) et force ces cellules en transparent : plus de pixel opaque, donc
+plus de tuile.
+
+Le masque ne touche que l'image écrite, **pas le recensement des couleurs** :
+ces cellules restent affichées à l'écran, par une autre couche, donc la
+palette doit continuer à les servir. Les sortir du vote permuterait les
+emplacements du stage.
+
 Réduction : 3/8 en X, 3/4 en Y, au plus proche voisin — 3072x240 devient
 1152x180. Mesuré : rejoué sur le stage 5, ce sous-échantillonnage reproduit
 `in.png` du dépôt au pixel près (100 % des 207 360 pixels), une fois la
@@ -189,6 +203,49 @@ def masque_alpha(src, width, height):
     w, h = src.size
     return [[trns[sp[x * w // width, y * h // height]] == 0 for x in range(width)]
             for y in range(height)]
+
+
+def applique_masque(chemin, alpha, width, height):
+    """Force en transparent les cellules 3x6 designees par un bitfield packe.
+
+    Le fichier est au format des masques de collision du jeu : une rangee de
+    cellules par tranche de `largeur_en_cellules / 8` octets, bit 7 = cellule
+    la plus a gauche. Une cellule couvre 3x6 px dans l'image reduite — c'est
+    la granularite du bit de collision, et donc celle des gommes du stage 4.
+
+    Sert a sortir du decor ce qu'une couche dediee dessinera au runtime : les
+    cellules retirees n'ont plus de pixel opaque, donc plus de tuile.
+
+    IMPORTANT : le masque ne touche QUE l'image ecrite, pas le recensement des
+    couleurs. Ces cellules restent affichees a l'ecran — par une autre couche —
+    donc la palette doit continuer a les servir. Les sortir du vote
+    permuterait les emplacements du stage et ferait deriver les couleurs de la
+    couche a la premiere recampagne palette (mesure sur le stage 4 : les
+    gommes pesent la moitie des pixels peints).
+
+    Rend (nb de cellules masquees, nouvel alpha) sans modifier celui recu.
+    """
+    cols, rows = width // 3, height // 6
+    stride = cols // 8
+    with open(chemin, 'rb') as f:
+        data = f.read()
+    attendu = stride * rows
+    if len(data) != attendu:
+        raise SystemExit('masque %s : %d octets, attendu %d (%d cellules x %d '
+                         'rangees)' % (chemin, len(data), attendu, cols, rows))
+    sortie = ([list(l) for l in alpha] if alpha is not None
+              else [[False] * width for _ in range(height)])
+    n = 0
+    for cy in range(rows):
+        for cx in range(cols):
+            if not (data[cy * stride + cx // 8] >> (7 - (cx % 8))) & 1:
+                continue
+            n += 1
+            for dy in range(6):
+                ligne = sortie[cy * 6 + dy]
+                for dx in range(3):
+                    ligne[cx * 3 + dx] = True
+    return n, sortie
 
 
 def dist(a, b):
@@ -414,6 +471,8 @@ def main():
     ap.add_argument('--free', default=','.join(map(str, FREE_DEFAULT)))
     ap.add_argument('--out', default=None)
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--masque', default=None,
+                    help='bitfield packe de cellules 3x6 a forcer transparentes')
     ap.add_argument('--pal-next', action='store_true')
     ap.add_argument('--metrique', default='lab', choices=sorted(METRIQUES))
     ap.add_argument('--plancher', type=float, default=0.1)
@@ -446,6 +505,15 @@ def main():
     width, height = round(w * SCALE_X), round(h * SCALE_Y)
     small = downscale(src, width, height)
     alpha = masque_alpha(plan, width, height)
+    # `alpha` sert au RECENSEMENT des couleurs, `alpha_sortie` a l'IMAGE : les
+    # cellules masquees restent affichees (par une autre couche), donc elles
+    # gardent leur voix au choix de la palette. Voir applique_masque.
+    alpha_sortie = alpha
+    if args.masque:
+        n, alpha_sortie = applique_masque(args.masque, alpha, width, height)
+        print('masque %s : %d cellules 3x6 sorties du decor, gardees au '
+              'recensement (une couche dediee les dessine au runtime)'
+              % (args.masque, n))
 
     if args.pal_next:
         palette, free = palette_pal_next(args.stage)
@@ -540,7 +608,7 @@ def main():
     for y in range(height):
         for x in range(width):
             # index 0 = la transparence, convention de toute la chaine gfxcomp
-            op[x, y] = 0 if alpha and alpha[y][x] else mapping[sp[x, y]]
+            op[x, y] = 0 if alpha_sortie and alpha_sortie[y][x] else mapping[sp[x, y]]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     out.save(out_path)
     print(f'\necrit {out_path}')
