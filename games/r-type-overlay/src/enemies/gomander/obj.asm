@@ -163,6 +163,9 @@ gomander.Init
         lda   #gomander_hitdamage
         sta   gomander.hp,u
         sta   gomander.AABB+AABB.p,u
+        jsr   gomander.Shield          ; l'attente qui suit est invulnerable :
+                                       ; sans ca la boite porte les PV des la
+                                       ; premiere trame, oeil ferme
         ; La POSITION de la boite — oubliee a la premiere passe : cx/cy ne
         ; sortaient jamais des residus du slot, l'orbe collisionnait n'importe
         ; ou. Le boss est immobile et le scroll fige : une ecriture suffit.
@@ -205,7 +208,12 @@ gomander.Init
 
 ; --- orbe ouvert : 224 trames, VULNERABLE (40:a290) --------------------------
 gomander.OrbOpen
-        jsr   gomander.HitCheck
+        ; PAS de HitCheck ici : _tick_orb_open (40:a290) ne teste que les PV
+        ; epuises, et n'appelle ni le rendu de l'orbe ni la collision (0xf7e4)
+        ; — contrairement au prologue a278 et a _tick_orb_arm_engulf. Le boss
+        ; n'est donc PAS touchable pendant cette attente. L'y laisser touchable
+        ; declenchait le flash pendant que l'oeil est ferme, ce qui n'a de sens
+        ; ni pour le joueur ni face a l'arcade.
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE          ; a2a3
@@ -282,7 +290,12 @@ gomander.ReopenOrb
         std   gomander.timer,u
         lda   #gomander.rt.orbOpen
         sta   routine,u
-        ; fall through : l'orbe se rouvre, les coups comptent a nouveau
+        ; ET LA BOITE SE REFERME. La cascade tombait ici dans Expose — « les
+        ; coups comptent a nouveau » — ce qui etait juste tant qu'OrbOpen
+        ; passait pour la fenetre de tir. L'arcade dit l'inverse : a290 n'y
+        ; expose pas l'orbe et n'y teste aucun coup frais. Elle se rouvre a
+        ; l'entree d'OrbArm, oeil ouvert.
+        jmp   gomander.Shield
 
 ; La boite prend les PV restants : un tir la fait descendre, HitCheck lit la
 ; difference. Hors fenetre elle passe negative — invulnerable, jamais modifiee.

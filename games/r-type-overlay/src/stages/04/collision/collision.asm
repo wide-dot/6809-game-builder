@@ -11,6 +11,10 @@
 ;*******************************************************************************
 
 terrainCollision.unit EXPORT
+; Les deux bases de carte, pour la couche de gommes qui vit en page 1 : elle
+; lit C et T directement, la page collision etant montee pendant sa passe.
+collisionMapForeground EXPORT
+terrainCollision.hard  EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -54,6 +58,13 @@ terrainCollision.hard
 ; level4_ball.bin ; la region collision est trop bornee pour une copie brute.
 pellet.ball0
         INCLUDEBIN "src/stages/04/terrain/level4_ball.rle"
+
+; GARDE-FOU : la couche de gommes (page 1) fige l'ecart entre les deux cartes a
+; 1440, ne pouvant pas soustraire deux symboles resolus au chargement. Si les
+; cartes cessent d'etre contigues, ce build echoue au lieu de dessiner faux.
+ IFNE terrainCollision.hard-collisionMapForeground-1440
+        ERROR les deux cartes ne sont plus contigues : pellet.HARDOFF est faux
+ ENDC
 
 ; Les primitives du champ, au contact des deux cartes (meme page).
         INCLUDE "src/common/lib/pellet.asm"

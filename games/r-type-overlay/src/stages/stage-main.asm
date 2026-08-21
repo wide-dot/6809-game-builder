@@ -32,6 +32,7 @@ mscroll.move EXTERNAL
 ; la reprise au checkpoint (les primitives, elles, servent aux objets).
  IFEQ STAGE_ID-4
 pellet.reset EXTERNAL
+pellet.blast EXTERNAL
  ENDC
 
 stage.main
@@ -536,6 +537,15 @@ stage.frame.faded
         ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
         ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
         ; le verrou, comme la v1 overlay (goldorak main.asm:47).
+        ; LE CHAMP DE GOMMES du stage 4, en FOND : les sprites passent devant,
+        ; donc le vaisseau reste visible dans les tunnels qu'il creuse. La passe
+        ; est RESIDENTE (page 1) : elle lit la page collision montee et ecrit
+        ; l'ecran en meme temps. Elle n'ecrit QUE ses plages — clearblast a
+        ; deja pose le fond, et le creux de la gomme vaut ce meme fond.
+ IFEQ STAGE_ID-4
+        jsr   pellet.blast
+ ENDC
+
         jsr   BuildSprites
 
         ; LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le

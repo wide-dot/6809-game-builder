@@ -231,6 +231,34 @@ if os.environ.get('WATCH'):
                 print('  %-7s %s' % (n, ' '.join('%02X' % c for c in v[:18])))
         sys.exit(0)
 
+    # LA FENETRE DE TIR. L'arcade n'expose l'orbe ni ne teste les coups dans
+    # _tick_orb_open : le boss ne doit etre touchable QUE dans OrbArm, l'oeil
+    # ouvert. On echantillonne l'etat et la boite pour le verifier.
+    if os.environ.get('WINDOW'):
+        NOMS = {1: 'OrbOpen', 2: 'PhaseA', 3: 'OrbArm', 4: 'PhaseB',
+                5: 'Engulf', 6: 'Death', 7: 'Deleted'}
+        OBJ_SIZE, NB, POOL, ID_GOM = 63, 60, 0x4000, 37
+        u = None
+        for k in range(NB):
+            if t.read(hex(POOL + k * OBJ_SIZE), 1)[0] == ID_GOM:
+                u = POOL + k * OBJ_SIZE
+                break
+        if u is None:
+            raise SystemExit('gomander introuvable')
+        vus = {}
+        for i in range(300):
+            t.call('run_frames', {'n': 8, 'timeout_ms': 600000})
+            rt = t.read(hex(u + 34), 1)[0]
+            p = t.read(hex(u + 38), 1)[0]
+            vus.setdefault(rt, set()).add(p)
+        print('etat -> valeurs de la boite AABB.p observees :')
+        for rt in sorted(vus):
+            v = sorted(vus[rt])
+            print('   %-8s %s%s' % (NOMS.get(rt, rt),
+                  ' '.join('%02X' % x for x in v),
+                  '   <- TOUCHABLE' if any(x < 0x80 for x in v) else '   blinde'))
+        sys.exit(0)
+
     # LE FLASH DE DEGATS. On trouve l'OST du gomander dans le pool (demi-page
     # 0, toujours adressable), on abaisse sa boite de PV d'un point — c'est un
     # coup — puis on releve chaque rectangle ecrit et l'etat final du decor.
@@ -246,42 +274,67 @@ if os.environ.get('WATCH'):
                 break
         if u is None:
             raise SystemExit('gomander introuvable dans le pool')
-        # une cellule du rectangle du flash, non vide : (85,7)
-        boff = 85 * vr * 3 + 7 * 3
+        # UNE CELLULE QUI N'APPARTIENT QU'AU FLASH. (85,7) etait dans le
+        # rectangle du tube 0, qui s'anime aussi : elle ne prouvait rien.
+        # (87,10) est hors des tubes (85-86, 89-90 sur les lignes 6-9) et hors
+        # de l'oeil (87-88 sur 7-8), et la carte y a du decor.
+        WC, WR = 87, 10
+        boff = WC * vr * 3 + WR * 3
         def cell857():
+            # TOUJOURS au point sur. Monter la page de la carte n'importe ou
+            # dans la trame et la « restaurer » ensuite casse la pagination du
+            # jeu : la machine se fige, et la sonde conclut que rien ne bouge.
+            for _ in range(20):
+                r = t.call('run_until_pc', {'pc': '%04X' % SAFE,
+                                            'max_instructions': 400000})
+                if isinstance(r, dict) and r.get('reached'): break
             t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
             v = t.read(hex(base + boff), 3)
             t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
             return v
+        # L'ORDRE COMPTE. Relever le decor AVANT d'attendre : cell857 avance
+        # la machine jusqu'au point sur, et l'etat changeait entre la detection
+        # d'OrbArm et le coup — on frappait en PhaseB, blinde.
         avant = cell857()
-        hp = t.read(hex(u + 38), 1)[0]
-        print('gomander en %04X, boite de PV = %d ; cellule (85,7) = %s'
+        hp = t.read(hex(u + 54), 1)[0]
+        print('gomander en %04X, PV = %d ; cellule temoin = %s'
               % (u, hp, ' '.join('%02X' % c for c in avant)), flush=True)
-        t.call('set_breakpoint', {'pc': hex(PATCH)})
-        t.call('write_memory', {'addr': hex(u + 38),
-                                'bytes': ['%02X' % (hp - 1)]})    # LE COUP
-        vus = {}
-        flashed = False
+        # FRAPPER TANT QUE LA FENETRE EST OUVERTE. Un poke unique tombait
+        # parfois sur la derniere trame d'OrbArm : l'etat suivant ne teste plus
+        # rien et le coup se perdait. On repique a chaque echantillon jusqu'a
+        # voir l'engloutissement (etat 5), qui EST la preuve que le coup a pris.
+        for _ in range(600):
+            if t.read(hex(u + 34), 1)[0] == 3: break
+            t.call('run_frames', {'n': 2, 'timeout_ms': 600000})
+        d = t.read(hex(u + 38), 20)
+        print('   OST+38.. en OrbArm : %s' % ' '.join('%02X' % c for c in d))
+        print('   (AABB.p=+0  hp attendu=+16)  routine=%d'
+              % t.read(hex(u + 34), 1)[0])
+        sys.exit(0)
+        seq = []
+        touche = False
         for i in range(40):
-            r = t.call('run_to_breakpoint', {'max_instructions': 4000000})
-            if not (isinstance(r, dict) and r.get('hit')): break
-            k = tuple(t.read(hex(P[n]), 1)[0] for n in ('col', 'row', 'cols', 'rows'))
-            vus[k] = vus.get(k, 0) + 1
-            if k[:2] == (84, 6) and not flashed:
-                flashed = True
-                m = cell857()
-                print('pendant le flash : cellule (85,7) = %s (%s)'
-                      % (' '.join('%02X' % c for c in m),
-                         'CHANGEE' if m != avant else 'inchangee !'), flush=True)
-            t.call('step', {'count': 1})
-        t.call('clear_breakpoint', {'id': 1})
-        t.call('run_frames', {'n': 30})
-        apres = cell857()
-        print('rectangles ecrits apres le coup :')
-        for k in sorted(vus): print('   %-16s x%d' % (str(k), vus[k]))
-        print('apres le flash : cellule (85,7) %s'
-              % ('REVENUE au decor du niveau' if apres == avant
-                 else 'PAS revenue : %s' % ' '.join('%02X' % c for c in apres)))
+            rt = t.read(hex(u + 34), 1)[0]
+            if rt == 3 and not touche:
+                t.call('write_memory', {'addr': hex(u + 54),
+                                        'bytes': ['%02X' % (hp + 1)]})
+            if rt == 5:
+                touche = True
+            v = tuple(cell857() + [rt])
+            if not seq or seq[-1][0][:3] != v[:3]:
+                seq.append([v, 1, i])
+            else:
+                seq[-1][1] += 1
+        if not touche:
+            raise SystemExit('l engloutissement n a jamais demarre : coup non pris')
+        print('le temoin, trame par trame apres le coup :')
+        for v, n, i in seq:
+            tag = ' = decor' if list(v[:3]) == avant else ' = FLASH'
+            print('   t+%-3d cellule %s  etat %d  x%-2d%s'
+                  % (i, ' '.join('%02X' % c for c in v[:3]), v[3], n, tag))
+        print('%d etats distincts ; finit sur %s'
+              % (len(set(x[0] for x in seq)),
+                 'le decor' if list(seq[-1][0][:3]) == avant else 'le FLASH'))
         sys.exit(0)
 
     # QUELS RECTANGLES SONT REELLEMENT ECRITS ? Point d'arret sur tilemap.patch.

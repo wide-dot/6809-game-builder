@@ -135,7 +135,11 @@ def tables(phase):
             # 4j + 2*plane et +1.
             motif = [octet(4 * j + 2 * plane, line, anchor, plein)
                      for j in range(3)]
-            run[(line, plane)] = motif * 3          # 9 octets = 3 periodes
+            # 3 octets : UNE periode. La table repetait le motif 3 fois pour
+            # servir un PSHS de 9 octets ; tant que la passe ecrit octet par
+            # octet c'etait 864 octets de redondance, et le blast pourra
+            # reconstruire ses 9 en registres depuis ces 3.
+            run[(line, plane)] = motif
             # les bords : un seul des deux px appartient a la plage.
             gauche = octet(4 * 0 + 2 * plane, line, anchor,
                            lambda cx: cx >= 0)      # rien a gauche de la plage
@@ -234,8 +238,8 @@ def main():
               '; compare pixel pour pixel a la carte : %d px, 0 divergence.'
               % total,
               '']
-    lignes.append('; 12 phases x 6 lignes x 2 plans x 9 octets — le motif repete')
-    lignes.append('; d\'une plage PLEINE, pret pour un PSHS de 9 octets.')
+    lignes.append('; 12 phases x 6 lignes x 2 plans x 3 octets — UNE periode du motif.')
+    lignes.append('; L\'octet j d\'un plan prend l\'entree (j mod 3).')
     lignes.append('pellet.tbl.run')
     for phase in range(12):
         run, _ = tables(phase)
@@ -255,11 +259,39 @@ def main():
         lignes.append('        fcb   $%02X,$%02X   ; ligne %d : bord gauche, bord droit'
                       % (gauche, droite, r))
 
+    # --- la geometrie par offset24, ce que le scroll maintient deja
+    lignes.append('')
+    lignes.append('; La geometrie, indexee par scroll_tile_pos_offset24 (0..23) — le')
+    lignes.append('; decalage px de la camera dans l\'octet de carte courant, que le')
+    lignes.append('; scroll tient a jour. Comme un octet de carte fait 24 px et que')
+    lignes.append('; 24 est multiple de 12, la PHASE du motif ne depend que de lui :')
+    lignes.append('; pas de division a faire au runtime.')
+    lignes.append(';   fdb  offset de la phase dans pellet.tbl.run (phase x 108)')
+    lignes.append(';   fcb  premiere cellule relative a dessiner')
+    lignes.append(';   fcb  nombre de cellules a parcourir')
+    lignes.append('pellet.tbl.geo')
+    for off24 in range(24):
+        anchor = VP_X - off24        # x ecran de la cellule relative 0
+        phase = anchor % 12
+        # premiere cellule dont un pixel touche la fenetre, et la derniere
+        ks = [k for k in range(64)
+              if anchor + 3 * k + 2 >= VP_X and anchor + 3 * k < VP_X + VP_W]
+        lignes.append('        fdb   %d' % (phase * 36)
+                      + '\n        fcb   %d,%d   ; offset24 %d, phase %d'
+                      % (ks[0], len(ks), off24, phase))
+
+    lignes.append('')
+    lignes.append('; j mod 3, pour indexer le motif periodique par l\'indice d\'octet.')
+    lignes.append('; 64 entrees : l\'indice d\'octet d\'un plan ne depasse pas 38.')
+    lignes.append('pellet.tbl.mod3')
+    for base in range(0, 64, 16):
+        lignes.append('        fcb   ' + ','.join(str(j % 3) for j in range(base, base + 16)))
+
     out = 'src/stages/04/pellet-tables.asm'
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, 'w') as f:
         f.write('\n'.join(lignes) + '\n')
-    taille = 12 * 6 * 2 * 9 + 6 * 2
+    taille = 12 * 6 * 2 * 3 + 6 * 2 + 24 * 4 + 64
     print('ecrit %s (%d octets de tables)' % (out, taille))
     return 0
 

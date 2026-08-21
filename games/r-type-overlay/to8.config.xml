@@ -2820,12 +2820,26 @@
                     </lwasm>
                 </file>
 
+                <!-- La couche de gommes : RESIDENTE, dans la bande par-stage de la
+                     page 1 ($92DB-$9DCA, 2 800 o dont elle prend 1 969). C'est ce
+                     qui la rend simple : en RAM fixe, elle lit la page collision
+                     montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
+                     temps. Les tables sont generees et prouvees par
+                     tools/gen_pellet_tables.py. -->
+                <file name="stage4.pellet" linkdata="LINK" page="$01" address="$92DB">
+                    <lwasm gensource="gen/stages/04/pellet.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pellet-blast.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
+                    <load name="stage4.pellet"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                 </scene>
