@@ -365,6 +365,33 @@ stage.state.running
         ; quelle touche du clavier le bouton B — c'est exactement ce que la v1
         ; appelle ici. addDirection, LUI, est dans l'IRQ — voir stage.userIRQ.
         jsr   joypad.readKbd
+
+        ; PAS DE TIR SOUS LA SEQUENCE DE FIN (21/08/2026, tous stages). Hors
+        ; phase 0 le joueur n'a plus la main : l'objet de fin pose
+        ; player1+subtype a -2, et l'objet joueur saute alors tout son bloc de
+        ; controle (`lbmi SkipPlayer1Controls`) — tir, faisceau, missiles.
+        ; Mais le FORCE POD, lui, lit le bouton DIRECTEMENT, en cinq endroits :
+        ; bouton A pour ses lasers (ForcePodAttachedFire / ForcePodDetachedFire),
+        ; bouton B pour se detacher et se rappeler. On pouvait donc tirer et
+        ; manoeuvrer le pod pendant l'autopilote, le fondu et le releve de score.
+        ;
+        ; On coupe a la SOURCE plutot qu'a chacun des cinq sites : une seule
+        ; regle, aucun lien nouveau a tirer vers une variable de stage depuis
+        ; une arme commune, et les bits comme tout consommateur futur sont
+        ; couverts d'office. Les deux boutons vivent dans le meme octet
+        ; (joypad.0.A et joypad.0.B), un clr les prend tous les deux.
+        ;
+        ; Le critere est la PHASE, pas le signe de player1+subtype : celui-ci
+        ; vaut aussi -1 quand le joueur est mort, et masquer sur lui
+        ; condamnerait le bouton du menu « continue » (hud.cont.checkFire).
+        ;
+        ; Les directions restent lues : elles ne font plus rien puisque le bloc
+        ; de controle est saute, et le pod suit le vaisseau.
+        lda   stage.overlayPhase
+        beq   >
+        clr   joypad.pressed.fire
+        clr   joypad.held.fire
+!
         jsr   Scroll
         jsr   ObjectWave
         ; La passe de collision, ici et pas ailleurs : elle marque les
