@@ -228,9 +228,11 @@ main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stag
 main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
 ; Le point de ralliement de l'autopilote, publie par LE STAGE : l'objet
 ; endlevel est un binaire commun, il ne peut pas porter une valeur par stage.
-; Le stage 8 est le SEUL a differer (drapeau 0x0F en 0x40:C21C). Table arcade complete : endlevel.const.asm.
-main.endstage.rallyX     fdb endstage.RALLY_X_BYDO
-main.endstage.rallyY     fdb endstage.RALLY_Y_BYDO
+; Le stage 8 ne s'acheve pas, il TERMINE LE JEU : pas de stage cleared,
+; mais la sequence de fin. Le vaisseau y est place pour la scene finale et
+; non rallie au centre pour un releve de score (drapeau 0x0F en 0x40:C21C). Table arcade complete : endlevel.const.asm.
+main.endstage.rallyX     fdb endstage.RALLY_X_ENDING
+main.endstage.rallyY     fdb endstage.RALLY_Y_ENDING
 
 stage.endTick
         ; La sequence de fin decide, pas la camera — voir le commentaire des

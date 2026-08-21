@@ -45,16 +45,29 @@ endstage.JINGLE   equ $10            ; jingle + autopilote a T-$10 du compte a r
 ;     5    Bellmite       0x40:B42F                 0xFF    X=$200 Y=$E0
 ;     6    Dop swarm      0x40:B1C2                 0xFF    X=$200 Y=$E0
 ;     7    Bronco         0x40:B970                 0xFF    X=$200 Y=$E0
-;     8    Bydo core      0x40:C21C                 0x0F    X=$190 Y=$100
+;     8    Bydo core      0x40:C21C                 0x0F    X=$190 Y=$100  <- fin du jeu
 ;
 ; (les deux dernieres ecritures immediates, 0x40:1F1B et 0x40:200F, valent 0 :
 ; ce sont des remises a zero, comme celle de l'init de stage en 0x40:0FE3.)
 ;
-; LE STAGE 8 EST LE SEUL A DIFFERER, et par une valeur qui a tout d'un
-; accident : `_tick_death_phase2_init` pose 0x0F la ou les huit autres posent
-; 0xFF, ce qui bascule sur la seconde cible. Un analyste avait deja annote
-; « should be xff ? » sur cette ligne. On porte le COMPORTEMENT du binaire,
-; pas l'intention supposee : bydo rallie ailleurs.
+; LE STAGE 8 EST LE SEUL A DIFFERER, ET C'EST VOULU. Ce n'est pas le meme
+; evenement : les stages 1 a 7 s'ACHEVENT (jingle, releve de score, stage
+; suivant), le stage 8 TERMINE LE JEU. Le bydo core ne rend pas la main a un
+; stage cleared mais a la sequence de fin — l'annotation du unload en
+; 0x40:C280 le dit : « Bydo's own ObjectRecord unloads -> Stage 8 ending
+; sequence takes over ». Le vaisseau n'est donc pas rallie au centre pour un
+; releve de score, il est place pour la scene finale : plus a gauche et plus
+; haut, ce qui degage le centre et le bas du champ.
+;
+; La valeur 0x0F n'a rien d'un chiffre magique : le test est `INC DL / JZ`,
+; donc TOUT ce qui n'est ni 0 ni 0xFF prend la seconde cible. Un analyste
+; avait annote « should be xff ? » sur cette ligne — c'est une melecture,
+; corrigee dans le projet Ghidra le 21/08/2026.
+;
+; Verifie par balayage d'octets : le drapeau n'a QUE DEUX lecteurs dans toute
+; la ROM (0x40:2084 et 0x40:20EA), tous deux dans run_player_one et tous deux
+; de simples tests de non-nullite. La valeur ne sert donc a rien d'autre qu'a
+; choisir la cible.
 ;
 ; Conversion (Conv.java, verifiee sur les deux valeurs deja portees) :
 ;   X_v2 = (X_arcade - 320) * 144/384 + 8
@@ -62,8 +75,9 @@ endstage.JINGLE   equ $10            ; jingle + autopilote a T-$10 du compte a r
 ; ---------------------------------------------------------------------------
 endstage.RALLY_X  equ 80             ; arcade X $200 : (512-320)*0.375+8
 endstage.RALLY_Y  equ 130            ; arcade Y $E0  : (224-144)*-0.75+190
-endstage.RALLY_X_BYDO equ 38         ; arcade X $190 : (400-320)*0.375+8
-endstage.RALLY_Y_BYDO equ 106        ; arcade Y $100 : (256-144)*-0.75+190
+; La cible de la SEQUENCE DE FIN (stage 8 seul).
+endstage.RALLY_X_ENDING equ 38       ; arcade X $190 : (400-320)*0.375+8
+endstage.RALLY_Y_ENDING equ 106      ; arcade Y $100 : (256-144)*-0.75+190
 
 ; ZONE MORTE — l'arcade compare |delta| a 4 px ARCADE sur LES DEUX axes
 ; (0x40:20B7 et 0x40:20CB). Les pixels arcade ne sont pas les notres et les

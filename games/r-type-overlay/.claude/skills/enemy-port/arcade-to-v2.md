@@ -451,3 +451,25 @@ Y_v2 = (Y_arcade - 128 - 16) * -180/240 + 190     ; axe arcade vers le haut
 
 Le `- 16` du Y est la hauteur du bandeau arcade (`Conv.HeightHUDArcade`) ; on
 l'oublie facilement, et il décale de 12 px v2.
+
+## Un écart n'est pas un bug tant qu'on n'a pas vu la suite (21/08/2026)
+
+Quand un stage fait autrement que les autres, la tentation est de conclure au
+défaut — surtout si une annotation d'analyste va déjà dans ce sens. Le stage 8
+pose `end_level_sequence_flag = 0x0F` là où les huit autres bosses posent
+`0xFF`, ce qui déplace le point de ralliement du vaisseau ; une note
+« should be xff ? » traînait sur la ligne, et j'ai conclu à l'accident.
+
+C'était faux, et la réponse était à deux instructions de là : le `unload` de
+fin (0x40:C280) est annoté « Stage 8 ending sequence takes over ». **Les
+stages 1 à 7 s'achèvent ; le stage 8 termine le jeu.** Pas de stage cleared,
+pas de relevé de score — donc aucune raison de rallier le vaisseau au centre.
+Il est placé pour la scène finale, plus à gauche et plus haut, ce qui dégage
+le centre et le bas du champ.
+
+**La règle : avant de qualifier un écart d'accident, remonter à ce que la
+séquence rend comme main.** Un chemin qui diverge sert souvent un événement
+différent, pas le même événement mal fait. Et se demander si la valeur a
+d'autres lecteurs : ici le drapeau n'en a que deux dans toute la ROM, tous
+deux de simples tests de non-nullité — `0x0F` n'est pas un code, c'est
+« n'importe quoi sauf 0 et 0xFF ».
