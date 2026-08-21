@@ -393,6 +393,12 @@ stage.state.running
         clr   joypad.held.fire
 !
         jsr   Scroll
+
+        ; LE DRAIN DES DEMANDES DE DECOR. Le code objet n'ecrit jamais dans la
+        ; carte : il empile un descripteur et un numero d'image. Ici, une fois
+        ; par trame et hors du verrou, on monte la page de la carte UNE fois et
+        ; on applique. C'est le seul endroit du jeu qui pagine pour ca.
+        jsr   tilemap.flush
         jsr   ObjectWave
         ; La passe de collision, ici et pas ailleurs : elle marque les
         ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant

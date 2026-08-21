@@ -125,17 +125,22 @@ main
 
         jsr   InitScroll
 
-        ; L'ANIMATION DE DECOR. Le rectangle 2x2 en (4,2) de la carte cycle sur
-        ; quatre images, huit trames video chacune. Les deux plans sont
-        ; declares : la camera derive ici, donc sa parite change et les deux
-        ; cartes sont lues tour a tour — un seul plan anime clignoterait une
-        ; trame sur deux, ce qui est justement le defaut qu'on veut voir si on
-        ; se trompe. Elle repart en boucle, alternee, dans la boucle de jeu.
-        ldx   #patch.state
-        ldy   #patch.even
-        ldu   #patch.odd
-        clrb                               ; sens avant
-        jsr   tilemap.anim.start
+        ; L'ANIMATION DE DECOR. Le rectangle 2x2 en (4,2) de la carte cycle
+        ; sur quatre images, huit trames video chacune, et repart en sens
+        ; inverse au bout — un aller-retour continu rend une image sautee ou
+        ; repetee visible a l'oeil.
+        ;
+        ; L'etat vit dans un OST : c'est le modele du moteur, une animation
+        ; appartient a l'objet qui la pilote. Cet exemple n'a pas d'objets,
+        ; d'ou le bloc bidon ci-dessous — `tilemap.animate` ne touche que les
+        ; octets 12 a 14, seize suffisent donc, et le banc exerce quand meme
+        ; le vrai chemin.
+        ldu   #patch.ost
+        clr   tanim.flags,u
+        ldx   #patch
+        lda   #patch.FRAMES
+        ldb   #patch.HOLD
+        jsr   tilemap.anim.arm
 
         ; terrain collision : point the resident wrappers at the mounted unit
         _terrainCollision.init objid.terrain
@@ -218,22 +223,28 @@ mainLoop
         ; because only the second one touches the screen.
         jsr   Scroll
 
-        ; Le decor anime, hors du verrou comme Scroll : il ne touche que la
-        ; table de carte, et c'est DrawTiles qui peindra le resultat. Au bout
-        ; de la sequence on repart dans l'autre sens — un aller-retour continu
-        ; rend une image sautee ou repetee visible a l'oeil, et le banc n'a
-        ; pas a etre relance a la main.
-        ldx   #patch.state
-        jsr   tilemap.anim.step
+        ; Le decor anime, hors du verrou comme Scroll : l'objet fait avancer
+        ; SON horloge et empile une demande quand l'image change ; c'est
+        ; tilemap.flush, plus bas, qui applique. Au bout de la sequence on
+        ; repart dans l'autre sens.
+        ldu   #patch.ost
+        ldx   #patch
+        lda   #patch.FRAMES
+        ldb   #patch.HOLD
+        jsr   tilemap.animate
         bne   >
-        ldx   #patch.state
-        lda   tilemap.anim.dir,x
-        eora  #1
-        tfr   a,b
-        ldy   #patch.even
-        ldu   #patch.odd
-        jsr   tilemap.anim.start
+        ldu   #patch.ost
+        lda   tanim.flags,u
+        eora  #tanim.BACKWARD
+        sta   tanim.flags,u
+        ldx   #patch
+        lda   #patch.FRAMES
+        ldb   #patch.HOLD
+        jsr   tilemap.anim.arm
 !
+        ; Le drain : UNE fois par trame, il monte la page de la carte et
+        ; applique tout ce qui s'est accumule. Le seul endroit qui pagine.
+        jsr   tilemap.flush
         _gfxlock.on
         jsr   DrawTiles
         _gfxlock.off
@@ -283,9 +294,10 @@ Obj_Index_Address
 ; nothing at load time. The code above reaches map.even/map.odd across
 ; sections, which stays an ordinary intern relocation. Only the geometry
 ; comes from source :
-patch.even  EXTERNAL
-patch.odd   EXTERNAL
-patch.state rmb tilemap.anim.SIZE
+patch       EXTERNAL
+patch.ost   rmb 16                     ; l'OST bidon, cf. le commentaire ci-dessus
+
+        INCLUDE "gen/assets/maps/patch.const.asm"
 
         INCLUDE "src/assets/maps/map.const.asm"
 

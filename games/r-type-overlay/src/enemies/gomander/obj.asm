@@ -84,15 +84,15 @@ gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
 ; L'ANIMATION DU TUBE. L'arcade repeint un rectangle de sa tilemap de fond
 ; (gomander_helper_blit_recipe, 0x40:A578) : le corps du boss est du DECOR, ce
 ; qui est aussi ce qui laisse le serpent passer derriere. Chez nous c'est
-; tilemap.patch, et le rectangle est en colonne 87 ligne 7 de la carte —
-; position retrouvee par correlation, cf. tools/gen_engulf.py.
+; tilemap.patch, rectangle en colonne 87 ligne 7 — position retrouvee par
+; correlation, cf. tools/gen_engulf.py.
 ;
-; L'etat vit ici et non dans les variables etendues : il pese 8 octets, les
-; ext en comptent 20 et 19 sont deja prises. Un statique convient — il n'y a
-; jamais deux gomanders.
-engulf.even       EXTERNAL
-engulf.odd        EXTERNAL
-gomander.anim     rmb tilemap.anim.SIZE
+; L'ETAT VIT DANS L'OST DU BOSS, sur les octets 12-14 que le moteur
+; d'animation de sprites y reserve deja (alias tanim.*). Rien a allouer : une
+; animation appartient a un objet, et cet objet la porte. Le code ci-dessous
+; n'ecrit jamais dans la carte — il empile une demande, et tilemap.flush
+; l'applique une fois par trame depuis la boucle de jeu.
+engulf            EXTERNAL
 
 ; --- la chronologie arcade, en trames ----------------------------------------
 gomander.ORB_FIRST   equ $01E0           ; a265 : 480, la premiere ouverture
@@ -185,11 +185,12 @@ gomander.Init
         ; en empilant U APRES l'avoir charge (le `puls u` rendait alors
         ; l'adresse d'engulf.odd, et tout le reste de l'init ecrivait dedans).
         pshs  u
-        ldx   #gomander.anim
-        ldy   #engulf.even
-        ldu   #engulf.odd
-        clrb
-        jsr   tilemap.anim.start
+        lda   #tanim.BACKWARD          ; l'oeil part FERME : a l'envers, `arm`
+        sta   tanim.flags,u            ; pose la derniere image
+        ldx   #engulf
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jsr   tilemap.anim.arm
         puls  u
         rts
 
@@ -200,13 +201,18 @@ gomander.OrbOpen
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE          ; a2a3
         std   gomander.timer,u
-        pshs  u                        ; l'orbe se referme : la sequence a l'endroit
-        ldx   #gomander.anim
-        ldy   #engulf.even
-        ldu   #engulf.odd
-        clrb
-        jsr   tilemap.anim.start
-        puls  u
+        ; L'OEIL S'OUVRE. Le sens a ete inverse le 21/08/2026 : la seule
+        ; fenetre VULNERABLE est l'etat suivant, OrbArm (15 trames, `Expose`),
+        ; et c'est donc la que l'oeil doit etre ouvert. `OrbOpen`, malgre son
+        ; nom, est la longue attente INVULNERABLE — 224 a 480 trames. Le sens
+        ; d'origine, calque sur la table `fwd` de l'arcade, laissait l'oeil
+        ; ouvert pendant l'attente et ferme pendant la fenetre de tir.
+        lda   #tanim.BACKWARD          ; ferme -> ouvert
+        sta   tanim.flags,u
+        ldx   #engulf
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jsr   tilemap.anim.arm
         lda   #gomander.rt.phaseA
         sta   routine,u
         jsr   gomander.Shield
@@ -214,10 +220,10 @@ gomander.OrbOpen
 
 ; --- phase A : 15 trames d'animation, AUCUN test de coup (40:a334) -----------
 gomander.PhaseA
-        pshs  u                        ; le decor avance d'une image quand il faut
-        ldx   #gomander.anim
-        jsr   tilemap.anim.step
-        puls  u
+        ldx   #engulf                  ; l'horloge du decor, sur l'OST du boss
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jsr   tilemap.animate
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE          ; a2cd
@@ -234,13 +240,11 @@ gomander.OrbArm
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE
         std   gomander.timer,u
-        pshs  u                        ; l'orbe se rouvre : la meme sequence a l'envers
-        ldx   #gomander.anim
-        ldy   #engulf.even
-        ldu   #engulf.odd
-        ldb   #1
-        jsr   tilemap.anim.start
-        puls  u
+        clr   tanim.flags,u            ; l'oeil se referme : la meme, a l'endroit
+        ldx   #engulf
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jsr   tilemap.anim.arm
         lda   #gomander.rt.phaseB
         sta   routine,u
         jsr   gomander.Shield
@@ -248,10 +252,10 @@ gomander.OrbArm
 
 ; --- phase B : 15 trames d'animation (40:a375) -------------------------------
 gomander.PhaseB
-        pshs  u                        ; le decor avance d'une image quand il faut
-        ldx   #gomander.anim
-        jsr   tilemap.anim.step
-        puls  u
+        ldx   #engulf                  ; l'horloge du decor, sur l'OST du boss
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jsr   tilemap.animate
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
         jsr   gomander.ReopenOrb

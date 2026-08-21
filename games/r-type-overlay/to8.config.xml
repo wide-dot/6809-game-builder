@@ -2380,15 +2380,17 @@
                         <tilemap map="gen/stages/02/map/odd.bin" label="map.odd"
                                  tiles="stage2.tiles.odd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
-                        <!-- L'animation du tube, un descripteur par plan. -->
-                        <tilepatch map="gen/stages/02/engulf/even.bin" label="engulf.even"
+                        <!-- L'animation du tube : UN descripteur pour les    -->
+                        <!-- deux plans, et les equates de geometrie pour le   -->
+                        <!-- code du boss, qui fait tourner l'horloge sans     -->
+                        <!-- rien lire de pagine.                              -->
+                        <tilepatch map="gen/stages/02/engulf/even.bin" label="engulf"
+                                   mapodd="gen/stages/02/engulf/odd.bin"
                                    tiles="stage2.engulf.even" variant="ND0"
+                                   tilesodd="stage2.engulf.odd" variantodd="ND0"
                                    cols="2" rows="2" frames="8" col="87" row="7" hold="2"
-                                   gensource="gen/stages/02/engulf-even-map.asm"/>
-                        <tilepatch map="gen/stages/02/engulf/odd.bin" label="engulf.odd"
-                                   tiles="stage2.engulf.odd" variant="ND0"
-                                   cols="2" rows="2" frames="8" col="87" row="7" hold="2"
-                                   gensource="gen/stages/02/engulf-odd-map.asm"/>
+                                   gensymbols="gen/stages/02/engulf/engulf.const.asm"
+                                   gensource="gen/stages/02/engulf-map.asm"/>
                     </lwasm>
                 </file>
 

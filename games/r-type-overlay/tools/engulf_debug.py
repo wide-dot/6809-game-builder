@@ -103,16 +103,6 @@ if os.environ.get('WATCH'):
         if cam >= 980:
             print('combat atteint, camera %d' % cam, flush=True)
             break
-    # vider le descripteur et le premier bloc, page de la carte montee
-    for _ in range(20):
-        r = t.call('run_until_pc', {'pc': '%04X' % SAFE, 'max_instructions': 400000})
-        if isinstance(r, dict) and r.get('reached'): break
-    t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % page]})
-    print('descripteur @3AF7 :', ' '.join('%02X' % c for c in t.read('0x3AF7', 8)))
-    print('table       @3AFF :', ' '.join('%02X' % c for c in t.read('0x3AFF', 16)))
-    print('bloc f0     @3B0F :', ' '.join('%02X' % c for c in t.read('0x3B0F', 12)))
-    t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
-
     seen = []
     shots = 0
     for i in range(200):

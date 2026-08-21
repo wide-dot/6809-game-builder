@@ -194,34 +194,43 @@ decor animation is bespoke pixels, not a recombination of the level's tiles,
 so it shares almost nothing with the level and a common pool would save
 nothing while coupling the animation's art to the level's tile numbering.
 
-### Three places, one window — the paging contract
+### Deferred requests — why object code never writes the map
 
-This is the part that bites. Three things take part and they live in **three
-different places** : the module is resident and always addressable ; the
-animation **state** belongs to the caller, so it sits in the caller's direntry
-; the **descriptor and blocks** sit in the MAP's direntry, deliberately, so
-that one page mount makes source and destination readable at once. The
-cartridge window shows one page at a time.
+Object code does not touch the map. It **pushes a request** — a descriptor and
+a frame number, three bytes — and that is all. Once per frame the game loop
+calls `tilemap.flush`, which mounts the map's page **once** and applies
+whatever accumulated.
 
-A read taken on the wrong side of a mount does not fail loudly — it returns
-whatever bytes live at that address in the other page. Three defects came out
-of exactly that, one after another, before the rule was written down :
+That is not a convenience, it is what makes the thing safe. Three parts live
+in three places : the module is resident ; an animation's **state** lives in
+the OST of the object driving it, hence in half-page 0 — outside the cartridge
+window, which ends at `$4000`, and pinned by `_gfxlock.init` under overlay, so
+always addressable ; the **descriptor and blocks** live in the map's direntry,
+which is paged. Pushing a pointer does not dereference it, so object code has
+no page to know about, and the only place that mounts one is the drain.
 
-- `cols`/`rows` read as zero — and zero is not benign here, `dec`/`bne` on
-  zero runs 256 times, so 256 columns of 256 bytes : 64 KB overwritten ;
-- the frame index read wrong — `abx` walked past the pointer table and the
-  block copied was a run of zeros, blanking the cells ;
-- `hold` read as zero — the catch-up loop never terminated.
+The sequencer that read both sides produced three defects, each the same
+mistake — a read taken on the wrong side of a mount does not fail loudly, it
+returns whatever bytes live there : `cols`/`rows` as zero and 64 KB
+overwritten, the frame index wrong and cells blanked, the hold as zero and the
+catch-up loop spinning. With deferred requests those are not expressible.
 
-So the paging is confined to **three named routines** : `tilemap.anim.mount`,
-`.unmount`, and `.cache`, the last called once at start to copy into the state
-the only two descriptor bytes the clock needs. `tilemap.anim.step` therefore
-never touches a page at all, and `applyOne` reads the frame index *before*
-mounting. Outside those, nothing mounts and nothing paged is read.
+**No allocator.** An animation belongs to an object, and that object's OST is
+its storage — on the bytes the sprite animator already reserves there
+(`tanim.frame` / `tanim.timer` / `tanim.flags`, aliases over indices 12-14).
+Instantiation, lifetime and release are the object's.
 
-`tilemap.patch` also refuses a zero `cols` or `rows` rather than trusting it :
-an unresolved symbol reads as a silent zero in this project, and here that
-zero is catastrophic rather than inert.
+One caveat worth knowing : `tanim.timer` shares byte 13 with `wave_frame_drop`,
+which ObjectWave deposits at creation. An object born from a wave must read its
+lateness **before** arming its animation.
+
+**Stamps need none of this.** `tilemap.stamp` pushes one request for frame 0 —
+no clock, no direction, no lifetime. The battleship's 31 wrecks are one call
+each.
+
+`tilemap.patch`, the leaf that writes a rectangle, refuses a zero `cols` or
+`rows` rather than trusting it : an unresolved symbol reads as a silent zero in
+this project, and here that zero would run 256 columns of 256 bytes.
 
 ### Validation
 
