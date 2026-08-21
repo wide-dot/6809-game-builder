@@ -347,3 +347,56 @@ la tilemap est un choix du portage, pas une donnée arcade — le noter comme
 Non tranché : l'ordre global entre la couche sprite et le plan de premier plan.
 Il n'est pas dans les données du jeu ; il faudra le lire dans le pilote vidéo
 M72 ou l'observer sous MAME.
+
+## Un tick dédié ne veut pas dire un art dédié (21/08/2026)
+
+Quand un ennemi tire, la question « projectile commun ou projectile propre ? »
+ne se tranche PAS sur l'existence d'une routine dédiée. Trois cas relevés en
+inspectant les six tireurs du jeu, et les trois se ressemblent dans l'index de
+connaissance (`projectile/`, `actor/enemy_*`) :
+
+| ennemi | tick | table de recipes | verdict |
+|---|---|---|---|
+| blaster, pata-pata, cancer, bug | `create_foe_fire` 0x40:f657 | `0x1000_84ae` | commun, rien à faire |
+| shell 0x40:6e27, newt 0x40:7435 | **dédié** | `0x2eee` / `0x327e` | **art commun quand même** |
+| outslay 0x40:95f1 | dédié | `0x1000_417e` | art dédié, à extraire |
+
+Les tables du shell et du newt sont **identiques à l'octet près** à celle du
+bullet commun (mêmes tuiles 0x00dc/0x00dd, même AABB rayon 2), au seul ancrage
+près : `f0 f0` (-16,-16) contre `f8 f8` (-8,-8). Leur tick n'est dédié que pour
+le *comportement* — le shell tue son tir passé 192 px derrière son anneau, le
+newt a un TTL avant d'armer la sonde terrain.
+
+**Le test qui tranche : lire les octets de la table, pas le nom de la
+routine.** `bridge_data_peek` sur la base du `ADD BX,<base>` juste avant
+`write_1_sprite_a`, et comparer avec `0x1000_84ae`. Deux tuiles miroitées
+(attr 0x00/0x04/0x08 sur deux ids) = c'est le bullet commun. Quatre ids
+distincts = art propre.
+
+Le bydo shot de l'outslay est le seul vrai cas : quatre tuiles (0x09fe, 0x09ff,
+0x0af0, 0x0af1), une boule qui enfle de 6x6 à 12x12, et une AABB à SOI
+(`0x1000_4196`, rayon 4 = le double du commun).
+
+### Deux détails de cadence à ne pas rater
+
+`run_foe_fire` calcule sa frame avec `(BP >> 3 + global_counter) & 0x18` : le
+`BP >> 3` **désynchronise volontairement les instances** (deux bullets alloués
+à des offsets d'ObjectRecord différents ne tournent pas en phase). Le bydo shot
+fait `(global_counter & 6) * 3` — **sans** `BP >> 3` : les huit tirs d'une salve
+battent en phase. Porter la désynchro sur un projectile qui n'en a pas est une
+erreur visible à l'écran.
+
+Et le pas : `& 0x18` sur un stride 6 tient une image 8 trames ; `& 6` la tient
+2 trames. Côté v2 la table étant en `fdb` (stride 2), `andb #6` donne
+directement le décalage — voir `outslay/shot.asm`.
+
+### Convertir l'art sur la BONNE palette
+
+`arcade_to_sprites.py` convertit tout `images/original/` d'un coup, ce qui
+réécrirait les jeux déjà commités — et la campagne palette les a retouchés
+depuis, donc aucune invocation ne les reproduit. Pour n'ajouter qu'un jeu :
+monter un répertoire temporaire ne contenant que `images/original/<jeu>/`, et
+passer `--palette <un PNG déjà commité de l'objet>` — un chemin de PNG ouvre
+les cases 13-16 et lit la palette réellement employée. Le projectile tombe
+alors exactement sur la palette de l'ennemi qui le tire (ce que l'arcade fait
+aussi : le bydo shot et le corps de l'outslay partagent la palette 0x3f).

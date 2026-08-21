@@ -124,6 +124,14 @@ outslay_hitbox_y	equ 12
 outslay_hitdamage	equ 1
 outslay_hitdamage_immune equ -128
 
+; Le bydo shot de la salve en etoile. Sa boite est la SIENNE (1000:4196,
+; fc ff 04 00 fc ff 04 00 = rayon 4 sur les deux axes), le double du bullet
+; commun (1000:84c6, rayon 2) qu'on lui pretait jusqu'ici.
+; 4 x 0.375 = 1.5 -> 2 en X, 4 x 0.75 = 3 en Y.
+outslay_shot_hitbox_x	equ 2
+outslay_shot_hitbox_y	equ 3
+outslay_shot_hitdamage	equ 1
+
 ; --- HP set inline in the obj (centralised here for the stage-1 catalogue) ---
 ; Arcade-verified via doc/arcade-combat-reference.md (section 4 roster).
 p_staff_hitdamage         equ 6      ; arcade create_p_staff @0x74b4 : +0x2F = 6 (v2)

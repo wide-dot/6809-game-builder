@@ -2376,6 +2376,7 @@
                             <images dir="src/enemies/outslay/images/neck" names="outslay_neck"/>
                             <images dir="src/enemies/outslay/images/body" names="outslay_body"/>
                             <images dir="src/enemies/outslay/images/body-broken" names="outslay_broken"/>
+                            <images dir="src/enemies/outslay/images/bydo-shot" names="outslay_shot"/>
                         </gfxcomp>
                     </lwasm>
                 </file>

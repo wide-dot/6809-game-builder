@@ -24,6 +24,7 @@ brood.Object     EXPORT
 outslay.Object   EXPORT
 outslay.Segment  EXPORT
 outslay.Render   EXPORT
+outslay.Shot     EXPORT
 gomander.Object  EXPORT
 
         INCLUDE "src/common/engine/api.asm"
@@ -94,6 +95,7 @@ stage2.cast.stub
         INCLUDE "src/enemies/wick/obj.asm"
         INCLUDE "src/enemies/brood/obj.asm"
         INCLUDE "src/enemies/outslay/obj.asm"
+        INCLUDE "src/enemies/outslay/shot.asm"
         INCLUDE "src/enemies/gomander/obj.asm"
 
  ENDSECTION

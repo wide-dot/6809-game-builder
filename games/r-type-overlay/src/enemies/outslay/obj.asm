@@ -731,8 +731,8 @@ outslay.RecInRangeFire
         clr   outslay.wSh
 @loop   jsr   LoadObject_x
         beq   @full
-        lda   #ObjID_foefire
-        sta   id,x
+        lda   #ObjID_outslay_shot       ; l'art dedie (voir shot.asm), plus
+        sta   id,x                     ; le bullet commun
         ldd   #0
 outslay.wFx equ *-2
         std   x_pos,x

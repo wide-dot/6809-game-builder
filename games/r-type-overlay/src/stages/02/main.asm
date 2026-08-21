@@ -47,6 +47,8 @@ outslay.Object    EXTERNAL
 ; images vivent dans un autre direntry) pour une seule entree de code.
 outslay.Segment   EXTERNAL
 outslay.Render    EXTERNAL
+; Le projectile de la salve en etoile : art et boite dedies (shot.asm).
+outslay.Shot      EXTERNAL
 gomander.Object   EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa

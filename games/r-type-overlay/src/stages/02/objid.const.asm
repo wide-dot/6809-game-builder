@@ -30,8 +30,10 @@ ObjID_outslay_head equ 39
 * Le porteur du rendu groupe des segments : un seul objet moteur pour les 20
 * sprites du corps (schema du tailmgr du Dobkeratops).
 ObjID_outslay_render equ 40
-
-objid.count equ 40
+* Le projectile de la salve en etoile : art et boite DEDIES cote arcade
+* (tick 95f1, recipes 1000:417e, AABB 1000:4196), pas le bullet commun.
+ObjID_outslay_shot equ 41
+objid.count equ 41
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
