@@ -97,11 +97,8 @@ tube0             EXTERNAL
 tube1             EXTERNAL
 tube2             EXTERNAL
 tube3             EXTERNAL
-; 19 — la parite des ouvertures. L'arcade ne leur donne pas d'horloge propre :
-; tick_gomander_orb_pellet_run choisit ptr_a ou ptr_b sur (compteur & 4), donc
-; les quatre battent ENSEMBLE sur l'horloge globale. On garde juste la derniere
-; parite posee, pour n'empiler les quatre demandes qu'au changement.
-gomander.tubePhase equ ext_variables+19
+; 19 — le curseur du script d'emission des ouvertures, en octets.
+gomander.orbCursor equ ext_variables+19
 
 
 ; --- la chronologie arcade, en trames ----------------------------------------
@@ -185,8 +182,7 @@ gomander.Init
         std   gomander.timer,u
         lda   #gomander.rt.orbOpen
         sta   routine,u
-        lda   #$FF                     ; parite impossible : la premiere trame
-        sta   gomander.tubePhase,u     ; de combat pose les quatre ouvertures
+        clr   gomander.orbCursor,u     ; le script des ouvertures part au debut
 
         ; L'orbe part OUVERT : l'etat OrbOpen suit, et la carte doit le montrer
         ; des maintenant. On pose l'image 0 sans faire tourner d'horloge — la
@@ -335,30 +331,41 @@ gomander.CombatJoin
         blo   >
         lda   #1                       ; a440 : end_level_sequence_flag — en v2
         sta   globals.bossDefeated     ; c'est ce drapeau que la sequence lit
-!       ; LES QUATRE OUVERTURES. L'arcade les repeint depuis les objets pellet
-        ; (a46f), qu'on ne porte pas ; mais l'animation, elle, ne depend que de
-        ; l'horloge globale — (compteur & 4) choisit la pose, donc les quatre
-        ; battent ensemble. On n'empile qu'au CHANGEMENT de parite : quatre
-        ; demandes toutes les quatre trames video, pas quatre par trame.
-        lda   gfxlock.frame.count+1
-        lsra
-        lsra
-        anda  #1
-        cmpa  gomander.tubePhase,u
-        beq   @tubesDone
-        sta   gomander.tubePhase,u
-        tfr   a,b
-        ldx   #tube0
-        jsr   tilemap.request
-        ldb   gomander.tubePhase,u
-        ldx   #tube1
-        jsr   tilemap.request
-        ldb   gomander.tubePhase,u
-        ldx   #tube2
-        jsr   tilemap.request
-        ldb   gomander.tubePhase,u
-        ldx   #tube3
-        jsr   tilemap.request
+!       ; LES OUVERTURES. Elles ne battent PAS en continu : gomander_orb_emission_script
+        ; (1000:4d1c) donne dix-sept instants du combat, chacun nommant UN tube,
+        ; et l'arcade y cree un objet qui vit ~272 trames en repeignant ce
+        ; tube-la (a5c5 / a638). Rapproche du script de vague, ces dix-sept se
+        ; rangent en deux familles sans bavure : huit a 24-56 trames d'un
+        ; serpent — il SORT — et huit a 336-354 — il RENTRE. Le tube s'ouvre
+        ; pour le laisser passer, deux fois par serpent.
+        ldb   gomander.orbCursor,u
+        cmpb  #gomander.OrbScript.SIZE
+        bhs   @tubesDone               ; script epuise
+        ldx   #gomander.OrbScript
+        abx
+        ldd   gomander.combat,u
+        cmpd  ,x
+        blo   @tubesDone               ; le seuil n'est pas atteint
+        pshs  u
+        jsr   LoadObject_x
+        beq   @noSlot
+        lda   #ObjID_tilemapanim
+        sta   id,x
+        ldu   ,s                       ; l'OST du boss : `pshs u` l'a mis en ,s
+                                       ; et non en 2,s — LoadObject_x le clobbe
+        ldb   gomander.orbCursor,u
+        pshs  x
+        ldx   #gomander.OrbScript
+        abx
+        ldd   2,x                      ; le descripteur du tube
+        puls  x
+        std   tanimobj.desc,x
+        ldd   #gomander.ORB_LIFE
+        std   tanimobj.life,x
+@noSlot puls  u
+        ldb   gomander.orbCursor,u     ; le curseur avance meme sans slot : une
+        addb  #4                       ; emission ratee ne doit pas bloquer les
+        stb   gomander.orbCursor,u     ; suivantes
 @tubesDone
         ; a46c : les serpents.
         jmp   gomander.WaveTick
@@ -482,3 +489,31 @@ gomander.WaveScript
         fdb   0,$0280                  ; t = 4708
         fdb   1,$FFFF                  ; t = 5348, puis plus rien
 gomander.WaveScript.end
+
+* ---------------------------------------------------------------------------
+* gomander_orb_emission_script (1000:4d1c), porte a l'identique : dix-sept
+* couples (seuil de combat, tube). Les seuils sont en trames video, comme le
+* compteur qui les lit.
+* ---------------------------------------------------------------------------
+gomander.ORB_LIFE equ 272              ; a5eb : 0x110 + (hasard & 3) ; on prend
+                                       ; la borne basse, le hasard ne sert qu'a
+                                       ; desynchroniser deux vies voisines
+gomander.OrbScript
+        fdb   $0038,tube0
+        fdb   $0162,tube1
+        fdb   $03E0,tube0
+        fdb   $0510,tube3
+        fdb   $0630,tube1
+        fdb   $0760,tube2
+        fdb   $0898,tube1
+        fdb   $09E0,tube0
+        fdb   $0B30,tube3
+        fdb   $0C60,tube3
+        fdb   $0D60,tube1
+        fdb   $0EA0,tube1
+        fdb   $1120,tube0
+        fdb   $1260,tube0
+        fdb   $13B0,tube3
+        fdb   $14E0,tube2
+        fdb   $1620,tube1
+gomander.OrbScript.SIZE equ *-gomander.OrbScript

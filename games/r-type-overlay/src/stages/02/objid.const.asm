@@ -33,7 +33,10 @@ ObjID_outslay_render equ 40
 * Le projectile de la salve en etoile : art et boite DEDIES cote arcade
 * (tick 95f1, recipes 1000:417e, AABB 1000:4196), pas le bullet commun.
 ObjID_outslay_shot equ 41
-objid.count equ 41
+* L'animation de decor comme objet : le boss en instancie une par ouverture
+* de tube, elle vit sa duree et se rend. Voir common/fx/tilemapanim/obj.asm.
+ObjID_tilemapanim equ 42
+objid.count equ 42
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

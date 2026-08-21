@@ -25,6 +25,7 @@ outslay.Object   EXPORT
 outslay.Segment  EXPORT
 outslay.Render   EXPORT
 outslay.Shot     EXPORT
+tilemapanim.Object EXPORT
 gomander.Object  EXPORT
 
         INCLUDE "src/common/engine/api.asm"
@@ -98,6 +99,7 @@ stage2.cast.stub
         INCLUDE "src/enemies/brood/obj.asm"
         INCLUDE "src/enemies/outslay/obj.asm"
         INCLUDE "src/enemies/outslay/shot.asm"
+        INCLUDE "src/common/fx/tilemapanim/obj.asm"
         INCLUDE "src/enemies/gomander/obj.asm"
 
  ENDSECTION
