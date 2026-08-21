@@ -11,13 +11,14 @@ applique une entree quand la camera franchit son seuil.
 
 La regle : une rangee n'est zappable a une position camera que si TOUTES
 les cellules de la fenetre visible (12-13 colonnes) y sont pleinement
-peintes — apres la regle overlay (blocs de ciel 3x6 transparents, cf.
-sky_transparent.py), appliquee ici en memoire pour lire les in.png traites
-ou non. Seules les rangees CONSECUTIVES depuis le haut (t) et depuis le
-bas (b) se zappent : la fenetre reste contigue, c'est ce que deux
-operandes savent dire. Le blast ne presume rien : meme la rangee du bas
-(que sky_transparent.py maintient peinte) est DEDUITE de la carte ici —
-elle donne b >= 1 partout, ce n'est pas une regle codee en dur.
+peintes — un pixel transparent (index 0) suffit a la rendre non zappable.
+La transparence est LUE dans l'in.png, ou tools/map_alpha.py l'a posee
+depuis le masque arcade ; l'heuristique par blocs 3x6 qui la devinait ici
+en memoire a disparu avec sky_transparent.py. Seules les rangees
+CONSECUTIVES depuis le haut (t) et depuis le bas (b) se zappent : la
+fenetre reste contigue, c'est ce que deux operandes savent dire. Le blast
+ne presume rien, la rangee du bas comprise : elle est DEDUITE de la carte
+comme les autres.
 L'analyse est ERODEE d'un pixel de camera de chaque cote : le plan impair
 est l'art decale d'un pixel, une transition ne doit jamais s'appliquer un
 pixel trop tot.
@@ -39,13 +40,8 @@ def load(stage):
     im = Image.open(f"src/stages/{stage}/map/in.png").convert("P")
     px = im.load()
     W, H = im.size
-    sky = set()
-    for cx in range(0, W, 3):
-        for cy in range(0, H - 12, 6):
-            if all(px[cx + i, cy + j] == 1 for j in range(6) for i in range(3)):
-                sky.add((cx, cy))
     def opaque(x, y):
-        return px[x, y] != 0 and (x // 3 * 3, y // 6 * 6) not in sky
+        return px[x, y] != 0
     return opaque, W, H
 
 for stage in (sys.argv[1:] or ["01"]):

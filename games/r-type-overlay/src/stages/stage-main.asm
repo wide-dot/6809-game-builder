@@ -424,9 +424,9 @@ stage.state.running
 
         ; Les etoiles TOUT DE SUITE apres l'effacement : le champ est noir
         ; vierge, le trace ecrit sans lire ni tester (cf. starfield/obj.asm),
-        ; et tuiles puis sprites recouvrent tout ce qu'ils traversent —
-        ; fond, decor, jeu, dans cet ordre. Une seule passe : la passe ERASE
-        ; est partie avec le chantier effacement.
+        ; et sprites puis tuiles recouvrent tout ce qu'ils traversent —
+        ; fond, jeu, decor, dans cet ordre depuis le 21/08. Une seule passe :
+        ; la passe ERASE est partie avec le chantier effacement.
         ;
         ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
         ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
@@ -438,24 +438,33 @@ stage.state.running
         jsr   paged.call
  ENDC
 
-        ; Ce que CE stage peint dans le verrou graphique, avant les tuiles :
+        ; Ce que CE stage peint dans le verrou graphique, avant tout le reste :
         ; sur le niveau 1, les bandes noires du boss et le rectangle de la
         ; salle. OVERLAY : plus de sauvegardes de fond a faire capturer — le
-        ; noir doit juste preceder les tuiles et les sprites de la trame.
+        ; noir doit juste preceder les sprites et les tuiles de la trame.
         jsr   stage.frameBlit
-
-        ; OVERLAY : le champ vient d'etre efface, le decor DOIT se repeindre
-        ; chaque trame (tuiles pleines, ciel transparent — cf. leanscroll du
-        ; config). Scroll ne leve glb_camera_move que quand la camera a bouge :
-        ; on le force.
-        lda   #1
-        sta   glb_camera_move
-        jsr   DrawTiles
 
         ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
         ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
         ; le verrou, comme la v1 overlay (goldorak main.asm:47).
         jsr   BuildSprites
+
+        ; LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le
+        ; 21/08/2026 (decision auteur), sur TOUS les stages, celui a couche
+        ; mobile compris : un sprite passe DERRIERE le terrain, et le ciel
+        ; transparent de la carte le laisse voir partout ailleurs. C'est la
+        ; transparence exacte du plan arcade qui rend l'ordre tenable — avec
+        ; un ciel peint, la carte effacerait tout le champ de jeu.
+        ;
+        ; Le champ vient d'etre efface, le decor DOIT donc se repeindre chaque
+        ; trame ; Scroll ne leve glb_camera_move que quand la camera a bouge,
+        ; on le force. DrawTiles est autonome : il sauve la page cartouche a
+        ; l'entree, la restaure en sortie, et calcule lui-meme
+        ; glb_screen_location_1/2 — passer apres BuildSprites (qui les ecrit
+        ; aussi, par sprite) ne lui coute rien.
+        lda   #1
+        sta   glb_camera_move
+        jsr   DrawTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main

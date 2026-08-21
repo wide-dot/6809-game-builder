@@ -2147,17 +2147,21 @@
                      du niveau, geometrie en equates, cache sur image+parametres.
                      refresh : cellules que le scroll ne reconstruit pas depuis ses
                      blocs de debut de stage — le checkpoint repeint depuis la carte. -->
-                <!-- OVERLAY : nbsteps au-dela de la largeur du niveau, donc
-                     chaque balayage du lean atteint le bord et TOUT pixel du
-                     decor est conserve — le lean n'a plus de sens quand le champ
-                     est efface puis repeint chaque trame. Le ciel, lui, est
-                     TRANSPARENT dans in.png (tools/sky_transparent.py) : les
-                     cellules de ciel restent des tuiles id 0 jamais dessinees,
-                     c'est le stackblast (playfield_clear) qui porte le noir.
+                <!-- OVERLAY : lean="false" — le lean n'a de sens que si le
+                     moteur FAIT DEFILER le champ ; ici il est efface puis
+                     repeint tuile par tuile a chaque trame, il n'y a rien a
+                     epargner et la passe ne ferait que masquer ce que dit
+                     l'art. (Elle etait deja neutralisee de biais par un
+                     nbsteps au-dela de la largeur du niveau ; l'attribut le
+                     dit maintenant.) Le ciel, lui, est TRANSPARENT dans
+                     in.png — le masque exact du plan arcade, pose par
+                     tools/map_alpha.py : les cellules de ciel restent des
+                     tuiles id 0 jamais dessinees, c'est le stackblast
+                     (playfield_clear) qui porte le noir.
                      refresh= sans objet : DrawTiles repeint chaque trame. -->
                 <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
                             gensymbols="gen/stages/01/map/map.const.asm"
-                            nbsteps="0,0,2048,0,0,0,0,0"/>
+                            lean="false"/>
 
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
                       gendir="gen/stages/01/tiles-even">
@@ -2290,8 +2294,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/02/map/in.png" gendir="gen/stages/02/map"
-                            gensymbols="gen/stages/02/map/map.const.asm"/>
+                            gensymbols="gen/stages/02/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
                       gendir="gen/stages/02/tiles-even">
@@ -2469,8 +2475,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/03/map/in.png" gendir="gen/stages/03/map"
-                            gensymbols="gen/stages/03/map/map.const.asm"/>
+                            gensymbols="gen/stages/03/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage3.tiles.even" linkdata="LINK" arena="stage3.gfx"
                       gendir="gen/stages/03/tiles-even">
@@ -2565,8 +2573,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/04/map/in.png" gendir="gen/stages/04/map"
-                            gensymbols="gen/stages/04/map/map.const.asm"/>
+                            gensymbols="gen/stages/04/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage4.tiles.even" linkdata="LINK" arena="stage4.gfx"
                       gendir="gen/stages/04/tiles-even">
@@ -2652,8 +2662,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/05/map/in.png" gendir="gen/stages/05/map"
-                            gensymbols="gen/stages/05/map/map.const.asm"/>
+                            gensymbols="gen/stages/05/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage5.tiles.even" linkdata="LINK" arena="stage5.gfx"
                       gendir="gen/stages/05/tiles-even">
@@ -2739,8 +2751,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/06/map/in.png" gendir="gen/stages/06/map"
-                            gensymbols="gen/stages/06/map/map.const.asm"/>
+                            gensymbols="gen/stages/06/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage6.tiles.even" linkdata="LINK" arena="stage6.gfx"
                       gendir="gen/stages/06/tiles-even">
@@ -2829,8 +2843,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/07/map/in.png" gendir="gen/stages/07/map"
-                            gensymbols="gen/stages/07/map/map.const.asm"/>
+                            gensymbols="gen/stages/07/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage7.tiles.even" linkdata="LINK" arena="stage7.gfx"
                       gendir="gen/stages/07/tiles-even">
@@ -2916,8 +2932,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/08/map/in.png" gendir="gen/stages/08/map"
-                            gensymbols="gen/stages/08/map/map.const.asm"/>
+                            gensymbols="gen/stages/08/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage8.tiles.even" linkdata="LINK" arena="stage8.gfx"
                       gendir="gen/stages/08/tiles-even">

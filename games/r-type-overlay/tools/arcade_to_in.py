@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
-"""Convertir un plan de niveau arcade en `in.png`, l'entrée de leanscroll.
+"""Convertir un plan de niveau arcade en `in.png`, la carte du stage.
 
 Le portage travaille sur une image unique par stage, `src/stages/NN/map/in.png`,
-que leanscroll découpe ensuite en tuiles et en carte. Cette image est le plan
+que le build découpe ensuite en tuiles et en carte. Cette image est le plan
 AVANT du niveau arcade, réduit au format TO8 et ramené sur la palette 16
 couleurs du jeu.
+
+## La transparence (21/08/2026)
+
+Le plan arcade déclare ses pixels transparents — le pen 0 de chacune des 16
+banques de couleur est le pen transparent de la couche — et l'export les porte
+en chunk tRNS (`re.arcade.r-type --extract-tiles`). Cet outil les écrit en
+**index 0**, la convention de transparence de toute la chaîne gfxcomp, et les
+tient hors du recensement des couleurs : un pixel qu'on ne peint pas n'a pas
+voix au choix de la palette. En overlay le champ est effacé au noir puis
+repeint chaque trame, donc une cellule sans pixel opaque n'a pas de tuile du
+tout. Un plan sans tRNS (export d'avant 08/2026) sort au ciel PEINT, avec un
+avertissement. Voir `tools/map_alpha.py`, qui pose la même information sur une
+image DÉJÀ convertie et qui a remplacé l'heuristique par blocs 3x6 de
+`sky_transparent.py`.
 
 Réduction : 3/8 en X, 3/4 en Y, au plus proche voisin — 3072x240 devient
 1152x180. Mesuré : rejoué sur le stage 5, ce sous-échantillonnage reproduit
@@ -151,6 +165,30 @@ def downscale(src, width, height):
         for x in range(width):
             op[x, y] = sp[x * w // width, ay]
     return out
+
+
+def masque_alpha(src, width, height):
+    """Le masque de transparence du plan arcade, reduit comme l'image.
+
+    Rend une liste de listes de booleens (True = pixel transparent), ou None
+    si le plan ne porte pas de chunk tRNS — les exports d'avant 08/2026 n'en
+    avaient pas. Meme calcul de plus proche voisin que `downscale` : les deux
+    doivent designer LE MEME pixel source, sinon le masque glisse d'un pixel
+    sur l'image.
+
+    La transparence n'est pas dans le pixel : le pen 0 de chaque banque de 16
+    couleurs est le pen transparent de la couche, et il a une couleur comme
+    les autres (du noir, en general). Voir tools/map_alpha.py.
+    """
+    trns = src.info.get('transparency')
+    if trns is None:
+        return None
+    if isinstance(trns, int):
+        trns = bytes(0 if i == trns else 255 for i in range(256))
+    sp = src.load()
+    w, h = src.size
+    return [[trns[sp[x * w // width, y * h // height]] == 0 for x in range(width)]
+            for y in range(height)]
 
 
 def dist(a, b):
@@ -328,8 +366,12 @@ def plan_supplementaire(spec):
     propres. Sans ça, elles sortent de la carte seule : le brood du stage 2 y
     perdait ses six verts d'un coup, faute d'avoir eu voix au chapitre.
 
-    Le noir est retiré : c'est la transparence du plan arcade, elle ne dit rien
-    du choix des couleurs et écraserait tout le reste par son nombre.
+    Les pixels TRANSPARENTS sont retirés : ils ne disent rien du choix des
+    couleurs et écraseraient tout le reste par leur nombre. Le plan les déclare
+    depuis 08/2026 (chunk tRNS) ; le noir est retiré en plus, c'est ce que
+    faisait cette fonction quand la transparence n'était pas exportée, et ça ne
+    change aucune affectation (le noir est un commun, il est à distance nulle
+    de son emplacement et ne peut donc pas en gagner un).
     """
     poids = 1
     if '*' in spec:
@@ -349,12 +391,17 @@ def plan_supplementaire(spec):
     if ':' in spec:
         spec, b = spec.rsplit(':', 1)
         boite = tuple(int(v) for v in b.split(','))
-    src = Image.open(spec).convert('RGB')
+    plan = Image.open(spec)
+    src = plan.convert('RGB')
     if boite:
-        src = src.crop(boite)
+        plan, src = plan.crop(boite), src.crop(boite)
     w, h = src.size
-    petit = downscale(src, round(w * SCALE_X), round(h * SCALE_Y))
-    cnt = Counter(petit.get_flattened_data())
+    pw, ph = round(w * SCALE_X), round(h * SCALE_Y)
+    petit = downscale(src, pw, ph)
+    alpha = masque_alpha(plan, pw, ph)
+    pp = petit.load()
+    cnt = Counter(pp[x, y] for y in range(ph) for x in range(pw)
+                  if not (alpha and alpha[y][x]))
     cnt.pop((0, 0, 0), None)
     return Counter({c: n * poids for c, n in cnt.items()}), spec, boite, poids
 
@@ -393,10 +440,12 @@ def main():
         rgb, idx = f.split('=')
         forces[tuple(int(v) for v in rgb.split(','))] = int(idx)
 
-    src = Image.open(args.plane).convert('RGB')
+    plan = Image.open(args.plane)
+    src = plan.convert('RGB')
     w, h = src.size
     width, height = round(w * SCALE_X), round(h * SCALE_Y)
     small = downscale(src, width, height)
+    alpha = masque_alpha(plan, width, height)
 
     if args.pal_next:
         palette, free = palette_pal_next(args.stage)
@@ -410,7 +459,22 @@ def main():
         palette = ref.getpalette()
         palette = [tuple(palette[i * 3:i * 3 + 3]) for i in range(256)]
 
-    colors = Counter(small.get_flattened_data())
+    if alpha is None:
+        print('ATTENTION : %s ne porte pas de chunk tRNS — la transparence de '
+              'la couche arcade est perdue, l\'in.png sortira au ciel PEINT. '
+              'Re-exporter le plan avec re.arcade.r-type --extract-tiles.'
+              % args.plane)
+        colors = Counter(small.get_flattened_data())
+    else:
+        # un pixel transparent ne dit rien du choix des couleurs (il n'est pas
+        # peint) et sa couleur stockee ecraserait tout le reste par le nombre
+        sp = small.load()
+        colors = Counter(sp[x, y] for y in range(height) for x in range(width)
+                         if not alpha[y][x])
+        print('transparence arcade : %d px sur %d (%.1f %%) hors recensement '
+              'et ecrits en index 0'
+              % (sum(r.count(True) for r in alpha), width * height,
+                 100.0 * sum(r.count(True) for r in alpha) / (width * height)))
 
     # Le choix des couleurs voit AUSSI les plans supplémentaires ; l'in.png,
     # lui, ne recevra que `small`. Les deux ne servent pas le même but : la
@@ -475,7 +539,8 @@ def main():
     op, sp = out.load(), small.load()
     for y in range(height):
         for x in range(width):
-            op[x, y] = mapping[sp[x, y]]
+            # index 0 = la transparence, convention de toute la chaine gfxcomp
+            op[x, y] = 0 if alpha and alpha[y][x] else mapping[sp[x, y]]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     out.save(out_path)
     print(f'\necrit {out_path}')

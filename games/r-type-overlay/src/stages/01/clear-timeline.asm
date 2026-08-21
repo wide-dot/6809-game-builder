@@ -4,11 +4,5 @@
 ; operande LDS plan couleur(2), offset de saut(2)] ; sentinelle $FFFF.
 ; t/b = rangees de tuiles zappees en haut/bas de la fenetre.
 clear.timeline
-        fdb   0,$BBF8,106   ; t=0 b=1 lignes 11-178
-        fdb   589,$BBF8,212   ; t=1 b=1 lignes 23-178
-        fdb   648,$BBF8,106   ; t=0 b=1 lignes 11-178
-        fdb   817,$BBF8,212   ; t=1 b=1 lignes 23-178
-        fdb   912,$BBF8,106   ; t=0 b=1 lignes 11-178
-        fdb   1081,$BBF8,212   ; t=1 b=1 lignes 23-178
-        fdb   1428,$BBF8,106   ; t=0 b=1 lignes 11-178
+        fdb   0,$BDD8,0   ; t=0 b=0 lignes 11-190
         fdb   $FFFF                ; fin — la camera n'y va jamais

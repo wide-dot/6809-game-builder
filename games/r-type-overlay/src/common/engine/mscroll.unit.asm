@@ -18,7 +18,8 @@
 ;
 ; La frontière avec un stage tient en HUIT noms (discipline api.asm) :
 ;   mscroll.setup          init complet depuis un bloc de paramètres (X)
-;   mscroll.do             le blast (entre _gfxlock.on et .off, AVANT DrawTiles)
+;   mscroll.do             le blast (en tête de trame, dans le verrou —
+;                          avant les sprites, donc avant les tuiles)
 ;   mscroll.move           caméra + feeds (après le blast)
 ;   mscroll.camera.speed   vitesse y 8.8 (mode vitesse : intégrée x trames)
 ;   mscroll.camera.speedx  vitesse x 8.8

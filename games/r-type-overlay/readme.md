@@ -38,11 +38,22 @@ Etat de cette base (etape 1 du chantier) :
   (src/common/fx/clearblast.asm), stack-blast maison PSHS 9 octets/14 cy
   entierement deroule, pleine largeur, lignes 9-178 — 21 215 cycles exacts
   (la version generee par gfxcomp : 25 596, gardee dans la page pour
-  comparaison). La rangee de tuiles du BAS n'est pas effacee : in.png la
-  garde toujours peinte, et tools/sky_transparent.py (blocs 3x6, la maille
-  arcade) l'exclut du remap. DrawTiles repeint chaque trame ; le starfield
+  comparaison). La fenetre d'effacement est PILOTEE par une timeline par
+  stage, deduite de la carte (tools/gen_clear_timeline.py) : elle zappe les
+  rangees pleinement peintes. Depuis la transparence exacte (21/08) le stage
+  1 n'en zappe plus aucune — sa rangee du bas a 1 350 px de ciel repartis sur
+  126 de ses 132 colonnes, l'ancienne heuristique 3x6 la disait pleine a
+  tort. DrawTiles repeint chaque trame ; le starfield
   est passe a UNE passe (ecriture directe entre effacement et tuiles, la
-  passe ERASE et ses tables par buffer sont supprimees). Deux pieges 6809
+  passe ERASE et ses tables par buffer sont supprimees).
+  **ORDRE DE DESSIN (21/08, decision auteur)** : le decor passe PAR-DESSUS
+  les sprites, sur les huit stages — effacement, etoiles, frameBlit,
+  BuildSprites, DrawTiles, puis masque et HUD. Un sprite passe donc derriere
+  le terrain, et le ciel transparent de la carte le laisse voir partout
+  ailleurs ; c'est la transparence exacte du plan arcade qui rend l'ordre
+  tenable, un ciel peint effacerait tout le champ de jeu. Le stage 3 n'a plus
+  de cas particulier ici : le sien porte sur l'EFFACEMENT (sa couche mobile
+  mscroll remplace clearblast), pas sur l'ordre. Deux pieges 6809
   payes et documentes dans clearblast.asm : pas de bsr/rts quand S est le
   pointeur d'ecriture, et CC inpoussable sous IRQ ouvertes (le RTI restaure
   E=1) ;
@@ -439,6 +450,29 @@ stages câblés (01, 02) n'ont plus de sorties committées ; les stages 03-08
 gardent leurs plans committés (`0/0.png`, `1/1.png`, `*.0.bin`) en attendant
 leur câblage. Voir `docs/lang/en/tilemaps.md`, et `tools/leanscroll-06.txt`
 pour la recette de reconstitution d'un `in.png` depuis l'arcade.
+
+**Pas de lean en overlay (21/08/2026)** : les huit stages déclarent
+`lean="false"`. La passe lean retire les pixels qu'un balayage de scroll
+repeindrait de toute façon ; ici le champ est effacé puis repeint tuile par
+tuile à chaque trame, il n'y a rien à épargner et la passe ne faisait que
+masquer ce que dit l'art. Elle était déjà neutralisée de biais au stage 1
+(un `nbsteps` au-delà de la largeur du niveau) mais tournait pour de bon sur
+les stages 02-08.
+
+**La transparence vient de l'arcade** : le plan de niveau exporté par
+`re.arcade.r-type --extract-tiles` porte le pen transparent de la couche en
+chunk tRNS (le pen 0 de chacune des 16 banques), et `tools/map_alpha.py` le
+reporte dans l'`in.png` en index 0 — la convention gfxcomp. Une cellule sans
+pixel opaque n'a pas de tuile du tout : c'est le stackblast qui porte son
+noir. Ça remplace `tools/sky_transparent.py` (supprimé), qui devinait le ciel
+par blocs de 3x6 pixels noirs et ratait tout ciel plus fin que sa maille.
+`arcade_to_in.py` pose la même information à la conversion.
+
+Mesure des deux changements réunis, tuiles compilées des huit stages :
+**448 551 → 417 637 octets (−30 914)** ; les plans impairs y gagnent le plus
+(stage 6 : −13 605, stage 7 : −10 133), quelques plans pairs grossissent
+(ce que le lean leur retirait). Le stage 1 repasse sous la barre de sa page
+12, qui débordait.
 
 ## Porter un ennemi
 

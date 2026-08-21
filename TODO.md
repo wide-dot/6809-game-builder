@@ -1119,3 +1119,53 @@ En veille sur décision (31/07/2026) :
       re-seme-t-il l'autoscroll ? » — stage.setup le couvre déjà), jalons
       musique de boss (0x1180/0x12c0), spawn script des 27 parties +
       ennemis externes (campagne enemy-port), séquence de fin (0xc55d).
+
+## Cartes de stage — transparence arcade et fin du lean (21/08)
+
+- [x] **Le plan arcade porte sa transparence** : `re.arcade.r-type` gagne
+      `--extract-tiles` (extraction ROM-only, hors GUI) et écrit les seize
+      plans de niveau avec un chunk `tRNS` — le pen 0 de chacune des 16
+      banques de couleur est le pen transparent de la couche. Les indices ne
+      bougent pas (un index vaut toujours `banque*16 + pen`) : `PngTrns`
+      injecte le chunk à côté d'ImageIO, qui réordonnerait la palette si on
+      lui confiait l'alpha. Vérifié : les 16 PNG sont identiques à l'octet
+      près hors chunk, les `.bin` de collision inchangés.
+- [x] **`tools/map_alpha.py` remplace `sky_transparent.py`** (supprimé) : le
+      masque exact au lieu des blocs 3x6 de noir. Règle conservatrice — seul
+      un pixel NOIR devient transparent, jamais un pixel coloré. Mesuré : sur
+      les stages 02-08 le masque arcade tombe à 100 % sur du noir (aucun art
+      touché) ; le stage 01, dont l'`in.png` vient de l'art v1 migré et non
+      de l'arcade, garde 1 083 px colorés que l'arcade dit vides et 1 287 px
+      déjà vides qu'elle dit peints — chiffrés à chaque exécution.
+      `arcade_to_in.py` pose la même information à la conversion, les deux
+      chemins ont été croisés (masques identiques sur le stage 04).
+      L'heuristique 3x6 disparaît aussi de `gen_clear_timeline.py` et de
+      `clear_profile_sim.py`, qui la rejouaient en mémoire.
+- [x] **`<leanscroll lean="false">`** : la passe lean devient optionnelle
+      (attribut déclaré, XSD régénéré — qui rattrape au passage `<mscroll>`,
+      absent du schéma commité). Elle n'a de sens que si le moteur FAIT
+      DÉFILER le champ ; l'overlay l'efface et le repeint chaque trame. Le
+      stage 01 la neutralisait déjà de biais (`nbsteps` au-delà de la largeur
+      du niveau), les stages 02-08 la subissaient pour de bon. Déclarer
+      `scrollstep`/`nbsteps` avec `lean="false"` est une erreur de config.
+- [x] **Mesure** : tuiles compilées des huit stages **448 551 → 417 637
+      octets (−30 914)**, les plans impairs y gagnant le plus (stage 6
+      −13 605, stage 7 −10 133). Le stage 1 repasse sous la barre de sa page
+      12, qui débordait dans l'arbre de travail. Conséquence assumée : sa
+      timeline d'effacement ne zappe plus aucune rangée (sa rangée du bas a
+      1 350 px de ciel sur 126 de ses 132 colonnes ; l'heuristique 3x6 la
+      disait pleine à tort) — ~1 500 cycles de blast par trame.
+- [x] **Le décor par-dessus les sprites (21/08, décision auteur)** : ordre
+      officiel sur les HUIT stages — `DrawTiles` passe après `BuildSprites`
+      dans `stage-main.asm`, soit effacement, étoiles, frameBlit, sprites,
+      tuiles, masque, HUD. Un seul point de changement : la boucle est
+      partagée par les huit mains. Le stage 3 n'avait pas de cas particulier
+      d'ORDRE — le sien porte sur l'effacement (`STAGE_MSCROLL` : sa couche
+      mobile remplace clearblast), il suit donc la règle comme les autres.
+      Les deux routines sont autonomes (chacune sauve/restaure la page
+      cartouche et recalcule `glb_screen_location_1/2`), l'inversion ne
+      demande rien d'autre. C'est la transparence exacte du plan arcade qui
+      rend l'ordre tenable : avec un ciel peint la carte effacerait le champ.
+- [ ] À l'écran : jugement auteur sur les huit cartes (le masque fin change
+      la frontière art/ciel d'environ 2 % des pixels sur les stages 01 et 03,
+      qui étaient les seuls traités) et sur le décor par-dessus les sprites.

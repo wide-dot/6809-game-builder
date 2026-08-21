@@ -28,9 +28,10 @@ CE QUE LA SIMULATION A ETABLI (19/08, les 8 stages) :
    l'assemblage (generaliser ROWTOP/ROWEND de clearblast.asm — zero cout
    runtime), pas un profil dynamique.
 
-La regle overlay (blocs 3x6 de ciel -> transparents, rangee du bas exclue,
-cf. sky_transparent.py) est appliquee en memoire : le script lit les in.png
-tels que commites, traites ou non.
+La transparence est LUE dans l'in.png (index 0), ou tools/map_alpha.py l'a
+posee depuis le masque arcade ; l'heuristique par blocs 3x6 qui la devinait
+en memoire a disparu avec sky_transparent.py. Les chiffres ci-dessus datent
+d'elle et sont a relire sur le masque exact.
 """
 import sys
 
@@ -45,13 +46,8 @@ def load(stage):
     im = Image.open(f"src/stages/{stage}/map/in.png").convert("P")
     px = im.load()
     W, H = im.size
-    sky = set()
-    for cx in range(0, W, 3):
-        for cy in range(0, H - 12, 6):        # rangee du bas exclue (contrat)
-            if all(px[cx + i, cy + j] == 1 for j in range(6) for i in range(3)):
-                sky.add((cx, cy))
     def opaque(x, y):
-        return px[x, y] != 0 and (x // 3 * 3, y // 6 * 6) not in sky
+        return px[x, y] != 0
     return opaque, W, H
 
 for stage in (sys.argv[1:] or [f"{n:02d}" for n in range(1, 9)]):

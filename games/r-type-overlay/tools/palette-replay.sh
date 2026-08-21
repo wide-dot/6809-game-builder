@@ -284,8 +284,6 @@ python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png 
 # raison que ceux des nuages.
 python3 tools/arcade_to_mscroll.py 03 src/stages/03/map/images/original/level3_b.png \
     --force 88,96,72=15 --force 48,64,32=15 --force 104,104,80=15
-# Le ciel des nuages redevient transparent apres toute regeneration de l'in.png.
-python3 tools/sky_transparent.py 03
 python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
 # Stage 5 : son cast vote (regle actee aux stages 2 et 6, poids 1). Le slither
 # — 10 915 px reduits, le plus gros ennemi converti — etait le pire du corpus a
@@ -541,3 +539,32 @@ $M stage1.tabrokcanon               --ecrire
 # (884 fichiers) ; seules les entrees de palette changent, aucun index de
 # pixel n'est touche. Idempotent.
 python3 tools/palette_harmonise.py
+
+# =========================================================================
+# Groupe I — la TRANSPARENCE des cartes de stage (21/08/2026).
+#
+# Le plan arcade declare ses pixels transparents (le pen 0 de chacune des 16
+# banques de couleur est le pen transparent de la couche) et l'export les
+# porte depuis 08/2026 en chunk tRNS — re.arcade.r-type --extract-tiles, les
+# plans committes dans src/stages/NN/map/images/original/ sont a jour.
+#
+# En overlay le champ de jeu est efface au noir puis repeint chaque trame :
+# une cellule sans pixel opaque n'a pas de tuile du tout. map_alpha.py reporte
+# donc le masque arcade dans les in.png, en index 0. Sa regle est
+# conservatrice — seul un pixel NOIR devient transparent, jamais un pixel
+# colore — et sur les stages 02 a 08 elle ne coute rien : le masque arcade y
+# tombe a 100 % sur du noir. Le stage 01 est le seul ecart (son in.png vient
+# de l'art v1 migre, pas de l'arcade) et le rapport le chiffre a chaque
+# execution.
+#
+# Ceci REMPLACE tools/sky_transparent.py (supprime), qui devinait le ciel par
+# blocs de 3x6 pixels entierement noirs et ratait tout ciel plus fin que sa
+# maille. arcade_to_in.py pose desormais la meme information a la conversion :
+# ce passage est le chemin des images deja converties, et le garde-fou qui
+# verifie l'accord entre les deux.
+python3 tools/map_alpha.py
+
+# La timeline d'effacement du stage 1 se DEDUIT de la carte : elle change avec
+# le masque (le masque exact rend la rangee du bas non zappable, ce que
+# l'heuristique 3x6 cachait). A rejouer apres map_alpha.
+python3 tools/gen_clear_timeline.py 01
