@@ -114,8 +114,17 @@ def octet(x0, line, anchor, present):
 
 
 def tables(phase):
-    """Les tables d'une phase. anchor mod 12 == phase."""
-    anchor = phase
+    """Les tables d'une phase. anchor mod 12 == phase.
+
+    L'ancre est prise LOIN A GAUCHE (phase - 1200, multiple de 12 retire) et
+    non a `phase` : les octets 0,1,2 sur lesquels le motif est releve ont des
+    pixels AVANT l'ancre des que la phase est non nulle, et la garde `rel >= 0`
+    d'`octet` les rendait alors en fond — la table de la phase 8 sortait
+    [$00,$00,$CC] pour une ligne pourtant pleine. Bug attrape par la simulation
+    de la passe, pas par la preuve du modele d'octets : celle-ci n'exercait pas
+    les tables.
+    """
+    anchor = phase - 1200
     plein = lambda cx: True
     run = {}
     edge = {}
@@ -188,6 +197,11 @@ def verifier(cells, cols, rows):
     return total, faux
 
 
+def edge_table():
+    """(gauche, droite) par ligne : le pixel unique d'un octet de bord."""
+    return [(BALL[r][0], BALL[r][2] << 4) for r in range(6)]
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument('--verifier-seulement', action='store_true')
@@ -232,26 +246,97 @@ def main():
                 lignes.append('        fcb   ' + ','.join('$%02X' % b for b in v)
                               + '   ; ligne %d plan %s' % (line, 'C' if plane == PLANE_C else 'A'))
     lignes.append('')
-    lignes.append('; 12 phases x 6 lignes x 2 plans x 2 octets — les bords de plage')
-    lignes.append('; (gauche, droite), ou un seul des deux pixels est de la gomme.')
+    lignes.append('; Les octets de BORD, par ligne. Un octet de bord n\'a qu\'UN pixel')
+    lignes.append('; dans la plage : celui de gauche est le d=0 d\'une gomme, celui de')
+    lignes.append('; droite le d=2. Sa valeur ne depend donc ni de la phase, ni du plan,')
+    lignes.append('; ni de l\'alignement — 12 octets pour tout le champ.')
     lignes.append('pellet.tbl.edge')
-    for phase in range(12):
-        _, edge = tables(phase)
-        lignes.append('; --- phase %d' % phase)
-        for line in range(6):
-            for plane in (PLANE_C, PLANE_A):
-                g, d = edge[(line, plane)]
-                lignes.append('        fcb   $%02X,$%02X   ; ligne %d plan %s'
-                              % (g, d, line, 'C' if plane == PLANE_C else 'A'))
+    for r, (gauche, droite) in enumerate(edge_table()):
+        lignes.append('        fcb   $%02X,$%02X   ; ligne %d : bord gauche, bord droit'
+                      % (gauche, droite, r))
 
     out = 'src/stages/04/pellet-tables.asm'
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, 'w') as f:
         f.write('\n'.join(lignes) + '\n')
-    taille = 12 * 6 * 2 * 9 + 12 * 6 * 2 * 2
+    taille = 12 * 6 * 2 * 9 + 6 * 2
     print('ecrit %s (%d octets de tables)' % (out, taille))
     return 0
 
 
 if __name__ == '__main__':
     sys.exit(main())
+
+
+# ---------------------------------------------------------------------------
+# La simulation de la PASSE — l'algorithme que le 6809 executera, joue ici et
+# verifie au pixel. Ce qui est prouve ici n'est plus a deviner en assembleur.
+#
+# L'algorithme : par rangee de cellules, on parcourt les plages de gommes
+# consecutives. Pour chaque plage, chaque ligne et chaque plan, on ecrit les
+# octets qui la recouvrent :
+#
+#   - un octet dont les DEUX pixels sont dans la plage prend la valeur du motif
+#     periodique, indexee par (phase, ligne, plan, j mod 3) — la periode est de
+#     3 octets par plan ;
+#   - un octet de BORD n'a qu'un pixel dans la plage : celui de gauche est le
+#     d=0 d'une gomme, celui de droite le d=2. Sa valeur ne depend donc que de
+#     la ligne — 12 octets de table pour tout le jeu.
+#
+# Les TROUS ne coutent RIEN : clearblast a deja pose le fond, et le creux de la
+# gomme vaut ce meme fond. La passe n'ecrit que ses plages, en octets pleins,
+# sans un seul read-modify-write.
+# ---------------------------------------------------------------------------
+
+def passe(cells, anchor, cols, rows):
+    """Joue la passe et rend l'ecran obtenu, en px."""
+    ecran = {}
+    edges = edge_table()
+    for cy in range(rows):
+        # les cellules visibles de la rangee
+        # une cellule entre des qu'UN de ses pixels touche la fenetre : celle
+        # du bord deborde d'un ou deux px sur la bordure, que le masque du
+        # champ de jeu recouvre en fin de trame. C'est deja ce que fait
+        # DrawTiles, qui se donne une marge a gauche « that will be remove
+        # later ». Ecarter la cellule entiere laissait ses pixels visibles
+        # non peints — 3 252 px sur 12 phases.
+        visibles = [cx for cx in range(cols)
+                    if anchor + 3 * cx + 2 >= VP_X and anchor + 3 * cx < VP_X + VP_W]
+        if not visibles:
+            continue
+        # les plages de gommes consecutives
+        plages, debut = [], None
+        for cx in visibles + [None]:
+            porte = cx is not None and cells[cy][cx]
+            if porte and debut is None:
+                debut = cx
+            elif not porte and debut is not None:
+                plages.append((debut, prec))
+                debut = None
+            prec = cx
+        for (ca, cb) in plages:
+            xa, xb = anchor + 3 * ca, anchor + 3 * cb + 2
+            for r in range(6):
+                ligne = VP_Y + cy * 6 + r
+                for p in (PLANE_C, PLANE_A):
+                    # les octets du plan p qui recouvrent [xa, xb]
+                    j = (xa - 2 * p) // 4
+                    while True:
+                        g, d = 4 * j + 2 * p, 4 * j + 2 * p + 1
+                        if g > xb:
+                            break
+                        if d >= xa:
+                            dedans_g, dedans_d = xa <= g <= xb, xa <= d <= xb
+                            if dedans_g and dedans_d:
+                                v = tables(anchor % 12)[0][(r, p)][j % 3]
+                            elif dedans_d:
+                                v = edges[r][0]          # bord gauche
+                            else:
+                                v = edges[r][1]          # bord droit
+                            ecran[(p, ligne, j)] = v
+                        j += 1
+    out = {}
+    for (p, ligne, j), v in ecran.items():
+        out[(j * 4 + p * 2, ligne)] = (v >> 4) & 0xF
+        out[(j * 4 + p * 2 + 1, ligne)] = v & 0xF
+    return out
