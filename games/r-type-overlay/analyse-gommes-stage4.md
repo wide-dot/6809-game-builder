@@ -5,7 +5,9 @@ de rendu, l'extraction arcade qui la valide, et la structure de données
 retenue. Il sera la référence du chantier quand il démarrera.
 
 Le simulateur qui produit les chiffres de rendu est décrit au §3 ; les
-artefacts arcade extraits sont listés au §7.
+artefacts arcade extraits sont listés au §7. **Le découpage du chantier vit
+dans [`plan-gommes-stage4.md`](plan-gommes-stage4.md)** — phases, fichiers à
+toucher, critères de validation.
 
 ---
 
