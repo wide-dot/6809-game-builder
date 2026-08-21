@@ -154,17 +154,6 @@ gomander.Init
         std   gomander.AABB+AABB.rx,u
         lda   #gomander_hitdamage
         sta   gomander.hp,u
-
-        ; L'orbe part OUVERT : c'est l'etat OrbOpen qui suit, et la carte doit
-        ; le montrer des maintenant. On pose l'image 0 sans faire tourner
-        ; d'horloge — la sequence ne demarre qu'a la phase A.
-        ldx   #gomander.anim
-        ldy   #engulf.even
-        ldu   #engulf.odd
-        clrb
-        pshs  u
-        jsr   tilemap.anim.start
-        puls  u
         sta   gomander.AABB+AABB.p,u
         ; La POSITION de la boite — oubliee a la premiere passe : cx/cy ne
         ; sortaient jamais des residus du slot, l'orbe collisionnait n'importe
@@ -186,6 +175,22 @@ gomander.Init
         std   gomander.timer,u
         lda   #gomander.rt.orbOpen
         sta   routine,u
+
+        ; L'orbe part OUVERT : l'etat OrbOpen suit, et la carte doit le montrer
+        ; des maintenant. On pose l'image 0 sans faire tourner d'horloge — la
+        ; sequence ne demarre qu'a la phase A.
+        ; EN FIN D'INIT, et pas au milieu : tilemap.anim.start clobbe A et U,
+        ; et la premiere version s'inserait entre le `lda #gomander_hitdamage`
+        ; et le SECOND `sta` qui le consomme (la boite recevait n'importe quoi),
+        ; en empilant U APRES l'avoir charge (le `puls u` rendait alors
+        ; l'adresse d'engulf.odd, et tout le reste de l'init ecrivait dedans).
+        pshs  u
+        ldx   #gomander.anim
+        ldy   #engulf.even
+        ldu   #engulf.odd
+        clrb
+        jsr   tilemap.anim.start
+        puls  u
         rts
 
 ; --- orbe ouvert : 224 trames, VULNERABLE (40:a290) --------------------------

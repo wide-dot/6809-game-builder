@@ -48,6 +48,10 @@ tilemap.patch.colStep   fdb   0        ; pas d'une colonne de carte, en octets
 tilemap.patch.runLen    fcb   0        ; octets d'une colonne de rectangle
 tilemap.patch.colCnt    fcb   0
 tilemap.patch.savedPage fcb   0
+tilemap.patch.savedPage2 fcb  0        ; le sequenceur, qui monte avant de lire
+tilemap.patch.frameOff  fcb   0        ; l'image courante x2, relevee avant le montage
+tilemap.patch.tmpA      fcb   0        ; transit : page montee -> page rendue
+tilemap.patch.tmpB      fcb   0
 
 * ---------------------------------------------------------------------------
 * tilemap.patch
@@ -60,7 +64,7 @@ tilemap.patch.savedPage fcb   0
 tilemap.patch
         _GetCartPageA
         sta   tilemap.patch.savedPage
-
+*
         ; le plan : sa carte et sa page
         lda   tilemap.patch.plane
         bne   @odd
@@ -70,7 +74,7 @@ tilemap.patch
 @odd    lda   scroll_map_page_odd
         ldy   scroll_map_odd
 @mount  _SetCartPageA
-
+*
         ; Le pas d'une colonne de carte : scroll_vp_v_tiles cellules x 3.
         ; L'octet bas suffit au `mul` de la colonne plus bas, et c'est
         ; STRUCTUREL : scroll_vp_v_tiles est la hauteur du VIEWPORT en tuiles,
@@ -81,13 +85,23 @@ tilemap.patch
         ldb   #3
         mul
         std   tilemap.patch.colStep
-
-        ; les octets d'une colonne de rectangle : rows x 3
+*
+        ; GARDE. Une geometrie nulle n'est pas benigne ici : `dec`/`bne` sur
+        ; zero parcourt 256 tours, donc 256 colonnes de 256 octets, soit toute
+        ; la memoire ecrasee. C'est exactement ce qui est arrive le 21/08/2026
+        ; quand le descripteur etait lu a travers la mauvaise page. Un symbole
+        ; non resolu vaut zero en silence dans ce projet : on refuse le zero
+        ; plutot que de lui faire confiance.
+        lda   tilemap.patch.cols
+        beq   @leave
         lda   tilemap.patch.rows
+        beq   @leave
+*
+        ; les octets d'une colonne de rectangle : rows x 3
         ldb   #3
         mul
         stb   tilemap.patch.runLen
-
+*
         ; Y = premiere cellule visee : base + col * colStep + row * 3
         lda   tilemap.patch.col
         ldb   tilemap.patch.colStep+1
@@ -97,7 +111,7 @@ tilemap.patch
         ldb   #3
         mul
         leay  d,y
-
+*
         ; une colonne par tour, chacune d'un seul bloc contigu
         lda   tilemap.patch.cols
         sta   tilemap.patch.colCnt
@@ -111,8 +125,8 @@ tilemap.patch
         leay  d,y
         dec   tilemap.patch.colCnt
         bne   @column
-
-        lda   tilemap.patch.savedPage
+*
+@leave  lda   tilemap.patch.savedPage
         _SetCartPageA
         rts
 
@@ -154,6 +168,58 @@ tilemap.patch
         INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.const.asm"
 
 * ---------------------------------------------------------------------------
+* tilemap.anim.mount / tilemap.anim.unmount
+* -----------------------------------------
+* LES DEUX SEULS ENDROITS DU MODULE QUI TOUCHENT A LA PAGINATION.
+*
+* Trois choses vivent a TROIS endroits differents. L'etat appartient a
+* l'appelant (son direntry, ou du resident) ; le descripteur et les blocs
+* vivent dans le direntry de la CARTE, choisi ainsi pour qu'UNE page rende
+* lisibles a la fois la source et la destination ; le module, lui, est
+* resident et toujours la. Une lecture faite du mauvais cote de ces deux
+* appels ne rate pas bruyamment : elle rend les octets qui trainent la.
+*
+* Trois defauts successifs sont sortis de la avant que la regle ne soit posee
+* — cols/rows a zero et 64 Ko ecrases, l'index d'image faux et des cellules
+* vides, hold a zero et la boucle de rattrapage sans fin. D'ou le
+* confinement : hors de ces deux routines et d'applyOne, personne ne monte
+* rien, et rien de pagine n'est lu.
+* ---------------------------------------------------------------------------
+tilemap.anim.mount
+        _GetCartPageA
+        sta   tilemap.patch.savedPage2
+        lda   tilemap.patch.plane
+        bne   @o
+        lda   scroll_map_page_even
+        bra   @s
+@o      lda   scroll_map_page_odd
+@s      _SetCartPageA
+        rts
+tilemap.anim.unmount
+        lda   tilemap.patch.savedPage2
+        _SetCartPageA
+        rts
+
+* ---------------------------------------------------------------------------
+* tilemap.anim.cache
+* ------------------
+* entree : X = etat, Y = descripteur pair
+* Recopie dans l'etat les deux octets que l'horloge relit a chaque tour.
+* ---------------------------------------------------------------------------
+tilemap.anim.cache
+        jsr   tilemap.anim.mount
+        lda   tilemap.desc.frames,y
+        sta   tilemap.patch.tmpA
+        lda   tilemap.desc.hold,y
+        sta   tilemap.patch.tmpB
+        jsr   tilemap.anim.unmount
+        lda   tilemap.patch.tmpA       ; l'etat n'est adressable qu'ici, page rendue
+        sta   tilemap.anim.frames,x
+        lda   tilemap.patch.tmpB
+        sta   tilemap.anim.hold,x
+        rts
+
+* ---------------------------------------------------------------------------
 * tilemap.anim.start
 * ------------------
 * entree : X = etat, Y = descripteur pair, U = descripteur impair (0 = aucun)
@@ -168,12 +234,13 @@ tilemap.anim.start
         stb   tilemap.anim.dir,x
         clr   tilemap.anim.flags,x
         clr   tilemap.anim.frame,x
+        jsr   tilemap.anim.cache       ; frames et hold, une fois pour toutes
         tstb
         beq   >
-        lda   tilemap.desc.frames,y    ; a l'envers : on part de la derniere
+        lda   tilemap.anim.frames,x    ; a l'envers : on part de la derniere
         deca
         sta   tilemap.anim.frame,x
-!       lda   tilemap.desc.hold,y
+!       lda   tilemap.anim.hold,x
         sta   tilemap.anim.timer,x
         bra   tilemap.anim.apply
 
@@ -197,7 +264,6 @@ tilemap.anim.step
         lda   tilemap.anim.timer,x
         suba  gfxlock.frameDrop.count
         bgt   @keep                    ; le maintien court encore
-        ldy   tilemap.anim.descEven,x
 *
         ; RATTRAPAGE. Une boucle de jeu couvre plusieurs trames video ; un
         ; maintien de 2 trames peut donc etre franchi DEUX fois dans le meme
@@ -212,7 +278,7 @@ tilemap.anim.step
         tst   tilemap.anim.dir,x
         bne   @backward
         incb
-        cmpb  tilemap.desc.frames,y
+        cmpb  tilemap.anim.frames,x
         bhs   @finish
         bra   @advance
 @backward
@@ -221,10 +287,10 @@ tilemap.anim.step
         decb
 @advance
         stb   tilemap.anim.frame,x
-        adda  tilemap.desc.hold,y
+        adda  tilemap.anim.hold,x
         ble   @catchup                 ; toujours en retard : encore une image
         sta   tilemap.anim.timer,x
-        bsr   tilemap.anim.apply       ; une seule fois, sur l'image d'arrivee
+        jsr   tilemap.anim.apply       ; une seule fois, sur l'image d'arrivee
         andcc #$FB                     ; Z = 0 : elle tourne encore
         rts
 @keep   sta   tilemap.anim.timer,x
@@ -249,17 +315,38 @@ tilemap.anim.apply
         pshs  x
         ldy   tilemap.anim.descEven,x
         clr   tilemap.patch.plane
-        bsr   tilemap.anim.applyOne
+        jsr   tilemap.anim.applyOne
         ldx   ,s                       ; l'etat, sans le depiler
         ldy   tilemap.anim.descOdd,x
         beq   >                        ; pas de plan impair declare
         lda   #1
         sta   tilemap.patch.plane
-        bsr   tilemap.anim.applyOne
+        jsr   tilemap.anim.applyOne
 !       puls  x,pc
 
 * Un plan : Y = son descripteur, X = l'etat (pour l'image courante).
+*
+* LE DESCRIPTEUR ET LES BLOCS VIVENT DANS LE DIRENTRY DE LA CARTE. C'est ce
+* qui rend le schema tenable : une seule page a monter les rend lisibles EN
+* MEME TEMPS que la carte ou l'on ecrit, alors que source et destination
+* seraient sinon deux pages a la fois dans une seule fenetre.
+*
+* D'ou ce montage AVANT la premiere lecture. Sans lui on lit le descripteur a
+* travers la page de l'appelant : cols et rows sortent des octets qui trainent
+* la — a zero le 21/08/2026 — et la copie part sur toute la memoire.
 tilemap.anim.applyOne
+        ldb   tilemap.anim.frame,x     ; l'etat : lu dans la page de l'APPELANT
+        aslb
+        stb   tilemap.patch.frameOff
+*
+* L'ETAT EST LU AVANT LE MONTAGE, le descripteur APRES. Les deux ne vivent pas
+* dans la meme page : l'etat appartient a l'appelant (son direntry, ou du
+* resident) et le descripteur au direntry de la carte. Monter puis lire l'etat
+* le lisait a travers la page de la carte — l'index d'image sortait faux,
+* `abx` sortait de la table, et le bloc copie etait une zone de zeros. C'est
+* le meme piege que celui du descripteur, un cran plus loin : ici DEUX pages
+* sont en jeu et chaque lecture doit savoir laquelle est montee.
+        jsr   tilemap.anim.mount
         lda   tilemap.desc.cols,y
         sta   tilemap.patch.cols
         lda   tilemap.desc.rows,y
@@ -268,9 +355,9 @@ tilemap.anim.applyOne
         sta   tilemap.patch.col
         lda   tilemap.desc.row,y
         sta   tilemap.patch.row
-        ldb   tilemap.anim.frame,x     ; le bloc de l'image courante
-        aslb
+        ldb   tilemap.patch.frameOff   ; releve plus haut, avant le montage
         ldx   tilemap.desc.table,y
         abx
         ldx   ,x
-        jmp   tilemap.patch
+        jsr   tilemap.patch            ; il remonte la meme page : sans effet
+        jmp   tilemap.anim.unmount

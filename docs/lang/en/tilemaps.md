@@ -194,6 +194,35 @@ decor animation is bespoke pixels, not a recombination of the level's tiles,
 so it shares almost nothing with the level and a common pool would save
 nothing while coupling the animation's art to the level's tile numbering.
 
+### Three places, one window — the paging contract
+
+This is the part that bites. Three things take part and they live in **three
+different places** : the module is resident and always addressable ; the
+animation **state** belongs to the caller, so it sits in the caller's direntry
+; the **descriptor and blocks** sit in the MAP's direntry, deliberately, so
+that one page mount makes source and destination readable at once. The
+cartridge window shows one page at a time.
+
+A read taken on the wrong side of a mount does not fail loudly — it returns
+whatever bytes live at that address in the other page. Three defects came out
+of exactly that, one after another, before the rule was written down :
+
+- `cols`/`rows` read as zero — and zero is not benign here, `dec`/`bne` on
+  zero runs 256 times, so 256 columns of 256 bytes : 64 KB overwritten ;
+- the frame index read wrong — `abx` walked past the pointer table and the
+  block copied was a run of zeros, blanking the cells ;
+- `hold` read as zero — the catch-up loop never terminated.
+
+So the paging is confined to **three named routines** : `tilemap.anim.mount`,
+`.unmount`, and `.cache`, the last called once at start to copy into the state
+the only two descriptor bytes the clock needs. `tilemap.anim.step` therefore
+never touches a page at all, and `applyOne` reads the frame index *before*
+mounting. Outside those, nothing mounts and nothing paged is read.
+
+`tilemap.patch` also refuses a zero `cols` or `rows` rather than trusting it :
+an unresolved symbol reads as a silent zero in this project, and here that
+zero is catastrophic rather than inert.
+
 ### Validation
 
 `examples/tilescroll` runs a 2×2 rectangle of four frames over the scrolling

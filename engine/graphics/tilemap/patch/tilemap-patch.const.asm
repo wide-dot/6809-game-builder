@@ -29,7 +29,13 @@ tilemap.anim.frame      equ   4        ; image courante
 tilemap.anim.timer      equ   5        ; maintien restant, en trames video
 tilemap.anim.dir        equ   6        ; 0 en avant, non nul en arriere
 tilemap.anim.flags      equ   7
-tilemap.anim.SIZE       equ   8
+; Copies prises AU DEMARRAGE dans le descripteur (tilemap.anim.cache) : ce sont
+; les deux seuls octets dont l'horloge a besoin, et les avoir ICI est ce qui
+; permet a `step` de ne jamais toucher a la pagination — le descripteur vit
+; dans une page, l'etat non.
+tilemap.anim.frames     equ   8
+tilemap.anim.hold       equ   9
+tilemap.anim.SIZE       equ   10
 
 tilemap.anim.DONE       equ   %00000001
 
