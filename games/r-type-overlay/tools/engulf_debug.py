@@ -29,7 +29,7 @@ _, ENGINE = unit_base('common.engine')
 SAFE = sym('gen/common/build/engine.lwmap', 'gfxlock.bufferSwap.wait', ENGINE)
 INV  = sym('gen/common/build/engine.lwmap', 'cheat.invincible', ENGINE)
 BENCH = 0x87DB
-STAGE = 2
+STAGE = int(os.environ.get('STAGE', '2'))
 
 def cheat_state_addr():
     occ = open('dist/occupancy-fd.html').read()
@@ -58,6 +58,34 @@ t.call('write_memory', {'addr': hex(addr), 'bytes': ['%02X' % STAGE, '01']})
 ok = t.read(hex(addr), 2) == [STAGE, 1]
 t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
 if not ok: raise SystemExit('le cheat n a pas pris')
+
+# LE DEFAUT DE LA TABLE DE RESTAURATION. tilemap.resetTable est une variable
+# RESIDENTE : sans remise a zero a l'init de stage, un stage sans <tilereset>
+# heriterait du pointeur du precedent. On le lit sur le stage demande.
+if os.environ.get('RESETPTR'):
+    RT0 = sym('gen/common/build/engine.lwmap', 'tilemap.resetTable', ENGINE)
+    t.call('press_key', {'scancode': '0F', 'down': True})
+    t.call('run_frames', {'n': 10})
+    t.call('press_key', {'scancode': '0F', 'down': False})
+    # ON EMPOISONNE AVANT L'INIT DU STAGE. Sans ca le test ne prouve rien :
+    # en venant du titre le pointeur vaut deja zero, et un effacement absent
+    # passerait pour un effacement correct. $FFFF est ce qu'un stage precedent
+    # aurait laisse.
+    if os.environ.get('POISON'):
+        t.call('write_memory', {'addr': hex(RT0), 'bytes': ['FF', 'FF']})
+        print('poison : tilemap.resetTable = %02X%02X'
+              % tuple(t.read(hex(RT0), 2)), flush=True)
+    for _ in range(14):
+        t.call('run_frames', {'n': 500, 'timeout_ms': 600000})
+        b = t.read(hex(BENCH), 2)
+        if b[0] == 0xCA and b[1] == STAGE: break
+    else: raise SystemExit('stage %d jamais seme' % STAGE)
+    RT = sym('gen/common/build/engine.lwmap', 'tilemap.resetTable', ENGINE)
+    rt = t.read(hex(RT), 2)
+    v = (rt[0] << 8) | rt[1]
+    print('stage %d : tilemap.resetTable = %04X  (%s)'
+          % (STAGE, v, 'une table' if v else 'aucune table'))
+    sys.exit(0)
 t.call('press_key', {'scancode': '0F', 'down': True}); t.call('run_frames', {'n': 10})
 t.call('press_key', {'scancode': '0F', 'down': False})
 
@@ -128,7 +156,15 @@ if os.environ.get('WATCH'):
     # LA TETE DE TABLE EST-ELLE LISIBLE SANS MONTER DE PAGE ? Elle vit
     # maintenant dans l'unite residente du stage (page 1, non paginee).
     if os.environ.get('HEAD'):
-        HEAD = 0x8000 + 0x0668        # stage2.reset, stage02-main.lwmap
+        RT = sym('gen/common/build/engine.lwmap', 'tilemap.resetTable', ENGINE)
+        rt = t.read(hex(RT), 2)
+        print('tilemap.resetTable @%04X = %02X%02X' % (RT, rt[0], rt[1]))
+        # ON PART DU POINTEUR, pas d'un offset code en dur : la tete bouge des
+        # que l'unite residente change de taille.
+        HEAD = (rt[0] << 8) | rt[1]
+        if HEAD == 0:
+            print('aucune table : ce stage n a rien de patchable')
+            sys.exit(0)
         h = t.read(hex(HEAD), 16)
         print('tete @%04X : %d rectangles' % (HEAD, h[0]))
         for k in range(h[0]):

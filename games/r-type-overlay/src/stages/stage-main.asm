@@ -199,6 +199,16 @@ statics.SIZE  equ nb_static_objects*object_size
         lda   #1
         sta   terrainCollision.disabled
 
+        ; RESTAURATION DU DECOR : aucune table PAR DEFAUT. tilemap.resetTable
+        ; vit dans le module RESIDENT, donc son `fdb 0` ne vaut qu'au boot : un
+        ; stage qui en pose une la laisse en place pour le stage suivant. Sans
+        ; cette remise a zero, un retour de checkpoint au stage 3 lirait le
+        ; compte et les pointeurs de la table du stage 2 — a une adresse que le
+        ; stage 3 a remplie d'autre chose. Meme raison que les deux defauts
+        ; ci-dessus : ce qui est resident se reinitialise a chaque stage.
+        ldd   #0
+        std   tilemap.resetTable
+
         jsr   stage.setup                  ; cartes, largeur, wave, collision : le stage
 
         ; LE CHAMP D'ETOILES est arme par la WAVE, comme dans l'arcade :
