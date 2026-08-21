@@ -65,6 +65,7 @@ set_outslay_head_15 EXTERNAL
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
+        INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.const.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         ; Les identifiants d'objets sont des CONSTANTES, pas des externes : le
         ; code les combine par decalage, ce qu'aucune relocation ne sait faire.

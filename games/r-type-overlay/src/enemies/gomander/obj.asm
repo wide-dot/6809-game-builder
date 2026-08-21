@@ -81,6 +81,19 @@ gomander.hp       equ ext_variables+16   ; 16    PV restants — miroir de AABB.
                                          ;       qui passe a -128 hors fenetre
 gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
 
+; L'ANIMATION DU TUBE. L'arcade repeint un rectangle de sa tilemap de fond
+; (gomander_helper_blit_recipe, 0x40:A578) : le corps du boss est du DECOR, ce
+; qui est aussi ce qui laisse le serpent passer derriere. Chez nous c'est
+; tilemap.patch, et le rectangle est en colonne 87 ligne 7 de la carte —
+; position retrouvee par correlation, cf. tools/gen_engulf.py.
+;
+; L'etat vit ici et non dans les variables etendues : il pese 8 octets, les
+; ext en comptent 20 et 19 sont deja prises. Un statique convient — il n'y a
+; jamais deux gomanders.
+engulf.even       EXTERNAL
+engulf.odd        EXTERNAL
+gomander.anim     rmb tilemap.anim.SIZE
+
 ; --- la chronologie arcade, en trames ----------------------------------------
 gomander.ORB_FIRST   equ $01E0           ; a265 : 480, la premiere ouverture
 gomander.ORB_OPEN    equ $00E0           ; 224, les suivantes
@@ -141,6 +154,17 @@ gomander.Init
         std   gomander.AABB+AABB.rx,u
         lda   #gomander_hitdamage
         sta   gomander.hp,u
+
+        ; L'orbe part OUVERT : c'est l'etat OrbOpen qui suit, et la carte doit
+        ; le montrer des maintenant. On pose l'image 0 sans faire tourner
+        ; d'horloge — la sequence ne demarre qu'a la phase A.
+        ldx   #gomander.anim
+        ldy   #engulf.even
+        ldu   #engulf.odd
+        clrb
+        pshs  u
+        jsr   tilemap.anim.start
+        puls  u
         sta   gomander.AABB+AABB.p,u
         ; La POSITION de la boite — oubliee a la premiere passe : cx/cy ne
         ; sortaient jamais des residus du slot, l'orbe collisionnait n'importe
@@ -171,20 +195,31 @@ gomander.OrbOpen
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE          ; a2a3
         std   gomander.timer,u
+        pshs  u                        ; l'orbe se referme : la sequence a l'endroit
+        ldx   #gomander.anim
+        ldy   #engulf.even
+        ldu   #engulf.odd
+        clrb
+        jsr   tilemap.anim.start
+        puls  u
         lda   #gomander.rt.phaseA
         sta   routine,u
-        bsr   gomander.Shield
+        jsr   gomander.Shield
         lbra  gomander.CombatJoin
 
 ; --- phase A : 15 trames d'animation, AUCUN test de coup (40:a334) -----------
 gomander.PhaseA
+        pshs  u                        ; le decor avance d'une image quand il faut
+        ldx   #gomander.anim
+        jsr   tilemap.anim.step
+        puls  u
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE          ; a2cd
         std   gomander.timer,u
         lda   #gomander.rt.orbArm
         sta   routine,u
-        bsr   gomander.Expose
+        jsr   gomander.Expose
         lbra  gomander.CombatJoin
 
 ; --- orbe arme : 15 trames, VULNERABLE (40:a2b0) -----------------------------
@@ -194,23 +229,34 @@ gomander.OrbArm
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE
         std   gomander.timer,u
+        pshs  u                        ; l'orbe se rouvre : la meme sequence a l'envers
+        ldx   #gomander.anim
+        ldy   #engulf.even
+        ldu   #engulf.odd
+        ldb   #1
+        jsr   tilemap.anim.start
+        puls  u
         lda   #gomander.rt.phaseB
         sta   routine,u
-        bsr   gomander.Shield
+        jsr   gomander.Shield
         lbra  gomander.CombatJoin
 
 ; --- phase B : 15 trames d'animation (40:a375) -------------------------------
 gomander.PhaseB
+        pshs  u                        ; le decor avance d'une image quand il faut
+        ldx   #gomander.anim
+        jsr   tilemap.anim.step
+        puls  u
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
-        bsr   gomander.ReopenOrb
+        jsr   gomander.ReopenOrb
         lbra  gomander.CombatJoin
 
 ; --- engloutissement : 224 trames apres un coup, invulnerable (40:a3b3) ------
 gomander.Engulf
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
-        bsr   gomander.ReopenOrb
+        jsr   gomander.ReopenOrb
         lbra  gomander.CombatJoin
 
 gomander.ReopenOrb
@@ -251,7 +297,7 @@ gomander.HitCheck
         std   gomander.timer,u
         lda   #gomander.rt.engulf
         sta   routine,u
-        bsr   gomander.Shield
+        jsr   gomander.Shield
 @none   rts
 @dead   leas  2,s                      ; on ne revient pas dans l'etat
         lbra  gomander.ArmDeath
@@ -284,7 +330,7 @@ gomander.WaveTick
         std   gomander.delay,u
 @due    ldd   gomander.delay,u
         bgt   @ret
-        bsr   gomander.WaveSpawn
+        jsr   gomander.WaveSpawn
         lda   gomander.cursor,u
         cmpa  #gomander.WaveScript.end-gomander.WaveScript
         blo   @due                     ; un gros frame drop peut en devoir deux

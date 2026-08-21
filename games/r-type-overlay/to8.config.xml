@@ -2308,6 +2308,49 @@
                             gensymbols="gen/stages/02/map/map.const.asm"
                             lean="false"/>
 
+                <!-- L'ENGULF DU BOSS : le tube du gomander se referme sur   -->
+                <!-- l'outslay. L'arcade repeint un rectangle de sa tilemap    -->
+                <!-- de fond (0x40:A578) ; chez nous c'est tilemap.patch.      -->
+                <!-- La bande de huit images est construite par                -->
+                <!-- tools/gen_engulf.py : l'art arcade converti sur la        -->
+                <!-- palette du stage, pose sur le decor de NOTRE carte a      -->
+                <!-- l'endroit mesure par correlation (colonne 87, ligne 7).   -->
+                <!-- lean="false" : rien ne scrolle ici, le rectangle est fixe.-->
+                <leanscroll image="src/stages/02/engulf/in.png"
+                            gendir="gen/stages/02/engulf"
+                            gensymbols="gen/stages/02/engulf/engulf.const.asm"
+                            lean="false"/>
+
+                <!-- Tileset PROPRE a l'animation : mesure sur l'arcade, une   -->
+                <!-- animation de decor est du pixel sur mesure et ne partage  -->
+                <!-- quasi rien avec le niveau (161 ids distincts pour 192     -->
+                <!-- cellules, 4 cellules figees sur huit images).             -->
+                <file name="stage2.engulf.even" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/engulf-even">
+                    <lwasm gensource="gen/stages/02/engulf-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/engulf-even"
+                                 gensource="gen/stages/02/engulf-even/includes.asm">
+                            <image name="engulfEven" filename="gen/stages/02/engulf/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.engulf.odd" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/engulf-odd">
+                    <lwasm gensource="gen/stages/02/engulf-odd.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/engulf-odd"
+                                 gensource="gen/stages/02/engulf-odd/includes.asm">
+                            <image name="engulfOdd" filename="gen/stages/02/engulf/odd.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
                       gendir="gen/stages/02/tiles-even">
                     <gfxcomp gendir="gen/stages/02/tiles-even"
@@ -2337,6 +2380,15 @@
                         <tilemap map="gen/stages/02/map/odd.bin" label="map.odd"
                                  tiles="stage2.tiles.odd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
+                        <!-- L'animation du tube, un descripteur par plan. -->
+                        <tilepatch map="gen/stages/02/engulf/even.bin" label="engulf.even"
+                                   tiles="stage2.engulf.even" variant="ND0"
+                                   cols="2" rows="2" frames="8" col="87" row="7" hold="2"
+                                   gensource="gen/stages/02/engulf-even-map.asm"/>
+                        <tilepatch map="gen/stages/02/engulf/odd.bin" label="engulf.odd"
+                                   tiles="stage2.engulf.odd" variant="ND0"
+                                   cols="2" rows="2" frames="8" col="87" row="7" hold="2"
+                                   gensource="gen/stages/02/engulf-odd-map.asm"/>
                     </lwasm>
                 </file>
 
@@ -2415,6 +2467,8 @@
                     <load name="stage2.cast.imgHead"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
+                    <load name="stage2.engulf.even"/>
+                    <load name="stage2.engulf.odd"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>

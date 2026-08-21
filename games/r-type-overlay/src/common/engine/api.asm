@@ -88,6 +88,14 @@ checkpoint.clearData EXTERNAL
         _api scroll_map_odd
         _api scroll_map_page_even
         _api scroll_map_page_odd
+        ; Animer le decor : reecrire des cellules de la carte en place.
+        ; Le sequenceur est le point d'entree normal ; tilemap.patch reste
+        ; expose pour qui veut poser un rectangle sans horloge.
+        _api tilemap.patch
+        _api tilemap.patch.plane
+        _api tilemap.anim.start
+        _api tilemap.anim.step
+        _api tilemap.anim.apply
         _api scroll_vp_h_tiles
         _api scroll_vp_v_tiles
         _api scroll_tile_width

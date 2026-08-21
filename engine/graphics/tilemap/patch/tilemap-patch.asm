@@ -151,26 +151,7 @@ tilemap.patch
 * etendues d'OST, pour que deux animations puissent tourner ensemble.
 * ---------------------------------------------------------------------------
 
-; dans le descripteur
-tilemap.desc.cols       equ   0
-tilemap.desc.rows       equ   1
-tilemap.desc.frames     equ   2
-tilemap.desc.col        equ   3
-tilemap.desc.row        equ   4
-tilemap.desc.hold       equ   5
-tilemap.desc.table      equ   6
-tilemap.desc.SIZE       equ   8
-
-; dans l'etat
-tilemap.anim.descEven   equ   0        ; descripteur du plan pair
-tilemap.anim.descOdd    equ   2        ; descripteur du plan impair, 0 si aucun
-tilemap.anim.frame      equ   4        ; image courante
-tilemap.anim.timer      equ   5        ; maintien restant, en trames video
-tilemap.anim.dir        equ   6        ; 0 en avant, non nul en arriere
-tilemap.anim.flags      equ   7
-tilemap.anim.SIZE       equ   8
-
-tilemap.anim.DONE       equ   %00000001
+        INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.const.asm"
 
 * ---------------------------------------------------------------------------
 * tilemap.anim.start

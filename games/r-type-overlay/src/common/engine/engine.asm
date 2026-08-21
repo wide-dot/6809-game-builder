@@ -330,6 +330,7 @@ terrainCollision.init.do
 ; octets pour un travail qui n'arrive qu'a l'ouverture d'un stage et au
 ; rechargement d'un checkpoint. Voir src/common/lib/clear.unit.asm.
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectWave-subtype.asm"
