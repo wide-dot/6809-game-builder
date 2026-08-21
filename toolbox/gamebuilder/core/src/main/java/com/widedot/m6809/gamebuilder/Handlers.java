@@ -305,6 +305,7 @@ public final class Handlers {
 		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
+		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as file content
@@ -328,9 +329,9 @@ public final class Handlers {
 		spec(element("tilepatch").doc("generate the animation blocks tilemap.patch writes into a scroll map, and the descriptor its sequencer reads, baked in a .static section")
 			.req("map", STRING, "tile index .bin of the frame strip (leanscroll output), frames laid side by side, column major")
 			.req("label", STRING, "label of the generated descriptor")
-			.req("mapodd", STRING, "the odd plane's index .bin — same shape, different tiles")
+			.opt("mapodd", STRING, "the odd plane's index .bin — omit when the camera is parked and only one plane is ever read")
 			.req("tiles", STRING, "the file hosting the even plane's tiles : entries reference adr_<host>_<id>_<variant>")
-			.req("tilesodd", STRING, "the file hosting the odd plane's tiles")
+			.opt("tilesodd", STRING, "the file hosting the odd plane's tiles — goes with mapodd")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.opt("variantodd", STRING, "the odd plane's variant, same as variant if omitted")
 			.opt("gensymbols", STRING, "generated equates of the geometry, for the object driving the clock")
@@ -341,8 +342,23 @@ public final class Handlers {
 			.opt("col", INT, "destination column in the map, 0 if omitted")
 			.opt("row", INT, "destination row in the map, 0 if omitted")
 			.opt("hold", INT, "video frames each animation frame is held, 1 if omitted")
+			.opt("first", INT, "index of the first frame in the strip, 0 if omitted — lets several animations share one cut and one tileset")
 			.opt("section", STRING, "section of the blocks, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("tilereset").doc("from a list of map rectangles, generate what puts those cells back the way the level shipped them — the map in RAM is the only copy, and a checkpoint return does not reload it")
+			.req("map", STRING, "the LEVEL's tile index .bin — the source of truth for the original cells")
+			.req("maprows", INT, "rows per column in that map, so a rectangle can be located")
+			.req("label", STRING, "label of the generated table")
+			.req("tiles", STRING, "the file hosting the LEVEL's tiles : the restore names those, so nothing is compiled twice")
+			.req("variant", STRING, "compiled tile variant of those tiles")
+			.req("gensource", STRING, "generated source file")
+			.opt("section", STRING, "section of the table, map if omitted")
+			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("rect").doc("one patchable rectangle of the map, inside <tilereset>")
+			.req("col", INT, "left column")
+			.req("row", INT, "top row")
+			.req("cols", INT, "width in cells")
+			.req("rows", INT, "height in cells"));
 		spec(element("imageset").doc("index of an imageset whose drawing code is spread over pages, baked in a .static section")
 			.req("name", STRING, "imageset name, as declared by the <gfxcomp imageset> that compiled the images")
 			.req("gensource", STRING, "generated source file of the index")

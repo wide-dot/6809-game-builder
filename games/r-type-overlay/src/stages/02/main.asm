@@ -30,6 +30,7 @@ Pal_black         EXPORT
 ; residente des que le niveau est entier. Le scroll porte deja une page par
 ; plan de carte, donc il suffit de les lui designer.
 map.even          EXTERNAL
+stage2.reset      EXTERNAL
 map.odd           EXTERNAL
 
 ; La wave vit dans le comblement du pageset des tuiles impaires : sa page est
@@ -308,6 +309,11 @@ stage.setup
         lda   #map.RAM_OVER_CART+stage2.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
+
+        ; Les zones que les animations de decor peuvent ecraser, et de quoi les
+        ; remettre a l'etat du niveau au retour de checkpoint (<tilereset>).
+        ldd   #stage2.reset
+        std   tilemap.resetTable
 
         ldd   #stage.wave
         std   object_wave_data

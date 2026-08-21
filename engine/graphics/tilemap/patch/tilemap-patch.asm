@@ -113,6 +113,64 @@ tilemap.stamp
         bra   tilemap.request
 
 * ---------------------------------------------------------------------------
+* tilemap.restore — remettre les cellules patchables dans l'etat du niveau
+* ------------------------------------------------------------------------
+* A appeler au RETOUR DE CHECKPOINT, avant que checkpoint.load ne repeigne.
+*
+* Pourquoi c'est necessaire : la carte en RAM est la SEULE copie, et un
+* checkpoint ne recharge rien depuis la disquette — il repeint depuis ces
+* memes tables. Sans ca le decor reste fige dans la derniere image ecrite.
+*
+* Le stage publie sa table via tilemap.resetTable, generee par <tilereset> a
+* partir d'une simple liste de rectangles de carte. Elle est faite d'entrees
+* d'anneau DEJA FORMATEES : la restauration est donc une recopie de bloc, et
+* le drain les applique sans savoir que ce sont des restaurations. Aucun
+* chemin dedie dans le runtime.
+*
+* On ECRASE l'anneau au lieu d'y ajouter : au retour de checkpoint, ce qui y
+* trainait decrit un etat de jeu qui n'existe plus.
+* clobbe : tout
+* ---------------------------------------------------------------------------
+tilemap.resetTable    fdb   0        ; pose par le setup du stage ; 0 = ce stage
+                                     ; n'a rien de patchable, et restore ne
+                                     ; fait rien
+tilemap.restore
+        ldx   tilemap.resetTable
+        beq   @rts
+* LA TABLE EST PAGINEE, elle aussi. Elle vit avec les descripteurs qu'elle
+* nomme, donc dans le direntry de la carte : la lire sans monter cette page
+* rend les octets qui trainent la, et le compte comme les entrees sont alors
+* du hasard. Quatrieme fois que ce piege mord — d'ou le montage explicite ici
+* aussi, et non parce que « ca ne coute rien ».
+        _GetCartPageA
+        sta   tilemap.patch.saved
+        lda   scroll_map_page_even
+        _SetCartPageA
+        lda   ,x+                      ; le nombre de rectangles
+        beq   @none
+        cmpa  #tilemap.q.LEN
+        bls   @take
+        lda   #tilemap.q.LEN           ; l'anneau borne la restauration ; le
+        inc   tilemap.q.lost           ; surplus est un defaut de dimensionnement
+@take   sta   tilemap.q.count
+        ldb   #tilemap.q.STEP
+        mul                            ; D = N x 3 octets
+        tfr   d,y
+        ldu   #tilemap.q
+@copy   lda   ,x+
+        sta   ,u+
+        leay  -1,y
+        bne   @copy
+        lda   tilemap.patch.saved      ; rendre la page avant le drain, qui
+        _SetCartPageA                  ; remontera la sienne
+        jmp   tilemap.flush            ; applique TOUT DE SUITE : deux trames
+                                       ; plus tard, le joueur aurait vu le
+                                       ; decor patche sous le READY
+@none   lda   tilemap.patch.saved
+        _SetCartPageA
+@rts    rts
+
+* ---------------------------------------------------------------------------
 * tilemap.anim.arm — (re)armer une animation portee par un OST
 * ------------------------------------------------------------
 * entree : U = OST, X = descripteur, A = nombre d'images, B = maintien
@@ -242,14 +300,15 @@ tilemap.flush
         pshs  y
         jsr   tilemap.patch
         puls  y
-        lda   #1                       ; --- le plan impair
+        ldx   tilemap.desc.tableOdd,y  ; --- le plan impair, s'il est declare
+        beq   @noOdd                   ; table nulle : la camera est figee, le
+        lda   #1                       ; scroll ne lira jamais ce plan
         sta   tilemap.patch.plane
         ldb   ,s
-        ldx   tilemap.desc.tableOdd,y
         abx
         ldx   ,x
         jsr   tilemap.patch
-        leas  1,s
+@noOdd  leas  1,s
         lda   tilemap.patch.saved
         _SetCartPageA
         ldx   tilemap.q.rd

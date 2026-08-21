@@ -93,6 +93,16 @@ gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
 ; n'ecrit jamais dans la carte — il empile une demande, et tilemap.flush
 ; l'applique une fois par trame depuis la boucle de jeu.
 engulf            EXTERNAL
+tube0             EXTERNAL
+tube1             EXTERNAL
+tube2             EXTERNAL
+tube3             EXTERNAL
+; 19 — la parite des ouvertures. L'arcade ne leur donne pas d'horloge propre :
+; tick_gomander_orb_pellet_run choisit ptr_a ou ptr_b sur (compteur & 4), donc
+; les quatre battent ENSEMBLE sur l'horloge globale. On garde juste la derniere
+; parite posee, pour n'empiler les quatre demandes qu'au changement.
+gomander.tubePhase equ ext_variables+19
+
 
 ; --- la chronologie arcade, en trames ----------------------------------------
 gomander.ORB_FIRST   equ $01E0           ; a265 : 480, la premiere ouverture
@@ -175,6 +185,8 @@ gomander.Init
         std   gomander.timer,u
         lda   #gomander.rt.orbOpen
         sta   routine,u
+        lda   #$FF                     ; parite impossible : la premiere trame
+        sta   gomander.tubePhase,u     ; de combat pose les quatre ouvertures
 
         ; L'orbe part OUVERT : l'etat OrbOpen suit, et la carte doit le montrer
         ; des maintenant. On pose l'image 0 sans faire tourner d'horloge — la
@@ -323,9 +335,32 @@ gomander.CombatJoin
         blo   >
         lda   #1                       ; a440 : end_level_sequence_flag — en v2
         sta   globals.bossDefeated     ; c'est ce drapeau que la sequence lit
-!       ; a46c : les serpents.
-        ; a46f : l'emission d'orbes n'est pas portee (hors perimetre).
-        ;        CALL gomander_helper_spawn_orb_pellet
+!       ; LES QUATRE OUVERTURES. L'arcade les repeint depuis les objets pellet
+        ; (a46f), qu'on ne porte pas ; mais l'animation, elle, ne depend que de
+        ; l'horloge globale — (compteur & 4) choisit la pose, donc les quatre
+        ; battent ensemble. On n'empile qu'au CHANGEMENT de parite : quatre
+        ; demandes toutes les quatre trames video, pas quatre par trame.
+        lda   gfxlock.frame.count+1
+        lsra
+        lsra
+        anda  #1
+        cmpa  gomander.tubePhase,u
+        beq   @tubesDone
+        sta   gomander.tubePhase,u
+        tfr   a,b
+        ldx   #tube0
+        jsr   tilemap.request
+        ldb   gomander.tubePhase,u
+        ldx   #tube1
+        jsr   tilemap.request
+        ldb   gomander.tubePhase,u
+        ldx   #tube2
+        jsr   tilemap.request
+        ldb   gomander.tubePhase,u
+        ldx   #tube3
+        jsr   tilemap.request
+@tubesDone
+        ; a46c : les serpents.
         jmp   gomander.WaveTick
 
 ; --- la wavescript des serpents (40:a5a4) ------------------------------------

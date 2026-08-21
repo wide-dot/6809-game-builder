@@ -47,13 +47,19 @@ public class TilepatchPlugin {
 	public static File getFile(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		String map = ctx.path + File.separator + Attribute.getString(node, ctx, "map");
-		String mapOdd = ctx.path + File.separator + Attribute.getString(node, ctx, "mapodd");
+		// Le plan impair est OPTIONNEL. Le scroll ne lit map.odd que si la
+		// parite de la camera l'impose ; un boss qui arrete le defilement fige
+		// cette parite, et le plan non lu ne merite ni ses blocs ni ses tuiles.
+		// Sans mapodd, le descripteur porte une table nulle et le drain saute
+		// ce plan.
+		String mapOddRel = Attribute.getStringOpt(node, ctx, "mapodd");
+		String mapOdd = mapOddRel == null ? null : ctx.path + File.separator + mapOddRel;
 		String label = Attribute.getString(node, ctx, "label");
 		String tiles = Attribute.getString(node, ctx, "tiles");
-		String tilesOdd = Attribute.getString(node, ctx, "tilesodd");
+		String tilesOdd = Attribute.getStringOpt(node, ctx, "tilesodd");
 		String variant = Attribute.getString(node, ctx, "variant");
 		String variantOdd = Attribute.getString(node, ctx, "variantodd", variant);
-		String gensymbols = Attribute.getString(node, ctx, "gensymbols", null);
+		String gensymbols = Attribute.getStringOpt(node, ctx, "gensymbols");
 		String gensource = ctx.path + File.separator + Attribute.getString(node, ctx, "gensource");
 		String section = Attribute.getString(node, ctx, "section", "map");
 		int bitdepth = Attribute.getInteger(node, ctx, "bitdepth", 16);
@@ -63,6 +69,11 @@ public class TilepatchPlugin {
 		int dstCol = Attribute.getInteger(node, ctx, "col", 0);
 		int dstRow = Attribute.getInteger(node, ctx, "row", 0);
 		int hold = Attribute.getInteger(node, ctx, "hold", 1);
+		// `first` lets several animations share ONE leanscroll cut, hence one
+		// tileset : the strip holds every frame of every animation side by
+		// side, and each <tilepatch> takes its own window of it. Four tube
+		// openings in one tileset instead of four is worth the attribute.
+		int first = Attribute.getInteger(node, ctx, "first", 0);
 
 		if (bitdepth != 8 && bitdepth != 16) {
 			throw new Exception("tilepatch " + label + " : bitdepth must be 8 or 16");
@@ -83,7 +94,10 @@ public class TilepatchPlugin {
 		}
 
 		byte[] data = Files.readAllBytes(Paths.get(map));
-		byte[] dataOdd = Files.readAllBytes(Paths.get(mapOdd));
+		if ((mapOdd == null) != (tilesOdd == null)) {
+			throw new Exception("tilepatch " + label + " : mapodd and tilesodd go together");
+		}
+		byte[] dataOdd = mapOdd == null ? data : Files.readAllBytes(Paths.get(mapOdd));
 		if (data.length != dataOdd.length) {
 			throw new Exception("tilepatch " + label + " : the two planes hold "
 					+ data.length + " and " + dataOdd.length + " bytes — they describe"
@@ -95,11 +109,12 @@ public class TilepatchPlugin {
 					+ " bytes, not a whole number of " + bitdepth + " bit indexes");
 		}
 		int entries = data.length / step;
-		int expected = frames * cols * rows;
-		if (entries != expected) {
+		int need = (first + frames) * cols * rows;
+		if (entries < need) {
 			throw new Exception("tilepatch " + label + " : " + map + " holds " + entries
-					+ " indexes, but " + frames + " frames of " + cols + "x" + rows
-					+ " need " + expected + " — the picture and the declared geometry disagree");
+					+ " indexes, but frames " + first + ".." + (first + frames - 1)
+					+ " of " + cols + "x" + rows + " need " + need
+					+ " — the picture and the declared geometry disagree");
 		}
 
 		int[] ids = new int[entries];
@@ -111,8 +126,12 @@ public class TilepatchPlugin {
 					: ((data[i * 2] & 0xFF) << 8) | (data[i * 2 + 1] & 0xFF);
 			idsOdd[i] = step == 1 ? dataOdd[i] & 0xFF
 					: ((dataOdd[i * 2] & 0xFF) << 8) | (dataOdd[i * 2 + 1] & 0xFF);
-			if (ids[i] != 0) used.add(ids[i]);
-			if (idsOdd[i] != 0) usedOdd.add(idsOdd[i]);
+			// seule LA FENETRE de cette animation compte : `first` permet a
+			// plusieurs <tilepatch> de partager une coupe, et declarer les
+			// tuiles des autres fausserait le releve autant que le fichier.
+			boolean mine = i >= first * cols * rows && i < (first + frames) * cols * rows;
+			if (mine && ids[i] != 0) used.add(ids[i]);
+			if (mine && mapOdd != null && idsOdd[i] != 0) usedOdd.add(idsOdd[i]);
 		}
 
 		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
@@ -150,10 +169,14 @@ public class TilepatchPlugin {
 		source.append("        fcb   ").append(dstRow).append("        ; destination row").append(nl);
 		source.append("        fcb   ").append(hold).append("        ; video frames per animation frame").append(nl);
 		source.append("        fdb   ").append(label).append(".tableEven").append(nl);
-		source.append("        fdb   ").append(label).append(".tableOdd").append(nl);
+		if (mapOdd == null) {
+			source.append("        fdb   0        ; pas de plan impair").append(nl);
+		} else {
+			source.append("        fdb   ").append(label).append(".tableOdd").append(nl);
+		}
 
 		int empty = 0;
-		for (int plane = 0; plane < 2; plane++) {
+		for (int plane = 0; plane < (mapOdd == null ? 1 : 2); plane++) {
 			int[] src = (plane == 0) ? ids : idsOdd;
 			String host = (plane == 0) ? tiles : tilesOdd;
 			String var = (plane == 0) ? variant : variantOdd;
@@ -165,7 +188,7 @@ public class TilepatchPlugin {
 			}
 			for (int f = 0; f < frames; f++) {
 				source.append(label).append('.').append(suffix).append(f).append(nl);
-				int base = f * cols * rows;
+				int base = (first + f) * cols * rows;
 				for (int i = 0; i < cols * rows; i++) {
 					int id = src[base + i];
 					if (id == 0) {
@@ -217,7 +240,7 @@ public class TilepatchPlugin {
 		log.info("tilepatch {} : {} frames of {}x{} over two planes ({}+{} distinct tiles, "
 				+ "{} empty cells), {} bytes of blocks + {} of tables and descriptor",
 				label, frames, cols, rows, used.size(), usedOdd.size(), empty,
-				entries * 3 * 2, frames * 4 + 10);
+				entries * 3 * (mapOdd == null ? 1 : 2), frames * 4 + 10);
 		return path.toFile();
 	}
 }

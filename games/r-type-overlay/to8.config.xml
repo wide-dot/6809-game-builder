@@ -2321,6 +2321,30 @@
                             gensymbols="gen/stages/02/engulf/engulf.const.asm"
                             lean="false"/>
 
+                <!-- LES QUATRE OUVERTURES. tick_gomander_orb_pellet_run    -->
+                <!-- (0x40:A638) repeint quatre tentacules, deux poses        -->
+                <!-- alternees chacune. Une SEULE bande de huit images et donc -->
+                <!-- un seul tileset : chaque <tilepatch> y prend sa plage par -->
+                <!-- l'attribut first. Placement derive de l'ancre de l'oeil   -->
+                <!-- par ECART (tools/gen_tubes.py).                           -->
+                <leanscroll image="src/stages/02/tubes/in.png"
+                            gendir="gen/stages/02/tubes"
+                            gensymbols="gen/stages/02/tubes/tubes.const.asm"
+                            lean="false"/>
+
+                <file name="stage2.tubes.even" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/tubes-even">
+                    <lwasm gensource="gen/stages/02/tubes-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/tubes-even"
+                                 gensource="gen/stages/02/tubes-even/includes.asm">
+                            <image name="tubesEven" filename="gen/stages/02/tubes/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- Tileset PROPRE a l'animation : mesure sur l'arcade, une   -->
                 <!-- animation de decor est du pixel sur mesure et ne partage  -->
                 <!-- quasi rien avec le niveau (161 ids distincts pour 192     -->
@@ -2384,6 +2408,25 @@
                         <!-- deux plans, et les equates de geometrie pour le   -->
                         <!-- code du boss, qui fait tourner l'horloge sans     -->
                         <!-- rien lire de pagine.                              -->
+                        <!-- LES ZONES PATCHABLES, et de quoi les remettre     -->
+                        <!-- comme le niveau les livre. La carte en RAM est la  -->
+                        <!-- seule copie et un checkpoint ne recharge rien :    -->
+                        <!-- sans cette table le decor resterait fige dans la   -->
+                        <!-- derniere image ecrite. Ce ne sont que des          -->
+                        <!-- POINTEURS vers les tuiles DU NIVEAU — rien n'est   -->
+                        <!-- recompile. Les coordonnees sont celles des         -->
+                        <!-- <tilepatch> ci-dessous.                            -->
+                        <tilereset map="gen/stages/02/map/even.bin" maprows="15"
+                                   label="stage2.reset"
+                                   tiles="stage2.tiles.even" variant="ND0"
+                                   gensource="gen/stages/02/reset.asm">
+                            <rect col="87" row="7"  cols="2" rows="2"/>
+                            <rect col="83" row="6"  cols="4" rows="4"/>
+                            <rect col="82" row="11" cols="4" rows="4"/>
+                            <rect col="89" row="6"  cols="4" rows="4"/>
+                            <rect col="89" row="11" cols="4" rows="4"/>
+                        </tilereset>
+
                         <tilepatch map="gen/stages/02/engulf/even.bin" label="engulf"
                                    mapodd="gen/stages/02/engulf/odd.bin"
                                    tiles="stage2.engulf.even" variant="ND0"
@@ -2391,6 +2434,30 @@
                                    cols="2" rows="2" frames="8" col="87" row="7" hold="2"
                                    gensymbols="gen/stages/02/engulf/engulf.const.asm"
                                    gensource="gen/stages/02/engulf-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube0"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="4" rows="4" frames="2" first="0"
+                                   col="83" row="6" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube0.const.asm"
+                                   gensource="gen/stages/02/tube0-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube1"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="4" rows="4" frames="2" first="2"
+                                   col="82" row="11" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube1.const.asm"
+                                   gensource="gen/stages/02/tube1-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube2"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="4" rows="4" frames="2" first="4"
+                                   col="89" row="6" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube2.const.asm"
+                                   gensource="gen/stages/02/tube2-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube3"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="4" rows="4" frames="2" first="6"
+                                   col="89" row="11" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube3.const.asm"
+                                   gensource="gen/stages/02/tube3-map.asm"/>
                     </lwasm>
                 </file>
 
@@ -2471,6 +2538,7 @@
                     <load name="stage2.tiles.odd"/>
                     <load name="stage2.engulf.even"/>
                     <load name="stage2.engulf.odd"/>
+                    <load name="stage2.tubes.even"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>

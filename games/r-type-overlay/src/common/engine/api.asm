@@ -96,6 +96,8 @@ checkpoint.clearData EXTERNAL
         _api tilemap.anim.arm
         _api tilemap.animate
         _api tilemap.flush
+        _api tilemap.restore
+        _api tilemap.resetTable
         _api scroll_vp_h_tiles
         _api scroll_vp_v_tiles
         _api scroll_tile_width

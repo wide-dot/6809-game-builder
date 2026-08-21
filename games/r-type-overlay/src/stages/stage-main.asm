@@ -266,6 +266,13 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Ne rien remettre ici de ce qu'il fait deja : notre portage avait
         ; duplique son effacement, son `player1+id`, son `ObjectDp_Clear`, son
         ; fondu et son `ObjectWave_Init` — et les deux copies avaient divergé.
+        ; LES CELLULES PATCHABLES REVIENNENT A L'ETAT DU NIVEAU, avant que
+        ; checkpoint.load ne repeigne. La carte en RAM est la SEULE copie et un
+        ; checkpoint ne recharge rien depuis la disquette : sans ca le decor
+        ; anime resterait fige dans la derniere image ecrite. La table est
+        ; generee par <tilereset> depuis une liste de rectangles de carte, et
+        ; c'est une simple recopie dans l'anneau de demandes.
+        jsr   tilemap.restore
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
@@ -846,6 +853,13 @@ stage.state.checkpoint
         ; dans le decor. Une roulette de phase d'IRQ : la partition des
         ; repertoires n'a fait que deplacer le tirage perdant.
         jsr   IrqOff
+        ; LES CELLULES PATCHABLES REVIENNENT A L'ETAT DU NIVEAU, avant que
+        ; checkpoint.load ne repeigne. La carte en RAM est la SEULE copie et un
+        ; checkpoint ne recharge rien depuis la disquette : sans ca le decor
+        ; anime resterait fige dans la derniere image ecrite. La table est
+        ; generee par <tilereset> depuis une liste de rectangles de carte, et
+        ; c'est une simple recopie dans l'anneau de demandes.
+        jsr   tilemap.restore
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
