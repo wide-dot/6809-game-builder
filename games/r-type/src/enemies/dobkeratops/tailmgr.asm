@@ -7,11 +7,13 @@
 ; INCLUDE "./objects/explosion/explosion.const.asm"
 ; INCLUDE "./objects/enemies_properties.asm"
 
-; tailmgr - MASTER fan-out COMPLET : 1 objet engine bg-erase qui PILOTE les
-; 19 vraies tails du boss (hors-pool). Portage 1:1 de tail.asm (Run/follow/
-; gating moveAlienStart, WaitEndStage/bossDefeated/hold, Explode) eclate sur
-; 19 records d'etat ; TailDrawAll/TailEraseAll eclatent vers les 19 blits
-; compiles bg-erase. Etat + preset + scripts : tout sur la page master.
+; tailmgr - MASTER fan-out COMPLET : 1 objet engine qui PILOTE les 19 vraies
+; tails du boss (hors-pool). Portage 1:1 de tail.asm (Run/follow/gating
+; moveAlienStart, WaitEndStage/bossDefeated/hold, Explode) eclate sur 19
+; records d'etat. OVERLAY : TailDrawAll dessine seul via les segments compiles
+; par la chaine gfxcomp (draw) — les blits bg-erase colles, leur TailEraseAll,
+; les cellules et les records bgdata sont partis avec le chantier overlay.
+; Etat + preset + scripts : tout sur la page master.
 ; COLLISION sans AABB stockees : les tails sont des boites invincibles (p=-128),
 ; on duplique l'algo Collision_Do et on teste directement les listes player et
 ; friend au recalcul de position (1 element sur 2 porte une hitbox, et on
@@ -20,8 +22,6 @@
 ; ===========================================================================
 
 TM_N     equ 19
-TM_SLICE equ 128                     ; octets buffer par element (max saved ~103)
-TM_NCELL equ TM_N*2                  ; cellules engine (128 o = 2 cellules/element)
 TM_BOXW  equ 8                       ; bbox PETITE : la box sert juste a la detection
 TM_BOXH  equ 8                       ; de changement (refresh) + in-range ; le draw/erase
                                      ; custom couvrent le vrai cluster (plus large que l'ecran)
@@ -62,17 +62,11 @@ Object
 
 Init
         clr   TMkilled               ; etat de page : NON recharge au reload checkpoint
-        ldx   #TMRec                 ; purge les records bgdata/erase d'une partie precedente
-        ldd   #0
-!       std   ,x++
-        cmpx  #TMRec_end
-        blo   <
         _GetCartPageA
         ldb   id,u
         ldx   #Img_Page_Index
         sta   b,x
-        sta   TMMf
-        sta   TMMf+3
+        sta   TMMf                   ; OVERLAY : une seule page a patcher (page_draw)
         ldd   #TMImg
         std   image_set,u
         lda   #120                   ; ancre ecran de la bbox master (cluster tail)
@@ -270,12 +264,12 @@ TailUpdateAll
         ldd   TS_XHI,y
         subd  glb_camera_x_pos
         stb   TMccx                  ; cx collision (coords camera, SANS +48 - cf tail.asm @end)
-        addb  glb_camera_x_offset+1
-        stb   TMtx
+        addb  #screen_left           ; OVERLAY : l'offset camera est nul (marge,
+        stb   TMtx                   ; pas cadre) — la constante porte le cadre
         ldd   TS_YHI,y
         subd  glb_camera_y_pos
         stb   TMccy                  ; cy collision (SANS +28)
-        addb  glb_camera_y_offset+1
+        addb  #screen_top
         stb   TMty
         ; --- collision : TOUS les elements portent une hitbox, testes un sur
         ; deux en alternance par trame (pairs puis impairs, arcade-style) ---
@@ -440,41 +434,36 @@ TM_ColScan
         bne   @loop
         rts
 
-; --- image-set fabrique : bg-erase -> parites {0,2} (B0,B1) ---
+; --- image-set fabrique : OVERLAY -> parites {1,3} (D0,D1), dessin seul ---
+; BuildSprites ne lit que page_draw/draw_routine : le descripteur fait 3 octets,
+; les champs d'effacement du bg-erase n'existent plus.
 TMImg
         fcb   TMSub-TMImg,TMSub-TMImg,TMSub-TMImg,TMSub-TMImg
         fcb   TM_BOXW,TM_BOXH,0
 TMSub
-        fcb   TMMf-TMSub             ; [0] B0
-        fcb   0                      ; [1] D0
-        fcb   TMMf-TMSub             ; [2] B1
-        fcb   0                      ; [3] D1
+        fcb   0                      ; [0] B0
+        fcb   TMMf-TMSub             ; [1] D0
+        fcb   0                      ; [2] B1
+        fcb   TMMf-TMSub             ; [3] D1
         fcb   0,0                    ; x1,y1 off
 TMMf
         fcb   0                      ; page_draw (patche)
         fdb   TailDrawAll
-        fcb   0                      ; page_erase (patche)
-        fdb   TailEraseAll
-        fcb   TM_NCELL               ; erase_nb_cell : tas cellules engine
 
 ; ===========================================================================
-; TailDrawAll - appele par DrawSprites. Saute les tails supprimees (TMalive=0)
-; en effacant leur record pour stopper l'erase.
+; TailDrawAll - appele par BuildSprites via le faux imageset TMImg. OVERLAY :
+; dessin seul — plus de region de cellules (Y ignore), plus de records
+; bgdata/erase, plus de TailEraseAll. Une tail supprimee (TMalive=0) n'est
+; simplement plus dessinee ; sa derniere image reste a l'ecran jusqu'a
+; l'effacement de fond (etape suivante du chantier), comme tout sprite.
 ; ===========================================================================
 TailDrawAll
-        sty   TMcellY               ; Y = haut region cellules (BgBufferAlloc)
-        jsr   TM_BufOff
         clr   TMi
 @loop
         ldb   TMi                    ; tail visible ?
         ldx   #TMalive
         lda   b,x
-        bne   @draw
-        jsr   TM_RecPtr              ; supprimee : efface le record (stoppe l'erase)
-        ldd   #0
-        std   ,x
-        lbra  @next
-@draw
+        beq   @next
         ; --- pointeur position table[TMi] ---
         lda   TMi
         ldb   #3
@@ -494,103 +483,32 @@ TailDrawAll
         lda   ,x
         suba  #TM_CENT
         ldb   1,x
-        pshs  x
         jsr   DRS_XYToAddress        ; -> glb_screen_location_2/1
-        puls  x
-        ; --- Y = haut du slice buffer de l'element TMi ---
-        jsr   TM_SlicePtr            ; Y = buffer_top[buf][TMi]
-        ; --- appel BCKDRAW (Y=buffer, U=ecran) -> U=bgdata ---
+        ; --- appel du dessin (U=ecran) — la routine consomme U ---
         ldu   <glb_screen_location_2
         ldx   #TMDrawTab
         ldb   TMidx
         ldx   b,x
-        jsr   ,x                     ; clobbe tout, retourne U=bgdata
-        ; --- stocke bgdata + erase_rtn de l'element TMi ---
-        jsr   TM_RecPtr              ; X = &record[buf][TMi] (4 o : bgdata,erase)
-        stu   ,x                     ; bgdata
-        ldu   #TMEraseTab
-        ldb   TMidx
-        ldu   b,u
-        stu   2,x                    ; erase_rtn
+        jsr   ,x
 @next
         inc   TMi
         lda   TMi
         cmpa  #TM_N
-        lblo  @loop
-        ; U pour le free engine : bas de region +16 (l'engine fait -16 puis
-        ; arrondit a la cellule -> retombe sur cell_start aligne)
-        ldd   TMcellY
-        subd  #TM_N*TM_SLICE-16
-        tfr   d,u
+        blo   @loop
         rts
 
-; ===========================================================================
-; TailEraseAll - appele par EraseSprites. Restaure les 19 en ORDRE INVERSE.
-; CONTRAT ENGINE : a l'entree U = rsv_bgdata (= TMcellY - (TM_N*TM_SLICE-16),
-; la valeur retournee par TailDrawAll) ; en SORTIE il faut retourner U = cell_end
-; (= TMcellY) pour BgBufferFree (EraseSprites: stu BBF_cell_end). On NE PEUT PAS
-; deduire cell_end du dernier blit d'erase : avec le culling, le tail 0 (slice du
-; haut = cell_end) peut etre culled -> U perime -> free-list de cellules corrompue
-; -> BgBufferAlloc echoue -> plus aucun tail affiche. On recalcule cell_end depuis
-; l'U d'entree, independamment du culling.
-; ===========================================================================
-TailEraseAll
-        stu   TMeraseU             ; sauve rsv_bgdata (U d'entree)
-        jsr   TM_BufOff             ; buffer courant (erase tourne AVANT le draw !)
-        lda   #TM_N-1
-        sta   TMi
-@loop
-        jsr   TM_RecPtr              ; X = &record[buf][TMi]
-        ldu   ,x                     ; bgdata
-        beq   @next
-        ldx   2,x                    ; erase_rtn
-        jsr   ,x                     ; U=bgdata -> restaure
-@next
-        dec   TMi
-        bpl   @loop
-        ldd   TMeraseU               ; U = cell_end = rsv_bgdata + (TM_N*TM_SLICE-16)
-        addd  #TM_N*TM_SLICE-16      ; = TMcellY (independant du culling)
-        tfr   d,u
-        rts
-
-; --- helpers (etat sur la page) ------------------------------------------
-; TM_BufOff : selectionne le buffer courant (double buffer gfxlock)
-TM_BufOff
-        clr   TMbufsel
-        lda   gfxlock.backBuffer.id
-        beq   >
-        lda   #1
-        sta   TMbufsel
-!       rts
-
-; TM_SlicePtr : Y = TMcellY - TMi*SLICE (haut du slice de l'element, tas engine)
-TM_SlicePtr
-        lda   TMi
-        ldb   #TM_SLICE
-        mul                          ; D = TMi*SLICE
-        pshs  d
-        ldd   TMcellY
-        subd  ,s++
-        tfr   d,y
-        rts
-
-; TM_RecPtr : X = TMRec + bufsel*(N*4) + TMi*4
-TM_RecPtr
-        lda   TMi
-        ldb   #4
-        mul
-        addd  #TMRec
-        tst   TMbufsel
-        beq   >
-        addd  #TM_N*4
-!       tfr   d,x
-        rts
+; --- table de dessin [img*4 + parite*2] : les symboles de la chaine gfxcomp
+; (config : <gfxcomp> de stage1.tailmgr), locaux a l'unite ------------------
+TMDrawTab
+        fdb   adr_tail_0_ND0,adr_tail_0_ND1
+        fdb   adr_tail_1_ND0,adr_tail_1_ND1
+        fdb   adr_tail_2_ND0,adr_tail_2_ND1
+        fdb   adr_tail_end_ND0,adr_tail_end_ND1
 
 ; --- data / buffers sur la page ------------------------------------------
 TMi        fcb 0
 TMkilled   fcb 0                     ; 1 = DeleteObject demande (master rendu au pool)
 TMidx      fcb 0
-TMbufsel   fcb 0
 TMbxmin    fcb 0
 TMbxmax    fcb 0
 TMbymin    fcb 0
@@ -601,15 +519,10 @@ TMcolPhase fcb 0
 TMdead     fcb 0
 TMtx       fcb 0
 TMty       fcb 0
-TMcellY    fdb 0
-TMeraseU   fdb 0
 TMnf       fdb 0
 
 TMalive    fill 0,TM_N              ; 19 x drapeau visible (1) / supprimee (0)
 TMPos      fill 0,3*TM_N            ; 19 x [x_pixel, y_pixel, img] (calcule par Run)
 TMState    fill 0,TM_ST*TM_N        ; 19 x etat complet (18 o)
-TMRec      fill 0,2*TM_N*4          ; records [bgdata(2),erase_rtn(2)] x 19 x 2 buffers
-TMRec_end
 
         INCLUDE "src/enemies/dobkeratops/tail_animation.asm"
-        INCLUDE "src/enemies/dobkeratops/tailmgr_blits.asm"

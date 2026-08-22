@@ -53,6 +53,10 @@ Ani_Asd_common    EXTERNAL
 ; il n'a ni etat ni OST, sa page est une equate (common.overlay.page) et son adresse
 ; ce symbole — paged.call suffit a l'atteindre.
 adr_playfield_mask_ND0 EXTERNAL
+; L'effacement du champ de jeu, meme page : peint en tete de trame.
+adr_playfield_clear_ND0 EXTERNAL
+playfield.clearBlast    EXTERNAL
+playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -68,7 +72,6 @@ hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL
-starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
 ; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les
@@ -118,16 +121,15 @@ counterairlaser.Object EXTERNAL
 
 ; Le cast d'ennemis, un direntry chacun.
 bug.Object      EXTERNAL
+bug.Render      EXTERNAL
 bink.Object     EXTERNAL
 blaster.Object  EXTERNAL
 pstaff.Object   EXTERNAL
 cancer.Object   EXTERNAL
 shell.Object    EXTERNAL
 tabrok.Object   EXTERNAL
-; Ce que ces deux-la font naitre ou servent : le canon du tabrok, cree par le
-; tank, et l'effaceur de la rotonde, que la boucle de trame appelle.
+; Ce que le tank fait naitre : son canon.
 tabrokcanon.Object EXTERNAL
-shellEraser.Object EXTERNAL
 ; Le missile et sa flamme : mutualises entre les ennemis et l'arme du joueur.
 commonmissile.Object      EXTERNAL
 commonmissileflame.Object EXTERNAL
@@ -306,13 +308,21 @@ stage.setup
         jsr   terrainCollision.init.do
         clr   terrainCollision.disabled
 
+        ; OVERLAY : les deux tables de carte sont deux direntries (les tuiles
+        ; pleines ont mange le trou du direntry unique) — chacune sa page.
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
-        lda   #map.RAM_OVER_CART+stage1.maps.page
+        lda   #map.RAM_OVER_CART+stage1.maps.even.page
         sta   scroll_map_page_even
+        lda   #map.RAM_OVER_CART+stage1.maps.odd.page
         sta   scroll_map_page_odd
+
+        ; La timeline d'effacement de CE stage. stage.setup rejoue a
+        ; l'ouverture ET au checkpoint : le tick rattrape la position.
+        ldx   #clear.timeline
+        stx   clear.tl.ptr
 
         ldd   #stage.wave
         ; SONDE DE TEST du systeme de log : D porte l'adresse de la wave du
@@ -322,16 +332,6 @@ stage.setup
         std   object_wave_data_start
         lda   #map.RAM_OVER_CART+stage1.wave.page
         sta   object_wave_data_page
-
-        ; La table d'effacement de la rotonde part vide : un slot non nul
-        ; herite de la partie precedente et efface un shell qui n'existe pas.
-        ; La v1 fait le meme geste a l'ouverture ET au checkpoint
-        ; (main.asm:101 et 324) ; ici stage.setup couvre les deux, il est
-        ; rejoue a chaque entree dans le niveau.
-        ldx   #shellEraseTable
-!       clr   ,x+
-        cmpx  #shellEraseTable_end
-        blo   <
 
         ; Le sequencement du boss : rendu a l'objet endstage, sa place en v1.
         ; stage.setup etant rejoue a l'ouverture ET au rechargement de
@@ -380,18 +380,10 @@ initlevel1.Object EXTERNAL
         INCLUDE "src/stages/01/objid.const.asm"
         INCLUDE "src/stages/01/objid.index.asm"
 
-; La table d'effacement de la rotonde : 14 emplacements de deux positions (un
-; par tampon), que chaque shell remplit et que l'effaceur relit. Elle vit dans
-; le stage — c'est de la RAM propre au niveau 1, comme en v1 (ram_data.asm) —
-; et traverse la frontiere de lien vers les deux unites qui la partagent.
-;
-; Elle DOIT etre remise a zero a l'ouverture du niveau et au rechargement de
-; checkpoint, sinon des positions fantomes s'effacent sur des shells absents.
-shellEraseTable     EXPORT
-shellEraseTable_end EXPORT
-shellEraseTable
-        fill  0,14*4
-shellEraseTable_end
+; La timeline d'effacement de CE stage — generee depuis in.png par
+; tools/gen_clear_timeline.py : le bas toujours zappe, le haut sur les
+; sections de plafond continues (rendu aux trous).
+        INCLUDE "src/stages/01/clear-timeline.asm"
 
 ;*******************************************************************************
 ; Le sequencement du boss — repris du main de la v1 (game-mode/01/main.asm)
@@ -421,6 +413,8 @@ main.endstage.counter         EXPORT
 main.endstage.phase           EXPORT
 main.endstage.scoreArmed      EXPORT
 main.endstage.scoreDone       EXPORT
+main.endstage.rallyX          EXPORT
+main.endstage.rallyY          EXPORT
 
 * The whole boss (face, jaw, the 19 tail parts, the alien) moves left as one
 * body: every part calls this each frame and subtracts the SAME step from its
@@ -498,6 +492,13 @@ main.endstage.counter         fdb 0  ; end of stage countdown (0: not armed)
 main.endstage.phase           fcb 0  ; 0: gameplay, 1: jingle+autopilot, 2: glide, 3: fading, 4: score readout
 main.endstage.scoreArmed      fcb 0  ; 1: tell the HUD readout to (re)seed from the stage score
 main.endstage.scoreDone       fcb 0  ; 1: HUD readout finished -> obj_endstage leaves the level
+; Le point de ralliement de l'autopilote. Le stage 1 a son PROPRE objet de
+; fin, qui lit encore la constante a l'assemblage — mais common.endlevel est
+; RESIDENT (charge au boot) et reference ces deux noms : sans export ici, le
+; re-lien du stage 1 les resoudrait silencieusement a zero. Meme constante des
+; deux cotes, aucune derive possible. Table arcade : endlevel.const.asm.
+main.endstage.rallyX          fdb endstage.RALLY_X
+main.endstage.rallyY          fdb endstage.RALLY_Y
 main.dobkeratops.halfDamage   fcb 0  ; set when the monster is past half damage
 main.dobkeratops.nervesErasing fcb 0 ; orbit-nerve erase animations still playing
 main.dobkeratops.explode       fcb 0 ; 0: boss frozen (bossDefeated) but explosions held

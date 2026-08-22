@@ -29,6 +29,7 @@ donnent l'ordre de grandeur de l'effort.
 | Mouvement circulaire / sinus, trajectoire géométrique | `shell/` (990 l.) | `circleCenter`, `terrainCollision.update`, effaceur dédié (`shelleraser`), `sinus.xlsx` pour dériver une table |
 | Poursuite du joueur, réactivité | `cancer/` (746 l.) | bits de direction, degré de réactivité, cap de durée de vie (exemple d'écart assumé `V2-DEVIATION`) |
 | Chaîne de segments (serpent) | `p-staff/` (543 l.) | la marche des segments liés — le modèle pour **outslay** |
+| Suiveurs par HISTORIQUE du parent | `forcepods/obj_reboundlaser.asm` (953 l.) | LE pattern « un seul interprète, N suiveurs » : le parent seul calcule sa trajectoire (et collisionne) et pousse (x, y, image_set) dans un anneau en plans parallèles (`ALIGN 32`, wrap par `andb`), UNE entrée par TRAME VIDÉO (poussées dans sa boucle de frame drop — l'espacement des suiveurs survit au drop). Un enfant = lire `bufferIndex` du parent, soustraire son retard (`childId*4+6`), masquer, copier trois mots, `DisplaySprite` — ~20 instructions, zéro interprétation. Et il VALIDE son parent avant lecture (`id` + `routine`), ce qui règle le pointeur d'aîné périmé. À réutiliser pour le moveByScript de l'outslay |
 | Boss multi-parties | `dobkeratops/` (515 l. + 6 unités) | découpage en unités (jaw/saw/tail/monster/explosion), gestionnaire de queue — le modèle pour **gomander**, plus tard |
 | Petit volant simple | `bink/`, `blaster/` | variantes compactes du patron minimal |
 

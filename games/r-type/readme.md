@@ -1,3 +1,77 @@
+# r-type-overlay — le fork du chantier overlay
+
+**Ce répertoire est un CLONE de `games/r-type`** (19/08/2026, branche
+`overlay-render`) : le banc du chantier « rendu overlay » — remplacer la
+sauvegarde de fond (`bdraw`) par le dessin seul (`draw`), et a terme un
+effacement plein champ en tete de trame. `games/r-type` reste la reference
+et ne doit pas etre touche par ce chantier ; toute correction du jeu
+s'applique DEUX fois tant que les deux vivent.
+
+Etat de cette base (etape 1 du chantier) :
+- config : `<define symbol="OverlayMode"/>`, tous les encodeurs en `draw`
+  (200 explicites + la cascade `images.encoder`) ;
+  **CORRECTIF 21/08/2026** : la cascade n'etait declaree que sur le
+  `<directory id="0">`, et deux entrees du repertoire 1 y echappaient encore —
+  `stage1.dobkeratopsjaw` et `stage1.dobkeratopssaw` sortaient en `bdraw`.
+  Ce n'est pas qu'un gaspillage (3 568 octets de sauvegarde/effacement morts,
+  jaw 3 925 -> 2 200, saw 4 637 -> 2 794) : un sprite `bdraw` ouvre par
+  `STS glb_register_s / LEAS ,Y` pour empiler le fond sauve, et le
+  `BuildSprites` overlay appelle `jsr [_draw_routine]` sans poser le moindre
+  tampon dans Y. La cascade est posee sur les neuf repertoires ; la machoire
+  et les scies du boss du stage 1 sont donc a revoir a l'ecran ;
+- engine : pack `sprite-overlay-pack` v1 importe (BuildSprites remplace
+  CheckSpritesRefresh/EraseSprites/DrawSprites/UnsetDisplayPriority) ;
+- **pas encore d'effacement de fond** : les sprites LAISSENT DES TRAINEES,
+  c'est attendu ;
+- les effaceurs a la main sont RETIRES (19/08, valide visuellement) : la
+  rotonde de shells (eraser/shelleraser.unit/mask supprimes, table et hooks
+  purges, l'ObjID 26 garde son numero et pointe le placeholder) et la
+  machinerie bg-erase de la queue du Dobkeratops — TailDrawAll dessine
+  seul, les quatre segments sont recompiles depuis leurs PNG par la chaine
+  gfxcomp (les 703 lignes de blits colles au generateur perdu sont
+  supprimees). Restent, a traiter AVEC le chantier effacement :
+  starfield.erase (sans effacement de fond les etoiles traineraient), les
+  bandes Wipe de la mort du boss (animation scriptee, pas de la
+  comptabilite d'effacement), les talons EraseSprites_ClearAll et les
+  ecritures glb_force_sprite_refresh (inertes) ;
+- l'EFFACEMENT DE FOND est en place (19/08) : `playfield.clearBlast`
+  (src/common/fx/clearblast.asm), stack-blast maison PSHS 9 octets/14 cy
+  entierement deroule, pleine largeur, lignes 9-178 — 21 215 cycles exacts
+  (la version generee par gfxcomp : 25 596, gardee dans la page pour
+  comparaison). La fenetre d'effacement est PILOTEE par une timeline par
+  stage, deduite de la carte (tools/gen_clear_timeline.py) : elle zappe les
+  rangees pleinement peintes. Depuis la transparence exacte (21/08) le stage
+  1 n'en zappe plus aucune — sa rangee du bas a 1 350 px de ciel repartis sur
+  126 de ses 132 colonnes, l'ancienne heuristique 3x6 la disait pleine a
+  tort. DrawTiles repeint chaque trame ; le starfield
+  est passe a UNE passe (ecriture directe entre effacement et tuiles, la
+  passe ERASE et ses tables par buffer sont supprimees).
+  **ORDRE DE DESSIN (21/08, decision auteur)** : le decor passe PAR-DESSUS
+  les sprites, sur les huit stages — effacement, etoiles, frameBlit,
+  BuildSprites, DrawTiles, puis masque et HUD. Un sprite passe donc derriere
+  le terrain, et le ciel transparent de la carte le laisse voir partout
+  ailleurs ; c'est la transparence exacte du plan arcade qui rend l'ordre
+  tenable, un ciel peint effacerait tout le champ de jeu. Le stage 3 n'a plus
+  de cas particulier ici : le sien porte sur l'EFFACEMENT (sa couche mobile
+  mscroll remplace clearblast), pas sur l'ordre. Deux pieges 6809
+  payes et documentes dans clearblast.asm : pas de bsr/rts quand S est le
+  pointeur d'ecriture, et CC inpoussable sous IRQ ouvertes (le RTI restaure
+  E=1) ;
+- mesure : defilement 9,2 img/s contre 8,8 en reference — la zone de jeu
+  principale est PLUS RAPIDE que le mode background-erase, a rendu complet
+  et sans trainees. Ouverture 15,2 (23,2 ref), boss 7,7 (9,3), sequence de
+  fin 12,7 (40,5 — elle efface pour rien, optimisation connue) ;
+- PIEGE APPRIS (19/08) : la convention des offsets camera CHANGE avec le
+  pack. En background-erase ils portent le cadre ecran (48/28) ; le
+  BuildSprites overlay les traite en MARGE hors-ecran et veut ZERO ici —
+  les poser a 48/28 decale chaque sprite playfield avec wrap au bord.
+  Le cadre 48-207 reste la convention de DRS_XYToAddress : les effaceurs
+  a la main y transposent par les constantes screen_left/screen_top.
+
+Le reste de ce readme est celui du jeu de reference.
+
+---
+
 # R-Type — TO8 (v2)
 
 Portage du projet R-Type de la v1 (`thomson-to8-game-engine/game-projects/r-type`)
@@ -308,7 +382,10 @@ de `dp` à `dp_extreg`) fait partie du résident, et `_Obj_RunU ObjID_Player1,#p
 est la forme d'appel qui l'anime. Les valeurs de la page directe sont la chaîne
 d'équates de `engine/constants.asm`, évaluée depuis `glb_ram_end = $A000-12`.
 
-Hors résident, en pages physiques : `$4000-$5FFF` tampon de fond (page `$00`),
+Hors résident, en pages physiques : `$4000-$5FFF` le pool d'objets (page
+`$00`, demi-page épinglée par PRC bit 0 — 60 slots dynamiques + fondu +
+3 slots d'armement depuis le 20/08/2026 ; c'était le tampon de fond du
+background-erase, sans usager depuis l'overlay),
 vidéo montée en `$A000` alternant `$02` et `$03`, loader `$04`, ennemis `$05`,
 tuiles `$06-$0D`, cartes `$0E`, scripts d'animation `$0F`, overlays `$10`,
 joueur `$11`, collision terrain du stage `$12`, armement `$13` (quatre régions
@@ -373,6 +450,29 @@ stages câblés (01, 02) n'ont plus de sorties committées ; les stages 03-08
 gardent leurs plans committés (`0/0.png`, `1/1.png`, `*.0.bin`) en attendant
 leur câblage. Voir `docs/lang/en/tilemaps.md`, et `tools/leanscroll-06.txt`
 pour la recette de reconstitution d'un `in.png` depuis l'arcade.
+
+**Pas de lean en overlay (21/08/2026)** : les huit stages déclarent
+`lean="false"`. La passe lean retire les pixels qu'un balayage de scroll
+repeindrait de toute façon ; ici le champ est effacé puis repeint tuile par
+tuile à chaque trame, il n'y a rien à épargner et la passe ne faisait que
+masquer ce que dit l'art. Elle était déjà neutralisée de biais au stage 1
+(un `nbsteps` au-delà de la largeur du niveau) mais tournait pour de bon sur
+les stages 02-08.
+
+**La transparence vient de l'arcade** : le plan de niveau exporté par
+`re.arcade.r-type --extract-tiles` porte le pen transparent de la couche en
+chunk tRNS (le pen 0 de chacune des 16 banques), et `tools/map_alpha.py` le
+reporte dans l'`in.png` en index 0 — la convention gfxcomp. Une cellule sans
+pixel opaque n'a pas de tuile du tout : c'est le stackblast qui porte son
+noir. Ça remplace `tools/sky_transparent.py` (supprimé), qui devinait le ciel
+par blocs de 3x6 pixels noirs et ratait tout ciel plus fin que sa maille.
+`arcade_to_in.py` pose la même information à la conversion.
+
+Mesure des deux changements réunis, tuiles compilées des huit stages :
+**448 551 → 417 637 octets (−30 914)** ; les plans impairs y gagnent le plus
+(stage 6 : −13 605, stage 7 : −10 133), quelques plans pairs grossissent
+(ce que le lean leur retirait). Le stage 1 repasse sous la barre de sa page
+12, qui débordait.
 
 ## Porter un ennemi
 

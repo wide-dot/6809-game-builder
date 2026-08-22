@@ -111,8 +111,22 @@ sous-dossier ou `_shared/`.
   réelle arrive, et les blocs `<gfxcomp>`/`<images>` sur le modèle de
   `lib.scant`.
 - [ ] **Ids** : `src/stages/NN/objid.const.asm` (id N = ligne N),
-  `objid.index.asm` (page + adresse), l'EXPORT dans `cast.unit.asm`.
-  Les enfants spawnés à l'exécution ont besoin des trois aussi.
+  `objid.index.asm`, l'EXPORT dans `cast.unit.asm`. Les enfants spawnés à
+  l'exécution ont besoin des trois aussi.
+  `objid.index.asm` porte **CINQ** tables, toutes indexées par l'identifiant
+  et toutes parcourues en `abx` sans borne : `Obj_Index_Page`,
+  `Obj_Index_Address`, `Ani_Page_Index`, `Ani_Asd_Index` et — celle qu'on
+  oublie — **`Img_Page_Index`**, la page des imagesets que `BuildSprites`
+  monte avant de lire la géométrie d'un sprite. Une table plus courte que
+  les autres ne casse rien tant qu'aucun objet de la queue ne DESSINE, puis
+  fige l'écran : c'est exactement ce qui est arrivé au premier segment
+  d'outslay (21/08/2026), la table du stage 2 s'arrêtant à l'identifiant 32.
+  Le garde-fou en fin de `src/stages/02/objid.index.asm` refuse désormais
+  d'assembler une table non dense — le recopier dans le stage qu'on touche.
+  Corollaire : `Img_Page_Index` donne UNE page par identifiant. Un objet
+  dont les imagesets sont répartis sur deux direntries a besoin d'un
+  identifiant par page (même entrée de code, deux lignes d'index) — voir
+  `ObjID_outslay_segment` / `ObjID_outslay_head`.
 - [ ] **Properties** : `src/enemies/enemies_properties.asm` — les 4 équates
   `<nom>_scoreIdx` / `hitbox_x` / `hitbox_y` / `hitdamage`.
 - [ ] **api.asm** : n'y toucher QUE si l'ennemi franchit une frontière

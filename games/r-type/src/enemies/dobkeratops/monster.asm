@@ -54,7 +54,7 @@ Init
         stb   priority,u
 
         ; display settings
-        lda   #render_playfieldcoord_mask|render_overlay_mask
+        lda   #render_playfieldcoord_mask ; OVERLAY : plus de drapeau overlay
         sta   render_flags,u
 
         ; init animation

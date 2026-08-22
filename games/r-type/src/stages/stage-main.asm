@@ -17,6 +17,24 @@
 ; game.stage.switch) : nom commun aux deux stages, le re-link de chaque
 ; scene.load le repointe sur le stage fraîchement chargé.
 stage.main EXPORT
+
+; Un stage a couche mobile (STAGE_MSCROLL defini par SON main, avant cette
+; inclusion) tire le blast et la camera du module resident — et son champ
+; n'est plus efface par clearblast : le blast mscroll repeint tout (voir la
+; boucle de trame plus bas).
+ IFDEF STAGE_MSCROLL
+mscroll.do   EXTERNAL
+mscroll.move EXTERNAL
+ ENDC
+
+; Le champ de gommes du stage 4 vit dans l'unite de collision — un autre
+; direntry, donc un lien resolu au chargement. Un seul nom : le reset appele a
+; la reprise au checkpoint (les primitives, elles, servent aux objets).
+ IFEQ STAGE_ID-4
+pellet.reset EXTERNAL
+pellet.blast EXTERNAL
+ ENDC
+
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff
@@ -175,6 +193,12 @@ statics.SIZE  equ nb_static_objects*object_size
         ldd   #bench.SCROLL_VEL
         std   scroll_vel
 
+        ; OVERLAY : la timeline d'effacement par defaut — fenetre pleine des
+        ; le premier tick. Un stage qui a SA timeline (generee depuis sa
+        ; carte) re-pointe dans son stage.setup, APRES cet init.
+        ldx   #clear.timeline.none
+        stx   clear.tl.ptr
+
         ; COLLISION TERRAIN : desactivee PAR DEFAUT. Un stage sans unite de
         ; collision laisserait les operandes de terrainCollision.do a zero, et
         ; la routine sauterait en $0000 de la fenetre cartouche, page 0 NUE —
@@ -182,6 +206,16 @@ statics.SIZE  equ nb_static_objects*object_size
         ; (stage.setup) pose l'init et leve le drapeau.
         lda   #1
         sta   terrainCollision.disabled
+
+        ; RESTAURATION DU DECOR : aucune table PAR DEFAUT. tilemap.resetTable
+        ; vit dans le module RESIDENT, donc son `fdb 0` ne vaut qu'au boot : un
+        ; stage qui en pose une la laisse en place pour le stage suivant. Sans
+        ; cette remise a zero, un retour de checkpoint au stage 3 lirait le
+        ; compte et les pointeurs de la table du stage 2 — a une adresse que le
+        ; stage 3 a remplie d'autre chose. Meme raison que les deux defauts
+        ; ci-dessus : ce qui est resident se reinitialise a chaque stage.
+        ldd   #0
+        std   tilemap.resetTable
 
         jsr   stage.setup                  ; cartes, largeur, wave, collision : le stage
 
@@ -250,6 +284,13 @@ statics.SIZE  equ nb_static_objects*object_size
         ; Ne rien remettre ici de ce qu'il fait deja : notre portage avait
         ; duplique son effacement, son `player1+id`, son `ObjectDp_Clear`, son
         ; fondu et son `ObjectWave_Init` — et les deux copies avaient divergé.
+        ; LES CELLULES PATCHABLES REVIENNENT A L'ETAT DU NIVEAU, avant que
+        ; checkpoint.load ne repeigne. La carte en RAM est la SEULE copie et un
+        ; checkpoint ne recharge rien depuis la disquette : sans ca le decor
+        ; anime resterait fige dans la derniere image ecrite. La table est
+        ; generee par <tilereset> depuis une liste de rectangles de carte, et
+        ; c'est une simple recopie dans l'anneau de demandes.
+        jsr   tilemap.restore
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
@@ -335,13 +376,54 @@ stage.states
 mainloop.state EXPORT
 mainloop.state fcb 0
 
+; LE SEUIL OU LA SEQUENCE DE FIN PREND L'ECRAN. A partir de cette phase, le
+; fondu pixel possede le champ entier : phase 3 il le dissout, phase 4 il le
+; garde noir sous le releve de score. Les deux objets qui ECRIVENT la phase
+; (src/common/flow/endlevel/obj_endlevel.asm pour les stages 2-8, et
+; src/stages/01/endstage/obj_endstage.asm) emploient la meme numerotation ;
+; la boucle est le seul lecteur, la constante vit donc ici.
+endstage.PHASE_FADE equ 3
+
 stage.state.running
         ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) :
         ; joypad.readKbd alimente held/pressed (le tir) et fait de n'importe
         ; quelle touche du clavier le bouton B — c'est exactement ce que la v1
         ; appelle ici. addDirection, LUI, est dans l'IRQ — voir stage.userIRQ.
         jsr   joypad.readKbd
+
+        ; PAS DE TIR SOUS LA SEQUENCE DE FIN (21/08/2026, tous stages). Hors
+        ; phase 0 le joueur n'a plus la main : l'objet de fin pose
+        ; player1+subtype a -2, et l'objet joueur saute alors tout son bloc de
+        ; controle (`lbmi SkipPlayer1Controls`) — tir, faisceau, missiles.
+        ; Mais le FORCE POD, lui, lit le bouton DIRECTEMENT, en cinq endroits :
+        ; bouton A pour ses lasers (ForcePodAttachedFire / ForcePodDetachedFire),
+        ; bouton B pour se detacher et se rappeler. On pouvait donc tirer et
+        ; manoeuvrer le pod pendant l'autopilote, le fondu et le releve de score.
+        ;
+        ; On coupe a la SOURCE plutot qu'a chacun des cinq sites : une seule
+        ; regle, aucun lien nouveau a tirer vers une variable de stage depuis
+        ; une arme commune, et les bits comme tout consommateur futur sont
+        ; couverts d'office. Les deux boutons vivent dans le meme octet
+        ; (joypad.0.A et joypad.0.B), un clr les prend tous les deux.
+        ;
+        ; Le critere est la PHASE, pas le signe de player1+subtype : celui-ci
+        ; vaut aussi -1 quand le joueur est mort, et masquer sur lui
+        ; condamnerait le bouton du menu « continue » (hud.cont.checkFire).
+        ;
+        ; Les directions restent lues : elles ne font plus rien puisque le bloc
+        ; de controle est saute, et le pod suit le vaisseau.
+        lda   stage.overlayPhase
+        beq   >
+        clr   joypad.pressed.fire
+        clr   joypad.held.fire
+!
         jsr   Scroll
+
+        ; LE DRAIN DES DEMANDES DE DECOR. Le code objet n'ecrit jamais dans la
+        ; carte : il empile un descripteur et un numero d'image. Ici, une fois
+        ; par trame et hors du verrou, on monte la page de la carte UNE fois et
+        ; on applique. C'est le seul endroit du jeu qui pagine pour ca.
+        jsr   tilemap.flush
         jsr   ObjectWave
         ; La passe de collision, ici et pas ailleurs : elle marque les
         ; potentiels (AABB.p) AVANT que les objets ne tournent, chacun lisant
@@ -364,50 +446,131 @@ stage.state.running
         _Obj_RunU ObjID_bitdevice,#bitdevTopOST
         _Obj_RunU ObjID_bitdevice,#bitdevBotOST
         jsr   RunObjects
-        jsr   CheckSpritesRefresh
         jsr   gfxlock.on
-        jsr   EraseSprites
 
-        ; Ce que CE stage peint dans le verrou graphique, juste apres
-        ; l'effacement des sprites et avant les tuiles : sur le niveau 1, les
-        ; bandes noires du boss et le rectangle de la salle. La v1 l'appelle
-        ; exactement ici (main.asm:236), pour que le noir recouvre le fond
-        ; restaure et que les sauvegardes de fond capturent le resultat noirci.
-        jsr   stage.frameBlit
-
-        jsr   UnsetDisplayPriority
-        jsr   DrawTiles
-
-        ; Les etoiles s'effacent ICI, entre les tuiles et les sprites : le fond
-        ; vient d'etre restaure. Et elles se tracent APRES DrawSprites, pour que
-        ; les fonds sauvegardes n'en contiennent jamais — sinon un sprite
-        ; immobile puis remis en mouvement reinjecte des etoiles perimees.
+        ; LA SEQUENCE DE FIN POSSEDE L'ECRAN (21/08/2026, tous stages).
+        ; Des que le fondu pixel demarre, le champ ne doit plus etre ni
+        ; efface ni repeint : la dissolution ACCUMULE son tramage a l'ecran,
+        ; trame apres trame, et ne repasse jamais sur une cellule deja
+        ; traitee. L'effacement du champ le detruisait a chaque trame, et
+        ; DrawTiles — appele APRES le blit — repeignait la tuilerie par-dessus
+        ; les cellules tout juste dissoutes.
         ;
-        ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
-        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
-        ; elargir les DEUX gardes erase/draw + celle du spawner (le produit
-        ; est nul si STAGE_ID vaut l'un des stages a etoiles), et decommenter
-        ; sa wave.
- IFEQ (STAGE_ID-1)*(STAGE_ID-4)
-        lda   #map.RAM_OVER_CART+common.starfield.page
-        ldx   #starfield.erase
+        ; Le stage 1 se protegeait deja de la seconde moitie du probleme en
+        ; n'armant le fondu qu'une fois les DEUX tampons rendus a la butee
+        ; (obj_endstage.asm @glide) : glb_camera_move retombait alors a zero
+        ; et DrawTiles ne repeignait plus rien. Le passage en overlay a rendu
+        ; cette precaution caduque — le champ etant efface chaque trame, la
+        ; boucle FORCE desormais glb_camera_move (voir plus bas). D'ou cette
+        ; garde, qui traite la cause au lieu de la contourner.
+        ;
+        ; Ce qui continue de tourner : stage.frameBlit (c'est LUI le fondu) et
+        ; BuildSprites (les phases 3 et 4 posent glb_force_sprite_refresh pour
+        ; garder vaisseau et module peints sur les DEUX pages).
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        lbhs  stage.frame.faded
+
+ IFDEF STAGE_MSCROLL
+        ; STAGE A COUCHE MOBILE (battleship) : le blast mscroll repeint chaque
+        ; pixel de la bande a chaque trame — c'est LUI l'effaceur du champ
+        ; (decision auteur, 2026-08-20). clearblast/clearWindow ne tournent
+        ; pas sur ce stage ; la ligne trash du haut de bande part sous le
+        ; masque HUD. move nourrit le buffer (lignes et colonnes entrantes)
+        ; dans la foulee du blast, comme dans le banc examples/mscroll.
+        jsr   mscroll.do
+        jsr   mscroll.move
+ ELSE
+        ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
+        ; fenetre que la camera vient de franchir (plusieurs possibles en une
+        ; trame de frame-drop, d'ou la boucle ; le rejeu au checkpoint est le
+        ; meme mecanisme : stage.setup remet le pointeur au debut, la boucle
+        ; rattrape). Une entree = [camera, operande LDS, offset de saut],
+        ; precalculee par gen_clear_timeline.py. Cout hors changement : un
+        ; cmpd par trame.
+        ldx   clear.tl.ptr
+!       ldd   glb_camera_x_pos
+        cmpd  ,x
+        blo   >
+        ldy   2,x                      ; l'operande LDS du plan couleur
+        ldu   4,x                      ; l'offset de saut dans le deroule
+        leax  6,x
+        stx   clear.tl.ptr
+        pshs  x
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearWindow
+        jsr   paged.call
+        puls  x
+        bra   <
+!
+        ; L'effacement du champ de jeu, en TETE de trame, avant tout le
+        ; reste — stack-blast maison a fenetre pilotee (cf. clearblast.asm).
+        ; Il adresse les deux plans lui-meme : rien a poser avant l'appel.
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlast
         jsr   paged.call
  ENDC
 
-        ; L'effaceur de la rotonde, ICI comme en v1 (main.asm:243) : entre les
-        ; etoiles et DrawSprites, le fond venant d'etre restaure. C'est un
-        ; objet hors pool — pas d'OST, RunObjects ne le voit pas — qui relit la
-        ; table que les shells remplissent. Les stages sans rotonde n'en
-        ; souffrent pas : la table y est vide, la boucle ne blitte rien.
-        _Obj_Run ObjID_shellEraser
-
-        jsr   DrawSprites
-
+        ; Les etoiles TOUT DE SUITE apres l'effacement : le champ est noir
+        ; vierge, le trace ecrit sans lire ni tester (cf. starfield/obj.asm),
+        ; et sprites puis tuiles recouvrent tout ce qu'ils traversent —
+        ; fond, jeu, decor, dans cet ordre depuis le 21/08. Une seule passe :
+        ; la passe ERASE est partie avec le chantier effacement.
+        ;
+        ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
+        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
+        ; elargir CETTE garde et celle du spawner (le produit est nul si
+        ; STAGE_ID vaut l'un des stages a etoiles), et decommenter sa wave.
  IFEQ (STAGE_ID-1)*(STAGE_ID-4)
         lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.draw
         jsr   paged.call
  ENDC
+
+stage.frame.faded
+        ; Ce que CE stage peint dans le verrou graphique, avant tout le reste :
+        ; sur le niveau 1, les bandes noires du boss et le rectangle de la
+        ; salle. OVERLAY : plus de sauvegardes de fond a faire capturer — le
+        ; noir doit juste preceder les sprites et les tuiles de la trame.
+        jsr   stage.frameBlit
+
+        ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
+        ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
+        ; le verrou, comme la v1 overlay (goldorak main.asm:47).
+        ; LE CHAMP DE GOMMES du stage 4, en FOND : les sprites passent devant,
+        ; donc le vaisseau reste visible dans les tunnels qu'il creuse. La passe
+        ; est RESIDENTE (page 1) : elle lit la page collision montee et ecrit
+        ; l'ecran en meme temps. Elle n'ecrit QUE ses plages — clearblast a
+        ; deja pose le fond, et le creux de la gomme vaut ce meme fond.
+ IFEQ STAGE_ID-4
+        jsr   pellet.blast
+ ENDC
+
+        jsr   BuildSprites
+
+        ; LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le
+        ; 21/08/2026 (decision auteur), sur TOUS les stages, celui a couche
+        ; mobile compris : un sprite passe DERRIERE le terrain, et le ciel
+        ; transparent de la carte le laisse voir partout ailleurs. C'est la
+        ; transparence exacte du plan arcade qui rend l'ordre tenable — avec
+        ; un ciel peint, la carte effacerait tout le champ de jeu.
+        ;
+        ; Le champ vient d'etre efface, le decor DOIT donc se repeindre chaque
+        ; trame ; Scroll ne leve glb_camera_move que quand la camera a bouge,
+        ; on le force. DrawTiles est autonome : il sauve la page cartouche a
+        ; l'entree, la restaure en sortie, et calcule lui-meme
+        ; glb_screen_location_1/2 — passer apres BuildSprites (qui les ecrit
+        ; aussi, par sprite) ne lui coute rien.
+        ; Sous le fondu, plus de decor a repeindre : cf. la garde en tete de
+        ; verrou. C'est le second des deux points ou la trame ecrasait la
+        ; dissolution.
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        bhs   stage.frame.noTiles
+        lda   #1
+        sta   glb_camera_move
+        jsr   DrawTiles
+stage.frame.noTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
@@ -415,7 +578,7 @@ stage.state.running
         ; fondu pixel possede l'ecran entier, bandeau compris, et on ne peint
         ; rien ; phase 4, le releve de score centre, seul.
         lda   stage.overlayPhase
-        cmpa  #3
+        cmpa  #endstage.PHASE_FADE
         blo   stage.overlay.normal
         cmpa  #4
         beq   stage.overlay.readout
@@ -569,11 +732,8 @@ stage.state.dead
         _Obj_RunU ObjID_fade,#palettefade
         _Obj_RunU ObjID_Player1,#player1
         jsr   RunFrozenObjects
-        jsr   CheckSpritesRefresh
         jsr   gfxlock.on
-        jsr   EraseSprites
-        jsr   UnsetDisplayPriority
-        jsr   DrawSprites
+        jsr   BuildSprites          ; OVERLAY : la passe unique remplace le quatuor
         ldd   #$A000
         std   <glb_screen_location_1
         ldu   #$C000
@@ -720,6 +880,13 @@ stage.state.checkpoint
         ; dans le decor. Une roulette de phase d'IRQ : la partition des
         ; repertoires n'a fait que deplacer le tirage perdant.
         jsr   IrqOff
+        ; LES CELLULES PATCHABLES REVIENNENT A L'ETAT DU NIVEAU, avant que
+        ; checkpoint.load ne repeigne. La carte en RAM est la SEULE copie et un
+        ; checkpoint ne recharge rien depuis la disquette : sans ca le decor
+        ; anime resterait fige dans la derniere image ecrite. La table est
+        ; generee par <tilereset> depuis une liste de rectangles de carte, et
+        ; c'est une simple recopie dans l'anneau de demandes.
+        jsr   tilemap.restore
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.load
         jsr   paged.call
@@ -780,6 +947,29 @@ stage.gameOver
 ; a l'appelant d'avoir pose le noir avant. o_fade_wait est le nombre de trames
 ; entre deux paliers de couleur ; la v1 monte en 4 et descend en 1.
 ;*******************************************************************************
+;*******************************************************************************
+; stage.checkpointReset — ce que CE stage remet a neuf a la reprise
+;
+; Appelee par checkpoint.load, apres le nettoyage de l'etat objet et le recalage
+; de la vague. Vide pour sept stages sur huit.
+;
+; Le stage 4 y remet son champ de gommes INTACT. La raison est la vague
+; elle-meme : elle rejoue le MEME Cytron depuis le point de reprise, et s'il
+; retracait sa ligne par-dessus celle laissee avant la mort, les traces
+; s'accumuleraient a chaque reprise. Le champ vit dans la carte de collision,
+; que checkpoint.load ne recharge pas (il ne touche pas au disque) — d'ou cette
+; reconstruction en memoire, C = T OR D0. Voir src/common/lib/pellet.asm.
+;*******************************************************************************
+stage.checkpointReset EXPORT
+stage.checkpointReset
+ IFEQ STAGE_ID-4
+        lda   #map.RAM_OVER_CART+collision.page
+        ldx   #pellet.reset
+        jmp   paged.call             ; sa valeur de retour est la notre
+ ELSE
+        rts
+ ENDC
+
 stage.paletteFadeIn EXPORT   ; l'unite checkpoint l'appelle apres rechargement
 stage.paletteFadeIn
         ldu   #palettefade
@@ -828,3 +1018,10 @@ gfxlock.off
 gfxlock.loop
         _gfxlock.loop
         rts
+
+; La timeline d'effacement : le pointeur de lecture, et la table par defaut
+; (fenetre pleine, posee au premier tick). APRES du code, jamais sur un
+; chemin d'execution — cf. loop-fallthrough.md.
+clear.tl.ptr        fdb   clear.timeline.none
+clear.timeline.none fdb   0,$BDD8,0    ; cam 0 : TOUT le champ (lignes 11-190) —
+                    fdb   $FFFF        ; le defaut ne presume rien du decor

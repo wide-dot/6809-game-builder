@@ -45,7 +45,19 @@ moveByScript.POSYSTEP        equ  $00C0
 ; garde <reserved> du builder le refuse. Le pool rend un slot : sa base monte
 ; a $8850, bench ($87DB) et cast ($87EB) remontent d'autant, et les unites
 ; title/stage disposent de $8000-$87DA (+117 octets).
-nb_dynamic_objects           equ 43
+;
+; 43 -> 60 ET DEMENAGEMENT (2026-08-20, decision auteur) : depuis l'overlay,
+; la demi-page 0 ($4000-$5FFF) n'a plus de cellules de fond — c'est de la RAM
+; stable (PRC bit 0 epingle par _gfxlock.init sous OverlayMode, il ne suit
+; plus la parite buffer : sans ca le pool n'existerait qu'une trame sur
+; deux). Le pool ET les quatre OST statiques y demenagent : 60 slots
+; dynamiques + fondu + les 3 slots d'armement (64 x 117 = $1D40, 704 octets
+; de marge dans la demi-page). La page 1 rend $8850-$9DCA (~5,5 Ko) — la
+; place du mscroll resident (stage 3) et de la zone par-stage. Les ancres
+; qui bougent ENSEMBLE : ces equates, <reserved name="objects.*"> du
+; config (passes en page $00) et l'ex <reserved name="background.save">
+; retire.
+nb_dynamic_objects           equ 60
 nb_graphical_objects         equ 64
 ext_variables_size           equ 20  ; per dynamic object
 
@@ -80,13 +92,16 @@ ext_variables_size           equ 20  ; per dynamic object
 * les casts d'ennemis reels (chaines RunPgSubRoutine plus profondes) seront
 * branches, avant d'envisager de rendre le pas de 117 au pool.
 GLOBALS_BASE                 equ $9DCB
-Dynamic_Object_RAM_End       equ GLOBALS_BASE-nb_static_objects*object_size
-Dynamic_Object_RAM           equ Dynamic_Object_RAM_End-nb_dynamic_objects*object_size
+; Le pool vit dans la demi-page 0, ancre en $4000 et croissant — il ne derive
+; plus de GLOBALS_BASE (2026-08-20, voir le recit au-dessus). GLOBALS_BASE ne
+; borne plus que les globales/pile de la page 1.
+Dynamic_Object_RAM           equ $4000
+Dynamic_Object_RAM_End       equ Dynamic_Object_RAM+nb_dynamic_objects*object_size
 
 * Les OST HORS POOL : des objets uniques, vivants pour toute la partie, que le
 * jeu lance par _Obj_RunU avec l'adresse de leur OST. Ils ne passent pas par
 * l'allocateur — la v1 les declarait de meme dans le ram_data de son game mode.
-* Ils vivent juste au-dessus du pool, sous les temoins du banc en $9C00.
+* Ils suivent le pool dans la demi-page 0 (fondu puis les 3 slots d'armement).
 * Les QUATRE OST statiques de la v1 (game-mode/01/ram_data.asm), dans son ordre
 * et contigus. Trois d'entre eux attendent encore leur objet — le force pod et
 * les deux bit devices ne sont pas portes — mais leur PLACE est reservee des

@@ -23,3 +23,8 @@ ref_1930A	fdb   ref_19CE4 ; bug
                 fdb   ref_19ACE ; pata pata
                 fdb   ref_19AF8 ; bink (jump left)
                 fdb   ref_19B0A ; bink (jump right)
+                fdb   ref_1A652 ; outslay (variante 4 du spawn, stage 2)
+                fdb   ref_1A4E6 ; outslay variante 0 (combat gomander)
+                fdb   ref_1A530 ; outslay variante 1 (combat gomander)
+                fdb   ref_1A56E ; outslay variante 2 (combat gomander)
+                fdb   ref_1A626 ; outslay variante 3 (combat gomander)

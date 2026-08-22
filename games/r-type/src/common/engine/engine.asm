@@ -330,6 +330,7 @@ terrainCollision.init.do
 ; octets pour un travail qui n'arrive qu'a l'ouverture d'un stage et au
 ; rechargement d'un checkpoint. Voir src/common/lib/clear.unit.asm.
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectWave-subtype.asm"
@@ -371,18 +372,85 @@ terrainCollision.init.do
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
         INCLUDE "engine/graphics/animation/moveByScript.asm"
         INCLUDE "engine/collision/collision.asm"
-; LE CODEC ZX0 N'EST PAS INCLUS. Aucune image de R-Type n'est encodee `rle` ni
-; `zx0` — que du `bdraw` et du `draw` — et le decompresseur pese 200 octets de
-; page 1, qui valent mieux au budget du pool d'objets.
-;
-; Ce n'est pas une suppression sauvage : DrawSpritesExtEnc garde ses deux `jsr`
-; et porte lui-meme le talon (`ifndef zx0_6809_mega_wrap` -> `rts`), exactement
-; comme pour DecMapAlpha. C'est le repli prevu par le moteur, pas un bricolage.
-;
-; A REACTIVER en decommentant la ligne ci-dessous le jour ou un `<gfxcomp>` de
-; ce jeu produira du zx0 — sans quoi l'image se dessinerait compressee.
-;        INCLUDE "engine/graphics/codec/zx0_mega.asm"
-        INCLUDE "engine/graphics/sprite/sprite-background-erase-ext-pack.asm"
+; OVERLAY : le pack de sprites est celui de l'overlay (BuildSprites — dessin
+; seul, pas de sauvegarde de fond, pas d'effacement). L'ancien pack
+; background-erase reste dans l'engine, choisi par l'absence du define
+; OverlayMode ; ce jeu-ci le pose dans son config.xml.
+; Le codec zx0 n'est toujours pas inclus (aucune image rle/zx0 dans ce jeu).
+        INCLUDE "engine/graphics/sprite/sprite-overlay-pack.asm"
+
+; ---------------------------------------------------------------------------
+; Compagnons du pack overlay — code du JEU, pas de l'engine.
+; Le pack v1 ne fournit que DisplaySprite/BuildSprites/DeleteObject ; les
+; quatre routines ci-dessous couvrent ce que le reste du jeu attend encore.
+; ---------------------------------------------------------------------------
+
+; ATTENTION, la convention CHANGE avec le pack. En background-erase les
+; offsets camera portent le cadre ecran (48/28) : CheckSpritesRefresh convertit
+; playfield -> cadre 48-207, puis DRS_XYToAddress retranche 48/28. Le
+; BuildSprites overlay, lui, calcule l'adresse DIRECTEMENT depuis
+; x_pos - camera + offset : l'offset y est une MARGE hors-ecran (sonic v1 met
+; 12/20), et R-Type, dont toute la logique suppose la fenetre visible
+; [camera, camera+160], veut ZERO. Les poser a 48/28 decale chaque sprite
+; playfield de +48/+28 avec wrap au bord (vecu : logo du title coupe en deux).
+; InitGlobals ne les pose que sous ifdef DrawSprites (pack bg-erase) — il
+; savait deja que la convention change ; ce talon les fixe explicitement.
+InitDrawSprites
+        ldd   #0
+        std   glb_camera_x_offset
+        std   glb_camera_y_offset
+        rts
+
+; Remise a zero de la structure de priorite (les deux tables de tetes de
+; liste du pack overlay). L'equivalent du DisplaySprite_ClearAll du pack
+; background-erase, pour les transitions de mode et le checkpoint.
+DisplaySprite_ClearAll
+        ldx   #Tbl_Priority_First_Entry
+        ldb   #(2+nb_priority_levels*2)*2   ; First + Last, contigus
+!       clr   ,x+
+        decb
+        bne   <
+        rts
+
+; Il n'y a plus de cellules de fond a rendre : la routine ne fait rien, et
+; les sites d'appel (title, checkpoint) restent intacts.
+; OVERLAY-TODO : purger les appels puis retirer ce talon.
+EraseSprites_ClearAll
+        rts
+
+; xy ecran -> adresses des deux plans. Copie du DRS_XYToAddress du pack
+; background-erase (DrawSpritesExtEnc.asm) : les effaceurs a la main
+; (rotonde de shells, queue du boss) s'en servent toujours.
+DRS_XYToAddress
+        suba  #$30
+        bcc   DRS_XYToAddressPositive
+        suba  #$60                          ; get x position one line up, skipping (160-255)
+        decb
+DRS_XYToAddressPositive
+        subb  #$1C                          ; TODO same thing as x for negative case
+        lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
+        lsra                                ; x=x/2, RAMA RAMB enterlace
+        bcs   DRS_XYToAddressRAM2First      ; Branch if write must begin in RAM2 first
+DRS_XYToAddressRAM1First
+        sta   DRS_dyn1+2
+        lda   #$28                          ; 40 bytes per line in RAMA or RAMB
+        mul
+DRS_dyn1
+        addd  #$C000                        ; (dynamic)
+        std   <glb_screen_location_2
+        subd  #$2000
+        std   <glb_screen_location_1
+        rts
+DRS_XYToAddressRAM2First
+        sta   DRS_dyn2+2
+        lda   #$28                          ; 40 bytes per line in RAMA or RAMB
+        mul
+DRS_dyn2
+        addd  #$A000                        ; (dynamic)
+        std   <glb_screen_location_2
+        addd  #$2001
+        std   <glb_screen_location_1
+        rts
         ; L'historique des 16 dernieres directions, que le force pod du joueur
         ; relit pour le suivre avec du retard. Fichier v1 SANS section : il va
         ; DANS celle de l'hote, contrairement au joypad v2 juste apres, qui

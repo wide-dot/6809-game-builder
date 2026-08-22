@@ -23,7 +23,9 @@ ObjID_pstaff equ 37
 * son slot (stage.starfieldSpawner).
 ObjID_starfield equ 38
 
-objid.count equ 38
+ObjID_bugrender equ 47 ; le renderer des chaines de bug — meme valeur que
+                       ; l'equ de bug.unit.asm (47 partout) ; 39..46 libres
+objid.count equ 47
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

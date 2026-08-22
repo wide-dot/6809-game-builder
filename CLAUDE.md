@@ -13,6 +13,23 @@ ne l'est pas encore** — voir l'état des lieux ci-dessous.
 Machines cibles : TO8 (principal) et MO6 (déjà largement supporté). Candidats futurs :
 MO5, Tandy CoCo 3.
 
+**Depuis le 22/08/2026, `games/r-type` EST l'ex `games/r-type-overlay`**
+(renommé au même chemin — la CI ne change pas). L'ancienne version, le banc
+d'échange des stages 1-2, est supprimée ; l'historique git la garde. Il n'y a
+plus qu'UNE version du jeu à maintenir (décision auteur). Les mentions de
+`games/r-type` dans les sections historiques plus bas décrivent l'ancien
+projet ; la lane toje-bench « banc r-type » (déjà rouge) s'exerce désormais
+contre la nouvelle version, à re-baser le jour où elle recompte.
+
+## Organisation des sessions (22/08/2026)
+
+**Un clone local par session de travail — jamais deux sessions sur le même
+checkout** (décision auteur, après la collision du 22/08 : checkout/stash
+d'une session écrasant les fichiers de l'autre). 1 session = 1 clone =
+1 branche. `ci/new-clone.sh <dest> [branche]` crée un clone prêt (origin
+GitHub, lien `engine`, rappel de build). La synchro entre chantiers passe par
+`origin`, jamais par le même arbre.
+
 ## Build & commandes
 
 - Build toolchain : `mvn clean install` à la racine (multi-module, 17 modules ; JDK 11+,

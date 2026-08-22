@@ -52,7 +52,15 @@ endstage.DURATION equ $C0            ; arcade: run_dobkeratops arms +0x22 = $C0 
 endstage.JINGLE   equ $10            ; arcade: jingle + ship autopilot fire when the countdown reaches $10
 endstage.RALLY_X  equ 80             ; arcade X $200: CoordinatesConv round((512-320)*144/384)+8 = 80
 endstage.RALLY_Y  equ 130            ; arcade Y $E0: CoordinatesConv round((224-128-16)*-180/240)+190 = 130 (arcade Y axis is up, flipped)
-endstage.DEADBAND equ 3              ; per axis dead band in px (arcade: 4 px)
+; DEAD BAND — the arcade compares |delta| to 4 ARCADE px on BOTH axes
+; (run_player_one 0x40:20b7 and 0x40:20cb). Arcade pixels are not v2 pixels,
+; and the two axes do not share a ratio : 4*144/384 = 1.5 -> 2 in X, and
+; 4*180/240 = 3 in Y. A single value of 3 was the Y figure applied to both,
+; making the horizontal band twice too wide (fixed 21/08/2026). The autopilot
+; speed already carries the same split — scale.XN1PX is 0.375 px/frame where
+; scale.YN1PX is 0.75.
+endstage.DEADBAND_X equ 2            ; arcade 4 px * 144/384 = 1.5 -> 2
+endstage.DEADBAND_Y equ 3            ; arcade 4 px * 180/240 = 3
 endstage.bossStopX equ 1396          ; camera x that frames the boss room (was the old map_width-viewport_width)
 endstage.SHIP_INVINCIBLE equ -128    ; player AABB.p during the end sequence. MUST be negative:
                                      ;   an invincible box is never modified by Collision_Do nor

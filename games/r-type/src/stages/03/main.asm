@@ -14,6 +14,21 @@
 STAGE_ID equ 3
 ; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
 STAGE_SCENE equ scenes.stage3
+; Ce stage a une couche mobile (le battleship, module mscroll résident) :
+; stage-main remplace clearblast/clearWindow par le blast mscroll en tête de
+; trame — la couche repeint tout le champ, c'est elle l'effaceur.
+STAGE_MSCROLL equ 1
+
+; La frontière mscroll (8 noms, cf. src/common/engine/mscroll.unit.asm) —
+; do/move sont déclarés par stage-main sous STAGE_MSCROLL ; ici ce que le
+; setup et le pilote touchent.
+mscroll.setup          EXTERNAL
+mscroll.camera.speed   EXTERNAL
+mscroll.camera.speedx  EXTERNAL
+mscroll.camera.impulse EXTERNAL
+; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
+; wave — le pilote la lit par page montée).
+warship.camera.script  EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -46,6 +61,10 @@ Ani_Asd_common    EXTERNAL
 ; ce symbole — paged.call suffit a l'atteindre. Les deux stages partagent
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
+; L'effacement du champ de jeu, meme page : peint en tete de trame.
+adr_playfield_clear_ND0 EXTERNAL
+playfield.clearBlast    EXTERNAL
+playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -62,7 +81,6 @@ hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL
-starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
 ; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les
@@ -219,10 +237,17 @@ main.endstage.counter    EXPORT
 main.endstage.phase      EXPORT
 main.endstage.scoreArmed EXPORT
 main.endstage.scoreDone  EXPORT
+main.endstage.rallyX     EXPORT
+main.endstage.rallyY     EXPORT
 main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
 main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
 main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
 main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
+; Le point de ralliement de l'autopilote, publie par LE STAGE : l'objet
+; endlevel est un binaire commun, il ne peut pas porter une valeur par stage.
+; Cible commune aux stages 1-7 (drapeau 0xFF). Table arcade complete : endlevel.const.asm.
+main.endstage.rallyX     fdb endstage.RALLY_X
+main.endstage.rallyY     fdb endstage.RALLY_Y
 
 stage.endTick
         ; La musique du boss : le marqueur seme par la wave pose ce drapeau, et
@@ -268,6 +293,25 @@ stage.endTick.done
         jmp   stage.handOver
 
 stage.setup
+        ; La couche battleship : l'init complet du mscroll resident depuis le
+        ; bloc de parametres (objids -> Obj_Index, geometrie du .equ genere,
+        ; viewport = le champ de jeu lignes 11-190 — la ligne trash du haut de
+        ; bande tombe ligne 10, sous le masque HUD).
+        ; stage.setup couvre l'ouverture ET le rechargement de checkpoint,
+        ; comme le reste de la mise en place.
+        ldx   #bship.params
+        jsr   mscroll.setup
+
+        ; L'autoscroll du checkpoint arcade : l'entree de stage seme la vitesse
+        ; bg a $0080 (0.5 px/trame, la MEME que le fg — les deux plans partent
+        ; soudes), et c'est elle qui fait ENTRER le vaisseau a l'ecran (~7 s,
+        ; camera 192 px arcade) AVANT le spawn du master a ts $2048. Le pilote
+        ; warship_core ecrase ensuite cette vitesse par celles du script.
+        ; Conversion : $0080 arcade * 0.375 = $0030 en 8.8 v2.
+        ; Source : table de checkpoint 0x1000:87FA, cp6 (+8 = v_bg).
+        ldd   #$0030
+        std   mscroll.camera.speedx
+
         ; La collision terrain : le resident pointe ses operandes sur l'unite
         ; de CE stage, et le drapeau disabled (pose par defaut dans le corps
         ; commun) tombe — le vaisseau heurte le decor.
@@ -312,6 +356,26 @@ stage.handOver
         ldy   #scenes.stage4.dir
         ldu   #cast.stage4                  ; les lots d'ennemis de la cible
         jmp   game.stage.switch
+
+; Le bloc de paramètres de la couche battleship (mscroll.setup) — la
+; géométrie vient du .equ écrit par les conversions <mscroll> du config.
+bship.params
+        fcb   objid.bship.map
+        fcb   objid.bship.tilesA
+        fcb   objid.bship.tilesB
+        fcb   objid.bship.bufA
+        fcb   objid.bship.bufB
+        fdb   battleship.MAP_HEIGHT
+        fdb   battleship.MAP_WIDTH
+        fcb   battleship.ROWSHIFT
+        fdb   0                            ; camera y0
+        fcb   11                           ; viewport y (champ de jeu 11-190)
+        fcb   180                          ; viewport height
+
+;*******************************************************************************
+; Le pilote de la couche battleship
+;*******************************************************************************
+        INCLUDE "src/stages/03/warship/pilot.asm"
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 2

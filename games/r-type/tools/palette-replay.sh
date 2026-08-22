@@ -250,10 +250,58 @@ python3 tools/arcade_to_in.py 08 src/stages/08/map/images/original/level8_b.png 
 # Ce que ca coute, mesure : les trois teintes du terrain (71 % des pixels
 # opaques du plan avant) perdent leurs emplacements — beige clair vers le
 # blanc (dE 17), tan vers le vert moyen (19), brun vers le gris (19).
+#
+# REPRISE du 20/08/2026 — la palette du stage 3 devient AUTHOREE, et sa couche
+# battleship entre dans la campagne. Trois decisions de l'auteur, dans l'ordre
+# ou elles ont ete prises :
+#
+#   1. FUSION des deux verts en un seul (#616100, emplacement PNG 15). Ils
+#      etaient #617A00 (l'olive) et #304020 — mais #304020 n'est pas
+#      representable : le TO8 l'affichait #006100, un vert vif qui salissait
+#      toutes les ombres de coque. La fusion libere un emplacement ET corrige
+#      le defaut. Voir « L'espace d'affichage » dans arcade_to_in.py : c'est
+#      ce cas qui a fait passer les outils a la metrique CIEDE2000 de png2pal.
+#   2. L'emplacement libere (PNG 16) va au BEIGE #b89e61 des nuages — mesure :
+#      il sert le tan #b89860, 19,8 % de la couche, qui tombait sur le
+#      vert-gris. Retenu a l'oeil par l'auteur contre un creme #faf2cc qui
+#      gagnait plus en erreur moyenne (-25 % contre -14 %).
+#   3. Les VERTS SOMBRES sont FORCES vers #616100, des deux cotes. La rampe
+#      arcade a quatre verts ; le plus proche voisin en ecrasait trois sur le
+#      seul vert clair — des aplats a l'ecran — parce que #616100 n'etait le
+#      plus proche d'aucun d'eux (33 contre 23). Deux niveaux valent mieux
+#      qu'une erreur moyenne plus basse : constat de l'auteur sur planche.
+#
+# Les quatre cases propres du stage sont donc GRAVEES (--fixe) et plus
+# calculees : leurs valeurs sont des decisions. Sans ca le calcul remettait un
+# vert vif en PNG 14 et evinçait le vert clair du vaisseau (mesure).
+# Le jaune n'a plus besoin de son --epingle : sa case est fixee (13).
 python3 tools/arcade_to_in.py 03 src/stages/03/map/images/original/level3_f.png --pal-next \
     --plan 'src/stages/03/map/images/original/level3_b.png:576,16,1168,192*3' \
-    --epingle 208,192,0
-python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next
+    --fixe 13=212,194,0 --fixe 14=143,143,97 --fixe 15=97,97,0 --fixe 16=184,158,97 \
+    --force 72,104,72=15 --force 48,72,48=15
+# La couche battleship (plan ARRIERE), carte du module mscroll : meme palette,
+# memes regles. Ses trois verts sombres sont forces vers #616100 pour la meme
+# raison que ceux des nuages.
+python3 tools/arcade_to_mscroll.py 03 src/stages/03/map/images/original/level3_b.png \
+    --force 88,96,72=15 --force 48,64,32=15 --force 104,104,80=15
+python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png --pal-next \
+    --masque src/stages/04/terrain/level4_ball.bin
+# Le champ de gommes du stage 4 (1 618 cellules) sort du decor : une couche de
+# rendu dediee le dessine et le detruit au runtime depuis le bitfield de
+# collision, il n'a donc rien a faire dans les tuiles compilees. Le masque ne
+# touche QUE l'image : les gommes restent affichees a l'ecran, donc elles
+# gardent leur voix au choix de la palette (les sortir du vote permuterait les
+# trois emplacements du stage). Le bitfield vient de
+# re.arcade.r-type --extract-ballfield.
+#
+# Sur un in.png DEJA converti, le meme masque s'applique sans rien regenerer :
+#   python3 tools/strip_cells.py src/stages/04/map/in.png \
+#       src/stages/04/terrain/level4_ball.bin
+# C'est ce qui a ete fait au 21/08/2026 : regenerer le stage 4 rejouerait AUSSI
+# la correction « espace d'affichage » du 20/08, pas encore passee sur ce stage
+# — 1 649 px changent d'emplacement de palette (11 -> 10, un peche clair vers un
+# orange soutenu). Legitime, mais c'est une decision de campagne palette, pas de
+# champ de gommes.
 # Stage 5 : son cast vote (regle actee aux stages 2 et 6, poids 1). Le slither
 # — 10 915 px reduits, le plus gros ennemi converti — etait le pire du corpus a
 # dE 24,2 : ses bruns tombaient sur l'or de la carte. Mesure du vote :
@@ -483,3 +531,57 @@ $M stage1.tabrok.imgFlight          --ecrire
 $M stage1.tabrok.imgGround          --ecrire
 $M stage1.tabrok.imgWalk            --ecrire
 $M stage1.tabrokcanon               --ecrire
+
+# =========================================================================
+# Groupe H — harmonisation des communs sur des valeurs REPRESENTABLES
+# (20/08/2026, decisions auteur sur planches).
+#
+# Le maillon qui manquait a toute la campagne : png2pal quantifie chaque
+# couleur sur le gamut TO8 au build (CIEDE2000), et cinq des douze communs
+# n'etaient pas representables. L'editeur de palette montrait donc autre
+# chose que l'ecran — deux campagnes couleur du stage 3 ont ete jugees sur
+# un rendu faux avant qu'on le voie.
+#
+# Trois gravures sans enjeu (les deux methodes de quantification s'accordent,
+# et sur ce que png2pal embarquait deja : zero changement a l'ecran) :
+#   hw2 #a8a8a8 -> #ababab   hw6 #08d4eb -> #00d4eb   hw8 #ac0000 -> #ab0000
+# Deux decisions, tranchees sur la REGULARITE DE LA RAMPE des rouges et pas
+# sur la distance a la couleur isolee :
+#   hw9  #cc5a3c -> #cc6100   hw10 #f99b68 -> #fa9e61
+# Ce que png2pal embarquait pour hw9 (#d47a61) etait 7 points de L* trop
+# clair : il collait a hw10 et la rampe perdait une marche. Detail et
+# mesures dans l'en-tete de tools/palette_harmonise.py.
+#
+# Portee : tout PNG indexe dont les 12 communs sont ceux de la reference
+# (884 fichiers) ; seules les entrees de palette changent, aucun index de
+# pixel n'est touche. Idempotent.
+python3 tools/palette_harmonise.py
+
+# =========================================================================
+# Groupe I — la TRANSPARENCE des cartes de stage (21/08/2026).
+#
+# Le plan arcade declare ses pixels transparents (le pen 0 de chacune des 16
+# banques de couleur est le pen transparent de la couche) et l'export les
+# porte depuis 08/2026 en chunk tRNS — re.arcade.r-type --extract-tiles, les
+# plans committes dans src/stages/NN/map/images/original/ sont a jour.
+#
+# En overlay le champ de jeu est efface au noir puis repeint chaque trame :
+# une cellule sans pixel opaque n'a pas de tuile du tout. map_alpha.py reporte
+# donc le masque arcade dans les in.png, en index 0. Sa regle est
+# conservatrice — seul un pixel NOIR devient transparent, jamais un pixel
+# colore — et sur les stages 02 a 08 elle ne coute rien : le masque arcade y
+# tombe a 100 % sur du noir. Le stage 01 est le seul ecart (son in.png vient
+# de l'art v1 migre, pas de l'arcade) et le rapport le chiffre a chaque
+# execution.
+#
+# Ceci REMPLACE tools/sky_transparent.py (supprime), qui devinait le ciel par
+# blocs de 3x6 pixels entierement noirs et ratait tout ciel plus fin que sa
+# maille. arcade_to_in.py pose desormais la meme information a la conversion :
+# ce passage est le chemin des images deja converties, et le garde-fou qui
+# verifie l'accord entre les deux.
+python3 tools/map_alpha.py
+
+# La timeline d'effacement du stage 1 se DEDUIT de la carte : elle change avec
+# le masque (le masque exact rend la rangee du bas non zappable, ce que
+# l'heuristique 3x6 cachait). A rejouer apres map_alpha.
+python3 tools/gen_clear_timeline.py 01

@@ -30,7 +30,9 @@ ObjID_dobkeratops_monster equ 45
 * le variant au module pagine et rend son slot (stage.starfieldSpawner).
 ObjID_starfield equ 46
 
-objid.count equ 46
+ObjID_bugrender equ 47 ; le renderer des chaines de bug — meme valeur que
+                       ; l'equ de bug.unit.asm (47 partout)
+objid.count equ 47
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

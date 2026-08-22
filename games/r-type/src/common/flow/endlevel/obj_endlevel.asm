@@ -54,6 +54,12 @@ scoreHold.timer fcb 0  ; phase 3->4: ~0.5 s black-screen hold before the readout
 Tick
         ldd   main.endstage.counter
         lbne  @run                          ; sequence already armed
+        ; a REAL boss has finished : it raises globals.bossDefeated itself and
+        ; that alone arms the sequence (stage 2's gomander does this on both
+        ; its exits). Nothing sets the flag in the stages that still rely on
+        ; the stand-in below, so this test is inert for them.
+        lda   globals.bossDefeated
+        bne   @beaten
         ; no sequence yet : the stand-in boss battle — camera at the end of
         ; the map, then the hold ; its expiry counts as the victory
         ldd   glb_camera_x_pos
@@ -119,6 +125,19 @@ Tick
         bne   >
         cmpx  buffer_x_pos+2
         bne   >
+        ; ... et le VAISSEAU a l'arret. Depuis que la boucle n'efface plus le
+        ; champ sous le fondu (stage-main.asm, garde stage.frame.faded), la
+        ; dissolution est CUMULATIVE : elle masque chaque cellule une seule
+        ; fois par page, et tout ce qui est repeint apres elle y reste grave.
+        ; Un vaisseau encore en vol laisserait donc sa trainee peinte sur le
+        ; noir jusqu'au releve de score. AutoPilot vient de tourner juste
+        ; au-dessus : des vitesses nulles = dans la zone morte, donc arrive.
+        ; L'autopilote converge toujours (1 px par trame, sans obstacle), la
+        ; condition ne peut pas bloquer la sequence.
+        ldd   player1+x_vel
+        bne   >
+        ldd   player1+y_vel
+        bne   >
         inc   main.endstage.phase
         jsr   InitFadeOut
 !       bra   @none2
@@ -155,16 +174,16 @@ AutoPilot
         std   player1+y_vel
         ldd   player1+x_pos
         subd  glb_camera_x_pos
-        subd  #endstage.RALLY_X
+        subd  main.endstage.rallyX
         bmi   @shipLeft
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_X
         blo   @yAxis
         ldd   #scale.XN1PX
         bsr   VelScale
         std   player1+x_vel
         bra   @yAxis
 @shipLeft
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_X
         bgt   @yAxis
         ldd   #scale.XP1PX
         bsr   VelScale
@@ -172,16 +191,16 @@ AutoPilot
 @yAxis
         ldd   player1+y_pos
         subd  glb_camera_y_pos
-        subd  #endstage.RALLY_Y
+        subd  main.endstage.rallyY
         bmi   @shipAbove
-        cmpd  #endstage.DEADBAND
+        cmpd  #endstage.DEADBAND_Y
         blo   @done
         ldd   #scale.YN1PX
         bsr   VelScale
         std   player1+y_vel
         rts
 @shipAbove
-        cmpd  #-endstage.DEADBAND
+        cmpd  #-endstage.DEADBAND_Y
         bgt   @done
         ldd   #scale.YP1PX
         bsr   VelScale

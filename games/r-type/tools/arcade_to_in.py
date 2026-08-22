@@ -1,10 +1,38 @@
 #!/usr/bin/env python3
-"""Convertir un plan de niveau arcade en `in.png`, l'entrée de leanscroll.
+"""Convertir un plan de niveau arcade en `in.png`, la carte du stage.
 
 Le portage travaille sur une image unique par stage, `src/stages/NN/map/in.png`,
-que leanscroll découpe ensuite en tuiles et en carte. Cette image est le plan
+que le build découpe ensuite en tuiles et en carte. Cette image est le plan
 AVANT du niveau arcade, réduit au format TO8 et ramené sur la palette 16
 couleurs du jeu.
+
+## La transparence (21/08/2026)
+
+Le plan arcade déclare ses pixels transparents — le pen 0 de chacune des 16
+banques de couleur est le pen transparent de la couche — et l'export les porte
+en chunk tRNS (`re.arcade.r-type --extract-tiles`). Cet outil les écrit en
+**index 0**, la convention de transparence de toute la chaîne gfxcomp, et les
+tient hors du recensement des couleurs : un pixel qu'on ne peint pas n'a pas
+voix au choix de la palette. En overlay le champ est effacé au noir puis
+repeint chaque trame, donc une cellule sans pixel opaque n'a pas de tuile du
+tout. Un plan sans tRNS (export d'avant 08/2026) sort au ciel PEINT, avec un
+avertissement. Voir `tools/map_alpha.py`, qui pose la même information sur une
+image DÉJÀ convertie et qui a remplacé l'heuristique par blocs 3x6 de
+`sky_transparent.py`.
+
+## Sortir des cellules du décor (`--masque`)
+
+Une couche de rendu dédiée peut posséder certaines cellules — le champ de
+gommes du stage 4 en est le cas : 1 618 cellules que le runtime dessine et
+détruit, et qui n'ont donc rien à faire dans les tuiles compilées. L'option
+prend un bitfield packé au format des masques de collision (une cellule 3x6
+par bit) et force ces cellules en transparent : plus de pixel opaque, donc
+plus de tuile.
+
+Le masque ne touche que l'image écrite, **pas le recensement des couleurs** :
+ces cellules restent affichées à l'écran, par une autre couche, donc la
+palette doit continuer à les servir. Les sortir du vote permuterait les
+emplacements du stage.
 
 Réduction : 3/8 en X, 3/4 en Y, au plus proche voisin — 3072x240 devient
 1152x180. Mesuré : rejoué sur le stage 5, ce sous-échantillonnage reproduit
@@ -16,9 +44,27 @@ emplacements libres — 5, 7, 15, 16 — que chaque stage attribue à ses propre
 teintes. L'attribution est faite ici par coût : à chaque tour, l'emplacement va
 à la couleur source dont le rattachement au reste de la palette coûte le plus
 cher (nombre de pixels x distance), puis les distances sont recalculées.
-Les couleurs retenues gardent leur valeur arcade telle quelle — c'est déjà le
-cas des emplacements libres des autres stages, et png2pal quantifie au moment
-du build.
+Les couleurs retenues sont ramenées sur le gamut TO8 avant d'être écrites — voir
+« L'espace d'affichage » plus bas.
+
+## L'espace d'affichage (20/08/2026)
+
+Une valeur de palette n'est pas ce que la machine montre : `png2pal` remplace au
+build chaque couleur par la plus proche des 4096 du gamut TO8, **en CIEDE2000**
+(`Png2PalPlugin.getNearestColor`). Sur les tons sombres l'écart est massif —
+`#304020` s'affiche `#006100`, un vert vif. Cet outil écrivait la valeur arcade
+brute en comptant sur cette quantification : l'éditeur de palette montrait donc
+autre chose que l'écran, et deux campagnes couleur du stage 3 ont été jugées sur
+un rendu faux.
+
+Deux règles depuis :
+
+1. **Toute couleur écrite dans un emplacement est représentable** — passée par
+   `to8disp.displayed`, qui reproduit exactement l'algorithme de png2pal. La
+   fonction est idempotente : png2pal la retrouvera à l'identique.
+2. **Les distances se mesurent contre ce que l'écran montre**, pas contre la
+   valeur stockée : les emplacements communs, eux, gardent leur valeur (elles
+   font contrat entre stages) mais sont comparés via leur rendu.
 
     usage : tools/arcade_to_in.py <NN> <plan_arcade.png> [options]
 
@@ -60,6 +106,24 @@ du build.
                     signifiante (les jaunes du battleship, 1 200 px) perd contre
                     n'importe quelle grande surface, et aucun réglage de poids
                     ne renverse ça — mesuré, poids 1 à 5.
+    --fixe IDX=R,G,B  l'auteur GRAVE une couleur dans un emplacement nommé, qui
+                    sort du calcul. Répétable. Différent d'`--epingle`, qui
+                    donne le PROCHAIN emplacement libre à une couleur : ici
+                    c'est l'emplacement qui est désigné. Sert quand la valeur
+                    est une décision et non une mesure — la fusion des deux
+                    verts du stage 3 en `#616100`, et le beige de sa couche de
+                    nuages.
+    --force R,G,B=IDX  une couleur SOURCE va dans CET emplacement, quoi qu'en
+                    dise la distance. Répétable. Raison d'être : le plus proche
+                    voisin ne voit que des couleurs isolées, jamais un dégradé.
+                    Mesuré sur les nuages du stage 3 — leur rampe de quatre
+                    verts s'écrasait à trois sur un seul emplacement (2 873 px
+                    d'un seul tenant, des aplats à l'écran) parce que le vert
+                    sombre disponible n'était le plus proche d'aucun d'eux
+                    (33 contre 23). Forcer les deux verts sombres vers lui
+                    rétablit deux niveaux là où la source en a quatre : l'erreur
+                    moyenne monte, l'image est meilleure. La couleur forcée ne
+                    concourt plus pour un emplacement.
 
 ## La métrique (17/08/2026)
 
@@ -97,6 +161,9 @@ from collections import Counter
 
 from PIL import Image
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import to8disp
+
 SCALE_X = 3 / 8
 SCALE_Y = 3 / 4
 FREE_DEFAULT = [5, 7, 15, 16]
@@ -112,6 +179,73 @@ def downscale(src, width, height):
         for x in range(width):
             op[x, y] = sp[x * w // width, ay]
     return out
+
+
+def masque_alpha(src, width, height):
+    """Le masque de transparence du plan arcade, reduit comme l'image.
+
+    Rend une liste de listes de booleens (True = pixel transparent), ou None
+    si le plan ne porte pas de chunk tRNS — les exports d'avant 08/2026 n'en
+    avaient pas. Meme calcul de plus proche voisin que `downscale` : les deux
+    doivent designer LE MEME pixel source, sinon le masque glisse d'un pixel
+    sur l'image.
+
+    La transparence n'est pas dans le pixel : le pen 0 de chaque banque de 16
+    couleurs est le pen transparent de la couche, et il a une couleur comme
+    les autres (du noir, en general). Voir tools/map_alpha.py.
+    """
+    trns = src.info.get('transparency')
+    if trns is None:
+        return None
+    if isinstance(trns, int):
+        trns = bytes(0 if i == trns else 255 for i in range(256))
+    sp = src.load()
+    w, h = src.size
+    return [[trns[sp[x * w // width, y * h // height]] == 0 for x in range(width)]
+            for y in range(height)]
+
+
+def applique_masque(chemin, alpha, width, height):
+    """Force en transparent les cellules 3x6 designees par un bitfield packe.
+
+    Le fichier est au format des masques de collision du jeu : une rangee de
+    cellules par tranche de `largeur_en_cellules / 8` octets, bit 7 = cellule
+    la plus a gauche. Une cellule couvre 3x6 px dans l'image reduite — c'est
+    la granularite du bit de collision, et donc celle des gommes du stage 4.
+
+    Sert a sortir du decor ce qu'une couche dediee dessinera au runtime : les
+    cellules retirees n'ont plus de pixel opaque, donc plus de tuile.
+
+    IMPORTANT : le masque ne touche QUE l'image ecrite, pas le recensement des
+    couleurs. Ces cellules restent affichees a l'ecran — par une autre couche —
+    donc la palette doit continuer a les servir. Les sortir du vote
+    permuterait les emplacements du stage et ferait deriver les couleurs de la
+    couche a la premiere recampagne palette (mesure sur le stage 4 : les
+    gommes pesent la moitie des pixels peints).
+
+    Rend (nb de cellules masquees, nouvel alpha) sans modifier celui recu.
+    """
+    cols, rows = width // 3, height // 6
+    stride = cols // 8
+    with open(chemin, 'rb') as f:
+        data = f.read()
+    attendu = stride * rows
+    if len(data) != attendu:
+        raise SystemExit('masque %s : %d octets, attendu %d (%d cellules x %d '
+                         'rangees)' % (chemin, len(data), attendu, cols, rows))
+    sortie = ([list(l) for l in alpha] if alpha is not None
+              else [[False] * width for _ in range(height)])
+    n = 0
+    for cy in range(rows):
+        for cx in range(cols):
+            if not (data[cy * stride + cx // 8] >> (7 - (cx % 8))) & 1:
+                continue
+            n += 1
+            for dy in range(6):
+                ligne = sortie[cy * 6 + dy]
+                for dx in range(3):
+                    ligne[cx * 3 + dx] = True
+    return n, sortie
 
 
 def dist(a, b):
@@ -148,7 +282,7 @@ def dist_lab(a, b):
 METRIQUES = {'rgb': dist, 'lab': dist_lab}
 
 
-def assign(colors, palette, free, d=dist, plancher=0.0, epingles=()):
+def assign(colors, palette, free, d=dist, plancher=0.0, epingles=(), forces=None):
     """Attribue les emplacements libres, puis rend la correspondance complète.
 
     `colors` : Counter {rgb: nb_pixels}. `palette` : liste de 256 rgb.
@@ -164,31 +298,44 @@ def assign(colors, palette, free, d=dist, plancher=0.0, epingles=()):
     slots = list(fixed)
     libres = list(free)
 
+    # Tout se mesure contre le RENDU de l'emplacement, jamais contre sa valeur
+    # stockée : png2pal quantifiera, et sur les sombres il déplace beaucoup
+    # (#304020 -> #006100). Voir « L'espace d'affichage » en tête de fichier.
+    def vue(i):
+        return to8disp.displayed(palette[i])
+
     def nearest(c, slots):
-        return min(slots, key=lambda i: d(c, palette[i]))
+        return min(slots, key=lambda i: d(c, vue(i)))
+
+    def prendre(slot, couleur):
+        # la valeur ÉCRITE est déjà représentable : ce que montre un éditeur
+        # de palette est alors ce que montrera la machine
+        palette[slot] = to8disp.displayed(couleur)
+        chosen[slot] = palette[slot]
+        slots.append(slot)
 
     for couleur in epingles:
         if not libres:
             raise SystemExit('epingle %s : plus d\'emplacement libre' % (couleur,))
-        slot = libres.pop(0)
-        palette[slot] = couleur
-        chosen[slot] = couleur
-        slots.append(slot)
+        prendre(libres.pop(0), couleur)
 
+    forces = forces or {}
     seuil = plancher * sum(colors.values())
     for slot in libres:
+        # une couleur forcée est déjà servie : elle ne concourt pas
         candidates = [c for c in colors
-                      if c not in chosen.values() and colors[c] >= seuil]
+                      if c not in chosen.values() and c not in forces
+                      and colors[c] >= seuil]
         if not candidates:
             break
-        worst = max(candidates, key=lambda c: colors[c] * d(c, palette[nearest(c, slots)]))
-        if d(worst, palette[nearest(worst, slots)]) == 0:
+        worst = max(candidates, key=lambda c: colors[c] * d(c, vue(nearest(c, slots))))
+        if d(worst, vue(nearest(worst, slots))) == 0:
             break  # déjà exactement représentée : l'emplacement ne sert à rien
-        palette[slot] = worst
-        chosen[slot] = worst
-        slots.append(slot)
+        prendre(slot, worst)
 
-    return {c: nearest(c, slots) for c in colors}, chosen
+    mapping = {c: nearest(c, slots) for c in colors}
+    mapping.update({c: i for c, i in forces.items() if c in mapping})
+    return mapping, chosen
 
 
 # Les 12 communs de la campagne. SEULS les index PNG 1..13 font
@@ -276,8 +423,12 @@ def plan_supplementaire(spec):
     propres. Sans ça, elles sortent de la carte seule : le brood du stage 2 y
     perdait ses six verts d'un coup, faute d'avoir eu voix au chapitre.
 
-    Le noir est retiré : c'est la transparence du plan arcade, elle ne dit rien
-    du choix des couleurs et écraserait tout le reste par son nombre.
+    Les pixels TRANSPARENTS sont retirés : ils ne disent rien du choix des
+    couleurs et écraseraient tout le reste par leur nombre. Le plan les déclare
+    depuis 08/2026 (chunk tRNS) ; le noir est retiré en plus, c'est ce que
+    faisait cette fonction quand la transparence n'était pas exportée, et ça ne
+    change aucune affectation (le noir est un commun, il est à distance nulle
+    de son emplacement et ne peut donc pas en gagner un).
     """
     poids = 1
     if '*' in spec:
@@ -297,12 +448,17 @@ def plan_supplementaire(spec):
     if ':' in spec:
         spec, b = spec.rsplit(':', 1)
         boite = tuple(int(v) for v in b.split(','))
-    src = Image.open(spec).convert('RGB')
+    plan = Image.open(spec)
+    src = plan.convert('RGB')
     if boite:
-        src = src.crop(boite)
+        plan, src = plan.crop(boite), src.crop(boite)
     w, h = src.size
-    petit = downscale(src, round(w * SCALE_X), round(h * SCALE_Y))
-    cnt = Counter(petit.get_flattened_data())
+    pw, ph = round(w * SCALE_X), round(h * SCALE_Y)
+    petit = downscale(src, pw, ph)
+    alpha = masque_alpha(plan, pw, ph)
+    pp = petit.load()
+    cnt = Counter(pp[x, y] for y in range(ph) for x in range(pw)
+                  if not (alpha and alpha[y][x]))
     cnt.pop((0, 0, 0), None)
     return Counter({c: n * poids for c, n in cnt.items()}), spec, boite, poids
 
@@ -315,11 +471,15 @@ def main():
     ap.add_argument('--free', default=','.join(map(str, FREE_DEFAULT)))
     ap.add_argument('--out', default=None)
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--masque', default=None,
+                    help='bitfield packe de cellules 3x6 a forcer transparentes')
     ap.add_argument('--pal-next', action='store_true')
     ap.add_argument('--metrique', default='lab', choices=sorted(METRIQUES))
     ap.add_argument('--plancher', type=float, default=0.1)
     ap.add_argument('--plan', action='append', default=[])
     ap.add_argument('--epingle', action='append', default=[])
+    ap.add_argument('--fixe', action='append', default=[])
+    ap.add_argument('--force', action='append', default=[])
     ap.add_argument('-h', '--help', action='store_true')
     args = ap.parse_args()
     if args.help:
@@ -330,11 +490,30 @@ def main():
     out_path = args.out or f'src/stages/{args.stage}/map/in.png'
     d = METRIQUES[args.metrique]
     epingles = [tuple(int(v) for v in e.split(',')) for e in args.epingle]
+    fixes = {}
+    for f in args.fixe:
+        idx, rgb = f.split('=')
+        fixes[int(idx)] = tuple(int(v) for v in rgb.split(','))
+    forces = {}
+    for f in args.force:
+        rgb, idx = f.split('=')
+        forces[tuple(int(v) for v in rgb.split(','))] = int(idx)
 
-    src = Image.open(args.plane).convert('RGB')
+    plan = Image.open(args.plane)
+    src = plan.convert('RGB')
     w, h = src.size
     width, height = round(w * SCALE_X), round(h * SCALE_Y)
     small = downscale(src, width, height)
+    alpha = masque_alpha(plan, width, height)
+    # `alpha` sert au RECENSEMENT des couleurs, `alpha_sortie` a l'IMAGE : les
+    # cellules masquees restent affichees (par une autre couche), donc elles
+    # gardent leur voix au choix de la palette. Voir applique_masque.
+    alpha_sortie = alpha
+    if args.masque:
+        n, alpha_sortie = applique_masque(args.masque, alpha, width, height)
+        print('masque %s : %d cellules 3x6 sorties du decor, gardees au '
+              'recensement (une couche dediee les dessine au runtime)'
+              % (args.masque, n))
 
     if args.pal_next:
         palette, free = palette_pal_next(args.stage)
@@ -348,7 +527,22 @@ def main():
         palette = ref.getpalette()
         palette = [tuple(palette[i * 3:i * 3 + 3]) for i in range(256)]
 
-    colors = Counter(small.get_flattened_data())
+    if alpha is None:
+        print('ATTENTION : %s ne porte pas de chunk tRNS — la transparence de '
+              'la couche arcade est perdue, l\'in.png sortira au ciel PEINT. '
+              'Re-exporter le plan avec re.arcade.r-type --extract-tiles.'
+              % args.plane)
+        colors = Counter(small.get_flattened_data())
+    else:
+        # un pixel transparent ne dit rien du choix des couleurs (il n'est pas
+        # peint) et sa couleur stockee ecraserait tout le reste par le nombre
+        sp = small.load()
+        colors = Counter(sp[x, y] for y in range(height) for x in range(width)
+                         if not alpha[y][x])
+        print('transparence arcade : %d px sur %d (%.1f %%) hors recensement '
+              'et ecrits en index 0'
+              % (sum(r.count(True) for r in alpha), width * height,
+                 100.0 * sum(r.count(True) for r in alpha) / (width * height)))
 
     # Le choix des couleurs voit AUSSI les plans supplémentaires ; l'in.png,
     # lui, ne recevra que `small`. Les deux ne servent pas le même but : la
@@ -361,31 +555,46 @@ def main():
               '(compte dans la palette, pas dans l\'in.png)'
               % (chemin, ' %s' % (boite,) if boite else '', poids,
                  sum(sup.values()) // poids, len(sup)))
+    # Les emplacements GRAVES par l'auteur sortent du calcul : leur valeur est
+    # une decision, pas une mesure. Ramenes sur le gamut comme tout le reste.
+    for idx, rgb in sorted(fixes.items()):
+        palette[idx] = to8disp.displayed(rgb)
+        if idx in free:
+            free.remove(idx)
+        print('fixe %2d = %s (grave par l\'auteur, hors calcul)' % (idx, palette[idx]))
+    for c, idx in forces.items():
+        print('force %s -> emplacement %d (preserve un degrade, cf. l\'en-tete)'
+              % (c, idx))
     for e in epingles:
         print('epingle %s : emplacement reserve avant calcul' % (e,))
     print('metrique %s ; plancher %.2f%% des pixels' % (args.metrique, args.plancher))
 
-    mapping, chosen = assign(vote, palette, free, d, args.plancher / 100.0, epingles)
+    mapping, chosen = assign(vote, palette, free, d, args.plancher / 100.0,
+                             epingles, forces)
 
     print(f'{args.plane}  {w}x{h}  ->  {out_path}  {width}x{height}')
     if not args.pal_next:
         print(f'palette de base : stage {args.ref} ; emplacements attribuables {free}')
     print()
-    print(f'{"couleur arcade":18} {"pixels":>8} {"%":>6}  idx  {"couleur TO8":18} ecart')
+    # la colonne montre le RENDU de l'emplacement (ce que l'ecran affichera),
+    # pas la valeur stockee : c'est contre lui que l'ecart est mesure
+    print(f'{"couleur arcade":18} {"pixels":>8} {"%":>6}  idx  {"rendu TO8":18} ecart')
     total = width * height
     for c, n in colors.most_common():
         i = mapping[c]
         tag = '  <= emplacement pris' if i in chosen and chosen[i] == c else ''
-        print(f'  {str(c):16} {n:8} {100 * n / total:5.2f}%  {i:3}  {str(palette[i]):18} '
-              f'{d(c, palette[i]) ** 0.5:5.1f}{tag}')
+        vu = to8disp.displayed(palette[i])
+        print(f'  {str(c):16} {n:8} {100 * n / total:5.2f}%  {i:3}  {str(vu):18} '
+              f'{d(c, vu) ** 0.5:5.1f}{tag}')
     hors = [(c, n) for c, n in vote.most_common() if c not in colors]
     if hors:
         print('\n  couleurs vues seulement dans les plans supplementaires :')
         for c, n in hors:
             i = mapping[c]
             tag = '  <= emplacement pris' if i in chosen and chosen[i] == c else ''
-            print(f'  {str(c):16} {n:8} {"":6}  {i:3}  {str(palette[i]):18} '
-                  f'{d(c, palette[i]) ** 0.5:5.1f}{tag}')
+            vu = to8disp.displayed(palette[i])
+            print(f'  {str(c):16} {n:8} {"":6}  {i:3}  {str(vu):18} '
+                  f'{d(c, vu) ** 0.5:5.1f}{tag}')
 
     if args.dry_run:
         return 0
@@ -398,7 +607,8 @@ def main():
     op, sp = out.load(), small.load()
     for y in range(height):
         for x in range(width):
-            op[x, y] = mapping[sp[x, y]]
+            # index 0 = la transparence, convention de toute la chaine gfxcomp
+            op[x, y] = 0 if alpha_sortie and alpha_sortie[y][x] else mapping[sp[x, y]]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     out.save(out_path)
     print(f'\necrit {out_path}')
