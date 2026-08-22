@@ -35,9 +35,17 @@
 ; offset24 : la table geo la donne, avec la premiere cellule a dessiner et leur
 ; nombre. Aucune division au runtime.
 ;
-; ETAT : version SANS blast. Les octets s'ecrivent un par un. Le PSHS 9 octets
-; de clearblast (exactement 3 periodes du motif) est l'optimisation suivante,
-; a mesurer contre cette version-ci.
+; LE BLAST. L'interieur d'une plage s'ecrit par PSHS A,B,DP,X,Y,U : 9 octets
+; en 14 cycles, exactement 3 periodes du motif. Un bloc qui FINIT a un indice
+; d'octet = 2 (mod 3) commence invariablement a la rotation 0 — d'ou un seul
+; jeu de registres par (ligne, plan), reconstruit une fois par trame depuis le
+; motif : A=p0 B=p1 DP=p2 X=p0p1 Y=p2p0 U=p1p2 (l'ordre memoire d'un PSHS, en
+; montant depuis S-9 : A B DP Xh Xl Yh Yl Uh Ul). Les octets que l'alignement
+; laisse de cote (bords, tete non alignee, queue) partent dans la boucle octet
+; par octet. Les trois pieges de clearblast s'appliquent tels quels — voir
+; l'en-tete de src/common/fx/clearblast.asm : aucun bsr/rts tant que S est le
+; pointeur d'ecriture, CC inpoussable sous IRQ ouvertes (9 octets et pas 10),
+; DP detruit par le blast et restaure au contrat engine ($9F).
 ;*******************************************************************************
 
  SECTION code
@@ -105,6 +113,25 @@ pellet.blast
         negb
         addb  #8
         stb   pellet.x0
+
+        ; --- les registres du blast, par (ligne, plan) : p0 p1 p2 p0.
+        ; Quatre octets suffisent a charger les six registres (X=p0p1 a +0,
+        ; Y=p2p0 a +2, U=p1p2 a +1) ; reconstruits ici car la phase — donc le
+        ; motif — change avec le scroll.
+        ldx   pellet.runBase
+        ldu   #pellet.runRegs
+        lda   #12
+        sta   pellet.rgLeft
+pellet.rgLoop
+        ldd   ,x                         ; p0 p1
+        std   ,u
+        lda   2,x                        ; p2
+        ldb   ,x                         ; p0
+        std   2,u
+        leax  3,x
+        leau  4,u
+        dec   pellet.rgLeft
+        bne   pellet.rgLoop
 
         ; --- la premiere rangee de carte
         ldb   scroll_tile_pos            ; index d'octet dans la rangee
@@ -275,6 +302,14 @@ pellet.drLineLoop
 ; X pointe le motif de la ligne (plan C) ; le plan A est 3 octets plus loin.
 ;   ja = (xa - 2p + 2) >> 2   le premier octet dont un pixel touche la plage
 ;   jb = (xb - 2p) >> 2       le dernier
+;
+; La decoupe du chemin rapide, prouvee dans la simulation :
+;   ji = ja + (1 si ja est un octet de bord gauche)   le premier octet PLEIN
+;   jf = jb - (1 si jb est un octet de bord droit)    le dernier
+;   jt = le plus grand indice <= jf avec jt = 2 (mod 3)
+;   n  = (jt - ji + 1) / 9                            les PSHS (au plus 4)
+; Le blast couvre [jt-9n+1 .. jt] ; la tete [ja .. jt-9n] et la queue
+; [jt+1 .. jb] partent dans la boucle octet par octet.
 ;-------------------------------------------------------------------------------
 pellet.drawPlane
         pshs  x
@@ -283,13 +318,14 @@ pellet.drawPlane
         sta   pellet.dpTwoP
         tst   pellet.drPlane
         beq   pellet.dpPlanC
-        leax  9,x
+        leax  3,x
         ldd   pellet.drBaseA
         bra   pellet.dpGo
 pellet.dpPlanC
         ldd   pellet.drBaseC
 pellet.dpGo
         std   pellet.dpBase
+        stx   pellet.dpMotif
         lda   pellet.drXa
         suba  pellet.dpTwoP
         adda  #2
@@ -305,9 +341,120 @@ pellet.dpGo
         ldu   #pellet.tbl.mod3
         lda   b,u
         sta   pellet.dpIdx
-pellet.dpLoop
+        ; --- la decoupe
+        lda   pellet.dpJ                 ; ji : ja, +1 si son pixel gauche sort
+        ldb   pellet.dpJ
+        aslb
+        aslb
+        addb  pellet.dpTwoP              ; g(ja)
+        cmpb  pellet.drXa
+        bhs   pellet.dpJiOk
+        inca
+pellet.dpJiOk
+        sta   pellet.dpJi
+        lda   pellet.dpJb                ; jf : jb, -1 si son pixel droit sort
+        ldb   pellet.dpJb
+        aslb
+        aslb
+        addb  pellet.dpTwoP
+        incb                             ; d(jb)
+        cmpb  pellet.drXb
+        bls   pellet.dpJfOk
+        deca                             ; jf peut valoir -1 : comparer SIGNE
+pellet.dpJfOk
+        cmpa  pellet.dpJi
+        lblt  pellet.dpSlow              ; aucun octet plein
+        tfr   a,b                        ; jt = jf - ((jf+1) mod 3)
+        incb
+        ldu   #pellet.tbl.mod3
+        suba  b,u
+        cmpa  pellet.dpJi
+        lblt  pellet.dpSlow              ; l'alignement mange tout l'interieur
+        sta   pellet.dpJt
+        suba  pellet.dpJi                ; n = (jt - ji + 1) / 9
+        inca
+        clrb
+pellet.dpDiv9
+        suba  #9
+        blo   pellet.dpDivD
+        incb
+        bra   pellet.dpDiv9
+pellet.dpDivD
+        tstb
+        lbeq  pellet.dpSlow              ; moins d'un bloc : pas de blast
+        stb   pellet.dpN
+        ; --- la tete : [ja .. jt-9n], octet par octet (souvent vide)
+        lda   #9
+        mul                              ; B = 9n (au plus 36)
+        stb   pellet.dpTmp
+        lda   pellet.dpJt
+        suba  pellet.dpTmp               ; jt - 9n, peut valoir ja-1 = -1
+        sta   pellet.dpEnd
+        cmpa  pellet.dpJ                 ; signe : la borne peut etre negative
+        blt   pellet.dpBlast
+        jsr   pellet.dpBytes
+pellet.dpBlast
+        ; --- le blast. L'operande du JMP D'ABORD : une fois les registres
+        ; charges, il ne reste plus rien pour compter les blocs.
+        lda   #4
+        suba  pellet.dpN
+        asla                             ; un PSHS zappe = 2 octets
+        ldx   #pellet.dpChain
+        leax  a,x
+        stx   pellet.dpJmp+1
+        ldb   pellet.dpJt                ; la cible de S : base + jt + 1
+        clra
+        incb
+        addd  pellet.dpBase
+        std   pellet.dpTarget
+        sts   pellet.dpSavedS            ; aucun bsr/rts tant que S ecrit
+        lda   pellet.drEdgeIdx           ; le record (ligne, plan) : offset
+        adda  pellet.drPlane             ; (ligne*2 + plan) * 4
+        asla
+        asla
+        ldu   #pellet.runRegs
+        leau  a,u
+        lda   2,u
+        tfr   a,dp                       ; DP fait partie des octets pousses
+        ldx   ,u                         ; p0 p1
+        ldy   2,u                        ; p2 p0
+        ldd   ,u                         ; A=p0 B=p1
+        ldu   1,u                        ; p1 p2 — en dernier, U etait le pointeur
+        lds   pellet.dpTarget
+pellet.dpJmp
+        jmp   >pellet.dpChain            ; operande posee plus haut
+pellet.dpChain
+        pshs  a,b,dp,x,y,u               ; CC inpoussable sous IRQ : 9 octets
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        lds   pellet.dpSavedS
+        lda   #dp/256                    ; le contrat engine : DP = $9F
+        tfr   a,dp
+        ; --- la queue : [jt+1 .. jb] ; jt+1 = 0 (mod 3), l'index repart a 0
+        ldx   pellet.dpMotif
+        lda   pellet.dpJt
+        inca
+        sta   pellet.dpJ
+        clr   pellet.dpIdx
+        lda   pellet.dpJb
+        sta   pellet.dpEnd
+        jsr   pellet.dpBytes
+        puls  x,pc
+pellet.dpSlow
+        lda   pellet.dpJb
+        sta   pellet.dpEnd
+        jsr   pellet.dpBytes
+        puls  x,pc
+
+;-------------------------------------------------------------------------------
+; pellet.dpBytes — les octets [dpJ .. dpEnd] du plan courant, un par un.
+; X pointe le motif de la ligne et du plan ; dpIdx = dpJ mod 3, tenu a jour.
+; Appelee hors blast uniquement : S est un vrai pointeur de pile ici.
+;-------------------------------------------------------------------------------
+pellet.dpBytes
         lda   pellet.dpJ
-        cmpa  pellet.dpJb
+        cmpa  pellet.dpEnd
         bhi   pellet.dpDone
         asla                             ; g = 4j + 2p
         asla
@@ -342,9 +489,9 @@ pellet.dpStore
         clra
 pellet.dpKeep
         sta   pellet.dpIdx
-        bra   pellet.dpLoop
+        bra   pellet.dpBytes
 pellet.dpDone
-        puls  x,pc
+        rts
 
 pellet.drXa      fcb 0
 pellet.drXb      fcb 0
@@ -355,10 +502,20 @@ pellet.drEdgeIdx fcb 0
 pellet.drBaseC   fdb 0
 pellet.drBaseA   fdb 0
 pellet.dpBase    fdb 0
+pellet.dpMotif   fdb 0
 pellet.dpTwoP    fcb 0
 pellet.dpJ       fcb 0
 pellet.dpJb      fcb 0
 pellet.dpIdx     fcb 0
+pellet.dpJi      fcb 0
+pellet.dpJt      fcb 0
+pellet.dpN       fcb 0
+pellet.dpEnd     fcb 0
+pellet.dpTmp     fcb 0
+pellet.dpTarget  fdb 0
+pellet.dpSavedS  fdb 0
+pellet.rgLeft    fcb 0
+pellet.runRegs   rmb 48                  ; 12 x (p0 p1 p2 p0)
 
         INCLUDE "src/stages/04/pellet-tables.asm"
 

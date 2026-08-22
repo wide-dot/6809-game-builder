@@ -1,7 +1,14 @@
 # EN COURS — le champ de gommes du stage 4
 
-*22/08/2026. Les phases 1, 2 et 3.1/3.2 sont livrées ; la passe DESSINE JUSTE à
-l'écran. Il reste à la rendre rapide.*
+*22/08/2026. Les phases 1, 2, 3.1/3.2 et 3.2b (le blast) sont livrées ; le
+build passe, la validation à l'écran du blast est à la main de l'auteur.*
+
+**Trouvé en écrivant le blast : la passe 3.2 avait un bug d'indexation.**
+`drawPlane` lisait le motif du plan A à `leax 9,x` au lieu de `+3` (la table
+fait 6 octets par ligne, plan A à +3) : chaque ligne empruntait le plan A de
+la ligne SUIVANTE. Rejoué en simulation : 153 012 pixels divergents sur
+503 064 — corrigé (`leax 3,x`), 0 divergence. La validation à l'écran de la
+3.2 n'avait pas accroché dessus ; à re-regarder avec le blast.
 
 Les deux documents de fond restent la référence :
 [`analyse-gommes-stage4.md`](analyse-gommes-stage4.md) (mesures, extraction
@@ -19,8 +26,8 @@ reprendre.
 | 2 — la carte mutable + primitives | **faite** | logique rejouée sur les vraies cartes, 11 520 cellules |
 | 2b — remise à neuf au checkpoint | **faite** | RLE 263 o, crochet `stage.checkpointReset` |
 | 3.1 — les tables de rendu | **faite** | 622 080 px comparés à l'art, 0 divergence |
-| 3.2 — la passe, premier jet | **faite** | **validée à l'écran par l'auteur** : position, couleurs, scroll |
-| 3.2b — le blast | **à écrire** | ← reprendre ici |
+| 3.2 — la passe, premier jet | **faite** | validée à l'écran, PUIS bug plan A trouvé et corrigé (voir en tête) |
+| 3.2b — le blast | **écrite** | découpe + registres rejoués en simulation, 0/503 064 divergence ; build OK, 1 428 o dans l'arène (2 800) — ← à valider à l'écran |
 | 3.4 — fusionner avec l'effacement | différée | optimisation, pas prérequis |
 | 4 — creuser | à faire | |
 | 5 — cytron et la repousse | à faire | cytron est au budget (décision auteur) |
@@ -30,7 +37,22 @@ reprendre.
 
 ---
 
-## Par quoi reprendre : le blast
+## Le blast : ÉCRIT (22/08, suite de session)
+
+Tel que planifié ci-dessous, dans `pellet.drawPlane` : découpe
+`ji/jf/jt = 2 (mod 3)/n`, tête et queue dans la boucle octet par octet
+(devenue la sous-routine `pellet.dpBytes`), chaîne de 4 `PSHS A,B,DP,X,Y,U`
+avec l'opérande du `JMP` posée AVANT le chargement des registres, `S` sauvé
+et restauré, `DP` reposé à `$9F`. Les records p0,p1,p2,p0 (12 × 4 octets,
+`pellet.runRegs`) sont reconstruits à chaque trame depuis le motif de la
+phase — quatre octets suffisent aux six registres (X à +0, U à +1, Y à +2).
+Trois branchements vers `dpSlow` sont en formes longues (`lblt`/`lbeq`), le
+blast s'étant intercalé. La découpe et l'image mémoire des registres ont été
+rejouées en Python contre l'art sur les 24 positions caméra : 0 divergence
+sur 503 064 px. Reste : valider à l'écran, mesurer (la salle devrait passer
+de ~300 000 à quelques dizaines de milliers de cycles), puis phase 4.
+
+Le plan d'origine, gardé pour référence :
 
 Le seul travail restant sur la phase 3. L'intérieur d'une plage passerait
 d'environ 900 cycles à ~116 par (ligne, plan) — la salle de ~300 000 cycles à

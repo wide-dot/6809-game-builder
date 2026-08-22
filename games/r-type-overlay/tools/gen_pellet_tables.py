@@ -30,8 +30,9 @@ phase du motif est `ancre mod 12` : douze jeux de tables.
 
     src/stages/04/pellet-tables.asm
 
-  pellet.tbl.run    12 phases x 6 lignes x 2 plans x 9 octets
-                    le motif repete d'une plage PLEINE, pret pour le blast
+  pellet.tbl.run    12 phases x 6 lignes x 2 plans x 3 octets
+                    UNE periode du motif ; le blast reconstruit ses 9 octets
+                    en registres depuis ces 3 (p0 p1 p2 p0 -> A,B,DP,X,Y,U)
   pellet.tbl.edge   12 phases x 6 lignes x 2 plans x 2 octets
                     les octets de bord (gauche, droite) d'une plage, ou un
                     seul des deux pixels appartient a la gomme
