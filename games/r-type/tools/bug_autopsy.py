@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Autopsie ciblee du gel stage 7 (camera ~61, boucles ~88).
 
-    TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 \
-    python3 tools/bug_autopsy.py dist/to8.fd
+    TOJE_FAST=1 python3 tools/bug_autopsy.py dist/to8.fd
 
 Amorce calquee sur bug_debug.py (cheat au point sur). Ensuite :
   - trace serree (5 trames) de [boucles, camera, etat scroll, log 9EF0]

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Sondes du gestionnaire de chaine du bug (stage 7).
 
-    TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 [CHAIN=1] \
-    python3 tools/bug_debug.py dist/to8.fd
+    TOJE_FAST=1 [CHAIN=1] python3 tools/bug_debug.py dist/to8.fd
 
 L'amorce est CALQUEE sur warship_fps.py — un seul poke de cheat, fait au
 point sur (safe_point), un seul appui, de gros blocs. Les variantes

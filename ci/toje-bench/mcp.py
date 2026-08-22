@@ -1,17 +1,33 @@
 """Minimal MCP stdio client for the toje emulator (teo-mcp module).
 
-The launcher is taken from the TOJE_MCP environment variable — point it at
-<toje clone>/scripts/toje-mcp.sh. The script builds its own classpath on
-first run, then execs the stdio JSON-RPC server.
+The launcher is the INSTALLED toje plugin, latest version, resolved from the
+Claude Code plugin cache (decision 22/08/2026 : one source of truth, the
+official plugin). TOJE_MCP stays as an override for plugin development —
+point it at <toje clone>/scripts/toje-mcp.sh. Beware when overriding : the
+clone and the plugin declare the same Maven version, their builds overwrite
+each other's jars in ~/.m2.
 """
-import atexit, json, os, subprocess
+import atexit, glob, json, os, subprocess
+
+PLUGIN_GLOB = os.path.expanduser(
+    "~/.claude/plugins/cache/wide-dot-thomson/toje/*/scripts/toje-mcp.sh")
+
+
+def _plugin_launcher():
+    """Latest installed plugin version (numeric sort : 1.10 > 1.9)."""
+    def vkey(path):
+        v = path.split("/toje/")[1].split("/")[0]
+        return [int(p) if p.isdigit() else 0 for p in v.split(".")]
+    found = sorted(glob.glob(PLUGIN_GLOB), key=vkey)
+    return found[-1] if found else None
 
 
 class Toje:
     def __init__(self):
-        launcher = os.environ.get("TOJE_MCP")
+        launcher = os.environ.get("TOJE_MCP") or _plugin_launcher()
         if not launcher:
-            raise SystemExit("TOJE_MCP must point at <toje>/scripts/toje-mcp.sh")
+            raise SystemExit("no toje plugin installed (looked at %s) and "
+                             "TOJE_MCP is not set" % PLUGIN_GLOB)
         self.proc = subprocess.Popen([launcher], stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.DEVNULL, text=True)
