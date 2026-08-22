@@ -10,6 +10,7 @@
 ;*******************************************************************************
 
 bug.Object   EXPORT
+bug.Render   EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -17,6 +18,8 @@ bug.Object   EXPORT
 ; l'adresse des sous-routines paginées avant de les faire monter.
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
+; le renderer groupe patche sa page dans l'index d'images du stage
+Img_Page_Index    EXTERNAL
 
  SECTION code
 
@@ -37,6 +40,18 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/state/variables.asm"
         ; Les pas de deplacement en 8.8, constantes de jeu partagees.
         INCLUDE "src/common/lib/scale.asm"
+        ; Les champs de tir de l'OST (fireCounter & co) : le gestionnaire les
+        ; utilise comme tampon de chargement de presets.
+        INCLUDE "src/common/lib/object.const.asm"
+
+; L'id du renderer groupe (ObjID_bugrender) vient de l'objid.const.asm du
+; stage 1 inclus ci-dessus — 47, la MEME valeur dans les trois stages qui
+; listent le bug (le premier id libre partout : 40..46 sont pris au stage 1).
+
+; Les deux rangees de boites residentes du gestionnaire (une par instance) :
+; membres des arenes stageN.res (res.unit.asm), un fournisseur par stage.
+bug.boxesL        EXTERNAL
+bug.boxesS        EXTERNAL
 
 ; V2-DEVIATION : la v1 nomme ses entrées d'imageset `Img_<nom>`, gfxcomp les
 ; génère en `set_<nom>`. Une table de liaison laisse le fichier v1 au 1:1.
@@ -62,7 +77,19 @@ Img_bug_15                   equ set_bug_15
 ; L'objet est COMMUN (stages 1, 4 et 7) : c'est la version FULL qui vit ici,
 ; avec les seize variantes de direction. obj_level1 (huit images, le reste
 ; rabattu sur bug_8) etait le sous-ensemble du seul stage 1.
+; TOUTES les chaines passent au gestionnaire (mgr.asm, deux instances) — le
+; code v1 par-objet est hors du chemin depuis le 22/08/2026. obj_full reste
+; inclus pour ses TABLES (ImageIndex, presets, animations), que le
+; gestionnaire consomme. Le gestionnaire vit sur les routines 5+.
 bug.Object
+        lda   routine,u
+        bne   >
+        lda   #5
+        sta   routine,u
+!       jmp   bugmgr.Object
+
         INCLUDE "src/enemies/bug/obj_full.asm"
+
+        INCLUDE "src/enemies/bug/mgr.asm"
 
  ENDSECTION

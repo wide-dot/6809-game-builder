@@ -19,8 +19,11 @@ ObjID_bug equ 36
 ObjID_pstaff equ 37
 ObjID_scant equ 38
 ObjID_mid equ 39
+; le renderer groupe des chaines de bug — MEME valeur que l'equ de
+; bug.unit.asm (47 : le premier id libre dans les trois stages a bugs)
+ObjID_bugrender equ 47
 
-objid.count equ 39
+objid.count equ 47
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

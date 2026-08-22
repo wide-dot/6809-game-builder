@@ -123,6 +123,7 @@ counterairlaser.Object EXTERNAL
 
 ; Le cast d'ennemis, un direntry chacun.
 bug.Object      EXTERNAL
+bug.Render      EXTERNAL
 bink.Object     EXTERNAL
 blaster.Object  EXTERNAL
 messages.Object   EXTERNAL   ; READY / GAME OVER, monte par _Obj_Mount

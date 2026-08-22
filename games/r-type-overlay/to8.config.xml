@@ -1237,7 +1237,7 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
-                <file name="lib.bug" linkdata="LINK" arena="enemies">
+<file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
@@ -2277,6 +2277,16 @@
                     </lwasm>
                 </file>
 
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage1.bugres" linkdata="LINK" arena="stage1.res">
+                    <lwasm gensource="gen/enemies/bugres1.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
                     <!-- Le stage 1 entier, charge par le press start et les retours
                          (stage 2, game over) — la dedup du loader rend ca idempotent. -->
@@ -2314,7 +2324,8 @@
                     <load name="stage1.collision"/>
                     <load name="stage1.music.ymm"/>
                     <load name="stage1"/>
-                </scene>
+                    <load name="stage1.bugres"/>
+</scene>
             </directory>
 
             <directory id="2" section="INDEX2" gensymbols="gen/directories/dir2/entries.asm">
@@ -2880,6 +2891,16 @@
                     </lwasm>
                 </file>
 
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage4.bugres" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/enemies/bugres4.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
@@ -2889,7 +2910,8 @@
                     <load name="stage4.pellet"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
-                </scene>
+                    <load name="stage4.bugres"/>
+</scene>
             </directory>
 
             <directory id="5" section="INDEX5" gensymbols="gen/directories/dir5/entries.asm">
@@ -3151,6 +3173,16 @@
                     </lwasm>
                 </file>
 
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage7.bugres" linkdata="LINK" arena="stage7.res">
+                    <lwasm gensource="gen/enemies/bugres7.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage7" section="SCENE" gensource="gen/scenes/stage7.asm">
                     <load name="stage7.tiles.even"/>
                     <load name="stage7.tiles.odd"/>
@@ -3159,7 +3191,8 @@
                     <load name="stage7.collision"/>
                     <load name="stage7.music.ymm"/>
                     <load name="stage7"/>
-                </scene>
+                    <load name="stage7.bugres"/>
+</scene>
             </directory>
 
             <directory id="8" section="INDEX8" gensymbols="gen/directories/dir8/entries.asm">

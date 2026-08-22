@@ -45,6 +45,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
+        fcb   0,0,0,0,0,0,0 ; 40..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
 
 Obj_Index_Address
         fdb   0
@@ -93,6 +95,8 @@ Obj_Index_Address
         fdb   pstaff.Object ; ObjID_pstaff
         fdb   scant.Object ; ObjID_scant
         fdb   mid.Object ; ObjID_mid
+        fdb   0,0,0,0,0,0,0 ; 40..46 libres
+        fdb   bug.Render ; ObjID_bugrender
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage7.page
@@ -135,6 +139,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
+        fcb   0,0,0,0,0,0,0 ; 40..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -177,6 +183,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_pstaff
         fdb   Ani_Asd_none ; ObjID_scant
         fdb   Ani_Asd_none ; ObjID_mid
+        fdb   0,0,0,0,0,0,0 ; 40..46 libres
+        fdb   Ani_Asd_none ; ObjID_bugrender
 
 Ani_Asd_none
         fdb   0
@@ -222,3 +230,5 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
+        fcb   0,0,0,0,0,0,0 ; 40..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender

@@ -44,6 +44,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   0,0,0,0,0,0,0,0 ; 39..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
 
 Obj_Index_Address
         fdb   0
@@ -91,6 +93,8 @@ Obj_Index_Address
         fdb   bug.Object ; ObjID_bug
         fdb   pstaff.Object ; ObjID_pstaff
         fdb   stage.starfieldSpawner ; ObjID_starfield
+        fdb   0,0,0,0,0,0,0,0 ; 39..46 libres
+        fdb   bug.Render ; ObjID_bugrender (47)
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page
@@ -132,6 +136,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   0,0,0,0,0,0,0,0 ; 39..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -173,6 +179,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bug
         fdb   Ani_Asd_none ; ObjID_pstaff
         fdb   Ani_Asd_none ; ObjID_starfield
+        fdb   0,0,0,0,0,0,0,0 ; 39..46 libres
+        fdb   Ani_Asd_none ; ObjID_bugrender (47)
 
 Ani_Asd_none
         fdb   0
@@ -217,3 +225,5 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   0,0,0,0,0,0,0,0 ; 39..46 libres
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
