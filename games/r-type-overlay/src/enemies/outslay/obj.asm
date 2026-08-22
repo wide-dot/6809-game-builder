@@ -85,19 +85,17 @@
 ; partout (voir cast.unit.asm).
 ;*******************************************************************************
 
-; --- LA ZONE RESIDENTE (layout : <reserved name="stage.outslay">) ------------
+; --- LA ZONE RESIDENTE (unite d'arene : res.unit.asm, arene stage2.res) ----
 ; Anneau et boites DOIVENT etre residents : le callback pousse depuis la page
 ; du cast, la passe de collision suit ses listes sans monter de page, et les
-; suiveurs a OST lisent l'anneau depuis le chemin moteur.
-outslay.res       equ $9A00
-outslay.ringX     equ outslay.res          ; 256 octets — x ecran
-outslay.ringY     equ outslay.res+256      ; 256 octets — y ecran
-outslay.ringP     equ outslay.res+512      ; 256 octets — pose du script
-outslay.boxes     equ outslay.res+768      ; 20 x sizeof{AABB} (9) = 180
-outslay.res.END   equ outslay.res+768+20*9
- IFNE outslay.res.END-($9A00+$3B4)
-        ERROR zone stage.outslay : accord layout/equates rompu (adresse ou taille)
- ENDC
+; suiveurs a OST lisent l'anneau depuis le chemin moteur. La zone est un
+; MEMBRE d'ARENE charge par la scene (donc zeroe au chargement), place par le
+; packer dans la bande par-stage — plus d'adresse en dur ni de garde IFNE :
+; l'accord est porte par le lien.
+outslay.ringX     EXTERNAL             ; 256 octets — x ecran
+outslay.ringY     EXTERNAL             ; 256 octets — y ecran
+outslay.ringP     EXTERNAL             ; 256 octets — pose du script
+outslay.boxes     EXTERNAL             ; 20 x sizeof{AABB} (9) = 180
 
 ; --- LE MAITRE : ext_variables (l'etat moveByScript vit dans son OST) --------
 outslay.mClock    equ ext_variables+0    ; 0,1  horloge de graine (arcade [+0x20])

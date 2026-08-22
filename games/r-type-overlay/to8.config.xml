@@ -240,20 +240,28 @@
                  destine au mscroll resident du stage 3. -->
             <!-- La convergence des lots d'ennemis : les 101 octets sous l'ex-pool —
                  la fenetre du moteur est pleine, voir cast.unit.asm. -->
+            <!-- LA BANDE RESIDENTE PAR-STAGE ($92DB-$9DCA, 2 800 o) en ARENES
+                 par stage sur les MEMES zones (decision auteur, 22/08/2026) :
+                 les locataires d'un stage sont des alternatives de ceux des
+                 autres, le packer verifie chaque stage separement. Remplace
+                 le <reserved stage.outslay>, qui bloquait la bande pour tout
+                 le monde — et masquait un chevauchement reel avec la couche
+                 de gommes du stage 4 ($9A00-$9A8C), inoffensif entre stages
+                 mais garanti par personne. Un locataire est un fichier de
+                 ZEROS charge par la scene : la zone arrive zeroee.  -->
+            <arena name="stage1.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage2.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage3.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage4.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage5.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage6.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage7.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage8.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <region name="cast" page="$01" address="$87EB" size="$0065"/>
             <reserved name="bench"        page="$01" address="$87DB" size="$0010"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
-            <!-- La zone residente PAR-STAGE (decision auteur, 21/08/2026) : la
-                 bande $92DB-$9DCA de la page 1, apres le mscroll, documentee
-                 dans ram.const.asm comme « la zone par-stage ». Premier
-                 locataire : l'outslay du stage 2 — l'anneau d'historique de
-                 la tete (3 plans de 256 octets : x, y, pose) et les 20 boites
-                 de collision statiques de ses segments (20 x 9). Les equates
-                 miroirs vivent dans src/enemies/outslay/obj.asm, avec un
-                 garde-fou d'accord adresse/taille. -->
-            <reserved name="stage.outslay" page="$01" address="$9A00" size="$03B4"/>
             <reserved name="globals"      page="$01" address="$9DCB" size="$0094"/>
             <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 145 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
@@ -1258,6 +1266,35 @@
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_11" filename="src/enemies/bug/images/07.png" index="7">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <!-- Les huit variantes restantes (v1-map.csv :
+                                         bug_0..3 = 08..11.png, bug_12..15 =
+                                         12..15.png). L'objet est commun aux
+                                         stages 1, 4 et 7 : il vit avec toutes
+                                         ses directions (obj_full). -->
+                                    <image name="bug_0" filename="src/enemies/bug/images/08.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_1" filename="src/enemies/bug/images/09.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_2" filename="src/enemies/bug/images/10.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_3" filename="src/enemies/bug/images/11.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_12" filename="src/enemies/bug/images/12.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_13" filename="src/enemies/bug/images/13.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_14" filename="src/enemies/bug/images/14.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_15" filename="src/enemies/bug/images/15.png" index="15">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                 </gfxcomp>
@@ -2530,6 +2567,15 @@
                      meme pool decale de 8) ; le corps a ses 4 images d'animation
                      et son epave. Pas de `shifts` : 37 sprites 12x24 suffisent a
                      la page, les doubler pour la precision sous-pixel non. -->
+                <!-- La zone residente du serpent : membre d'arene, charge en
+                     zeros par la scene (voir res.unit.asm). -->
+                <file name="stage2.outslay.res" linkdata="LINK" arena="stage2.res">
+                    <lwasm gensource="gen/stages/02/outslay-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/outslay/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.cast" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -2589,6 +2635,7 @@
                     <load name="stage2.engulf.odd"/>
                     <load name="stage2.tubes.even"/>
                     <load name="stage2.blink.even"/>
+                    <load name="stage2.outslay.res"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>
@@ -2826,7 +2873,7 @@
                      montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
                      temps. Les tables sont generees et prouvees par
                      tools/gen_pellet_tables.py. -->
-                <file name="stage4.pellet" linkdata="LINK" page="$01" address="$92DB">
+                <file name="stage4.pellet" linkdata="LINK" arena="stage4.res">
                     <lwasm gensource="gen/stages/04/pellet.asm">
                         <asm filename="src/common/engine/api.asm"/>
                         <asm filename="src/stages/04/pellet-blast.asm"/>
