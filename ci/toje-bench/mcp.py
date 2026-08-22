@@ -4,7 +4,7 @@ The launcher is taken from the TOJE_MCP environment variable — point it at
 <toje clone>/scripts/toje-mcp.sh. The script builds its own classpath on
 first run, then execs the stdio JSON-RPC server.
 """
-import json, os, subprocess
+import atexit, json, os, subprocess
 
 
 class Toje:
@@ -15,6 +15,9 @@ class Toje:
         self.proc = subprocess.Popen([launcher], stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.DEVNULL, text=True)
+        # The JVM must not outlive the probe script : a leaked instance per
+        # run is how a debugging session ends up with a hundred of them.
+        atexit.register(self.close)
         self.rid = 0
         self.request("initialize", {"protocolVersion": "2024-11-05",
                                     "capabilities": {},
@@ -99,4 +102,9 @@ class Toje:
             print(self.call("disassemble", {"addr": pc, "lines": 8}), flush=True)
 
     def close(self):
-        self.proc.terminate()
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
