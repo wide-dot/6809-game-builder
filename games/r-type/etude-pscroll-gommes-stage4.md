@@ -1080,3 +1080,27 @@ Le poste « routines » rendu par le profileur (247 cy/mutation) était
 deux bases coûte 88 cycles par phase, soit 176 des 599. Les quatre pages et les
 quatre adresses sont figées après l'init — une table pré-calculée par phase les
 ramènerait à deux `ldd`/`std`.
+
+### F — l'entrée de phase, posée à l'init (23/08)
+
+`mutate.plans` relisait `sc.phase` **trois fois** et refaisait l'indexation de
+`buf.page`/`buf.address` à chaque fois : 88 cycles par phase, soit 176 des 599
+de l'aiguillage — pour aller chercher quatre valeurs qui ne bougent plus depuis
+l'init.
+
+`pscroll.buildPhaseTable` (appelée par `pscroll.init`) pose une entrée de six
+octets par phase : les deux pages, puis les deux adresses de buffer, **dans
+l'ordre où l'interface des routines les attend**. Les deux pages se posent d'un
+seul `ldd`/`std` parce qu'elles sont contiguës des deux côtés. L'appelant passe
+l'entrée dans X — `sc.phase` et `sc.rout` disparaissent, et la routine du cas
+reste dans Y jusqu'au `jmp ,y`.
+
+**599 → 489 cycles.** Bilan depuis le départ, une mutation complète :
+
+| | aiguillage | 2 × routine | total |
+|---|---|---|---|
+| départ | 828 | 438 | **1 266** |
+| après A-F | 489 | 370 | **859** (écriture) |
+| après A-F | 489 | 338 | **827** (effacement) |
+
+**−32 %.**

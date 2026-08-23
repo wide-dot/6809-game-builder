@@ -322,8 +322,30 @@ pscroll.seamFind
 ; Cout : la gravure de dix colonnes (~160 000 cycles) — a l'ouverture du stage
 ; et au checkpoint, jamais en jeu.
 ; -----------------------------------------------------------------------------
+; Pose pscroll.phase.tbl : pour la phase p, le plan 0 est le buffer p et le
+; plan 1 le buffer 2+p (index = plan*2 + phase). Deroule : ca tourne une fois.
+pscroll.buildPhaseTable
+        lda   pscroll.buf.page+0       ; phase 0
+        sta   pscroll.phase.tbl+0
+        lda   pscroll.buf.page+2
+        sta   pscroll.phase.tbl+1
+        ldd   pscroll.buf.address+0
+        std   pscroll.phase.tbl+2
+        ldd   pscroll.buf.address+4
+        std   pscroll.phase.tbl+4
+        lda   pscroll.buf.page+1       ; phase 1
+        sta   pscroll.phase.tbl+pscroll.PHASE_SZ+0
+        lda   pscroll.buf.page+3
+        sta   pscroll.phase.tbl+pscroll.PHASE_SZ+1
+        ldd   pscroll.buf.address+2
+        std   pscroll.phase.tbl+pscroll.PHASE_SZ+2
+        ldd   pscroll.buf.address+6
+        std   pscroll.phase.tbl+pscroll.PHASE_SZ+4
+        rts
+
 pscroll.init
         pshs  d
+        jsr   pscroll.buildPhaseTable
         jsr   pscroll.buildSkeleton    ; jsr et non bsr : le squelette a
         puls  d                        ; grossi, la portee courte ne suffit plus
         jsr   pscroll.setCameraX
@@ -783,7 +805,7 @@ pscroll.mutate
         lbsr  pscroll.geom             ; -> sc.dst
         ldb   pscroll.sc.px+1          ; PHASE 0 : le cas est px mod 16
         andb  #15
-        clr   pscroll.sc.phase
+        ldx   #pscroll.phase.tbl
         lbsr  pscroll.mutate.plans
         ldd   pscroll.sc.px            ; PHASE 1 : n0 = px - 1
         subd  #1
@@ -801,7 +823,7 @@ pscroll.mutate
 @meme   ldb   pscroll.sc.px+1
         decb
         andb  #15
-        inc   pscroll.sc.phase
+        ldx   #pscroll.phase.tbl+pscroll.PHASE_SZ
         lbsr  pscroll.mutate.plans
 @fin    andcc #$FB                     ; Z = 0 : le champ a change
         rts
@@ -812,36 +834,29 @@ pscroll.mutate
 ; -----------------------------------------------------------------------------
 ; pscroll.mutate.plans — poser les deux plans d'une phase et graver
 ; -----------------------------------------------------------------------------
-; input REG : [b] le cas, 0..15
-; input VAR : [pscroll.sc.phase] la phase, [pscroll.sc.dst] l'offset commun
+; input REG : [b] le cas 0..15, [x] l'entree de phase (pscroll.phase.tbl)
+; input VAR : [pscroll.sc.dst] l'offset commun aux deux plans
+;
+; TOUT SORT D'UNE TABLE POSEE A L'INIT. Cette routine relisait sc.phase trois
+; fois et refaisait l'indexation de buf.page/buf.address a chaque fois : 88
+; cycles par phase, soit 176 des 599 de l'aiguillage — pour aller chercher
+; quatre valeurs qui ne bougent plus depuis l'init. L'entree de phase les
+; donne dans l'ordre ou l'interface des routines les attend, et les deux pages
+; se posent d'un seul ldd/std parce qu'elles sont contigues des deux cotes.
 ; -----------------------------------------------------------------------------
 pscroll.mutate.plans
-        aslb                           ; la routine du cas
-        ldx   pscroll.sc.tbl           ; ecriture ou effacement
-        ldx   b,x
-        stx   pscroll.sc.rout
-        ldb   pscroll.sc.phase         ; les deux plans : index = plan*2 + phase
-        ldx   #pscroll.buf.page
-        lda   b,x
-        sta   pscroll.wr.page0
-        addb  #2
-        lda   b,x
-        sta   pscroll.wr.page1
-        ldb   pscroll.sc.phase
+        ldy   pscroll.sc.tbl           ; la table du chemin (ecriture/effacement)
         aslb
-        ldx   #pscroll.buf.address
-        ldd   b,x
+        ldy   b,y                      ; la routine du cas ; elle y reste
+        ldd   ,x                       ; LES DEUX PAGES D'UN COUP : elles sont
+        std   pscroll.wr.page0         ; contigues des deux cotes
+        ldd   2,x
         addd  pscroll.sc.dst
         std   pscroll.wr.base0
-        ldb   pscroll.sc.phase
-        addb  #2
-        aslb
-        ldx   #pscroll.buf.address
-        ldd   b,x
+        ldd   4,x
         addd  pscroll.sc.dst
         std   pscroll.wr.base1
-        ldx   pscroll.sc.rout
-        jmp   ,x                       ; la routine du cas ecrit les 3 px
+        jmp   ,y                       ; la routine du cas ecrit les 3 px
 
 ; -----------------------------------------------------------------------------
 ; pscroll.geom — l'offset d'une mutation, pour une bande
@@ -883,6 +898,11 @@ pscroll.tbl.bit  fcb   $80,$40,$20,$10,$08,$04,$02,$01
 ; _SetCartPageA pour rien. Un projet qui le voudrait pagine monte sa page
 ; avant d'appeler.
 pscroll.map.address   fdb   0          ; le bitfield des gommes, pose par le projet
+; L'ENTREE DE PHASE : les deux pages puis les deux adresses de buffer, dans
+; l'ordre ou l'interface ci-dessous les attend. Posee une fois par pscroll.init.
+pscroll.PHASE_SZ      equ   6
+pscroll.phase.tbl     fill  0,2*pscroll.PHASE_SZ
+
 pscroll.wr.page0      fcb   0          ; l'interface des routines d'ecriture
 pscroll.wr.page1      fcb   0
 pscroll.wr.base0      fdb   0
@@ -892,10 +912,8 @@ pscroll.sc.row        fcb   0
 pscroll.sc.rowptr     fdb   0
 pscroll.sc.px         fdb   0
 pscroll.sc.n0         fdb   0
-pscroll.sc.phase      fcb   0
 pscroll.sc.chunk      fcb   0
 pscroll.sc.rowbase    fdb   0
 pscroll.sc.dst        fdb   0
-pscroll.sc.rout       fdb   0
 pscroll.sc.tbl        fdb   0          ; la table du chemin en cours
 pscroll.sc.mode       fcb   0          ; 0 = pousse, 1 = efface
