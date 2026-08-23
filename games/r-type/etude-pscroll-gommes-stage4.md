@@ -1042,3 +1042,41 @@ mutations parfaitement justes — 40 essais sur 80, tous à la ligne 10.
 
 Enfin, `TOJE_FAST=1` fait passer la campagne de ~60 minutes à ~3 : mêmes
 instructions, mêmes cycles, pas de rendu.
+
+### E — deux bases, zéro `leau` dans les routines de cellule (23/08)
+
+Relevé par l'auteur à la revue : **les routines de cellule n'avaient jamais reçu
+l'idiome de la gravure de colonne**. Six lignes espacées de 80 octets se
+couvrent avec **deux bases à 240 d'écart** — `u` sur la ligne 1, `x = u−240`
+sur la ligne 4 — et des offsets qui ne dépassent jamais ±88, donc tous en
+8 bits signés. On paie un octet et un cycle par accès lointain, on économise
+**cinq `leau` par plan**.
+
+Le décalage de la base (`u` = ligne 1 et non ligne 0) ne coûte rien : il vit
+dans la constante d'addition de `pscroll.geom`.
+
+Compté sur le code émis, ce qui est déterministe :
+
+| | avant | après |
+|---|---|---|
+| routine d'écriture | 219 cy | **185** |
+| routine d'effacement | 203 cy | **169** |
+
+**−34 par appel, −68 par mutation.**
+
+### Le bilan honnête, et une correction
+
+Le poste « routines » rendu par le profileur (247 cy/mutation) était
+**sous-compté** : sa liste s'arrête aux ~1 000 PC les plus chauds et le code des
+32 routines s'y dilue. Le compte sur le code émis fait foi.
+
+| | aiguillage | 2 × routine | total |
+|---|---|---|---|
+| départ | 828 | 438 | **1 266** |
+| après A-E | 599 | 370 | **969** (écriture) |
+| après A-E | 599 | 338 | **937** (effacement) |
+
+**−23 %.** Le poste dominant est désormais `mutate.plans` : poser deux pages et
+deux bases coûte 88 cycles par phase, soit 176 des 599. Les quatre pages et les
+quatre adresses sont figées après l'init — une table pré-calculée par phase les
+ramènerait à deux `ldd`/`std`.

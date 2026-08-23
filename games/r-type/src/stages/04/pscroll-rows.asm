@@ -786,832 +786,704 @@ pscroll.wr.00
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$0D
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -80,u
         lda   #$D7
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   80,x
         lda   #$CC
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   ,x
         lda   #$0F
-        sta   ,u
+        sta   -80,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   80,u
+        anda  #$0F
+        ora   #$C0
+        sta   80,u
         lda   ,u
         anda  #$0F
         ora   #$C0
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$0F
         ora   #$C0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$0F
-        ora   #$C0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
         anda  #$0F
         ora   #$A0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   80,x
+        lda   ,x
         anda  #$0F
         ora   #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$0F
         ora   #$F0
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.wr.01
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$DC
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -80,u
         lda   #$7A
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   80,x
         lda   #$CF
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   ,x
         lda   #$FF
-        sta   ,u
+        sta   -80,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   80,u
+        anda  #$F0
+        sta   80,u
         lda   ,u
         anda  #$F0
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        ora   #$0D
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$F0
         ora   #$0D
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
+        anda  #$F0
+        ora   #$0D
+        sta   80,x
+        lda   ,x
         anda  #$F0
         ora   #$0C
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$F0
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.wr.02
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$0D
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -80,u
         lda   #$D7
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   80,x
         lda   #$CC
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   ,x
         lda   #$0F
-        sta   ,u
+        sta   -80,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   81,u
+        anda  #$0F
+        ora   #$C0
+        sta   81,u
         lda   1,u
         anda  #$0F
         ora   #$C0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$0F
         ora   #$C0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$0F
-        ora   #$C0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$0F
         ora   #$A0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$0F
         ora   #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$0F
         ora   #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.wr.03
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$DC
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -79,u
         lda   #$7A
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   81,x
         lda   #$CF
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   1,x
         lda   #$FF
-        sta   1,u
+        sta   -79,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   80,u
+        anda  #$F0
+        sta   80,u
         lda   ,u
         anda  #$F0
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        ora   #$0D
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$F0
         ora   #$0D
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
+        anda  #$F0
+        ora   #$0D
+        sta   80,x
+        lda   ,x
         anda  #$F0
         ora   #$0C
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$F0
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.wr.04
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$0D
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -79,u
         lda   #$D7
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   81,x
         lda   #$CC
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   1,x
         lda   #$0F
-        sta   1,u
+        sta   -79,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   81,u
+        anda  #$0F
+        ora   #$C0
+        sta   81,u
         lda   1,u
         anda  #$0F
         ora   #$C0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$0F
         ora   #$C0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$0F
-        ora   #$C0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$0F
         ora   #$A0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$0F
         ora   #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$0F
         ora   #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.wr.05
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$DC
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -79,u
         lda   #$7A
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   81,x
         lda   #$CF
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   1,x
         lda   #$FF
-        sta   1,u
+        sta   -79,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   81,u
+        anda  #$F0
+        sta   81,u
         lda   1,u
         anda  #$F0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        ora   #$0D
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$F0
         ora   #$0D
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
+        anda  #$F0
+        ora   #$0D
+        sta   81,x
+        lda   1,x
         anda  #$F0
         ora   #$0C
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.wr.06
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$0D
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -79,u
         lda   #$D7
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   81,x
         lda   #$CC
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   1,x
         lda   #$0F
-        sta   1,u
+        sta   -79,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   83,u
+        anda  #$0F
+        ora   #$C0
+        sta   83,u
         lda   3,u
         anda  #$0F
         ora   #$C0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$0F
         ora   #$C0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$0F
-        ora   #$C0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$0F
         ora   #$A0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$0F
         ora   #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$0F
         ora   #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.wr.07
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$DC
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -77,u
         lda   #$7A
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   83,x
         lda   #$CF
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   3,x
         lda   #$FF
-        sta   3,u
+        sta   -77,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   81,u
+        anda  #$F0
+        sta   81,u
         lda   1,u
         anda  #$F0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        ora   #$0D
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$F0
         ora   #$0D
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
+        anda  #$F0
+        ora   #$0D
+        sta   81,x
+        lda   1,x
         anda  #$F0
         ora   #$0C
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.wr.08
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$0D
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -77,u
         lda   #$D7
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   83,x
         lda   #$CC
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   3,x
         lda   #$0F
-        sta   3,u
+        sta   -77,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   83,u
+        anda  #$0F
+        ora   #$C0
+        sta   83,u
         lda   3,u
         anda  #$0F
         ora   #$C0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$0F
         ora   #$C0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$0F
-        ora   #$C0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$0F
         ora   #$A0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$0F
         ora   #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$0F
         ora   #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.wr.09
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$DC
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -77,u
         lda   #$7A
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   83,x
         lda   #$CF
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   3,x
         lda   #$FF
-        sta   3,u
+        sta   -77,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   83,u
+        anda  #$F0
+        sta   83,u
         lda   3,u
         anda  #$F0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        ora   #$0D
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$F0
         ora   #$0D
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
+        anda  #$F0
+        ora   #$0D
+        sta   83,x
+        lda   3,x
         anda  #$F0
         ora   #$0C
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.wr.10
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$0D
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -77,u
         lda   #$D7
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   83,x
         lda   #$CC
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   3,x
         lda   #$0F
-        sta   3,u
+        sta   -77,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   84,u
+        anda  #$0F
+        ora   #$C0
+        sta   84,u
         lda   4,u
         anda  #$0F
         ora   #$C0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$0F
         ora   #$C0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$0F
-        ora   #$C0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$0F
         ora   #$A0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$0F
         ora   #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$0F
         ora   #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.wr.11
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$DC
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -76,u
         lda   #$7A
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   84,x
         lda   #$CF
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   4,x
         lda   #$FF
-        sta   4,u
+        sta   -76,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   83,u
+        anda  #$F0
+        sta   83,u
         lda   3,u
         anda  #$F0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        ora   #$0D
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$F0
         ora   #$0D
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
+        anda  #$F0
+        ora   #$0D
+        sta   83,x
+        lda   3,x
         anda  #$F0
         ora   #$0C
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.wr.12
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$0D
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -76,u
         lda   #$D7
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   84,x
         lda   #$CC
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   4,x
         lda   #$0F
-        sta   4,u
+        sta   -76,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   84,u
+        anda  #$0F
+        ora   #$C0
+        sta   84,u
         lda   4,u
         anda  #$0F
         ora   #$C0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$0F
         ora   #$C0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$0F
-        ora   #$C0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$0F
         ora   #$A0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$0F
         ora   #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$0F
         ora   #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.wr.13
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$DC
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -76,u
         lda   #$7A
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   84,x
         lda   #$CF
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   4,x
         lda   #$FF
-        sta   4,u
+        sta   -76,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   84,u
+        anda  #$F0
+        sta   84,u
         lda   4,u
         anda  #$F0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        ora   #$0D
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$F0
         ora   #$0D
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
+        anda  #$F0
+        ora   #$0D
+        sta   84,x
+        lda   4,x
         anda  #$F0
         ora   #$0C
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.wr.14
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$0D
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
         lda   #$DD
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -76,u
         lda   #$D7
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   84,x
         lda   #$CC
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   4,x
         lda   #$0F
-        sta   4,u
+        sta   -76,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   72,u
+        anda  #$0F
+        ora   #$C0
+        sta   72,u
         lda   -8,u
         anda  #$0F
         ora   #$C0
         sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        lda   -88,u
         anda  #$0F
         ora   #$C0
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
-        anda  #$0F
-        ora   #$C0
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   -88,u
+        lda   72,x
         anda  #$0F
         ora   #$A0
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   72,x
+        lda   -8,x
         anda  #$0F
         ora   #$F0
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   -8,x
+        lda   -88,x
         anda  #$0F
         ora   #$F0
-        sta   -8,u
+        sta   -88,x
         rts
 
 pscroll.wr.15
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$DC
+        sta   72,u
         sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -88,u
         lda   #$7A
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   72,x
         lda   #$CF
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
+        sta   -8,x
         lda   #$FF
-        sta   -8,u
+        sta   -88,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   84,u
+        anda  #$F0
+        sta   84,u
         lda   4,u
         anda  #$F0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        ora   #$0D
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$F0
         ora   #$0D
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
+        anda  #$F0
+        ora   #$0D
+        sta   84,x
+        lda   4,x
         anda  #$F0
         ora   #$0C
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 ; l'aiguillage : (3*colonne - phase) mod 16 -> la routine
@@ -1640,704 +1512,576 @@ pscroll.er.00
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
+        sta   -80,u
+        sta   80,x
+        sta   ,x
+        sta   -80,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   80,u
+        anda  #$0F
+        sta   80,u
         lda   ,u
         anda  #$0F
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$0F
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
         anda  #$0F
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   80,x
+        lda   ,x
         anda  #$0F
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$0F
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$0F
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.er.01
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
+        sta   -80,u
+        sta   80,x
+        sta   ,x
+        sta   -80,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   80,u
+        anda  #$F0
+        sta   80,u
         lda   ,u
         anda  #$F0
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   80,x
+        lda   ,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.er.02
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   80,u
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   ,u
+        sta   -80,u
+        sta   80,x
+        sta   ,x
+        sta   -80,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   81,u
+        anda  #$0F
+        sta   81,u
         lda   1,u
         anda  #$0F
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$0F
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.er.03
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
+        sta   -79,u
+        sta   81,x
+        sta   1,x
+        sta   -79,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   80,u
+        anda  #$F0
+        sta   80,u
         lda   ,u
         anda  #$F0
         sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        lda   -80,u
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   -80,u
+        lda   80,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   80,x
+        lda   ,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
+        sta   ,x
+        lda   -80,x
         anda  #$F0
-        sta   ,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   ,u
-        anda  #$F0
-        sta   ,u
+        sta   -80,x
         rts
 
 pscroll.er.04
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
+        sta   -79,u
+        sta   81,x
+        sta   1,x
+        sta   -79,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   81,u
+        anda  #$0F
+        sta   81,u
         lda   1,u
         anda  #$0F
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$0F
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$0F
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.er.05
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
+        sta   -79,u
+        sta   81,x
+        sta   1,x
+        sta   -79,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   81,u
+        anda  #$F0
+        sta   81,u
         lda   1,u
         anda  #$F0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.er.06
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   81,u
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   1,u
+        sta   -79,u
+        sta   81,x
+        sta   1,x
+        sta   -79,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   83,u
+        anda  #$0F
+        sta   83,u
         lda   3,u
         anda  #$0F
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$0F
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.er.07
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
+        sta   -77,u
+        sta   83,x
+        sta   3,x
+        sta   -77,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   81,u
+        anda  #$F0
+        sta   81,u
         lda   1,u
         anda  #$F0
         sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        lda   -79,u
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   -79,u
+        lda   81,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   81,x
+        lda   1,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
+        sta   1,x
+        lda   -79,x
         anda  #$F0
-        sta   1,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   1,u
-        anda  #$F0
-        sta   1,u
+        sta   -79,x
         rts
 
 pscroll.er.08
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
+        sta   -77,u
+        sta   83,x
+        sta   3,x
+        sta   -77,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   83,u
+        anda  #$0F
+        sta   83,u
         lda   3,u
         anda  #$0F
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$0F
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$0F
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.er.09
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
+        sta   -77,u
+        sta   83,x
+        sta   3,x
+        sta   -77,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   83,u
+        anda  #$F0
+        sta   83,u
         lda   3,u
         anda  #$F0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.er.10
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   83,u
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   3,u
+        sta   -77,u
+        sta   83,x
+        sta   3,x
+        sta   -77,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   84,u
+        anda  #$0F
+        sta   84,u
         lda   4,u
         anda  #$0F
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$0F
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.er.11
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
+        sta   -76,u
+        sta   84,x
+        sta   4,x
+        sta   -76,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   83,u
+        anda  #$F0
+        sta   83,u
         lda   3,u
         anda  #$F0
         sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        lda   -77,u
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   -77,u
+        lda   83,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   83,x
+        lda   3,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
+        sta   3,x
+        lda   -77,x
         anda  #$F0
-        sta   3,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   3,u
-        anda  #$F0
-        sta   3,u
+        sta   -77,x
         rts
 
 pscroll.er.12
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
+        sta   -76,u
+        sta   84,x
+        sta   4,x
+        sta   -76,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   84,u
+        anda  #$0F
+        sta   84,u
         lda   4,u
         anda  #$0F
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$0F
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$0F
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.er.13
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
+        sta   -76,u
+        sta   84,x
+        sta   4,x
+        sta   -76,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   84,u
+        anda  #$F0
+        sta   84,u
         lda   4,u
         anda  #$F0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 pscroll.er.14
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
         lda   #$00
+        sta   84,u
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   4,u
+        sta   -76,u
+        sta   84,x
+        sta   4,x
+        sta   -76,x
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
+        lda   72,u
+        anda  #$0F
+        sta   72,u
         lda   -8,u
         anda  #$0F
         sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        lda   -88,u
         anda  #$0F
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   -88,u
+        lda   72,x
         anda  #$0F
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   72,x
+        lda   -8,x
         anda  #$0F
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
+        sta   -8,x
+        lda   -88,x
         anda  #$0F
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   -8,u
-        anda  #$0F
-        sta   -8,u
+        sta   -88,x
         rts
 
 pscroll.er.15
         lda   pscroll.wr.page0
         _SetCartPageA
         ldu   pscroll.wr.base0
+        leax  -240,u
         lda   #$00
+        sta   72,u
         sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
-        leau  -pscroll.LINE_SIZE,u
-        sta   -8,u
+        sta   -88,u
+        sta   72,x
+        sta   -8,x
+        sta   -88,x
         lda   pscroll.wr.page1
         _SetCartPageA
         ldu   pscroll.wr.base1
+        leax  -240,u
+        lda   84,u
+        anda  #$F0
+        sta   84,u
         lda   4,u
         anda  #$F0
         sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        lda   -76,u
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   -76,u
+        lda   84,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   84,x
+        lda   4,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
+        sta   4,x
+        lda   -76,x
         anda  #$F0
-        sta   4,u
-        leau  -pscroll.LINE_SIZE,u
-        lda   4,u
-        anda  #$F0
-        sta   4,u
+        sta   -76,x
         rts
 
 ; l'aiguillage de l'effacement

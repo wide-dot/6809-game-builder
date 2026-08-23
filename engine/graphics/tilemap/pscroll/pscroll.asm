@@ -866,7 +866,11 @@ pscroll.geom
         ldx   #pscroll.bandoff.tbl
         ldd   d,x                      ; emplacement - coutures*80
         addd  pscroll.sc.rowbase       ; le terme de rangee
-        addd  #pscroll.ROW_BIAS*pscroll.LINE_SIZE+1
+        ; -LINE_SIZE : les routines de cellule attaquent le buffer avec DEUX
+        ; bases a 240 octets d'ecart pour n'avoir que des offsets 8 bits (donc
+        ; aucun leau entre les lignes). Leur base u est la ligne 1, pas la
+        ; ligne 0 — et ce decalage ne coute rien, il vit dans cette constante.
+        addd  #pscroll.ROW_BIAS*pscroll.LINE_SIZE+1-pscroll.LINE_SIZE
         std   pscroll.sc.dst
         rts
 

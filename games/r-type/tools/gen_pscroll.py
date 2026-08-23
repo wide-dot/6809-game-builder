@@ -266,6 +266,14 @@ def emettre(ordre, colonnes, path=OUT):
     #   masque : lda off,u / anda #masque / ora #v / sta off,u
     # L'octet d'un chunk-plan est a l'offset (0,1,3,4)[octet] de l'operande.
     OPOFF = (0, 1, 3, 4)
+    # DEUX BASES, ZERO leau — le meme idiome que la gravure de colonne
+    # (proposition auteur du 22/08, jamais appliquee ici). Six lignes espacees
+    # de 80 octets se couvrent avec deux bases a 240 d'ecart et des offsets qui
+    # ne depassent jamais +-88 : tous tiennent en 8 bits signes. On paie un
+    # octet et un cycle par acces lointain, on economise CINQ leau par plan.
+    #   u = la ligne 1 (l'appelant l'a deja decalee, cf. pscroll.geom)
+    #   x = u - 240 = la ligne 4
+    BASES = [("u", 80), ("u", 0), ("u", -80), ("x", 80), ("x", 0), ("x", -80)]
     # LE CHUNK VOISIN EST A -8, PAS +8. Les emplacements du ruban sont ranges
     # A L'ENVERS dans la ligne (le chunk c peint la colonne 9-c, cf. feedBand),
     # donc la bande SUIVANTE de la carte est 8 octets AVANT. Avec le signe +
@@ -304,6 +312,14 @@ def emettre_cellule(A, prefixe, pen):
     """les 16 routines d'un chemin de mutation ; `pen(ligne, index)` donne le
     quartet a poser pour le pixel `index` de la gomme, a la ligne `ligne`."""
     OPOFF = (0, 1, 3, 4)
+    # DEUX BASES, ZERO leau — le meme idiome que la gravure de colonne
+    # (proposition auteur du 22/08, jamais appliquee ici). Six lignes espacees
+    # de 80 octets se couvrent avec deux bases a 240 d'ecart et des offsets qui
+    # ne depassent jamais +-88 : tous tiennent en 8 bits signes. On paie un
+    # octet et un cycle par acces lointain, on economise CINQ leau par plan.
+    #   u = la ligne 1 (l'appelant l'a deja decalee, cf. pscroll.geom)
+    #   x = u - 240 = la ligne 4
+    BASES = [("u", 80), ("u", 0), ("u", -80), ("x", 80), ("x", 0), ("x", -80)]
     VOISIN = -8
     for k in range(16):
         n0 = k                                  # (3c - p) mod 16, ramene a 0..15
@@ -321,6 +337,7 @@ def emettre_cellule(A, prefixe, pen):
             A(f"        lda   pscroll.wr.page{pl}")
             A("        _SetCartPageA")
             A(f"        ldu   pscroll.wr.base{pl}")
+            A("        leax  -240,u")
             dernier[0] = None                   # _SetCartPageA a passe par A
             for line in range(CELL_H):
                 if phase_pass == "full":
@@ -331,30 +348,29 @@ def emettre_cellule(A, prefixe, pen):
                     hi, lo = (px.index(pair[0]), px.index(pair[1]))
                     v = (pen(line, hi) << 4) | pen(line, lo)
                     d = pair[0]
-                    off = OPOFF[d[2]] + (VOISIN if d[1] else 0)
+                    base, dl = BASES[line]
+                    off = OPOFF[d[2]] + (VOISIN if d[1] else 0) + dl
                     if v != dernier[0]:
                         A(f"        lda   #${v:02X}")
                         dernier[0] = v
-                    A(f"        sta   {off if off else ''},u")
+                    A(f"        sta   {off if off else ''},{base}")
                 else:
                     d = sel[0]
                     sub = 0 if len(sel) == 1 and px.index(d) == 0 else 2
                     v = pen(line, px.index(d))
-                    off = OPOFF[d[2]] + (VOISIN if d[1] else 0)
+                    base, dl = BASES[line]
+                    off = OPOFF[d[2]] + (VOISIN if d[1] else 0) + dl
                     if d[3] == 0:                # quartet haut
-                        A(f"        lda   {off if off else ''},u")
+                        A(f"        lda   {off if off else ''},{base}")
                         A("        anda  #$0F")
                         if v:                    # le fond vaut 0 : rien a poser
                             A(f"        ora   #${v << 4:02X}")
                     else:                        # quartet bas
-                        A(f"        lda   {off if off else ''},u")
+                        A(f"        lda   {off if off else ''},{base}")
                         A("        anda  #$F0")
                         if v:
                             A(f"        ora   #${v:02X}")
-                    A(f"        sta   {off if off else ''},u")
-                if line != CELL_H - 1:
-                    # l'axe du buffer est inverse : on remonte
-                    A("        leau  -pscroll.LINE_SIZE,u")
+                    A(f"        sta   {off if off else ''},{base}")
         A("        rts")
         A("")
 
