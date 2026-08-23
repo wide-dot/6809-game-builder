@@ -32,7 +32,8 @@ mscroll.move EXTERNAL
 ; la reprise au checkpoint (les primitives, elles, servent aux objets).
  IFEQ STAGE_ID-4
 pellet.reset EXTERNAL
-pellet.blast EXTERNAL
+pscroll.stage4.frame EXTERNAL
+pscroll.stage4.init  EXTERNAL
  ENDC
 
 stage.main
@@ -481,6 +482,18 @@ stage.state.running
         jsr   mscroll.do
         jsr   mscroll.move
  ELSE
+ IFEQ STAGE_ID-4
+        ; STAGE A CHAMP DE GOMMES : c'est PSCROLL qui efface. Son ruban porte
+        ; le champ grave une fois pour toutes ; le passage qui le peint pose le
+        ; fond ET les gommes du meme geste, puisque le creux d'une gomme EST le
+        ; fond. Ni clearblast ni la timeline ne tournent ici — et pellet.blast,
+        ; qui repeignait toutes les gommes a chaque trame, n'existe plus.
+        ; La camera suit le scroll du stage, en 8.8.
+        ldd   scroll_vel               ; la vitesse du stage, en 8.8
+        lda   #map.RAM_OVER_CART+pscroll.code.page
+        ldx   #pscroll.stage4.frame
+        jsr   paged.call
+ ELSE
         ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
         ; fenetre que la camera vient de franchir (plusieurs possibles en une
         ; trame de frame-drop, d'ou la boucle ; le rejeu au checkpoint est le
@@ -510,6 +523,7 @@ stage.state.running
         ldx   #playfield.clearBlast
         jsr   paged.call
  ENDC
+ ENDC
 
         ; Les etoiles TOUT DE SUITE apres l'effacement : le champ est noir
         ; vierge, le trace ecrit sans lire ni tester (cf. starfield/obj.asm),
@@ -537,14 +551,9 @@ stage.frame.faded
         ; OVERLAY : BuildSprites fait en une passe ce que CheckSpritesRefresh,
         ; EraseSprites et DrawSprites faisaient en trois — dessin seul, dans
         ; le verrou, comme la v1 overlay (goldorak main.asm:47).
-        ; LE CHAMP DE GOMMES du stage 4, en FOND : les sprites passent devant,
-        ; donc le vaisseau reste visible dans les tunnels qu'il creuse. La passe
-        ; est RESIDENTE (page 1) : elle lit la page collision montee et ecrit
-        ; l'ecran en meme temps. Elle n'ecrit QUE ses plages — clearblast a
-        ; deja pose le fond, et le creux de la gomme vaut ce meme fond.
- IFEQ STAGE_ID-4
-        jsr   pellet.blast
- ENDC
+        ; (Le champ de gommes du stage 4 n'est plus repeint ici : pscroll l'a
+        ; peint en tete de trame, a la place de l'effacement. Les sprites
+        ; passent donc toujours devant, mais sans repasse.)
 
         jsr   BuildSprites
 

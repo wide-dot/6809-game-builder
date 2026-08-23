@@ -1920,3 +1920,49 @@ a besoin — le Force Pod et le Wave Cannon balaient à l'horizontale, les rebon
 à la verticale, et les missiles n'effacent qu'une cellule. Il se réécrira le
 jour où une arme le demandera, et la règle est notée sur place : **un intervalle
 par rangée, pas une boîte englobante.**
+
+## L'intégration dans r-type — état au 23/08/2026 (EN COURS, ne tourne pas)
+
+**Ce qui est fait et se construit.** `pscroll` remplace `playfield.clearBlast`
+ET `pellet.blast` pour le stage 4 : son ruban porte le champ gravé une fois, et
+le passage qui le peint pose le fond ET les gommes du même geste, puisque le
+creux d'une gomme EST le fond.
+
+- `src/stages/04/pscroll.unit.asm` — l'unité hôte : géométrie dérivée de la
+  carte leanscroll, `stage4.init` (pages, adresses, gravure), `stage4.frame`
+  (do + move), et `pscroll.grow` qui convertit l'écran en cellule pour cytron ;
+- config : arène `pscroll.code` (page $0B) pour les ~14 Ko de code, quatre
+  régions `pscroll.buf0..3` ($0E, $0F, $10, $1D) pour le ruban, le direntry
+  `stage4.pscroll` à la place de `stage4.pellet` ;
+- `stage-main.asm` : pour le stage 4, l'effacement et la timeline ne tournent
+  plus — `pscroll.stage4.frame` prend leur place en tête de trame ;
+- `cytron` sème par `pscroll.grow` au lieu de `pellet.grow`.
+
+**Le budget, mesuré avant d'écrire** (rapport d'occupation) : pendant le
+stage 4 la page 1 porte le commun plus le stage, il y reste ~4,7 Ko — pscroll
+n'y tient pas, d'où sa propre page appelée par `paged.call`. Et 23 pages sont
+libres pendant ce stage, donc les quatre buffers ne coûtent rien à personne.
+`stage4.pellet` libère 1 564 octets résidents, le bitfield en demande 1 440 :
+il prend sa place.
+
+**Ce qui ne marche pas encore.** Le jeu boote, le cheat mène au stage 4
+(témoin `stage=04`), mais **la boucle de trame ne démarre jamais** : le
+compteur de tours reste à zéro après 12 000 trames, et le PC oscille entre une
+unité paginée et les routines disque du moniteur — le chargement boucle. À
+chercher en premier : le direntry `stage4.pscroll` (14 Ko, le plus gros du
+stage) et sa page $0B.
+
+**Deux outils en sont sortis, eux utilisables tout de suite :**
+
+- `tools/goto_stage.py` — sauter à un stage SANS manette. Le cheat du title
+  compte des appuis joypad puis appelle `title.cheat.launch` ; un émulateur
+  sans manette ne peut pas y arriver, mais rien n'empêche de poser `tct.pstage`
+  et d'appeler la même routine. Piège : la fenêtre cartouche du TO8 est en
+  `$0000-$3FFF`, pas en `$A000`.
+- **Le format `.fd` et le toje du plugin.** Le plugin échouait à lire l'image
+  r-type (« le contrôleur ne rend pas de donnée », face 1 piste 12). Ce n'est
+  pas une panne du contrôleur : **le builder écrit le `.fd` face par face**
+  (vérifié en retrouvant le secteur dans `to8_1.sap`) alors que le plugin
+  l'attend **entrelacé par piste**. Réécrite entrelacée, l'image boote et
+  atteint le loader du jeu. L'alignement des deux conventions est un arbitrage
+  à rendre — builder ou émulateur.

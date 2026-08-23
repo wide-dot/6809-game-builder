@@ -49,6 +49,14 @@ adr_playfield_mask_ND0 EXTERNAL
 ; L'effacement du champ de jeu, meme page : peint en tete de trame.
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
+pscroll.stage4.init     EXTERNAL
+pscroll.field.map       EXTERNAL
+collisionMapForeground  EXTERNAL
+
+; La taille du bitfield, en dur ici : c'est une EQUATE, elle ne peut pas
+; traverser le loader comme un symbole. Elle doit suivre pscroll.unit.asm —
+; 48 octets par rangee (384 cellules / 8), 30 rangees.
+pscroll.MAP_BYTES       equ 48*30
 playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
@@ -300,6 +308,23 @@ stage.setup
         lda   #map.RAM_OVER_CART+stage4.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
+
+        ; LE CHAMP DE GOMMES. Son bitfield vit en RAM FIXE (setCell le lit et
+        ; l'ecrit pendant qu'une page de buffer est montee) : on l'emplit ici
+        ; depuis la carte de collision, puis pscroll grave ses dix bandes.
+        ; ~160 000 cycles, payes a l'ouverture et au checkpoint, jamais en jeu.
+        lda   #map.RAM_OVER_CART+collision.page
+        _SetCartPageA
+        ldx   #collisionMapForeground
+        ldu   #pscroll.field.map
+!       ldd   ,x++
+        std   ,u++
+        cmpu  #pscroll.field.map+pscroll.MAP_BYTES
+        blo   <
+        ldd   glb_camera_x_pos
+        lda   #map.RAM_OVER_CART+pscroll.code.page
+        ldx   #pscroll.stage4.init
+        jsr   paged.call
 
         ldd   #stage.wave
         std   object_wave_data

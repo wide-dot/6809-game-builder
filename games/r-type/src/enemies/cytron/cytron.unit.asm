@@ -19,7 +19,7 @@ Obj_Index_Address EXTERNAL
 
 ; La repousse du champ de gommes vit dans le stage : c'est lui qui porte les
 ; cartes C et T et leur page. Une seule frontiere, un seul nom.
-pellet.grow       EXTERNAL
+pscroll.grow      EXTERNAL
 
  SECTION code
 

@@ -61,6 +61,20 @@
                 <zone page="$1E" address="$38A0" size="$0760"/>
                 <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
+            <!-- PSCROLL, le champ de gommes persistant du stage 4.
+                 Le code (~14 Ko avec ses tables gravees) ne tient pas dans la
+                 bande residente : il vit dans SA page, montee a l'appel par
+                 paged.call, exactement comme overlay ou starfield. Les quatre
+                 buffers du ruban sont de la RAM de travail — pas des fichiers,
+                 rien a charger : pscroll.init les grave au demarrage du stage.
+                 Pages choisies parmi celles que le stage 4 ne charge pas et qui
+                 ne portent rien de permanent (releve du 23/08 : le commun tient
+                 $01 et $04-$0A, le stage 4 tient $17,$18,$19,$1A,$1B). -->
+            <arena name="pscroll.code"><zone page="$0B" address="$0000" size="$4000"/></arena>
+            <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B10"/>
+            <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B10"/>
+            <region name="pscroll.buf2" page="$10" address="$0000" size="$3B10"/>
+            <region name="pscroll.buf3" page="$1D" address="$0000" size="$3B10"/>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
@@ -2948,10 +2962,10 @@
                      montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
                      temps. Les tables sont generees et prouvees par
                      tools/gen_pellet_tables.py. -->
-                <file name="stage4.pellet" linkdata="LINK" arena="stage4.res">
-                    <lwasm gensource="gen/stages/04/pellet.asm">
+                <file name="stage4.pscroll" linkdata="LINK" arena="pscroll.code">
+                    <lwasm gensource="gen/stages/04/pscroll.asm">
                         <asm filename="src/common/engine/api.asm"/>
-                        <asm filename="src/stages/04/pellet-blast.asm"/>
+                        <asm filename="src/stages/04/pscroll.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -2971,7 +2985,7 @@
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
-                    <load name="stage4.pellet"/>
+                    <load name="stage4.pscroll"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>
