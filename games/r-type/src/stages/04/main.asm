@@ -50,6 +50,7 @@ adr_playfield_mask_ND0 EXTERNAL
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
 pscroll.stage4.init     EXTERNAL
+pscroll.camera.x        EXTERNAL
 
 playfield.clearWindow   EXTERNAL
 
@@ -308,7 +309,13 @@ stage.setup
         ; le bitfield y vit, et la carte de collision se monte en fenetre
         ; cartouche, qui est libre a ce moment. ~160 000 cycles, payes a
         ; l'ouverture et au checkpoint, jamais en jeu.
+        ; LA CAMERA NE PEUT PAS PASSER PAR D : paged.call prend la page dans
+        ; A, donc le `lda` ci-dessous ecrasait sa moitie haute — l'init
+        ; recevait $6B00 au lieu de la position, et pscroll.init cherchait des
+        ; coutures hors carte (ecran noir, camera figee, 23/08). Elle transite
+        ; par la variable residente, qui est justement sa destination.
         ldd   glb_camera_x_pos
+        std   pscroll.camera.x
         lda   #map.RAM_OVER_CART+pscroll.edit.page
         ldx   #pscroll.stage4.init
         jsr   paged.call

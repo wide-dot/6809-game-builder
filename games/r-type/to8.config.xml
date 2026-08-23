@@ -84,7 +84,7 @@
                  RAM FIXE (demi-page video 0), donc appelable et lisible quelle
                  que soit la page en fenetre cartouche. -->
             <region name="pscroll.edit" page="$0B" address="$0000" size="$4000"/>
-            <region name="pscroll.vid" page="0" address="$4000" size="$2000"/>
+            <region name="pscroll.vid" page="$0C" address="$4000" size="$2000"/>
             <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B13"/>
             <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B13"/>
             <region name="pscroll.buf2" page="$10" address="$0000" size="$3B13"/>

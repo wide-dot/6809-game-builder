@@ -49,7 +49,6 @@ PSCROLL_PART       equ 1                ; la part cartouche
 ; le checkpoint.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.init
-        pshs  d
         ; ce que les routines de la part $4000 remonteront apres chaque
         ; commutation de buffer — a poser AVANT le premier appel (fillMap)
         lda   #map.RAM_OVER_CART+pscroll.edit.page
@@ -76,8 +75,8 @@ pscroll.stage4.init
         std   pscroll.camera.x.max
         ldd   #pscroll.field.map
         std   pscroll.map.address
-        puls  d
-        jmp   pscroll.init
+        ldd   pscroll.camera.x         ; posee par l'appelant : D servait a
+        jmp   pscroll.init             ; porter la page pour paged.call
 
         INCLUDE "src/stages/04/pscroll-grow.asm"
 
