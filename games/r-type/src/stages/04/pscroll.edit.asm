@@ -20,6 +20,8 @@ pscroll.move        EXPORT              ; la trame residente l'appelle par page
 pscroll.field.map   EXPORT              ; la part $4000 la recopie a l'init
 
 pscroll.stage4.fillMap EXTERNAL         ; part $4000 : la recopie par staging
+pscroll.half.on        EXTERNAL         ; la part $4000 n'est visible que
+pscroll.half.off       EXTERNAL         ; demi-page 0 montee
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -53,6 +55,11 @@ pscroll.stage4.init
         ; commutation de buffer — a poser AVANT le premier appel (fillMap)
         lda   #map.RAM_OVER_CART+pscroll.edit.page
         sta   pscroll.cart.page
+        ; TOUTE L'INIT appelle la part $4000 — fillMap, puis buildSkeleton et
+        ; feedBand depuis pscroll.init. Elle n'est visible que demi-page 0
+        ; montee : sans ca l'init grave dans le vide et le stage part avec un
+        ; ruban muet.
+        jsr   pscroll.half.on
         ; le bitfield, depuis la carte de collision. Deux pages pour une seule
         ; fenetre : la recopie vit en RAM fixe et alterne par le staging.
         jsr   pscroll.stage4.fillMap
@@ -76,7 +83,8 @@ pscroll.stage4.init
         ldd   #pscroll.field.map
         std   pscroll.map.address
         ldd   pscroll.camera.x         ; posee par l'appelant : D servait a
-        jmp   pscroll.init             ; porter la page pour paged.call
+        jsr   pscroll.init             ; porter la page pour paged.call
+        jmp   pscroll.half.off         ; et la demi-page du jeu revient
 
         INCLUDE "src/stages/04/pscroll-grow.asm"
 

@@ -17,6 +17,8 @@ pscroll.stage4.frame EXPORT
 pscroll.gum.set      EXPORT              ; les relais pour le CODE OBJET
 pscroll.gum.clear    EXPORT
 pscroll.gum.rect     EXPORT
+pscroll.half.on      EXPORT              ; l'init de la part cartouche en a
+pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -65,11 +67,52 @@ paged.call         EXTERNAL
 ; -----------------------------------------------------------------------------
 pscroll.stage4.frame
         std   pscroll.camera.speedx
+        ; LA PAGE DE L'APPELANT, SAUVEE AVANT `do`. `do` commute la fenetre
+        ; cartouche vers ses buffers et ne rend rien — c'est son droit, il est
+        ; resident. Mais l'appelant, lui, est stage-main, qui VIT dans cette
+        ; fenetre : sans cette sauvegarde, le `rts` final revient dans une page
+        ; buffer. Et paged.call ne peut pas y suppleer — il relit $E7E6 APRES
+        ; `do`, donc il sauverait la page du dernier buffer en croyant sauver
+        ; celle de l'appelant. Le stage tournait 10 trames puis deraillait
+        ; (DP=$E7, page cartouche 00), 24/08.
+        _GetCartPageB
+        pshs  b
         jsr   pscroll.do
+        bsr   pscroll.half.on              ; la part $4000 doit etre VISIBLE
         lda   #map.RAM_OVER_CART+pscroll.edit.page
         sta   pscroll.cart.page            ; ce que la part $4000 remontera
         ldx   #pscroll.move                ; apres chaque commutation de buffer
-        jmp   paged.call                   ; monte, appelle, rend sa page
+        jsr   paged.call                   ; monte, appelle, rend sa page
+        bsr   pscroll.half.off
+        puls  b                            ; et l'appelant retrouve la sienne
+        _SetCartPageB
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.half.on / .off — RENDRE LA PART $4000 VISIBLE, ET LA RENDRE
+; -----------------------------------------------------------------------------
+; $4000-$5FFF n'est PAS de la RAM fixe inconditionnelle : c'est une demi-page,
+; choisie par le bit 0 de $E7C3 (MC6846 PDR), et le code graphique du jeu le
+; bascule pour son propre compte. La part $4000 de pscroll vit dans la demi-page
+; 0 ; sans ce montage, un appel a feedBand ou a une routine deroulee tombe sur
+; l'AUTRE demi-page — la ou il n'y a rien. Le stage tournait 10 trames puis
+; marchait dans des zeros ($4F4B, 2 octets par instruction), 24/08.
+;
+; Le bit voisin appartient au 6846 : on ne pose que le bit 0, jamais l'octet.
+; -----------------------------------------------------------------------------
+pscroll.half.on
+        lda   map.HALFPAGE
+        sta   pscroll.half.saved           ; l'etat du jeu, rendu tel quel
+        anda  #$FE                         ; demi-page 0 : la notre
+        sta   map.HALFPAGE
+        rts
+
+pscroll.half.off
+        lda   pscroll.half.saved
+        sta   map.HALFPAGE
+        rts
+
+pscroll.half.saved  fcb 0
 
 ; -----------------------------------------------------------------------------
 ; pscroll.gum.set / .clear / .rect — LE CHAMP, VU DU CODE OBJET
@@ -121,6 +164,7 @@ pscroll.gum.rect
 
 ; monter pscroll en gardant de quoi revenir
 pscroll.gum.enter
+        bsr   pscroll.half.on              ; meme raison que dans la trame
         _GetCartPageB
         stb   pscroll.gum.caller
         lda   #map.RAM_OVER_CART+pscroll.edit.page
@@ -131,6 +175,7 @@ pscroll.gum.enter
 ; rendre sa page a l'appelant, puis ses registres — CC intact
 pscroll.gum.leave
         pshs  cc
+        bsr   pscroll.half.off
         ldb   pscroll.gum.caller
         _SetCartPageB
         puls  cc
