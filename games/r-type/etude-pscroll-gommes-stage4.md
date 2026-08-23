@@ -1480,23 +1480,42 @@ L'aiguillage fait quatre choses :
 **Prouvé identique** : les cinq cas de `check_rect.py` rendent les mêmes pixels
 qu'avec le chemin par cellule — c'est l'A/B qu'il fallait.
 
-**Mesuré**, sur la bande du beam (2 rangées × 12 cellules) :
+### Mesuré sur une mire DÉTERMINISTE — et ce que ça révèle
 
-| | cycles | par cellule |
-|---|---|---|
-| géométrie `clearRect` | 816 | |
-| mutation par cellule résiduelle (les extrémités) | **184** | |
-| **total** | **1 000** | **41** |
+Une cellule déjà vide ne coûte que son rejet : mesurer sur un champ dont on ne
+connaît pas le remplissage ne veut rien dire. Deux campagnes ont donné 148 puis
+621 cycles par cellule pour le même cas, l'écart venant du champ et non du code.
+`tools/profile_rect.py` **redémarre la machine avant chaque cas** — redessiner
+par-dessus un champ entamé ne restaure pas tout (240 pixels manquants mesurés) —
+et il compte les pixels allumés pour refuser de conclure si l'état bouge.
 
-La mutation par cellule a **presque disparu** — il ne reste que les deux bouts
-du run — et les 41 cycles par cellule sont sous les 55 prévus, au plancher
-théorique de 48. Sur les runs courts (moins de huit cellules) le régime par
-cellule reste en place, par conception : aucune bande n'y est pleine.
+Sur champ plein, donc :
 
-Note de banc : la mesure d'un bloc 4×4 isolé est bruitée tant que la mire n'est
-pas garantie complète au moment du tir — deux campagnes ont donné 148 et
-621 cy/cellule pour le même cas, l'écart venant du remplissage du champ et non
-du code. Le profilage d'un cas court demande une mire déterministe.
+| cas | cases | gommes | total | cy/case |
+|---|---|---|---|---|
+| bloc 4×4 seul (régime par cellule) | 16 | 16 | 9 354 | **584** |
+| 4×4 balayé de 6 | 40 | 36 | 15 616 | **390** |
+| bande beam 2×12 | 24 | 18 | 3 102 | **129** |
+| bande large 2×24 | 48 | 41 | 5 854 | **121** |
+
+**Le déroulé gagne d'un facteur 4 à 5** sur les runs longs. Mais le détail dit
+où part le reste, et c'est instructif — la bande beam, par rangée :
+
+| poste | cycles |
+|---|---|
+| deux bandes pleines, déroulées, quatre buffers | ~576 |
+| **deux cellules d'extrémité, par cellule** | **~1 168** |
+
+**Les extrémités coûtent plus cher que tout le milieu.** Une cellule du régime
+par cellule vaut 584 cycles ; une bande pleine en vaut 288 pour cinq ou six
+cellules, soit ~50 par cellule. Le rapport est de douze, et un run traîne
+jusqu'à dix cellules d'extrémité.
+
+**La suite est donc écrite d'avance** : traiter les bandes PARTIELLES par une
+variante masquée de `zrow` — même structure de douze `std`, mais lecture,
+masque, écriture — une fois par bande au lieu d'une fois par cellule. Ça
+ramènerait une extrémité de ~2 900 cycles (cinq cellules) à ~150, et
+supprimerait le dernier chemin par cellule de l'effacement en masse.
 
 ### L'oblique, retiré
 

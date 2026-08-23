@@ -990,13 +990,14 @@ pscroll.clearRect
         sta   pscroll.rect.row
         lda   pscroll.rect.h
         sta   pscroll.rect.left
-pscroll.rect.hloop  lda   pscroll.rect.row
-        ldx   pscroll.rect.a
-        ldy   pscroll.rect.b
-        jsr   pscroll.clearRow
+        jsr   pscroll.rect.prep        ; UNE fois : l'intervalle ne change pas
+        bcs   pscroll.rect.hend        ; d'une rangee a l'autre
+pscroll.rect.hloop
+        jsr   pscroll.clearRow.go
         inc   pscroll.rect.row
         dec   pscroll.rect.left
         bne   pscroll.rect.hloop
+pscroll.rect.hend
         rts
 
 pscroll.rect.notflat
@@ -1021,13 +1022,14 @@ pscroll.rect.notflat
         nega
 !       adda  pscroll.rect.h
         sta   pscroll.rect.left
-pscroll.rect.vloop  lda   pscroll.rect.row
-        ldx   pscroll.rect.a
-        ldy   pscroll.rect.b
-        jsr   pscroll.clearRow
+        jsr   pscroll.rect.prep        ; UNE fois, comme l'horizontal
+        bcs   pscroll.rect.vend
+pscroll.rect.vloop
+        jsr   pscroll.clearRow.go
         inc   pscroll.rect.row
         dec   pscroll.rect.left
         bne   pscroll.rect.vloop
+pscroll.rect.vend
         rts
 
 pscroll.rect.oblique
@@ -1048,10 +1050,26 @@ pscroll.rect.oblique
 ; regraver. Le contournement est ici : si aucun bit ne change, on ne regrave
 ; rien — et ce test est par OCTET de carte, pas par cellule.
 ; -----------------------------------------------------------------------------
+; L'intervalle est le MEME pour toutes les rangees d'un balayage aligne — et
+; les deux cas du jeu le sont. Borner et chercher les bandes pleines une fois
+; par rangee coutait ~90 cycles a chaque tour pour un resultat identique : la
+; preparation est donc hoistee hors de la boucle (remarque auteur, 23/08 : le
+; test des bandes couvertes ne doit pas couter plus que ce qu'il economise).
 pscroll.clearRow
         sta   pscroll.rect.row
         stx   pscroll.rect.a
         sty   pscroll.rect.b
+        jsr   pscroll.rect.prep
+        lbcs  pscroll.clearRow.rien    ; l'intervalle est vide
+        lbra  pscroll.clearRow.go
+
+; -----------------------------------------------------------------------------
+; pscroll.rect.prep — borner l'intervalle et reperer les bandes PLEINES
+; -----------------------------------------------------------------------------
+; input VAR : pscroll.rect.a / .b     sortie : cc.C = 1 si plus rien a faire
+; Pose .a .b .n .m0 .m1 (m1 < m0 : aucune bande pleine, tout ira par cellule).
+; -----------------------------------------------------------------------------
+pscroll.rect.prep
         ; --- borner sur la carte
         ldd   pscroll.rect.a
         bpl   >
@@ -1065,8 +1083,11 @@ pscroll.clearRow
         std   pscroll.rect.b
 !       ldd   pscroll.rect.a
         cmpd  pscroll.rect.b
-        lbhi  pscroll.clearRow.rien
-        ; --- borner sur le RUBAN. Une cellule hors fenetre n'est pas dans le
+        bls   >
+pscroll.rect.prepFail
+        orcc  #$01                     ; C = 1 : plus rien a faire
+        rts
+!       ; --- borner sur le RUBAN. Une cellule hors fenetre n'est pas dans le
         ; buffer : l'y effacer poserait un bit que rien n'affiche, exactement
         ; le defaut corrige sur setCell le 23/08.
         ldd   pscroll.rect.a           ; la bande de la premiere cellule
@@ -1114,24 +1135,18 @@ pscroll.clearRow
         std   pscroll.rect.b
 !       ldd   pscroll.rect.a
         cmpd  pscroll.rect.b
-        lbhi  pscroll.clearRow.rien
-        clr   pscroll.rect.done
-        ldb   pscroll.rect.row         ; le terme de rangee, pour la sequence
-        clra
-        aslb
-        rola
-        ldx   #pscroll.rowbase.tbl
-        ldd   d,x
-        std   pscroll.rect.rowbase
-        ; --- le regime : sous le seuil, cellule par cellule
+        lbhi  pscroll.rect.prepFail
         ldd   pscroll.rect.b
         subd  pscroll.rect.a
         addd  #1
         std   pscroll.rect.n
+        lda   #1                       ; m1 < m0 par defaut : aucune bande pleine
+        sta   pscroll.rect.m0
+        clr   pscroll.rect.m1
         cmpd  #pscroll.CLEAR_UNROLL
-        lblo  pscroll.clearRow.cells
+        lblo  pscroll.rect.prepEnd
 
-; --- LE CHEMIN DEROULE -------------------------------------------------------
+; --- LES BANDES PLEINES ------------------------------------------------------
 ; Les bandes ENTIEREMENT couvertes par l'intervalle se vident d'un trait : le
 ; fond vaut 0, donc leur contenu de buffer n'est plus que des zeros. Les deux
 ; extremites, elles, restent par cellule — une bande couvre six cellules, un
@@ -1158,9 +1173,25 @@ pscroll.clearRow
         cmpd  pscroll.rect.b
         bls   >
         dec   pscroll.rect.m1          ; sa derniere cellule depasse b
-!       lda   pscroll.rect.m1
+!       andcc #$FE                     ; C = 0 : il reste du travail
+pscroll.rect.prepEnd
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.clearRow.go — le travail d'UNE rangee, preparation deja faite
+; -----------------------------------------------------------------------------
+pscroll.clearRow.go
+        clr   pscroll.rect.done
+        ldb   pscroll.rect.row         ; le terme de rangee, pour la sequence
+        clra
+        aslb
+        rola
+        ldx   #pscroll.rowbase.tbl
+        ldd   d,x
+        std   pscroll.rect.rowbase
+        lda   pscroll.rect.m1
         cmpa  pscroll.rect.m0
-        blo   pscroll.clearRow.cells   ; aucune bande pleine : tout par cellule
+        lblo  pscroll.clearRow.cells   ; aucune bande pleine : tout par cellule
 
         ; les deux extremites, par cellule
         ldd   pscroll.rect.a
