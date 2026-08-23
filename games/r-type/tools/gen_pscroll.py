@@ -415,6 +415,20 @@ def _suite_tables(A, L, path, ordre, colonnes):
     # cellules dans la fenetre du ruban, sans division au runtime. Une entree de
     # plus que de bandes, pour que « derniere cellule de la bande m » se lise
     # tbl[m+1]-1.
+    # Couper un run aux COUTURES : les bandes d'un meme groupe de dix partagent
+    # le cisaillement, donc les memes lignes de buffer. seamof donne le groupe,
+    # seamlast sa derniere bande — et l'emplacement de ruban s'en deduit sans
+    # modulo : slot(m) = seamlast[seam(m)] - m.
+    A("; --- le groupe de couture de chaque bande, et sa derniere bande ---------")
+    A("pscroll.seamof.tbl")
+    for m in range(0, CHUNKS, 12):
+        A("        fcb   " + ",".join(str(x // CHUNKS_PER_LINE)
+                                      for x in range(m, min(m + 12, CHUNKS))))
+    A("")
+    A("pscroll.seamlast.tbl")
+    A("        fcb   " + ",".join(str((k + 1) * CHUNKS_PER_LINE - 1)
+                                  for k in range(CHUNKS // CHUNKS_PER_LINE + 1)))
+    A("")
     A("; --- la premiere cellule de chaque bande --------------------------------")
     A("pscroll.chunkfirst.tbl")
     for m in range(CHUNKS + 1):

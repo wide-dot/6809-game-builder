@@ -2103,6 +2103,18 @@ pscroll.er.tbl
         fdb   pscroll.er.14
         fdb   pscroll.er.15
 
+; --- le groupe de couture de chaque bande, et sa derniere bande ---------
+pscroll.seamof.tbl
+        fcb   0,0,0,0,0,0,0,0,0,0,1,1
+        fcb   1,1,1,1,1,1,1,1,2,2,2,2
+        fcb   2,2,2,2,2,2,3,3,3,3,3,3
+        fcb   3,3,3,3,4,4,4,4,4,4,4,4
+        fcb   4,4,5,5,5,5,5,5,5,5,5,5
+        fcb   6,6,6,6,6,6,6,6,6,6,7,7
+
+pscroll.seamlast.tbl
+        fcb   9,19,29,39,49,59,69,79
+
 ; --- la premiere cellule de chaque bande --------------------------------
 pscroll.chunkfirst.tbl
         fdb   0   ; bande 0

@@ -1030,37 +1030,13 @@ pscroll.rect.vloop  lda   pscroll.rect.row
         bne   pscroll.rect.vloop
         rts
 
-; --- OBLIQUE : l'escalier exact ---------------------------------------------
-; On parcourt le segment par pas d'UNE cellule sur l'axe dominant et on note,
-; pour chaque rangee touchee, la colonne la plus a gauche et la plus a droite.
-; C'est la boite englobante par RANGEE, pas la boite du mouvement : c'est ce
-; qui fait la difference entre un escalier exact et un rectangle trop gros.
-; Le nombre de pas est celui du deplacement d'une trame, donc quelques unites.
 pscroll.rect.oblique
-        lda   #pscroll.RECT_ROWS       ; vider les intervalles
-        sta   pscroll.rect.left
-        ldx   #pscroll.rect.mins
-        ldy   #pscroll.rect.maxs
-!       ldd   #$7FFF
-        std   ,x++
-        ldd   #$8000
-        std   ,y++
-        dec   pscroll.rect.left
-        bne   <
-        lda   pscroll.rect.r0          ; la rangee de reference du tableau
-        cmpa  pscroll.rect.r1
-        bls   >
-        lda   pscroll.rect.r1
-!       sta   pscroll.rect.rowbase
-        ; le pas dominant
-        ldd   pscroll.rect.c1
-        subd  pscroll.rect.c0
-        std   pscroll.rect.dc
-        lda   pscroll.rect.r1
-        suba  pscroll.rect.r0
-        sta   pscroll.rect.dr
-        rts                            ; l'oblique arrive avec les rebonds :
-                                       ; ecrit, mais pas encore branche
+        ; PAS D'OBLIQUE. Aucune arme du stage 4 n'en a besoin : le Force Pod et
+        ; le Wave Cannon balaient a l'horizontale, les rebonds a la verticale,
+        ; et les missiles n'effacent qu'une cellule (cf. SS15). L'escalier exact
+        ; se rajoutera le jour ou une arme le demandera — un intervalle par
+        ; rangee, pas une boite englobante.
+        rts
 
 ; -----------------------------------------------------------------------------
 ; pscroll.clearRow — effacer l'intervalle [x..y] de la rangee A
@@ -1139,36 +1115,113 @@ pscroll.clearRow
 !       ldd   pscroll.rect.a
         cmpd  pscroll.rect.b
         lbhi  pscroll.clearRow.rien
+        clr   pscroll.rect.done
+        ldb   pscroll.rect.row         ; le terme de rangee, pour la sequence
+        clra
+        aslb
+        rola
+        ldx   #pscroll.rowbase.tbl
+        ldd   d,x
+        std   pscroll.rect.rowbase
         ; --- le regime : sous le seuil, cellule par cellule
         ldd   pscroll.rect.b
         subd  pscroll.rect.a
         addd  #1
         std   pscroll.rect.n
         cmpd  #pscroll.CLEAR_UNROLL
-        blo   pscroll.clearRow.cells
-        ; TODO(23/08) : le chemin deroule se branche ici. Tant qu'il n'est pas
-        ; prouve, on passe par les cellules : meme resultat, moins vite.
+        lblo  pscroll.clearRow.cells
+
+; --- LE CHEMIN DEROULE -------------------------------------------------------
+; Les bandes ENTIEREMENT couvertes par l'intervalle se vident d'un trait : le
+; fond vaut 0, donc leur contenu de buffer n'est plus que des zeros. Les deux
+; extremites, elles, restent par cellule — une bande couvre six cellules, un
+; run n'en remplit une que s'il la couvre toute.
+        ldd   pscroll.rect.a           ; m0 : premiere bande PLEINE
+        lbsr  pscroll.chunkOf
+        stb   pscroll.rect.m0
+        aslb
+        clra
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   d,x
+        cmpd  pscroll.rect.a
+        bhs   >
+        inc   pscroll.rect.m0          ; sa premiere cellule est avant a
+!       ldd   pscroll.rect.b           ; m1 : derniere bande PLEINE
+        lbsr  pscroll.chunkOf
+        stb   pscroll.rect.m1
+        incb
+        aslb
+        clra
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   d,x
+        subd  #1
+        cmpd  pscroll.rect.b
+        bls   >
+        dec   pscroll.rect.m1          ; sa derniere cellule depasse b
+!       lda   pscroll.rect.m1
+        cmpa  pscroll.rect.m0
+        blo   pscroll.clearRow.cells   ; aucune bande pleine : tout par cellule
+
+        ; les deux extremites, par cellule
+        ldd   pscroll.rect.a
+        std   pscroll.rect.cur
+        lda   pscroll.rect.m0
+        asla
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   a,x                      ; premiere cellule de la premiere pleine
+        std   pscroll.rect.mid0
+        subd  pscroll.rect.a
+        std   pscroll.rect.nleft
+        lbsr  pscroll.clearRow.runCells
+        lda   pscroll.rect.m1
+        inca
+        asla
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   a,x                      ; premiere cellule apres la derniere
+        std   pscroll.rect.cur         ; pleine : la queue commence la
+        std   pscroll.rect.mid1
+        ldd   pscroll.rect.b
+        addd  #1
+        subd  pscroll.rect.mid1
+        std   pscroll.rect.nleft
+        lbsr  pscroll.clearRow.runCells
+
+        ; --- le milieu, bande par bande, COUPE AUX COUTURES -----------------
+        ; Le cisaillement decale d'une ligne les bandes d'apres une couture :
+        ; deux bandes d'un meme run n'y sont plus sur les memes lignes de
+        ; buffer, et la sequence deroulee suppose le contraire. Le ruban n'en
+        ; portant que dix, un run traverse au plus une couture.
+        lda   pscroll.rect.m0
+        sta   pscroll.rect.g0
+pscroll.clearRow.group
+        lda   pscroll.rect.g0          ; la couture de ce groupe
+        ldx   #pscroll.seamof.tbl
+        lda   a,x
+        sta   pscroll.rect.seam
+        ldx   #pscroll.seamlast.tbl
+        lda   a,x
+        sta   pscroll.rect.seamlast    ; sa derniere bande
+        cmpa  pscroll.rect.m1
+        bls   >
+        lda   pscroll.rect.m1          ; le run s'arrete avant
+!       sta   pscroll.rect.g1
+        lbsr  pscroll.clearRow.zone
+        lda   pscroll.rect.g1
+        inca
+        sta   pscroll.rect.g0
+        cmpa  pscroll.rect.m1
+        bls   pscroll.clearRow.group
+        tst   pscroll.rect.done
+        beq   pscroll.clearRow.rien
+        andcc #$FB
+        rts
+
 pscroll.clearRow.cells
         ldd   pscroll.rect.a
         std   pscroll.rect.cur
         ldd   pscroll.rect.n
         std   pscroll.rect.nleft
-        clr   pscroll.rect.done
-        ; Tete de boucle NOMMEE : un `bne <` se lie au `!` le plus proche, et il
-        ; y en a un au milieu du corps — la boucle ne tournait qu'une fois.
-pscroll.clearRow.cell
-        ldb   pscroll.rect.row
-        ldx   pscroll.rect.cur
-        jsr   pscroll.clearCell
-        beq   >
-        inc   pscroll.rect.done
-!       ldd   pscroll.rect.cur
-        addd  #1
-        std   pscroll.rect.cur
-        ldd   pscroll.rect.nleft
-        subd  #1
-        std   pscroll.rect.nleft
-        bne   pscroll.clearRow.cell
+        lbsr  pscroll.clearRow.runCells
         tst   pscroll.rect.done
         beq   pscroll.clearRow.rien
         andcc #$FB                     ; Z = 0 : le champ a change
@@ -1176,6 +1229,230 @@ pscroll.clearRow.cell
 pscroll.clearRow.rien
         orcc  #$04
         rts
+
+; -----------------------------------------------------------------------------
+; pscroll.chunkOf — la bande d'une cellule
+; input REG : [d] la cellule    sortie : [b] la bande, a detruit
+; -----------------------------------------------------------------------------
+pscroll.chunkOf
+        pshs  d
+        aslb
+        rola
+        addd  ,s++                     ; 3 * cellule
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb                           ; / 16
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.clearRow.runCells — effacer nleft cellules a partir de cur
+; -----------------------------------------------------------------------------
+pscroll.clearRow.runCells
+        ldd   pscroll.rect.nleft
+        beq   pscroll.clearRow.rcEnd
+pscroll.clearRow.rcLoop
+        ldb   pscroll.rect.row
+        ldx   pscroll.rect.cur
+        jsr   pscroll.clearCell
+        beq   pscroll.clearRow.rcNext
+        inc   pscroll.rect.done
+pscroll.clearRow.rcNext
+        ldd   pscroll.rect.cur
+        addd  #1
+        std   pscroll.rect.cur
+        ldd   pscroll.rect.nleft
+        subd  #1
+        std   pscroll.rect.nleft
+        bne   pscroll.clearRow.rcLoop
+pscroll.clearRow.rcEnd
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.clearRow.zone — vider les bandes PLEINES g0..g1 d'un meme groupe
+; -----------------------------------------------------------------------------
+; Toutes les bandes du groupe partagent le cisaillement, donc les memes lignes
+; de buffer : c'est ce qui autorise une seule entree dans la sequence deroulee.
+;
+; Deux temps : les bits de carte par MASQUE D'OCTET — et c'est la qu'est le
+; contournement, si rien ne change on ne regrave rien — puis la sequence.
+; -----------------------------------------------------------------------------
+pscroll.clearRow.zone
+        lda   pscroll.rect.g0          ; les cellules du groupe
+        asla
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   a,x
+        std   pscroll.rect.ca
+        lda   pscroll.rect.g1
+        inca
+        asla
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   a,x
+        subd  #1
+        std   pscroll.rect.cb
+
+        ; --- la carte, par masque d'octet
+        lda   pscroll.rect.row
+        ldb   #pscroll.MAP_STRIDE
+        mul
+        addd  pscroll.map.address
+        std   pscroll.rect.mapptr
+        ldd   pscroll.rect.ca          ; l'octet et le bit du premier
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        addd  pscroll.rect.mapptr
+        std   pscroll.rect.bptr
+        ldb   pscroll.rect.ca+1
+        andb  #7
+        ldx   #pscroll.mfrom
+        lda   b,x
+        sta   pscroll.rect.mA
+        ldd   pscroll.rect.cb          ; l'octet et le bit du dernier
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        addd  pscroll.rect.mapptr
+        subd  pscroll.rect.bptr
+        stb   pscroll.rect.nbytes      ; octets - 1
+        ldb   pscroll.rect.cb+1
+        andb  #7
+        ldx   #pscroll.mto
+        lda   b,x
+        sta   pscroll.rect.mB
+        clr   pscroll.rect.chg
+        ldx   pscroll.rect.bptr
+        lda   pscroll.rect.mA
+        tst   pscroll.rect.nbytes
+        bne   pscroll.clearRow.zMulti
+        anda  pscroll.rect.mB          ; un seul octet : les deux masques
+pscroll.clearRow.zMulti
+        ldb   pscroll.rect.nbytes
+        incb
+        stb   pscroll.rect.bleft
+pscroll.clearRow.zByte
+        ldb   ,x
+        pshs  a
+        anda  ,x                       ; ce qui change vraiment
+        beq   pscroll.clearRow.zNoChg
+        inc   pscroll.rect.chg
+pscroll.clearRow.zNoChg
+        puls  a
+        pshs  a
+        coma
+        andb  ,x+                      ; hmm : b relu, on ecrit ensuite
+        puls  a
+        stb   -1,x
+        dec   pscroll.rect.bleft
+        beq   pscroll.clearRow.zDone
+        lda   pscroll.rect.bleft       ; dernier octet ? sinon $FF
+        cmpa  #1
+        bne   pscroll.clearRow.zFull
+        lda   pscroll.rect.mB
+        bra   pscroll.clearRow.zByte
+pscroll.clearRow.zFull
+        lda   #$FF
+        bra   pscroll.clearRow.zByte
+pscroll.clearRow.zDone
+        tst   pscroll.rect.chg
+        lbeq  pscroll.clearRow.zRien   ; rien n'a change : rien a regraver
+        inc   pscroll.rect.done
+
+        ; --- la sequence deroulee : entree par la premiere bande, sortie patchee
+        lda   pscroll.rect.seamlast
+        suba  pscroll.rect.g0
+        asla
+        ldx   #pscroll.zrow.entry
+        ldx   a,x
+        stx   pscroll.rect.entry
+        lda   pscroll.rect.seamlast
+        suba  pscroll.rect.g1
+        beq   pscroll.clearRow.zNoPatch ; la derniere bande est l'emplacement 0 :
+        deca                            ; la sequence finit d'elle-meme
+        asla
+        ldx   #pscroll.zrow.entry
+        ldx   a,x
+        stx   pscroll.rect.patch
+        lda   ,x
+        sta   pscroll.rect.saved
+        lda   #pscroll.OPCODE_RTS
+        sta   ,x
+        bra   pscroll.clearRow.zBufs
+pscroll.clearRow.zNoPatch
+        clr   pscroll.rect.patch
+        clr   pscroll.rect.patch+1
+pscroll.clearRow.zBufs
+        lda   #pscroll.ROW_BIAS        ; la ligne du haut de la rangee
+        suba  pscroll.rect.seam
+        ldb   #pscroll.LINE_SIZE
+        mul
+        addd  pscroll.rect.rowbase
+        std   pscroll.rect.lineoff
+        clr   pscroll.rect.buf
+pscroll.clearRow.zBuf
+        lda   pscroll.rect.buf
+        ldx   #pscroll.buf.page
+        lda   a,x
+        _SetCartPageA
+        lda   pscroll.rect.buf
+        asla
+        ldx   #pscroll.buf.address
+        ldd   a,x
+        addd  pscroll.rect.lineoff
+        tfr   d,u                      ; U : ligne du bas de la rangee
+        subd  #2*pscroll.LINE_SIZE
+        tfr   d,y                      ; Y : deux lignes plus haut
+        subd  #2*pscroll.LINE_SIZE
+        tfr   d,x                      ; X : deux de plus
+        ldd   #0                       ; la donnee : le fond vaut zero
+        jsr   [pscroll.rect.entry]
+        inc   pscroll.rect.buf
+        lda   pscroll.rect.buf
+        cmpa  #4
+        blo   pscroll.clearRow.zBuf
+        ldx   pscroll.rect.patch       ; rendre l'octet patche
+        beq   pscroll.clearRow.zRien
+        lda   pscroll.rect.saved
+        sta   ,x
+pscroll.clearRow.zRien
+        rts
+
+pscroll.mfrom    fcb $FF,$7F,$3F,$1F,$0F,$07,$03,$01
+pscroll.mto      fcb $80,$C0,$E0,$F0,$F8,$FC,$FE,$FF
+pscroll.OPCODE_RTS equ $39
+pscroll.rect.m0      fcb 0
+pscroll.rect.m1      fcb 0
+pscroll.rect.g0      fcb 0
+pscroll.rect.g1      fcb 0
+pscroll.rect.seam    fcb 0
+pscroll.rect.seamlast fcb 0
+pscroll.rect.mid0    fdb 0
+pscroll.rect.mid1    fdb 0
+pscroll.rect.ca      fdb 0
+pscroll.rect.cb      fdb 0
+pscroll.rect.mapptr  fdb 0
+pscroll.rect.bptr    fdb 0
+pscroll.rect.mA      fcb 0
+pscroll.rect.mB      fcb 0
+pscroll.rect.nbytes  fcb 0
+pscroll.rect.bleft   fcb 0
+pscroll.rect.chg     fcb 0
+pscroll.rect.entry   fdb 0
+pscroll.rect.patch   fdb 0
+pscroll.rect.saved   fcb 0
+pscroll.rect.lineoff fdb 0
+pscroll.rect.rowbase fdb 0
+pscroll.rect.buf     fcb 0
 
 pscroll.CLEAR_UNROLL equ 8             ; le seuil des deux regimes : huit
                                        ; cellules garantissent une bande pleine
@@ -1196,7 +1473,6 @@ pscroll.rect.cur     fdb 0
 pscroll.rect.row     fcb 0
 pscroll.rect.left    fcb 0
 pscroll.rect.done    fcb 0
-pscroll.rect.rowbase fcb 0
 pscroll.rect.dc      fdb 0
 pscroll.rect.dr      fcb 0
 pscroll.rect.mins    fill 0,2*pscroll.RECT_ROWS

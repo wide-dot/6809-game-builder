@@ -1454,23 +1454,54 @@ pas.
 La géométrie coûte ~50 cycles par cellule ; **tout le reste est la mutation par
 cellule**, et c'est elle que le déroulé doit remplacer.
 
-### Le déroulé : la séquence est là, l'aiguillage reste
+### Le déroulé, branché (23/08)
 
 `gen_pscroll.py` émet `pscroll.zrow` — dix blocs de douze `std`, trois bases
 (X, Y, U) pour six lignes, offsets 8 bits, **360 octets** — plus la table
 d'entrée par emplacement de ruban et `pscroll.chunkfirst.tbl` (la première
 cellule de chaque bande, pour borner sans division).
 
-Ce qui reste à écrire, et une contrainte découverte en le câblant :
+L'aiguillage fait quatre choses :
 
-1. Trouver les bandes **entièrement** couvertes par l'intervalle (les deux
-   extrémités restent par cellule).
-2. Effacer les bits de carte de ces bandes par masques d'octet — c'est là que
-   vit le contournement : **si aucun bit ne change, on ne regrave rien**.
-3. Entrer dans `pscroll.zrow` sur la première bande, patcher un `rts` après la
-   dernière.
-4. **LE RUN DOIT ÊTRE COUPÉ AUX COUTURES.** Le cisaillement décale d'une ligne
-   les bandes situées après une couture : deux bandes d'un même run ne sont
-   alors plus sur les mêmes lignes de buffer, et la séquence déroulée suppose le
-   contraire. Le ruban ne portant que dix bandes, un run traverse au plus une
-   couture — une comparaison suffit à le couper en deux appels.
+1. Il trouve les bandes **entièrement** couvertes par l'intervalle — une bande
+   porte six cellules, elle n'est pleine que si le run la couvre toute. Les deux
+   extrémités restent par cellule.
+2. **Il coupe le run aux coutures.** Le cisaillement décale d'une ligne les
+   bandes situées après une couture : deux bandes d'un même run n'y sont plus
+   sur les mêmes lignes de buffer, et la séquence déroulée suppose le contraire.
+   Le ruban ne portant que dix bandes, un run en traverse au plus une —
+   `seamof` donne le groupe, `seamlast` sa dernière bande, et l'emplacement de
+   ruban s'en déduit **sans modulo** : `slot(m) = seamlast[couture(m)] − m`.
+3. Il efface les bits de carte du groupe **par masques d'octet** — et c'est là
+   qu'est le contournement : si aucun bit ne change, on ne regrave rien.
+4. Il entre dans `pscroll.zrow` sur la première bande et **patche un `rts`**
+   après la dernière, exactement comme `pscroll.do` patche la sortie du blast.
+
+**Prouvé identique** : les cinq cas de `check_rect.py` rendent les mêmes pixels
+qu'avec le chemin par cellule — c'est l'A/B qu'il fallait.
+
+**Mesuré**, sur la bande du beam (2 rangées × 12 cellules) :
+
+| | cycles | par cellule |
+|---|---|---|
+| géométrie `clearRect` | 816 | |
+| mutation par cellule résiduelle (les extrémités) | **184** | |
+| **total** | **1 000** | **41** |
+
+La mutation par cellule a **presque disparu** — il ne reste que les deux bouts
+du run — et les 41 cycles par cellule sont sous les 55 prévus, au plancher
+théorique de 48. Sur les runs courts (moins de huit cellules) le régime par
+cellule reste en place, par conception : aucune bande n'y est pleine.
+
+Note de banc : la mesure d'un bloc 4×4 isolé est bruitée tant que la mire n'est
+pas garantie complète au moment du tir — deux campagnes ont donné 148 et
+621 cy/cellule pour le même cas, l'écart venant du remplissage du champ et non
+du code. Le profilage d'un cas court demande une mire déterministe.
+
+### L'oblique, retiré
+
+Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en
+a besoin — le Force Pod et le Wave Cannon balaient à l'horizontale, les rebonds
+à la verticale, et les missiles n'effacent qu'une cellule. Il se réécrira le
+jour où une arme le demandera, et la règle est notée sur place : **un intervalle
+par rangée, pas une boîte englobante.**
