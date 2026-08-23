@@ -98,6 +98,28 @@
 
 ; constantes
 ; -----------------------------------------------------------------------------
+; DECOUPAGE EN DEUX MORCEAUX — pourquoi, et comment
+; -----------------------------------------------------------------------------
+; Un projet ou le module ne tient pas en RAM fixe le coupe en deux unites :
+;
+;   PSCROLL_PART = 0   la part RESIDENTE : les variables, `do` et `runBuffer`.
+;                      `do` peint la fenetre depuis le ruban ; il lui faut
+;                      l'ECRAN monte en $A000, donc la page du module ne l'est
+;                      pas a cet instant — il ne peut toucher aucune variable
+;                      qui y vivrait. D'ou : toutes les variables ici.
+;   PSCROLL_PART = 1   la part PAGINEE : gravure, scroll, ajout, effacement.
+;                      Elle n'a jamais besoin de l'ecran, elle peut donc vivre
+;                      dans une page montee en $A000. Le loader ecrit par la
+;                      MEME fenetre (ram.set choisit d'apres l'adresse de
+;                      destination) : l'inversion des demi-pages s'annule des
+;                      deux cotes, et rien dans l'arithmetique ne bouge.
+;   non defini         tout, d'un seul tenant — c'est ce que fait le banc.
+; -----------------------------------------------------------------------------
+ IFNDEF PSCROLL_PART
+PSCROLL_PART equ 2                     ; par defaut : le module entier
+ ENDC
+
+; -----------------------------------------------------------------------------
 pscroll.OPCODE_JMP_E  equ   $7E
 pscroll.OPCODE_LDD_I  equ   $CC        ; ldd #imm
 pscroll.OPCODE_LDX_I  equ   $8E        ; ldx #imm
@@ -191,6 +213,7 @@ pscroll.BLAST_REM     equ   pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE-(pscroll.BUFF
 ; parametres, poses par le projet avant l'init
 ; -----------------------------------------------------------------------------
 ; Les quatre buffers : [plan][phase]. Plan 0 = zone $C000 en phase paire.
+ IFNE PSCROLL_PART-1                   ; la part RESIDENTE
 pscroll.buf.page      fill  0,4        ; pages des 4 buffers
 pscroll.buf.address   fill  0,8        ; adresses des 4 buffers (fenetre cart.)
 pscroll.data.page     fcb   0          ; page des routines de gravure + tables
@@ -239,6 +262,49 @@ pscroll.bufEnd        fdb   0
 pscroll.hoff          fdb   0
 pscroll.initcnt       fcb   0
 pscroll.blastrem      fcb   0          ; chunks restants du blast, hors boucle
+ IFEQ PSCROLL_PART-0                   ; coupe en deux : la part
+                                       ; paginee les voit par le loader
+pscroll.buf.page       EXPORT
+pscroll.buf.address    EXPORT
+pscroll.data.page      EXPORT
+pscroll.viewport.ram   EXPORT
+pscroll.camera.x.max   EXPORT
+pscroll.camera.x       EXPORT
+pscroll.camera.speedx  EXPORT
+pscroll.speedx         EXPORT
+pscroll.window         EXPORT
+pscroll.edge16         EXPORT
+pscroll.stretch        EXPORT
+pscroll.origin         EXPORT
+pscroll.h              EXPORT
+pscroll.seamx          EXPORT
+pscroll.w              EXPORT
+pscroll.bo             EXPORT
+pscroll.dest0          EXPORT
+pscroll.dest1          EXPORT
+pscroll.dest.current   EXPORT
+pscroll.parity         EXPORT
+pscroll.counter        EXPORT
+pscroll.counter2       EXPORT
+pscroll.slotbase       EXPORT
+pscroll.seq            EXPORT
+pscroll.savedS         EXPORT
+pscroll.savedU         EXPORT
+pscroll.band           EXPORT
+pscroll.base           EXPORT
+pscroll.line           EXPORT
+pscroll.chunkoff       EXPORT
+pscroll.startline      EXPORT
+pscroll.tmpidx         EXPORT
+pscroll.tmpcnt         EXPORT
+pscroll.bufStart       EXPORT
+pscroll.bufEnd         EXPORT
+pscroll.hoff           EXPORT
+pscroll.initcnt        EXPORT
+pscroll.blastrem       EXPORT
+ ENDC
+ ENDC
+
 ; Ni SECTION ni EXPORT ici : c'est l'unite qui inclut ce fichier qui les
 ; fournit, comme pour mscroll (games/r-type/src/common/engine/mscroll.unit.asm).
 
@@ -257,6 +323,48 @@ pscroll.blastrem      fcb   0          ; chunks restants du blast, hors boucle
 ;
 ; Pieges de clearblast : aucun bsr/rts tant que S ecrit, S sauve et restaure.
 ; Les IRQ sont coupees a l'init, donc rien ne pousse sous S.
+ IFNE PSCROLL_PART                     ; PAGINE : gravure et scroll
+ IFEQ PSCROLL_PART-1
+pscroll.buf.page       EXTERNAL
+pscroll.buf.address    EXTERNAL
+pscroll.data.page      EXTERNAL
+pscroll.viewport.ram   EXTERNAL
+pscroll.camera.x.max   EXTERNAL
+pscroll.camera.x       EXTERNAL
+pscroll.camera.speedx  EXTERNAL
+pscroll.speedx         EXTERNAL
+pscroll.window         EXTERNAL
+pscroll.edge16         EXTERNAL
+pscroll.stretch        EXTERNAL
+pscroll.origin         EXTERNAL
+pscroll.h              EXTERNAL
+pscroll.seamx          EXTERNAL
+pscroll.w              EXTERNAL
+pscroll.bo             EXTERNAL
+pscroll.dest0          EXTERNAL
+pscroll.dest1          EXTERNAL
+pscroll.dest.current   EXTERNAL
+pscroll.parity         EXTERNAL
+pscroll.counter        EXTERNAL
+pscroll.counter2       EXTERNAL
+pscroll.slotbase       EXTERNAL
+pscroll.seq            EXTERNAL
+pscroll.savedS         EXTERNAL
+pscroll.savedU         EXTERNAL
+pscroll.band           EXTERNAL
+pscroll.base           EXTERNAL
+pscroll.line           EXTERNAL
+pscroll.chunkoff       EXTERNAL
+pscroll.startline      EXTERNAL
+pscroll.tmpidx         EXTERNAL
+pscroll.tmpcnt         EXTERNAL
+pscroll.bufStart       EXTERNAL
+pscroll.bufEnd         EXTERNAL
+pscroll.hoff           EXTERNAL
+pscroll.initcnt        EXTERNAL
+pscroll.blastrem       EXTERNAL
+ ENDC
+
 ; -----------------------------------------------------------------------------
 pscroll.buildSkeleton
         sts   pscroll.savedS          ; aucun bsr/rts tant que S ecrit
@@ -658,6 +766,11 @@ pscroll.engraveColumn
 ;       h      : chunk d'entree dans chaque ligne (0-9)
 ;       bo     : offset d'octet sur S (-2..1)
 ;       w      : echange des zones $A000 / $C000
+ ENDC
+
+ IFNE PSCROLL_PART-1                   ; RESIDENT : do peint,
+                                       ; il lui faut l'ecran, donc pas
+                                       ; la page du module
 ; -----------------------------------------------------------------------------
 pscroll.do
         ; --- la parite : elle choisit la paire de buffers ------------------
@@ -834,6 +947,9 @@ pscroll.runBuffer
 ; phase) : c'est ce que la premiere version ratait, en prenant le chunk sur le
 ; pixel de carte brut — l'octet vise dans le chunk s'en trouvait decale, d'ou
 ; les 4 px de trop vus a l'ecran.
+ ENDC
+
+ IFNE PSCROLL_PART                     ; PAGINE : ajout et effacement
 ; -----------------------------------------------------------------------------
 pscroll.setCell
         ldy   #pscroll.wr.tbl          ; la gomme POUSSE
@@ -2097,3 +2213,5 @@ pscroll.sc.tbl        fdb   0          ; la table du chemin en cours
 pscroll.sc.mode       fcb   0          ; 0 = pousse, 1 = efface
 pscroll.sc.plans      fdb   0          ; poser les plans : cellule ou run
 pscroll.sc.lastchunk  fcb   $FF        ; la bande dont sc.dst est la geometrie
+
+ ENDC

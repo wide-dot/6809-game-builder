@@ -50,13 +50,7 @@ adr_playfield_mask_ND0 EXTERNAL
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
 pscroll.stage4.init     EXTERNAL
-pscroll.field.map       EXTERNAL
-collisionMapForeground  EXTERNAL
 
-; La taille du bitfield, en dur ici : c'est une EQUATE, elle ne peut pas
-; traverser le loader comme un symbole. Elle doit suivre pscroll.unit.asm —
-; 48 octets par rangee (384 cellules / 8), 30 rangees.
-pscroll.MAP_BYTES       equ 48*30
 playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
@@ -309,20 +303,13 @@ stage.setup
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 
-        ; LE CHAMP DE GOMMES. Son bitfield vit en RAM FIXE (setCell le lit et
-        ; l'ecrit pendant qu'une page de buffer est montee) : on l'emplit ici
-        ; depuis la carte de collision, puis pscroll grave ses dix bandes.
-        ; ~160 000 cycles, payes a l'ouverture et au checkpoint, jamais en jeu.
-        lda   #map.RAM_OVER_CART+collision.page
-        _SetCartPageA
-        ldx   #collisionMapForeground
-        ldu   #pscroll.field.map
-!       ldd   ,x++
-        std   ,u++
-        cmpu  #pscroll.field.map+pscroll.MAP_BYTES
-        blo   <
+        ; LE CHAMP DE GOMMES : pscroll emplit son bitfield depuis la carte de
+        ; collision puis grave ses dix bandes. Les deux se font DANS sa page —
+        ; le bitfield y vit, et la carte de collision se monte en fenetre
+        ; cartouche, qui est libre a ce moment. ~160 000 cycles, payes a
+        ; l'ouverture et au checkpoint, jamais en jeu.
         ldd   glb_camera_x_pos
-        lda   #map.RAM_OVER_CART+pscroll.code.page
+        lda   #map.RAM_OVER_CART+pscroll.edit.page
         ldx   #pscroll.stage4.init
         jsr   paged.call
 

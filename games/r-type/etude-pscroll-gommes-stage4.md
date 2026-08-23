@@ -1945,7 +1945,40 @@ libres pendant ce stage, donc les quatre buffers ne coûtent rien à personne.
 `stage4.pellet` libère 1 564 octets résidents, le bitfield en demande 1 440 :
 il prend sa place.
 
-**Pourquoi ça ne marche pas — et c'est structurel.** `paged.call` monte une
+### Le découpage en deux, réalisé (23/08, soir)
+
+`paged.call` monte dans la fenêtre CARTOUCHE — celle que pscroll bascule pour
+ses buffers : il s'y démontait lui-même. La solution (décision auteur) est de
+mettre le code d'édition dans la fenêtre **DONNÉES** (`$A000`), et elle ne
+demande **rien** à personne : `engine/system/to8/ram/ram.asm` choisit déjà la
+fenêtre d'après l'adresse de destination, donc le loader écrit par la même
+fenêtre que celle où le code s'exécutera — l'inversion des demi-pages
+(mesurée : offset `$0000` se voit en `$C000`, `$2000` en `$A000`) s'annule
+entre l'écriture et la lecture. Ni builder, ni loader, ni arithmétique.
+
+Le module se coupe donc en deux par le drapeau `PSCROLL_PART` :
+
+| part | contenu | où | poids |
+|---|---|---|---|
+| 0 | `do`, `runBuffer`, **toutes les variables** | résident | ~1,7 Ko |
+| 1 | gravure, scroll, ajout, effacement, le bitfield | page réservée, `$A000` | ~11,3 Ko |
+| absent | tout d'un tenant — c'est le banc | | |
+
+`do` a besoin de l'écran monté en `$A000` : la page du module n'y est donc pas
+à cet instant, et il ne peut lire aucune variable qui y vivrait — d'où les
+variables toutes côté résident, exportées vers la part paginée (38 symboles).
+
+**Le banc est le filet de ce découpage** : il compile la version « tout d'un
+tenant » et rejoue la matrice — 32 cas, zéro faute après la coupe, identique à
+avant.
+
+**Où ça bloque encore.** L'image se construit des deux côtés, mais la scène du
+stage 4 ne se charge plus : le PC tourne dans une boucle du moniteur (`$E0C9`,
+pas la boucle de lecture `$E3C0`) et la trame ne démarre jamais. Le suspect est
+le direntry à destination `$A000` — c'est le premier du jeu à viser la fenêtre
+données, et le chemin n'a jamais servi.
+
+**Pourquoi ça ne marchait pas avant — et c'était structurel.** `paged.call` monte une
 unité dans la fenêtre **cartouche** (`$0000-$3FFF`). Or c'est exactement la
 fenêtre que pscroll bascule pour atteindre ses buffers : au premier
 `_SetCartPageA`, **il se démonte lui-même** et le CPU tombe dans les octets du

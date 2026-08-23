@@ -29,7 +29,8 @@ dest = sys.argv[4] if len(sys.argv) > 4 else "/tmp/claude-501/stage%d.png" % sta
 
 t = Toje()
 t.boot_floppy(image)
-t.call("run_frames", {"n": 500})               # que le title soit pose
+t.call("run_frames", {"n": 900})               # que le title soit pose
+t.call("run_frames", {"n": 300})
 b = t.read("87DB", 8)
 print("title : magic=%02X stage=%02X" % (b[0], b[1]))
 if b[0] != 0xCA:
@@ -55,11 +56,24 @@ if len(sym) < 3:
     print("!! symboles du cheat introuvables dans les .lwmap")
     t.close()
     sys.exit(2)
-# L'unite du cheat vit en page $19 a $1A33 (releve du rapport d'occupation).
+# L'unite du cheat : sa page et son adresse se LISENT dans le rapport
+# d'occupation du build courant. Les coder en dur les rend faux au premier
+# rebuild qui deplace quoi que ce soit (vecu le 23/08).
 # LA FENETRE CARTOUCHE DU TO8 EST EN $0000-$3FFF (map.ram.CART_START), pas en
 # $A000 — $A000 est l'ecran. Une unite paginee se lit donc a son adresse telle
 # quelle, une fois sa page montee.
-CHEAT_PAGE, CHEAT_ADDR = 0x19, 0x1A33
+import json
+_h = open(os.path.join(os.path.dirname(image), "occupancy-fd.html")).read()
+_D = json.loads(re.search(r'const DATA\s*=\s*(\{.*?\});', _h, re.S).group(1))
+CHEAT_PAGE = CHEAT_ADDR = None
+for _sc in _D["ram"]["scenes"]:
+    for _l in _sc["loads"]:
+        if _l["name"] == "title.cheat":
+            CHEAT_PAGE, CHEAT_ADDR = _l["page"], _l["address"]
+if CHEAT_PAGE is None:
+    print("!! title.cheat introuvable dans le rapport d'occupation")
+    t.close(); sys.exit(3)
+print("cheat : page %02X adresse %04X" % (CHEAT_PAGE, CHEAT_ADDR))
 
 
 def cart(off):

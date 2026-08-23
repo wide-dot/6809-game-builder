@@ -490,9 +490,8 @@ stage.state.running
         ; qui repeignait toutes les gommes a chaque trame, n'existe plus.
         ; La camera suit le scroll du stage, en 8.8.
         ldd   scroll_vel               ; la vitesse du stage, en 8.8
-        lda   #map.RAM_OVER_CART+pscroll.code.page
-        ldx   #pscroll.stage4.frame
-        jsr   paged.call
+        jsr   pscroll.stage4.frame     ; RESIDENT : il peint, puis monte la page
+                                       ; du module pour graver ce qui entre
  ELSE
         ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
         ; fenetre que la camera vient de franchir (plusieurs possibles en une

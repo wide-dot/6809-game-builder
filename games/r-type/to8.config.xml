@@ -70,7 +70,12 @@
                  Pages choisies parmi celles que le stage 4 ne charge pas et qui
                  ne portent rien de permanent (releve du 23/08 : le commun tient
                  $01 et $04-$0A, le stage 4 tient $17,$18,$19,$1A,$1B). -->
-            <arena name="pscroll.code"><zone page="$0B" address="$0000" size="$4000"/></arena>
+            <!-- La page du code d'edition, vue en $A000 : le loader y ecrit par
+                 la fenetre DONNEES (ram.set choisit d'apres l'adresse), donc
+                 l'inversion des demi-pages s'annule entre l'ecriture et la
+                 lecture. La page est RESERVEE — son contenu physique est dans
+                 l'ordre echange, rien d'autre ne peut y cohabiter. -->
+            <region name="pscroll.edit" page="$0B" address="$A000" size="$4000"/>
             <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B10"/>
             <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B10"/>
             <region name="pscroll.buf2" page="$10" address="$0000" size="$3B10"/>
@@ -2962,10 +2967,16 @@
                      montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
                      temps. Les tables sont generees et prouvees par
                      tools/gen_pellet_tables.py. -->
-                <file name="stage4.pscroll" linkdata="LINK" arena="pscroll.code">
-                    <lwasm gensource="gen/stages/04/pscroll.asm">
+                <file name="stage4.pscroll.res" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/stages/04/pscroll-res.asm">
                         <asm filename="src/common/engine/api.asm"/>
-                        <asm filename="src/stages/04/pscroll.unit.asm"/>
+                        <asm filename="src/stages/04/pscroll.res.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage4.pscroll.edit" linkdata="LINK" region="pscroll.edit">
+                    <lwasm gensource="gen/stages/04/pscroll-edit.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pscroll.edit.asm"/>
                     </lwasm>
                 </file>
 
@@ -2985,7 +2996,8 @@
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
-                    <load name="stage4.pscroll"/>
+                    <load name="stage4.pscroll.res"/>
+                    <load name="stage4.pscroll.edit"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>
