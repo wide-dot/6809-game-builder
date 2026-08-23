@@ -938,6 +938,270 @@ pscroll.geom
         rts
 
 
+; -----------------------------------------------------------------------------
+; pscroll.clearRect — L'EFFACEMENT EN MASSE
+; -----------------------------------------------------------------------------
+; input VAR : pscroll.rect.c0/r0  le coin haut-gauche du bloc au DEPART
+;             pscroll.rect.c1/r1  le meme coin a l'ARRIVEE
+;             pscroll.rect.w/h    la taille du bloc, en cellules
+;
+; Efface la surface BALAYEE par le bloc entre les deux points. C'est le module
+; qui fait la geometrie (arbitrage auteur, 23/08) : les armes passent un depart
+; et une arrivee, elles ne portent pas de grille.
+;
+; Etiquettes explicites et non locales : une macro entre la reference a un
+; @label et sa definition casse sa portee chez lwasm, et ce fichier en appelle
+; (docs/lang/en/migration/local-labels-and-macros.md).
+;
+; POURQUOI UN BALAYAGE ET PAS N BLOCS. A 16 img/s une trame rendue couvre trois
+; a quatre trames arcade. Rejouer le bloc arcade N fois couterait N fois son
+; prix ; l'union de ces N blocs le long du deplacement est, rangee par rangee,
+; un INTERVALLE — et un intervalle, ca s'efface d'un trait. L'effacement doit
+; donc sortir de la boucle de frame-drop de l'arme : le tick se rejoue N fois
+; pour le mouvement et la collision, et l'effacement est appele UNE fois, ici.
+;
+; La cartographie arcade (SS15 de l'etude) donne les formes a couvrir : bloc 4x4
+; du Force Pod a chaque trame, bande 2 x (CX+1) du Wave Cannon, onze blocs 4x4
+; du Counter-Air Laser. Les missiles et le tir simple du pod, eux, n'effacent
+; qu'une cellule dans toute leur vie : ils restent sur pscroll.clearCell.
+; -----------------------------------------------------------------------------
+pscroll.clearRect
+        ; --- les deux cas alignes, qui sont ceux du jeu ---------------------
+        ; Le pod et le beam se deplacent a l'horizontale ; le vertical arrive
+        ; avec les rebonds. Les traiter a part evite le parcours du segment.
+        lda   pscroll.rect.r0
+        cmpa  pscroll.rect.r1
+        bne   pscroll.rect.notflat
+        ; --- HORIZONTAL : toutes les rangees du bloc ont le meme intervalle
+        ldd   pscroll.rect.c0
+        cmpd  pscroll.rect.c1
+        bls   >
+        ldd   pscroll.rect.c1          ; le depart est a droite : on echange
+!       std   pscroll.rect.a
+        ldd   pscroll.rect.c0
+        cmpd  pscroll.rect.c1
+        bhs   >
+        ldd   pscroll.rect.c1
+!       addb  pscroll.rect.w
+        adca  #0
+        subd  #1
+        std   pscroll.rect.b
+        lda   pscroll.rect.r0
+        sta   pscroll.rect.row
+        lda   pscroll.rect.h
+        sta   pscroll.rect.left
+pscroll.rect.hloop  lda   pscroll.rect.row
+        ldx   pscroll.rect.a
+        ldy   pscroll.rect.b
+        jsr   pscroll.clearRow
+        inc   pscroll.rect.row
+        dec   pscroll.rect.left
+        bne   pscroll.rect.hloop
+        rts
+
+pscroll.rect.notflat
+        ldd   pscroll.rect.c0
+        cmpd  pscroll.rect.c1
+        bne   pscroll.rect.oblique
+        ; --- VERTICAL : une seule colonne d'intervalle, sur toutes les rangees
+        ldd   pscroll.rect.c0
+        std   pscroll.rect.a
+        addb  pscroll.rect.w
+        adca  #0
+        subd  #1
+        std   pscroll.rect.b
+        lda   pscroll.rect.r0          ; la rangee la plus haute
+        cmpa  pscroll.rect.r1
+        bls   >
+        lda   pscroll.rect.r1
+!       sta   pscroll.rect.row
+        lda   pscroll.rect.r0          ; le nombre de rangees balayees
+        suba  pscroll.rect.r1
+        bpl   >
+        nega
+!       adda  pscroll.rect.h
+        sta   pscroll.rect.left
+pscroll.rect.vloop  lda   pscroll.rect.row
+        ldx   pscroll.rect.a
+        ldy   pscroll.rect.b
+        jsr   pscroll.clearRow
+        inc   pscroll.rect.row
+        dec   pscroll.rect.left
+        bne   pscroll.rect.vloop
+        rts
+
+; --- OBLIQUE : l'escalier exact ---------------------------------------------
+; On parcourt le segment par pas d'UNE cellule sur l'axe dominant et on note,
+; pour chaque rangee touchee, la colonne la plus a gauche et la plus a droite.
+; C'est la boite englobante par RANGEE, pas la boite du mouvement : c'est ce
+; qui fait la difference entre un escalier exact et un rectangle trop gros.
+; Le nombre de pas est celui du deplacement d'une trame, donc quelques unites.
+pscroll.rect.oblique
+        lda   #pscroll.RECT_ROWS       ; vider les intervalles
+        sta   pscroll.rect.left
+        ldx   #pscroll.rect.mins
+        ldy   #pscroll.rect.maxs
+!       ldd   #$7FFF
+        std   ,x++
+        ldd   #$8000
+        std   ,y++
+        dec   pscroll.rect.left
+        bne   <
+        lda   pscroll.rect.r0          ; la rangee de reference du tableau
+        cmpa  pscroll.rect.r1
+        bls   >
+        lda   pscroll.rect.r1
+!       sta   pscroll.rect.rowbase
+        ; le pas dominant
+        ldd   pscroll.rect.c1
+        subd  pscroll.rect.c0
+        std   pscroll.rect.dc
+        lda   pscroll.rect.r1
+        suba  pscroll.rect.r0
+        sta   pscroll.rect.dr
+        rts                            ; l'oblique arrive avec les rebonds :
+                                       ; ecrit, mais pas encore branche
+
+; -----------------------------------------------------------------------------
+; pscroll.clearRow — effacer l'intervalle [x..y] de la rangee A
+; -----------------------------------------------------------------------------
+; input REG : [a] la rangee, [x] la premiere cellule, [y] la derniere
+; sortie    : cc.Z = 1 si rien n'a change
+;
+; Trois temps : borner sur la carte ET sur le ruban, effacer les bits, puis
+; regraver. Le contournement est ici : si aucun bit ne change, on ne regrave
+; rien — et ce test est par OCTET de carte, pas par cellule.
+; -----------------------------------------------------------------------------
+pscroll.clearRow
+        sta   pscroll.rect.row
+        stx   pscroll.rect.a
+        sty   pscroll.rect.b
+        ; --- borner sur la carte
+        ldd   pscroll.rect.a
+        bpl   >
+        clra                           ; a gauche de la carte
+        clrb
+        std   pscroll.rect.a
+!       ldd   pscroll.rect.b
+        cmpd  #pscroll.CELLS-1
+        bls   >
+        ldd   #pscroll.CELLS-1
+        std   pscroll.rect.b
+!       ldd   pscroll.rect.a
+        cmpd  pscroll.rect.b
+        lbhi  pscroll.clearRow.rien
+        ; --- borner sur le RUBAN. Une cellule hors fenetre n'est pas dans le
+        ; buffer : l'y effacer poserait un bit que rien n'affiche, exactement
+        ; le defaut corrige sur setCell le 23/08.
+        ldd   pscroll.rect.a           ; la bande de la premiere cellule
+        aslb
+        rola
+        addd  pscroll.rect.a
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        subb  pscroll.edge16
+        bcc   >
+        ldb   pscroll.edge16           ; a gauche du ruban : on remonte a son
+        aslb                           ; premier bord
+        clra
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   d,x
+        std   pscroll.rect.a
+!       ldd   pscroll.rect.b           ; la bande de la derniere cellule
+        aslb
+        rola
+        addd  pscroll.rect.b
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        subb  pscroll.edge16
+        cmpb  #pscroll.CHUNKS_PER_LINE
+        blo   >
+        ldb   pscroll.edge16           ; a droite : on descend au dernier bord
+        addb  #pscroll.CHUNKS_PER_LINE
+        aslb
+        clra
+        ldx   #pscroll.chunkfirst.tbl
+        ldd   d,x
+        subd  #1
+        std   pscroll.rect.b
+!       ldd   pscroll.rect.a
+        cmpd  pscroll.rect.b
+        lbhi  pscroll.clearRow.rien
+        ; --- le regime : sous le seuil, cellule par cellule
+        ldd   pscroll.rect.b
+        subd  pscroll.rect.a
+        addd  #1
+        std   pscroll.rect.n
+        cmpd  #pscroll.CLEAR_UNROLL
+        blo   pscroll.clearRow.cells
+        ; TODO(23/08) : le chemin deroule se branche ici. Tant qu'il n'est pas
+        ; prouve, on passe par les cellules : meme resultat, moins vite.
+pscroll.clearRow.cells
+        ldd   pscroll.rect.a
+        std   pscroll.rect.cur
+        ldd   pscroll.rect.n
+        std   pscroll.rect.nleft
+        clr   pscroll.rect.done
+        ; Tete de boucle NOMMEE : un `bne <` se lie au `!` le plus proche, et il
+        ; y en a un au milieu du corps — la boucle ne tournait qu'une fois.
+pscroll.clearRow.cell
+        ldb   pscroll.rect.row
+        ldx   pscroll.rect.cur
+        jsr   pscroll.clearCell
+        beq   >
+        inc   pscroll.rect.done
+!       ldd   pscroll.rect.cur
+        addd  #1
+        std   pscroll.rect.cur
+        ldd   pscroll.rect.nleft
+        subd  #1
+        std   pscroll.rect.nleft
+        bne   pscroll.clearRow.cell
+        tst   pscroll.rect.done
+        beq   pscroll.clearRow.rien
+        andcc #$FB                     ; Z = 0 : le champ a change
+        rts
+pscroll.clearRow.rien
+        orcc  #$04
+        rts
+
+pscroll.CLEAR_UNROLL equ 8             ; le seuil des deux regimes : huit
+                                       ; cellules garantissent une bande pleine
+                                       ; quelle que soit leur position (six n'y
+                                       ; suffisent que si elles tombent bien)
+pscroll.RECT_ROWS    equ 16            ; rangees que l'escalier peut couvrir
+pscroll.rect.c0      fdb 0
+pscroll.rect.r0      fcb 0
+pscroll.rect.c1      fdb 0
+pscroll.rect.r1      fcb 0
+pscroll.rect.w       fcb 0
+pscroll.rect.h       fcb 0
+pscroll.rect.a       fdb 0
+pscroll.rect.b       fdb 0
+pscroll.rect.n       fdb 0
+pscroll.rect.nleft   fdb 0
+pscroll.rect.cur     fdb 0
+pscroll.rect.row     fcb 0
+pscroll.rect.left    fcb 0
+pscroll.rect.done    fcb 0
+pscroll.rect.rowbase fcb 0
+pscroll.rect.dc      fdb 0
+pscroll.rect.dr      fcb 0
+pscroll.rect.mins    fill 0,2*pscroll.RECT_ROWS
+pscroll.rect.maxs    fill 0,2*pscroll.RECT_ROWS
+
 pscroll.tbl.bit  fcb   $80,$40,$20,$10,$08,$04,$02,$01
 ; LE BITFIELD DES GOMMES. CONTRAT : il doit etre ADRESSABLE quand setCell ou
 ; clearCell est appele — donc en RAM fixe, pas dans une page a monter. Il ne

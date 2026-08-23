@@ -168,6 +168,12 @@ mainLoop
 
         jsr   bench.smileyStep         ; la mire, tant qu'elle n'est pas finie
 
+        ; --- L'EFFACEMENT EN MASSE : le banc le declenche a la demande ------
+        tst   bench.rect
+        beq   >
+        clr   bench.rect
+        jsr   pscroll.clearRect
+!
         ; --- CYTRON : le pilote, porte de l'arcade --------------------------
         jsr   bench.cytronStep
 
@@ -454,6 +460,7 @@ smiley.loop  fcb 1                     ; 0 = un seul cycle puis silence
 smiley.col0  fdb 4                     ; a la camera 0 : px 12..107, hors des
 smiley.ROW0  equ 0                     ; 8 px de bord masques
 
+bench.rect   fcb 0                     ; 1 = joue pscroll.clearRect une fois
 demo.attract fcb 1                         ; 1 tant que rien n'a ete presse
 ctrlmag      fdb $0100
 ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se dessine

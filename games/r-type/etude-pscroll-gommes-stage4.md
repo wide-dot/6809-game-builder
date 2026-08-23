@@ -1414,3 +1414,63 @@ Arbitrage auteur (23/08). Les armes passent un départ et une arrivée ; le modu
 en tire l'escalier exact (un intervalle par rangée), retranche le hors-carte et
 le hors-ruban, puis choisit le régime. Les armes ne portent pas de géométrie de
 grille.
+
+## 16. `clearRect` — l'effacement en masse (23/08/2026)
+
+### Ce qui est écrit et prouvé
+
+`pscroll.clearRect` prend un **départ**, une **arrivée** et la **taille du bloc**,
+et efface la surface balayée. C'est le module qui fait la géométrie : les armes
+ne portent pas de grille.
+
+Trois chemins, dont deux spécialisés parce que ce sont ceux du jeu :
+
+- **horizontal** (`r0 == r1`) — le Force Pod et le Wave Cannon : toutes les
+  rangées du bloc partagent le même intervalle, aucun parcours de segment ;
+- **vertical** (`c0 == c1`) — une seule colonne d'intervalle sur toutes les
+  rangées balayées ;
+- **oblique** — l'escalier exact, un intervalle par rangée. Le squelette est
+  écrit, il n'est pas branché : aucune arme du stage 4 n'en a besoin
+  aujourd'hui.
+
+`pscroll.clearRow` borne ensuite sur la carte **et sur le ruban** — une cellule
+hors fenêtre n'est pas dans le buffer, l'y effacer poserait un bit que rien
+n'affiche, exactement le défaut corrigé sur `setCell`.
+
+**Prouvé sur machine** (`tools/check_rect.py`, cinq cas, chacun sur une mire
+fraîche) : la différence à l'écran est **exactement** l'intersection de la
+surface balayée et de la mire — ni gomme voisine mangée, ni gomme oubliée dans
+le couloir. Le cas qui déborde à gauche de la carte n'efface rien et ne plante
+pas.
+
+### Mesuré
+
+| cas | cellules | `clearRect` | mutation | total |
+|---|---|---|---|---|
+| bloc 4×4 seul | 16 | 655 cy | 1 723 | 148 cy/cellule |
+| 4×4 balayé de 6 (l'union d'une trame) | 40 | 2 045 | 13 221 | 381 |
+| bande du beam, 2×12 | 24 | 1 494 | 9 870 | 473 |
+
+La géométrie coûte ~50 cycles par cellule ; **tout le reste est la mutation par
+cellule**, et c'est elle que le déroulé doit remplacer.
+
+### Le déroulé : la séquence est là, l'aiguillage reste
+
+`gen_pscroll.py` émet `pscroll.zrow` — dix blocs de douze `std`, trois bases
+(X, Y, U) pour six lignes, offsets 8 bits, **360 octets** — plus la table
+d'entrée par emplacement de ruban et `pscroll.chunkfirst.tbl` (la première
+cellule de chaque bande, pour borner sans division).
+
+Ce qui reste à écrire, et une contrainte découverte en le câblant :
+
+1. Trouver les bandes **entièrement** couvertes par l'intervalle (les deux
+   extrémités restent par cellule).
+2. Effacer les bits de carte de ces bandes par masques d'octet — c'est là que
+   vit le contournement : **si aucun bit ne change, on ne regrave rien**.
+3. Entrer dans `pscroll.zrow` sur la première bande, patcher un `rts` après la
+   dernière.
+4. **LE RUN DOIT ÊTRE COUPÉ AUX COUTURES.** Le cisaillement décale d'une ligne
+   les bandes situées après une couture : deux bandes d'un même run ne sont
+   alors plus sur les mêmes lignes de buffer, et la séquence déroulée suppose le
+   contraire. Le ruban ne portant que dix bandes, un run traverse au plus une
+   couture — une comparaison suffit à le couper en deux appels.

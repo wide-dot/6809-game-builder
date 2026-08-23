@@ -387,6 +387,62 @@ def _suite_tables(A, L, path, ordre, colonnes):
     # RANGEE ne depend pas de la bande, le terme de BANDE ne depend pas de la
     # rangee, et le biais est une constante d'instruction. Deux tables, deux
     # additions, plus un seul mul ni une seule division.
+    # ------------------------------------------------------------------
+    # LA SEQUENCE D'EFFACEMENT DEROULEE — une rangee entiere, zero re-base.
+    #
+    # Effacer, c'est ecrire le FOND, et le fond vaut 0 : un chunk dont toutes
+    # les cellules sont parties ne contient que des zeros. Pas de table, pas de
+    # relecture de la carte.
+    #
+    # TROIS BASES, SIX LIGNES. Un offset indexe 8 bits ne va que de -128 a
+    # +127, et l'offset combine vaut « decalage de ligne » + « decalage de
+    # colonne » (1 a 76 dans la ligne) : une base ne sert donc que DEUX lignes
+    # (0 et -80). X, Y et U en couvrent six, soit exactement une rangee, et D
+    # reste charge a zero — c'est la donnee.
+    #
+    #   X sur la ligne L+1 : offset 0 -> L+1, -80 -> L
+    #   Y sur la ligne L+3 : offset 0 -> L+3, -80 -> L+2
+    #   U sur la ligne L+5 : offset 0 -> L+5, -80 -> L+4
+    #
+    # Les emplacements du ruban sont ranges A L'ENVERS dans la ligne (la bande
+    # c peint la colonne 9-c), donc deux bandes de carte consecutives sont a
+    # des offsets DECROISSANTS de 8. La sequence est emise dans cet ordre : on
+    # entre sur la premiere bande du run et on continue tout seul.
+    #
+    # L'ENTREE se choisit par le nombre de colonnes (table ci-dessous), LA
+    # SORTIE se patche par un rts — le mecanisme de pscroll.do pour le blast.
+    # La premiere cellule de chaque bande : sert a ramener un intervalle de
+    # cellules dans la fenetre du ruban, sans division au runtime. Une entree de
+    # plus que de bandes, pour que « derniere cellule de la bande m » se lise
+    # tbl[m+1]-1.
+    A("; --- la premiere cellule de chaque bande --------------------------------")
+    A("pscroll.chunkfirst.tbl")
+    for m in range(CHUNKS + 1):
+        A(f"        fdb   {-(-CHUNK_PX * m // CELL_W)}"
+          + (f"   ; bande {m}" if m % 10 == 0 else ""))
+    A("")
+    A("; --- l'effacement deroule : une rangee, dix bandes ----------------------")
+    A("; 12 std par bande, trois bases (X,Y,U) pour six lignes, offsets 8 bits.")
+    A("; On entre par pscroll.zrow.entry[bande] et on sort en patchant un rts.")
+    A("pscroll.zrow")
+    for slot in range(CHUNKS_PER_LINE - 1, -1, -1):
+        c = slot * CHUNK_SIZE
+        A(f"pscroll.zrow.{slot:02d}")
+        for base, dl in (("x", 0), ("x", -LINE_SIZE), ("y", 0), ("y", -LINE_SIZE),
+                         ("u", 0), ("u", -LINE_SIZE)):
+            for k in (1, 4):
+                off = c + k + dl
+                A(f"        std   {off},{base}")
+    A("        rts                            ; sortie naturelle : le run va")
+    A("                                       ; jusqu'au bord du ruban")
+    A("")
+    A("; l'entree, par emplacement de ruban de la PREMIERE bande du run")
+    A("pscroll.zrow.entry")
+    for slot in range(CHUNKS_PER_LINE):
+        A(f"        fdb   pscroll.zrow.{slot:02d}")
+    A("")
+    A(f"pscroll.ZROW_STEP equ 6*2*3          ; octets par bande dans la sequence")
+    A("")
     A("; --- l'offset d'une mutation, en deux termes ---------------------------")
     A("; dst = pscroll.ROW_BIAS*LINE_SIZE + rowbase[rangee] + bandoff[bande] + 1")
     A("; rowbase : le terme de rangee, axe du buffer inverse (rangee 0 en bas)")

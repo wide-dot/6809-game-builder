@@ -2103,6 +2103,234 @@ pscroll.er.tbl
         fdb   pscroll.er.14
         fdb   pscroll.er.15
 
+; --- la premiere cellule de chaque bande --------------------------------
+pscroll.chunkfirst.tbl
+        fdb   0   ; bande 0
+        fdb   6
+        fdb   11
+        fdb   16
+        fdb   22
+        fdb   27
+        fdb   32
+        fdb   38
+        fdb   43
+        fdb   48
+        fdb   54   ; bande 10
+        fdb   59
+        fdb   64
+        fdb   70
+        fdb   75
+        fdb   80
+        fdb   86
+        fdb   91
+        fdb   96
+        fdb   102
+        fdb   107   ; bande 20
+        fdb   112
+        fdb   118
+        fdb   123
+        fdb   128
+        fdb   134
+        fdb   139
+        fdb   144
+        fdb   150
+        fdb   155
+        fdb   160   ; bande 30
+        fdb   166
+        fdb   171
+        fdb   176
+        fdb   182
+        fdb   187
+        fdb   192
+        fdb   198
+        fdb   203
+        fdb   208
+        fdb   214   ; bande 40
+        fdb   219
+        fdb   224
+        fdb   230
+        fdb   235
+        fdb   240
+        fdb   246
+        fdb   251
+        fdb   256
+        fdb   262
+        fdb   267   ; bande 50
+        fdb   272
+        fdb   278
+        fdb   283
+        fdb   288
+        fdb   294
+        fdb   299
+        fdb   304
+        fdb   310
+        fdb   315
+        fdb   320   ; bande 60
+        fdb   326
+        fdb   331
+        fdb   336
+        fdb   342
+        fdb   347
+        fdb   352
+        fdb   358
+        fdb   363
+        fdb   368
+        fdb   374   ; bande 70
+        fdb   379
+        fdb   384
+
+; --- l'effacement deroule : une rangee, dix bandes ----------------------
+; 12 std par bande, trois bases (X,Y,U) pour six lignes, offsets 8 bits.
+; On entre par pscroll.zrow.entry[bande] et on sort en patchant un rts.
+pscroll.zrow
+pscroll.zrow.09
+        std   73,x
+        std   76,x
+        std   -7,x
+        std   -4,x
+        std   73,y
+        std   76,y
+        std   -7,y
+        std   -4,y
+        std   73,u
+        std   76,u
+        std   -7,u
+        std   -4,u
+pscroll.zrow.08
+        std   65,x
+        std   68,x
+        std   -15,x
+        std   -12,x
+        std   65,y
+        std   68,y
+        std   -15,y
+        std   -12,y
+        std   65,u
+        std   68,u
+        std   -15,u
+        std   -12,u
+pscroll.zrow.07
+        std   57,x
+        std   60,x
+        std   -23,x
+        std   -20,x
+        std   57,y
+        std   60,y
+        std   -23,y
+        std   -20,y
+        std   57,u
+        std   60,u
+        std   -23,u
+        std   -20,u
+pscroll.zrow.06
+        std   49,x
+        std   52,x
+        std   -31,x
+        std   -28,x
+        std   49,y
+        std   52,y
+        std   -31,y
+        std   -28,y
+        std   49,u
+        std   52,u
+        std   -31,u
+        std   -28,u
+pscroll.zrow.05
+        std   41,x
+        std   44,x
+        std   -39,x
+        std   -36,x
+        std   41,y
+        std   44,y
+        std   -39,y
+        std   -36,y
+        std   41,u
+        std   44,u
+        std   -39,u
+        std   -36,u
+pscroll.zrow.04
+        std   33,x
+        std   36,x
+        std   -47,x
+        std   -44,x
+        std   33,y
+        std   36,y
+        std   -47,y
+        std   -44,y
+        std   33,u
+        std   36,u
+        std   -47,u
+        std   -44,u
+pscroll.zrow.03
+        std   25,x
+        std   28,x
+        std   -55,x
+        std   -52,x
+        std   25,y
+        std   28,y
+        std   -55,y
+        std   -52,y
+        std   25,u
+        std   28,u
+        std   -55,u
+        std   -52,u
+pscroll.zrow.02
+        std   17,x
+        std   20,x
+        std   -63,x
+        std   -60,x
+        std   17,y
+        std   20,y
+        std   -63,y
+        std   -60,y
+        std   17,u
+        std   20,u
+        std   -63,u
+        std   -60,u
+pscroll.zrow.01
+        std   9,x
+        std   12,x
+        std   -71,x
+        std   -68,x
+        std   9,y
+        std   12,y
+        std   -71,y
+        std   -68,y
+        std   9,u
+        std   12,u
+        std   -71,u
+        std   -68,u
+pscroll.zrow.00
+        std   1,x
+        std   4,x
+        std   -79,x
+        std   -76,x
+        std   1,y
+        std   4,y
+        std   -79,y
+        std   -76,y
+        std   1,u
+        std   4,u
+        std   -79,u
+        std   -76,u
+        rts                            ; sortie naturelle : le run va
+                                       ; jusqu'au bord du ruban
+
+; l'entree, par emplacement de ruban de la PREMIERE bande du run
+pscroll.zrow.entry
+        fdb   pscroll.zrow.00
+        fdb   pscroll.zrow.01
+        fdb   pscroll.zrow.02
+        fdb   pscroll.zrow.03
+        fdb   pscroll.zrow.04
+        fdb   pscroll.zrow.05
+        fdb   pscroll.zrow.06
+        fdb   pscroll.zrow.07
+        fdb   pscroll.zrow.08
+        fdb   pscroll.zrow.09
+
+pscroll.ZROW_STEP equ 6*2*3          ; octets par bande dans la sequence
+
 ; --- l'offset d'une mutation, en deux termes ---------------------------
 ; dst = pscroll.ROW_BIAS*LINE_SIZE + rowbase[rangee] + bandoff[bande] + 1
 ; rowbase : le terme de rangee, axe du buffer inverse (rangee 0 en bas)
