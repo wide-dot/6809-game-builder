@@ -1710,42 +1710,54 @@ Le banc a payé immédiatement : quatre défauts réels, dont deux du moteur.
 4. **`edge16` est un octet** : lu en mot par le modèle Python, la borne de
    ruban devenait infranchissable et le modèle n'effaçait plus rien.
 
-### Le décalage d'une ligne aux coutures — caractérisé, pas résolu
+### Le décalage d'une ligne aux coutures — RÉSOLU
 
 Les 48 px résiduels de la démo n'étaient que la queue d'un défaut bien plus
-gros, que la chasse a mis au jour : **le plan de gommes s'affiche une ligne
-trop bas sur les derniers pixels de caméra avant certaines coutures**, puis se
-remet exactement au pas de couture. Sonde : `tools/probe_couture.py`.
+gros : **le plan de gommes s'affichait une ligne trop bas sur les huit derniers
+pixels de caméra avant une couture**. Sonde : `tools/probe_couture.py`.
 
-Ce qui est établi :
+**La cause.** L'index d'une bande vaut `(camera + 8) / 16` — le `+8` centre la
+fenêtre de 16 px. Son groupe de couture, donc le `startline` que `feedBand`
+grave, change donc quand **`camera + 8`** franchit un multiple de 160. Mais
+`move` comparait **`camera.x` nue** aux seuils de `seam.tbl` : `origin` sautait
+huit pixels trop tard, et pendant ces huit pixels le blast entrait une ligne à
+côté des bandes gravées. Correctif : une variable `pscroll.seamx = camera.x + 8`,
+tenue à jour avec la caméra, et c'est elle qu'on compare aux seuils — dans
+`move` comme dans `seamFind`.
 
-- **stable et reproductible** — cinq mesures identiques au repos, `frameDrop`
-  constant : ni capture en vol, ni artefact de double-buffer ;
-- **c'est bien une ligne, et tout le plan** — vérifié en image, les rangées
-  larges du motif tombent une ligne plus bas ; ni déchirure, ni décalage
-  horizontal (mon premier ajustement automatique disait « dy = +3 », artefact
-  de la périodicité du motif : l'image, elle, ne ment pas) ;
-- **caméra mod 160 ∈ [153..159]**, et ça disparaît au pas de couture ;
-- **mais pas à toutes les coutures** : celle de 640 est saine, 800 et 960 non.
+**Ce qui a permis de le trouver** — l'instrumentation, pas le raisonnement. Un
+journal de gravure derrière `PSCROLL_DEBUG` (`dbg.startline`, `dbg.fed`,
+`dbg.cam` par bande ; `dbg.entry` et les valeurs vues par `do`) a montré du
+premier coup que **le ruban était identique à la caméra fautive et à la caméra
+saine** — mêmes bandes, mêmes `startline`, aucune regravure. Le feed était
+innocenté, la faute était côté affichage.
 
-C'est ce dernier point qui interdit la conclusion facile. La théorie naturelle
-est un `+8` manquant : `move` compare `camera.x` aux seuils de `seam.tbl`,
-alors que l'index de bande dérive de `camera.x + 8` — donc `stretch` et le
-groupe de couture des bandes divergent quand `camera mod 160 ≥ 152`. Ça prédit
-le défaut à **toutes** les coutures ; la mesure le dément.
+**Un piège de lecture, et un faux coupable.** `do` s'exécute AVANT `move` : les
+variables relues après la trame ne sont pas celles qui ont peint. C'est en
+capturant `h`, `window` et `origin` *à l'instant où `do` les lit* que le
+mécanisme est apparu — et il a d'abord désigné le mauvais coupable :
 
-Et à l'instant du défaut, `stretch`, `origin` et `seam.tbl` sont mutuellement
-cohérents : `startline = ROW_BIAS − bande/10` pour les bandes visibles vaut
-exactement `origin` (au biais d'une ligne du blast, qui est voulu). La
-contradiction est donc ailleurs — et je ne l'ai pas trouvée.
+```
+@mod    cmpb  #10
+        blo   @modok
+@modok  beq   >          ; teste les flags du CMPB, pas la nullite de B
+```
 
-**Piège rencontré** : poker `pscroll.origin` pour tester ne prouve rien et
-*abîme* le ruban — `runBuffer` y pose un `jmp` de sortie qu'il restaure à la
-ligne d'origine ; changer `origin` entre deux trames laisse un `jmp` orphelin
-dans le buffer. Mes premières mesures « incohérentes » venaient de là.
+Un `window` multiple de 10 laisse `b = 0`, mais `Z` porte le `cmpb #10` : le
+`beq` n'est pas pris, et `h` vaut **10** au lieu de 0. Ça ressemble à un bug —
+c'en est un dans la forme, mais **le résultat est celui qu'il faut** : `h*8 = 80`,
+soit une ligne entière, et cette ligne est exactement le débordement de la
+rotation (colonne 80 = colonne 0 de la ligne suivante) qui compense le biais
+d'une ligne du blast. « Corriger » ce `beq` par un `tstb` casse l'affichage —
+essayé, mesuré, annulé. Le commentaire du code le dit désormais.
 
-**C'est le défaut à fermer avant de migrer `pscroll` dans `games/r-type`** :
-il touche le scroll lui-même, pas l'effacement.
+**Vérifié** : six coutures balayées caméra par caméra (320, 480, 640, 800, 960,
+1120), **aucune caméra fautive**. `check_gum` 80/80, `check_rect` 10/10.
+
+**Reste**, sur la démo complète : 72 pixels résiduels contre la carte machine
+(l'écart de 1 599 affiché vient d'une divergence entre le modèle Python et la
+machine sur 39 octets de champ — le modèle croit avoir effacé des cellules que
+le moteur a refusées). C'est le prochain fil, beaucoup plus fin que celui-ci.
 
 Bilan de la passe complète : 41/42 validations conformes, 868 trames, vidéo de
 35 s (2× temps réel).

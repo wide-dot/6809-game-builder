@@ -213,6 +213,7 @@ pscroll.origin        fcb   0          ; ligne d'entree dans le buffer
 ; un poste qui pese 0,3 % de la trame.
 
 pscroll.h             fcb   0
+pscroll.seamx         fdb   0          ; camera.x + 8 : ce qui decide la couture
 pscroll.w             fcb   0
 pscroll.bo            fdb   0
 pscroll.dest0         fdb   0
@@ -323,6 +324,15 @@ pscroll.buildSkeleton
 ; -----------------------------------------------------------------------------
 pscroll.setCameraX
         std   pscroll.camera.x
+        addd  #8                       ; LA COUTURE SE DECIDE SUR LA FENETRE,
+        std   pscroll.seamx            ; pas sur la camera nue : l'index de
+                                       ; bande vaut (camera+8)/16, donc son
+                                       ; groupe change quand camera+8 franchit
+                                       ; un multiple de 160 — huit pixels avant
+                                       ; la camera. Comparer camera.x aux
+                                       ; seuils faisait deriver origin de huit
+                                       ; pixels par rapport aux bandes gravees
+                                       ; (defaut de couture du 23/08).
         bsr   pscroll.seamFind         ; pose pscroll.stretch
         lda   #pscroll.SEAM_BIAS       ; meme convention que la ligne des
         suba  pscroll.stretch          ; bandes : BIAIS - coutures
@@ -353,7 +363,7 @@ pscroll.seam.tbl
 pscroll.seamFind
         ldx   #pscroll.seam.tbl
 @f      ldd   ,x++
-        cmpd  pscroll.camera.x
+        cmpd  pscroll.seamx            ; meme critere que move
         bls   @f
         tfr   x,d                      ; x pointe apres le palier non franchi
         subd  #pscroll.seam.tbl+2
@@ -436,6 +446,8 @@ pscroll.move
         ble   >
         ldd   pscroll.camera.x.max
 !       std   pscroll.camera.x
+        addd  #8
+        std   pscroll.seamx            ; la position qui decide de la couture
         ldb   pscroll.speedx
         bpl   >
         ldb   #$ff
@@ -450,7 +462,7 @@ pscroll.move
         aslb
         ldx   #pscroll.seam.tbl
         ldd   b,x
-        cmpd  pscroll.camera.x
+        cmpd  pscroll.seamx
         bhi   @noup
         inc   pscroll.stretch          ; vers la droite : l'entree descend
         dec   pscroll.origin
@@ -461,7 +473,7 @@ pscroll.move
         aslb
         ldx   #pscroll.seam.tbl
         ldd   b,x
-        cmpd  pscroll.camera.x
+        cmpd  pscroll.seamx
         bls   @noseam
         dec   pscroll.stretch          ; vers la gauche
         inc   pscroll.origin
@@ -546,6 +558,28 @@ pscroll.feedBand
         lda   #pscroll.ROW_BIAS
         suba  ,s+
         sta   pscroll.startline
+ IFDEF PSCROLL_DEBUG
+        ; LE JOURNAL DE GRAVURE. On note, PAR BANDE, le startline reellement
+        ; ecrit, la camera de la gravure et le nombre de passages. C'est le
+        ; seul moyen de confronter ce que le feed a grave a ce que le modele
+        ; dit (ROW_BIAS - bande/10) : au defaut de couture du 23/08, tout
+        ; concordait EN VARIABLES mais pas a l'ecran.
+        ldb   pscroll.band
+        ldx   #pscroll.dbg.startline
+        abx
+        sta   ,x
+        ldx   #pscroll.dbg.fed
+        abx
+        inc   ,x
+        ldb   pscroll.band
+        aslb
+        clra
+        ldx   #pscroll.dbg.cam
+        leax  d,x
+        ldd   pscroll.camera.x
+        std   ,x
+        lda   pscroll.startline        ; A servait au journal : le rendre
+ ENDC
         ; les quatre buffers
         clr   pscroll.counter
 @buf    lda   pscroll.counter
@@ -635,10 +669,34 @@ pscroll.do
         blo   @modok
         subb  #pscroll.CHUNKS_PER_LINE
         bra   @mod
-@modok  beq   >
-        subb  #pscroll.CHUNKS_PER_LINE
-        negb                           ; h = (10 - window mod 10) mod 10
+@modok  beq   >                        ; h = (10 - window mod 10), et le reste
+        subb  #pscroll.CHUNKS_PER_LINE ; NUL donne 10, PAS 0 — voulu.
+        negb
+                                       ; ATTENTION : le `beq` teste les flags du
+                                       ; `cmpb #10` de la boucle (0 vs 10, donc
+                                       ; Z=0), pas la nullite de B. Un window
+                                       ; multiple de 10 tombe donc dans la
+                                       ; branche du complement et rend h = 10.
+                                       ; C'EST CE QU'IL FAUT : h*8 = 80, soit
+                                       ; une ligne entiere — la rotation deborde
+                                       ; sur la ligne suivante (colonne 80 =
+                                       ; colonne 0 d'apres), et c'est ce
+                                       ; debordement qui compense le biais d'une
+                                       ; ligne du blast. « Corriger » ce beq par
+                                       ; un tstb casse l'affichage (essaye le
+                                       ; 23/08). Le vrai defaut etait ailleurs :
+                                       ; le seuil de couture, voir pscroll.seamx.
 !       stb   pscroll.h
+ IFDEF PSCROLL_DEBUG
+        stb   pscroll.dbg.h            ; h, window et origin TELS QUE do les a
+        ldb   pscroll.window           ; vus — les relire apres la trame donne
+        stb   pscroll.dbg.window       ; l'etat d'APRES move, qui n'est pas
+        ldb   pscroll.origin           ; celui qui a servi a peindre
+        stb   pscroll.dbg.origin
+        ldd   pscroll.camera.x
+        std   pscroll.dbg.camdo
+        ldb   pscroll.h
+ ENDC
         ; --- la partie fine : bo et w --------------------------------------
         ldb   pscroll.camera.x+1
         addb  #8
@@ -728,6 +786,21 @@ pscroll.runBuffer
         aslb
         aslb
         leax  b,x                      ; x = point d'entree
+ IFDEF PSCROLL_DEBUG
+        ; L'ADRESSE D'ENTREE REELLE du blast, et sa sortie, pour le buffer
+        ; courant. origin et startline concordaient dans les deux etats du
+        ; defaut de couture (23/08) : c'est donc l'adresse qu'il faut lire,
+        ; pas les variables dont on la croit derivee.
+        pshs  a,b
+        ldb   pscroll.counter
+        aslb
+        ldu   #pscroll.dbg.entry
+        stx   b,u
+        ldu   #pscroll.dbg.exit
+        ldd   pscroll.savedU
+        std   b,u
+        puls  a,b
+ ENDC
         sts   pscroll.savedS
         lds   pscroll.dest.current
         jmp   ,x
@@ -1557,6 +1630,17 @@ pscroll.clearRun.bit
 
 pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
+ IFDEF PSCROLL_DEBUG
+pscroll.dbg.h         fcb 0                      ; ce que do a VU
+pscroll.dbg.window    fcb 0
+pscroll.dbg.origin    fcb 0
+pscroll.dbg.camdo     fdb 0
+pscroll.dbg.entry     fill 0,8                   ; entree du blast, par buffer
+pscroll.dbg.exit      fill 0,8                   ; sa sortie (savedU)
+pscroll.dbg.startline fill 0,pscroll.CHUNKS      ; grave par bande
+pscroll.dbg.fed       fill 0,pscroll.CHUNKS      ; nombre de gravures
+pscroll.dbg.cam       fill 0,2*pscroll.CHUNKS    ; camera de la derniere
+ ENDC
 pscroll.run.n     fcb 0                ; la longueur du run en cours
 pscroll.run.k     fcb 0                ; la coupe d'une decomposition
 pscroll.run.last  fcb 0

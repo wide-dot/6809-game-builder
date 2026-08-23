@@ -3,6 +3,7 @@
 ; les seize routines de run de quatre n'y entraient pas. L'objet COMPLET vit
 ; desormais dans games/r-type/src/enemies/cytron/ ; ce pilote n'etait qu'un
 ; banc de repousse. Le remettre a 1 pour rejouer shot_cytron.py.
+PSCROLL_DEBUG equ 1                    ; le journal de gravure de feedBand
 BENCH_CYTRON equ 0
 
 ;*******************************************************************************
