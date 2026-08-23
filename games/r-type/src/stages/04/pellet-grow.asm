@@ -12,6 +12,11 @@
 ; sortie    : cc.Z = 1 si rien n'a pousse (hors champ, terrain dur, ou deja
 ;             pleine) — la meme convention que pscroll.setCell
 ;
+; ETIQUETTES EXPLICITES ET NON LOCALES : une invocation de MACRO entre l'usage
+; d'un @label et sa definition casse sa portee chez lwasm (« Undefined symbol
+; @rien »), et cette routine monte une page au milieu. Vu deux fois le 23/08,
+; ici et dans cytron/obj.asm.
+;
 ; Les deux divisions se font par soustractions : la cellule fait 3 px de large
 ; et la rangee 6 lignes, donc au plus 53 et 30 tours, une fois par trame et par
 ; cytron. Si le stage en fait vivre plusieurs a la fois, c'est le premier
@@ -25,31 +30,31 @@ pellet.grow
 
         ; --- la rangee : (ligne - VP_Y) / 6
         subb  #pellet.VP_Y
-        blo   @rien                      ; au-dessus du champ
+        blo   pellet.grow.no                      ; au-dessus du champ
         clra
-@rowdiv cmpb  #pellet.CELL_H
-        blo   @rowok
+pellet.grow.rd cmpb  #pellet.CELL_H
+        blo   pellet.grow.rok
         subb  #pellet.CELL_H
         inca
-        bra   @rowdiv
-@rowok  cmpa  #pellet.ROWS
-        bhs   @rien                      ; sous le champ
+        bra   pellet.grow.rd
+pellet.grow.rok  cmpa  #pellet.ROWS
+        bhs   pellet.grow.no                      ; sous le champ
         sta   pellet.grow.row
 
         ; --- la cellule relative : (x ecran - x0) / 3
         ldd   pellet.gx
         subb  pellet.x0
         sbca  #0
-        blo   @rien                      ; a gauche de la travee
+        blo   pellet.grow.no                      ; a gauche de la travee
         tsta
-        bne   @rien                      ; hors ecran a droite
+        bne   pellet.grow.no                      ; hors ecran a droite
         clra
-@coldiv cmpb  #pellet.CELL_W
-        blo   @colok
+pellet.grow.cd cmpb  #pellet.CELL_W
+        blo   pellet.grow.cok
         subb  #pellet.CELL_W
         inca
-        bra   @coldiv
-@colok  sta   pellet.grow.k
+        bra   pellet.grow.cd
+pellet.grow.cok  sta   pellet.grow.k
 
         ; --- l'octet et le bit, dans la page des cartes
         _GetCartPageA
@@ -76,18 +81,18 @@ pellet.grow
         ldb   b,u                        ; le masque du bit
 
         bitb  pellet.HARDOFF,x           ; terrain dur : cytron n'y peut rien
-        bne   @fini
+        bne   pellet.grow.end
         bitb  ,x                         ; deja pleine ?
-        bne   @fini
+        bne   pellet.grow.end
         orb   ,x                         ; elle pousse
         stb   ,x
         lda   pellet.grow.page
         _SetCartPageA
         andcc #$FB                       ; Z = 0 : le champ a change
         rts
-@fini   lda   pellet.grow.page
+pellet.grow.end   lda   pellet.grow.page
         _SetCartPageA
-@rien   orcc  #$04                       ; Z = 1 : rien n'a pousse
+pellet.grow.no   orcc  #$04                       ; Z = 1 : rien n'a pousse
         rts
 
 pellet.CELL_W    equ 3                   ; largeur d'une cellule, en px larges

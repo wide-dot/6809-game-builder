@@ -519,4 +519,8 @@ pellet.runRegs   rmb 48                  ; 12 x (p0 p1 p2 p0)
 
         INCLUDE "src/stages/04/pellet-tables.asm"
 
+; La repousse vit dans la meme section : elle partage pellet.tbl.bit, la page
+; des cartes et la geometrie du champ.
+        INCLUDE "src/stages/04/pellet-grow.asm"
+
  ENDSECTION

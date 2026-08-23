@@ -71,16 +71,13 @@ Init
         ; 696e : load_xy_preset copie (x,y) depuis bug_and_pow_armor_preset_xy
         lda   subtype_w+1,u
         anda  #$0F
-        aslb
+        asla                           ; deux octets par entree
         ldx   #PresetXYIndex
-        lda   subtype_w+1,u
-        anda  #$0F
-        aslb
-        abx
-        ldd   glb_camera_x_pos
+        leax  a,x
+        clra
+        ldb   ,x                       ; x du preset
+        addd  glb_camera_x_pos
         addd  #144+8
-        addb  ,x                       ; + x du preset
-        adca  #0
         std   x_pos,u
         clra
         ldb   1,x                      ; y du preset
@@ -134,10 +131,10 @@ Live
         std   moveByScript.callback
         jsr   moveByScript.runByFrameDrop
 !       lda   moveByScript.anim.end
-        bne   @delete                  ; 6a42 : script fini = decharge silencieuse
+        bne   cytron.dead                  ; 6a42 : script fini = decharge silencieuse
         jsr   tryFoeFire
         lda   AABB_0+AABB.p,u
-        beq   @destroy
+        beq   cytron.blown
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
@@ -159,18 +156,18 @@ Live
         std   image_set,u
         jmp   DisplaySprite
 
-@destroy
+cytron.blown
         ldb   #cytron_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
-        beq   @delete
+        beq   cytron.dead
         _ldd  ObjID_explosion,explosion.subtype.smallx2
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
         ldd   y_pos,u
         std   y_pos,x
-@delete
+cytron.dead
         lda   #2
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy

@@ -1237,6 +1237,69 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
+                <!-- cytron : seize poses, ce sont les seize directions de son
+                     cercle de repousse et le script les pose lui-meme. -->
+                <!-- Dans l'arene du STAGE et non dans « enemies » : cytron ne
+                     sert qu'au stage 4, et l'arene partagee est pleine (le
+                     dobkeratops du stage 1 n'y tenait plus). -->
+                <file name="lib.cytron" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/cytron.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/cytron/cytron.unit.asm"/>
+                                <gfxcomp file="lib.cytron" gendir="gen/enemies/cytron"
+                                         gensource="gen/enemies/cytron/includes.asm"
+                                         genindex="gen/enemies/cytron/index.asm">
+                                    <image name="cytron_0" filename="src/enemies/cytron/images/default/00.png" index="0">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_1" filename="src/enemies/cytron/images/default/01.png" index="1">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_2" filename="src/enemies/cytron/images/default/02.png" index="2">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_3" filename="src/enemies/cytron/images/default/03.png" index="3">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_4" filename="src/enemies/cytron/images/default/04.png" index="4">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_5" filename="src/enemies/cytron/images/default/05.png" index="5">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_6" filename="src/enemies/cytron/images/default/06.png" index="6">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_7" filename="src/enemies/cytron/images/default/07.png" index="7">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_8" filename="src/enemies/cytron/images/default/08.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_9" filename="src/enemies/cytron/images/default/09.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_10" filename="src/enemies/cytron/images/default/10.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_11" filename="src/enemies/cytron/images/default/11.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_12" filename="src/enemies/cytron/images/default/12.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_13" filename="src/enemies/cytron/images/default/13.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_14" filename="src/enemies/cytron/images/default/14.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_15" filename="src/enemies/cytron/images/default/15.png" index="15">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
 <file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1589,6 +1652,7 @@
                 </scene>
                 <scene name="scenes.lot.cancer" section="SCENE" gensource="gen/scenes/lot-cancer.asm">
                     <load name="lib.cancer"/>
+                    <load name="lib.cytron"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>
