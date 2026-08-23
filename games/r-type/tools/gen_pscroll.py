@@ -534,6 +534,18 @@ def _suite_tables(A, L, path, ordre, colonnes):
         A(f"        fdb   {-(-CHUNK_PX * m // CELL_W)}"
           + (f"   ; bande {m}" if m % 10 == 0 else ""))
     A("")
+    A("; LA DERNIERE CELLULE ENTIEREMENT DANS LA BANDE m. Une cellule occupe")
+    A("; [3c, 3c+2] ; elle tient dans la bande m si 3c+2 <= 16m+15, soit")
+    A("; c <= (16m+13)/3. NE PAS confondre avec chunkfirst[m+1]-1, qui est la")
+    A("; cellule d'AVANT la premiere entierement dans la bande suivante : celle-la")
+    A("; est le plus souvent A CHEVAL sur les deux bandes. Prendre l'une pour")
+    A("; l'autre laissait la queue d'un effacement demarrer une cellule trop loin,")
+    A("; et cette cellule gardait deux de ses trois pixels (23/08).")
+    A("pscroll.bandlast.tbl")
+    for m in range(CHUNKS + 1):
+        A(f"        fdb   {(CHUNK_PX * m + CHUNK_PX - 1 - (CELL_W - 1)) // CELL_W}"
+          + (f"   ; bande {m}" if m % 10 == 0 else ""))
+    A("")
     A("; --- l'effacement deroule : une rangee, dix bandes ----------------------")
     A("; 12 std par bande, trois bases (X,Y,U) pour six lignes, offsets 8 bits.")
     A("; On entre par pscroll.zrow.entry[bande] et on sort en patchant un rts.")

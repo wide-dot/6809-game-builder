@@ -1835,6 +1835,60 @@ correcte (`0 octet` d'écart) mais l'écran garde 12 à 18 pixels — c'est la m
 famille que les 48 px résiduels de la démo. Le défaut est à la jonction entre
 le milieu déroulé et les extrémités, et il se rejoue en une commande.
 
+### Le chemin des bandes déroulées — corrigé
+
+La matrice a désigné le coupable au pixel : longueur 8, tous décalages, la carte
+juste et l'écran faux. Le détail disait tout — pour un run de 8 à partir de la
+cellule 6, **la cellule 5 (hors du run) perdait deux de ses trois pixels, et la
+cellule 10 (dans le run) en gardait deux**.
+
+**La cause : une bande se jugeait en cellules alors qu'elle s'efface en
+pixels.** La séquence déroulée vide les seize pixels de la bande ; elle n'est
+donc utilisable que si ces seize pixels sont TOUS dans l'intervalle. Or `prep`
+demandait « la première cellule entièrement dans la bande est-elle ≥ a ? », ce
+qui est un critère plus faible, faux des deux côtés :
+
+- **à gauche**, la bande débordait sur la cellule d'avant, qui perdait deux
+  pixels sans que la carte le dise ;
+- **à droite**, la queue démarrait à `chunkfirst[m1+1]`, la première cellule
+  entièrement dans la bande SUIVANTE — en sautant celle à cheval, qui n'était
+  donc effacée par personne.
+
+Le critère est désormais en pixels, et il est exact :
+
+```
+m0 = ceil(3a / 16)          première bande entièrement dedans
+m1 = (3b + 2 − 15) / 16     dernière bande entièrement dedans
+```
+
+et la queue part de `bandlast[m1] + 1`, une nouvelle table donnant la dernière
+cellule **entièrement** dans la bande (`floor((16m+13)/3)`), à ne pas confondre
+avec `chunkfirst[m+1] − 1`.
+
+**Le prix, et comment il a été repris.** Le critère resserré qualifie moins de
+bandes : le coût des runs longs a triplé d'un coup (223 → 728 cycles par case
+sur la bande du beam). Les extrémités passent donc elles aussi par les routines
+de run — elles font une à cinq cellules, autant les traiter d'un trait — sauf la
+longueur 3, qui n'est pas gravée et que la table dense rabattrait sur celle de 2
+(une cellule resterait entière : attrapé par la matrice, encore).
+
+| cas | avant correction | après | |
+|---|---|---|---|
+| bloc 4×4 seul | 610 | 633 | +4 % |
+| 4×4 balayé de 1 | 526 | 549 | +4 % |
+| 4×4 balayé de 6 | 577 | 808 | +40 % |
+| bande beam 2×12 | 223 | **399** | +79 % |
+| bande large 2×24 | 220 | **301** | +37 % |
+
+Le surcoût est réel et assumé : **les mesures d'avant portaient sur un
+effacement faux**. La bande large en est la preuve directe — elle efface
+désormais 615 pixels là où elle en effaçait 603, les douze manquants étant la
+cellule que la queue sautait.
+
+**Validation** : 176 essais de matrice (longueurs 1 à 24, seize décalages),
+zéro faute ; plus 72 essais sur les rangées de bord. `check_gum` 80/80,
+`check_rect` 10/10.
+
 ### L'oblique, retiré
 
 Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en

@@ -2864,6 +2864,88 @@ pscroll.chunkfirst.tbl
         fdb   379
         fdb   384
 
+; LA DERNIERE CELLULE ENTIEREMENT DANS LA BANDE m. Une cellule occupe
+; [3c, 3c+2] ; elle tient dans la bande m si 3c+2 <= 16m+15, soit
+; c <= (16m+13)/3. NE PAS confondre avec chunkfirst[m+1]-1, qui est la
+; cellule d'AVANT la premiere entierement dans la bande suivante : celle-la
+; est le plus souvent A CHEVAL sur les deux bandes. Prendre l'une pour
+; l'autre laissait la queue d'un effacement demarrer une cellule trop loin,
+; et cette cellule gardait deux de ses trois pixels (23/08).
+pscroll.bandlast.tbl
+        fdb   4   ; bande 0
+        fdb   9
+        fdb   15
+        fdb   20
+        fdb   25
+        fdb   31
+        fdb   36
+        fdb   41
+        fdb   47
+        fdb   52
+        fdb   57   ; bande 10
+        fdb   63
+        fdb   68
+        fdb   73
+        fdb   79
+        fdb   84
+        fdb   89
+        fdb   95
+        fdb   100
+        fdb   105
+        fdb   111   ; bande 20
+        fdb   116
+        fdb   121
+        fdb   127
+        fdb   132
+        fdb   137
+        fdb   143
+        fdb   148
+        fdb   153
+        fdb   159
+        fdb   164   ; bande 30
+        fdb   169
+        fdb   175
+        fdb   180
+        fdb   185
+        fdb   191
+        fdb   196
+        fdb   201
+        fdb   207
+        fdb   212
+        fdb   217   ; bande 40
+        fdb   223
+        fdb   228
+        fdb   233
+        fdb   239
+        fdb   244
+        fdb   249
+        fdb   255
+        fdb   260
+        fdb   265
+        fdb   271   ; bande 50
+        fdb   276
+        fdb   281
+        fdb   287
+        fdb   292
+        fdb   297
+        fdb   303
+        fdb   308
+        fdb   313
+        fdb   319
+        fdb   324   ; bande 60
+        fdb   329
+        fdb   335
+        fdb   340
+        fdb   345
+        fdb   351
+        fdb   356
+        fdb   361
+        fdb   367
+        fdb   372
+        fdb   377   ; bande 70
+        fdb   383
+        fdb   388
+
 ; --- l'effacement deroule : une rangee, dix bandes ----------------------
 ; 12 std par bande, trois bases (X,Y,U) pour six lignes, offsets 8 bits.
 ; On entre par pscroll.zrow.entry[bande] et on sort en patchant un rts.

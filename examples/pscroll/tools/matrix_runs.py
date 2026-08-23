@@ -233,11 +233,14 @@ for n in LONGUEURS:
                                   r, o, att_b, vu_b, cells,
                                   "que la machine a GARDEES"
                                   if (vu_b & diff) else "que la machine a EFFACEES"))
-                    if tr:
-                        lignes = sorted({(y - VP_Y) % CELL_H for x, y in tr})
-                        cells = sorted({(cam + x) // 3 for x, y in tr})
-                        print("      en trop : cellules %s, lignes-dans-rangee %s"
-                              % (cells, lignes))
+                    for nom, ens in (("manquants", mq), ("en trop", tr)):
+                        if ens:
+                            print("      %-9s : cellules %s | rangees %s | "
+                                  "lignes-dans-rangee %s"
+                                  % (nom,
+                                     sorted({(cam + x) // 3 for x, y in ens}),
+                                     sorted({(y - VP_Y) // CELL_H for x, y in ens}),
+                                     sorted({(y - VP_Y) % CELL_H for x, y in ens})))
             else:
                 ligne.append(".")
     print("longueur %-2d : %s" % (n, "".join(ligne)))

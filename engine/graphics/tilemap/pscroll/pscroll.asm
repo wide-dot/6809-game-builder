@@ -104,6 +104,7 @@ pscroll.OPCODE_LDX_I  equ   $8E        ; ldx #imm
 pscroll.OPCODE_PSHS   equ   $34        ; pshs ...
 pscroll.POSTB_DX      equ   $16        ; ... d,x  (b0000 0110 -> A,B,X)
 
+pscroll.CHUNK_PX      equ   16        ; pixels larges couverts par une bande
 pscroll.CHUNK_SIZE    equ   8          ; ldd#(3) ldx#(3) pshs(2) = 16 px
 pscroll.CHUNKS_PER_LINE equ 10         ; 10 x 16 px = 160 px
 pscroll.LINE_SIZE     equ   pscroll.CHUNKS_PER_LINE*pscroll.CHUNK_SIZE
@@ -1277,29 +1278,47 @@ pscroll.rect.prepFail
 ; fond vaut 0, donc leur contenu de buffer n'est plus que des zeros. Les deux
 ; extremites, elles, restent par cellule — une bande couvre six cellules, un
 ; run n'en remplit une que s'il la couvre toute.
-        ldd   pscroll.rect.a           ; m0 : premiere bande PLEINE
-        lbsr  pscroll.chunkOf
+        ; UNE BANDE SE JUGE EN PIXELS, PAS EN CELLULES. La sequence deroulee
+        ; vide les seize pixels de la bande ; elle n'est donc utilisable que si
+        ; TOUS ces pixels sont dans l'intervalle. L'ancien critere raisonnait en
+        ; cellules (« la premiere cellule entierement dans la bande est-elle
+        ; >= a ? ») et se trompait des deux cotes : la bande debordait a gauche
+        ; sur la cellule d'avant — qui perdait deux de ses trois pixels sans
+        ; que la carte le dise — et laissait a droite une cellule que la queue
+        ; ne reprenait pas. Mesure du 23/08 : longueur 8, tous decalages.
+        ;
+        ;   m0 = ceil(3a / 16)        premiere bande entierement dedans
+        ;   m1 = (3b + 2 - 15) / 16   derniere bande entierement dedans
+        ldd   pscroll.rect.a
+        aslb
+        rola
+        addd  pscroll.rect.a           ; 3a
+        addd  #pscroll.CHUNK_PX-1      ; arrondi vers le haut
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
         stb   pscroll.rect.m0
+        ldd   pscroll.rect.b
         aslb
-        clra
-        ldx   #pscroll.chunkfirst.tbl
-        ldd   d,x
-        cmpd  pscroll.rect.a
-        bhs   >
-        inc   pscroll.rect.m0          ; sa premiere cellule est avant a
-!       ldd   pscroll.rect.b           ; m1 : derniere bande PLEINE
-        lbsr  pscroll.chunkOf
+        rola
+        addd  pscroll.rect.b           ; 3b
+        subd  #pscroll.CHUNK_PX-3      ; 3b + 2 - 15
+        bmi   pscroll.rect.prepShort   ; pas seize pixels : aucune bande
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
         stb   pscroll.rect.m1
-        incb
-        aslb
-        clra
-        ldx   #pscroll.chunkfirst.tbl
-        ldd   d,x
-        subd  #1
-        cmpd  pscroll.rect.b
-        bls   >
-        dec   pscroll.rect.m1          ; sa derniere cellule depasse b
-!       andcc #$FE                     ; C = 0 : il reste du travail
+        andcc #$FE                     ; C = 0 : il reste du travail
 pscroll.rect.prepEnd
         rts
 pscroll.rect.prepShort
@@ -1334,12 +1353,13 @@ pscroll.clearRow.go
         std   pscroll.rect.nleft
         lbsr  pscroll.clearRow.runCells
         lda   pscroll.rect.m1
-        inca
         asla
-        ldx   #pscroll.chunkfirst.tbl
-        ldd   a,x                      ; premiere cellule apres la derniere
-        std   pscroll.rect.cur         ; pleine : la queue commence la
-        std   pscroll.rect.mid1
+        ldx   #pscroll.bandlast.tbl
+        ldd   a,x                      ; la derniere cellule ENTIEREMENT dans
+        addd  #1                       ; la bande : la queue commence apres.
+        std   pscroll.rect.cur         ; (chunkfirst[m1+1] designait la premiere
+        std   pscroll.rect.mid1        ; cellule entierement dans la bande
+                                       ; SUIVANTE, en sautant celle a cheval.)
         ldd   pscroll.rect.b
         addd  #1
         subd  pscroll.rect.mid1
@@ -1425,7 +1445,7 @@ pscroll.clearRow.cellsGo
         std   pscroll.rect.cur
         ldd   pscroll.rect.n
         std   pscroll.rect.nleft
-        lbsr  pscroll.clearRow.runCells
+        lbsr  pscroll.clearRow.runCellsSlow   ; la routine vient d'echouer ici
         tst   pscroll.rect.done
         beq   pscroll.clearRow.rien
         andcc #$FB                     ; Z = 0 : le champ a change
@@ -1729,6 +1749,33 @@ pscroll.chunkOf
 ; buffers, les masques — est irreductible et reste tel quel.
 ; -----------------------------------------------------------------------------
 pscroll.clearRow.runCells
+        ; LES EXTREMITES AUSSI MERITENT UNE ROUTINE DE RUN. Elles font une a
+        ; cinq cellules, et depuis que le critere de bande s'est resserre (une
+        ; bande n'est prise que si ses SEIZE pixels sont dans l'intervalle) il
+        ; y en a davantage : les passer une par une a triple le cout des runs
+        ; longs. On tente donc la routine gravee ; si elle refuse — hors ruban,
+        ; a cheval sur une couture — on reprend cellule par cellule.
+        ldd   pscroll.rect.nleft
+        lbeq  pscroll.clearRow.rcEnd
+        cmpd  #pscroll.RUN_GEN_MAX
+        bhi   pscroll.clearRow.runCellsSlow
+        cmpd  #3                       ; 3 n'est pas GRAVEE : elle se decompose
+        beq   pscroll.clearRow.runCellsSlow  ; (la table dense la rabat sur 2,
+                                       ; et la troisieme cellule restait
+                                       ; entiere — 23/08). Trois cellules par
+                                       ; le chemin unitaire, c'est peu.
+        stb   pscroll.run.n
+        ldx   pscroll.rect.cur
+        ldb   pscroll.rect.row
+        lbsr  pscroll.clearRun
+        bcs   pscroll.clearRow.runCellsSlow
+        beq   >
+        inc   pscroll.rect.done
+!       ldd   #0
+        std   pscroll.rect.nleft
+        rts
+
+pscroll.clearRow.runCellsSlow
  IFDEF PSCROLL_DEBUG
         inc   pscroll.dbg.ncells
  ENDC
