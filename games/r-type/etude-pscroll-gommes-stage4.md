@@ -1150,3 +1150,70 @@ pscroll.BLAST_REM equ pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE
   `SEAM_BIAS` ferait boucler pour de bon, et le code du bouclage est là pour ça.
 - Validé : banc **80/80 TOUT CONFORME**, et la mire **17 280 sous-pixels,
   0 divergence** — le squelette est bien écrit d'un bout à l'autre.
+
+## 13. Pourquoi 189 lignes et pas 181 (23/08/2026)
+
+Question de l'auteur. Le décompte :
+
+```
+180  la bande utile (30 rangées × 6 lignes)
+  8  une ligne de BUDGET par couture du niveau  ← le surplus
+  1  la ligne d'entrée du blast, jamais peinte
+```
+
+Une bande de carte `m` est gravée à `startline = ROW_BIAS − m/10`, où `m/10`
+compte les rebouclages du ruban **depuis le début du niveau** : il monte d'une
+ligne tous les 160 px, 7 fois pour les 1 152 px du stage 4. Le buffer doit être
+assez haut pour que la bande de couture 0 tienne encore ses 180 lignes sous le
+budget.
+
+**Ce qui est vivant, lui, tient en 181 lignes** : le ruban ne porte que dix
+bandes consécutives, donc `m/10` n'y prend jamais que **deux valeurs
+adjacentes**. Le compteur pourrait être pris modulo la hauteur — le buffer est
+cyclique, il se termine par un `jmp` vers son début, et les différences
+modulaires restent exactes.
+
+**Ce qui l'interdit aujourd'hui** : `engraveColumn` grave une colonne d'un
+trait, `leau 6×80` de rangée en rangée. Avec un buffer serré, **une rangée par
+colonne tombe à cheval sur le rebouclage** (5 fois sur 6) et les routines
+câblées ne savent pas reboucler — elles écrivent six lignes en aveugle depuis
+deux bases fixes. Il faut alors le chemin lent, ligne à ligne, avec la table de
+données que la conception d'origine avait prévue (`row.data`, 792 o).
+
+**Le calcul du gain, fait avant d'écrire quoi que ce soit :**
+
+| | |
+|---|---|
+| rendu par le passage au modulo | 8 lignes × 80 o × 4 buffers = **2 560 o** |
+| coût | 792 o de table (dans l'unité) + le chemin lent |
+| **où atterrissent les 2 560 o** | dans les quatre pages de buffer — **et rien d'autre ne peut y vivre** |
+
+Une page de buffer n'est montée que pendant les opérations de pscroll : la
+place qu'on y libère est **morte**. Le gain en octets est donc cosmétique. Le
+vrai prix, c'est le **plafond de largeur** : `startline` devient négatif dès que
+les coutures dépassent le budget, en silence.
+
+**Ce qui est fait** — le plafond devient explicite au lieu d'être implicite :
+
+- `SEAM_BIAS` dérive de `pscroll.MAX_SEAMS`, que le projet déclare ;
+- deux `ERROR` d'assemblage, parce que les deux se franchissent en silence :
+  le buffer qui déborde de sa page, et le budget trop court pour
+  `pscroll.MAP_WIDTH`. Vérifié : déclarer une carte de 3 000 px fait échouer
+  l'assemblage avec le bon message.
+
+Le budget grandit donc avec le niveau, jusqu'à ~2 900 px où le buffer remplit sa
+page. Au-delà, le modulo devient obligatoire.
+
+### Et mscroll ? Non, ce n'est pas la même cause
+
+`mscroll` **prend déjà le modulo** — son curseur cyclique porte l'index de
+couture de la caméra et se replie sur `BUFFER_LINES` (`cmpd`/`subd` à chaque
+avance). Il peut se le permettre parce qu'il grave **par rangée**, ligne à
+ligne (`copyBitmap`) : le rebouclage est un test de curseur, pas un cas
+particulier. C'est pscroll qui est prisonnier de ses routines câblées — la
+vitesse se paie là.
+
+Sa limite de **2 048 px de large** a une tout autre origine : le stride d'une
+rangée de carte est une **puissance de deux** pour qu'une adresse de rangée soit
+un décalage et non une multiplication (héritage de vscroll v1, le générateur
+padde la largeur), et les données doivent tenir dans une page de 16 Ko.

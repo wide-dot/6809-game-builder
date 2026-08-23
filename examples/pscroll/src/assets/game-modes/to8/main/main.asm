@@ -42,8 +42,9 @@
 
 ; --- la geometrie du champ, celle du stage 4 ---------------------------------
 pscroll.BAND_LINES equ 180              ; 30 rangees de 6 lignes
-pscroll.MAX_SEAMS  equ 8                ; 1152 px / 160 = 7,2 coutures
 field.MAP_W        equ 1152             ; largeur de la carte, en px
+pscroll.MAP_WIDTH  equ field.MAP_W      ; le module verifie le budget avec
+pscroll.MAX_SEAMS  equ 8                ; 1152 px / 160 = 7,2 coutures
 field.VP_Y         equ 11               ; premiere ligne ecran du champ
 
 ; les quatre pages de buffer : plan 0 phase 0, plan 0 phase 1, plan 1 ph 0, ph 1

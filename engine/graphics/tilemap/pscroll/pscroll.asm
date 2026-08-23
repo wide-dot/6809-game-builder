@@ -120,7 +120,18 @@ pscroll.SEAM_PX       equ   160        ; la coupure du ruban, dans la carte
 ; ligne d'une bande = BIAIS - coutures(bande), entree du blast = BIAIS -
 ; coutures(camera). Les deux restent dans [1..8], donc tout est positif et il
 ; n'y a AUCUN modulo a faire — ni piege signe possible.
-pscroll.SEAM_BIAS     equ   8
+ IFNDEF pscroll.MAX_SEAMS
+pscroll.MAX_SEAMS     equ   8          ; le projet devrait la definir
+ ENDC
+; LE BUDGET DE CISAILLEMENT. Une bande est gravee a ROW_BIAS - (sa bande)/10 :
+; ce compteur monte d'UNE LIGNE tous les 160 px DEPUIS LE DEBUT DU NIVEAU, donc
+; le buffer doit porter autant de lignes de budget qu'il y a de coutures. C'est
+; ce qui lie la hauteur du buffer a la LONGUEUR DE LA CARTE — et ce qui la
+; plafonne. Le compteur pourrait etre pris modulo la hauteur (le buffer est
+; cyclique, mscroll fait exactement ca), mais alors une rangee par colonne
+; tombe a cheval sur le rebouclage et ne peut plus se graver d'un trait :
+; il faut le chemin lent, ligne a ligne. Arbitrage ouvert, cf. l'etude.
+pscroll.SEAM_BIAS     equ   pscroll.MAX_SEAMS
 ; LE BIAIS DES RANGEES, distinct de celui de l'ENTREE. Le blast peint 180
 ; lignes a partir de pscroll.origin = SEAM_BIAS - coutures ; les rangees, elles,
 ; doivent commencer UNE LIGNE PLUS HAUT dans le buffer, sinon la derniere ligne
@@ -144,6 +155,17 @@ pscroll.ROW_BIAS      equ   pscroll.SEAM_BIAS+1
 pscroll.BUFFER_LINES  equ   pscroll.BAND_LINES+pscroll.ROW_BIAS
  ENDC
 pscroll.BUFFER_SIZE   equ   pscroll.BUFFER_LINES*pscroll.LINE_SIZE
+; DEUX GARDE-FOUS, parce que les deux se franchissent EN SILENCE : un buffer
+; trop grand deborde sur la page voisine, un budget trop court rend startline
+; negatif et le champ se grave hors du buffer.
+ IFGT pscroll.BUFFER_SIZE+3-16384
+        ERROR "pscroll : le buffer ne tient pas dans une page de 16 Ko — reduire pscroll.MAX_SEAMS ou la hauteur de bande"
+ ENDC
+ IFDEF pscroll.MAP_WIDTH
+ IFLT pscroll.MAX_SEAMS-((pscroll.MAP_WIDTH/16-1)/pscroll.CHUNKS_PER_LINE)
+        ERROR "pscroll : pscroll.MAX_SEAMS est trop court pour pscroll.MAP_WIDTH"
+ ENDC
+ ENDC
 pscroll.WRAP_OFF      equ   pscroll.BUFFER_SIZE   ; ou vit le jmp de rebouclage
 ; Les chunks que la boucle deroulee de buildSkeleton ne peut pas couvrir : elle
 ; en pose huit a la fois, le buffer n'en fait pas forcement un multiple de huit.
