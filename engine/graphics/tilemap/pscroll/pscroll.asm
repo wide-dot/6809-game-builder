@@ -138,16 +138,16 @@ pscroll.ROW_BIAS      equ   pscroll.SEAM_BIAS+1
 ; BAND + BIAIS : la derniere ligne gravee est BIAIS + 6*(ROWS-1) + 5, soit
 ; BIAIS + BAND - 1. Une colonne tient donc TOUJOURS d'un trait — le feed n'a
 ; aucun bouclage a gerer, et seul le run du blast en traverse un.
-; MULTIPLE DE 4 OBLIGATOIRE. buildSkeleton ecrit le buffer par blocs de
-; 64 octets (8 x pshs de 8) et s'arrete sur une EGALITE exacte avec le debut :
-; si BUFFER_SIZE n'est pas multiple de 64, le cmps ne tombe jamais juste et le
-; blast descend dans le reste de la page — machine morte, ecran fige (vecu le
-; 23/08 en passant a 189 lignes). LINE_SIZE valant 80, il suffit que le nombre
-; de lignes soit multiple de 4.
-pscroll.BUFFER_LINES  equ   ((pscroll.BAND_LINES+pscroll.ROW_BIAS+3)/4)*4
+; EXACTEMENT ce qu'il faut : la rangee 0 occupe les lignes startline..+5 avec
+; startline = ROW_BIAS - coutures, et la rangee 29 finit a ROW_BIAS + 179.
+; Aucun arrondi — buildSkeleton ecrit le reste hors de sa boucle deroulee.
+pscroll.BUFFER_LINES  equ   pscroll.BAND_LINES+pscroll.ROW_BIAS
  ENDC
 pscroll.BUFFER_SIZE   equ   pscroll.BUFFER_LINES*pscroll.LINE_SIZE
 pscroll.WRAP_OFF      equ   pscroll.BUFFER_SIZE   ; ou vit le jmp de rebouclage
+; Les chunks que la boucle deroulee de buildSkeleton ne peut pas couvrir : elle
+; en pose huit a la fois, le buffer n'en fait pas forcement un multiple de huit.
+pscroll.BLAST_REM     equ   pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE-(pscroll.BUFFER_SIZE/(8*pscroll.CHUNK_SIZE))*8
 
 
 ; Le buffer PHYSIQUE fait BUFFER_SIZE + 3 : le jmp de rebouclage vit apres la
@@ -202,6 +202,7 @@ pscroll.bufStart      fdb   0
 pscroll.bufEnd        fdb   0
 pscroll.hoff          fdb   0
 pscroll.initcnt       fcb   0
+pscroll.blastrem      fcb   0          ; chunks restants du blast, hors boucle
 ; Ni SECTION ni EXPORT ici : c'est l'unite qui inclut ce fichier qui les
 ; fournit, comme pour mscroll (games/r-type/src/common/engine/mscroll.unit.asm).
 
@@ -235,11 +236,24 @@ pscroll.buildSkeleton
         std   pscroll.bufStart
         addd  #pscroll.BUFFER_SIZE
         std   pscroll.dest.current    ; le blast DESCEND : partir de la fin
+        lda   #pscroll.BLAST_REM       ; les chunks en trop de CE buffer
+        sta   pscroll.blastrem
         ldd   #(pscroll.OPCODE_LDD_I<<8)   ; a=$CC, b=immediat haut
         ldx   #pscroll.OPCODE_LDX_I        ; xh=immediat bas, xl=$8E
         ldy   #0                           ; les deux octets du second immediat
         ldu   #(pscroll.OPCODE_PSHS<<8)|pscroll.POSTB_DX
         lds   pscroll.dest.current
+        ; LE RESTE D'ABORD. La boucle ci-dessous ecrit par blocs de 64 octets et
+        ; s'arrete sur une EGALITE exacte avec le debut : si le buffer n'est pas
+        ; un multiple de 64, le cmps ne tombe jamais juste et le blast descend
+        ; dans le reste de la page. On ecrit donc d'abord les chunks en trop,
+        ; un par un — le compteur vit en MEMOIRE parce que les cinq registres
+        ; portent le motif et qu'aucun n'est libre.
+        tst   pscroll.blastrem         ; tst et non lda : A porte le motif
+        beq   @chunk
+@reste  pshs  a,b,x,y,u
+        dec   pscroll.blastrem
+        bne   @reste
 @chunk  pshs  a,b,x,y,u                ; 8 octets, l'ordre memoire montant est
         pshs  a,b,x,y,u                ; A B Xh Xl Yh Yl Uh Ul : exactement le
         pshs  a,b,x,y,u                ; motif d'un chunk. Deroule par 8 pour

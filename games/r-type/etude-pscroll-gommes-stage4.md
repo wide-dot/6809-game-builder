@@ -953,12 +953,13 @@ SEAM_BIAS + 1` : **deux biais, deux rôles** — celui de l'entrée et celui des
 rangées. Y toucher d'un seul côté déplace le champ ; des deux côtés ne fait
 rien.
 
-**Le buffer doit faire un multiple de 64 octets.** `buildSkeleton` l'écrit par
-blocs de 64 (8 × `pshs` de 8) et s'arrête sur une **égalité exacte** avec son
-début : à 189 lignes (15 120 o) le `cmps` ne tombe jamais juste, le blast
-descend dans le reste de la page et la machine meurt. `LINE_SIZE` valant 80, il
-suffit que le nombre de lignes soit multiple de 4 — `BUFFER_LINES` l'arrondit
-désormais, avec le pourquoi en commentaire.
+**Le blast s'arrête sur une égalité exacte.** `buildSkeleton` écrit le buffer
+par blocs de 64 octets (8 × `pshs` de 8) et compare S au début : si la taille
+n'est pas un multiple de 64, le `cmps` ne tombe jamais juste, le blast descend
+dans le reste de la page et la machine meurt. Ça a d'abord été « corrigé » en
+**arrondissant le buffer** au multiple de 4 lignes — 240 octets gâchés par
+buffer, 960 sur les quatre. L'auteur a refusé (23/08) : *« tu écris un lot de
+moins et tu complètes hors boucle »*. C'est fait — voir plus bas.
 
 ### Le banc, désormais
 
@@ -1104,3 +1105,48 @@ reste dans Y jusqu'au `jmp ,y`.
 | après A-F | 489 | 338 | **827** (effacement) |
 
 **−32 %.**
+
+
+### G — le buffer fait exactement sa taille (23/08)
+
+Le blast écrivait par blocs de 64 octets et s'arrêtait sur une égalité exacte,
+donc j'avais **arrondi le buffer** au multiple de 4 lignes. L'auteur a tranché :
+c'est de l'espace gâché, on écrit un lot de moins et on complète hors boucle.
+
+Le reste (les chunks que la boucle déroulée ne peut pas couvrir) s'écrit **avant**
+la boucle, un par un, et son compteur vit **en mémoire** : les cinq registres
+portent le motif, aucun n'est libre — d'où `tst`/`dec` sur une variable plutôt
+qu'un `lda`, qui écraserait l'octet d'opcode que porte A.
+
+```asm
+        tst   pscroll.blastrem         ; tst et non lda : A porte le motif
+        beq   @chunk
+@reste  pshs  a,b,x,y,u
+        dec   pscroll.blastrem
+        bne   @reste
+@chunk  pshs  a,b,x,y,u                ; ... x8, puis cmps/bne
+```
+
+Le compte est une constante d'assemblage :
+
+```asm
+pscroll.BLAST_REM equ pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE
+                      -(pscroll.BUFFER_SIZE/(8*pscroll.CHUNK_SIZE))*8
+```
+
+**Impacts, dans l'ordre :**
+
+- `BUFFER_LINES` redevient `BAND_LINES + ROW_BIAS` = **189**, sans arrondi.
+  C'est le compte exact : la rangée 29 finit à la ligne `ROW_BIAS + 179` = 188.
+- `BUFFER_SIZE` : 15 360 → **15 120 o** (15 123 avec le `jmp` de rebouclage).
+  **240 octets rendus par buffer, 960 sur les quatre**, et la marge dans la
+  page passe de 1 021 à 1 261 octets.
+- L'init est **plus rapide**, pas plus lente : 236 blocs + 2 chunks au lieu de
+  240 blocs, soit 240 octets de moins à écrire par buffer. La boucle de reste
+  coûte au plus 7 tours d'une vingtaine de cycles, une fois par buffer.
+- Le **bouclage cyclique** de `pscroll.do` (`origin + BAND_LINES` comparé à
+  `BUFFER_LINES`) n'est toujours jamais franchi : `origin` vaut au plus 8, donc
+  188 < 189. Mais le buffer est désormais **exactement juste** — augmenter
+  `SEAM_BIAS` ferait boucler pour de bon, et le code du bouclage est là pour ça.
+- Validé : banc **80/80 TOUT CONFORME**, et la mire **17 280 sous-pixels,
+  0 divergence** — le squelette est bien écrit d'un bout à l'autre.
