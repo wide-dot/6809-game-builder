@@ -38,6 +38,9 @@ ap.add_argument("image")
 ap.add_argument("--longueurs", default="1,2,3,4,5,6,7,8,12")
 ap.add_argument("--rangees", default="12")
 ap.add_argument("--colonnes", default="16", help="decalages de phase balayes")
+ap.add_argument("--hauteur", default="1", help="rangees par rectangle")
+ap.add_argument("--scroll", default="0",
+                help="trames de scroll APRES l'effacement (la demo en fait)")
 ap.add_argument("-v", "--verbeux", action="store_true")
 args = ap.parse_args()
 
@@ -80,13 +83,22 @@ def ecran():
             if sum(q[ORG_X + PX_W * x + 1, ORG_Y + PX_H * y]) > 60}
 
 
-def attendu_de(c, cam):
-    """les pixels que la carte `c` impose a l'ecran, camera `cam`"""
+def attendu_de(c, cam, bornes=None):
+    """les pixels que la carte `c` impose a l'ecran, camera `cam`.
+
+    LES DEUX CELLULES DE BORD DU RUBAN SONT EXCLUES. Elles chevauchent une
+    bande qui n'est pas dans le ruban : setCell n'en peint que la moitie, et le
+    feed grave l'autre depuis les donnees du niveau. Ce n'est pas un defaut du
+    moteur — c'est la definition du ruban — mais ca fait diverger un modele qui
+    les compte pleines (vu le 23/08 : la cellule 53 « disparaissait » des que
+    la camera bougeait)."""
     bit = lambda cc, rr: (c[rr * MAP_STRIDE + (cc >> 3)] >> (7 - (cc & 7))) & 1
     out = set()
     for X in range(GARDE, 160 - GARDE):
         cc, d = divmod(cam + X, 3)
         if not (0 <= cc < CELLS):
+            continue
+        if bornes and not (bornes[0] < cc < bornes[1]):
             continue
         for r in range(ROWS):
             if bit(cc, r):
@@ -165,7 +177,7 @@ print("camera %d (figee), ruban cellules %d..%d" % (cam, lo, hi))
 # --- etape 1 : le champ plein -----------------------------------------------
 ref = remplir()
 plein = sum(bin(x).count("1") for x in ref)
-vu, att = ecran(), attendu_de(ref, cam)
+vu, att = ecran(), attendu_de(ref, cam, (lo, hi))
 print("champ plein : %d bits poses, ecran %d px | %d manquants, %d en trop"
       % (plein, len(vu), len(att - vu), len(vu - att)))
 if att != vu:
@@ -180,6 +192,8 @@ if att != vu:
 LONGUEURS = [int(x) for x in args.longueurs.split(",")]
 RANGEES = [int(x) for x in args.rangees.split(",")]
 NCOL = int(args.colonnes)
+H = int(args.hauteur)
+SCROLL = int(args.scroll)
 base = lo + 4                          # a l'aise dans le ruban
 fautes = []
 essais = 0
@@ -193,20 +207,33 @@ for n in LONGUEURS:
                 continue
             essais += 1
             avant = remplir()
-            if not effacer(c0, r0, n):
+            if not effacer(c0, r0, n, H):
                 fautes.append((n, c0, r0, "bench.rect jamais consomme"))
                 ligne.append("!")
                 continue
+            if SCROLL:
+                # LE SCROLL D'APRES. La demo en fait, la matrice n'en faisait
+                # pas : si un residu n'apparait qu'une fois la camera bougee,
+                # c'est le feed qui regrave par-dessus l'effacement.
+                wr("pscroll.camera.speedx", 0, 0x30)
+                wr("ctrlspeedx", 0, 0x30)
+                for _ in range(SCROLL):
+                    t.call("run_frames", {"n": 1})
+                wr("pscroll.camera.speedx", 0, 0)
+                wr("ctrlspeedx", 0, 0)
+                for _ in range(4):
+                    t.call("run_frames", {"n": 1})
             apres = carte()
             # le modele : les n cellules, bornees comme prep le fait
             mod = bytearray(avant)
             a = max(c0, lo)
             b = min(c0 + n - 1, hi)
-            for c in range(a, b + 1):
-                mod[r0 * MAP_STRIDE + (c >> 3)] &= ~(1 << (7 - (c & 7))) & 0xFF
+            for r in range(r0, min(r0 + H, ROWS)):
+                for c in range(a, b + 1):
+                    mod[r * MAP_STRIDE + (c >> 3)] &= ~(1 << (7 - (c & 7))) & 0xFF
             dcarte = [i for i in range(len(mod)) if mod[i] != apres[i]]
             vu = ecran()
-            att = attendu_de(apres, cam)
+            att = attendu_de(apres, w16("pscroll.camera.x"), (lo, hi))
             mq, tr = att - vu, vu - att
             cas = (3 * c0 - (cam & 1)) % 16
             if dcarte or mq or tr:
@@ -243,7 +270,7 @@ for n in LONGUEURS:
                                      sorted({(y - VP_Y) % CELL_H for x, y in ens})))
             else:
                 ligne.append(".")
-    print("longueur %-2d : %s" % (n, "".join(ligne)))
+    print("longueur %-2d (h=%d) : %s" % (n, H, "".join(ligne)))
 
 print("\n%d essais, %d fautifs" % (essais, len(fautes)))
 for n, c0, r0, quoi in fautes[:25]:

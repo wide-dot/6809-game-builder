@@ -1889,6 +1889,30 @@ cellule que la queue sautait.
 zéro faute ; plus 72 essais sur les rangées de bord. `check_gum` 80/80,
 `check_rect` 10/10.
 
+### Ce que la matrice ne peut PAS prouver — et pourquoi ça ne bloque pas
+
+Le banc à champ plein remplit par `setCell`, donc il n'écrit que dans le
+**ruban**. Deux conséquences, toutes deux propres au banc :
+
+- **la cellule de bord du ruban** chevauche une bande qui n'y est pas :
+  `setCell` n'en peint que la moitié, et le feed grave l'autre depuis les
+  données du niveau. Elle « disparaît » dès que la caméra bouge. Le modèle
+  exclut donc les deux cellules de bord ;
+- **un champ rempli ne survit pas au défilement** : `feedBand` grave une bande
+  entrante depuis les données GÉNÉRÉES du niveau, jamais depuis `field.map`.
+  Tout remplissage artificiel est donc effacé au fil du scroll.
+
+C'est pour ça que la matrice se joue **caméra figée**, et que ses 328 essais
+prouvent les chemins d'effacement et rien d'autre. À chaque essai la carte
+machine est comparée au modèle : **zéro octet d'écart, toujours** — y compris
+sur les essais où l'écran diverge après un scroll. L'effacement est donc juste ;
+ce qui diverge est ce que le feed regrave.
+
+**Et en jeu, ça ne se produit pas** : la caméra n'avance que vers la droite, une
+bande n'entre qu'une fois, et elle est gravée AVANT que le joueur puisse
+atteindre ce qu'elle contient. Les effacements portent sur ce qui est à
+l'écran, donc sur des bandes déjà gravées.
+
 ### L'oblique, retiré
 
 Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en
