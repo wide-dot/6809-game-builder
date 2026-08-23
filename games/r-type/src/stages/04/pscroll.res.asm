@@ -92,10 +92,11 @@ pscroll.stage4.frame
 ; pscroll.half.on / .off — RENDRE LA PART $4000 VISIBLE, ET LA RENDRE
 ; -----------------------------------------------------------------------------
 ; $4000-$5FFF n'est PAS de la RAM fixe inconditionnelle : c'est une demi-page,
-; choisie par le bit 0 de $E7C3 (MC6846 PDR), et le code graphique du jeu le
-; bascule pour son propre compte. La part $4000 de pscroll vit dans la demi-page
-; 0 ; sans ce montage, un appel a feedBand ou a une routine deroulee tombe sur
-; l'AUTRE demi-page — la ou il n'y a rien. Le stage tournait 10 trames puis
+; choisie par le bit 0 de $E7C3 (MC6846 PDR). _gfxlock.init l'epingle a 0 sous
+; OverlayMode — et la demi-page 0, c'est le POOL D'OBJETS (Dynamic_Object_RAM
+; = $4000, 60 slots + 4 OST statiques). La part $4000 de pscroll vit donc dans
+; la demi-page 1, celle que la config declare libre, et il faut la MONTER pour
+; l'atteindre. Sans ca on tombe sur le pool : le stage tournait 10 trames puis
 ; marchait dans des zeros ($4F4B, 2 octets par instruction), 24/08.
 ;
 ; Le bit voisin appartient au 6846 : on ne pose que le bit 0, jamais l'octet.
@@ -103,8 +104,10 @@ pscroll.stage4.frame
 pscroll.half.on
         lda   map.HALFPAGE
         sta   pscroll.half.saved           ; l'etat du jeu, rendu tel quel
-        anda  #$FE                         ; demi-page 0 : la notre
-        sta   map.HALFPAGE
+        ora   #$01                         ; demi-page 1 : la notre. La 0 est le
+        sta   map.HALFPAGE                 ; POOL D'OBJETS ($4000 = Dynamic_
+                                           ; Object_RAM) — y loger du code le
+                                           ; fait ecraser par l'object manager
         rts
 
 pscroll.half.off

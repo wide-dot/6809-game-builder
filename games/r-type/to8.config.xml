@@ -84,7 +84,21 @@
                  RAM FIXE (demi-page video 0), donc appelable et lisible quelle
                  que soit la page en fenetre cartouche. -->
             <region name="pscroll.edit" page="$0B" address="$0000" size="$4000"/>
-            <region name="pscroll.vid" page="$0C" address="$4000" size="$2000"/>
+            <!-- LA DEMI-PAGE SE CHOISIT PAR LE BIT 0 DU NUMERO DE PAGE : pour
+                 une destination en $4000-$5FFF, ram.set (to8/ram/ram.asm) ne
+                 garde de B que ce bit (`rorb`) et le pousse dans PRC. Page
+                 PAIRE -> demi-page 0, IMPAIRE -> demi-page 1. Le reste du
+                 numero n'a aucun effet a l'execution — mais le builder, lui,
+                 ne connait pas les demi-pages : il comptabilise (page,
+                 adresse) sans jamais relier ce $4000 aux <reserved page="$00">
+                 qui decrivent le MEME silicium. Les deux declarations
+                 ci-dessous sont donc a tenir a la main.
+                 On vise la demi-page 1 (offset $2000-$3FFF de la page 0) :
+                 la demi-page 0 est le POOL D'OBJETS (Dynamic_Object_RAM =
+                 $4000). Y avoir pose ce code le faisait ecraser par l'object
+                 manager — le stage tournait 10 trames puis marchait dans des
+                 zeros (24/08). -->
+            <region name="pscroll.vid" page="$01" address="$4000" size="$2000"/>
             <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B13"/>
             <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B13"/>
             <region name="pscroll.buf2" page="$10" address="$0000" size="$3B13"/>
@@ -309,6 +323,11 @@
                  par montage seulement) sont libres. -->
             <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
             <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <!-- L'AUTRE MOITIE, prise par la part $4000 de pscroll. C'est le
+                 meme silicium que <region pscroll.vid>, decrit dans l'autre
+                 systeme de coordonnees : ce <reserved> est ce qui EMPECHE
+                 qu'on la reattribue. -->
+            <reserved name="pscroll.vid.half1" page="$00" address="$2000" size="$2000"/>
             <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
                  moitie, 192 octets libres en fin de chaque moitie — reserves
                  plage par plage pour que la carte les montre). Le loader se
