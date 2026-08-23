@@ -110,6 +110,8 @@ main
         ldd   ctrlspeedx
         std   pscroll.camera.speedx
 
+        jsr   bench.cytronReset
+
         ; --- la gravure initiale : dix bandes ------------------------------
         ldd   #0
         jsr   pscroll.init
@@ -166,64 +168,8 @@ mainLoop
 
         jsr   bench.smileyStep         ; la mire, tant qu'elle n'est pas finie
 
-        ; --- CYTRON : la repousse, une cellule par trame --------------------
-        ; run_cytron etape 5 (plate Ghidra 0x4069b4) : il sonde la cellule sous
-        ; son centre et n'ecrit QUE si elle est vide. Ici le pilote est reduit a
-        ; sa trajectoire : il rampe vers la droite le long d'une rangee, une
-        ; cellule par trame, exactement comme l'arcade.
-        ; L'INTERRUPTEUR DU BANC. 0 = le pilote se tait (on positionne la
-        ; camera sans muter le champ) ; 255 = il rampe librement ; 1..254 =
-        ; autant de tirs UNIQUES, sans avancer — c'est ce qui permet de valider
-        ; UNE gomme a la fois, la seule methode qui prouve un positionnement.
-        lda   cytron.enable
-        lbeq  @nogum
-        cmpa  #255
-        beq   @libre
-        deca
-        sta   cytron.enable
-        ldb   cytron.row
-        ldx   cytron.col
-        tst   cytron.erase             ; le banc exerce les DEUX chemins
-        beq   >
-        jsr   pscroll.clearCell
-        bra   @compte
-!       jsr   pscroll.setCell
-@compte beq   >                        ; Z=1 : rien a faire (deja pleine/vide)
-        inc   $9C06                    ; mutee — AVANT le compteur d'essais :
-!       inc   $9C05                    ; `inc` ecrase le Z que la routine vient
-        lbra  @nogum                   ; de poser (defaut du banc, 22/08)
-@libre  ldb   cytron.row
-        ldx   cytron.col
-        jsr   pscroll.setCell
-        beq   >                        ; Z=1 : la cellule etait deja pleine
-        inc   $9C06                    ; temoin : celles qui ont pousse
-!       inc   $9C05                    ; temoin : les repousses tentees
-        ldx   cytron.col               ; il avance d'une cellule par trame
-        leax  1,x
-        cmpx  #pscroll.CELLS
-        blo   >
-        ldx   #0
-!       stx   cytron.col
-        ldd   cytron.px
-        addd  #3
-        std   cytron.px
-        ; IL RESTE DANS LA FENETRE. L'arcade ne fait jamais ecrire cytron au
-        ; dela du bord droit : le scroll fait apparaitre les colonnes neuves.
-        ; Ici il avance 3 px/trame contre 1 a la camera, donc il sort — on le
-        ; ramene d'un ruban (53 cellules = 159 px) autant de fois qu'il faut.
-@wrap   ldd   pscroll.camera.x
-        addd  #150
-        cmpd  cytron.px
-        bhi   >
-        ldd   cytron.px
-        subd  #159
-        std   cytron.px
-        ldx   cytron.col
-        leax  -53,x
-        stx   cytron.col
-        bra   @wrap
-!
-@nogum
+        ; --- CYTRON : le pilote, porte de l'arcade --------------------------
+        jsr   bench.cytronStep
 
         ; --- les temoins ---------------------------------------------------
         inc   $9C00
@@ -242,6 +188,160 @@ mainLoop
 userIRQ
         jsr   gfxlock.bufferSwap.check
         jmp   PalUpdateNow
+
+
+; -----------------------------------------------------------------------------
+; bench.cytronStep — un tour de cytron
+; -----------------------------------------------------------------------------
+; cytron.enable : 0 = muet ; 255 = il joue son script arcade ; 1..254 = autant
+; de sondes UNIQUES a (cytron.col, cytron.row), sans bouger — c'est par la que
+; tools/check_gum.py valide une mutation a la fois.
+; -----------------------------------------------------------------------------
+bench.cytronStep
+        lda   cytron.enable
+        lbeq  @rien
+        cmpa  #255
+        beq   @script
+        deca                           ; le chemin du banc : une sonde, sur place
+        sta   cytron.enable
+        ldb   cytron.row
+        ldx   cytron.col
+        lbra  @sonde                   ; portee longue : le decodeur s'etale
+        ; --- le script arcade : `speed` octets de deplacement par trame -----
+@script lda   cytron.speed
+        sta   cytron.left
+@byte   ldx   cytron.seg
+        ldb   ,x+
+        stx   cytron.seg
+        rolb                           ; bit 7 : pose ?
+        bcs   @image
+        rolb                           ; bit 6
+        bcs   @xneg
+        rolb                           ; bit 5
+        bcc   @ytest
+        ldd   cytron.x                 ; x++
+        addd  #cytron.STEP
+        std   cytron.x
+        bra   @ytest
+@xneg   rolb                           ; bit 5
+        bcc   @ytest
+        ldd   cytron.x                 ; x--
+        subd  #cytron.STEP
+        std   cytron.x
+@ytest  rolb                           ; bit 4
+        bcs   @ypos
+        rolb                           ; bit 3
+        bcc   @fin
+        ldd   cytron.y                 ; y--
+        subd  #cytron.STEP
+        std   cytron.y
+        bra   @fin
+@ypos   rolb                           ; bit 3
+        bcc   @fin
+        ldd   cytron.y                 ; y++
+        addd  #cytron.STEP
+        std   cytron.y
+@fin    rolb                           ; bit 2 : fin de segment ?
+        bcs   @suivant
+@apres  dec   cytron.left
+        bne   @byte
+        bra   @place
+@image  lsrb                           ; la pose ne consomme pas de deplacement
+        stb   cytron.img               ; et ne termine pas le segment
+        bra   @byte
+        ; --- la commande suivante -------------------------------------------
+@suivant
+        ldx   cytron.script
+        leax  2,x
+        ldd   ,x
+        beq   @finscript               ; 0 : fin de script
+        stx   cytron.script
+        cmpa  #$F0
+        bne   @segment
+        stb   cytron.speed             ; $F0nn : la vitesse change
+        bra   @suivant
+@segment
+        std   cytron.seg
+        bra   @apres
+        ; L'ARCADE DECHARGE L'OBJET ICI (0x6A42, unload silencieux). Le banc,
+        ; lui, le fait repartir : il n'a ni vague ni gestionnaire d'objets pour
+        ; en faire naitre un autre, et une mire qui s'arrete ne montre rien.
+@finscript
+        jsr   bench.cytronReset
+        bra   @place                   ; @place suit immediatement
+        ; --- LA SONDE : position + le decalage de la pose --------------------
+        ; Le decalage est en px arcade ; 8 px arcade = 1 cellule, donc x32 le
+        ; met a l'echelle du 8.8 en cellules.
+@place  ldb   cytron.img
+        andb  #15
+        aslb
+        aslb                           ; x4 : deux mots par pose
+        ldx   #cytron.trail.tbl
+        abx
+        ldd   ,x                       ; dx, en px arcade (signe)
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola                           ; x32 -> cellules 8.8
+        addd  cytron.x
+        sta   cytron.col+1             ; la partie entiere : l'index de cellule
+        clr   cytron.col
+        ldb   cytron.img
+        andb  #15
+        aslb
+        aslb
+        ldx   #cytron.trail.tbl
+        abx
+        ldd   2,x                      ; dy
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        addd  cytron.y
+        sta   cytron.row
+        ldb   cytron.row
+        ldx   cytron.col
+@sonde  tst   cytron.erase
+        beq   >
+        jsr   pscroll.clearCell
+        bra   @compte
+!       jsr   pscroll.setCell
+@compte beq   >                        ; Z=1 : rien a faire (deja pleine/vide)
+        inc   $9C06                    ; mutee — AVANT le compteur d'essais :
+!       inc   $9C05                    ; `inc` ecrase le Z que la routine vient
+@rien   rts                            ; de poser (defaut du banc, 22/08)
+
+; Pose la variante jouee et la position de depart.
+bench.cytronReset
+        ldb   #cytron.VAR
+        aslb
+        aslb                           ; 4 octets par entree
+        ldx   #cytron.script.tbl
+        abx
+        ldd   ,x                       ; le pointeur de script
+        std   cytron.script
+        lda   2,x                      ; les octets par trame
+        sta   cytron.speed
+        ldx   cytron.script
+        ldd   ,x                       ; la premiere commande EST un segment
+        std   cytron.seg
+        ldd   #cytron.START_X*256
+        std   cytron.x
+        ldd   #cytron.START_Y*256
+        std   cytron.y
+        rts
 
 ; --- LE SMILEY : la mire du chemin d'ECRITURE -----------------------------
 ; Une rangee par trame, cellule par cellule, par pscroll.setCell — le chemin
@@ -306,16 +406,44 @@ bench.smileyStep
         inc   smiley.row
         rts
 
-; --- cytron, reduit a ce que le banc doit valider -------------------------
-; La rangee 14 traverse la grande salle en plein milieu du champ : le pilote
-; y rampe et fait repousser ce qui manque. Les vraies routines (script de
-; mouvement bit-packe, tir, collision, PV) viendront avec le portage complet.
-cytron.col   fdb 260                   ; il demarre juste avant la salle
-cytron.row   fcb 14
-cytron.px    fdb 780                   ; 3 * cytron.col, tenu a jour
+; --- CYTRON, porte de l'arcade -------------------------------------------
+; run_cytron (0x40:69B4). Ce que le banc porte, et pourquoi :
+;
+;   - LE SCRIPT DE MOUVEMENT, joue depuis les octets de la rom
+;     (src/enemies/cytron/movescript.asm, exporte par re.arcade.r-type). Le
+;     format est celui de move_by_script (0x40:F5C1), que la v2 embarque deja
+;     sous le nom moveByScript ; le banc le decode ici en unites de CELLULE
+;     parce que c'est la langue du champ de gommes — 8 px arcade = 1 cellule,
+;     ce qui tombe juste : 8 x 0,375 = 3 px larges en X, 8 x 0,75 = 6 lignes
+;     en Y, exactement la geometrie d'une cellule.
+;
+;   - LE DECALAGE DE REPOUSSE PAR POSE. La plate Ghidra dit « la cellule sous
+;     le centre du corps » ; le code dit autre chose, et le code a raison :
+;     il ajoute a la position un couple (dx,dy) lu dans une table indexee par
+;     la POSE (0x1000:2D90). Cette table est un CERCLE DE RAYON 12 px sur
+;     seize directions — cytron plante sa gomme DERRIERE lui, dans l'axe de sa
+;     pose, pas sous son centre. C'est ce qui lui fait laisser une trainee.
+;
+;   - LA SONDE : une cellule par trame, et seulement si elle est vide. C'est
+;     exactement ce que fait pscroll.setCell (cc.Z = 1 = deja pleine).
+;
+; Hors banc, faute de joueur et de gestionnaire d'objets : try_foe_fire, la
+; collision, les PV et les deux morts. Ils viendront avec l'objet complet.
+cytron.STEP  equ $0020                 ; 1 px arcade = 1/8 de cellule, en 8.8
+cytron.VAR   equ 0                     ; la variante jouee par le banc
+cytron.START_X equ 200                 ; ou il entre en scene, en cellules
+cytron.START_Y equ 15
+cytron.script fdb 0                    ; la commande courante
+cytron.seg   fdb 0                     ; l'octet courant du segment
+cytron.speed fcb 3                     ; octets de deplacement par trame
+cytron.img   fcb 0                     ; la pose
+cytron.x     fdb 0                     ; position, en CELLULES 8.8
+cytron.y     fdb 0
+cytron.left  fcb 0                     ; octets restants a lire cette trame
 cytron.erase  fcb 0                    ; 0 = la gomme pousse, 1 = elle disparait
 cytron.enable fcb 0                    ; 0 = muet, 255 = libre, n = n tirs
-                                       ; (muet tant que le smiley se dessine)
+cytron.col   fdb 0                     ; la cellule sondee, pour les temoins
+cytron.row   fcb 0
 smiley.row   fcb 0                     ; la rangee en cours ; H = fini
 smiley.ptr   fdb 0
 smiley.i     fcb 0
@@ -341,6 +469,8 @@ ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se des
         INCLUDE "engine/graphics/tilemap/pscroll/pscroll.asm"
         INCLUDE "../../games/r-type/src/stages/04/pscroll-rows.asm"
         INCLUDE "src/assets/game-modes/to8/main/smiley.asm"
+        ; les scripts de mouvement de cytron, exportes de la rom arcade
+        INCLUDE "../../games/r-type/src/enemies/cytron/movescript.asm"
 
 ; le champ de gommes d'origine : cytron le mute en place
 field.map

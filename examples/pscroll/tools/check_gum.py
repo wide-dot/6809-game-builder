@@ -90,11 +90,12 @@ def loops():
 
 
 def pose(col, row, efface=False):
-    """une mutation, un tour de boucle, puis le pilote se tait a nouveau"""
-    px = 3 * col
+    """une mutation, un tour de boucle, puis le pilote se tait a nouveau.
+
+    cytron.enable = 1 : le pilote fait UNE sonde sur place, a la cellule
+    demandee, sans jouer son script arcade (celui-ci tourne sur 255)."""
     wr("cytron.col", col >> 8, col & 0xFF)
     wr("cytron.row", row)
-    wr("cytron.px", px >> 8, px & 0xFF)
     wr("cytron.erase", 1 if efface else 0)
     n = loops()
     wr("cytron.enable", 1)                # UN tir : le banc decremente lui-meme

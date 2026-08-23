@@ -1246,3 +1246,58 @@ Sa limite de **2 048 px de large** a une tout autre origine : le stride d'une
 rangée de carte est une **puissance de deux** pour qu'une adresse de rangée soit
 un décalage et non une multiplication (héritage de vscroll v1, le générateur
 padde la largeur), et les données doivent tenir dans une page de 16 Ko.
+
+## 14. Cytron dans le banc (23/08/2026)
+
+Le pilote du banc n'était qu'une trajectoire écrite à la main. Il joue
+désormais **le script arcade**, et la source de vérité a corrigé deux points de
+la fiche Ghidra.
+
+### Ce que la plate dit, et ce que le code fait
+
+**« la cellule sous le centre du corps »** — non. `run_cytron` (0x40:69B4) lit
+un couple `(dx,dy)` dans une table **indexée par la POSE** (0x1000:2D90), l'ajoute
+à la position, sonde là, puis restaure. Cette table est un **cercle de rayon
+12 px arcade sur seize directions** : cytron sème sa gomme **derrière lui**,
+dans l'axe de sa pose. C'est ce qui lui fait laisser une traînée plutôt qu'un
+point.
+
+**« 4-entry table »** pour le choix du script — non plus. L'index vaut
+`(CL & 0xF0) >> 2`, soit 0 à 60 avec un pas de 4 : **seize variantes**. Le
+stage 4 fait naître 38 cytrons et en emploie **neuf distinctes**.
+
+### La géométrie se recoupe exactement
+
+1 tuile arcade = **1 cellule de gomme**, et ce n'est pas une approximation :
+8 px arcade × 0,375 = 3 px larges en X, 8 × 0,75 = 6 lignes en Y — la
+géométrie d'une cellule, au pixel. Le compte des tuiles le confirme de son
+côté : la carte arcade porte 1 618 tuiles `0x9F6`, et le bitfield du stage 4
+en porte 1 618.
+
+### L'export, pas la recopie
+
+`re.arcade.r-type` savait décoder le format (`MoveByScript`) mais rien ne
+l'appelait. Il a désormais `--extract-movescript` : il part de la table de
+variantes, suit chaque commande, collecte les segments atteints et émet le tout
+en données assemblables étiquetées par offset ROM. Sortie :
+`src/enemies/cytron/movescript.asm`, 1 645 lignes, **rejouable**.
+
+### Ce que le banc porte, et ce qu'il ne porte pas
+
+Porté : le script bit-packé (décodé en unités de **cellule**, la langue du
+champ — 1 px arcade = 1/8 de cellule), le décalage de repousse par pose, et la
+sonde d'une cellule par trame qui n'écrit que si elle est vide.
+
+Hors banc, faute de joueur et de gestionnaire d'objets : `try_foe_fire`, la
+collision, les PV et les deux morts. Une déviation assumée : quand le script se
+termine, l'arcade décharge l'objet (0x6A42) — le banc le fait repartir, sinon
+la mire s'arrête et ne montre plus rien.
+
+### Vérifié
+
+Caméra figée à 541, cytron lâché à la cellule 200 rangée 15 : après 400 trames
+il est à **189,50** (26 segments de `x--`, 3 octets par trame = 0,375 cellule
+par tour ✓), pose **8**, et la cellule semée est la **191** — soit 1,5 cellule
+**à sa droite** alors qu'il rampe vers la gauche : bien derrière lui. La traînée
+mesurée à l'écran couvre les cellules 189 à 202 sur la **rangée 15**. Le banc de
+mutation reste à **80/80**.
