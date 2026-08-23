@@ -1378,12 +1378,16 @@ pscroll.clearRow.zByte
         beq   pscroll.clearRow.zNoChg
         inc   pscroll.rect.chg
 pscroll.clearRow.zNoChg
-        puls  a
+        puls  a                        ; le masque des cellules visees
+        coma                           ; son complement : ce qui SURVIT
         pshs  a
-        coma
-        andb  ,x+                      ; hmm : b relu, on ecrit ensuite
-        puls  a
-        stb   -1,x
+        andb  ,s+                      ; l'octet, prive des cellules visees.
+        stb   ,x+                      ; PAS `andb ,x` : la 6809 ne sait pas
+                                       ; croiser A et B, le complement doit
+                                       ; passer par la memoire. La version
+                                       ; d'origine faisait `andb ,x+` — soit
+                                       ; l'octet ET lui-meme — et reecrivait
+                                       ; donc la carte INCHANGEE (23/08).
         dec   pscroll.rect.bleft
         beq   pscroll.clearRow.zDone
         lda   pscroll.rect.bleft       ; dernier octet ? sinon $FF
