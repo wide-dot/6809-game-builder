@@ -1364,3 +1364,53 @@ faut une routine de BLOC qui travaille par OCTET du bitfield :
 
 C'est le même raisonnement que pour le feed : **le champ se parle en octets, pas
 en cellules**. Reste à écrire la routine et à la prouver comme les autres.
+
+### La portée de chaque arme — ce qui dimensionne vraiment
+
+Vérifié dans le code, arme par arme :
+
+| arme | efface | portée |
+|---|---|---|
+| **Force Pod** (le corps) | 4×4 | **infinie** — il n'est jamais détruit, il laboure tant qu'il traverse |
+| **Wave Cannon** | bande 2 × (CX+1) | **traverse** : une cellule effacée devient passable, il ne meurt que sur le terrain dur. Son palier décroît d'une trame à l'autre, donc le tunnel se referme derrière lui |
+| **Counter-Air Laser** | 11 × 4×4, une trame sur seize | ses seize trames d'animation, puis la queue de fade |
+| **Counter-Air, réflexion** | 2×2 | sa propre durée |
+| **Bit Device** | 2×2 | **infinie** — satellite permanent |
+| **Missile haut / bas** | **1 cellule** | **meurt sur la première gomme** |
+| **Tir simple du pod** | **1 cellule** | **meurt sur la première gomme** |
+| Rebound laser, ground laser, horizontal laser | **rien** | ils n'effacent pas — le champ les arrête |
+
+**Les deux « meurt sur la première gomme » sont un accident de code**, et le même
+dans les deux cas :
+
+```asm
+        call  probe_foreground_and_background_tiles
+        cmp   AX, 0x9f6                ; une gomme ?
+        jnz   skip
+        call  erase_green_ball_stage4  ; elle rend AX = 0
+skip:   cmp   AX, 0xdfc
+        jnc   keep_flying              ; >= seuil : passable
+        jmp   explode                  ; < seuil : solide → explose
+```
+
+L'effaceur fait `XOR AX,AX` avant de rendre la main : l'appelant relit **0**,
+donc « en dessous du seuil de solidité », donc **mur**, et il explose sur la
+gomme qu'il vient de manger.
+
+**Trois conséquences pour la conception :**
+
+1. **Le régime unitaire est négligeable.** Missiles et tir simple effacent une
+   seule cellule dans toute leur vie : `er.NN` suffit, rien à optimiser.
+2. **Trois armes seulement dimensionnent le régime long** — Force Pod, Wave
+   Cannon, Counter-Air Laser. C'est sur elles que la routine déroulée se taille.
+3. **Il faudra reproduire « meurt sur la première gomme » EXPLICITEMENT** : chez
+   nous la mutation rend un `Z` propre, pas un faux « mur ». L'oublier ferait
+   traverser missiles et tir simple — un changement de gameplay silencieux,
+   exactement ce que le double banc doit attraper.
+
+### Décision : le module calcule le rectangle
+
+Arbitrage auteur (23/08). Les armes passent un départ et une arrivée ; le module
+en tire l'escalier exact (un intervalle par rangée), retranche le hors-carte et
+le hors-ruban, puis choisit le régime. Les armes ne portent pas de géométrie de
+grille.
