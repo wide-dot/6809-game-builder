@@ -300,12 +300,93 @@ def emettre(ordre, colonnes, path=OUT):
     A("; Meme aiguillage que l'ecriture. La valeur est le fond, constante :")
     A("; l'octet plein ne se recharge donc qu'une fois.")
     emettre_cellule(A, "er", lambda l, i: BG)
+    A("; --- LE RUN DE QUATRE : les octets partages partent en entier ----------")
+    emettre_run(A, 4)
     A("; l'aiguillage de l'effacement")
     A("pscroll.er.tbl")
     for k in range(16):
         A(f"        fdb   pscroll.er.{k:02d}")
     A("")
     return _suite_tables(A, L, path, ordre, colonnes)
+
+
+def emettre_run(A, L):
+    """Les 16 routines d'un RUN de L cellules voisines, sur une rangee.
+
+    Une cellule fait 3 px larges, un octet en fait 2 : deux gommes voisines
+    PARTAGENT toujours un octet. Traitees une par une, cet octet se fait
+    masquer deux fois — une fois par chacune, chaque fois pour preserver la
+    moitie de l'autre — alors que dans un run il part en entier. Pour L=4, les
+    24 ecritures masquees d'un plan tombent a 4, et il ne reste qu'UN
+    aiguillage au lieu de quatre.
+
+    BOUCLE SUR LES SIX LIGNES, et non deroule. Le deroule pesait 992
+    instructions (~2,4 Ko) et la page du banc etait deja pleine a 129 octets
+    pres. La base avance de -80 par ligne, ce qui a deux vertus : le code
+    n'existe qu'en un exemplaire, et les offsets retombent dans -8..+4 — donc
+    en indexe 5 bits, un octet et un cycle de moins que les 8 bits du deroule.
+    Le prix est de 10 cycles par ligne et par plan, soit ~240 sur un run qui en
+    economise plusieurs milliers.
+
+    B vaut 0 d'un bout a l'autre et sert toutes les ecritures pleines ; le
+    masquage passe par A, qui ne le touche pas — d'ou le compteur de lignes en
+    memoire et non dans un registre.
+    """
+    assert BG == 0, "le run ecrit le fond par stb : il doit valoir zero"
+    OPOFF = (0, 1, 3, 4)
+    VOISIN = -8
+    for k in range(16):
+        px = []
+        for j in range(3 * L):
+            n = k + j
+            px.append(((n >> 1) & 1, n >> 4, (n % 16) >> 2, n & 1))
+        for plane in (0, 1):
+            octets = {}
+            for d in px:
+                if d[0] == plane:
+                    octets.setdefault((d[1], d[2]), set()).add(d[3])
+            if not octets:
+                continue
+            lbl = f"pscroll.r{L}.{k:02d}.p{plane}"
+            A(lbl)
+            cles = sorted(octets, key=lambda t: (-t[0], t[1]))
+            # UN PLAN SANS MASQUE garde A a zero d'un tour a l'autre : ses
+            # octets pleins voisins partent alors par PAIRES (std). Les offsets
+            # 0-1 et 3-4 sont contigus, 1-3 ne l'est pas.
+            propre = all(len(octets[c]) == 2 for c in cles)
+            saute = None
+            for idx, (voisin, bi) in enumerate(cles):
+                if (voisin, bi) == saute:
+                    continue
+                quartets = octets[(voisin, bi)]
+                off = OPOFF[bi] + (VOISIN if voisin else 0)
+                o = f"{off if off else ''},u"
+                if len(quartets) == 2:          # les deux px partent
+                    suiv = cles[idx + 1] if idx + 1 < len(cles) else None
+                    if (propre and suiv and suiv[0] == voisin
+                            and OPOFF[suiv[1]] == OPOFF[bi] + 1):
+                        A(f"        std   {o}")
+                        saute = suiv
+                    else:
+                        A(f"        stb   {o}")
+                else:                           # un seul : le voisin survit
+                    garde = "$0F" if 0 in quartets else "$F0"
+                    A(f"        lda   {o}")
+                    A(f"        anda  #{garde}")
+                    A(f"        sta   {o}")
+            A("        leau  -80,u")
+            A(f"        dec   pscroll.run.lines")
+            A(f"        bne   {lbl}")
+            A("        rts")
+            A("")
+    A(f"; l'aiguillage du run de {L} : DEUX entrees par cas, une par plan. Le")
+    A("; montage de page et la mise en place de la base sont identiques pour les")
+    A("; seize cas — les repeter ici pesait plus que les ecritures elles-memes,")
+    A("; ils vivent donc dans pscroll.run.plans.")
+    A(f"pscroll.r{L}.tbl")
+    for k in range(16):
+        A(f"        fdb   pscroll.r{L}.{k:02d}.p0,pscroll.r{L}.{k:02d}.p1")
+    A("")
 
 
 def emettre_cellule(A, prefixe, pen):

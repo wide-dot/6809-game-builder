@@ -1585,6 +1585,70 @@ dans les mêmes pages, avec les mêmes bases de ligne. Un aiguillage pour le lot
 puis N fois la seule routine d'écriture donnerait le même ~30 %, en réutilisant
 les routines masquées existantes telles quelles.
 
+### Le run de quatre : les octets partagés partent en entier
+
+Une gomme fait 3 px larges, un octet en fait 2 : deux voisines **partagent
+toujours un octet**. Effacées une par une, cet octet se fait masquer deux fois —
+une fois par chacune, chaque fois pour préserver la moitié de l'autre — alors
+que dans un run il part en entier. Sur quatre cellules, les 24 écritures
+masquées d'un plan tombent à 4, et il ne reste qu'un aiguillage au lieu de
+quatre.
+
+Seize routines, une par cas `(3c − phase) mod 16`, **deux entrées chacune, une
+par plan**. Trois choix de forme, tous imposés par la mesure ou par la place :
+
+- **bouclées sur les six lignes, pas déroulées.** Le déroulé pesait 992
+  instructions (~2,4 Ko) et la page du banc était pleine à 129 octets près. La
+  base recule de 80 par tour, ce qui a deux vertus : le code n'existe qu'en un
+  exemplaire, et les offsets retombent dans −8..+4 — de l'indexé 5 bits, un
+  octet et un cycle de moins que les 8 bits du déroulé. Le prix est de 10
+  cycles par ligne et par plan, soit ~240 sur un run qui en économise des
+  milliers.
+- **le montage de page est sorti** dans `pscroll.run.plans` : répété seize
+  fois, il pesait plus que les écritures elles-mêmes (472 instructions contre
+  264 une fois sorti).
+- **les octets pleins voisins partent en `std`** dans les plans sans masque, où
+  A reste à zéro d'un tour à l'autre : 264 → 240 instructions, ~560 octets.
+
+`clearRun4` vérifie que les deux bandes du run sont dans le ruban et du même
+côté d'une couture (sans quoi le décalage VOISIN de −8 ne veut plus rien dire),
+efface les quatre bits, puis appelle `mutate.tail` — **la seule différence avec
+une mutation ordinaire est la table de routines**. Sinon il refuse et
+l'appelant reprend cellule par cellule.
+
+À effacement strictement égal (240, 540, 270, 603 pixels) :
+
+| cas | avant | après | |
+|---|---|---|---|
+| **bloc 4×4 seul** | 13 636 | **9 540** | **−30 %** |
+| 4×4 balayé de 6 | 22 894 | 23 086 | — |
+| bande beam 2×12 | 5 349 | 5 367 | — |
+| bande large 2×24 | 10 517 | 10 571 | — |
+
+Le bloc isolé passe des deux tiers d'une trame à moins de la moitié. Les autres
+cas ne changent pas : leur run ne fait pas quatre cellules, ils ne prennent pas
+ce chemin. Le balayé de six, en particulier, fait des runs de CINQ — une
+routine de cinq lui rendrait le même service, au prix de seize routines de plus.
+
+### Deux pièges rencontrés en chemin
+
+**La rangée voyage dans B.** Poser `sc.plans` dans `setCell`/`clearCell` par un
+`ldd` écrasait B **avant** le `stb pscroll.sc.row` de `mutate` : toutes les
+mutations tombaient sur la même rangée. La mire se croyait déjà pleine et plus
+rien ne s'effaçait. Le store est descendu après la mise à l'abri des registres.
+
+**La page du banc, et un garde qui manque au builder.** Le module est une page
+de 16 Ko chargée à `$6100` dans la fenêtre `$6000-$9FFF` : seuls **16 128
+octets** sont utilisables, mais le builder valide contre 16 384 — la taille de
+la page — sans tenir compte de l'adresse de chargement. Il a donc accepté un
+direntry de 16 384 octets qui débordait de 252 octets au-delà de `$A000`, et
+l'image bootait sur du vide. **Le garde devrait porter sur adresse + taille
+contre la fin de la région.**
+
+La place a été faite en passant le **script arcade** de cytron derrière
+`BENCH_CYTRON` (l'objet complet vit dans `games/r-type`). Attention : la SONDE
+du pilote reste, elle — c'est par elle que `check_gum` injecte ses mutations.
+
 ### L'oblique, retiré
 
 Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en

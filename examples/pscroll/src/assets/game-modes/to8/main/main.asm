@@ -1,3 +1,10 @@
+; LE PILOTE CYTRON, DERRIERE UN DRAPEAU. Il pesait ~1,6 Ko avec son script de
+; mouvement arcade, et la page du banc n'avait plus que 129 octets de marge —
+; les seize routines de run de quatre n'y entraient pas. L'objet COMPLET vit
+; desormais dans games/r-type/src/enemies/cytron/ ; ce pilote n'etait qu'un
+; banc de repousse. Le remettre a 1 pour rejouer shot_cytron.py.
+BENCH_CYTRON equ 0
+
 ;*******************************************************************************
 ; pscroll — le banc du champ de gommes persistant
 ;
@@ -110,7 +117,9 @@ main
         ldd   ctrlspeedx
         std   pscroll.camera.speedx
 
+ IFNE BENCH_CYTRON
         jsr   bench.cytronReset
+ ENDC
 
         ; --- la gravure initiale : dix bandes ------------------------------
         ldd   #0
@@ -206,13 +215,16 @@ userIRQ
 bench.cytronStep
         lda   cytron.enable
         lbeq  @rien
-        cmpa  #255
+ IFNE BENCH_CYTRON
+        cmpa  #255                     ; 255 = il joue son script arcade
         beq   @script
+ ENDC
         deca                           ; le chemin du banc : une sonde, sur place
         sta   cytron.enable
         ldb   cytron.row
         ldx   cytron.col
         lbra  @sonde                   ; portee longue : le decodeur s'etale
+ IFNE BENCH_CYTRON
         ; --- le script arcade : `speed` octets de deplacement par trame -----
 @script lda   cytron.speed
         sta   cytron.left
@@ -273,7 +285,9 @@ bench.cytronStep
         ; lui, le fait repartir : il n'a ni vague ni gestionnaire d'objets pour
         ; en faire naitre un autre, et une mire qui s'arrete ne montre rien.
 @finscript
+ IFNE BENCH_CYTRON
         jsr   bench.cytronReset
+ ENDC
         bra   @place                   ; @place suit immediatement
         ; --- LA SONDE : position + le decalage de la pose --------------------
         ; Le decalage est en px arcade ; 8 px arcade = 1 cellule, donc x32 le
@@ -319,6 +333,7 @@ bench.cytronStep
         sta   cytron.row
         ldb   cytron.row
         ldx   cytron.col
+ ENDC
 @sonde  tst   cytron.erase
         beq   >
         jsr   pscroll.clearCell
@@ -329,6 +344,7 @@ bench.cytronStep
 !       inc   $9C05                    ; `inc` ecrase le Z que la routine vient
 @rien   rts                            ; de poser (defaut du banc, 22/08)
 
+ IFNE BENCH_CYTRON
 ; Pose la variante jouee et la position de depart.
 bench.cytronReset
         ldb   #cytron.VAR
@@ -348,6 +364,7 @@ bench.cytronReset
         ldd   #cytron.START_Y*256
         std   cytron.y
         rts
+ ENDC
 
 ; --- LE SMILEY : la mire du chemin d'ECRITURE -----------------------------
 ; Une rangee par trame, cellule par cellule, par pscroll.setCell — le chemin
@@ -477,7 +494,9 @@ ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se des
         INCLUDE "../../games/r-type/src/stages/04/pscroll-rows.asm"
         INCLUDE "src/assets/game-modes/to8/main/smiley.asm"
         ; les scripts de mouvement de cytron, exportes de la rom arcade
+ IFNE BENCH_CYTRON
         INCLUDE "../../games/r-type/src/enemies/cytron/movescript.asm"
+ ENDC
 
 ; le champ de gommes d'origine : cytron le mute en place
 field.map

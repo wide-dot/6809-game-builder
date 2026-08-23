@@ -784,6 +784,12 @@ pscroll.mutate
         sty   pscroll.sc.tbl
         stx   pscroll.sc.col
         stb   pscroll.sc.row
+        ; APRES avoir mis B a l'abri : mutate recoit la rangee DANS B et la
+        ; cellule dans X. Poser sc.plans plus haut, dans setCell/clearCell,
+        ; ecrasait B (ldd) et faisait tomber toutes les mutations sur la meme
+        ; rangee — la mire se croyait deja pleine et rien ne s'effacait (23/08).
+        ldd   #pscroll.mutate.plans    ; une cellule : le chemin ordinaire
+        std   pscroll.sc.plans
         ldd   pscroll.sc.col           ; le px de carte : 3 * colonne
         aslb
         rola
@@ -878,7 +884,7 @@ pscroll.mutate.tail
 @geomok ldb   pscroll.sc.px+1          ; PHASE 0 : le cas est px mod 16
         andb  #15
         ldx   #pscroll.phase.tbl
-        lbsr  pscroll.mutate.plans
+        jsr   [pscroll.sc.plans]
         ldd   pscroll.sc.px            ; PHASE 1 : n0 = px - 1
         subd  #1
         bmi   @fin                     ; avant le bord gauche : rien de plus
@@ -898,7 +904,7 @@ pscroll.mutate.tail
         decb
         andb  #15
         ldx   #pscroll.phase.tbl+pscroll.PHASE_SZ
-        lbsr  pscroll.mutate.plans
+        jsr   [pscroll.sc.plans]
 @fin    rts
 
 ; -----------------------------------------------------------------------------
@@ -1270,6 +1276,19 @@ pscroll.clearRow.group
         rts
 
 pscroll.clearRow.cells
+        ldd   pscroll.rect.n           ; UN RUN DE QUATRE ? il a sa routine
+        cmpd  #4
+        bne   pscroll.clearRow.cellsGo
+        ldx   pscroll.rect.a
+        ldb   pscroll.rect.row
+        lbsr  pscroll.clearRun4
+        bcs   pscroll.clearRow.cellsGo ; refuse : le chemin par cellule
+        bne   >
+        lbra  pscroll.clearRow.rien
+!       inc   pscroll.rect.done
+        andcc #$FB
+        rts
+pscroll.clearRow.cellsGo
         ldd   pscroll.rect.a
         std   pscroll.rect.cur
         ldd   pscroll.rect.n
@@ -1282,6 +1301,194 @@ pscroll.clearRow.cells
 pscroll.clearRow.rien
         orcc  #$04
         rts
+
+; -----------------------------------------------------------------------------
+; pscroll.run.plans — poser les deux plans d'une phase, pour un RUN
+; -----------------------------------------------------------------------------
+; input REG : [b] le cas 0..15, [x] l'entree de phase
+;
+; Meme role que mutate.plans, mais les routines de run ont DEUX entrees par cas
+; — une par plan — et ne contiennent que leur boucle de six lignes. Le montage
+; de page, la base et le compteur sont identiques pour les seize cas : les
+; repeter dans le code genere pesait plus que les ecritures elles-memes (472
+; instructions contre 264 une fois sortis).
+;
+; La base part de la ligne du BAS (+80) et remonte de 80 par tour, ce qui garde
+; tous les offsets dans -8..+4 — de l'indexe 5 bits, un octet et un cycle de
+; moins que les 8 bits du deroule.
+; -----------------------------------------------------------------------------
+pscroll.run.plans
+        ldy   pscroll.sc.tbl
+        aslb
+        aslb                           ; quatre octets par cas : deux entrees
+        leay  b,y
+        sty   pscroll.run.entry
+        ldd   ,x                       ; les deux pages, d'un coup
+        std   pscroll.wr.page0
+        ldd   2,x
+        addd  pscroll.sc.dst
+        std   pscroll.wr.base0
+        ldd   4,x
+        addd  pscroll.sc.dst
+        std   pscroll.wr.base1
+        clr   pscroll.run.plane        ; les deux plans, meme montage
+pscroll.run.pLoop
+        lda   pscroll.run.plane        ; sa page (page0 et page1 sont voisines)
+        ldx   #pscroll.wr.page0
+        lda   a,x
+        _SetCartPageA
+        lda   pscroll.run.plane
+        asla
+        ldx   #pscroll.wr.base0        ; sa base : la ligne du BAS de la rangee
+        ldu   a,x
+        leau  pscroll.LINE_SIZE,u
+        ldy   pscroll.run.entry        ; son entree, calculee AVANT de vider D :
+        leay  a,y                      ; la routine veut D = 0
+        lda   #pscroll.CELL_H
+        sta   pscroll.run.lines
+        clra                           ; D = 0 : le fond. A sert aussi aux
+        clrb                           ; paires d'octets pleins (std)
+        jsr   [,y]
+        inc   pscroll.run.plane
+        lda   pscroll.run.plane
+        cmpa  #2
+        blo   pscroll.run.pLoop
+        rts
+
+pscroll.run.entry fdb 0
+pscroll.run.plane fcb 0
+
+; -----------------------------------------------------------------------------
+; pscroll.clearRun4 — effacer QUATRE cellules voisines d'un seul trait
+; -----------------------------------------------------------------------------
+; input REG : [x] la premiere cellule, [b] la rangee
+; input VAR : [pscroll.rect.rowbase] la base de ligne de la rangee
+; sortie    : cc.C = 1 si la routine REFUSE (a l'appelant de faire autrement),
+;             sinon cc.Z = 1 si le champ n'a pas change
+;
+; POURQUOI UNE ROUTINE PAR LONGUEUR. Une gomme fait 3 px larges et un octet en
+; fait 2 : deux voisines partagent toujours un octet. Effacees une par une, cet
+; octet se fait masquer DEUX fois — chacune preservant la moitie de l'autre —
+; alors que dans un run il part en entier. Sur quatre cellules, 24 ecritures
+; masquees et 24 pleines deviennent 4 masquees et 32 pleines, et il ne reste
+; qu'un aiguillage au lieu de quatre.
+;
+; Le reste est celui d'une mutation ordinaire : meme cas (px mod 16), meme
+; geometrie, meme mutate.tail — SEULE LA TABLE DE ROUTINES CHANGE. Les douze
+; pixels tiennent dans deux bandes au plus (16 px la bande), et le decalage
+; VOISIN de -8 les y suit, a deux conditions que la routine verifie :
+;   - les deux bandes sont dans le ruban ;
+;   - elles sont du meme cote d'une couture, sans quoi elles ne sont pas sur
+;     les memes lignes de buffer et le -8 ne veut plus rien dire.
+; Sinon elle refuse (C=1) et l'appelant reprend cellule par cellule.
+;
+; Les quatre cellules sont ecrites MEME SI certaines etaient deja vides : le
+; fond vaut zero, y reecrire zero ne coute rien de plus et evite quatre tests.
+; -----------------------------------------------------------------------------
+pscroll.clearRun4
+        stx   pscroll.sc.col
+        stb   pscroll.sc.row
+        ldd   pscroll.sc.col           ; le px de carte : 3 * colonne
+        aslb
+        rola
+        addd  pscroll.sc.col
+        std   pscroll.sc.px
+        lsra                           ; sa bande
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        stb   pscroll.sc.chunk
+        subb  pscroll.edge16           ; dans le ruban ?
+        lbcs  pscroll.clearRun4.no
+        cmpb  #pscroll.CHUNKS_PER_LINE
+        lbhs  pscroll.clearRun4.no
+        ldd   pscroll.sc.px            ; la bande du DERNIER px du run
+        addd  #3*4-1
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        stb   pscroll.run.last
+        subb  pscroll.edge16
+        lbcs  pscroll.clearRun4.no
+        cmpb  #pscroll.CHUNKS_PER_LINE
+        lbhs  pscroll.clearRun4.no
+        ldx   #pscroll.seamof.tbl      ; meme cote de couture ?
+        ldb   pscroll.sc.chunk
+        lda   b,x
+        ldb   pscroll.run.last
+        cmpa  b,x
+        lbne  pscroll.clearRun4.no
+
+        ; --- la carte : les quatre bits, et le champ a-t-il seulement change ?
+        lda   pscroll.sc.row
+        ldb   #pscroll.MAP_STRIDE
+        mul
+        addd  pscroll.map.address
+        std   pscroll.sc.rowptr
+        clr   pscroll.run.chg
+        ldx   pscroll.sc.col
+        lda   #4
+        sta   pscroll.run.left
+pscroll.clearRun4.bit
+        tfr   x,d
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        addd  pscroll.sc.rowptr
+        tfr   d,y
+        tfr   x,d
+        andb  #7
+        ldu   #pscroll.tbl.bit
+        ldb   b,u
+        bitb  ,y
+        beq   >
+        inc   pscroll.run.chg
+        comb
+        andb  ,y
+        stb   ,y
+!       leax  1,x
+        dec   pscroll.run.left
+        bne   pscroll.clearRun4.bit
+        tst   pscroll.run.chg
+        beq   pscroll.clearRun4.rien   ; les quatre etaient vides
+
+        ldd   pscroll.rect.rowbase     ; la rangee, deja calculee par l'appelant
+        std   pscroll.sc.rowbase
+        ldd   #pscroll.r4.tbl          ; LA SEULE DIFFERENCE avec une mutation
+        std   pscroll.sc.tbl
+        ldd   #pscroll.run.plans
+        std   pscroll.sc.plans
+        lda   #$FF
+        sta   pscroll.sc.lastchunk
+        lbsr  pscroll.mutate.tail
+        andcc #$FA                     ; C = 0 : la routine a fait le travail,
+                                       ; Z = 0 : le champ a change
+        rts
+pscroll.clearRun4.rien
+        andcc #$FE
+        orcc  #$04                     ; Z = 1 : rien n'a change
+        rts
+pscroll.clearRun4.no
+        orcc  #$01                     ; C = 1 : la routine refuse
+        rts
+
+pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
+                                       ; memoire, A servant au masquage
+pscroll.run.last  fcb 0
+pscroll.run.chg   fcb 0
+pscroll.run.left  fcb 0
 
 ; -----------------------------------------------------------------------------
 ; pscroll.chunkOf — la bande d'une cellule
@@ -1338,6 +1545,8 @@ pscroll.clearRow.runCells
         std   pscroll.sc.rowbase
         ldd   #pscroll.er.tbl          ; le lot n'efface que
         std   pscroll.sc.tbl
+        ldd   #pscroll.mutate.plans
+        std   pscroll.sc.plans
         lda   #1
         sta   pscroll.sc.mode
         lda   #$FF                     ; aucune geometrie encore calculee
@@ -1588,7 +1797,6 @@ pscroll.CLEAR_UNROLL equ 8             ; le seuil des deux regimes : huit
                                        ; cellules garantissent une bande pleine
                                        ; quelle que soit leur position (six n'y
                                        ; suffisent que si elles tombent bien)
-pscroll.RECT_ROWS    equ 16            ; rangees que l'escalier peut couvrir
 pscroll.rect.c0      fdb 0
 pscroll.rect.r0      fcb 0
 pscroll.rect.c1      fdb 0
@@ -1603,10 +1811,8 @@ pscroll.rect.cur     fdb 0
 pscroll.rect.row     fcb 0
 pscroll.rect.left    fcb 0
 pscroll.rect.done    fcb 0
-pscroll.rect.dc      fdb 0
-pscroll.rect.dr      fcb 0
-pscroll.rect.mins    fill 0,2*pscroll.RECT_ROWS
-pscroll.rect.maxs    fill 0,2*pscroll.RECT_ROWS
+; (rect.dc/dr/mins/maxs sont partis avec le parcours en escalier : 67 octets
+; qu'aucune ligne ne lisait plus.)
 
 pscroll.tbl.bit  fcb   $80,$40,$20,$10,$08,$04,$02,$01
 ; LE BITFIELD DES GOMMES. CONTRAT : il doit etre ADRESSABLE quand setCell ou
@@ -1635,4 +1841,5 @@ pscroll.sc.rowbase    fdb   0
 pscroll.sc.dst        fdb   0
 pscroll.sc.tbl        fdb   0          ; la table du chemin en cours
 pscroll.sc.mode       fcb   0          ; 0 = pousse, 1 = efface
+pscroll.sc.plans      fdb   0          ; poser les plans : cellule ou run
 pscroll.sc.lastchunk  fcb   $FF        ; la bande dont sc.dst est la geometrie
