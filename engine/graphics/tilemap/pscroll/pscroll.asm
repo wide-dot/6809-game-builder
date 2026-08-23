@@ -98,26 +98,61 @@
 
 ; constantes
 ; -----------------------------------------------------------------------------
-; DECOUPAGE EN DEUX MORCEAUX — pourquoi, et comment
+; DECOUPAGE EN TROIS MORCEAUX — pourquoi cette frontiere-la
 ; -----------------------------------------------------------------------------
-; Un projet ou le module ne tient pas en RAM fixe le coupe en deux unites :
+; Un projet ou le module ne tient pas en RAM fixe le coupe. La coupe n'est PAS
+; libre : elle est dictee par les fenetres du TO8 et par une seule question —
+; QUI MONTE UN BUFFER ? Une routine qui commute la fenetre cartouche pour
+; atteindre un buffer ne peut pas y vivre elle-meme, elle s'y effacerait.
 ;
-;   PSCROLL_PART = 0   la part RESIDENTE : les variables, `do` et `runBuffer`.
-;                      `do` peint la fenetre depuis le ruban ; il lui faut
-;                      l'ECRAN monte en $A000, donc la page du module ne l'est
-;                      pas a cet instant — il ne peut toucher aucune variable
-;                      qui y vivrait. D'ou : toutes les variables ici.
-;   PSCROLL_PART = 1   la part PAGINEE : gravure, scroll, ajout, effacement.
-;                      Elle n'a jamais besoin de l'ecran, elle peut donc vivre
-;                      dans une page montee en $A000. Le loader ecrit par la
-;                      MEME fenetre (ram.set choisit d'apres l'adresse de
-;                      destination) : l'inversion des demi-pages s'annule des
-;                      deux cotes, et rien dans l'arithmetique ne bouge.
-;   non defini         tout, d'un seul tenant — c'est ce que fait le banc.
+;   PSCROLL_PART = 0   RESIDENT : les variables, `do` et `runBuffer`. `do`
+;                      peint depuis le ruban ; il lui faut l'ECRAN monte en
+;                      $A000, donc aucune page du module ne l'est a cet
+;                      instant — il ne peut toucher aucune variable qui y
+;                      vivrait. D'ou : toutes les variables ici.
+;   PSCROLL_PART = 1   CARTOUCHE ($0000, page commutable) : ce qui ne touche
+;                      jamais un buffer — `move`, `clearRect`, `clearRow`,
+;                      `grow`, et les tables. Les routines de la part 2 le
+;                      demontent le temps d'une ecriture et le REMONTENT
+;                      avant leur rts.
+;   PSCROLL_PART = 2   VIDEO ($4000, 8 Ko de RAM FIXE — demi-page video 0) :
+;                      ce qui monte un buffer, et rien d'autre. `feedBand`,
+;                      `run.pLoop` + les 16 routines deroulees, `zBuf`,
+;                      `buildSkeleton`. Fixe, donc toujours appelable.
+;   non defini / 3     tout, d'un seul tenant — c'est ce que fait le banc,
+;                      et c'est le filet de la coupe : le meme code doit s'y
+;                      comporter a l'identique.
+;
+; Le bitfield `field.map` ne suit aucune des trois : `feedBand` le lit PENDANT
+; qu'il ecrit un buffer, il ne peut donc pas etre en cartouche. Il va dans une
+; page reservee en $A000 — et il n'a pas besoin d'etre chargeable, puisqu'il
+; est `fill 0` et se remplit a l'init. C'est ce qui le sauve : le loader ne
+; peut PAS ecrire en $A000, il y habite (loader.PAGE, loader.ADDRESS $C000).
 ; -----------------------------------------------------------------------------
  IFNDEF PSCROLL_PART
-PSCROLL_PART equ 2                     ; par defaut : le module entier
+PSCROLL_PART equ 3                     ; par defaut : le module entier
  ENDC
+; Les trois predicats — un bloc ne demande jamais « quelle part ? » mais « est-ce
+; que J'EN SUIS ? ». C'est ce qui rend « tout d'un tenant » exprimable sans
+; dupliquer une seule garde.
+PSCROLL_RES  set 0
+PSCROLL_CART set 0
+PSCROLL_VID  set 0
+ IFEQ PSCROLL_PART
+PSCROLL_RES  set 1
+ ENDC
+ IFEQ PSCROLL_PART-1
+PSCROLL_CART set 1
+ ENDC
+ IFEQ PSCROLL_PART-2
+PSCROLL_VID  set 1
+ ENDC
+ IFEQ PSCROLL_PART-3
+PSCROLL_RES  set 1
+PSCROLL_CART set 1
+PSCROLL_VID  set 1
+ ENDC
+PSCROLL_PAGED set PSCROLL_CART+PSCROLL_VID   ; « pas resident » : l'une ou l'autre
 
 ; -----------------------------------------------------------------------------
 pscroll.OPCODE_JMP_E  equ   $7E
@@ -213,7 +248,7 @@ pscroll.BLAST_REM     equ   pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE-(pscroll.BUFF
 ; parametres, poses par le projet avant l'init
 ; -----------------------------------------------------------------------------
 ; Les quatre buffers : [plan][phase]. Plan 0 = zone $C000 en phase paire.
- IFNE PSCROLL_PART-1                   ; la part RESIDENTE
+ IFNE PSCROLL_RES                      ; la part RESIDENTE
 pscroll.buf.page      fill  0,4        ; pages des 4 buffers
 pscroll.buf.address   fill  0,8        ; adresses des 4 buffers (fenetre cart.)
 pscroll.data.page     fcb   0          ; page des routines de gravure + tables
@@ -323,8 +358,8 @@ pscroll.blastrem       EXPORT
 ;
 ; Pieges de clearblast : aucun bsr/rts tant que S ecrit, S sauve et restaure.
 ; Les IRQ sont coupees a l'init, donc rien ne pousse sous S.
- IFNE PSCROLL_PART                     ; PAGINE : gravure et scroll
- IFEQ PSCROLL_PART-1
+ IFNE PSCROLL_CART                     ; CARTOUCHE : scroll, et ce qui
+ IFEQ PSCROLL_RES                      ; les variables sont ailleurs
 pscroll.buf.page       EXTERNAL
 pscroll.buf.address    EXTERNAL
 pscroll.data.page      EXTERNAL
@@ -366,6 +401,8 @@ pscroll.blastrem       EXTERNAL
  ENDC
 
 ; -----------------------------------------------------------------------------
+ ENDC
+ IFNE PSCROLL_VID                     ; buildSkeleton : monte un buffer
 pscroll.buildSkeleton
         sts   pscroll.savedS          ; aucun bsr/rts tant que S ecrit
         clr   pscroll.counter
@@ -424,6 +461,8 @@ pscroll.buildSkeleton
         cmpa  #4
         blo   @buf
         rts
+ ENDC
+ IFNE PSCROLL_CART                    ; retour au cote cartouche
 
 ; -----------------------------------------------------------------------------
 ; pscroll.setCameraX
@@ -618,6 +657,8 @@ pscroll.move
 ; buffers. Sans scroll vertical la destination est connue d'avance : rangee r
 ; -> lignes 6r, decalees du cisaillement, le tout modulo le bouclage.
 ; -----------------------------------------------------------------------------
+ ENDC
+ IFNE PSCROLL_VID                     ; feedBand + engraveColumn : monte un buffer
 pscroll.feedBand
         cmpb  #pscroll.CHUNKS
         blo   >
@@ -768,7 +809,7 @@ pscroll.engraveColumn
 ;       w      : echange des zones $A000 / $C000
  ENDC
 
- IFNE PSCROLL_PART-1                   ; RESIDENT : do peint,
+ IFNE PSCROLL_RES                      ; RESIDENT : do peint,
                                        ; il lui faut l'ecran, donc pas
                                        ; la page du module
 ; -----------------------------------------------------------------------------
@@ -949,7 +990,7 @@ pscroll.runBuffer
 ; les 4 px de trop vus a l'ecran.
  ENDC
 
- IFNE PSCROLL_PART                     ; PAGINE : ajout et effacement
+ IFNE PSCROLL_CART                     ; CARTOUCHE : ajout, effacement
 ; -----------------------------------------------------------------------------
 pscroll.setCell
         ldy   #pscroll.wr.tbl          ; la gomme POUSSE
@@ -1585,6 +1626,8 @@ pscroll.clearRow.rien
 ; tous les offsets dans -8..+4 — de l'indexe 5 bits, un octet et un cycle de
 ; moins que les 8 bits du deroule.
 ; -----------------------------------------------------------------------------
+ ENDC
+ IFNE PSCROLL_VID                     ; run.plans + run.pLoop + les 16 routines : monte un buffer
 pscroll.run.plans
         ldy   pscroll.sc.tbl
         aslb
@@ -1625,6 +1668,8 @@ pscroll.run.pLoop
 
 pscroll.run.entry fdb 0
 pscroll.run.plane fcb 0
+ ENDC
+ IFNE PSCROLL_CART                    ; retour au cote cartouche
 
 ; -----------------------------------------------------------------------------
 ; pscroll.clearRun — effacer un RUN de cellules voisines d'un seul trait
@@ -2097,6 +2142,8 @@ pscroll.clearRow.zDone
 pscroll.clearRow.zNoPatch
         clr   pscroll.rect.patch
         clr   pscroll.rect.patch+1
+ ENDC
+ IFNE PSCROLL_VID                     ; clearRow.zBuf : monte un buffer
 pscroll.clearRow.zBufs
         lda   #pscroll.ROW_BIAS        ; la ligne du haut de la rangee
         suba  pscroll.rect.seam
@@ -2132,6 +2179,8 @@ pscroll.clearRow.zBuf
         sta   ,x
 pscroll.clearRow.zRien
         rts
+ ENDC
+ IFNE PSCROLL_CART                    ; retour au cote cartouche
 
 pscroll.mfrom    fcb $FF,$7F,$3F,$1F,$0F,$07,$03,$01
 pscroll.mto      fcb $80,$C0,$E0,$F0,$F8,$FC,$FE,$FF
