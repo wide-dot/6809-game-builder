@@ -1945,12 +1945,28 @@ libres pendant ce stage, donc les quatre buffers ne coûtent rien à personne.
 `stage4.pellet` libère 1 564 octets résidents, le bitfield en demande 1 440 :
 il prend sa place.
 
-**Ce qui ne marche pas encore.** Le jeu boote, le cheat mène au stage 4
-(témoin `stage=04`), mais **la boucle de trame ne démarre jamais** : le
-compteur de tours reste à zéro après 12 000 trames, et le PC oscille entre une
-unité paginée et les routines disque du moniteur — le chargement boucle. À
-chercher en premier : le direntry `stage4.pscroll` (14 Ko, le plus gros du
-stage) et sa page $0B.
+**Pourquoi ça ne marche pas — et c'est structurel.** `paged.call` monte une
+unité dans la fenêtre **cartouche** (`$0000-$3FFF`). Or c'est exactement la
+fenêtre que pscroll bascule pour atteindre ses buffers : au premier
+`_SetCartPageA`, **il se démonte lui-même** et le CPU tombe dans les octets du
+ruban. Mesuré : `stage=04`, compteur de tours à zéro, PC en `$4F43` — hors de
+tout ce que la scène charge.
+
+La machine n'a qu'une fenêtre paginable : la fenêtre données (`$6000-$9FFF`)
+est fixée à la page 1, l'écran occupe `$A000`/`$C000`. **Un code qui bascule la
+fenêtre cartouche doit donc être RÉSIDENT** — c'est ce que dit l'en-tête de
+`pellet.blast`, et je l'ai lu trop vite en croyant que `paged.call` s'en
+affranchissait.
+
+Le budget est le vrai obstacle : la partie de pscroll qui doit être résidente
+(le module, les routines d'écriture, `zrow`, les 33 routines de gravure et
+leurs tables de colonnes) pèse ~11 Ko, et il reste ~4,7 Ko sur la page 1
+pendant le stage 4. `mscroll` montre le modèle tenable — 2,6 Ko résidents — mais
+il n'embarque pas la gravure d'un niveau entier.
+
+**C'est un arbitrage à rendre** : libérer ~7 Ko de résident, ou réduire pscroll
+(les tables de colonnes et les routines de rangée sont les deux gros postes).
+Le reste du câblage est en place et se construit.
 
 **Deux outils en sont sortis, eux utilisables tout de suite :**
 
@@ -1959,10 +1975,13 @@ stage) et sa page $0B.
   sans manette ne peut pas y arriver, mais rien n'empêche de poser `tct.pstage`
   et d'appeler la même routine. Piège : la fenêtre cartouche du TO8 est en
   `$0000-$3FFF`, pas en `$A000`.
-- **Le format `.fd` et le toje du plugin.** Le plugin échouait à lire l'image
-  r-type (« le contrôleur ne rend pas de donnée », face 1 piste 12). Ce n'est
-  pas une panne du contrôleur : **le builder écrit le `.fd` face par face**
-  (vérifié en retrouvant le secteur dans `to8_1.sap`) alors que le plugin
-  l'attend **entrelacé par piste**. Réécrite entrelacée, l'image boote et
-  atteint le loader du jeu. L'alignement des deux conventions est un arbitrage
-  à rendre — builder ou émulateur.
+- **Le toje du plugin qui ne lisait plus l'image : un état, pas un bug.**
+  Symptôme : « le contrôleur ne rend pas de donnée », boucle DRQ du moniteur
+  (`$E3C0-$E3E9`). J'ai d'abord accusé le format `.fd` — à tort, et deux fois :
+  le builder écrit bien face par face, lire face 0 puis face 1 d'une piste est
+  l'optimisation de tête, et une autre émulation lit l'image sans broncher.
+  La preuve : le harnais `FdBootRepro` du dépôt toje, compilé sur la **1.6.1
+  elle-même**, boote notre image (`GOOD`). Le diff `THMFC1` entre notre version
+  et la 1.6.1 ne touche rien à la localisation d'un secteur. **C'était
+  l'instance du plugin qui portait un état incohérent** — `restart_emulator`
+  la remet d'aplomb, et tout lit normalement.
