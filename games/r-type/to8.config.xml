@@ -75,7 +75,14 @@
                  l'inversion des demi-pages s'annule entre l'ecriture et la
                  lecture. La page est RESERVEE — son contenu physique est dans
                  l'ordre echange, rien d'autre ne peut y cohabiter. -->
-            <region name="pscroll.edit" page="$0B" address="$A000" size="$4000"/>
+            <!-- La carte de gommes : page RESERVEE, jamais chargee. Elle est
+                 `fill 0` et se remplit a l'init depuis la carte de collision,
+                 donc le loader n'a jamais a l'ecrire — ce qui la sauve, puisque
+                 le loader ne PEUT pas ecrire en $A000 : il y habite. Et elle ne
+                 peut pas etre ailleurs : feedBand la LIT pendant qu'il ecrit un
+                 buffer, donc ni en cartouche (le buffer y est) ni dans les 8 Ko
+                 de la part video (elle n'y tiendrait pas avec les routines). -->
+            <region name="pscroll.map" page="$0B" address="$A000" size="$4000"/>
             <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B10"/>
             <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B10"/>
             <region name="pscroll.buf2" page="$10" address="$0000" size="$3B10"/>
@@ -365,6 +372,7 @@
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
             <define symbol="loader.PAGE" value="4"/>
+            <define symbol="pscroll.map.page" value="$0B"/>
             <define symbol="loader.ADDRESS" value="$C000"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">

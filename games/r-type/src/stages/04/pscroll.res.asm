@@ -31,7 +31,8 @@ pscroll.MAP_WIDTH  equ field.MAP_W
 pscroll.MAX_SEAMS  equ 8
 PSCROLL_PART       equ 0                ; la part residente
 
-pscroll.move       EXTERNAL              ; l'autre moitie, en page
+pscroll.move       EXTERNAL              ; la part CARTOUCHE
+paged.call         EXTERNAL
 
  SECTION code
 
@@ -59,10 +60,16 @@ pscroll.move       EXTERNAL              ; l'autre moitie, en page
 pscroll.stage4.frame
         std   pscroll.camera.speedx
         jsr   pscroll.do
-        ldb   map.CF74021.DATA             ; le tampon video courant,
-        stb   pscroll.backBuffer           ; avant d'y toucher
-        _ram.data.set #pscroll.edit.page
-        jsr   pscroll.move
+        ldb   map.CF74021.DATA             ; la page ecran, sauvee avant
+        stb   pscroll.backBuffer           ; qu'on lui prenne la fenetre
+        _ram.data.set #pscroll.map.page    ; la carte prend sa place : feedBand
+                                           ; la LIT pendant qu'il ecrit un
+                                           ; buffer, elle ne peut donc etre ni
+                                           ; en cartouche ni dans la part video
+        lda   #map.RAM_OVER_CART+pscroll.edit.page
+        sta   pscroll.cart.page            ; ce que la part VIDEO remontera
+        ldx   #pscroll.move
+        jsr   paged.call                   ; monte, appelle, rend sa page
         ldb   pscroll.backBuffer           ; et l'ecran revient
         stb   map.CF74021.DATA
         rts

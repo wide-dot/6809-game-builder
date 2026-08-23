@@ -251,7 +251,12 @@ pscroll.BLAST_REM     equ   pscroll.BUFFER_SIZE/pscroll.CHUNK_SIZE-(pscroll.BUFF
  IFNE PSCROLL_RES                      ; la part RESIDENTE
 pscroll.buf.page      fill  0,4        ; pages des 4 buffers
 pscroll.buf.address   fill  0,8        ; adresses des 4 buffers (fenetre cart.)
-pscroll.data.page     fcb   0          ; page des routines de gravure + tables
+pscroll.cart.page     fcb   0          ; la page CARTOUCHE de l'appelant, avec
+                                       ; son bit RAM_OVER_CART. Toute routine
+                                       ; de la part VIDEO la remonte avant son
+                                       ; rts : elle vient de commuter la
+                                       ; fenetre pour atteindre un buffer, et
+                                       ; c'est la que vit le code qui l'appelle.
 pscroll.viewport.ram  fdb   0          ; fin de bande dans la zone $A000-$BFFF
 pscroll.camera.x.max  fdb   0          ; largeur de carte - 160
 
@@ -301,7 +306,7 @@ pscroll.blastrem      fcb   0          ; chunks restants du blast, hors boucle
                                        ; paginee les voit par le loader
 pscroll.buf.page       EXPORT
 pscroll.buf.address    EXPORT
-pscroll.data.page      EXPORT
+pscroll.cart.page      EXPORT
 pscroll.viewport.ram   EXPORT
 pscroll.camera.x.max   EXPORT
 pscroll.camera.x       EXPORT
@@ -362,7 +367,7 @@ pscroll.blastrem       EXPORT
  IFEQ PSCROLL_RES                      ; les variables sont ailleurs
 pscroll.buf.page       EXTERNAL
 pscroll.buf.address    EXTERNAL
-pscroll.data.page      EXTERNAL
+pscroll.cart.page      EXTERNAL
 pscroll.viewport.ram   EXTERNAL
 pscroll.camera.x.max   EXTERNAL
 pscroll.camera.x       EXTERNAL
@@ -460,6 +465,12 @@ pscroll.buildSkeleton
         lda   pscroll.counter
         cmpa  #4
         blo   @buf
+ IFEQ PSCROLL_PART-2                   ; SPLIT SEUL : d'un seul tenant, le
+        pshs  cc,a                     ; code n'est pas en cartouche et il n'y
+        lda   pscroll.cart.page        ; a rien a remonter. Ici si : la page de
+        _SetCartPageA                  ; l'appelant revient AVANT le rts, son
+        puls  cc,a                     ; code vit la-bas et on l'a demonte.
+ ENDC
         rts
  ENDC
  IFNE PSCROLL_CART                    ; retour au cote cartouche
@@ -662,6 +673,12 @@ pscroll.move
 pscroll.feedBand
         cmpb  #pscroll.CHUNKS
         blo   >
+ IFEQ PSCROLL_PART-2                   ; SPLIT SEUL : d'un seul tenant, le
+        pshs  cc,a                     ; code n'est pas en cartouche et il n'y
+        lda   pscroll.cart.page        ; a rien a remonter. Ici si : la page de
+        _SetCartPageA                  ; l'appelant revient AVANT le rts, son
+        puls  cc,a                     ; code vit la-bas et on l'a demonte.
+ ENDC
         rts                            ; hors carte : rien a graver
 !       stb   pscroll.band
         ; l'emplacement dans le ruban (b mod 10) et le nombre de coutures a
@@ -760,6 +777,12 @@ pscroll.feedBand
         lda   pscroll.counter
         cmpa  #4
         blo   @buf
+ IFEQ PSCROLL_PART-2                   ; SPLIT SEUL : d'un seul tenant, le
+        pshs  cc,a                     ; code n'est pas en cartouche et il n'y
+        lda   pscroll.cart.page        ; a rien a remonter. Ici si : la page de
+        _SetCartPageA                  ; l'appelant revient AVANT le rts, son
+        puls  cc,a                     ; code vit la-bas et on l'a demonte.
+ ENDC
         rts
 
 ; -----------------------------------------------------------------------------
@@ -1664,6 +1687,12 @@ pscroll.run.pLoop
         lda   pscroll.run.plane
         cmpa  #2
         blo   pscroll.run.pLoop
+ IFEQ PSCROLL_PART-2                   ; SPLIT SEUL : d'un seul tenant, le
+        pshs  cc,a                     ; code n'est pas en cartouche et il n'y
+        lda   pscroll.cart.page        ; a rien a remonter. Ici si : la page de
+        _SetCartPageA                  ; l'appelant revient AVANT le rts, son
+        puls  cc,a                     ; code vit la-bas et on l'a demonte.
+ ENDC
         rts
 
 pscroll.run.entry fdb 0
@@ -2178,6 +2207,12 @@ pscroll.clearRow.zBuf
         lda   pscroll.rect.saved
         sta   ,x
 pscroll.clearRow.zRien
+ IFEQ PSCROLL_PART-2                   ; SPLIT SEUL : d'un seul tenant, le
+        pshs  cc,a                     ; code n'est pas en cartouche et il n'y
+        lda   pscroll.cart.page        ; a rien a remonter. Ici si : la page de
+        _SetCartPageA                  ; l'appelant revient AVANT le rts, son
+        puls  cc,a                     ; code vit la-bas et on l'a demonte.
+ ENDC
         rts
  ENDC
  IFNE PSCROLL_CART                    ; retour au cote cartouche
