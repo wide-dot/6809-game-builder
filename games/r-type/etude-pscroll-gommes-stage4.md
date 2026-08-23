@@ -1480,13 +1480,13 @@ L'aiguillage fait quatre choses :
 **Prouvé identique** : les cinq cas de `check_rect.py` rendent les mêmes pixels
 qu'avec le chemin par cellule — c'est l'A/B qu'il fallait.
 
-### Mesuré sur une mire déterministe — et le défaut que ça a fait tomber
+### Mesurer : deux instruments faux avant le bon
 
-Une cellule déjà vide ne coûte que son rejet : mesurer sur un champ dont on ne
-connaît pas le remplissage ne veut rien dire. Le premier profilage a vu la mire
-maigrir de cas en cas — 9 600 pixels, puis 9 360, puis 9 090 — et redessiner ne
-la restaurait pas. J'ai d'abord redémarré la machine entre les cas ; c'était
-traiter le symptôme. **La cause était un défaut de `clearRow.zone`** :
+Trois pièges se sont succédé, et chacun a produit des chiffres crédibles.
+
+**Le champ.** Une cellule déjà vide ne coûte que son rejet. La mire maigrissait
+de cas en cas — 9 600 pixels, puis 9 360, puis 9 090 — et redessiner ne la
+restaurait pas. La cause n'était pas le banc mais un défaut de `clearRow.zone` :
 
 ```
         coma                           ; A = ~masque, la valeur voulue
@@ -1495,24 +1495,54 @@ traiter le symptôme. **La cause était un défaut de `clearRow.zone`** :
 ```
 
 La 6809 ne sait pas croiser A et B : le complément doit passer par la mémoire
-(`pshs a` / `andb ,s+`). **Les bits de carte des bandes pleines n'étaient donc
-jamais effacés** — les pixels partaient, le bitfield disait toujours « pleine »,
-et `setCell` refusait de faire repousser. Le déficit valait exactement les
-cellules du cas précédent.
+(`pshs a` / `andb ,s+`). **Les bits de carte des bandes pleines n'étaient jamais
+effacés** — les pixels partaient, le bitfield disait toujours « pleine », et
+`setCell` refusait de faire repousser. `check_rect` ne pouvait pas le voir : il
+compare des PIXELS, et les pixels étaient justes. La mire qui revient à
+l'identique est un oracle plus fort, parce qu'elle passe par la carte.
 
-`check_rect` ne l'avait pas vu : il compare des PIXELS, et les pixels étaient
-justes. La mire qui revient à l'identique est un oracle plus fort, parce qu'elle
-passe par la carte — elle est désormais dans `profile_rect.py`, et le
-redémarrage n'est plus nécessaire.
+**Les plages de PC.** Le profil sommait les cycles des PC compris entre
+`pscroll.setCell` et `pscroll.tbl.bit`. Or les routines d'écriture générées
+vivent à `$7750` et `$7E00`, et la séquence déroulée à `$8492` : **on ne
+mesurait que l'aiguillage**, et une bande pleine paraissait presque gratuite.
+Pire, `profile_top` plafonne à mille lignes et le code déroulé en fait
+davantage, donc le total était tronqué — variablement d'une version à l'autre.
 
-Sur champ plein :
+**Les trames fixes.** Mesurer `total_cycles` sur un nombre de trames fixe, avec
+et sans effacement, donne zéro : le 6809 consomme le même temps qu'il travaille
+ou qu'il attende.
 
-| cas | cases | gommes | total | cy/case |
-|---|---|---|---|---|
-| bloc 4×4 seul (régime par cellule) | 16 | 16 | 9 354 | **584** |
-| 4×4 balayé de 6 | 40 | 36 | 15 596 | **389** |
-| bande beam 2×12 | 24 | 18 | 3 082 | **128** |
-| bande large 2×24 | 48 | 41 | 5 814 | **121** |
+**Ce qui marche** : encadrer l'appel. On court jusqu'à l'entrée de `clearRect`,
+on lit son adresse de retour sur la pile, on profile jusqu'à elle. `total_cycles`
+ne compte alors que l'effacement, sans plage à deviner ni troncature. Et chaque
+cas compte en plus les pixels réellement effacés — deux versions ne se comparent
+qu'à effacement égal.
+
+### L'aiguillage en lot, mesuré
+
+L'aiguillage recalculait par cellule quatre choses qui ne bougent pas dans un
+lot : le pointeur de carte de la rangée, la base de ligne, le px de carte (qui
+n'avance que de 3), et la géométrie de bande — alors que la bande ne change
+qu'une cellule sur cinq. La queue de `mutate` est devenue `mutate.tail`,
+appelable en lot, avec `sc.lastchunk` qui évite le `geom` redondant.
+
+À effacement strictement égal (240, 540, 270 et 603 pixels) :
+
+| cas | avant | après | |
+|---|---|---|---|
+| bloc 4×4 seul | 942 | **852** | −10 % |
+| 4×4 balayé de 6 | 611 | **572** | −6 % |
+| bande beam 2×12 | 228 | **222** | −3 % |
+| bande large 2×24 | 230 | **219** | −5 % |
+
+**C'est un gain modeste, et il faut le dire** : l'instrument cassé annonçait
+−44 % et −76 % sur les deux bandes. La part hoistée ne pesait qu'une fraction de
+l'aiguillage, lui-même une fraction du total.
+
+Ce que la mesure fiable montre en revanche, c'est **où est le problème** : le
+bloc 4×4 isolé coûte 13 636 cycles, soit **les deux tiers d'une trame** à
+19 954 cycles. Les runs longs, eux, tiennent à ~220 cycles par case — le déroulé
+y fait son travail.
 
 ### Ce que coûtent les extrémités, et ce qu'un masque n'y changerait pas
 
