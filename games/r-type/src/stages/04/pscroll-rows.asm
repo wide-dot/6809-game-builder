@@ -1,0 +1,2786 @@
+;******************************************************************************
+; pscroll — les routines de gravure d'une rangee, GENEREES
+;
+; tools/gen_pscroll.py — ne pas editer a la main.
+;
+; Une routine grave UNE RANGEE de cellules (6 lignes) x les 4 octets
+; d'un plan sur une bande de 16 px. U pointe le chunk de la premiere
+; ligne ; les immediats sont CUITS (ldd #, 3 cy) et la destination est
+; fixe — c'est le chemin du FEED, pas celui de la mutation (voir
+; etude-pscroll-gommes-stage4.md, §6.4).
+;
+; La combinaison ne mentionne pas le plan : le meme peigne (2 px, saut
+; de 2 px) se retrouve dans les deux. 33 routines au lieu de 28.
+;******************************************************************************
+
+; pscroll.LINE_SIZE vient du module engine (pscroll.asm) : le pas de
+; ligne du buffer, 80 o. Le generateur le SUPPOSE — si le module
+; change de geometrie, cette valeur doit suivre ici aussi.
+
+; --- la table des routines ---------------------------------------------
+pscroll.row.tbl
+        fdb   pscroll.row.00
+        fdb   pscroll.row.01
+        fdb   pscroll.row.02
+        fdb   pscroll.row.03
+        fdb   pscroll.row.04
+        fdb   pscroll.row.05
+        fdb   pscroll.row.06
+        fdb   pscroll.row.07
+        fdb   pscroll.row.08
+        fdb   pscroll.row.09
+        fdb   pscroll.row.10
+        fdb   pscroll.row.11
+        fdb   pscroll.row.12
+        fdb   pscroll.row.13
+        fdb   pscroll.row.14
+        fdb   pscroll.row.15
+        fdb   pscroll.row.16
+        fdb   pscroll.row.17
+        fdb   pscroll.row.18
+        fdb   pscroll.row.19
+        fdb   pscroll.row.20
+        fdb   pscroll.row.21
+        fdb   pscroll.row.22
+        fdb   pscroll.row.23
+        fdb   pscroll.row.24
+        fdb   pscroll.row.25
+        fdb   pscroll.row.26
+        fdb   pscroll.row.27
+        fdb   pscroll.row.28
+        fdb   pscroll.row.29
+        fdb   pscroll.row.30
+        fdb   pscroll.row.31
+        fdb   pscroll.row.32
+
+pscroll.row.00                   ; fond
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   83,x
+        std   ,x
+        std   3,x
+        std   -80,x
+        std   -77,x
+        std   80,u
+        std   83,u
+        std   ,u
+        std   3,u
+        std   -80,u
+        std   -77,u
+        rts
+
+pscroll.row.01
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$0D00
+        std   83,x
+        std   3,x
+        ldd   #$DD00
+        std   -77,x
+        ldd   #$D700
+        std   83,u
+        ldd   #$CC00
+        std   3,u
+        ldd   #$0F00
+        std   -77,u
+        rts
+
+pscroll.row.02
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$DC00
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$7A00
+        std   83,u
+        ldd   #$CF00
+        std   3,u
+        ldd   #$FF00
+        std   -77,u
+        rts
+
+pscroll.row.03
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$C000
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$A000
+        std   83,u
+        ldd   #$F000
+        std   3,u
+        std   -77,u
+        rts
+
+pscroll.row.04
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   83,x
+        std   ,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -80,u
+        std   -77,u
+        ldd   #$000D
+        std   -80,x
+        std   80,u
+        ldd   #$000C
+        std   ,u
+        rts
+
+pscroll.row.05
+        leax  240,u
+        ldd   #$000D
+        std   80,x
+        std   ,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$00DD
+        std   -80,x
+        ldd   #$00D7
+        std   80,u
+        ldd   #$00CC
+        std   ,u
+        ldd   #$000F
+        std   -80,u
+        rts
+
+pscroll.row.06
+        leax  240,u
+        ldd   #$00DC
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$007A
+        std   80,u
+        ldd   #$00CF
+        std   ,u
+        ldd   #$00FF
+        std   -80,u
+        rts
+
+pscroll.row.07
+        leax  240,u
+        ldd   #$00C0
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$00A0
+        std   80,u
+        ldd   #$00F0
+        std   ,u
+        std   -80,u
+        rts
+
+pscroll.row.08
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   83,x
+        std   ,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -80,u
+        std   -77,u
+        ldd   #$0D00
+        std   -80,x
+        std   80,u
+        ldd   #$0C00
+        std   ,u
+        rts
+
+pscroll.row.09
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   83,x
+        std   ,x
+        std   3,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        std   -77,u
+        ldd   #$000D
+        std   -77,x
+        std   83,u
+        ldd   #$000C
+        std   3,u
+        rts
+
+pscroll.row.10
+        leax  240,u
+        ldd   #$0D00
+        std   80,x
+        std   ,x
+        ldd   #$000D
+        std   83,x
+        std   3,x
+        ldd   #$DD00
+        std   -80,x
+        ldd   #$00DD
+        std   -77,x
+        ldd   #$D700
+        std   80,u
+        ldd   #$00D7
+        std   83,u
+        ldd   #$CC00
+        std   ,u
+        ldd   #$00CC
+        std   3,u
+        ldd   #$0F00
+        std   -80,u
+        ldd   #$000F
+        std   -77,u
+        rts
+
+pscroll.row.11
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$000D
+        std   83,x
+        std   3,x
+        ldd   #$00DD
+        std   -77,x
+        ldd   #$00D7
+        std   83,u
+        ldd   #$00CC
+        std   3,u
+        ldd   #$000F
+        std   -77,u
+        rts
+
+pscroll.row.12
+        leax  240,u
+        ldd   #$DC00
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$00DC
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$7A00
+        std   80,u
+        ldd   #$007A
+        std   83,u
+        ldd   #$CF00
+        std   ,u
+        ldd   #$00CF
+        std   3,u
+        ldd   #$FF00
+        std   -80,u
+        ldd   #$00FF
+        std   -77,u
+        rts
+
+pscroll.row.13
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$00DC
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$007A
+        std   83,u
+        ldd   #$00CF
+        std   3,u
+        ldd   #$00FF
+        std   -77,u
+        rts
+
+pscroll.row.14
+        leax  240,u
+        ldd   #$C000
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$00C0
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$A000
+        std   80,u
+        ldd   #$00A0
+        std   83,u
+        ldd   #$F000
+        std   ,u
+        std   -80,u
+        ldd   #$00F0
+        std   3,u
+        std   -77,u
+        rts
+
+pscroll.row.15
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$00C0
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$00A0
+        std   83,u
+        ldd   #$00F0
+        std   3,u
+        std   -77,u
+        rts
+
+pscroll.row.16
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   83,x
+        std   ,x
+        std   3,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        std   -77,u
+        ldd   #$0D00
+        std   -77,x
+        std   83,u
+        ldd   #$0C00
+        std   3,u
+        rts
+
+pscroll.row.17
+        leax  240,u
+        ldd   #$0DDC
+        std   80,x
+        std   ,x
+        ldd   #$C00D
+        std   83,x
+        std   3,x
+        ldd   #$DDDC
+        std   -80,x
+        ldd   #$CDDD
+        std   -77,x
+        ldd   #$D77A
+        std   80,u
+        ldd   #$ADD7
+        std   83,u
+        ldd   #$CCCF
+        std   ,u
+        ldd   #$FCCC
+        std   3,u
+        ldd   #$0FFF
+        std   -80,u
+        ldd   #$F00F
+        std   -77,u
+        rts
+
+pscroll.row.18
+        leax  240,u
+        ldd   #$DCC0
+        std   80,x
+        std   ,x
+        ldd   #$0DDC
+        std   83,x
+        std   3,x
+        ldd   #$DCCD
+        std   -80,x
+        ldd   #$DDDC
+        std   -77,x
+        ldd   #$7AAD
+        std   80,u
+        ldd   #$D77A
+        std   83,u
+        ldd   #$CFFC
+        std   ,u
+        ldd   #$CCCF
+        std   3,u
+        ldd   #$FFF0
+        std   -80,u
+        ldd   #$0FFF
+        std   -77,u
+        rts
+
+pscroll.row.19
+        leax  240,u
+        ldd   #$C00D
+        std   80,x
+        std   ,x
+        ldd   #$DCC0
+        std   83,x
+        std   3,x
+        ldd   #$CDDD
+        std   -80,x
+        ldd   #$DCCD
+        std   -77,x
+        ldd   #$ADD7
+        std   80,u
+        ldd   #$7AAD
+        std   83,u
+        ldd   #$FCCC
+        std   ,u
+        ldd   #$CFFC
+        std   3,u
+        ldd   #$F00F
+        std   -80,u
+        ldd   #$FFF0
+        std   -77,u
+        rts
+
+pscroll.row.20
+        leax  240,u
+        ldd   #$0D00
+        std   80,x
+        std   ,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$DD00
+        std   -80,x
+        ldd   #$D700
+        std   80,u
+        ldd   #$CC00
+        std   ,u
+        ldd   #$0F00
+        std   -80,u
+        rts
+
+pscroll.row.21
+        leax  240,u
+        ldd   #$DC00
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$7A00
+        std   80,u
+        ldd   #$CF00
+        std   ,u
+        ldd   #$FF00
+        std   -80,u
+        rts
+
+pscroll.row.22
+        leax  240,u
+        ldd   #$C000
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,u
+        ldd   #$000D
+        std   -77,x
+        std   83,u
+        ldd   #$A000
+        std   80,u
+        ldd   #$F000
+        std   ,u
+        std   -80,u
+        ldd   #$000C
+        std   3,u
+        rts
+
+pscroll.row.23
+        leax  240,u
+        ldd   #$DCC0
+        std   80,x
+        std   ,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$DCCD
+        std   -80,x
+        ldd   #$7AAD
+        std   80,u
+        ldd   #$CFFC
+        std   ,u
+        ldd   #$FFF0
+        std   -80,u
+        rts
+
+pscroll.row.24
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$0DDC
+        std   83,x
+        std   3,x
+        ldd   #$DDDC
+        std   -77,x
+        ldd   #$D77A
+        std   83,u
+        ldd   #$CCCF
+        std   3,u
+        ldd   #$0FFF
+        std   -77,u
+        rts
+
+pscroll.row.25
+        leax  240,u
+        ldd   #$C00D
+        std   80,x
+        std   ,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$CDDD
+        std   -80,x
+        ldd   #$ADD7
+        std   80,u
+        ldd   #$FCCC
+        std   ,u
+        ldd   #$F00F
+        std   -80,u
+        rts
+
+pscroll.row.26
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$DCC0
+        std   83,x
+        std   3,x
+        ldd   #$DCCD
+        std   -77,x
+        ldd   #$7AAD
+        std   83,u
+        ldd   #$CFFC
+        std   3,u
+        ldd   #$FFF0
+        std   -77,u
+        rts
+
+pscroll.row.27
+        leax  240,u
+        ldd   #$0DDC
+        std   80,x
+        std   ,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$DDDC
+        std   -80,x
+        ldd   #$D77A
+        std   80,u
+        ldd   #$CCCF
+        std   ,u
+        ldd   #$0FFF
+        std   -80,u
+        rts
+
+pscroll.row.28
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,x
+        std   80,u
+        std   ,u
+        std   -80,u
+        ldd   #$C00D
+        std   83,x
+        std   3,x
+        ldd   #$CDDD
+        std   -77,x
+        ldd   #$ADD7
+        std   83,u
+        ldd   #$FCCC
+        std   3,u
+        ldd   #$F00F
+        std   -77,u
+        rts
+
+pscroll.row.29
+        leax  240,u
+        ldd   #$DCC0
+        std   80,x
+        std   ,x
+        std   -80,x
+        ldd   #$0000
+        std   83,x
+        std   3,x
+        std   -77,x
+        std   83,u
+        std   3,u
+        std   -77,u
+        ldd   #$7AA0
+        std   80,u
+        ldd   #$CFF0
+        std   ,u
+        ldd   #$FFF0
+        std   -80,u
+        rts
+
+pscroll.row.30
+        leax  240,u
+        ldd   #$0000
+        std   80,x
+        std   ,x
+        std   -80,u
+        ldd   #$0DDC
+        std   83,x
+        std   3,x
+        ldd   #$000D
+        std   -80,x
+        std   80,u
+        ldd   #$DDDC
+        std   -77,x
+        ldd   #$D77A
+        std   83,u
+        ldd   #$000C
+        std   ,u
+        ldd   #$CCCF
+        std   3,u
+        ldd   #$0FFF
+        std   -77,u
+        rts
+
+pscroll.row.31
+        leax  240,u
+        ldd   #$C00D
+        std   80,x
+        std   ,x
+        ldd   #$DCC0
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$CDDD
+        std   -80,x
+        ldd   #$ADD7
+        std   80,u
+        ldd   #$7AA0
+        std   83,u
+        ldd   #$FCCC
+        std   ,u
+        ldd   #$CFF0
+        std   3,u
+        ldd   #$F00F
+        std   -80,u
+        ldd   #$FFF0
+        std   -77,u
+        rts
+
+pscroll.row.32
+        leax  240,u
+        ldd   #$000D
+        std   80,x
+        std   ,x
+        ldd   #$DCC0
+        std   83,x
+        std   3,x
+        std   -77,x
+        ldd   #$00DD
+        std   -80,x
+        ldd   #$00D7
+        std   80,u
+        ldd   #$7AA0
+        std   83,u
+        ldd   #$00CC
+        std   ,u
+        ldd   #$CFF0
+        std   3,u
+        ldd   #$000F
+        std   -80,u
+        ldd   #$FFF0
+        std   -77,u
+        rts
+
+; --- les 16 routines d'ecriture d'une cellule ---------------------------
+; cas = (3*colonne - phase) mod 16. Entree : les bases/pages des deux
+; plans dans pscroll.wr.*, pointant la ligne du buffer qui porte la
+; ligne 0 du motif — soit la ligne la PLUS HAUTE de la rangee, l'axe du
+; buffer croissant vers le haut de l'ecran.
+pscroll.wr.00
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   ,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   ,u
+        anda  #$0F
+        ora   #$C0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        ora   #$C0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        ora   #$C0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        ora   #$A0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        ora   #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        ora   #$F0
+        sta   ,u
+        rts
+
+pscroll.wr.01
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$DC
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   ,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0C
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        rts
+
+pscroll.wr.02
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   ,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$A0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$F0
+        sta   1,u
+        rts
+
+pscroll.wr.03
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$DC
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   1,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0D
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        ora   #$0C
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        rts
+
+pscroll.wr.04
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   1,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$C0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$A0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        ora   #$F0
+        sta   1,u
+        rts
+
+pscroll.wr.05
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$DC
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   1,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0C
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        rts
+
+pscroll.wr.06
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   1,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$A0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$F0
+        sta   3,u
+        rts
+
+pscroll.wr.07
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$DC
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   3,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0D
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        ora   #$0C
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        rts
+
+pscroll.wr.08
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   3,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$C0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$A0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        ora   #$F0
+        sta   3,u
+        rts
+
+pscroll.wr.09
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$DC
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   3,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0C
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        rts
+
+pscroll.wr.10
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   3,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$A0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$F0
+        sta   4,u
+        rts
+
+pscroll.wr.11
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$DC
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   4,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0D
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        ora   #$0C
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        rts
+
+pscroll.wr.12
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   4,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$C0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$A0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        ora   #$F0
+        sta   4,u
+        rts
+
+pscroll.wr.13
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$DC
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   4,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0C
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        rts
+
+pscroll.wr.14
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$DD
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$D7
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CC
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$0F
+        sta   4,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   -8,u
+        anda  #$0F
+        ora   #$C0
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        ora   #$C0
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        ora   #$C0
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        ora   #$A0
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        ora   #$F0
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        ora   #$F0
+        sta   -8,u
+        rts
+
+pscroll.wr.15
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$DC
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$7A
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$CF
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   #$FF
+        sta   -8,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0D
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        ora   #$0C
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        rts
+
+; l'aiguillage : (3*colonne - phase) mod 16 -> la routine
+pscroll.wr.tbl
+        fdb   pscroll.wr.00
+        fdb   pscroll.wr.01
+        fdb   pscroll.wr.02
+        fdb   pscroll.wr.03
+        fdb   pscroll.wr.04
+        fdb   pscroll.wr.05
+        fdb   pscroll.wr.06
+        fdb   pscroll.wr.07
+        fdb   pscroll.wr.08
+        fdb   pscroll.wr.09
+        fdb   pscroll.wr.10
+        fdb   pscroll.wr.11
+        fdb   pscroll.wr.12
+        fdb   pscroll.wr.13
+        fdb   pscroll.wr.14
+        fdb   pscroll.wr.15
+
+; --- les 16 routines d'EFFACEMENT d'une cellule -------------------------
+; Meme aiguillage que l'ecriture. La valeur est le fond, constante :
+; l'octet plein ne se recharge donc qu'une fois.
+pscroll.er.00
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$0F
+        sta   ,u
+        rts
+
+pscroll.er.01
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        rts
+
+pscroll.er.02
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   ,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        rts
+
+pscroll.er.03
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        rts
+
+pscroll.er.04
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        rts
+
+pscroll.er.05
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        rts
+
+pscroll.er.06
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   1,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        rts
+
+pscroll.er.07
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        rts
+
+pscroll.er.08
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        rts
+
+pscroll.er.09
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        rts
+
+pscroll.er.10
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   3,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        rts
+
+pscroll.er.11
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        rts
+
+pscroll.er.12
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        rts
+
+pscroll.er.13
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        rts
+
+pscroll.er.14
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   #$00
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   4,u
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        rts
+
+pscroll.er.15
+        lda   pscroll.wr.page0
+        _SetCartPageA
+        ldu   pscroll.wr.base0
+        lda   #$00
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        leau  -pscroll.LINE_SIZE,u
+        sta   -8,u
+        lda   pscroll.wr.page1
+        _SetCartPageA
+        ldu   pscroll.wr.base1
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -pscroll.LINE_SIZE,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        rts
+
+; l'aiguillage de l'effacement
+pscroll.er.tbl
+        fdb   pscroll.er.00
+        fdb   pscroll.er.01
+        fdb   pscroll.er.02
+        fdb   pscroll.er.03
+        fdb   pscroll.er.04
+        fdb   pscroll.er.05
+        fdb   pscroll.er.06
+        fdb   pscroll.er.07
+        fdb   pscroll.er.08
+        fdb   pscroll.er.09
+        fdb   pscroll.er.10
+        fdb   pscroll.er.11
+        fdb   pscroll.er.12
+        fdb   pscroll.er.13
+        fdb   pscroll.er.14
+        fdb   pscroll.er.15
+
+; --- les colonnes : 30 index de routine par (bande, plan, phase) -------
+; Seules les colonnes NON VIDES portent une sequence ; les autres
+; pointent 0 dans l'index, et le feed se contente alors d'y poser le
+; fond (57 bandes sur 72 dans ce niveau).
+pscroll.col.10.0.0
+        fcb   0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0
+pscroll.col.10.0.1
+        fcb   0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0
+pscroll.col.10.1.0
+        fcb   0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0
+pscroll.col.10.1.1
+        fcb   0,0,0,0,0,0,0,0,0,0,0,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,0,0,0
+pscroll.col.11.0.0
+        fcb   0,0,0,0,0,0,0,0,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0,0,0,0,0,0
+pscroll.col.11.0.1
+        fcb   0,0,0,0,0,0,0,0,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,0,0,0,0,0,0
+pscroll.col.11.1.0
+        fcb   0,0,0,0,0,0,0,0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0
+pscroll.col.11.1.1
+        fcb   0,0,0,0,0,0,0,0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,0,0,0,0,0,0
+pscroll.col.29.1.1
+        fcb   0,0,0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pscroll.col.30.0.0
+        fcb   0,0,0,0,0,0,0,0,11,11,11,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pscroll.col.30.0.1
+        fcb   0,0,0,0,0,0,0,0,13,13,13,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pscroll.col.30.1.0
+        fcb   0,0,0,0,0,0,0,0,15,15,15,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pscroll.col.30.1.1
+        fcb   0,0,0,0,0,0,0,0,16,16,16,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pscroll.col.50.1.1
+        fcb   0,0,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,0,0
+pscroll.col.51.0.0
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0
+pscroll.col.51.0.1
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0
+pscroll.col.51.1.0
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0
+pscroll.col.51.1.1
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0
+pscroll.col.52.0.0
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0
+pscroll.col.52.0.1
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0
+pscroll.col.52.1.0
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0
+pscroll.col.52.1.1
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0
+pscroll.col.53.0.0
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0
+pscroll.col.53.0.1
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0
+pscroll.col.53.1.0
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0
+pscroll.col.53.1.1
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,9,9
+pscroll.col.54.0.0
+        fcb   0,0,17,17,17,17,17,20,20,20,20,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17
+pscroll.col.54.0.1
+        fcb   0,0,18,18,18,18,18,21,21,21,21,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18
+pscroll.col.54.1.0
+        fcb   0,0,19,19,19,19,19,22,22,22,22,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19
+pscroll.col.54.1.1
+        fcb   0,0,17,17,17,17,17,11,11,11,11,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17
+pscroll.col.55.0.0
+        fcb   24,24,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,23,23,23,23,23
+pscroll.col.55.0.1
+        fcb   26,26,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,25,25,25,25,25
+pscroll.col.55.1.0
+        fcb   28,28,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,27,27,27,27,27
+pscroll.col.55.1.1
+        fcb   30,30,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,29,29,29,29,29
+pscroll.col.56.0.0
+        fcb   19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.56.0.1
+        fcb   17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.56.1.0
+        fcb   18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.56.1.1
+        fcb   31,31,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.57.0.0
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,20,20,20,20,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.57.0.1
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,21,21,21,21,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.57.1.0
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,22,22,22,22,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.57.1.1
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,11,11,11,11,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.58.0.0
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.58.0.1
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.58.1.0
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.58.1.1
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.59.0.0
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.59.0.1
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.59.1.0
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.59.1.1
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.60.0.0
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.60.0.1
+        fcb   0,0,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,0,0,0,0,0
+pscroll.col.60.1.0
+        fcb   0,0,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,0,0,0,0,0
+pscroll.col.60.1.1
+        fcb   0,0,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,0,0,0,0,0
+pscroll.col.61.0.0
+        fcb   24,24,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,1,1,1,1,24
+pscroll.col.61.0.1
+        fcb   26,26,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,2,2,2,2,26
+pscroll.col.61.1.0
+        fcb   28,28,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,3,3,3,3,28
+pscroll.col.61.1.1
+        fcb   30,30,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,4,4,4,4,30
+pscroll.col.62.0.0
+        fcb   19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,26,26,26,26,19
+pscroll.col.62.0.1
+        fcb   17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,28,28,28,28,17
+pscroll.col.62.1.0
+        fcb   18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,30,30,30,30,18
+pscroll.col.62.1.1
+        fcb   31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,31,32,32,32,32,31
+
+; --- l'index : ((bande * 2 + plan) * 2 + phase) -> sequence, 0 si vide -
+pscroll.col.tbl
+        fdb   0                    ; bande 00 plan 0 phase 0
+        fdb   0                    ; bande 00 plan 0 phase 1
+        fdb   0                    ; bande 00 plan 1 phase 0
+        fdb   0                    ; bande 00 plan 1 phase 1
+        fdb   0                    ; bande 01 plan 0 phase 0
+        fdb   0                    ; bande 01 plan 0 phase 1
+        fdb   0                    ; bande 01 plan 1 phase 0
+        fdb   0                    ; bande 01 plan 1 phase 1
+        fdb   0                    ; bande 02 plan 0 phase 0
+        fdb   0                    ; bande 02 plan 0 phase 1
+        fdb   0                    ; bande 02 plan 1 phase 0
+        fdb   0                    ; bande 02 plan 1 phase 1
+        fdb   0                    ; bande 03 plan 0 phase 0
+        fdb   0                    ; bande 03 plan 0 phase 1
+        fdb   0                    ; bande 03 plan 1 phase 0
+        fdb   0                    ; bande 03 plan 1 phase 1
+        fdb   0                    ; bande 04 plan 0 phase 0
+        fdb   0                    ; bande 04 plan 0 phase 1
+        fdb   0                    ; bande 04 plan 1 phase 0
+        fdb   0                    ; bande 04 plan 1 phase 1
+        fdb   0                    ; bande 05 plan 0 phase 0
+        fdb   0                    ; bande 05 plan 0 phase 1
+        fdb   0                    ; bande 05 plan 1 phase 0
+        fdb   0                    ; bande 05 plan 1 phase 1
+        fdb   0                    ; bande 06 plan 0 phase 0
+        fdb   0                    ; bande 06 plan 0 phase 1
+        fdb   0                    ; bande 06 plan 1 phase 0
+        fdb   0                    ; bande 06 plan 1 phase 1
+        fdb   0                    ; bande 07 plan 0 phase 0
+        fdb   0                    ; bande 07 plan 0 phase 1
+        fdb   0                    ; bande 07 plan 1 phase 0
+        fdb   0                    ; bande 07 plan 1 phase 1
+        fdb   0                    ; bande 08 plan 0 phase 0
+        fdb   0                    ; bande 08 plan 0 phase 1
+        fdb   0                    ; bande 08 plan 1 phase 0
+        fdb   0                    ; bande 08 plan 1 phase 1
+        fdb   0                    ; bande 09 plan 0 phase 0
+        fdb   0                    ; bande 09 plan 0 phase 1
+        fdb   0                    ; bande 09 plan 1 phase 0
+        fdb   0                    ; bande 09 plan 1 phase 1
+        fdb   pscroll.col.10.0.0
+        fdb   pscroll.col.10.0.1
+        fdb   pscroll.col.10.1.0
+        fdb   pscroll.col.10.1.1
+        fdb   pscroll.col.11.0.0
+        fdb   pscroll.col.11.0.1
+        fdb   pscroll.col.11.1.0
+        fdb   pscroll.col.11.1.1
+        fdb   0                    ; bande 12 plan 0 phase 0
+        fdb   0                    ; bande 12 plan 0 phase 1
+        fdb   0                    ; bande 12 plan 1 phase 0
+        fdb   0                    ; bande 12 plan 1 phase 1
+        fdb   0                    ; bande 13 plan 0 phase 0
+        fdb   0                    ; bande 13 plan 0 phase 1
+        fdb   0                    ; bande 13 plan 1 phase 0
+        fdb   0                    ; bande 13 plan 1 phase 1
+        fdb   0                    ; bande 14 plan 0 phase 0
+        fdb   0                    ; bande 14 plan 0 phase 1
+        fdb   0                    ; bande 14 plan 1 phase 0
+        fdb   0                    ; bande 14 plan 1 phase 1
+        fdb   0                    ; bande 15 plan 0 phase 0
+        fdb   0                    ; bande 15 plan 0 phase 1
+        fdb   0                    ; bande 15 plan 1 phase 0
+        fdb   0                    ; bande 15 plan 1 phase 1
+        fdb   0                    ; bande 16 plan 0 phase 0
+        fdb   0                    ; bande 16 plan 0 phase 1
+        fdb   0                    ; bande 16 plan 1 phase 0
+        fdb   0                    ; bande 16 plan 1 phase 1
+        fdb   0                    ; bande 17 plan 0 phase 0
+        fdb   0                    ; bande 17 plan 0 phase 1
+        fdb   0                    ; bande 17 plan 1 phase 0
+        fdb   0                    ; bande 17 plan 1 phase 1
+        fdb   0                    ; bande 18 plan 0 phase 0
+        fdb   0                    ; bande 18 plan 0 phase 1
+        fdb   0                    ; bande 18 plan 1 phase 0
+        fdb   0                    ; bande 18 plan 1 phase 1
+        fdb   0                    ; bande 19 plan 0 phase 0
+        fdb   0                    ; bande 19 plan 0 phase 1
+        fdb   0                    ; bande 19 plan 1 phase 0
+        fdb   0                    ; bande 19 plan 1 phase 1
+        fdb   0                    ; bande 20 plan 0 phase 0
+        fdb   0                    ; bande 20 plan 0 phase 1
+        fdb   0                    ; bande 20 plan 1 phase 0
+        fdb   0                    ; bande 20 plan 1 phase 1
+        fdb   0                    ; bande 21 plan 0 phase 0
+        fdb   0                    ; bande 21 plan 0 phase 1
+        fdb   0                    ; bande 21 plan 1 phase 0
+        fdb   0                    ; bande 21 plan 1 phase 1
+        fdb   0                    ; bande 22 plan 0 phase 0
+        fdb   0                    ; bande 22 plan 0 phase 1
+        fdb   0                    ; bande 22 plan 1 phase 0
+        fdb   0                    ; bande 22 plan 1 phase 1
+        fdb   0                    ; bande 23 plan 0 phase 0
+        fdb   0                    ; bande 23 plan 0 phase 1
+        fdb   0                    ; bande 23 plan 1 phase 0
+        fdb   0                    ; bande 23 plan 1 phase 1
+        fdb   0                    ; bande 24 plan 0 phase 0
+        fdb   0                    ; bande 24 plan 0 phase 1
+        fdb   0                    ; bande 24 plan 1 phase 0
+        fdb   0                    ; bande 24 plan 1 phase 1
+        fdb   0                    ; bande 25 plan 0 phase 0
+        fdb   0                    ; bande 25 plan 0 phase 1
+        fdb   0                    ; bande 25 plan 1 phase 0
+        fdb   0                    ; bande 25 plan 1 phase 1
+        fdb   0                    ; bande 26 plan 0 phase 0
+        fdb   0                    ; bande 26 plan 0 phase 1
+        fdb   0                    ; bande 26 plan 1 phase 0
+        fdb   0                    ; bande 26 plan 1 phase 1
+        fdb   0                    ; bande 27 plan 0 phase 0
+        fdb   0                    ; bande 27 plan 0 phase 1
+        fdb   0                    ; bande 27 plan 1 phase 0
+        fdb   0                    ; bande 27 plan 1 phase 1
+        fdb   0                    ; bande 28 plan 0 phase 0
+        fdb   0                    ; bande 28 plan 0 phase 1
+        fdb   0                    ; bande 28 plan 1 phase 0
+        fdb   0                    ; bande 28 plan 1 phase 1
+        fdb   0                    ; bande 29 plan 0 phase 0
+        fdb   0                    ; bande 29 plan 0 phase 1
+        fdb   0                    ; bande 29 plan 1 phase 0
+        fdb   pscroll.col.29.1.1
+        fdb   pscroll.col.30.0.0
+        fdb   pscroll.col.30.0.1
+        fdb   pscroll.col.30.1.0
+        fdb   pscroll.col.30.1.1
+        fdb   0                    ; bande 31 plan 0 phase 0
+        fdb   0                    ; bande 31 plan 0 phase 1
+        fdb   0                    ; bande 31 plan 1 phase 0
+        fdb   0                    ; bande 31 plan 1 phase 1
+        fdb   0                    ; bande 32 plan 0 phase 0
+        fdb   0                    ; bande 32 plan 0 phase 1
+        fdb   0                    ; bande 32 plan 1 phase 0
+        fdb   0                    ; bande 32 plan 1 phase 1
+        fdb   0                    ; bande 33 plan 0 phase 0
+        fdb   0                    ; bande 33 plan 0 phase 1
+        fdb   0                    ; bande 33 plan 1 phase 0
+        fdb   0                    ; bande 33 plan 1 phase 1
+        fdb   0                    ; bande 34 plan 0 phase 0
+        fdb   0                    ; bande 34 plan 0 phase 1
+        fdb   0                    ; bande 34 plan 1 phase 0
+        fdb   0                    ; bande 34 plan 1 phase 1
+        fdb   0                    ; bande 35 plan 0 phase 0
+        fdb   0                    ; bande 35 plan 0 phase 1
+        fdb   0                    ; bande 35 plan 1 phase 0
+        fdb   0                    ; bande 35 plan 1 phase 1
+        fdb   0                    ; bande 36 plan 0 phase 0
+        fdb   0                    ; bande 36 plan 0 phase 1
+        fdb   0                    ; bande 36 plan 1 phase 0
+        fdb   0                    ; bande 36 plan 1 phase 1
+        fdb   0                    ; bande 37 plan 0 phase 0
+        fdb   0                    ; bande 37 plan 0 phase 1
+        fdb   0                    ; bande 37 plan 1 phase 0
+        fdb   0                    ; bande 37 plan 1 phase 1
+        fdb   0                    ; bande 38 plan 0 phase 0
+        fdb   0                    ; bande 38 plan 0 phase 1
+        fdb   0                    ; bande 38 plan 1 phase 0
+        fdb   0                    ; bande 38 plan 1 phase 1
+        fdb   0                    ; bande 39 plan 0 phase 0
+        fdb   0                    ; bande 39 plan 0 phase 1
+        fdb   0                    ; bande 39 plan 1 phase 0
+        fdb   0                    ; bande 39 plan 1 phase 1
+        fdb   0                    ; bande 40 plan 0 phase 0
+        fdb   0                    ; bande 40 plan 0 phase 1
+        fdb   0                    ; bande 40 plan 1 phase 0
+        fdb   0                    ; bande 40 plan 1 phase 1
+        fdb   0                    ; bande 41 plan 0 phase 0
+        fdb   0                    ; bande 41 plan 0 phase 1
+        fdb   0                    ; bande 41 plan 1 phase 0
+        fdb   0                    ; bande 41 plan 1 phase 1
+        fdb   0                    ; bande 42 plan 0 phase 0
+        fdb   0                    ; bande 42 plan 0 phase 1
+        fdb   0                    ; bande 42 plan 1 phase 0
+        fdb   0                    ; bande 42 plan 1 phase 1
+        fdb   0                    ; bande 43 plan 0 phase 0
+        fdb   0                    ; bande 43 plan 0 phase 1
+        fdb   0                    ; bande 43 plan 1 phase 0
+        fdb   0                    ; bande 43 plan 1 phase 1
+        fdb   0                    ; bande 44 plan 0 phase 0
+        fdb   0                    ; bande 44 plan 0 phase 1
+        fdb   0                    ; bande 44 plan 1 phase 0
+        fdb   0                    ; bande 44 plan 1 phase 1
+        fdb   0                    ; bande 45 plan 0 phase 0
+        fdb   0                    ; bande 45 plan 0 phase 1
+        fdb   0                    ; bande 45 plan 1 phase 0
+        fdb   0                    ; bande 45 plan 1 phase 1
+        fdb   0                    ; bande 46 plan 0 phase 0
+        fdb   0                    ; bande 46 plan 0 phase 1
+        fdb   0                    ; bande 46 plan 1 phase 0
+        fdb   0                    ; bande 46 plan 1 phase 1
+        fdb   0                    ; bande 47 plan 0 phase 0
+        fdb   0                    ; bande 47 plan 0 phase 1
+        fdb   0                    ; bande 47 plan 1 phase 0
+        fdb   0                    ; bande 47 plan 1 phase 1
+        fdb   0                    ; bande 48 plan 0 phase 0
+        fdb   0                    ; bande 48 plan 0 phase 1
+        fdb   0                    ; bande 48 plan 1 phase 0
+        fdb   0                    ; bande 48 plan 1 phase 1
+        fdb   0                    ; bande 49 plan 0 phase 0
+        fdb   0                    ; bande 49 plan 0 phase 1
+        fdb   0                    ; bande 49 plan 1 phase 0
+        fdb   0                    ; bande 49 plan 1 phase 1
+        fdb   0                    ; bande 50 plan 0 phase 0
+        fdb   0                    ; bande 50 plan 0 phase 1
+        fdb   0                    ; bande 50 plan 1 phase 0
+        fdb   pscroll.col.50.1.1
+        fdb   pscroll.col.51.0.0
+        fdb   pscroll.col.51.0.1
+        fdb   pscroll.col.51.1.0
+        fdb   pscroll.col.51.1.1
+        fdb   pscroll.col.52.0.0
+        fdb   pscroll.col.52.0.1
+        fdb   pscroll.col.52.1.0
+        fdb   pscroll.col.52.1.1
+        fdb   pscroll.col.53.0.0
+        fdb   pscroll.col.53.0.1
+        fdb   pscroll.col.53.1.0
+        fdb   pscroll.col.53.1.1
+        fdb   pscroll.col.54.0.0
+        fdb   pscroll.col.54.0.1
+        fdb   pscroll.col.54.1.0
+        fdb   pscroll.col.54.1.1
+        fdb   pscroll.col.55.0.0
+        fdb   pscroll.col.55.0.1
+        fdb   pscroll.col.55.1.0
+        fdb   pscroll.col.55.1.1
+        fdb   pscroll.col.56.0.0
+        fdb   pscroll.col.56.0.1
+        fdb   pscroll.col.56.1.0
+        fdb   pscroll.col.56.1.1
+        fdb   pscroll.col.57.0.0
+        fdb   pscroll.col.57.0.1
+        fdb   pscroll.col.57.1.0
+        fdb   pscroll.col.57.1.1
+        fdb   pscroll.col.58.0.0
+        fdb   pscroll.col.58.0.1
+        fdb   pscroll.col.58.1.0
+        fdb   pscroll.col.58.1.1
+        fdb   pscroll.col.59.0.0
+        fdb   pscroll.col.59.0.1
+        fdb   pscroll.col.59.1.0
+        fdb   pscroll.col.59.1.1
+        fdb   pscroll.col.60.0.0
+        fdb   pscroll.col.60.0.1
+        fdb   pscroll.col.60.1.0
+        fdb   pscroll.col.60.1.1
+        fdb   pscroll.col.61.0.0
+        fdb   pscroll.col.61.0.1
+        fdb   pscroll.col.61.1.0
+        fdb   pscroll.col.61.1.1
+        fdb   pscroll.col.62.0.0
+        fdb   pscroll.col.62.0.1
+        fdb   pscroll.col.62.1.0
+        fdb   pscroll.col.62.1.1
+        fdb   0                    ; bande 63 plan 0 phase 0
+        fdb   0                    ; bande 63 plan 0 phase 1
+        fdb   0                    ; bande 63 plan 1 phase 0
+        fdb   0                    ; bande 63 plan 1 phase 1
+        fdb   0                    ; bande 64 plan 0 phase 0
+        fdb   0                    ; bande 64 plan 0 phase 1
+        fdb   0                    ; bande 64 plan 1 phase 0
+        fdb   0                    ; bande 64 plan 1 phase 1
+        fdb   0                    ; bande 65 plan 0 phase 0
+        fdb   0                    ; bande 65 plan 0 phase 1
+        fdb   0                    ; bande 65 plan 1 phase 0
+        fdb   0                    ; bande 65 plan 1 phase 1
+        fdb   0                    ; bande 66 plan 0 phase 0
+        fdb   0                    ; bande 66 plan 0 phase 1
+        fdb   0                    ; bande 66 plan 1 phase 0
+        fdb   0                    ; bande 66 plan 1 phase 1
+        fdb   0                    ; bande 67 plan 0 phase 0
+        fdb   0                    ; bande 67 plan 0 phase 1
+        fdb   0                    ; bande 67 plan 1 phase 0
+        fdb   0                    ; bande 67 plan 1 phase 1
+        fdb   0                    ; bande 68 plan 0 phase 0
+        fdb   0                    ; bande 68 plan 0 phase 1
+        fdb   0                    ; bande 68 plan 1 phase 0
+        fdb   0                    ; bande 68 plan 1 phase 1
+        fdb   0                    ; bande 69 plan 0 phase 0
+        fdb   0                    ; bande 69 plan 0 phase 1
+        fdb   0                    ; bande 69 plan 1 phase 0
+        fdb   0                    ; bande 69 plan 1 phase 1
+        fdb   0                    ; bande 70 plan 0 phase 0
+        fdb   0                    ; bande 70 plan 0 phase 1
+        fdb   0                    ; bande 70 plan 1 phase 0
+        fdb   0                    ; bande 70 plan 1 phase 1
+        fdb   0                    ; bande 71 plan 0 phase 0
+        fdb   0                    ; bande 71 plan 0 phase 1
+        fdb   0                    ; bande 71 plan 1 phase 0
+        fdb   0                    ; bande 71 plan 1 phase 1
+
+pscroll.CHUNKS    equ 72      ; bandes de 16 px dans le niveau
+pscroll.ROWS      equ 30      ; rangees de cellules
+pscroll.CELL_H    equ 6       ; lignes par rangee
+pscroll.CELLS     equ 384     ; cellules dans la largeur de carte
+pscroll.MAP_STRIDE equ 48     ; octets par rangee du bitfield
