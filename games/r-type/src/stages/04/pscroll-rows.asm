@@ -17,6 +17,34 @@
 ; ligne du buffer, 80 o. Le generateur le SUPPOSE — si le module
 ; change de geometrie, cette valeur doit suivre ici aussi.
 
+ IFEQ PSCROLL_PART-1              ; CART seul : les tables fixes sont
+pscroll.rowbase.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.bandoff.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.chunkfirst.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.bandlast.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.seamof.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.seamlast.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.run.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.wr.tbl EXTERNAL         ; dans l'unite $4000
+pscroll.col.tbl EXPORT
+pscroll.r1.tbl EXTERNAL          ; clearCell : la table du run de UN
+pscroll.zrow.entry EXTERNAL      ; zone : l'entree de la bande deroulee
+ ENDC
+ IFEQ PSCROLL_PART-2              ; VID seul
+pscroll.rowbase.tbl EXPORT
+pscroll.bandoff.tbl EXPORT
+pscroll.chunkfirst.tbl EXPORT
+pscroll.bandlast.tbl EXPORT
+pscroll.seamof.tbl EXPORT
+pscroll.seamlast.tbl EXPORT
+pscroll.run.tbl EXPORT
+pscroll.wr.tbl EXPORT
+pscroll.col.tbl EXTERNAL         ; cote cartouche, lu avant montage
+pscroll.r1.tbl EXPORT
+pscroll.zrow.entry EXPORT
+ ENDC
+
+ IFNE PSCROLL_VID                 ; --- ecrit les buffers, ou lu pendant
 ; --- la table des routines ---------------------------------------------
 pscroll.row.tbl
         fdb   pscroll.row.00
@@ -3209,6 +3237,9 @@ pscroll.bandoff.tbl
         fdb   -488   ; bande 70
         fdb   -496
 
+ ENDC                             ; --- fin de la part $4000
+
+ IFNE PSCROLL_CART                ; --- lu AVANT montage : reste en page
 ; --- les colonnes : 30 index de routine par (bande, plan, phase) -------
 ; Seules les colonnes NON VIDES portent une sequence ; les autres
 ; pointent 0 dans l'index, et le feed se contente alors d'y poser le
@@ -3628,6 +3659,7 @@ pscroll.col.tbl
         fdb   0                    ; bande 71 plan 0 phase 1
         fdb   0                    ; bande 71 plan 1 phase 0
         fdb   0                    ; bande 71 plan 1 phase 1
+ ENDC                             ; --- fin de la part cartouche
 
 pscroll.CHUNKS    equ 72      ; bandes de 16 px dans le niveau
 pscroll.ROWS      equ 30      ; rangees de cellules

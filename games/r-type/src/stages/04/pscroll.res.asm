@@ -14,6 +14,9 @@
 ;*******************************************************************************
 
 pscroll.stage4.frame EXPORT
+pscroll.gum.set      EXPORT              ; les relais pour le CODE OBJET
+pscroll.gum.clear    EXPORT
+pscroll.gum.rect     EXPORT
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -32,6 +35,9 @@ pscroll.MAX_SEAMS  equ 8
 PSCROLL_PART       equ 0                ; la part residente
 
 pscroll.move       EXTERNAL              ; la part CARTOUCHE
+pscroll.setCell    EXTERNAL
+pscroll.clearCell  EXTERNAL
+pscroll.clearRect  EXTERNAL
 paged.call         EXTERNAL
 
  SECTION code
@@ -47,31 +53,87 @@ paged.call         EXTERNAL
 ; besoin de l'ecran monte. `move` ensuite, dans la page du module : il grave ce
 ; qui entre et n'a plus besoin de l'ecran.
 ;
-; PAS `paged.call` : il monte dans la fenetre CARTOUCHE, celle-la meme que
-; pscroll commute pour atteindre ses buffers — le module s'y demontait
-; lui-meme (PC $4F43, vecu le 23/08). Ici la page va dans la fenetre DONNEES,
-; ou le code EST : un `jsr` direct suffit une fois la page montee.
+; L'ECRAN NE BOUGE PAS. La fenetre DONNEES garde sa page ecran d'un bout a
+; l'autre : la part cartouche n'en a pas besoin, et rien de pscroll ne vit
+; plus en $A000 — le bitfield tient dans la page cartouche avec le code qui
+; le lit. C'est la coupe « qui monte un buffer » qui rend ca possible.
 ;
-; La page ecran qui etait en place est SAUVEE AVANT le premier swap et remise
-; apres — le registre $E7E5 se relit, comme mscroll le fait deja pour son
-; tampon arriere (mscroll.asm:374). Sans ca, la trame suivante dessinerait
-; dans la page de pscroll.
+; paged.call monte bien dans la fenetre CARTOUCHE, celle que pscroll commute
+; pour ses buffers — mais plus rien ne s'y demonte : les routines qui montent
+; un buffer vivent en RAM FIXE ($4000) et REMONTENT pscroll.cart.page avant
+; leur rts. C'est ce qui a coute le PC $4F43 du 23/08.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.frame
         std   pscroll.camera.speedx
         jsr   pscroll.do
-        ldb   map.CF74021.DATA             ; la page ecran, sauvee avant
-        stb   pscroll.backBuffer           ; qu'on lui prenne la fenetre
-        _ram.data.set #pscroll.map.page    ; la carte prend sa place : feedBand
-                                           ; la LIT pendant qu'il ecrit un
-                                           ; buffer, elle ne peut donc etre ni
-                                           ; en cartouche ni dans la part video
         lda   #map.RAM_OVER_CART+pscroll.edit.page
-        sta   pscroll.cart.page            ; ce que la part VIDEO remontera
-        ldx   #pscroll.move
-        jsr   paged.call                   ; monte, appelle, rend sa page
-        ldb   pscroll.backBuffer           ; et l'ecran revient
-        stb   map.CF74021.DATA
+        sta   pscroll.cart.page            ; ce que la part $4000 remontera
+        ldx   #pscroll.move                ; apres chaque commutation de buffer
+        jmp   paged.call                   ; monte, appelle, rend sa page
+
+; -----------------------------------------------------------------------------
+; pscroll.gum.set / .clear / .rect — LE CHAMP, VU DU CODE OBJET
+; -----------------------------------------------------------------------------
+; input REG : set/clear   [x] la colonne, [b] la rangee
+;             rect        les bornes, dans pscroll.rect.* (poses par l'appelant)
+;
+; POURQUOI DES RELAIS. Une arme, le cytron, un tir : chacun vit dans SA page
+; cartouche. Toucher le champ demande d'y monter celle de pscroll — donc de
+; DEMONTER l'appelant, dont le code disparait le temps de l'appel. Le trajet
+; complet ne peut donc se faire que depuis la RAM fixe, et c'est ici.
+;
+; Le trajet, en entier :
+;   1. la page de l'appelant est relue ($E7E6 se relit) et mise de cote ;
+;   2. la page pscroll est montee, et posee dans pscroll.cart.page — c'est
+;      elle que les routines de la part $4000 remonteront apres avoir commute
+;      la fenetre vers un buffer ;
+;   3. la routine cartouche fait le travail (elle appelle $4000, qui monte le
+;      buffer, ecrit, et remonte pscroll.cart.page avant son rts) ;
+;   4. la page de l'appelant revient, et SES REGISTRES AVEC — U EN PARTICULIER
+;      (c'est l'OST de l'objet : le code appelant ne survit pas a sa perte),
+;      plus Y et DP.
+;
+; CC N'EST PAS RESTAURE : clearRect rend son verdict dedans (C = refus, Z =
+; champ inchange). Les relais le laissent passer tel quel.
+;
+; B est pousse AVANT _GetCartPageB, qui l'ecrase : c'est la rangee.
+; -----------------------------------------------------------------------------
+pscroll.gum.set
+        pshs  u,y,dp,b
+        bsr   pscroll.gum.enter
+        puls  b                            ; la rangee revient
+        jsr   pscroll.setCell
+        bra   pscroll.gum.leave
+
+pscroll.gum.clear
+        pshs  u,y,dp,b
+        bsr   pscroll.gum.enter
+        puls  b
+        jsr   pscroll.clearCell
+        bra   pscroll.gum.leave
+
+pscroll.gum.rect
+        pshs  u,y,dp,b
+        bsr   pscroll.gum.enter
+        puls  b
+        jsr   pscroll.clearRect
+        bra   pscroll.gum.leave
+
+; monter pscroll en gardant de quoi revenir
+pscroll.gum.enter
+        _GetCartPageB
+        stb   pscroll.gum.caller
+        lda   #map.RAM_OVER_CART+pscroll.edit.page
+        sta   pscroll.cart.page            ; ce que la part $4000 remontera
+        _SetCartPageA
         rts
 
-pscroll.backBuffer  fcb 0
+; rendre sa page a l'appelant, puis ses registres — CC intact
+pscroll.gum.leave
+        pshs  cc
+        ldb   pscroll.gum.caller
+        _SetCartPageB
+        puls  cc
+        puls  dp,y,u,pc
+
+pscroll.gum.caller  fcb 0

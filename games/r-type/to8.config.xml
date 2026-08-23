@@ -75,18 +75,20 @@
                  l'inversion des demi-pages s'annule entre l'ecriture et la
                  lecture. La page est RESERVEE — son contenu physique est dans
                  l'ordre echange, rien d'autre ne peut y cohabiter. -->
-            <!-- La carte de gommes : page RESERVEE, jamais chargee. Elle est
-                 `fill 0` et se remplit a l'init depuis la carte de collision,
-                 donc le loader n'a jamais a l'ecrire — ce qui la sauve, puisque
-                 le loader ne PEUT pas ecrire en $A000 : il y habite. Et elle ne
-                 peut pas etre ailleurs : feedBand la LIT pendant qu'il ecrit un
-                 buffer, donc ni en cartouche (le buffer y est) ni dans les 8 Ko
-                 de la part video (elle n'y tiendrait pas avec les routines). -->
-            <region name="pscroll.map" page="$0B" address="$A000" size="$4000"/>
-            <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B10"/>
-            <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B10"/>
-            <region name="pscroll.buf2" page="$10" address="$0000" size="$3B10"/>
-            <region name="pscroll.buf3" page="$1D" address="$0000" size="$3B10"/>
+            <!-- LA COUPE DE PSCROLL, dictee par « qui monte un buffer ? ».
+                 La part CARTOUCHE ne touche jamais un buffer : elle vit dans
+                 une page ordinaire, montee par paged.call, avec le bitfield
+                 (1 440 o) et les sequences de colonnes que feedBand copie
+                 dans son staging AVANT de monter. La part $4000 est tout ce
+                 qui ecrit un buffer, plus les tables lues pendant ce temps :
+                 RAM FIXE (demi-page video 0), donc appelable et lisible quelle
+                 que soit la page en fenetre cartouche. -->
+            <region name="pscroll.edit" page="$0B" address="$0000" size="$4000"/>
+            <region name="pscroll.vid" page="0" address="$4000" size="$2000"/>
+            <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf2" page="$10" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf3" page="$1D" address="$0000" size="$3B13"/>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
@@ -372,7 +374,6 @@
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
             <define symbol="loader.PAGE" value="4"/>
-            <define symbol="pscroll.map.page" value="$0B"/>
             <define symbol="loader.ADDRESS" value="$C000"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
@@ -2987,6 +2988,17 @@
                         <asm filename="src/stages/04/pscroll.edit.asm"/>
                     </lwasm>
                 </file>
+                <!-- La part RAM FIXE : tout ce qui monte un buffer, plus les
+                     tables lues pendant ce temps. En $4000 (demi-page video 0)
+                     elle reste appelable et lisible quelle que soit la page en
+                     fenetre cartouche — c'est ce qui permet a la part cartouche
+                     d'etre demontee le temps d'une ecriture de buffer. -->
+                <file name="stage4.pscroll.vid" linkdata="LINK" region="pscroll.vid">
+                    <lwasm gensource="gen/stages/04/pscroll-vid.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pscroll.vid.asm"/>
+                    </lwasm>
+                </file>
 
                 <!-- Les boites residentes du gestionnaire de chaine du bug
                      (fournisseur de bug.boxes pour CE stage, re-lie a chaque
@@ -3006,6 +3018,7 @@
                     <load name="stage4.collision"/>
                     <load name="stage4.pscroll.res"/>
                     <load name="stage4.pscroll.edit"/>
+                    <load name="stage4.pscroll.vid"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>

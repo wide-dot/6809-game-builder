@@ -302,6 +302,25 @@ pscroll.bufEnd        fdb   0
 pscroll.hoff          fdb   0
 pscroll.initcnt       fcb   0
 pscroll.blastrem      fcb   0          ; chunks restants du blast, hors boucle
+
+; LU BUFFER MONTE — DONC RESIDENT, ET C'EST UN CONTRAT, PAS UN RANGEMENT.
+; Ces dix variables sont lues APRES un _SetCartPageA : wr.* et run.lines par
+; les routines generees (`ldu pscroll.wr.base0` suit immediatement le
+; montage), rect.* par clearRow.zBuf. Les laisser cote cartouche les rendait
+; invisibles a l'instant precis ou on les lit — la page qui les portait vient
+; d'etre remplacee par le buffer. REGLE : toute variable touchee entre un
+; montage de buffer et son remontage appartient ICI.
+pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
+pscroll.rect.entry   fdb 0
+pscroll.rect.patch   fdb 0
+pscroll.rect.saved   fcb 0
+pscroll.rect.lineoff fdb 0
+pscroll.rect.buf     fcb 0
+pscroll.wr.page0      fcb   0          ; l'interface des routines d'ecriture
+pscroll.wr.page1      fcb   0
+pscroll.wr.base0      fdb   0
+pscroll.wr.base1      fdb   0
+
  IFEQ PSCROLL_PART-0                   ; coupe en deux : la part
                                        ; paginee les voit par le loader
 pscroll.buf.page       EXPORT
@@ -309,6 +328,16 @@ pscroll.buf.address    EXPORT
 pscroll.cart.page      EXPORT
 pscroll.viewport.ram   EXPORT
 pscroll.camera.x.max   EXPORT
+pscroll.wr.page0       EXPORT
+pscroll.wr.page1       EXPORT
+pscroll.wr.base0       EXPORT
+pscroll.wr.base1       EXPORT
+pscroll.run.lines      EXPORT
+pscroll.rect.buf       EXPORT
+pscroll.rect.lineoff   EXPORT
+pscroll.rect.entry     EXPORT
+pscroll.rect.patch     EXPORT
+pscroll.rect.saved     EXPORT
 pscroll.camera.x       EXPORT
 pscroll.camera.speedx  EXPORT
 pscroll.speedx         EXPORT
@@ -363,13 +392,22 @@ pscroll.blastrem       EXPORT
 ;
 ; Pieges de clearblast : aucun bsr/rts tant que S ecrit, S sauve et restaure.
 ; Les IRQ sont coupees a l'init, donc rien ne pousse sous S.
- IFNE PSCROLL_CART                     ; CARTOUCHE : scroll, et ce qui
  IFEQ PSCROLL_RES                      ; les variables sont ailleurs
 pscroll.buf.page       EXTERNAL
 pscroll.buf.address    EXTERNAL
 pscroll.cart.page      EXTERNAL
 pscroll.viewport.ram   EXTERNAL
 pscroll.camera.x.max   EXTERNAL
+pscroll.wr.page0       EXTERNAL
+pscroll.wr.page1       EXTERNAL
+pscroll.wr.base0       EXTERNAL
+pscroll.wr.base1       EXTERNAL
+pscroll.run.lines      EXTERNAL
+pscroll.rect.buf       EXTERNAL
+pscroll.rect.lineoff   EXTERNAL
+pscroll.rect.entry     EXTERNAL
+pscroll.rect.patch     EXTERNAL
+pscroll.rect.saved     EXTERNAL
 pscroll.camera.x       EXTERNAL
 pscroll.camera.speedx  EXTERNAL
 pscroll.speedx         EXTERNAL
@@ -404,6 +442,47 @@ pscroll.hoff           EXTERNAL
 pscroll.initcnt        EXTERNAL
 pscroll.blastrem       EXTERNAL
  ENDC
+; --- LA FRONTIERE ENTRE LES DEUX PARTS PAGINEES ------------------------
+ IFEQ PSCROLL_PART-1                   ; L'API DU CHAMP, pour le code objet :
+pscroll.setCell          EXPORT        ; les relais residents la joignent par
+pscroll.clearCell        EXPORT        ; le loader (le code objet, lui, ne
+pscroll.clearRect        EXPORT        ; peut pas — sa page part au montage)
+ ENDC
+; Ces listes decrivent la COUPE, pas une part : elles doivent etre vues
+; des DEUX cotes. Les enfermer dans la garde CART les rendait muettes
+; pour la part $4000 — qui n'emettait alors aucun EXPORT, et dont les
+; EXTERNALs restaient introuvables (vecu deux fois, 23/08).
+ IFEQ PSCROLL_PART-1                   ; COUPE : ce que la cartouche PRETE a
+                                       ; la part $4000 — lu AVANT tout montage
+                                       ; de buffer (run.plans et zBufs posent
+                                       ; leur geometrie, puis montent)
+pscroll.sc.tbl           EXPORT
+pscroll.sc.dst           EXPORT
+pscroll.rect.seam        EXPORT
+pscroll.rect.rowbase     EXPORT
+ ENDC
+ IFEQ PSCROLL_PART-2
+pscroll.sc.tbl           EXTERNAL
+pscroll.sc.dst           EXTERNAL
+pscroll.rect.seam        EXTERNAL
+pscroll.rect.rowbase     EXTERNAL
+ ENDC
+ IFEQ PSCROLL_PART-1                   ; COUPE, cote cartouche : ce qui monte
+pscroll.buildSkeleton    EXTERNAL
+pscroll.feedBand         EXTERNAL
+pscroll.run.plans        EXTERNAL
+pscroll.clearRow.zBufs   EXTERNAL
+pscroll.clearRow.zRien   EXTERNAL
+ ENDC
+ IFEQ PSCROLL_PART-2                   ; COUPE, cote $4000 : ce qu'il expose
+pscroll.buildSkeleton    EXPORT
+pscroll.feedBand         EXPORT
+pscroll.run.plans        EXPORT
+pscroll.clearRow.zBufs   EXPORT
+pscroll.clearRow.zRien   EXPORT
+ ENDC
+
+ IFNE PSCROLL_CART                     ; CARTOUCHE : scroll, et ce qui
 
 ; -----------------------------------------------------------------------------
  ENDC
@@ -670,6 +749,13 @@ pscroll.move
 ; -----------------------------------------------------------------------------
  ENDC
  IFNE PSCROLL_VID                     ; feedBand + engraveColumn : monte un buffer
+pscroll.feed.seqs     fill 0,8         ; 4 pointeurs : la sequence de chaque
+                                       ; buffer, copiee dans le staging (0 =
+                                       ; colonne vide). En RAM fixe : lus
+                                       ; buffer monte.
+pscroll.feed.stage    fill 0,4*30      ; le staging lui-meme. Sert aussi de
+                                       ; tampon de recopie a l'init du projet
+                                       ; (voir pscroll.stage4.fillMap).
 pscroll.feedBand
         cmpb  #pscroll.CHUNKS
         blo   >
@@ -747,6 +833,35 @@ pscroll.feedBand
         std   ,x
         lda   pscroll.startline        ; A servait au journal : le rendre
  ENDC
+        ; LES SEQUENCES D'ABORD, LES BUFFERS ENSUITE. Les sequences de
+        ; colonnes vivent cote cartouche (avec la carte) : monter un buffer
+        ; les rendrait invisibles. On copie donc les quatre (une par buffer)
+        ; dans le staging — en RAM fixe, lisible buffer monte — AVANT le
+        ; premier montage. L'index dans col.tbl : bande*4 + i (i = plan*2 +
+        ; phase, l'ordre meme des buffers), 2 octets par entree.
+        ldb   pscroll.band
+        lda   #8                       ; bande*4 entrees de 2 octets
+        mul
+        addd  #pscroll.col.tbl
+        tfr   d,x                      ; x -> les 4 pointeurs de sequence
+        ldu   #pscroll.feed.seqs
+        ldy   #pscroll.feed.stage
+@seq    ldd   ,x++
+        beq   @vide                    ; 0 = colonne vide : le rester
+        pshs  x
+        tfr   d,x                      ; x -> la sequence d'origine
+        tfr   y,d                      ; d = sa copie a venir
+        lda   #pscroll.ROWS
+@octet  ldb   ,x+
+        stb   ,y+
+        deca
+        bne   @octet
+        puls  x
+        tfr   y,d
+        subd  #pscroll.ROWS            ; le debut de la copie
+@vide   std   ,u++
+        cmpu  #pscroll.feed.seqs+8
+        blo   @seq
         ; les quatre buffers
         clr   pscroll.counter
 @buf    lda   pscroll.counter
@@ -758,21 +873,12 @@ pscroll.feedBand
         ldx   #pscroll.buf.address
         ldd   a,x
         std   pscroll.base
-        ; la sequence de 30 index : ((bande*2 + plan)*2 + phase) = bande*4 + i,
-        ; ou i = plan*2 + phase, l'ordre meme des quatre buffers.
-        ; addb/adca et non addd : counter est un OCTET, un addd y lirait le
-        ; voisin (bug du 22/08).
-        ldb   pscroll.band
-        lda   #4
-        mul
-        addb  pscroll.counter
-        adca  #0
-        aslb                           ; x2 : la table est en fdb
-        rola
-        ldx   #pscroll.col.tbl
-        ldx   d,x
+        lda   pscroll.counter          ; la sequence de ce buffer, depuis le
+        asla                           ; staging — plus jamais col.tbl ici :
+        ldx   #pscroll.feed.seqs       ; le buffer est monte, la cartouche
+        ldx   a,x                      ; est partie
         stx   pscroll.seq
-        bsr   pscroll.engraveColumn
+        jsr   pscroll.engraveColumn
         inc   pscroll.counter
         lda   pscroll.counter
         cmpa  #4
@@ -1873,7 +1979,6 @@ pscroll.clearRun.bit
                                        ; Z = 0 : le champ a change
         rts
 
-pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
  IFDEF PSCROLL_DEBUG_FEED
 pscroll.dbg.startline fill 0,pscroll.CHUNKS      ; grave par bande
@@ -2145,7 +2250,14 @@ pscroll.clearRow.zFull
         bra   pscroll.clearRow.zByte
 pscroll.clearRow.zDone
         tst   pscroll.rect.chg
+ IFNE PSCROLL_CART-PSCROLL_VID         ; COUPE : zRien est dans l'autre unite,
+        bne   >                        ; et une branche ne franchit pas une
+        rts                            ; frontiere. Rien n'a change, donc aucun
+!                                      ; buffer n'a ete monte : rts sec.
+ ENDC
+ IFEQ PSCROLL_CART-PSCROLL_VID
         lbeq  pscroll.clearRow.zRien   ; rien n'a change : rien a regraver
+ ENDC
         inc   pscroll.rect.done
 
         ; --- la sequence deroulee : entree par la premiere bande, sortie patchee
@@ -2167,10 +2279,18 @@ pscroll.clearRow.zDone
         sta   pscroll.rect.saved
         lda   #pscroll.OPCODE_RTS
         sta   ,x
+ IFNE PSCROLL_CART-PSCROLL_VID
+        jmp   pscroll.clearRow.zBufs   ; COUPE : saut absolu vers la part $4000
+ ENDC
+ IFEQ PSCROLL_CART-PSCROLL_VID
         bra   pscroll.clearRow.zBufs
+ ENDC
 pscroll.clearRow.zNoPatch
         clr   pscroll.rect.patch
         clr   pscroll.rect.patch+1
+ IFNE PSCROLL_CART-PSCROLL_VID         ; COUPE : le fil tombait dans zBufs,
+        jmp   pscroll.clearRow.zBufs   ; qui n'est plus la ligne suivante
+ ENDC
  ENDC
  IFNE PSCROLL_VID                     ; clearRow.zBuf : monte un buffer
 pscroll.clearRow.zBufs
@@ -2237,12 +2357,7 @@ pscroll.rect.mB      fcb 0
 pscroll.rect.nbytes  fcb 0
 pscroll.rect.bleft   fcb 0
 pscroll.rect.chg     fcb 0
-pscroll.rect.entry   fdb 0
-pscroll.rect.patch   fdb 0
-pscroll.rect.saved   fcb 0
-pscroll.rect.lineoff fdb 0
 pscroll.rect.rowbase fdb 0
-pscroll.rect.buf     fcb 0
 
 pscroll.RUN_MIN      equ 1             ; les routines de run GRAVEES : 1,2,4,5.
 pscroll.RUN_GEN_MAX  equ 5             ; 3, 6 et 7 se decomposent (2+1, 4+2,
@@ -2281,10 +2396,6 @@ pscroll.map.address   fdb   0          ; le bitfield des gommes, pose par le pro
 pscroll.PHASE_SZ      equ   6
 pscroll.phase.tbl     fill  0,2*pscroll.PHASE_SZ
 
-pscroll.wr.page0      fcb   0          ; l'interface des routines d'ecriture
-pscroll.wr.page1      fcb   0
-pscroll.wr.base0      fdb   0
-pscroll.wr.base1      fdb   0
 pscroll.sc.col        fdb   0
 pscroll.sc.row        fcb   0
 pscroll.sc.rowptr     fdb   0

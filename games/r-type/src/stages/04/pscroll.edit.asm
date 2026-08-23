@@ -1,27 +1,25 @@
 ;*******************************************************************************
-; pscroll.edit — la part PAGINEE du champ de gommes du stage 4
+; pscroll.edit — la part CARTOUCHE du champ de gommes du stage 4
 ;
-; Gravure, scroll, ajout, effacement : ~11,3 Ko qui ne tiennent pas en RAM fixe
-; et n'en ont pas besoin. Aucune de ces phases ne touche l'ecran, la page peut
-; donc etre montee en $A000 — la fenetre DONNEES — le temps de l'appel.
+; Scroll, ajout, effacement, la carte et les sequences de colonnes : tout ce
+; qui ne touche jamais un buffer. La page se monte dans la fenetre CARTOUCHE
+; ($0000) par paged.call, comme n'importe quelle page du jeu — le loader sait
+; l'ecrire, et les routines de la part $4000 la REMONTENT avant leur rts
+; quand elles ont commute la fenetre pour un buffer.
 ;
-; POURQUOI $A000 MARCHE SANS RIEN TOUCHER. Les deux demi-pages sont echangees
-; dans cette zone (mesure du 23/08 : offset $0000 se voit en $C000, $2000 en
-; $A000). Mais le loader ecrit par la MEME fenetre — ram.set choisit d'apres
-; l'adresse de destination, et $A000 lui fait monter la page dans la zone
-; donnees. L'inversion s'applique donc a l'ecriture comme a la lecture et
-; s'annule : le code se relit lineairement a $A000. Rien a corriger, ni dans
-; le builder, ni dans l'arithmetique du module.
-;
-; La page est RESERVEE a cet usage : son contenu physique est dans l'ordre
-; echange, rien d'autre ne peut y cohabiter.
+; LE BITFIELD EST ICI. Il n'est lu et ecrit QUE par ce cote (mutate, clearRun,
+; zone, grow — via pscroll.map.address) : feedBand, lui, lit des sequences
+; generees, qu'il copie dans son staging AVANT de monter un buffer. La carte
+; est `fill 0`, remplie a l'init depuis la carte de collision : le loader n'a
+; rien a en charger.
 ;*******************************************************************************
 
 pscroll.stage4.init EXPORT
 pscroll.grow        EXPORT
-collisionMapForeground EXTERNAL
 pscroll.move        EXPORT              ; la trame residente l'appelle par page
-pscroll.field.map   EXPORT              ; le stage l'emplit au demarrage
+pscroll.field.map   EXPORT              ; la part $4000 la recopie a l'init
+
+pscroll.stage4.fillMap EXTERNAL         ; part $4000 : la recopie par staging
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -36,7 +34,7 @@ pscroll.CELL_W     equ 3
 pscroll.BAND_LINES equ 180
 pscroll.MAP_WIDTH  equ field.MAP_W
 pscroll.MAX_SEAMS  equ 8
-PSCROLL_PART       equ 1                ; la part paginee
+PSCROLL_PART       equ 1                ; la part cartouche
 
  SECTION code
 
@@ -47,21 +45,18 @@ PSCROLL_PART       equ 1                ; la part paginee
 ; pscroll.stage4.init — poser la couche, puis graver les dix bandes
 ; -----------------------------------------------------------------------------
 ; input REG : [d] la position camera de depart
-; Appelee page montee. ~160 000 cycles : l'ouverture du stage et le checkpoint.
+; Appelee page montee (paged.call). ~160 000 cycles : l'ouverture du stage et
+; le checkpoint.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.init
         pshs  d
-        ; le bitfield, depuis la carte de collision. On est DANS la page du
-        ; module (fenetre donnees) : la fenetre cartouche est libre pour la
-        ; carte, et field.map est ici meme.
-        lda   #map.RAM_OVER_CART+collision.page
-        _SetCartPageA
-        ldx   #collisionMapForeground
-        ldu   #pscroll.field.map
-!       ldd   ,x++
-        std   ,u++
-        cmpu  #pscroll.field.map+pscroll.MAP_STRIDE*pscroll.ROWS
-        blo   <
+        ; ce que les routines de la part $4000 remonteront apres chaque
+        ; commutation de buffer — a poser AVANT le premier appel (fillMap)
+        lda   #map.RAM_OVER_CART+pscroll.edit.page
+        sta   pscroll.cart.page
+        ; le bitfield, depuis la carte de collision. Deux pages pour une seule
+        ; fenetre : la recopie vit en RAM fixe et alterne par le staging.
+        jsr   pscroll.stage4.fillMap
         lda   #map.RAM_OVER_CART+pscroll.buf0.page
         sta   pscroll.buf.page
         lda   #map.RAM_OVER_CART+pscroll.buf1.page
@@ -86,8 +81,8 @@ pscroll.stage4.init
 
         INCLUDE "src/stages/04/pscroll-grow.asm"
 
-; LE BITFIELD DES GOMMES — dans CETTE page, avec le code qui le lit et l'ecrit.
-; setCell et clearCell tournent page montee : le bitfield y est donc visible.
-; `do`, lui, n'y touche jamais.
+; LE BITFIELD DES GOMMES — dans CETTE page, avec le code qui le lit et l'ecrit
+; (setCell, clearCell, clearRun, zone, grow tournent page montee). `do` et la
+; part $4000 n'y touchent jamais — fillMap la REMPLIT, par le staging.
 pscroll.field.map
         fill  0,pscroll.MAP_STRIDE*pscroll.ROWS

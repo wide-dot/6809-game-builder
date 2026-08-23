@@ -196,6 +196,32 @@ def emettre(ordre, colonnes, path=OUT):
     A(f"; ligne du buffer, {LINE_SIZE} o. Le generateur le SUPPOSE — si le module")
     A("; change de geometrie, cette valeur doit suivre ici aussi.")
     A("")
+    # LA COUPE EN PARTS (cf. pscroll.asm, « DECOUPAGE EN TROIS MORCEAUX »).
+    # Tout ce fichier est du contenu VISIBLE BUFFER MONTE — routines qui
+    # ecrivent les buffers et tables lues pendant ce temps — SAUF les
+    # sequences de colonnes et leur index, que feedBand copie dans son
+    # staging AVANT de monter : elles restent cote cartouche, avec la carte.
+    # Les tables fixes ($4000) sont lisibles de partout : les dispatchers
+    # cartouche les lisent sans lien. Seuls les SYMBOLES qui franchissent la
+    # frontiere d'unite sont declares, et uniquement dans les builds coupes.
+    A(" IFEQ PSCROLL_PART-1              ; CART seul : les tables fixes sont")
+    for t in ("rowbase", "bandoff", "chunkfirst", "bandlast",
+              "seamof", "seamlast", "run", "wr"):
+        A(f"pscroll.{t}.tbl EXTERNAL         ; dans l'unite $4000")
+    A("pscroll.col.tbl EXPORT")
+    A("pscroll.r1.tbl EXTERNAL          ; clearCell : la table du run de UN")
+    A("pscroll.zrow.entry EXTERNAL      ; zone : l'entree de la bande deroulee")
+    A(" ENDC")
+    A(" IFEQ PSCROLL_PART-2              ; VID seul")
+    for t in ("rowbase", "bandoff", "chunkfirst", "bandlast",
+              "seamof", "seamlast", "run", "wr"):
+        A(f"pscroll.{t}.tbl EXPORT")
+    A("pscroll.col.tbl EXTERNAL         ; cote cartouche, lu avant montage")
+    A("pscroll.r1.tbl EXPORT")
+    A("pscroll.zrow.entry EXPORT")
+    A(" ENDC")
+    A("")
+    A(" IFNE PSCROLL_VID                 ; --- ecrit les buffers, ou lu pendant")
     A("; --- la table des routines ---------------------------------------------")
     A("pscroll.row.tbl")
     for i in range(len(ordre)):
@@ -584,6 +610,9 @@ def _suite_tables(A, L, path, ordre, colonnes):
              - (m // CHUNKS_PER_LINE) * LINE_SIZE)
         A(f"        fdb   {v}" + (f"   ; bande {m}" if m % CHUNKS_PER_LINE == 0 else ""))
     A("")
+    A(" ENDC                             ; --- fin de la part $4000")
+    A("")
+    A(" IFNE PSCROLL_CART                ; --- lu AVANT montage : reste en page")
     A("; --- les colonnes : 30 index de routine par (bande, plan, phase) -------")
     A("; Seules les colonnes NON VIDES portent une sequence ; les autres")
     A("; pointent 0 dans l'index, et le feed se contente alors d'y poser le")
@@ -606,6 +635,7 @@ def _suite_tables(A, L, path, ordre, colonnes):
                       f"plan {plane} phase {phase}")
                 else:
                     A(f"        fdb   pscroll.col.{m:02d}.{plane}.{phase}")
+    A(" ENDC                             ; --- fin de la part cartouche")
     A("")
     A(f"pscroll.CHUNKS    equ {CHUNKS}      ; bandes de 16 px dans le niveau")
     A(f"pscroll.ROWS      equ {ROWS}      ; rangees de cellules")
