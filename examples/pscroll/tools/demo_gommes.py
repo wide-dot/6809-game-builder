@@ -92,20 +92,28 @@ def bit(c, r):
     return (champ[r * MAP_STRIDE + (c >> 3)] >> (7 - (c & 7))) & 1
 
 
+def chunkfirst(m):
+    """la premiere cellule ENTIEREMENT dans la bande m — la table du moteur.
+    Une cellule occupe les px [3c, 3c+2] ; elle est dans m des que 3c >= 16m."""
+    return -(-16 * m // 3)
+
+
 def model_clear(c0, r0, c1, r1, w, h):
-    """l'union du balayage, avec LES MEMES bornes que pscroll.clearRect :
-    la carte, ET le ruban — une cellule hors des dix bandes n'est pas dans
-    les buffers, le moteur refuse de l'y effacer (le modele qui ne bornait
-    qu'a la carte voyait des effacements que la machine n'avait pas faits,
-    des que le counter-air tombait pres du bord : 288 px « en trop »)."""
+    """l'union du balayage, avec LES MEMES bornes que pscroll.rect.prep : la
+    carte, puis le RUBAN — et le ruban se borne a la bande, pas a la cellule.
+    prep remonte le debut a chunkfirst[edge16] et descend la fin a
+    chunkfirst[edge16+10]-1 : une cellule A CHEVAL sur le bord gauche du ruban
+    est donc refusee, alors qu'un test par cellule la croirait dedans. C'est
+    ce que faisait le modele, d'ou 39 octets de champ ou il se croyait en
+    avance sur la machine (23/08)."""
     edge = rd("pscroll.edge16")[0]     # UN octet — lu en mot, la borne
                                        # devenait infranchissable (23/08)
+    a = max(min(c0, c1), chunkfirst(edge))
+    b = min(max(c0, c1) + w - 1, chunkfirst(edge + 10) - 1)
     for r in range(min(r0, r1), max(r0, r1) + h):
-        for c in range(min(c0, c1), max(c0, c1) + w):
+        for c in range(a, b + 1):
             if not (0 <= c < CELLS and 0 <= r < ROWS):
                 continue
-            if not (edge <= (3 * c) // 16 < edge + 10):
-                continue               # hors ruban : le moteur n'y touche pas
             champ[r * MAP_STRIDE + (c >> 3)] &= ~(1 << (7 - (c & 7))) & 0xFF
 
 

@@ -1754,10 +1754,29 @@ essayé, mesuré, annulé. Le commentaire du code le dit désormais.
 **Vérifié** : six coutures balayées caméra par caméra (320, 480, 640, 800, 960,
 1120), **aucune caméra fautive**. `check_gum` 80/80, `check_rect` 10/10.
 
-**Reste**, sur la démo complète : 72 pixels résiduels contre la carte machine
-(l'écart de 1 599 affiché vient d'une divergence entre le modèle Python et la
-machine sur 39 octets de champ — le modèle croit avoir effacé des cellules que
-le moteur a refusées). C'est le prochain fil, beaucoup plus fin que celui-ci.
+### Ce que la chasse a séparé — et les 48 px, toujours ouverts
+
+Deux choses se cachaient derrière « 48 px résiduels », et il a fallu corriger
+la première pour voir la seconde.
+
+**Mon modèle sur-effaçait.** `model_clear` bornait le ruban cellule par
+cellule ; `pscroll.rect.prep`, lui, borne à la BANDE — il remonte le début à
+`chunkfirst[edge16]` et descend la fin à `chunkfirst[edge16+10] − 1`, donc une
+cellule *à cheval* sur le bord gauche du ruban est refusée alors qu'un test par
+cellule la croit dedans. D'où 39 octets de champ où le modèle se croyait en
+avance sur la machine. Le modèle applique désormais la même règle
+(`chunkfirst(m) = ceil(16m/3)`).
+
+**Et il reste un vrai résidu, de 48 à 60 px selon le cas**, mesuré CONTRE LA
+CARTE DE LA MACHINE (donc indiscutable : `0 manquants, 48 en trop`). Sa forme
+est précise et c'est ce qui rend la suite abordable : **quatre lignes sur les
+six d'une rangée subsistent, sur quatre cellules**, alors que le bit de carte
+est bien effacé. Une routine de run écrit ses six lignes par une boucle sur
+`pscroll.run.lines` ; un résidu de deux lignes exactement pointe vers ce
+compteur ou vers l'un des quatre buffers non parcouru.
+
+C'est le prochain fil, et il est court : instrumenter `run.plans` pour
+enregistrer, par buffer, le nombre d'itérations réellement faites.
 
 Bilan de la passe complète : 41/42 validations conformes, 868 trames, vidéo de
 35 s (2× temps réel).

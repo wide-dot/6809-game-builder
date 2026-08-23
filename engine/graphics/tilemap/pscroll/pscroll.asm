@@ -1191,6 +1191,9 @@ pscroll.rect.prep
         cmpd  pscroll.rect.b
         bls   >
 pscroll.rect.prepFail
+ IFDEF PSCROLL_DEBUG
+        inc   pscroll.dbg.nprepko
+ ENDC
         orcc  #$01                     ; C = 1 : plus rien a faire
         rts
 !       ; --- borner sur le RUBAN. Une cellule hors fenetre n'est pas dans le
@@ -1501,11 +1504,17 @@ pscroll.clearRun.rien
         orcc  #$04                     ; Z = 1 : rien n'a change
         rts
 pscroll.clearRun.no
+ IFDEF PSCROLL_DEBUG
+        inc   pscroll.dbg.nrefus
+ ENDC
         orcc  #$01                     ; C = 1 : la routine refuse
         rts
         ; (les epilogues sont AVANT l'entree : les cinq tests du debut les
         ; atteignent en branche courte, la routine frolait la page du banc)
 pscroll.clearRun
+ IFDEF PSCROLL_DEBUG
+        inc   pscroll.dbg.nrun
+ ENDC
         stx   pscroll.sc.col
         stb   pscroll.sc.row
         ldd   pscroll.sc.col           ; le px de carte : 3 * colonne
@@ -1598,6 +1607,12 @@ pscroll.clearRun.bit
         andb  #7
         ldu   #pscroll.tbl.bit
         ldb   b,u
+ IFDEF PSCROLL_DEBUG
+        sty   pscroll.dbg.mapy         ; l'adresse d'octet de carte calculee,
+        stb   pscroll.dbg.mask         ; le masque, et ce qu'on y lit
+        lda   ,y
+        sta   pscroll.dbg.mapv
+ ENDC
         bitb  ,y
         beq   >
         inc   pscroll.run.chg
@@ -1631,6 +1646,13 @@ pscroll.clearRun.bit
 pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
  IFDEF PSCROLL_DEBUG
+pscroll.dbg.nrun      fcb 0                      ; qui passe ou : compteurs
+pscroll.dbg.nrefus    fcb 0
+pscroll.dbg.ncells    fcb 0
+pscroll.dbg.nprepko   fcb 0
+pscroll.dbg.mapy      fdb 0                      ; clearRun : l'octet de carte
+pscroll.dbg.mask      fcb 0                      ; vise, son masque, sa valeur
+pscroll.dbg.mapv      fcb 0
 pscroll.dbg.h         fcb 0                      ; ce que do a VU
 pscroll.dbg.window    fcb 0
 pscroll.dbg.origin    fcb 0
@@ -1685,6 +1707,9 @@ pscroll.chunkOf
 ; buffers, les masques — est irreductible et reste tel quel.
 ; -----------------------------------------------------------------------------
 pscroll.clearRow.runCells
+ IFDEF PSCROLL_DEBUG
+        inc   pscroll.dbg.ncells
+ ENDC
         ldd   pscroll.rect.nleft
         lbeq  pscroll.clearRow.rcEnd
         lda   pscroll.rect.row         ; le pointeur de carte de la rangee
