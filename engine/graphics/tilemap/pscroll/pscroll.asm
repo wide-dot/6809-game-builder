@@ -123,14 +123,26 @@ pscroll.SEAM_PX       equ   160        ; la coupure du ruban, dans la carte
  IFNDEF pscroll.MAX_SEAMS
 pscroll.MAX_SEAMS     equ   8          ; le projet devrait la definir
  ENDC
-; LE BUDGET DE CISAILLEMENT. Une bande est gravee a ROW_BIAS - (sa bande)/10 :
-; ce compteur monte d'UNE LIGNE tous les 160 px DEPUIS LE DEBUT DU NIVEAU, donc
-; le buffer doit porter autant de lignes de budget qu'il y a de coutures. C'est
-; ce qui lie la hauteur du buffer a la LONGUEUR DE LA CARTE — et ce qui la
-; plafonne. Le compteur pourrait etre pris modulo la hauteur (le buffer est
-; cyclique, mscroll fait exactement ca), mais alors une rangee par colonne
-; tombe a cheval sur le rebouclage et ne peut plus se graver d'un trait :
-; il faut le chemin lent, ligne a ligne. Arbitrage ouvert, cf. l'etude.
+; LE BUDGET DE CISAILLEMENT — ET CE N'EST PAS DU GACHIS. Une bande est gravee a
+; ROW_BIAS - (sa bande)/10 : ce compteur monte d'UNE LIGNE tous les 160 px
+; DEPUIS LE DEBUT DU NIVEAU, donc le buffer porte autant de lignes de budget
+; qu'il y a de coutures. Ca lie sa hauteur a la LONGUEUR DE LA CARTE.
+;
+; Le compteur POURRAIT etre pris modulo la hauteur — le buffer est cyclique et
+; mscroll fait exactement ca — et le buffer tomberait a BAND_LINES+1. Mais
+; alors une rangee par colonne tombe a cheval sur le rebouclage, et les
+; routines cablees ecrivent leurs six lignes en aveugle depuis deux bases
+; fixes : elles ne savent pas reboucler. Les deux sorties coutent plus cher que
+; le budget :
+;   - appeler la routine DEUX fois, a base et base-BUFFER_SIZE, en laissant les
+;     moities hors buffer tomber dans un scratch : il en faut 5 lignes de
+;     chaque cote, soit DIX — plus que les huit du budget ;
+;   - un chemin lent ligne a ligne : 792 o de table, +3 % sur la mutation et
+;     +23 % sur le pic du feed.
+; Le budget grandit avec le niveau, le scratch non : le croisement est a
+; ~1 600 px de carte. Le stage 4 en fait 1 152 — ARBITRAGE RENDU (auteur,
+; 23/08) : on garde le budget, il est a la fois le plus rapide et le plus
+; compact ici. Le SS13 de l'etude porte les trois chiffrages.
 pscroll.SEAM_BIAS     equ   pscroll.MAX_SEAMS
 ; LE BIAIS DES RANGEES, distinct de celui de l'ENTREE. Le blast peint 180
 ; lignes a partir de pscroll.origin = SEAM_BIAS - coutures ; les rangees, elles,

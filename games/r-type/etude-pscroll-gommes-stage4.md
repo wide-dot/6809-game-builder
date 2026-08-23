@@ -1193,6 +1193,35 @@ place qu'on y libère est **morte**. Le gain en octets est donc cosmétique. Le
 vrai prix, c'est le **plafond de largeur** : `startline` devient négatif dès que
 les coutures dépassent le budget, en silence.
 
+### Les trois conceptions, chiffrées — et le verdict
+
+L'auteur a corrigé une erreur de ma part : la place libérée dans une page de
+buffer **n'est pas morte**, le packer v2 sait y couler des objets (arènes,
+`<pageset>`). Le critère devient donc franchement la performance, à place
+comparable. Et en refaisant le calcul sous cet angle, une variante m'était
+apparue que je n'avais pas vue :
+
+| | buffer | slack/page | vitesse |
+|---|---|---|---|
+| **A — budget** (aujourd'hui) | 15 120 o | **1 264 o** | référence |
+| **B — modulo + double appel** | 15 280 o | 1 104 o | plus lente |
+| **C — modulo + chemin lent** | 14 480 o | 1 904 o (+2 560 o au total, −792 o de table) | +3 % mutation, +23 % pic de feed |
+
+**B** évite tout chemin lent : la rangée à cheval appelle sa routine **deux
+fois**, à `base` puis à `base − BUFFER_SIZE`, et les moitiés hors buffer
+tombent dans un scratch pris sur le slack de la page. Mais il faut 5 lignes de
+débordement **de chaque côté**, soit dix — quand le budget de A n'en coûte que
+huit. B est donc plus grosse ET plus lente : éliminée.
+
+**Le point qui décide** : les huit lignes de budget de A ne sont pas du
+gâchis, ce sont **huit lignes qui remplacent les dix lignes de scratch de B**.
+Le budget grandit avec le niveau (une ligne par 160 px), le scratch non — le
+**croisement est à ~1 600 px de carte**. Le stage 4 en fait 1 152.
+
+**Verdict de l'auteur (23/08) : A**, pas de niveau plus long au programme. A
+est ici la plus rapide *et* la plus compacte ; C ne se justifierait que si ses
+1 768 o nets manquaient ailleurs, au prix des +23 % de pic de feed.
+
 **Ce qui est fait** — le plafond devient explicite au lieu d'être implicite :
 
 - `SEAM_BIAS` dérive de `pscroll.MAX_SEAMS`, que le projet déclare ;
