@@ -1477,6 +1477,29 @@ pscroll.clearRun
         ldb   pscroll.run.last
         cmpa  b,x
         bne   pscroll.clearRun.no
+        ; ... POUR LES DEUX PHASES. La phase 1 ecrit en px-1 : quand le run
+        ; commence pile sur un multiple de 16, SA premiere bande est la
+        ; precedente — qui peut etre de l'autre cote d'une couture, et la
+        ; routine deroulee ecrirait une ligne a cote. 48 px residuels dans le
+        ; buffer, attrapes par la demo a la camera 782 (23/08) ; les
+        ; verificateurs a camera 0 ne pouvaient pas le voir, leurs coutures
+        ; etant hors de l'ecran.
+        ldd   pscroll.sc.px
+        subd  #1
+        bmi   pscroll.clearRun.no      ; px 0 : pas de phase 1, cellule a cellule
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        ldx   #pscroll.seamof.tbl
+        lda   b,x
+        ldb   pscroll.run.last         ; la derniere bande de la phase 1 est
+        cmpa  b,x                      ; celle de la phase 0 ou une de moins :
+        bne   pscroll.clearRun.no      ; comparer a la premiere de phase 1 suffit
 
         ; --- la carte : les quatre bits, et le champ a-t-il seulement change ?
         lda   pscroll.sc.row

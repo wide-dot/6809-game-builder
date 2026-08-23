@@ -1678,6 +1678,46 @@ La place a été faite en passant le **script arcade** de cytron derrière
 `BENCH_CYTRON` (l'objet complet vit dans `games/r-type`). Attention : la SONDE
 du pilote reste, elle — c'est par elle que `check_gum` injecte ses mutations.
 
+### Le banc de démonstration : le vrai champ, les vraies armes, chaque trame jugée
+
+`examples/pscroll/tools/demo_gommes.py` joue le champ RÉEL du stage 4 qui
+défile à la vitesse du jeu ($0030, 0,5 px arcade/trame), traversé par chaque
+arme une à la fois, aux vitesses et empreintes relevées dans la ROM. Pendant
+les arrêts, chaque trame rendue est comparée au modèle (champ + caméra + motif
+de gomme, avec les MÊMES bornes de ruban que le moteur) ; pendant le scroll, à
+l'entrée et à la sortie de la phase. La vidéo est assemblée depuis les
+screenshots des trames jouées — elle montre exactement ce qui a été validé.
+
+Le banc a payé immédiatement : quatre défauts réels, dont deux du moteur.
+
+1. **`bench.rect` tombait AVANT l'exécution.** Un effacement qui déborde de la
+   trame laissait le pilote extérieur croire le travail fini, écrire le rect
+   suivant et écraser les variables du rect en vol — 4 des 11 blocs du
+   counter-air se perdaient. Le témoin ne tombe plus qu'après le `jsr` ; idem
+   pour la sonde. (Au passage : les états « figés » lus pendant le débogage
+   étaient des instantanés à mi-course, pas des crashes — `run_frames` rend la
+   main au vblank, où qu'en soit le 6809.)
+2. **La couture, pour les DEUX phases.** `clearRun` vérifiait que les bandes du
+   run étaient du même côté d'une couture — pour la phase 0. La phase 1 écrit
+   en px−1 : un run qui commence pile sur un multiple de 16 a sa première
+   bande de phase 1 de L'AUTRE CÔTÉ, et la routine déroulée écrivait une ligne
+   à côté : 48 px résiduels dans le buffer, qui défilaient avec la carte. Les
+   vérificateurs à caméra 0 ne pouvaient pas le voir — leurs coutures étaient
+   hors de l'écran. Le refus couvre désormais les deux phases.
+3. **La latence du pipeline.** Une mutation décidée au tour T est dessinée par
+   le `do` de T+1 dans le tampon arrière, flippé en fin de T+1 : l'écran la
+   montre à T+2. Toute validation qui suit une mutation attend deux trames.
+4. **`edge16` est un octet** : lu en mot par le modèle Python, la borne de
+   ruban devenait infranchissable et le modèle n'effaçait plus rien.
+
+**Reste ouvert, reproductible** : 48 px résiduels (4 lignes × 12 px, rangée 24,
+px de carte ~832) qui NAISSENT pendant le scroll final — absents à la caméra
+782, présents à 820. Un défaut fin du feed au franchissement de couture,
+distinct des précédents : à chasser avec cette repro avant la migration.
+
+Bilan de la passe complète : 41/42 validations conformes, 868 trames, vidéo de
+35 s (2× temps réel).
+
 ### L'oblique, retiré
 
 Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en

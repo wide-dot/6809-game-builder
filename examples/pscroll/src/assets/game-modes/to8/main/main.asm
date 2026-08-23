@@ -180,8 +180,14 @@ mainLoop
         ; --- L'EFFACEMENT EN MASSE : le banc le declenche a la demande ------
         tst   bench.rect
         beq   >
-        clr   bench.rect
         jsr   pscroll.clearRect
+        ; le temoin ne tombe qu'APRES l'execution. Il tombait avant : un
+        ; effacement qui deborde de la trame laissait le pilote exterieur
+        ; croire le travail fini, ecrire le rect suivant, et ECRASER les
+        ; variables du rect encore en vol — 4 des 11 blocs du counter-air
+        ; se perdaient ainsi (23/08). Aucun autre tour ne lit entre le jsr
+        ; et le clr : le re-jeu est impossible.
+        clr   bench.rect
 !
         ; --- CYTRON : le pilote, porte de l'arcade --------------------------
         jsr   bench.cytronStep
@@ -219,11 +225,9 @@ bench.cytronStep
         cmpa  #255                     ; 255 = il joue son script arcade
         beq   @script
  ENDC
-        deca                           ; le chemin du banc : une sonde, sur place
-        sta   cytron.enable
-        ldb   cytron.row
-        ldx   cytron.col
-        lbra  @sonde                   ; portee longue : le decodeur s'etale
+        ldb   cytron.row               ; le chemin du banc : une sonde, sur
+        ldx   cytron.col               ; place. enable n'est decremente
+        lbra  @sonde                   ; qu'APRES la mutation (voir bench.rect)                   ; portee longue : le decodeur s'etale
  IFNE BENCH_CYTRON
         ; --- le script arcade : `speed` octets de deplacement par trame -----
 @script lda   cytron.speed
@@ -342,7 +346,11 @@ bench.cytronStep
 @compte beq   >                        ; Z=1 : rien a faire (deja pleine/vide)
         inc   $9C06                    ; mutee — AVANT le compteur d'essais :
 !       inc   $9C05                    ; `inc` ecrase le Z que la routine vient
-@rien   rts                            ; de poser (defaut du banc, 22/08)
+        lda   cytron.enable            ; de poser (defaut du banc, 22/08)
+        beq   @rien
+        deca                           ; la sonde est consommee, maintenant
+        sta   cytron.enable            ; qu'elle a eu lieu
+@rien   rts
 
  IFNE BENCH_CYTRON
 ; Pose la variante jouee et la position de depart.
