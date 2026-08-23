@@ -2084,7 +2084,10 @@ pscroll.er.15
         sta   -76,x
         rts
 
-; --- LE RUN DE QUATRE : les octets partages partent en entier ----------
+; --- LES RUNS : les octets partages partent en entier -------------------
+; Quatre et cinq : les deux longueurs que le jeu produit. Le bloc 4x4 des
+; armes donne des runs de quatre a l'arret ; des qu'il BALAYE (compensation
+; de frame-drop), l'union fait cinq cellules par rangee.
 pscroll.r4.00.p0
         std   ,u
         stb   3,u
@@ -2410,6 +2413,361 @@ pscroll.r4.tbl
         fdb   pscroll.r4.13.p0,pscroll.r4.13.p1
         fdb   pscroll.r4.14.p0,pscroll.r4.14.p1
         fdb   pscroll.r4.15.p0,pscroll.r4.15.p1
+
+pscroll.r5.00.p0
+        std   ,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.00.p0
+        rts
+
+pscroll.r5.00.p1
+        stb   ,u
+        stb   1,u
+        stb   3,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.00.p1
+        rts
+
+pscroll.r5.01.p0
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        stb   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.01.p0
+        rts
+
+pscroll.r5.01.p1
+        std   ,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.01.p1
+        rts
+
+pscroll.r5.02.p0
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        stb   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.02.p0
+        rts
+
+pscroll.r5.02.p1
+        std   ,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.02.p1
+        rts
+
+pscroll.r5.03.p0
+        stb   -8,u
+        stb   1,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.03.p0
+        rts
+
+pscroll.r5.03.p1
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        stb   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.03.p1
+        rts
+
+pscroll.r5.04.p0
+        stb   -8,u
+        stb   1,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.04.p0
+        rts
+
+pscroll.r5.04.p1
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        stb   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.04.p1
+        rts
+
+pscroll.r5.05.p0
+        stb   -8,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.05.p0
+        rts
+
+pscroll.r5.05.p1
+        stb   -8,u
+        stb   1,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.05.p1
+        rts
+
+pscroll.r5.06.p0
+        stb   -8,u
+        lda   -7,u
+        anda  #$0F
+        sta   -7,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.06.p0
+        rts
+
+pscroll.r5.06.p1
+        stb   -8,u
+        stb   1,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.06.p1
+        rts
+
+pscroll.r5.07.p0
+        std   -8,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.07.p0
+        rts
+
+pscroll.r5.07.p1
+        stb   -8,u
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.07.p1
+        rts
+
+pscroll.r5.08.p0
+        std   -8,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.08.p0
+        rts
+
+pscroll.r5.08.p1
+        stb   -8,u
+        lda   -7,u
+        anda  #$0F
+        sta   -7,u
+        stb   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.08.p1
+        rts
+
+pscroll.r5.09.p0
+        stb   -8,u
+        stb   -7,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.09.p0
+        rts
+
+pscroll.r5.09.p1
+        std   -8,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.09.p1
+        rts
+
+pscroll.r5.10.p0
+        stb   -8,u
+        stb   -7,u
+        lda   -5,u
+        anda  #$0F
+        sta   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.10.p0
+        rts
+
+pscroll.r5.10.p1
+        std   -8,u
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.10.p1
+        rts
+
+pscroll.r5.11.p0
+        std   -8,u
+        stb   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.11.p0
+        rts
+
+pscroll.r5.11.p1
+        stb   -8,u
+        stb   -7,u
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.11.p1
+        rts
+
+pscroll.r5.12.p0
+        std   -8,u
+        stb   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.12.p0
+        rts
+
+pscroll.r5.12.p1
+        stb   -8,u
+        stb   -7,u
+        lda   -5,u
+        anda  #$0F
+        sta   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.12.p1
+        rts
+
+pscroll.r5.13.p0
+        stb   -8,u
+        stb   -7,u
+        stb   -5,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.13.p0
+        rts
+
+pscroll.r5.13.p1
+        std   -8,u
+        stb   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.13.p1
+        rts
+
+pscroll.r5.14.p0
+        stb   -8,u
+        stb   -7,u
+        stb   -5,u
+        lda   -4,u
+        anda  #$0F
+        sta   -4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.14.p0
+        rts
+
+pscroll.r5.14.p1
+        std   -8,u
+        stb   -5,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.14.p1
+        rts
+
+pscroll.r5.15.p0
+        std   -8,u
+        std   -5,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.15.p0
+        rts
+
+pscroll.r5.15.p1
+        stb   -8,u
+        stb   -7,u
+        stb   -5,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r5.15.p1
+        rts
+
+; l'aiguillage du run de 5 : DEUX entrees par cas, une par plan. Le
+; montage de page et la mise en place de la base sont identiques pour les
+; seize cas — les repeter ici pesait plus que les ecritures elles-memes,
+; ils vivent donc dans pscroll.run.plans.
+pscroll.r5.tbl
+        fdb   pscroll.r5.00.p0,pscroll.r5.00.p1
+        fdb   pscroll.r5.01.p0,pscroll.r5.01.p1
+        fdb   pscroll.r5.02.p0,pscroll.r5.02.p1
+        fdb   pscroll.r5.03.p0,pscroll.r5.03.p1
+        fdb   pscroll.r5.04.p0,pscroll.r5.04.p1
+        fdb   pscroll.r5.05.p0,pscroll.r5.05.p1
+        fdb   pscroll.r5.06.p0,pscroll.r5.06.p1
+        fdb   pscroll.r5.07.p0,pscroll.r5.07.p1
+        fdb   pscroll.r5.08.p0,pscroll.r5.08.p1
+        fdb   pscroll.r5.09.p0,pscroll.r5.09.p1
+        fdb   pscroll.r5.10.p0,pscroll.r5.10.p1
+        fdb   pscroll.r5.11.p0,pscroll.r5.11.p1
+        fdb   pscroll.r5.12.p0,pscroll.r5.12.p1
+        fdb   pscroll.r5.13.p0,pscroll.r5.13.p1
+        fdb   pscroll.r5.14.p0,pscroll.r5.14.p1
+        fdb   pscroll.r5.15.p0,pscroll.r5.15.p1
+
+; la table des runs, indexee par (longueur - 4)
+pscroll.run.tbl
+        fdb   pscroll.r4.tbl
+        fdb   pscroll.r5.tbl
 
 ; l'aiguillage de l'effacement
 pscroll.er.tbl

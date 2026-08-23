@@ -1276,12 +1276,15 @@ pscroll.clearRow.group
         rts
 
 pscroll.clearRow.cells
-        ldd   pscroll.rect.n           ; UN RUN DE QUATRE ? il a sa routine
+        ldd   pscroll.rect.n           ; UN RUN QUI A SA ROUTINE ? (4 ou 5)
         cmpd  #4
-        bne   pscroll.clearRow.cellsGo
+        blo   pscroll.clearRow.cellsGo
+        cmpd  #pscroll.RUN_MAX
+        bhi   pscroll.clearRow.cellsGo
+        stb   pscroll.run.n
         ldx   pscroll.rect.a
         ldb   pscroll.rect.row
-        lbsr  pscroll.clearRun4
+        lbsr  pscroll.clearRun
         bcs   pscroll.clearRow.cellsGo ; refuse : le chemin par cellule
         bne   >
         lbra  pscroll.clearRow.rien
@@ -1359,9 +1362,11 @@ pscroll.run.entry fdb 0
 pscroll.run.plane fcb 0
 
 ; -----------------------------------------------------------------------------
-; pscroll.clearRun4 — effacer QUATRE cellules voisines d'un seul trait
+; pscroll.clearRun — effacer un RUN de cellules voisines d'un seul trait
 ; -----------------------------------------------------------------------------
 ; input REG : [x] la premiere cellule, [b] la rangee
+; input VAR : [pscroll.run.n] sa longueur, 4 ou 5 — les deux que le jeu produit
+;             (le bloc des armes a l'arret, et son union quand il balaye)
 ; input VAR : [pscroll.rect.rowbase] la base de ligne de la rangee
 ; sortie    : cc.C = 1 si la routine REFUSE (a l'appelant de faire autrement),
 ;             sinon cc.Z = 1 si le champ n'a pas change
@@ -1385,7 +1390,7 @@ pscroll.run.plane fcb 0
 ; Les quatre cellules sont ecrites MEME SI certaines etaient deja vides : le
 ; fond vaut zero, y reecrire zero ne coute rien de plus et evite quatre tests.
 ; -----------------------------------------------------------------------------
-pscroll.clearRun4
+pscroll.clearRun
         stx   pscroll.sc.col
         stb   pscroll.sc.row
         ldd   pscroll.sc.col           ; le px de carte : 3 * colonne
@@ -1403,11 +1408,14 @@ pscroll.clearRun4
         rorb
         stb   pscroll.sc.chunk
         subb  pscroll.edge16           ; dans le ruban ?
-        lbcs  pscroll.clearRun4.no
+        lbcs  pscroll.clearRun.no
         cmpb  #pscroll.CHUNKS_PER_LINE
-        lbhs  pscroll.clearRun4.no
-        ldd   pscroll.sc.px            ; la bande du DERNIER px du run
-        addd  #3*4-1
+        lbhs  pscroll.clearRun.no
+        lda   #3                       ; la bande du DERNIER px du run :
+        ldb   pscroll.run.n            ; 3 px par cellule, moins un
+        mul
+        subd  #1
+        addd  pscroll.sc.px
         lsra
         rorb
         lsra
@@ -1418,15 +1426,15 @@ pscroll.clearRun4
         rorb
         stb   pscroll.run.last
         subb  pscroll.edge16
-        lbcs  pscroll.clearRun4.no
+        lbcs  pscroll.clearRun.no
         cmpb  #pscroll.CHUNKS_PER_LINE
-        lbhs  pscroll.clearRun4.no
+        lbhs  pscroll.clearRun.no
         ldx   #pscroll.seamof.tbl      ; meme cote de couture ?
         ldb   pscroll.sc.chunk
         lda   b,x
         ldb   pscroll.run.last
         cmpa  b,x
-        lbne  pscroll.clearRun4.no
+        lbne  pscroll.clearRun.no
 
         ; --- la carte : les quatre bits, et le champ a-t-il seulement change ?
         lda   pscroll.sc.row
@@ -1436,9 +1444,9 @@ pscroll.clearRun4
         std   pscroll.sc.rowptr
         clr   pscroll.run.chg
         ldx   pscroll.sc.col
-        lda   #4
+        lda   pscroll.run.n
         sta   pscroll.run.left
-pscroll.clearRun4.bit
+pscroll.clearRun.bit
         tfr   x,d
         lsra
         rorb
@@ -1460,13 +1468,18 @@ pscroll.clearRun4.bit
         stb   ,y
 !       leax  1,x
         dec   pscroll.run.left
-        bne   pscroll.clearRun4.bit
+        bne   pscroll.clearRun.bit
         tst   pscroll.run.chg
-        beq   pscroll.clearRun4.rien   ; les quatre etaient vides
+        beq   pscroll.clearRun.rien   ; les quatre etaient vides
 
         ldd   pscroll.rect.rowbase     ; la rangee, deja calculee par l'appelant
         std   pscroll.sc.rowbase
-        ldd   #pscroll.r4.tbl          ; LA SEULE DIFFERENCE avec une mutation
+        ldb   pscroll.run.n            ; LA SEULE DIFFERENCE avec une mutation
+        subb  #4                       ; est la table de routines
+        aslb
+        clra
+        ldx   #pscroll.run.tbl
+        ldd   d,x
         std   pscroll.sc.tbl
         ldd   #pscroll.run.plans
         std   pscroll.sc.plans
@@ -1476,16 +1489,17 @@ pscroll.clearRun4.bit
         andcc #$FA                     ; C = 0 : la routine a fait le travail,
                                        ; Z = 0 : le champ a change
         rts
-pscroll.clearRun4.rien
+pscroll.clearRun.rien
         andcc #$FE
         orcc  #$04                     ; Z = 1 : rien n'a change
         rts
-pscroll.clearRun4.no
+pscroll.clearRun.no
         orcc  #$01                     ; C = 1 : la routine refuse
         rts
 
 pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
+pscroll.run.n     fcb 0                ; la longueur du run en cours
 pscroll.run.last  fcb 0
 pscroll.run.chg   fcb 0
 pscroll.run.left  fcb 0
@@ -1793,6 +1807,7 @@ pscroll.rect.lineoff fdb 0
 pscroll.rect.rowbase fdb 0
 pscroll.rect.buf     fcb 0
 
+pscroll.RUN_MAX      equ 5             ; la plus longue routine de run generee
 pscroll.CLEAR_UNROLL equ 8             ; le seuil des deux regimes : huit
                                        ; cellules garantissent une bande pleine
                                        ; quelle que soit leur position (six n'y

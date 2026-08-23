@@ -1625,10 +1625,29 @@ l'appelant reprend cellule par cellule.
 | bande beam 2×12 | 5 349 | 5 367 | — |
 | bande large 2×24 | 10 517 | 10 571 | — |
 
-Le bloc isolé passe des deux tiers d'une trame à moins de la moitié. Les autres
-cas ne changent pas : leur run ne fait pas quatre cellules, ils ne prennent pas
-ce chemin. Le balayé de six, en particulier, fait des runs de CINQ — une
-routine de cinq lui rendrait le même service, au prix de seize routines de plus.
+Le bloc isolé passe des deux tiers d'une trame à moins de la moitié.
+
+### Le run de cinq, et le cas que le banc n'exerçait pas
+
+Les autres cas n'ont pas bougé, et j'ai d'abord cru que le « balayé de six »
+faisait des runs de cinq. **Faux** : balayer un bloc de 4 sur 6 cellules donne
+une union de DIX cellules par rangée — au-dessus du seuil, donc chemin déroulé.
+
+Le vrai producteur de runs de cinq est le bloc balayé d'**une** cellule, c'est-à-dire
+la compensation de frame-drop réelle : 4 + 1. Le banc ne l'exerçait pas ; le cas
+a été ajouté aux deux vérificateurs. `emettre_run` était déjà paramétré par la
+longueur, et l'aiguillage lit désormais `pscroll.run.n` (la table de routines se
+choisit par `run.n − 4`).
+
+| cas | sans run de 5 | avec | |
+|---|---|---|---|
+| **4×4 balayé de 1** | 15 622 | **10 532** | **−33 %** |
+| bloc 4×4 seul | 9 540 | 9 760 | **+2 %** |
+
+Le bloc de quatre paie 220 cycles de plus : l'aiguillage généralisé calcule
+`3n − 1` par une multiplication et passe par une table au lieu de constantes.
+C'est le prix du second cas, il est assumé — 5 090 cycles gagnés contre 220
+perdus.
 
 ### Deux pièges rencontrés en chemin
 
@@ -1636,6 +1655,16 @@ routine de cinq lui rendrait le même service, au prix de seize routines de plus
 `ldd` écrasait B **avant** le `stb pscroll.sc.row` de `mutate` : toutes les
 mutations tombaient sur la même rangée. La mire se croyait déjà pleine et plus
 rien ne s'effaçait. Le store est descendu après la mise à l'abri des registres.
+
+**Un vérificateur peut passer sans rien vérifier.** `check_rect` a affiché
+« TOUT CONFORME » sur cinq cas alors que le banc ne démarrait plus et
+qu'AUCUN pixel n'était effacé : son modèle dérive les pixels attendus de la
+mire, mire absente donne un ensemble vide, l'effacement rend le même, et
+l'égalité passe. C'est le mode de panne déjà rencontré sur `check_gum`. Il
+compare désormais le champ avant chaque cas à celui du premier, et refuse de
+conclure sur un écran vide — un cas peut légitimement n'attendre aucun pixel
+(hors carte), mais pas sur un champ différent. Le garde a été vérifié en le
+faisant mordre, pas supposé.
 
 **La page du banc, et un garde qui manque au builder.** Le module est une page
 de 16 Ko chargée à `$6100` dans la fenêtre `$6000-$9FFF` : seuls **16 128

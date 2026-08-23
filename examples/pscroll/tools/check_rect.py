@@ -76,6 +76,7 @@ COL0 = (rd("smiley.col0", 2)[0] << 8) | rd("smiley.col0", 2)[1]
 print("camera %d, mire aux cellules %d..%d" % (cam, COL0, COL0 + 31))
 
 CAS = [
+    ("horizontal, 4x4 balaye de 1 cellule", COL0 + 6, 10, COL0 + 7, 10, 4, 4),
     ("horizontal, 4x4 balaye de 6 cellules", COL0 + 4, 10, COL0 + 10, 10, 4, 4),
     ("horizontal court (sous le seuil)",     COL0 + 20, 4, COL0 + 21, 4, 4, 4),
     ("vertical, 4x4 balaye de 5 rangees",    COL0 + 14, 2, COL0 + 14, 7, 4, 4),
@@ -84,6 +85,8 @@ CAS = [
 ]
 
 ko = 0
+creux = 0
+reference = None
 for nom, c0, r0, c1, r1, w, h in CAS:
     avant = pixels()
     wr("pscroll.rect.c0", (c0 >> 8) & 0xFF, c0 & 0xFF)
@@ -119,6 +122,25 @@ for nom, c0, r0, c1, r1, w, h in CAS:
                     if BALL[l][d] != BG:
                         attendus.add((3 * c - cam + d, VP_Y + CELL_H * r + l))
     attendus = {p for p in attendus if 0 <= p[0] < 160}
+    # LA MIRE DOIT ETRE LA, ET IDENTIQUE D'UN CAS A L'AUTRE. Si elle manque —
+    # banc qui ne demarre pas, camera a la derive — le modele rend un ensemble
+    # VIDE, l'effacement rend le meme, et la comparaison PASSE. C'est ce qui
+    # s'est produit le 23/08 : cinq cas « TOUT CONFORME » avec zero pixel
+    # efface partout. On compare donc le champ AVANT chaque cas a celui du
+    # premier ; un cas peut legitimement n'attendre aucun pixel (hors carte),
+    # mais pas sur un champ different.
+    if reference is None:
+        reference = len(avant)                 # la mire du premier cas fait foi
+        if reference == 0:                     # ... encore faut-il qu'elle soit
+            print("  !! ECRAN VIDE : la mire n'est pas la, rien ne sera prouve")
+        print("  mire de reference : %d pixels allumes" % reference)
+    if reference == 0:
+        creux += 1
+        print("  %-40s NON CONCLUANT — ecran vide" % nom)
+    elif len(avant) != reference:
+        creux += 1
+        print("  %-40s NON CONCLUANT — mire a %d px au lieu de %d"
+              % (nom, len(avant), reference))
     if partis == attendus:
         print("  %-40s OK  (%d px effaces)" % (nom, len(partis)))
     else:
@@ -137,6 +159,12 @@ for nom, c0, r0, c1, r1, w, h in CAS:
             break
         t.call("run_frames", {"n": 10})
 
-print("\nBILAN :", "TOUT CONFORME" if not ko else "%d cas faux" % ko)
+if creux:
+    print("\nBILAN : NON CONCLUANT — %d cas n'attendaient aucun pixel "
+          "(mire absente ?)" % creux)
+elif ko:
+    print("\nBILAN : %d cas faux" % ko)
+else:
+    print("\nBILAN : TOUT CONFORME")
 t.close()
 sys.exit(1 if ko else 0)

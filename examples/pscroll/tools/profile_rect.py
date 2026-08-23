@@ -99,6 +99,7 @@ print("mire de reference : %d pixels allumes, cellules %d..%d"
 
 CAS = [
     ("bloc 4x4 seul",           COL0 + 6, 10, COL0 + 6, 10, 4, 4),
+    ("4x4 balaye de 1 (union)",   COL0 + 6, 10, COL0 + 7, 10, 4, 4),
     ("4x4 balaye de 6 (union)", COL0 + 4, 10, COL0 + 10, 10, 4, 4),
     ("bande beam 2x12",         COL0 + 2, 20, COL0 + 10, 20, 4, 2),
     ("bande large 2x24",        COL0 + 2, 24, COL0 + 22, 24, 4, 2),

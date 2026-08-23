@@ -300,14 +300,26 @@ def emettre(ordre, colonnes, path=OUT):
     A("; Meme aiguillage que l'ecriture. La valeur est le fond, constante :")
     A("; l'octet plein ne se recharge donc qu'une fois.")
     emettre_cellule(A, "er", lambda l, i: BG)
-    A("; --- LE RUN DE QUATRE : les octets partages partent en entier ----------")
-    emettre_run(A, 4)
+    A("; --- LES RUNS : les octets partages partent en entier -------------------")
+    A("; Quatre et cinq : les deux longueurs que le jeu produit. Le bloc 4x4 des")
+    A("; armes donne des runs de quatre a l'arret ; des qu'il BALAYE (compensation")
+    A("; de frame-drop), l'union fait cinq cellules par rangee.")
+    for n in RUNS:
+        emettre_run(A, n)
+    A("; la table des runs, indexee par (longueur - 4)")
+    A("pscroll.run.tbl")
+    for n in RUNS:
+        A(f"        fdb   pscroll.r{n}.tbl")
+    A("")
     A("; l'aiguillage de l'effacement")
     A("pscroll.er.tbl")
     for k in range(16):
         A(f"        fdb   pscroll.er.{k:02d}")
     A("")
     return _suite_tables(A, L, path, ordre, colonnes)
+
+
+RUNS = (4, 5)                          # les longueurs de run qui ont leur code
 
 
 def emettre_run(A, L):
