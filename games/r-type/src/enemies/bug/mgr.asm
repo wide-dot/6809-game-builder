@@ -512,13 +512,17 @@ bugmgr.wLoop
         tsta                           ; hors du cadre en octet : cache
         bne   @hide
         stb   bugmgr.wSx
+        ; le slot D'ABORD : WSlotPtr recharge X avec le bloc d'instance
+        ; (« les aides clobbent ») — pris en defaut le 22/08 : le set charge
+        ; avant l'appel partait ecrase, RecPublish publiait InstS+14 comme
+        ; routine et BuildSprites sautait dedans (gel du stage 4, t=1600)
+        jsr   bugmgr.WSlotPtr          ; Y = le slot
         ldb   bugmgr.wPose
         andb  #$0F
         aslb
         ldx   #ImageIndex
         abx
         ldx   ,x                       ; le set de la direction
-        jsr   bugmgr.WSlotPtr          ; Y = le slot
         lda   bugmgr.wSx
         ldb   bugmgr.wY
         addb  #screen_top
