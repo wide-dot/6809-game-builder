@@ -1480,42 +1480,80 @@ L'aiguillage fait quatre choses :
 **Prouvé identique** : les cinq cas de `check_rect.py` rendent les mêmes pixels
 qu'avec le chemin par cellule — c'est l'A/B qu'il fallait.
 
-### Mesuré sur une mire DÉTERMINISTE — et ce que ça révèle
+### Mesuré sur une mire déterministe — et le défaut que ça a fait tomber
 
 Une cellule déjà vide ne coûte que son rejet : mesurer sur un champ dont on ne
-connaît pas le remplissage ne veut rien dire. Deux campagnes ont donné 148 puis
-621 cycles par cellule pour le même cas, l'écart venant du champ et non du code.
-`tools/profile_rect.py` **redémarre la machine avant chaque cas** — redessiner
-par-dessus un champ entamé ne restaure pas tout (240 pixels manquants mesurés) —
-et il compte les pixels allumés pour refuser de conclure si l'état bouge.
+connaît pas le remplissage ne veut rien dire. Le premier profilage a vu la mire
+maigrir de cas en cas — 9 600 pixels, puis 9 360, puis 9 090 — et redessiner ne
+la restaurait pas. J'ai d'abord redémarré la machine entre les cas ; c'était
+traiter le symptôme. **La cause était un défaut de `clearRow.zone`** :
 
-Sur champ plein, donc :
+```
+        coma                           ; A = ~masque, la valeur voulue
+        andb  ,x+                      ; B = octet & octet — sans effet
+        stb   -1,x                     ; la carte est reecrite INCHANGEE
+```
+
+La 6809 ne sait pas croiser A et B : le complément doit passer par la mémoire
+(`pshs a` / `andb ,s+`). **Les bits de carte des bandes pleines n'étaient donc
+jamais effacés** — les pixels partaient, le bitfield disait toujours « pleine »,
+et `setCell` refusait de faire repousser. Le déficit valait exactement les
+cellules du cas précédent.
+
+`check_rect` ne l'avait pas vu : il compare des PIXELS, et les pixels étaient
+justes. La mire qui revient à l'identique est un oracle plus fort, parce qu'elle
+passe par la carte — elle est désormais dans `profile_rect.py`, et le
+redémarrage n'est plus nécessaire.
+
+Sur champ plein :
 
 | cas | cases | gommes | total | cy/case |
 |---|---|---|---|---|
 | bloc 4×4 seul (régime par cellule) | 16 | 16 | 9 354 | **584** |
-| 4×4 balayé de 6 | 40 | 36 | 15 616 | **390** |
-| bande beam 2×12 | 24 | 18 | 3 102 | **129** |
-| bande large 2×24 | 48 | 41 | 5 854 | **121** |
+| 4×4 balayé de 6 | 40 | 36 | 15 596 | **389** |
+| bande beam 2×12 | 24 | 18 | 3 082 | **128** |
+| bande large 2×24 | 48 | 41 | 5 814 | **121** |
 
-**Le déroulé gagne d'un facteur 4 à 5** sur les runs longs. Mais le détail dit
-où part le reste, et c'est instructif — la bande beam, par rangée :
+### Ce que coûtent les extrémités, et ce qu'un masque n'y changerait pas
 
-| poste | cycles |
-|---|---|
-| deux bandes pleines, déroulées, quatre buffers | ~576 |
-| **deux cellules d'extrémité, par cellule** | **~1 168** |
+Le déroulé gagne un facteur 4 à 5 sur les runs longs, mais la bande beam dit où
+part le reste, par rangée : ~576 cycles pour les deux bandes pleines déroulées
+sur les quatre buffers, et **~1 168 pour les deux seules cellules d'extrémité**.
 
-**Les extrémités coûtent plus cher que tout le milieu.** Une cellule du régime
-par cellule vaut 584 cycles ; une bande pleine en vaut 288 pour cinq ou six
-cellules, soit ~50 par cellule. Le rapport est de douze, et un run traîne
-jusqu'à dix cellules d'extrémité.
+J'ai d'abord proposé d'y passer une variante MASQUÉE de `zrow`. **C'était faux
+par excès**, et la raison est géométrique. Une gomme fait 3 px larges, un octet
+en fait 2 : une cellule ne pave jamais des octets.
 
-**La suite est donc écrite d'avance** : traiter les bandes PARTIELLES par une
-variante masquée de `zrow` — même structure de douze `std`, mais lecture,
-masque, écriture — une fois par bande au lieu d'une fois par cellule. Ça
-ramènerait une extrémité de ~2 900 cycles (cinq cellules) à ~150, et
-supprimerait le dernier chemin par cellule de l'effacement en masse.
+```
+px      0   1 | 2   3 | 4   5 | 6   7 |
+octet   |  o0   |  o1   |  o2   |  o3  |   (pairs -> plan A, impairs -> plan B)
+cellule |   c0      |   c1      |   c2 |
+```
+
+Chaque cellule possède **un octet plein dans un plan et un demi-octet dans
+l'autre**, et deux voisines partagent toujours cet octet — d'où les deux passes
+`full` (un `sta` sec) et `mask` (`lda`/`anda`/`ora`/`sta`) des routines
+générées. **Le read-modify-write est déjà là, une fois par cellule, par
+construction.** Le masque n'est donc pas une idée neuve à ajouter aux bords :
+c'est le régime normal.
+
+Ce qui coince aux bords est une affaire de granularité. Une bande porte 4 octets
+de données par plan, soit 16 px sur les deux, soit **5⅓ cellules** : une
+frontière de bande ne tombe sur une frontière de cellule qu'une fois sur trois
+(px 16c multiple de 3 ⟺ c multiple de 3), ce que dit `chunkfirst.tbl` — 0, 6,
+11, 16. Écraser une bande de bord en bloc mangerait jusqu'à cinq gommes
+voisines ; la masquer entière coûterait quatre `lda/anda/sta` par ligne et par
+plan, soit ~1 200 cycles pour remplacer les ~1 750 des trois cellules qu'elle
+porte. **30 %, pas le facteur douze annoncé.**
+
+Le vrai gras est ailleurs. Une mutation se découpe en **489 cycles d'aiguillage**
+(rangée, cellule, bande, slot, tables, montages de page) et **338 d'écriture**
+pour les quatre buffers. `clearRect` en amortit déjà une part — 584 mesurés au
+lieu de 827 — mais il refait l'essentiel de l'aiguillage à CHAQUE cellule de
+bord, alors que ces trois à cinq cellules sont contiguës, sur la même rangée,
+dans les mêmes pages, avec les mêmes bases de ligne. Un aiguillage pour le lot
+puis N fois la seule routine d'écriture donnerait le même ~30 %, en réutilisant
+les routines masquées existantes telles quelles.
 
 ### L'oblique, retiré
 
