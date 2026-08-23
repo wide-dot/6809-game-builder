@@ -104,8 +104,22 @@ CAS = [
     ("bande large 2x24",        COL0 + 2, 24, COL0 + 22, 24, 4, 2),
 ]
 
-LO, HI = sym["pscroll.clearRect"], sym["pscroll.tbl.bit"]
-MUT = sym["pscroll.setCell"]
+# LA MESURE SE FAIT PAR DIFFERENCE, sur un nombre de trames FIXE. Le decoupage
+# par plages de PC ne marchait pas : profile_top plafonne a 1000 lignes et les
+# routines deroulees en font davantage, donc le total etait tronque — et
+# variablement d'une version a l'autre, ce qui rendait toute comparaison
+# fausse (23/08). total_cycles, lui, couvre tout ce qui s'est execute.
+TRAMES = 24                            # de quoi laisser l'effacement finir
+
+
+def cycles(fixe=True):
+    t.call("profile_reset")
+    t.call("profile_start")
+    t.call("run_frames", {"n": TRAMES})
+    t.call("profile_stop")
+    return t.call("profile_top", {"n": 1, "by": "cycles"})["total_cycles"]
+
+
 
 for nom, c0, r0, c1, r1, w, h in CAS:
     n = poser_mire(reboot=True)
@@ -122,19 +136,23 @@ for nom, c0, r0, c1, r1, w, h in CAS:
     wr("pscroll.rect.r1", r1)
     wr("pscroll.rect.w", w)
     wr("pscroll.rect.h", h)
+    # ON ENCADRE L'APPEL LUI-MEME : entree de clearRect, puis son adresse de
+    # retour lue sur la pile. total_cycles ne compte alors QUE l'effacement.
+    # Mesurer sur un nombre de trames fixe ne marche pas — le 6809 consomme le
+    # meme temps qu'il travaille ou qu'il attende (23/08).
+    wr("bench.rect", 1)
+    t.call("run_until_pc", {"pc": "%04X" % sym["pscroll.clearRect"]})
+    sp = int(t.call("machine_state", {})["registers"]["s"], 16)
+    ra = t.read("%04X" % sp, 2)
     t.call("profile_reset")
     t.call("profile_start")
-    wr("bench.rect", 1)
-    for _ in range(30):
-        t.call("run_frames", {"n": 2})
-        if rd("bench.rect")[0] == 0:
-            break
+    t.call("run_until_pc", {"pc": "%02X%02X" % (ra[0], ra[1])})
     t.call("profile_stop")
-    top = t.call("profile_top", {"n": 1000, "by": "cycles"})
-    rect = sum(r["cycles"] for r in top.get("rows", []) if LO <= int(r["pc"], 16) < HI)
-    mut = sum(r["cycles"] for r in top.get("rows", []) if MUT <= int(r["pc"], 16) < LO)
-    print("%-24s %3d cases dont %3d gommes | clearRect %5d + mutation %5d = "
-          "%5d cy, soit %4d cy/case et %4d cy/gomme"
-          % (nom, cases, gommes, rect, mut, rect + mut,
-             (rect + mut) // cases, (rect + mut) // max(gommes, 1)))
+    tot = t.call("profile_top", {"n": 1, "by": "cycles"})["total_cycles"]
+    # CE QUI A REELLEMENT ETE EFFACE. Le profil seul ne dit pas si le travail a
+    # eu lieu : deux versions ne se comparent qu'a effacement egal (23/08).
+    t.call("run_frames", {"n": 8})     # que le ruban soit rejoue a l'ecran
+    reste = allumes()
+    print("%-24s %3d cases, %3d gommes, %4d px effaces | %6d cy, soit %4d cy/case"
+          % (nom, cases, gommes, reference - reste, tot, tot // cases))
 t.close()

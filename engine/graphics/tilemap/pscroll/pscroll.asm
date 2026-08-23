@@ -833,6 +833,33 @@ pscroll.mutate
         andb  ,x                       ; la gomme disparait
         stb   ,x
 @suite
+        ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
+        clra                           ; depend ni de la bande ni de la phase
+        aslb
+        rola
+        ldx   #pscroll.rowbase.tbl
+        ldd   d,x
+        std   pscroll.sc.rowbase
+        lda   #$FF                     ; appel isole : la geometrie est a faire
+        sta   pscroll.sc.lastchunk
+        lbsr  pscroll.mutate.tail
+        andcc #$FB                     ; Z = 0 : le champ a change
+        rts
+@already
+        orcc  #$04                     ; Z = 1 : rien a faire
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.mutate.tail — la geometrie et les deux phases
+; -----------------------------------------------------------------------------
+; input VAR : sc.row, sc.chunk, sc.px, sc.rowbase, sc.tbl, sc.lastchunk
+;
+; SORTIE DE MUTATE pour etre appelable EN LOT : dans un run de cellules
+; voisines, la rangee et sa base de ligne ne changent pas, et la bande ne change
+; qu'une cellule sur cinq — `geom` n'est donc refait que lorsque `sc.chunk`
+; differe de `sc.lastchunk`. Un appelant isole pose $FF pour la forcer.
+; -----------------------------------------------------------------------------
+pscroll.mutate.tail
         ; -------------------------------------------------------------------
         ; LA GEOMETRIE NE SE CALCULE QU'UNE FOIS. Les deux phases ne different
         ; que par n0 = px et px-1 : le CAS change toujours (c'est case-1 mod
@@ -842,16 +869,13 @@ pscroll.mutate
         ; on ne refait la geometrie pour la phase 1 que dans ce cas la.
         ; Mesure du 23/08 : l'aiguillage passe de 828 a 645 cycles.
         ; -------------------------------------------------------------------
-        ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
-        clra                           ; depend ni de la bande ni de la phase
-        aslb
-        rola
-        ldx   #pscroll.rowbase.tbl
-        ldd   d,x
-        std   pscroll.sc.rowbase
+        lda   pscroll.sc.chunk         ; la bande a-t-elle change ?
+        cmpa  pscroll.sc.lastchunk
+        beq   @geomok
+        sta   pscroll.sc.lastchunk
         ldb   pscroll.sc.chunk
         lbsr  pscroll.geom             ; -> sc.dst
-        ldb   pscroll.sc.px+1          ; PHASE 0 : le cas est px mod 16
+@geomok ldb   pscroll.sc.px+1          ; PHASE 0 : le cas est px mod 16
         andb  #15
         ldx   #pscroll.phase.tbl
         lbsr  pscroll.mutate.plans
@@ -864,6 +888,8 @@ pscroll.mutate
         ldb   pscroll.sc.chunk         ; oui : la phase 1 est dans la bande
         decb                           ; PRECEDENTE
         stb   pscroll.sc.chunk
+        lda   #$FF                     ; sc.dst ne decrira plus sc.chunk : le
+        sta   pscroll.sc.lastchunk     ; lot devra refaire sa geometrie
         subb  pscroll.edge16           ; qui n'est peut-etre plus dans le ruban
         bcs   @fin
         ldb   pscroll.sc.chunk
@@ -873,11 +899,7 @@ pscroll.mutate
         andb  #15
         ldx   #pscroll.phase.tbl+pscroll.PHASE_SZ
         lbsr  pscroll.mutate.plans
-@fin    andcc #$FB                     ; Z = 0 : le champ a change
-        rts
-@already
-        orcc  #$04                     ; Z = 1 : rien a faire
-        rts
+@fin    rts
 
 ; -----------------------------------------------------------------------------
 ; pscroll.mutate.plans — poser les deux plans d'une phase et graver
@@ -1283,23 +1305,96 @@ pscroll.chunkOf
 ; -----------------------------------------------------------------------------
 ; pscroll.clearRow.runCells — effacer nleft cellules a partir de cur
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; pscroll.clearRow.runCells — un LOT de cellules voisines, sur une rangee
+; -----------------------------------------------------------------------------
+; C'est le chemin des extremites d'un run, et le seul chemin quand l'intervalle
+; est trop court pour porter une bande pleine. Il fait le meme travail que N
+; appels a clearCell, mais SORT DU LOT ce qui ne depend que de la rangee ou qui
+; n'avance que d'un pas :
+;   - le pointeur de carte de la rangee (une multiplication)
+;   - la base de ligne (une table)
+;   - le px de carte, qui avance de 3 par cellule au lieu d'etre remultiplie
+;   - la geometrie de bande, refaite seulement quand la bande change, soit une
+;     cellule sur cinq (sc.lastchunk)
+; Mesure du 23/08 : voir l'etude. Le reste — les deux phases, les quatre
+; buffers, les masques — est irreductible et reste tel quel.
+; -----------------------------------------------------------------------------
 pscroll.clearRow.runCells
         ldd   pscroll.rect.nleft
-        beq   pscroll.clearRow.rcEnd
+        lbeq  pscroll.clearRow.rcEnd
+        lda   pscroll.rect.row         ; le pointeur de carte de la rangee
+        sta   pscroll.sc.row
+        ldb   #pscroll.MAP_STRIDE
+        mul
+        addd  pscroll.map.address
+        std   pscroll.sc.rowptr
+        ldb   pscroll.rect.row         ; sa base de ligne
+        clra
+        aslb
+        rola
+        ldx   #pscroll.rowbase.tbl
+        ldd   d,x
+        std   pscroll.sc.rowbase
+        ldd   #pscroll.er.tbl          ; le lot n'efface que
+        std   pscroll.sc.tbl
+        lda   #1
+        sta   pscroll.sc.mode
+        lda   #$FF                     ; aucune geometrie encore calculee
+        sta   pscroll.sc.lastchunk
+        ldd   pscroll.rect.cur         ; le px de carte : 3 * colonne, UNE fois
+        aslb
+        rola
+        addd  pscroll.rect.cur
+        std   pscroll.sc.px
 pscroll.clearRow.rcLoop
-        ldb   pscroll.rect.row
-        ldx   pscroll.rect.cur
-        jsr   pscroll.clearCell
-        beq   pscroll.clearRow.rcNext
+        ldd   pscroll.rect.cur
+        std   pscroll.sc.col
+        ldd   pscroll.sc.px            ; la bande
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        stb   pscroll.sc.chunk
+        subb  pscroll.edge16           ; DANS LE RUBAN ?
+        bcs   pscroll.clearRow.rcNext
+        cmpb  #pscroll.CHUNKS_PER_LINE
+        bhs   pscroll.clearRow.rcNext
+        ldd   pscroll.sc.col           ; l'octet de carte et le masque du bit
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        addd  pscroll.sc.rowptr
+        tfr   d,x
+        ldb   pscroll.sc.col+1
+        andb  #7
+        ldy   #pscroll.tbl.bit
+        ldb   b,y
+        bitb  ,x
+        beq   pscroll.clearRow.rcNext  ; deja vide : rien a faire
+        comb
+        andb  ,x                       ; la gomme disparait
+        stb   ,x
+        lbsr  pscroll.mutate.tail
         inc   pscroll.rect.done
 pscroll.clearRow.rcNext
         ldd   pscroll.rect.cur
         addd  #1
         std   pscroll.rect.cur
+        ldd   pscroll.sc.px            ; le px suit, il ne se recalcule pas
+        addd  #3
+        std   pscroll.sc.px
         ldd   pscroll.rect.nleft
         subd  #1
         std   pscroll.rect.nleft
-        bne   pscroll.clearRow.rcLoop
+        lbne  pscroll.clearRow.rcLoop
 pscroll.clearRow.rcEnd
         rts
 
@@ -1540,3 +1635,4 @@ pscroll.sc.rowbase    fdb   0
 pscroll.sc.dst        fdb   0
 pscroll.sc.tbl        fdb   0          ; la table du chemin en cours
 pscroll.sc.mode       fcb   0          ; 0 = pousse, 1 = efface
+pscroll.sc.lastchunk  fcb   $FF        ; la bande dont sc.dst est la geometrie
