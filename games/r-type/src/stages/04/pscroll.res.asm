@@ -20,6 +20,7 @@ pscroll.stage4.frame EXPORT
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "gen/layout.asm"
         INCLUDE "gen/stages/04/map/map.const.asm"
 field.MAP_W        equ map.COLS*12
@@ -31,7 +32,6 @@ pscroll.MAX_SEAMS  equ 8
 PSCROLL_PART       equ 0                ; la part residente
 
 pscroll.move       EXTERNAL              ; l'autre moitie, en page
-paged.call         EXTERNAL
 
  SECTION code
 
@@ -44,12 +44,27 @@ paged.call         EXTERNAL
 ;
 ; `do` peint d'abord — c'est lui qui remplace l'effacement du champ, et il a
 ; besoin de l'ecran monte. `move` ensuite, dans la page du module : il grave ce
-; qui entre et n'a plus besoin de l'ecran. L'appelant remonte sa page ecran
-; apres, ce que la trame fait en dessinant.
+; qui entre et n'a plus besoin de l'ecran.
+;
+; PAS `paged.call` : il monte dans la fenetre CARTOUCHE, celle-la meme que
+; pscroll commute pour atteindre ses buffers — le module s'y demontait
+; lui-meme (PC $4F43, vecu le 23/08). Ici la page va dans la fenetre DONNEES,
+; ou le code EST : un `jsr` direct suffit une fois la page montee.
+;
+; La page ecran qui etait en place est SAUVEE AVANT le premier swap et remise
+; apres — le registre $E7E5 se relit, comme mscroll le fait deja pour son
+; tampon arriere (mscroll.asm:374). Sans ca, la trame suivante dessinerait
+; dans la page de pscroll.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.frame
         std   pscroll.camera.speedx
         jsr   pscroll.do
-        lda   #map.RAM_OVER_CART+pscroll.edit.page
-        ldx   #pscroll.move
-        jmp   paged.call
+        ldb   map.CF74021.DATA             ; le tampon video courant,
+        stb   pscroll.backBuffer           ; avant d'y toucher
+        _ram.data.set #pscroll.edit.page
+        jsr   pscroll.move
+        ldb   pscroll.backBuffer           ; et l'ecran revient
+        stb   map.CF74021.DATA
+        rts
+
+pscroll.backBuffer  fcb 0

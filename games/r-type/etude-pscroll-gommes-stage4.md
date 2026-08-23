@@ -1972,11 +1972,49 @@ variables toutes côté résident, exportées vers la part paginée (38 symboles
 tenant » et rejoue la matrice — 32 cas, zéro faute après la coupe, identique à
 avant.
 
-**Où ça bloque encore.** L'image se construit des deux côtés, mais la scène du
-stage 4 ne se charge plus : le PC tourne dans une boucle du moniteur (`$E0C9`,
-pas la boucle de lecture `$E3C0`) et la trame ne démarre jamais. Le suspect est
-le direntry à destination `$A000` — c'est le premier du jeu à viser la fenêtre
-données, et le chemin n'a jamais servi.
+**Le montage/démontage à l'exécution, fait.** `paged.call` disparaît — il
+montait dans la fenêtre CARTOUCHE, celle que pscroll commute pour ses buffers.
+La page va dans la fenêtre DONNÉES où le code EST : un `jsr` direct suffit. La
+page écran est **sauvée avant le premier swap et remise après** (`$E7E5` se
+relit — `mscroll` le fait déjà pour son tampon arrière, mscroll.asm:374) ;
+sans ça la trame suivante dessinerait dans la page de pscroll.
+
+**Ce qui bloque, et c'est STRUCTUREL : le loader habite la fenêtre données.**
+`loader.PAGE = 4`, `loader.ADDRESS = $C000`, monté par `_ram.data.set` — et
+`loader.file.load` commence par `jsr ram.set`, qui pour une destination ≥
+`$A000` fait `stb map.CF74021.DATA`. L'instruction suivante est lue dans la
+page qu'on vient de monter : **le loader s'efface sous ses propres pieds**.
+Ce n'est pas un bug, c'est la géométrie : le loader ne peut rien écrire dans
+la fenêtre où il vit. Et l'application des données de lien passe par la même
+fenêtre, donc même un chargement « brut » ne suffirait pas.
+
+La fenêtre données reste donc bonne pour EXÉCUTER (l'inversion des demi-pages
+s'y annule pour du code, puisqu'on lirait par la fenêtre qui a écrit) mais
+elle est fermée au CHARGEMENT. Les 13 317 octets se répartissent ainsi :
+
+| tranche | contenu | taille |
+|---|---|---|
+| `$0000-$09CA` | logique : `init`/`move`/`feedBand`/`clearRect`/`clearRow` | 2,5 Ko |
+| `$09CA-$2096` | les routines déroulées générées | 5,8 Ko |
+| `$2096-$2DC9` | leurs tables | 3,2 Ko |
+| `$2DC9-$2E65` | `stage4.init` + `grow` | 150 o |
+| `$2E65-$3B10` | `field.map` — `fill 0`, rempli à l'init, **jamais chargé** | 3,2 Ko |
+
+Ce qui laisse trois voies, toutes à arbitrer avec l'auteur :
+
+1. **Demi-page vidéo `$4000-$5FFF`** (8 Ko, que le loader sait écrire) : il
+   faut descendre sous 8 192 octets. Sortir `field.map` (il ne se charge pas,
+   il se remplit) ramène à 10 074 — encore 1,9 Ko de trop. Couper en deux
+   demi-pages ne marche pas : `clearRow` APPELLE les routines déroulées, les
+   deux moitiés doivent être montées ensemble.
+2. **Un relais résident dans le loader** : lire le secteur dans `ptsec`, puis
+   un copieur résident (~30 octets en `$6000-$9FFF`) qui monte la page,
+   recopie, remonte `loader.PAGE`. Tient si — et seulement si — l'unité n'a
+   AUCUNE donnée de lien (elle en a 911 aujourd'hui), sinon il faut aussi
+   faire passer chaque patch par le relais. Sections `.static` des deux côtés
+   pour y arriver.
+3. **Réduire** : `RUNS = (1, 2, 4, 5)` génère les 5,8 Ko de routines déroulées.
+   Retirer le run de 5 rendrait ~1,5 Ko, au prix de la vitesse d'effacement.
 
 **Pourquoi ça ne marchait pas avant — et c'était structurel.** `paged.call` monte une
 unité dans la fenêtre **cartouche** (`$0000-$3FFF`). Or c'est exactement la
