@@ -1301,3 +1301,66 @@ par tour ✓), pose **8**, et la cellule semée est la **191** — soit 1,5 cell
 **à sa droite** alors qu'il rampe vers la gauche : bien derrière lui. La traînée
 mesurée à l'écran couvre les cellules 189 à 202 sur la **rangée 15**. Le banc de
 mutation reste à **80/80**.
+
+## 15. Qui détruit les gommes — la cartographie arcade (23/08/2026)
+
+Relevée par Ghidra (MCP `asm-ark`). **Trois routines**, et rien d'autre n'écrit
+dans le champ : toute suppression passe par l'une des trois.
+
+| routine | arcade | forme effacée |
+|---|---|---|
+| `erase_green_ball_stage4` | 0x40:4FB9 | **une cellule** |
+| `clear_green_ball_helper_stage4` | 0x40:2736 | **une grappe 2×2** |
+| `clear_green_ball_stage4` | 0x40:2702 | **quatre grappes 2×2 aux quatre coins** (±8,±8) — un bloc de 4×4 avec recouvrement |
+
+Les trois ne réécrivent que les cellules qui lisent exactement
+`TILE_GREEN_BALL` (0x9F6), et incrémentent `pickup_pending_flag` par cellule
+effacée — dont le seul lecteur est l'IRQ, qui joue le SFX 0x5E. **Manger des
+gommes fait du bruit, ça ne marque pas de points.**
+
+### Qui appelle quoi
+
+| arme / objet | routine | quand | forme réelle |
+|---|---|---|---|
+| **Force Pod** — flottant, attaché, éjecté (0x2534, 0x259F, 0x262F) | 4×4 | **chaque trame**, dans ses trois états | un bloc de 4×4 centré sur le pod |
+| **Wave Cannon**, allumage (0x3168..0x3180) | 2×2 ×4 | à la naissance du tir | quatre grappes |
+| **Wave Cannon**, en vol (0x323B) | 2×2 × CX | chaque trame | **une bande de 2 rangées sur CX+1 colonnes** — CX = 5 à 10 selon le palier de charge (table 0x1000:183E), et le palier décroît d'une trame à l'autre : le tunnel se referme |
+| **Counter-Air Laser** (0x4A36..0x4A80, 0x4B65..0x4BAF, 0x4CB4) | 4×4 × 11 | **une trame sur seize** (`anim_phase == 0`) | une grille : colonne de 3, puis 3 latérales, puis une queue de 4 — **176 cellules balayées d'un coup** |
+| **Bit Device** (0x2E8E, 0x304F) | 2×2 | par trame | une grappe |
+| **Laser réfléchi** (0x4E6B) | 2×2 | par trame | une grappe |
+| **Missiles** haut et bas (0x3414, 0x35CC, 0x36E0, 0x3896) | 1 cellule | à l'impact | unitaire |
+| **Force Pod, tir simple** (0x3EE4, 0x4F52, 0x4F78) | 1 cellule | à l'impact | unitaire — et il **meurt sur la première gomme** : l'effaceur rend 0, que l'appelant relit comme « mur » |
+
+**Donc : l'ajout est unitaire (cytron), la suppression ne l'est pas.** Le pire
+cas est le Counter-Air Laser, 176 cellules dans une seule trame, et le Force Pod
+qui efface 16 cellules à **chaque** trame tant qu'il traverse le champ.
+
+### Le test de contournement n'est PAS assez rapide
+
+`pscroll.setCell` rejette une cellule déjà pleine après avoir calculé le px de
+carte, la bande, la garde de ruban, le pointeur de rangée et le masque du bit :
+**≈ 185 cycles pour ne rien faire**. Compté sur le source, chemin de rejet le
+plus court.
+
+Ce que ça donne appliqué à la cartographie :
+
+| cas | cellules | coût de rejet seul |
+|---|---|---|
+| Force Pod, une trame | 16 | ~3 000 cy |
+| Wave Cannon, une trame au palier max | 22 | ~4 100 cy |
+| **Counter-Air Laser, sa trame** | **176** | **~32 600 cy — plus d'une trame et demie** |
+
+**Conclusion : la suppression ne peut pas passer par un appel par cellule.** Il
+faut une routine de BLOC qui travaille par OCTET du bitfield :
+
+- un bloc de 4×4 cellules, c'est **4 bits de large sur 4 rangées** — donc au
+  plus **deux octets par rangée**, soit 4 à 8 lectures-modifications au lieu de
+  16 tests ;
+- le masque dit d'un coup ce qui change : `change = ancien AND masque`. Si
+  `change` est nul, la rangée n'a rien à regraver — **le contournement devient
+  un test par RANGÉE, pas par cellule** ;
+- et seules les colonnes touchées ont besoin d'une regravure de buffer, ce que
+  `change` donne directement.
+
+C'est le même raisonnement que pour le feed : **le champ se parle en octets, pas
+en cellules**. Reste à écrire la routine et à la prouver comme les autres.
