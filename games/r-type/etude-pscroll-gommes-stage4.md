@@ -1710,10 +1710,42 @@ Le banc a payé immédiatement : quatre défauts réels, dont deux du moteur.
 4. **`edge16` est un octet** : lu en mot par le modèle Python, la borne de
    ruban devenait infranchissable et le modèle n'effaçait plus rien.
 
-**Reste ouvert, reproductible** : 48 px résiduels (4 lignes × 12 px, rangée 24,
-px de carte ~832) qui NAISSENT pendant le scroll final — absents à la caméra
-782, présents à 820. Un défaut fin du feed au franchissement de couture,
-distinct des précédents : à chasser avec cette repro avant la migration.
+### Le décalage d'une ligne aux coutures — caractérisé, pas résolu
+
+Les 48 px résiduels de la démo n'étaient que la queue d'un défaut bien plus
+gros, que la chasse a mis au jour : **le plan de gommes s'affiche une ligne
+trop bas sur les derniers pixels de caméra avant certaines coutures**, puis se
+remet exactement au pas de couture. Sonde : `tools/probe_couture.py`.
+
+Ce qui est établi :
+
+- **stable et reproductible** — cinq mesures identiques au repos, `frameDrop`
+  constant : ni capture en vol, ni artefact de double-buffer ;
+- **c'est bien une ligne, et tout le plan** — vérifié en image, les rangées
+  larges du motif tombent une ligne plus bas ; ni déchirure, ni décalage
+  horizontal (mon premier ajustement automatique disait « dy = +3 », artefact
+  de la périodicité du motif : l'image, elle, ne ment pas) ;
+- **caméra mod 160 ∈ [153..159]**, et ça disparaît au pas de couture ;
+- **mais pas à toutes les coutures** : celle de 640 est saine, 800 et 960 non.
+
+C'est ce dernier point qui interdit la conclusion facile. La théorie naturelle
+est un `+8` manquant : `move` compare `camera.x` aux seuils de `seam.tbl`,
+alors que l'index de bande dérive de `camera.x + 8` — donc `stretch` et le
+groupe de couture des bandes divergent quand `camera mod 160 ≥ 152`. Ça prédit
+le défaut à **toutes** les coutures ; la mesure le dément.
+
+Et à l'instant du défaut, `stretch`, `origin` et `seam.tbl` sont mutuellement
+cohérents : `startline = ROW_BIAS − bande/10` pour les bandes visibles vaut
+exactement `origin` (au biais d'une ligne du blast, qui est voulu). La
+contradiction est donc ailleurs — et je ne l'ai pas trouvée.
+
+**Piège rencontré** : poker `pscroll.origin` pour tester ne prouve rien et
+*abîme* le ruban — `runBuffer` y pose un `jmp` de sortie qu'il restaure à la
+ligne d'origine ; changer `origin` entre deux trames laisse un `jmp` orphelin
+dans le buffer. Mes premières mesures « incohérentes » venaient de là.
+
+**C'est le défaut à fermer avant de migrer `pscroll` dans `games/r-type`** :
+il touche le scroll lui-même, pas l'effacement.
 
 Bilan de la passe complète : 41/42 validations conformes, 868 trames, vidéo de
 35 s (2× temps réel).
