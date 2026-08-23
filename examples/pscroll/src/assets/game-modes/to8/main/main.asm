@@ -3,7 +3,15 @@
 ; les seize routines de run de quatre n'y entraient pas. L'objet COMPLET vit
 ; desormais dans games/r-type/src/enemies/cytron/ ; ce pilote n'etait qu'un
 ; banc de repousse. Le remettre a 1 pour rejouer shot_cytron.py.
-PSCROLL_DEBUG equ 1                    ; le journal de gravure de feedBand
+PSCROLL_DEBUG equ 1                    ; compteurs de chemin + octet de carte
+; PSCROLL_DEBUG_FEED equ 1             ; le journal de gravure de feedBand :
+                                       ; startline par bande, adresses d'entree
+                                       ; du blast, compteurs de chemin. ~350
+                                       ; octets — a REACTIVER pour probe_couture
+                                       ; et a couper ensuite, la page est juste
+                                       ; (au-dela de ~15 Ko le game mode ne se
+                                       ; charge plus du tout : PC part au
+                                       ; moniteur, temoins muets, 23/08).
 BENCH_CYTRON equ 0
 
 ;*******************************************************************************
@@ -179,6 +187,16 @@ mainLoop
         jsr   bench.smileyStep         ; la mire, tant qu'elle n'est pas finie
 
         ; --- L'EFFACEMENT EN MASSE : le banc le declenche a la demande ------
+        ; --- LE CHAMP PLEIN : remplir la carte et TOUT regraver -------------
+        ; La mire smiley servait a avoir un champ connu ; un champ PLEIN sert
+        ; mieux : tout ecart a l'ecran est alors un effacement, et un seul.
+        ; On ecrit la carte a $FF puis on rappelle pscroll.init, qui regrave
+        ; les dix bandes depuis elle — c'est cher (~160 000 cycles) et c'est
+        ; exactement ce qu'on veut entre deux essais.
+        tst   bench.fill
+        beq   >
+        jsr   bench.fillRow            ; UNE rangee par tour, pas les trente
+!
         tst   bench.rect
         beq   >
         jsr   pscroll.clearRect
@@ -375,6 +393,43 @@ bench.cytronReset
         rts
  ENDC
 
+; -----------------------------------------------------------------------------
+; bench.fillDo — POSER UNE GOMME PARTOUT, par le vrai chemin
+; -----------------------------------------------------------------------------
+; PAS par la carte : le feed grave depuis les donnees GENEREES (les routines de
+; colonne portent le niveau), pas depuis field.map — remplir la carte et
+; rappeler pscroll.init redonne donc le niveau d'origine, pas un champ plein.
+; On passe par setCell, qui est justement le chemin a exercer : il pose le bit
+; ET grave les quatre buffers. Les cellules hors ruban sont refusees toutes
+; seules, on peut donc balayer la carte entiere sans se soucier des bornes.
+;
+; ~11 500 appels, dont 1 620 font vraiment quelque chose : environ deux
+; secondes. C'est un banc.
+; -----------------------------------------------------------------------------
+; UNE RANGEE PAR TOUR. Les trente d'un coup tenaient dans un seul tour de
+; boucle — deux secondes, soit un debordement de plus de cent trames — et
+; gfxlock n'en revenait pas : la boucle du banc s'arretait net, temoins geles
+; (23/08). Une rangee coute ~4 trames, ce que la compensation absorbe.
+; Le pilote pose bench.fill.row a 0 puis bench.fill a 1 ; le banc rend la main
+; en effacant bench.fill quand les trente rangees sont posees.
+bench.fillRow
+        ldx   #0
+bench.fillCol
+        ldb   bench.fill.row
+        pshs  x
+        jsr   pscroll.setCell          ; hors ruban, il refuse tout seul
+        puls  x
+        leax  1,x
+        cmpx  #pscroll.CELLS
+        blo   bench.fillCol
+        inc   bench.fill.row
+        lda   bench.fill.row
+        cmpa  #pscroll.ROWS
+        blo   >
+        clr   bench.fill               ; les trente rangees sont posees
+!       rts
+bench.fill.row fcb 0
+
 ; --- LE SMILEY : la mire du chemin d'ECRITURE -----------------------------
 ; Une rangee par trame, cellule par cellule, par pscroll.setCell — le chemin
 ; exact de la repousse arcade. Un disque trace sur la grille de cellules doit
@@ -487,6 +542,7 @@ smiley.col0  fdb 4                     ; a la camera 0 : px 12..107, hors des
 smiley.ROW0  equ 0                     ; 8 px de bord masques
 
 bench.rect   fcb 0                     ; 1 = joue pscroll.clearRect une fois
+bench.fill   fcb 0                     ; 1 = champ plein + regravure complete
 demo.attract fcb 1                         ; 1 tant que rien n'a ete presse
 ctrlmag      fdb $0100
 ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se dessine

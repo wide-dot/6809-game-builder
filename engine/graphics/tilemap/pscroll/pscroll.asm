@@ -558,7 +558,7 @@ pscroll.feedBand
         lda   #pscroll.ROW_BIAS
         suba  ,s+
         sta   pscroll.startline
- IFDEF PSCROLL_DEBUG
+ IFDEF PSCROLL_DEBUG_FEED
         ; LE JOURNAL DE GRAVURE. On note, PAR BANDE, le startline reellement
         ; ecrit, la camera de la gravure et le nombre de passages. C'est le
         ; seul moyen de confronter ce que le feed a grave a ce que le modele
@@ -687,7 +687,7 @@ pscroll.do
                                        ; 23/08). Le vrai defaut etait ailleurs :
                                        ; le seuil de couture, voir pscroll.seamx.
 !       stb   pscroll.h
- IFDEF PSCROLL_DEBUG
+ IFDEF PSCROLL_DEBUG_FEED
         stb   pscroll.dbg.h            ; h, window et origin TELS QUE do les a
         ldb   pscroll.window           ; vus — les relire apres la trame donne
         stb   pscroll.dbg.window       ; l'etat d'APRES move, qui n'est pas
@@ -786,7 +786,7 @@ pscroll.runBuffer
         aslb
         aslb
         leax  b,x                      ; x = point d'entree
- IFDEF PSCROLL_DEBUG
+ IFDEF PSCROLL_DEBUG_FEED
         ; L'ADRESSE D'ENTREE REELLE du blast, et sa sortie, pour le buffer
         ; courant. origin et startline concordaient dans les deux etats du
         ; defaut de couture (23/08) : c'est donc l'adresse qu'il faut lire,
@@ -1252,8 +1252,25 @@ pscroll.rect.prepFail
         lda   #1                       ; m1 < m0 par defaut : aucune bande pleine
         sta   pscroll.rect.m0
         clr   pscroll.rect.m1
+        ldd   pscroll.rect.n           ; RELIRE n : le `lda #1` ci-dessus a
+                                       ; ecrase A, donc D. Sans ca le cmpd
+                                       ; comparait $01xx et le raccourci des
+                                       ; runs courts n'etait JAMAIS pris : m0/m1
+                                       ; se calculaient pour tout n, et pour un
+                                       ; intervalle dans la bande 0 le `dec m1`
+                                       ; passait de 0 a 255. Le test « pas de
+                                       ; bande pleine » tombait a l'envers, la
+                                       ; zone deroulee partait sur des bornes
+                                       ; delirantes, ecrivait hors de la carte —
+                                       ; jusque sur son propre compteur — et
+                                       ; bouclait a l'infini (23/08).
         cmpd  #pscroll.CLEAR_UNROLL
-        lblo  pscroll.rect.prepEnd
+        lblo  pscroll.rect.prepShort   ; LE RACCOURCI DOIT NETTOYER LA RETENUE :
+                                       ; le cmpd la laisse a 1 quand n < 8, et
+                                       ; l'appelant y lit « rien a faire ». Le
+                                       ; andcc de sortie n'etait que sur le
+                                       ; chemin long — invisible tant que le
+                                       ; raccourci n'etait jamais pris (23/08).
 
 ; --- LES BANDES PLEINES ------------------------------------------------------
 ; Les bandes ENTIEREMENT couvertes par l'intervalle se vident d'un trait : le
@@ -1285,6 +1302,9 @@ pscroll.rect.prepFail
 !       andcc #$FE                     ; C = 0 : il reste du travail
 pscroll.rect.prepEnd
         rts
+pscroll.rect.prepShort
+        andcc #$FE                     ; run court : pas de bande pleine, mais
+        rts                            ; du travail quand meme
 
 ; -----------------------------------------------------------------------------
 ; pscroll.clearRow.go — le travail d'UNE rangee, preparation deja faite
@@ -1645,6 +1665,17 @@ pscroll.clearRun.bit
 
 pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
+ IFDEF PSCROLL_DEBUG_FEED
+pscroll.dbg.startline fill 0,pscroll.CHUNKS      ; grave par bande
+pscroll.dbg.fed       fill 0,pscroll.CHUNKS      ; nombre de gravures
+pscroll.dbg.cam       fill 0,2*pscroll.CHUNKS    ; camera de la derniere
+pscroll.dbg.h         fcb 0                      ; ce que do a VU
+pscroll.dbg.window    fcb 0
+pscroll.dbg.origin    fcb 0
+pscroll.dbg.camdo     fdb 0
+pscroll.dbg.entry     fill 0,8                   ; entree du blast, par buffer
+pscroll.dbg.exit      fill 0,8                   ; sa sortie (savedU)
+ ENDC
  IFDEF PSCROLL_DEBUG
 pscroll.dbg.nrun      fcb 0                      ; qui passe ou : compteurs
 pscroll.dbg.nrefus    fcb 0
@@ -1653,15 +1684,6 @@ pscroll.dbg.nprepko   fcb 0
 pscroll.dbg.mapy      fdb 0                      ; clearRun : l'octet de carte
 pscroll.dbg.mask      fcb 0                      ; vise, son masque, sa valeur
 pscroll.dbg.mapv      fcb 0
-pscroll.dbg.h         fcb 0                      ; ce que do a VU
-pscroll.dbg.window    fcb 0
-pscroll.dbg.origin    fcb 0
-pscroll.dbg.camdo     fdb 0
-pscroll.dbg.entry     fill 0,8                   ; entree du blast, par buffer
-pscroll.dbg.exit      fill 0,8                   ; sa sortie (savedU)
-pscroll.dbg.startline fill 0,pscroll.CHUNKS      ; grave par bande
-pscroll.dbg.fed       fill 0,pscroll.CHUNKS      ; nombre de gravures
-pscroll.dbg.cam       fill 0,2*pscroll.CHUNKS    ; camera de la derniere
  ENDC
 pscroll.run.n     fcb 0                ; la longueur du run en cours
 pscroll.run.k     fcb 0                ; la coupe d'une decomposition

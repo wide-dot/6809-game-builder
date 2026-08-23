@@ -1781,6 +1781,60 @@ enregistrer, par buffer, le nombre d'itérations réellement faites.
 Bilan de la passe complète : 41/42 validations conformes, 868 trames, vidéo de
 35 s (2× temps réel).
 
+### La matrice sur champ plein — trois défauts en une séance
+
+Décision auteur (23/08) : **plus de mire, plus de scroll**. Le banc remplit
+l'écran de gommes (`bench.fill`, qui pose une gomme partout par `setCell` — le
+vrai chemin, une rangée par tour), la caméra est figée, et chaque cas s'exécute
+seul, avec un remplissage entre deux. Sur un champ plein, tout pixel éteint est
+un effacement et rien d'autre : plus de motif à modéliser, plus de cellule
+« déjà vide » pour masquer un défaut. Outil : `tools/matrix_runs.py`.
+
+Le contrôle est un ET, à chaque étape : la **carte** machine dit ce que le
+modèle dit, ET l'**écran** dit ce que la carte machine dit. Le second attrape
+les résidus de buffer.
+
+**Ça a payé immédiatement — trois défauts, chacun masquant le suivant.**
+
+1. **`prep` comparait un registre écrasé.**
+   ```
+   std   pscroll.rect.n
+   lda   #1              ; ecrase A, donc D
+   sta   pscroll.rect.m0
+   clr   pscroll.rect.m1
+   cmpd  #pscroll.CLEAR_UNROLL   ; compare $01xx : jamais < 8
+   lblo  pscroll.rect.prepEnd    ; raccourci JAMAIS pris
+   ```
+   Le raccourci des runs courts n'était donc jamais emprunté.
+
+2. **Conséquence : `dec m1` débordait par le bas.** `m0`/`m1` se calculaient
+   pour tout `n` ; pour un intervalle dans la bande 0, `m1` passait de 0 à
+   **255**, le test « pas de bande pleine » tombait à l'envers, et le chemin
+   des bandes déroulées partait sur des bornes délirantes. Il écrivait **hors
+   de la carte** — jusque sur son propre compteur de boucle — et **bouclait à
+   l'infini** : le banc se figeait, témoins gelés.
+
+3. **Le raccourci ne nettoyait pas la retenue.** Une fois (1) corrigé, `prep`
+   sortait par `lblo` avec le C du `cmpd` — à 1 quand `n < 8` — que l'appelant
+   lit comme « rien à faire ». Plus AUCUN run court ne s'effaçait. Le `andcc`
+   de sortie n'existait que sur le chemin long ; invisible tant que le
+   raccourci n'était jamais pris.
+
+**Ce que la matrice donne maintenant** (144 essais, chaque longueur aux seize
+décalages de phase) :
+
+```
+longueur 1..7 : ................   toutes conformes
+longueur 8    : XXXXXXXXXXXXXXXX
+longueur 12   : ..XXXXXXXXXXXXXX
+```
+
+Les routines de run et les décompositions sont **justes aux seize cas**. Ce qui
+reste est le **chemin des bandes déroulées** (`n ≥ CLEAR_UNROLL`) : la carte est
+correcte (`0 octet` d'écart) mais l'écran garde 12 à 18 pixels — c'est la même
+famille que les 48 px résiduels de la démo. Le défaut est à la jonction entre
+le milieu déroulé et les extrémités, et il se rejoue en une commande.
+
 ### L'oblique, retiré
 
 Le squelette de l'escalier a été supprimé (23/08) : aucune arme du stage 4 n'en
