@@ -777,7 +777,7 @@ pscroll.setCell
 ; d'effacer une gomme COLLEE a une autre sans entamer sa voisine.
 ; -----------------------------------------------------------------------------
 pscroll.clearCell
-        ldy   #pscroll.er.tbl          ; la gomme DISPARAIT
+        ldy   #pscroll.r1.tbl          ; la gomme DISPARAIT — un run de UN
         lda   #1
         sta   pscroll.sc.mode
 pscroll.mutate
@@ -788,8 +788,13 @@ pscroll.mutate
         ; cellule dans X. Poser sc.plans plus haut, dans setCell/clearCell,
         ; ecrasait B (ldd) et faisait tomber toutes les mutations sur la meme
         ; rangee — la mire se croyait deja pleine et rien ne s'effacait (23/08).
-        ldd   #pscroll.mutate.plans    ; une cellule : le chemin ordinaire
-        std   pscroll.sc.plans
+        ; L'ecriture garde ses routines deroulees (mutate.plans + wr.tbl) ;
+        ; l'effacement passe par la forme bouclee des runs (run.plans).
+        ldd   #pscroll.mutate.plans
+        tst   pscroll.sc.mode
+        beq   >
+        ldd   #pscroll.run.plans       ; effacement : la table r1 a DEUX
+!       std   pscroll.sc.plans         ; entrees par cas, comme tout run
         ldd   pscroll.sc.col           ; le px de carte : 3 * colonne
         aslb
         rola
@@ -1276,19 +1281,47 @@ pscroll.clearRow.group
         rts
 
 pscroll.clearRow.cells
-        ldd   pscroll.rect.n           ; UN RUN QUI A SA ROUTINE ? (4 ou 5)
-        cmpd  #4
+        ldd   pscroll.rect.n           ; UN RUN QUI A SA ROUTINE ? (2..7)
+        cmpd  #pscroll.RUN_MIN
         blo   pscroll.clearRow.cellsGo
         cmpd  #pscroll.RUN_MAX
         bhi   pscroll.clearRow.cellsGo
+        ; 3, 6 et 7 n'ont pas leur gravure : DEUX sous-runs, n-2 puis 2 —
+        ; 1+2, 4+2, 5+2, tous graves. (La premiere version coupait 7 en 4+3 :
+        ; le sous-run de 3 n'est pas grave non plus, la table dense le
+        ; rabattait sur celle de 2 et UNE CELLULE restait pleine — attrape par
+        ; check_rect le 23/08.) L'octet de jointure est masque par chacun au
+        ; lieu d'ecrit plein — quelques cycles contre ~1,1 Ko de code genere.
+        cmpb  #3
+        beq   >
+        cmpb  #pscroll.RUN_GEN_MAX
+        bls   pscroll.clearRow.oneRun
+!       subb  #2
+        stb   pscroll.run.k            ; le premier sous-run : n-2 cellules
+        ldb   #2
+        stb   pscroll.run.n            ; le second : 2, a la fin du run...
+        ldb   pscroll.run.k
+        clra
+        addd  pscroll.rect.a
+        tfr   d,x
+        ldb   pscroll.rect.row
+        lbsr  pscroll.clearRun
+        bcs   pscroll.clearRow.cellsGo ; refuse : tout le run par cellule
+        beq   >                        ; son effet se consigne ICI — le Z du
+        inc   pscroll.rect.done        ; second appel l'ecraserait
+!       ldb   pscroll.run.k            ; ...puis le premier, n-2 cellules
+pscroll.clearRow.oneRun
         stb   pscroll.run.n
         ldx   pscroll.rect.a
         ldb   pscroll.rect.row
         lbsr  pscroll.clearRun
         bcs   pscroll.clearRow.cellsGo ; refuse : le chemin par cellule
         bne   >
+        tst   pscroll.rect.done        ; le premier sous-run a pu, lui, effacer
+        bne   pscroll.clearRow.oneOk
         lbra  pscroll.clearRow.rien
 !       inc   pscroll.rect.done
+pscroll.clearRow.oneOk
         andcc #$FB
         rts
 pscroll.clearRow.cellsGo
@@ -1390,6 +1423,15 @@ pscroll.run.plane fcb 0
 ; Les quatre cellules sont ecrites MEME SI certaines etaient deja vides : le
 ; fond vaut zero, y reecrire zero ne coute rien de plus et evite quatre tests.
 ; -----------------------------------------------------------------------------
+pscroll.clearRun.rien
+        andcc #$FE
+        orcc  #$04                     ; Z = 1 : rien n'a change
+        rts
+pscroll.clearRun.no
+        orcc  #$01                     ; C = 1 : la routine refuse
+        rts
+        ; (les epilogues sont AVANT l'entree : les cinq tests du debut les
+        ; atteignent en branche courte, la routine frolait la page du banc)
 pscroll.clearRun
         stx   pscroll.sc.col
         stb   pscroll.sc.row
@@ -1408,9 +1450,9 @@ pscroll.clearRun
         rorb
         stb   pscroll.sc.chunk
         subb  pscroll.edge16           ; dans le ruban ?
-        lbcs  pscroll.clearRun.no
+        bcs   pscroll.clearRun.no
         cmpb  #pscroll.CHUNKS_PER_LINE
-        lbhs  pscroll.clearRun.no
+        bhs   pscroll.clearRun.no
         lda   #3                       ; la bande du DERNIER px du run :
         ldb   pscroll.run.n            ; 3 px par cellule, moins un
         mul
@@ -1426,15 +1468,15 @@ pscroll.clearRun
         rorb
         stb   pscroll.run.last
         subb  pscroll.edge16
-        lbcs  pscroll.clearRun.no
+        bcs   pscroll.clearRun.no
         cmpb  #pscroll.CHUNKS_PER_LINE
-        lbhs  pscroll.clearRun.no
+        bhs   pscroll.clearRun.no
         ldx   #pscroll.seamof.tbl      ; meme cote de couture ?
         ldb   pscroll.sc.chunk
         lda   b,x
         ldb   pscroll.run.last
         cmpa  b,x
-        lbne  pscroll.clearRun.no
+        bne   pscroll.clearRun.no
 
         ; --- la carte : les quatre bits, et le champ a-t-il seulement change ?
         lda   pscroll.sc.row
@@ -1470,12 +1512,12 @@ pscroll.clearRun.bit
         dec   pscroll.run.left
         bne   pscroll.clearRun.bit
         tst   pscroll.run.chg
-        beq   pscroll.clearRun.rien   ; les quatre etaient vides
+        lbeq  pscroll.clearRun.rien    ; toutes deja vides (epilogue en tete)
 
         ldd   pscroll.rect.rowbase     ; la rangee, deja calculee par l'appelant
         std   pscroll.sc.rowbase
         ldb   pscroll.run.n            ; LA SEULE DIFFERENCE avec une mutation
-        subb  #4                       ; est la table de routines
+        subb  #pscroll.RUN_MIN         ; est la table de routines
         aslb
         clra
         ldx   #pscroll.run.tbl
@@ -1489,17 +1531,11 @@ pscroll.clearRun.bit
         andcc #$FA                     ; C = 0 : la routine a fait le travail,
                                        ; Z = 0 : le champ a change
         rts
-pscroll.clearRun.rien
-        andcc #$FE
-        orcc  #$04                     ; Z = 1 : rien n'a change
-        rts
-pscroll.clearRun.no
-        orcc  #$01                     ; C = 1 : la routine refuse
-        rts
 
 pscroll.run.lines fcb 0                ; le compteur de lignes du run : en
                                        ; memoire, A servant au masquage
 pscroll.run.n     fcb 0                ; la longueur du run en cours
+pscroll.run.k     fcb 0                ; la coupe d'une decomposition
 pscroll.run.last  fcb 0
 pscroll.run.chg   fcb 0
 pscroll.run.left  fcb 0
@@ -1557,9 +1593,9 @@ pscroll.clearRow.runCells
         ldx   #pscroll.rowbase.tbl
         ldd   d,x
         std   pscroll.sc.rowbase
-        ldd   #pscroll.er.tbl          ; le lot n'efface que
+        ldd   #pscroll.r1.tbl          ; le lot n'efface que — des runs de UN
         std   pscroll.sc.tbl
-        ldd   #pscroll.mutate.plans
+        ldd   #pscroll.run.plans
         std   pscroll.sc.plans
         lda   #1
         sta   pscroll.sc.mode
@@ -1807,7 +1843,9 @@ pscroll.rect.lineoff fdb 0
 pscroll.rect.rowbase fdb 0
 pscroll.rect.buf     fcb 0
 
-pscroll.RUN_MAX      equ 5             ; la plus longue routine de run generee
+pscroll.RUN_MIN      equ 1             ; les routines de run GRAVEES : 1,2,4,5.
+pscroll.RUN_GEN_MAX  equ 5             ; 3, 6 et 7 se decomposent (2+1, 4+2,
+pscroll.RUN_MAX      equ 7             ; 4+3) sur ces memes routines
 pscroll.CLEAR_UNROLL equ 8             ; le seuil des deux regimes : huit
                                        ; cellules garantissent une bande pleine
                                        ; quelle que soit leur position (six n'y

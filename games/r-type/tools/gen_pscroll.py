@@ -297,29 +297,35 @@ def emettre(ordre, colonnes, path=OUT):
     # plus de la ligne. Le pixel voisin est preserve par le masque, comme a
     # l'ecriture : c'est ce qui permet d'effacer une gomme collee a une autre.
     A("; --- les 16 routines d'EFFACEMENT d'une cellule -------------------------")
-    A("; Meme aiguillage que l'ecriture. La valeur est le fond, constante :")
-    A("; l'octet plein ne se recharge donc qu'une fois.")
-    emettre_cellule(A, "er", lambda l, i: BG)
+    A("; L'EFFACEMENT D'UNE CELLULE EST UN RUN DE UN. Les seize routines")
+    A("; deroulees (er.NN, 1 456 octets) sont remplacees par la forme bouclee")
+    A("; des runs : ~380 octets, au prix de ~120 cycles sur le chemin par")
+    A("; cellule — qui est deja le repli, plus le chemin nominal (23/08).")
     A("; --- LES RUNS : les octets partages partent en entier -------------------")
-    A("; Quatre et cinq : les deux longueurs que le jeu produit. Le bloc 4x4 des")
-    A("; armes donne des runs de quatre a l'arret ; des qu'il BALAYE (compensation")
-    A("; de frame-drop), l'union fait cinq cellules par rangee.")
+    A("; Deux a sept : les longueurs sous le seuil de bande que les armes")
+    A("; produisent reellement (gen_gum_cases.py les derive de leur empreinte,")
+    A("; leur vitesse et le frame drop). Une n'a pas besoin de routine")
+    A("; (clearCell) ; huit et plus passent par la bande deroulee.")
     for n in RUNS:
         emettre_run(A, n)
-    A("; la table des runs, indexee par (longueur - 4)")
+    A(f"; la table des runs, DENSE, indexee par (longueur - 1). Le trou du 3")
+    A(f"; pointe la table du 2 : l'aiguillage decompose 3 avant d'arriver ici.")
     A("pscroll.run.tbl")
-    for n in RUNS:
+    for n in (1, 2, 2, 4, 5):
         A(f"        fdb   pscroll.r{n}.tbl")
     A("")
-    A("; l'aiguillage de l'effacement")
-    A("pscroll.er.tbl")
-    for k in range(16):
-        A(f"        fdb   pscroll.er.{k:02d}")
-    A("")
+
     return _suite_tables(A, L, path, ordre, colonnes)
 
 
-RUNS = (4, 5)                          # les longueurs de run qui ont leur code
+# Les longueurs derivees des armes reelles (tools/gen_gum_cases.py) : le jeu
+# produit 1..16 ; 8+ est la bande deroulee, reste 1..7. Seules 1, 2, 4 et 5
+# sont GRAVEES — 3, 6 et 7 se DECOMPOSENT (2+1, 4+2, 4+3) sur ces routines :
+# un octet de jointure masque deux fois au lieu d'ecrit plein, contre ~1,1 Ko
+# de code genere en moins. Le 1 est aussi l'effacement d'UNE cellule (il a
+# remplace les seize er.NN deroulees). La table est indexee longueur-1 ; le
+# trou du 3 pointe la routine de 2 mais l'aiguillage ne l'atteint jamais.
+RUNS = (1, 2, 4, 5)
 
 
 def emettre_run(A, L):

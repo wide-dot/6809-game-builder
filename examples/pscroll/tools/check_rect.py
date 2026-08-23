@@ -77,6 +77,13 @@ print("camera %d, mire aux cellules %d..%d" % (cam, COL0, COL0 + 31))
 
 CAS = [
     ("horizontal, 4x4 balaye de 1 cellule", COL0 + 6, 10, COL0 + 7, 10, 4, 4),
+    # les cas DERIVES des armes reelles (tools/gen_gum_cases.py) : le bit
+    # device fait des grappes 2x2 (runs 2 et 3), le pod ejecte des unions de
+    # 6 et 7 — decomposees par le moteur en 4+2 et 4+3
+    ("bit device 2x2 a l'arret",            COL0 + 12, 6,  COL0 + 12, 6,  2, 2),
+    ("bit device 2x2 balaye de 1",          COL0 + 12, 14, COL0 + 13, 14, 2, 2),
+    ("pod ejecte : 4x4 balaye de 2 (=6)",   COL0 + 20, 6,  COL0 + 22, 6,  4, 4),
+    ("pod ejecte : 4x4 balaye de 3 (=7)",   COL0 + 20, 14, COL0 + 23, 14, 4, 4),
     ("horizontal, 4x4 balaye de 6 cellules", COL0 + 4, 10, COL0 + 10, 10, 4, 4),
     ("horizontal court (sous le seuil)",     COL0 + 20, 4, COL0 + 21, 4, 4, 4),
     ("vertical, 4x4 balaye de 5 rangees",    COL0 + 14, 2, COL0 + 14, 7, 4, 4),

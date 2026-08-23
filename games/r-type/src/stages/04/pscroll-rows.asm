@@ -1506,588 +1506,591 @@ pscroll.wr.tbl
         fdb   pscroll.wr.15
 
 ; --- les 16 routines d'EFFACEMENT d'une cellule -------------------------
-; Meme aiguillage que l'ecriture. La valeur est le fond, constante :
-; l'octet plein ne se recharge donc qu'une fois.
-pscroll.er.00
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   80,u
-        sta   ,u
-        sta   -80,u
-        sta   80,x
-        sta   ,x
-        sta   -80,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   80,u
-        anda  #$0F
-        sta   80,u
+; L'EFFACEMENT D'UNE CELLULE EST UN RUN DE UN. Les seize routines
+; deroulees (er.NN, 1 456 octets) sont remplacees par la forme bouclee
+; des runs : ~380 octets, au prix de ~120 cycles sur le chemin par
+; cellule — qui est deja le repli, plus le chemin nominal (23/08).
+; --- LES RUNS : les octets partages partent en entier -------------------
+; Deux a sept : les longueurs sous le seuil de bande que les armes
+; produisent reellement (gen_gum_cases.py les derive de leur empreinte,
+; leur vitesse et le frame drop). Une n'a pas besoin de routine
+; (clearCell) ; huit et plus passent par la bande deroulee.
+pscroll.r1.00.p0
+        stb   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.00.p0
+        rts
+
+pscroll.r1.00.p1
         lda   ,u
         anda  #$0F
         sta   ,u
-        lda   -80,u
-        anda  #$0F
-        sta   -80,u
-        lda   80,x
-        anda  #$0F
-        sta   80,x
-        lda   ,x
-        anda  #$0F
-        sta   ,x
-        lda   -80,x
-        anda  #$0F
-        sta   -80,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.00.p1
         rts
 
-pscroll.er.01
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   80,u
-        sta   ,u
-        sta   -80,u
-        sta   80,x
-        sta   ,x
-        sta   -80,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   80,u
-        anda  #$F0
-        sta   80,u
+pscroll.r1.01.p0
         lda   ,u
         anda  #$F0
         sta   ,u
-        lda   -80,u
-        anda  #$F0
-        sta   -80,u
-        lda   80,x
-        anda  #$F0
-        sta   80,x
-        lda   ,x
-        anda  #$F0
-        sta   ,x
-        lda   -80,x
-        anda  #$F0
-        sta   -80,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.01.p0
         rts
 
-pscroll.er.02
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   80,u
-        sta   ,u
-        sta   -80,u
-        sta   80,x
-        sta   ,x
-        sta   -80,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   81,u
-        anda  #$0F
-        sta   81,u
+pscroll.r1.01.p1
+        stb   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.01.p1
+        rts
+
+pscroll.r1.02.p0
         lda   1,u
         anda  #$0F
         sta   1,u
-        lda   -79,u
-        anda  #$0F
-        sta   -79,u
-        lda   81,x
-        anda  #$0F
-        sta   81,x
-        lda   1,x
-        anda  #$0F
-        sta   1,x
-        lda   -79,x
-        anda  #$0F
-        sta   -79,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.02.p0
         rts
 
-pscroll.er.03
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   81,u
-        sta   1,u
-        sta   -79,u
-        sta   81,x
-        sta   1,x
-        sta   -79,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   80,u
-        anda  #$F0
-        sta   80,u
+pscroll.r1.02.p1
+        stb   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.02.p1
+        rts
+
+pscroll.r1.03.p0
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.03.p0
+        rts
+
+pscroll.r1.03.p1
         lda   ,u
         anda  #$F0
         sta   ,u
-        lda   -80,u
-        anda  #$F0
-        sta   -80,u
-        lda   80,x
-        anda  #$F0
-        sta   80,x
-        lda   ,x
-        anda  #$F0
-        sta   ,x
-        lda   -80,x
-        anda  #$F0
-        sta   -80,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.03.p1
         rts
 
-pscroll.er.04
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   81,u
-        sta   1,u
-        sta   -79,u
-        sta   81,x
-        sta   1,x
-        sta   -79,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   81,u
-        anda  #$0F
-        sta   81,u
+pscroll.r1.04.p0
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.04.p0
+        rts
+
+pscroll.r1.04.p1
         lda   1,u
         anda  #$0F
         sta   1,u
-        lda   -79,u
-        anda  #$0F
-        sta   -79,u
-        lda   81,x
-        anda  #$0F
-        sta   81,x
-        lda   1,x
-        anda  #$0F
-        sta   1,x
-        lda   -79,x
-        anda  #$0F
-        sta   -79,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.04.p1
         rts
 
-pscroll.er.05
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   81,u
-        sta   1,u
-        sta   -79,u
-        sta   81,x
-        sta   1,x
-        sta   -79,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   81,u
-        anda  #$F0
-        sta   81,u
+pscroll.r1.05.p0
         lda   1,u
         anda  #$F0
         sta   1,u
-        lda   -79,u
-        anda  #$F0
-        sta   -79,u
-        lda   81,x
-        anda  #$F0
-        sta   81,x
-        lda   1,x
-        anda  #$F0
-        sta   1,x
-        lda   -79,x
-        anda  #$F0
-        sta   -79,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.05.p0
         rts
 
-pscroll.er.06
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   81,u
-        sta   1,u
-        sta   -79,u
-        sta   81,x
-        sta   1,x
-        sta   -79,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   83,u
-        anda  #$0F
-        sta   83,u
+pscroll.r1.05.p1
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.05.p1
+        rts
+
+pscroll.r1.06.p0
         lda   3,u
         anda  #$0F
         sta   3,u
-        lda   -77,u
-        anda  #$0F
-        sta   -77,u
-        lda   83,x
-        anda  #$0F
-        sta   83,x
-        lda   3,x
-        anda  #$0F
-        sta   3,x
-        lda   -77,x
-        anda  #$0F
-        sta   -77,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.06.p0
         rts
 
-pscroll.er.07
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   83,u
-        sta   3,u
-        sta   -77,u
-        sta   83,x
-        sta   3,x
-        sta   -77,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   81,u
-        anda  #$F0
-        sta   81,u
+pscroll.r1.06.p1
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.06.p1
+        rts
+
+pscroll.r1.07.p0
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.07.p0
+        rts
+
+pscroll.r1.07.p1
         lda   1,u
         anda  #$F0
         sta   1,u
-        lda   -79,u
-        anda  #$F0
-        sta   -79,u
-        lda   81,x
-        anda  #$F0
-        sta   81,x
-        lda   1,x
-        anda  #$F0
-        sta   1,x
-        lda   -79,x
-        anda  #$F0
-        sta   -79,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.07.p1
         rts
 
-pscroll.er.08
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   83,u
-        sta   3,u
-        sta   -77,u
-        sta   83,x
-        sta   3,x
-        sta   -77,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   83,u
-        anda  #$0F
-        sta   83,u
+pscroll.r1.08.p0
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.08.p0
+        rts
+
+pscroll.r1.08.p1
         lda   3,u
         anda  #$0F
         sta   3,u
-        lda   -77,u
-        anda  #$0F
-        sta   -77,u
-        lda   83,x
-        anda  #$0F
-        sta   83,x
-        lda   3,x
-        anda  #$0F
-        sta   3,x
-        lda   -77,x
-        anda  #$0F
-        sta   -77,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.08.p1
         rts
 
-pscroll.er.09
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   83,u
-        sta   3,u
-        sta   -77,u
-        sta   83,x
-        sta   3,x
-        sta   -77,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   83,u
-        anda  #$F0
-        sta   83,u
+pscroll.r1.09.p0
         lda   3,u
         anda  #$F0
         sta   3,u
-        lda   -77,u
-        anda  #$F0
-        sta   -77,u
-        lda   83,x
-        anda  #$F0
-        sta   83,x
-        lda   3,x
-        anda  #$F0
-        sta   3,x
-        lda   -77,x
-        anda  #$F0
-        sta   -77,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.09.p0
         rts
 
-pscroll.er.10
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   83,u
-        sta   3,u
-        sta   -77,u
-        sta   83,x
-        sta   3,x
-        sta   -77,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   84,u
-        anda  #$0F
-        sta   84,u
+pscroll.r1.09.p1
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.09.p1
+        rts
+
+pscroll.r1.10.p0
         lda   4,u
         anda  #$0F
         sta   4,u
-        lda   -76,u
-        anda  #$0F
-        sta   -76,u
-        lda   84,x
-        anda  #$0F
-        sta   84,x
-        lda   4,x
-        anda  #$0F
-        sta   4,x
-        lda   -76,x
-        anda  #$0F
-        sta   -76,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.10.p0
         rts
 
-pscroll.er.11
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   84,u
-        sta   4,u
-        sta   -76,u
-        sta   84,x
-        sta   4,x
-        sta   -76,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   83,u
-        anda  #$F0
-        sta   83,u
+pscroll.r1.10.p1
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.10.p1
+        rts
+
+pscroll.r1.11.p0
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.11.p0
+        rts
+
+pscroll.r1.11.p1
         lda   3,u
         anda  #$F0
         sta   3,u
-        lda   -77,u
-        anda  #$F0
-        sta   -77,u
-        lda   83,x
-        anda  #$F0
-        sta   83,x
-        lda   3,x
-        anda  #$F0
-        sta   3,x
-        lda   -77,x
-        anda  #$F0
-        sta   -77,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.11.p1
         rts
 
-pscroll.er.12
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   84,u
-        sta   4,u
-        sta   -76,u
-        sta   84,x
-        sta   4,x
-        sta   -76,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   84,u
-        anda  #$0F
-        sta   84,u
+pscroll.r1.12.p0
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.12.p0
+        rts
+
+pscroll.r1.12.p1
         lda   4,u
         anda  #$0F
         sta   4,u
-        lda   -76,u
-        anda  #$0F
-        sta   -76,u
-        lda   84,x
-        anda  #$0F
-        sta   84,x
-        lda   4,x
-        anda  #$0F
-        sta   4,x
-        lda   -76,x
-        anda  #$0F
-        sta   -76,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.12.p1
         rts
 
-pscroll.er.13
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   84,u
-        sta   4,u
-        sta   -76,u
-        sta   84,x
-        sta   4,x
-        sta   -76,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   84,u
-        anda  #$F0
-        sta   84,u
+pscroll.r1.13.p0
         lda   4,u
         anda  #$F0
         sta   4,u
-        lda   -76,u
-        anda  #$F0
-        sta   -76,u
-        lda   84,x
-        anda  #$F0
-        sta   84,x
-        lda   4,x
-        anda  #$F0
-        sta   4,x
-        lda   -76,x
-        anda  #$F0
-        sta   -76,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.13.p0
         rts
 
-pscroll.er.14
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   #$00
-        sta   84,u
-        sta   4,u
-        sta   -76,u
-        sta   84,x
-        sta   4,x
-        sta   -76,x
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   72,u
-        anda  #$0F
-        sta   72,u
+pscroll.r1.13.p1
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.13.p1
+        rts
+
+pscroll.r1.14.p0
         lda   -8,u
         anda  #$0F
         sta   -8,u
-        lda   -88,u
-        anda  #$0F
-        sta   -88,u
-        lda   72,x
-        anda  #$0F
-        sta   72,x
-        lda   -8,x
-        anda  #$0F
-        sta   -8,x
-        lda   -88,x
-        anda  #$0F
-        sta   -88,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.14.p0
         rts
 
-pscroll.er.15
-        lda   pscroll.wr.page0
-        _SetCartPageA
-        ldu   pscroll.wr.base0
-        leax  -240,u
-        lda   #$00
-        sta   72,u
-        sta   -8,u
-        sta   -88,u
-        sta   72,x
-        sta   -8,x
-        sta   -88,x
-        lda   pscroll.wr.page1
-        _SetCartPageA
-        ldu   pscroll.wr.base1
-        leax  -240,u
-        lda   84,u
-        anda  #$F0
-        sta   84,u
+pscroll.r1.14.p1
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.14.p1
+        rts
+
+pscroll.r1.15.p0
+        stb   -8,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.15.p0
+        rts
+
+pscroll.r1.15.p1
         lda   4,u
         anda  #$F0
         sta   4,u
-        lda   -76,u
-        anda  #$F0
-        sta   -76,u
-        lda   84,x
-        anda  #$F0
-        sta   84,x
-        lda   4,x
-        anda  #$F0
-        sta   4,x
-        lda   -76,x
-        anda  #$F0
-        sta   -76,x
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r1.15.p1
         rts
 
-; --- LES RUNS : les octets partages partent en entier -------------------
-; Quatre et cinq : les deux longueurs que le jeu produit. Le bloc 4x4 des
-; armes donne des runs de quatre a l'arret ; des qu'il BALAYE (compensation
-; de frame-drop), l'union fait cinq cellules par rangee.
+; l'aiguillage du run de 1 : DEUX entrees par cas, une par plan. Le
+; montage de page et la mise en place de la base sont identiques pour les
+; seize cas — les repeter ici pesait plus que les ecritures elles-memes,
+; ils vivent donc dans pscroll.run.plans.
+pscroll.r1.tbl
+        fdb   pscroll.r1.00.p0,pscroll.r1.00.p1
+        fdb   pscroll.r1.01.p0,pscroll.r1.01.p1
+        fdb   pscroll.r1.02.p0,pscroll.r1.02.p1
+        fdb   pscroll.r1.03.p0,pscroll.r1.03.p1
+        fdb   pscroll.r1.04.p0,pscroll.r1.04.p1
+        fdb   pscroll.r1.05.p0,pscroll.r1.05.p1
+        fdb   pscroll.r1.06.p0,pscroll.r1.06.p1
+        fdb   pscroll.r1.07.p0,pscroll.r1.07.p1
+        fdb   pscroll.r1.08.p0,pscroll.r1.08.p1
+        fdb   pscroll.r1.09.p0,pscroll.r1.09.p1
+        fdb   pscroll.r1.10.p0,pscroll.r1.10.p1
+        fdb   pscroll.r1.11.p0,pscroll.r1.11.p1
+        fdb   pscroll.r1.12.p0,pscroll.r1.12.p1
+        fdb   pscroll.r1.13.p0,pscroll.r1.13.p1
+        fdb   pscroll.r1.14.p0,pscroll.r1.14.p1
+        fdb   pscroll.r1.15.p0,pscroll.r1.15.p1
+
+pscroll.r2.00.p0
+        std   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.00.p0
+        rts
+
+pscroll.r2.00.p1
+        stb   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.00.p1
+        rts
+
+pscroll.r2.01.p0
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.01.p0
+        rts
+
+pscroll.r2.01.p1
+        stb   ,u
+        lda   1,u
+        anda  #$0F
+        sta   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.01.p1
+        rts
+
+pscroll.r2.02.p0
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.02.p0
+        rts
+
+pscroll.r2.02.p1
+        std   ,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.02.p1
+        rts
+
+pscroll.r2.03.p0
+        stb   1,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.03.p0
+        rts
+
+pscroll.r2.03.p1
+        lda   ,u
+        anda  #$F0
+        sta   ,u
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.03.p1
+        rts
+
+pscroll.r2.04.p0
+        stb   1,u
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.04.p0
+        rts
+
+pscroll.r2.04.p1
+        stb   1,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.04.p1
+        rts
+
+pscroll.r2.05.p0
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.05.p0
+        rts
+
+pscroll.r2.05.p1
+        stb   1,u
+        lda   3,u
+        anda  #$0F
+        sta   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.05.p1
+        rts
+
+pscroll.r2.06.p0
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.06.p0
+        rts
+
+pscroll.r2.06.p1
+        stb   1,u
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.06.p1
+        rts
+
+pscroll.r2.07.p0
+        stb   3,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.07.p0
+        rts
+
+pscroll.r2.07.p1
+        lda   1,u
+        anda  #$F0
+        sta   1,u
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.07.p1
+        rts
+
+pscroll.r2.08.p0
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.08.p0
+        rts
+
+pscroll.r2.08.p1
+        stb   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.08.p1
+        rts
+
+pscroll.r2.09.p0
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.09.p0
+        rts
+
+pscroll.r2.09.p1
+        stb   3,u
+        lda   4,u
+        anda  #$0F
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.09.p1
+        rts
+
+pscroll.r2.10.p0
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.10.p0
+        rts
+
+pscroll.r2.10.p1
+        std   3,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.10.p1
+        rts
+
+pscroll.r2.11.p0
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.11.p0
+        rts
+
+pscroll.r2.11.p1
+        lda   3,u
+        anda  #$F0
+        sta   3,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.11.p1
+        rts
+
+pscroll.r2.12.p0
+        stb   -8,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.12.p0
+        rts
+
+pscroll.r2.12.p1
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.12.p1
+        rts
+
+pscroll.r2.13.p0
+        stb   -8,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.13.p0
+        rts
+
+pscroll.r2.13.p1
+        lda   -8,u
+        anda  #$0F
+        sta   -8,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.13.p1
+        rts
+
+pscroll.r2.14.p0
+        stb   -8,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.14.p0
+        rts
+
+pscroll.r2.14.p1
+        stb   -8,u
+        stb   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.14.p1
+        rts
+
+pscroll.r2.15.p0
+        stb   -8,u
+        lda   -7,u
+        anda  #$0F
+        sta   -7,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.15.p0
+        rts
+
+pscroll.r2.15.p1
+        stb   -8,u
+        lda   4,u
+        anda  #$F0
+        sta   4,u
+        leau  -80,u
+        dec   pscroll.run.lines
+        bne   pscroll.r2.15.p1
+        rts
+
+; l'aiguillage du run de 2 : DEUX entrees par cas, une par plan. Le
+; montage de page et la mise en place de la base sont identiques pour les
+; seize cas — les repeter ici pesait plus que les ecritures elles-memes,
+; ils vivent donc dans pscroll.run.plans.
+pscroll.r2.tbl
+        fdb   pscroll.r2.00.p0,pscroll.r2.00.p1
+        fdb   pscroll.r2.01.p0,pscroll.r2.01.p1
+        fdb   pscroll.r2.02.p0,pscroll.r2.02.p1
+        fdb   pscroll.r2.03.p0,pscroll.r2.03.p1
+        fdb   pscroll.r2.04.p0,pscroll.r2.04.p1
+        fdb   pscroll.r2.05.p0,pscroll.r2.05.p1
+        fdb   pscroll.r2.06.p0,pscroll.r2.06.p1
+        fdb   pscroll.r2.07.p0,pscroll.r2.07.p1
+        fdb   pscroll.r2.08.p0,pscroll.r2.08.p1
+        fdb   pscroll.r2.09.p0,pscroll.r2.09.p1
+        fdb   pscroll.r2.10.p0,pscroll.r2.10.p1
+        fdb   pscroll.r2.11.p0,pscroll.r2.11.p1
+        fdb   pscroll.r2.12.p0,pscroll.r2.12.p1
+        fdb   pscroll.r2.13.p0,pscroll.r2.13.p1
+        fdb   pscroll.r2.14.p0,pscroll.r2.14.p1
+        fdb   pscroll.r2.15.p0,pscroll.r2.15.p1
+
 pscroll.r4.00.p0
         std   ,u
         stb   3,u
@@ -2764,29 +2767,14 @@ pscroll.r5.tbl
         fdb   pscroll.r5.14.p0,pscroll.r5.14.p1
         fdb   pscroll.r5.15.p0,pscroll.r5.15.p1
 
-; la table des runs, indexee par (longueur - 4)
+; la table des runs, DENSE, indexee par (longueur - 1). Le trou du 3
+; pointe la table du 2 : l'aiguillage decompose 3 avant d'arriver ici.
 pscroll.run.tbl
+        fdb   pscroll.r1.tbl
+        fdb   pscroll.r2.tbl
+        fdb   pscroll.r2.tbl
         fdb   pscroll.r4.tbl
         fdb   pscroll.r5.tbl
-
-; l'aiguillage de l'effacement
-pscroll.er.tbl
-        fdb   pscroll.er.00
-        fdb   pscroll.er.01
-        fdb   pscroll.er.02
-        fdb   pscroll.er.03
-        fdb   pscroll.er.04
-        fdb   pscroll.er.05
-        fdb   pscroll.er.06
-        fdb   pscroll.er.07
-        fdb   pscroll.er.08
-        fdb   pscroll.er.09
-        fdb   pscroll.er.10
-        fdb   pscroll.er.11
-        fdb   pscroll.er.12
-        fdb   pscroll.er.13
-        fdb   pscroll.er.14
-        fdb   pscroll.er.15
 
 ; --- le groupe de couture de chaque bande, et sa derniere bande ---------
 pscroll.seamof.tbl
