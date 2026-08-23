@@ -70,6 +70,7 @@ t.boot_floppy(image)
 # posees. On force la phase d'EFFACEMENT (smiley.row = H) et on attend la
 # fin du cycle : ce qui n'a pas ete dessine est simplement refuse par
 # clearCell, donc le raccourci est sans effet de bord.
+wr("smiley.loop", 0)                  # un seul cycle : le banc doit se taire
 wr("smiley.row", 30)
 wr("smiley.pause", 0)                 # pas de pause : on veut la mire effacee
 for _ in range(200):
@@ -125,9 +126,15 @@ def boite(px, size):
 
 
 def pixels(px, size):
-    """l'ecran en pixels BM16 : un set des allumes"""
+    """LA BANDE DU CHAMP, en pixels BM16 : un set des allumes.
+
+    On ne juge que les lignes VP_Y..VP_Y+179 : au-dessus, la ligne d'entree
+    du blast laisse quelques pixels au bord droit du ruban, qui clignotent
+    d'une trame a l'autre. Ce n'est pas le champ, et un banc qui les compte
+    declare faux des mutations parfaitement justes (vecu le 23/08).
+    """
     out = set()
-    for y in range(200):
+    for y in range(VP_Y, VP_Y + 180):
         Y = ORG_Y + PX_H * y
         if Y + 1 >= size[1]:
             break
@@ -143,6 +150,9 @@ def attendu_de(col, row, cam):
     return {(3 * col - cam + d, VP_Y + CELL_H * row + l)
             for l in range(CELL_H) for d in range(CELL_W)
             if BALL[l][d] != BG}
+
+
+SAUTES = []
 
 
 def essai_efface(col, row, avant, cam):
@@ -175,7 +185,12 @@ def essai(col, row, titre):
     pousses = t.read("9C06", 1)[0]
     pose(col, row)
     if t.read("9C06", 1)[0] == pousses:
-        print("  cellule %3d rangee %2d : cellule DEJA PLEINE (rien a faire)"
+        # UN ESSAI SAUTE N'EST PAS UN ESSAI REUSSI. Deux campagnes ont rendu
+        # « TOUT CONFORME » alors que la mire couvrait toutes les cibles et
+        # que pas un seul essai n'avait tourne (22 et 23/08). On les compte,
+        # et le bilan le dit.
+        SAUTES.append((col, row))
+        print("  cellule %3d rangee %2d : SAUTE — cellule deja pleine"
               % (col, row))
         return 0
     b = pixels(*shot())
@@ -196,7 +211,7 @@ def essai(col, row, titre):
     print("  %s : %s, decale de dx=%+d px dy=%+d lignes (%d px dessines, %d attendus)"
           % (tag, "MEME FORME" if forme else "FORME DIFFERENTE",
              dx, dy, len(neuf), len(att)))
-    if dx == 0 and dy == 0:
+    if True:
         manque = sorted(att - neuf)
         trop = sorted(neuf - att)
         if manque:
@@ -272,6 +287,12 @@ if camera() % 2 == cam % 2:
 for k in range(16):
     ko += essai(c0 + 25 + k, 20, "cas phase 1")
 
-print("\nBILAN :", "TOUT CONFORME" if not ko else "%d essais non conformes" % ko)
+if SAUTES:
+    print("\nBILAN : NON CONCLUANT — %d essais sautes (cellules deja pleines) : %s"
+          % (len(SAUTES), SAUTES[:8]))
+elif ko:
+    print("\nBILAN : %d essais non conformes" % ko)
+else:
+    print("\nBILAN : TOUT CONFORME")
 t.close()
-sys.exit(1 if ko else 0)
+sys.exit(1 if (ko or SAUTES) else 0)

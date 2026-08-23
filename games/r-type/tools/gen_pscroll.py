@@ -55,6 +55,8 @@ SCREEN_W = 160                   # px visibles
 CHUNK_PX = 16                    # un chunk = 16 px d'ecran pour un plan
 CHUNKS = MAP_W // CHUNK_PX       # 72 bandes dans le niveau
 LINE_SIZE = 80                   # 10 chunks x 8 o : le pas de ligne du buffer
+CHUNK_SIZE = 8                   # ldd# ldx# pshs : les 8 octets d'un chunk
+CHUNKS_PER_LINE = LINE_SIZE // CHUNK_SIZE
 
 
 # --- la carte -----------------------------------------------------------------
@@ -358,6 +360,33 @@ def emettre_cellule(A, prefixe, pen):
 
 
 def _suite_tables(A, L, path, ordre, colonnes):
+    # LA GEOMETRIE D'UNE BANDE, EN TABLE. pscroll.geom divisait par 10 en
+    # retranchant 10 jusqu'a passer dessous : 12 cycles par dizaine, donc
+    # jusqu'a 84 pour la bande 71 — et ca se paie a chaque mutation. Les deux
+    # tables tiennent en 3 octets par bande et suppriment aussi le mul de
+    # l'emplacement.
+    # L'OFFSET D'UNE MUTATION, EN DEUX ADDITIONS. Il valait
+    #   dst = ligne*80 + emplacement + 1,  ligne = BIAIS - couture + 6*(29-r) + 5
+    # soit deux mul et une division par 10. Or ca se separe : le terme de
+    # RANGEE ne depend pas de la bande, le terme de BANDE ne depend pas de la
+    # rangee, et le biais est une constante d'instruction. Deux tables, deux
+    # additions, plus un seul mul ni une seule division.
+    A("; --- l'offset d'une mutation, en deux termes ---------------------------")
+    A("; dst = pscroll.ROW_BIAS*LINE_SIZE + rowbase[rangee] + bandoff[bande] + 1")
+    A("; rowbase : le terme de rangee, axe du buffer inverse (rangee 0 en bas)")
+    A("pscroll.rowbase.tbl")
+    for r in range(ROWS):
+        A(f"        fdb   {(CELL_H - 1 + CELL_H * (ROWS - 1 - r)) * LINE_SIZE}"
+          + (f"   ; rangee {r}" if r % 10 == 0 else ""))
+    A("")
+    A("; bandoff : l'emplacement dans la ligne (INVERSE : la bande c peint la")
+    A("; colonne 9-c) MOINS le cisaillement de ses coutures. Signe.")
+    A("pscroll.bandoff.tbl")
+    for m in range(CHUNKS):
+        v = ((CHUNKS_PER_LINE - 1 - m % CHUNKS_PER_LINE) * CHUNK_SIZE
+             - (m // CHUNKS_PER_LINE) * LINE_SIZE)
+        A(f"        fdb   {v}" + (f"   ; bande {m}" if m % CHUNKS_PER_LINE == 0 else ""))
+    A("")
     A("; --- les colonnes : 30 index de routine par (bande, plan, phase) -------")
     A("; Seules les colonnes NON VIDES portent une sequence ; les autres")
     A("; pointent 0 dans l'index, et le feed se contente alors d'y poser le")

@@ -51,7 +51,6 @@ buf.PAGE0          equ 5
 buf.PAGE1          equ 6
 buf.PAGE2          equ 7
 buf.PAGE3          equ 8
-field.PAGE         equ 9              ; le bitfield des gommes, mute par cytron
 
 ; le scene loader saute au premier octet : main doit etre emis en premier
 main
@@ -99,12 +98,10 @@ main
         ldd   #field.MAP_W-160
         std   pscroll.camera.x.max
 
-        ; le bitfield des gommes : la mutation le lit ET l'ecrit, contrairement
-        ; au feed qui grave depuis la carte de build. Il a SA page — dans
-        ; l'unite il tombait sur les temoins et sur la page directe.
-        lda   #map.RAM_OVER_CART+field.PAGE
-        sta   pscroll.map.page
-        ldd   #$0000
+        ; le bitfield des gommes, en RAM FIXE : la mutation le lit ET l'ecrit,
+        ; contrairement au feed qui grave depuis la carte de build. Il tient
+        ; dans l'unite depuis que les tables generiques ont disparu.
+        ldd   #field.map
         std   pscroll.map.address
 
         ; la vitesse de derive, posee AVANT la boucle : le chemin « personne
@@ -257,7 +254,12 @@ bench.smileyStep
         lda   smiley.row
         cmpa  #2*bench.smiley.H
         blo   >
-        rts                            ; dessinee puis effacee : fini
+        tst   smiley.loop              ; le cycle recommence, sauf si un banc
+        beq   @fini                    ; demande le silence (check_gum)
+        clr   smiley.row
+        lda   #smiley.PAUSE
+        sta   smiley.pause
+@fini   rts
 !       cmpa  #bench.smiley.H          ; premiere moitie = on dessine,
         blo   >                        ; seconde = on efface la meme mire
         bne   @efface                  ; pile a la bascule : on la laisse en
@@ -287,8 +289,8 @@ bench.smileyStep
         beq   @next
         ldb   smiley.r
         addb  #smiley.ROW0
-        ldx   #smiley.COL0
-        lda   smiley.i
+        ldx   smiley.col0              ; variable : un banc peut poser la mire
+        lda   smiley.i                 ; au fond du niveau pour y mesurer
         leax  a,x
         lda   smiley.row               ; seconde moitie : on efface
         cmpa  #bench.smiley.H
@@ -317,8 +319,10 @@ smiley.row   fcb 0                     ; la rangee en cours ; H = fini
 smiley.ptr   fdb 0
 smiley.i     fcb 0
 smiley.r     fcb 0                     ; la rangee de la mire (row modulo H)
-smiley.pause fcb 150                   ; tours de boucle avant l'effacement
-smiley.COL0  equ 4                     ; a la camera 0 : px 12..107, hors des
+smiley.PAUSE equ 150                   ; tours de boucle avant l'effacement
+smiley.pause fcb smiley.PAUSE
+smiley.loop  fcb 1                     ; 0 = un seul cycle puis silence
+smiley.col0  fdb 4                     ; a la camera 0 : px 12..107, hors des
 smiley.ROW0  equ 0                     ; 8 px de bord masques
 
 demo.attract fcb 1                         ; 1 tant que rien n'a ete presse
@@ -336,6 +340,10 @@ ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se des
         INCLUDE "engine/graphics/tilemap/pscroll/pscroll.asm"
         INCLUDE "../../games/r-type/src/stages/04/pscroll-rows.asm"
         INCLUDE "src/assets/game-modes/to8/main/smiley.asm"
+
+; le champ de gommes d'origine : cytron le mute en place
+field.map
+        INCLUDEBIN "../../games/r-type/src/stages/04/terrain/level4_ball.bin"
 
  ENDSECTION
 

@@ -727,12 +727,11 @@ pscroll.mutate
         rorb
         lsra
         rorb
+        stb   pscroll.sc.chunk         ; la bande, gardee pour la geometrie
         subb  pscroll.edge16           ; DANS LE RUBAN ? sinon on ne touche a
         lbcs  @already                 ; RIEN, bit compris (voir plus bas)
         cmpb  #pscroll.CHUNKS_PER_LINE
         lbhs  @already
-        lda   pscroll.map.page         ; le champ a SA page : il est ecrit
-        _SetCartPageA
         lda   pscroll.sc.row           ; l'octet du champ, et le masque du bit
         ldb   #pscroll.MAP_STRIDE
         mul
@@ -763,70 +762,64 @@ pscroll.mutate
         comb
         andb  ,x                       ; la gomme disparait
         stb   ,x
-@suite  clr   pscroll.sc.phase
-@phase  ldd   pscroll.sc.px            ; n0 = px - phase, la coordonnee de phase
-        subb  pscroll.sc.phase
-        sbca  #0
-        lbmi  @next                    ; avant le bord gauche : rien a graver
-        std   pscroll.sc.n0
-        andb  #15                      ; le cas, et sa routine
+@suite
+        ; -------------------------------------------------------------------
+        ; LA GEOMETRIE NE SE CALCULE QU'UNE FOIS. Les deux phases ne different
+        ; que par n0 = px et px-1 : le CAS change toujours (c'est case-1 mod
+        ; 16, une soustraction), mais la bande, la couture, l'emplacement et
+        ; la ligne ne changent QUE si px tombe pile sur un multiple de 16 —
+        ; une fois sur seize. On calcule donc pour la phase 0, on appelle, et
+        ; on ne refait la geometrie pour la phase 1 que dans ce cas la.
+        ; Mesure du 23/08 : l'aiguillage passe de 828 a 645 cycles.
+        ; -------------------------------------------------------------------
+        ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
+        clra                           ; depend ni de la bande ni de la phase
         aslb
+        rola
+        ldx   #pscroll.rowbase.tbl
+        ldd   d,x
+        std   pscroll.sc.rowbase
+        ldb   pscroll.sc.chunk
+        lbsr  pscroll.geom             ; -> sc.dst
+        ldb   pscroll.sc.px+1          ; PHASE 0 : le cas est px mod 16
+        andb  #15
+        clr   pscroll.sc.phase
+        lbsr  pscroll.mutate.plans
+        ldd   pscroll.sc.px            ; PHASE 1 : n0 = px - 1
+        subd  #1
+        bmi   @fin                     ; avant le bord gauche : rien de plus
+        andb  #15                      ; px etait-il pile sur la bande ?
+        cmpb  #15
+        bne   @meme                    ; non : meme bande, meme offset
+        ldb   pscroll.sc.chunk         ; oui : la phase 1 est dans la bande
+        decb                           ; PRECEDENTE
+        stb   pscroll.sc.chunk
+        subb  pscroll.edge16           ; qui n'est peut-etre plus dans le ruban
+        bcs   @fin
+        ldb   pscroll.sc.chunk
+        lbsr  pscroll.geom
+@meme   ldb   pscroll.sc.px+1
+        decb
+        andb  #15
+        inc   pscroll.sc.phase
+        lbsr  pscroll.mutate.plans
+@fin    andcc #$FB                     ; Z = 0 : le champ a change
+        rts
+@already
+        orcc  #$04                     ; Z = 1 : rien a faire
+        rts
+
+; -----------------------------------------------------------------------------
+; pscroll.mutate.plans — poser les deux plans d'une phase et graver
+; -----------------------------------------------------------------------------
+; input REG : [b] le cas, 0..15
+; input VAR : [pscroll.sc.phase] la phase, [pscroll.sc.dst] l'offset commun
+; -----------------------------------------------------------------------------
+pscroll.mutate.plans
+        aslb                           ; la routine du cas
         ldx   pscroll.sc.tbl           ; ecriture ou effacement
         ldx   b,x
         stx   pscroll.sc.rout
-        ldd   pscroll.sc.n0            ; le chunk : n0 / 16
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb
-        ; LE RUBAN NE FAIT QUE 160 px. Une bande hors fenetre n'est pas dans le
-        ; buffer : l'y graver ALIASERAIT l'emplacement d'une autre bande (le
-        ; slot est cyclique sur 10) et poserait une gomme fantome ailleurs a
-        ; l'ecran — vu le 22/08 en poussant le pilote hors champ.
-        ;
-        ; ET LE BIT N'EST PAS POSE NON PLUS. Le feed grave depuis les TABLES,
-        ; c'est-a-dire la carte d'ORIGINE : il ne relira jamais le bitfield.
-        ; Poser le bit sans graver laisserait une cellule « pleine » que rien
-        ; n'affiche — incoherence vue le 23/08 sur la mire (trois cellules du
-        ; smiley refusees parce que le pilote avait pose leur bit hors champ).
-        ; Muter hors ruban n'a pas de sens : ni l'arcade ni le jeu ne le font.
-        tfr   b,a
-        suba  pscroll.edge16
-        lblo  @next
-        cmpa  #pscroll.CHUNKS_PER_LINE
-        lbhs  @next
-        clra                           ; emplacement de ruban et cisaillement
-@mod    cmpb  #pscroll.CHUNKS_PER_LINE
-        blo   @modok
-        subb  #pscroll.CHUNKS_PER_LINE
-        inca
-        bra   @mod
-@modok  sta   pscroll.sc.seam
-        negb                           ; l'emplacement est INVERSE (9 - c)
-        addb  #pscroll.CHUNKS_PER_LINE-1
-        lda   #pscroll.CHUNK_SIZE
-        mul
-        std   pscroll.sc.chunkoff
-        ; LA LIGNE, DANS UN AXE INVERSE. L'index de ligne du buffer croit vers
-        ; le HAUT de l'ecran : la rangee 0 est donc la DERNIERE du buffer, et
-        ; la ligne 0 du motif est la ligne la plus HAUTE de la rangee (les
-        ; routines d'ecriture remontent avec un leau negatif). Sans ca le champ
-        ; s'affiche en miroir vertical — mesure du 22/08.
-        lda   #pscroll.ROWS-1
-        suba  pscroll.sc.row
-        ldb   #pscroll.CELL_H
-        mul
-        addb  #pscroll.ROW_BIAS+pscroll.CELL_H-1
-        subb  pscroll.sc.seam
-        lda   #pscroll.LINE_SIZE       ; l'offset commun aux deux plans
-        mul
-        addd  pscroll.sc.chunkoff
-        addd  #1
-        std   pscroll.sc.dst
         ldb   pscroll.sc.phase         ; les deux plans : index = plan*2 + phase
         ldx   #pscroll.buf.page
         lda   b,x
@@ -848,20 +841,44 @@ pscroll.mutate
         addd  pscroll.sc.dst
         std   pscroll.wr.base1
         ldx   pscroll.sc.rout
-        jsr   ,x                       ; la routine du cas ecrit les 3 px
-@next   inc   pscroll.sc.phase
-        lda   pscroll.sc.phase
-        cmpa  #2
-        lblo  @phase
-        andcc #$FB                     ; Z = 0 : le champ a change
-        rts
-@already
-        orcc  #$04                     ; Z = 1 : rien a faire
+        jmp   ,x                       ; la routine du cas ecrit les 3 px
+
+; -----------------------------------------------------------------------------
+; pscroll.geom — l'offset d'une mutation, pour une bande
+; -----------------------------------------------------------------------------
+; input REG : [b] la bande de carte
+; input VAR : [pscroll.sc.rowbase] le terme de rangee
+; sortie VAR: [pscroll.sc.dst]
+;
+; L'OFFSET EN DEUX ADDITIONS. Il valait ligne*80 + emplacement + 1, avec
+; ligne = BIAIS - couture + 6*(29-rangee) + 5 : deux mul et une division par
+; 10 faite en retranchant 10 jusqu'a passer dessous (12 cycles par dizaine,
+; donc 84 pour la bande 71 — de plus en plus cher a mesure qu'on avance dans
+; le niveau). Or ca se separe : le terme de RANGEE ne depend pas de la bande,
+; le terme de BANDE ne depend pas de la rangee, et le biais est une constante
+; d'instruction. Les deux tables sont engendrees avec le reste, et celle des
+; bandes porte deja l'emplacement MOINS le cisaillement — une seule lecture.
+; -----------------------------------------------------------------------------
+pscroll.geom
+        clra                           ; la bande, en mots (offset 16 bits :
+        aslb                           ; la table depasse 127 octets)
+        rola
+        ldx   #pscroll.bandoff.tbl
+        ldd   d,x                      ; emplacement - coutures*80
+        addd  pscroll.sc.rowbase       ; le terme de rangee
+        addd  #pscroll.ROW_BIAS*pscroll.LINE_SIZE+1
+        std   pscroll.sc.dst
         rts
 
+
 pscroll.tbl.bit  fcb   $80,$40,$20,$10,$08,$04,$02,$01
+; LE BITFIELD DES GOMMES. CONTRAT : il doit etre ADRESSABLE quand setCell ou
+; clearCell est appele — donc en RAM fixe, pas dans une page a monter. Il ne
+; fait que MAP_STRIDE * ROWS octets (1 440 pour le stage 4) et la partie de
+; jeu le lit et l'ecrit sans arret ; le monter a chaque mutation coutait un
+; _SetCartPageA pour rien. Un projet qui le voudrait pagine monte sa page
+; avant d'appeler.
 pscroll.map.address   fdb   0          ; le bitfield des gommes, pose par le projet
-pscroll.map.page      fcb   0
 pscroll.wr.page0      fcb   0          ; l'interface des routines d'ecriture
 pscroll.wr.page1      fcb   0
 pscroll.wr.base0      fdb   0
@@ -872,8 +889,8 @@ pscroll.sc.rowptr     fdb   0
 pscroll.sc.px         fdb   0
 pscroll.sc.n0         fdb   0
 pscroll.sc.phase      fcb   0
-pscroll.sc.seam       fcb   0
-pscroll.sc.chunkoff   fdb   0
+pscroll.sc.chunk      fcb   0
+pscroll.sc.rowbase    fdb   0
 pscroll.sc.dst        fdb   0
 pscroll.sc.rout       fdb   0
 pscroll.sc.tbl        fdb   0          ; la table du chemin en cours

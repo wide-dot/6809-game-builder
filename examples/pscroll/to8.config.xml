@@ -39,18 +39,8 @@
                     </lwasm>
                 </file>
 
-                <!-- LE CHAMP DE GOMMES, en page $09 et PAS dans l'unite.   -->
-                <!-- La mutation l'ECRIT : tant qu'il vivait dans la queue  -->
-                <!-- du game mode il tombait sur les temoins ($9C00) et sur -->
-                <!-- la page directe ($9F00) — la premiere repousse ecrasait-->
-                <!-- les globales de l'engine. Le voila chez lui.           -->
-                <file name="assets.field.map" page="$09" address="$0000">
-                    <bin filename="../../games/r-type/src/stages/04/terrain/level4_ball.bin"/>
-                </file>
-
                 <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
                     <load name="assets.gm.main"/>
-                    <load name="assets.field.map"/>
                 </scene>
 
             </directory>

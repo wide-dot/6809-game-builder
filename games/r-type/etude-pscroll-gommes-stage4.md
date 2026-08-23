@@ -967,3 +967,78 @@ désormais, avec le pourquoi en commentaire.
 différence d'image, les seize cas d'écriture ET les seize d'effacement, dans
 les deux phases et sur les rangées clés. `tools/shot_smiley.py` capture le banc
 à un instant précis de son cycle.
+
+## 12. La perf de la mutation, et sa revue (23/08/2026)
+
+### La mesure
+
+`examples/pscroll/tools/profile_gum.py` profile **une rangée de la mire** — 30
+mutations dans un tour de boucle, ce qui tient largement dans les ~1 000 PC que
+le profileur rend. La mire se rejoue ensuite **au fond du niveau** (caméra 600,
+bande 38) sur une zone vide de la carte : c'est là que se juge le coût en
+conditions de jeu.
+
+État de départ, par mutation :
+
+| poste | écriture | effacement |
+|---|---|---|
+| aiguillage (`setCell`/`clearCell`/`mutate`) | 832 | 828 |
+| routine de cellule (les 16 câblées) | ~250 | ~250 |
+
+**77 % d'arithmétique pour 23 % d'écriture.** Les routines câblées étaient
+saines ; c'est ce qu'il y avait autour qui pesait.
+
+### Les quatre correctifs, un par un, chacun avec son banc
+
+| | ce qui change | aiguillage |
+|---|---|---|
+| départ | | **828** |
+| **A** | la géométrie ne se calcule qu'**une fois** pour les deux phases | **640** |
+| **B** | la division par 10 devient une **table** | 645, mais **plat** |
+| **C** | l'offset en **deux additions** (deux tables, plus un seul `mul`) | **611** |
+| **D** | le champ en **RAM fixe** : plus de page à monter | **599** |
+
+**828 → 599 cycles, −28 %**, et une mutation complète passe de ~1 075 à ~845.
+
+Le détail de chacun :
+
+**A — les deux phases ne diffèrent presque pas.** `n0` vaut `px` puis `px−1` :
+le CAS change toujours (c'est `case−1 mod 16`, une soustraction), mais la
+bande, la couture, l'emplacement et la ligne ne changent **que si `px` tombe
+pile sur un multiple de 16** — une fois sur seize. Tout le bloc était calculé
+deux fois pour rien. C'est le gros du gain.
+
+**B — la division par 10 se payait de plus en plus cher.** `chunk mod 10` et
+`chunk / 10` se faisaient en retranchant 10 jusqu'à passer dessous : 12 cycles
+par dizaine, donc 84 pour la bande 71. La mesure à la caméra 0 le cachait (les
+bandes y valent 0 à 3). Mesuré après : **645 cycles à la bande 0 comme à la
+bande 38** — le coût ne dépend plus de la position dans le niveau. C'est ça, le
+gain de B, pas les 6 cycles du banc à l'origine.
+
+**C — l'offset se sépare.** Il valait `ligne*80 + emplacement + 1` avec
+`ligne = BIAIS − couture + 6·(29−rangée) + 5`. Or le terme de **rangée** ne
+dépend pas de la bande, le terme de **bande** ne dépend pas de la rangée, et le
+biais est une constante d'instruction. Deux tables engendrées avec le reste —
+celle des bandes portant déjà l'emplacement **moins** le cisaillement — et
+l'offset devient **deux additions**. Plus un seul `mul`.
+
+**D — le champ n'a pas à être paginé.** Il ne fait que 1 440 octets et la
+partie de jeu le lit et l'écrit sans arrêt ; le monter à chaque mutation coûtait
+un `_SetCartPageA` pour rien. Il vit désormais en RAM fixe dans l'unité (les
+tables génériques supprimées y ont fait la place), et le contrat du module le
+dit : **le bitfield doit être adressable à l'appel**.
+
+### Ce que la campagne a appris au banc
+
+Deux verdicts « TOUT CONFORME » se sont révélés **vides** : la mire couvrait
+toutes les cibles, chaque essai était sauté faute de cellule libre, et le bilan
+comptait zéro échec. `check_gum.py` compte désormais les essais sautés et rend
+**NON CONCLUANT** dès qu'il y en a un.
+
+Et il ne juge plus que la **bande du champ** (lignes VP_Y..VP_Y+179) : au-dessus,
+la ligne d'entrée du blast laisse quelques pixels au bord droit du ruban, qui
+clignotent d'une trame à l'autre. Les compter faisait déclarer fausses des
+mutations parfaitement justes — 40 essais sur 80, tous à la ligne 10.
+
+Enfin, `TOJE_FAST=1` fait passer la campagne de ~60 minutes à ~3 : mêmes
+instructions, mêmes cycles, pas de rendu.

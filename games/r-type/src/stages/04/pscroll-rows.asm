@@ -2359,6 +2359,117 @@ pscroll.er.tbl
         fdb   pscroll.er.14
         fdb   pscroll.er.15
 
+; --- l'offset d'une mutation, en deux termes ---------------------------
+; dst = pscroll.ROW_BIAS*LINE_SIZE + rowbase[rangee] + bandoff[bande] + 1
+; rowbase : le terme de rangee, axe du buffer inverse (rangee 0 en bas)
+pscroll.rowbase.tbl
+        fdb   14320   ; rangee 0
+        fdb   13840
+        fdb   13360
+        fdb   12880
+        fdb   12400
+        fdb   11920
+        fdb   11440
+        fdb   10960
+        fdb   10480
+        fdb   10000
+        fdb   9520   ; rangee 10
+        fdb   9040
+        fdb   8560
+        fdb   8080
+        fdb   7600
+        fdb   7120
+        fdb   6640
+        fdb   6160
+        fdb   5680
+        fdb   5200
+        fdb   4720   ; rangee 20
+        fdb   4240
+        fdb   3760
+        fdb   3280
+        fdb   2800
+        fdb   2320
+        fdb   1840
+        fdb   1360
+        fdb   880
+        fdb   400
+
+; bandoff : l'emplacement dans la ligne (INVERSE : la bande c peint la
+; colonne 9-c) MOINS le cisaillement de ses coutures. Signe.
+pscroll.bandoff.tbl
+        fdb   72   ; bande 0
+        fdb   64
+        fdb   56
+        fdb   48
+        fdb   40
+        fdb   32
+        fdb   24
+        fdb   16
+        fdb   8
+        fdb   0
+        fdb   -8   ; bande 10
+        fdb   -16
+        fdb   -24
+        fdb   -32
+        fdb   -40
+        fdb   -48
+        fdb   -56
+        fdb   -64
+        fdb   -72
+        fdb   -80
+        fdb   -88   ; bande 20
+        fdb   -96
+        fdb   -104
+        fdb   -112
+        fdb   -120
+        fdb   -128
+        fdb   -136
+        fdb   -144
+        fdb   -152
+        fdb   -160
+        fdb   -168   ; bande 30
+        fdb   -176
+        fdb   -184
+        fdb   -192
+        fdb   -200
+        fdb   -208
+        fdb   -216
+        fdb   -224
+        fdb   -232
+        fdb   -240
+        fdb   -248   ; bande 40
+        fdb   -256
+        fdb   -264
+        fdb   -272
+        fdb   -280
+        fdb   -288
+        fdb   -296
+        fdb   -304
+        fdb   -312
+        fdb   -320
+        fdb   -328   ; bande 50
+        fdb   -336
+        fdb   -344
+        fdb   -352
+        fdb   -360
+        fdb   -368
+        fdb   -376
+        fdb   -384
+        fdb   -392
+        fdb   -400
+        fdb   -408   ; bande 60
+        fdb   -416
+        fdb   -424
+        fdb   -432
+        fdb   -440
+        fdb   -448
+        fdb   -456
+        fdb   -464
+        fdb   -472
+        fdb   -480
+        fdb   -488   ; bande 70
+        fdb   -496
+
 ; --- les colonnes : 30 index de routine par (bande, plan, phase) -------
 ; Seules les colonnes NON VIDES portent une sequence ; les autres
 ; pointent 0 dans l'index, et le feed se contente alors d'y poser le
