@@ -50,6 +50,7 @@ adr_playfield_mask_ND0 EXTERNAL
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
 pscroll.stage4.init     EXTERNAL
+pscroll.gum.erase       EXTERNAL
 pscroll.camera.x        EXTERNAL
 
 playfield.clearWindow   EXTERNAL
@@ -304,11 +305,29 @@ stage.setup
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
 
-        ; LE CHAMP DE GOMMES : pscroll emplit son bitfield depuis la carte de
-        ; collision puis grave ses dix bandes. Les deux se font DANS sa page —
-        ; le bitfield y vit, et la carte de collision se monte en fenetre
-        ; cartouche, qui est libre a ce moment. ~160 000 cycles, payes a
-        ; l'ouverture et au checkpoint, jamais en jeu.
+        ; LE PLAN ARRIERE DE CE STAGE EST LA CARTE DES GOMMES (24/08/2026).
+        ; Le decor dur est seul dans le plan avant ; « solide » vaut donc
+        ; « dur OU gomme » par le DOUBLE TEST que le moteur sait deja faire.
+        ; Sans ce drapeau, une gomme ne serait qu'un decor : le joueur la
+        ; traverserait et les tirs aussi.
+        lda   #1
+        sta   globals.backgroundSolid
+
+        ; LE CROCHET : les armes du joueur mangent le champ. C'est le relais
+        ; RESIDENT qu'on designe, jamais pscroll.erase nu — l'arme vit dans sa
+        ; propre page et l'effaceur dans celle de pscroll.
+        ldd   #pscroll.gum.erase
+        std   stage.gum.hook
+
+        ; LA CARTE DES GOMMES, remplie AVANT pscroll : elle est residente et
+        ; c'est elle que le bitfield de pscroll designe desormais. Le dépliage
+        ; du flux RLE des gommes d'origine est exactement ce que fait la
+        ; reprise au checkpoint — une seule routine pour les deux chemins.
+        jsr   stage.checkpointReset
+
+        ; LE CHAMP DE GOMMES : pscroll grave ses dix bandes depuis la carte
+        ; qu'on vient de remplir. ~160 000 cycles, payes a l'ouverture et au
+        ; checkpoint, jamais en jeu.
         ; LA CAMERA NE PEUT PAS PASSER PAR D : paged.call prend la page dans
         ; A, donc le `lda` ci-dessous ecrasait sa moitie haute — l'init
         ; recevait $6B00 au lieu de la position, et pscroll.init cherchait des

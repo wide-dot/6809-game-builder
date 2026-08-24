@@ -49,4 +49,21 @@ missilePairCount           equ GLOBAL_VARIABLES+143 ; 1 octet, missiles vivants
 missileTgtTop              equ GLOBAL_VARIABLES+144 ; 2 octets, OST cible du haut
 missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 
+* LE CROCHET DE COUCHE DESTRUCTIBLE (24/08/2026).
+*
+* Un stage peut porter une couche de decor que les tirs du joueur DETRUISENT —
+* le champ de gommes du stage 4 aujourd'hui. Le code d'arme, lui, est COMMUN :
+* il est charge une fois au boot et sert les huit stages, donc il ne peut pas
+* referencer un symbole qui n'existe que sur l'un d'eux (le lien se resoudrait
+* a zero sur les sept autres, et le premier tir sauterait dans le vide).
+*
+* D'ou ce vecteur : le corps commun du stage le pose sur un `rts`, le stage qui
+* a une couche destructible le pointe sur SON effaceur. Une arme fait
+* `jsr [stage.gum.hook]` une fois par trame compensee ; sur un stage sans
+* couche, c'est un appel indirect vers un retour, une douzaine de cycles.
+*
+* Convention de l'effaceur : le senseur est deja pose (les memes variables que
+* terrainCollision), il rend Z=0 si quelque chose a ete detruit.
+stage.gum.hook             equ GLOBAL_VARIABLES+148 ; 2 octets, vecteur
+
  ENDC

@@ -315,11 +315,14 @@
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
-            <reserved name="globals"      page="$01" address="$9DCB" size="$0094"/>
-            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 145 octets ;
+            <reserved name="globals"      page="$01" address="$9DCB" size="$0096"/>
+            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 143 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
-                 trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE. -->
-            <reserved name="stack"        page="$01" address="$9E5F" size="$0091"/>
+                 trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE.
+                 24/08/2026 : le plancher monte de deux octets, `globals` ayant pris
+                 le crochet de couche destructible (stage.gum.hook). Il reste 59
+                 octets de marge sur le pic mesure. -->
+            <reserved name="stack"        page="$01" address="$9E61" size="$008F"/>
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
@@ -3040,6 +3043,19 @@
                     </lwasm>
                 </file>
 
+                <!-- LA CARTE DES GOMMES, residente : elle est a la fois le
+                     bitfield que pscroll mute et le plan ARRIERE de la
+                     collision du stage. terrainCollision la lit page
+                     collision montee, donc elle ne peut pas vivre dans la
+                     page pscroll. 1 440 octets, chargee en zeros et remplie
+                     par le depliage RLE de stage4.init. -->
+                <file name="stage4.gumres" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/stages/04/gumres.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/04/gumres.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
@@ -3052,6 +3068,7 @@
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>
+                    <load name="stage4.gumres"/>
 </scene>
             </directory>
 

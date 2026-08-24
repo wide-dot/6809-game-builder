@@ -18,6 +18,8 @@ pscroll.gum.set      EXPORT              ; les relais pour le CODE OBJET
 pscroll.gum.clear    EXPORT
 pscroll.gum.rect     EXPORT
 pscroll.gum.grow     EXPORT
+pscroll.gum.erase    EXPORT              ; le crochet du stage : les armes du
+                                        ; joueur mangent le champ
 pscroll.half.on      EXPORT              ; l'init de la part cartouche en a
 pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
 
@@ -42,6 +44,7 @@ pscroll.setCell    EXTERNAL
 pscroll.clearCell  EXTERNAL
 pscroll.clearRect  EXTERNAL
 pscroll.grow       EXTERNAL
+pscroll.erase      EXTERNAL
 paged.call         EXTERNAL
 
  SECTION code
@@ -202,6 +205,16 @@ pscroll.gum.grow
         bsr   pscroll.gum.enter             ; ne touche pas X : x survit
         puls  b
         jsr   pscroll.grow
+        bra   pscroll.gum.leave
+
+; input REG : [x] le x en px de CARTE, [b] la ligne ecran
+; C'est LUI que stage.gum.hook designe : le code d'arme est commun, il ne peut
+; pas connaitre un symbole du stage 4 (cf. src/common/state/variables.asm).
+pscroll.gum.erase
+        pshs  u,y,dp,b
+        bsr   pscroll.gum.enter
+        puls  b
+        jsr   pscroll.erase
         bra   pscroll.gum.leave
 
 ; monter pscroll en gardant de quoi revenir

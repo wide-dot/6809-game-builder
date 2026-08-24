@@ -75,7 +75,8 @@ Init
 Live
         ; delete weapon if no more damage potential
         lda   AABB_0+AABB.p,u
-        beq   Delete
+        lbeq  Delete                   ; le corps a grossi du crochet de couche
+                                       ; destructible : portee courte insuffisante
 
         ; update weapon position
         lda   #6
@@ -86,6 +87,25 @@ Live
         subd  glb_camera_x_pos_old
         std   x_pos,u
 !
+        ; LA COUCHE DESTRUCTIBLE (24/08/2026) : le tir mange UNE cellule de
+        ; gomme et meurt dessus. C'est le comportement de la borne — son
+        ; effaceur rend zero, et le test de solidite qui suit voit « solide »
+        ; et envoie le tir en impact (0x40:4F55). Le crochet vaut un rts sur
+        ; les stages sans couche destructible.
+        ; Ce tir-ci n'a pas de boucle de rattrapage : il avance de
+        ; 6*frameDrop d'un coup, donc une sonde par tour, a l'arrivee.
+        ldx   x_pos,u
+        ldb   y_pos+1,u
+        jsr   [stage.gum.hook]
+        beq   @noGum
+        ldd   x_pos,u                  ; la hitbox suit le point d'impact
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        ldd   #set_weapon_impact0
+        std   image_set,u
+        inc   routine,u
+        jmp   DisplaySprite
+@noGum
         ; check wall collision
         ldd   impactX,u
         beq   >

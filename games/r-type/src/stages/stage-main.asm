@@ -98,6 +98,19 @@ stage.stateKept
         ; reservee que rien ne charge — sans ce clr, un residu declencherait
         ; la musique du boss des l'entree du stage.
         clr   globals.nextGameMode
+        ; LE DOUBLE TEST DE COLLISION EST PAR STAGE, et il etait COLLANT : seuls
+        ; les stages 1 et 4 le posent, personne ne le retirait. Un enchainement
+        ; 1 -> 2 laissait donc le stage 2 tester deux fois SA PROPRE carte
+        ; (background et foreground pointent le meme binaire sur six stages sur
+        ; huit) — un loadMap complet gaspille a chaque site de collision. Le
+        ; stage qui en a besoin le repose dans son setup.
+        clr   globals.backgroundSolid
+        ; LE CROCHET DE COUCHE DESTRUCTIBLE, neutre par defaut : les armes du
+        ; joueur l'appellent a chaque trame compensee, et sur un stage sans
+        ; couche il ne doit rien faire. Le stage qui en a une le repointe dans
+        ; son setup. La cible est le `rts` de stage.gum.none, juste en dessous.
+        ldd   #stage.gum.none
+        std   stage.gum.hook
         ; La base du score DU STAGE : le decompte de fin affiche
         ; globals.score moins cette base. C'est le score COURANT a l'entree
         ; du stage — plus zero : le score persiste a travers les stages (il
@@ -983,6 +996,18 @@ stage.gameOver
 ; que checkpoint.load ne recharge pas (il ne touche pas au disque) — d'ou cette
 ; reconstruction en memoire, C = T OR D0. Voir src/common/lib/pellet.asm.
 ;*******************************************************************************
+; Le crochet neutre : ce que stage.gum.hook designe tant qu'aucun stage n'a
+; pose le sien. Un stage sans couche destructible paie un jsr indirect vers ce
+; rts, une douzaine de cycles par trame compensee et par tir.
+stage.gum.none
+        orcc  #$04                   ; Z = 1 : RIEN n'a ete detruit. Un simple
+        rts                          ; `rts` laissait le Z de l'appelant, et
+                                     ; l'arme lisait « j'ai mange une gomme »
+                                     ; une fois sur deux — sur les sept stages
+                                     ; sans couche destructible, ses tirs
+                                     ; mouraient a la naissance (banc r-type
+                                     ; C2, 24/08/2026).
+
 stage.checkpointReset EXPORT
 stage.checkpointReset
  IFEQ STAGE_ID-4

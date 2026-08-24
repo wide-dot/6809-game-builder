@@ -41,7 +41,25 @@
 ; SIGNE son offset : une entree au-dela de 127 se lirait avant la table. `abx`
 ; ajoute B non signe — meme cout (3 cycles), et les deux tables font plus de
 ; 127 octets.
+; ---------------------------------------------------------------------------
+; pscroll.erase — MANGER une gomme, meme conversion, autre verbe
+; ---------------------------------------------------------------------------
+; input REG : [x] x du point sonde, en px de CARTE ; [b] ligne ecran
+; sortie    : cc.Z = 1 si rien n'a ete mange
+;
+; L'inverse de grow, et il n'a besoin d'AUCUN test de durete : depuis que la
+; carte des gommes est une carte a elle (gumres.unit.asm), un bit pose y EST
+; une gomme. Le decor dur vit dans l'autre plan de collision et n'apparait pas
+; ici. C'est la meme simplification que l'arcade obtient par son identifiant de
+; tuile — elle n'efface que ce qui lit exactement TILE_GREEN_BALL.
+; ---------------------------------------------------------------------------
+pscroll.erase
+        ldy   #pscroll.clearCell
+        bra   pscroll.point
+
 pscroll.grow
+        ldy   #pscroll.setCell
+pscroll.point
         stx   pscroll.grow.x           ; le x de carte, le temps de la rangee
         subb  #field.VP_Y              ; la rangee : (ligne - VP_Y) / 6
         blo   pscroll.grow.no          ; au-dessus du champ
@@ -63,7 +81,8 @@ pscroll.grow
         ldx   pscroll.ribbon.cell      ; la colonne du bord du ruban
         abx                            ; ... plus la notre
         ldb   pscroll.grow.row
-        jmp   pscroll.setCell          ; il refuse hors ruban et deja pleine
+        jmp   ,y                       ; setCell ou clearCell : tous deux
+                                       ; refusent hors ruban et sans effet
 pscroll.grow.no
         orcc  #$04                     ; Z = 1 : rien n'a pousse
         rts

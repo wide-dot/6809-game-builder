@@ -16,10 +16,11 @@
 
 pscroll.stage4.init EXPORT
 pscroll.grow        EXPORT
+pscroll.erase       EXPORT
 pscroll.move        EXPORT              ; la trame residente l'appelle par page
-pscroll.field.map   EXPORT              ; la part $4000 la recopie a l'init
-
-pscroll.stage4.fillMap EXTERNAL         ; part $4000 : la recopie par staging
+pscroll.gum.map     EXTERNAL            ; la carte des gommes, RESIDENTE :
+                                        ; elle est aussi le plan arriere de la
+                                        ; collision du stage (gumres.unit.asm)
 pscroll.half.on        EXTERNAL         ; la part $4000 n'est visible que
 pscroll.half.off       EXTERNAL         ; demi-page 0 montee
 
@@ -52,17 +53,17 @@ PSCROLL_PART       equ 1                ; la part cartouche
 ; -----------------------------------------------------------------------------
 pscroll.stage4.init
         ; ce que les routines de la part $4000 remonteront apres chaque
-        ; commutation de buffer — a poser AVANT le premier appel (fillMap)
+        ; commutation de buffer — a poser AVANT le premier appel a la part $4000
         lda   #map.RAM_OVER_CART+pscroll.edit.page
         sta   pscroll.cart.page
-        ; TOUTE L'INIT appelle la part $4000 — fillMap, puis buildSkeleton et
-        ; feedBand depuis pscroll.init. Elle n'est visible que demi-page 0
-        ; montee : sans ca l'init grave dans le vide et le stage part avec un
-        ; ruban muet.
+        ; TOUTE L'INIT appelle la part $4000 — buildSkeleton et feedBand
+        ; depuis pscroll.init. Elle n'est visible que demi-page 0 montee :
+        ; sans ca l'init grave dans le vide et le stage part avec un ruban
+        ; muet.
+        ; La carte des gommes, elle, est deja remplie : le main du stage a
+        ; appele stage.checkpointReset (pellet.reset) juste avant, qui deplie
+        ; le flux des gommes d'origine dans la carte residente.
         jsr   pscroll.half.on
-        ; le bitfield, depuis la carte de collision. Deux pages pour une seule
-        ; fenetre : la recopie vit en RAM fixe et alterne par le staging.
-        jsr   pscroll.stage4.fillMap
         lda   #map.RAM_OVER_CART+pscroll.buf0.page
         sta   pscroll.buf.page
         lda   #map.RAM_OVER_CART+pscroll.buf1.page
@@ -80,7 +81,7 @@ pscroll.stage4.init
         std   pscroll.viewport.ram
         ldd   #field.MAP_W-160
         std   pscroll.camera.x.max
-        ldd   #pscroll.field.map
+        ldd   #pscroll.gum.map
         std   pscroll.map.address
         ldd   pscroll.camera.x         ; posee par l'appelant : D servait a
         jsr   pscroll.init             ; porter la page pour paged.call
@@ -88,8 +89,12 @@ pscroll.stage4.init
 
         INCLUDE "src/stages/04/pscroll-grow.asm"
 
-; LE BITFIELD DES GOMMES — dans CETTE page, avec le code qui le lit et l'ecrit
-; (setCell, clearCell, clearRun, zone, grow tournent page montee). `do` et la
-; part $4000 n'y touchent jamais — fillMap la REMPLIT, par le staging.
-pscroll.field.map
-        fill  0,pscroll.MAP_STRIDE*pscroll.ROWS
+; LE BITFIELD DES GOMMES N'EST PLUS ICI (24/08/2026). Il a demenage en RAM
+; RESIDENTE — src/stages/04/gumres.unit.asm, arene stage4.res — parce qu'il est
+; devenu le PLAN ARRIERE de la collision du stage : terrainCollision le lit
+; page collision montee, ou cette page-ci est invisible. C'est la meme carte
+; des deux cotes, donc il n'y a plus rien a synchroniser.
+;
+; Ce qui part avec : la copie initiale (fillMap, supprimee) et le
+; croisement avec le terrain dur. La carte se remplit maintenant du seul flux
+; des gommes d'origine, deplie par pellet.reset.
