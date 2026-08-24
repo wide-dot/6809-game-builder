@@ -2056,3 +2056,49 @@ Le reste du câblage est en place et se construit.
   et la 1.6.1 ne touche rien à la localisation d'un secteur. **C'était
   l'instance du plugin qui portait un état incohérent** — `restart_emulator`
   la remet d'aplomb, et tout lit normalement.
+
+
+### Le chargement en $4000 : où on en est (24/08)
+
+**Ce qui est acquis.** Le paramètre `page` d'une région veut dire *ce que le
+registre de la fenêtre veut dire* : `ram.set` dispatche sur la plage d'adresse
+puis interprète `page` selon le registre — cartouche `$E7E6`, données `$E7E5`,
+résident rien, et `$4000-$5FFF` le **bit 0 de `$E7C3`**, l'index de demi-page.
+`page="$01"` sur une région en `$4000` dit donc « demi-page 1 », et c'est le
+mécanisme nominal du couple builder/loader. Aucun `org` n'est requis.
+
+**Ce qui a progressé.** La demi-page 0 vue en `$4000` **est le pool d'objets**
+(`Dynamic_Object_RAM`, 60 slots + 4 OST statiques). Y avoir posé la part `$4000`
+de pscroll la faisait écraser à chaque trame. La sortir de là a fait passer le
+stage de **10 à 35 trames**.
+
+**Ce qui bloque.** Les octets de l'unité ne sont **dans aucune des deux
+demi-pages**, mesuré en forçant chacune depuis le débogueur après chargement :
+
+| demi-page | `$4000` | `$4F4B` |
+|---|---|---|
+| 0 | `00 00 …` | `60 60 60 60 …` |
+| 1 | `FF 00 …` | `00 00 00 00 …` |
+
+Pourtant l'unité fait 7 453 octets et le rapport la place bien (page 01,
+`$4000-$5D1D`, chargée par `scenes.stage4`).
+
+**Le déraillement, tracé jusqu'à sa source.** `RunObjects+5` dispatche un objet
+dont l'adresse de routine tombe dans `Ani_Asd_Index+1` — une **table**, pas du
+code. Le PC y marche 2 octets par instruction, traverse `$86xx`, `$9F00` (la
+page directe) et finit en boucle dans le framebuffer (`$A023-$A077`). Remonté à
+l'anneau de trace, point d'arrêt par point d'arrêt.
+
+**La piste, et elle expliquerait le « nulle part ».** `gfxlock` **bascule la
+demi-page à chaque trame** (`eorb #%00000001` sur `map.HALFPAGE`), sauf quand
+`gfxlock.halfPage.swap.auto` l'en empêche — ce que `_gfxlock.init` fait sous
+OverlayMode pour l'épingler à 0. Le `$4000-$5FFF` n'est donc pas une demi-page
+qu'on *choisit* mais une demi-page qui **alterne** : un chargement étalé sur
+plusieurs trames verrait ses secteurs se répartir entre les deux moitiés. À
+vérifier en premier : l'état de `swap.auto` au moment où la scène du stage 4 se
+charge (`game.stage.switch` fait pourtant `jsr IrqOff` avant de charger — donc
+si le swap est piloté par l'IRQ, il ne devrait pas tourner ; c'est exactement
+ce qu'il faut confirmer ou infirmer).
+
+**Écarté par la mesure** : l'hypothèse d'une IRQ lisant le pool à travers notre
+demi-page — masquer les interruptions autour de la bascule ne change rien.
