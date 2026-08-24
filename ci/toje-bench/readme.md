@@ -64,6 +64,14 @@ Le traceur écarte de la moyenne **les deux queues qui ne sont pas du jeu** :
   qu'une seule raconte le coût du rendu. Seuil réglable par `--saturated`
   (défaut 45 img/s ; `--saturated 51` ne coupe rien).
 
+`--traversal` va plus loin et coupe **tout ce qui suit l'arrêt de la caméra** :
+décompte de fin, dissolution — plus de bandes qui entrent, plus de vagues, ce
+n'est plus la même scène. C'est la mesure de la **traversée**, et c'est celle
+qu'on garde en référence pour le stage 4. Pas par défaut : sur un stage à
+boss la caméra se fige aussi pendant le combat (la séquence de fin cale
+`scroll_max` sur la salle du boss), et couper là jetterait le passage le plus
+chargé du niveau.
+
 Le `define invincible` a disparu : l'invincibilité vient du cheat du title.
 `--cheat` l'arme au joypad (préfixe h,b,g,d puis bas), et c'est **aussi la
 seule façon d'entrer ailleurs qu'au stage 1** — le même cheat sélectionne le
@@ -79,28 +87,40 @@ python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv --stage 4 --chea
 Elles vivent dans `ci/toje-bench/refs/`, CSV brut **et** SVG tracé, pour que
 la comparaison d'après ne dépende pas d'un relevé à refaire.
 
-| relevé | moy. | creux | remarque |
+| relevé | périmètre | moy. | creux |
 |---|---|---|---|
-| stage 1, 19/08/2026 @ 886fda9c | 12,0 | 3,9 (caméra 552) | 27 à l'ouverture, plateau 8,4 dans la salle du boss ; queues non retirées, la moyenne n'est pas comparable telle quelle |
-| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | **6,0** | **1,0** (caméra 711) | 8 158 trames jouées sur 9 100 relevées (163 s), caméra 0 → 992 |
+| stage 1, 19/08/2026 @ 886fda9c | relevé entier | 12,0 | 3,9 (caméra 552) |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | **traversée** | **5,2** | **1,0** (caméra 711) |
 
-Trois moyennes du même relevé, selon ce qu'on décide de mesurer — les écarts
-sont assez gros pour qu'on dise toujours laquelle :
+Le chiffre du stage 1 est un relevé entier, queues comprises : il n'est **pas**
+comparable tel quel à celui du stage 4, qui est une traversée. À rejouer avec
+`--saturated` le jour où on voudra les mettre côte à côte (mais sans
+`--traversal` : ce stage a un boss).
+
+Ce que change le périmètre sur le même relevé de stage 4 — assez pour qu'on
+dise toujours de laquelle on parle :
 
 | périmètre | trames | moy. |
 |---|---|---|
 | relevé entier, jusqu'au stage 5 | 8 699 | 8,7 |
-| **jouable** (queues muette et saturée retirées) — la référence | 8 158 | **6,0** |
-| traversée seule (jusqu'à ce que la caméra atteigne 992) | 7 418 | 5,2 |
+| jouable (queues muette et saturée retirées) | 8 158 | 6,0 |
+| **traversée** (`--traversal`) — la référence | 7 418 | **5,2** |
 
-Profil du stage 4 par tranche de caméra (moyenne glissante 1 s, img/s) —
-c'est un stage qui s'effondre lentement puis se libère d'un coup :
+```bash
+python3 ../../ci/toje-bench/fps_plot.py refs/fps-stage4-2026-08-24.svg \
+    refs/fps-stage4-2026-08-24.csv="stage 4 — traversee, reference 24/08/2026" \
+    --traversal --title "Cadence de rendu — R-Type stage 4, traversee"
+```
+
+Profil de la traversée par tranche de caméra (moyenne glissante 1 s), avec la
+part du temps passée dans chacune — le stage vit entre 3,6 et 8,9 img/s, et il
+passe 40 % de son temps dans son tiers le plus lent :
 
 ```
-   0- 99   7,8      400-499   4,9      800-899    8,9
- 100-199   5,9      500-599   3,8      900-999    9,6   (camera au plafond,
- 200-299   5,6      600-699   3,6                        sequence de fin)
- 300-399   5,3      700-799   4,0   <- creux a 1,0 img/s (camera 711)
+   0- 99   7,8   7,6 %      400-499   4,9   9,2 %      800-899   8,9   7,2 %
+ 100-199   5,9   7,9 %      500-599   3,8  12,5 %      900-999   5,4   9,3 %
+ 200-299   5,6   8,9 %      600-699   3,6  12,7 %
+ 300-399   5,3   9,8 %      700-799   4,0  14,8 %  <- creux a 1,0 (camera 711)
 ```
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)

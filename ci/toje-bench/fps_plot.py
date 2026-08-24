@@ -27,7 +27,8 @@ def load(path):
     return rows
 
 
-def playable(rows, dry=100, sat=45.0, sat_window=50, sat_min=150):
+def playable(rows, dry=100, sat=45.0, sat_window=50, sat_min=150,
+             traversal=False):
     """Ou s'arrete le JEU — les deux queues qui ne sont pas du jeu.
 
     LA QUEUE MUETTE. Le releve va jusqu'au changement de stage, donc il finit
@@ -45,6 +46,15 @@ def playable(rows, dry=100, sat=45.0, sat_window=50, sat_min=150):
     au-dessus de `sat`, et on coupe si la queue trouvee vaut au moins
     `sat_min` trames (en deca c'est une pointe, pas une queue).
 
+    LA QUEUE IMMOBILE, sur demande (`traversal`). Le stage continue apres que
+    la camera a atteint son plafond — decompte de fin, dissolution — et ce
+    n'est plus la meme scene : plus de bandes qui entrent, plus de vagues.
+    Mesurer LA TRAVERSEE, c'est s'arreter la ou la camera s'arrete.
+    PAS PAR DEFAUT : sur un stage a boss, la camera se fige AUSSI pendant le
+    combat (la sequence de fin cale scroll_max sur la salle du boss), et ce
+    combat est du jeu — couper la reviendrait a jeter le passage le plus
+    charge du niveau.
+
     Rend l'indice de fin du segment jouable."""
     last = max((i for i, r in enumerate(rows) if r[1]), default=len(rows) - 1)
     end = last + 1 if len(rows) - last > dry else len(rows)
@@ -52,7 +62,16 @@ def playable(rows, dry=100, sat=45.0, sat_window=50, sat_min=150):
     i = end
     while i - sat_window > 0 and 50.0 * sum(d[i - sat_window:i]) / sat_window >= sat:
         i -= 1
-    return i if end - i >= sat_min else end
+    if end - i >= sat_min:
+        end = i
+    if traversal:
+        cap = rows[end - 1][2]
+        i = end
+        while i > 1 and rows[i - 2][2] >= cap:
+            i -= 1
+        if end - i >= sat_min:
+            end = i
+    return end
 
 
 def smooth(rows, window):
@@ -83,13 +102,18 @@ p.add_argument("--saturated", type=float, default=45.0,
                help="seuil img/s de la queue SATUREE ecartee de la moyenne "
                     "(sequence de fin : plus rien a dessiner, le jeu rend "
                     "chaque trame). 51 pour ne rien couper")
+p.add_argument("--traversal", action="store_true",
+               help="ne mesurer que LA TRAVERSEE : couper des que la camera "
+                    "atteint son plafond et n'en bouge plus. A ne pas utiliser "
+                    "sur un stage a boss — la camera s'y fige aussi pendant le "
+                    "combat, qui est du jeu")
 a = p.parse_args()
 
 series = []
 for s in a.series:
     path, _, label = s.partition("=")
     rows = load(path)
-    end = playable(rows, sat=a.saturated)
+    end = playable(rows, sat=a.saturated, traversal=a.traversal)
     series.append((label or os.path.basename(path), rows, smooth(rows, a.window), end))
 
 L, R, T, B = 58, 18, 44, 76          # marges ; B loge la bande camera
