@@ -1193,3 +1193,17 @@ En veille sur décision (31/07/2026) :
       corollaire que les `<region>`/`<reserved>` parlent en référentiel de
       page et que rien ne vérifie l'accord entre une région en `$4000` et les
       `<reserved page="$00">` qui décrivent le même silicium.
+- [ ] **Duplication de code dans l'engine — chantier à part entière, BIEN plus
+      tard** (décision auteur, 24/08) : le principe voudrait que tout code
+      spécifique à une machine vive sous `engine/system/<machine>/`, mais ce
+      n'est pas le cas partout. Trouvé en chassant le point précédent :
+      `engine/irq/Irq.asm` (v1-importé, noms `IrqManager`/`Irq_user_routine`,
+      celui que r-type assemble réellement) **duplique**
+      `engine/system/to8/irq/irq.asm` (noms `irq.manage`/`irq.userRoutine`,
+      apparemment jamais linké par r-type) — même logique, deux fichiers,
+      deux conventions de nommage. Un correctif posé dans l'un (sauver/rendre
+      la demi-page autour de l'IRQ utilisateur, 24/08) ne s'applique pas à
+      l'autre sans le refaire à la main — exactement le risque qu'une
+      structure `system/<machine>/` est censée éliminer. Ne pas entamer
+      avant migration complète : le doublon générique/spécifique de gfxlock
+      juste au-dessus est le même chantier, à traiter ensemble.
