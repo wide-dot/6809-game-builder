@@ -118,8 +118,10 @@ Init
         puls  x
         jsr   moveByScript.initialize
 
-        ; les trames sautees avant la creation de l'objet
-        ldd   #endCheck
+        ; les trames sautees avant la creation de l'objet — la trainee se seme
+        ; PENDANT ce rattrapage : le cytron a bel et bien parcouru ces trames
+        ; en arcade, et sa gomme avec.
+        ldd   #cytron.tick
         std   moveByScript.callback
         ldb   wave_frame_drop
         jsr   moveByScript.runByB
@@ -127,7 +129,7 @@ Init
         inc   routine,u
         bra   >
 Live
-        ldd   #endCheck
+        ldd   #cytron.tick
         std   moveByScript.callback
         jsr   moveByScript.runByFrameDrop
 !       lda   moveByScript.anim.end
@@ -141,8 +143,10 @@ Live
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u
 
-        ; --- LA REPOUSSE : une cellule par trame, dans l'axe de la pose ------
-        jsr   growTrail
+        ; --- LA REPOUSSE : elle n'est plus ici. Une gomme par TICK COMPENSE,
+        ; semee par cytron.tick depuis la boucle de moveByScript (voir plus
+        ; bas) — une par tour de jeu trouait la trainee des que le moteur
+        ; perdait une trame.
 
         ; --- le sprite ------------------------------------------------------
         lda   blink,u                  ; V2-DEVIATION: le compteur est tenu, le
@@ -175,11 +179,26 @@ cytron.dead
 AlreadyDeleted
         rts
 
-endCheck
+; ---------------------------------------------------------------------------
+; cytron.tick — LE TICK ARCADE, UN PAR TRAME COMPENSEE
+;
+; moveByScript appelle ce callback une fois par tour de sa boucle de
+; rattrapage, position deja mise a jour et page de l'appelant remontee. C'est
+; le seul endroit ou l'on voit les trames perdues une par une — et c'est donc
+; la que la repousse doit vivre. Semee depuis Live, elle ne posait QU'UNE
+; gomme par tour de jeu : un cytron qui rattrapait cinq trames avancait de
+; cinq pas et n'en semait qu'une, d'ou une trainee en pointille dont le pas
+; variait avec la charge (releve du 24/08/2026).
+;
+; L'ordre est celui du tick arcade : script fini -> l'objet se decharge sans
+; rien semer (0x6A42), sinon il seme (69d9). growTrail finit en jmp sur le
+; relais resident, dont le rts rend la main a la boucle.
+; ---------------------------------------------------------------------------
+cytron.tick
         lda   moveByScript.anim.end
-        beq   >
+        beq   growTrail
         clr   moveByScript.anim.loops  ; exit parent loop
-!       rts
+        rts
 
 ; ---------------------------------------------------------------------------
 ; growTrail — semer une gomme dans l'axe de la pose
