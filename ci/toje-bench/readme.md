@@ -52,9 +52,17 @@ trames, 252 s émulées) se relève en une minute.
 Conditions à tenir identiques des deux côtés d'une comparaison :
 **l'invincibilité** (sans elle le vaisseau meurt faute d'entrée manette et le
 relevé s'arrête — vécu à la trame 3835), aucune entrée manette,
-`bench.SCROLL_VEL` inchangé. Le traceur écarte de la moyenne la queue muette
-du relevé : c'est le chargement de la scène suivante, dont la durée dépend de
-la taille des fichiers et pas du rendu.
+`bench.SCROLL_VEL` inchangé.
+
+Le traceur écarte de la moyenne **les deux queues qui ne sont pas du jeu** :
+
+- la **queue muette**, le chargement de la scène suivante — sa durée dépend de
+  la taille des fichiers, pas du rendu ;
+- la **queue saturée**, la séquence de fin : il ne reste plus rien à dessiner
+  et le jeu rend chaque trame machine. Sur le stage 4 c'était 541 trames à
+  50 img/s, qui à elles seules faisaient passer la moyenne de 6,0 à 8,7 sans
+  qu'une seule raconte le coût du rendu. Seuil réglable par `--saturated`
+  (défaut 45 img/s ; `--saturated 51` ne coupe rien).
 
 Le `define invincible` a disparu : l'invincibilité vient du cheat du title.
 `--cheat` l'arme au joypad (préfixe h,b,g,d puis bas), et c'est **aussi la
@@ -73,17 +81,26 @@ la comparaison d'après ne dépende pas d'un relevé à refaire.
 
 | relevé | moy. | creux | remarque |
 |---|---|---|---|
-| stage 1, 19/08/2026 @ 886fda9c | 12,0 | 3,9 (caméra 552) | 27 à l'ouverture, plateau 8,4 dans la salle du boss |
-| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | 8,7 | **1,0** (caméra 711) | 8 699 trames jouées, caméra 0 → 992, sortie vers le stage 5 |
+| stage 1, 19/08/2026 @ 886fda9c | 12,0 | 3,9 (caméra 552) | 27 à l'ouverture, plateau 8,4 dans la salle du boss ; queues non retirées, la moyenne n'est pas comparable telle quelle |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | **6,0** | **1,0** (caméra 711) | 8 158 trames jouées sur 9 100 relevées (163 s), caméra 0 → 992 |
+
+Trois moyennes du même relevé, selon ce qu'on décide de mesurer — les écarts
+sont assez gros pour qu'on dise toujours laquelle :
+
+| périmètre | trames | moy. |
+|---|---|---|
+| relevé entier, jusqu'au stage 5 | 8 699 | 8,7 |
+| **jouable** (queues muette et saturée retirées) — la référence | 8 158 | **6,0** |
+| traversée seule (jusqu'à ce que la caméra atteigne 992) | 7 418 | 5,2 |
 
 Profil du stage 4 par tranche de caméra (moyenne glissante 1 s, img/s) —
 c'est un stage qui s'effondre lentement puis se libère d'un coup :
 
 ```
    0- 99   7,8      400-499   4,9      800-899    8,9
- 100-199   5,9      500-599   3,8      900-999   20,5
- 200-299   5,6      600-699   3,6
- 300-399   5,3      700-799   4,0   <- creux a 1,0 img/s
+ 100-199   5,9      500-599   3,8      900-999    9,6   (camera au plafond,
+ 200-299   5,6      600-699   3,6                        sequence de fin)
+ 300-399   5,3      700-799   4,0   <- creux a 1,0 img/s (camera 711)
 ```
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
