@@ -26,6 +26,15 @@
 ;   +9 $4000 relu en demi-page 1, DDRC configure   (attendu $B1)
 ;  +10 verdict : $01 = commute des le depart, $02 = commute une fois DDRC pose,
 ;                $FF = ne commute jamais
+;
+; ROND-POINT DU BIT SEUL (24/08, sur demande) : le debogueur toje rend
+; toujours 0 sur $E7xx (read_memory ne lit pas les registres reels — verifie,
+; c'est un artefact de sonde, pas un fait machine). Ici on ecrit 0/1/0/1 sur le
+; SEUL bit 0 et on relit CHAQUE FOIS depuis le CODE, sans passer par $4000 :
+;   +11 PRC apres bit=0   +12 PRC apres bit=1
+;   +13 PRC apres bit=0   +14 PRC apres bit=1
+;   +15 verdict rond-point : $01 = le bit se lit 0/1/0/1 comme ecrit,
+;                             $FF = au moins une lecture ne correspond pas
 ;*******************************************************************************
 
 ut.WITNESS equ $9C00
@@ -40,7 +49,7 @@ ut.VIDEO   equ $4000
         lda   MC6846.PRC
         sta   ut.WITNESS+2
 
-        bsr   ut.essai                 ; premiere serie, DDRC tel quel
+        lbsr  ut.essai                 ; premiere serie, DDRC tel quel
         sta   ut.WITNESS+5             ; (essai rend la marque de la moitie 1)
         lda   ut.tmp.prc
         sta   ut.WITNESS+3
@@ -53,7 +62,7 @@ ut.VIDEO   equ $4000
         lda   MC6846.DDRC
         sta   ut.WITNESS+6
 
-        bsr   ut.essai
+        lbsr  ut.essai
         sta   ut.WITNESS+9
         lda   ut.tmp.prc
         sta   ut.WITNESS+7
@@ -80,7 +89,49 @@ ut.verdict.deux
         lda   #$02                     ; commute une fois DDRC pose
 ut.verdict.pose
         sta   ut.WITNESS+10
+
+        ; --- le rond-point : 0/1/0/1, RIEN d'autre que le bit
+        ldx   #ut.WITNESS+11
+        bsr   ut.roundtrip             ; bit=0
+        bsr   ut.roundtrip1            ; bit=1
+        bsr   ut.roundtrip             ; bit=0
+        bsr   ut.roundtrip1            ; bit=1
+
+        lda   #$01                     ; verdict rond-point
+        ldb   ut.WITNESS+11
+        andb  #1
+        bne   ut.rt.mauvais
+        ldb   ut.WITNESS+12
+        andb  #1
+        beq   ut.rt.mauvais
+        ldb   ut.WITNESS+13
+        andb  #1
+        bne   ut.rt.mauvais
+        ldb   ut.WITNESS+14
+        andb  #1
+        beq   ut.rt.mauvais
+        bra   ut.rt.pose
+ut.rt.mauvais
+        lda   #$FF
+ut.rt.pose
+        sta   ut.WITNESS+15
 ut.fin  bra   ut.fin                   ; le banc se lit en RAM, il ne rend rien
+
+; pose le bit a 0, relit, range en [x] ; x avance de 1
+ut.roundtrip
+        lda   map.HALFPAGE
+        anda  #%11111110
+        sta   map.HALFPAGE
+        bra   ut.rt.read
+; pose le bit a 1, relit, range en [x] ; x avance de 1
+ut.roundtrip1
+        lda   map.HALFPAGE
+        ora   #%00000001
+        sta   map.HALFPAGE
+ut.rt.read
+        lda   map.HALFPAGE
+        sta   ,x+
+        rts
 
 ; -----------------------------------------------------------------------------
 ; ut.essai — ecrire une marque par moitie, puis relire les deux

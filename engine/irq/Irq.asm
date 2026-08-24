@@ -135,17 +135,58 @@ IrqManager
         beq   @smode                   ; branch if rendering tiles - force RAM use instead of testing ROM or RAM
         _GetCartPageB
         stb   @page                    ; backup data page normally
+ IFDEF OverlayMode
+        ; OVERLAY : la demi-page $4000-$5FFF n'est pas forcement sur l'OST (0)
+        ; quand l'IRQ tombe — le mainline peut etre EN TRAIN de tourner sur la
+        ; 1 (ex. pscroll.half.on, le temps d'un jsr). Irq_user_routine
+        ; (PalUpdateNow, le son) a besoin de l'OST : on n'a pas a SAVOIR
+        ; quelle moitie etait montee, on la LIT et on la remet EXACTEMENT —
+        ; meme principe que _GetCartPageB/_SetCartPageA juste au-dessus,
+        ; jamais un toggle relatif (voir docs/lang/en/migration/
+        ; relative-toggles-on-shared-registers.md : un E7C3 stale corrompt un
+        ; toggle, pas un backup/restore absolu).
+        lda   map.HALFPAGE
+        anda  #%00000001
+        sta   @half                    ; 0 ou 1 : la demi-page EXACTE en cours
+        lda   map.HALFPAGE
+        anda  #%11111110
+        sta   map.HALFPAGE                ; demi-page 0 : l'OST, pour la duree de l'IRQ
+ ENDC
         jsr   [Irq_user_routine]
+ IFDEF OverlayMode
+        lda   map.HALFPAGE                ; RELU, pas rejoue : les bits 1-7 sont
+        anda  #%11111110                ; de l'I/O vivante (timer, clavier,
+        ora   #0                        ; (dynamic) disque)
+@half   equ   *-1
+        sta   map.HALFPAGE
+ ENDC
         lda   #0                       ; (dynamic)
 @page   equ   *-1
         _SetCartPageA                  ; restore data page
-@end    lds   #0                       ; (dynamic) restore system stack   
+@end    lds   #0                       ; (dynamic) restore system stack
 @stack  equ   *-2
         jmp   $E830                    ; return to caller
 @smode
         ldb   <$E6
         stb   @page2                   ; backup data page
+ IFDEF OverlayMode
+        lda   map.HALFPAGE
+        anda  #%00000001
+        sta   @half2
+        lda   map.HALFPAGE
+        anda  #%11111110
+        sta   map.HALFPAGE
+ ENDC
         jsr   [Irq_user_routine]
+ IFDEF OverlayMode
+        pshs  a                        ; @smode reutilise A pour glb_Page :
+        lda   map.HALFPAGE                ; ne pas lui voler avant d'avoir lu
+        anda  #%11111110
+        ora   #0                        ; (dynamic)
+@half2  equ   *-1
+        sta   map.HALFPAGE
+        puls  a
+ ENDC
         anda  #0
         sta   glb_Page                 ; restore special page mode
         lda   #0                       ; (dynamic)

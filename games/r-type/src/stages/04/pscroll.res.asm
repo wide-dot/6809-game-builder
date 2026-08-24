@@ -99,23 +99,27 @@ pscroll.stage4.frame
 ; l'atteindre. Sans ca on tombe sur le pool : le stage tournait 10 trames puis
 ; marchait dans des zeros ($4F4B, 2 octets par instruction), 24/08.
 ;
-; Le bit voisin appartient au 6846 : on ne pose que le bit 0, jamais l'octet.
+; ON NE POSE QUE LE BIT 0, JAMAIS L'OCTET. La version d'avant sauvait $E7C3
+; entier a l'entree et le reecrivait entier a la sortie — invalide deux fois :
+; les bits 1-7 sont de l'I/O VIVANTE (timer, clavier, disque), donc les remettre
+; a une valeur lue plus tot rejoue du perime dans le materiel ; et l'octet sauve
+; etait un global unique, donc deux montages imbriques auraient rendu la
+; demi-page 1 au lieu de la 0. Il n'y a rien a sauver : le jeu tourne demi-page
+; 0 par contrat (InitGlobals l'epingle au premier geste du game mode), donc
+; « rendre » c'est remettre le bit a 0. C'est exactement ce que font les macros
+; _gfxlock.halfPage.set0/.set1 du gfxlock thomson.
 ; -----------------------------------------------------------------------------
 pscroll.half.on
         lda   map.HALFPAGE
-        sta   pscroll.half.saved           ; l'etat du jeu, rendu tel quel
-        ora   #$01                         ; demi-page 1 : la notre. La 0 est le
-        sta   map.HALFPAGE                 ; POOL D'OBJETS ($4000 = Dynamic_
-                                           ; Object_RAM) — y loger du code le
-                                           ; fait ecraser par l'object manager
-        rts
-
-pscroll.half.off
-        lda   pscroll.half.saved
+        ora   #$01                         ; demi-page 1 : la notre
         sta   map.HALFPAGE
         rts
 
-pscroll.half.saved  fcb 0
+pscroll.half.off
+        lda   map.HALFPAGE
+        anda  #%11111110                   ; demi-page 0 : celle du pool
+        sta   map.HALFPAGE
+        rts
 
 ; -----------------------------------------------------------------------------
 ; pscroll.gum.set / .clear / .rect — LE CHAMP, VU DU CODE OBJET
