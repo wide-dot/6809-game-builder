@@ -232,7 +232,18 @@
                 <zone page="$08" address="$0000" size="$4000"/>
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
-                <zone page="$0B" address="$0000" size="$4000"/>
+                <!-- PAS DE $0B : la page appartient a <region pscroll.edit>, que
+                     scenes.stage4 charge. L'offrir ici etait un chevauchement en
+                     sursis — le commun est PERMANENT (charge au boot, jamais
+                     recharge), donc le jour ou le packer y deborderait, le stage 4
+                     l'ecraserait sans que rien ne le dise, et le retour de stage
+                     tournerait sur des octets de pscroll. Rien n'y atterrissait
+                     encore (releve du 24/08 : $0A garde 7 725 o libres, $0C et $17
+                     sont vierges), retirer la zone ne deplace donc aucun fichier —
+                     mais desormais un commun trop gros ECHOUE au build au lieu de
+                     mordre ici. Meme regle pour les quatre pages de buffers
+                     ($0E/$0F/$10/$1D) : elles ne portent que du par-stage
+                     (stages 1,2,3,7), jamais du permanent. -->
                 <!-- Tete de $0C jusqu'a $0A80, frontiere relevee a la main avec
                      l'arene du stage 1 : si le commun grossit, le controle de scene
                      refuse le build. Elle ne PEUT pas monter : le visage du
