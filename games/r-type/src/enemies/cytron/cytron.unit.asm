@@ -17,9 +17,14 @@ cytron.Object  EXPORT
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
 
-; La repousse du champ de gommes vit dans le stage : c'est lui qui porte les
-; cartes C et T et leur page. Une seule frontiere, un seul nom.
-pscroll.grow      EXTERNAL
+; La repousse du champ de gommes vit dans le stage, sur SA PROPRE page — pas
+; celle du cytron. `pscroll.grow` est un EXTERNAL ordinaire (une adresse), pas
+; un montage : l'appeler en direct (jmp) execute les octets de LA PAGE DU
+; CYTRON a cet offset, puisque rien n'a monte la page de pscroll avant de
+; sauter (vecu le 24/08 : ca corrompait l'OST du cytron lui-meme, gel du stage
+; en quelques trames). `pscroll.gum.grow` est le relais RESIDENT qui monte,
+; appelle, et rend la page — c'est lui qu'on appelle, jamais pscroll.grow nu.
+pscroll.gum.grow  EXTERNAL
 
  SECTION code
 

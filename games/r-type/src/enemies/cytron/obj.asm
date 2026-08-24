@@ -221,7 +221,9 @@ growTrail
         tfr   b,a                      ; la ligne ecran tient dans un octet
         puls  x                        ; x ecran
         tfr   a,b                      ; b = ligne ecran, x = x ecran
-        jmp   pscroll.grow             ; la regle « vide ET pas dur » est la-bas
+        jmp   pscroll.gum.grow         ; la regle « vide ET pas dur » est la-bas
+                                       ; — le relais RESIDENT, jamais l'appel
+                                       ; direct (page du cytron != page pscroll)
 
 ; V2-DEVIATION: la v1 nommait ses entrees d'imageset Img_<nom>, gfxcomp les
 ; genere en set_<nom>. Seize poses : ce sont les seize directions du cercle de

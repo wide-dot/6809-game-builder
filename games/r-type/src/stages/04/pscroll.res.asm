@@ -17,6 +17,7 @@ pscroll.stage4.frame EXPORT
 pscroll.gum.set      EXPORT              ; les relais pour le CODE OBJET
 pscroll.gum.clear    EXPORT
 pscroll.gum.rect     EXPORT
+pscroll.gum.grow     EXPORT
 pscroll.half.on      EXPORT              ; l'init de la part cartouche en a
 pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
 
@@ -40,6 +41,7 @@ pscroll.move       EXTERNAL              ; la part CARTOUCHE
 pscroll.setCell    EXTERNAL
 pscroll.clearCell  EXTERNAL
 pscroll.clearRect  EXTERNAL
+pscroll.grow       EXTERNAL
 paged.call         EXTERNAL
 
  SECTION code
@@ -132,6 +134,20 @@ pscroll.half.off
 ; DEMONTER l'appelant, dont le code disparait le temps de l'appel. Le trajet
 ; complet ne peut donc se faire que depuis la RAM fixe, et c'est ici.
 ;
+; LE CAS QUI A COUTE LA SOIREE DU 24/08 : le cytron appelait `pscroll.grow`
+; en DIRECT (`jmp pscroll.grow`, un EXTERNAL resolu par le loader a l'adresse
+; de pscroll.edit) SANS monter la page de pscroll.edit — le cytron vit dans
+; SA propre page (arena stage4.gfx). Le jmp sautait donc a l'offset resolu,
+; mais la fenetre cartouche montrait toujours la page du cytron : le CPU
+; executait les octets de LA PAGE DU CYTRON a cet offset — du hasard qui
+; RESSEMBLE a du code (ANDB/ORB/STD…) jusqu'a corrompre l'OST courant. Track
+; complet : RunObjects dispatche le cytron (ObjID 39) -> jmp pscroll.grow non
+; monte -> execution dans la page du cytron -> STD ,U ecrit n'importe quoi
+; dans l'OST du cytron lui-meme (U) -> la trame suivante redispatche cet OST
+; avec un id devenu garbage -> jsr [,x] saute dans une table -> marche dans
+; les zeros -> gel. Chasse aux breakpoints/watchpoints, jamais reproduite au
+; premier coup : voir la session du 24/08 pour la methode.
+;
 ; Le trajet, en entier :
 ;   1. la page de l'appelant est relue ($E7E6 se relit) et mise de cote ;
 ;   2. la page pscroll est montee, et posee dans pscroll.cart.page — c'est
@@ -167,6 +183,14 @@ pscroll.gum.rect
         bsr   pscroll.gum.enter
         puls  b
         jsr   pscroll.clearRect
+        bra   pscroll.gum.leave
+
+; input REG : [x] la position ecran (pscroll.grow.x), [b] la ligne ecran
+pscroll.gum.grow
+        pshs  u,y,dp,b
+        bsr   pscroll.gum.enter             ; ne touche pas X : x survit
+        puls  b
+        jsr   pscroll.grow
         bra   pscroll.gum.leave
 
 ; monter pscroll en gardant de quoi revenir
