@@ -50,15 +50,41 @@ gagner d'un outil d'échantillonnage dédié**. Un niveau 1 complet (12 631
 trames, 252 s émulées) se relève en une minute.
 
 Conditions à tenir identiques des deux côtés d'une comparaison :
-`<define symbol="invincible"/>` (sans lui le vaisseau meurt faute d'entrée
-manette et le relevé s'arrête — vécu à la trame 3835), aucune entrée
-manette, `bench.SCROLL_VEL` inchangé. Le traceur écarte de la moyenne la
-queue muette du relevé : c'est le chargement de la scène suivante, dont la
-durée dépend de la taille des fichiers et pas du rendu.
+**l'invincibilité** (sans elle le vaisseau meurt faute d'entrée manette et le
+relevé s'arrête — vécu à la trame 3835), aucune entrée manette,
+`bench.SCROLL_VEL` inchangé. Le traceur écarte de la moyenne la queue muette
+du relevé : c'est le chargement de la scène suivante, dont la durée dépend de
+la taille des fichiers et pas du rendu.
 
-Référence mesurée le 19/08/2026 sur `games/r-type` @ 886fda9c : **12,0 img/s
-de moyenne**, de 27 img/s à l'ouverture à **3,9 img/s au creux** (caméra 552),
-plateau à 8,4 dans la salle du boss.
+Le `define invincible` a disparu : l'invincibilité vient du cheat du title.
+`--cheat` l'arme au joypad (préfixe h,b,g,d puis bas), et c'est **aussi la
+seule façon d'entrer ailleurs qu'au stage 1** — le même cheat sélectionne le
+stage (préfixe puis N fois haut). Sans `--cheat`, le script presse start,
+ce qui n'ouvre que le stage 1.
+
+```bash
+python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv --stage 4 --cheat
+```
+
+### Références mesurées
+
+Elles vivent dans `ci/toje-bench/refs/`, CSV brut **et** SVG tracé, pour que
+la comparaison d'après ne dépende pas d'un relevé à refaire.
+
+| relevé | moy. | creux | remarque |
+|---|---|---|---|
+| stage 1, 19/08/2026 @ 886fda9c | 12,0 | 3,9 (caméra 552) | 27 à l'ouverture, plateau 8,4 dans la salle du boss |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | 8,7 | **1,0** (caméra 711) | 8 699 trames jouées, caméra 0 → 992, sortie vers le stage 5 |
+
+Profil du stage 4 par tranche de caméra (moyenne glissante 1 s, img/s) —
+c'est un stage qui s'effondre lentement puis se libère d'un coup :
+
+```
+   0- 99   7,8      400-499   4,9      800-899    8,9
+ 100-199   5,9      500-599   3,8      900-999   20,5
+ 200-299   5,6      600-699   3,6
+ 300-399   5,3      700-799   4,0   <- creux a 1,0 img/s
+```
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
 
