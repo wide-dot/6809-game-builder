@@ -138,6 +138,24 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
   `moveByScript.runByB`) pour rester calé sur l'horodatage arcade.
 - En vie : `moveByScript.runByFrameDrop` déroule les pas de script au rythme
   compensé.
+- **Un script de mouvement est un INDICE, pas une adresse — et il vit dans
+  l'objet d'animation commun.** `moveByScript.initialize` attend dans X un
+  décalage d'octets dans la LUT de `Ani_Asd_common` (`ldx anim.addr,x`, base
+  posée par `moveByScript.register`), et il monte la page de cet objet avant
+  de lire ; `runByFrameDrop` la remonte à chaque tour pour relire les
+  segments. Un script posé dans la page de l'ennemi est donc illisible, quelle
+  que soit la façon de le référencer. Marche à suivre pour un ennemi porté :
+  vérifier que ses scripts sont déjà dans `src/common/fx/animation/script.asm`
+  (l'export arcade couvre toute la zone de scripts, ils y sont en général),
+  leur ajouter une ligne dans `index.asm` **et** `index.equ`, et référencer
+  l'équate `anim_<addr>` — comme pata-pata (`ldx #anim_19ACE`) et outslay
+  (`fdb anim_1A4E6`). Ne pas oublier
+  `INCLUDE "src/common/fx/animation/index.equ"` dans l'unité.
+  Symptôme quand on s'est trompé (cytron, 24/08/2026) : l'ennemi frémit sur
+  place — quelques pixels en cent trames — parce que `sub_anim,u` pointe hors
+  de l'objet d'animation et que l'interprète lit de la RAM moteur comme des
+  commandes de déplacement ; `anim_frame,u` prend des valeurs hors 0-15
+  (127 relevé) que le masque `andb #$0F` cache à l'affichage.
 
 ## L'ObjectRecord arcade ↔ l'OST v2
 

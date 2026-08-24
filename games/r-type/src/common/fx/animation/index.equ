@@ -16,5 +16,20 @@ anim_1A4E6    equ   46 ; outslay variante 0 (combat gomander)
 anim_1A530    equ   48 ; outslay variante 1 (combat gomander)
 anim_1A56E    equ   50 ; outslay variante 2 (combat gomander)
 anim_1A626    equ   52 ; outslay variante 3 (combat gomander)
+; cytron : les seize variantes du quartet haut du subtype, treize scripts
+; distincts (12..15 partagent le dernier). Voir movescript.asm.
+anim_19D32    equ   54 ; cytron variante 0
+anim_19D68    equ   56 ; cytron variante 1
+anim_19DA4    equ   58 ; cytron variante 2
+anim_19E0A    equ   60 ; cytron variante 3
+anim_19E4E    equ   62 ; cytron variante 4
+anim_19EF8    equ   64 ; cytron variante 5
+anim_19F2E    equ   66 ; cytron variante 6
+anim_19F7C    equ   68 ; cytron variante 7
+anim_19FBC    equ   70 ; cytron variante 8
+anim_19FDE    equ   72 ; cytron variante 9
+anim_1A000    equ   74 ; cytron variante 10
+anim_1A046    equ   76 ; cytron variante 11
+anim_1A086    equ   78 ; cytron variantes 12 a 15
 
  ENDC
