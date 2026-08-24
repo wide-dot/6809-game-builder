@@ -93,6 +93,20 @@
                  adresse) sans jamais relier ce $4000 aux <reserved page="$00">
                  qui decrivent le MEME silicium. Les deux declarations
                  ci-dessous sont donc a tenir a la main.
+                 PROVISOIRE, ET QUI MENT DANS LE RAPPORT. Une <region> parle
+                 normalement en referentiel de PAGE (cf. les <reserved>
+                 framebuffer.*.forme en page $02 adresse $2000), pas en espace
+                 mappe. La forme juste serait page="$00" address="$2000" : le
+                 chemin de ram.set serait alors celui de la CARTOUCHE, comme
+                 tout le reste, et le loader resterait en zone data. Elle
+                 manque d'une seule chose — un `org` : le code doit se
+                 RELOCALISER pour $4000 tout en etant ECRIT en $2000, et rien
+                 dans le builder ne sait exprimer ca (verifie le 24/08 :
+                 `org` n'existe que comme directive inline dans <asm> et comme
+                 origine de numerotation dans <segment>). Bonne nouvelle pour
+                 le jour ou on l'ajoute : dir.entry ne porte AUCUNE adresse de
+                 destination — elle vient de la table de scene, en registres.
+                 Ce n'est donc pas un changement de format disque.
                  On vise la demi-page 1 (offset $2000-$3FFF de la page 0) :
                  la demi-page 0 est le POOL D'OBJETS (Dynamic_Object_RAM =
                  $4000). Y avoir pose ce code le faisait ecraser par l'object
