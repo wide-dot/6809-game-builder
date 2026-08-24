@@ -86,7 +86,7 @@ t.call("run_frames", {"n": 20})
 
 
 def loops():
-    return t.read("9C00", 1)[0]
+    return t.read("9D00", 1)[0]
 
 
 def pose(col, row, efface=False):
@@ -183,9 +183,9 @@ def essai(col, row, titre):
     peut fausser la mesure, aucune calibration n'est supposee."""
     a = pixels(*shot())
     cam = camera()
-    pousses = t.read("9C06", 1)[0]
+    pousses = t.read("9D06", 1)[0]
     pose(col, row)
-    if t.read("9C06", 1)[0] == pousses:
+    if t.read("9D06", 1)[0] == pousses:
         # UN ESSAI SAUTE N'EST PAS UN ESSAI REUSSI. Deux campagnes ont rendu
         # « TOUT CONFORME » alors que la mire couvrait toutes les cibles et
         # que pas un seul essai n'avait tourne (22 et 23/08). On les compte,

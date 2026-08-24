@@ -24,7 +24,7 @@ frames = int(sys.argv[3]) if len(sys.argv) > 3 else 200
 LWMAP = os.path.join(os.path.dirname(image) or ".",
                      "../gen/assets/game-modes/to8/main/build/main.lwmap")
 BASE = 0x6100
-WIT = 0x9C00
+WIT = 0x9D00
 
 
 def symbols():

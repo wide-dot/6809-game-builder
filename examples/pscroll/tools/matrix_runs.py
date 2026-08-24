@@ -152,7 +152,7 @@ def effacer(c0, r0, n, h=1):
         print("   !! rect bloque : fill=%d rect=%d pc=%s tour=%d | a=%d b=%d "
               "n=%d row=%d left=%d"
               % (rb("bench.fill"), rb("bench.rect"), st["pc"],
-                 t.read("9C00", 1)[0], w16("pscroll.rect.a"),
+                 t.read("9D00", 1)[0], w16("pscroll.rect.a"),
                  w16("pscroll.rect.b"), w16("pscroll.rect.n"),
                  rb("pscroll.rect.row"), rb("pscroll.rect.left")))
         return False

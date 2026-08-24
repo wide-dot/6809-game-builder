@@ -196,7 +196,7 @@ pscroll.gum.rect
         jsr   pscroll.clearRect
         bra   pscroll.gum.leave
 
-; input REG : [x] la position ecran (pscroll.grow.x), [b] la ligne ecran
+; input REG : [x] le x en px de CARTE, [b] la ligne ecran
 pscroll.gum.grow
         pshs  u,y,dp,b
         bsr   pscroll.gum.enter             ; ne touche pas X : x survit

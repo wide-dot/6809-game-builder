@@ -67,7 +67,7 @@ t.call("run_frames", {"n": trames})
 print("cytron : x=%.2f cellules  y=%.2f  pose=%d  derniere cellule sondee=(%d,%d)"
       % (w16("cytron.x") / 256.0, w16("cytron.y") / 256.0,
          rd("cytron.img")[0], w16("cytron.col"), rd("cytron.row")[0]))
-print("mutations comptees :", t.read("9C06", 1)[0])
+print("mutations comptees :", t.read("9D06", 1)[0])
 shutil.copy(t.call("screenshot")["path"], dest)
 print("capture ->", dest)
 t.close()

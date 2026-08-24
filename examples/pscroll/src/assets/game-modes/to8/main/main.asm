@@ -14,6 +14,15 @@ PSCROLL_DEBUG equ 1                    ; compteurs de chemin + octet de carte
                                        ; moniteur, temoins muets, 23/08).
 BENCH_CYTRON equ 0
 
+; LE BLOC TEMOIN, hors de portee de tout ce que le banc pose. Il etait a
+; $9C00, juste au-dessus de la carte de gommes : six octets de variables
+; ajoutes au module ont suffi a pousser la queue de field.map par-dessus,
+; et le compteur de trames s'est mis a « faire pousser » trois cellules de
+; la rangee 29 a chaque tour (24/08/2026). Le garde-fou plus bas refuse
+; desormais d'assembler avant que ca se reproduise.
+bench.ORG    equ $6100                 ; ou la scene charge ce game mode
+bench.WIT    equ $9D00
+
 ;*******************************************************************************
 ; pscroll — le banc du champ de gommes persistant
 ;
@@ -38,8 +47,10 @@ BENCH_CYTRON equ 0
 ; B = lent (0,5), rien = 1 px/trame. Sans manette, la camera derive seule
 ; vers la droite pour que le banc dise quelque chose.
 ;
-; Temoins en $9C00 : $9C00 compteur de trames, $9C01 camera (mot),
-; $9C03 la parite courante, $9C04 le nombre de gravures faites.
+; Temoins en bench.WIT ($9D00) : +0 compteur de trames, +1 camera (mot),
+; +3 la parite courante, +5/+6 les compteurs de mutation. L'adresse est
+; LUE EN DUR par les pilotes de tools/ — la changer ici veut dire les
+; changer aussi.
 ;*******************************************************************************
 
  SECTION code
@@ -58,6 +69,9 @@ BENCH_CYTRON equ 0
 
 ; --- la geometrie du champ, celle du stage 4 ---------------------------------
 pscroll.BAND_LINES equ 180              ; 30 rangees de 6 lignes
+pscroll.CELL_W     equ 3                ; la largeur d'une cellule : le module
+                                        ; s'en sert pour propager l'ancre du
+                                        ; ruban (16 px = 5 cellules et 1 reste)
 field.MAP_W        equ 1152             ; largeur de la carte, en px
 pscroll.MAP_WIDTH  equ field.MAP_W      ; le module verifie le budget avec
 pscroll.MAX_SEAMS  equ 8                ; 1152 px / 160 = 7,2 coutures
@@ -216,12 +230,12 @@ mainLoop
         jsr   bench.cytronStep
 
         ; --- les temoins ---------------------------------------------------
-        inc   $9C00
+        inc   bench.WIT
         ldd   pscroll.camera.x
-        std   $9C01
+        std   bench.WIT+1
         ldb   pscroll.camera.x+1
         andb  #1
-        stb   $9C03
+        stb   bench.WIT+3
 
         _gfxlock.loop
         lbra  mainLoop
@@ -367,8 +381,8 @@ bench.cytronStep
         bra   @compte
 !       jsr   pscroll.setCell
 @compte beq   >                        ; Z=1 : rien a faire (deja pleine/vide)
-        inc   $9C06                    ; mutee — AVANT le compteur d'essais :
-!       inc   $9C05                    ; `inc` ecrase le Z que la routine vient
+        inc   bench.WIT+6                    ; mutee — AVANT le compteur d'essais :
+!       inc   bench.WIT+5                    ; `inc` ecrase le Z que la routine vient
         lda   cytron.enable            ; de poser (defaut du banc, 22/08)
         beq   @rien
         deca                           ; la sonde est consommee, maintenant
@@ -607,9 +621,16 @@ bench.cam.cnt  fcb 0
         INCLUDE "../../games/r-type/src/enemies/cytron/movescript.asm"
  ENDC
 
-; le champ de gommes d'origine : cytron le mute en place
+; le champ de gommes d'origine : cytron le mute en place. C'est le dernier
+; gros bloc du banc, et il doit tenir SOUS le bloc temoin.
 field.map
         INCLUDEBIN "../../games/r-type/src/stages/04/terrain/level4_ball.bin"
+field.map.end
+; Le garde-fou : une DIFFERENCE DE LABELS, seule forme constante des la
+; premiere passe (l'unite est relogeable, `*` ne vaut rien ici).
+ IFGT field.map.end-main-(bench.WIT-bench.ORG)
+        ERROR field.map deborde sur le bloc temoin : le banc a grossi
+ ENDC
 
  ENDSECTION
 

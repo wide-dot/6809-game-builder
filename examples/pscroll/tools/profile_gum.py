@@ -61,7 +61,7 @@ def wr(name, *b):
 
 
 def mutations():
-    return t.read("9C06", 1)[0]
+    return t.read("9D06", 1)[0]
 
 
 def attendre(cible, maxi=4000, pas=2):

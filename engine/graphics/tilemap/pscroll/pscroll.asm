@@ -274,6 +274,16 @@ pscroll.camera.x      fdb   0          ; position dans la carte, en px
 pscroll.camera.next   fdb   0          ; ou LA camera se trouve, en px de carte
 pscroll.window        fcb   0          ; base de la fenetre 16 px : x>>4
 pscroll.edge16        fcb   0          ; bord de feed, en bandes de 16 px
+; L'ANCRE DU RUBAN — ce qui permet a grow de convertir un pixel de carte en
+; colonne de cellule SANS DIVISER. Le ruban commence au pixel edge16*16 ; un
+; point qui n'y tient pas est refuse par mutate de toute facon, donc grow
+; soustrait x0, verifie que le reste tient dans 162, et lit (reste + rem)/3
+; dans une table. Les trois valeurs ne bougent qu'au changement de bande —
+; une fois par 16 px de camera, contre une division par gomme avant.
+pscroll.ribbon.x0     fdb   0          ; edge16 * 16, en px de carte
+pscroll.ribbon.cell   fdb   0          ; x0 / 3, la colonne du bord
+pscroll.ribbon.rem    fcb   0          ; x0 mod 3
+pscroll.ribbon.seed   fcb   0          ; compteur d'amorcage (setCameraX seul)
 pscroll.stretch       fcb   0          ; x / 160 : l'index de couture
 pscroll.origin        fcb   0          ; ligne d'entree dans le buffer
 
@@ -349,6 +359,10 @@ pscroll.camera.x       EXPORT
 pscroll.camera.next    EXPORT
 pscroll.window         EXPORT
 pscroll.edge16         EXPORT
+pscroll.ribbon.x0      EXPORT
+pscroll.ribbon.cell    EXPORT
+pscroll.ribbon.rem     EXPORT
+pscroll.ribbon.seed    EXPORT
 pscroll.stretch        EXPORT
 pscroll.origin         EXPORT
 pscroll.h              EXPORT
@@ -418,6 +432,10 @@ pscroll.camera.x       EXTERNAL
 pscroll.camera.next    EXTERNAL
 pscroll.window         EXTERNAL
 pscroll.edge16         EXTERNAL
+pscroll.ribbon.x0      EXTERNAL
+pscroll.ribbon.cell    EXTERNAL
+pscroll.ribbon.rem     EXTERNAL
+pscroll.ribbon.seed    EXTERNAL
 pscroll.stretch        EXTERNAL
 pscroll.origin         EXTERNAL
 pscroll.h              EXTERNAL
@@ -588,7 +606,23 @@ pscroll.setCameraX
         _lsrd
         stb   pscroll.window
         stb   pscroll.edge16
-        rts
+        ; L'ANCRE DU RUBAN, semee. Elle se PROPAGE ensuite (ribbon.up/.down),
+        ; donc c'est le seul endroit qui la calcule — et il ne tourne qu'a
+        ; l'ouverture du stage et au checkpoint. On applique le pas d'une
+        ; bande edge16 fois plutot que de diviser : 72 tours au pire, deux
+        ; fois par stage, contre du code de division qui ne servirait qu'ici.
+        clra
+        clrb
+        std   pscroll.ribbon.x0
+        std   pscroll.ribbon.cell
+        clr   pscroll.ribbon.rem
+        lda   pscroll.edge16
+        beq   >
+        sta   pscroll.ribbon.seed
+@seed   jsr   pscroll.ribbon.up
+        dec   pscroll.ribbon.seed
+        bne   @seed
+!       rts
 
 ; b = camera.x / 160 (l'index de couture). d detruit.
 ; Les PALIERS de couture. On ne divise plus la camera par 160 a chaque trame :
@@ -734,14 +768,57 @@ pscroll.move
         beq   @done
         bhi   @right
         dec   pscroll.edge16           ; vers la gauche : la bande de gauche
-        ldb   pscroll.edge16
+        jsr   pscroll.ribbon.down      ; l'ancre suit le bord, ici et nulle
+        ldb   pscroll.edge16           ; part ailleurs
         bra   @feed
 @right  inc   pscroll.edge16           ; vers la droite : celle qui suit la
-        ldb   pscroll.edge16           ; fenetre, prete avant d'etre vue
+        jsr   pscroll.ribbon.up        ; fenetre, prete avant d'etre vue
+        ldb   pscroll.edge16
         addb  #pscroll.CHUNKS_PER_LINE-1
 @feed   jsr   pscroll.feedBand
         bra   @floop
 @done   rts
+
+; -----------------------------------------------------------------------------
+; pscroll.ribbon.up / .down — l'ancre du ruban, d'une bande
+; -----------------------------------------------------------------------------
+; Une bande vaut 16 px, et 16 = 5*3 + 1 : le bord avance de CINQ cellules et
+; d'UN reste. C'est tout le calcul — la division par 3 de l'origine du ruban
+; ne se refait jamais, elle se propage.
+; -----------------------------------------------------------------------------
+pscroll.ribbon.up
+        ldd   pscroll.ribbon.x0
+        addd  #16
+        std   pscroll.ribbon.x0
+        ldd   pscroll.ribbon.cell
+        addd  #16/pscroll.CELL_W
+        std   pscroll.ribbon.cell
+        inc   pscroll.ribbon.rem
+        lda   pscroll.ribbon.rem
+        cmpa  #pscroll.CELL_W
+        blo   >
+        suba  #pscroll.CELL_W
+        sta   pscroll.ribbon.rem
+        ldd   pscroll.ribbon.cell
+        addd  #1
+        std   pscroll.ribbon.cell
+!       rts
+
+pscroll.ribbon.down
+        ldd   pscroll.ribbon.x0
+        subd  #16
+        std   pscroll.ribbon.x0
+        ldd   pscroll.ribbon.cell
+        subd  #16/pscroll.CELL_W
+        std   pscroll.ribbon.cell
+        dec   pscroll.ribbon.rem       ; 0 -> $FF : N pose, on rattrape
+        bpl   >
+        lda   #pscroll.CELL_W-1
+        sta   pscroll.ribbon.rem
+        ldd   pscroll.ribbon.cell
+        subd  #1
+        std   pscroll.ribbon.cell
+!       rts
 
 ; -----------------------------------------------------------------------------
 ; pscroll.feedBand

@@ -238,8 +238,12 @@ growTrail
         _asrd
         _asrd                          ; (3 * dx) / 8
         addd  x_pos,u
-        subd  glb_camera_x_pos
-        pshs  d                        ; x ecran de la cellule visee
+        pshs  d                        ; x de CARTE de la cellule visee : on ne
+                                       ; retire plus la camera pour que grow la
+                                       ; rajoute — l'aller-retour ne se
+                                       ; compensait meme pas exactement, grow
+                                       ; tournant avant que pscroll ne recoive
+                                       ; la camera du tour (1 a 2 px d'ecart)
         ldd   2,x                      ; dy
         pshs  d
         ldd   2,x
@@ -250,8 +254,8 @@ growTrail
         _asrd                          ; (3 * dy) / 4 = x0,75
         addd  y_pos,u
         tfr   b,a                      ; la ligne ecran tient dans un octet
-        puls  x                        ; x ecran
-        tfr   a,b                      ; b = ligne ecran, x = x ecran
+        puls  x                        ; x de carte
+        tfr   a,b                      ; b = ligne ecran, x = x de carte
         jmp   pscroll.gum.grow         ; la regle « vide ET pas dur » est la-bas
                                        ; — le relais RESIDENT, jamais l'appel
                                        ; direct (page du cytron != page pscroll)
