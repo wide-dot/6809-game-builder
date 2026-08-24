@@ -37,6 +37,18 @@ pscroll.stage4.init  EXTERNAL
  ENDC
 
 stage.main
+        ; SONDE (24/08) — QUELLE DEMI-PAGE EST MONTEE ? On ne peut pas lire
+        ; $E7C3 du debogueur (read_memory rend zero sur les registres d'I/O :
+        ; c'est ce qui m'a fait conclure a tort que le port etait en entree).
+        ; Alors on ecrit dans la QUEUE de la demi-page, que personne ne touche :
+        ; le pool d'OST s'arrete a $5D40 et le plus gros fichier charge la
+        ; ($5D1D) aussi. La moitie qui porte $5A est celle qui etait montee, et
+        ; $5FFE donne la vraie valeur de PRC.
+        lda   MC6846.PRC
+        sta   $5FFE
+        lda   #$5A
+        sta   $5FFF
+
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff
 
@@ -242,6 +254,10 @@ statics.SIZE  equ nb_static_objects*object_size
         ; purgeait deja avant sa trame d'amorce).
         jsr   InitStack
         jsr   ManagedObjects_ClearAll
+        lda   MC6846.PRC                   ; SONDE : la demi-page a-t-elle
+        sta   $5FFD                        ; change depuis l'entree du main ?
+        lda   #$A5
+        sta   $5FFC
         ; Et les structures de rendu avec, pour la meme raison : elles nomment
         ; les objets qu'on vient d'effacer. Une entree de priorite laissee
         ; derriere EMPOISONNE son niveau pour de bon — `DisplaySprite` ne
