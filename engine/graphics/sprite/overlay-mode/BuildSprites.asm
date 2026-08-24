@@ -61,6 +61,20 @@ BuildSprites
         sta   <_y_size
         sta   <_image_center_parity
 
+        ; LES BORNES DE LA PASSE, une fois pour toutes — voir BS_xlo plus bas.
+        ldd   <glb_camera_x_pos
+        subd  <glb_camera_x_offset
+        subd  <glb_camera_x_offset
+        std   BS_xlo
+        ldd   <glb_camera_x_pos            ; les deux offsets s'annulent dans la
+        addd  #160                         ; borne haute : ils n'y sont pas
+        std   BS_xhi
+        ldd   <glb_camera_y_pos
+        subd  <glb_camera_y_offset
+        std   BS_ylo
+        addd  #200
+        std   BS_yhi
+
         ldu   Tbl_Priority_Last_Entry+16
         beq   >
         jsr   @process   
@@ -198,29 +212,25 @@ BuildSprites
         sex
         std   <_y1_pixel
 ;
-        ldd   <_x_pos 
+        ; V2-DEVIATION (24/08/2026) : les bornes sont PRECALCULEES (BS_xlo..).
+        ; La v1 recombinait ici, par sprite, la camera et ses offsets — quatre
+        ; valeurs qui ne bougent pas de la passe.
+        ldd   <_x_pos
         addd  <_x1_pixel
-        addd  <glb_camera_x_offset 
-        addd  <glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  <glb_camera_x_pos
+        cmpd  BS_xlo
         blt   @nextobject
 ;
         addd  <_x_size
-        subd  #160 ; screen width
-        subd  <glb_camera_x_offset ; use border from other side of the screen 
-        subd  <glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  <glb_camera_x_pos
+        cmpd  BS_xhi
         bge   @nextobject
 ;
-        ldd   <_y_pos 
+        ldd   <_y_pos
         addd  <_y1_pixel
-        addd  <glb_camera_y_offset 
-        cmpd  <glb_camera_y_pos
+        cmpd  BS_ylo
         blt   @nextobject
 ;
         addd  <_y_size
-        subd  #200 ; screen height
-        cmpd  <glb_camera_y_pos
+        cmpd  BS_yhi
         bge   @nextobject
 ;
 ;       convert playfield position to screen position
@@ -484,6 +494,56 @@ BuildSprites
 ; APRES le eorb #%10 : bit1 pose = on retombe sur la DECALEE (reculer d'un
 ; pixel de plus), bit1 efface = sur la NON decalee (avancer d'un pixel).
 ; En mot : l'inc/dec du seul octet bas wrappait ($FF -> $00 donnait -256).
+; ---------------------------------------------------------------------------
+; LES BORNES D'ECRAN — calculees UNE FOIS PAR PASSE (24/08/2026)
+; ---------------------------------------------------------------------------
+; Le test de hors-champ du chemin PLAYFIELD melangeait, a chaque sprite, la
+; position de l'objet et quatre valeurs qui ne bougent pas de la passe :
+;   glb_camera_x_pos / glb_camera_y_pos          fixes pendant tout BuildSprites
+;   glb_camera_x_offset / glb_camera_y_offset    ecrits par InitGlobals seul
+; Il les recombinait seize fois pour retrouver les memes quatre bornes.
+;
+;   rejet si  x_pos+x1           <  cam_x - 2*offx        -> BS_xlo
+;   rejet si  x_pos+x1+x_size    >= cam_x + 160           -> BS_xhi
+;   rejet si  y_pos+y1           <  cam_y - offy          -> BS_ylo
+;   rejet si  y_pos+y1+y_size    >= cam_y + 200 - offy    -> BS_yhi
+; Les offsets s'annulent dans BS_xhi : l'ancien code ajoutait 2*offx puis le
+; retranchait deux fois de plus.
+;
+; LES OFFSETS SE LISENT, ILS NE SE REPLIENT PAS. Premier jet du 24/08 : je les
+; avais mis en immediat (#screen_left, #screen_top) au motif qu'InitGlobals ne
+; pose que ca. Faux — ce store est sous ` ifdef DrawSprites`, le mode
+; background-erase. En OverlayMode il ne s'execute pas et les deux offsets
+; restent a ZERO, laisses par l'effacement de la page directe. Les bornes
+; etaient donc decalees de 96 px en x et 28 en y : le jeu ne quittait plus le
+; title. Le mode se choisit a la configuration, une constante d'assemblage ne
+; peut pas en decider.
+;
+; L'egalite est exacte, pas approchee : chaque borne est l'ancien membre de
+; droite moins ce que l'ancien membre de gauche ajoutait. Les deux cotes
+; restent tres loin du debordement signe (x_pos <= largeur de carte, ~1200 ;
+; la borne haute plafonne vers 1400), donc les branchements signes gardent
+; leur sens.
+;
+; Mesure : 110 cycles de test par sprite avant, 76 apres ; seize sprites au
+; tour releve, soit 544 cycles gagnes contre ~40 de precalcul.
+;
+; PORTEE : le chemin SINGLE seulement. Le chemin multisprite porte la meme
+; sequence en double et reste strictement 1:1 avec la v1 — zero passage sur
+; R-Type, et le prix d'un ecart non valide en jeu serait plus eleve que le
+; gain.
+;
+; Les quatre mots sont en adressage ETENDU, pas en page directe : dp_engine
+; n'a que cinq octets libres pour huit demandes, et descendre le bloc moteur
+; mangerait le budget de page directe du jeu. Une comparaison etendue coute un
+; cycle de plus qu'une directe — quatre par sprite, contre trente-quatre
+; gagnes.
+; ---------------------------------------------------------------------------
+BS_xlo  fdb   0
+BS_xhi  fdb   0
+BS_ylo  fdb   0
+BS_yhi  fdb   0
+
 BSP_parityFallback
         pshs  b
         bitb  #%00000010
