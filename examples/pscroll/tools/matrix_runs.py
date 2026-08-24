@@ -167,7 +167,8 @@ wr("smiley.loop", 0)                   # pas de mire : le champ plein la remplac
 wr("smiley.row", 60)
 wr("cytron.enable", 0)
 wr("ctrlspeedx", 0, 0)                 # PAS DE SCROLL : camera figee
-wr("pscroll.camera.speedx", 0, 0)
+# pscroll n'a plus de vitesse a lui (24/08/2026) : le banc integre ctrlspeedx
+# dans SA camera et la donne au module. Une seule manette a tourner.
 t.call("run_frames", {"n": 30})
 cam = w16("pscroll.camera.x")
 edge = rb("pscroll.edge16")
@@ -215,11 +216,9 @@ for n in LONGUEURS:
                 # LE SCROLL D'APRES. La demo en fait, la matrice n'en faisait
                 # pas : si un residu n'apparait qu'une fois la camera bougee,
                 # c'est le feed qui regrave par-dessus l'effacement.
-                wr("pscroll.camera.speedx", 0, 0x30)
                 wr("ctrlspeedx", 0, 0x30)
                 for _ in range(SCROLL):
                     t.call("run_frames", {"n": 1})
-                wr("pscroll.camera.speedx", 0, 0)
                 wr("ctrlspeedx", 0, 0)
                 for _ in range(4):
                     t.call("run_frames", {"n": 1})

@@ -263,7 +263,18 @@ statics.SIZE  equ nb_static_objects*object_size
         ; InitScroll cale le plafond caméra sur le map_width figé à l'assemblage
         ; du moteur ; chaque stage a le sien, et l'écrit par-dessus. C'est la
         ; porte que le boss de la v1 utilisait déjà pour figer la caméra.
+ IFEQ STAGE_ID-4
+        ; STAGE 4 : le ruban de gommes ne sait dessiner que jusqu'a
+        ; largeur-160 (dix bandes de 16 px depuis (camera+8)>>4). Le plafond
+        ; de LA camera se cale donc dessus, et non sur le -144 des autres
+        ; stages : c'est ce qui garantit que le plafond interne de pscroll ne
+        ; mord jamais. Deux bornes differentes, c'etait le plan de gommes qui
+        ; se figeait sur les seize derniers pixels pendant que le reste
+        ; continuait.
+        ldd   #map.COLS*12-160
+ ELSE
         ldd   #map.COLS*12-144
+ ENDC
         std   scroll_max
 
         ; moveByScript garde la page et l'adresse de la table de scripts dans
@@ -488,8 +499,12 @@ stage.state.running
         ; fond ET les gommes du meme geste, puisque le creux d'une gomme EST le
         ; fond. Ni clearblast ni la timeline ne tournent ici — et pellet.blast,
         ; qui repeignait toutes les gommes a chaque trame, n'existe plus.
-        ; La camera suit le scroll du stage, en 8.8.
-        ldd   scroll_vel               ; la vitesse du stage, en 8.8
+        ; LE CHAMP N'A PAS DE CAMERA A LUI. On lui donne LA camera, celle que
+        ; tout le reste du stage utilise. Il integrait sa propre vitesse 8.8
+        ; jusqu'au 24/08/2026 : deux integrateurs nourris de scroll_vel,
+        ; appeles a des moments differents et bornes differemment, donc un plan
+        ; de gommes qui derivait de la tuilerie et des objets.
+        ldd   glb_camera_x_pos
         jsr   pscroll.stage4.frame     ; RESIDENT : il peint, puis monte la page
                                        ; du module pour graver ce qui entre
  ELSE

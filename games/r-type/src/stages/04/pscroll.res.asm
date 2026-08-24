@@ -49,13 +49,24 @@ paged.call         EXTERNAL
         INCLUDE "engine/graphics/tilemap/pscroll/pscroll.asm"
 
 ; -----------------------------------------------------------------------------
-; pscroll.stage4.frame — la trame : peindre ici, avancer dans la page
+; pscroll.stage4.frame — la trame : s'y rendre, puis peindre
 ; -----------------------------------------------------------------------------
-; input REG : [d] la vitesse camera 8.8 de la trame
+; input REG : [d] LA position camera du moteur (glb_camera_x_pos), en px
 ;
-; `do` peint d'abord — c'est lui qui remplace l'effacement du champ, et il a
-; besoin de l'ecran monte. `move` ensuite, dans la page du module : il grave ce
-; qui entre et n'a plus besoin de l'ecran.
+; Le champ de gommes n'a pas de camera a lui : il va ou la camera du moteur
+; est.
+;
+; MOVE D'ABORD, DO ENSUITE — et c'est ce qui met le plan en phase avec le reste
+; de la trame. `do` peint a pscroll.camera.x ; tant que `move` passait apres,
+; il peignait la position du TOUR PRECEDENT pendant que DrawTiles et
+; BuildSprites, plus loin dans le meme verrou gfxlock, travaillaient sur le
+; glb_camera_x_pos du tour courant. Le plan de gommes trainait donc d'un tour
+; entier derriere la tuilerie — cinq a huit pixels au regime observe du stage,
+; et un decalage qui bougeait avec le frame drop. D'ou l'impression d'une
+; couche « qui a sa propre vie ».
+;
+; Cet ordre est aussi le bon vis-a-vis du ruban : `move` grave la bande qui
+; entre AVANT que `do` ne la peigne.
 ;
 ; L'ECRAN NE BOUGE PAS. La fenetre DONNEES garde sa page ecran d'un bout a
 ; l'autre : la part cartouche n'en a pas besoin, et rien de pscroll ne vit
@@ -68,7 +79,7 @@ paged.call         EXTERNAL
 ; leur rts. C'est ce qui a coute le PC $4F43 du 23/08.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.frame
-        std   pscroll.camera.speedx
+        std   pscroll.camera.next
         ; LA PAGE DE L'APPELANT, SAUVEE AVANT `do`. `do` commute la fenetre
         ; cartouche vers ses buffers et ne rend rien — c'est son droit, il est
         ; resident. Mais l'appelant, lui, est stage-main, qui VIT dans cette
@@ -79,13 +90,13 @@ pscroll.stage4.frame
         ; (DP=$E7, page cartouche 00), 24/08.
         _GetCartPageB
         pshs  b
-        jsr   pscroll.do
         bsr   pscroll.half.on              ; la part $4000 doit etre VISIBLE
         lda   #map.RAM_OVER_CART+pscroll.edit.page
         sta   pscroll.cart.page            ; ce que la part $4000 remontera
         ldx   #pscroll.move                ; apres chaque commutation de buffer
         jsr   paged.call                   ; monte, appelle, rend sa page
         bsr   pscroll.half.off
+        jsr   pscroll.do                   ; peindre LA position du tour courant
         puls  b                            ; et l'appelant retrouve la sienne
         _SetCartPageB
         rts

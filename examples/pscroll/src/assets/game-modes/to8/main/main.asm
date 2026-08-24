@@ -121,10 +121,12 @@ main
         ldd   #field.map
         std   pscroll.map.address
 
-        ; la vitesse de derive, posee AVANT la boucle : le chemin « personne
-        ; n'a touche » saute l'application, donc sans ca la camera reste a 0
-        ldd   ctrlspeedx
-        std   pscroll.camera.speedx
+        ; LA CAMERA DU BANC. pscroll n'a plus de defilement interne (24/08/2026)
+        ; : dans le jeu c'est glb_camera_x_pos qui le pilote, et ici c'est ce
+        ; banc — qui n'a pas de moteur, donc integre lui-meme sa vitesse. Le
+        ; calcul est celui que le module portait, deplace tel quel : accumuler
+        ; la vitesse 8.8 autant de fois que de trames perdues, ne prendre que
+        ; la partie entiere, garder la fraction.
 
  IFNE BENCH_CYTRON
         jsr   bench.cytronReset
@@ -176,12 +178,14 @@ mainLoop
         bra   @setx
 @zerox  ldd   #0
 @setx   std   ctrlspeedx
-@apply  ldd   ctrlspeedx
-        std   pscroll.camera.speedx
-@run
+@apply
+@run    jsr   bench.cameraStep             ; LA camera du banc -> camera.next
         _gfxlock.on
+        ; move d'abord : il porte la camera et grave la bande qui entre AVANT
+        ; que do ne la peigne. Dans l'autre ordre, do peignait la position du
+        ; tour precedent — un decalage d'un tour entre le plan et la camera.
+        jsr   pscroll.move                 ; s'y rendre, graver ce qui entre
         jsr   pscroll.do                   ; peindre la bande ou est la camera
-        jsr   pscroll.move                 ; avancer, graver ce qui entre
         _gfxlock.off
 
         jsr   bench.smileyStep         ; la mire, tant qu'elle n'est pas finie
@@ -546,6 +550,46 @@ bench.fill   fcb 0                     ; 1 = champ plein + regravure complete
 demo.attract fcb 1                         ; 1 tant que rien n'a ete presse
 ctrlmag      fdb $0100
 ctrlspeedx   fdb $0000                     ; a l'arret tant que le smiley se dessine
+
+; -----------------------------------------------------------------------------
+; bench.cameraStep — LA camera du banc
+; -----------------------------------------------------------------------------
+; pscroll ne defile plus tout seul : il va ou pscroll.camera.next dit. Dans le
+; jeu c'est glb_camera_x_pos ; ici c'est ce banc, qui n'a pas de moteur et
+; integre donc lui-meme sa vitesse. Le calcul vient TEL QUEL de l'ancien
+; pscroll.move : accumuler la vitesse 8.8 une fois par trame perdue, ne
+; consommer que la partie entiere, garder la fraction (l'octet haut de
+; l'accumulateur est la partie entiere, il se remet a 0 — ou a $FF pour que
+; l'emprunt joue quand on recule).
+; -----------------------------------------------------------------------------
+bench.cameraStep
+        lda   gfxlock.frameDrop.count
+        bne   >
+        rts
+!       sta   bench.cam.cnt
+        ldd   bench.cam.frac
+!       addd  ctrlspeedx
+        dec   bench.cam.cnt
+        bne   <
+        std   bench.cam.frac
+        ldb   bench.cam.frac           ; l'octet haut : la partie entiere
+        bpl   >
+        incb
+!       sex
+        addd  bench.cam.x
+        std   bench.cam.x
+        std   pscroll.camera.next
+        ldb   bench.cam.frac
+        bpl   >
+        ldb   #$ff
+        bra   @tail
+!       clrb
+@tail   stb   bench.cam.frac
+        rts
+
+bench.cam.x    fdb $0000                   ; position, en px de carte
+bench.cam.frac fdb $0000                   ; accumulateur 8.8 (haut = entier)
+bench.cam.cnt  fcb 0
 
 ;*******************************************************************************
 ; engine

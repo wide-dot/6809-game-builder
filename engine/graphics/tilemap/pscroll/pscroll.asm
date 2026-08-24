@@ -263,8 +263,15 @@ pscroll.camera.x.max  fdb   0          ; largeur de carte - 160
 ; etat
 ; -----------------------------------------------------------------------------
 pscroll.camera.x      fdb   0          ; position dans la carte, en px
-pscroll.camera.speedx fdb   0          ; 8.8 signe, px/trame
-pscroll.speedx        fdb   0          ; accumulateur de fraction
+; LA CAMERA VIENT DU DEHORS — pscroll n'a plus de defilement a lui.
+; L'appelant ecrit ici la position qu'occupe LA camera (celle du moteur pour un
+; stage, celle du banc pour un banc) et `move` s'y rend, en px entiers.
+; Jusqu'au 24/08/2026 le module integrait sa propre vitesse 8.8, avec son
+; accumulateur de fraction et son plafond a lui : deux integrateurs nourris de
+; la meme vitesse mais appeles a des moments differents, qui divergeaient des
+; que l'un tournait sans l'autre (rattrapage de trame, butee, checkpoint). Le
+; plan de gommes avait « sa propre vie ».
+pscroll.camera.next   fdb   0          ; ou LA camera se trouve, en px de carte
 pscroll.window        fcb   0          ; base de la fenetre 16 px : x>>4
 pscroll.edge16        fcb   0          ; bord de feed, en bandes de 16 px
 pscroll.stretch       fcb   0          ; x / 160 : l'index de couture
@@ -339,8 +346,7 @@ pscroll.rect.entry     EXPORT
 pscroll.rect.patch     EXPORT
 pscroll.rect.saved     EXPORT
 pscroll.camera.x       EXPORT
-pscroll.camera.speedx  EXPORT
-pscroll.speedx         EXPORT
+pscroll.camera.next    EXPORT
 pscroll.window         EXPORT
 pscroll.edge16         EXPORT
 pscroll.stretch        EXPORT
@@ -409,8 +415,7 @@ pscroll.rect.entry     EXTERNAL
 pscroll.rect.patch     EXTERNAL
 pscroll.rect.saved     EXTERNAL
 pscroll.camera.x       EXTERNAL
-pscroll.camera.speedx  EXTERNAL
-pscroll.speedx         EXTERNAL
+pscroll.camera.next    EXTERNAL
 pscroll.window         EXTERNAL
 pscroll.edge16         EXTERNAL
 pscroll.stretch        EXTERNAL
@@ -660,38 +665,38 @@ pscroll.init
 ; -----------------------------------------------------------------------------
 ; pscroll.move
 ; -----------------------------------------------------------------------------
-; Avance la camera de sa vitesse compensee, absorbe les franchissements de
+; Porte la camera a pscroll.camera.next, absorbe les franchissements de
 ; couture, et grave les bandes qui entrent.
+;
+; AUCUN DEFILEMENT INTERNE. La position vient de l'appelant, qui la tient de
+; LA camera — glb_camera_x_pos pour un stage. Le module ne fait que s'y rendre :
+; plus d'accumulateur 8.8, plus de lecture de gfxlock.frameDrop.count (la
+; camera du moteur est deja compensee, la recompenser ici la doublait), plus de
+; seconde verite sur ou se trouve le monde.
+;
+; Le plafond reste teste — le ruban ne sait pas dessiner au-dela de
+; camera.x.max — mais il ne doit JAMAIS mordre : l'appelant borne sa propre
+; camera a la meme valeur, sinon le plan de gommes se fige pendant que le reste
+; continue, ce qui est exactement la divergence qu'on vient de retirer.
+;
+; Le franchissement de couture reste incremental (un palier par appel, dans
+; chaque sens) : un pas de camera d'une trame ne franchit jamais deux paliers
+; de 160 px. Un saut, lui, passe par pscroll.setCameraX (init, checkpoint), qui
+; retrouve le palier par parcours.
 ; -----------------------------------------------------------------------------
 pscroll.move
-        lda   gfxlock.frameDrop.count
-        bne   >
-        rts
-!       sta   pscroll.counter
-        ldd   pscroll.speedx
-!       addd  pscroll.camera.speedx
-        dec   pscroll.counter
-        bne   <
-        std   pscroll.speedx
-        ldb   pscroll.speedx
+        ldd   pscroll.camera.next
         bpl   >
-        incb
-!       sex
-        addd  pscroll.camera.x
-        bpl   >
-        ldd   #0
+        ldd   #0                       ; jamais avant l'origine de la carte
 !       cmpd  pscroll.camera.x.max
         ble   >
         ldd   pscroll.camera.x.max
+!       cmpd  pscroll.camera.x
+        bne   >
+        rts                            ; la camera n'a pas bouge : rien a faire
 !       std   pscroll.camera.x
         addd  #8
         std   pscroll.seamx            ; la position qui decide de la couture
-        ldb   pscroll.speedx
-        bpl   >
-        ldb   #$ff
-        bra   @tail
-!       clrb
-@tail   stb   pscroll.speedx
         ; --- la couture map-fixe : l'origine porte l'index de couture -------
         ; --- LES PALIERS DE COUTURE : on avance dans la table, on ne divise
         ; plus. L'index EST pscroll.stretch, et l'origine derive a contre-sens
