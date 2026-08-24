@@ -61,10 +61,7 @@ viewport_height equ 180
 Init
         jsr   WaitVBL
         jsr   RunObjects
-        jsr   CheckSpritesRefresh
-        jsr   EraseSprites
-        jsr   UnsetDisplayPriority
-        jsr   DrawSprites
+        jsr   BuildSprites          ; OVERLAY : la passe unique remplace le quatuor
         lda   #10
 @loop   equ   *-1
         beq   >

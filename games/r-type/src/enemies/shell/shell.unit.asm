@@ -21,7 +21,6 @@ Obj_Index_Address EXTERNAL
 ; La table d'effacement de la rotonde vit dans la RAM du stage : chaque shell y
 ; écrit sa position, l'effaceur la relit. Elle traverse donc la frontière de
 ; lien, comme toute donnée que deux unités se partagent.
-shellEraseTable     EXTERNAL
 
  SECTION code
 

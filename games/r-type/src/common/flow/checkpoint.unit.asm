@@ -49,6 +49,7 @@ checkpoint.clearData EXPORT
 ; Ce que le stage fournit, repointé à chaque chargement de scène.
 checkpoint.positions EXTERNAL
 stage.paletteFadeIn  EXTERNAL
+stage.checkpointReset EXTERNAL
 
 ;*******************************************************************************
 ; checkpoint.load — v1 `checkpoint.load`
@@ -122,6 +123,10 @@ checkpoint.load.a equ *-1
         lda   #ObjID_Player1
         sta   player1+id
 
+        ; ce que le stage remet a neuf : le champ de gommes du stage 4, rien
+        ; ailleurs. Apres le recalage de la vague, qui rejouera les memes
+        ; objets — le decor destructible doit repartir de son etat d'origine.
+        jsr   stage.checkpointReset
         jsr   stage.paletteFadeIn
 
         ; la vague sur l'horloge de la position retrouvée

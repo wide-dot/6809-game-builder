@@ -6,7 +6,9 @@
 ;
 ; ---------------------------------------------------------------------------
 
-        INCLUDE "./objects/enemies/bug/obj_main.asm"
+; V2-DEVIATION: obj_main.asm n'est PAS un en-tete : c'est le corps commun de
+; l'objet (les deux versions level1/full s'y adossent). Seul le chemin change.
+        INCLUDE "src/enemies/bug/obj_main.asm"
 ImageIndex
         fdb   Img_bug_0
         fdb   Img_bug_1

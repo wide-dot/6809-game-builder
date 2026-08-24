@@ -51,10 +51,15 @@
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1A" address="$3C00" size="$0400"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
-                <zone page="$1C" address="$0000" size="$4000"/>
-                <zone page="$1D" address="$0000" size="$4000"/>
-                <zone page="$1E" address="$0000" size="$4000"/>
-                <zone page="$1F" address="$0000" size="$4000"/>
+                <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
+                     les tilesets doivent partager la meme adresse dans leurs
+                     pages (le LUT de lignes est commun aux deux plans) et les
+                     buffers de code sont pleine page. L'arene garde les
+                     queues. -->
+                <zone page="$1C" address="$0000" size="$2000"/>
+                <zone page="$1D" address="$1800" size="$0800"/>
+                <zone page="$1E" address="$38A0" size="$0760"/>
+                <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
@@ -228,18 +233,32 @@
             <!-- Ce que le jeu occupe sans jamais rien y charger : des equates du
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
                  que ce soit. $9E80 est la limite haute d'un main.
-                 ATTENTION : le pool est POSE par ram.const.asm (ancre GLOBALS_BASE,
-                 nb_dynamic_objects = 43 -> $8850) ; ce <reserved> le DECRIT, rien ne
-                 verifie l'accord des deux. Les 16 octets en $87DB logent les temoins
-                 du banc (bench.const.asm) ; les unites title/stage disposent de
-                 $8000-$87DA. -->
-            <!-- La convergence des lots d'ennemis : les 101 octets sous le pool —
+                 Les 16 octets en $87DB logent les temoins du banc
+                 (bench.const.asm) ; les unites title/stage disposent de
+                 $8000-$87DA. Le pool d'objets a demenage dans la demi-page 0
+                 (2026-08-20) : $8850-$9DCA est redevenu libre en page 1 —
+                 destine au mscroll resident du stage 3. -->
+            <!-- La convergence des lots d'ennemis : les 101 octets sous l'ex-pool —
                  la fenetre du moteur est pleine, voir cast.unit.asm. -->
+            <!-- LA BANDE RESIDENTE PAR-STAGE ($92DB-$9DCA, 2 800 o) en ARENES
+                 par stage sur les MEMES zones (decision auteur, 22/08/2026) :
+                 les locataires d'un stage sont des alternatives de ceux des
+                 autres, le packer verifie chaque stage separement. Remplace
+                 le <reserved stage.outslay>, qui bloquait la bande pour tout
+                 le monde — et masquait un chevauchement reel avec la couche
+                 de gommes du stage 4 ($9A00-$9A8C), inoffensif entre stages
+                 mais garanti par personne. Un locataire est un fichier de
+                 ZEROS charge par la scene : la zone arrive zeroee.  -->
+            <arena name="stage1.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage2.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage3.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage4.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage5.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage6.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage7.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <arena name="stage8.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <region name="cast" page="$01" address="$87EB" size="$0065"/>
             <reserved name="bench"        page="$01" address="$87DB" size="$0010"/>
-            <reserved name="objects.pool" page="$01" address="$8850" size="$13A7"/>
-            <!-- Les OST hors pool : objets uniques lances par _Obj_RunU (ram.const.asm). -->
-            <reserved name="objects.static" page="$01" address="$9BF7" size="$01D4"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
@@ -251,11 +270,21 @@
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
-            <!-- Ce que la MACHINE occupe : page 0 le background save, pages 2-3 les
-                 deux framebuffers de gfxlock (8000 octets par moitie, 192 octets
-                 libres en fin de chaque moitie — reserves plage par plage pour que
-                 la carte les montre). Le loader se reserve par son <data>. -->
-            <reserved name="background.save"       page="$00" address="$0000" size="$4000"/>
+            <!-- Page 0 : depuis l'overlay il n'y a plus de cellules de fond — la
+                 demi-page vue en $4000-$5FFF (PRC bit 0 epingle a 0 par
+                 _gfxlock.init sous OverlayMode) est de la RAM stable. Le pool
+                 d'objets y vit : 60 slots dynamiques puis les 4 OST statiques
+                 (fondu + 3 slots d'armement), 64 x 117 = $1D40, poses par
+                 ram.const.asm (Dynamic_Object_RAM = $4000) — ce <reserved> les
+                 DECRIT, rien ne verifie l'accord des deux. Le reste de la
+                 demi-page (704 o) et l'autre moitie ($2000-$3FFF, accessible
+                 par montage seulement) sont libres. -->
+            <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
+            <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
+                 moitie, 192 octets libres en fin de chaque moitie — reserves
+                 plage par plage pour que la carte les montre). Le loader se
+                 reserve par son <data>. -->
             <reserved name="framebuffer.2.couleur" page="$02" address="$0000" size="$1F40"/>
             <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
             <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
@@ -311,6 +340,10 @@
             <!-- <define symbol="game.continue.MAX" value="$FF"/> -->
             <!-- Sondes info compilees : un build de DEV. Retirer cette ligne les
                  fait disparaitre (les sondes error restent toujours). -->
+            <!-- OVERLAY : bascule l'engine sur le pack overlay (BuildSprites,
+                 pas de sauvegarde de fond). Les equates d'OST commutent avec
+                 (object_rsvd_size 59 -> 5) — voir glb.const.asm/constants.asm. -->
+            <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
             <define symbol="loader.PAGE" value="4"/>
             <define symbol="loader.ADDRESS" value="$C000"/>
@@ -323,6 +356,8 @@
                      ligne <images> epingle les siennes dans les deux sens. Une
                      cible t2 declarerait 0,1 ici. -->
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <!-- Le moteur résident                                        -->
                 <file name="common.cast" linkdata="LINK" region="cast">
@@ -336,6 +371,19 @@
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le scroll multidirectionnel, résident : la couche battleship
+                     du stage 3, inerte ailleurs (personne n'appelle do/move).
+                     Résident parce que do/move commutent eux-mêmes la fenêtre
+                     cartouche. Sa place est celle que le pool d'objets a rendue
+                     en déménageant dans la demi-page 0 (2026-08-20) ;
+                     $8850-$9DCA, le budget est la carte d'occupation. -->
+                <file name="common.mscroll" linkdata="LINK" page="$01" address="$8850">
+                    <lwasm gensource="gen/common/mscroll.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/engine/mscroll.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -353,11 +401,25 @@
                 <file name="common.overlay" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/overlay/overlay.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <!-- OVERLAY : l'effacement maison (PSHS 10 registres,
+                             pleine largeur) — cf. clearblast.asm. La version
+                             generee (playfield_clear plus bas) reste dans la
+                             page le temps de la comparaison des deux. -->
+                        <asm filename="src/common/fx/clearblast.asm"/>
                         <gfxcomp gendir="gen/overlay"
                                  gensource="gen/overlay/includes.asm"
                                  genindex="gen/overlay/index.asm"
                                  file="common.overlay">
                             <image name="playfield_mask" filename="src/common/hud/mask/images/00.png" index="0" >
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                            <!-- OVERLAY : l'effacement du champ de jeu (144x180 de
+                                 noir plein), peint en TETE de trame, avant tout le
+                                 reste. Le generateur reconnait l'uni et sort du
+                                 stack-blast (PSHU D,X,Y) : 25 596 cycles mesures.
+                                 Version chaine standard — l'optimum hardcode
+                                 (PSHS 10 registres, boucle) viendra la remplacer. -->
+                            <image name="playfield_clear" filename="src/common/hud/mask/images/01.png" index="1" >
                                 <encoder name="draw" mirror="none" shift="0" position="top-left"/>
                             </image>
                         </gfxcomp>
@@ -403,13 +465,13 @@
                                  genindex="gen/weapons/weapon/index.asm"
                                  file="common.weapon">
                             <image name="weapon" filename="src/common/weapons/weapon/images/00-shoot.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="weapon_impact0" filename="src/common/weapons/weapon/images/impact/00.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="weapon_impact3" filename="src/common/weapons/weapon/images/impact/01.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -437,40 +499,40 @@
                                  genindex="gen/weapons/beamp/index.asm"
                                  file="common.beamp">
                             <image name="beam0_0" filename="src/common/weapons/beam/images/beam-slim/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam0_1" filename="src/common/weapons/beam/images/beam-slim/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam1_0" filename="src/common/weapons/beam/images/beam-slim/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam1_1" filename="src/common/weapons/beam/images/beam-slim/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam2_0" filename="src/common/weapons/beam/images/beam-slim/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam2_1" filename="src/common/weapons/beam/images/beam-slim/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam3_0" filename="src/common/weapons/beam/images/beam-slim/06.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam3_1" filename="src/common/weapons/beam/images/beam-slim/07.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam4_0" filename="src/common/weapons/beam/images/beam-slim/08.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam4_1" filename="src/common/weapons/beam/images/beam-slim/09.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam_impact_0" filename="src/common/weapons/beam/images/beam-impact/00.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="beam_impact_4" filename="src/common/weapons/beam/images/beam-impact/01.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -499,16 +561,16 @@
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
                                  gensource="gen/fx/explosion/includesSmall.asm">
                             <image name="expSmall_0" filename="src/common/fx/explosion/images/blast_small/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expSmall_1" filename="src/common/fx/explosion/images/blast_small/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expSmall_3" filename="src/common/fx/explosion/images/blast_small/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expSmall_5" filename="src/common/fx/explosion/images/blast_small/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -519,16 +581,16 @@
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
                                  gensource="gen/fx/explosion/includesFwk.asm">
                             <image name="expFwk_0" filename="src/common/fx/explosion/images/firework/00.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expFwk_1" filename="src/common/fx/explosion/images/firework/01.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expFwk_3" filename="src/common/fx/explosion/images/firework/02.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expFwk_5" filename="src/common/fx/explosion/images/firework/03.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -539,19 +601,19 @@
                         <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
                                  gensource="gen/fx/explosion/includesBig.asm">
                             <image name="expBig_0" filename="src/common/fx/explosion/images/blast_big/00.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expBig_1" filename="src/common/fx/explosion/images/blast_big/01.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expBig_3" filename="src/common/fx/explosion/images/blast_big/02.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expBig_5" filename="src/common/fx/explosion/images/blast_big/03.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="expBig_7" filename="src/common/fx/explosion/images/blast_big/04.png" index="12">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -716,28 +778,28 @@
                                  genindex="gen/pickups/pow/index.asm"
                                  file="common.pow">
                             <image name="pow_fly" filename="src/common/pickups/pow/images/pow/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_1" filename="src/common/pickups/pow/images/pow/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_2" filename="src/common/pickups/pow/images/pow/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_3" filename="src/common/pickups/pow/images/pow/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_4" filename="src/common/pickups/pow/images/pow/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="pow_5" filename="src/common/pickups/pow/images/pow/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
                         <animation name="Ani_pow_land" duration="7" end="nextroutine">
@@ -770,24 +832,24 @@
                                  genindex="gen/pickups/optionbox/index.asm"
                                  file="common.optionbox">
                             <image name="pow_optionbox_0" filename="src/common/pickups/pow/images/00-lasercrystal_blue_0.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_1" filename="src/common/pickups/pow/images/01-lasercrystal_yellow_0.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_3" filename="src/common/pickups/pow/images/02-option_speedup_0.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_4" filename="src/common/pickups/pow/images/03-lasercrystal_red_0.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="pow_optionbox_7" filename="src/common/pickups/pow/images/04-option_missiles_0.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -830,52 +892,52 @@
                                          gensource="gen/enemies/commonmissile/includes.asm"
                                          genindex="gen/enemies/commonmissile/index.asm">
                                     <image name="missile_0" filename="src/enemies/_shared/images/missile/00.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="missile_1" filename="src/enemies/_shared/images/missile/01.png" index="1">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="missile_2" filename="src/enemies/_shared/images/missile/02.png" index="2">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="missile_3" filename="src/enemies/_shared/images/missile/03.png" index="3">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="missile_4" filename="src/enemies/_shared/images/missile/04.png" index="4">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="missile_5" filename="src/enemies/_shared/images/missile/03.png" index="5">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                        <encoder name="draw" mirror="y" shift="0"/>
                                     </image>
                                     <image name="missile_6" filename="src/enemies/_shared/images/missile/02.png" index="6">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                        <encoder name="draw" mirror="y" shift="0"/>
                                     </image>
                                     <image name="missile_7" filename="src/enemies/_shared/images/missile/01.png" index="7">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                        <encoder name="draw" mirror="y" shift="0"/>
                                     </image>
                                     <image name="missile_8" filename="src/enemies/_shared/images/missile/00.png" index="8">
-                                        <encoder name="bdraw" mirror="y" shift="0"/>
+                                        <encoder name="draw" mirror="y" shift="0"/>
                                     </image>
                                     <image name="missile_9" filename="src/enemies/_shared/images/missile/01.png" index="9">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                        <encoder name="draw" mirror="xy" shift="0"/>
                                     </image>
                                     <image name="missile_10" filename="src/enemies/_shared/images/missile/02.png" index="10">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                        <encoder name="draw" mirror="xy" shift="0"/>
                                     </image>
                                     <image name="missile_11" filename="src/enemies/_shared/images/missile/03.png" index="11">
-                                        <encoder name="bdraw" mirror="xy" shift="0"/>
+                                        <encoder name="draw" mirror="xy" shift="0"/>
                                     </image>
                                     <image name="missile_12" filename="src/enemies/_shared/images/missile/04.png" index="12">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="missile_13" filename="src/enemies/_shared/images/missile/03.png" index="13">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="missile_14" filename="src/enemies/_shared/images/missile/02.png" index="14">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="missile_15" filename="src/enemies/_shared/images/missile/01.png" index="15">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -918,58 +980,58 @@
                                  genindex="gen/weapons/forcepod/index.asm"
                                  file="common.forcepod">
                             <image name="forcepod_0_0" filename="src/common/weapons/forcepods/images/forcepod_0/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_0_1" filename="src/common/weapons/forcepods/images/forcepod_0/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_0_2" filename="src/common/weapons/forcepods/images/forcepod_0/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_0_3" filename="src/common/weapons/forcepods/images/forcepod_0/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_0_4" filename="src/common/weapons/forcepods/images/forcepod_0/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_0_5" filename="src/common/weapons/forcepods/images/forcepod_0/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_1_0" filename="src/common/weapons/forcepods/images/forcepod_1/00.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_1_1" filename="src/common/weapons/forcepods/images/forcepod_1/01.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_1_2" filename="src/common/weapons/forcepods/images/forcepod_1/02.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_1_3" filename="src/common/weapons/forcepods/images/forcepod_1/03.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_1_4" filename="src/common/weapons/forcepods/images/forcepod_1/04.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_1_5" filename="src/common/weapons/forcepods/images/forcepod_1/05.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="forcepod_2_0" filename="src/common/weapons/forcepods/images/forcepod_2/00.png" index="12">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_2_1" filename="src/common/weapons/forcepods/images/forcepod_2/01.png" index="13">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_2_2" filename="src/common/weapons/forcepods/images/forcepod_2/02.png" index="14">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="forcepod_2_3" filename="src/common/weapons/forcepods/images/forcepod_2/03.png" index="15">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -984,55 +1046,55 @@
                                  genindex="gen/weapons/reboundlaser/index.asm"
                                  file="common.reboundlaser">
                             <image name="reboundlaser_angle_0" filename="src/common/weapons/forcepods/images/reboundlaser/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_1" filename="src/common/weapons/forcepods/images/reboundlaser/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_2" filename="src/common/weapons/forcepods/images/reboundlaser/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_3" filename="src/common/weapons/forcepods/images/reboundlaser/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_4" filename="src/common/weapons/forcepods/images/reboundlaser/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_5" filename="src/common/weapons/forcepods/images/reboundlaser/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_6" filename="src/common/weapons/forcepods/images/reboundlaser/06.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_angle_7" filename="src/common/weapons/forcepods/images/reboundlaser/07.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_diagonal_0" filename="src/common/weapons/forcepods/images/reboundlaser/08.png" index="8">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_diagonal_1" filename="src/common/weapons/forcepods/images/reboundlaser/09.png" index="9">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_diagonal_2" filename="src/common/weapons/forcepods/images/reboundlaser/10.png" index="10">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_diagonal_3" filename="src/common/weapons/forcepods/images/reboundlaser/11.png" index="11">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_horizontal" filename="src/common/weapons/forcepods/images/reboundlaser/12.png" index="12">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_explosion_0" filename="src/common/weapons/forcepods/images/reboundlaser/13.png" index="13">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_explosion_1" filename="src/common/weapons/forcepods/images/reboundlaser/14.png" index="14">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_explosion_2" filename="src/common/weapons/forcepods/images/reboundlaser/15.png" index="15">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="reboundlaser_explosion_3" filename="src/common/weapons/forcepods/images/reboundlaser/16.png" index="16">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1047,36 +1109,36 @@
                                  genindex="gen/weapons/counterairlaser/index.asm"
                                  file="common.counterairlaser">
                             <image name="counterairlaser_0" filename="src/common/weapons/forcepods/images/counterairlaser-4/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_1" filename="src/common/weapons/forcepods/images/counterairlaser-4/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_2" filename="src/common/weapons/forcepods/images/counterairlaser-4/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_3" filename="src/common/weapons/forcepods/images/counterairlaser-4/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_4" filename="src/common/weapons/forcepods/images/counterairlaser-4/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_5" filename="src/common/weapons/forcepods/images/counterairlaser-4/05.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_6" filename="src/common/weapons/forcepods/images/counterairlaser-4/06.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="counterairlaser_7" filename="src/common/weapons/forcepods/images/counterairlaser-4/07.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1091,25 +1153,25 @@
                                  genindex="gen/weapons/simplefire/index.asm"
                                  file="common.simplefire">
                             <image name="shootup" filename="src/common/weapons/forcepods/images/shootpod/00.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="shootupright" filename="src/common/weapons/forcepods/images/shootpod/01.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="shootright" filename="src/common/weapons/forcepods/images/shootpod/02.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="shootdownright" filename="src/common/weapons/forcepods/images/shootpod/03.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="shootdown" filename="src/common/weapons/forcepods/images/shootpod/04.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="simplefire_impact0" filename="src/common/weapons/weapon/images/impact/00.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="simplefire_impact3" filename="src/common/weapons/weapon/images/impact/01.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1175,7 +1237,7 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
-                <file name="lib.bug" linkdata="LINK" arena="enemies">
+<file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/bug/bug.unit.asm"/>
@@ -1183,28 +1245,57 @@
                                          gensource="gen/enemies/bug/includes.asm"
                                          genindex="gen/enemies/bug/index.asm">
                                     <image name="bug_4" filename="src/enemies/bug/images/00.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_5" filename="src/enemies/bug/images/01.png" index="1">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_6" filename="src/enemies/bug/images/02.png" index="2">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_7" filename="src/enemies/bug/images/03.png" index="3">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_8" filename="src/enemies/bug/images/04.png" index="4">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_9" filename="src/enemies/bug/images/05.png" index="5">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_10" filename="src/enemies/bug/images/06.png" index="6">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="bug_11" filename="src/enemies/bug/images/07.png" index="7">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <!-- Les huit variantes restantes (v1-map.csv :
+                                         bug_0..3 = 08..11.png, bug_12..15 =
+                                         12..15.png). L'objet est commun aux
+                                         stages 1, 4 et 7 : il vit avec toutes
+                                         ses directions (obj_full). -->
+                                    <image name="bug_0" filename="src/enemies/bug/images/08.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_1" filename="src/enemies/bug/images/09.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_2" filename="src/enemies/bug/images/10.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_3" filename="src/enemies/bug/images/11.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_12" filename="src/enemies/bug/images/12.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_13" filename="src/enemies/bug/images/13.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_14" filename="src/enemies/bug/images/14.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="bug_15" filename="src/enemies/bug/images/15.png" index="15">
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -1217,40 +1308,40 @@
                                          gensource="gen/enemies/pstaff/includes.asm"
                                          genindex="gen/enemies/pstaff/index.asm">
                                     <image name="pstaff_0" filename="src/enemies/p-staff/images/00.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_1" filename="src/enemies/p-staff/images/01.png" index="1">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_2" filename="src/enemies/p-staff/images/02.png" index="2">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_6" filename="src/enemies/p-staff/images/03.png" index="6">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_8" filename="src/enemies/p-staff/images/04.png" index="8">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_9" filename="src/enemies/p-staff/images/05.png" index="9">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="pstaff_10" filename="src/enemies/p-staff/images/00.png" index="10">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="pstaff_11" filename="src/enemies/p-staff/images/01.png" index="11">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="pstaff_12" filename="src/enemies/p-staff/images/02.png" index="12">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="pstaff_16" filename="src/enemies/p-staff/images/03.png" index="16">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="pstaff_18" filename="src/enemies/p-staff/images/04.png" index="18">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                     <image name="pstaff_19" filename="src/enemies/p-staff/images/05.png" index="19">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -1290,6 +1381,7 @@
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
                     <load name="common.cast"/>
                     <load name="common.engine"/>
+                    <load name="common.mscroll"/>
                     <load name="common.anim"/>
                     <load name="common.overlay"/>
                     <load name="common.starfield"/>
@@ -1520,6 +1612,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
 
                 <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
@@ -1541,44 +1635,44 @@
                                          gensource="gen/enemies/blaster/includes.asm"
                                          genindex="gen/enemies/blaster/index.asm">
                                     <image name="blaster_l1" filename="src/enemies/blaster/images/blaster_l/00.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_l2" filename="src/enemies/blaster/images/blaster_l/01.png" index="1">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_l3" filename="src/enemies/blaster/images/blaster_l/02.png" index="2">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_l4" filename="src/enemies/blaster/images/blaster_l/03.png" index="3">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_l5" filename="src/enemies/blaster/images/blaster_l/04.png" index="4">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_u1" filename="src/enemies/blaster/images/blaster_u/00.png" index="5">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_u2" filename="src/enemies/blaster/images/blaster_u/01.png" index="6">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_u3" filename="src/enemies/blaster/images/blaster_u/02.png" index="7">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_u4" filename="src/enemies/blaster/images/blaster_u/03.png" index="8">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="blaster_u5" filename="src/enemies/blaster/images/blaster_u/04.png" index="9">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
-                                        <encoder name="bdraw" mirror="none" shift="1"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -1663,13 +1757,6 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.shelleraser" linkdata="LINK" arena="enemies">
-                    <lwasm gensource="gen/enemies/shelleraser.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/shell/shelleraser.unit.asm"/>
-                    </lwasm>
-                </file>
-
                 <!-- Douze poses en trois tranches d'arene, une par phase de jeu ;
                      index unique, chaque descripteur porte la page de SON image.
                      Vol et chute : poses 6-7 + miroirs 14-15. -->
@@ -1679,16 +1766,16 @@
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
                                  gensource="gen/enemies/tabrok/includesFlight.asm">
                             <image name="tabrok_6" filename="src/enemies/tabrok/images/00.png" index="6">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_7" filename="src/enemies/tabrok/images/01.png" index="7">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_14" filename="src/enemies/tabrok/images/00.png" index="14">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="tabrok_15" filename="src/enemies/tabrok/images/01.png" index="15">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1701,16 +1788,16 @@
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
                                  gensource="gen/enemies/tabrok/includesGround.asm">
                             <image name="tabrok_4" filename="src/enemies/tabrok/images/02.png" index="4">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_5" filename="src/enemies/tabrok/images/03.png" index="5">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_12" filename="src/enemies/tabrok/images/02.png" index="12">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                             <image name="tabrok_13" filename="src/enemies/tabrok/images/03.png" index="13">
-                                <encoder name="bdraw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1723,16 +1810,16 @@
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
                                  gensource="gen/enemies/tabrok/includesWalk.asm">
                             <image name="tabrok_0" filename="src/enemies/tabrok/images/04.png" index="0">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_1" filename="src/enemies/tabrok/images/05.png" index="1">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_2" filename="src/enemies/tabrok/images/06.png" index="2">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="tabrok_3" filename="src/enemies/tabrok/images/07.png" index="3">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1753,10 +1840,10 @@
                                          gensource="gen/enemies/tabrokcanon/includes.asm"
                                          genindex="gen/enemies/tabrokcanon/index.asm">
                                     <image name="tabrokcanon_left" filename="src/enemies/_shared/images/00-tabrokcanon.png" index="0">
-                                        <encoder name="bdraw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="tabrokcanon_right" filename="src/enemies/_shared/images/00-tabrokcanon.png" index="1">
-                                        <encoder name="bdraw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -1862,50 +1949,50 @@
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
                                  gensource="gen/enemies/dobkeratops/includesEyes.asm">
                             <image name="dobkeratops_eye100" filename="src/enemies/dobkeratops/final/dk-eye-1-0/00.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="dobkeratops_eye101" filename="src/enemies/dobkeratops/final/dk-eye-1-0/01.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye102" filename="src/enemies/dobkeratops/final/dk-eye-1-0/02.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye103" filename="src/enemies/dobkeratops/final/dk-eye-1-0/03.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye104" filename="src/enemies/dobkeratops/final/dk-eye-1-0/04.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye300" filename="src/enemies/dobkeratops/final/dk-eye-3-0/00.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="dobkeratops_eye301" filename="src/enemies/dobkeratops/final/dk-eye-3-0/01.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye310" filename="src/enemies/dobkeratops/final/dk-eye-3-1/00.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="dobkeratops_eye311" filename="src/enemies/dobkeratops/final/dk-eye-3-1/01.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye312" filename="src/enemies/dobkeratops/final/dk-eye-3-1/02.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye313" filename="src/enemies/dobkeratops/final/dk-eye-3-1/03.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye320" filename="src/enemies/dobkeratops/final/dk-eye-3-2/00.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
-                                <encoder name="bdraw" mirror="none" shift="1"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="dobkeratops_eye321" filename="src/enemies/dobkeratops/final/dk-eye-3-2/01.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                             <image name="dobkeratops_eye322" filename="src/enemies/dobkeratops/final/dk-eye-3-2/02.png">
-                                <encoder name="bdraw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
@@ -1999,6 +2086,30 @@
                     <lwasm gensource="gen/enemies/tailmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
+                        <!-- OVERLAY : les quatre segments de queue redeviennent des
+                             PNG compiles par la chaine standard (dessin seul, paires
+                             decalees), a la place des blits bg-erase colles dont le
+                             generateur etait perdu. TMDrawTab (tailmgr.asm) les vise
+                             par leur symbole ; pas d'index, comme le HUD. -->
+                        <gfxcomp gendir="gen/enemies/tail"
+                                 gensource="gen/enemies/tail/includes.asm">
+                            <image name="tail_0" filename="src/enemies/dobkeratops/images/tail/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_1" filename="src/enemies/dobkeratops/images/tail/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_2" filename="src/enemies/dobkeratops/images/tail/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tail_end" filename="src/enemies/dobkeratops/images/00-end_2.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                        </gfxcomp>
                     </lwasm>
                 </file>
                 <!-- Le monstre qui emerge de la bouche -->
@@ -2082,10 +2193,21 @@
                      du niveau, geometrie en equates, cache sur image+parametres.
                      refresh : cellules que le scroll ne reconstruit pas depuis ses
                      blocs de debut de stage — le checkpoint repeint depuis la carte. -->
+                <!-- OVERLAY : lean="false" — le lean n'a de sens que si le
+                     moteur FAIT DEFILER le champ ; ici il est efface puis
+                     repeint tuile par tuile a chaque trame, il n'y a rien a
+                     epargner et la passe ne ferait que masquer ce que dit
+                     l'art. (Elle etait deja neutralisee de biais par un
+                     nbsteps au-dela de la largeur du niveau ; l'attribut le
+                     dit maintenant.) Le ciel, lui, est TRANSPARENT dans
+                     in.png — le masque exact du plan arcade, pose par
+                     tools/map_alpha.py : les cellules de ciel restent des
+                     tuiles id 0 jamais dessinees, c'est le stackblast
+                     (playfield_clear) qui porte le noir.
+                     refresh= sans objet : DrawTiles repeint chaque trame. -->
                 <leanscroll image="src/stages/01/map/in.png" gendir="gen/stages/01/map"
                             gensymbols="gen/stages/01/map/map.const.asm"
-                            nbsteps="0,0,6,0,0,0,0,0"
-                            refresh="48:6-8"/>
+                            lean="false"/>
 
                 <file name="stage1.tiles.even" linkdata="LINK" arena="stage1.gfx"
                       gendir="gen/stages/01/tiles-even">
@@ -2108,12 +2230,22 @@
                 </file>
 
                 <!-- Les deux tables de carte, cuites contre le placement des tuiles -->
-                <file name="stage1.maps" linkdata="LINK" bake="all" arena="stage1.gfx">
-                    <lwasm gensource="gen/stages/01/stage1-maps.asm">
+                <!-- OVERLAY : les deux tables de carte etaient UN direntry de
+                     11 880 o d'un tenant. Les tuiles pleines (+5 140 o au total)
+                     ont mange le trou qui le logeait ; en deux direntries de
+                     5 940, chaque table se glisse dans un trou existant — deux
+                     fichiers plus petits rentrent la ou un gros ne rentre pas. -->
+                <file name="stage1.maps.even" linkdata="LINK" bake="all" arena="stage1.gfx">
+                    <lwasm gensource="gen/stages/01/stage1-maps-even.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="gen/stages/01/map/even.bin" label="map.even"
                                  tiles="stage1.tiles.even" variant="ND0"
                                  gensource="gen/stages/01/map-even.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage1.maps.odd" linkdata="LINK" bake="all" arena="stage1.gfx">
+                    <lwasm gensource="gen/stages/01/stage1-maps-odd.asm">
+                        <asm filename="engine/system/to8/map.const.asm"/>
                         <tilemap map="gen/stages/01/map/odd.bin" label="map.odd"
                                  tiles="stage1.tiles.odd" variant="ND0"
                                  gensource="gen/stages/01/map-odd.asm"/>
@@ -2145,13 +2277,22 @@
                     </lwasm>
                 </file>
 
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage1.bugres" linkdata="LINK" arena="stage1.res">
+                    <lwasm gensource="gen/enemies/bugres1.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage1" section="SCENE" gensource="gen/scenes/stage1.asm">
                     <!-- Le stage 1 entier, charge par le press start et les retours
                          (stage 2, game over) — la dedup du loader rend ca idempotent. -->
                     <load name="stage1.init"/>
                     <load name="stage1.blaster"/>
                     <load name="stage1.shell"/>
-                    <load name="stage1.shelleraser"/>
                     <load name="stage1.tabrok"/>
                     <load name="stage1.tabrok.imgFlight"/>
                     <load name="stage1.tabrok.imgGround"/>
@@ -2177,12 +2318,14 @@
                     <load name="stage1.dobkeratopsexplosion"/>
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>
-                    <load name="stage1.maps"/>
+                    <load name="stage1.maps.even"/>
+                    <load name="stage1.maps.odd"/>
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
                     <load name="stage1.music.ymm"/>
                     <load name="stage1"/>
-                </scene>
+                    <load name="stage1.bugres"/>
+</scene>
             </directory>
 
             <directory id="2" section="INDEX2" gensymbols="gen/directories/dir2/entries.asm">
@@ -2190,6 +2333,14 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul.
+                     La cascade est declaree par repertoire ; seul le 0 la
+                     portait, parce que lui seul avait des rangees <images>.
+                     Les repertoires 1 et 3..N ne l'ont toujours PAS : une
+                     rangee <images> ajoutee la-bas retomberait en bdraw et
+                     emettrait des routines d'effacement mortes (vecu ici, le
+                     cast du stage 2 pesait 34 675 octets au lieu de 16 383). -->
+                <default name="images.encoder"   value="draw"/>
 
 
                 <!-- Stage 2 : mêmes noms, tout autre contenu                  -->
@@ -2200,8 +2351,101 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/02/map/in.png" gendir="gen/stages/02/map"
-                            gensymbols="gen/stages/02/map/map.const.asm"/>
+                            gensymbols="gen/stages/02/map/map.const.asm"
+                            lean="false"/>
+
+                <!-- L'ENGULF DU BOSS : le tube du gomander se referme sur   -->
+                <!-- l'outslay. L'arcade repeint un rectangle de sa tilemap    -->
+                <!-- de fond (0x40:A578) ; chez nous c'est tilemap.patch.      -->
+                <!-- La bande de huit images est construite par                -->
+                <!-- tools/gen_engulf.py : l'art arcade converti sur la        -->
+                <!-- palette du stage, pose sur le decor de NOTRE carte a      -->
+                <!-- l'endroit mesure par correlation (colonne 87, ligne 7).   -->
+                <!-- lean="false" : rien ne scrolle ici, le rectangle est fixe.-->
+                <leanscroll image="src/stages/02/engulf/in.png"
+                            gendir="gen/stages/02/engulf"
+                            gensymbols="gen/stages/02/engulf/engulf.const.asm"
+                            lean="false"/>
+
+                <!-- LES QUATRE OUVERTURES. tick_gomander_orb_pellet_run    -->
+                <!-- (0x40:A638) repeint quatre tentacules, deux poses        -->
+                <!-- alternees chacune. Une SEULE bande de huit images et donc -->
+                <!-- un seul tileset : chaque <tilepatch> y prend sa plage par -->
+                <!-- l'attribut first. Placement derive de l'ancre de l'oeil   -->
+                <!-- par ECART (tools/gen_tubes.py).                           -->
+                <leanscroll image="src/stages/02/tubes/in.png"
+                            gendir="gen/stages/02/tubes"
+                            gensymbols="gen/stages/02/tubes/tubes.const.asm"
+                            lean="false"/>
+
+                <!-- LE CLIGNOTEMENT DE DEGATS. L'arcade repointe les bancs de -->
+                <!-- palette 7/8 du corps vers le banc 4 pendant seize trames.  -->
+                <!-- Nous n'avons qu'une palette et aucune case propre au boss,  -->
+                <!-- donc on recolore les tuiles (tools/gen_blink.py) et le     -->
+                <!-- patch ne touche que lui. Dans l'arene ennemis : c'est du    -->
+                <!-- contenu de boss, et la place y est.                         -->
+                <leanscroll image="src/stages/02/blink/in.png"
+                            gendir="gen/stages/02/blink"
+                            gensymbols="gen/stages/02/blink/blink.const.asm"
+                            lean="false"/>
+
+                <file name="stage2.blink.even" linkdata="LINK" arena="enemies"
+                      gendir="gen/stages/02/blink-even">
+                    <lwasm gensource="gen/stages/02/blink-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/blink-even"
+                                 gensource="gen/stages/02/blink-even/includes.asm">
+                            <image name="blinkEven" filename="gen/stages/02/blink/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.tubes.even" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/tubes-even">
+                    <lwasm gensource="gen/stages/02/tubes-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/tubes-even"
+                                 gensource="gen/stages/02/tubes-even/includes.asm">
+                            <image name="tubesEven" filename="gen/stages/02/tubes/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Tileset PROPRE a l'animation : mesure sur l'arcade, une   -->
+                <!-- animation de decor est du pixel sur mesure et ne partage  -->
+                <!-- quasi rien avec le niveau (161 ids distincts pour 192     -->
+                <!-- cellules, 4 cellules figees sur huit images).             -->
+                <file name="stage2.engulf.even" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/engulf-even">
+                    <lwasm gensource="gen/stages/02/engulf-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/engulf-even"
+                                 gensource="gen/stages/02/engulf-even/includes.asm">
+                            <image name="engulfEven" filename="gen/stages/02/engulf/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.engulf.odd" linkdata="LINK" arena="stage2.gfx"
+                      gendir="gen/stages/02/engulf-odd">
+                    <lwasm gensource="gen/stages/02/engulf-odd.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/02/engulf-odd"
+                                 gensource="gen/stages/02/engulf-odd/includes.asm">
+                            <image name="engulfOdd" filename="gen/stages/02/engulf/odd.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
 
                 <file name="stage2.tiles.even" linkdata="LINK" arena="stage2.gfx"
                       gendir="gen/stages/02/tiles-even">
@@ -2232,15 +2476,129 @@
                         <tilemap map="gen/stages/02/map/odd.bin" label="map.odd"
                                  tiles="stage2.tiles.odd" variant="ND0"
                                  gensource="gen/stages/02/map-odd.asm"/>
+                        <!-- L'animation du tube : UN descripteur pour les    -->
+                        <!-- deux plans, et les equates de geometrie pour le   -->
+                        <!-- code du boss, qui fait tourner l'horloge sans     -->
+                        <!-- rien lire de pagine.                              -->
+                        <!-- LES ZONES PATCHABLES, et de quoi les remettre     -->
+                        <!-- comme le niveau les livre. La carte en RAM est la  -->
+                        <!-- seule copie et un checkpoint ne recharge rien :    -->
+                        <!-- sans cette table le decor resterait fige dans la   -->
+                        <!-- derniere image ecrite. Ce ne sont que des          -->
+                        <!-- POINTEURS vers les tuiles DU NIVEAU — rien n'est   -->
+                        <!-- recompile. Les coordonnees sont celles des         -->
+                        <!-- <tilepatch> ci-dessous.                            -->
+                        <tilereset map="gen/stages/02/map/even.bin" maprows="15"
+                                   label="stage2.reset"
+                                   tiles="stage2.tiles.even" variant="ND0"
+                                   gensource="gen/stages/02/reset.asm"
+                                   genhead="gen/stages/02/reset-head.asm">
+                            <!-- Le rectangle du flash (84,6 8x9) contient    -->
+                            <!-- l'oeil et les tubes 0 et 2 ; seuls tube1 et    -->
+                            <!-- tube3 en depassent d'une colonne chacun.       -->
+                            <rect col="84" row="6"  cols="8" rows="9"/>
+                            <rect col="83" row="11" cols="3" rows="4"/>
+                            <rect col="89" row="11" cols="4" rows="4"/>
+                        </tilereset>
+
+                        <tilepatch map="gen/stages/02/engulf/even.bin" label="engulf"
+                                   mapodd="gen/stages/02/engulf/odd.bin"
+                                   tiles="stage2.engulf.even" variant="ND0"
+                                   tilesodd="stage2.engulf.odd" variantodd="ND0"
+                                   cols="2" rows="2" frames="8" col="87" row="7" hold="2"
+                                   gensymbols="gen/stages/02/engulf/engulf.const.asm"
+                                   gensource="gen/stages/02/engulf-map.asm"/>
+                        <!-- Le flash a DEUX trames : la 0 est le decor du    -->
+                        <!-- niveau lui-meme (base : pointe, pas recompile),    -->
+                        <!-- la 1 le blanc/cyan. Alterner 0/1 clignote, finir   -->
+                        <!-- sur 0 remet l'ecran exactement comme avant.        -->
+                        <tilepatch map="gen/stages/02/blink/even.bin" label="blink"
+                                   tiles="stage2.blink.even" variant="ND0"
+                                   base="gen/stages/02/map/even.bin" baserows="15"
+                                   basetiles="stage2.tiles.even"
+                                   cols="8" rows="9" frames="2"
+                                   col="84" row="6" hold="4"
+                                   gensymbols="gen/stages/02/blink/patch.const.asm"
+                                   gensource="gen/stages/02/blink-map.asm"/>
+
+                        <!-- Chaque tube declare SA taille (l'arcade : 7x8,   -->
+                        <!-- 9x8, 7x8, 10x8 cellules) ; firstcol repere sa      -->
+                        <!-- fenetre dans la bande partagee. Les valeurs sont    -->
+                        <!-- imprimees par tools/gen_tubes.py.                   -->
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube0"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="2" rows="4" frames="2" firstcol="0"
+                                   col="85" row="6" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube0.const.asm"
+                                   gensource="gen/stages/02/tube0-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube1"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="3" rows="4" frames="2" firstcol="4"
+                                   col="83" row="11" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube1.const.asm"
+                                   gensource="gen/stages/02/tube1-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube2"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="2" rows="4" frames="2" firstcol="10"
+                                   col="89" row="6" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube2.const.asm"
+                                   gensource="gen/stages/02/tube2-map.asm"/>
+                        <tilepatch map="gen/stages/02/tubes/even.bin" label="tube3"
+                                   tiles="stage2.tubes.even" variant="ND0"
+                                   cols="4" rows="4" frames="2" firstcol="14"
+                                   col="89" row="11" hold="4"
+                                   gensymbols="gen/stages/02/tubes/tube3.const.asm"
+                                   gensource="gen/stages/02/tube3-map.asm"/>
                     </lwasm>
                 </file>
 
-                <!-- Cast du stage 2 : squelettes (pas de source v1) — chaque ennemi a
-                     son unite, son id et ses lignes de wave ; implementation a venir. -->
-                <file name="stage2.cast" arena="enemies" codec="none">
+                <!-- Les 16 poses de tete/finalizer sortent du direntry du cast :
+                     37 sprites 12x24 en dessin seul pesent ~17,6 Ko, au-dela des
+                     16 Ko d'une entree. Le cast garde le code, le cou/queue, le
+                     corps et l'epave ; ce direntry-ci porte la tete. Les seize
+                     `set_outslay_head_*` franchissent donc la frontiere : 16
+                     references de lien, resolues au chargement (cf. symbols.md).
+                     Meme decoupe que stage1.tabrok.imgWalk / dobkeratops.imgFace. -->
+                <file name="stage2.cast.imgHead" linkdata="LINK" arena="enemies">
+                    <lwasm gensource="gen/enemies/stage2-cast-imghead.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgHead" gendir="gen/enemies/stage2-cast-imghead"
+                                 gensource="gen/enemies/stage2-cast-imghead/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imghead/index.asm">
+                            <images dir="src/enemies/outslay/images/head" names="outslay_head"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Cast du stage 2 : un direntry pour tout le cast. Les squelettes
+                     (pas de source v1) tombent un par un a mesure que la reference
+                     arcade est portee ; l'outslay est le premier implemente.
+                     Les poses : tete et finalizer partagent le pool de 16 du
+                     `head`, cou et queue celui du `neck` (le bout arriere lit le
+                     meme pool decale de 8) ; le corps a ses 4 images d'animation
+                     et son epave. Pas de `shifts` : 37 sprites 12x24 suffisent a
+                     la page, les doubler pour la precision sous-pixel non. -->
+                <!-- La zone residente du serpent : membre d'arene, charge en
+                     zeros par la scene (voir res.unit.asm). -->
+                <file name="stage2.outslay.res" linkdata="LINK" arena="stage2.res">
+                    <lwasm gensource="gen/stages/02/outslay-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/outslay/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/cast.unit.asm"/>
+                        <gfxcomp file="stage2.cast" gendir="gen/enemies/stage2-cast"
+                                 gensource="gen/enemies/stage2-cast/includes.asm"
+                                 genindex="gen/enemies/stage2-cast/index.asm">
+                            <images dir="src/enemies/outslay/images/neck" names="outslay_neck"/>
+                            <images dir="src/enemies/outslay/images/body" names="outslay_body"/>
+                            <images dir="src/enemies/outslay/images/body-broken" names="outslay_broken"/>
+                            <images dir="src/enemies/outslay/images/bydo-shot" names="outslay_shot"/>
+                        </gfxcomp>
                     </lwasm>
                 </file>
 
@@ -2250,6 +2608,12 @@
                         <asm filename="gen/directories/dir2/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="src/stages/02/main.asm"/>
+                        <!-- La TETE de la table de restauration. Elle vit ici,
+                             dans le resident du stage, et non avec la carte :
+                             tilemap.restore la lit sans monter de page. Les
+                             descripteurs qu'elle nomme, eux, restent dans le
+                             direntry de la carte — flush ira les chercher. -->
+                        <asm filename="gen/stages/02/reset-head.asm"/>
                         <!-- La palette dediee du stage : 12 communs + 4 cases propres,
                              ecrite par arcade_to_in.py (mode pal-next) depuis la MEME
                              affectation que map/in.png : l'accord est garanti. -->
@@ -2275,8 +2639,14 @@
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
+                    <load name="stage2.cast.imgHead"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>
+                    <load name="stage2.engulf.even"/>
+                    <load name="stage2.engulf.odd"/>
+                    <load name="stage2.tubes.even"/>
+                    <load name="stage2.blink.even"/>
+                    <load name="stage2.outslay.res"/>
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>
@@ -2290,6 +2660,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage3.wave" linkdata="LINK" arena="stage3.gfx">
                     <unit name="stage3.wave" symbol="stage.wave" section="code">
@@ -2298,8 +2670,57 @@
                     </unit>
                 </file>
 
+                <!-- La couche battleship (mscroll resident). Cinq direntries
+                     produits par l'element <mscroll> depuis la carte generee
+                     (tools/arcade_to_mscroll.py -> map/battleship.png) : la
+                     premiere declaration materialise aussi gen/stages/03/bship/
+                     (le .equ de geometrie et les flux de depart que les unites
+                     buffers INCLUDEBINent). Places en dur : les tilesets a
+                     l'offset $2000 de leurs pages (le format court <= 256
+                     tuiles couvre la moitie que la fenetre donnees montre en
+                     $A000 — meme adresse dans les deux pages, le LUT de
+                     lignes est commun aux deux plans), les buffers pleine
+                     page, la carte devant le tileset A (montages cart/data
+                     jamais simultanes). La moitie basse de $1C et la queue
+                     de $1D restent a l'arene. -->
+                <file name="stage3.bship.tilesA" page="$1D" address="$2000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="tiles" plane="0" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.tilesB" page="$1C" address="$2000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="tiles" plane="1" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.map" page="$1D" address="$0000">
+                    <mscroll filename="src/stages/03/map/battleship.png"
+                             gendir="gen/stages/03/bship" output="map" viewheight="180"/>
+                </file>
+                <file name="stage3.bship.bufA" page="$1E" address="$0000">
+                    <lwasm format="raw" gensource="gen/stages/03/bship-bufA.asm">
+                        <asm filename="src/stages/03/bship/bufA.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage3.bship.bufB" page="$1F" address="$0000">
+                    <lwasm format="raw" gensource="gen/stages/03/bship-bufB.asm">
+                        <asm filename="src/stages/03/bship/bufB.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- La choregraphie camera du warship : l'export re.arcade
+                     (out/warship/warship-camera-script.asm, copie commitee dans
+                     warship/camera-script.asm) — consommee par le pilote
+                     (warship/pilot.asm, unite stage3) par page montee, comme la
+                     wave. -->
+                <file name="stage3.camscript" linkdata="LINK" arena="stage3.gfx">
+                    <unit name="stage3.camscript" symbol="warship.camera.script" section="code">
+                        <asm filename="src/stages/03/warship/camera-script.asm"/>
+                    </unit>
+                </file>
+
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/03/map/in.png" gendir="gen/stages/03/map"
-                            gensymbols="gen/stages/03/map/map.const.asm"/>
+                            gensymbols="gen/stages/03/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage3.tiles.even" linkdata="LINK" arena="stage3.gfx"
                       gendir="gen/stages/03/tiles-even">
@@ -2338,6 +2759,9 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
                         <asm filename="gen/directories/dir4/entries.asm"/>
+                        <!-- la geometrie de la couche battleship, ecrite par
+                             les conversions <mscroll> ci-dessus -->
+                        <asm filename="gen/stages/03/bship/battleship.mscroll.equ"/>
                         <asm filename="src/stages/03/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="src/stages/03/palette/pal.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
@@ -2364,6 +2788,12 @@
                     <load name="stage3.tiles.odd"/>
                     <load name="stage3.maps"/>
                     <load name="stage3.wave"/>
+                    <load name="stage3.bship.tilesA"/>
+                    <load name="stage3.bship.tilesB"/>
+                    <load name="stage3.bship.map"/>
+                    <load name="stage3.bship.bufA"/>
+                    <load name="stage3.bship.bufB"/>
+                    <load name="stage3.camscript"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
                     <load name="stage3"/>
@@ -2375,6 +2805,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage4.wave" linkdata="LINK" arena="stage4.gfx">
                     <unit name="stage4.wave" symbol="stage.wave" section="code">
@@ -2383,8 +2815,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/04/map/in.png" gendir="gen/stages/04/map"
-                            gensymbols="gen/stages/04/map/map.const.asm"/>
+                            gensymbols="gen/stages/04/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage4.tiles.even" linkdata="LINK" arena="stage4.gfx"
                       gendir="gen/stages/04/tiles-even">
@@ -2444,15 +2878,40 @@
                     </lwasm>
                 </file>
 
+                <!-- La couche de gommes : RESIDENTE, dans la bande par-stage de la
+                     page 1 ($92DB-$9DCA, 2 800 o dont elle prend 1 969). C'est ce
+                     qui la rend simple : en RAM fixe, elle lit la page collision
+                     montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
+                     temps. Les tables sont generees et prouvees par
+                     tools/gen_pellet_tables.py. -->
+                <file name="stage4.pellet" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/stages/04/pellet.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pellet-blast.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage4.bugres" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/enemies/bugres4.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
+                    <load name="stage4.pellet"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
-                </scene>
+                    <load name="stage4.bugres"/>
+</scene>
             </directory>
 
             <directory id="5" section="INDEX5" gensymbols="gen/directories/dir5/entries.asm">
@@ -2460,6 +2919,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage5.wave" linkdata="LINK" arena="stage5.gfx">
                     <unit name="stage5.wave" symbol="stage.wave" section="code">
@@ -2468,8 +2929,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/05/map/in.png" gendir="gen/stages/05/map"
-                            gensymbols="gen/stages/05/map/map.const.asm"/>
+                            gensymbols="gen/stages/05/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage5.tiles.even" linkdata="LINK" arena="stage5.gfx"
                       gendir="gen/stages/05/tiles-even">
@@ -2545,6 +3008,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage6.wave" linkdata="LINK" arena="stage6.gfx">
                     <unit name="stage6.wave" symbol="stage.wave" section="code">
@@ -2553,8 +3018,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/06/map/in.png" gendir="gen/stages/06/map"
-                            gensymbols="gen/stages/06/map/map.const.asm"/>
+                            gensymbols="gen/stages/06/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage6.tiles.even" linkdata="LINK" arena="stage6.gfx"
                       gendir="gen/stages/06/tiles-even">
@@ -2633,6 +3100,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage7.wave" linkdata="LINK" arena="stage7.gfx">
                     <unit name="stage7.wave" symbol="stage.wave" section="code">
@@ -2641,8 +3110,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/07/map/in.png" gendir="gen/stages/07/map"
-                            gensymbols="gen/stages/07/map/map.const.asm"/>
+                            gensymbols="gen/stages/07/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage7.tiles.even" linkdata="LINK" arena="stage7.gfx"
                       gendir="gen/stages/07/tiles-even">
@@ -2702,6 +3173,16 @@
                     </lwasm>
                 </file>
 
+                <!-- Les boites residentes du gestionnaire de chaine du bug
+                     (fournisseur de bug.boxes pour CE stage, re-lie a chaque
+                     scene ; voir src/enemies/bug/res.unit.asm). -->
+                <file name="stage7.bugres" linkdata="LINK" arena="stage7.res">
+                    <lwasm gensource="gen/enemies/bugres7.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/bug/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage7" section="SCENE" gensource="gen/scenes/stage7.asm">
                     <load name="stage7.tiles.even"/>
                     <load name="stage7.tiles.odd"/>
@@ -2710,7 +3191,8 @@
                     <load name="stage7.collision"/>
                     <load name="stage7.music.ymm"/>
                     <load name="stage7"/>
-                </scene>
+                    <load name="stage7.bugres"/>
+</scene>
             </directory>
 
             <directory id="8" section="INDEX8" gensymbols="gen/directories/dir8/entries.asm">
@@ -2718,6 +3200,8 @@
                 <default name="file.maxsize" value="0x4000"/>
                 <default name="lwasm.format"     value="obj"/>
                 <default name="images.shifts"    value="0"/>
+                <!-- OVERLAY : les rangees <images> compilent en dessin seul -->
+                <default name="images.encoder"   value="draw"/>
 
                 <file name="stage8.wave" linkdata="LINK" arena="stage8.gfx">
                     <unit name="stage8.wave" symbol="stage.wave" section="code">
@@ -2726,8 +3210,10 @@
                     </unit>
                 </file>
 
+                <!-- OVERLAY : pas de lean, cf. le stage 01. -->
                 <leanscroll image="src/stages/08/map/in.png" gendir="gen/stages/08/map"
-                            gensymbols="gen/stages/08/map/map.const.asm"/>
+                            gensymbols="gen/stages/08/map/map.const.asm"
+                            lean="false"/>
 
                 <file name="stage8.tiles.even" linkdata="LINK" arena="stage8.gfx"
                       gendir="gen/stages/08/tiles-even">

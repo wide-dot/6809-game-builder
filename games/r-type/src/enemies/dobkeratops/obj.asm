@@ -70,7 +70,8 @@ Init
         blo   @orbit
         cmpb  #8
         blo   @foregroundOrbitAndNerves
-        ora   #render_overlay_mask ; alien background
+        ; OVERLAY : le drapeau render_overlay_mask n'existe plus (tout
+        ; sprite est dessine sans sauvegarde) — le geste devient neutre.
         bra   >
 @foregroundOrbitAndNerves
         ldx   #EyesObjects
@@ -92,8 +93,7 @@ Init
         bne   >
         ldb   #4               ; first orbit spawned: reset the nerve counter
         stb   eyesAlive        ; (arcade: parent +0x34 nerves-alive)
-!       ora   #render_overlay_mask
-        sta   render_flags,u
+!       sta   render_flags,u        ; OVERLAY : plus de drapeau overlay a poser
         lda   #rtnid.IntroEye
         sta   routine,u
         jmp   DisplaySprite

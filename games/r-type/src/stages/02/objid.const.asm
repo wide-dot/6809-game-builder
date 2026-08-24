@@ -17,8 +17,26 @@ ObjID_wick equ 34
 ObjID_brood equ 35
 ObjID_outslay equ 36
 ObjID_gomander equ 37
-
-objid.count equ 37
+* Les segments d'outslay : la chaine en pose 22, le role voyageant par le
+* subtype. L'emetteur (ObjID_outslay) est ce que la wave spawne ; lui seul
+* apparait dans wave.asm.
+* DEUX ids, et c'est Img_Page_Index qui l'impose : cette table donne UNE page
+* d'imagesets par identifiant, or les 16 poses de tete/finalizer vivent dans
+* leur propre direntry (stage2.cast.imgHead) faute de tenir dans les 16 Ko du
+* cast. Le code est le meme des deux cotes (outslay.Segment) ; seule la page
+* d'images differe.
+ObjID_outslay_segment equ 38
+ObjID_outslay_head equ 39
+* Le porteur du rendu groupe des segments : un seul objet moteur pour les 20
+* sprites du corps (schema du tailmgr du Dobkeratops).
+ObjID_outslay_render equ 40
+* Le projectile de la salve en etoile : art et boite DEDIES cote arcade
+* (tick 95f1, recipes 1000:417e, AABB 1000:4196), pas le bullet commun.
+ObjID_outslay_shot equ 41
+* L'animation de decor comme objet : le boss en instancie une par ouverture
+* de tube, elle vit sa duree et se rend. Voir common/fx/tilemapanim/obj.asm.
+ObjID_tilemapanim equ 42
+objid.count equ 42
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

@@ -14,7 +14,9 @@ capture d'écran).
 ## Usage
 
 ```bash
-export TOJE_MCP=<clone de toje>/scripts/toje-mcp.sh   # construit son classpath au 1er run
+# le lanceur est le plugin toje INSTALLE (derniere version, resolue par
+# mcp.py dans le cache des plugins Claude Code) ; TOJE_MCP ne sert qu'a
+# pointer un clone de dev : export TOJE_MCP=<clone de toje>/scripts/toje-mcp.sh
 
 cd examples/loader-ut
 python3 ../../ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd

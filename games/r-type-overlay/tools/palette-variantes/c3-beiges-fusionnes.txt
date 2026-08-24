@@ -1,8 +1,0 @@
-# Recette candidate pour la planche 3/3 — surcouche, par-dessus palette-map.txt.
-#
-#     palette_migrate.py RESSOURCE… --sans-base --variante <ce fichier>
-#
-# Beiges fusionnes — l'olive et les autres index sont deja tranches dans palette-map.txt, cette recette ne porte QUE les deux beiges.
-#
-# `*` = la ressource en cours : une recette ne prejuge de rien.
-*  3>2 4>2 fusion-ok

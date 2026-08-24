@@ -74,6 +74,20 @@ public class TilepatchPlugin {
 		// side, and each <tilepatch> takes its own window of it. Four tube
 		// openings in one tileset instead of four is worth the attribute.
 		int first = Attribute.getInteger(node, ctx, "first", 0);
+		// `firstcol` fait le meme travail que `first` mais en COLONNES de la
+		// bande : indispensable des que les animations partageant une coupe
+		// n'ont pas toutes la meme largeur (les quatre tubes du gomander font
+		// 2, 3, 2 et 4 colonnes — un compte de trames ne tombe plus juste).
+		int firstcol = Attribute.getInteger(node, ctx, "firstcol", -1);
+		// `base` fait de la TRAME 0 les cellules du niveau lui-meme : la carte
+		// donnee est lue au rectangle de destination et pointee telle quelle,
+		// comme <tilereset> — rien n'est compile deux fois. C'est la trame
+		// « repos » d'un clignotement : alterner 0/1 flashe puis remet le
+		// decor, et finir sur 0 rend l'ecran exactement comme avant.
+		String baseRel = Attribute.getStringOpt(node, ctx, "base");
+		String basetiles = Attribute.getStringOpt(node, ctx, "basetiles");
+		String basevariant = Attribute.getString(node, ctx, "basevariant", variant);
+		int baserows = Attribute.getInteger(node, ctx, "baserows", 0);
 
 		if (bitdepth != 8 && bitdepth != 16) {
 			throw new Exception("tilepatch " + label + " : bitdepth must be 8 or 16");
@@ -109,11 +123,25 @@ public class TilepatchPlugin {
 					+ " bytes, not a whole number of " + bitdepth + " bit indexes");
 		}
 		int entries = data.length / step;
-		int need = (first + frames) * cols * rows;
+		if ((baseRel == null) != (basetiles == null)) {
+			throw new Exception("tilepatch " + label + " : base and basetiles go together");
+		}
+		if (baseRel != null && baserows < 1) {
+			throw new Exception("tilepatch " + label + " : base needs baserows (rows per column of that map)");
+		}
+		if (baseRel != null && mapOdd != null) {
+			throw new Exception("tilepatch " + label + " : base only supports the even plane");
+		}
+		int stripFrames = frames - (baseRel == null ? 0 : 1);
+		if (stripFrames < 1) {
+			throw new Exception("tilepatch " + label + " : frames counts the base frame too, it must be at least 2 with base");
+		}
+		int base0 = firstcol >= 0 ? firstcol * rows : first * cols * rows;
+		int need = base0 + stripFrames * cols * rows;
 		if (entries < need) {
 			throw new Exception("tilepatch " + label + " : " + map + " holds " + entries
-					+ " indexes, but frames " + first + ".." + (first + frames - 1)
-					+ " of " + cols + "x" + rows + " need " + need
+					+ " indexes, but the window starting at cell " + base0
+					+ " needs " + need + " for " + stripFrames + " frames of " + cols + "x" + rows
 					+ " — the picture and the declared geometry disagree");
 		}
 
@@ -129,9 +157,25 @@ public class TilepatchPlugin {
 			// seule LA FENETRE de cette animation compte : `first` permet a
 			// plusieurs <tilepatch> de partager une coupe, et declarer les
 			// tuiles des autres fausserait le releve autant que le fichier.
-			boolean mine = i >= first * cols * rows && i < (first + frames) * cols * rows;
+			boolean mine = i >= base0 && i < base0 + stripFrames * cols * rows;
 			if (mine && ids[i] != 0) used.add(ids[i]);
 			if (mine && mapOdd != null && idsOdd[i] != 0) usedOdd.add(idsOdd[i]);
+		}
+
+		int[] baseIds = null;
+		java.util.TreeSet<Integer> usedBase = new java.util.TreeSet<Integer>();
+		if (baseRel != null) {
+			byte[] bd = Files.readAllBytes(Paths.get(ctx.path + File.separator + baseRel));
+			baseIds = new int[cols * rows];
+			for (int c = 0; c < cols; c++) {
+				for (int r = 0; r < rows; r++) {
+					int i = (dstCol + c) * baserows + (dstRow + r);
+					int id = step == 1 ? bd[i] & 0xFF
+							: ((bd[i * 2] & 0xFF) << 8) | (bd[i * 2 + 1] & 0xFF);
+					baseIds[c * rows + r] = id;
+					if (id != 0) usedBase.add(id);
+				}
+			}
 		}
 
 		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
@@ -151,6 +195,11 @@ public class TilepatchPlugin {
 		}
 		for (int id : usedOdd) {
 			String tile = "adr_" + tilesOdd + "_" + id + "_" + variantOdd;
+			source.append(tile).append(" EXTERNAL").append(nl);
+			source.append(tile).append("$PAGE EXTERNAL").append(nl);
+		}
+		for (int id : usedBase) {
+			String tile = "adr_" + basetiles + "_" + id + "_" + basevariant;
 			source.append(tile).append(" EXTERNAL").append(nl);
 			source.append(tile).append("$PAGE EXTERNAL").append(nl);
 		}
@@ -188,9 +237,12 @@ public class TilepatchPlugin {
 			}
 			for (int f = 0; f < frames; f++) {
 				source.append(label).append('.').append(suffix).append(f).append(nl);
-				int base = (first + f) * cols * rows;
+				boolean fromBase = baseIds != null && f == 0;
+				int base = base0 + (f - (baseIds == null ? 0 : 1)) * cols * rows;
+				String h = fromBase ? basetiles : host;
+				String v = fromBase ? basevariant : var;
 				for (int i = 0; i < cols * rows; i++) {
-					int id = src[base + i];
+					int id = fromBase ? baseIds[i] : src[base + i];
 					if (id == 0) {
 						// same convention as <tilemap> : nothing to draw. On a
 						// patch that is not a hole in the data, it is an erase.
@@ -199,7 +251,7 @@ public class TilepatchPlugin {
 						empty++;
 						continue;
 					}
-					String symbol = "adr_" + host + "_" + id + "_" + var;
+					String symbol = "adr_" + h + "_" + id + "_" + v;
 					source.append("        fcb   ").append(machine.pageExpr).append(symbol)
 							.append("$PAGE").append(nl);
 					source.append("        fdb   ").append(symbol).append(nl);
@@ -237,10 +289,13 @@ public class TilepatchPlugin {
 			Files.writeString(ep, eq.toString());
 		}
 
+		// entries est la bande ENTIERE, partagee entre plusieurs animations :
+		// le cout de celle-ci est sa fenetre a elle, base comprise.
 		log.info("tilepatch {} : {} frames of {}x{} over two planes ({}+{} distinct tiles, "
 				+ "{} empty cells), {} bytes of blocks + {} of tables and descriptor",
 				label, frames, cols, rows, used.size(), usedOdd.size(), empty,
-				entries * 3 * (mapOdd == null ? 1 : 2), frames * 4 + 10);
+				frames * cols * rows * 3 * (mapOdd == null ? 1 : 2),
+				frames * 2 * (mapOdd == null ? 1 : 2) + 8);
 		return path.toFile();
 	}
 }

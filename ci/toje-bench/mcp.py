@@ -1,20 +1,39 @@
 """Minimal MCP stdio client for the toje emulator (teo-mcp module).
 
-The launcher is taken from the TOJE_MCP environment variable — point it at
-<toje clone>/scripts/toje-mcp.sh. The script builds its own classpath on
-first run, then execs the stdio JSON-RPC server.
+The launcher is the INSTALLED toje plugin, latest version, resolved from the
+Claude Code plugin cache (decision 22/08/2026 : one source of truth, the
+official plugin). TOJE_MCP stays as an override for plugin development —
+point it at <toje clone>/scripts/toje-mcp.sh. Beware when overriding : the
+clone and the plugin declare the same Maven version, their builds overwrite
+each other's jars in ~/.m2.
 """
-import json, os, subprocess
+import atexit, glob, json, os, subprocess
+
+PLUGIN_GLOB = os.path.expanduser(
+    "~/.claude/plugins/cache/wide-dot-thomson/toje/*/scripts/toje-mcp.sh")
+
+
+def _plugin_launcher():
+    """Latest installed plugin version (numeric sort : 1.10 > 1.9)."""
+    def vkey(path):
+        v = path.split("/toje/")[1].split("/")[0]
+        return [int(p) if p.isdigit() else 0 for p in v.split(".")]
+    found = sorted(glob.glob(PLUGIN_GLOB), key=vkey)
+    return found[-1] if found else None
 
 
 class Toje:
     def __init__(self):
-        launcher = os.environ.get("TOJE_MCP")
+        launcher = os.environ.get("TOJE_MCP") or _plugin_launcher()
         if not launcher:
-            raise SystemExit("TOJE_MCP must point at <toje>/scripts/toje-mcp.sh")
+            raise SystemExit("no toje plugin installed (looked at %s) and "
+                             "TOJE_MCP is not set" % PLUGIN_GLOB)
         self.proc = subprocess.Popen([launcher], stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.DEVNULL, text=True)
+        # The JVM must not outlive the probe script : a leaked instance per
+        # run is how a debugging session ends up with a hundred of them.
+        atexit.register(self.close)
         self.rid = 0
         self.request("initialize", {"protocolVersion": "2024-11-05",
                                     "capabilities": {},
@@ -48,10 +67,17 @@ class Toje:
             args.setdefault("fast", True)
         res = self.request("tools/call", {"name": name, "arguments": args})
         txt = "".join(c.get("text", "") for c in res.get("content", []))
+        # A tool-level error (isError) MUST raise. Swallowing it cost two
+        # debugging sessions : probes passing timeout_ms=900000 (schema max is
+        # 600000) had every run_frames silently rejected — the machine never
+        # advanced, which looked exactly like a game freeze (the phantom
+        # "stage 7 freeze" of 22/08/2026).
+        if res.get("isError"):
+            raise RuntimeError(f"{name}: {txt}")
         try:
             return json.loads(txt)
         except Exception:
-            return {"raw": txt, "isError": res.get("isError")}
+            return {"raw": txt}
 
     # --- conveniences -----------------------------------------------------
 
@@ -99,4 +125,9 @@ class Toje:
             print(self.call("disassemble", {"addr": pc, "lines": 8}), flush=True)
 
     def close(self):
-        self.proc.terminate()
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()

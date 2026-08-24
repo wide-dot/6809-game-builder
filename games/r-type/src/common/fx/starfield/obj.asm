@@ -39,12 +39,12 @@
 ; aux sprites propres au stage 1, et le fondu de tunnel qui l'exploitait est
 ; retire.
 ;
-; Deux passes par trame (cf. main.asm et le commentaire de StarfieldErase) :
-;   ERASE entre DrawTiles et DrawSprites (le fond vient d'etre restaure),
-;   DRAW apres DrawSprites (les fonds sauvegardes ne contiennent JAMAIS
-;   d'etoile -> un sprite immobile puis remis en mouvement ne peut pas
-;   reinjecter d'etoiles perimees). Le test "ciel vierge" garde les etoiles
-;   derriere les sprites.
+; OVERLAY : UNE passe par trame. L'effacement global noircit le champ en tete
+; de verrou et les etoiles se tracent DESSUS immediatement — ecriture directe,
+; sans lecture ni test, le champ etant vierge par construction — puis les
+; tuiles et les sprites recouvrent tout ce qu'ils traversent. La passe ERASE,
+; ses tables d'offsets par buffer et le test "ciel vierge" sont partis avec
+; le chantier effacement (l'effaceur global fait leur travail).
 ; ===========================================================================
 ; V2-DEVIATION: INCLUDE de macros.asm retire — l'unite hote le porte deja
 ; (en v1 chaque objet etait une unite d'assemblage a lui seul).
@@ -76,39 +76,20 @@
 ; `sfdh\1` seul ne definit rien (erreur "Undefined symbol"), et les labels
 ; anonymes `>` / `!` ne se re-resolvent pas par expansion de macro.
 ; ---------------------------------------------------------------------------
+; OVERLAY : ecriture DIRECTE — ni lecture, ni test, ni XOR. Le champ vient
+; d'etre efface : l'autre nibble de l'octet est du ciel a zero, ecrire l'octet
+; entier est juste. Un masque a zero (etoile eteinte par le fondu) ecrit du
+; noir sur du noir. Le second argument des invocations (l'ancien chainage de
+; saut) est conserve mais inutilise.
 STAR_DH MACRO                           ; tracer, nibble haut
 sfdh\1  ldx   \1,u
-        lda   ,x
-        bita  #$F0                      ; ciel vierge ? notre nibble a 0
-        bne   sfdh\2
-        eora  \1/2-16,y                 ; 0 -> couleur de CETTE etoile
+        lda   \1/2-16,y                 ; la couleur de CETTE etoile
         sta   ,x
  ENDM
 
 STAR_DL MACRO                           ; tracer, nibble bas
 sfdl\1  ldx   \1,u
-        lda   ,x
-        bita  #$0F                      ; le meme test sur l'autre nibble
-        bne   sfdl\2
-        eora  \1/2-8,y
-        sta   ,x
- ENDM
-
-STAR_EH MACRO                           ; effacer, nibble haut
-sfeh\1  ldx   \1,u
-        lda   ,x
-        eora  \1/2-16,y                 ; notre couleur -> 0
-        bita  #$F0
-        bne   sfeh\2                    ; ce n'etait pas notre couleur
-        sta   ,x
- ENDM
-
-STAR_EL MACRO                           ; effacer, nibble bas
-sfel\1  ldx   \1,u
-        lda   ,x
-        eora  \1/2-8,y
-        bita  #$0F
-        bne   sfel\2
+        lda   \1/2-8,y
         sta   ,x
  ENDM
 
@@ -141,10 +122,8 @@ sfel\1  ldx   \1,u
 ; 2 = gris clair #A8A8A8, 4 = bleu fonce #00618F. Les octets sont renumerotes
 ; par tools/palette_code.py, jamais a la main. L'etoile 8 (offset 14) = slot 7.
 ; ---------------------------------------------------------------------------
-; Les masques de la table sont REECRITS par le fondu de sortie, et
-; l'effacement XOR doit toujours employer la couleur TRACEE dans son buffer :
-; StarfieldErase rebatit donc les masques au palier du buffer AVANT son
-; effacement, et au palier courant apres (starBufPal / starTblPal). Les
+; Les masques de la table sont REECRITS par le fondu de sortie : StarfieldDraw
+; les rebatit au palier courant quand celui-ci change (garde starTblPal). Les
 ; valeurs nominales font foi dans starMasksNominal ; celles ci-dessous n'en
 ; sont que l'etat de depart.
         fcb   $20,$10,$20,$20,$10,$20,$10,$20   ; p0 : clair,moyen,clair,clair,moyen,clair,moyen,clair
@@ -233,23 +212,17 @@ StarfieldInit
         aslb
         ldx   #starLifetimes
         ldd   b,x                       ; D = duree du variant, en trames de jeu
-        ; les masques repartent au nominal par le differentiel de StarfieldErase
-        ; (starBufPal / starTblPal) : jamais en direct — l'ecran peut encore
-        ; porter des etoiles aux couleurs d'un fondu entame.
+        ; les masques repartent au nominal au prochain trace (starPalier 0
+        ; != starTblPal -> StarMasksApply) ; l'ecran, lui, est efface chaque
+        ; trame — aucune etoile d'un fondu entame n'y survit.
         clr   starPalier
-        ; dans les deux cas la prolongation ou la naissance rendent le droit
-        ; de tracer (starNoDraw peut etre leve par un dernier palier ou une
-        ; queue d'extinction en cours)
-        clr   starNoDraw
-        clr   starOffCnt
-        clr   starFade
+        clr   starFade                  ; un fondu entame repart de zero
         tst   starDead
         beq   sf_extend
         ; mort -> naissance complete : offsets et tours a zero
         std   starLifetime
         ldx   #starCurOff
-        ldb   #27                       ; 6 (starCurOff) + 12 (starPrevOff)
-                                        ; + 3 (starCurLap) + 6 (starPrevLap)
+        ldb   #9                        ; 6 (starCurOff) + 3 (starCurLap)
 sf_ini  clr   ,x+
         decb
         bne   sf_ini
@@ -271,160 +244,6 @@ sf_extend
 StarfieldKill
         lda   #1
         sta   starDead
-        rts
-
-; ---------------------------------------------------------------------------
-; La trame est en DEUX passes, encadrant DrawSprites (cf. main.asm) :
-;   EraseSprites -> DrawTiles -> starfield.ERASE -> DrawSprites -> starfield.DRAW
-;
-; POURQUOI : le moteur SAUTE l'effacement/redraw d'un sprite immobile
-; (CheckSpritesRefresh compare buf_prev_xy_pixel). Si les etoiles etaient
-; tracees AVANT DrawSprites, elles etaient cuites dans la cellule de fond
-; sauvegardee du sprite ; un sprite reste immobile N trames (vaisseau pose,
-; pod dormant), puis bouge -> le moteur restaure un fond VIEUX de N trames,
-; avec des etoiles a des offsets que le starfield ne vise plus -> residus
-; permanents. En tracant APRES la sauvegarde des fonds, aucune cellule ne
-; contient jamais d'etoile : la restauration ne peut plus rien reinjecter.
-; L'effacement, lui, reste AVANT DrawSprites (le fond vient d'etre restaure
-; par EraseSprites, nos etoiles de l'avant-derniere trame y sont visibles).
-; ---------------------------------------------------------------------------
-
-; StarPlaneIdx - index du plan courant, partages par les deux passes.
-StarPlaneIdx
-        ldb   starPlaneIdx
-        aslb                            ; B = plan*2
-        stb   starCurIdx
-        aslb                            ; B = plan*4
-        addb  starBufOff                ; + buffer*2
-        stb   starPrevIdx
-        lsrb                            ; B = plan*2 + buffer : index dans starPrevLap
-        stb   starPrevLapIdx
-        rts
-
-; ---------------------------------------------------------------------------
-; StarfieldErase - passe 1 : effacer chaque plan a l'offset et au tour du
-; dernier trace DANS CE BUFFER. Porte aussi l'horloge de vie et l'extinction.
-;
-; LE MODELE EST CELUI DE L'ARCADE (tick_starfield, 0x40:E4A5) : un compte a
-; rebours arme par la wave, un fondu avant le terme, puis la mort. Le mur
-; camera de la v1 (star_cam_max, reglage a l'oeil) est retire : la duree du
-; variant donne le meme point de coupe, et le respawn au checkpoint — que la
-; camera revenue en arriere signalait ici — est couvert par le rejeu de la
-; wave, exactement comme l'arcade (l'entree starfield est posee quelques
-; trames apres chaque checkpoint du ciel).
-;
-; L'arcade fond sa sortie par la palette (62 trames vers le noir). Sans slots
-; de palette a nous, le fondu est une echelle de MASQUES par etoile, validee
-; par l'auteur (18/08) : les claires descendent au gris moyen, puis les bleues
-; s'eteignent, puis les grises d'origine, puis les survivantes — un palier
-; toutes les 12 trames sur les 48 dernieres, puis 4 rendus d'effacement pur et
-; starDead coupe tout. Un masque ne change JAMAIS en direct : l'effacement
-; XOR exige d'effacer avec la couleur TRACEE, donc chaque buffer a sa table
-; de plans (planeTableA/B) et une recette en attente s'applique a la table
-; d'un buffer APRES son effacement, AVANT son trace (starMaskPend, par
-; buffer — robuste aussi quand une trame sautee fait repasser le meme buffer).
-; ---------------------------------------------------------------------------
-StarfieldErase
-        lda   starDead
-        lbne  sfe_done                  ; mort : cout nul jusqu'a la prochaine wave
-        lda   starOffCnt
-        bne   sfe_wipe                  ; queue d'extinction entamee
-        lda   starFade
-        bne   sfe_fade                  ; fondu entame : il compte en RENDUS
-; l'horloge de VIE, en trames de JEU : les trames sautees comptent, meme
-; convention que l'avance des offsets dans StarfieldDraw — c'est elle qui
-; ancre la fin du champ a une POSITION de la carte.
-        ldb   gfxlock.frameDrop.count
-        bne   >
-        incb                            ; 0 -> compter 1 trame
-!       clra
-        pshs  d
-        ldd   starLifetime
-        subd  ,s++
-        bhi   >
-        ldd   #0                        ; terme deja depasse (grosse rafale de
-!       std   starLifetime              ; drops) : le fondu part quand meme
-        cmpd  #48
-        bhi   sfe_buf                   ; loin du terme
-; Le FONDU, lui, compte en RENDUS (decision auteur, 19/08) : en trames de
-; jeu, une periode de frame-drop le comprimait — 48 trames avalees en 16
-; rendus, des paliers sautes, et les etoiles disparaissaient d'un coup. Un
-; palier a besoin de 2 rendus pour se propager aux deux buffers ; 12 rendus
-; par palier le garantissent quel que soit le drop.
-        lda   #48
-        sta   starFade
-sfe_fade
-        dec   starFade
-        beq   sfe_wipe                  ; fondu fini -> queue d'extinction
-        ldb   #1                        ; 37..48 -> palier 1 : les claires en gris moyen
-        lda   starFade
-        cmpa  #36
-        bhi   sfe_pal
-        incb                            ; 25..36 -> palier 2 : les bleues s'eteignent
-        cmpa  #24
-        bhi   sfe_pal
-        incb                            ; 13..24 -> palier 3 : les grises d'origine
-        cmpa  #12
-        bhi   sfe_pal
-        lda   #1                        ; 1..12 -> les survivantes s'eteignent
-        sta   starNoDraw                ;         (l'effacement continue, lui)
-sfe_pal cmpb  starPalier
-        bls   sfe_buf                   ; palier deja atteint
-        stb   starPalier                ; la resynchronisation par buffer suit
-        bra   sfe_buf
-; la queue : on ne trace plus, on efface encore 4 rendus (les 2 buffers
-; nettoyes 2x), puis starDead coupe tout definitivement.
-sfe_wipe
-        lda   #1
-        sta   starNoDraw
-        inc   starOffCnt
-        lda   starOffCnt
-        cmpa  #4
-        blo   sfe_buf
-        sta   starDead                  ; A != 0
-sfe_buf
-        lda   gfxlock.backBuffer.id
-        beq   >
-        lda   #2
-!       sta   starBufOff                ; sert aussi a la passe DRAW (meme trame)
-        clr   starPlaneIdx
-; les masques au palier ou CE buffer avait TRACE, avant de l'effacer
-        ldx   #starBufPal
-        ldb   gfxlock.backBuffer.id
-        lda   b,x
-        cmpa  starTblPal
-        beq   >
-        jsr   StarMasksApply            ; A = palier vise
-!       ldy   #planeTable
-sfe_plane
-        jsr   StarPlaneIdx
-; Deplacement de tour de l'effacement = le tour trace dans CE buffer. On efface
-; exactement la ou on avait trace, sinon les etoiles de l'autre tour resteraient.
-        jsr   StarLapDispPrev
-        ldx   #starPrevOff
-        ldb   starPrevIdx
-        abx
-        lda   ,x                        ; octet haut = partie entiere
-        jsr   StarErasePass
-        leay  25,y                      ; descripteur suivant (25 octets)
-        inc   starPlaneIdx
-        lda   starPlaneIdx
-        cmpa  #3
-        blo   sfe_plane
-; l'effacement a employe les couleurs TRACEES dans ce buffer ; le trace qui
-; suit emploiera celles du palier courant — rebatir si elles different, et
-; noter que ce buffer trace desormais au palier courant.
-        lda   starTblPal
-        cmpa  starPalier
-        beq   sfe_sync
-        lda   starPalier
-        jsr   StarMasksApply
-sfe_sync
-        ldx   #starBufPal
-        ldb   gfxlock.backBuffer.id
-        lda   starPalier
-        sta   b,x
-sfe_done
         rts
 
 ; ---------------------------------------------------------------------------
@@ -478,19 +297,66 @@ sfm_st  sta   ,u+
         rts
 
 ; ---------------------------------------------------------------------------
-; StarfieldDraw - passe 2 : avancer chaque plan puis tracer au nouvel offset,
-; et memoriser (offset, tour) pour l'effacement de CE buffer a la trame
-; suivante. starBufOff et starNoDraw viennent de la passe ERASE (meme trame).
+; StarfieldDraw - LA passe du champ d'etoiles, appelee juste apres
+; l'effacement global, avant les tuiles. Elle porte aussi le cycle de vie
+; (horloge en trames de jeu, fondu en RENDUS — decision auteur, 19/08),
+; transplante tel quel de l'ancienne passe ERASE. L'extinction n'a plus de
+; queue d'effacement : quand plus rien ne se trace (fondu <= 12, les
+; survivantes eteintes), le champ est simplement MORT — l'effaceur global
+; nettoie l'ecran a la trame suivante.
 ; ---------------------------------------------------------------------------
 StarfieldDraw
         lda   starDead
         lbne  sfd_done
-        lda   starNoDraw
-        lbne  sfd_done                  ; extinction : on efface encore, on ne trace plus
-        clr   starPlaneIdx
-        ldy   #planeTable               ; ERASE a laisse la table au palier courant
+        lda   starFade
+        bne   sfd_fade                  ; fondu entame : il compte en RENDUS
+; l'horloge de VIE, en trames de JEU : les trames sautees comptent, meme
+; convention que l'avance des offsets plus bas — c'est elle qui ancre la
+; fin du champ a une POSITION de la carte.
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb                            ; 0 -> compter 1 trame
+!       clra
+        pshs  d
+        ldd   starLifetime
+        subd  ,s++
+        bhi   >
+        ldd   #0                        ; terme deja depasse (grosse rafale de
+!       std   starLifetime              ; drops) : le fondu part quand meme
+        cmpd  #48
+        bhi   sfd_masks                 ; loin du terme
+        lda   #48                       ; le terme approche : armer le fondu
+        sta   starFade
+sfd_fade
+        dec   starFade
+        lda   starFade
+        cmpa  #12
+        bhi   >
+        lda   #1                        ; 0..12 : les survivantes s'eteignent —
+        sta   starDead                  ; plus rien a tracer, le champ est mort
+        rts
+!       ldb   #1                        ; 37..48 -> palier 1 : les claires en gris moyen
+        cmpa  #36
+        bhi   sfd_pal
+        incb                            ; 25..36 -> palier 2 : les bleues s'eteignent
+        cmpa  #24
+        bhi   sfd_pal
+        incb                            ; 13..24 -> palier 3 : les grises d'origine
+sfd_pal cmpb  starPalier
+        bls   sfd_masks                 ; palier deja atteint
+        stb   starPalier
+sfd_masks
+; la table au palier courant (et au nominal apres une renaissance)
+        lda   starPalier
+        cmpa  starTblPal
+        beq   >
+        jsr   StarMasksApply
+!       clr   starPlaneIdx
+        ldy   #planeTable
 sfd_plane
-        jsr   StarPlaneIdx
+        ldb   starPlaneIdx
+        aslb                            ; B = plan*2
+        stb   starCurIdx
 
 ; --- 1) AVANCER l'offset courant (compense frame-drop) -----------------------
         lda   gfxlock.frameDrop.count
@@ -532,26 +398,6 @@ sfd_wrapEnd
         lda   ,x                        ; partie entiere du nouvel offset
         jsr   StarDrawPass
 
-; --- 3) memoriser l'offset ET le tour traces pour CE buffer ------------------
-; Les DEUX pointeurs sont calcules AVANT le ldd : un "ldb starPrevIdx" apres
-; le ldd ecraserait B, c'est-a-dire l'octet BAS de D (piege ldd = A:B).
-        ldx   #starPrevOff
-        ldb   starPrevIdx
-        abx                             ; X = &starPrevOff[plan][buffer]
-        ldu   #starCurOff
-        ldb   starCurIdx
-        leau  b,u                       ; U = &starCurOff[plan]
-        ldd   ,u
-        std   ,x
-; tour trace -> starPrevLap[plan][buffer], pour que l'effacement de la trame
-; suivante vise le meme tour.
-        ldu   #starCurLap
-        ldb   starPlaneIdx
-        lda   b,u                       ; A = tour courant du plan
-        ldu   #starPrevLap
-        ldb   starPrevLapIdx
-        sta   b,u
-
         leay  25,y                      ; descripteur suivant (25 octets)
         inc   starPlaneIdx
         lda   starPlaneIdx
@@ -561,17 +407,11 @@ sfd_done                                ; depasse la portee +/-127
         rts
 
 ; ---------------------------------------------------------------------------
-; StarLapDispPrev / StarLapDispCur - calculent starLapDisp, le deplacement de
-; tour (en octets) que StarSetup ajoutera a U : 0 au tour 0, lapStride au tour 1.
-;   Prev : tour = starPrevLap[starPrevLapIdx]  (pour l'effacement)
-;   Cur  : tour = starCurLap[B]                 (pour le trace ; B = plan)
+; StarLapDispCur - calcule starLapDisp, le deplacement de tour (en octets)
+; que StarSetup ajoutera a U : 0 au tour 0, lapStride au tour 1.
+;   tour = starCurLap[B]  (B = plan)
 ; Y = descripteur (lapStride en 7,y). Preservent X. Clobber : A, B, D, U.
 ; ---------------------------------------------------------------------------
-StarLapDispPrev
-        ldu   #starPrevLap
-        ldb   starPrevLapIdx
-        lda   b,u                       ; A = tour trace dans ce buffer
-        bra   StarLapDisp
 StarLapDispCur
         ldu   #starCurLap
         lda   b,u                       ; A = tour courant (B = plan en entree)
@@ -639,41 +479,6 @@ sf_dr_low
         STAR_DL 12,99
 sfdl99 rts
 
-; ---------------------------------------------------------------------------
-; StarErasePass - efface les etoiles du plan a l'offset A. Meme XOR que le
-; tracage, applique AVANT le test : si c'etait notre couleur, le nibble devient
-; $F et on ecrit ; sinon (decor, sprite, autre plan) on ne touche a rien.
-; ---------------------------------------------------------------------------
-StarErasePass
-        jsr   StarSetup
-        bne   sf_er_low
-        lda   5,y
-        bne   sfeh14
-        bra   sfeh0
-; --- nibble haut, deroule
-        STAR_EH 14,0
-        STAR_EH 0,2
-        STAR_EH 2,4
-        STAR_EH 4,6
-        STAR_EH 6,8
-        STAR_EH 8,10
-        STAR_EH 10,12
-        STAR_EH 12,99
-sfeh99 rts
-sf_er_low
-        lda   5,y
-        bne   sfel14
-        bra   sfel0
-; --- nibble bas, deroule
-        STAR_EL 14,0
-        STAR_EL 0,2
-        STAR_EL 2,4
-        STAR_EL 4,6
-        STAR_EL 6,8
-        STAR_EL 8,10
-        STAR_EL 10,12
-        STAR_EL 12,99
-sfel99 rts
 
 ; ---------------------------------------------------------------------------
 ; Adresses VRAM precalculees (6048 o, page cartouche). GENERE : ne pas editer,

@@ -42,6 +42,14 @@ gouger.Object     EXTERNAL
 wick.Object       EXTERNAL
 brood.Object      EXTERNAL
 outslay.Object    EXTERNAL
+; Le segment de la chaine d'outslay : spawne par l'emetteur et non par la
+; wave. Il porte DEUX identifiants (le corps et la tete/finalizer, dont les
+; images vivent dans un autre direntry) pour une seule entree de code.
+outslay.Segment   EXTERNAL
+outslay.Render    EXTERNAL
+tilemapanim.Object EXTERNAL
+; Le projectile de la salve en etoile : art et boite dedies (shot.asm).
+outslay.Shot      EXTERNAL
 gomander.Object   EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
@@ -53,6 +61,10 @@ Ani_Asd_common    EXTERNAL
 ; ce symbole — paged.call suffit a l'atteindre. Les deux stages partagent
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
+; L'effacement du champ de jeu, meme page : peint en tete de trame.
+adr_playfield_clear_ND0 EXTERNAL
+playfield.clearBlast    EXTERNAL
+playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -69,7 +81,6 @@ hud.gameOverWait  EXTERNAL
 
 starfield.init    EXTERNAL
 starfield.kill    EXTERNAL
-starfield.erase   EXTERNAL
 starfield.draw    EXTERNAL
 
 ; Le joueur, dans sa page a lui : l'index d'objets du stage y renvoie pour les
@@ -229,10 +240,17 @@ main.endstage.counter    EXPORT
 main.endstage.phase      EXPORT
 main.endstage.scoreArmed EXPORT
 main.endstage.scoreDone  EXPORT
+main.endstage.rallyX     EXPORT
+main.endstage.rallyY     EXPORT
 main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
 main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
 main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
 main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
+; Le point de ralliement de l'autopilote, publie par LE STAGE : l'objet
+; endlevel est un binaire commun, il ne peut pas porter une valeur par stage.
+; Cible commune aux stages 1-7 (drapeau 0xFF). Table arcade complete : endlevel.const.asm.
+main.endstage.rallyX     fdb endstage.RALLY_X
+main.endstage.rallyY     fdb endstage.RALLY_Y
 
 stage.endTick
         ; La musique du boss : le marqueur seme par la wave pose ce drapeau, et
@@ -291,6 +309,14 @@ stage.setup
         lda   #map.RAM_OVER_CART+stage2.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
+
+        ; Les zones que les animations de decor peuvent ecraser, et de quoi les
+        ; remettre a l'etat du niveau au retour de checkpoint (<tilereset>).
+        ; La tete de table est assemblee DANS cette unite (genhead) : c'est un
+        ; label ordinaire, ni export ni link data, et tilemap.restore la lit
+        ; sans rien monter.
+        ldd   #stage2.reset
+        std   tilemap.resetTable
 
         ldd   #stage.wave
         std   object_wave_data

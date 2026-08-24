@@ -40,6 +40,15 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core (pilote, unite du main)
+        ; la couche mscroll : carte et buffers montes en espace cartouche
+        ; (RAM_OVER_CART), tilesets montes en fenetre donnees (numero nu) —
+        ; la convention du banc examples/mscroll
+        fcb   map.RAM_OVER_CART+stage3.bship.map.page ; objid.bship.map
+        fcb   stage3.bship.tilesA.page ; objid.bship.tilesA
+        fcb   stage3.bship.tilesB.page ; objid.bship.tilesB
+        fcb   map.RAM_OVER_CART+stage3.bship.bufA.page ; objid.bship.bufA
+        fcb   map.RAM_OVER_CART+stage3.bship.bufB.page ; objid.bship.bufB
 
 Obj_Index_Address
         fdb   0
@@ -83,6 +92,12 @@ Obj_Index_Address
         fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   patapata.Object ; ObjID_patapata
         fdb   bink.Object ; ObjID_bink
+        fdb   warship.pilot ; ObjID_warship_core
+        fdb   stage3.bship.map.address ; objid.bship.map
+        fdb   stage3.bship.tilesA.address ; objid.bship.tilesA
+        fdb   stage3.bship.tilesB.address ; objid.bship.tilesB
+        fdb   stage3.bship.bufA.address ; objid.bship.bufA
+        fdb   stage3.bship.bufB.address ; objid.bship.bufB
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage3.page
@@ -120,6 +135,13 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        ; le pilote et les assets mscroll : jamais animes — remplissage
+        fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.map
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesA
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesB
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.bufA
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.bufB
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -157,6 +179,12 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bossmusic
         fdb   Ani_Asd_none ; ObjID_patapata
         fdb   Ani_Asd_none ; ObjID_bink
+        fdb   Ani_Asd_none ; ObjID_warship_core
+        fdb   Ani_Asd_none ; objid.bship.map
+        fdb   Ani_Asd_none ; objid.bship.tilesA
+        fdb   Ani_Asd_none ; objid.bship.tilesB
+        fdb   Ani_Asd_none ; objid.bship.bufA
+        fdb   Ani_Asd_none ; objid.bship.bufB
 
 Ani_Asd_none
         fdb   0
@@ -197,3 +225,10 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        ; le pilote et les assets mscroll : sans images — remplissage
+        fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.map
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesA
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesB
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.bufA
+        fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.bufB

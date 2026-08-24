@@ -14,8 +14,19 @@ ObjID_bossmusic equ 32
 * src/common/cast.const.asm et l'analyse des lots).
 ObjID_patapata equ 33
 ObjID_bink equ 34
+* Le pilote de la couche battleship (warship/pilot.asm) — instancie par la
+* wave comme en arcade (create_warship 0xc46e).
+ObjID_warship_core equ 35
+* Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
+* des entrees d'index que mscroll.setup resout en pages/adresses, le
+* patron du banc examples/mscroll.
+objid.bship.map    equ 36
+objid.bship.tilesA equ 37
+objid.bship.tilesB equ 38
+objid.bship.bufA   equ 39
+objid.bship.bufB   equ 40
 
-objid.count equ 34
+objid.count equ 40
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

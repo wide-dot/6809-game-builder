@@ -104,6 +104,34 @@ dobkeratops_eye_hitbox_x  equ 3
 dobkeratops_eye_hitbox_y  equ 6
 dobkeratops_eye_hitdamage equ 1
 
+; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
+; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
+; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur
+; utile est celle du sprite (12x24 large-dot), d'ou 6 et 12.
+; Seul le CORPS est vulnerable et il meurt au premier coup (933c zerote
+; [+0x1f] a l'install et body_tick ne le rearme jamais) ; tete, cou, queue,
+; finalizer et cadavre reappliquent l'immunite a chaque trame (929b/929f).
+; Gomander (boss du stage 2). L'arcade teste la boite de l'ORBE, son point
+; faible : les 8 premiers octets de gomander_orb_sprite_offsets (1000:54ea)
+; donnent -16..+16 en X et -8..+8 en Y, arcade -> 16*0.375 = 6 et 8*0.75 = 6.
+; 8 PV (a256), mais UN coup par exposition : voir gomander/obj.asm.
+gomander_hitbox_x	equ 6
+gomander_hitbox_y	equ 6
+gomander_hitdamage	equ 8
+
+outslay_hitbox_x	equ 6
+outslay_hitbox_y	equ 12
+outslay_hitdamage	equ 1
+outslay_hitdamage_immune equ -128
+
+; Le bydo shot de la salve en etoile. Sa boite est la SIENNE (1000:4196,
+; fc ff 04 00 fc ff 04 00 = rayon 4 sur les deux axes), le double du bullet
+; commun (1000:84c6, rayon 2) qu'on lui pretait jusqu'ici.
+; 4 x 0.375 = 1.5 -> 2 en X, 4 x 0.75 = 3 en Y.
+outslay_shot_hitbox_x	equ 2
+outslay_shot_hitbox_y	equ 3
+outslay_shot_hitdamage	equ 1
+
 ; --- HP set inline in the obj (centralised here for the stage-1 catalogue) ---
 ; Arcade-verified via doc/arcade-combat-reference.md (section 4 roster).
 p_staff_hitdamage         equ 6      ; arcade create_p_staff @0x74b4 : +0x2F = 6 (v2)

@@ -343,6 +343,11 @@ public final class Handlers {
 			.opt("row", INT, "destination row in the map, 0 if omitted")
 			.opt("hold", INT, "video frames each animation frame is held, 1 if omitted")
 			.opt("first", INT, "index of the first frame in the strip, 0 if omitted — lets several animations share one cut and one tileset")
+			.opt("firstcol", INT, "first COLUMN of this animation in the strip — same job as first, but usable when the sharing animations have different widths")
+			.opt("base", STRING, "the LEVEL's tile index .bin : frame 0 becomes the level's own cells at the destination, pointed as-is like <tilereset> — the rest frame of a blink, nothing compiled twice")
+			.opt("baserows", INT, "rows per column of the base map — goes with base")
+			.opt("basetiles", STRING, "the file hosting the LEVEL's tiles — goes with base")
+			.opt("basevariant", STRING, "the level tiles' variant, same as variant if omitted")
 			.opt("section", STRING, "section of the blocks, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("tilereset").doc("from a list of map rectangles, generate what puts those cells back the way the level shipped them — the map in RAM is the only copy, and a checkpoint return does not reload it")

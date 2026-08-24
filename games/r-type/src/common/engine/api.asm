@@ -88,6 +88,16 @@ checkpoint.clearData EXTERNAL
         _api scroll_map_odd
         _api scroll_map_page_even
         _api scroll_map_page_odd
+        ; Animer le decor : reecrire des cellules de la carte en place.
+        ; Le sequenceur est le point d'entree normal ; tilemap.patch reste
+        ; expose pour qui veut poser un rectangle sans horloge.
+        _api tilemap.request
+        _api tilemap.stamp
+        _api tilemap.anim.arm
+        _api tilemap.animate
+        _api tilemap.flush
+        _api tilemap.restore
+        _api tilemap.resetTable
         _api scroll_vp_h_tiles
         _api scroll_vp_v_tiles
         _api scroll_tile_width
@@ -196,11 +206,11 @@ checkpoint.clearData EXTERNAL
         _api DRS_XYToAddress
         _api DisplaySprite
         _api DeleteObject
-        _api CheckSpritesRefresh
-        _api EraseSprites
-        _api DrawSprites
-        _api UnsetDisplayPriority
-        _api BgBufferAlloc
+        ; OVERLAY : BuildSprites remplace le quatuor CheckSpritesRefresh /
+        ; EraseSprites / DrawSprites / UnsetDisplayPriority, et il n'y a plus
+        ; de cellules de fond (BgBufferAlloc). InitDrawSprites et les deux
+        ; ClearAll sont les compagnons du pack, fournis par engine.asm.
+        _api BuildSprites
         _api InitDrawSprites
         _api DisplaySprite_ClearAll
         _api EraseSprites_ClearAll
