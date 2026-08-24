@@ -90,7 +90,16 @@ la comparaison d'après ne dépende pas d'un relevé à refaire.
 | relevé | périmètre | moy. | creux |
 |---|---|---|---|
 | stage 1, 19/08/2026 @ 886fda9c | relevé entier | 12,0 | 3,9 (caméra 552) |
-| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | **traversée** | **5,2** | **1,0** (caméra 711) |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | traversée | 5,2 | 1,0 (caméra 711) |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24-opt.csv) @ bf51cc40 — **la référence** | **traversée** | **8,2** | **5,9** |
+
+Le second relevé est le même stage après deux chantiers : `pscroll.grow` qui
+ne divise plus par soustractions (`b33065da`) et la couche de gommes devenue
+le plan arrière de la collision (`bf51cc40`). **+58 % de moyenne, creux ×6, et
+la pente a disparu** — la cadence ne dépend plus de la position dans le
+niveau. Le double test de collision que le stage 4 paie désormais partout ne
+se voit pas : traversée identique à la trame près (5 327), profil à 0,3 img/s
+près sur toutes les tranches.
 
 Le chiffre du stage 1 est un relevé entier, queues comprises : il n'est **pas**
 comparable tel quel à celui du stage 4, qui est une traversée. À rejouer avec
@@ -106,22 +115,25 @@ dise toujours de laquelle on parle :
 | jouable (queues muette et saturée retirées) | 8 158 | 6,0 |
 | **traversée** (`--traversal`) — la référence | 7 418 | **5,2** |
 
+(chiffres du relevé @ dfcc4357 ; les trois se décalent ensemble sur le suivant)
+
 ```bash
 python3 ../../ci/toje-bench/fps_plot.py refs/fps-stage4-2026-08-24.svg \
     refs/fps-stage4-2026-08-24.csv="stage 4 — traversee, reference 24/08/2026" \
     --traversal --title "Cadence de rendu — R-Type stage 4, traversee"
 ```
 
-Profil de la traversée par tranche de caméra (moyenne glissante 1 s), avec la
-part du temps passée dans chacune — le stage vit entre 3,6 et 8,9 img/s, et il
-passe 40 % de son temps dans son tiers le plus lent :
+Profil de la traversée par tranche de caméra (moyenne glissante 1 s) :
 
 ```
-   0- 99   7,8   7,6 %      400-499   4,9   9,2 %      800-899   8,9   7,2 %
- 100-199   5,9   7,9 %      500-599   3,8  12,5 %      900-999   5,4   9,3 %
- 200-299   5,6   8,9 %      600-699   3,6  12,7 %
- 300-399   5,3   9,8 %      700-799   4,0  14,8 %  <- creux a 1,0 (camera 711)
+cam        0   100   200   300   400   500   600   700   800   900
+dfcc4357 7,8   5,9   5,6   5,3   4,9   3,8   3,6   4,0   8,9   5,4
+bf51cc40 9,0   7,0   7,7   8,2   8,3   7,7   7,1   8,7   8,7   9,6
 ```
+
+La pente du premier relevé — de 7,8 à 3,6 au fil du niveau — était la division
+par soustractions de `pscroll.grow`, dont le nombre de tours croissait avec la
+coordonnée de carte. Le second est plat entre 7 et 9.
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
 
