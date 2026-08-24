@@ -854,6 +854,12 @@ pscroll.wr.00
         anda  #$0F
         ora   #$F0
         sta   -80,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.01
@@ -896,6 +902,12 @@ pscroll.wr.01
         lda   -80,x
         anda  #$F0
         sta   -80,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.02
@@ -942,6 +954,12 @@ pscroll.wr.02
         anda  #$0F
         ora   #$F0
         sta   -79,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.03
@@ -984,6 +1002,12 @@ pscroll.wr.03
         lda   -80,x
         anda  #$F0
         sta   -80,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.04
@@ -1030,6 +1054,12 @@ pscroll.wr.04
         anda  #$0F
         ora   #$F0
         sta   -79,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.05
@@ -1072,6 +1102,12 @@ pscroll.wr.05
         lda   -79,x
         anda  #$F0
         sta   -79,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.06
@@ -1118,6 +1154,12 @@ pscroll.wr.06
         anda  #$0F
         ora   #$F0
         sta   -77,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.07
@@ -1160,6 +1202,12 @@ pscroll.wr.07
         lda   -79,x
         anda  #$F0
         sta   -79,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.08
@@ -1206,6 +1254,12 @@ pscroll.wr.08
         anda  #$0F
         ora   #$F0
         sta   -77,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.09
@@ -1248,6 +1302,12 @@ pscroll.wr.09
         lda   -77,x
         anda  #$F0
         sta   -77,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.10
@@ -1294,6 +1354,12 @@ pscroll.wr.10
         anda  #$0F
         ora   #$F0
         sta   -76,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.11
@@ -1336,6 +1402,12 @@ pscroll.wr.11
         lda   -77,x
         anda  #$F0
         sta   -77,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.12
@@ -1382,6 +1454,12 @@ pscroll.wr.12
         anda  #$0F
         ora   #$F0
         sta   -76,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.13
@@ -1424,6 +1502,12 @@ pscroll.wr.13
         lda   -76,x
         anda  #$F0
         sta   -76,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.14
@@ -1470,6 +1554,12 @@ pscroll.wr.14
         anda  #$0F
         ora   #$F0
         sta   -88,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 pscroll.wr.15
@@ -1512,6 +1602,12 @@ pscroll.wr.15
         lda   -76,x
         anda  #$F0
         sta   -76,x
+ IFEQ PSCROLL_PART-2
+        pshs  cc,a
+        lda   pscroll.cart.page
+        _SetCartPageA
+        puls  cc,a
+ ENDC
         rts
 
 ; l'aiguillage : (3*colonne - phase) mod 16 -> la routine

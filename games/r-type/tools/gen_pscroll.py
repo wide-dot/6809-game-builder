@@ -496,6 +496,22 @@ def emettre_cellule(A, prefixe, pen):
                         if v:
                             A(f"        ora   #${v:02X}")
                     A(f"        sta   {off if off else ''},{base}")
+        # LA PAGE CARTOUCHE, RENDUE AVANT LE RTS (24/08).
+        # Ces routines montent un BUFFER dans la fenetre cartouche (les deux
+        # _SetCartPageA ci-dessus) et sont atteintes par `jmp ,y` depuis
+        # pscroll.mutate.plans, qui vit dans la part CARTOUCHE. Leur rts revient
+        # donc a une adresse de cette part — mais la fenetre porte encore un
+        # buffer : le CPU atterrit dans le ruban, en decalé, et part en vrille
+        # (vecu : la premiere gomme que le cytron fait pousser rasait 7 Ko de RAM
+        # residente). Meme regle que les sorties de pscroll.asm, et pour la meme
+        # raison ; elle manquait ici parce que ces routines sont GENEREES.
+        # Hors decoupage, il n'y a rien a rendre : la garde le dit.
+        A(" IFEQ PSCROLL_PART-2")
+        A("        pshs  cc,a")
+        A("        lda   pscroll.cart.page")
+        A("        _SetCartPageA")
+        A("        puls  cc,a")
+        A(" ENDC")
         A("        rts")
         A("")
 
