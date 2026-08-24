@@ -1,80 +1,97 @@
-# EN COURS — le gel du stage 7 (gestionnaire de chaînes du bug)
+# RÉSOLU — le gel du stage 7 : un artefact de sonde CACHAIT un vrai crash (22/08/2026)
 
-*22/08/2026. Diagnostic avancé, chantier en pause (réorganisation du workflow).
-Deux sessions ont travaillé dessus ; ce fichier consolide ce que les deux ont
-établi. Le détail de la bissection vit dans le transcript de la session
-`1ac49dd6` ; les sondes sont `tools/bug_debug.py` et `tools/bug_autopsy.py`.*
+*Diagnostic clos, en deux temps. Le « gel à caméra 61 » des deux sessions
+précédentes était un artefact de sonde (§ cause 1) ; une fois les sondes
+réparées, un VRAI crash à caméra ~174 est apparu — le premier rendu des
+chaînes de bug — corrigé dans `mgr.asm` (§ cause 2). Banc CHAIN au vert :
+chaîne courte pic 10 records (instance S), chaîne longue pic 34 (instance L),
+extinction propre, captures `dist/stage7-chainS.png` et `dist/stage7-chain.png`.*
 
-## Le symptôme
+## Cause 2 — le vrai crash : X écrasé entre l'imageset et RecPublish
 
-Stage 7, très tôt (caméra 61-62, compteur de tours figé à 88), AVANT tout
-spawn de bug (le premier arrive vers caméra 146). Reproduit 5 fois en tout,
-états identiques. Amorce : cheat `tct.pstage=07,01` posé au point sûr
-(`gfxlock.bufferSwap.wait`), voir l'en-tête de `tools/bug_debug.py`.
+Au premier rendu d'une chaîne (caméra ~171-174), le jeu mourait : pile
+détruite, CPU exécutant les restes du stage 2 en page 14. La chaîne causale,
+remontée au watchpoint/breakpoint toje :
 
-## Ce que la bissection (session 1ac49dd6) a établi
+1. Site de publication (`bugmgr.wLoop`, mgr.asm) : X = entrée d'imageset
+   (`ldx ,x` sur ImageIndex), puis `jsr bugmgr.WSlotPtr` — qui faisait
+   `ldx bm.instp,u` : **X écrasé** par le bloc d'instance. L'outslay
+   d'origine (mono-instance, base de slots immédiate) ne touchait pas X ;
+   le passage à deux instances a introduit le clobber.
+2. `RecPublish` lisait géométrie et routine compilée (+14/15) **dans le bloc
+   d'instance** au lieu de l'entrée d'imageset → slot+3 = $00C9.
+3. `DrawAll` : `jsr ,x` avec X=$00C9 = 3 octets au milieu du
+   `ldy #Preset19260` de LiveCreator (obj_main) → décodage désaligné qui
+   retombe dans la QUEUE du macro `_loadFirePresetBug` : `sta PSR_Page` avec
+   A résiduel ($CE/$AE), puis le `jsr RunPgSubRoutine` d'origine.
+4. RunPgSubRoutine monte la page fantôme ($AE → page 14, jamais chargée en
+   stage 7) et saute — le CPU glisse dans les données jusqu'à se perdre.
 
-- Le gel PERSISTE avec : les chaînes courtes rebasculées sur le code v1, les
-  tables du stage 7 à HEAD, les stages 1/4 à HEAD. La logique du gestionnaire
-  (`mgr.asm`) est donc hors de cause sur ce gel.
-- RÉFÉRENCE SAINE : un build mono-instance (shim type-3 seulement + anneau
-  planaire 1024, jamais commité, contenu dans le transcript) a joué le stage 7
-  ENTIER. La variable discriminante est donc le CONTENU/LA TAILLE de lib.bug
-  (7 274 → 14 420 octets, page 13 pleine à 16 263/16 384, repack de l'arène
-  enemies : 35 unités déplacées).
+Correctif : `bugmgr.WSlotPtr` préserve X (`pshs x … puls x,pc`) — commenté
+dans le code. Les 16 entrées d'imageset et les 3 références load-time-linked
+de lib.bug étaient saines ; la table Obj_Index_Page n'a jamais été écrite
+(vérifié au watchpoint sur toute la fenêtre du crash).
 
-## Ce que l'autopsie instrumentée (cette session) a établi
+## La cause
 
-- **Le gel n'existe que sous `run_frames` toje.** Quarante échantillons de PC
-  pris entre des `run_frames(1)` tombent TOUS sur `$0EDA` =
-  `soundFX.playIRQ+2` (unité `common.soundfx`, page 10), CC=$F1 — I et F
-  masqués, on est SOUS IRQ. Le CPU y est prisonnier.
-- **Sous `step`, le jeu REPART** : 200 000 pas → le compteur de tours passe de
-  88 à 98, la caméra de 61 à 72, exécution normale (RunObjects, DrawTiles,
-  moveByScript, pages qui tournent). Heisenbug pur.
-- **Sensible au découpage des run_frames** : amorçage en tranches de 500 +
-  surveillance en 25 (le rythme de bug_debug.py) → gel systématique ;
-  surveillance en tranches de 5 → AUCUN gel en 2 000 trames, même build.
-- Tout l'état de jeu inspecté est SAIN au moment du gel : variables du scroll
-  (tile_pos/map_pos/camold/scroll_max), file tilemap (count/lost = 0), bloc de
-  log engine `$9EF0` vierge, aucune référence liée à zéro, placements page 1
-  propres (arènes stageN.res sans chevauchement).
+Les sondes (`tools/bug_debug.py`, `tools/bug_autopsy.py`) passaient
+`timeout_ms: 900000` à `run_frames`. Le schéma du plugin toje 1.6.1 plafonne
+`timeout_ms` à **600000** : chaque appel de la phase de surveillance était
+**rejeté à la validation d'entrée** — zéro trame exécutée — et `mcp.py`
+retournait l'erreur (`isError`) sans la lever ; les sondes ignorent la valeur
+de retour de `run_frames`. La machine restait exactement où l'amorçage
+(timeouts valides) l'avait laissée.
 
-## L'hypothèse de travail
+Tout le dossier s'explique :
 
-Le « crash » est vraisemblablement un ARTEFACT de l'émulation toje en mode
-TOJE_FAST (turbo sans rendu) : l'IRQ son (`soundFX.playIRQ`, pilote YM2413
-sous IRQ 50 Hz) se retrouve dans un état que `run_frames` ne fait plus
-avancer, alors que `step` le débloque. La corrélation avec la taille de
-lib.bug serait alors du TIMING (le repack et la taille chargée déplacent
-l'alignement trame du moment où l'IRQ son croise autre chose), pas de la
-mémoire écrasée — cohérent avec une bissection qui n'a jamais trouvé de
-coupable dans le code.
+- « gel à caméra 61-62, boucles 88 » = l'état où la phase d'amorçage
+  (tranches de 500, timeout 600000, VALIDE) s'est arrêtée. Déterministe,
+  donc « reproduit 5 fois, états identiques ».
+- « 40/40 PC sur `$0EDA` = `soundFX.playIRQ+2`, CC=$F1, prisonnier sous
+  IRQ » = le même état relu 40 fois. `runFrame` s'arrête à la frontière de
+  trame (19968 cycles) ; l'IRQ 50 Hz du MC6846 partage cette phase, donc la
+  machine se gare naturellement 2 instructions après l'entrée du handler son.
+  Ce n'est PAS un état anormal.
+- « sous `step` le jeu repart » = `step` était le seul appel qui exécutait
+  quelque chose. Heisenbug parfait.
+- « sensible au découpage des run_frames » = les variantes qui « guérissaient »
+  utilisaient un timeout valide (ou le défaut).
+- « corrélé à la taille de lib.bug » = coïncidence : la référence « saine »
+  avait été jouée avec d'autres appels/timeouts.
+- L'hypothèse TOJE_FAST est morte : le gel « persistait » sans l'env var
+  (mêmes appels invalides), et la trace ring a prouvé zéro instruction ET
+  zéro cycle sous `run_frames` — ce qu'aucun état CPU réel ne produit.
 
-Précédent connu : toje n'émule pas les timers MPLUS (le factory test les voit
-KO) ; et le gomander avait déjà produit la même signature de registres sous
-IRQ son (jugée hareng rouge à l'époque — c'est peut-être le MÊME artefact).
+Preuve finale (sonde `bug_err.py`, transcript session du 22/08 après-midi) :
 
-## Par quoi reprendre
+    run_frames(1) -> Tool (run_frames) input validation failed:
+      [/timeout_ms: doit avoir une valeur maximale de 600000]
 
-1. **Trancher artefact vs bug réel** : rejouer la repro SANS `TOJE_FAST`
-   (retirer l'env var — les sondes marchent pareil, juste plus lentes), et/ou
-   jouer le stage 7 à l'écran (toje UI ou DCMoto). Si ça ne gèle pas : c'est
-   un artefact toje — le signaler côté toje (run_frames fast × IRQ son) et
-   reprendre le chantier bug normalement.
-2. Si ça gèle aussi en réel : instrumenter `soundFX.playIRQ` (compteur
-   d'entrées/sorties en RAM fixe) pour voir si l'IRQ réentre ou ne sort pas,
-   et regarder ce que `paged.call` du stage monte au moment du gel.
-3. La revue de code du gestionnaire faite au passage n'a PAS trouvé de bug
-   bloquant dans `mgr.asm` (idiomes outslay respectés, page callback OK,
-   listes AABB nettoyées au checkpoint). Deux points d'hygiène restants :
-   `objid.count` doit valoir 47 dans les trois stages (fait), et le renderer
-   d'une instance jamais « vue » ne se libère qu'à l'extinction d'un slot.
+## Les correctifs (ce commit)
+
+1. **`ci/toje-bench/mcp.py` : une erreur d'outil (`isError`) LÈVE désormais
+   `RuntimeError`.** C'est le correctif systémique — l'erreur avalée a coûté
+   deux sessions. Toute sonde qui ignorait le retour de `run_frames` est
+   maintenant protégée.
+2. `timeout_ms` ramené à 600000 dans `bug_debug.py`, `bug_autopsy.py`,
+   `engulf_debug.py` (le plafond du schéma).
+
+## État du chantier bug après validation
+
+Voir le readme / les résultats du banc `TOJE_FAST=1 CHAIN=1 bug_debug.py` —
+le gestionnaire de chaînes (2 instances) se valide désormais réellement.
+Les deux points d'hygiène du gestionnaire relevés par la revue restent
+ouverts (cf. `mgr.asm`) : `objid.count` = 47 dans les trois stages (fait),
+et le renderer d'une instance jamais « vue » ne se libère qu'à l'extinction
+d'un slot.
 
 ## Les pièges payés (à ne pas repayer)
 
-- `bug_debug.py` fuyait UNE JVM TOJE PAR RUN (la centaine de JVM du 22/08) :
-  corrigé par `atexit` dans `ci/toje-bench/mcp.py`. Ne jamais sonder sans.
-- Tout poke de `$E7E6` (cheat compris) passe par le point sûr, sinon la page
-  montée est corrompue et le stage fige très tôt (vécu trois fois).
+- **Ne jamais ignorer la valeur de retour d'un appel toje** — et ne jamais
+  sonder avec un `mcp.py` qui n'a pas le raise sur `isError`.
+- `timeout_ms` max de `run_frames` : **600000**.
+- `bug_debug.py` fuyait UNE JVM TOJE PAR RUN : corrigé par `atexit` dans
+  `ci/toje-bench/mcp.py`. Ne jamais sonder sans.
+- Tout poke de `$E7E6` (cheat compris) passe par le point sûr
+  (`gfxlock.bufferSwap.wait`), sinon la page montée est corrompue.
 - Deux sessions sur le même clone local : plus jamais. Un clone par session.

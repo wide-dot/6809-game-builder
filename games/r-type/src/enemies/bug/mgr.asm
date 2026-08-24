@@ -591,14 +591,22 @@ bugmgr.WBoxPtr
         rts
 
 ; Y = le slot du record wN
+; X PRESERVE — l'outslay d'origine lit sa base de slots en immediat (mono-
+; instance) et ne touche pas X ; ici elle vient du bloc d'instance, et le
+; site de publication tient DEJA l'entree d'imageset dans X quand il appelle
+; (RecPublish la consomme : geometrie + routine compilee). Sans le pshs, le
+; slot recevait +14/15 du bloc d'instance comme routine de dessin — jsr en
+; plein milieu d'une instruction de LiveCreator, PSR_Page pourri, montage
+; d'une page fantome (gel du stage 7 au premier rendu de chaine, 22/08/2026).
 bugmgr.WSlotPtr
+        pshs  x
         lda   bugmgr.wN
         ldb   #bm.SLOTSZ
         mul
         ldx   bm.instp,u
         addd  I.slots,x
         tfr   d,y
-        rts
+        puls  x,pc
 
 ; -----------------------------------------------------------------------------
 ; Publier un record — le clone du RecPublish outslay : cull « entierement
