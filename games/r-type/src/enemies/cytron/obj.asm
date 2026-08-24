@@ -89,6 +89,42 @@ Init
         ldb   subtype_w+1,u
         _loadFirePreset
 
+        ; --- le script de mouvement : le quartet HAUT du subtype le choisit.
+        ; f95c : BX = (CL & 0xF0) >> 2, soit SEIZE variantes de 4 octets — et
+        ; non quatre comme l'annonce la plate.
+        ;
+        ; CE BLOC PRECEDE render_flags ET anim_frame_duration, PARCE QUE LES
+        ; DEUX ALIASENT CE QU'IL LIT :
+        ;   subtype_w+1   = offset 2 de l'OST = render_flags
+        ;   wave_frame_drop = offset 13       = anim_frame_duration
+        ; Ecrire d'abord et lire ensuite, c'est lire ce qu'on vient d'ecrire.
+        ; Vecu les deux fois (24/08/2026) : `render_playfieldcoord_mask` vaut
+        ; $08, donc `anda #$F0` rendait 0 et les 38 cytrons du stage tiraient
+        ; tous la variante 0 — la seule des seize qui va tout droit ; et le
+        ; rattrapage rejouait l'octet de variante (3) au lieu du retard de
+        ; wave. La meme dependance est documentee chez bug (mgr.asm) et
+        ; outslay.
+        lda   subtype_w+1,u
+        anda  #$F0
+        lsra
+        lsra
+        ldx   #cytron.script.tbl
+        leax  a,x
+        ldb   wave_frame_drop,u        ; le retard de wave, avant de l'ecraser
+        pshs  b
+        lda   2,x                      ; l'octet de variante = octets par trame
+        sta   anim_frame_duration,u
+        ldx   ,x                       ; l'indice du script dans la LUT commune
+        jsr   moveByScript.initialize
+
+        ; les trames sautees avant la creation de l'objet — la trainee se seme
+        ; PENDANT ce rattrapage : le cytron a bel et bien parcouru ces trames
+        ; en arcade, et sa gomme avec.
+        ldd   #cytron.tick
+        std   moveByScript.callback
+        puls  b
+        jsr   moveByScript.runByB
+
         ldb   #6                       ; display priority
         stb   priority,u
         lda   #render_playfieldcoord_mask
@@ -101,30 +137,6 @@ Init
         _ldd  cytron_hitbox_x,cytron_hitbox_y
         std   AABB_0+AABB.rx,u
         clr   blink,u
-
-        ; --- le script de mouvement : le quartet HAUT du subtype le choisit.
-        ; f95c : BX = (CL & 0xF0) >> 2, soit SEIZE variantes de 4 octets — et
-        ; non quatre comme l'annonce la plate.
-        lda   subtype_w+1,u
-        anda  #$F0
-        lsra
-        lsra
-        ldx   #cytron.script.tbl
-        leax  a,x
-        ldd   ,x
-        pshs  d
-        lda   2,x                      ; l'octet de variante = octets par trame
-        sta   anim_frame_duration,u
-        puls  x
-        jsr   moveByScript.initialize
-
-        ; les trames sautees avant la creation de l'objet — la trainee se seme
-        ; PENDANT ce rattrapage : le cytron a bel et bien parcouru ces trames
-        ; en arcade, et sa gomme avec.
-        ldd   #cytron.tick
-        std   moveByScript.callback
-        ldb   wave_frame_drop
-        jsr   moveByScript.runByB
 
         inc   routine,u
         bra   >

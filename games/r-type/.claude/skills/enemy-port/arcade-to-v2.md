@@ -159,6 +159,20 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
 
 ## L'ObjectRecord arcade ↔ l'OST v2
 
+> **DEUX OCTETS DE L'OST SONT PARTAGÉS — l'Init doit lire avant d'écrire.**
+> `subtype_w+1` (le descripteur de spawn) **est** `render_flags` (offset 2), et
+> `wave_frame_drop` **est** `anim_frame_duration` (offset 13). Un Init qui pose
+> `render_flags` ou la vitesse d'anim puis relit le descripteur ou le retard de
+> wave relit ce qu'il vient d'écrire, sans que rien ne le signale. Règle :
+> **tout ce qui dépend du descripteur de spawn et du retard de wave se fait en
+> tête d'Init**, avant la première écriture sur ces deux octets.
+> Les deux pièges se sont refermés le même jour sur le cytron (24/08/2026) :
+> `render_playfieldcoord_mask` vaut `$08`, donc le `anda #$F0` de la sélection
+> de script rendait 0 et les 38 cytrons du stage tiraient tous la variante 0 —
+> la seule des seize qui aille tout droit ; et le rattrapage rejouait l'octet
+> de variante au lieu du retard. Voir `bug/mgr.asm` et `outslay/obj.asm`, qui
+> commentent déjà l'alias de `wave_frame_drop`.
+
 | Arcade | v2 |
 |---|---|
 | `+0x00` tick handler, réécrit entre phases | `routine,u` = index dans la table `Routines` (fdb) du dispatch. « installe le handler 0x7048 » → un index nommé de plus ; `inc routine,u` ou `lda #n / sta routine,u` |
