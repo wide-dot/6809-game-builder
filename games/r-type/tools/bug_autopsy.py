@@ -107,7 +107,7 @@ def snap():
 # qu'une fois la boucle en marche, sinon l'intro passe pour un gel.
 last_loop, stall, hist, armed = None, 0, [], False
 for i in range(200):
-    t.call('run_frames', {'n': 25, 'timeout_ms': 900000})
+    t.call('run_frames', {'n': 25, 'timeout_ms': 600000})
     s = snap()
     hist.append(s)
     if not armed:
@@ -138,7 +138,7 @@ for s in hist[-12:]:
 print('--- 40 PC entre run_frames(1), sans stepping ---', flush=True)
 pure = {}
 for _ in range(40):
-    t.call('run_frames', {'n': 1, 'timeout_ms': 900000})
+    t.call('run_frames', {'n': 1, 'timeout_ms': 600000})
     r = t.call('read_registers', {})
     pc = r['pc']
     pure[pc] = pure.get(pc, 0) + 1

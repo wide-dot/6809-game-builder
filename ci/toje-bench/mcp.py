@@ -67,10 +67,17 @@ class Toje:
             args.setdefault("fast", True)
         res = self.request("tools/call", {"name": name, "arguments": args})
         txt = "".join(c.get("text", "") for c in res.get("content", []))
+        # A tool-level error (isError) MUST raise. Swallowing it cost two
+        # debugging sessions : probes passing timeout_ms=900000 (schema max is
+        # 600000) had every run_frames silently rejected — the machine never
+        # advanced, which looked exactly like a game freeze (the phantom
+        # "stage 7 freeze" of 22/08/2026).
+        if res.get("isError"):
+            raise RuntimeError(f"{name}: {txt}")
         try:
             return json.loads(txt)
         except Exception:
-            return {"raw": txt, "isError": res.get("isError")}
+            return {"raw": txt}
 
     # --- conveniences -----------------------------------------------------
 

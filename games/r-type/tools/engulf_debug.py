@@ -104,7 +104,7 @@ if os.environ.get('PROBE'):
           ('plane', '04ED'), ('mapEven', '0310'), ('pageEven', '0314'),
           ('vrows', '030B'))}
     t.call('set_breakpoint', {'addr': '%04X' % PATCH})
-    r = t.call('run_to_breakpoint', {'timeout_ms': 900000})
+    r = t.call('run_to_breakpoint', {'timeout_ms': 600000})
     print('arret :', r)
     print('registres :', t.call('read_registers', {}))
     for n, a in P.items():

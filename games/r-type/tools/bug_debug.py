@@ -92,14 +92,22 @@ else:
 print('stage 7 en place', time.strftime('%H:%M:%S'), flush=True)
 
 def mgr_state():
-    """(vivants L, allumes L, vivants S, allumes S), page montee AU POINT SUR."""
-    safe_point()
+    """(vivants L, allumes L, vivants S, allumes S).
+
+    Pas de point sur : en plein gameplay le stage droppe des trames et
+    gfxlock.bufferSwap.wait peut ne jamais etre atteint. La machine est
+    arretee entre deux instructions, donc poser la page du bug et REMETTRE
+    LA PAGE REELLEMENT MONTEE (lue par read_page_map) est sur — le piege
+    historique venait du '78' code en dur, faux des que le stage avait une
+    autre page montee."""
+    pm = t.call('read_page_map', {})
+    cur = 0x60 + pm['cart_ram_page']
     t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % (0x60 + BUGPAGE)]})
     rcl = t.read(hex(RECSL), NRECL * RECSZ)
     sll = t.read(hex(SLOTSL), NRECL * SLOTSZ)
     rcs = t.read(hex(RECSS), NRECS * RECSZ)
     sls = t.read(hex(SLOTSS), NRECS * SLOTSZ)
-    t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['78']})
+    t.call('write_memory', {'addr': '0xE7E6', 'bytes': ['%02X' % cur]})
     return (sum(1 for k in range(NRECL) if rcl[k * RECSZ] == 1),
             sum(1 for k in range(NRECL) if sll[k * SLOTSZ] == 1),
             sum(1 for k in range(NRECS) if rcs[k * RECSZ] == 1),
@@ -112,7 +120,7 @@ if os.environ.get('CRASH'):
     last = None
     stall = 0
     for i in range(200):
-        t.call('run_frames', {'n': 25, 'timeout_ms': 900000})
+        t.call('run_frames', {'n': 25, 'timeout_ms': 600000})
         b = t.read(hex(BENCH), 5)
         cam = (b[3] << 8) | b[4]
         if b[2] == last:
@@ -157,7 +165,7 @@ if os.environ.get('CRASH'):
     print('profil de 50 trames au point mort...', flush=True)
     t.call('profile_reset', {})
     t.call('profile_start', {})
-    t.call('run_frames', {'n': 50, 'timeout_ms': 900000})
+    t.call('run_frames', {'n': 50, 'timeout_ms': 600000})
     t.call('profile_stop', {})
     print('TOP :', t.call('profile_top', {}), flush=True)
     print('LOOPS :', t.call('profile_loops', {}), flush=True)
@@ -166,14 +174,14 @@ if os.environ.get('CRASH'):
 if os.environ.get('CHAIN'):
     # --- 1) la chaine COURTE (camera ~146) doit prendre l'instance S --------
     while True:
-        t.call('run_frames', {'n': 120, 'timeout_ms': 900000})
+        t.call('run_frames', {'n': 120, 'timeout_ms': 600000})
         b = t.read(hex(BENCH), 5)
         cam = (b[3] << 8) | b[4]
         if cam >= 138:
             break
     peakS = 0
     for i in range(10):
-        t.call('run_frames', {'n': 60, 'timeout_ms': 900000})
+        t.call('run_frames', {'n': 60, 'timeout_ms': 600000})
         al, ll, as_, ls = mgr_state()
         b = t.read(hex(BENCH), 5)
         cam = (b[3] << 8) | b[4]
@@ -187,7 +195,7 @@ if os.environ.get('CHAIN'):
     print('chaine courte : pic %d records sur l instance S' % peakS, flush=True)
     # --- 2) la chaine LONGUE (camera ~643) sur l'instance L -----------------
     while True:
-        t.call('run_frames', {'n': 250, 'timeout_ms': 900000})
+        t.call('run_frames', {'n': 250, 'timeout_ms': 600000})
         b = t.read(hex(BENCH), 5)
         cam = (b[3] << 8) | b[4]
         if cam >= 640:
@@ -197,7 +205,7 @@ if os.environ.get('CHAIN'):
     shot = False
     zero = 0
     for i in range(60):
-        t.call('run_frames', {'n': 60, 'timeout_ms': 900000})
+        t.call('run_frames', {'n': 60, 'timeout_ms': 600000})
         al, ll, as_, ls = mgr_state()
         b = t.read(hex(BENCH), 5)
         cam = (b[3] << 8) | b[4]
