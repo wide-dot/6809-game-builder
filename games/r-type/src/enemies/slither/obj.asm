@@ -551,7 +551,7 @@ slither.MasterLive
         beq   @nocasc
         ldb   slither.wDrop
 @cloop  pshs  b
-        jsr   slither.Cascade
+        jsr   slither.CascStep         ; UNE trame de jeu, entiere
         puls  b
         decb
         bne   @cloop
@@ -610,6 +610,43 @@ slither.Deleted
 ; Le predecesseur du rang 0 est la TETE, qui n'a pas de record : son drapeau
 ; vit dans l'OST du maitre (slither.mHeadC).
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; UN PAS DE TRAME DE JEU. L'ordre interne est ce qui donne son motif au
+; chapelet, et il ne se resume pas a « avancer de n » :
+;
+;   1) chaque compte a rebours descend d'UN,
+;   2) PUIS un seul cran de propagation.
+;
+; L'arcade fait tourner ses objets dans l'ordre de la chaine : le rang n-1
+; decremente son compte AVANT que le rang n ne le lise pour en deriver le
+; sien. L'ecart reel entre deux voisins vaut donc TROIS trames, pas quatre —
+; le +4 s'applique a une valeur deja retombee d'une unite.
+;
+; Jouer les deux horloges en bloc (n decrements d'un cote, n propagations de
+; l'autre) donne des retards fausses : 4, 8, 12, 16 au lieu de 4, 7, 10, 13.
+; Les segments cessent alors de s'eteindre a intervalle regulier et
+; l'eclatement perd son motif (constat auteur : « ca donne une bouillie »).
+; -----------------------------------------------------------------------------
+slither.CascStep
+        lda   slither.mNrec,u
+        beq   slither.Cascade
+        sta   slither.wN2
+@dloop  dec   slither.wN2
+        ldb   slither.wN2
+        jsr   slither.RecPtrB
+        lda   slither.RS,x
+        cmpa  #1
+        bne   @dnext                   ; seul un segment de la chaine compte
+        lda   slither.RD,x
+        beq   @dnext
+        deca
+        sta   slither.RD,x
+        bne   @dnext
+        lda   #5                       ; echu : la marche en fera un cadavre,
+        sta   slither.RS,x             ; elle seule connait sa position
+@dnext  tst   slither.wN2
+        bne   @dloop
+        ; ... et maintenant le cran de propagation
 slither.Cascade
         lda   slither.mNrec,u
         beq   @out
@@ -642,7 +679,23 @@ slither.Cascade
         lbra  @next
 @chain  lda   #2
         sta   slither.RC,x
-        addb  #4                       ; l'etalement du chapelet
+        ; L'ETALEMENT. L'arcade espace deux explosions voisines de QUATRE
+        ; trames — a 55 Hz cela fait quatre images, et l'oeil suit l'onde qui
+        ; descend la chaine. Ici quatre trames de jeu tiennent dans une DEMI
+        ; image : deux segments eclatent ensemble, et le motif disparait
+        ; (constat auteur : « ca donne une bouillie »).
+        ; L'ecart est donc porte a une IMAGE — frameDrop.count trames de jeu —
+        ; sans jamais descendre sous les quatre de l'arcade. C'est le meme
+        ; arbitrage que le flash d'une trame : a cette cadence on garde ce qui
+        ; se VOIT, un segment par image, plutot qu'une duree exacte qu'aucun
+        ; ecran ne peut restituer. Le chapelet dure alors un peu plus
+        ; longtemps qu'en arcade, mais il se lit.
+        lda   slither.wDrop
+        cmpa  #4
+        bhs   >
+        lda   #4
+!       pshs  a
+        addb  ,s+
         stb   slither.RD,x
 @next   lda   slither.wN
         beq   @out
@@ -693,6 +746,9 @@ slither.Walk
         lbeq  @next                    ; fini
         cmpa  #4
         lbeq  @drift                   ; detache : il ne lit plus l'anneau
+                                       ; (l'etat 5 — echu — passe par le
+                                       ;  chemin normal : il lui faut sa
+                                       ;  position avant de devenir cadavre)
         ; le retard et le role, constants (RecInit)
         ldb   slither.wN
         aslb
@@ -741,15 +797,11 @@ slither.Walk
         ; pas echu.
         ldb   slither.wN
         jsr   slither.RecPtrB
-        lda   slither.RD,x
-        beq   @nodelay
-        suba  slither.wDrop            ; il compte des trames de JEU
-        bhi   @encore                  ; strictement positif : il vole encore
-        clra                           ; echu (ou depasse) : on borne a zero
-        sta   slither.RD,x
+        lda   slither.RS,x
+        cmpa  #5                       ; un pas de cascade l'a declare echu
+        bne   @nodelay
         jsr   slither.RecCorpse        ; le cadavre part sur son script
         lbra  @next
-@encore sta   slither.RD,x
 @nodelay
         lda   slither.RC,x
         cmpa  #1
@@ -911,6 +963,7 @@ slither.wPose   fcb 0
 slither.wDrop   fcb 0                  ; trames a rattraper dans le vol libre
 slither.wState  fcb 1                  ; l'etat a publier dans le slot
 slither.wPot    fcb 0                  ; le potentiel lu du tour
+slither.wN2     fcb 0                  ; le rang courant du pas de cascade
 
 ; B = rang -> X = la boite. (Le maitre est en U, la zone est residente.)
 slither.BoxPtrB
