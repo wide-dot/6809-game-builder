@@ -26,7 +26,13 @@ from PIL import Image
 BLANC = 4
 POSE = '02'          # celle que la plongee fige
 TRANSPARENT = 0
-DIRECTIONS = ('top-right', 'top-left', 'bottom-right', 'bottom-left')
+# DANS L'ORDRE DES VARIANTES DE WAVE, et il n'est pas celui qu'on croit :
+# gauche et droite sont l'inverse de ce que le signe de vx laisse penser. La
+# correspondance est mesuree sur les adresses arcade portees par les noms des
+# fichiers sources, pas deduite. Voir la fiche dans gouger/obj.asm.
+#   var 0 -> top-left    var 1 -> top-right
+#   var 2 -> bottom-left var 3 -> bottom-right
+DIRECTIONS = ('top-left', 'top-right', 'bottom-left', 'bottom-right')
 
 def main():
     racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,8 +50,7 @@ def main():
                 px[k] = BLANC
         out = Image.frombytes('P', im.size, bytes(px))
         out.putpalette(im.getpalette())
-        # numerotees dans l'ordre des variantes de wave : 0 top-right,
-        # 1 top-left, 2 bottom-right, 3 bottom-left
+        # numerotees dans l'ordre des variantes de wave (cf. DIRECTIONS)
         out.save(os.path.join(dst, '%02d.png' % i))
     print('%d images blanches ecrites (pose %s de chaque orientation)'
           % (len(DIRECTIONS), POSE))

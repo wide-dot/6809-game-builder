@@ -28,10 +28,20 @@
 ;
 ;   var  y      vx      vy     traine x  traine y  poses     images
 ;   ---  -----  ------  -----  --------  --------  --------  -------------
-;    0   $0178  +1.500  -2.000   +0.375    -0.500  1000:30DE  top-right
-;    1   $0178  -1.500  -2.000   -0.375    -0.500  1000:30BE  top-left
-;    2   $0098  +1.500  +2.000   +0.375    +0.500  1000:309E  bottom-right
-;    3   $0098  -1.500  +2.000   -0.375    +0.500  1000:307E  bottom-left
+;    0   $0178  +1.500  -2.000   +0.375    -0.500  1000:30DE  top-LEFT
+;    1   $0178  -1.500  -2.000   -0.375    -0.500  1000:30BE  top-RIGHT
+;    2   $0098  +1.500  +2.000   +0.375    +0.500  1000:309E  bottom-LEFT
+;    3   $0098  -1.500  +2.000   -0.375    +0.500  1000:307E  bottom-RIGHT
+;
+; ATTENTION AU NOM DES DOSSIERS : gauche et droite sont l'INVERSE de ce que le
+; signe de vx laisse croire. La correspondance n'est pas deduite, elle est
+; MESUREE — les fichiers sources portent l'adresse arcade de leur meta-sprite
+; (000_013116.png…), et ces adresses sont exactement celles que la base de la
+; variante enumere. Le nom decrit vraisemblablement le coin d'ou le gouger
+; EMERGE, pas son sens de deplacement : au plafond, celui qui part vers la
+; gauche arrive bien du coin haut-droit.
+; Se fier au signe de vx aurait donne a chaque variante l'art d'une autre
+; direction — silencieux au build, penible a l'ecran.
 ;
 ; L'axe Y arcade monte : $0178 (376) est donc le PLAFOND et $0098 (152) le
 ; SOL — les variantes 0 et 1 descendent (vy negatif), les 2 et 3 montent.
@@ -55,7 +65,15 @@
 ;   bottom-right  4 poses   0 1 2 3 2 1 0 3   <- sa 8e pose est identique a la 4e
 ;   bottom-left   5 poses   0 1 2 3 2 1 0 4
 ;
-; 19 sprites au lieu de 32, soit 41 % de moins, sans rien perdre. La table de
+; 19 sprites au lieu de 32, soit 41 % de moins, sans rien perdre.
+;
+; LA POSE MANQUANTE DE bottom-right VIENT DE LA ROM, pas de l'export — verifie.
+; Un descripteur fait 48 octets, soit QUATRE tranches de douze, une par
+; variante (d'ou les ecarts de 0x0C entre 30FE, 310A, 3116, 3122). Pour la
+; variante 3, les tranches des slots 3 et 7 sont identiques octet pour octet
+; (tuiles 0x0524 et 0x0530 des deux cotes), alors que les tranches des trois
+; autres variantes different bien (0x0530/0x0524 contre 0x0540/0x0534). La
+; donnee d'origine repete cette pose pour cette direction-la, c'est tout. La table de
 ; bottom-right differe d'une entree : le code objet porte donc DEUX tables, pas
 ; une. Verification independante : les doublons attendus depuis la table arcade
 ; se retrouvaient exactement dans les images converties avant deduplication.
