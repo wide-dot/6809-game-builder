@@ -22,6 +22,7 @@ xPosOld       equ ext_variables+11 ; 2 bytes - old player one x_pos
 impactX       equ ext_variables+13 ; 2 bytes - impact x position
 parent        equ ext_variables+15 ; 2 bytes - parent object pointer
 armed         equ ext_variables+17 ; 1 byte  - 1 = hitbox armee (segment deja apparu a l'ecran)
+gumPrevX      equ ext_variables+18 ; 2 bytes - x de la tete a la trame precedente (labour)
 
 stepMove      equ 6                ; number of pixels in horizontal axis
 leftOffset    equ 11               ; init position when left
@@ -131,6 +132,8 @@ InitFirstChild
         ldx   #counterAirImagesa
         stx   anim,u
  ENDC
+        ldd   x_pos,u                  ; amorcer le labour : sans ca le premier
+        std   gumPrevX,u               ; balayage partirait de zero
         stu   parent,u                 ; set self as parent
         rts
 
@@ -281,6 +284,11 @@ Live
         cmpd  x_pos,u
         bhs   @delete
 !
+        ; --- LE LABOUR : LA TETE SEULE, ET A CHAQUE TRAME (voir plus bas)
+        cmpu  parent,u
+        bne   >
+        jsr   CounterAirGumSweep
+!
         ; compute current frame
         lda   caFrame,u
  IFDEF t2
@@ -314,6 +322,107 @@ Live
         jmp   DeleteObject
 AlreadyDeleted
         rts
+
+; ---------------------------------------------------------------------------
+; CounterAirGumSweep — le plus gros effacement du jeu
+; ---------------------------------------------------------------------------
+; arcade : 0x40:4A28..4A88 (tir vers l'avant) et son miroir 0x4B57..4BB8, ou le
+; `x -= 0x48` devient `x += 0x48`. ONZE blocs de 4x4 cellules d'un coup, poses
+; aux centres suivants, en px arcade relatifs a la tete :
+;
+;      (x-72,y-12) (x-60,y-12)                              la TETE : deux
+;      (x-72,y   ) (x-60,y   ) (x-48,y) (x-34,y) (x-20,y)   colonnes sur trois
+;      (x-72,y+12) (x-60,y+12)          (x-6,y)  (x+8,y)    rangees, puis la
+;                                                           QUEUE sur la rangee
+;                                                           du milieu
+;
+; Les blocs se recouvrent largement (12 px d'ecart pour 32 px de large) : la
+; surface reelle est un T. On la rend par DEUX rectangles au lieu de onze
+; blocs — meme forme, deux appels.
+;   tete  : 6 cellules de large sur 7 rangees, a la racine du tir
+;   queue : 11 cellules de large sur 4 rangees, sur la rangee du milieu
+;
+; QUAND, ET QUI. Ici la reponse s'ecarte de la borne, et il faut savoir
+; pourquoi (25/08/2026). Chez elle le counter-air est UN SEUL objet : les
+; quatre segments sont quatre tranches de sprite du meme, sa tete est ANCREE au
+; pod (pos = pod +-0x50) et ne voyage pas, son anneau d'animation fait seize
+; trames, et le balayage tombe a `anim_phase == 0` — donc UNE FOIS, a la
+; naissance. Elle creuse son couloir d'un coup et joue son animation dedans ;
+; c'est ce qui donne le front de gommes net devant le tir.
+;
+; Notre portage (celui de la v1) en fait QUATRE OBJETS, et sa tete VOYAGE
+; (stepMove px par pas d'animation). Un balayage unique a la naissance
+; laisserait donc le tir survoler des gommes intactes tout le reste de sa vie —
+; c'est exactement ce qu'on voyait : le sprite dessine par-dessus des gommes
+; encore la, effacees plusieurs trames plus tard. On laboure donc A CHAQUE
+; TRAME, et LE SILLAGE, de la position de la trame precedente a la position
+; courante : la tete creuse toujours devant elle, et les trois segments qui la
+; suivent avancent dans un couloir deja fait.
+;
+; LA TETE SEULE. Les trois autres segments ne labourent pas : ils sont derriere
+; elle, dans le couloir. Un seul balayage par trame, donc le meme cout qu'avant
+; — et c'est aussi le nombre d'appels que faisait la borne.
+;
+; V2-DEVIATION: la reflexion du counter-air (0x40:4E6B, une grappe 2x2) n'est
+; pas portee — l'objet de reflexion ne l'est pas non plus.
+; ---------------------------------------------------------------------------
+CounterAirGumSweep
+        ldd   stage.gum.hook
+        addd  #6                       ; +6 : effacer un rectangle balaye
+        std   counterAir.gum.call
+
+        ldd   #-33                     ; --- LA TETE, a la racine du tir
+        tst   x_vel,u
+        bpl   >
+        ldd   #16                      ; vers la gauche : elle passe de l'autre cote
+!       std   counterAir.gum.off
+        ldb   y_pos+1,u
+        subb  #21
+        bhs   >
+        clrb                           ; le tir colle au haut du champ
+!       lda   #$67                     ; 6 cellules de large, 7 rangees
+        bsr   CounterAirGumRect
+
+        ldd   #-24                     ; --- LA QUEUE
+        tst   x_vel,u
+        bpl   >
+        ldd   #-9
+!       std   counterAir.gum.off
+        ldb   y_pos+1,u
+        subb  #12
+        bhs   >
+        clrb
+!       lda   #$B4                     ; 11 cellules de large, 4 rangees
+        bsr   CounterAirGumRect
+
+        ldd   x_pos,u                  ; la trame suivante partira d'ici
+        std   gumPrevX,u
+        rts
+
+; input REG : [a] la taille du bloc, [b] la ligne ecran du haut
+; input VAR : counterAir.gum.off, l'offset SIGNE du bord gauche
+CounterAirGumRect
+        sta   @size
+        stb   @line
+        ldd   gumPrevX,u               ; le depart
+        addd  counterAir.gum.off
+        bpl   >
+        ldd   #0                       ; debut de carte : on colle au bord
+!       tfr   d,x
+        ldd   x_pos,u                  ; l'arrivee
+        addd  counterAir.gum.off
+        bpl   >
+        ldd   #0
+!       tfr   d,y
+        ldb   #0
+@line   equ   *-1
+        lda   #0
+@size   equ   *-1
+        jsr   >0
+counterAir.gum.call equ *-2
+        rts
+
+counterAir.gum.off  fdb 0
 
 counterAirImages
         fdb   Img_counterairlaser_7
