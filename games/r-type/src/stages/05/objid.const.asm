@@ -41,8 +41,10 @@ ObjID_slither_tail_corpse equ 40
 * donnant qu'UNE par identifiant, l'objet BASCULE d'identifiant le temps
 * d'une trame. Meme motif que le cadavre de la queue ci-dessus.
 ObjID_slither_head_hit equ 41
+* Et la QUEUE pendant son flash, pour la meme raison.
+ObjID_slither_tail_hit equ 42
 
-objid.count equ 41
+objid.count equ 42
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

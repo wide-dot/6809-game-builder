@@ -121,6 +121,13 @@ slither.fMode     equ ext_variables+12   ; 12   0 = dans la chaine, 1 = compte
 slither.fDelayC   equ ext_variables+13   ; 13   ce compte a rebours
 slither.fPrevP    equ ext_variables+14   ; 14   le potentiel du tour precedent
 slither.fBlink    equ ext_variables+15   ; 15   1 = flash de coup cette trame
+slither.fRole     equ ext_variables+16   ; 16   0 = tete, 1 = queue. L'ID ne
+                                         ;      peut PLUS repondre a cette
+                                         ;      question : pendant son flash le
+                                         ;      suiveur en porte un autre, pour
+                                         ;      monter la page des poses
+                                         ;      blanches. Le role, lui, est fige
+                                         ;      a la naissance.
 ; --- LE RENDERER GROUPE : son instance ---------------------------------------
 slither.rInst     equ ext_variables+0    ; 0,1  le bloc dont il dessine les slots
 
@@ -1034,6 +1041,10 @@ slither.SpawnFollower
         stb   slither.fDelay,x
         stu   slither.fMaster,x        ; l'OST du maitre, valide avant usage
         clr   routine,x
+        clr   slither.fRole,x          ; la tete par defaut
+        cmpa  #ObjID_slither_tail
+        bne   @out
+        inc   slither.fRole,x
 @out    puls  u,a,b,pc
 
 ; Le suiveur a OST — la TETE (retard 0) ou la QUEUE (retard 92/146). Une
@@ -1047,9 +1058,8 @@ slither.Segment
         ; On teste la QUEUE, pas la tete : pendant son flash la tete porte
         ; ObjID_slither_head_hit, et tout test « est-ce la tete ? » la
         ; ferait basculer du cote de la queue.
-        lda   id,u
-        cmpa  #ObjID_slither_tail
-        beq   @queue
+        lda   slither.fRole,u
+        bne   @queue
         lda   #slither_head_hitdamage
         sta   slither.fAABB+AABB.p,u
         _ldd  slither_head_hitbox_x,slither_head_hitbox_y
@@ -1109,9 +1119,6 @@ slither.FollowerLive
         ; degats, comme le +0x1f de l'arcade. Une BAISSE est un coup encaisse.
         ; Seule la tete flashe : elle seule encaisse plusieurs coups (14
         ; contre 6), un corps ou la queue meurt bien avant d'avoir pu flasher.
-        lda   id,u
-        cmpa  #ObjID_slither_tail
-        beq   @noflash
         lda   slither.fAABB+AABB.p,u
         beq   @noflash                 ; a zero : le chemin de mort s'en charge
         cmpa  slither.fPrevP,u
@@ -1151,30 +1158,35 @@ slither.FollowerLive
         stb   anim_frame,u             ; la pose du tour, que le cadavre relira
         andb  #$0F
         aslb
-        lda   id,u
-        cmpa  #ObjID_slither_tail
-        bne   @tete
-        ldx   #slither.TailSets
-        bra   @set
-@tete   lda   slither.fBlink,u
-        beq   @normal
-        clr   slither.fBlink,u         ; une seule trame
-        lda   #ObjID_slither_head_hit  ; CE changement d'identifiant est ce qui
-        sta   id,u                     ; fait monter l'autre page d'images
-        ldx   #slither.HeadHitSets
-        bra   @set
-@normal lda   #ObjID_slither_head
-        sta   id,u
+        ; Le jeu de poses vient du ROLE, l'identifiant de l'ETAT : c'est lui
+        ; qui decide quelle page d'images BuildSprites montera.
+        lda   slither.fBlink,u
+        bne   @flash
+        lda   slither.fRole,u
+        bne   @tnorm
         ldx   #slither.HeadSets
-@set    abx
+        lda   #ObjID_slither_head
+        bra   @set
+@tnorm  ldx   #slither.TailSets
+        lda   #ObjID_slither_tail
+        bra   @set
+@flash  clr   slither.fBlink,u         ; une seule trame
+        lda   slither.fRole,u
+        bne   @tflash
+        ldx   #slither.HeadHitSets
+        lda   #ObjID_slither_head_hit
+        bra   @set
+@tflash ldx   #slither.TailHitSets
+        lda   #ObjID_slither_tail_hit
+@set    sta   id,u
+        abx
         ldx   ,x
         stx   image_set,u
         ; --- la cascade, cote QUEUE (40:7afa) --------------------------------
         ; Son predecesseur est le DERNIER record. La TETE, elle, est la SOURCE
         ; de la cascade (40:7c50) et n'a pas de predecesseur a lire.
-        lda   id,u
-        cmpa  #ObjID_slither_tail
-        bne   @nocasc
+        lda   slither.fRole,u
+        beq   @nocasc                  ; la tete n'a pas de predecesseur
         lda   slither.fMode,u
         bne   @counting
         ldx   slither.fMaster,u
@@ -1215,9 +1227,8 @@ slither.FollowerLive
         lda   slither.fAABB+AABB.p,u
         beq   @dead
         jmp   DisplaySprite
-@dead   lda   id,u
-        cmpa  #ObjID_slither_tail
-        beq   @dtail
+@dead   lda   slither.fRole,u
+        bne   @dtail
         ; 40:7c50 : la tete pose son drapeau AVANT de mourir. C'est le bit 0,
         ; celui qui detache toute la chaine — elle est la source de la cascade.
         ldx   slither.fMaster,u        ; valide : on vient de le lire ce tour
@@ -1702,6 +1713,16 @@ slither.TailSets
 ; Les seize poses BLANCHES de la tete. Elles vivent sur LEUR page — voir
 ; stage5.cast.imgHeadHit dans le config — que seul ObjID_slither_head_hit
 ; monte. C'est pourquoi l'objet change d'identifiant le temps du flash.
+slither.TailHitSets
+        fdb   set_slither_tailhit_0,set_slither_tailhit_1
+        fdb   set_slither_tailhit_2,set_slither_tailhit_3
+        fdb   set_slither_tailhit_4,set_slither_tailhit_5
+        fdb   set_slither_tailhit_6,set_slither_tailhit_7
+        fdb   set_slither_tailhit_8,set_slither_tailhit_9
+        fdb   set_slither_tailhit_10,set_slither_tailhit_11
+        fdb   set_slither_tailhit_12,set_slither_tailhit_13
+        fdb   set_slither_tailhit_14,set_slither_tailhit_15
+
 slither.HeadHitSets
         fdb   set_slither_headhit_0,set_slither_headhit_1
         fdb   set_slither_headhit_2,set_slither_headhit_3

@@ -3273,6 +3273,20 @@
 
                 <!-- La zone residente du serpent : membre d'arene, charge en
                      zeros par la scene (voir slither/res.unit.asm). -->
+                <!-- Les seize poses BLANCHES de la QUEUE. Meme raison que
+                     pour la tete, et meme mecanique : un direntry, un ObjID,
+                     l'objet bascule d'identifiant le temps du flash. -->
+                <file name="stage5.cast.imgTailHit" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgtailhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgTailHit" gendir="gen/enemies/stage5-cast-imgtailhit"
+                                 gensource="gen/enemies/stage5-cast-imgtailhit/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgtailhit/index.asm">
+                            <images dir="src/enemies/slither/images/tail_hit" names="slither_tailhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage5.slither.res" linkdata="LINK" arena="stage5.res">
                     <lwasm gensource="gen/stages/05/slither-res.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3325,6 +3339,7 @@
                     <load name="stage5.cast.imgHead"/>
                     <load name="stage5.cast.imgTail"/>
                     <load name="stage5.cast.imgHeadHit"/>
+                    <load name="stage5.cast.imgTailHit"/>
                     <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
