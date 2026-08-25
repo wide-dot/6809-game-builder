@@ -149,6 +149,7 @@ reboundmgr.RecPublish.off
 reboundmgr.sx   fcb 0
 reboundmgr.di   fcb 0
 reboundmgr.n    fcb 0
+reboundmgr.fill fcb 0
 reboundmgr.k    fcb 0
 reboundmgr.px   fdb 0
 reboundmgr.py   fdb 0
@@ -203,8 +204,31 @@ reboundmgr.publishChain
         lda   nbPass,u
         beq   reboundmgr.publishChain.rts
         sta   reboundmgr.n
+        ; COMBIEN D'ANNEAU EST DEJA ECRIT. La tete ecrit une entree par tick ;
+        ; sa duree de vie decroit du meme pas, donc LASER_LIFETIME moins ce
+        ; qu'il en reste EST le nombre de ticks vecus, donc d'entrees ecrites.
+        ; Un passager qui remonte plus loin que ca lirait une entree JAMAIS
+        ; ECRITE — un zero, publie au bord gauche de la carte. Avec trois
+        ; passagers le plus profond ne remontait que 7 ticks et ca ne se voyait
+        ; guere ; avec sept il en remonte 15, et la queue de la chaine se
+        ; desaligne a chaque naissance (releve du 25/08/2026 : anneau
+        ; [363..330, 0,0,0,0], k=5 et k=6 a zero).
+        ; La borne dit la meme chose autrement : son pre_delay fait entrer les
+        ; segments UN TOUTES LES DEUX TRAMES. Ne rien publier qui n'existe pas
+        ; encore, c'est exactement ce deploiement progressif.
+        lda   #LASER_LIFETIME
+        suba  laserLifetime,u
+        cmpa  #16                      ; l'anneau tient seize entrees
+        blo   >
+        lda   #16
+!       sta   reboundmgr.fill
         clr   reboundmgr.k
 reboundmgr.publishChain.loop
+        lda   reboundmgr.k             ; son recul, en ENTREES : 2k + 3
+        asla
+        adda  #3
+        cmpa  reboundmgr.fill
+        bhi   reboundmgr.publishChain.tail
         lda   reboundmgr.k             ; le recul dans l'anneau
         asla
         asla
@@ -245,6 +269,11 @@ reboundmgr.publishChain.pub
         blo   reboundmgr.publishChain.loop
 reboundmgr.publishChain.rts
         rts
+reboundmgr.publishChain.tail
+        ; ceux d'apres non plus n'existent pas : leurs slots s'eteignent, sans
+        ; quoi ils garderaient l'image de la volee precedente
+        ldb   reboundmgr.k
+        jmp   reboundmgr.clearChainFrom
 
 ;-------------------------------------------------------------------------------
 ; reboundmgr.clearChainFrom — eteindre les slots d'une chaine A PARTIR d'un rang
