@@ -18,6 +18,32 @@
 ; ses etiquettes de son nom — voir outslay/obj.asm.
 ;*******************************************************************************
 
+; Les sprites du GOUGER franchissent la frontiere de direntry : chaque
+; direction a sa page, donc son entree de repertoire (23 sprites 24x48 pesent
+; 34 445 octets, plus de deux pages). Ces symboles sont resolus au chargement.
+set_gouger_tl_0  EXTERNAL
+set_gouger_tl_1  EXTERNAL
+set_gouger_tl_2  EXTERNAL
+set_gouger_tl_3  EXTERNAL
+set_gouger_tl_4  EXTERNAL
+set_gouger_tr_0  EXTERNAL
+set_gouger_tr_1  EXTERNAL
+set_gouger_tr_2  EXTERNAL
+set_gouger_tr_3  EXTERNAL
+set_gouger_tr_4  EXTERNAL
+set_gouger_bl_0  EXTERNAL
+set_gouger_bl_1  EXTERNAL
+set_gouger_bl_2  EXTERNAL
+set_gouger_bl_3  EXTERNAL
+set_gouger_bl_4  EXTERNAL
+set_gouger_br_0  EXTERNAL
+set_gouger_br_1  EXTERNAL
+set_gouger_br_2  EXTERNAL
+set_gouger_br_3  EXTERNAL
+set_gouger_hit_tl_0  EXTERNAL
+set_gouger_hit_tr_0  EXTERNAL
+set_gouger_hit_bl_0  EXTERNAL
+set_gouger_hit_br_0  EXTERNAL
 gouger.Object    EXPORT
 wick.Object      EXPORT
 brood.Object     EXPORT

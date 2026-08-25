@@ -39,6 +39,10 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
@@ -91,6 +95,10 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   gouger.Object ; ObjID_gouger
+        fdb   gouger.Object ; ObjID_gouger_tl
+        fdb   gouger.Object ; ObjID_gouger_tr
+        fdb   gouger.Object ; ObjID_gouger_bl
+        fdb   gouger.Object ; ObjID_gouger_br
         fdb   wick.Object ; ObjID_wick
         fdb   brood.Object ; ObjID_brood
         fdb   outslay.Object ; ObjID_outslay
@@ -137,6 +145,10 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
@@ -183,6 +195,10 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
         fdb   Ani_Asd_none ; ObjID_gouger
+        fdb   Ani_Asd_none ; ObjID_gouger_tl
+        fdb   Ani_Asd_none ; ObjID_gouger_tr
+        fdb   Ani_Asd_none ; ObjID_gouger_bl
+        fdb   Ani_Asd_none ; ObjID_gouger_br
         fdb   Ani_Asd_none ; ObjID_wick
         fdb   Ani_Asd_none ; ObjID_brood
         fdb   Ani_Asd_none ; ObjID_outslay
@@ -238,7 +254,11 @@ Img_Page_Index
 * quelconque et saute dans le vide. Une table indexee par identifiant doit
 * etre DENSE jusqu'a objid.count — le garde-fou en fin de fichier le verifie
 * maintenant.
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger ; bascule des l init
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTL.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTR.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBL.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBR.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay

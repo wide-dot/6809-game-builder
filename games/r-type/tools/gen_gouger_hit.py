@@ -37,9 +37,12 @@ DIRECTIONS = ('top-left', 'top-right', 'bottom-left', 'bottom-right')
 def main():
     racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     base = os.path.join(racine, 'src/enemies/gouger/images')
-    dst = os.path.join(base, 'hit')
-    os.makedirs(dst, exist_ok=True)
+    # une pose blanche par direction, RANGEE AVEC sa direction : chacune doit
+    # vivre sur la meme page d'images que les poses normales de sa variante.
+    COURTS = ('tl', 'tr', 'bl', 'br')
     for i, d in enumerate(DIRECTIONS):
+        dst = os.path.join(base, 'hit', COURTS[i])
+        os.makedirs(dst, exist_ok=True)
         src = os.path.join(base, d, POSE + '.png')
         im = Image.open(src)
         if im.mode != 'P':
@@ -51,7 +54,7 @@ def main():
         out = Image.frombytes('P', im.size, bytes(px))
         out.putpalette(im.getpalette())
         # numerotees dans l'ordre des variantes de wave (cf. DIRECTIONS)
-        out.save(os.path.join(dst, '%02d.png' % i))
+        out.save(os.path.join(dst, '00.png'))
     print('%d images blanches ecrites (pose %s de chaque orientation)'
           % (len(DIRECTIONS), POSE))
 

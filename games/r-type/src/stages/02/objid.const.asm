@@ -36,7 +36,18 @@ ObjID_outslay_shot equ 41
 * L'animation de decor comme objet : le boss en instancie une par ouverture
 * de tube, elle vit sa duree et se rend. Voir common/fx/tilemapanim/obj.asm.
 ObjID_tilemapanim equ 42
-objid.count equ 42
+* Le gouger a QUATRE identifiants, un par direction. Ce n'est pas un caprice :
+* ses 23 sprites 24x48 pesent 34 445 octets, soit plus de deux pages, et
+* Img_Page_Index ne donne QU'UNE page d'images par identifiant. Chaque
+* direction a donc son direntry et son id ; l'objet bascule sur celui de sa
+* variante des l'init, et n'en change plus — la variante est figee a la
+* naissance. Meme motif que la tete et la queue du serpent.
+ObjID_gouger_tl equ 43
+ObjID_gouger_tr equ 44
+ObjID_gouger_bl equ 45
+ObjID_gouger_br equ 46
+
+objid.count equ 46
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
