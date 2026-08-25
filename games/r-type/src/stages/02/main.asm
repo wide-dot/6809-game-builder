@@ -39,6 +39,7 @@ patapata.Object   EXTERNAL
 
 ; Le cast du stage 2 — squelettes du chantier 3, une unité paginée chacun.
 gouger.Object     EXTERNAL
+gouger.Half       EXTERNAL
 wick.Object       EXTERNAL
 brood.Object      EXTERNAL
 outslay.Object    EXTERNAL

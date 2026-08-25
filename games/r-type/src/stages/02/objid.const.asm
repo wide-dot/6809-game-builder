@@ -36,18 +36,29 @@ ObjID_outslay_shot equ 41
 * L'animation de decor comme objet : le boss en instancie une par ouverture
 * de tube, elle vit sa duree et se rend. Voir common/fx/tilemapanim/obj.asm.
 ObjID_tilemapanim equ 42
-* Le gouger a QUATRE identifiants, un par direction. Ce n'est pas un caprice :
-* ses 23 sprites 24x48 pesent 34 445 octets, soit plus de deux pages, et
-* Img_Page_Index ne donne QU'UNE page d'images par identifiant. Chaque
-* direction a donc son direntry et son id ; l'objet bascule sur celui de sa
-* variante des l'init, et n'en change plus — la variante est figee a la
-* naissance. Meme motif que la tete et la queue du serpent.
+* Le gouger a HUIT identifiants : un par direction, et le double parce que
+* chaque pose est coupee en deux moities dessinees par DEUX objets.
+* Ce n'est pas un caprice. Img_Page_Index ne donne QU'UNE page d'images par
+* identifiant, et les 46 demi-sprites 24x48 du gouger pesent plus de deux
+* pages : chaque direction a donc son direntry et son id, et l'objet bascule
+* sur celui de sa variante des l'init sans en changer — la variante est figee
+* a la naissance (meme motif que la tete et la queue du serpent).
+* La coupe en deux, elle, vient du moteur : BuildSprites rejette EN BLOC un
+* sprite qui deborde de l'ecran, la ou l'arcade le decoupe. Le gouger attend a
+* demi enterre dans la paroi, donc il debordait toujours et n'etait pas dessine
+* du tout. Coupe, seule la moitie enfouie est rejetee. Le parent porte la
+* moitie HAUTE, son enfant la BASSE ; ils partagent la meme position, l'ancre
+* de chaque demi-image faisant le reste.
 ObjID_gouger_tl equ 43
 ObjID_gouger_tr equ 44
 ObjID_gouger_bl equ 45
 ObjID_gouger_br equ 46
+ObjID_gouger_tl_b equ 47
+ObjID_gouger_tr_b equ 48
+ObjID_gouger_bl_b equ 49
+ObjID_gouger_br_b equ 50
 
-objid.count equ 46
+objid.count equ 50
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

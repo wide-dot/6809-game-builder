@@ -2815,58 +2815,117 @@
                     </lwasm>
                 </file>
 
-                <!-- Les sprites du GOUGER, une entree de repertoire PAR
-                     DIRECTION. Ses 23 sprites 24x48 pesent 34 445 octets, soit
-                     plus de deux pages, et Img_Page_Index ne donne qu'UNE page
-                     d'images par identifiant : chaque direction a donc son
-                     direntry, son ObjID, et sa pose blanche de flash avec elle.
-                     19 poses seulement, le cycle arcade faisant un aller-retour
-                     (option dedup d'arcade_to_sprites). Pas de variante decalee
-                     d'un pixel, vu la taille. -->
-                <file name="stage2.cast.imgGougerTL" linkdata="LINK" arena="stage2.foes">
-                    <lwasm gensource="gen/enemies/stage2-cast-imggougertl.asm">
+                <!-- Les sprites du GOUGER : une entree de repertoire par
+                     DIRECTION et par MOITIE, soit huit.
+                     Deux raisons se cumulent. Img_Page_Index ne donne qu'UNE
+                     page d'images par identifiant, donc chaque direction a son
+                     ObjID et sa pose blanche de flash avec elle. Et chaque pose
+                     est COUPEE EN DEUX horizontalement (tools/gen_gouger_halves.py)
+                     parce que BuildSprites ne decoupe pas aux bords de l'ecran :
+                     un gouger a demi enterre dans la paroi n'etait pas dessine du
+                     tout. La moitie haute va au parent, la moitie basse a son
+                     objet enfant — d'ou deux identifiants et deux pages par
+                     direction.
+                     46 demi-images pour 19 poses distinctes plus 4 flashs, le
+                     cycle arcade faisant un aller-retour (option dedup
+                     d'arcade_to_sprites). Les pixels sont les memes qu'avant la
+                     coupe ; le fixe ajoute est d'un LEAU et d'un RTS par routine.
+                     Couper AIDE le rangement : huit unites de ~4,4 Ko se logent
+                     dans les creux la ou quatre de ~9 Ko forcaient une page
+                     entiere. Pas de variante decalee d'un pixel, vu la taille. -->
+
+                <file name="stage2.cast.imgGougerTLh" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougertlh.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage2.cast.imgGougerTL" gendir="gen/enemies/stage2-cast-imggougertl"
-                                 gensource="gen/enemies/stage2-cast-imggougertl/includes.asm"
-                                 genindex="gen/enemies/stage2-cast-imggougertl/index.asm">
-                            <images dir="src/enemies/gouger/images/top-left" names="gouger_tl"/>
-                            <images dir="src/enemies/gouger/images/hit/tl" names="gouger_hit_tl"/>
+                        <gfxcomp file="stage2.cast.imgGougerTLh" gendir="gen/enemies/stage2-cast-imggougertlh"
+                                 gensource="gen/enemies/stage2-cast-imggougertlh/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougertlh/index.asm">
+                            <images dir="src/enemies/gouger/images/half/tl/haut" names="gouger_tl_h"/>
+                            <images dir="src/enemies/gouger/images/half/hit/tl/haut" names="gouger_hit_tl_h"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <file name="stage2.cast.imgGougerTR" linkdata="LINK" arena="stage2.foes">
-                    <lwasm gensource="gen/enemies/stage2-cast-imggougertr.asm">
+                <file name="stage2.cast.imgGougerTLb" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougertlb.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage2.cast.imgGougerTR" gendir="gen/enemies/stage2-cast-imggougertr"
-                                 gensource="gen/enemies/stage2-cast-imggougertr/includes.asm"
-                                 genindex="gen/enemies/stage2-cast-imggougertr/index.asm">
-                            <images dir="src/enemies/gouger/images/top-right" names="gouger_tr"/>
-                            <images dir="src/enemies/gouger/images/hit/tr" names="gouger_hit_tr"/>
+                        <gfxcomp file="stage2.cast.imgGougerTLb" gendir="gen/enemies/stage2-cast-imggougertlb"
+                                 gensource="gen/enemies/stage2-cast-imggougertlb/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougertlb/index.asm">
+                            <images dir="src/enemies/gouger/images/half/tl/bas" names="gouger_tl_b"/>
+                            <images dir="src/enemies/gouger/images/half/hit/tl/bas" names="gouger_hit_tl_b"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <file name="stage2.cast.imgGougerBL" linkdata="LINK" arena="stage2.foes">
-                    <lwasm gensource="gen/enemies/stage2-cast-imggougerbl.asm">
+                <file name="stage2.cast.imgGougerTRh" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougertrh.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage2.cast.imgGougerBL" gendir="gen/enemies/stage2-cast-imggougerbl"
-                                 gensource="gen/enemies/stage2-cast-imggougerbl/includes.asm"
-                                 genindex="gen/enemies/stage2-cast-imggougerbl/index.asm">
-                            <images dir="src/enemies/gouger/images/bottom-left" names="gouger_bl"/>
-                            <images dir="src/enemies/gouger/images/hit/bl" names="gouger_hit_bl"/>
+                        <gfxcomp file="stage2.cast.imgGougerTRh" gendir="gen/enemies/stage2-cast-imggougertrh"
+                                 gensource="gen/enemies/stage2-cast-imggougertrh/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougertrh/index.asm">
+                            <images dir="src/enemies/gouger/images/half/tr/haut" names="gouger_tr_h"/>
+                            <images dir="src/enemies/gouger/images/half/hit/tr/haut" names="gouger_hit_tr_h"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <file name="stage2.cast.imgGougerBR" linkdata="LINK" arena="stage2.foes">
-                    <lwasm gensource="gen/enemies/stage2-cast-imggougerbr.asm">
+                <file name="stage2.cast.imgGougerTRb" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougertrb.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage2.cast.imgGougerBR" gendir="gen/enemies/stage2-cast-imggougerbr"
-                                 gensource="gen/enemies/stage2-cast-imggougerbr/includes.asm"
-                                 genindex="gen/enemies/stage2-cast-imggougerbr/index.asm">
-                            <images dir="src/enemies/gouger/images/bottom-right" names="gouger_br"/>
-                            <images dir="src/enemies/gouger/images/hit/br" names="gouger_hit_br"/>
+                        <gfxcomp file="stage2.cast.imgGougerTRb" gendir="gen/enemies/stage2-cast-imggougertrb"
+                                 gensource="gen/enemies/stage2-cast-imggougertrb/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougertrb/index.asm">
+                            <images dir="src/enemies/gouger/images/half/tr/bas" names="gouger_tr_b"/>
+                            <images dir="src/enemies/gouger/images/half/hit/tr/bas" names="gouger_hit_tr_b"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast.imgGougerBLh" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougerblh.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgGougerBLh" gendir="gen/enemies/stage2-cast-imggougerblh"
+                                 gensource="gen/enemies/stage2-cast-imggougerblh/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougerblh/index.asm">
+                            <images dir="src/enemies/gouger/images/half/bl/haut" names="gouger_bl_h"/>
+                            <images dir="src/enemies/gouger/images/half/hit/bl/haut" names="gouger_hit_bl_h"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast.imgGougerBLb" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougerblb.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgGougerBLb" gendir="gen/enemies/stage2-cast-imggougerblb"
+                                 gensource="gen/enemies/stage2-cast-imggougerblb/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougerblb/index.asm">
+                            <images dir="src/enemies/gouger/images/half/bl/bas" names="gouger_bl_b"/>
+                            <images dir="src/enemies/gouger/images/half/hit/bl/bas" names="gouger_hit_bl_b"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast.imgGougerBRh" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougerbrh.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgGougerBRh" gendir="gen/enemies/stage2-cast-imggougerbrh"
+                                 gensource="gen/enemies/stage2-cast-imggougerbrh/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougerbrh/index.asm">
+                            <images dir="src/enemies/gouger/images/half/br/haut" names="gouger_br_h"/>
+                            <images dir="src/enemies/gouger/images/half/hit/br/haut" names="gouger_hit_br_h"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast.imgGougerBRb" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imggougerbrb.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgGougerBRb" gendir="gen/enemies/stage2-cast-imggougerbrb"
+                                 gensource="gen/enemies/stage2-cast-imggougerbrb/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imggougerbrb/index.asm">
+                            <images dir="src/enemies/gouger/images/half/br/bas" names="gouger_br_b"/>
+                            <images dir="src/enemies/gouger/images/half/hit/br/bas" names="gouger_hit_br_b"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2923,10 +2982,14 @@
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
-                    <load name="stage2.cast.imgGougerTL"/>
-                    <load name="stage2.cast.imgGougerTR"/>
-                    <load name="stage2.cast.imgGougerBL"/>
-                    <load name="stage2.cast.imgGougerBR"/>
+                    <load name="stage2.cast.imgGougerTLh"/>
+                    <load name="stage2.cast.imgGougerTLb"/>
+                    <load name="stage2.cast.imgGougerTRh"/>
+                    <load name="stage2.cast.imgGougerTRb"/>
+                    <load name="stage2.cast.imgGougerBLh"/>
+                    <load name="stage2.cast.imgGougerBLb"/>
+                    <load name="stage2.cast.imgGougerBRh"/>
+                    <load name="stage2.cast.imgGougerBRb"/>
                     <load name="stage2.cast.imgHead"/>
                     <load name="stage2.tiles.even"/>
                     <load name="stage2.tiles.odd"/>

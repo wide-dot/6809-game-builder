@@ -53,6 +53,10 @@ Obj_Index_Page.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_b
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -110,6 +114,10 @@ Obj_Index_Address.gouger_tl
         fdb   gouger.Object ; ObjID_gouger_tr
         fdb   gouger.Object ; ObjID_gouger_bl
         fdb   gouger.Object ; ObjID_gouger_br
+        fdb   gouger.Half ; ObjID_gouger_tl_b
+        fdb   gouger.Half ; ObjID_gouger_tr_b
+        fdb   gouger.Half ; ObjID_gouger_bl_b
+        fdb   gouger.Half ; ObjID_gouger_br_b
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -161,6 +169,10 @@ Ani_Page_Index.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_b
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -212,6 +224,10 @@ Ani_Asd_Index.gouger_tl
         fdb   Ani_Asd_none ; ObjID_gouger_tr
         fdb   Ani_Asd_none ; ObjID_gouger_bl
         fdb   Ani_Asd_none ; ObjID_gouger_br
+        fdb   Ani_Asd_none ; ObjID_gouger_tl_b
+        fdb   Ani_Asd_none ; ObjID_gouger_tr_b
+        fdb   Ani_Asd_none ; ObjID_gouger_bl_b
+        fdb   Ani_Asd_none ; ObjID_gouger_br_b
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -269,10 +285,14 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_shot
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_tilemapanim
 Img_Page_Index.gouger_tl
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTL.page ; ObjID_gouger_tl
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTR.page ; ObjID_gouger_tr
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBL.page ; ObjID_gouger_bl
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBR.page ; ObjID_gouger_br
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTLh.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTRh.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBLh.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBRh.page ; ObjID_gouger_br
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTLb.page ; ObjID_gouger_tl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTRb.page ; ObjID_gouger_tr_b
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBLb.page ; ObjID_gouger_bl_b
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBRb.page ; ObjID_gouger_br_b
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

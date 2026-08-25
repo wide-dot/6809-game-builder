@@ -89,10 +89,28 @@
 ; Chaque pose est un META-SPRITE de DEUX sprites (write_2_sprites) : nos PNG
 ; 24x48 sont les deux tranches deja composees.
 ;
+; ET ON LES RECOUPE EN DEUX, horizontalement. Pas par gout de la fidelite :
+; BuildSprites rejette EN BLOC un sprite qui deborde de l'ecran, la ou l'arcade
+; le decoupe. Le gouger attend a demi enterre dans la paroi (15 au plafond,
+; 183 au sol, ancre au centre d'un sprite de 48) : il debordait donc TOUJOURS
+; et n'etait pas dessine du tout pendant sa phase d'attente, qui est
+; l'essentiel de sa vie. Coupe, seule la moitie enfouie est rejetee.
+;   plafond 15 : haute -6 -> rejetee     basse 15..36   -> dessinee
+;   sol    183 : haute 162..183 -> ok    basse 183..207 -> rejetee
+; Un objet PARENT porte la moitie haute, un objet ENFANT la basse. L'enfant ne
+; decide de rien : le parent lui ecrit position et image a chaque trame. Les
+; deux portent le MEME y_pos — les demi-images restent sur un canevas 24x48
+; dont une moitie est effacee (tools/gen_gouger_halves.py), et gfxcomp derive
+; l'ancre du centre de ce canevas. Aucun decalage a ecrire nulle part.
+; Cout mesure : 34 887 octets contre 34 445 avant la coupe, soit +442 pour 23
+; routines de plus (un LEAU et un RTS chacune). Et le RANGEMENT s'ameliore :
+; huit unites de ~4,4 Ko se logent dans les creux de l'arene la ou quatre de
+; ~9 Ko forcaient leurs propres pages — cinq pages au lieu de six.
+;
 ; LE FLASH DE COUP : une image blanche par orientation, quatre en tout
-; (images/hit/00..03, dans l'ordre des variantes). C'est la POSE 2 qui est
-; blanchie — celle que la plongee fige, donc la plus vue. Voir
-; tools/gen_gouger_hit.py.
+; (images/hit/{tl,tr,bl,br}, dans l'ordre des variantes), coupees en deux comme
+; le reste. C'est la POSE 2 qui est blanchie — celle que la plongee fige, donc
+; la plus vue. Voir tools/gen_gouger_hit.py puis gen_gouger_halves.py.
 ;
 ; LA MACHINE A TROIS ETATS
 ;
@@ -143,11 +161,14 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 23 sprites de 24x48 compiles : 34 445 octets MESURES, trois pages pleines
-;   (le packer a loge BL et BR ensemble, 16 367 sur 16 384). L'estimation par
-;   octet-par-pixel du serpent en annoncait 11,7 Ko — trois fois moins : le
-;   cout d'un sprite compile suit le REMPLISSAGE, pas la surface du cadre.
-;   Une entree de repertoire par direction, le cast n'ayant pas la place.
+; - 46 demi-sprites compiles : 34 887 octets MESURES sur cinq pages, partagees
+;   avec le reste de l'arene. L'estimation par octet-par-pixel du serpent en
+;   annoncait 11,7 Ko — trois fois moins : le cout d'un sprite compile suit le
+;   REMPLISSAGE, pas la surface du cadre. Une entree de repertoire par
+;   direction ET par moitie, le cast n'ayant pas la place.
+; - un slot d'OST et un sprite de plus par gouger vivant. Trois gougers
+;   simultanes releves, donc six sprites ; la passe en tient seize. A surveiller
+;   quand wick et brood arriveront, pas avant.
 ; - PAS de variante decalee d'un pixel, vu la taille des sprites — meme choix
 ;   que pour l'outslay.
 ;*******************************************************************************
@@ -163,6 +184,10 @@ gouger.anim     equ ext_variables+12   ; 12,13  le compteur d'animation
 gouger.recoil   equ ext_variables+14   ; 14     le compte a rebours du recul
 gouger.prevP    equ ext_variables+15   ; 15     le potentiel du tour precedent
 gouger.blink    equ ext_variables+16   ; 16     1 = blanc cette trame
+gouger.child    equ ext_variables+17   ; 17,18  l'OST de la moitie basse, 0 si
+                                       ;        aucun slot n'etait libre
+; Cote ENFANT, le meme espace porte tout autre chose : il n'a pas de boite.
+gouger.hParent  equ ext_variables      ; 0,1    l'OST de son parent
 
 gouger.RECOIL   equ 23                 ; 0x17 trames de jeu, comme l'arcade
 
@@ -226,10 +251,41 @@ gouger.Init
         sta   id,u
         ldd   #0
         std   gouger.anim,u
+        std   gouger.child,u           ; pas encore d'enfant
         clr   gouger.recoil,u
         clr   gouger.blink,u
         inc   routine,u
-        rts
+        ; --- LA MOITIE BASSE, un objet a part entiere ---------------------
+        ; Elle ne decide de rien : le parent lui ecrit sa position et son image
+        ; a chaque trame (gouger.Draw). Elle existe parce que BuildSprites
+        ; rejette EN BLOC un sprite qui deborde de l'ecran — coupe en deux, le
+        ; gouger a demi enterre montre au moins sa moitie hors paroi. Les deux
+        ; objets portent le MEME y_pos : l'ancre de chaque demi-image, derivee
+        ; du centre du canevas par gfxcomp, place chacune a sa hauteur.
+        ; LoadObject_x accroche en FIN de liste, donc l'enfant tourne apres son
+        ; parent des cette trame — et le parent n'a pas encore dessine, d'ou la
+        ; garde sur image_set cote enfant.
+        jsr   LoadObject_x
+        beq   @seul                    ; plus de slot : il vivra en demi-teinte
+        ldb   gouger.var,u
+        ldy   #gouger.ChildIds
+        lda   b,y
+        sta   id,x
+        lda   #1
+        sta   routine,x                ; l'enfant n'a pas d'etat d'init
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,x
+        lda   #6
+        sta   priority,x
+        clr   image_set,x              ; rien a montrer avant le premier dessin
+        clr   image_set+1,x
+        stu   gouger.hParent,x
+        stx   gouger.child,u
+        ldd   x_pos,u
+        std   x_pos,x
+        ldd   y_pos,u
+        std   y_pos,x
+@seul   rts
 
 ; -----------------------------------------------------------------------------
 ; PHASE A — cache. Il defile avec la carte (coordonnees playfield : la camera
@@ -384,12 +440,50 @@ gouger.Frame
         rts
 
 gouger.Gone
-        lda   #4
+        ; L'enfant part AVEC le parent, dans la meme trame : le laisser mourir
+        ; de lui-meme au tour suivant laisserait une demi-carcasse a l'ecran.
+        ; UnloadObject_u sait qu'il peut etre le prochain de la marche et
+        ; recale object_list_next — supprimer un autre objet en pleine passe
+        ; est prevu par le moteur.
+        ldx   gouger.child,u
+        beq   >
+        lda   #2
+        sta   routine,x
+        pshs  u                        ; DeleteObject prend l'objet en U, et le
+        leau  ,x                       ; rend intact — c'est notre U a nous qu'il
+        jsr   DeleteObject             ; faut remettre. Pas de _api de plus pour
+        puls  u                        ; ca : un export coute a chaque chargement.
+!       lda   #4
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy
         jmp   DeleteObject
 gouger.Deleted
         rts
+
+; -----------------------------------------------------------------------------
+; LA MOITIE BASSE. Elle ne porte ni boite, ni horloge, ni decision : son parent
+; lui ecrit position et image. Elle ne fait que verifier qu'il est encore la.
+; Le controle est double parce qu'un OST se RECYCLE : l'identifiant seul dirait
+; encore « gouger » si un autre gouger avait pris le slot, d'ou la verification
+; que le parent nous reconnait pour enfant. C'est le geste du suiveur du
+; serpent, avec la reciproque en plus.
+; -----------------------------------------------------------------------------
+gouger.Half
+        ldx   gouger.hParent,u
+        lda   id,x
+        suba  #ObjID_gouger_tl
+        cmpa  #3
+        bhi   @orphelin                ; le slot du parent a change de main
+        cmpu  gouger.child,x
+        bne   @orphelin                ; ... ou il ne nous reconnait plus
+        ldd   image_set,u
+        beq   @attend                  ; le parent n'a pas encore dessine
+        jmp   DisplaySprite
+@attend rts
+@orphelin
+        lda   #2
+        sta   routine,u
+        jmp   DeleteObject
 
 ; -----------------------------------------------------------------------------
 ; L'animation : une horloge de JEU. B rend le slot du cycle, 0..7.
@@ -415,7 +509,14 @@ gouger.Draw
         aslb
         ldx   #gouger.HitSets
         abx
-        bra   @pose
+        ldx   ,x
+        stx   image_set,u
+        ldb   gouger.var,u
+        aslb
+        ldx   #gouger.HitSetsB
+        abx
+        ldx   ,x
+        bra   @enfant
 @normal pshs  b
         ldb   gouger.var,u
         aslb
@@ -430,12 +531,29 @@ gouger.Draw
         aslb
         ldx   #gouger.PoseSets
         abx
-        ldx   ,x                       ; X = les poses de la variante
+        ldx   ,x                       ; X = les moities hautes de la variante
+        ldb   ,s
+        abx
+        ldx   ,x
+        stx   image_set,u
+        ldb   gouger.var,u
+        aslb
+        ldx   #gouger.PoseSetsB
+        abx
+        ldx   ,x                       ; X = les moities basses
         puls  b
         abx
-@pose   ldx   ,x
-        stx   image_set,u
-        rts
+        ldx   ,x
+; X = l'image de la moitie basse. On la depose chez l'enfant avec la position :
+; il ne calcule rien, et les deux moities ne peuvent pas diverger d'une trame.
+@enfant ldy   gouger.child,u
+        beq   @seul
+        stx   image_set,y
+        ldd   x_pos,u
+        std   x_pos,y
+        ldd   y_pos,u
+        std   y_pos,y
+@seul   rts
 
 ; -----------------------------------------------------------------------------
 ; Deplacer des deux vitesses 8.8 pointees par X, compensees du frame-drop.
@@ -488,21 +606,16 @@ gouger.tmp      fdb 0
 ; y = (396 - y_arcade) x 0.75, conversion deduite du preset commun 1930c et
 ; verifiee sur ses six valeurs. Le sprite fait 48 de haut et son ancre est au
 ; centre : le gouger deborde du cadre, il est a demi enterre dans le decor.
-; V2-DEVIATION (25/08/2026) : l'arcade DECOUPE ses sprites aux bords, pas nous.
-; BuildSprites rejette en bloc tout sprite qui deborde du cadre (BS_ylo/BS_yhi,
-; il n'y a pas de decoupe partielle) — un gouger a demi enterre ne serait donc
-; pas dessine DU TOUT pendant sa phase d'attente, qui est l'essentiel de sa vie.
-; Les ordonnees arcade converties valent 15 au plafond et 183 au sol ; le sprite
-; fait 48 de haut et son ancre est au centre, donc il ne devient dessinable
-; qu'entre 24 et 175. On prend ces deux bornes : le gouger emerge de la paroi au
-; lieu d'y etre a demi enfoui, a neuf pixels pres. L'alternative fidele serait
-; une pose d'attente RECADREE par direction (quatre sprites de plus) ; ce serait
-; a l'auteur d'en decider, la difference se voit a l'oeil.
+; Les ordonnees arcade, telles quelles : la coupe en deux moities rend le
+; recadrage inutile. A 15 comme a 183, seule la moitie ENFOUIE est rejetee par
+; BuildSprites, et la moitie hors paroi s'affiche a sa vraie place.
+;   plafond 15 : haute -6 -> rejetee   basse 15..36  -> dessinee
+;   sol    183 : haute 162..183 -> ok  basse 183..207 -> rejetee
 gouger.PresetY
-        fdb   24   ; var 0, plafond (arcade $0178 -> 15, remonte a 24)
-        fdb   24   ; var 1, plafond
-        fdb   175  ; var 2, sol (arcade $0098 -> 183, releve a 175)
-        fdb   175  ; var 3, sol
+        fdb   15   ; var 0, plafond ($0178)
+        fdb   15   ; var 1, plafond
+        fdb   183  ; var 2, sol ($0098)
+        fdb   183  ; var 3, sol
 ; $FFFF = guetter le joueur ; sinon un compte a rebours en trames
 gouger.PresetTrig
         fdb   $FFFF,128,384,512
@@ -531,24 +644,48 @@ gouger.Cycles
         fdb   gouger.CycA  ; var 1, top-right
         fdb   gouger.CycA  ; var 2, bottom-left
         fdb   gouger.CycB  ; var 3, bottom-right
+; Deux jeux de tables, la moitie HAUTE pour le parent et la BASSE pour son
+; enfant. Le suffixe _h / _b est celui des repertoires d'images ; le cycle
+; slot -> pose est le meme des deux cotes, une moitie n'a pas sa propre
+; animation.
 gouger.PoseSets
         fdb   gouger.SetsTL,gouger.SetsTR,gouger.SetsBL,gouger.SetsBR
+gouger.PoseSetsB
+        fdb   gouger.SetsTLb,gouger.SetsTRb,gouger.SetsBLb,gouger.SetsBRb
 gouger.SetsTL
-        fdb   set_gouger_tl_0,set_gouger_tl_1,set_gouger_tl_2
-        fdb   set_gouger_tl_3,set_gouger_tl_4
+        fdb   set_gouger_tl_h_0,set_gouger_tl_h_1,set_gouger_tl_h_2
+        fdb   set_gouger_tl_h_3,set_gouger_tl_h_4
 gouger.SetsTR
-        fdb   set_gouger_tr_0,set_gouger_tr_1,set_gouger_tr_2
-        fdb   set_gouger_tr_3,set_gouger_tr_4
+        fdb   set_gouger_tr_h_0,set_gouger_tr_h_1,set_gouger_tr_h_2
+        fdb   set_gouger_tr_h_3,set_gouger_tr_h_4
 gouger.SetsBL
-        fdb   set_gouger_bl_0,set_gouger_bl_1,set_gouger_bl_2
-        fdb   set_gouger_bl_3,set_gouger_bl_4
+        fdb   set_gouger_bl_h_0,set_gouger_bl_h_1,set_gouger_bl_h_2
+        fdb   set_gouger_bl_h_3,set_gouger_bl_h_4
 gouger.SetsBR
-        fdb   set_gouger_br_0,set_gouger_br_1,set_gouger_br_2
-        fdb   set_gouger_br_3
+        fdb   set_gouger_br_h_0,set_gouger_br_h_1,set_gouger_br_h_2
+        fdb   set_gouger_br_h_3
+gouger.SetsTLb
+        fdb   set_gouger_tl_b_0,set_gouger_tl_b_1,set_gouger_tl_b_2
+        fdb   set_gouger_tl_b_3,set_gouger_tl_b_4
+gouger.SetsTRb
+        fdb   set_gouger_tr_b_0,set_gouger_tr_b_1,set_gouger_tr_b_2
+        fdb   set_gouger_tr_b_3,set_gouger_tr_b_4
+gouger.SetsBLb
+        fdb   set_gouger_bl_b_0,set_gouger_bl_b_1,set_gouger_bl_b_2
+        fdb   set_gouger_bl_b_3,set_gouger_bl_b_4
+gouger.SetsBRb
+        fdb   set_gouger_br_b_0,set_gouger_br_b_1,set_gouger_br_b_2
+        fdb   set_gouger_br_b_3
 gouger.HitSets
-        fdb   set_gouger_hit_tl_0,set_gouger_hit_tr_0
-        fdb   set_gouger_hit_bl_0,set_gouger_hit_br_0
+        fdb   set_gouger_hit_tl_h_0,set_gouger_hit_tr_h_0
+        fdb   set_gouger_hit_bl_h_0,set_gouger_hit_br_h_0
+gouger.HitSetsB
+        fdb   set_gouger_hit_tl_b_0,set_gouger_hit_tr_b_0
+        fdb   set_gouger_hit_bl_b_0,set_gouger_hit_br_b_0
 ; l'identifiant de chaque direction : c'est lui qui porte la page d'images
 gouger.Ids
         fcb   ObjID_gouger_tl,ObjID_gouger_tr
         fcb   ObjID_gouger_bl,ObjID_gouger_br
+gouger.ChildIds
+        fcb   ObjID_gouger_tl_b,ObjID_gouger_tr_b
+        fcb   ObjID_gouger_bl_b,ObjID_gouger_br_b

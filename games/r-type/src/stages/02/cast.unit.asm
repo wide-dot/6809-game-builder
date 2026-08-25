@@ -19,32 +19,57 @@
 ;*******************************************************************************
 
 ; Les sprites du GOUGER franchissent la frontiere de direntry : chaque
-; direction a sa page, donc son entree de repertoire (23 sprites 24x48 pesent
-; 34 445 octets, plus de deux pages). Ces symboles sont resolus au chargement.
-set_gouger_tl_0  EXTERNAL
-set_gouger_tl_1  EXTERNAL
-set_gouger_tl_2  EXTERNAL
-set_gouger_tl_3  EXTERNAL
-set_gouger_tl_4  EXTERNAL
-set_gouger_tr_0  EXTERNAL
-set_gouger_tr_1  EXTERNAL
-set_gouger_tr_2  EXTERNAL
-set_gouger_tr_3  EXTERNAL
-set_gouger_tr_4  EXTERNAL
-set_gouger_bl_0  EXTERNAL
-set_gouger_bl_1  EXTERNAL
-set_gouger_bl_2  EXTERNAL
-set_gouger_bl_3  EXTERNAL
-set_gouger_bl_4  EXTERNAL
-set_gouger_br_0  EXTERNAL
-set_gouger_br_1  EXTERNAL
-set_gouger_br_2  EXTERNAL
-set_gouger_br_3  EXTERNAL
-set_gouger_hit_tl_0  EXTERNAL
-set_gouger_hit_tr_0  EXTERNAL
-set_gouger_hit_bl_0  EXTERNAL
-set_gouger_hit_br_0  EXTERNAL
+; direction a sa page — et chaque MOITIE la sienne, les poses etant coupees
+; en deux (46 demi-sprites, plus de deux pages, et Img_Page_Index ne donne
+; qu'une page par identifiant). Ces symboles sont resolus au chargement.
+set_gouger_tl_h_0  EXTERNAL
+set_gouger_tl_h_1  EXTERNAL
+set_gouger_tl_h_2  EXTERNAL
+set_gouger_tl_h_3  EXTERNAL
+set_gouger_tl_h_4  EXTERNAL
+set_gouger_tr_h_0  EXTERNAL
+set_gouger_tr_h_1  EXTERNAL
+set_gouger_tr_h_2  EXTERNAL
+set_gouger_tr_h_3  EXTERNAL
+set_gouger_tr_h_4  EXTERNAL
+set_gouger_bl_h_0  EXTERNAL
+set_gouger_bl_h_1  EXTERNAL
+set_gouger_bl_h_2  EXTERNAL
+set_gouger_bl_h_3  EXTERNAL
+set_gouger_bl_h_4  EXTERNAL
+set_gouger_br_h_0  EXTERNAL
+set_gouger_br_h_1  EXTERNAL
+set_gouger_br_h_2  EXTERNAL
+set_gouger_br_h_3  EXTERNAL
+set_gouger_hit_tl_h_0  EXTERNAL
+set_gouger_hit_tr_h_0  EXTERNAL
+set_gouger_hit_bl_h_0  EXTERNAL
+set_gouger_hit_br_h_0  EXTERNAL
+set_gouger_tl_b_0  EXTERNAL
+set_gouger_tl_b_1  EXTERNAL
+set_gouger_tl_b_2  EXTERNAL
+set_gouger_tl_b_3  EXTERNAL
+set_gouger_tl_b_4  EXTERNAL
+set_gouger_tr_b_0  EXTERNAL
+set_gouger_tr_b_1  EXTERNAL
+set_gouger_tr_b_2  EXTERNAL
+set_gouger_tr_b_3  EXTERNAL
+set_gouger_tr_b_4  EXTERNAL
+set_gouger_bl_b_0  EXTERNAL
+set_gouger_bl_b_1  EXTERNAL
+set_gouger_bl_b_2  EXTERNAL
+set_gouger_bl_b_3  EXTERNAL
+set_gouger_bl_b_4  EXTERNAL
+set_gouger_br_b_0  EXTERNAL
+set_gouger_br_b_1  EXTERNAL
+set_gouger_br_b_2  EXTERNAL
+set_gouger_br_b_3  EXTERNAL
+set_gouger_hit_tl_b_0  EXTERNAL
+set_gouger_hit_tr_b_0  EXTERNAL
+set_gouger_hit_bl_b_0  EXTERNAL
+set_gouger_hit_br_b_0  EXTERNAL
 gouger.Object    EXPORT
+gouger.Half      EXPORT
 wick.Object      EXPORT
 brood.Object     EXPORT
 outslay.Object   EXPORT
