@@ -1108,54 +1108,71 @@
                                  file="common.reboundlaser">
                             <image name="reboundlaser_angle_0" filename="src/common/weapons/forcepods/images/reboundlaser/00.png" index="0">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_1" filename="src/common/weapons/forcepods/images/reboundlaser/01.png" index="1">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_2" filename="src/common/weapons/forcepods/images/reboundlaser/02.png" index="2">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_3" filename="src/common/weapons/forcepods/images/reboundlaser/03.png" index="3">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_4" filename="src/common/weapons/forcepods/images/reboundlaser/04.png" index="4">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_5" filename="src/common/weapons/forcepods/images/reboundlaser/05.png" index="5">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_6" filename="src/common/weapons/forcepods/images/reboundlaser/06.png" index="6">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_angle_7" filename="src/common/weapons/forcepods/images/reboundlaser/07.png" index="7">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_diagonal_0" filename="src/common/weapons/forcepods/images/reboundlaser/08.png" index="8">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_diagonal_1" filename="src/common/weapons/forcepods/images/reboundlaser/09.png" index="9">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_diagonal_2" filename="src/common/weapons/forcepods/images/reboundlaser/10.png" index="10">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_diagonal_3" filename="src/common/weapons/forcepods/images/reboundlaser/11.png" index="11">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_horizontal" filename="src/common/weapons/forcepods/images/reboundlaser/12.png" index="12">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_explosion_0" filename="src/common/weapons/forcepods/images/reboundlaser/13.png" index="13">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_explosion_1" filename="src/common/weapons/forcepods/images/reboundlaser/14.png" index="14">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_explosion_2" filename="src/common/weapons/forcepods/images/reboundlaser/15.png" index="15">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="reboundlaser_explosion_3" filename="src/common/weapons/forcepods/images/reboundlaser/16.png" index="16">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
