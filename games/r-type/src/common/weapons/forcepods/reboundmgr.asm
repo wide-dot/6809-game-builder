@@ -247,24 +247,38 @@ reboundmgr.publishChain.rts
         rts
 
 ;-------------------------------------------------------------------------------
-; reboundmgr.clearChain — eteindre les slots d'une chaine qui meurt
-; input REG : [u] la tete
+; reboundmgr.clearChainFrom — eteindre les slots d'une chaine A PARTIR d'un rang
+; input REG : [u] un segment de la chaine, [b] le premier indice a eteindre
+;
+; Un PORTEUR touche n'emporte que ce qui est DERRIERE lui — c'est le
+; comportement de la borne : les passagers derriere un porteur mort
+; disparaissent, le porteur suivant continue. La tete, elle, eteint tout.
 ;-------------------------------------------------------------------------------
-reboundmgr.clearChain
+reboundmgr.clearChainFrom
+        stb   reboundmgr.k
         ldb   slotMask,u
         ldx   #reboundmgr.chain.tbl
         abx
         ldb   ,x
         lda   #RB.NPASS
         mul
-        jsr   reboundmgr.SlotPtrIdx
-        ldb   #RB.NPASS
-reboundmgr.clearChain.loop
+        addb  reboundmgr.k
+        jsr   reboundmgr.SlotPtrIdx    ; Y = le premier slot a eteindre
+        lda   #RB.NPASS
+        suba  reboundmgr.k
+        beq   reboundmgr.clearChainFrom.rts
+        sta   reboundmgr.n
+reboundmgr.clearChainFrom.loop
         clr   ,y
         leay  RB.SLOTSZ,y
-        decb
-        bne   reboundmgr.clearChain.loop
+        dec   reboundmgr.n
+        bne   reboundmgr.clearChainFrom.loop
+reboundmgr.clearChainFrom.rts
         rts
+
+reboundmgr.clearChain
+        clrb
+        bra   reboundmgr.clearChainFrom
 
 ;*******************************************************************************
 ; LE FAUX IMAGESET — ce que BuildSprites croit dessiner. Son entree compilee

@@ -374,7 +374,53 @@ InitiateHorizontalLaser
         bne   >
         ldb   #1
 !       stb   nbPass,x
-        rts
+        ; LES PORTEURS DE BOITE. La borne en arme plusieurs par chaine — les
+        ; segments 1 et 5 en horizontal, 1, 4 et 7 en diagonale (0x40:41A0 et
+        ; 0x3F5D) ; les autres sont du remplissage visuel. Le segment 1 EST la
+        ; tete. Les autres deviennent des objets INVISIBLES : la tete les
+        ; dessine deja avec le reste de la chaine, ils ne portent que leur
+        ; boite et leur mort.
+        ; Rien a armer au palier faible : deux segments, et le second est
+        ; desarme chez la borne aussi.
+        lda   player1+forcepodlevel
+        cmpa  #2
+        beq   >
+        ldb   #3                       ; segment 5
+        jsr   reboundBearer
+!       rts
+
+; entree : [x] la tete, [b] l'indice du passager qui portera la boite
+; sortie : [x] preserve
+reboundBearer
+        pshs  b,x
+        jsr   LoadObject_x             ; X = le porteur
+        beq   reboundBearer.rts
+        ldy   1,s                      ; Y = la tete
+        lda   #ObjID_forcepod_reboundlaser
+        sta   id,x
+        lda   #7
+        sta   priority,x
+        lda   render_flags,y
+        sta   render_flags,x
+        lda   direction,y
+        sta   direction,x
+        lda   slotMask,y
+        sta   slotMask,x
+        ldd   bufferBase,y
+        std   bufferBase,x
+        sty   parent,x
+        lda   ,s                       ; son rang dans la chaine
+        sta   childId,x
+        lda   routine_secondary,y
+        sta   routine_secondary,x
+        ldd   x_pos,y                  ; il nait sur la tete et rejoint sa place
+        std   x_pos,x                  ;   dans l'anneau des la premiere trame
+        ldd   y_pos,y
+        std   y_pos,x
+        lda   #Rtn_StartLaser
+        sta   routine,x
+reboundBearer.rts
+        puls  b,x,pc
 
 HorizontalLoadObject
         stx   @x
@@ -436,12 +482,19 @@ StartLaser
         sta   routine,u
         ldd   parent,u
         beq   >
-        ; for children
+        ; for children — les PORTEURS de boite, les seuls enfants qui restent
         lda   childId,u
         inca
         asla
         adda  #LASER_LIFETIME ; for parent a is implicitely 0
         sta   laserLifetime,u
+        lda   #1                       ; le potentiel arcade d'un porteur de
+        sta   AABB_0+AABB.p,u          ;   milieu de chaine (la tete a 2)
+        _ldd  5,9
+        std   AABB_0+AABB.rx,u
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
+        _Collision_AddAABB AABB_0,AABB_list_friend
         jmp   Object ; run the laser now
 !
         ; for parent
@@ -485,9 +538,14 @@ RunHorizontalChildLaser
         ldx   bufferBase,x  ; get actual position of parent in buffer
         ldd   b,x
         std   x_pos,u
-        ldd   #Img_reboundlaser_horizontal
-        std   image_set,u
-        jmp   reboundmgr.publish       ; il ne se dessine plus : il se DEPOSE
+        ; INVISIBLE : la tete le dessine avec le reste de la chaine. Il ne tient
+        ; que sa boite — et sa mort.
+        lda   AABB_0+AABB.p,u
+        lbeq  reboundBearerHit
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        rts
 
 RunHorizontalLaser
         ; simplyfied code for childs
@@ -576,8 +634,12 @@ RunHorizontalLaser.forward
         jmp   DisplaySprite
 
 Destroy
-        pshs  x                        ; la chaine s'eteint avec sa tete : sans
-        jsr   reboundmgr.clearChain    ;   ca les passagers resteraient affiches
+        pshs  x                        ; la chaine s'eteint : sans ca ses
+        clrb                           ;   passagers resteraient affiches. Un
+        ldx   parent,u                 ;   PORTEUR n'emporte que ce qui est
+        beq   >                        ;   derriere lui, la tete emporte tout.
+        ldb   childId,u
+!       jsr   reboundmgr.clearChainFrom
         puls  x
         lda   isLastChild,u
         beq   >
@@ -588,11 +650,9 @@ Destroy
 !
         lda   #Rtn_DoubleBufferingFlush
         sta   routine,u
-        ldd   parent,u
-        bne   >
-        lda   AABB_0+AABB.rx,u
-        beq   >
-        _Collision_RemoveAABB AABB_0,AABB_list_friend        
+        lda   AABB_0+AABB.rx,u         ; les porteurs ont une boite eux aussi :
+        beq   >                        ;   le test sur parent qui etait ici la
+        _Collision_RemoveAABB AABB_0,AABB_list_friend  ; leur faisait fuir
 !       jmp   DeleteObject
 
 isInLivingArea
@@ -683,9 +743,30 @@ RunDiagonalChildLaser
         std   x_pos,u
         ldd   32,y
         std   y_pos,u
-        ldd   64,y
-        std   image_set,u        
-        jmp   reboundmgr.publish       ; il ne se dessine plus : il se DEPOSE
+        lda   AABB_0+AABB.p,u          ; INVISIBLE, cf. le porteur horizontal
+        lbeq  reboundBearerHit
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
+        rts
+
+; Un porteur touche. La borne fait disparaitre les segments DERRIERE lui et
+; laisse le porteur suivant continuer : on tronque donc la chaine de la tete a
+; son rang, on eteint les slots au-dela, et il devient son explosion.
+reboundBearerHit
+        ldx   parent,u
+        lda   childId,u
+        cmpa  nbPass,x
+        bhs   >
+        sta   nbPass,x
+!       ldb   childId,u
+        jsr   reboundmgr.clearChainFrom
+        ldb   #Rtn_RunExplosion
+        stb   routine,u
+        clr   anim_frame,u
+        jmp   RunExplosion
 
 RunDiagonalLaser
         ; simplyfied code for childs
