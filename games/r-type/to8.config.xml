@@ -451,7 +451,6 @@
                  face 1 de la piste 0 : dir1 en 9-13, dir2 en 14-15. Emplacements
                  publies au loader par gen/directories/locations.asm. -->
             <section name="INDEX1" track="0" face="1" sector="10"/>
-            <section name="INDEX2" track="0" face="1" sector="15"/>
             <!-- Les repertoires des stages 3-8 : une piste en fin de disque,
                  2 secteurs chacun (mesure stage 2). -->
             <section name="INDEX3" track="79" face="0" sector="1"/>
@@ -460,6 +459,14 @@
             <section name="INDEX6" track="79" face="0" sector="7"/>
             <section name="INDEX7" track="79" face="0" sector="9"/>
             <section name="INDEX8" track="79" face="0" sector="11"/>
+            <!-- dir2 a REJOINT cette piste le 25/08/2026 : il tenait dans les
+                 secteurs 14-15 de la piste 0 face 1, derriere dir1, et la piste
+                 s'arrete a 16 — le gouger y a ajoute quatre entrees et il
+                 debordait de 79 octets sur la section SCENE. Ici il dispose des
+                 secteurs 13 a 16, le double, la piste 79 n'etant occupee que
+                 jusqu'au 12. Le loader lit les emplacements dans la table
+                 generee (gen/directories/locations.asm), rien n'est cable. -->
+            <section name="INDEX2" track="79" face="0" sector="13"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
             <!-- DATA en piste 8 : LINK a besoin des pistes 2 a 7 (le controle

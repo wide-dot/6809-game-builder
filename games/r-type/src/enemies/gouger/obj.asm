@@ -347,7 +347,7 @@ gouger.Frame
         bmi   @part                    ; sorti par la gauche
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u
-        andcc #$FB                     ; Z = 1 : il reste
+        orcc  #$04                     ; Z = 1 : il reste
         rts
 @mort   ldb   #gouger_scoreIdx
         jsr   AwardScore
@@ -359,7 +359,7 @@ gouger.Frame
         std   x_pos,x
         ldd   y_pos,u
         std   y_pos,x
-@part   orcc  #$04                     ; Z = 0 : il s'en va
+@part   andcc #$FB                     ; Z = 0 : il s'en va
         rts
 
 gouger.Gone
