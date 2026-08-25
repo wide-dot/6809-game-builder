@@ -980,6 +980,17 @@ slither.RecCorpse
 ; 40:7c77 destroy_slither_body_or_tail — score index 2 (300 points).
 ; -----------------------------------------------------------------------------
 slither.RecExplode
+        ; 40:7c77 pose cascade_flag := 2 AVANT de rendre l'objet. C'est LA
+        ; source du chapelet : sans elle un corps tue laisse un trou permanent
+        ; au lieu d'emporter tout ce qui le suit — et, la cascade se propageant
+        ; de rang en rang, ce trou a RC = 0 BLOQUE ensuite le detachement de la
+        ; tete pour tout ce qui est derriere (constat auteur). Le record est
+        ; retire juste apres, mais son RC survit : c'est lui que son successeur
+        ; lit a la trame suivante.
+        ldb   slither.wN
+        jsr   slither.RecPtrB
+        lda   #2
+        sta   slither.RC,x
         ldb   #slither_body_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
