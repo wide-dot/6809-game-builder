@@ -3276,21 +3276,6 @@
                 <!-- Les seize poses BLANCHES de la QUEUE. Meme raison que
                      pour la tete, et meme mecanique : un direntry, un ObjID,
                      l'objet bascule d'identifiant le temps du flash. -->
-                <!-- Les seize poses BLANCHES du CORPS. Elles ne peuvent pas
-                     rejoindre le cast (leur page est pleine) et surtout un
-                     renderer groupe ne monte QU'UNE page d'images : c'est un
-                     SECOND renderer qui les dessine, sur cette page-ci. -->
-                <file name="stage5.cast.imgBodyHit" linkdata="LINK" arena="stage5.foes">
-                    <lwasm gensource="gen/enemies/stage5-cast-imgbodyhit.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/slither/hit.unit.asm"/>
-                        <gfxcomp file="stage5.cast.imgBodyHit" gendir="gen/enemies/stage5-cast-imgbodyhit"
-                                 gensource="gen/enemies/stage5-cast-imgbodyhit/includes.asm"
-                                 genindex="gen/enemies/stage5-cast-imgbodyhit/index.asm">
-                            <images dir="src/enemies/slither/images/body_hit" names="slither_bodyhit"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
 
                 <file name="stage5.cast.imgTailHit" linkdata="LINK" arena="stage5.foes">
                     <lwasm gensource="gen/enemies/stage5-cast-imgtailhit.asm">
@@ -3320,6 +3305,14 @@
                                  gensource="gen/enemies/stage5-cast/includes.asm"
                                  genindex="gen/enemies/stage5-cast/index.asm">
                             <images dir="src/enemies/slither/images/body" names="slither_body"/>
+                            <!-- Le flash de coup du corps : UNE image ronde,
+                                 valable pour les seize orientations (elle sort
+                                 de leur intersection dilatee — voir
+                                 tools/gen_slither_hit_round.py). Elle vit ICI,
+                                 avec les poses normales, pour que le renderer
+                                 groupe la dessine LUI-MEME : c'est ce qui rend
+                                 son ordre de tuilage correct. -->
+                            <images dir="src/enemies/slither/images/body_hit_round" names="slither_bodyhit"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -3356,7 +3349,6 @@
                     <load name="stage5.cast.imgTail"/>
                     <load name="stage5.cast.imgHeadHit"/>
                     <load name="stage5.cast.imgTailHit"/>
-                    <load name="stage5.cast.imgBodyHit"/>
                     <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>

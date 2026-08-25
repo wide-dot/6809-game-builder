@@ -87,17 +87,6 @@ slither.ring2     EXTERNAL
 slither.boxes0    EXTERNAL
 slither.boxes1    EXTERNAL
 slither.boxes2    EXTERNAL
-; La liste du BLANC, residente. Le renderer du flash tourne sous la page des
-; poses blanches et n'y voit plus les slots ; il lit donc cette liste-ci.
-slither.hits0     EXTERNAL
-slither.hits1     EXTERNAL
-slither.hits2     EXTERNAL
-; Son faux imageset vit LA-BAS aussi : BuildSprites monte Img_Page_Index[id]
-; pour lire l'imageset LUI-MEME (overlay-mode/BuildSprites.asm ligne 110), il
-; doit donc se trouver sur la page que cet index designe. Voir hit.unit.asm.
-slither.FakeHit0  EXTERNAL
-slither.FakeHit1  EXTERNAL
-slither.FakeHit2  EXTERNAL
 
 ; --- LE MAITRE : ext_variables (l'etat moveByScript vit dans son OST) -------
 slither.mFrames   equ ext_variables+0    ; 0,1  L'HORLOGE DE LA CHAINE : le
@@ -172,7 +161,6 @@ slither.RPP       equ 12                 ; le potentiel du tour precedent : une
                                          ; une trame blanche
 slither.RECSZ     equ 13                 ; DUPLIQUE dans res.unit.asm, qui
                                          ; s'assemble seul : bouger les deux
-slither.NHIT      equ 6                  ; DUPLIQUE dans res.unit.asm et hit.unit.asm
 slither.NREC      equ 15                 ; les CORPS du script long (la
                                          ; tete et la queue sont des suiveurs)
 
@@ -193,8 +181,7 @@ I.ring    equ 2                        ; 2,3  x a +0, y a +256, pose a +512
 I.recs    equ 4                        ; 4,5
 I.slots   equ 6                        ; 6,7
 I.boxes   equ 8                        ; 8,9
-I.hits    equ 10                       ; 10,11 la liste du BLANC (residente)
-I.SZ      equ 12
+I.SZ      equ 10
 slither.NINST equ 3
 
 ; Le cache de pointeurs de l'instance COURANTE : le 6809 n'a pas assez de
@@ -204,7 +191,6 @@ slither.cRing   fdb 0
 slither.cRecs   fdb 0
 slither.cSlots  fdb 0
 slither.cBoxes  fdb 0
-slither.cHits   fdb 0
 
 ; X = un bloc d'instance. Z = 1 s'il est libre. La propriete se VALIDE : un
 ; proprietaire qui n'est plus un maitre vivant ne tient plus son instance.
@@ -237,8 +223,6 @@ slither.UseInst
         std   slither.cSlots
         ldd   I.boxes,x
         std   slither.cBoxes
-        ldd   I.hits,x
-        std   slither.cHits
         rts
 
 ;*******************************************************************************
@@ -397,12 +381,6 @@ slither.MasterInit
         lda   #ObjID_slither_render
         sta   id,x
         ldd   slither.mInst,u          ; le renderer dessine MON instance
-        std   slither.rInst,x
-!       jsr   LoadObject_x             ; ... et son jumeau, celui du BLANC
-        beq   >
-        lda   #ObjID_slither_render_hit
-        sta   id,x
-        ldd   slither.mInst,u
         std   slither.rInst,x
 !       lda   #ObjID_slither_head      ; le suiveur de TETE, retard 0
         clrb
@@ -574,8 +552,6 @@ slither.MasterLive
 @nocasc
         ; --- 4) la marche des records --------------------------------------
         ; (slither.mPhase ne sert plus : la collision est systematique)
-        ldx   slither.cHits
-        clr   ,x                       ; la liste du blanc repart vide
         jsr   slither.Walk
         ; --- 5) la fin : plus un record vivant apres le drain ---------------
         lda   slither.mState,u
@@ -863,16 +839,25 @@ slither.Walk
         ldx   #slither.BodySets        ; les records sont TOUS des corps
         abx
         ldx   ,x
+        ; LE FLASH DE COUP : un DISQUE unique remplace la pose. Les seize
+        ; poses ne sont pas des rotations mais les frames d'animation des
+        ; ecailles — toutes de meme orientation — et leur intersection est un
+        ; noyau rond ; dilate de deux pixels en largeur et quatre en hauteur,
+        ; il couvre n'importe laquelle d'entre elles.
+        ; Il vit sur la page du CAST, avec les poses normales : c'est ce qui
+        ; permet au renderer groupe de le dessiner LUI-MEME, donc au bon rang
+        ; dans le tuilage. Une premiere version le mettait sur sa propre page
+        ; avec un second renderer ; le blanc passait alors SOUS les segments
+        ; voisins et l'effet d'ecailles se perdait (constat auteur).
+        lda   slither.wState
+        cmpa  #2
+        bne   @pub
+        ldx   #set_slither_bodyhit_0
         ; --- publier ---------------------------------------------------------
-        jsr   slither.SlotPtrN         ; Y = slot
+@pub    jsr   slither.SlotPtrN         ; Y = slot
         lda   slither.wPx
         ldb   slither.wPy
         jsr   slither.RecPublish
-        lda   slither.wState
-        cmpa  #2
-        bne   @nowhite
-        jsr   slither.HitAppend        ; Y = le slot publie
-@nowhite
         ; --- la boite : position, puis parite --------------------------------
         ldb   slither.wN
         jsr   slither.BoxPtrB
@@ -1060,41 +1045,11 @@ slither.RecPublish
         sta   2,y
         ldd   14,x
         std   3,y
-        lda   slither.wState           ; 1 = normal, 2 = blanc
+        lda   #1
         sta   ,y
         puls  a,b,pc
 @off    clr   ,y
         puls  a,b,pc
-
-; -----------------------------------------------------------------------------
-; DEPOSER un segment dans LA LISTE DU BLANC. Le renderer du flash tourne sous
-; la page des poses blanches et n'y voit ni les slots ni l'imageset du cast :
-; il recoit donc ici la position et la POSE, et resout le sprite chez lui.
-; Y = le slot qui vient d'etre publie. Liste pleine : le segment REPASSE EN
-; NORMAL — mieux vaut un segment sans flash qu'un trou dans la chaine.
-; -----------------------------------------------------------------------------
-slither.HitAppend
-        pshs  a,b,x,y
-        lda   ,y
-        beq   @out                     ; hors cadre : rien a peindre
-        ldx   slither.cHits
-        lda   ,x
-        cmpa  #slither.NHIT
-        blo   @room
-        lda   #1
-        sta   ,y                       ; il redevient un segment ordinaire
-        bra   @out
-@room   inc   ,x
-        ldb   #3                       ; trois octets par entree
-        mul
-        addd  #1                       ; ... apres l'octet de compte
-        leax  d,x
-        ldd   1,y                      ; x et y ecran du slot
-        std   ,x
-        lda   slither.wPose
-        anda  #$0F
-        sta   2,x
-@out    puls  a,b,x,y,pc
 
 ; -----------------------------------------------------------------------------
 ; DETACHER un record — 40:7c9e puis 40:7cab. Il quitte l'anneau et part en
@@ -1710,10 +1665,6 @@ slither.FakeMf2
 slither.Render
         lda   routine,u
         bne   slither.RenderLive
-        lda   id,u
-        cmpa  #ObjID_slither_render_hit
-        beq   @blanc
-        ; --- le renderer NORMAL : ses images sont sur SA page, il l'y ecrit
         _GetCartPageA
         ldb   id,u
         ldx   #Img_Page_Index
@@ -1729,21 +1680,6 @@ slither.Render
         cmpx  #slither.Insts+2*I.SZ
         blo   >
         ldd   #slither.FakeImg2
-        bra   @pose
-        ; --- le JUMEAU : ses images sont AILLEURS. Il ne patche donc rien et
-        ; LIT au contraire la page que l'index lui donne (celle du direntry
-        ; des poses blanches), pour la recopier dans ses faux sets.
-        ; Le JUMEAU ne patche RIEN : son faux imageset vit avec les poses
-        ; blanches et porte leur page en dur (hit.unit.asm).
-@blanc  ldx   slither.rInst,u
-        ldd   #slither.FakeHit0
-        cmpx  #slither.Insts+I.SZ
-        blo   @pose
-        ldd   #slither.FakeHit1
-        cmpx  #slither.Insts+2*I.SZ
-        blo   @pose
-        ldd   #slither.FakeHit2
-@pose   equ   *
 !       std   image_set,u
         clr   render_flags,u
         lda   #120                     ; boite parquee au centre : jamais
@@ -1789,18 +1725,14 @@ slither.SlotsLive
 ; A rebours — le plus ancien recouvre, l'ordre du spawn.
 slither.DrawAll0
         ldx   #slither.Insts
-        lda   #1
         bra   slither.DrawCommon
 slither.DrawAll1
         ldx   #slither.Insts+I.SZ
-        lda   #1
         bra   slither.DrawCommon
 slither.DrawAll2
         ldx   #slither.Insts+2*I.SZ
-        lda   #1
         bra   slither.DrawCommon
 slither.DrawCommon
-        sta   slither.dWant
         ldd   I.slots,x
         std   slither.dSlots
         lda   #slither.NREC
@@ -1812,8 +1744,7 @@ slither.DrawCommon
         addd  slither.dSlots
         tfr   d,x
         lda   ,x
-        cmpa  slither.dWant             ; chacun ne prend QUE ses slots
-        bne   @next
+        beq   @next
         ldd   1,x                      ; A = x_pixel, B = y_pixel
         pshs  x
         jsr   DRS_XYToAddress
@@ -1827,7 +1758,6 @@ slither.DrawCommon
 
 slither.di      fcb 0
 slither.dSlots  fdb 0
-slither.dWant   fcb 1                  ; l'etat de slot que CE renderer dessine
 
 ;*******************************************************************************
 ; LES TABLES
@@ -1846,19 +1776,16 @@ slither.Insts
         fdb   slither.Recs
         fdb   slither.Slots
         fdb   slither.boxes0
-        fdb   slither.hits0
         fdb   0
         fdb   slither.ring1
         fdb   slither.Recs+slither.NREC*slither.RECSZ
         fdb   slither.Slots+slither.NREC*slither.SLOTSZ
         fdb   slither.boxes1
-        fdb   slither.hits1
         fdb   0
         fdb   slither.ring2
         fdb   slither.Recs+2*slither.NREC*slither.RECSZ
         fdb   slither.Slots+2*slither.NREC*slither.SLOTSZ
         fdb   slither.boxes2
-        fdb   slither.hits2
 
 ; Les retards cumules des SANS-OST (la tete, retard 0, est le suiveur a OST).
 ; Script court (1000:34b6) : 9 corps. La queue (retard 92) est un suiveur.

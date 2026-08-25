@@ -40,7 +40,12 @@ def main():
     racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     base = os.path.join(racine, 'src/enemies/slither/images')
     total = 0
-    for partie in ('head', 'body', 'tail'):
+    # Le CORPS n'a plus de jeu blanc : son flash est un DISQUE unique, produit
+    # par gen_slither_hit_round.py — les seize poses du corps sont dessinees
+    # par le renderer groupe, qui ne monte qu'une page, et une image ronde tient
+    # avec elles sur la page du cast. Restent la tete et la queue, qui sont des
+    # objets a OST et basculent d'identifiant le temps de leur flash.
+    for partie in ('head', 'tail'):
         src_dir = os.path.join(base, partie)
         dst_dir = os.path.join(base, partie + '_hit')
         os.makedirs(dst_dir, exist_ok=True)
