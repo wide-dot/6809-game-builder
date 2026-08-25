@@ -43,8 +43,12 @@ ObjID_slither_tail_corpse equ 40
 ObjID_slither_head_hit equ 41
 * Et la QUEUE pendant son flash, pour la meme raison.
 ObjID_slither_tail_hit equ 42
+* Le SECOND renderer groupe : meme boucle, meme instance, mais il ne dessine
+* que les slots MARQUES et sa page d'images est celle des poses blanches du
+* corps. Un renderer ne montant qu'une page, il en faut deux.
+ObjID_slither_render_hit equ 43
 
-objid.count equ 42
+objid.count equ 43
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

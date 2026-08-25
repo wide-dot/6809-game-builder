@@ -48,6 +48,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_render_hit
 
 Obj_Index_Address
         fdb   0
@@ -99,6 +100,7 @@ Obj_Index_Address
         fdb   slither.Corpse ; ObjID_slither_tail_corpse
         fdb   slither.Segment ; ObjID_slither_head_hit
         fdb   slither.Segment ; ObjID_slither_tail_hit
+        fdb   slither.Render ; ObjID_slither_render_hit
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage5.page
@@ -144,6 +146,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_render_hit
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -189,6 +192,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_slither_tail_corpse
         fdb   Ani_Asd_none ; ObjID_slither_head_hit
         fdb   Ani_Asd_none ; ObjID_slither_tail_hit
+        fdb   Ani_Asd_none ; ObjID_slither_render_hit
 
 Ani_Asd_none
         fdb   0
@@ -237,3 +241,4 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage5.cast.imgTail.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.imgHeadHit.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.imgTailHit.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.cast.imgBodyHit.page ; ObjID_slither_render_hit

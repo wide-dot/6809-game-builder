@@ -3276,6 +3276,21 @@
                 <!-- Les seize poses BLANCHES de la QUEUE. Meme raison que
                      pour la tete, et meme mecanique : un direntry, un ObjID,
                      l'objet bascule d'identifiant le temps du flash. -->
+                <!-- Les seize poses BLANCHES du CORPS. Elles ne peuvent pas
+                     rejoindre le cast (leur page est pleine) et surtout un
+                     renderer groupe ne monte QU'UNE page d'images : c'est un
+                     SECOND renderer qui les dessine, sur cette page-ci. -->
+                <file name="stage5.cast.imgBodyHit" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgbodyhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgBodyHit" gendir="gen/enemies/stage5-cast-imgbodyhit"
+                                 gensource="gen/enemies/stage5-cast-imgbodyhit/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgbodyhit/index.asm">
+                            <images dir="src/enemies/slither/images/body_hit" names="slither_bodyhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage5.cast.imgTailHit" linkdata="LINK" arena="stage5.foes">
                     <lwasm gensource="gen/enemies/stage5-cast-imgtailhit.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3340,6 +3355,7 @@
                     <load name="stage5.cast.imgTail"/>
                     <load name="stage5.cast.imgHeadHit"/>
                     <load name="stage5.cast.imgTailHit"/>
+                    <load name="stage5.cast.imgBodyHit"/>
                     <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
