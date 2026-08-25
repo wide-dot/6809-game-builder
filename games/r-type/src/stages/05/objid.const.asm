@@ -27,8 +27,17 @@ ObjID_slither equ 35
 ObjID_slither_head equ 36
 ObjID_slither_tail equ 37
 ObjID_slither_render equ 38
+* Le CADAVRE d'un corps : ne du chapelet d'explosion (40:7b85), il part sur
+* un des deux scripts de vol libre et n'appartient plus a la chaine. C'est un
+* objet a OST parce qu'il lui faut un interprete moveByScript a lui ; ses
+* images sont celles du CORPS, donc sur la page du cast.
+ObjID_slither_corpse equ 39
+* Le cadavre de la QUEUE : meme code, mais ses images sont celles de la queue,
+* donc sur imgTail et pas sur la page du cast — d'ou un identifiant a lui,
+* Img_Page_Index n'en donnant qu'UNE par identifiant.
+ObjID_slither_tail_corpse equ 40
 
-objid.count equ 38
+objid.count equ 40
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

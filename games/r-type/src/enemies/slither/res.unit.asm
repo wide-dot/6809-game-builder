@@ -42,6 +42,8 @@ slither.boxes2 EXPORT
 slither.NBOX    equ   15                 ; les corps du script long
 slither.RINGSZ  equ   256*3              ; les trois plans x, y, pose
 
+
+
  SECTION code
 
 ; Un anneau = trois plans d'octets CONTIGUS de 256 : x a +0, y a +256,

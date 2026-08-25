@@ -20,6 +20,7 @@
 slither.Object   EXPORT
 slither.Segment  EXPORT
 slither.Render   EXPORT
+slither.Corpse   EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 

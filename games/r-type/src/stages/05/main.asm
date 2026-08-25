@@ -43,6 +43,10 @@ patapata.Object   EXTERNAL
 slither.Object    EXTERNAL
 slither.Segment   EXTERNAL
 slither.Render    EXTERNAL
+; Le CADAVRE : ce que devient un segment sorti de la chaine, en vol libre ou
+; sur son script de chapelet. Deux identifiants, un seul point d'entree —
+; seules ses images changent (celles du corps ou celles de la queue).
+slither.Corpse    EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
 ; propre page : moveByScript la lit par page montee.

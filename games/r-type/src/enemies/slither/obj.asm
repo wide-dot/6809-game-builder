@@ -105,18 +105,45 @@ slither.mInst     equ ext_variables+10   ; 10,11 le bloc d'instance pris a la
 slither.mTailD    equ ext_variables+12   ; 12   le retard de la QUEUE : 92
                                          ;      (script court) ou 146 (long)
 slither.mTailDone equ ext_variables+13   ; 13   1 = la queue est posee
+slither.mHeadC    equ ext_variables+14   ; 14   le drapeau de cascade de la
+                                         ;      TETE : 1 quand elle meurt au
+                                         ;      tir (40:7c50). Le record de
+                                         ;      rang 0 le lit comme son
+                                         ;      predecesseur — la tete n'a pas
+                                         ;      de record a elle.
 
 ; --- LE SUIVEUR A OST (la tete) --------------------------------------------
 slither.fMaster   equ ext_variables+0    ; 0,1  l'OST du maitre (valide avant usage)
 slither.fDelay    equ ext_variables+2    ; 2    retard en trames (0 tete, 92/146 queue)
 slither.fAABB     equ ext_variables+3    ; 3..11
+slither.fMode     equ ext_variables+12   ; 12   0 = dans la chaine, 1 = compte
+                                         ;      a rebours du chapelet
+slither.fDelayC   equ ext_variables+13   ; 13   ce compte a rebours
 ; --- LE RENDERER GROUPE : son instance ---------------------------------------
 slither.rInst     equ ext_variables+0    ; 0,1  le bloc dont il dessine les slots
 
-; --- LES RECORDS (page du cast) : 2 octets par segment sans OST -------------
-slither.RS        equ 0                  ; etat : 0 inactif, 1 vivant, 3 fini
-slither.RC        equ 1                  ; libre (cascade a venir)
-slither.RECSZ     equ 2
+; --- LES RECORDS (page du cast) : 12 octets par segment sans OST -----------
+; Ils tenaient en deux octets ; la cascade de mort leur demande l'etat d'un
+; vol libre (position et vitesse en 8.8, vrillage) et le compte a rebours du
+; chapelet. Ils restent sur la page du CAST : seuls l'anneau et les boites
+; doivent etre residents (la passe de collision suit ses listes sans monter de
+; page), alors que les records ne sont lus que par la marche et la cascade,
+; qui tournent deja page du cast montee. L'arene residente du stage 5 n'aurait
+; d'ailleurs pas pu les prendre — 3 249 octets demandes pour 2 800.
+slither.RS        equ 0                  ; etat : 0 inactif, 1 vivant, 3 fini,
+                                         ;        4 = detache (vol libre)
+slither.RC        equ 1                  ; cascade, comme +0x1E de l'arcade :
+                                         ;   0 rien, 1 (bit 0) detachement,
+                                         ;   2 (bit 1) chapelet d'explosion
+slither.RD        equ 2                  ; le compte a rebours du chapelet,
+                                         ; pose a celui du predecesseur + 4
+slither.RX        equ 3                  ; 3,4  x en 8.8 pendant le vol libre
+slither.RY        equ 5                  ; 5,6  y en 8.8
+slither.RVX       equ 7                  ; 7,8  vitesse x en 8.8
+slither.RVY       equ 9                  ; 9,10 vitesse y en 8.8
+slither.RP        equ 11                 ; le compteur de vrillage
+slither.RECSZ     equ 12                 ; DUPLIQUE dans res.unit.asm, qui
+                                         ; s'assemble seul : bouger les deux
 slither.NREC      equ 15                 ; les CORPS du script long (la
                                          ; tete et la queue sont des suiveurs)
 
@@ -318,6 +345,7 @@ slither.MasterInit
         ; residente partagee, au meme endroit du raisonnement.
         stb   slither.mTailD,u
         clr   slither.mTailDone,u
+        clr   slither.mHeadC,u           ; aucune cascade en cours
         ; --- le maitre ne dessine rien --------------------------------------
         clr   priority,u
         clr   render_flags,u           ; coordonnees ECRAN, comme l'outslay
@@ -428,12 +456,11 @@ slither.MasterLive
                                        ; — une position rassise. Le record nait
                                        ; a mFrames = retard + 1.
         ldb   slither.mActive,u
-        aslb
-        ldx   slither.cRecs
-        abx
+        jsr   slither.RecPtrB
         lda   #1
         sta   slither.RS,x             ; vivant
         clr   slither.RC,x
+        clr   slither.RD,x
         ; --- la boite entre dans la liste du moteur -------------------------
         ; La NETTOYER D'ABORD, prev/next compris : l'arene arrive zeroee au
         ; chargement, mais un SECOND serpent dans le meme stage retrouverait
@@ -482,6 +509,8 @@ slither.MasterLive
         ldb   slither.mTailD,u
         jsr   slither.SpawnFollower
 @tail
+        ; --- 3ter) la CASCADE DE MORT, un cran par trame --------------------
+        jsr   slither.Cascade
         ; --- 4) la marche des records --------------------------------------
         com   slither.mPhase,u         ; la parite bascule PAR TOUR DE BOUCLE
         jsr   slither.Walk
@@ -495,7 +524,7 @@ slither.MasterLive
         ldx   slither.cRecs
 @fin    lda   slither.RS,x
         cmpa  #3
-        bne   >                        ; il en reste un
+        bne   >                        ; il en reste un (vivant OU en vol libre)
         leax  slither.RECSZ,x
         incb
         cmpb  slither.mNrec,u
@@ -517,16 +546,108 @@ slither.Deleted
 ;*******************************************************************************
 ; LA MARCHE DES RECORDS — un tour par boucle de jeu
 ;*******************************************************************************
+; -----------------------------------------------------------------------------
+; LA CASCADE DE MORT — 40:7a3f (body_tick) lit +0x1E du PREDECESSEUR
+;
+;   bit 0 (drapeau 1) : la TETE est morte au tir (40:7c50). Chaque segment se
+;                       DETACHE : vol libre balistique et vrillage sur place.
+;   bit 1 (drapeau 2) : un CORPS est mort au tir (40:7c77). Ce qui suit part en
+;                       CHAPELET : le compte a rebours de chacun vaut celui de
+;                       son predecesseur + 4 trames, puis le cadavre s'en va
+;                       sur un des deux scripts de vol libre.
+;
+; L'arcade propage UN CRAN PAR TRAME, chaque segment lisant son predecesseur au
+; tour suivant. On descend donc les rangs A REBOURS : le rang n lit le rang
+; n-1 tel qu'il etait a l'entree de la trame, puisqu'on ne l'a pas encore
+; touche. En montant, la cascade traverserait toute la chaine en une trame et
+; le chapelet perdrait justement son etalement.
+;
+; Le predecesseur du rang 0 est la TETE, qui n'a pas de record : son drapeau
+; vit dans l'OST du maitre (slither.mHeadC).
+; -----------------------------------------------------------------------------
+slither.Cascade
+        lda   slither.mNrec,u
+        beq   @out
+        deca
+@loop   sta   slither.wN
+        ldb   slither.wN
+        jsr   slither.RecPtrB          ; X = MON record
+        lda   slither.RS,x
+        cmpa  #1
+        bne   @next                    ; seul un segment dans la chaine adopte
+        lda   slither.RC,x
+        bne   @next                    ; deja marque : on n'adopte qu'une fois
+        ldb   slither.wN
+        beq   @head
+        decb
+        pshs  x
+        jsr   slither.RecPtrB          ; X = le predecesseur
+        lda   slither.RC,x
+        ldb   slither.RD,x
+        puls  x
+        bra   @adopt
+@head   lda   slither.mHeadC,u         ; le rang 0 suit la tete
+        clrb
+@adopt  bita  #2                       ; l'arcade teste le bit 1 D'ABORD
+        bne   @chain
+        bita  #1
+        beq   @next
+        lda   #1                       ; detachement : la marche s'en occupe
+        sta   slither.RC,x
+        bra   @next
+@chain  lda   #2
+        sta   slither.RC,x
+        addb  #4                       ; l'etalement du chapelet
+        stb   slither.RD,x
+@next   lda   slither.wN
+        beq   @out
+        deca
+        bra   @loop
+@out    rts
+
+; B = rang -> X = son record. (Le cache d'instance doit etre pose.)
+slither.RecPtrB
+        lda   #slither.RECSZ
+        mul
+        addd  slither.cRecs
+        tfr   d,x
+        rts
+
+; -----------------------------------------------------------------------------
+; LES SEIZE DIRECTIONS DU VOL LIBRE — 1000:8fd0, converties a l'echelle TO8.
+; L'arcade y range seize vitesses 8.8 sur un cercle de rayon ~2.125 px/trame ;
+; l'index est priority & 0x0F, ce qui donne a chaque segment sa direction.
+; Echelle du jeu : x 0.375 en X, x 0.75 en Y — la meme que les boites.
+; Ex. l'entree 4 vaut +2.375 en X arcade, soit +0.891 ici (228/256).
+; -----------------------------------------------------------------------------
+slither.DetachVel
+        fdb   0,408      ; 0
+        fdb   78,384     ; 1
+        fdb   150,300    ; 2
+        fdb   204,180    ; 3
+        fdb   228,0      ; 4
+        fdb   204,-180   ; 5
+        fdb   150,-300   ; 6
+        fdb   78,-384    ; 7
+        fdb   0,-408     ; 8
+        fdb   -78,-384   ; 9
+        fdb   -150,-300  ; 10
+        fdb   -204,-180  ; 11
+        fdb   -228,0     ; 12
+        fdb   -204,180   ; 13
+        fdb   -150,300   ; 14
+        fdb   -78,384    ; 15
+
 slither.Walk
         clr   slither.wN
 @loop   ldb   slither.wN
-        aslb
-        ldx   slither.cRecs
-        abx
+        jsr   slither.RecPtrB
         lda   slither.RS,x
         lbeq  @next                    ; inactif
         cmpa  #3
         lbeq  @next                    ; fini
+        cmpa  #4
+        lbeq  @drift                   ; detache : il ne lit plus l'anneau
         ; le retard et le role, constants (RecInit)
         ldb   slither.wN
         aslb
@@ -569,6 +690,27 @@ slither.Walk
         abx
         lda   ,x
         sta   slither.wPose
+        ; --- la cascade : ce record quitte-t-il la chaine cette trame ? ------
+        ; L'ordre est celui de 40:7a3f — le compte a rebours court AVANT tout
+        ; le reste, et le segment continue de suivre la chaine tant qu'il n'est
+        ; pas echu.
+        ldb   slither.wN
+        jsr   slither.RecPtrB
+        lda   slither.RD,x
+        beq   @nodelay
+        deca
+        sta   slither.RD,x
+        bne   @nodelay
+        jsr   slither.RecCorpse        ; echu : le cadavre part sur son script
+        lbra  @next
+@nodelay
+        lda   slither.RC,x
+        cmpa  #1
+        bne   @img
+        jsr   slither.RecDetach        ; la tete est morte : vol libre
+        ; il publie une derniere fois avec la pose de la chaine ; des la
+        ; trame suivante c'est @drift qui le mene
+@img
         ; --- le set d'images du role ----------------------------------------
         ldb   slither.wPose
         andb  #$0F
@@ -611,6 +753,39 @@ slither.Walk
         jsr   slither.RecExplode       ; oui : score, explosion, retrait
         bra   @next
 @clr    clr   AABB.p,x                 ; hors de la passe jusqu'au prochain tour
+        bra   @next
+; --- LE VOL LIBRE (40:7cd3) -------------------------------------------------
+; Le segment ne lit plus l'anneau : il derive en 8.8 et vrille sur place.
+; L'arcade avance image_id d'UN par trame et indexe (image_id & 0x1E) * 3 sur
+; un pas de six octets — soit une pose toutes les DEUX trames, et seulement
+; les seize premieres, celles de la famille rotation.
+@drift  ldd   slither.RX,x
+        addd  slither.RVX,x
+        std   slither.RX,x
+        lda   slither.RX,x             ; l'octet haut est le pixel
+        sta   slither.wPx
+        ldd   slither.RY,x
+        addd  slither.RVY,x
+        std   slither.RY,x
+        lda   slither.RY,x
+        sta   slither.wPy
+        inc   slither.RP,x
+        lda   slither.RP,x
+        anda  #$1E
+        lsra
+        sta   slither.wPose
+        ; sorti du cadre : l'arcade recycle (is_visible_range). En octets, un
+        ; x passe sous screen_left repasse par 255 — donc au-dela de la
+        ; largeur : le meme test attrape les deux bords.
+        lda   slither.wPx
+        suba  #screen_left
+        cmpa  #screen_right-screen_left
+        bhi   @gone
+        lda   slither.wPy
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bls   @img
+@gone   jsr   slither.RecRetire
 @next
         inc   slither.wN
         lda   slither.wN
@@ -658,9 +833,7 @@ slither.RecRetire
         jsr   slither.SlotPtrN
         clr   ,y
         ldb   slither.wN
-        aslb
-        ldx   slither.cRecs
-        abx
+        jsr   slither.RecPtrB
         lda   #3
         sta   slither.RS,x
         rts
@@ -702,6 +875,67 @@ slither.RecPublish
         puls  a,b,pc
 @off    clr   ,y
         puls  a,b,pc
+
+; -----------------------------------------------------------------------------
+; DETACHER un record — 40:7c9e puis 40:7cab. Il quitte l'anneau et part en
+; balistique. X = son record, wN son rang, wPx/wPy sa derniere position.
+; -----------------------------------------------------------------------------
+slither.RecDetach
+        lda   slither.wPx              ; la position devient un 8.8
+        clrb
+        std   slither.RX,x
+        lda   slither.wPy
+        clrb
+        std   slither.RY,x
+        ; la direction : l'arcade indexe la table par priority & 0x0F, ce qui
+        ; donne a chaque segment la sienne. Le RANG joue ici ce role — il est
+        ; ce qui distingue nos segments les uns des autres.
+        ldb   slither.wN
+        andb  #$0F
+        aslb
+        aslb                           ; quatre octets par direction
+        pshs  x
+        ldx   #slither.DetachVel
+        abx
+        ldd   ,x
+        ldy   2,x
+        puls  x
+        std   slither.RVX,x
+        sty   slither.RVY,x
+        ; 40:7cca tire l'image de depart au hasard : les segments ne vrillent
+        ; pas en choeur
+        pshs  x
+        jsr   RandomNumber
+        puls  x
+        stb   slither.RP,x
+        lda   #4
+        sta   slither.RS,x
+        rts
+
+; -----------------------------------------------------------------------------
+; LE CADAVRE DU CHAPELET — 40:7b85. Le compte a rebours est echu : le segment
+; sort de la chaine et part sur un des deux scripts de vol libre. Il lui faut
+; un interprete a lui, donc un OST : c'est le seul endroit du serpent ou un
+; segment sans OST en reclame un. Faute d'OST il explose sur place, ce qui est
+; la degradation la plus douce — un segment qui disparait, pas un qui reste.
+; X = son record, wPx/wPy/wPose sa position et sa pose.
+; -----------------------------------------------------------------------------
+slither.RecCorpse
+        jsr   LoadObject_x
+        beq   @fail
+        lda   #ObjID_slither_corpse
+        sta   id,x
+        clr   routine,x
+        lda   #2                       ; mode 2 : le script
+        sta   slither.dMode,x
+        lda   slither.wPx
+        sta   x_pixel,x
+        lda   slither.wPy
+        sta   y_pixel,x
+        lda   slither.wPose
+        sta   anim_frame,x             ; c'est elle qui choisit le script
+        jmp   slither.RecRetire
+@fail   jmp   slither.RecExplode
 
 ; -----------------------------------------------------------------------------
 ; La mort d'un segment par tir : score + explosion, puis retrait.
@@ -763,6 +997,11 @@ slither.Segment
         ldb   #6
         stb   priority,u
         clr   render_flags,u           ; coordonnees ECRAN
+        ; L'OST est RECYCLE : ces deux octets portent ce qu'y a laisse l'objet
+        ; precedent. Sans ce nettoyage une queue pouvait naitre en croyant
+        ; compter le chapelet d'un serpent deja mort.
+        clr   slither.fMode,u
+        clr   slither.fDelayC,u
         inc   routine,u
 slither.FollowerLive
         ; --- valider le maitre AVANT de lire l'anneau (le geste du rebound
@@ -821,6 +1060,7 @@ slither.FollowerLive
         leax  512,x
         abx
         ldb   ,x
+        stb   anim_frame,u             ; la pose du tour, que le cadavre relira
         andb  #$0F
         aslb
         lda   id,u
@@ -832,6 +1072,42 @@ slither.FollowerLive
 @set    abx
         ldx   ,x
         stx   image_set,u
+        ; --- la cascade, cote QUEUE (40:7afa) --------------------------------
+        ; Son predecesseur est le DERNIER record. La TETE, elle, est la SOURCE
+        ; de la cascade (40:7c50) et n'a pas de predecesseur a lire.
+        lda   id,u
+        cmpa  #ObjID_slither_tail
+        bne   @nocasc
+        lda   slither.fMode,u
+        bne   @counting
+        ldx   slither.fMaster,u
+        ldy   slither.mInst,x
+        ldy   I.recs,y
+        lda   slither.mNrec,x
+        deca
+        ldb   #slither.RECSZ
+        mul
+        leay  d,y                      ; Y = le dernier record
+        lda   slither.RC,y
+        beq   @nocasc
+        cmpa  #2
+        bne   @tnow                    ; bit 0 : elle se detache tout de suite
+        ldb   slither.RD,y             ; bit 1 : elle prend son rang dans le
+        addb  #4                       ; chapelet, quatre trames plus tard
+        stb   slither.fDelayC,u
+        lda   #1
+        sta   slither.fMode,u
+        bra   @nocasc
+@tnow   lda   #1
+        bra   @tcorpse
+@counting
+        dec   slither.fDelayC,u
+        bne   @nocasc
+        lda   #2                       ; echu : le cadavre part sur son script
+@tcorpse
+        jsr   slither.TailCorpse
+        lbra  @die
+@nocasc
         ; --- la boite ---------------------------------------------------------
         lda   x_pixel,u
         suba  #screen_left
@@ -842,12 +1118,18 @@ slither.FollowerLive
         lda   slither.fAABB+AABB.p,u
         beq   @dead
         jmp   DisplaySprite
-@dead   ldb   #slither_head_scoreIdx  ; 7c50 : la tete vaut plus que son corps
-        lda   id,u
+@dead   lda   id,u
         cmpa  #ObjID_slither_head
-        beq   >
-        ldb   #slither_body_scoreIdx   ; 7c77 : la queue compte comme un corps
-!       jsr   AwardScore
+        bne   @dtail
+        ; 40:7c50 : la tete pose son drapeau AVANT de mourir. C'est le bit 0,
+        ; celui qui detache toute la chaine — elle est la source de la cascade.
+        ldx   slither.fMaster,u        ; valide : on vient de le lire ce tour
+        lda   #1
+        sta   slither.mHeadC,x
+        ldb   #slither_head_scoreIdx   ; 7c50 : la tete vaut plus que son corps
+        bra   @dscore
+@dtail  ldb   #slither_body_scoreIdx   ; 7c77 : la queue compte comme un corps
+@dscore jsr   AwardScore
         jsr   LoadObject_x
         beq   @die
         _ldd  ObjID_explosion,explosion.subtype.smallx2
@@ -866,6 +1148,197 @@ slither.FollowerLive
 
 ;*******************************************************************************
 ; LE RENDERER GROUPE — un faux imageset dont la routine dessine les 16 slots
+;*******************************************************************************
+; -----------------------------------------------------------------------------
+; LA QUEUE DEVIENT UN CADAVRE — elle a un OST, mais pas les huit octets qu'il
+; faudrait pour porter un vol libre (ext_variables_size vaut 20 et sa boite en
+; occupe neuf). Elle passe donc la main a un objet cadavre, comme un record.
+; A = le mode (1 vol libre, 2 script). U = la queue.
+; -----------------------------------------------------------------------------
+slither.TailCorpse
+        pshs  a
+        jsr   LoadObject_x
+        beq   @out
+        lda   #ObjID_slither_tail_corpse
+        sta   id,x
+        clr   routine,x
+        lda   ,s
+        sta   slither.dMode,x
+        lda   x_pixel,u
+        sta   x_pixel,x
+        lda   y_pixel,u
+        sta   y_pixel,x
+        lda   anim_frame,u
+        sta   anim_frame,x
+        lda   ,s
+        cmpa  #1
+        bne   @out
+        ; La direction : l'arcade indexe la table par priority & 0x0F. La queue
+        ; n'a pas de rang dans les records ; sa POSE joue ce role — elle varie
+        ; d'un serpent a l'autre et reste deterministe.
+        ldb   anim_frame,u
+        andb  #$0F
+        aslb
+        aslb
+        pshs  x
+        ldx   #slither.DetachVel
+        abx
+        ldd   ,x
+        ldy   2,x
+        puls  x
+        std   slither.dVX,x
+        sty   slither.dVY,x
+@out    puls  a,pc
+
+;*******************************************************************************
+; LE CADAVRE — 40:7cd3 (vol libre) et 40:7bfc / 40:7bbb (chapelet)
+;
+; Un segment qui a quitte la chaine. Deux modes, exactement ceux de l'arcade :
+;   1 : balistique 8.8 dans une des seize directions, et vrillage a demi-
+;       cadence. C'est ce que devient toute la chaine quand la TETE meurt.
+;   2 : un des deux scripts de vol libre (1000:A3E6 si la pose est < 9, sinon
+;       1000:A380), joue par l'interprete. C'est le CHAPELET : chaque segment
+;       part quatre trames apres son predecesseur.
+;
+; Il reste touchable dans les deux modes (l'arcade garde la boite du corps) et
+; disparait a la sortie du cadre ou a la fin de son script.
+;*******************************************************************************
+slither.dMode   equ ext_variables+0    ; 1 ou 2
+slither.dSpin   equ ext_variables+1    ; le compteur de vrillage (mode 1)
+slither.dVX     equ ext_variables+2    ; 2,3  vitesse 8.8
+slither.dVY     equ ext_variables+4    ; 4,5
+slither.dPX     equ ext_variables+6    ; 6,7  position 8.8 (mode 1)
+slither.dPY     equ ext_variables+8    ; 8,9
+slither.dAABB   equ ext_variables+10   ; 10..18
+
+slither.Corpse
+        lda   routine,u
+        bne   slither.CorpseLive
+        _Collision_AddAABB slither.dAABB,AABB_list_ennemy
+        lda   #slither_hitdamage       ; les PV d'un corps, dans les deux modes
+        sta   slither.dAABB+AABB.p,u
+        _ldd  slither_hitbox_x,slither_hitbox_y
+        std   slither.dAABB+AABB.rx,u
+        ldb   #6
+        stb   priority,u
+        clr   render_flags,u           ; coordonnees ECRAN, comme la chaine
+        clr   slither.dSpin,u          ; l'OST est recycle : pas d'heritage
+        lda   x_pixel,u                ; la position devient un 8.8
+        clrb
+        std   slither.dPX,u
+        lda   y_pixel,u
+        clrb
+        std   slither.dPY,u
+        clra                           ; ... et un 16 bits pour l'interprete
+        ldb   x_pixel,u
+        std   x_pos,u
+        clra
+        ldb   y_pixel,u
+        std   y_pos,u
+        lda   slither.dMode,u
+        cmpa  #2
+        bne   @armed
+        ; 40:7b85 choisit le script sur la pose : < 9 -> A3E6, sinon A380.
+        ; Les deux entrees sont contiguës dans la LUT commune.
+        ldb   #anim_slither_corpse
+        lda   anim_frame,u
+        cmpa  #9
+        blo   >
+        addb  #2
+!       clra
+        tfr   d,x
+        jsr   moveByScript.initialize
+@armed  inc   routine,u
+
+slither.CorpseLive
+        lda   slither.dMode,u
+        cmpa  #2
+        beq   @script
+        ; --- mode 1 : la balistique et le vrillage --------------------------
+        ldd   slither.dPX,u
+        addd  slither.dVX,u
+        std   slither.dPX,u
+        lda   slither.dPX,u
+        sta   x_pixel,u
+        ldd   slither.dPY,u
+        addd  slither.dVY,u
+        std   slither.dPY,u
+        lda   slither.dPY,u
+        sta   y_pixel,u
+        inc   slither.dSpin,u
+        ldb   slither.dSpin,u
+        andb  #$1E                     ; une pose toutes les DEUX trames,
+        lsrb                           ; et seulement les seize premieres
+        bra   @pose
+        ; --- mode 2 : l'interprete ------------------------------------------
+@script ldd   #slither.CorpseCB
+        std   moveByScript.callback
+        jsr   moveByScript.runByFrameDrop
+        lda   moveByScript.anim.end
+        lbne  @gone                    ; script fini : il s'efface
+        lda   x_pos+1,u
+        sta   x_pixel,u
+        lda   y_pos+1,u
+        sta   y_pixel,u
+        ldb   anim_frame,u
+        andb  #$0F
+@pose   aslb
+        ldx   #slither.BodySets
+        lda   id,u
+        cmpa  #ObjID_slither_tail_corpse
+        bne   >
+        ldx   #slither.TailSets
+!       abx
+        ldx   ,x
+        stx   image_set,u
+        ; --- la boite --------------------------------------------------------
+        lda   x_pixel,u
+        suba  #screen_left
+        sta   slither.dAABB+AABB.cx,u
+        lda   y_pixel,u
+        suba  #screen_top
+        sta   slither.dAABB+AABB.cy,u
+        lda   slither.dAABB+AABB.p,u
+        beq   @hit
+        ; hors du cadre : l'arcade recycle (is_visible_range)
+        lda   x_pixel,u
+        suba  #screen_left
+        cmpa  #screen_right-screen_left
+        bhi   @gone
+        lda   y_pixel,u
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bhi   @gone
+        jmp   DisplaySprite
+@hit    ldb   #slither_body_scoreIdx
+        jsr   AwardScore
+        jsr   LoadObject_x
+        beq   @gone
+        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        std   id,x
+        lda   x_pixel,u                ; l'explosion vit en PLAYFIELD
+        clrb
+        addd  glb_camera_x_pos
+        std   x_pos,x
+        clra
+        ldb   y_pixel,u
+        std   y_pos,x
+@gone   _Collision_RemoveAABB slither.dAABB,AABB_list_ennemy
+        lda   #2
+        sta   routine,u
+        jmp   DeleteObject
+
+; Le callback de l'interprete. Il ne pousse rien — mais il DOIT couper la
+; boucle de rattrapage quand le script se termine, sinon l'interprete lit
+; au-dela de sa fin. Meme geste que slither.Push.
+slither.CorpseCB
+        lda   moveByScript.anim.end
+        beq   >
+        clr   moveByScript.anim.loops
+!       rts
+
+;*******************************************************************************
+; LE RENDERER GROUPE (suite)
 ;*******************************************************************************
 slither.SLOTSZ  equ 5                  ; etat, x, y, routine(2)
 

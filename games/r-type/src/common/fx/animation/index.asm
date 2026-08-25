@@ -57,3 +57,5 @@ ref_1930A	fdb   ref_19CE4 ; bug
                 fdb   ref_1A308 ; slither variante 13
                 fdb   ref_1A308 ; slither variante 14
                 fdb   ref_1A308 ; slither variante 15
+                fdb   ref_1A3E6 ; slither, vol libre du cadavre, pose < 9
+                fdb   ref_1A380 ; slither, vol libre du cadavre, pose >= 9
