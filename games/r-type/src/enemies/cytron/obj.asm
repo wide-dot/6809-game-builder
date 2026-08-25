@@ -69,20 +69,33 @@ Routines
 Init
         ; --- la position : preset XY indexe par le quartet BAS du subtype
         ; 696e : load_xy_preset copie (x,y) depuis bug_and_pow_armor_preset_xy
+        ;
+        ; LE PRESET EST DEJA UNE POSITION ECRAN. La table importee est convertie
+        ; a l'export (v2_x = (arcade_x - 320)*0,375 + 8), donc il ne reste qu'a
+        ; passer en repere playfield en ajoutant la camera — exactement ce que
+        ; font pow, scant et tabrok, qui lisent la MEME table.
+        ; Il y avait ici un `addd #144+8` de plus : le cytron naissait 152 px a
+        ; droite du bord, soit presque un ecran entier. Il n'entrait dans le
+        ; champ que bien apres son heure et semait sa trainee hors vue — c'est
+        ; ce qui le faisait apparaitre au moment ou l'arcade le fait disparaitre
+        ; (25/08/2026).
         lda   subtype_w+1,u
         anda  #$0F
         asla                           ; deux octets par entree
         ldx   #PresetXYIndex
         leax  a,x
         clra
-        ldb   ,x                       ; x du preset
+        ldb   ,x                       ; x du preset, en px ecran
         addd  glb_camera_x_pos
-        addd  #144+8
         std   x_pos,u
         clra
         ldb   1,x                      ; y du preset
-        addb  #3                       ; 69ae : +0x08 += 4 px arcade = 3 lignes
-        adca  #0
+        ; 69ae : l'arcade fait `+0x08 += 4`. SON AXE Y EST INVERSE DU NOTRE — la
+        ; table de presets le prouve (arcade y=392 donne notre y=3, en haut ;
+        ; arcade y=136 donne 195, en bas), et l'export porte le facteur -0,75.
+        ; Quatre px arcade vers le haut valent donc TROIS LIGNES DE MOINS chez
+        ; nous, pas trois de plus.
+        subd  #3
         std   y_pos,u
 
         ; --- le preset de tir (f932 : seuils + vitesse, par difficulte)
@@ -252,6 +265,11 @@ growTrail
         addd  ,s++
         _asrd
         _asrd                          ; (3 * dy) / 4 = x0,75
+        ; LE MEME AXE INVERSE. La table 0x1000:2D90 est reprise telle quelle,
+        ; en unites ARCADE : dy positif y veut dire VERS LE HAUT. On la
+        ; retranche donc au lieu de l'ajouter, sinon le cercle de repousse est
+        ; miroite verticalement et la trainee part du mauvais cote.
+        _negd
         addd  y_pos,u
         tfr   b,a                      ; la ligne ecran tient dans un octet
         puls  x                        ; x de carte
