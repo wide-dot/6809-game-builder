@@ -227,7 +227,7 @@ def correspondance(im_src, pal, dispo, forcer=None):
     return m
 
 
-def convertir(objet, spec_pal, dry, suffixe, forcer=None):
+def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False):
     base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
     orig = os.path.join(base, 'images/original')
     if not os.path.isdir(orig):
@@ -260,6 +260,16 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None):
         print('  %-16s %2d frames  cadre %dx%d -> %dx%d  ancre %+.1f %+.1f'
               % (nom or '.', len(chemins), aw, ah, w, h, ax, ay))
         dst = os.path.join(base, 'images' + suffixe, nom)
+        # --dedup : un cycle d'animation arcade repasse souvent par les memes
+        # poses (le gouger fait un aller-retour 0 1 2 3 2 1 0 puis une huitieme
+        # distincte). Importer huit fichiers quand cinq suffisent double le
+        # cout sprite pour rien. Sous ce drapeau on n'ecrit que les images
+        # DISTINCTES, renumerotees a la suite, et on note la correspondance
+        # slot -> pose dans cycle.txt : c'est elle que le code objet indexe.
+        # Opt-in, parce que renumeroter changerait l'art deja embarque des
+        # ennemis existants.
+        vus = {}
+        cycle = []
         for n, p in enumerate(chemins):
             im = Image.open(p)
             petit, _ = reduire(im, u)
@@ -270,10 +280,27 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None):
                     v = m[px[x, y]]
                     px[x, y] = v[(x + y) & 1] if isinstance(v, tuple) else v
             petit.putpalette(plat)
+            if dedup:
+                cle = petit.tobytes()
+                if cle in vus:
+                    cycle.append(vus[cle])
+                    continue
+                pose = len(vus)
+                vus[cle] = pose
+                cycle.append(pose)
+            else:
+                pose = n
             if not dry:
                 os.makedirs(dst, exist_ok=True)
-                petit.save(os.path.join(dst, '%02d.png' % n))
+                petit.save(os.path.join(dst, '%02d.png' % pose))
             total += 1
+        if dedup and not dry:
+            os.makedirs(dst, exist_ok=True)
+            with open(os.path.join(dst, 'cycle.txt'), 'w') as f:
+                f.write('# slot d animation arcade -> pose importee, ecrit par\n'
+                        '# arcade_to_sprites.py --dedup. Le code objet indexe\n'
+                        '# cette table, pas le slot brut.\n')
+                f.write(' '.join(str(c) for c in cycle) + '\n')
         if not dry:
             os.makedirs(dst, exist_ok=True)
             with open(os.path.join(dst, 'geometrie.txt'), 'w') as f:
@@ -296,6 +323,9 @@ def main():
     ap.add_argument('--ecrire-palette', default=None)
     ap.add_argument('--stage', default=None)
     ap.add_argument('--garder-olive', action='store_true')
+    ap.add_argument('--dedup', action='store_true',
+                    help="n'importer que les poses distinctes, et ecrire la "
+                         "table slot -> pose dans cycle.txt")
     ap.add_argument('--forcer', action='append', default=[],
                     help='R,G,B:MAT ou R,G,B:A~B (trame) — couleur arcade '
                          'posee sur un index (ou un damier de deux), hors '
@@ -327,8 +357,9 @@ def main():
             res = tuple(v)
         aj = [int(x) for x in a.ajuster.split(',') if x] if a.ajuster else []
         palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj)
-        return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe, forcer)
-    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer)
+        return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe,
+                         forcer, a.dedup)
+    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer, a.dedup)
 
 
 

@@ -408,7 +408,10 @@ rm -f src/stages/01/background/fadetotunnel.unit.asm \
 # (12 index communs, cases de stage en magenta, couleur donnee par Pal_stage) :
 # c'est le defaut de l'outil, et ca ne se refait jamais.
 # =========================================================================
-python3 tools/arcade_to_sprites.py gouger  --palette 02
+# --dedup : le cycle du gouger fait un aller-retour et repasse par les memes
+# poses. Seules les distinctes sont importees (19 au lieu de 32) et la table
+# slot -> pose part dans cycle.txt, que le code objet indexe.
+python3 tools/arcade_to_sprites.py gouger  --palette 02 --dedup
 python3 tools/arcade_to_sprites.py wick    --palette 02
 python3 tools/arcade_to_sprites.py brood   --palette 02
 python3 tools/arcade_to_sprites.py outslay --palette 02

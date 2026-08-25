@@ -37,15 +37,36 @@
 ; SOL — les variantes 0 et 1 descendent (vy negatif), les 2 et 3 montent.
 ; X est fixe a $02D0, juste a droite de l'ecran.
 ;
-; LES POSES. La table d'une variante fait seize mots, mais ce sont HUIT poses
-; repetees deux fois — et le cycle fait un aller-retour :
+; LES POSES. La table d'une variante fait seize mots, mais ce sont HUIT slots
+; repetes deux fois — et le cycle fait un aller-retour :
 ;   30FE 312E 315E 318E 315E 312E 30FE 31BE   (var 3, les autres sont
 ;                                              identiques a l'adresse pres)
-; L'index arcade vaut (anim & 0x3C) >> 1, soit un mot toutes les QUATRE
-; trames ; ramene a nos huit images : pose = (anim >> 2) & 7. La plongee, elle,
-; force l'offset 4 — donc la POSE 2, fixe.
+; L'index arcade vaut (anim & 0x3C) >> 1, soit un slot toutes les QUATRE
+; trames ; ramene a nos images : slot = (anim >> 2) & 7. La plongee, elle,
+; force l'offset 4 — donc le SLOT 2, fixe.
+;
+; MAIS CES HUIT SLOTS NE FONT PAS HUIT IMAGES. L'aller-retour repasse par les
+; memes poses : n'en sont importees que les DISTINCTES
+; (arcade_to_sprites.py --dedup, ecrit le 25/08/2026 pour ca). Chaque dossier
+; porte sa table slot -> pose dans cycle.txt :
+;
+;   top-right     5 poses   0 1 2 3 2 1 0 4
+;   top-left      5 poses   0 1 2 3 2 1 0 4
+;   bottom-right  4 poses   0 1 2 3 2 1 0 3   <- sa 8e pose est identique a la 4e
+;   bottom-left   5 poses   0 1 2 3 2 1 0 4
+;
+; 19 sprites au lieu de 32, soit 41 % de moins, sans rien perdre. La table de
+; bottom-right differe d'une entree : le code objet porte donc DEUX tables, pas
+; une. Verification independante : les doublons attendus depuis la table arcade
+; se retrouvaient exactement dans les images converties avant deduplication.
+;
 ; Chaque pose est un META-SPRITE de DEUX sprites (write_2_sprites) : nos PNG
 ; 24x48 sont les deux tranches deja composees.
+;
+; LE FLASH DE COUP : une image blanche par orientation, quatre en tout
+; (images/hit/00..03, dans l'ordre des variantes). C'est la POSE 2 qui est
+; blanchie — celle que la plongee fige, donc la plus vue. Voir
+; tools/gen_gouger_hit.py.
 ;
 ; LA MACHINE A TROIS ETATS
 ;
@@ -87,8 +108,12 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 32 sprites de 24x48 a compiler, et l'arene stage2.foes n'a que trois pages
-;   occupees sur sept : de la place, mais son propre direntry sera necessaire.
+; - 23 sprites de 24x48 a compiler (19 poses + 4 blanches), soit ~11,7 Ko a
+;   l'estimation de 0,44 octet par pixel relevee sur le serpent. L'arene
+;   stage2.foes n'occupe que trois de ses sept pages ; les sprites y prendront
+;   leur propre entree de repertoire, le cast n'ayant pas la place.
+; - PAS de variante decalee d'un pixel, vu la taille des sprites — meme choix
+;   que pour l'outslay.
 ;*******************************************************************************
 
 gouger.Object
