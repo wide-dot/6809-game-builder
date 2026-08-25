@@ -39,10 +39,6 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
@@ -52,6 +48,11 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_shot
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_tilemapanim
+Obj_Index_Page.gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -95,10 +96,6 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   gouger.Object ; ObjID_gouger
-        fdb   gouger.Object ; ObjID_gouger_tl
-        fdb   gouger.Object ; ObjID_gouger_tr
-        fdb   gouger.Object ; ObjID_gouger_bl
-        fdb   gouger.Object ; ObjID_gouger_br
         fdb   wick.Object ; ObjID_wick
         fdb   brood.Object ; ObjID_brood
         fdb   outslay.Object ; ObjID_outslay
@@ -108,6 +105,11 @@ Obj_Index_Address
         fdb   outslay.Render ; ObjID_outslay_render
         fdb   outslay.Shot ; ObjID_outslay_shot
         fdb   tilemapanim.Object ; ObjID_tilemapanim
+Obj_Index_Address.gouger_tl
+        fdb   gouger.Object ; ObjID_gouger_tl
+        fdb   gouger.Object ; ObjID_gouger_tr
+        fdb   gouger.Object ; ObjID_gouger_bl
+        fdb   gouger.Object ; ObjID_gouger_br
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -145,10 +147,6 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
@@ -158,6 +156,11 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_shot
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_tilemapanim
+Ani_Page_Index.gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -195,10 +198,6 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
         fdb   Ani_Asd_none ; ObjID_gouger
-        fdb   Ani_Asd_none ; ObjID_gouger_tl
-        fdb   Ani_Asd_none ; ObjID_gouger_tr
-        fdb   Ani_Asd_none ; ObjID_gouger_bl
-        fdb   Ani_Asd_none ; ObjID_gouger_br
         fdb   Ani_Asd_none ; ObjID_wick
         fdb   Ani_Asd_none ; ObjID_brood
         fdb   Ani_Asd_none ; ObjID_outslay
@@ -208,6 +207,11 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_outslay_render
         fdb   Ani_Asd_none ; ObjID_outslay_shot
         fdb   Ani_Asd_none ; ObjID_tilemapanim
+Ani_Asd_Index.gouger_tl
+        fdb   Ani_Asd_none ; ObjID_gouger_tl
+        fdb   Ani_Asd_none ; ObjID_gouger_tr
+        fdb   Ani_Asd_none ; ObjID_gouger_bl
+        fdb   Ani_Asd_none ; ObjID_gouger_br
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -255,10 +259,6 @@ Img_Page_Index
 * etre DENSE jusqu'a objid.count — le garde-fou en fin de fichier le verifie
 * maintenant.
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger ; bascule des l init
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTL.page ; ObjID_gouger_tl
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTR.page ; ObjID_gouger_tr
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBL.page ; ObjID_gouger_bl
-        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBR.page ; ObjID_gouger_br
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
@@ -268,6 +268,11 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_render
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_shot
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_tilemapanim
+Img_Page_Index.gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTL.page ; ObjID_gouger_tl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerTR.page ; ObjID_gouger_tr
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBL.page ; ObjID_gouger_bl
+        fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBR.page ; ObjID_gouger_br
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
@@ -293,4 +298,26 @@ objid.index.expected equ objid.count+1
  ENDC
  IFNE Img_Page_Index.end-Img_Page_Index-objid.index.expected
         ERROR Img_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+* ... et le RANG, pas seulement le compte : le 25/08/2026 les quatre gougers
+* de direction (43..46) ont ete inseres a la suite de ObjID_gouger (33) au
+* lieu de la fin de table. Le compte restait juste, les commentaires aussi,
+* et TOUT le cast au-dela de 33 se decalait de quatre rangs : le gouger BL
+* etait tique par le code du tir d'outslay, qui le detruisait aussitot.
+* Un rang verifie vaut mieux qu'un commentaire.
+ IFNE Obj_Index_Page.gouger_tl-Obj_Index_Page-ObjID_gouger_tl
+        ERROR Obj_Index_Page : ObjID_gouger_tl n est pas a son rang
+ ENDC
+ IFNE Obj_Index_Address.gouger_tl-Obj_Index_Address-ObjID_gouger_tl*2
+        ERROR Obj_Index_Address : ObjID_gouger_tl n est pas a son rang
+ ENDC
+ IFNE Ani_Page_Index.gouger_tl-Ani_Page_Index-ObjID_gouger_tl
+        ERROR Ani_Page_Index : ObjID_gouger_tl n est pas a son rang
+ ENDC
+ IFNE Ani_Asd_Index.gouger_tl-Ani_Asd_Index-ObjID_gouger_tl*2
+        ERROR Ani_Asd_Index : ObjID_gouger_tl n est pas a son rang
+ ENDC
+ IFNE Img_Page_Index.gouger_tl-Img_Page_Index-ObjID_gouger_tl
+        ERROR Img_Page_Index : ObjID_gouger_tl n est pas a son rang
  ENDC

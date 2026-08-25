@@ -52,7 +52,8 @@
 ;
 ; L'axe Y arcade monte : $0178 (376) est donc le PLAFOND et $0098 (152) le
 ; SOL — les variantes 0 et 1 descendent (vy negatif), les 2 et 3 montent.
-; X est fixe a $02D0, juste a droite de l'ecran.
+; X est fixe a $02D0, juste a droite de l'ecran. Les deux ordonnees sont
+; RAMENEES dans le cadre chez nous, faute de decoupe : voir gouger.PresetY.
 ;
 ; LES POSES. La table d'une variante fait seize mots, mais ce sont HUIT slots
 ; repetes deux fois — et le cycle fait un aller-retour :
@@ -104,7 +105,10 @@
 ;       UNE trame sur 64 — quand (+0x34 & $3F) vaut zero — ou il montre la
 ;       POSE 2 : un sursaut d'une trame. Seules les variantes a compte a
 ;       rebours sursautent ; celle qui guette le joueur ne passe jamais par la.
-;       La collision, la mort et le recul sont deja actifs dans cette phase.
+;       La collision, la mort et le recul sont deja actifs dans cette phase,
+;       ainsi que la fenetre de visibilite (voir gouger.Frame). Il nait a
+;       166, juste a droite du cadre : DANS la fenetre, qui s'arrete a 167 —
+;       quelques pixels plus loin et il se retirait a la naissance.
 ;
 ;   B — la plongee. Chaque trame : x_pos += scroll_amount (verrou de defilement),
 ;       puis SONDE DU DECOR au centre.
@@ -139,10 +143,11 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 23 sprites de 24x48 a compiler (19 poses + 4 blanches), soit ~11,7 Ko a
-;   l'estimation de 0,44 octet par pixel relevee sur le serpent. L'arene
-;   stage2.foes n'occupe que trois de ses sept pages ; les sprites y prendront
-;   leur propre entree de repertoire, le cast n'ayant pas la place.
+; - 23 sprites de 24x48 compiles : 34 445 octets MESURES, trois pages pleines
+;   (le packer a loge BL et BR ensemble, 16 367 sur 16 384). L'estimation par
+;   octet-par-pixel du serpent en annoncait 11,7 Ko — trois fois moins : le
+;   cout d'un sprite compile suit le REMPLISSAGE, pas la surface du cadre.
+;   Une entree de repertoire par direction, le cast n'ayant pas la place.
 ; - PAS de variante decalee d'un pixel, vu la taille des sprites — meme choix
 ;   que pour l'outslay.
 ;*******************************************************************************
@@ -185,7 +190,7 @@ gouger.Init
         ldd   ,x
         std   y_pos,u
         ldd   glb_camera_x_pos
-        addd  #144+10                  ; juste a droite du cadre
+        addd  #166                     ; juste a droite du cadre, comme l'arcade
         std   x_pos,u
         clr   x_pos+2,u                ; la fraction repart nette
         clr   y_pos+2,u
@@ -340,13 +345,29 @@ gouger.Frame
         sta   gouger.recoil,u
         lda   #3
         sta   routine,u
+; La fenetre de visibilite, portee de is_visible_range (40:1d6b) : l'arcade
+; garde un objet dont le CENTRE tient dans le cadre elargi de 20 pixels arcade
+; sur chacun des quatre bords. On reprend la MARGE, pas les coordonnees : le
+; cadre du portage ne couvre pas la meme largeur de monde que celui de l'arcade
+; (160 px larges en coordonnees playfield contre 384 arcade, soit 0,417 et non
+; le 0,375 des vitesses et des boites). Marges : 20 x 0,375 = 8 en X,
+; 20 x 0,75 = 15 en Y.
+;   X : -8..167 (le cadre va de 0 a 159)   Y : -15..214 (de 0 a 199)
+; Les trois phases la partagent, comme en arcade — et comme en arcade elle ne
+; s'evalue que si l'objet n'est ni mort ni touche cette trame.
 @cadre  ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
-        addd  #gouger_hitbox_x
+        addd  #8
         bmi   @part                    ; sorti par la gauche
-        ldb   y_pos+1,u
+        cmpd  #167+8
+        bgt   @part                    ; ... ou par la droite
+        ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
+        addd  #15
+        bmi   @part                    ; sorti par le haut
+        cmpd  #214+15
+        bgt   @part                    ; ... ou par le bas
         orcc  #$04                     ; Z = 1 : il reste
         rts
 @mort   ldb   #gouger_scoreIdx
@@ -467,11 +488,21 @@ gouger.tmp      fdb 0
 ; y = (396 - y_arcade) x 0.75, conversion deduite du preset commun 1930c et
 ; verifiee sur ses six valeurs. Le sprite fait 48 de haut et son ancre est au
 ; centre : le gouger deborde du cadre, il est a demi enterre dans le decor.
+; V2-DEVIATION (25/08/2026) : l'arcade DECOUPE ses sprites aux bords, pas nous.
+; BuildSprites rejette en bloc tout sprite qui deborde du cadre (BS_ylo/BS_yhi,
+; il n'y a pas de decoupe partielle) — un gouger a demi enterre ne serait donc
+; pas dessine DU TOUT pendant sa phase d'attente, qui est l'essentiel de sa vie.
+; Les ordonnees arcade converties valent 15 au plafond et 183 au sol ; le sprite
+; fait 48 de haut et son ancre est au centre, donc il ne devient dessinable
+; qu'entre 24 et 175. On prend ces deux bornes : le gouger emerge de la paroi au
+; lieu d'y etre a demi enfoui, a neuf pixels pres. L'alternative fidele serait
+; une pose d'attente RECADREE par direction (quatre sprites de plus) ; ce serait
+; a l'auteur d'en decider, la difference se voit a l'oeil.
 gouger.PresetY
-        fdb   15  ; var 0, plafond ($0178)
-        fdb   15  ; var 1, plafond
-        fdb   183  ; var 2, sol ($0098)
-        fdb   183  ; var 3, sol
+        fdb   24   ; var 0, plafond (arcade $0178 -> 15, remonte a 24)
+        fdb   24   ; var 1, plafond
+        fdb   175  ; var 2, sol (arcade $0098 -> 183, releve a 175)
+        fdb   175  ; var 3, sol
 ; $FFFF = guetter le joueur ; sinon un compte a rebours en trames
 gouger.PresetTrig
         fdb   $FFFF,128,384,512
