@@ -26,10 +26,23 @@ RB.MAXSEG   equ 8       ; la borne s'arrete la, et NOTRE ANNEAU AUSSI : un
                         ; septieme (childId 6) recule de 30 octets dans un
                         ; anneau de 32. Le huitieme lirait une position PLUS
                         ; RECENTE que la tete et se collerait devant elle.
-RB.NPASS    equ RB.MAXSEG-1        ; passagers par chaine (la tete est un OST)
+RB.NPASS    equ RB.MAXSEG-1        ; passagers derriere la tete
+RB.NSEG     equ RB.MAXSEG          ; slots par chaine : les passagers ET la tete
 RB.NCHAIN   equ 3                  ; haut, centre, bas
 RB.SLOTSZ   equ 5                  ; [vivant, x_pixel, y_pixel, routine(2)]
-RB.NSLOT    equ RB.NCHAIN*RB.NPASS
+RB.NSLOT    equ RB.NCHAIN*RB.NSEG
+
+; LA TETE PASSE PAR LE MEME CHEMIN QUE SA CHAINE (25/08/2026). Elle se
+; dessinait par le moteur (DisplaySprite) pendant que ses passagers passaient
+; par cette publication : deux chemins differents pour la meme grandeur, et
+; l'auteur voyait la tete decalee du reste — a n'importe quelle longueur de
+; chaine, donc un ecart CONSTANT, pas une erreur d'espacement (le releve
+; d'anneau donne six px reguliers partout).
+; Plutot que de faire coincider les deux calculs — le moteur convertit en ligne
+; dans BuildSprites, nous par DRS_XYToAddress, et les deux referentiels ne se
+; recouvrent pas trivialement — la tete se publie elle aussi, dans le dernier
+; slot de sa chaine. Un ecart residuel s'appliquerait alors a TOUT LE MONDE et
+; ne se verrait plus ; l'alignement interne est garanti par construction.
 
 ; slotMask (1, 2, 4) -> index de chaine (0, 1, 2). Une table de cinq octets
 ; coute moins qu'un decalage teste.
@@ -65,7 +78,7 @@ reboundmgr.SlotPtr
         ldx   #reboundmgr.chain.tbl
         abx
         ldb   ,x                       ; 0, 1 ou 2
-        lda   #RB.NPASS
+        lda   #RB.NSEG
         mul
         addb  childId,u
         adca  #0
@@ -201,6 +214,23 @@ reboundmgr.pubXY.hide
 ; qu'un objet et un renderer, la ou ils en coutaient huit.
 ;-------------------------------------------------------------------------------
 reboundmgr.publishChain
+        ; --- LA TETE, dans le dernier slot de sa chaine
+        ldd   x_pos,u
+        std   reboundmgr.px
+        ldd   y_pos,u
+        std   reboundmgr.py
+        ldd   image_set,u
+        std   reboundmgr.pset
+        ldb   slotMask,u
+        ldx   #reboundmgr.chain.tbl
+        abx
+        ldb   ,x
+        lda   #RB.NSEG
+        mul
+        addb  #RB.NPASS                ; le rang de la tete
+        jsr   reboundmgr.SlotPtrIdx
+        jsr   reboundmgr.pubXY
+        ; --- puis ses passagers
         lda   nbPass,u
         beq   reboundmgr.publishChain.rts
         sta   reboundmgr.n
@@ -254,11 +284,11 @@ reboundmgr.publishChain.diag
         ldd   64,x
 reboundmgr.publishChain.pub
         std   reboundmgr.pset
-        ldb   slotMask,u               ; le slot : chaine * RB.NPASS + k
+        ldb   slotMask,u               ; le slot : chaine * RB.NSEG + k
         ldx   #reboundmgr.chain.tbl
         abx
         ldb   ,x
-        lda   #RB.NPASS
+        lda   #RB.NSEG
         mul
         addb  reboundmgr.k
         jsr   reboundmgr.SlotPtrIdx
@@ -289,11 +319,11 @@ reboundmgr.clearChainFrom
         ldx   #reboundmgr.chain.tbl
         abx
         ldb   ,x
-        lda   #RB.NPASS
+        lda   #RB.NSEG
         mul
         addb  reboundmgr.k
         jsr   reboundmgr.SlotPtrIdx    ; Y = le premier slot a eteindre
-        lda   #RB.NPASS
+        lda   #RB.NSEG
         suba  reboundmgr.k
         beq   reboundmgr.clearChainFrom.rts
         sta   reboundmgr.n

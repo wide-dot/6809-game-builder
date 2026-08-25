@@ -630,8 +630,7 @@ RunHorizontalLaser.forward
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u            
 
-        jsr   reboundmgr.publishChain  ; les passagers, en une passe
-        jmp   DisplaySprite
+        jmp   reboundmgr.publishChain  ; la tete ET ses passagers, meme chemin
 
 Destroy
         pshs  x                        ; la chaine s'eteint : sans ca ses
@@ -958,8 +957,7 @@ RunDiagonalLaser.afterCollision
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u            
         
-        jsr   reboundmgr.publishChain  ; les passagers, en une passe
-        jmp   DisplaySprite
+        jmp   reboundmgr.publishChain  ; la tete ET ses passagers, meme chemin
 
 InitExplosion
         ; LE SPLIT EST RETIRE (25/08/2026). Il promouvait le troisieme segment
