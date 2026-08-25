@@ -68,6 +68,18 @@ missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 *                  rend D = le x de carte de la premiere cellule destructible
 *                  a DROITE du senseur, 0 si aucune.
 *                  `ldx stage.gum.hook / jsr 3,x`
+*   +6  RECTANGLE  [x] = le coin haut-gauche du bloc au DEPART (x de carte),
+*                  [y] = le meme x a l'ARRIVEE,
+*                  [b] = la ligne ecran du haut,
+*                  [a] = la taille du bloc, quartet HAUT = largeur, BAS =
+*                        hauteur, en cellules ($12 = le beam, $44 = le pod).
+*                  Efface la surface BALAYEE par le bloc entre les deux points.
+*                  Les bords sont rabotes au champ, pas refuses.
+*                  Pour une arme qui CREUSE au lieu de mourir sur la premiere
+*                  cellule. Le depart et l'arrivee sont ce qui rend la
+*                  compensation de trames gratuite : la reunion des passes
+*                  d'une trame est un seul rectangle, quel qu'en soit le
+*                  nombre.
 *
 * POURQUOI DEUX ENTREES (25/08/2026). Sonder a la position courante une fois
 * par trame ne marche pas a bas regime : le tir simple avance de 6*frameDrop

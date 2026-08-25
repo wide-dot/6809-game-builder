@@ -111,3 +111,102 @@ pscroll.grow.x   fdb 0
 pscroll.grow.row fcb 0
 
         INCLUDE "src/stages/04/pscroll-divtables.asm"
+
+; -----------------------------------------------------------------------------
+; pscroll.sweep — EFFACER LE RECTANGLE BALAYE ENTRE DEUX POINTS
+; -----------------------------------------------------------------------------
+; input REG : [x] le x de carte du coin haut-gauche du bloc au DEPART,
+;             [y] le meme x a l'ARRIVEE, [b] la ligne ecran du HAUT,
+;             [a] la taille du bloc : quartet HAUT = largeur, BAS = hauteur,
+;                 en cellules ($12 = 1x2 pour le beam, $44 = 4x4 pour le pod)
+;
+; La porte d'entree EN PIXELS de pscroll.clearRect, dont le contrat est en
+; cellules — le code objet, lui, ne connait que des pixels et vit dans une
+; autre page. La surface couverte est le rectangle balaye par le bloc entre
+; les deux points, soit [gauche .. droite+largeur-1] x [haut .. haut+hauteur-1].
+;
+; POURQUOI CETTE FORME. Le Wave Cannon de la borne (0x40:323B) efface CX
+; grappes en avancant d'une cellule par grappe, soit une bande de deux rangees
+; sur CX+1 colonnes, REFAITE A CHAQUE TICK. Deux bandes consecutives ne
+; different que d'une colonne au bout : leur reunion EST une bande. On demande
+; donc la reunion d'un coup, du depart au bout de la portee — un appel par
+; trame, quel que soit le nombre de trames sautees, sans boucle de rattrapage.
+; C'est la raison d'etre de clearRect (« les armes passent un depart et une
+; arrivee, elles ne portent pas de grille », arbitrage auteur du 23/08).
+;
+; LES BORDS SONT RABOTES, PAS REFUSES. pscroll.point rend la main des qu'un
+; point sort du ruban : c'est bon pour UN point, ce serait absurde ici — un
+; beam a cheval sur le bord perdrait tout son effacement. Les deux x sont donc
+; ramenes dans le ruban.
+;
+; La conversion est REECRITE ici plutot que partagee avec pscroll.point : ce
+; dernier est le chemin chaud du stage (la trainee de cytron, 42,7 % du temps
+; machine avant optimisation), et lui imposer deux jsr de plus par appel
+; couterait plus que ne coute cette vingtaine d'octets.
+; -----------------------------------------------------------------------------
+pscroll.sweep
+        stb   pscroll.sweep.line
+        tfr   a,b                      ; le quartet bas : la hauteur
+        andb  #$0F
+        stb   pscroll.rect.h
+        lsra                           ; le quartet haut : la largeur
+        lsra
+        lsra
+        lsra
+        sta   pscroll.rect.w
+        tfr   x,d
+        bsr   pscroll.sweep.col
+        stx   pscroll.rect.c0
+        tfr   y,d
+        bsr   pscroll.sweep.col
+        stx   pscroll.rect.c1
+        ldb   pscroll.sweep.line
+        bsr   pscroll.sweep.row
+        stb   pscroll.rect.r0
+        stb   pscroll.rect.r1
+        jmp   pscroll.clearRect
+
+; [d] un x de carte -> [x] la colonne, RABOTEE au ruban
+pscroll.sweep.col
+        subd  pscroll.ribbon.x0
+        bhs   pscroll.sweep.col.in
+        clra                           ; a gauche du ruban : on colle au bord
+        clrb
+pscroll.sweep.col.in
+        cmpd  #pscroll.CELL_W*54
+        blo   pscroll.sweep.col.ok
+        ldd   #pscroll.CELL_W*54-1     ; a droite : on colle a l'autre bord
+pscroll.sweep.col.ok
+        subd  #8                       ; le bord du viewport, cf. pscroll.point
+        bhs   pscroll.sweep.col.div
+        clra
+        clrb
+pscroll.sweep.col.div
+        addb  pscroll.ribbon.rem       ; 0..153 + 0..2, pas de retenue dans A
+        ldx   #pscroll.div3.tbl
+        abx
+        ldb   ,x
+        ldx   pscroll.ribbon.cell      ; la colonne du bord du ruban
+        abx                            ; ... plus la notre
+        rts
+
+; [b] une ligne ecran -> [b] la rangee, RABOTEE au champ
+pscroll.sweep.row
+        subb  #field.VP_Y
+        bhs   pscroll.sweep.row.in
+        clrb                           ; au-dessus du champ : premiere rangee
+pscroll.sweep.row.in
+        cmpb  #pscroll.div6.SIZE-1     ; la table a une fin, et deux armes
+        blo   pscroll.sweep.row.tbl    ; l'adressent maintenant
+        ldb   #pscroll.div6.SIZE-1
+pscroll.sweep.row.tbl
+        ldx   #pscroll.div6.tbl
+        abx
+        ldb   ,x
+        cmpb  #pscroll.ROWS
+        blo   pscroll.sweep.row.ok
+        ldb   #pscroll.ROWS-1          ; sous le champ : derniere rangee
+pscroll.sweep.row.ok
+        rts
+
+pscroll.sweep.line fcb 0

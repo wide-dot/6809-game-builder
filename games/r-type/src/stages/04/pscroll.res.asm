@@ -21,6 +21,7 @@ pscroll.gum.grow     EXPORT
 pscroll.gum.erase    EXPORT              ; le crochet du stage : les armes du
                                         ; joueur mangent le champ
 pscroll.gum.vectors  EXPORT              ; ... et le designent par CETTE table
+pscroll.gum.sweep    EXPORT              ; l'effacement en rectangle (le beam)
 pscroll.half.on      EXPORT              ; l'init de la part cartouche en a
 pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
 
@@ -46,6 +47,7 @@ pscroll.clearCell  EXTERNAL
 pscroll.clearRect  EXTERNAL
 pscroll.grow       EXTERNAL
 pscroll.erase      EXTERNAL
+pscroll.sweep      EXTERNAL
 paged.call         EXTERNAL
 
  SECTION code
@@ -200,6 +202,17 @@ pscroll.gum.rect
         jsr   pscroll.clearRect
         bra   pscroll.gum.leave
 
+; input REG : [x] le x de carte a gauche, [y] a droite, [b] la ligne du haut,
+;             [a] la hauteur en cellules
+; C'est LUI que l'entree +6 de la table designe. A EST POUSSE AUSSI : gum.enter
+; s'en sert pour monter la page, il ne survivrait pas au trajet.
+pscroll.gum.sweep
+        pshs  u,y,dp,a,b
+        bsr   pscroll.gum.enter
+        puls  a,b
+        jsr   pscroll.sweep
+        bra   pscroll.gum.leave
+
 ; input REG : [x] le x en px de CARTE, [b] la ligne ecran
 pscroll.gum.grow
         pshs  u,y,dp,b
@@ -213,8 +226,9 @@ pscroll.gum.grow
 ; src/common/state/variables.asm ; ne pas changer l'ORDRE, `jsr [stage.gum.hook]`
 ; tombe sur la premiere entree.
 pscroll.gum.vectors
-        jmp   pscroll.gum.erase        ; +0 : effacer
+        jmp   pscroll.gum.erase        ; +0 : effacer une cellule
         jmp   pscroll.gum.scanRight    ; +3 : chercher
+        jmp   pscroll.gum.sweep        ; +6 : effacer un rectangle
 
 ; ---------------------------------------------------------------------------
 ; pscroll.gum.scanRight — la premiere gomme A DROITE du senseur

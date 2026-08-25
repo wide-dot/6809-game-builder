@@ -51,6 +51,13 @@ L = [
     "; ****************************************************************************",
     "",
 ]
+L += [
+    "; La taille est EXPORTEE : pscroll.sweep borne son index avant de lire, les",
+    "; armes qui l'appellent ne garantissent pas toutes leur plage.",
+    f"pscroll.div3.SIZE equ {COL_SPAN}",
+    f"pscroll.div6.SIZE equ {ROW_SPAN}",
+    "",
+]
 L += bloc("pscroll.div3.tbl", COL_SPAN, CELL_W, None)
 L.append("")
 L += bloc("pscroll.div6.tbl", ROW_SPAN, CELL_H, None)

@@ -1000,8 +1000,10 @@ stage.gameOver
 ; pose le sien. Un stage sans couche destructible paie un jsr indirect vers ce
 ; rts, une douzaine de cycles par trame compensee et par tir.
 stage.gum.none
-        jmp   >@erase                ; +0 : effacer
-@scan   ldd   #0                     ; +3 : chercher -> aucune cible sur la ligne
+        jmp   >@erase                ; +0 : effacer une cellule
+        jmp   >@scan                 ; +3 : chercher -> aucune cible sur la ligne
+        jmp   >@erase                ; +6 : effacer un rectangle -> rien
+@scan   ldd   #0
         rts
 @erase  orcc  #$04                   ; Z = 1 : RIEN n'a ete detruit. Un simple
         rts                          ; `rts` laissait le Z de l'appelant, et

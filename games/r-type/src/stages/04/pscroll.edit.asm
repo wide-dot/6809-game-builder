@@ -17,6 +17,7 @@
 pscroll.stage4.init EXPORT
 pscroll.grow        EXPORT
 pscroll.erase       EXPORT
+pscroll.sweep       EXPORT              ; l'effacement en rectangle, en pixels
 pscroll.move        EXPORT              ; la trame residente l'appelle par page
 pscroll.gum.map     EXTERNAL            ; la carte des gommes, RESIDENTE :
                                         ; elle est aussi le plan arriere de la

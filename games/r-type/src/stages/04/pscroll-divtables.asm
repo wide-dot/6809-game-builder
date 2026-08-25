@@ -9,6 +9,11 @@
 ; son origine), la seconde n/6 sur 0..191 (une ligne dans le champ).
 ; ****************************************************************************
 
+; La taille est EXPORTEE : pscroll.sweep borne son index avant de lire, les
+; armes qui l'appellent ne garantissent pas toutes leur plage.
+pscroll.div3.SIZE equ 176
+pscroll.div6.SIZE equ 192
+
 pscroll.div3.tbl
         fcb   0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5
         fcb   5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10
