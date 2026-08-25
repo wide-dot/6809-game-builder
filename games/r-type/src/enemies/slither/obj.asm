@@ -105,6 +105,11 @@ slither.mInst     equ ext_variables+10   ; 10,11 le bloc d'instance pris a la
 slither.mTailD    equ ext_variables+12   ; 12   le retard de la QUEUE : 92
                                          ;      (script court) ou 146 (long)
 slither.mTailDone equ ext_variables+13   ; 13   1 = la queue est posee
+slither.mCasc     equ ext_variables+15   ; 15   1 = une cascade court. Sans
+                                         ;      lui il faudrait balayer les
+                                         ;      records pour le savoir, et on
+                                         ;      le fait desormais PLUSIEURS
+                                         ;      fois par trame.
 slither.mHeadC    equ ext_variables+14   ; 14   le drapeau de cascade de la
                                          ;      TETE : 1 quand elle meurt au
                                          ;      tir (40:7c50). Le record de
@@ -358,6 +363,7 @@ slither.MasterInit
         stb   slither.mTailD,u
         clr   slither.mTailDone,u
         clr   slither.mHeadC,u           ; aucune cascade en cours
+        clr   slither.mCasc,u
         ; --- le maitre ne dessine rien --------------------------------------
         clr   priority,u
         clr   render_flags,u           ; coordonnees ECRAN, comme l'outslay
@@ -529,8 +535,27 @@ slither.MasterLive
         ldb   slither.mTailD,u
         jsr   slither.SpawnFollower
 @tail
-        ; --- 3ter) la CASCADE DE MORT, un cran par trame --------------------
+        ; --- 3ter) LA CASCADE DE MORT, au rythme du JEU ---------------------
+        ; L'arcade propage le drapeau d'UN segment par trame, et espace deux
+        ; explosions voisines de QUATRE trames : une chaine de quinze s'eteint
+        ; en ~60 trames, soit ~1,1 s a 55 Hz. Ces deux horloges sont des
+        ; horloges de JEU. Tournant par trame RENDUE — sept fois plus lentes
+        ; ici — le chapelet mettait une dizaine de secondes (constat auteur).
+        ; On rejoue donc la passe autant de fois qu'il s'est ecoule de trames,
+        ; et le compte a rebours descend du meme pas (voir slither.Walk).
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb                           ; miroir du garde de runByFrameDrop
+!       stb   slither.wDrop
+        lda   slither.mCasc,u
+        beq   @nocasc
+        ldb   slither.wDrop
+@cloop  pshs  b
         jsr   slither.Cascade
+        puls  b
+        decb
+        bne   @cloop
+@nocasc
         ; --- 4) la marche des records --------------------------------------
         ; (slither.mPhase ne sert plus : la collision est systematique)
         jsr   slither.Walk
@@ -718,11 +743,13 @@ slither.Walk
         jsr   slither.RecPtrB
         lda   slither.RD,x
         beq   @nodelay
-        deca
+        suba  slither.wDrop            ; il compte des trames de JEU
+        bhi   @encore                  ; strictement positif : il vole encore
+        clra                           ; echu (ou depasse) : on borne a zero
         sta   slither.RD,x
-        bne   @nodelay
-        jsr   slither.RecCorpse        ; echu : le cadavre part sur son script
+        jsr   slither.RecCorpse        ; le cadavre part sur son script
         lbra  @next
+@encore sta   slither.RD,x
 @nodelay
         lda   slither.RC,x
         cmpa  #1
@@ -813,12 +840,8 @@ slither.Walk
         ; avance son horloge de frameDrop.count pendant le drain. Le vol libre
         ; n'appliquait sa vitesse QU'UNE FOIS par appel d'objet — sur une
         ; machine qui laisse tomber une trame sur deux, un cadavre partait
-        ; deux fois trop lentement. Meme garde que runByFrameDrop : un compte
-        ; nul vaut un.
-        ldb   gfxlock.frameDrop.count
-        bne   >
-        incb
-!       stb   slither.wDrop
+        ; deux fois trop lentement. slither.wDrop est pose par MasterLive,
+        ; juste avant la cascade, et sert aux deux.
         ; La compensation se fait SANS BOUCLE : position += vitesse x n en
         ; deux mul par axe, a temps constant. Deux choses la rendent courte.
         ; D'abord le signe se traite tout seul — le produit tronque a 16 bits
@@ -1041,6 +1064,7 @@ slither.RecExplode
         jsr   slither.RecPtrB
         lda   #2
         sta   slither.RC,x
+        sta   slither.mCasc,u          ; la cascade demarre (U = le maitre)
         ldb   #slither_body_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
@@ -1248,9 +1272,20 @@ slither.FollowerLive
 @tnow   lda   #1
         bra   @tcorpse
 @counting
-        dec   slither.fDelayC,u
-        bne   @nocasc
-        lda   #2                       ; echu : le cadavre part sur son script
+        ; meme horloge de JEU que les records : elle descend du frame-drop
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       lda   slither.fDelayC,u
+        pshs  b
+        suba  ,s+
+        bhi   @encore
+        clra
+        sta   slither.fDelayC,u
+        bra   @echu
+@encore sta   slither.fDelayC,u
+        bra   @nocasc
+@echu   lda   #2                       ; echu : le cadavre part sur son script
 @tcorpse
         jsr   slither.TailCorpse
         lbra  @die
@@ -1272,6 +1307,7 @@ slither.FollowerLive
         ldx   slither.fMaster,u        ; valide : on vient de le lire ce tour
         lda   #1
         sta   slither.mHeadC,x
+        sta   slither.mCasc,x          ; la cascade demarre
         ldb   #slither_head_scoreIdx   ; 7c50 : la tete vaut plus que son corps
         bra   @dscore
 @dtail  ldb   #slither_body_scoreIdx   ; 7c77 : la queue compte comme un corps
