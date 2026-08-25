@@ -60,9 +60,65 @@ power_level       equ ext_variables+11 ; 1 byte
 
 Object
         lda   routine,u
+        cmpa  #rtnid.RunFloating
+        blo   ForcePodDispatch         ; Init : la position n'est pas encore posee
+        cmpa  #rtnid.Dormant
+        bhs   ForcePodDispatch         ; en sommeil : le pod n'est pas dans le champ
+        pshs  a
+        bsr   ForcePodGumSweep
+        puls  a
+ForcePodDispatch
         asla
         ldx   #Routines
         jmp   [a,x]
+
+; ---------------------------------------------------------------------------
+; ForcePodGumSweep — le pod LABOURE la couche destructible
+; ---------------------------------------------------------------------------
+; arcade : erase_green_ball_block4x4_stage4 0x40:2702, appele par les TROIS
+; etats du pod (0x2534 flottant, 0x259F accroche, 0x262F ejecte) A CHAQUE
+; TRAME. La borne y pose quatre grappes 2x2 aux quatre coins (+-8,+-8), qui se
+; recouvrent : la surface reelle est un bloc de 4x4 cellules centre sur le pod.
+; « Le pod n'est jamais detruit : sa portee est infinie, il laboure. »
+;
+; UN SEUL APPEL, ICI. Les trois etats convergent sur ce dispatch, et le
+; balayage part de la position de la TRAME PRECEDENTE : le segment couvert est
+; donc exactement le trajet du pod pendant la trame, deplacement de la camera
+; compris. C'est ce qui rend la compensation gratuite — le pod peut avoir
+; parcouru quatre cellules pendant que l'ecran n'en affichait qu'une, la
+; surface balayee est la meme et le cout aussi.
+;
+; V2-DEVIATION: la borne balaie aussi en Y (le bloc suit le pod qui suit le
+; vaisseau). Ici la rangee est celle de l'ARRIVEE seule : le bloc fait quatre
+; rangees, soit 24 px, et la derive verticale d'une trame en vaut huit au pire
+; — elle tient dans le bloc. Le balayage reste sur le chemin rapide de
+; clearRect (r0 == r1), celui qui ne parcourt pas le segment.
+; V2-DEVIATION: la garde d'entree arcade (pos_x >= 0x140, le pod a gauche de la
+; bande visible) n'est pas reprise : pscroll.sweep rabote deja ses deux bords
+; sur le ruban.
+; ---------------------------------------------------------------------------
+ForcePodGumSweep
+        ldd   stage.gum.hook
+        addd  #6                       ; +6 : effacer un rectangle balaye
+        std   @call
+        ldd   x_pos,u
+        ldy   gum_prev_x               ; le depart : la trame d'avant
+        std   gum_prev_x
+        subd  #6                       ; le coin haut-gauche : deux cellules a
+        tfr   d,x                      ; gauche du centre
+        leay  -6,y
+        ldb   y_pos+1,u
+        subb  #12                      ; ... et deux rangees au-dessus
+        bhs   >
+        clrb                           ; le pod colle au haut du champ
+!       lda   #$44                     ; bloc 4 x 4 cellules
+        jsr   >0
+@call   equ   *-2
+        rts
+
+; La position du pod a la trame precedente. Il n'y a qu'UN pod : c'est une
+; variable d'unite, comme rotation ou target_x_pos juste en dessous.
+gum_prev_x        fdb   0
 
 Routines
         fdb   Init
@@ -152,6 +208,9 @@ Init
         jsr   checkForcePodUpdate                
         jsr   UpdateCollisionBox
 
+        ldd   x_pos,u                   ; amorcer le balayage de gommes : sans ca
+        std   gum_prev_x                ; le premier partirait de la position que
+                                        ; le pod avait a sa vie precedente
         inc   routine,u                      
         rts
 
@@ -717,7 +776,8 @@ RunAttached
         ; enemy contact is applied by the shared, frame-drop-gated WeaponContactTick
         ; (collision phase, main.asm) — arcade: pod+bits share one 1/16-frame gate.
 
-        ; TODO clear green balls of level 4
+        ; L'effacement du champ de gommes n'est PAS ici : il est pose une fois
+        ; pour les trois etats, en tete du dispatch (ForcePodGumSweep).
 
         lda   joypad.pressed.fire
         anda  #joypad.0.B
