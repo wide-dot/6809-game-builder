@@ -997,13 +997,20 @@ slither.RecExplode
         beq   @gone
         _ldd  ObjID_explosion,explosion.subtype.smallx2
         std   id,x
-        ; la frontiere : l'explosion vit en coordonnees PLAYFIELD
-        lda   slither.wPx
-        clrb
+        ; FRONTIERE : l'explosion vit en PLAYFIELD, nous en ECRAN. La forme
+        ; est celle de l'outslay (outslay/obj.asm) : l'octet de position part
+        ; dans B — pas dans A, sinon il vaut 256 fois trop — et le cadre se
+        ; retranche sur les DEUX axes avant d'ajouter la camera. Ecrit a
+        ; l'envers, l'explosion naissait a des milliers de pixels et ne se
+        ; voyait jamais (constat auteur : « ni explosion ni chapelet »).
+        ldb   slither.wPx
+        clra
+        subd  #screen_left
         addd  glb_camera_x_pos
         std   x_pos,x
-        clra
         ldb   slither.wPy
+        clra
+        subd  #screen_top
         std   y_pos,x
 @gone   jsr   slither.RecRetire
         rts
@@ -1183,12 +1190,14 @@ slither.FollowerLive
         beq   @die
         _ldd  ObjID_explosion,explosion.subtype.smallx2
         std   id,x
-        lda   x_pixel,u
-        clrb
+        ldb   x_pixel,u                ; meme frontiere, voir slither.RecExplode
+        clra
+        subd  #screen_left
         addd  glb_camera_x_pos
         std   x_pos,x
-        clra
         ldb   y_pixel,u
+        clra
+        subd  #screen_top
         std   y_pos,x
 @die    _Collision_RemoveAABB slither.fAABB,AABB_list_ennemy
         lda   #2
@@ -1389,12 +1398,14 @@ slither.CorpseLive
         beq   @gone
         _ldd  ObjID_explosion,explosion.subtype.smallx2
         std   id,x
-        lda   x_pixel,u                ; l'explosion vit en PLAYFIELD
-        clrb
+        ldb   x_pixel,u                ; meme frontiere, voir slither.RecExplode
+        clra
+        subd  #screen_left
         addd  glb_camera_x_pos
         std   x_pos,x
-        clra
         ldb   y_pixel,u
+        clra
+        subd  #screen_top
         std   y_pos,x
 @gone   _Collision_RemoveAABB slither.dAABB,AABB_list_ennemy
         lda   #2
