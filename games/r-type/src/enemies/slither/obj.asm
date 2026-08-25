@@ -759,17 +759,31 @@ slither.Walk
 ; L'arcade avance image_id d'UN par trame et indexe (image_id & 0x1E) * 3 sur
 ; un pas de six octets — soit une pose toutes les DEUX trames, et seulement
 ; les seize premieres, celles de la famille rotation.
-@drift  ldd   slither.RX,x
+@drift
+        ; LA COMPENSATION DE FRAME-DROP. Tout le reste de la chaine l'a : le
+        ; maitre passe par moveByScript.runByFrameDrop pendant le script et
+        ; avance son horloge de frameDrop.count pendant le drain. Le vol libre
+        ; n'appliquait sa vitesse QU'UNE FOIS par appel d'objet — sur une
+        ; machine qui laisse tomber une trame sur deux, un cadavre partait
+        ; deux fois trop lentement. Meme garde que runByFrameDrop : un compte
+        ; nul vaut un.
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       stb   slither.wDrop
+@dloop  ldd   slither.RX,x
         addd  slither.RVX,x
         std   slither.RX,x
-        lda   slither.RX,x             ; l'octet haut est le pixel
-        sta   slither.wPx
         ldd   slither.RY,x
         addd  slither.RVY,x
         std   slither.RY,x
+        inc   slither.RP,x             ; le vrillage est une horloge, lui aussi
+        dec   slither.wDrop
+        bne   @dloop
+        lda   slither.RX,x             ; l'octet haut est le pixel
+        sta   slither.wPx
         lda   slither.RY,x
         sta   slither.wPy
-        inc   slither.RP,x
         lda   slither.RP,x
         anda  #$1E
         lsra
@@ -784,7 +798,7 @@ slither.Walk
         lda   slither.wPy
         suba  #screen_top
         cmpa  #screen_bottom-screen_top
-        bls   @img
+        lbls  @img                     ; la boucle de rattrapage a eloigne @img
 @gone   jsr   slither.RecRetire
 @next
         inc   slither.wN
@@ -800,6 +814,7 @@ slither.wIdx    fcb 0
 slither.wPx     fcb 0
 slither.wPy     fcb 0
 slither.wPose   fcb 0
+slither.wDrop   fcb 0                  ; trames a rattraper dans le vol libre
 
 ; B = rang -> X = la boite. (Le maitre est en U, la zone est residente.)
 slither.BoxPtrB
@@ -1254,18 +1269,26 @@ slither.CorpseLive
         lda   slither.dMode,u
         cmpa  #2
         beq   @script
-        ; --- mode 1 : la balistique et le vrillage --------------------------
-        ldd   slither.dPX,u
+        ; --- mode 1 : la balistique et le vrillage, frame-drop compense -----
+        ; Le mode 2 l'est deja par construction (runByFrameDrop) ; celui-ci
+        ; doit le faire a la main, sinon le cadavre derive au ralenti.
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       stb   slither.wDrop
+@bloop  ldd   slither.dPX,u
         addd  slither.dVX,u
         std   slither.dPX,u
-        lda   slither.dPX,u
-        sta   x_pixel,u
         ldd   slither.dPY,u
         addd  slither.dVY,u
         std   slither.dPY,u
+        inc   slither.dSpin,u
+        dec   slither.wDrop
+        bne   @bloop
+        lda   slither.dPX,u
+        sta   x_pixel,u
         lda   slither.dPY,u
         sta   y_pixel,u
-        inc   slither.dSpin,u
         ldb   slither.dSpin,u
         andb  #$1E                     ; une pose toutes les DEUX trames,
         lsrb                           ; et seulement les seize premieres
