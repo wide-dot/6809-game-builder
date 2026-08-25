@@ -36,8 +36,13 @@ ObjID_slither_corpse equ 39
 * donc sur imgTail et pas sur la page du cast — d'ou un identifiant a lui,
 * Img_Page_Index n'en donnant qu'UNE par identifiant.
 ObjID_slither_tail_corpse equ 40
+* La TETE PENDANT SON FLASH DE COUP. Meme code, meme objet — seules ses
+* images changent, et elles vivent sur une autre page. Img_Page_Index n'en
+* donnant qu'UNE par identifiant, l'objet BASCULE d'identifiant le temps
+* d'une trame. Meme motif que le cadavre de la queue ci-dessus.
+ObjID_slither_head_hit equ 41
 
-objid.count equ 40
+objid.count equ 41
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

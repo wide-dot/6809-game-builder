@@ -119,6 +119,8 @@ slither.fAABB     equ ext_variables+3    ; 3..11
 slither.fMode     equ ext_variables+12   ; 12   0 = dans la chaine, 1 = compte
                                          ;      a rebours du chapelet
 slither.fDelayC   equ ext_variables+13   ; 13   ce compte a rebours
+slither.fPrevP    equ ext_variables+14   ; 14   le potentiel du tour precedent
+slither.fBlink    equ ext_variables+15   ; 15   1 = flash de coup cette trame
 ; --- LE RENDERER GROUPE : son instance ---------------------------------------
 slither.rInst     equ ext_variables+0    ; 0,1  le bloc dont il dessine les slots
 
@@ -1055,9 +1057,12 @@ slither.Segment
         bne   slither.FollowerLive
         ; --- l'init : la boite, la priorite, le mode ecran ------------------
         _Collision_AddAABB slither.fAABB,AABB_list_ennemy
+        ; On teste la QUEUE, pas la tete : pendant son flash la tete porte
+        ; ObjID_slither_head_hit, et tout test « est-ce la tete ? » la
+        ; ferait basculer du cote de la queue.
         lda   id,u
-        cmpa  #ObjID_slither_head
-        bne   @queue
+        cmpa  #ObjID_slither_tail
+        beq   @queue
         lda   #slither_head_hitdamage
         sta   slither.fAABB+AABB.p,u
         _ldd  slither_head_hitbox_x,slither_head_hitbox_y
@@ -1066,6 +1071,9 @@ slither.Segment
         sta   slither.fAABB+AABB.p,u
         _ldd  slither_hitbox_x,slither_hitbox_y
 !       std   slither.fAABB+AABB.rx,u
+        lda   slither.fAABB+AABB.p,u
+        sta   slither.fPrevP,u
+        clr   slither.fBlink,u
         ldb   #6
         stb   priority,u
         clr   render_flags,u           ; coordonnees ECRAN
@@ -1104,6 +1112,27 @@ slither.FollowerLive
         cmpd  slither.mEndF,x
         lbge  @die
 @vivant
+        ; --- LE FLASH DE COUP ------------------------------------------------
+        ; L'arcade fait clignoter le segment touche douze trames, trois sur
+        ; quatre (40:7d22). A notre cadence une trame rendue vaut ~7 trames de
+        ; jeu : UNE trame blanche couvre donc deja la duree du clignotement
+        ; arcade, et le motif 3-sur-4 n'a plus de sens (decision auteur).
+        ; Le potentiel d'un SUIVEUR n'est pas rearme — pose une fois a l'init,
+        ; la passe de collision le decremente — il accumule donc vraiment les
+        ; degats, comme le +0x1f de l'arcade. Une BAISSE est un coup encaisse.
+        ; Seule la tete flashe : elle seule encaisse plusieurs coups (14
+        ; contre 6), un corps ou la queue meurt bien avant d'avoir pu flasher.
+        lda   id,u
+        cmpa  #ObjID_slither_tail
+        beq   @noflash
+        lda   slither.fAABB+AABB.p,u
+        beq   @noflash                 ; a zero : le chemin de mort s'en charge
+        cmpa  slither.fPrevP,u
+        bhs   @noflash
+        sta   slither.fPrevP,u
+        lda   #1
+        sta   slither.fBlink,u
+@noflash
         ; --- la position : l'anneau DE SON MAITRE, a (ecriture - 1 - retard)
         ; X porte l'OST du maitre, valide juste au-dessus : on y prend son
         ; bloc d'instance, donc SON anneau. Un suiveur qui lirait l'anneau
@@ -1136,11 +1165,20 @@ slither.FollowerLive
         andb  #$0F
         aslb
         lda   id,u
-        cmpa  #ObjID_slither_head
-        bne   >
-        ldx   #slither.HeadSets
+        cmpa  #ObjID_slither_tail
+        bne   @tete
+        ldx   #slither.TailSets
         bra   @set
-!       ldx   #slither.TailSets
+@tete   lda   slither.fBlink,u
+        beq   @normal
+        clr   slither.fBlink,u         ; une seule trame
+        lda   #ObjID_slither_head_hit  ; CE changement d'identifiant est ce qui
+        sta   id,u                     ; fait monter l'autre page d'images
+        ldx   #slither.HeadHitSets
+        bra   @set
+@normal lda   #ObjID_slither_head
+        sta   id,u
+        ldx   #slither.HeadSets
 @set    abx
         ldx   ,x
         stx   image_set,u
@@ -1191,8 +1229,8 @@ slither.FollowerLive
         beq   @dead
         jmp   DisplaySprite
 @dead   lda   id,u
-        cmpa  #ObjID_slither_head
-        bne   @dtail
+        cmpa  #ObjID_slither_tail
+        beq   @dtail
         ; 40:7c50 : la tete pose son drapeau AVANT de mourir. C'est le bit 0,
         ; celui qui detache toute la chaine — elle est la source de la cascade.
         ldx   slither.fMaster,u        ; valide : on vient de le lire ce tour
@@ -1674,6 +1712,19 @@ slither.TailSets
         fdb   set_slither_tail_10,set_slither_tail_11
         fdb   set_slither_tail_12,set_slither_tail_13
         fdb   set_slither_tail_14,set_slither_tail_15
+; Les seize poses BLANCHES de la tete. Elles vivent sur LEUR page — voir
+; stage5.cast.imgHeadHit dans le config — que seul ObjID_slither_head_hit
+; monte. C'est pourquoi l'objet change d'identifiant le temps du flash.
+slither.HeadHitSets
+        fdb   set_slither_headhit_0,set_slither_headhit_1
+        fdb   set_slither_headhit_2,set_slither_headhit_3
+        fdb   set_slither_headhit_4,set_slither_headhit_5
+        fdb   set_slither_headhit_6,set_slither_headhit_7
+        fdb   set_slither_headhit_8,set_slither_headhit_9
+        fdb   set_slither_headhit_10,set_slither_headhit_11
+        fdb   set_slither_headhit_12,set_slither_headhit_13
+        fdb   set_slither_headhit_14,set_slither_headhit_15
+
 slither.HeadSets
         fdb   set_slither_head_0,set_slither_head_1
         fdb   set_slither_head_2,set_slither_head_3

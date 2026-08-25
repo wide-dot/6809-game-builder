@@ -3236,6 +3236,26 @@
                     </lwasm>
                 </file>
 
+                <!-- Les seize poses BLANCHES de la tete : le flash de coup.
+                     L'arcade echange la palette de l'objet (40:7d22) ; la
+                     palette TO8 est globale au stage, donc on echange les
+                     IMAGES. Elles ne peuvent pas rejoindre imgHead (12 000
+                     octets pour 2 583 libres) et Img_Page_Index ne donne
+                     QU'UNE page d'images par ObjID : d'ou un direntry et un
+                     identifiant a elles, comme le cadavre de la queue. Le
+                     flash ne vise que la TETE — seule elle encaisse plusieurs
+                     coups (14 points contre 6), un corps meurt du premier. -->
+                <file name="stage5.cast.imgHeadHit" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgheadhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgHeadHit" gendir="gen/enemies/stage5-cast-imgheadhit"
+                                 gensource="gen/enemies/stage5-cast-imgheadhit/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgheadhit/index.asm">
+                            <images dir="src/enemies/slither/images/head_hit" names="slither_headhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- La QUEUE : seize poses de plus que la page du cast ne
                      pouvait porter (18 688 octets pour 16 384). Elle est
                      passee en suiveur a OST — comme le finalizer de
@@ -3304,6 +3324,7 @@
                     <load name="stage5.cast"/>
                     <load name="stage5.cast.imgHead"/>
                     <load name="stage5.cast.imgTail"/>
+                    <load name="stage5.cast.imgHeadHit"/>
                     <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
