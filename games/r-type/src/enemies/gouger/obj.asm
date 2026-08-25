@@ -123,6 +123,8 @@
 ;       UNE trame sur 64 — quand (+0x34 & $3F) vaut zero — ou il montre la
 ;       POSE 2 : un sursaut d'une trame. Seules les variantes a compte a
 ;       rebours sursautent ; celle qui guette le joueur ne passe jamais par la.
+;       Cette pose d'attente est chez nous une IMAGE A PART, la seule du gouger
+;       compilee avec sa variante pre-decalee d'un pixel : voir gouger.DrawIdle.
 ;       La collision, la mort et le recul sont deja actifs dans cette phase,
 ;       ainsi que la fenetre de visibilite (voir gouger.Frame). Il nait a
 ;       166, juste a droite du cadre : DANS la fenetre, qui s'arrete a 167 —
@@ -161,16 +163,23 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 46 demi-sprites compiles : 34 887 octets MESURES sur cinq pages, partagees
-;   avec le reste de l'arene. L'estimation par octet-par-pixel du serpent en
+; - 54 demi-sprites compiles : 46 968 octets MESURES sur six pages, partagees
+;   avec le reste de l'arene. Les huit derniers sont la pose d'attente, seule a
+;   porter ses deux variantes de decalage : +12 081 octets pour que le gouger
+;   ne tremble pas sur la roche. On pourrait en economiser la moitie — en
+;   attente, la moitie enfouie n'est jamais dessinee, sa pose d'attente ne sert
+;   donc a rien — au prix d'un cas particulier par direction. Garde entier tant
+;   que la page 22 reste libre. L'estimation par octet-par-pixel du serpent en
 ;   annoncait 11,7 Ko — trois fois moins : le cout d'un sprite compile suit le
 ;   REMPLISSAGE, pas la surface du cadre. Une entree de repertoire par
 ;   direction ET par moitie, le cast n'ayant pas la place.
 ; - un slot d'OST et un sprite de plus par gouger vivant. Trois gougers
 ;   simultanes releves, donc six sprites ; la passe en tient seize. A surveiller
 ;   quand wick et brood arriveront, pas avant.
-; - PAS de variante decalee d'un pixel, vu la taille des sprites — meme choix
-;   que pour l'outslay.
+; - PAS de variante decalee d'un pixel pour les poses d'ANIMATION, vu la taille
+;   des sprites — meme choix que pour l'outslay. Seule la pose d'attente en a
+;   une, et pour une raison precise : elle est la seule que le gouger tienne
+;   IMMOBILE sur un decor qui defile.
 ;*******************************************************************************
 
 ; -----------------------------------------------------------------------------
@@ -304,11 +313,11 @@ gouger.Hidden
         bra   @plonge
 @attend std   gouger.trig,u
         andb  #$3F                     ; le sursaut : une trame sur 64
-        bne   @pose1
-        ldb   #2
+        bne   @repos
+        ldb   #2                       ; le sursaut garde la pose ordinaire
         bra   @dessine
-@pose1  ldb   #1
-        bra   @dessine
+@repos  jsr   gouger.DrawIdle
+        jmp   DisplaySprite
 @regard ldb   gouger.var,u
         aslb
         ldx   #gouger.Compass
@@ -320,11 +329,10 @@ gouger.Hidden
         tfr   y,d
         cmpd  ,s++
         beq   @plonge
-        ldb   #1                       ; il guette : toujours la pose 1
-        bra   @dessine
+        bra   @repos                   ; il guette : la pose d'attente
 @plonge lda   #2
         sta   routine,u
-        ldb   #1
+        bra   @repos                   ; encore contre la paroi cette trame
 @dessine
         jsr   gouger.Draw
         jmp   DisplaySprite
@@ -516,7 +524,7 @@ gouger.Draw
         ldx   #gouger.HitSetsB
         abx
         ldx   ,x
-        bra   @enfant
+        bra   gouger.Child
 @normal pshs  b
         ldb   gouger.var,u
         aslb
@@ -544,9 +552,40 @@ gouger.Draw
         puls  b
         abx
         ldx   ,x
+        bra   gouger.Child
+
+; -----------------------------------------------------------------------------
+; LA POSE D'ATTENTE, et elle seule, porte la variante PRE-DECALEE d'un pixel.
+; Le gouger en attente est immobile sur un decor qui defile d'un pixel a la
+; fois : sans variante decalee le moteur replie sur la routine non decalee et
+; corrige la position d'un pixel (BSP_parityFallback), donc le gouger tremble
+; sur la roche une trame sur deux. Avec les deux variantes, il y est colle.
+; Les poses de l'ANIMATION restent non decalees, et c'est pourquoi l'attente
+; est une IMAGE SEPAREE plutot qu'un attribut de plus sur la pose 1 : melanger
+; dans un meme cycle des poses exactes et des poses calees sur la grille paire
+; ferait scintiller la reptation. Des que le gouger quitte sa cachette, cette
+; voie n'est plus empruntee.
+; Le sursaut d'une trame sur 64 garde la pose ordinaire : un ecart d'un pixel
+; le temps d'une trame, c'est exactement ce a quoi un sursaut ressemble.
+; -----------------------------------------------------------------------------
+gouger.DrawIdle
+        lda   gouger.blink,u
+        bne   gouger.Draw              ; le flash de coup passe par la voie
+        ldb   gouger.var,u             ; ordinaire, B ne lui sert pas
+        aslb
+        ldx   #gouger.IdleSets
+        abx
+        ldx   ,x
+        stx   image_set,u
+        ldb   gouger.var,u
+        aslb
+        ldx   #gouger.IdleSetsB
+        abx
+        ldx   ,x
 ; X = l'image de la moitie basse. On la depose chez l'enfant avec la position :
 ; il ne calcule rien, et les deux moities ne peuvent pas diverger d'une trame.
-@enfant ldy   gouger.child,u
+gouger.Child
+        ldy   gouger.child,u
         beq   @seul
         stx   image_set,y
         ldd   x_pos,u
@@ -676,6 +715,13 @@ gouger.SetsBLb
 gouger.SetsBRb
         fdb   set_gouger_br_b_0,set_gouger_br_b_1,set_gouger_br_b_2
         fdb   set_gouger_br_b_3
+; la pose d'attente, la seule a deux variantes de decalage
+gouger.IdleSets
+        fdb   set_gouger_idle_tl_h_0,set_gouger_idle_tr_h_0
+        fdb   set_gouger_idle_bl_h_0,set_gouger_idle_br_h_0
+gouger.IdleSetsB
+        fdb   set_gouger_idle_tl_b_0,set_gouger_idle_tr_b_0
+        fdb   set_gouger_idle_bl_b_0,set_gouger_idle_br_b_0
 gouger.HitSets
         fdb   set_gouger_hit_tl_h_0,set_gouger_hit_tr_h_0
         fdb   set_gouger_hit_bl_h_0,set_gouger_hit_br_h_0

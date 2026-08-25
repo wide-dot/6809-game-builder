@@ -2842,6 +2842,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougertlh/index.asm">
                             <images dir="src/enemies/gouger/images/half/tl/haut" names="gouger_tl_h"/>
                             <images dir="src/enemies/gouger/images/half/hit/tl/haut" names="gouger_hit_tl_h"/>
+                            <images dir="src/enemies/gouger/images/half/idle/tl/haut" names="gouger_idle_tl_h" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2854,6 +2855,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougertlb/index.asm">
                             <images dir="src/enemies/gouger/images/half/tl/bas" names="gouger_tl_b"/>
                             <images dir="src/enemies/gouger/images/half/hit/tl/bas" names="gouger_hit_tl_b"/>
+                            <images dir="src/enemies/gouger/images/half/idle/tl/bas" names="gouger_idle_tl_b" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2866,6 +2868,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougertrh/index.asm">
                             <images dir="src/enemies/gouger/images/half/tr/haut" names="gouger_tr_h"/>
                             <images dir="src/enemies/gouger/images/half/hit/tr/haut" names="gouger_hit_tr_h"/>
+                            <images dir="src/enemies/gouger/images/half/idle/tr/haut" names="gouger_idle_tr_h" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2878,6 +2881,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougertrb/index.asm">
                             <images dir="src/enemies/gouger/images/half/tr/bas" names="gouger_tr_b"/>
                             <images dir="src/enemies/gouger/images/half/hit/tr/bas" names="gouger_hit_tr_b"/>
+                            <images dir="src/enemies/gouger/images/half/idle/tr/bas" names="gouger_idle_tr_b" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2890,6 +2894,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougerblh/index.asm">
                             <images dir="src/enemies/gouger/images/half/bl/haut" names="gouger_bl_h"/>
                             <images dir="src/enemies/gouger/images/half/hit/bl/haut" names="gouger_hit_bl_h"/>
+                            <images dir="src/enemies/gouger/images/half/idle/bl/haut" names="gouger_idle_bl_h" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2902,6 +2907,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougerblb/index.asm">
                             <images dir="src/enemies/gouger/images/half/bl/bas" names="gouger_bl_b"/>
                             <images dir="src/enemies/gouger/images/half/hit/bl/bas" names="gouger_hit_bl_b"/>
+                            <images dir="src/enemies/gouger/images/half/idle/bl/bas" names="gouger_idle_bl_b" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2914,6 +2920,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougerbrh/index.asm">
                             <images dir="src/enemies/gouger/images/half/br/haut" names="gouger_br_h"/>
                             <images dir="src/enemies/gouger/images/half/hit/br/haut" names="gouger_hit_br_h"/>
+                            <images dir="src/enemies/gouger/images/half/idle/br/haut" names="gouger_idle_br_h" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2926,6 +2933,7 @@
                                  genindex="gen/enemies/stage2-cast-imggougerbrb/index.asm">
                             <images dir="src/enemies/gouger/images/half/br/bas" names="gouger_br_b"/>
                             <images dir="src/enemies/gouger/images/half/hit/br/bas" names="gouger_hit_br_b"/>
+                            <images dir="src/enemies/gouger/images/half/idle/br/bas" names="gouger_idle_br_b" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>

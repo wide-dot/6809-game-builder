@@ -38,6 +38,8 @@ MILIEU = HAUTEUR // 2
 # l'inverse de ce que le signe de vx laisse croire, c'est mesure.
 DIRECTIONS = (('top-left', 'tl'), ('top-right', 'tr'),
               ('bottom-left', 'bl'), ('bottom-right', 'br'))
+# la pose que la phase A montre en permanence — slot 1 du cycle arcade
+POSE_ATTENTE = '01.png'
 
 
 def coupe(src, dst, garder):
@@ -72,6 +74,20 @@ def main():
                 n += 1
             coupe(os.path.join(base, 'hit', court, '00.png'),
                   os.path.join(base, 'half', 'hit', court, moitie, '00.png'),
+                  moitie)
+            n += 1
+            # LA POSE D'ATTENTE, en double. C'est la meme image que la pose 1,
+            # mais elle est declaree a part pour porter shifts="0,1" : le gouger
+            # en attente est IMMOBILE sur le decor, qui defile d'un pixel a la
+            # fois. Sans variante pre-decalee, le moteur replie sur la routine
+            # non decalee et corrige la position d'un pixel (BSP_parityFallback)
+            # — le gouger tremble d'un pixel sur le decor, une trame sur deux.
+            # Les poses de l'ANIMATION restent non decalees : melanger des poses
+            # exactes et des poses calees sur la grille paire ferait scintiller
+            # le cycle de reptation. C'est pour ca que la pose d'attente est une
+            # image separee et pas un attribut de plus sur la pose 1.
+            coupe(os.path.join(base, long, POSE_ATTENTE),
+                  os.path.join(base, 'half', 'idle', court, moitie, '00.png'),
                   moitie)
             n += 1
     print('%d demi-images ecrites sous images/half/' % n)

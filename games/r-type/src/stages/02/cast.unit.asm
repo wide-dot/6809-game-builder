@@ -68,6 +68,14 @@ set_gouger_hit_tl_b_0  EXTERNAL
 set_gouger_hit_tr_b_0  EXTERNAL
 set_gouger_hit_bl_b_0  EXTERNAL
 set_gouger_hit_br_b_0  EXTERNAL
+set_gouger_idle_tl_h_0  EXTERNAL
+set_gouger_idle_tr_h_0  EXTERNAL
+set_gouger_idle_bl_h_0  EXTERNAL
+set_gouger_idle_br_h_0  EXTERNAL
+set_gouger_idle_tl_b_0  EXTERNAL
+set_gouger_idle_tr_b_0  EXTERNAL
+set_gouger_idle_bl_b_0  EXTERNAL
+set_gouger_idle_br_b_0  EXTERNAL
 gouger.Object    EXPORT
 gouger.Half      EXPORT
 wick.Object      EXPORT
