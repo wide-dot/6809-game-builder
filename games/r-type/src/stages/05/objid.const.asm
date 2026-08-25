@@ -14,8 +14,21 @@ ObjID_bossmusic equ 32
 * src/common/cast.const.asm et l'analyse des lots).
 ObjID_cancer equ 33
 ObjID_mid equ 34
+* Le serpent du stage 5. QUATRE identifiants pour un ennemi :
+*  - le MAITRE, qui interprete le script et ne dessine rien ;
+*  - la TETE et la QUEUE, suiveurs a OST — leurs imagesets vivent dans
+*    D'AUTRES direntries (stage5.cast.imgHead, stage5.cast.imgTail), et
+*    `Img_Page_Index` ne donne qu'UNE page par identifiant : un objet
+*    reparti sur plusieurs direntries en veut un par page (meme decoupe que
+*    ObjID_outslay_segment / ObjID_outslay_head) ;
+*  - le RENDERER GROUPE, qui dessine les quinze slots publies en un seul
+*    preambule BuildSprites.
+ObjID_slither equ 35
+ObjID_slither_head equ 36
+ObjID_slither_tail equ 37
+ObjID_slither_render equ 38
 
-objid.count equ 34
+objid.count equ 38
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

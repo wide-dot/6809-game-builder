@@ -131,6 +131,19 @@ outslay_hitbox_y	equ 12
 outslay_hitdamage	equ 1
 outslay_hitdamage_immune equ -128
 
+; slither (stage 5). Les boites arcade sont centrees : 1000:37c6 pour la tete
+; (f0 ff 10 00, soit -16..+16 sur les deux axes = 32x32) et 1000:37ce pour un
+; corps ou la queue (f6 ff 0a 00 = 20x20). Ramenees a l'echelle TO8 (3/8 en X,
+; 3/4 en Y) et exprimees en TAILLE PLEINE, comme le reste du fichier.
+; Le hitdamage porte les PV, que la passe de collision decremente :
+; 0x0E (14) pour la tete d'apres head_ctor, 6 pour le corps et la queue.
+slither_hitbox_x	equ 8
+slither_hitbox_y	equ 15
+slither_hitdamage	equ 6
+slither_head_hitbox_x	equ 12
+slither_head_hitbox_y	equ 24
+slither_head_hitdamage	equ 14
+
 ; Le bydo shot de la salve en etoile. Sa boite est la SIENNE (1000:4196,
 ; fc ff 04 00 fc ff 04 00 = rayon 4 sur les deux axes), le double du bullet
 ; commun (1000:84c6, rayon 2) qu'on lui pretait jusqu'ici.

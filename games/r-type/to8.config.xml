@@ -3220,9 +3220,59 @@
                     </lwasm>
                 </file>
 
+                <!-- La TETE du serpent : 36x54 en TO8 contre 12x24 pour un
+                     corps — elle ne tient pas dans le direntry du cast. Les
+                     seize `set_slither_head_*` franchissent donc la frontiere :
+                     16 references de lien, resolues au chargement (cf.
+                     symbols.md). Meme decoupe que stage2.cast.imgHead. -->
+                <file name="stage5.cast.imgHead" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imghead.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgHead" gendir="gen/enemies/stage5-cast-imghead"
+                                 gensource="gen/enemies/stage5-cast-imghead/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imghead/index.asm">
+                            <images dir="src/enemies/slither/images/head" names="slither_head"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
 
+                <!-- La QUEUE : seize poses de plus que la page du cast ne
+                     pouvait porter (18 688 octets pour 16 384). Elle est
+                     passee en suiveur a OST — comme le finalizer de
+                     l'outslay — donc son art a son direntry et son ObjID. -->
+                <file name="stage5.cast.imgTail" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgtail.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgTail" gendir="gen/enemies/stage5-cast-imgtail"
+                                 gensource="gen/enemies/stage5-cast-imgtail/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgtail/index.asm">
+                            <images dir="src/enemies/slither/images/tail" names="slither_tail"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
 
+                <!-- La zone residente du serpent : membre d'arene, charge en
+                     zeros par la scene (voir slither/res.unit.asm). -->
+                <file name="stage5.slither.res" linkdata="LINK" arena="stage5.res">
+                    <lwasm gensource="gen/stages/05/slither-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/slither/res.unit.asm"/>
+                    </lwasm>
+                </file>
 
+                <!-- Cast du stage 5 : un direntry pour tout le cast. Seul le
+                     slither est implemente ; le reste tombe sur le bouchon. -->
+                <file name="stage5.cast" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/05/cast.unit.asm"/>
+                        <gfxcomp file="stage5.cast" gendir="gen/enemies/stage5-cast"
+                                 gensource="gen/enemies/stage5-cast/includes.asm"
+                                 genindex="gen/enemies/stage5-cast/index.asm">
+                            <images dir="src/enemies/slither/images/body" names="slither_body"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
 
                 <file name="stage5" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/05/stage05-main.asm">
@@ -3251,6 +3301,10 @@
                 </file>
 
                 <scene name="scenes.stage5" section="SCENE" gensource="gen/scenes/stage5.asm">
+                    <load name="stage5.cast"/>
+                    <load name="stage5.cast.imgHead"/>
+                    <load name="stage5.cast.imgTail"/>
+                    <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
                     <load name="stage5.maps"/>

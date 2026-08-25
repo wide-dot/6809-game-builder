@@ -41,3 +41,19 @@ ref_1930A	fdb   ref_19CE4 ; bug
                 fdb   ref_1A000 ; cytron variante 10
                 fdb   ref_1A046 ; cytron variante 11
                 fdb   ref_1A086 ; cytron variantes 12 a 15
+                fdb   ref_1A0C2 ; slither variante 0
+                fdb   ref_1A0EA ; slither variante 1
+                fdb   ref_1A112 ; slither variante 2
+                fdb   ref_1A142 ; slither variante 3
+                fdb   ref_1A1AE ; slither variante 4
+                fdb   ref_1A1F2 ; slither variante 5
+                fdb   ref_1A236 ; slither variante 6
+                fdb   ref_1A290 ; slither variante 7
+                fdb   ref_1A308 ; slither variante 8 (8 a 15 partagent le meme script)
+                fdb   ref_1A308 ; slither variante 9
+                fdb   ref_1A308 ; slither variante 10
+                fdb   ref_1A308 ; slither variante 11
+                fdb   ref_1A308 ; slither variante 12
+                fdb   ref_1A308 ; slither variante 13
+                fdb   ref_1A308 ; slither variante 14
+                fdb   ref_1A308 ; slither variante 15
