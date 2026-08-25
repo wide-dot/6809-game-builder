@@ -146,15 +146,14 @@ palette par objet).
 | 11 | palette par objet (0x3D) | absente | moteur |
 | 12 | SFX 0x3B tir + rebond (segment 2) | absent | moteur |
 | 13 | pas de fenêtre de collision réduite | `isInCollisionRange` | **ajout v2**, justifié dans le code |
-| 14 | — | anneau limité à 16 entrées | **limite dure v2**, bloque les 8 segments |
+| 14 | 8 segments, pas plus | anneau de 16 entrées = 8 segments pile | la borne et nous butons au même endroit |
 
 ## 9. Ce qui reste à établir
 
-- **la longueur par palier de puissance côté borne.** Nos huit entrées
-  d'armement sont fixes ; la variation « 2 ou 8 » de notre code vient du
-  dispatch `[tier][type]` du pod. Il faut relever ce que la borne arme au
-  palier faible : moins de segments, ou une autre arme.
+- **RÉSOLU** : la longueur par palier. La table de routage des slots d'arme
+  (`weapon_object_routines_table`, ES:0x1B80) donne **2 segments au palier
+  faible, 8 au palier fort** — voir [le plan](rebound-laser-plan.md).
 - le potentiel exact du segment 1 diagonal (le relevé donne 2 pour
-  l'horizontal ; à confirmer pour la diagonale).
+  l'horizontal ; à confirmer pour la diagonale) ;
 - si les segments porteurs de milieu de chaîne ont bien un **imageset propre**
   (« cellule plus brillante ») ou seulement une boîte.

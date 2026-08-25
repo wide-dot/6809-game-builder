@@ -55,19 +55,17 @@ anneaux.
 
 ## Les étapes
 
-### Étape 0 — l'anneau (préalable, invisible)
+### L'anneau : rien à faire, mais une borne à écrire
 
-L'anneau ne tient que 16 entrées ; un enfant lit à `bufferIndex − (childId·4 + 6)`
-et le septième demanderait 34 octets, ramenés à 2 par le masque `#%00011111` :
-il lirait une position **plus récente** que la tête.
+Un passager lit à `bufferIndex − (childId·4 + 6)`. Huit segments, c'est une tête
+plus **sept** enfants (`childId` 0..6) : reculs de 6 à 30 octets, soit 3 à 15
+entrées derrière la tête, dans un anneau qui en compte 16. **Ça tient, avec une
+entrée de marge.** Rien à agrandir.
 
-- `glb.horizontalBuffer` 32 → 64 octets ;
-- `glb.diagonalUpBuffer` / `DownBuffer` 96 → 192 (trois plans de 64) ;
-- masque `#%00011111` → `#%00111111` partout, et les offsets de plan 32/64 → 64/128 ;
-- `ALIGN 32` → `ALIGN 64`.
-
-Coût : 224 → 448 octets dans la page de l'unité.
-**Test** : aucun changement visible à 4 segments ; la chaîne doit être identique.
+Mais la marge est nulle : un neuvième segment lirait une position *plus récente*
+que la tête. La borne s'arrête à huit, l'anneau aussi — on l'écrit dans le code
+(équate de longueur maximale + commentaire), pour que personne ne le découvre à
+l'écran.
 
 ### Étape 1 — le renderer groupé
 

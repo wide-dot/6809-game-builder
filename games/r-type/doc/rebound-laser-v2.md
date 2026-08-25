@@ -144,18 +144,21 @@ La borne donne des boîtes à certains segments enfants (à relever précisémen
 le relevé arcade liste `horizontal_segment_1_arm` … `_8_arm`, dont un
 `segment_5_arm_damage` qui se distingue par son nom). Chez nous, aucune.
 
-### 8.3 Une limite dure que la coupe masquait
+### 8.3 L'anneau tient huit segments — tout juste
 
-**L'anneau ne tient pas huit segments.** Un enfant lit à
-`bufferIndex − (childId·4 + 6)` : pour `childId` 0..6 cela donne 6, 10, 14, 18,
-22, 26, 30 — et le septième enfant demanderait 34, ramené à 2 par le masque
-`#%00011111`. Il lirait une position **plus récente** que la tête au lieu d'une
-plus ancienne, et le segment se collerait devant elle.
+Un passager lit à `bufferIndex − (childId·4 + 6)`. Huit segments, c'est une
+tête plus **sept** enfants (`childId` 0..6) : les reculs valent 6, 10, 14, 18,
+22, 26, 30 octets, soit 3 à 15 entrées derrière la tête. L'anneau en compte 16.
 
-Restaurer les huit segments impose donc, avant toute autre chose :
-anneaux 32 → 64 octets (horizontal) et 96 → 192 (chaque diagonale), masque
-`#%00011111` → `#%00111111`, et l'alignement qui va avec. Coût : 224 → 448
-octets dans la page de l'unité.
+**Ça passe, avec exactement une entrée de marge.** Le dernier passager lit la
+plus ancienne entrée encore valide. Rien à agrandir pour restaurer la longueur
+arcade — mais rien non plus au-delà : un neuvième segment lirait une position
+*plus récente* que la tête et se collerait devant elle. La borne s'arrête à
+huit, l'anneau aussi ; il faut que ça se voie dans le code.
+
+*(Un premier jet de cette analyse annonçait l'inverse — il comptait huit enfants
+au lieu de sept. La première `DiagonalLoadObject` crée la TÊTE, pas un enfant :
+`stx parent,u` juste après le prouve, et `clr glb.childId` ne vient qu'ensuite.)*
 
 ### 8.4 Autres écarts relevés au passage
 
@@ -187,4 +190,5 @@ que chaque segment consomme puisqu'il est dessiné.
    **manager** façon `bug`/`outslay` — ici la moitié du chemin est déjà faite
    (l'anneau existe, les enfants n'ont pas de boîte), il ne manquerait que le
    renderer groupé ;
-3. dans les deux cas, l'anneau doit grandir : c'est indépendant du reste.
+3. l'anneau, lui, n'a pas à bouger : il est dimensionné pour huit segments
+   pile — mais la marge nulle mérite d'être écrite dans le code.
