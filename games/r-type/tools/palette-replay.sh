@@ -308,8 +308,34 @@ python3 tools/arcade_to_in.py 04 src/stages/04/map/images/original/level4_f.png 
 # slither 24,2 -> 17,4, la carte paie 4,1 -> 6,5 (une case passe de D09030 au
 # brun 583810 du serpent), pursuer 18,9 -> 21,1, cheetah stable. Le poids 2
 # gagnait plus au slither mais coutait 12,2 a la carte — ecarte.
+# REPRIS LE 24/08/2026, palette GRAVEE (choix auteur « P12+P11 »). Deux causes.
+# 1) La palette du body du slither etait fausse dans le catalog arcade (0x25,
+#    celle de la tete ; le code dit 0x26 — create_slither_body_segment). Le
+#    corps portait donc le turquoise de l'oeil. Corrige en amont, l'export
+#    rejoue par `--export-catalog`, le recensement change.
+# 2) Le vote sur ce nouveau recensement rendait la case 16 MUETTE : il lui
+#    donnait une couleur que l'ecran ne distingue pas de celle du 13. Ce n'est
+#    pas un defaut d'arbitrage mais le GAMUT — TO = [0, 97, 122, ...], il n'y a
+#    rien entre 0 et 97, et QUATRE bruns sources (886800 de la carte, 583810 du
+#    slither, 705810 et 887030 du cheetah) tombent tous sur 7A6100.
+# D'ou une palette gravee plutot que votee, et le routage des rampes a la main.
+# Le critere n'est pas l'ecart moyen mais le NOMBRE DE NIVEAUX conserves : c'est
+# la regle du 18/08 (cf. --forcer de arcade_to_sprites), et elle fait MONTER
+# l'ecart. Mesure (tools/pal05_candidats.py) : quatre rampes sur quatre passent
+# a 3/3 contre une seule avant. slither 583 -> 556, cheetah 482 -> 389, carte
+# 108 -> 194 ; le pursuer monte 522 -> 623 et c'est le prix de son brun sombre,
+# qui partait sur le ROUGE du 8 et rejoint la rampe brune. Le vert sombre est en
+# 14 par convention (le vert sombre du cheetah cessait de tomber sur le GRIS du
+# 2) ; son moyen prend l'olive gelee du 15 et son clair le jaune du 12, donc
+# trois niveaux verts sans case supplementaire.
+# Ecarte : P11 (vert MOYEN en 14, cheetah 370 mais vert sombre sur le gris).
 python3 tools/arcade_to_in.py 05 src/stages/05/map/images/original/level5_f.png --pal-next \
-    --plan sprites:slither --plan sprites:pursuer --plan sprites:cheetah
+    --plan sprites:slither --plan sprites:pursuer --plan sprites:cheetah \
+    --fixe 13=88,56,16 --fixe 14=8,72,32 --fixe 16=168,128,88 \
+    --force 248,200,152=11 \
+    --force 144,72,32=13 --force 200,128,48=16 --force 248,176,136=11 \
+    --force 0,128,144=5 --force 0,176,144=6 --force 0,232,176=7 \
+    --force 16,144,56=15 --force 128,200,112=12
 # Stage 6 : son cast vote (constat auteur sur planche — le dop ne va pas).
 # Mesure : SEPT couleurs arcade du dop s'ecrasaient sur le seul 144,168,136
 # (3570 px sur 10 832). Le vote lui donne une case a lui (808018) et la carte ne
@@ -443,9 +469,18 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
     --ecrire-palette src/stages/04/palette/pal-boss.png \
     --reserver 0,208,0:14 --ajuster 7,8,9,10
-python3 tools/arcade_to_sprites.py slither  --palette 05
-python3 tools/arcade_to_sprites.py pursuer  --palette 05
-python3 tools/arcade_to_sprites.py cheetah  --palette 05
+# Le routage des rampes du stage 5 (24/08/2026) : les memes decisions que le
+# --force de arcade_to_in, cote sprites. Indices MATERIELS ici (PNG - 1).
+# Sans ces lignes le plus proche voisin refait exactement ce qu'on vient de
+# defaire : creme du slither sur le tan, oeil ecrase sur deux niveaux, brun du
+# pursuer sur le rouge, vert clair du cheetah sur l'olive.
+python3 tools/arcade_to_sprites.py slither  --palette 05 \
+    --forcer 248,200,152:10 \
+    --forcer 0,128,144:4 --forcer 0,176,144:5 --forcer 0,232,176:6
+python3 tools/arcade_to_sprites.py pursuer  --palette 05 \
+    --forcer 144,72,32:12 --forcer 200,128,48:15 --forcer 248,176,136:10
+python3 tools/arcade_to_sprites.py cheetah  --palette 05 \
+    --forcer 16,144,56:14 --forcer 128,200,112:11
 python3 tools/arcade_to_sprites.py dop      --palette 06
 python3 tools/arcade_to_sprites.py newt     --palette 06
 python3 tools/arcade_to_sprites.py fast     --palette 07
