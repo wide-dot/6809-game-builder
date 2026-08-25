@@ -56,5 +56,6 @@ Img_reboundlaser_explosion_3     equ set_reboundlaser_explosion_3
 ; frontière de lien — même écart que l'éclair d'émission et loadFirePreset.
 reboundlaser.Object
         INCLUDE "src/common/weapons/forcepods/obj_reboundlaser.asm"
+        INCLUDE "src/common/weapons/forcepods/reboundmgr.asm"
 
  ENDSECTION

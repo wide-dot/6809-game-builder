@@ -58,6 +58,7 @@ Routines
         fdb   RunDiagonalLaser
         fdb   RunExplosion
         fdb   DoubleBufferingFlush
+        fdb   Render
 
 Rtn_Orchestrate          equ 0
 Rtn_StartLaser           equ 1
@@ -65,6 +66,7 @@ Rtn_RunHorizontalLaser   equ 2
 Rtn_RunDiagonalLaser     equ 3
 Rtn_RunExplosion         equ 4
 Rtn_DoubleBufferingFlush equ 5
+Rtn_Render               equ 6   ; le renderer groupe des passagers (reboundmgr.asm)
 
 glb.loopCounter    fcb 0
 glb.childId        fcb 0
@@ -73,6 +75,7 @@ glb.slotsState     fcb 0 ; bit0=up, bit1=center, bit2=down
 glb.frameDrop      fcb 0
 glb.buffer         fdb 0 ; temp for buffer address
 glb.dataLocation   fdb 0
+glb.renderLive     fcb 0 ; un renderer de la volee precedente vit-il encore ?
 
 ; V2-DEVIATION : la v1 aligne ses trois tampons cycliques par arithmetique sur
 ; le compteur d'adresse — `fill 0,32` de rab, puis `equ (*/32)*32` qui arrondit
@@ -142,6 +145,7 @@ Orchestrate
         ; Ignores : 0 = orchestrateur (nous-meme, ou un precedent en attente de free) et
         ; 5 = DoubleBufferingFlush (Destroy a deja rendu le slot ET inverse slotMask).
         clr   glb.slotsState
+        clr   glb.renderLive
         ldx   object_list_first
         beq   @synced
 @sloop  lda   id,x
@@ -149,6 +153,10 @@ Orchestrate
         bne   @snext
         lda   routine,x
         beq   @snext                  ; 0 = Rtn_Orchestrate
+        cmpa  #Rtn_Render              ; le renderer groupe ne prend pas de slot,
+        bne   @snotrender              ;   mais on note qu'il vit : en creer un
+        inc   glb.renderLive           ;   second dessinerait tout en double
+@snotrender
         cmpa  #Rtn_DoubleBufferingFlush
         bhs   @snext
         ldb   glb.slotsState
@@ -214,6 +222,11 @@ Orchestrate
         beq   >
         jmp   DeleteObject
 !
+        ; LE RENDERER GROUPE : les slots de la volee precedente sont morts
+        ; avec elle (une volee exige les trois slots libres), on les eteint
+        ; avant que les nouvelles chaines n'y publient.
+        jsr   reboundmgr.reset
+
         ; initiate the lasers
         lda   glb.slotsState
         anda  #SLOT_UP                ; is slot up active?
@@ -236,7 +249,19 @@ Orchestrate
         lda   #LASER_RIGHT_DOWN
         ldb   #SLOT_DOWN
         jsr   InitiateDiagonalLaser
-!       
+!
+        ; l'objet qui dessinera les passagers des trois chaines — un seul, et
+        ; pas un de plus (cf. glb.renderLive plus haut)
+        lda   glb.renderLive
+        bne   @noRender
+        jsr   LoadObject_x
+        beq   @noRender
+        lda   #ObjID_forcepod_reboundlaser
+        sta   id,x
+        lda   #Rtn_Render
+        sta   routine,x
+        clr   routine_secondary,x
+@noRender
         jmp   DeleteObject
 
 InitiateDiagonalLaser
@@ -462,7 +487,9 @@ RunHorizontalChildLaser
         ldx   bufferBase,x  ; get actual position of parent in buffer
         ldd   b,x
         std   x_pos,u
-        jmp   DisplaySprite
+        ldd   #Img_reboundlaser_horizontal
+        std   image_set,u
+        jmp   reboundmgr.publish       ; il ne se dessine plus : il se DEPOSE
 
 RunHorizontalLaser
         ; simplyfied code for childs
@@ -550,7 +577,13 @@ RunHorizontalLaser.forward
         jmp   DisplaySprite
 
 Destroy
-        lda   isLastChild,u
+        ldd   parent,u                 ; un PASSAGER eteint son slot : sans ca
+        beq   >                        ;   son image resterait a l'ecran
+        pshs  x
+        jsr   reboundmgr.SlotPtr
+        clr   ,y
+        puls  x
+!       lda   isLastChild,u
         beq   >
         com   slotMask,u
         ldb   glb.slotsState
@@ -656,7 +689,7 @@ RunDiagonalChildLaser
         std   y_pos,u
         ldd   64,y
         std   image_set,u        
-        jmp   DisplaySprite
+        jmp   reboundmgr.publish       ; il ne se dessine plus : il se DEPOSE
 
 RunDiagonalLaser
         ; simplyfied code for childs
