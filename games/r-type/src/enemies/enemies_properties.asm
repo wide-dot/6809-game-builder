@@ -64,6 +64,13 @@ warship_small_turret_scoreIdx equ 1
 warship_core_scoreIdx         equ 13
 warship_capsule_scoreIdx      equ 7
 
+; cytron — arcade AABB 0x1000:2E36 = -12..+12 sur les deux axes ; x0,375 et
+; x0,75 donnent 4 et 9. PV arcade indexes par la difficulte (3/5/8/14) : on
+; prend la premiere, comme le reste du cast.
+cytron_hitbox_x		equ 4
+cytron_hitbox_y		equ 9
+cytron_hitdamage	equ 3
+
 patapata_hitbox_x	equ 4
 patapata_hitbox_y	equ 8
 patapata_hitdamage	equ 1

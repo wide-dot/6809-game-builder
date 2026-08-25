@@ -21,7 +21,7 @@
 
 AABB_0        equ ext_variables    ; AABB struct (9 bytes)
 direction     equ ext_variables+9  ; 1 byte, diagonal: 0=upright, 2=downright, 4=downleft, 6=upleft - horizontal: 0=right, 2=left
-; free slot equ ext_variables+10 ; 1 byte
+nbPass        equ ext_variables+10 ; 1 byte, passagers derriere la tete
 laserLifetime equ ext_variables+11 ; 1 byte, number of frames the laser is active
 slotMask      equ ext_variables+12 ; 1 byte, mask to set/free slot occupation
 parent        equ ext_variables+13 ; 2 bytes, parent object pointer (0=no parent, head of laser)
@@ -58,6 +58,7 @@ Routines
         fdb   RunDiagonalLaser
         fdb   RunExplosion
         fdb   DoubleBufferingFlush
+        fdb   Render
 
 Rtn_Orchestrate          equ 0
 Rtn_StartLaser           equ 1
@@ -65,6 +66,7 @@ Rtn_RunHorizontalLaser   equ 2
 Rtn_RunDiagonalLaser     equ 3
 Rtn_RunExplosion         equ 4
 Rtn_DoubleBufferingFlush equ 5
+Rtn_Render               equ 6   ; le renderer groupe des passagers (reboundmgr.asm)
 
 glb.loopCounter    fcb 0
 glb.childId        fcb 0
@@ -73,6 +75,7 @@ glb.slotsState     fcb 0 ; bit0=up, bit1=center, bit2=down
 glb.frameDrop      fcb 0
 glb.buffer         fdb 0 ; temp for buffer address
 glb.dataLocation   fdb 0
+glb.renderLive     fcb 0 ; un renderer de la volee precedente vit-il encore ?
 
 ; V2-DEVIATION : la v1 aligne ses trois tampons cycliques par arithmetique sur
 ; le compteur d'adresse — `fill 0,32` de rab, puis `equ (*/32)*32` qui arrondit
@@ -142,6 +145,7 @@ Orchestrate
         ; Ignores : 0 = orchestrateur (nous-meme, ou un precedent en attente de free) et
         ; 5 = DoubleBufferingFlush (Destroy a deja rendu le slot ET inverse slotMask).
         clr   glb.slotsState
+        clr   glb.renderLive
         ldx   object_list_first
         beq   @synced
 @sloop  lda   id,x
@@ -149,6 +153,10 @@ Orchestrate
         bne   @snext
         lda   routine,x
         beq   @snext                  ; 0 = Rtn_Orchestrate
+        cmpa  #Rtn_Render              ; le renderer groupe ne prend pas de slot,
+        bne   @snotrender              ;   mais on note qu'il vit : en creer un
+        inc   glb.renderLive           ;   second dessinerait tout en double
+@snotrender
         cmpa  #Rtn_DoubleBufferingFlush
         bhs   @snext
         ldb   glb.slotsState
@@ -214,6 +222,11 @@ Orchestrate
         beq   >
         jmp   DeleteObject
 !
+        ; LE RENDERER GROUPE : les slots de la volee precedente sont morts
+        ; avec elle (une volee exige les trois slots libres), on les eteint
+        ; avant que les nouvelles chaines n'y publient.
+        jsr   reboundmgr.reset
+
         ; initiate the lasers
         lda   glb.slotsState
         anda  #SLOT_UP                ; is slot up active?
@@ -236,7 +249,19 @@ Orchestrate
         lda   #LASER_RIGHT_DOWN
         ldb   #SLOT_DOWN
         jsr   InitiateDiagonalLaser
-!       
+!
+        ; l'objet qui dessinera les passagers des trois chaines — un seul, et
+        ; pas un de plus (cf. glb.renderLive plus haut)
+        lda   glb.renderLive
+        bne   @noRender
+        jsr   LoadObject_x
+        beq   @noRender
+        lda   #ObjID_forcepod_reboundlaser
+        sta   id,x
+        lda   #Rtn_Render
+        sta   routine,x
+        clr   routine_secondary,x
+@noRender
         jmp   DeleteObject
 
 InitiateDiagonalLaser
@@ -260,21 +285,20 @@ InitiateDiagonalLaser
                                        ;   LoadObject_x echoue ici, le chemin d'echec fait
                                        ;   "inc isLastChild,x" -> sans ca il corromprait
                                        ;   bufferBase+$36 (code). On vise l'orchestrateur (inoffensif).
-        jsr   DiagonalLoadObject
-        stx   parent,u
-        clr   glb.childId
-        ; laser length (2 or 8) based on forcepod power        
+        jsr   DiagonalLoadObject       ; la tete, et elle seule
+        ; LA LONGUEUR. Les passagers ne sont plus des objets : la tete les
+        ; porte, et le renderer groupe les dessine. Huit segments ne coutent
+        ; donc plus qu'UN objet, la ou ils en coutaient huit — c'est ce qui
+        ; rend la longueur de la borne payable.
+        ; Deux au palier faible, huit au palier fort : c'est ce que donne la
+        ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
+        ; dans doc/rebound-laser-plan.md.
+        ldb   #RB.MAXSEG-1
         lda   player1+forcepodlevel
         cmpa  #2
-        beq   >
-        ;jsr   DiagonalLoadObject ; 8 sprites x 3 lasers = 24 sprites, too much left for enemies
-        ;jsr   DiagonalLoadObject
-        ;jsr   DiagonalLoadObject
-        ;jsr   DiagonalLoadObject
-        jsr   DiagonalLoadObject
-        jsr   DiagonalLoadObject 
-!       inc   isLastChild,u
-        jsr   DiagonalLoadObject
+        bne   >
+        ldb   #1
+!       stb   nbPass,x
         rts
 
 DiagonalLoadObject
@@ -336,22 +360,67 @@ InitiateHorizontalLaser
                                        ;   Si LoadObject_x echoue ici (pool plein), le chemin d'echec
                                        ;   "inc isLastChild,x" corromprait $3200+$36 = $3236 (DIV3u).
                                        ;   On vise l'orchestrateur (isLastChild,u, inoffensif).
-        jsr   HorizontalLoadObject
-        stx   parent,u
-        clr   glb.childId
-        ; laser length (2 or 8) based on forcepod power        
+        jsr   HorizontalLoadObject     ; la tete, et elle seule
+        ; LA LONGUEUR. Les passagers ne sont plus des objets : la tete les
+        ; porte, et le renderer groupe les dessine. Huit segments ne coutent
+        ; donc plus qu'UN objet, la ou ils en coutaient huit — c'est ce qui
+        ; rend la longueur de la borne payable.
+        ; Deux au palier faible, huit au palier fort : c'est ce que donne la
+        ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
+        ; dans doc/rebound-laser-plan.md.
+        ldb   #RB.MAXSEG-1
+        lda   player1+forcepodlevel
+        cmpa  #2
+        bne   >
+        ldb   #1
+!       stb   nbPass,x
+        ; LES PORTEURS DE BOITE. La borne en arme plusieurs par chaine — les
+        ; segments 1 et 5 en horizontal, 1, 4 et 7 en diagonale (0x40:41A0 et
+        ; 0x3F5D) ; les autres sont du remplissage visuel. Le segment 1 EST la
+        ; tete. Les autres deviennent des objets INVISIBLES : la tete les
+        ; dessine deja avec le reste de la chaine, ils ne portent que leur
+        ; boite et leur mort.
+        ; Rien a armer au palier faible : deux segments, et le second est
+        ; desarme chez la borne aussi.
         lda   player1+forcepodlevel
         cmpa  #2
         beq   >
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        jsr   HorizontalLoadObject
-        jsr   HorizontalLoadObject
-!       inc   isLastChild,u
-        jsr   HorizontalLoadObject
-        rts
+        ldb   #3                       ; segment 5
+        jsr   reboundBearer
+!       rts
+
+; entree : [x] la tete, [b] l'indice du passager qui portera la boite
+; sortie : [x] preserve
+reboundBearer
+        pshs  b,x
+        jsr   LoadObject_x             ; X = le porteur
+        beq   reboundBearer.rts
+        ldy   1,s                      ; Y = la tete
+        lda   #ObjID_forcepod_reboundlaser
+        sta   id,x
+        lda   #7
+        sta   priority,x
+        lda   render_flags,y
+        sta   render_flags,x
+        lda   direction,y
+        sta   direction,x
+        lda   slotMask,y
+        sta   slotMask,x
+        ldd   bufferBase,y
+        std   bufferBase,x
+        sty   parent,x
+        lda   ,s                       ; son rang dans la chaine
+        sta   childId,x
+        lda   routine_secondary,y
+        sta   routine_secondary,x
+        ldd   x_pos,y                  ; il nait sur la tete et rejoint sa place
+        std   x_pos,x                  ;   dans l'anneau des la premiere trame
+        ldd   y_pos,y
+        std   y_pos,x
+        lda   #Rtn_StartLaser
+        sta   routine,x
+reboundBearer.rts
+        puls  b,x,pc
 
 HorizontalLoadObject
         stx   @x
@@ -413,12 +482,19 @@ StartLaser
         sta   routine,u
         ldd   parent,u
         beq   >
-        ; for children
+        ; for children — les PORTEURS de boite, les seuls enfants qui restent
         lda   childId,u
         inca
         asla
         adda  #LASER_LIFETIME ; for parent a is implicitely 0
         sta   laserLifetime,u
+        lda   #1                       ; le potentiel arcade d'un porteur de
+        sta   AABB_0+AABB.p,u          ;   milieu de chaine (la tete a 2)
+        _ldd  5,9
+        std   AABB_0+AABB.rx,u
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
+        _Collision_AddAABB AABB_0,AABB_list_friend
         jmp   Object ; run the laser now
 !
         ; for parent
@@ -462,7 +538,14 @@ RunHorizontalChildLaser
         ldx   bufferBase,x  ; get actual position of parent in buffer
         ldd   b,x
         std   x_pos,u
-        jmp   DisplaySprite
+        ; INVISIBLE : la tete le dessine avec le reste de la chaine. Il ne tient
+        ; que sa boite — et sa mort.
+        lda   AABB_0+AABB.p,u
+        lbeq  reboundBearerHit
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        rts
 
 RunHorizontalLaser
         ; simplyfied code for childs
@@ -547,9 +630,16 @@ RunHorizontalLaser.forward
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u            
 
-        jmp   DisplaySprite
+        jmp   reboundmgr.publishChain  ; la tete ET ses passagers, meme chemin
 
 Destroy
+        pshs  x                        ; la chaine s'eteint : sans ca ses
+        clrb                           ;   passagers resteraient affiches. Un
+        ldx   parent,u                 ;   PORTEUR n'emporte que ce qui est
+        beq   >                        ;   derriere lui, la tete emporte tout.
+        ldb   childId,u
+!       jsr   reboundmgr.clearChainFrom
+        puls  x
         lda   isLastChild,u
         beq   >
         com   slotMask,u
@@ -559,11 +649,9 @@ Destroy
 !
         lda   #Rtn_DoubleBufferingFlush
         sta   routine,u
-        ldd   parent,u
-        bne   >
-        lda   AABB_0+AABB.rx,u
-        beq   >
-        _Collision_RemoveAABB AABB_0,AABB_list_friend        
+        lda   AABB_0+AABB.rx,u         ; les porteurs ont une boite eux aussi :
+        beq   >                        ;   le test sur parent qui etait ici la
+        _Collision_RemoveAABB AABB_0,AABB_list_friend  ; leur faisait fuir
 !       jmp   DeleteObject
 
 isInLivingArea
@@ -654,9 +742,30 @@ RunDiagonalChildLaser
         std   x_pos,u
         ldd   32,y
         std   y_pos,u
-        ldd   64,y
-        std   image_set,u        
-        jmp   DisplaySprite
+        lda   AABB_0+AABB.p,u          ; INVISIBLE, cf. le porteur horizontal
+        lbeq  reboundBearerHit
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
+        rts
+
+; Un porteur touche. La borne fait disparaitre les segments DERRIERE lui et
+; laisse le porteur suivant continuer : on tronque donc la chaine de la tete a
+; son rang, on eteint les slots au-dela, et il devient son explosion.
+reboundBearerHit
+        ldx   parent,u
+        lda   childId,u
+        cmpa  nbPass,x
+        bhs   >
+        sta   nbPass,x
+!       ldb   childId,u
+        jsr   reboundmgr.clearChainFrom
+        ldb   #Rtn_RunExplosion
+        stb   routine,u
+        clr   anim_frame,u
+        jmp   RunExplosion
 
 RunDiagonalLaser
         ; simplyfied code for childs
@@ -848,41 +957,22 @@ RunDiagonalLaser.afterCollision
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u            
         
-        jmp   DisplaySprite
+        jmp   reboundmgr.publishChain  ; la tete ET ses passagers, meme chemin
 
 InitExplosion
-        ; split laser if needed
-        ldx   child,u
-        lda   isLastChild,x
-        bne   >                 ; if next segment is last child, do not split
-        ; split child
-        inc   isLastChild,x     ; make 2nd segment last child
-        ldx   child,x           ; 3rd segment will be new parent
-        ldd   #0
-        std   parent,x
-        ldb   bufferIndex,u
-        subb  #4*2
-        andb  #%00011111
-        stb   bufferIndex,x
-
-        ; set hitbox of new parent
-        lda   #2                ; set damage potential for this hitbox
-        sta   AABB_0+AABB.p,x
-        _ldd  5,9               ; set hitbox xy radius (arcade radius: 12x12px)
-        std   AABB_0+AABB.rx,x
-        ldd   x_pos,x
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,x
-        ldb   y_pos+1,x
-        stb   AABB_0+AABB.cy,x  ; fixed y position for horizontal laser   
-        _Collision_AddAABB_x AABB_0,AABB_list_friend
-
-        ldy   child,x           ; 4th segment is now child of new parent
-        stx   parent,y
-        clr   childId,y
-!
-        ; init explosion
-        ldb   #Rtn_RunExplosion ; replace head of laser chain by an explosion
+        ; LE SPLIT EST RETIRE (25/08/2026). Il promouvait le troisieme segment
+        ; en nouvelle tete — nouveau parent, nouvelle boite, index d'anneau
+        ; recule — pour que la moitie arriere de la chaine continue. C'etait une
+        ; invention v1 qui APPROXIMAIT les boites de milieu de chaine de la
+        ; borne (segments 1 et 5 en horizontal, 1, 4 et 7 en diagonale) avec une
+        ; seule boite au depart. La borne ne promeut personne : les passagers
+        ; derriere un porteur mort disparaissent, le porteur suivant continue.
+        ;
+        ; Et il n'a plus de chaine d'OBJETS sur laquelle operer : les passagers
+        ; sont des lignes d'anneau depuis que le renderer groupe les dessine.
+        ; `ldx child,u` rendait zero et la promotion ecrivait en $0010.
+        jsr   reboundmgr.clearChain    ; la chaine s'eteint avec sa tete
+        ldb   #Rtn_RunExplosion        ; la tete devient son explosion
         stb   routine,u
         clr   anim_frame,u
         ; please do not change priority here, there is a bug in priority change ...

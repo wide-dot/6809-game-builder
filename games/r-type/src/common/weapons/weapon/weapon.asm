@@ -23,6 +23,8 @@ Weapon            EXPORT
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
         INCLUDE "engine/sound/soundFX.macro.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
+        ; stage.gum.hook : le vecteur de couche destructible du stage
+        INCLUDE "src/common/state/variables.asm"
 
         INCLUDE "src/common/weapons/weapon/obj.asm"
 

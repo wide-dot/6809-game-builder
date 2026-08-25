@@ -49,4 +49,44 @@ missilePairCount           equ GLOBAL_VARIABLES+143 ; 1 octet, missiles vivants
 missileTgtTop              equ GLOBAL_VARIABLES+144 ; 2 octets, OST cible du haut
 missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 
+* LE CROCHET DE COUCHE DESTRUCTIBLE (24/08/2026).
+*
+* Un stage peut porter une couche de decor que les tirs du joueur DETRUISENT —
+* le champ de gommes du stage 4 aujourd'hui. Le code d'arme, lui, est COMMUN :
+* il est charge une fois au boot et sert les huit stages, donc il ne peut pas
+* referencer un symbole qui n'existe que sur l'un d'eux (le lien se resoudrait
+* a zero sur les sept autres, et le premier tir sauterait dans le vide).
+*
+* D'ou ce vecteur : le corps commun du stage le pose sur le neutre, le stage
+* qui a une couche destructible le pointe sur LE SIEN. Il designe une table de
+* deux `jmp`, a la maniere de terrainCollision.unit :
+*
+*   +0  EFFACER    [x] = x de carte, [b] = ligne ecran
+*                  rend Z=0 si quelque chose a ete detruit.
+*                  `jsr [stage.gum.hook]` tombe dessus tel quel.
+*   +3  CHERCHER   le senseur terrainCollision est deja pose par l'appelant
+*                  rend D = le x de carte de la premiere cellule destructible
+*                  a DROITE du senseur, 0 si aucune.
+*                  `ldx stage.gum.hook / jsr 3,x`
+*   +6  RECTANGLE  [x] = le coin haut-gauche du bloc au DEPART (x de carte),
+*                  [y] = le meme x a l'ARRIVEE,
+*                  [b] = la ligne ecran du haut,
+*                  [a] = la taille du bloc, quartet HAUT = largeur, BAS =
+*                        hauteur, en cellules ($12 = le beam, $44 = le pod).
+*                  Efface la surface BALAYEE par le bloc entre les deux points.
+*                  Les bords sont rabotes au champ, pas refuses.
+*                  Pour une arme qui CREUSE au lieu de mourir sur la premiere
+*                  cellule. Le depart et l'arrivee sont ce qui rend la
+*                  compensation de trames gratuite : la reunion des passes
+*                  d'une trame est un seul rectangle, quel qu'en soit le
+*                  nombre.
+*
+* POURQUOI DEUX ENTREES (25/08/2026). Sonder a la position courante une fois
+* par trame ne marche pas a bas regime : le tir simple avance de 6*frameDrop
+* d'un coup — 24 px a 12 img/s, huit cellules — donc il enjambe des gommes et
+* mange celle sur laquelle il retombe, loin devant son sprite d'impact. La
+* recherche resout ca comme le mur l'est deja depuis la v1 : UN balayage a la
+* naissance donne le point d'arrivee au pixel, et il ne depend plus du regime.
+stage.gum.hook             equ GLOBAL_VARIABLES+148 ; 2 octets, vecteur
+
  ENDC

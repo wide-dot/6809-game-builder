@@ -79,6 +79,19 @@ Init
         std   y_pos,u
         stb   AABB_0+AABB.cy,u
 
+        ; --- L'ALLUMAGE NETTOIE DEVANT LE CANON (3168..3180)
+        ; La borne y pose QUATRE grappes, a +0, +0x0E, +0x1C et +0x2A px
+        ; arcade ; chacune fait deux tuiles de large, donc l'ensemble couvre
+        ; 0x2A+8 = 50 px arcade, soit 19 chez nous. Un rectangle suffit.
+        jsr   beam.gum.arm
+        ldx   x_pos,u
+        leay  19,x
+        ldb   y_pos+1,u
+        subb  #3
+        lda   #$12                     ; bloc 1 x 2 cellules
+        jsr   >0
+beam.gum.call equ *-2
+
         ; compute wall hit destiny
         ldd   x_pos,u
         std   terrainCollision.sensor.x
@@ -108,6 +121,27 @@ Live
         clr   halfWidth,u
         sta   halfWidth+1,u
 
+        ; --- LE SILLAGE : le beam CREUSE le champ, il n'y meurt pas
+        ; 31D9 etape 6 : chaque tick, la borne efface CX grappes en avancant
+        ; d'une cellule par grappe — une bande de deux rangees sur CX+1
+        ; colonnes, refaite a chaque tick, AVANT de sonder le decor dur. C'est
+        ; cet ordre qui fait le tunnel : les gommes ne l'arretent jamais.
+        ;
+        ; Notre compensation ne coute rien. Le beam avance d'UNE cellule par
+        ; tick (8 px arcade = une tuile = nos 3 px = une cellule) alors que sa
+        ; bande en fait six a onze : deux bandes consecutives se recouvrent a
+        ; une colonne pres, donc la reunion de N bandes est UNE bande, allongee
+        ; de N colonnes. On la demande d'un seul coup, du x d'avant le
+        ; deplacement au bout de la portee — un appel par trame, quel que soit
+        ; le frame drop, sans boucle de rattrapage ni division.
+        ;
+        ; V2-DEVIATION: la borne pose aussi une demande de son a chaque cellule
+        ; effacee (SFX 0x5E, une fois par trame quel qu'en soit le nombre —
+        ; 0x40:027A). Le moteur audio n'est pas porte : rien ici. Ce n'est PAS
+        ; du score, verifie sur la plate de erase_green_ball_cell_stage4.
+        ldx   x_pos,u
+        pshs  x                        ; le depart, avant le deplacement
+
         ; update beam position
         lda   #3
         ldb   gfxlock.frameDrop.count
@@ -116,6 +150,22 @@ Live
         addd  glb_camera_x_pos
         subd  glb_camera_x_pos_old
         std   x_pos,u
+
+        jsr   beam.gum.arm
+        ldb   beamTier,u               ; la portee, en px : 3 * le nombre de
+        ldx   #beam.gum.reach.tbl      ; grappes de la borne
+        abx
+        ldb   ,x
+        clra
+        addd  x_pos,u
+        tfr   d,y                      ; l'arrivee
+        puls  x                        ; le depart
+        ldb   y_pos+1,u
+        subb  #3                       ; 2736 : la grappe est sondee 4 px
+                                       ; arcade plus haut, 3 lignes chez nous
+        lda   #$12                     ; bloc 1 x 2 : la hauteur de la grappe
+        jsr   >0
+beam.gum.call2 equ *-2
 !
         ; check wall collision
         ldd   impactX,u
@@ -173,6 +223,23 @@ Delete
 
 AlreadyDeleted
         rts ; once deleted, the object can be called again for double buffering update.
+
+; Le crochet de couche destructible est un VECTEUR pose par le stage (il n'y a
+; de gommes qu'au stage 4, et ce code-ci sert les huit). Son entree +6 est
+; l'effacement en rectangle ; on l'installe dans les deux appels avant de
+; charger les parametres, qui occupent A, B, X et Y a eux seuls.
+beam.gum.arm
+        ldd   stage.gum.hook
+        addd  #6
+        std   beam.gum.call
+        std   beam.gum.call2
+        rts
+
+; green_ball_sweep_count_table (0x1000:183E), lue aux cinq paliers que le beam
+; peut prendre : 5, 5, 6, 6, 7 grappes. Une grappe par cellule d'avance, donc
+; la portee en px vaut trois fois ce nombre.
+beam.gum.reach.tbl
+        fcb   15,15,18,18,21
 
 Ani_Beams
         fdb   Ani_beam0

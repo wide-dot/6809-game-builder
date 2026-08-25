@@ -1,0 +1,64 @@
+<configuration>
+    <!-- LA DEMI-PAGE $4000-$5FFF SE COMMUTE-T-ELLE ? Voir src/halfpage.ut.asm.
+         Le banc le plus depouille possible : un seul fichier, charge en RAM
+         residente, qui ecrit une marque dans chaque moitie et relit. Aucun
+         moteur autour — c'est le but : repondre a la question sans le jeu. -->
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/00/entries.asm">
+                <default name="file.maxsize"      value="0x4000"/>
+                <default name="lwasm.format"          value="raw"/>
+
+                <file name="fileid.halfpage.ut" section="DATA" page="$01" address="$6100">
+                    <lwasm gensource="gen/halfpage/halfpage.ut.asm">
+                        <asm xml:space="preserve">        org   $6100</asm>
+                        <asm filename="engine/system/to8/memory-map.equ"/>
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <asm filename="src/halfpage.ut.asm"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.default" section="SCENE">
+                    <load name="fileid.halfpage.ut"/>
+                </scene>
+
+            </directory>
+
+            <define symbol="loader.PAGE" value="4"/>
+            <define symbol="loader.ADDRESS" value="$A000"/>
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/00/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm>loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm>loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm>loader.DEFAULT_SCENE_FILE_ID   equ scenes.default</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+        </floppydisk>
+    </target>
+</configuration>

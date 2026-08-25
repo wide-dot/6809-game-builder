@@ -52,15 +52,90 @@ gagner d'un outil d'échantillonnage dédié**. Un niveau 1 complet (12 631
 trames, 252 s émulées) se relève en une minute.
 
 Conditions à tenir identiques des deux côtés d'une comparaison :
-`<define symbol="invincible"/>` (sans lui le vaisseau meurt faute d'entrée
-manette et le relevé s'arrête — vécu à la trame 3835), aucune entrée
-manette, `bench.SCROLL_VEL` inchangé. Le traceur écarte de la moyenne la
-queue muette du relevé : c'est le chargement de la scène suivante, dont la
-durée dépend de la taille des fichiers et pas du rendu.
+**l'invincibilité** (sans elle le vaisseau meurt faute d'entrée manette et le
+relevé s'arrête — vécu à la trame 3835), aucune entrée manette,
+`bench.SCROLL_VEL` inchangé.
 
-Référence mesurée le 19/08/2026 sur `games/r-type` @ 886fda9c : **12,0 img/s
-de moyenne**, de 27 img/s à l'ouverture à **3,9 img/s au creux** (caméra 552),
-plateau à 8,4 dans la salle du boss.
+Le traceur écarte de la moyenne **les deux queues qui ne sont pas du jeu** :
+
+- la **queue muette**, le chargement de la scène suivante — sa durée dépend de
+  la taille des fichiers, pas du rendu ;
+- la **queue saturée**, la séquence de fin : il ne reste plus rien à dessiner
+  et le jeu rend chaque trame machine. Sur le stage 4 c'était 541 trames à
+  50 img/s, qui à elles seules faisaient passer la moyenne de 6,0 à 8,7 sans
+  qu'une seule raconte le coût du rendu. Seuil réglable par `--saturated`
+  (défaut 45 img/s ; `--saturated 51` ne coupe rien).
+
+`--traversal` va plus loin et coupe **tout ce qui suit l'arrêt de la caméra** :
+décompte de fin, dissolution — plus de bandes qui entrent, plus de vagues, ce
+n'est plus la même scène. C'est la mesure de la **traversée**, et c'est celle
+qu'on garde en référence pour le stage 4. Pas par défaut : sur un stage à
+boss la caméra se fige aussi pendant le combat (la séquence de fin cale
+`scroll_max` sur la salle du boss), et couper là jetterait le passage le plus
+chargé du niveau.
+
+Le `define invincible` a disparu : l'invincibilité vient du cheat du title.
+`--cheat` l'arme au joypad (préfixe h,b,g,d puis bas), et c'est **aussi la
+seule façon d'entrer ailleurs qu'au stage 1** — le même cheat sélectionne le
+stage (préfixe puis N fois haut). Sans `--cheat`, le script presse start,
+ce qui n'ouvre que le stage 1.
+
+```bash
+python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv --stage 4 --cheat
+```
+
+### Références mesurées
+
+Elles vivent dans `ci/toje-bench/refs/`, CSV brut **et** SVG tracé, pour que
+la comparaison d'après ne dépende pas d'un relevé à refaire.
+
+| relevé | périmètre | moy. | creux |
+|---|---|---|---|
+| stage 1, 19/08/2026 @ 886fda9c | relevé entier | 12,0 | 3,9 (caméra 552) |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | traversée | 5,2 | 1,0 (caméra 711) |
+| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24-opt.csv) @ bf51cc40 — **la référence** | **traversée** | **8,2** | **5,9** |
+
+Le second relevé est le même stage après deux chantiers : `pscroll.grow` qui
+ne divise plus par soustractions (`b33065da`) et la couche de gommes devenue
+le plan arrière de la collision (`bf51cc40`). **+58 % de moyenne, creux ×6, et
+la pente a disparu** — la cadence ne dépend plus de la position dans le
+niveau. Le double test de collision que le stage 4 paie désormais partout ne
+se voit pas : traversée identique à la trame près (5 327), profil à 0,3 img/s
+près sur toutes les tranches.
+
+Le chiffre du stage 1 est un relevé entier, queues comprises : il n'est **pas**
+comparable tel quel à celui du stage 4, qui est une traversée. À rejouer avec
+`--saturated` le jour où on voudra les mettre côte à côte (mais sans
+`--traversal` : ce stage a un boss).
+
+Ce que change le périmètre sur le même relevé de stage 4 — assez pour qu'on
+dise toujours de laquelle on parle :
+
+| périmètre | trames | moy. |
+|---|---|---|
+| relevé entier, jusqu'au stage 5 | 8 699 | 8,7 |
+| jouable (queues muette et saturée retirées) | 8 158 | 6,0 |
+| **traversée** (`--traversal`) — la référence | 7 418 | **5,2** |
+
+(chiffres du relevé @ dfcc4357 ; les trois se décalent ensemble sur le suivant)
+
+```bash
+python3 ../../ci/toje-bench/fps_plot.py refs/fps-stage4-2026-08-24.svg \
+    refs/fps-stage4-2026-08-24.csv="stage 4 — traversee, reference 24/08/2026" \
+    --traversal --title "Cadence de rendu — R-Type stage 4, traversee"
+```
+
+Profil de la traversée par tranche de caméra (moyenne glissante 1 s) :
+
+```
+cam        0   100   200   300   400   500   600   700   800   900
+dfcc4357 7,8   5,9   5,6   5,3   4,9   3,8   3,6   4,0   8,9   5,4
+bf51cc40 9,0   7,0   7,7   8,2   8,3   7,7   7,1   8,7   8,7   9,6
+```
+
+La pente du premier relevé — de 7,8 à 3,6 au fil du niveau — était la division
+par soustractions de `pscroll.grow`, dont le nombre de tours croissait avec la
+coordonnée de carte. Le second est plat entre 7 et 9.
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
 

@@ -11,10 +11,14 @@
 ;*******************************************************************************
 
 terrainCollision.unit EXPORT
-; Les deux bases de carte, pour la couche de gommes qui vit en page 1 : elle
-; lit C et T directement, la page collision etant montee pendant sa passe.
+; LA CARTE DES GOMMES EST RESIDENTE, ET C'EST LE PLAN ARRIERE DE CE STAGE.
+; Elle vit dans l'arene stage4.res (gumres.unit.asm) : pscroll la mute, le
+; moteur de collision la lit comme seconde couche. Une seule carte, donc rien
+; a tenir d'accord — avant le 24/08/2026 l'etat des gommes existait en deux
+; exemplaires (le champ de pscroll et la carte de collision) et les deux
+; divergeaient des la premiere pousse.
 collisionMapForeground EXPORT
-terrainCollision.hard  EXPORT
+pscroll.gum.map        EXTERNAL
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -33,23 +37,25 @@ terrainCollision.unit
         INCLUDE "engine/objects/collision/terrainCollision.asm"
 
 terrainCollision.maps
-        fdb   collisionMapBackground
-        fdb   collisionMapForeground
+        fdb   pscroll.gum.map        ; plan 0 : les gommes, residentes
+        fdb   collisionMapForeground ; plan 1 : le decor dur
 
-; La v1 pointe le MEME bin pour les deux plans de ce stage — le
-; level4_bc.bin du dossier terrain est un orphelin qu'elle ne
-; consomme jamais (son pas de ligne ne correspond d'ailleurs pas).
+; LES DEUX PLANS DE CE STAGE (24/08/2026)
+;   AVANT   (plan 1) : le decor DUR seul, statique, jamais ecrit
+;   ARRIERE (plan 0) : la carte des GOMMES, residente et mutable
 ;
-; CETTE CARTE EST MUTABLE : le champ de gommes y vit, le joueur le creuse et
-; Cytron le fait repousser. C'est deja le cas du mur de la rotonde au stage 1.
-collisionMapBackground
+; L'arcade obtient le meme resultat autrement : chez elle une gomme EST une
+; tuile de la tilemap de premier plan, donc solide par le meme test que le
+; decor. Ici on reutilise le DOUBLE TEST que le moteur sait deja faire pour un
+; stage a deux plans : globals.backgroundSolid pose, chaque site teste l'avant
+; puis l'arriere, et « solide » veut dire « dur OU gomme » sans une ligne de
+; moteur en plus. Le double test gere en prime le cas ou les deux plans se
+; deplacent l'un par rapport a l'autre (suivi du boss au stage 1, vaisseau de
+; fond au stage 3) — c'est ce qui l'a fait preferer a une routine d'union.
+;
+; level4_fc n'est plus utilise : `hard OR ball == level4_fc` est verifie a
+; l'extraction, les deux moities vivent maintenant chacune de leur cote.
 collisionMapForeground
-        INCLUDEBIN "src/stages/04/terrain/level4_fc.bin"
-
-; Le terrain DUR seul — la meme geometrie, gommes exclues. Statique, jamais
-; ecrit : c'est lui qui distingue une gomme destructible d'un mur. Extrait par
-; re.arcade.r-type --extract-ballfield ; verifie : hard OR ball == level4_fc.
-terrainCollision.hard
         INCLUDEBIN "src/stages/04/terrain/level4_hard.bin"
 
 ; Les gommes D'ORIGINE, en RLE (263 o au lieu de 1 440) : pellet.reset
@@ -58,13 +64,6 @@ terrainCollision.hard
 ; level4_ball.bin ; la region collision est trop bornee pour une copie brute.
 pellet.ball0
         INCLUDEBIN "src/stages/04/terrain/level4_ball.rle"
-
-; GARDE-FOU : la couche de gommes (page 1) fige l'ecart entre les deux cartes a
-; 1440, ne pouvant pas soustraire deux symboles resolus au chargement. Si les
-; cartes cessent d'etre contigues, ce build echoue au lieu de dessiner faux.
- IFNE terrainCollision.hard-collisionMapForeground-1440
-        ERROR les deux cartes ne sont plus contigues : pellet.HARDOFF est faux
- ENDC
 
 ; Les primitives du champ, au contact des deux cartes (meme page).
         INCLUDE "src/common/lib/pellet.asm"

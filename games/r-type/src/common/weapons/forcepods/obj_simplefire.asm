@@ -115,6 +115,20 @@ FrameDropLoop
         ldd   y_pos,u
         std   terrainCollision.sensor.y
 
+        ; LA COUCHE DESTRUCTIBLE D'ABORD (24/08/2026, portage 1:1 de l'arcade).
+        ; run_simple_fire (0x40:4F40) sonde la tuile, l'efface si c'est une
+        ; gomme, PUIS teste la solidite — et la routine d'effacement rendant
+        ; zero, ce test voit « solide » et le tir part en impact. Un tir simple
+        ; y mange donc EXACTEMENT UNE cellule et meurt dessus ; les deux
+        ; missiles ont le meme sort. Ce n'est visiblement pas voulu par la
+        ; borne, mais c'est son comportement, et on le reproduit — sans imiter
+        ; le XOR AX,AX : ici l'effaceur dit franchement « j'ai mange », et on
+        ; prend la meme branche que le mur.
+        ; Le crochet vaut un rts sur les stages sans couche destructible.
+        ldx   x_pos,u
+        ldb   y_pos+1,u
+        jsr   [stage.gum.hook]
+        bne   @impact
         ldb   #1 ; foreground
         jsr   terrainCollision.do
         tstb
@@ -132,7 +146,8 @@ FrameDropLoop
         bra   @end
 !
         dec   glb.frameDrop
-        bne   FrameDropLoop
+        lbne  FrameDropLoop            ; le corps a grossi du crochet de couche
+                                       ; destructible : la portee courte ne suffit plus
 @end
         ldd   x_pos,u
         subd  glb_camera_x_pos
