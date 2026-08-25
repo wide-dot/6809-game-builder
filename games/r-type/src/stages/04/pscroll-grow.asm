@@ -74,6 +74,26 @@ pscroll.point
         cmpd  #pscroll.CELL_W*54       ; 162 : la fenetre, arrondie au cran de
         bhs   pscroll.grow.no          ; cellule. NON SIGNE : a gauche du ruban
                                        ; la soustraction deborde et tombe ici
+
+        ; LE BORD DU VIEWPORT (25/08/2026). La carte des gommes n'appartient
+        ; pas a pscroll : c'est le PLAN 0 de terrainCollision, la meme grille
+        ; que level4_hard.bin — pellet.reset y deplie level4_ball.rle octet
+        ; pour octet, et l'extraction verifie `hard OR ball == level4_fc`. Or
+        ; cette grille commence au bord GAUCHE DU CHAMP, pas au bord de
+        ; l'ecran : terrainCollision.xOffset est declare `equ *-8`, il retire
+        ; les 8 px de marge avant de diviser, et son chemin de retour les
+        ; rajoute (`addd #8 ; screen border offset`).
+        ; Ici la division portait sur le x brut : huit px de decalage, soit
+        ; DEUX CELLULES ET DEMIE trop a droite. Effets : les gommes semees par
+        ; cytron ne tombaient pas sur la cellule que la collision lit, et
+        ; l'effacement demande par un tir — qui vient justement de la sonde de
+        ; terrain, donc en coordonnee de terrain — visait une cellule vide et
+        ; ne faisait rien (`clearCell` sort sur `bitb ,x / lbeq @already`).
+        ; C'est ce que l'auteur voyait : l'impact se pose sur la gomme et la
+        ; gomme reste.
+        subd  #8
+        blo   pscroll.grow.no          ; les 8 px de marge eux-memes
+
         addb  pscroll.ribbon.rem       ; 0..161 + 0..2, pas de retenue dans A
         ldx   #pscroll.div3.tbl
         abx

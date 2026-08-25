@@ -20,6 +20,7 @@ pscroll.gum.rect     EXPORT
 pscroll.gum.grow     EXPORT
 pscroll.gum.erase    EXPORT              ; le crochet du stage : les armes du
                                         ; joueur mangent le champ
+pscroll.gum.vectors  EXPORT              ; ... et le designent par CETTE table
 pscroll.half.on      EXPORT              ; l'init de la part cartouche en a
 pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
 
@@ -207,9 +208,37 @@ pscroll.gum.grow
         jsr   pscroll.grow
         bra   pscroll.gum.leave
 
+; LA TABLE QUE stage.gum.hook DESIGNE — deux `jmp`, gabarit de
+; terrainCollision.unit. Le contrat est ecrit dans
+; src/common/state/variables.asm ; ne pas changer l'ORDRE, `jsr [stage.gum.hook]`
+; tombe sur la premiere entree.
+pscroll.gum.vectors
+        jmp   pscroll.gum.erase        ; +0 : effacer
+        jmp   pscroll.gum.scanRight    ; +3 : chercher
+
+; ---------------------------------------------------------------------------
+; pscroll.gum.scanRight — la premiere gomme A DROITE du senseur
+; ---------------------------------------------------------------------------
+; input  : terrainCollision.sensor.x/.y deja poses par l'appelant
+; sortie : [d] le x de carte du bord gauche de la cellule, 0 si aucune
+;
+; AUCUN CODE NOUVEAU : la carte des gommes EST le plan 0 de
+; terrainCollision.maps (cf. src/stages/04/collision/collision.asm), donc le
+; balayage de ligne que la v1 ecrivait pour le decor dur sert ici tel quel — il
+; suffit de lui donner l'autre numero de plan. Il s'arrete a la septieme
+; colonne d'octets, soit 168 px : plus large que l'ecran.
+;
+; Il n'y a pas de danse de page a faire : xAxis.doRight est le relais resident,
+; c'est lui qui monte l'unite de collision et rend sa page a l'appelant.
+pscroll.gum.scanRight
+        clrb                           ; plan 0 : les gommes
+        jsr   terrainCollision.xAxis.doRight
+        ldd   terrainCollision.impact.x
+        rts
+
 ; input REG : [x] le x en px de CARTE, [b] la ligne ecran
-; C'est LUI que stage.gum.hook designe : le code d'arme est commun, il ne peut
-; pas connaitre un symbole du stage 4 (cf. src/common/state/variables.asm).
+; C'est LUI que l'entree +0 de la table designe : le code d'arme est commun, il
+; ne peut pas connaitre un symbole du stage 4 (cf. src/common/state/variables.asm).
 pscroll.gum.erase
         pshs  u,y,dp,b
         bsr   pscroll.gum.enter

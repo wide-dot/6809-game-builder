@@ -57,13 +57,24 @@ missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 * referencer un symbole qui n'existe que sur l'un d'eux (le lien se resoudrait
 * a zero sur les sept autres, et le premier tir sauterait dans le vide).
 *
-* D'ou ce vecteur : le corps commun du stage le pose sur un `rts`, le stage qui
-* a une couche destructible le pointe sur SON effaceur. Une arme fait
-* `jsr [stage.gum.hook]` une fois par trame compensee ; sur un stage sans
-* couche, c'est un appel indirect vers un retour, une douzaine de cycles.
+* D'ou ce vecteur : le corps commun du stage le pose sur le neutre, le stage
+* qui a une couche destructible le pointe sur LE SIEN. Il designe une table de
+* deux `jmp`, a la maniere de terrainCollision.unit :
 *
-* Convention de l'effaceur : le senseur est deja pose (les memes variables que
-* terrainCollision), il rend Z=0 si quelque chose a ete detruit.
+*   +0  EFFACER    [x] = x de carte, [b] = ligne ecran
+*                  rend Z=0 si quelque chose a ete detruit.
+*                  `jsr [stage.gum.hook]` tombe dessus tel quel.
+*   +3  CHERCHER   le senseur terrainCollision est deja pose par l'appelant
+*                  rend D = le x de carte de la premiere cellule destructible
+*                  a DROITE du senseur, 0 si aucune.
+*                  `ldx stage.gum.hook / jsr 3,x`
+*
+* POURQUOI DEUX ENTREES (25/08/2026). Sonder a la position courante une fois
+* par trame ne marche pas a bas regime : le tir simple avance de 6*frameDrop
+* d'un coup — 24 px a 12 img/s, huit cellules — donc il enjambe des gommes et
+* mange celle sur laquelle il retombe, loin devant son sprite d'impact. La
+* recherche resout ca comme le mur l'est deja depuis la v1 : UN balayage a la
+* naissance donne le point d'arrivee au pixel, et il ne depend plus du regime.
 stage.gum.hook             equ GLOBAL_VARIABLES+148 ; 2 octets, vecteur
 
  ENDC

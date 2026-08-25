@@ -50,7 +50,7 @@ adr_playfield_mask_ND0 EXTERNAL
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
 pscroll.stage4.init     EXTERNAL
-pscroll.gum.erase       EXTERNAL
+pscroll.gum.vectors     EXTERNAL
 pscroll.camera.x        EXTERNAL
 
 playfield.clearWindow   EXTERNAL
@@ -313,10 +313,10 @@ stage.setup
         lda   #1
         sta   globals.backgroundSolid
 
-        ; LE CROCHET : les armes du joueur mangent le champ. C'est le relais
-        ; RESIDENT qu'on designe, jamais pscroll.erase nu — l'arme vit dans sa
-        ; propre page et l'effaceur dans celle de pscroll.
-        ldd   #pscroll.gum.erase
+        ; LE CROCHET : les armes du joueur mangent le champ. C'est la table de
+        ; relais RESIDENTE qu'on designe, jamais pscroll.erase nu — l'arme vit
+        ; dans sa propre page et l'effaceur dans celle de pscroll.
+        ldd   #pscroll.gum.vectors
         std   stage.gum.hook
 
         ; LA CARTE DES GOMMES, remplie AVANT pscroll : elle est residente et
