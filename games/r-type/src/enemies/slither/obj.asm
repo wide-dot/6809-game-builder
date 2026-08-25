@@ -771,15 +771,38 @@ slither.Walk
         bne   >
         incb
 !       stb   slither.wDrop
-@dloop  ldd   slither.RX,x
-        addd  slither.RVX,x
+        ; La compensation se fait SANS BOUCLE : position += vitesse x n en
+        ; deux mul par axe, a temps constant. Deux choses la rendent courte.
+        ; D'abord le signe se traite tout seul — le produit tronque a 16 bits
+        ; est le meme en complement a deux, donc deux mul NON SIGNES suffisent
+        ; pour une vitesse 8.8 signee. Ensuite on n'assemble jamais le delta :
+        ; le produit de l'octet BAS s'ajoute a la position entiere (sa retenue
+        ; remonte d'elle-meme), et celui de l'octet HAUT au seul octet haut,
+        ; ce qui evite le decalage et la pile.
+        ; A n = 7 : ~130 cycles par segment contre ~364 pour la boucle.
+        lda   slither.RVX+1,x
+        ldb   slither.wDrop
+        mul
+        addd  slither.RX,x
         std   slither.RX,x
-        ldd   slither.RY,x
-        addd  slither.RVY,x
+        lda   slither.RVX,x
+        ldb   slither.wDrop
+        mul
+        addb  slither.RX,x
+        stb   slither.RX,x
+        lda   slither.RVY+1,x
+        ldb   slither.wDrop
+        mul
+        addd  slither.RY,x
         std   slither.RY,x
-        inc   slither.RP,x             ; le vrillage est une horloge, lui aussi
-        dec   slither.wDrop
-        bne   @dloop
+        lda   slither.RVY,x
+        ldb   slither.wDrop
+        mul
+        addb  slither.RY,x
+        stb   slither.RY,x
+        lda   slither.RP,x             ; le vrillage est une horloge, lui aussi
+        adda  slither.wDrop
+        sta   slither.RP,x
         lda   slither.RX,x             ; l'octet haut est le pixel
         sta   slither.wPx
         lda   slither.RY,x
@@ -1276,15 +1299,31 @@ slither.CorpseLive
         bne   >
         incb
 !       stb   slither.wDrop
-@bloop  ldd   slither.dPX,u
-        addd  slither.dVX,u
+        ; Meme calcul sans boucle que le vol libre des records — voir la-bas
+        ; pour le pourquoi des deux mul non signes.
+        lda   slither.dVX+1,u
+        ldb   slither.wDrop
+        mul
+        addd  slither.dPX,u
         std   slither.dPX,u
-        ldd   slither.dPY,u
-        addd  slither.dVY,u
+        lda   slither.dVX,u
+        ldb   slither.wDrop
+        mul
+        addb  slither.dPX,u
+        stb   slither.dPX,u
+        lda   slither.dVY+1,u
+        ldb   slither.wDrop
+        mul
+        addd  slither.dPY,u
         std   slither.dPY,u
-        inc   slither.dSpin,u
-        dec   slither.wDrop
-        bne   @bloop
+        lda   slither.dVY,u
+        ldb   slither.wDrop
+        mul
+        addb  slither.dPY,u
+        stb   slither.dPY,u
+        lda   slither.dSpin,u
+        adda  slither.wDrop
+        sta   slither.dSpin,u
         lda   slither.dPX,u
         sta   x_pixel,u
         lda   slither.dPY,u
