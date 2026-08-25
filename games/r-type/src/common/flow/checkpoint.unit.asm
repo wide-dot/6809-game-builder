@@ -31,6 +31,7 @@
 
 CHECKPOINT_UNIT equ 1           ; api.asm ne doit pas m'en donner l'EXTERNAL
 checkpoint.load      EXPORT
+checkpoint.reload    EXPORT
 checkpoint.clearData EXPORT
 
         INCLUDE "src/common/engine/api.asm"
@@ -45,6 +46,12 @@ checkpoint.clearData EXPORT
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "src/stages/01/objid.const.asm"
         INCLUDE "gen/layout.asm"
+        ; L'ARMEMENT DE LA PARTIE (25/08/2026) : les cinq octets persistants et
+        ; les identifiants de routine des trois slots statiques.
+        INCLUDE "src/common/state/variables.asm"
+        INCLUDE "src/common/player/player1.equ"
+        INCLUDE "src/common/weapons/forcepods/forcepod.equ"
+        INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
 
 ; Ce que le stage fournit, repointé à chaque chargement de scène.
 checkpoint.positions EXTERNAL
@@ -60,7 +67,14 @@ stage.checkpointReset EXTERNAL
 ; et RECALE LA VAGUE : l'horloge de niveau redevient position x 128 — 128 trames
 ; par tuile de 24 px, l'inverse exact de la vitesse de scroll (24 / 0,1875).
 ;*******************************************************************************
+; La MORT : meme travail, mais la partie perd son armement.
+checkpoint.reload
+        clr   checkpoint.keepArmament
+        bra   checkpoint.load.entry
 checkpoint.load
+        lda   #1
+        sta   checkpoint.keepArmament
+checkpoint.load.entry
         clrb
         ldx   #checkpoint.positions
 @loop   lda   b,x
@@ -139,7 +153,88 @@ checkpoint.load.b equ *-1
         std   gfxlock.frame.count
         std   gfxlock.frame.lastCount
         std   gfxlock.frame.gameCount
+
+        jsr   checkpoint.armament
         jmp   ObjectWave_Init
+
+;*******************************************************************************
+; L'ARMEMENT DE LA PARTIE — ce qu'on garde, ce qu'on perd (25/08/2026)
+;
+; Le pod, les bits, la vitesse et le deverrouillage missile sont de la
+; PROPRIETE : la borne les conserve d'un stage au suivant et ne les reprend
+; qu'a la mort. Chez nous ils vivaient dans `player1+ext_variables`, donc dans
+; la page directe — que ObjectDp_Clear balaie quelques lignes plus haut, et
+; InitGlobals avant lui. Le joueur desarmait donc en changeant de niveau. Ils
+; sont depuis dans le bloc `globals` (src/common/state/variables.asm), et cette
+; routine est le SEUL endroit qui les touche apres le semis de partie fraiche.
+;
+; Elle vit ici et pas dans le corps de stage pour deux raisons. La bonne : la
+; distinction « je perds » / « je garde » EST la difference entre les deux
+; appelants du checkpoint, et la porter dans sa signature la rend impossible a
+; oublier. La pratique : le corps de stage est recopie dans les huit unites, et
+; le stage 1 debordait deja de son plafond ($87DA) de vingt-six octets.
+;
+; Elle DOIT venir apres ObjectDp_Clear : `player1+forcepod_attached`, que la
+; restauration pose pour faire renaitre le pod accroche, ne survivrait pas au
+; balayage de la page directe.
+;*******************************************************************************
+checkpoint.keepArmament fcb 0
+
+checkpoint.armament
+        ; PARQUER D'ABORD, toujours. A l'ouverture d'un stage les trois slots
+        ; statiques viennent d'etre effaces par le corps commun — routine 0,
+        ; c'est-a-dire l'Init de leur objet : sans veille, le pod et les bits
+        ; naitraient tout seuls, sans avoir ete ramasses. A la mort ils ne sont
+        ; pas effaces du tout (ManagedObjects_ClearAll s'arrete au pool, et ces
+        ; slots sont au-dela) : il faut donc les arreter explicitement, comme
+        ; la v1 le fait au meme endroit (v1-main.asm:326).
+        lda   #rtnid.Dormant
+        sta   forcepodOST+routine
+        lda   #bitdev.rtnid.Dormant
+        sta   bitdevTopOST+routine
+        sta   bitdevBotOST+routine
+
+        tst   checkpoint.keepArmament
+        bne   checkpoint.armament.restore
+
+; LA MORT — on repart nu. C'est la regle arcade, et c'est le seul endroit qui
+; la porte.
+checkpoint.armament.lose
+        ldx   #globals.forcepodlevel
+        ldb   #globals.ARMAMENT_SIZE
+!       clr   ,x+
+        decb
+        bne   <
+        clr   globals.missileUnlocked
+        rts
+
+; L'OUVERTURE D'UN STAGE — on reprend ce qu'on possede.
+;
+; Le pod repart par son Init, le meme que declenche le ramassage du bonus, mais
+; avec `player1+forcepod_attached` pose : il finit alors ACCROCHE au lieu de
+; flottant. La borne ne le rappelle pas en fin de stage — il reste ou il est —
+; donc c'est ICI, et seulement ici, qu'il retrouve le vaisseau ; le refaire
+; naitre flottant lui ferait retraverser l'ecran pour rien.
+;
+; Les bits repartent par ActiveInit, qui prend son cote sur l'ADRESSE de son
+; slot : c'est ce qui permet d'armer les deux dans la meme trame.
+checkpoint.armament.restore
+        lda   globals.forcepodlevel
+        beq   checkpoint.armament.bits
+        lda   #1
+        sta   player1+forcepod_attached
+        lda   #rtnid.Init
+        sta   forcepodOST+routine
+checkpoint.armament.bits
+        lda   globals.bitdevice
+        beq   checkpoint.armament.done
+        ldb   #bitdev.rtnid.ActiveInit
+        stb   bitdevTopOST+routine
+        cmpa  #2
+        blo   checkpoint.armament.done
+        stb   bitdevBotOST+routine
+checkpoint.armament.done
+        rts
 
 ;*******************************************************************************
 ; checkpoint.clearData — les 16 Ko de la fenêtre données d'un coup

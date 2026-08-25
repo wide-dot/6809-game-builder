@@ -7,7 +7,7 @@ point it at <toje clone>/scripts/toje-mcp.sh. Beware when overriding : the
 clone and the plugin declare the same Maven version, their builds overwrite
 each other's jars in ~/.m2.
 """
-import atexit, glob, json, os, subprocess
+import atexit, glob, json, os, re, subprocess
 
 PLUGIN_GLOB = os.path.expanduser(
     "~/.claude/plugins/cache/wide-dot-thomson/toje/*/scripts/toje-mcp.sh")
@@ -135,3 +135,52 @@ class Toje:
                 self.proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+
+
+# ---------------------------------------------------------------------------
+# LA CARTE MEMOIRE, LUE A LA SOURCE
+#
+# Le builder ecrit `<nom>.address equ $XXXX` dans gen/layout.asm pour chaque
+# <reserved> et chaque <region> du config. C'est la meme equate que consomme
+# l'assembleur : la lane et le jeu lisent donc le meme chiffre.
+#
+# Ces adresses BOUGENT — le bloc des temoins a demenage trois fois, et chaque
+# fois un littéral perime est reste quelque part. En aout 2026 la lane a tue
+# son joueur a l'ancienne adresse pendant six jours, en ecrivant dans le
+# binaire du stage : les temoins avaient l'air normaux, le joueur ne mourait
+# simplement jamais. Aucun script ne doit coder une de ces adresses en dur.
+# ---------------------------------------------------------------------------
+def layout_path(image):
+    """gen/layout.asm du projet dont vient cette image (dist/ et gen/ sont soeurs)."""
+    return os.path.join(os.path.dirname(os.path.abspath(image)), os.pardir,
+                        "gen", "layout.asm")
+
+
+def layout_symbol(name, image, fallback=None, layout=None):
+    """La valeur de `<name>.address` pour le projet de cette image.
+
+    `layout` force le fichier a lire ; sinon il est deduit de l'image."""
+    path = layout or layout_path(image)
+    want = re.compile(r"\s*%s\.address\s+equ\s+\$([0-9A-Fa-f]+)" % re.escape(name))
+    try:
+        with open(path) as f:
+            for line in f:
+                m = want.match(line)
+                if m:
+                    return int(m.group(1), 16)
+    except OSError:
+        pass
+    if fallback is None:
+        raise SystemExit("%s.address introuvable dans %s — le projet est-il "
+                         "construit ?" % (name, path))
+    return fallback
+
+
+def bench_block(image, fallback=None, layout=None):
+    """L'ancre des temoins du banc (src/common/bench.const.asm)."""
+    return layout_symbol("bench", image, fallback, layout)
+
+
+def globals_block(image, fallback=None, layout=None):
+    """L'ancre du bloc `globals` (src/common/state/variables.asm)."""
+    return layout_symbol("globals", image, fallback, layout)

@@ -66,7 +66,7 @@ LiveOptionBox
         ldd   x_pos,u
         cmpd  glb_camera_x_pos
         ble   @delete
-        lda   player1+bitdevice
+        lda   globals.bitdevice
         cmpa  #2
         blo   @canCollect              ; ignore contact if player1 already has the 2 bit devices
         lda   #127                     ; ... mais REARMER la boite : la passe de collision la
@@ -91,20 +91,20 @@ AlreadyDeletedOptionBox
 ; ---------------------------------------------------------------------------
 ; Collect : the floating pickup was touched. Activate a free static bit-device
 ; slot (bitdevTopOST first, then bitdevBotOST), then delete the pickup. The bit
-; count player1+bitdevice picks the slot: 0 -> TOP, 1 -> BOTTOM. The slot is
+; count globals.bitdevice picks the slot: 0 -> TOP, 1 -> BOTTOM. The slot is
 ; activated by writing bitdev.rtnid.ActiveInit to slot+routine; ActiveInit seeds
-; its orbit side/anim from player1+bitdevice and falls into ActiveTick.
+; its orbit side/anim from globals.bitdevice and falls into ActiveTick.
 ;   [u] = floating pickup OST (deleted here)
 ; ---------------------------------------------------------------------------
 Collect
         ldx   #bitdevTopOST            ; bit 0 (count 0) -> top slot
-        lda   player1+bitdevice
+        lda   globals.bitdevice
         beq   >
         ldx   #bitdevBotOST            ; bit 1 (count 1) -> bottom slot
 !
         lda   #bitdev.rtnid.ActiveInit
         sta   routine,x                ; activate the static slot (ActiveInit next frame)
-        inc   player1+bitdevice        ; one more active bit device
+        inc   globals.bitdevice        ; one more active bit device
 
         ; delete the floating pickup (transient): drop its bonus hitbox and free it
         _Collision_RemoveAABB AABB_0,AABB_list_bonus
@@ -141,14 +141,19 @@ ActiveInit
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
 
-        ; orbit side from the bit index: TOP (count was 0 -> now 1) above the
-        ; ship (offsety +25, Ani_bitdevice1), BOTTOM (count now 2) below it
-        ; (offsety -25, Ani_bitdevice2). player1+bitdevice was already
-        ; incremented by Collect, so 1 -> top, 2 -> bottom.
+        ; Orbit side: TOP above the ship (offsety +25, Ani_bitdevice1), BOTTOM
+        ; below it (offsety -25, Ani_bitdevice2).
+        ;
+        ; Le cote se lit sur L'ADRESSE DU SLOT, pas sur le compte (25/08/2026).
+        ; Il se lisait sur globals.bitdevice, qui vaut 1 quand Collect vient
+        ; d'armer le slot du haut et 2 pour celui du bas — juste tant que les
+        ; deux naissent l'un apres l'autre. La restauration d'armement en
+        ; entree de stage les arme TOUS LES DEUX d'un coup, le compte valant
+        ; deja 2 : les deux slots seraient partis en bas, superposes. Le slot
+        ; EST le cote, il n'y a pas de raison de le deduire d'ailleurs.
         ldx   #25
         ldy   #Ani_bitdevice1
-        lda   player1+bitdevice
-        cmpa  #1
+        cmpu  #bitdevTopOST
         beq   >
         ldx   #-25
         ldy   #Ani_bitdevice2

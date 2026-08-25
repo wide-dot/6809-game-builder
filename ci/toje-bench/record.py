@@ -30,7 +30,7 @@ facteur every/2. Le TO8 affiche 16 couleurs — le GIF est sans perte.
 import argparse, os, sys, tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mcp import Toje
+from mcp import Toje, bench_block
 from PIL import Image
 
 p = argparse.ArgumentParser()
@@ -92,7 +92,7 @@ def enter_stage(t, n):
     t.press()
     for _ in range(12):
         t.call("run_frames", {"n": 500, "timeout_ms": 600000, "fast": True})
-        b = t.read("87DB", 2)
+        b = t.read("%04X" % bench_block(a.image), 2)
         if b[0] == 0xCA and b[1] == n:
             return
     raise SystemExit("stage %d jamais seme" % n)

@@ -2,8 +2,8 @@
 ; La boîte à option — ce qui arme le kit du joueur
 ;
 ; C'est l'objet v1 `objects/player1/pow/pow_optionbox.asm`, que le POW détruit
-; fait naître. Ramassée, elle pose `player1+forcepodtype`, monte
-; `player1+forcepodlevel`, la vitesse, ou débloque les missiles — et surtout
+; fait naître. Ramassée, elle pose `globals.forcepodtype`, monte
+; `globals.forcepodlevel`, la vitesse, ou débloque les missiles — et surtout
 ; c'est elle qui RÉVEILLE le force pod : l'OST statique `forcepodOST` dort en
 ; routine Dormant, elle y écrit Init et la boucle le fait naître à la trame
 ; suivante.

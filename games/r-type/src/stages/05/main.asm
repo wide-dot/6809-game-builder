@@ -175,6 +175,9 @@ mid.Object        EXTERNAL
         ; Les identifiants de routine du force pod : le corps commun amorce son
         ; OST statique en veille a l'ouverture du stage.
         INCLUDE "src/common/weapons/forcepods/forcepod.equ"
+        ; player1.equ : forcepod_attached, que la restauration d'armement du
+        ; corps commun pose pour faire renaitre le pod ACCROCHE.
+        INCLUDE "src/common/player/player1.equ"
 
         ; Les variables inter-main, en equates absolues de la zone reservee
         ; `globals` : la boucle les remet a zero a l'entree du stage, comme la

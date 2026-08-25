@@ -126,6 +126,11 @@ Tick
         inc   main.endstage.phase
         lda   #-2
         sta   player1+subtype               ; autopilot: no control, ship still displayed
+        ; LE FORCE POD NE RENTRE PAS. Comme sur la borne, il reste ou il est
+        ; pendant toute la sequence de fin — un rappel avait ete essaye ici le
+        ; 25/08/2026 et rendait mal a l'ecran (decision auteur). Il n'y a rien
+        ; a faire : le stage suivant le fait renaitre accroche de toute facon,
+        ; puisque c'est l'etat que checkpoint.armament lui donne.
         jsr   AutoPilot
         ldb   #endstage.STATUS_JINGLE       ; main starts the stage clear jingle
         rts

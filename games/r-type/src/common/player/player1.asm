@@ -60,8 +60,11 @@ Init
         ldd   #0
         std   missileTgtTop
         std   missileTgtBot
-        clr   globals.missileUnlocked  ; verrouillé au départ ; débloqué par le bonus (pow_optionbox subtype 7),
-                                       ;   et perdu à la mort (Init rejoué au respawn) — fidèle arcade
+        ; globals.missileUnlocked N'EST PLUS EFFACE ICI (25/08/2026). Cet Init
+        ; rejoue au respawn ET a chaque entree de stage — c'est par lui que
+        ; l'arme missile se perdait en changeant de niveau. Le deverrouillage
+        ; est de l'ARMEMENT : il se perd a la mort, avec le pod, les bits et la
+        ; vitesse, par checkpoint.armament. Voir src/common/state/variables.asm.
         ldd   #60
         addd  glb_camera_x_pos
         std   player1+x_pos
@@ -515,7 +518,7 @@ ApplyJoypadInput
         decb                                         ; convert 1-based to 0-based index
         lslb                                         ; multiply by 4 (each entry is 4 bytes)
         lslb
-        ldx   player1+speedlevel
+        ldx   globals.speedlevel
         abx
         leax  speed.preset,x
 @setSpeed

@@ -77,6 +77,9 @@ _api    macro
         ; Le rechargement de checkpoint et le rejeu de defilement : l'objet
         ; checkpoint de la v1, dans son unite montee.
 checkpoint.load      EXTERNAL
+        ; La seconde porte du meme rechargement : celle de la MORT, qui fait
+        ; perdre son armement a la partie la ou l'ouverture d'un stage le rend.
+checkpoint.reload    EXTERNAL
 checkpoint.clearData EXTERNAL
  ENDC
 

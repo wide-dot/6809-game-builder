@@ -294,7 +294,7 @@ InitiateDiagonalLaser
         ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
         ; dans doc/rebound-laser-plan.md.
         ldb   #RB.MAXSEG-1
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         cmpa  #2
         bne   >
         ldb   #1
@@ -369,7 +369,7 @@ InitiateHorizontalLaser
         ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
         ; dans doc/rebound-laser-plan.md.
         ldb   #RB.MAXSEG-1
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         cmpa  #2
         bne   >
         ldb   #1
@@ -382,7 +382,7 @@ InitiateHorizontalLaser
         ; boite et leur mort.
         ; Rien a armer au palier faible : deux segments, et le second est
         ; desarme chez la borne aussi.
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         cmpa  #2
         beq   >
         ldb   #3                       ; segment 5
@@ -657,7 +657,7 @@ Destroy
 isInLivingArea
         ; check if the laser is in living range
         ; if not, destroy the laser
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         cmpa  #2
         beq   >        
         ; longer laser

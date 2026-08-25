@@ -81,9 +81,9 @@ Live
         lda   #2                        ; reste : subtype 4 = counter-air (les subtypes sans
                                         ;   image sont filtres a l'Init, cf. optionboxes)
 !
-        sta   player1+forcepodtype
+        sta   globals.forcepodtype
                                         ; Do we need to activate the force pod ?
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         bne   >
                                         ; Yes : the force pod is the static forcepodOST slot.
                                         ; Activate it by kicking its routine to Init (its spawn/
@@ -95,11 +95,11 @@ Live
         lda   #rtnid.Init
         sta   forcepodOST+routine
 !
-        lda   player1+forcepodlevel
+        lda   globals.forcepodlevel
         cmpa  #3
         beq   >
         inca  
-        sta   player1+forcepodlevel
+        sta   globals.forcepodlevel
 !
         _soundFX.play soundFX.BonusSound,4
 @delete
@@ -107,11 +107,11 @@ Live
         _Collision_RemoveAABB AABB_0,AABB_list_bonus
         jmp   DeleteObject
 @speed
-        ldd   player1+speedlevel
+        ldd   globals.speedlevel
         addd  #32
         cmpd  #32*5             ; arcade : 5 paliers (0..4). On plafonne a l'offset
         beq   >                 ;   128 (Configuration 5 = niveau 4, le plus rapide) ;
-        std   player1+speedlevel ;  sans ca on restait bloque au niveau 3 (config 4).
+        std   globals.speedlevel ;  sans ca on restait bloque au niveau 3 (config 4).
 !
         jmp   @delete
 @missiles
