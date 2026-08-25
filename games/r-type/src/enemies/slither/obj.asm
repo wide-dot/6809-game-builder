@@ -102,6 +102,9 @@ slither.mInit     equ ext_variables+7    ; 7,8  la table RecInit choisie
 slither.mPhase    equ ext_variables+9    ; 9    parite de collision
 slither.mInst     equ ext_variables+10   ; 10,11 le bloc d'instance pris a la
                                          ;       naissance, rendu a la mort
+slither.mTailD    equ ext_variables+12   ; 12   le retard de la QUEUE : 92
+                                         ;      (script court) ou 146 (long)
+slither.mTailDone equ ext_variables+13   ; 13   1 = la queue est posee
 
 ; --- LE SUIVEUR A OST (la tete) --------------------------------------------
 slither.fMaster   equ ext_variables+0    ; 0,1  l'OST du maitre (valide avant usage)
@@ -231,8 +234,15 @@ slither.MasterInit
         ; a lui : 78f8 passe son CX a load_xy_preset et a
         ; load_animation_script_preset (40:f912). Donc, comme le bug :
         ;   subtype   & 3     -> la rangee de 1000:34ae, donc la LONGUEUR de
-        ;                        la chaine (l'arcade compare la priorite a
-        ;                        0x4280 : 4400/4300 -> long, 4200/4100 -> court)
+        ;                        la chaine. L'arcade compare cette valeur a
+        ;                        0x4280 (40:7922) et le sens est celui du
+        ;                        DESASSEMBLAGE, pas celui de la plate qui dit
+        ;                        l'inverse : `MOV AX,short / CMP [SI+34],4280
+        ;                        / JNC garde-le-court`. JNC saute quand il n'y
+        ;                        a PAS de retenue, donc quand la valeur est
+        ;                        SUPERIEURE ou egale. Table : 4400 4300 4200
+        ;                        4100, donc variantes 0 et 1 -> COURT,
+        ;                        2 et 3 -> LONG.
         ;   subtype+1 & $0F   -> l'entree du preset XY commun (18dd0)
         ;   subtype+1 >> 4    -> la variante de script (1000:9274, seize
         ;                        pointeurs, pas de DEUX octets)
@@ -246,17 +256,31 @@ slither.MasterInit
         ; anim_slither dans src/common/fx/animation/index.asm.
         ldb   subtype+1,u
         stb   @script
-        ; la position, preset XY commun — le geste de l'InitCreator du bug
+        ; --- la position : preset XY commun, en repere ECRAN ----------------
+        ; 78f8 passe CX a load_xy_preset (40:f88c), qui lit la table 0x8DD0 —
+        ; seize entrees, converties ici en deux octets (x, y) dans le repere
+        ; du cadre de jeu. PAS d'ajustement au passage : le +24 que le bug
+        ; applique pour ses presets 3 a 8 vit dans SON code (0x61EB), pas dans
+        ; le helper.
+        ;
+        ; REPERE : le bug ajoute glb_camera_x_pos parce qu'il travaille en
+        ; PLAYFIELD (render_playfieldcoord_mask). Nous sommes en repere ECRAN,
+        ; comme l'outslay dont la table a le cadre 48/28 cuit dedans — le
+        ; maitre a render_flags nul, l'anneau ne garde qu'un OCTET de x, et la
+        ; publication compare a screen_left/right. Ajouter la camera faisait
+        ; croitre x_pos sans borne au fil du niveau : son octet bas repassait
+        ; par zero et la chaine sautait a l'ecran. Le cadre se cuit donc ici.
         andb  #$0F
         aslb
         ldx   #PresetXYIndex
         abx
         clra
         ldb   1,x
+        addd  #screen_top
         std   y_pos,u
         clra
         ldb   ,x
-        addd  glb_camera_x_pos
+        addd  #screen_left
         std   x_pos,u
         ; le script de mouvement : l'INDEX de la variante dans la LUT commune
         ldb   #0
@@ -276,15 +300,24 @@ slither.MasterInit
         ldb   subtype,u
         andb  #3
         cmpb  #2
-        bhs   @court
-        ldx   #slither.RecInitLong
-        ldd   #15*256+146              ; A = corps, B = le retard de la queue
+        bhs   @long                    ; variantes 2 et 3 : la chaine longue
+        ldx   #slither.RecInitShort    ; variantes 0 et 1 : la courte
+        ldd   #9*256+92                ; A = corps, B = le retard de la queue
         bra   >
-@court  ldx   #slither.RecInitShort
-        ldd   #9*256+92
+@long   ldx   #slither.RecInitLong
+        ldd   #15*256+146
 !       stx   slither.mInit,u
         sta   slither.mNrec,u
-        stb   @tailDelay
+        ; LE RETARD DE LA QUEUE VIT DANS L'OST, pas dans un operande
+        ; auto-modifie : cet octet-la est unique pour toute la page, donc
+        ; PARTAGE par les trois serpents. Le dernier maitre a s'initialiser
+        ; ecrasait la valeur avant que le precedent ne l'ait consommee — une
+        ; chaine courte heritait du retard 146 d'une longue et sa queue se
+        ; retrouvait 64 trames trop loin : un element isole suivant la file a
+        ; distance (constat auteur). Meme famille de defaut que la zone
+        ; residente partagee, au meme endroit du raisonnement.
+        stb   slither.mTailD,u
+        clr   slither.mTailDone,u
         ; --- le maitre ne dessine rien --------------------------------------
         clr   priority,u
         clr   render_flags,u           ; coordonnees ECRAN, comme l'outslay
@@ -306,10 +339,10 @@ slither.MasterInit
 !       lda   #ObjID_slither_head      ; le suiveur de TETE, retard 0
         clrb
         jsr   slither.SpawnFollower
-        lda   #ObjID_slither_tail      ; le suiveur de QUEUE, retard du script
-        ldb   #0
-@tailDelay equ *-1
-        jsr   slither.SpawnFollower
+        ; La QUEUE n'est PAS posee ici : son heure vient 92 ou 146 trames plus
+        ; tard. La poser tout de suite la ferait lire l'anneau a un index que
+        ; le maitre n'a pas encore ecrit — vecu, une queue a x=0 y=0. C'est le
+        ; geste du finalizer de l'outslay, pose quand son retard est atteint.
         inc   routine,u
         ; --- le retard de la wave : derouler l'interprete d'autant, chaque
         ; trame rattrapee poussant SON entree d'anneau --------------------
@@ -432,6 +465,23 @@ slither.MasterLive
         inc   slither.mActive,u
         lbra  @aloop
 @aend
+        ; --- 3bis) la QUEUE, quand son retard est atteint -------------------
+        ; Meme garde que l'eveil d'un record : STRICTEMENT superieur, sinon la
+        ; premiere lecture vaudrait -1, soit l'entree 255 — une position
+        ; rassise d'un serpent precedent.
+        lda   slither.mTailDone,u
+        bne   @tail
+        ldb   slither.mTailD,u
+        clra
+        pshs  d
+        ldd   slither.mFrames,u
+        cmpd  ,s++
+        bls   @tail
+        inc   slither.mTailDone,u
+        lda   #ObjID_slither_tail
+        ldb   slither.mTailD,u
+        jsr   slither.SpawnFollower
+@tail
         ; --- 4) la marche des records --------------------------------------
         com   slither.mPhase,u         ; la parite bascule PAR TOUR DE BOUCLE
         jsr   slither.Walk
@@ -724,6 +774,25 @@ slither.FollowerLive
         lda   routine,x
         cmpa  #2
         lbeq  @die
+        ; --- le drain : MEME regle que les records (slither.Walk) -----------
+        ; Passe la fin du script plus personne ne pousse l'anneau, et l'horloge
+        ; continue d'avancer : chaque lecteur descend la zone ECRITE vers la
+        ; position finale. Un lecteur qui l'a entierement consommee lit alors
+        ; des entrees vieilles de 256 trames — la trajectoire du tour
+        ; precedent. La TETE, a retard 0, sort de la zone ecrite des la
+        ; PREMIERE trame de drain : sans ce test elle survit au serpent et
+        ; rejoue son propre passage tres loin derriere (constat auteur). Les
+        ; records avaient le test depuis toujours, les suiveurs non.
+        lda   slither.mState,x
+        beq   @vivant
+        ldb   slither.fDelay,u
+        clra
+        pshs  d
+        ldd   slither.mFrames,x
+        subd  ,s++
+        cmpd  slither.mEndF,x
+        lbge  @die
+@vivant
         ; --- la position : l'anneau DE SON MAITRE, a (ecriture - 1 - retard)
         ; X porte l'OST du maitre, valide juste au-dessus : on y prend son
         ; bloc d'instance, donc SON anneau. Un suiveur qui lirait l'anneau
