@@ -4,14 +4,14 @@
     TOJE_MCP=<toje>/scripts/toje-mcp.sh \
     python3 ci/toje-bench/rtype_bench.py dist/to8.fd [max_frames]
 
-Witnesses at bench.BLOCK = $87DB (src/common/bench.const.asm, the
-layout's <reserved name="bench"> block): magic $CA, stage byte (00 =
+Witnesses at bench.BLOCK (src/common/bench.const.asm), whose address
+comes from gen/layout.asm — never hardcode it: magic $CA, stage byte (00 =
 title, 01/02 = stages), frame counter, camera (word), spawns (word).
-bench.BLOCK+12 is the lane's COMMAND window (bench.request): writing a
+bench.BLOCK+8 is the lane's COMMAND window (bench.request): writing a
 non-zero byte kills the player on the next stage.loop tour — the lane's
 ship never dies on its own (its constant fire mows everything down
 before contact), and this is what makes the death path exercisable.
-globals.lives is read directly at its fixed address ($9DCF).
+globals.lives is read at globals.address+4, resolved the same way.
 
 The game carries NO verdict flags: the lane derives its seven checks
 from observable state, driving the real flow — the image boots on the
@@ -35,10 +35,19 @@ registers, disassembly and a screenshot are dumped.
 Exit code: 0 pass, 1 wedge/abort, 2 frame budget exceeded.
 """
 import os, sys, time
-from mcp import Toje
+from mcp import Toje, bench_block, globals_block
 
 image = sys.argv[1]
 max_frames = int(sys.argv[2]) if len(sys.argv) > 2 else 140000
+
+# Les deux ancres, lues dans gen/layout.asm — la source du jeu lui-meme.
+# Tout en derive : la fenetre de commande etait restee sur l'adresse d'AVANT le
+# demenagement du 19/08, donc `kill` poussait son octet dans le binaire du stage
+# au lieu de la lane, et le joueur ne mourait jamais.
+BLOCK = bench_block(image)
+REQUEST = BLOCK + 8                    # bench.request
+LIVES = globals_block(image) + 4       # globals.lives
+print("temoins : bench=$%04X lives=$%04X" % (BLOCK, LIVES), flush=True)
 
 t = Toje()
 t.boot_floppy(image)
@@ -47,13 +56,13 @@ frames = 215
 
 
 def witnesses():
-    b = t.read("87DB", 16)
+    b = t.read("%04X" % BLOCK, 9)
     return {"magic": b[0], "stage": b[1],
             "cam": (b[3] << 8) | b[4], "spawns": (b[5] << 8) | b[6]}
 
 
 def lives():
-    return t.read("9DCF", 1)[0]
+    return t.read("%04X" % LIVES, 1)[0]
 
 
 def run(n):
@@ -65,7 +74,7 @@ def run(n):
 
 
 def kill():
-    t.call("write_memory", {"addr": "8772", "bytes": ["01"]})
+    t.call("write_memory", {"addr": "%04X" % REQUEST, "bytes": ["01"]})
 
 
 def fail(msg):

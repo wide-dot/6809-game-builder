@@ -211,7 +211,28 @@ Init
         ldd   x_pos,u                   ; amorcer le balayage de gommes : sans ca
         std   gum_prev_x                ; le premier partirait de la position que
                                         ; le pod avait a sa vie precedente
-        inc   routine,u                      
+
+        ; OU FINIT CET INIT — flottant, ou deja accroche (25/08/2026).
+        ;
+        ; Ramasse en jeu, le pod nait FLOTTANT devant le vaisseau et s'accroche
+        ; en le rejoignant : c'est le geste arcade, et `inc routine,u` (0 -> 1)
+        ; le disait. Mais l'entree d'un nouveau STAGE re-active le meme slot
+        ; statique pour un pod que le joueur possede DEJA : le refaire naitre
+        ; flottant lui ferait retraverser l'ecran pour rien. Comme sur la borne,
+        ; le pod n'est PAS rappele en fin de stage — il reste ou il est — et
+        ; c'est le stage suivant qui le remet accroche (decision auteur).
+        ;
+        ; Le signal est `player1+forcepod_attached`, pose par la restauration
+        ; d'armement APRES checkpoint.load (donc apres le dernier balayage de la
+        ; page directe). A la mort comme au ramassage il vaut zero, et l'ancien
+        ; comportement tient mot pour mot.
+        lda   player1+forcepod_attached
+        beq   @floating
+        lda   #RunAttached_rtn
+        sta   routine,u
+        rts
+@floating
+        inc   routine,u
         rts
 
 RunFloating
@@ -830,7 +851,7 @@ ForcePodAttachedFire
         lda   power_level,u            ; = forcepodlevel (palier de puissance)
         cmpa  #2
         blo   @rts                     ; niveau 0/1 -> pas de laser (le faible/fort = longueur, lue par l'objet laser depuis forcepodlevel)
-        lda   player1+forcepodtype     ; choix de l'arme par le TYPE, pas le niveau
+        lda   globals.forcepodtype     ; choix de l'arme par le TYPE, pas le niveau
         cmpa  #2
         beq   @counterairlaser         ; type 2 = counter-air
         ; type 0 = rebound (bleu) ; type 1 = counter-ground (pas encore implemente, stage > 1) -> rebound en attendant
@@ -950,7 +971,7 @@ Ani_forcepod_2
         fcb   -1
 
 checkForcePodUpdate
-        ldb   player1+forcepodlevel
+        ldb   globals.forcepodlevel
         cmpb  power_level,u
         beq   @rts
         stb   power_level,u

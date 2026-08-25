@@ -282,6 +282,19 @@ Les trois régressions ci-dessous sont **corrigées** :
    (la signature YM du gel a disparu), et le layout dit vrai sur
    globals/pile (le débordement missile de 4 octets est déclaré).
 
+   **Mise à jour du 25/08/2026 — plus aucune adresse en dur.** Le bloc est
+   passé à `$87E2` et à **9 octets** : les cinq témoins `t1`..`t5` du
+   scénario forcé et le compteur `stage1Spawns` n'avaient plus d'écrivain
+   depuis la dé-banc-ification du 13/08, et `bench.SCROLL_VEL` (la vitesse
+   de défilement du JEU, pas un témoin) est devenue `stage.SCROLL_VEL`.
+   Surtout : l'adresse ne s'écrit plus nulle part. Le builder l'émet dans
+   `gen/layout.asm` (`bench.address`), `bench.const.asm` la lit, et les
+   scripts la lisent par `mcp.bench_block(image)` / `mcp.globals_block(image)`.
+   Ce qui a motivé la bascule : `kill()` pointait encore `$8772`, la fenêtre
+   de commande d'AVANT le déménagement du 19/08 — la lane poussait son octet
+   dans le binaire du stage, et **son joueur ne mourait jamais**. C3 et C4
+   ne prouvaient donc plus rien depuis six jours, sans le moindre signe.
+
 L'instrumentation étant enfin fiable, la suite s'est éclaircie :
 
 - **« la wave n'exécute aucun objet » était un faux diagnostic** — la

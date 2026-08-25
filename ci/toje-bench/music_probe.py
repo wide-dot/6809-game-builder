@@ -15,7 +15,7 @@ Exit code: 0 all stages verified, 1 mismatch or wedge.
 """
 import os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mcp import Toje
+from mcp import Toje, bench_block
 
 image = sys.argv[1]
 root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
@@ -44,7 +44,7 @@ frames = 215
 
 
 def witnesses():
-    b = t.read("87DB", 8)
+    b = t.read("%04X" % bench_block(image), 9)
     return {"magic": b[0], "stage": b[1]}
 
 

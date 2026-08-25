@@ -89,4 +89,37 @@ missileTgtBot              equ GLOBAL_VARIABLES+146 ; 2 octets, OST cible du bas
 * naissance donne le point d'arrivee au pixel, et il ne depend plus du regime.
 stage.gum.hook             equ GLOBAL_VARIABLES+148 ; 2 octets, vecteur
 
+* L'ARMEMENT DU JOUEUR — CE QUE LA PARTIE POSSEDE (25/08/2026).
+*
+* Ces cinq octets vivaient dans `player1+ext_variables`, donc dans la PAGE
+* DIRECTE — et la page directe est balayee DEUX FOIS a chaque entree de stage
+* (InitGlobals, puis ObjectDp_Clear via checkpoint.load). Le joueur perdait
+* donc pod, bits, vitesse et missiles en passant d'un niveau au suivant, alors
+* que la borne les conserve : la seule chose qu'on y perd, c'est en mourant.
+*
+* Ils rejoignent le bloc reserve pour la meme raison que
+* globals.missileUnlocked juste au-dessus, dont le commentaire disait deja
+* « STATUT D'ARME persistant (doit survivre au changement de stage) » — les
+* quatre autres n'avaient simplement jamais suivi. Une seule copie de la
+* verite, et plus aucun effaceur ne passe dessus.
+*
+* CE QUI RESTE DANS L'OST DU JOUEUR : beam_value (la charge se perd, comme en
+* arcade), forcepod_attached et forcepod_mount_side — de l'etat COURANT du
+* pod, pas de la propriete. Comme sur la borne, le pod reste ou il est pendant
+* la sequence de fin ; c'est l'entree du stage suivant qui le remet accroche
+* (decision auteur, 25/08/2026 : un rappel avait ete essaye, il rendait mal a
+* l'ecran). Accroche, sa position se rederive du vaisseau a chaque trame — il
+* n'y a donc rien a conserver de son etat courant.
+*
+* LE BLOC RESERVE N'EST NI CHARGE NI MIS A ZERO : c'est le semis de partie
+* fraiche qui les efface, et la mort qui les reprend — voir
+* checkpoint.armament dans src/common/flow/checkpoint.unit.asm : c'est
+* checkpoint.reload — la porte de la MORT — qui les reprend, la ou
+* checkpoint.load, l'ouverture d'un stage, les rend.
+globals.forcepodlevel      equ GLOBAL_VARIABLES+150 ; 1 octet, 0 a 3 (0 = pas de pod)
+globals.forcepodtype       equ GLOBAL_VARIABLES+151 ; 1 octet, = player_one_laser_type arcade
+globals.bitdevice          equ GLOBAL_VARIABLES+152 ; 1 octet, nombre de bit devices (0, 1 ou 2)
+globals.speedlevel         equ GLOBAL_VARIABLES+153 ; 2 octets, offset dans la table speed.preset
+globals.ARMAMENT_SIZE      equ 5                    ; ce que checkpoint.armament efface
+
  ENDC

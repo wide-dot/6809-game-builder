@@ -365,9 +365,14 @@
             <!-- Ce que le jeu occupe sans jamais rien y charger : des equates du
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
                  que ce soit. $9E80 est la limite haute d'un main.
-                 Les 16 octets en $87DB logent les temoins du banc
+                 Les 9 octets en $87E2 logent les temoins du banc
                  (bench.const.asm) ; les unites title/stage disposent de
-                 $8000-$87DA. Le pool d'objets a demenage dans la demi-page 0
+                 $8000-$87E1. Le bloc faisait 16 octets jusqu'au 25/08/2026 :
+                 sept etaient morts (les cinq controles du scenario force, que
+                 la de-banc-ification du 13/08 a prive d'ecrivain, et un
+                 compteur jamais ecrit). Il est colle a la region `cast` pour
+                 que ce qu'il rend aille aux unites de stage, qui sont ce qui
+                 grossit. Le pool d'objets a demenage dans la demi-page 0
                  (2026-08-20) : $8850-$9DCA est redevenu libre en page 1 —
                  destine au mscroll resident du stage 3. -->
             <!-- La convergence des lots d'ennemis : les 101 octets sous l'ex-pool —
@@ -390,18 +395,23 @@
             <arena name="stage7.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <arena name="stage8.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <region name="cast" page="$01" address="$87EB" size="$0065"/>
-            <reserved name="bench"        page="$01" address="$87DB" size="$0010"/>
+            <reserved name="bench"        page="$01" address="$87E2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
-                 missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
-            <reserved name="globals"      page="$01" address="$9DCB" size="$0096"/>
+                 missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font.
+                 25/08/2026 : +5 octets pour l'ARMEMENT PERSISTANT (pod, bits,
+                 vitesse), qui quitte la page directe parce qu'elle est balayee a
+                 chaque entree de stage — voir variables.asm. Pris a la pile. -->
+            <reserved name="globals"      page="$01" address="$9DCB" size="$009B"/>
             <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 143 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
                  trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE.
                  24/08/2026 : le plancher monte de deux octets, `globals` ayant pris
-                 le crochet de couche destructible (stage.gum.hook). Il reste 59
-                 octets de marge sur le pic mesure. -->
-            <reserved name="stack"        page="$01" address="$9E61" size="$008F"/>
+                 le crochet de couche destructible (stage.gum.hook).
+                 25/08/2026 : le plancher monte de cinq octets de plus, `globals`
+                 ayant pris l'armement persistant. 138 octets, il reste 54 de marge
+                 sur le pic mesure — a re-mesurer avec les casts d'ennemis reels. -->
+            <reserved name="stack"        page="$01" address="$9E66" size="$008A"/>
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>

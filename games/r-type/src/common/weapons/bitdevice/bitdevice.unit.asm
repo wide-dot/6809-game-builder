@@ -32,6 +32,9 @@ bitdevice.Object EXPORT
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/common/player/player1.equ"
+        ; le compte de bits vit dans `globals` depuis le 25/08/2026 : il doit
+        ; survivre a l'echange de stage, que la page directe ne fait pas.
+        INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
         INCLUDE "src/stages/01/objid.const.asm"
 

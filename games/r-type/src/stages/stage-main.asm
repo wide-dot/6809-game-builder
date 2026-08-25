@@ -18,6 +18,15 @@
 ; scene.load le repointe sur le stage fraîchement chargé.
 stage.main EXPORT
 
+; LA VITESSE DE DEFILEMENT, en 8.8 : 3/16 de pixel par trame, celle de r-type.
+; Elle a vecu dans bench.const.asm sous le nom bench.SCROLL_VEL, ou elle n'avait
+; rien a faire — ce n'est pas un temoin de test mais un parametre du jeu.
+; NE PAS L'ACCELERER pour traverser un niveau plus vite : les horodatages d'une
+; wave sont des trames d'arcade calees sur CETTE vitesse, et un scroll plus
+; rapide desynchronise les apparitions du decor, ce qui rend toute observation
+; d'un ennemi ininterpretable. Le banc l'a appris en tournant a $0200.
+stage.SCROLL_VEL equ $0030
+
 ; Un stage a couche mobile (STAGE_MSCROLL defini par SON main, avant cette
 ; inclusion) tire le blast et la camera du module resident — et son champ
 ; n'est plus efface par clearblast : le blast mscroll repeint tout (voir la
@@ -80,6 +89,19 @@ stage.main
         ldb   #2
         addb  cheat.extraLives             ; les vies du cheat title, en plus
         stb   globals.lives
+        ; L'ARMEMENT part a zero — et ICI SEULEMENT, comme le score et les vies.
+        ; Le bloc reserve n'est ni charge ni mis a zero : sans ce semis, une
+        ; partie fraiche demarrerait avec ce que la RAM contenait, et le
+        ; checkpoint d'ouverture RESTAURERAIT ce residu (un niveau de pod
+        ; arbitraire, un offset de vitesse hors table).
+        ; Ensuite, plus personne n'y touche jusqu'a la mort — c'est
+        ; checkpoint.reload qui la porte, voir src/common/flow/checkpoint.unit.asm.
+        ldx   #globals.forcepodlevel
+        ldb   #globals.ARMAMENT_SIZE
+!       clr   ,x+
+        decb
+        bne   <
+        clr   globals.missileUnlocked
         ldx   #bench.magic                 ; cf. bench.SIZE : la zone n'est chargée
         ldb   #bench.SIZE                  ; par personne, un témoin non posé lirait
         clra                               ; sinon $FF au lieu de $00
@@ -162,14 +184,15 @@ statics.SIZE  equ nb_static_objects*object_size
         ; tout seuls a l'ouverture du stage, sans avoir ete ramasses.
         lda   #ObjID_forcepod
         sta   forcepodOST+id
-        lda   #rtnid.Dormant
-        sta   forcepodOST+routine
         lda   #ObjID_bitdevice
         sta   bitdevTopOST+id
         sta   bitdevBotOST+id
-        lda   #bitdev.rtnid.Dormant
-        sta   bitdevTopOST+routine
-        sta   bitdevBotOST+routine
+        ; LES ROUTINES DE VEILLE NE SONT PLUS POSEES ICI (25/08/2026) : elles le
+        ; sont par checkpoint.load, en fin d'init, avec la restauration de
+        ; l'armement. Les deux gestes sont indissociables — parquer les trois
+        ; slots puis reveiller ceux que le joueur possede — et ils ont besoin
+        ; que la page directe ait fini d'etre balayee. Les identifiants, eux,
+        ; restent ici : ils appartiennent a l'effacement juste au-dessus.
 
         ; LE POINTEUR DE LA TRAINEE DU JOUEUR. La v1 l'initialise depuis le
         ; binaire de son game mode (`fdb player_pos_ring_buffer`) ; ici la
@@ -204,7 +227,7 @@ statics.SIZE  equ nb_static_objects*object_size
         sta   scroll_vp_x_pos
         lda   #11
         sta   scroll_vp_y_pos
-        ldd   #bench.SCROLL_VEL
+        ldd   #stage.SCROLL_VEL
         std   scroll_vel
 
         ; OVERLAY : la timeline d'effacement par defaut — fenetre pleine des
@@ -896,7 +919,7 @@ stage.state.checkpoint
         lda   #$7B                     ; retour en 160x200x16c
         sta   map.CF74021.LGAMOD
 
-        ldd   #bench.SCROLL_VEL
+        ldd   #stage.SCROLL_VEL
         std   scroll_vel
         lda   #mainloop.state.RUNNING
         sta   mainloop.state
@@ -923,8 +946,14 @@ stage.state.checkpoint
         ; generee par <tilereset> depuis une liste de rectangles de carte, et
         ; c'est une simple recopie dans l'anneau de demandes.
         jsr   tilemap.restore
+        ; `checkpoint.reload` ET PAS `checkpoint.load` : meme routine, deux
+        ; portes. Celle-ci dit « le joueur vient de mourir », et c'est ce qui
+        ; lui fait PERDRE son armement — pod, bits, vitesse, missiles — la ou
+        ; l'ouverture d'un stage le lui rend. Tant que ces cinq octets vivaient
+        ; dans la page directe, le balayage du checkpoint les emportait dans les
+        ; DEUX cas, et le joueur desarmait en changeant de niveau.
         lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.load
+        ldx   #checkpoint.reload
         jsr   paged.call
         ; Le clignotement / l'invincibilite de la reapparition. Il faut le
         ; reposer APRES le chargement : ObjectDp_Clear vient d'effacer la page

@@ -38,41 +38,15 @@ Codes de sortie : 0 releve complet, 1 blocage, 2 pas entre dans le stage.
 import argparse, os, re, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mcp import Toje
-
-
-def bench_address(layout, fallback=0x87DB):
-    """L'adresse du bloc temoin, lue dans gen/layout.asm quand il est la.
-
-    Le bloc a deja demenage deux fois ($8766 -> $87DB le 19/08, le title ayant
-    grossi jusqu'a poser son dernier octet dessus) : le coder en dur, c'est
-    relever du bruit de pile un jour sans s'en apercevoir."""
-    try:
-        for line in open(layout):
-            m = re.match(r'\s*bench\.address\s+equ\s+\$([0-9A-Fa-f]+)', line)
-            if m:
-                return int(m.group(1), 16)
-    except OSError:
-        pass
-    return fallback
-
-
-def globals_address(layout, fallback=0x9DCB):
-    try:
-        for line in open(layout):
-            m = re.match(r'\s*globals\.address\s+equ\s+\$([0-9A-Fa-f]+)', line)
-            if m:
-                return int(m.group(1), 16)
-    except OSError:
-        pass
-    return fallback
+from mcp import Toje, bench_block, globals_block, layout_path
 
 
 p = argparse.ArgumentParser()
 p.add_argument("image")
 p.add_argument("out")
-p.add_argument("--layout", default="gen/layout.asm",
-               help="d'ou sont lues bench.address et globals.address")
+p.add_argument("--layout", default=None,
+               help="gen/layout.asm a lire ; par defaut celui du projet de "
+                    "l'image (dist/ et gen/ sont soeurs)")
 p.add_argument("--stage", type=int, default=1,
                help="le stage a relever ; le releve s'arrete quand on en sort")
 p.add_argument("--max-frames", type=int, default=30000,
@@ -88,9 +62,10 @@ p.add_argument("--cheat", action="store_true",
                     "disparu")
 a = p.parse_args()
 
-BENCH = bench_address(a.layout)
-LIVES = globals_address(a.layout) + 4
-print(f"temoins : bench=${BENCH:04X} lives=${LIVES:04X} (source {a.layout})", flush=True)
+src = a.layout or layout_path(a.image)
+BENCH = bench_block(a.image, layout=a.layout)
+LIVES = globals_block(a.image, layout=a.layout) + 4
+print(f"temoins : bench=${BENCH:04X} lives=${LIVES:04X} (source {src})", flush=True)
 
 t = Toje()
 t.boot_floppy(os.path.abspath(a.image))
