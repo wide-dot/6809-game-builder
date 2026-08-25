@@ -27,17 +27,51 @@ def load(path):
     return rows
 
 
-def playable(rows, dry=100):
-    """Ou s'arrete le JEU, avant le chargement de la scene suivante.
+def playable(rows, dry=100, sat=45.0, sat_window=50, sat_min=150,
+             traversal=False):
+    """Ou s'arrete le JEU — les deux queues qui ne sont pas du jeu.
 
-    Le releve va jusqu'au changement de stage, donc sa queue est un chargement
-    disque : plusieurs centaines de trames sans un seul rendu. Le laisser dans
-    la moyenne, c'est comparer deux versions sur la duree de leurs acces disque
-    — qui n'ont rien a voir avec le rendu et dependent de la taille des
-    fichiers. On rend l'indice du dernier rendu quand la queue muette depasse
-    `dry` trames, sinon la fin du releve."""
+    LA QUEUE MUETTE. Le releve va jusqu'au changement de stage, donc il finit
+    sur un chargement disque : plusieurs centaines de trames sans un seul
+    rendu. Le laisser dans la moyenne, c'est comparer deux versions sur la
+    duree de leurs acces disque — qui n'ont rien a voir avec le rendu et
+    dependent de la taille des fichiers. Coupee des qu'elle depasse `dry`
+    trames.
+
+    LA QUEUE SATUREE. Symetrique, et tout aussi hors sujet : quand la sequence
+    de fin a pris l'ecran, il ne reste plus rien a dessiner et le jeu rend
+    CHAQUE trame machine. Une centaine de secondes a 50 img/s tire la moyenne
+    d'un stage vers le haut sans qu'une seule de ces trames raconte le cout du
+    rendu. On remonte donc depuis la fin tant que la cadence glissante reste
+    au-dessus de `sat`, et on coupe si la queue trouvee vaut au moins
+    `sat_min` trames (en deca c'est une pointe, pas une queue).
+
+    LA QUEUE IMMOBILE, sur demande (`traversal`). Le stage continue apres que
+    la camera a atteint son plafond — decompte de fin, dissolution — et ce
+    n'est plus la meme scene : plus de bandes qui entrent, plus de vagues.
+    Mesurer LA TRAVERSEE, c'est s'arreter la ou la camera s'arrete.
+    PAS PAR DEFAUT : sur un stage a boss, la camera se fige AUSSI pendant le
+    combat (la sequence de fin cale scroll_max sur la salle du boss), et ce
+    combat est du jeu — couper la reviendrait a jeter le passage le plus
+    charge du niveau.
+
+    Rend l'indice de fin du segment jouable."""
     last = max((i for i, r in enumerate(rows) if r[1]), default=len(rows) - 1)
-    return last + 1 if len(rows) - last > dry else len(rows)
+    end = last + 1 if len(rows) - last > dry else len(rows)
+    d = [r[1] for r in rows]
+    i = end
+    while i - sat_window > 0 and 50.0 * sum(d[i - sat_window:i]) / sat_window >= sat:
+        i -= 1
+    if end - i >= sat_min:
+        end = i
+    if traversal:
+        cap = rows[end - 1][2]
+        i = end
+        while i > 1 and rows[i - 2][2] >= cap:
+            i -= 1
+        if end - i >= sat_min:
+            end = i
+    return end
 
 
 def smooth(rows, window):
@@ -64,13 +98,22 @@ p.add_argument("--ymax", type=float, default=0, help="0 = automatique")
 p.add_argument("--width", type=int, default=980)
 p.add_argument("--height", type=int, default=420)
 p.add_argument("--title", default="Cadence de rendu — niveau 1")
+p.add_argument("--saturated", type=float, default=45.0,
+               help="seuil img/s de la queue SATUREE ecartee de la moyenne "
+                    "(sequence de fin : plus rien a dessiner, le jeu rend "
+                    "chaque trame). 51 pour ne rien couper")
+p.add_argument("--traversal", action="store_true",
+               help="ne mesurer que LA TRAVERSEE : couper des que la camera "
+                    "atteint son plafond et n'en bouge plus. A ne pas utiliser "
+                    "sur un stage a boss — la camera s'y fige aussi pendant le "
+                    "combat, qui est du jeu")
 a = p.parse_args()
 
 series = []
 for s in a.series:
     path, _, label = s.partition("=")
     rows = load(path)
-    end = playable(rows)
+    end = playable(rows, sat=a.saturated, traversal=a.traversal)
     series.append((label or os.path.basename(path), rows, smooth(rows, a.window), end))
 
 L, R, T, B = 58, 18, 44, 76          # marges ; B loge la bande camera
@@ -135,13 +178,14 @@ o.append(f'<line x1="{L}" y1="{T+PH}" x2="{L+PW}" y2="{T+PH}" class="rule" strok
 
 step = max(1, len(series[0][1]) // 900)
 
-# la queue muette = chargement de la scene suivante : bande grisee, hors moyenne
+# les queues hors jeu — sequence de fin a 50 img/s puis chargement de la scene
+# suivante : bande grisee, hors moyenne (voir playable())
 tail = min(e for _, _, _, e in series)
 if tail < len(series[0][1]):
     tx = X(series[0][1][tail - 1][0])
     o.append(f'<rect x="{tx:.1f}" y="{T}" width="{L+PW-tx:.1f}" height="{PH}" '
              f'class="cam" opacity=".45"/>')
-    o.append(f'<text x="{tx+6:.1f}" y="{T+14}" class="dim" font-size="9">chargement</text>')
+    o.append(f'<text x="{tx+6:.1f}" y="{T+14}" class="dim" font-size="9">hors jeu</text>')
 
 for i, (label, rows, fps, end) in enumerate(series):
     o.append(f'<path d="{path_of(rows[:end], fps[:end], step)}" fill="none" '

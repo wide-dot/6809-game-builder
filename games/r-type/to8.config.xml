@@ -61,6 +61,48 @@
                 <zone page="$1E" address="$38A0" size="$0760"/>
                 <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
+            <!-- PSCROLL, le champ de gommes persistant du stage 4.
+                 Le code (~14 Ko avec ses tables gravees) ne tient pas dans la
+                 bande residente : il vit dans SA page, montee a l'appel par
+                 paged.call, exactement comme overlay ou starfield. Les quatre
+                 buffers du ruban sont de la RAM de travail — pas des fichiers,
+                 rien a charger : pscroll.init les grave au demarrage du stage.
+                 Pages choisies parmi celles que le stage 4 ne charge pas et qui
+                 ne portent rien de permanent (releve du 23/08 : le commun tient
+                 $01 et $04-$0A, le stage 4 tient $17,$18,$19,$1A,$1B). -->
+            <!-- La page du code d'edition, vue en $A000 : le loader y ecrit par
+                 la fenetre DONNEES (ram.set choisit d'apres l'adresse), donc
+                 l'inversion des demi-pages s'annule entre l'ecriture et la
+                 lecture. La page est RESERVEE — son contenu physique est dans
+                 l'ordre echange, rien d'autre ne peut y cohabiter. -->
+            <!-- LA COUPE DE PSCROLL, dictee par « qui monte un buffer ? ».
+                 La part CARTOUCHE ne touche jamais un buffer : elle vit dans
+                 une page ordinaire, montee par paged.call, avec le bitfield
+                 (1 440 o) et les sequences de colonnes que feedBand copie
+                 dans son staging AVANT de monter. La part $4000 est tout ce
+                 qui ecrit un buffer, plus les tables lues pendant ce temps :
+                 RAM FIXE (demi-page video 0), donc appelable et lisible quelle
+                 que soit la page en fenetre cartouche. -->
+            <region name="pscroll.edit" page="$0B" address="$0000" size="$4000"/>
+            <!-- LE PARAMETRE `page` VEUT DIRE CE QUE LE REGISTRE DE LA FENETRE
+                 VEUT DIRE. ram.set (to8/ram/ram.asm) dispatche sur la PLAGE
+                 D'ADRESSE, puis interprete `page` selon le registre de cette
+                 fenetre : cartouche -> $E7E6, donnees -> $E7E5, resident ->
+                 rien, et $4000-$5FFF -> le BIT 0 de $E7C3, l'index de
+                 demi-page. Ici page="$01" ne designe donc pas la page 1 : il
+                 dit DEMI-PAGE 1, et c'est le mecanisme nominal du couple
+                 builder/loader, pas un effet de bord.
+                 On vise la demi-page 1 parce que la 0 est LE POOL D'OBJETS
+                 (Dynamic_Object_RAM = $4000, 60 slots + 4 OST statiques). Y
+                 avoir pose ce code le faisait ecraser par l'object manager —
+                 le stage tournait 10 trames puis marchait dans des zeros
+                 (24/08). Le <reserved pscroll.vid.half1> plus bas decrit le
+                 meme silicium en referentiel de page. -->
+            <region name="pscroll.vid" page="$01" address="$4000" size="$2000"/>
+            <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf2" page="$10" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf3" page="$1D" address="$0000" size="$3B13"/>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
@@ -190,7 +232,18 @@
                 <zone page="$08" address="$0000" size="$4000"/>
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
-                <zone page="$0B" address="$0000" size="$4000"/>
+                <!-- PAS DE $0B : la page appartient a <region pscroll.edit>, que
+                     scenes.stage4 charge. L'offrir ici etait un chevauchement en
+                     sursis — le commun est PERMANENT (charge au boot, jamais
+                     recharge), donc le jour ou le packer y deborderait, le stage 4
+                     l'ecraserait sans que rien ne le dise, et le retour de stage
+                     tournerait sur des octets de pscroll. Rien n'y atterrissait
+                     encore (releve du 24/08 : $0A garde 7 725 o libres, $0C et $17
+                     sont vierges), retirer la zone ne deplace donc aucun fichier —
+                     mais desormais un commun trop gros ECHOUE au build au lieu de
+                     mordre ici. Meme regle pour les quatre pages de buffers
+                     ($0E/$0F/$10/$1D) : elles ne portent que du par-stage
+                     (stages 1,2,3,7), jamais du permanent. -->
                 <!-- Tete de $0C jusqu'a $0A80, frontiere relevee a la main avec
                      l'arene du stage 1 : si le commun grossit, le controle de scene
                      refuse le build. Elle ne PEUT pas monter : le visage du
@@ -262,11 +315,14 @@
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font. -->
-            <reserved name="globals"      page="$01" address="$9DCB" size="$0094"/>
-            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 145 octets ;
+            <reserved name="globals"      page="$01" address="$9DCB" size="$0096"/>
+            <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 143 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
-                 trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE. -->
-            <reserved name="stack"        page="$01" address="$9E5F" size="$0091"/>
+                 trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE.
+                 24/08/2026 : le plancher monte de deux octets, `globals` ayant pris
+                 le crochet de couche destructible (stage.gum.hook). Il reste 59
+                 octets de marge sur le pic mesure. -->
+            <reserved name="stack"        page="$01" address="$9E61" size="$008F"/>
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
@@ -281,6 +337,11 @@
                  par montage seulement) sont libres. -->
             <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
             <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <!-- L'AUTRE MOITIE, prise par la part $4000 de pscroll. C'est le
+                 meme silicium que <region pscroll.vid>, decrit dans l'autre
+                 systeme de coordonnees : ce <reserved> est ce qui EMPECHE
+                 qu'on la reattribue. -->
+            <reserved name="pscroll.vid.half1" page="$00" address="$2000" size="$2000"/>
             <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
                  moitie, 192 octets libres en fin de chaque moitie — reserves
                  plage par plage pour que la carte les montre). Le loader se
@@ -1237,6 +1298,69 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
+                <!-- cytron : seize poses, ce sont les seize directions de son
+                     cercle de repousse et le script les pose lui-meme. -->
+                <!-- Dans l'arene du STAGE et non dans « enemies » : cytron ne
+                     sert qu'au stage 4, et l'arene partagee est pleine (le
+                     dobkeratops du stage 1 n'y tenait plus). -->
+                <file name="lib.cytron" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/cytron.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/cytron/cytron.unit.asm"/>
+                                <gfxcomp file="lib.cytron" gendir="gen/enemies/cytron"
+                                         gensource="gen/enemies/cytron/includes.asm"
+                                         genindex="gen/enemies/cytron/index.asm">
+                                    <image name="cytron_0" filename="src/enemies/cytron/images/default/00.png" index="0">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_1" filename="src/enemies/cytron/images/default/01.png" index="1">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_2" filename="src/enemies/cytron/images/default/02.png" index="2">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_3" filename="src/enemies/cytron/images/default/03.png" index="3">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_4" filename="src/enemies/cytron/images/default/04.png" index="4">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_5" filename="src/enemies/cytron/images/default/05.png" index="5">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_6" filename="src/enemies/cytron/images/default/06.png" index="6">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_7" filename="src/enemies/cytron/images/default/07.png" index="7">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_8" filename="src/enemies/cytron/images/default/08.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_9" filename="src/enemies/cytron/images/default/09.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_10" filename="src/enemies/cytron/images/default/10.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_11" filename="src/enemies/cytron/images/default/11.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_12" filename="src/enemies/cytron/images/default/12.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_13" filename="src/enemies/cytron/images/default/13.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_14" filename="src/enemies/cytron/images/default/14.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="cytron_15" filename="src/enemies/cytron/images/default/15.png" index="15">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
 <file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1589,6 +1713,7 @@
                 </scene>
                 <scene name="scenes.lot.cancer" section="SCENE" gensource="gen/scenes/lot-cancer.asm">
                     <load name="lib.cancer"/>
+                    <load name="lib.cytron"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>
@@ -2884,10 +3009,27 @@
                      montee ($0000-$3FFF) ET ecrit l'ecran ($A000/$C000) en meme
                      temps. Les tables sont generees et prouvees par
                      tools/gen_pellet_tables.py. -->
-                <file name="stage4.pellet" linkdata="LINK" arena="stage4.res">
-                    <lwasm gensource="gen/stages/04/pellet.asm">
+                <file name="stage4.pscroll.res" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/stages/04/pscroll-res.asm">
                         <asm filename="src/common/engine/api.asm"/>
-                        <asm filename="src/stages/04/pellet-blast.asm"/>
+                        <asm filename="src/stages/04/pscroll.res.asm"/>
+                    </lwasm>
+                </file>
+                <file name="stage4.pscroll.edit" linkdata="LINK" region="pscroll.edit">
+                    <lwasm gensource="gen/stages/04/pscroll-edit.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pscroll.edit.asm"/>
+                    </lwasm>
+                </file>
+                <!-- La part RAM FIXE : tout ce qui monte un buffer, plus les
+                     tables lues pendant ce temps. En $4000 (demi-page video 0)
+                     elle reste appelable et lisible quelle que soit la page en
+                     fenetre cartouche — c'est ce qui permet a la part cartouche
+                     d'etre demontee le temps d'une ecriture de buffer. -->
+                <file name="stage4.pscroll.vid" linkdata="LINK" region="pscroll.vid">
+                    <lwasm gensource="gen/stages/04/pscroll-vid.asm">
+                        <asm filename="src/common/engine/api.asm"/>
+                        <asm filename="src/stages/04/pscroll.vid.asm"/>
                     </lwasm>
                 </file>
 
@@ -2901,16 +3043,32 @@
                     </lwasm>
                 </file>
 
+                <!-- LA CARTE DES GOMMES, residente : elle est a la fois le
+                     bitfield que pscroll mute et le plan ARRIERE de la
+                     collision du stage. terrainCollision la lit page
+                     collision montee, donc elle ne peut pas vivre dans la
+                     page pscroll. 1 440 octets, chargee en zeros et remplie
+                     par le depliage RLE de stage4.init. -->
+                <file name="stage4.gumres" linkdata="LINK" arena="stage4.res">
+                    <lwasm gensource="gen/stages/04/gumres.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/04/gumres.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <scene name="scenes.stage4" section="SCENE" gensource="gen/scenes/stage4.asm">
                     <load name="stage4.tiles.even"/>
                     <load name="stage4.tiles.odd"/>
                     <load name="stage4.maps"/>
                     <load name="stage4.wave"/>
                     <load name="stage4.collision"/>
-                    <load name="stage4.pellet"/>
+                    <load name="stage4.pscroll.res"/>
+                    <load name="stage4.pscroll.edit"/>
+                    <load name="stage4.pscroll.vid"/>
                     <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>
+                    <load name="stage4.gumres"/>
 </scene>
             </directory>
 

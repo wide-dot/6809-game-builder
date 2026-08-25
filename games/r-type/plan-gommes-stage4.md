@@ -1,5 +1,18 @@
 # Stage 4 — plan d'implémentation du champ de gommes
 
+> **LA PHASE 3 EST REMPLACÉE (22/08/2026)** par
+> [`etude-pscroll-gommes-stage4.md`](etude-pscroll-gommes-stage4.md). Sa
+> stratégie « run-blast » est livrée et juste au pixel, mais elle coûte
+> **691 537 cycles par trame là où cette page en annonçait 33 000** — elle
+> échoue son propre critère d'acceptation (« la salle passe de ~6 trames
+> vidéo à ~2 » : elle en prend 34,6), parce que l'estimation ne comptait que
+> le dessin et pas le parcours de structure, qui fait la moitié du coût.
+> Le contrat, rappelé par l'auteur : **les gfx sont gravés dans un méga-sprite
+> compilé persistant, et seul le delta est mis à jour** — scroll, ajout et
+> suppression de gommes. Les phases 0, 1, 2 et 3.1 restent valides et sont
+> réutilisées telles quelles ; les phases 4, 5 et 6 restent à faire et sont
+> reprises dans l'étude.
+
 Compagnon de [`analyse-gommes-stage4.md`](analyse-gommes-stage4.md), qui porte
 les mesures, l'extraction arcade et la structure retenue. Ce document-ci dit
 **dans quel ordre le faire, où toucher, et à quoi on sait que c'est bon**.

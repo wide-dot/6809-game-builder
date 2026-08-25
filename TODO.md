@@ -1169,3 +1169,41 @@ En veille sur décision (31/07/2026) :
 - [ ] À l'écran : jugement auteur sur les huit cartes (le masque fin change
       la frontière art/ciel d'environ 2 % des pixels sur les stages 01 et 03,
       qui étaient les seuls traités) et sur le décor par-dessus les sprites.
+- [ ] **Le spécifique Thomson des routines gfx à migrer** (décision auteur,
+      24/08) : `engine/graphics/buffer/gfxlock.asm` — celui que r-type linke —
+      ne touche **jamais** la demi-page, alors que
+      `engine/system/thomson/graphics/buffer/gfxlock.asm` porte le swap
+      (`eorb #%00000001` sur `map.HALFPAGE`), le drapeau
+      `gfxlock.halfPage.swap.auto` et les macros `_gfxlock.halfPage.set0/.set1`.
+      Deux implémentations concurrentes qui définissent toutes deux
+      `_gfxlock.init` : on ne peut donc pas inclure les deux, et un projet qui
+      linke le générique n'a **aucun** accès aux primitives de demi-page (vécu
+      le 24/08 : `_gfxlock.halfPage.set0` en « Bad opcode » depuis un main de
+      stage). Migrer le spécifique Thomson vers son fichier, laisser le
+      générique générique, et donner au premier une garde d'inclusion — les
+      autres en-têtes du repo en ont une (`IFNDEF TO8_RAM_MACRO`).
+- [ ] **Documenter le `set page` selon la fenêtre** (décision auteur, 24/08) :
+      `ram.set` dispatche sur la **plage d'adresse** de la destination, puis
+      interprète le paramètre `page` selon le **registre de cette fenêtre** —
+      cartouche `$E7E6`, données `$E7E5`, résident rien, et `$4000-$5FFF` le
+      **bit 0 de `$E7C3`** (index de demi-page). Donc `page="$01"` sur une
+      région en `$4000` ne désigne pas la page 1 : il dit **demi-page 1**.
+      C'est le mécanisme nominal du couple builder/loader et il n'est écrit
+      nulle part — à consolider dans le manuel (`docs/lang/en/`), avec le
+      corollaire que les `<region>`/`<reserved>` parlent en référentiel de
+      page et que rien ne vérifie l'accord entre une région en `$4000` et les
+      `<reserved page="$00">` qui décrivent le même silicium.
+- [ ] **Duplication de code dans l'engine — chantier à part entière, BIEN plus
+      tard** (décision auteur, 24/08) : le principe voudrait que tout code
+      spécifique à une machine vive sous `engine/system/<machine>/`, mais ce
+      n'est pas le cas partout. Trouvé en chassant le point précédent :
+      `engine/irq/Irq.asm` (v1-importé, noms `IrqManager`/`Irq_user_routine`,
+      celui que r-type assemble réellement) **duplique**
+      `engine/system/to8/irq/irq.asm` (noms `irq.manage`/`irq.userRoutine`,
+      apparemment jamais linké par r-type) — même logique, deux fichiers,
+      deux conventions de nommage. Un correctif posé dans l'un (sauver/rendre
+      la demi-page autour de l'IRQ utilisateur, 24/08) ne s'applique pas à
+      l'autre sans le refaire à la main — exactement le risque qu'une
+      structure `system/<machine>/` est censée éliminer. Ne pas entamer
+      avant migration complète : le doublon générique/spécifique de gfxlock
+      juste au-dessus est le même chantier, à traiter ensemble.

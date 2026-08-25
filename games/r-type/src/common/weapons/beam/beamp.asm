@@ -18,6 +18,7 @@ Beam              EXPORT
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/graphics/animation/constants-animation.equ"
         INCLUDE "src/common/player/player1.equ"
+        INCLUDE "src/common/state/variables.asm"   ; stage.gum.hook
 
         INCLUDE "src/common/weapons/beam/beam.asm"
 

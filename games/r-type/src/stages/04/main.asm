@@ -49,6 +49,10 @@ adr_playfield_mask_ND0 EXTERNAL
 ; L'effacement du champ de jeu, meme page : peint en tete de trame.
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
+pscroll.stage4.init     EXTERNAL
+pscroll.gum.vectors     EXTERNAL
+pscroll.camera.x        EXTERNAL
+
 playfield.clearWindow   EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
@@ -138,6 +142,7 @@ emitterFlash.Object EXTERNAL
 
 ; La bibliotheque d'ennemis de ce stage (lots charges par l'engine).
 cancer.Object     EXTERNAL
+cytron.Object     EXTERNAL
 pstaff.Object     EXTERNAL
 
  SECTION code
@@ -299,6 +304,40 @@ stage.setup
         lda   #map.RAM_OVER_CART+stage4.maps.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
+
+        ; LE PLAN ARRIERE DE CE STAGE EST LA CARTE DES GOMMES (24/08/2026).
+        ; Le decor dur est seul dans le plan avant ; « solide » vaut donc
+        ; « dur OU gomme » par le DOUBLE TEST que le moteur sait deja faire.
+        ; Sans ce drapeau, une gomme ne serait qu'un decor : le joueur la
+        ; traverserait et les tirs aussi.
+        lda   #1
+        sta   globals.backgroundSolid
+
+        ; LE CROCHET : les armes du joueur mangent le champ. C'est la table de
+        ; relais RESIDENTE qu'on designe, jamais pscroll.erase nu — l'arme vit
+        ; dans sa propre page et l'effaceur dans celle de pscroll.
+        ldd   #pscroll.gum.vectors
+        std   stage.gum.hook
+
+        ; LA CARTE DES GOMMES, remplie AVANT pscroll : elle est residente et
+        ; c'est elle que le bitfield de pscroll designe desormais. Le dépliage
+        ; du flux RLE des gommes d'origine est exactement ce que fait la
+        ; reprise au checkpoint — une seule routine pour les deux chemins.
+        jsr   stage.checkpointReset
+
+        ; LE CHAMP DE GOMMES : pscroll grave ses dix bandes depuis la carte
+        ; qu'on vient de remplir. ~160 000 cycles, payes a l'ouverture et au
+        ; checkpoint, jamais en jeu.
+        ; LA CAMERA NE PEUT PAS PASSER PAR D : paged.call prend la page dans
+        ; A, donc le `lda` ci-dessous ecrasait sa moitie haute — l'init
+        ; recevait $6B00 au lieu de la position, et pscroll.init cherchait des
+        ; coutures hors carte (ecran noir, camera figee, 23/08). Elle transite
+        ; par la variable residente, qui est justement sa destination.
+        ldd   glb_camera_x_pos
+        std   pscroll.camera.x
+        lda   #map.RAM_OVER_CART+pscroll.edit.page
+        ldx   #pscroll.stage4.init
+        jsr   paged.call
 
         ldd   #stage.wave
         std   object_wave_data

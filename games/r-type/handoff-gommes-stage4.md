@@ -3,6 +3,61 @@
 *22/08/2026. Les phases 1, 2, 3.1/3.2 et 3.2b (le blast) sont livrées ; le
 build passe, la validation à l'écran du blast est à la main de l'auteur.*
 
+## RÉSOLU (22/08, session gommes) — le crash du milieu de stage N'ÉTAIT PAS les gommes
+
+Le crash émulateur en milieu de stage 4 est reproduit sous toje (déterministe,
+avec et sans turbo : c'est un vrai bug, pas l'artefact `run_frames fast` du
+gel stage 7), diagnostiqué et **corrigé dans `src/enemies/bug/mgr.asm`**,
+le gestionnaire de chaînes du bug (wip du 22/08) :
+
+- Il éclate à `gameCount=1600` — le spawn de la chaîne du bug
+  (`$06,$40,ObjID_bug` dans la wave), caméra ~300. Le début du stage est sain
+  parce qu'aucune chaîne n'a encore spawné ; les gommes sont innocentes.
+- La faute : dans `@pub` de `bugmgr.wLoop`, le set d'images était chargé dans
+  X **avant** `jsr bugmgr.WSlotPtr`, dont la première instruction utile est
+  `ldx bm.instp,u` — X écrasé, RecPublish lisait ses champs « imageset » dans
+  le **bloc d'instance** et publiait InstS+14 (= $00C9) comme routine de slot.
+  Au BuildSprites suivant, `jsr ,x` sautait en $00C9 sur la page firechain,
+  retombait sur un `jsr RunPgSubRoutine` à opérandes périmées, montait une
+  page vide → marche de NEG sur des zéros → pile enroulée par l'IRQ suivante
+  (S=$FFFE), machine morte. L'en-tête de la marche disait « les aides
+  clobbent » — la règle avait été manquée à ce seul point.
+- Correctif : `WSlotPtr` appelé AVANT le calcul du set (commenté sur place).
+  Validé sous toje : stage 4 joué EN ENTIER (invincible), champ de gommes
+  plein écran traversé, fin de stage, échange vers le stage 5. Le même
+  chemin arme les stages 1 et 7 (même mgr) — couverts par le même fix.
+- Repro : cheat joypad au title (h,b,g,d, bas=invincible, h,b,g,d, 4×haut,
+  fire) puis ~4 500 trames. Piégeage utile à retenir : le déraillement se
+  capture par watchpoint sur `$9F00` (première `NEG /$00` de la marche,
+  DP=$9F) ou breakpoint `PC=$0000` qualifié par page — l'anneau de trace
+  contient alors le vrai saut fautif.
+- **Point de vigilance blast — LEVÉ le 22/08** : le chemin rapide s'exerce
+  bien (`pellet.dpN` non nul sur 417 des 706 échantillons, jusqu'à 4 blocs).
+  Ce que j'avais vu à zéro était l'instant du gel, pas une passe morte. Mais
+  la mesure a montré autre chose : le blast ne pèse que 5 % de la passe —
+  d'où le virage ci-dessus.
+
+## La mesure de cadence, et comment la rejouer
+
+Stage 4 complet : **2,75 img/s** en moyenne (17 650 trames machine, 971
+tours), **1,25 dans la grande salle**, 4,5 une fois le champ passé. Contrôle
+stage 1, même build, même méthode : **10,39 img/s** (la référence du readme
+dit 9,2) — le moteur va bien, c'est le stage 4 qui est lourd.
+
+`ci/toje-bench/fps_curve.py` n'entre qu'au stage 1 (il presse start). Pour un
+autre stage il faut passer par le cheat joypad du title — préfixe haut, bas,
+gauche, droite, puis `bas` pour l'invincibilité (sans elle le vaisseau meurt
+faute d'entrée et le relevé s'arrête), à nouveau le préfixe, puis N×haut et
+fire. Deux pièges payés : `set_pointer_device none` doit être appelé **après**
+`boot_floppy` (son reset rebranche la souris, qui occupe la manette 0, et
+`press_joystick` échoue alors en silence), et le cheat doit attendre que le
+title TOURNE (témoin magic `$CA`), sinon il tombe dans le vide.
+
+L'attribution des cycles par routine se fait par `profile_top` filtré sur les
+plages d'adresses de l'unité (base `stage4.pellet` = `$92DB`, offsets dans
+`gen/stages/04/build/pellet.lwmap`). C'est ce qui a montré que le blast
+pesait 5 % — un profil non attribué ne l'aurait pas dit.
+
 **Trouvé en écrivant le blast : la passe 3.2 avait un bug d'indexation.**
 `drawPlane` lisait le motif du plan A à `leax 9,x` au lieu de `+3` (la table
 fait 6 octets par ligne, plan A à +3) : chaque ligne empruntait le plan A de
@@ -18,6 +73,20 @@ reprendre.
 
 ---
 
+## VIRAGE DU 22/08 — la phase 3 est remplacée
+
+La passe run-blast **coûte 691 537 cycles par trame** dans la salle, mesurés
+sous toje, là où le plan en annonçait 33 000 : elle échoue son critère
+d'acceptation d'un facteur 17. Le blast n'y pèse que **5 %** ; **49 %** sont
+du parcours de structure refait chaque trame. Le contrat de départ, rappelé
+par l'auteur, est celui de mscroll : **les gfx sont gravés dans un méga-sprite
+compilé qui persiste, et seul le delta est mis à jour** — le scroll, l'ajout
+et la suppression de gommes.
+
+**La suite est dans [`etude-pscroll-gommes-stage4.md`](etude-pscroll-gommes-stage4.md)**
+(conception, budgets, pages disponibles, arbitrages, plan A→D). Ce fichier-ci
+ne garde que l'historique de la route run-blast.
+
 ## L'état, en une table
 
 | phase | état | preuve |
@@ -25,15 +94,17 @@ reprendre.
 | 1 — les gommes sortent du décor | **faite** | validée à l'écran ; DrawTiles sur la salle 120 597 → 11 841 cy |
 | 2 — la carte mutable + primitives | **faite** | logique rejouée sur les vraies cartes, 11 520 cellules |
 | 2b — remise à neuf au checkpoint | **faite** | RLE 263 o, crochet `stage.checkpointReset` |
-| 3.1 — les tables de rendu | **faite** | 622 080 px comparés à l'art, 0 divergence |
-| 3.2 — la passe, premier jet | **faite** | validée à l'écran, PUIS bug plan A trouvé et corrigé (voir en tête) |
-| 3.2b — le blast | **écrite** | découpe + registres rejoués en simulation, 0/503 064 divergence ; build OK, 1 428 o dans l'arène (2 800) — ← à valider à l'écran |
-| 3.4 — fusionner avec l'effacement | différée | optimisation, pas prérequis |
-| 4 — creuser | à faire | |
+| 3.1 — les tables de rendu | **faite, réutilisée par pscroll** | 622 080 px comparés à l'art, 0 divergence |
+| 3.2 — la passe, premier jet | livrée | validée à l'écran, PUIS bug plan A trouvé et corrigé (voir en tête) |
+| 3.2b — le blast | livré, **validé à l'écran le 22/08** | et mesuré : il ne pèse que 5 % de la passe |
+| 3.x — la route run-blast | **ABANDONNÉE** | 691 537 cy/trame contre 33 000 visés — voir l'étude pscroll |
+| 3.4 — fusionner avec l'effacement | **acquise par construction** avec pscroll | la couche peint chaque octet de sa bande |
+| 4 — creuser | **à faire** | `pellet.test/clear/set` exportées, **aucun appelant** |
 | 5 — cytron et la repousse | à faire | cytron est au budget (décision auteur) |
 | 6 — profondeur par objet | bloquée | dépend de l'ordre global sprite/plan avant, §8 de l'analyse |
 
-**C'est lent, et c'est attendu** : la v1 écrit octet par octet, sans blast.
+La passe run-blast n'est pas perdue : elle est **prouvée exacte au pixel**,
+donc elle sert d'**oracle** pour valider pscroll avant d'être supprimée.
 
 ---
 

@@ -16,9 +16,11 @@ toje — un niveau 1 complet se releve en une minute environ.
 
 CE QUE LE RELEVE SUPPOSE, et qui doit etre identique des deux cotes d'une
 comparaison :
-  - `<define symbol="invincible"/>` dans le config. Sans lui, le vaisseau finit
-    par mourir faute d'entree manette, la boucle passe en DEAD/CHECKPOINT et le
-    releve s'arrete la (constate a la trame 3835 sur le build du 19/08) ;
+  - L'INVINCIBILITE. Sans elle le vaisseau finit par mourir faute d'entree
+    manette, la boucle passe en DEAD/CHECKPOINT et le releve s'arrete la
+    (constate a la trame 3835 sur le build du 19/08). Elle vient du cheat du
+    title depuis que le define `invincible` a ete retire : --cheat l'arme
+    toujours, et c'est aussi la seule facon d'entrer ailleurs qu'au stage 1 ;
   - aucune entree manette pendant le releve ;
   - `bench.SCROLL_VEL` inchange : les horodatages des vagues sont des trames
     d'arcade calees sur CETTE vitesse.
@@ -79,6 +81,11 @@ p.add_argument("--wedge", type=int, default=1200,
                help="trames machine sans un seul rendu avant de crier au blocage")
 p.add_argument("--enter-budget", type=int, default=80,
                help="rafales de touche start avant d'abandonner l'entree en jeu")
+p.add_argument("--cheat", action="store_true",
+               help="entrer par le cheat du title (manette) : invincible + le "
+                    "stage demande. Obligatoire au-dela du stage 1, et c'est "
+                    "aussi ce qui arme l'invincibilite depuis que le define a "
+                    "disparu")
 a = p.parse_args()
 
 BENCH = bench_address(a.layout)
@@ -100,12 +107,38 @@ def lives():
 
 
 # --- entrer dans le stage -----------------------------------------------------
+def cheat_entry(stage):
+    """Le cheat du title, a la manette (src/title/cheat.unit.asm).
+
+    Prefixe haut,bas,gauche,droite puis : bas = invincible, N fois haut =
+    stage N. Les cheats se cumulent en re-entrant le prefixe, bouton A lance.
+    La souris emulee occupe la manette 0 : la debrancher est le prealable."""
+    t.call("set_pointer_device", {"device": "none"})
+    prefix = ["up", "down", "left", "right"]
+    for d in prefix + ["down"]:                    # invincible
+        t.call("press_joystick", {"joystick": 0, "direction": d,
+                                  "hold_frames": 6})
+    for d in prefix + ["up"] * stage:              # stage N
+        t.call("press_joystick", {"joystick": 0, "direction": d,
+                                  "hold_frames": 6})
+    t.call("press_joystick", {"joystick": 0, "button_a": True,
+                              "hold_frames": 6})
+    return 6 * 2 * (len(prefix) * 2 + 1 + stage + 1)
+
+
 machine = 0
+armed = not a.cheat
 for _ in range(a.enter_budget):
     w = wit()
     if w["magic"] == 0xCA and w["stage"] == a.stage:
         break
-    t.press("0F")
+    if a.cheat:
+        # le cheat ne se saisit qu'AU title : hors de lui, on attend
+        if w["magic"] == 0xCA and w["stage"] == 0x00 and not armed:
+            machine += cheat_entry(a.stage)
+            armed = True
+    else:
+        t.press("0F")
     t.call("run_frames", {"n": 60})
     machine += 65
 else:

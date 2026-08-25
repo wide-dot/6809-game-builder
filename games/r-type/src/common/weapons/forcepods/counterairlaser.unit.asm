@@ -27,6 +27,7 @@ counterairlaser.Object EXPORT
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/stages/01/objid.const.asm"
+        INCLUDE "src/common/state/variables.asm"   ; stage.gum.hook
 
 ; V2-DEVIATION : la v1 nomme ses entrées d'imageset `Img_<nom>`, gfxcomp les
 ; génère en `set_<nom>`. Une table de liaison laisse le fichier v1 au 1:1.
