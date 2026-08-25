@@ -594,7 +594,7 @@ slither.Cascade
         beq   @next
         lda   #1                       ; detachement : la marche s'en occupe
         sta   slither.RC,x
-        bra   @next
+        lbra  @next
 @chain  lda   #2
         sta   slither.RC,x
         addb  #4                       ; l'etalement du chapelet
@@ -640,7 +640,8 @@ slither.DetachVel
 
 slither.Walk
         clr   slither.wN
-@loop   ldb   slither.wN
+@loop   clr   slither.wFree            ; dans la chaine, sauf preuve du contraire
+        ldb   slither.wN
         jsr   slither.RecPtrB
         lda   slither.RS,x
         lbeq  @next                    ; inactif
@@ -741,25 +742,39 @@ slither.Walk
         ; tour desarme — c'est NOUS qui venions d'y mettre zero. Mesure avant
         ; correction : mActive montait a 9 mais un seul record restait vivant,
         ; d'ou une chaine qui se lisait comme deux ou trois morceaux epars.
+        ; LA CADENCE DE COLLISION suit l'arcade, et elle DIFFERE selon l'etat :
+        ; un corps de la chaine est teste une trame sur DEUX (40:7a3f gate le
+        ; test par global_counter XOR priority), mais un segment DETACHE l'est
+        ; a CHAQUE trame — 40:7cd3 appelle la passe sans porte, tout comme la
+        ; tete et la queue. On sort donc du schema de parite des qu'il vole.
+        lda   slither.wFree
+        bne   @libre
         lda   slither.mPhase,u
         eora  slither.wN
         anda  #1
         beq   @disarm
         lda   #slither_hitdamage       ; boucle armee : exposer les PV
         sta   AABB.p,x
-        bra   @next
+        lbra  @next
 @disarm lda   AABB.p,x                 ; la passe de collision l'a-t-elle vide ?
         bne   @clr
         jsr   slither.RecExplode       ; oui : score, explosion, retrait
-        bra   @next
+        lbra  @next
 @clr    clr   AABB.p,x                 ; hors de la passe jusqu'au prochain tour
-        bra   @next
+        lbra  @next
+@libre  lda   AABB.p,x                 ; vol libre : arme a chaque trame, et le
+        beq   @boom                    ; verdict se lit au tour suivant
+        lda   #slither_hitdamage
+        sta   AABB.p,x
+        lbra  @next
+@boom   jsr   slither.RecExplode
+        lbra  @next
 ; --- LE VOL LIBRE (40:7cd3) -------------------------------------------------
 ; Le segment ne lit plus l'anneau : il derive en 8.8 et vrille sur place.
 ; L'arcade avance image_id d'UN par trame et indexe (image_id & 0x1E) * 3 sur
 ; un pas de six octets — soit une pose toutes les DEUX trames, et seulement
 ; les seize premieres, celles de la famille rotation.
-@drift
+@drift  inc   slither.wFree            ; en vol libre : cadence de collision a part
         ; LA COMPENSATION DE FRAME-DROP. Tout le reste de la chaine l'a : le
         ; maitre passe par moveByScript.runByFrameDrop pendant le script et
         ; avance son horloge de frameDrop.count pendant le drain. Le vol libre
@@ -838,6 +853,7 @@ slither.wPx     fcb 0
 slither.wPy     fcb 0
 slither.wPose   fcb 0
 slither.wDrop   fcb 0                  ; trames a rattraper dans le vol libre
+slither.wFree   fcb 0                  ; 1 = le record courant est detache
 
 ; B = rang -> X = la boite. (Le maitre est en U, la zone est residente.)
 slither.BoxPtrB
