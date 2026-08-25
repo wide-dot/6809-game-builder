@@ -131,6 +131,31 @@ outslay_hitbox_y	equ 12
 outslay_hitdamage	equ 1
 outslay_hitdamage_immune equ -128
 
+; slither (stage 5). Les TROIS boites arcade sont centrees et donnent des
+; DEMI-extensions : 1000:37c6 pour la tete (f0 ff 10 00 = -16..+16 sur les
+; deux axes, donc rayon 16), 1000:37ce pour un corps et 1000:37d6 pour la
+; queue (f6 ff 0a 00 = rayon 10 ; les deux tables sont numeriquement
+; identiques, d'ou une seule paire d'equates ici).
+; Echelle du fichier : rayon arcade x 0.375 en X, x 0.75 en Y — la meme que
+; tabrok, gomander et outslay_shot.
+;   corps/queue : 10 x 0.375 = 3.75 -> 4   |  10 x 0.75 = 7.5 -> 8
+;   tete        : 16 x 0.375 = 6           |  16 x 0.75  = 12
+; CORRECTION 25/08/2026 : ces quatre valeurs etaient le DOUBLE (8/15 et
+; 12/24). L'echelle etait juste mais appliquee a la taille PLEINE, alors que
+; l'en-tete de ce fichier definit hitbox_x/y comme des RAYONS — le serpent
+; etait deux fois trop facile a toucher, surtout verticalement.
+; Pas d'exception a la Outslay ici : celle-la elargit sciemment la boite a la
+; demi-largeur du sprite large-dot (voir plus haut), on reste ici fidele a
+; l'arcade comme demande.
+; Le hitdamage porte les PV, que la passe de collision decremente :
+; 0x0E (14) pour la tete d'apres head_ctor, 6 pour le corps et la queue.
+slither_hitbox_x	equ 4
+slither_hitbox_y	equ 8
+slither_hitdamage	equ 6
+slither_head_hitbox_x	equ 6
+slither_head_hitbox_y	equ 12
+slither_head_hitdamage	equ 14
+
 ; Le bydo shot de la salve en etoile. Sa boite est la SIENNE (1000:4196,
 ; fc ff 04 00 fc ff 04 00 = rayon 4 sur les deux axes), le double du bullet
 ; commun (1000:84c6, rayon 2) qu'on lui pretait jusqu'ici.

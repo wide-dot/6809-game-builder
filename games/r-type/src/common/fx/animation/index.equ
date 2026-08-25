@@ -31,5 +31,18 @@ anim_19FDE    equ   72 ; cytron variante 9
 anim_1A000    equ   74 ; cytron variante 10
 anim_1A046    equ   76 ; cytron variante 11
 anim_1A086    equ   78 ; cytron variantes 12 a 15
+; Le slither prend SEIZE entrees contiguës : le quartet haut du descripteur
+; de wave choisit la variante, l'init calcule base + quartet*2. Les scripts
+; eux-memes etaient DEJA dans le pool commun (script.asm) — seule la table
+; d'index leur manquait, soit 32 octets.
+; Il vient APRES le cytron : les deux ont ete ajoutes a l'offset 54 sur des
+; branches paralleles, et le cytron occupe 54..78.
+anim_slither  equ   80 ; slither, base des seize variantes (stage 5)
+; Les DEUX scripts de vol libre du cadavre (40:7b85 en choisit un selon la
+; pose : < 9 -> 1000:A3E6, sinon 1000:A380). Ils etaient deja dans le pool
+; commun, comme les seize variantes — seules les deux lignes d'index
+; manquaient. Contigus et dans CET ordre : l'init du cadavre fait
+; base + 2 si la pose est haute.
+anim_slither_corpse equ 112 ; slither, vol libre du cadavre (stage 5)
 
  ENDC

@@ -263,19 +263,98 @@
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete ($0A80). -->
+            <!-- L'ARENE DES ENNEMIS, PARTITIONNEE (24/08/2026). Elle etait
+                 UNE arene pour tout le monde : les lots communs ET les
+                 fichiers exclusifs d'un stage. Le packer faisait donc tenir
+                 ENSEMBLE le Dobkeratops du stage 1, le cast du stage 2 et
+                 celui du stage 5 — alors qu'a l'execution une scene ne
+                 charge que SON stage et les communs. Le premier ennemi
+                 custom du stage 5 la faisait deborder, sans qu'il manque une
+                 seule page.
+                 Le remede est celui deja acte pour la bande residente
+                 ($92DB, arenes stageN.res) : des arenes SEPAREES sur les
+                 MEMES zones, que le packer verifie chacune de son cote — les
+                 locataires d'un stage sont des alternatives de ceux des
+                 autres. Les lots communs gardent leur arene a eux, puisqu'ils
+                 doivent coexister avec n'importe quel stage.
+                 Nom `stageN.foes` et non `stageN.cast` : une arene et un
+                 fichier de meme nom emettraient la MEME equate de page. -->
             <arena name="enemies">
                 <zone page="$0C" address="$0A80" size="$3580"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage1.foes">
                 <zone page="$10" address="$0000" size="$4000"/>
                 <zone page="$11" address="$0000" size="$4000"/>
                 <zone page="$12" address="$0000" size="$4000"/>
                 <zone page="$13" address="$0000" size="$4000"/>
                 <zone page="$14" address="$0000" size="$4000"/>
                 <zone page="$15" address="$0000" size="$4000"/>
-                <!-- La derniere page libre avant la collision ($17) et les
-                     tuiles ($18-$1F) : le boss la reclame. -->
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage2.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage3.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage4.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage5.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage6.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage7.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
+                <zone page="$16" address="$0000" size="$4000"/>
+            </arena>
+            <arena name="stage8.foes">
+                <zone page="$10" address="$0000" size="$4000"/>
+                <zone page="$11" address="$0000" size="$4000"/>
+                <zone page="$12" address="$0000" size="$4000"/>
+                <zone page="$13" address="$0000" size="$4000"/>
+                <zone page="$14" address="$0000" size="$4000"/>
+                <zone page="$15" address="$0000" size="$4000"/>
                 <zone page="$16" address="$0000" size="$4000"/>
             </arena>
             <!-- La musique SN76489, migree mais debranchee (rendre du temps CPU,
@@ -1769,7 +1848,7 @@
                      ranges par l'arene — un fichier par objet coute un bloc de
                      liaison, et rend au rangement toute sa liberte. -->
 
-                <file name="stage1.blaster" linkdata="LINK" arena="enemies">
+                <file name="stage1.blaster" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/blaster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/blaster/blaster.unit.asm"/>
@@ -1821,7 +1900,7 @@
                 </file>
 
 
-                <file name="stage1.shell" linkdata="LINK" arena="enemies">
+                <file name="stage1.shell" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/shell.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/shell/shell.unit.asm"/>
@@ -1902,7 +1981,7 @@
                 <!-- Douze poses en trois tranches d'arene, une par phase de jeu ;
                      index unique, chaque descripteur porte la page de SON image.
                      Vol et chute : poses 6-7 + miroirs 14-15. -->
-                <file name="stage1.tabrok.imgFlight" linkdata="LINK" arena="enemies">
+                <file name="stage1.tabrok.imgFlight" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tabrok-imgflight.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1924,7 +2003,7 @@
                 </file>
                 <!-- Pose au sol, visee et tir (modes 2, 3, 11) : la posture immobile et son
                      leger cycle de repos 4,4,5,4. Poses 4-5 et miroirs 12-13 -->
-                <file name="stage1.tabrok.imgGround" linkdata="LINK" arena="enemies">
+                <file name="stage1.tabrok.imgGround" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tabrok-imgground.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1946,7 +2025,7 @@
                 </file>
                 <!-- Marche (mode 4) : poses 0-3, sans miroir — la table 2b70 n'existe
                      que dans un sens. -->
-                <file name="stage1.tabrok.imgWalk" linkdata="LINK" arena="enemies">
+                <file name="stage1.tabrok.imgWalk" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tabrok-imgwalk.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="tabrok" gendir="gen/enemies/tabrok"
@@ -1966,7 +2045,7 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <file name="stage1.tabrok" linkdata="LINK" arena="enemies">
+                <file name="stage1.tabrok" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tabrok.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrok.unit.asm"/>
@@ -1974,7 +2053,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1.tabrokcanon" linkdata="LINK" arena="enemies">
+                <file name="stage1.tabrokcanon" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tabrokcanon.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/tabrok/tabrokcanon.unit.asm"/>
@@ -1994,7 +2073,7 @@
 
                 <!-- Le sequenceur de fin du niveau 1 : objet monte, commande en B —
                      hors de la RAM residente, qui est saturee. -->
-                <file name="stage1.endstage" linkdata="LINK" arena="enemies">
+                <file name="stage1.endstage" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/stages/01/endstage.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/endstage/endstage.unit.asm"/>
@@ -2007,7 +2086,7 @@
                 <!-- Le visage : une pose = un sprite geant (~6 Ko), un etat par
                      fichier — les six ensemble depassent deux pages. -->
                 <!-- Le visage intact, tant qu'aucun nerf n'a cede -->
-                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgFace" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgface.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2020,7 +2099,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 0 -->
-                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2033,7 +2112,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 1 -->
-                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2046,7 +2125,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 2 -->
-                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2059,7 +2138,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 3 -->
-                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2072,7 +2151,7 @@
                     </lwasm>
                 </file>
                 <!-- Le visage a l'etat de nerfs 4 -->
-                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgnerves4.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2085,7 +2164,7 @@
                     </lwasm>
                 </file>
                 <!-- Les yeux : les quatre nerfs optiques, la seule cible du joueur -->
-                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgeyes.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2141,7 +2220,7 @@
                 </file>
                 <!-- Le nettoyage du boss : trop large pour un effacement par sprite —
                      une bande par tranche de decor, un fichier par bande. -->
-                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2151,7 +2230,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 1 : 7 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2181,7 +2260,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 2 : 12 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2191,7 +2270,7 @@
                     </lwasm>
                 </file>
                 <!-- Bande 3 : 10 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
@@ -2202,7 +2281,7 @@
                 </file>
                 <!-- Le corps : le code et l'INDEX de ses images, qui doit rester dans la
                      page que Img_Page_Index monte -->
-                <file name="stage1.dobkeratops" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratops" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/dobkeratops.unit.asm"/>
@@ -2210,7 +2289,7 @@
                     </lwasm>
                 </file>
                 <!-- La machoire, dont le monstre sort -->
-                <file name="stage1.dobkeratopsjaw" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratopsjaw" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratopsjaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/jaw.unit.asm"/>
@@ -2224,7 +2303,7 @@
                 </file>
                 <!-- Les dix-neuf queues, gerees par un seul objet maitre : il ECRIT sa
                      propre page dans Img_Page_Index, ses blits vivant avec lui -->
-                <file name="stage1.tailmgr" linkdata="LINK" arena="enemies">
+                <file name="stage1.tailmgr" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/tailmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/tailmgr.unit.asm"/>
@@ -2255,7 +2334,7 @@
                     </lwasm>
                 </file>
                 <!-- Le monstre qui emerge de la bouche -->
-                <file name="stage1.dobkeratopsmonster" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratopsmonster" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratopsmonster.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/monster.unit.asm"/>
@@ -2291,7 +2370,7 @@
                     </lwasm>
                 </file>
                 <!-- Ses scies -->
-                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratopssaw.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/saw.unit.asm"/>
@@ -2304,7 +2383,7 @@
                     </lwasm>
                 </file>
                 <!-- Ses explosions : un preset partage, pas d'images propres -->
-                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="enemies">
+                <file name="stage1.dobkeratopsexplosion" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratopsexplosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/enemies/dobkeratops/explosion.unit.asm"/>
@@ -2533,7 +2612,7 @@
                             gensymbols="gen/stages/02/blink/blink.const.asm"
                             lean="false"/>
 
-                <file name="stage2.blink.even" linkdata="LINK" arena="enemies"
+                <file name="stage2.blink.even" linkdata="LINK" arena="stage2.foes"
                       gendir="gen/stages/02/blink-even">
                     <lwasm gensource="gen/stages/02/blink-even.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -2701,7 +2780,7 @@
                      `set_outslay_head_*` franchissent donc la frontiere : 16
                      references de lien, resolues au chargement (cf. symbols.md).
                      Meme decoupe que stage1.tabrok.imgWalk / dobkeratops.imgFace. -->
-                <file name="stage2.cast.imgHead" linkdata="LINK" arena="enemies">
+                <file name="stage2.cast.imgHead" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast-imghead.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp file="stage2.cast.imgHead" gendir="gen/enemies/stage2-cast-imghead"
@@ -2729,7 +2808,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2.cast" linkdata="LINK" arena="enemies">
+                <file name="stage2.cast" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/cast.unit.asm"/>
@@ -3141,6 +3220,103 @@
                     </lwasm>
                 </file>
 
+                <!-- La TETE du serpent : 36x54 en TO8 contre 12x24 pour un
+                     corps — elle ne tient pas dans le direntry du cast. Les
+                     seize `set_slither_head_*` franchissent donc la frontiere :
+                     16 references de lien, resolues au chargement (cf.
+                     symbols.md). Meme decoupe que stage2.cast.imgHead. -->
+                <file name="stage5.cast.imgHead" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imghead.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgHead" gendir="gen/enemies/stage5-cast-imghead"
+                                 gensource="gen/enemies/stage5-cast-imghead/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imghead/index.asm">
+                            <images dir="src/enemies/slither/images/head" names="slither_head"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Les seize poses BLANCHES de la tete : le flash de coup.
+                     L'arcade echange la palette de l'objet (40:7d22) ; la
+                     palette TO8 est globale au stage, donc on echange les
+                     IMAGES. Elles ne peuvent pas rejoindre imgHead (12 000
+                     octets pour 2 583 libres) et Img_Page_Index ne donne
+                     QU'UNE page d'images par ObjID : d'ou un direntry et un
+                     identifiant a elles, comme le cadavre de la queue. Le
+                     flash ne vise que la TETE — seule elle encaisse plusieurs
+                     coups (14 points contre 6), un corps meurt du premier. -->
+                <file name="stage5.cast.imgHeadHit" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgheadhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgHeadHit" gendir="gen/enemies/stage5-cast-imgheadhit"
+                                 gensource="gen/enemies/stage5-cast-imgheadhit/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgheadhit/index.asm">
+                            <images dir="src/enemies/slither/images/head_hit" names="slither_headhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La QUEUE : seize poses de plus que la page du cast ne
+                     pouvait porter (18 688 octets pour 16 384). Elle est
+                     passee en suiveur a OST — comme le finalizer de
+                     l'outslay — donc son art a son direntry et son ObjID. -->
+                <file name="stage5.cast.imgTail" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgtail.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgTail" gendir="gen/enemies/stage5-cast-imgtail"
+                                 gensource="gen/enemies/stage5-cast-imgtail/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgtail/index.asm">
+                            <images dir="src/enemies/slither/images/tail" names="slither_tail"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La zone residente du serpent : membre d'arene, charge en
+                     zeros par la scene (voir slither/res.unit.asm). -->
+                <!-- Les seize poses BLANCHES de la QUEUE. Meme raison que
+                     pour la tete, et meme mecanique : un direntry, un ObjID,
+                     l'objet bascule d'identifiant le temps du flash. -->
+
+                <file name="stage5.cast.imgTailHit" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast-imgtailhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage5.cast.imgTailHit" gendir="gen/enemies/stage5-cast-imgtailhit"
+                                 gensource="gen/enemies/stage5-cast-imgtailhit/includes.asm"
+                                 genindex="gen/enemies/stage5-cast-imgtailhit/index.asm">
+                            <images dir="src/enemies/slither/images/tail_hit" names="slither_tailhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage5.slither.res" linkdata="LINK" arena="stage5.res">
+                    <lwasm gensource="gen/stages/05/slither-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/slither/res.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Cast du stage 5 : un direntry pour tout le cast. Seul le
+                     slither est implemente ; le reste tombe sur le bouchon. -->
+                <file name="stage5.cast" linkdata="LINK" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-cast.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/05/cast.unit.asm"/>
+                        <gfxcomp file="stage5.cast" gendir="gen/enemies/stage5-cast"
+                                 gensource="gen/enemies/stage5-cast/includes.asm"
+                                 genindex="gen/enemies/stage5-cast/index.asm">
+                            <images dir="src/enemies/slither/images/body" names="slither_body"/>
+                            <!-- Le flash de coup du corps : UNE image ronde,
+                                 valable pour les seize orientations (elle sort
+                                 de leur intersection dilatee — voir
+                                 tools/gen_slither_hit_round.py). Elle vit ICI,
+                                 avec les poses normales, pour que le renderer
+                                 groupe la dessine LUI-MEME : c'est ce qui rend
+                                 son ordre de tuilage correct. -->
+                            <images dir="src/enemies/slither/images/body_hit_round" names="slither_bodyhit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage5" linkdata="LINK" page="$01" address="$8000">
                     <lwasm gensource="gen/stages/05/stage05-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3168,6 +3344,12 @@
                 </file>
 
                 <scene name="scenes.stage5" section="SCENE" gensource="gen/scenes/stage5.asm">
+                    <load name="stage5.cast"/>
+                    <load name="stage5.cast.imgHead"/>
+                    <load name="stage5.cast.imgTail"/>
+                    <load name="stage5.cast.imgHeadHit"/>
+                    <load name="stage5.cast.imgTailHit"/>
+                    <load name="stage5.slither.res"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
                     <load name="stage5.maps"/>

@@ -21,6 +21,11 @@ facteur every/2. Le TO8 affiche 16 couleurs — le GIF est sans perte.
                   hexa ADDR vaille VV (l'idiome des lanes : entrer dans le
                   jeu en guettant un témoin, ex. 8767=01 pour r-type)
   --scale S       réduction entière de la vignette (défaut 2 -> 352x312)
+  --stage N       entre directement dans le stage N par le cheat du title
+                  (tct.pstage), invincible arme. Demande --gamedir : les
+                  adresses sont lues dans dist/occupancy-fd.html et les
+                  .lwmap du jeu, jamais codées en dur.
+  --gamedir DIR   la racine du jeu (ex. games/r-type), pour --stage
 """
 import argparse, os, sys, tempfile
 
@@ -37,13 +42,70 @@ p.add_argument("--every", type=int, default=5)
 p.add_argument("--press-start", action="store_true")
 p.add_argument("--press-until", metavar="ADDR=VV")
 p.add_argument("--scale", type=int, default=2)
+p.add_argument("--stage", type=int)
+p.add_argument("--gamedir", default=".")
 a = p.parse_args()
+
+def _sym(mapfile, name, base=0):
+    import re
+    for l in open(os.path.join(a.gamedir, mapfile)):
+        m = re.match(r"Symbol: %s \(.*\) = ([0-9A-Fa-f]+)" % re.escape(name), l)
+        if m:
+            return base + int(m.group(1), 16)
+    raise SystemExit("symbole %s absent de %s" % (name, mapfile))
+
+
+def _unit(name):
+    import re
+    occ = open(os.path.join(a.gamedir, "dist/occupancy-fd.html")).read()
+    m = re.search(r'"name":"%s","container":"[^"]*","page":(\d+),"address":(\d+)'
+                  % re.escape(name), occ)
+    if not m:
+        raise SystemExit("unite %s absente de l occupancy" % name)
+    return int(m.group(1)), int(m.group(2))
+
+
+def enter_stage(t, n):
+    """Poser le cheat du title puis relancer — l'idiome des sondes.
+
+    Le poke de $E7E6 se fait au POINT SUR (gfxlock.bufferSwap.wait, un PC de
+    RAM fixe) : ecrire le registre de page pendant que PC est dans la fenetre
+    cartouche retire le code sous les pieds du processeur.
+    """
+    _, engine = _unit("common.engine")
+    safe = _sym("gen/common/build/engine.lwmap", "gfxlock.bufferSwap.wait", engine)
+    page, addr = _unit("title.cheat")
+    addr += _sym("gen/title/build/cheat.lwmap", "tct.pstage") - 0
+    for _ in range(40):
+        r = t.call("run_until_pc", {"pc": "%04X" % safe, "max_instructions": 400000})
+        if isinstance(r, dict) and r.get("reached"):
+            break
+        t.call("run_frames", {"n": 60})
+    else:
+        raise SystemExit("point sur jamais atteint")
+    t.call("write_memory", {"addr": "0xE7E6", "bytes": ["%02X" % (0x60 + page)]})
+    t.call("write_memory", {"addr": hex(addr), "bytes": ["%02X" % n, "01"]})
+    ok = t.read(hex(addr), 2) == [n, 1]
+    t.call("write_memory", {"addr": "0xE7E6", "bytes": ["78"]})
+    if not ok:
+        raise SystemExit("le cheat n a pas pris")
+    t.press()
+    for _ in range(12):
+        t.call("run_frames", {"n": 500, "timeout_ms": 600000, "fast": True})
+        b = t.read("87DB", 2)
+        if b[0] == 0xCA and b[1] == n:
+            return
+    raise SystemExit("stage %d jamais seme" % n)
+
 
 t = Toje()
 t.boot_floppy(a.image)
 if a.press_start:
     t.press()
     t.call("run_frames", {"n": 25, "timeout_ms": 30000, "fast": True})
+if a.stage:
+    t.call("run_frames", {"n": 3000, "timeout_ms": 600000, "fast": True})
+    enter_stage(t, a.stage)
 if a.press_until:
     addr, val = a.press_until.split("=")
     val = int(val, 16)
