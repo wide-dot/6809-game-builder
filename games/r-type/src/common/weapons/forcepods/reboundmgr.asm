@@ -128,29 +128,71 @@ reboundmgr.publish.hide2
 ; +11 x1, +12 y1, +14 la routine compilee.
 ;-------------------------------------------------------------------------------
 reboundmgr.RecPublish
-        pshs  a,b
+        pshs  a,b                      ; ,s = x ecran ; 1,s = y ecran
+        ldd   image_x_size,x           ; la geometrie vit sur l'IMAGESET
+        sta   reboundmgr.xsize
+        stb   reboundmgr.ysize
+        lda   image_center_offset,x
+        sta   reboundmgr.centre
+        ; --- PREMIERE INDIRECTION : le miroir. Nos segments n'en ont pas, donc
+        ; le code vaut zero ; on suit quand meme le moteur, qui lit la un des
+        ; quatre offsets de l'en-tete d'imageset.
+        lda   ,x
+        beq   reboundmgr.RecPublish.off
+        leax  a,x                      ; X = le SOUS-ENSEMBLE
+        ; --- SECONDE INDIRECTION : LA PARITE. C'est elle qui manquait, et c'est
+        ; elle qui ouvrait un joint sur deux : le moteur ne pose un sprite qu'au
+        ; pas de DEUX pixels, et le laser nait sur une grille de TROIS. Sans
+        ; choisir la variante PRE-DECALEE, une position impaire est dessinee a
+        ; la place paire et le segment suivant ne se joint plus au precedent.
+        ; bugmgr court-circuite ce parcours par des offsets fixes (11,x et 14,x,
+        ; soit le miroir 0 et le code 1) : ses records ne se jointent pas, l'ecart
+        ; ne s'y voit pas. Ici il se voit.
         lda   ,s
-        adda  11,x
+        eora  reboundmgr.centre
+        anda  #1
+        asla                           ; bit1 = variante decalee d'un pixel
+        ora   #1                       ; bit0 = sprite overlay
+        tfr   a,b
+        lda   b,x
+        bne   reboundmgr.RecPublish.mf
+        eorb  #%00000010               ; variante absente : le moteur prend
+        lda   b,x                      ;   l'autre ET corrige la position
+        beq   reboundmgr.RecPublish.off
+        bitb  #%00000010               ; BSP_parityFallback : +-1 sur le centre
+        beq   reboundmgr.RecPublish.less
+        inc   reboundmgr.centre
+        bra   reboundmgr.RecPublish.mf
+reboundmgr.RecPublish.less
+        dec   reboundmgr.centre
+reboundmgr.RecPublish.mf
+        sta   reboundmgr.mfoff         ; l'offset du meta-sprite, garde
+        ; --- le cull, avec x1/y1 du SOUS-ENSEMBLE
+        lda   ,s
+        adda  image_subset_x1_offset,x
         suba  #screen_left
         cmpa  #screen_right-screen_left
         bhi   reboundmgr.RecPublish.off
-        adda  4,x
+        adda  reboundmgr.xsize
         cmpa  #screen_right-screen_left+1
         bhi   reboundmgr.RecPublish.off
         lda   1,s
-        adda  12,x
+        adda  image_subset_y1_offset,x
         suba  #screen_top
         cmpa  #screen_bottom-screen_top
         bhi   reboundmgr.RecPublish.off
-        adda  5,x
+        adda  reboundmgr.ysize
         cmpa  #screen_bottom-screen_top+1
         bhi   reboundmgr.RecPublish.off
+        ; --- le slot
         lda   ,s
-        suba  6,x                      ; le centre pair/impair, comme le moteur
+        suba  reboundmgr.centre        ; le centre pair/impair, comme le moteur
         sta   1,y
         lda   1,s
         sta   2,y
-        ldd   14,x
+        lda   reboundmgr.mfoff
+        leax  a,x                      ; X = le meta-sprite {page, routine}
+        ldd   draw_routine,x
         std   3,y
         lda   #1
         sta   ,y
@@ -159,6 +201,10 @@ reboundmgr.RecPublish.off
         clr   ,y
         puls  a,b,pc
 
+reboundmgr.xsize  fcb 0
+reboundmgr.ysize  fcb 0
+reboundmgr.centre fcb 0
+reboundmgr.mfoff  fcb 0
 reboundmgr.sx   fcb 0
 reboundmgr.di   fcb 0
 reboundmgr.n    fcb 0
