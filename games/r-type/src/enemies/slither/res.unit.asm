@@ -35,11 +35,16 @@
 slither.ring0  EXPORT
 slither.ring1  EXPORT
 slither.ring2  EXPORT
+slither.hits0  EXPORT
+slither.hits1  EXPORT
+slither.hits2  EXPORT
 slither.boxes0 EXPORT
 slither.boxes1 EXPORT
 slither.boxes2 EXPORT
 
 slither.NBOX    equ   15                 ; les corps du script long
+slither.NHIT    equ   6                  ; segments blancs simultanes par serpent
+                                         ; — DUPLIQUE dans obj.asm et hit.unit.asm
 slither.RINGSZ  equ   256*3              ; les trois plans x, y, pose
 
 
@@ -51,6 +56,17 @@ slither.RINGSZ  equ   256*3              ; les trois plans x, y, pose
 slither.ring0   fill  0,slither.RINGSZ
 slither.ring1   fill  0,slither.RINGSZ
 slither.ring2   fill  0,slither.RINGSZ
+; LA LISTE DU BLANC. Le renderer du flash s'execute sous la page des poses
+; blanches — le moteur y monte la page de l'imageset avant d'appeler sa
+; routine — et n'y voit donc plus la page du cast, ou vivent les slots. La
+; marche y depose ce qu'il doit peindre : un compte, puis des entrees
+; (x, y, pose). La POSE, et non une adresse : l'imageset blanc n'est lisible
+; que depuis la page ou il vit, c'est donc au renderer du blanc de la
+; resoudre. Dix-neuf octets par serpent, contre 225 si les slots entiers
+; devenaient residents — et la bande residente du stage n'a que 91 octets.
+slither.hits0   fill  0,1+slither.NHIT*3
+slither.hits1   fill  0,1+slither.NHIT*3
+slither.hits2   fill  0,1+slither.NHIT*3
 slither.boxes0  fill  0,slither.NBOX*9
 slither.boxes1  fill  0,slither.NBOX*9
 slither.boxes2  fill  0,slither.NBOX*9

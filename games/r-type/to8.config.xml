@@ -3283,6 +3283,7 @@
                 <file name="stage5.cast.imgBodyHit" linkdata="LINK" arena="stage5.foes">
                     <lwasm gensource="gen/enemies/stage5-cast-imgbodyhit.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/slither/hit.unit.asm"/>
                         <gfxcomp file="stage5.cast.imgBodyHit" gendir="gen/enemies/stage5-cast-imgbodyhit"
                                  gensource="gen/enemies/stage5-cast-imgbodyhit/includes.asm"
                                  genindex="gen/enemies/stage5-cast-imgbodyhit/index.asm">

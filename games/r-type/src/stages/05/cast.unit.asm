@@ -37,22 +37,6 @@ Img_Page_Index    EXTERNAL
 ; qu'elle fait 36x54 en TO8, la queue parce que corps et queue ne tenaient
 ; pas ensemble sur la page du cast. Trente-deux references de lien, resolues
 ; au chargement (cf. symbols.md).
-set_slither_bodyhit_0  EXTERNAL
-set_slither_bodyhit_1  EXTERNAL
-set_slither_bodyhit_2  EXTERNAL
-set_slither_bodyhit_3  EXTERNAL
-set_slither_bodyhit_4  EXTERNAL
-set_slither_bodyhit_5  EXTERNAL
-set_slither_bodyhit_6  EXTERNAL
-set_slither_bodyhit_7  EXTERNAL
-set_slither_bodyhit_8  EXTERNAL
-set_slither_bodyhit_9  EXTERNAL
-set_slither_bodyhit_10 EXTERNAL
-set_slither_bodyhit_11 EXTERNAL
-set_slither_bodyhit_12 EXTERNAL
-set_slither_bodyhit_13 EXTERNAL
-set_slither_bodyhit_14 EXTERNAL
-set_slither_bodyhit_15 EXTERNAL
 set_slither_tailhit_0  EXTERNAL
 set_slither_tailhit_1  EXTERNAL
 set_slither_tailhit_2  EXTERNAL

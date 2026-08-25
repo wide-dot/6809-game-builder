@@ -87,6 +87,17 @@ slither.ring2     EXTERNAL
 slither.boxes0    EXTERNAL
 slither.boxes1    EXTERNAL
 slither.boxes2    EXTERNAL
+; La liste du BLANC, residente. Le renderer du flash tourne sous la page des
+; poses blanches et n'y voit plus les slots ; il lit donc cette liste-ci.
+slither.hits0     EXTERNAL
+slither.hits1     EXTERNAL
+slither.hits2     EXTERNAL
+; Son faux imageset vit LA-BAS aussi : BuildSprites monte Img_Page_Index[id]
+; pour lire l'imageset LUI-MEME (overlay-mode/BuildSprites.asm ligne 110), il
+; doit donc se trouver sur la page que cet index designe. Voir hit.unit.asm.
+slither.FakeHit0  EXTERNAL
+slither.FakeHit1  EXTERNAL
+slither.FakeHit2  EXTERNAL
 
 ; --- LE MAITRE : ext_variables (l'etat moveByScript vit dans son OST) -------
 slither.mFrames   equ ext_variables+0    ; 0,1  L'HORLOGE DE LA CHAINE : le
@@ -161,6 +172,7 @@ slither.RPP       equ 12                 ; le potentiel du tour precedent : une
                                          ; une trame blanche
 slither.RECSZ     equ 13                 ; DUPLIQUE dans res.unit.asm, qui
                                          ; s'assemble seul : bouger les deux
+slither.NHIT      equ 6                  ; DUPLIQUE dans res.unit.asm et hit.unit.asm
 slither.NREC      equ 15                 ; les CORPS du script long (la
                                          ; tete et la queue sont des suiveurs)
 
@@ -181,7 +193,8 @@ I.ring    equ 2                        ; 2,3  x a +0, y a +256, pose a +512
 I.recs    equ 4                        ; 4,5
 I.slots   equ 6                        ; 6,7
 I.boxes   equ 8                        ; 8,9
-I.SZ      equ 10
+I.hits    equ 10                       ; 10,11 la liste du BLANC (residente)
+I.SZ      equ 12
 slither.NINST equ 3
 
 ; Le cache de pointeurs de l'instance COURANTE : le 6809 n'a pas assez de
@@ -191,6 +204,7 @@ slither.cRing   fdb 0
 slither.cRecs   fdb 0
 slither.cSlots  fdb 0
 slither.cBoxes  fdb 0
+slither.cHits   fdb 0
 
 ; X = un bloc d'instance. Z = 1 s'il est libre. La propriete se VALIDE : un
 ; proprietaire qui n'est plus un maitre vivant ne tient plus son instance.
@@ -223,6 +237,8 @@ slither.UseInst
         std   slither.cSlots
         ldd   I.boxes,x
         std   slither.cBoxes
+        ldd   I.hits,x
+        std   slither.cHits
         rts
 
 ;*******************************************************************************
@@ -558,6 +574,8 @@ slither.MasterLive
 @nocasc
         ; --- 4) la marche des records --------------------------------------
         ; (slither.mPhase ne sert plus : la collision est systematique)
+        ldx   slither.cHits
+        clr   ,x                       ; la liste du blanc repart vide
         jsr   slither.Walk
         ; --- 5) la fin : plus un record vivant apres le drain ---------------
         lda   slither.mState,u
@@ -835,18 +853,26 @@ slither.Walk
         ldb   slither.wPose
         andb  #$0F
         aslb
+        ; TOUJOURS le set NORMAL, meme pour un segment qui flashe : la
+        ; publication lit la GEOMETRIE de l'imageset (tailles, centrage) pour
+        ; son cull, et l'imageset blanc vit sur une AUTRE page — illisible
+        ; d'ici. Les deux variantes ont la meme geometrie, le cull est donc le
+        ; meme ; c'est le renderer du blanc qui echangera le sprite, sur SA
+        ; page. C'est aussi pourquoi la liste transporte la POSE et non une
+        ; adresse de routine : celle-ci ne se resout que la-bas.
         ldx   #slither.BodySets        ; les records sont TOUS des corps
-        lda   slither.wState
-        cmpa  #2
-        bne   >
-        ldx   #slither.BodyHitSets
-!       abx
+        abx
         ldx   ,x
         ; --- publier ---------------------------------------------------------
         jsr   slither.SlotPtrN         ; Y = slot
         lda   slither.wPx
         ldb   slither.wPy
         jsr   slither.RecPublish
+        lda   slither.wState
+        cmpa  #2
+        bne   @nowhite
+        jsr   slither.HitAppend        ; Y = le slot publie
+@nowhite
         ; --- la boite : position, puis parite --------------------------------
         ldb   slither.wN
         jsr   slither.BoxPtrB
@@ -1039,6 +1065,36 @@ slither.RecPublish
         puls  a,b,pc
 @off    clr   ,y
         puls  a,b,pc
+
+; -----------------------------------------------------------------------------
+; DEPOSER un segment dans LA LISTE DU BLANC. Le renderer du flash tourne sous
+; la page des poses blanches et n'y voit ni les slots ni l'imageset du cast :
+; il recoit donc ici la position et la POSE, et resout le sprite chez lui.
+; Y = le slot qui vient d'etre publie. Liste pleine : le segment REPASSE EN
+; NORMAL — mieux vaut un segment sans flash qu'un trou dans la chaine.
+; -----------------------------------------------------------------------------
+slither.HitAppend
+        pshs  a,b,x,y
+        lda   ,y
+        beq   @out                     ; hors cadre : rien a peindre
+        ldx   slither.cHits
+        lda   ,x
+        cmpa  #slither.NHIT
+        blo   @room
+        lda   #1
+        sta   ,y                       ; il redevient un segment ordinaire
+        bra   @out
+@room   inc   ,x
+        ldb   #3                       ; trois octets par entree
+        mul
+        addd  #1                       ; ... apres l'octet de compte
+        leax  d,x
+        ldd   1,y                      ; x et y ecran du slot
+        std   ,x
+        lda   slither.wPose
+        anda  #$0F
+        sta   2,x
+@out    puls  a,b,x,y,pc
 
 ; -----------------------------------------------------------------------------
 ; DETACHER un record — 40:7c9e puis 40:7cab. Il quitte l'anneau et part en
@@ -1650,51 +1706,6 @@ slither.FakeMf2
         fcb   0                        ; page, patchee a l'Init du renderer
         fdb   slither.DrawAll2
 
-; Les trois faux sets du JUMEAU. Identiques aux precedents a deux choses pres :
-; leur routine ne dessine que les slots marques, et leur octet de page porte
-; celle des poses BLANCHES du corps — lue dans Img_Page_Index a l'init, non
-; patchee depuis la page courante comme le fait le renderer normal.
-slither.FakeHit0
-        fcb   slither.FakeHitSub0-slither.FakeHit0,slither.FakeHitSub0-slither.FakeHit0
-        fcb   slither.FakeHitSub0-slither.FakeHit0,slither.FakeHitSub0-slither.FakeHit0
-        fcb   8,8,0
-slither.FakeHitSub0
-        fcb   0
-        fcb   slither.FakeHitMf0-slither.FakeHitSub0
-        fcb   0
-        fcb   slither.FakeHitMf0-slither.FakeHitSub0
-        fcb   0,0
-slither.FakeHitMf0
-        fcb   0                        ; page des poses blanches, lue a l'init
-        fdb   slither.DrawHit0
-
-slither.FakeHit1
-        fcb   slither.FakeHitSub1-slither.FakeHit1,slither.FakeHitSub1-slither.FakeHit1
-        fcb   slither.FakeHitSub1-slither.FakeHit1,slither.FakeHitSub1-slither.FakeHit1
-        fcb   8,8,0
-slither.FakeHitSub1
-        fcb   0
-        fcb   slither.FakeHitMf1-slither.FakeHitSub1
-        fcb   0
-        fcb   slither.FakeHitMf1-slither.FakeHitSub1
-        fcb   0,0
-slither.FakeHitMf1
-        fcb   0                        ; page des poses blanches, lue a l'init
-        fdb   slither.DrawHit1
-
-slither.FakeHit2
-        fcb   slither.FakeHitSub2-slither.FakeHit2,slither.FakeHitSub2-slither.FakeHit2
-        fcb   slither.FakeHitSub2-slither.FakeHit2,slither.FakeHitSub2-slither.FakeHit2
-        fcb   8,8,0
-slither.FakeHitSub2
-        fcb   0
-        fcb   slither.FakeHitMf2-slither.FakeHitSub2
-        fcb   0
-        fcb   slither.FakeHitMf2-slither.FakeHitSub2
-        fcb   0,0
-slither.FakeHitMf2
-        fcb   0                        ; page des poses blanches, lue a l'init
-        fdb   slither.DrawHit2
 
 slither.Render
         lda   routine,u
@@ -1722,13 +1733,9 @@ slither.Render
         ; --- le JUMEAU : ses images sont AILLEURS. Il ne patche donc rien et
         ; LIT au contraire la page que l'index lui donne (celle du direntry
         ; des poses blanches), pour la recopier dans ses faux sets.
-@blanc  ldb   id,u
-        ldx   #Img_Page_Index
-        lda   b,x
-        sta   slither.FakeHitMf0
-        sta   slither.FakeHitMf1
-        sta   slither.FakeHitMf2
-        ldx   slither.rInst,u
+        ; Le JUMEAU ne patche RIEN : son faux imageset vit avec les poses
+        ; blanches et porte leur page en dur (hit.unit.asm).
+@blanc  ldx   slither.rInst,u
         ldd   #slither.FakeHit0
         cmpx  #slither.Insts+I.SZ
         blo   @pose
@@ -1792,17 +1799,6 @@ slither.DrawAll2
         ldx   #slither.Insts+2*I.SZ
         lda   #1
         bra   slither.DrawCommon
-slither.DrawHit0
-        ldx   #slither.Insts
-        lda   #2
-        bra   slither.DrawCommon
-slither.DrawHit1
-        ldx   #slither.Insts+I.SZ
-        lda   #2
-        bra   slither.DrawCommon
-slither.DrawHit2
-        ldx   #slither.Insts+2*I.SZ
-        lda   #2
 slither.DrawCommon
         sta   slither.dWant
         ldd   I.slots,x
@@ -1850,16 +1846,19 @@ slither.Insts
         fdb   slither.Recs
         fdb   slither.Slots
         fdb   slither.boxes0
+        fdb   slither.hits0
         fdb   0
         fdb   slither.ring1
         fdb   slither.Recs+slither.NREC*slither.RECSZ
         fdb   slither.Slots+slither.NREC*slither.SLOTSZ
         fdb   slither.boxes1
+        fdb   slither.hits1
         fdb   0
         fdb   slither.ring2
         fdb   slither.Recs+2*slither.NREC*slither.RECSZ
         fdb   slither.Slots+2*slither.NREC*slither.SLOTSZ
         fdb   slither.boxes2
+        fdb   slither.hits2
 
 ; Les retards cumules des SANS-OST (la tete, retard 0, est le suiveur a OST).
 ; Script court (1000:34b6) : 9 corps. La queue (retard 92) est un suiveur.
@@ -1927,16 +1926,6 @@ slither.TailSets
 ; Les seize poses BLANCHES de la tete. Elles vivent sur LEUR page — voir
 ; stage5.cast.imgHeadHit dans le config — que seul ObjID_slither_head_hit
 ; monte. C'est pourquoi l'objet change d'identifiant le temps du flash.
-slither.BodyHitSets
-        fdb   set_slither_bodyhit_0,set_slither_bodyhit_1
-        fdb   set_slither_bodyhit_2,set_slither_bodyhit_3
-        fdb   set_slither_bodyhit_4,set_slither_bodyhit_5
-        fdb   set_slither_bodyhit_6,set_slither_bodyhit_7
-        fdb   set_slither_bodyhit_8,set_slither_bodyhit_9
-        fdb   set_slither_bodyhit_10,set_slither_bodyhit_11
-        fdb   set_slither_bodyhit_12,set_slither_bodyhit_13
-        fdb   set_slither_bodyhit_14,set_slither_bodyhit_15
-
 slither.TailHitSets
         fdb   set_slither_tailhit_0,set_slither_tailhit_1
         fdb   set_slither_tailhit_2,set_slither_tailhit_3
