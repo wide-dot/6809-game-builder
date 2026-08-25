@@ -21,7 +21,7 @@
 
 AABB_0        equ ext_variables    ; AABB struct (9 bytes)
 direction     equ ext_variables+9  ; 1 byte, diagonal: 0=upright, 2=downright, 4=downleft, 6=upleft - horizontal: 0=right, 2=left
-; free slot equ ext_variables+10 ; 1 byte
+nbPass        equ ext_variables+10 ; 1 byte, passagers derriere la tete
 laserLifetime equ ext_variables+11 ; 1 byte, number of frames the laser is active
 slotMask      equ ext_variables+12 ; 1 byte, mask to set/free slot occupation
 parent        equ ext_variables+13 ; 2 bytes, parent object pointer (0=no parent, head of laser)
@@ -285,21 +285,20 @@ InitiateDiagonalLaser
                                        ;   LoadObject_x echoue ici, le chemin d'echec fait
                                        ;   "inc isLastChild,x" -> sans ca il corromprait
                                        ;   bufferBase+$36 (code). On vise l'orchestrateur (inoffensif).
-        jsr   DiagonalLoadObject
-        stx   parent,u
-        clr   glb.childId
-        ; laser length (2 or 8) based on forcepod power        
+        jsr   DiagonalLoadObject       ; la tete, et elle seule
+        ; LA LONGUEUR. Les passagers ne sont plus des objets : la tete les
+        ; porte, et le renderer groupe les dessine. Huit segments ne coutent
+        ; donc plus qu'UN objet, la ou ils en coutaient huit — c'est ce qui
+        ; rend la longueur de la borne payable.
+        ; Deux au palier faible, huit au palier fort : c'est ce que donne la
+        ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
+        ; dans doc/rebound-laser-plan.md.
+        ldb   #RB.MAXSEG-1
         lda   player1+forcepodlevel
         cmpa  #2
-        beq   >
-        ;jsr   DiagonalLoadObject ; 8 sprites x 3 lasers = 24 sprites, too much left for enemies
-        ;jsr   DiagonalLoadObject
-        ;jsr   DiagonalLoadObject
-        ;jsr   DiagonalLoadObject
-        jsr   DiagonalLoadObject
-        jsr   DiagonalLoadObject 
-!       inc   isLastChild,u
-        jsr   DiagonalLoadObject
+        bne   >
+        ldb   #1
+!       stb   nbPass,x
         rts
 
 DiagonalLoadObject
@@ -361,21 +360,20 @@ InitiateHorizontalLaser
                                        ;   Si LoadObject_x echoue ici (pool plein), le chemin d'echec
                                        ;   "inc isLastChild,x" corromprait $3200+$36 = $3236 (DIV3u).
                                        ;   On vise l'orchestrateur (isLastChild,u, inoffensif).
-        jsr   HorizontalLoadObject
-        stx   parent,u
-        clr   glb.childId
-        ; laser length (2 or 8) based on forcepod power        
+        jsr   HorizontalLoadObject     ; la tete, et elle seule
+        ; LA LONGUEUR. Les passagers ne sont plus des objets : la tete les
+        ; porte, et le renderer groupe les dessine. Huit segments ne coutent
+        ; donc plus qu'UN objet, la ou ils en coutaient huit — c'est ce qui
+        ; rend la longueur de la borne payable.
+        ; Deux au palier faible, huit au palier fort : c'est ce que donne la
+        ; table de routage des slots d'arme de la borne (ES:0x1B80), decodee
+        ; dans doc/rebound-laser-plan.md.
+        ldb   #RB.MAXSEG-1
         lda   player1+forcepodlevel
         cmpa  #2
-        beq   >
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        ;jsr   HorizontalLoadObject
-        jsr   HorizontalLoadObject
-        jsr   HorizontalLoadObject
-!       inc   isLastChild,u
-        jsr   HorizontalLoadObject
+        bne   >
+        ldb   #1
+!       stb   nbPass,x
         rts
 
 HorizontalLoadObject
@@ -574,16 +572,14 @@ RunHorizontalLaser.forward
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u            
 
+        jsr   reboundmgr.publishChain  ; les passagers, en une passe
         jmp   DisplaySprite
 
 Destroy
-        ldd   parent,u                 ; un PASSAGER eteint son slot : sans ca
-        beq   >                        ;   son image resterait a l'ecran
-        pshs  x
-        jsr   reboundmgr.SlotPtr
-        clr   ,y
+        pshs  x                        ; la chaine s'eteint avec sa tete : sans
+        jsr   reboundmgr.clearChain    ;   ca les passagers resteraient affiches
         puls  x
-!       lda   isLastChild,u
+        lda   isLastChild,u
         beq   >
         com   slotMask,u
         ldb   glb.slotsState
@@ -881,41 +877,23 @@ RunDiagonalLaser.afterCollision
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u            
         
+        jsr   reboundmgr.publishChain  ; les passagers, en une passe
         jmp   DisplaySprite
 
 InitExplosion
-        ; split laser if needed
-        ldx   child,u
-        lda   isLastChild,x
-        bne   >                 ; if next segment is last child, do not split
-        ; split child
-        inc   isLastChild,x     ; make 2nd segment last child
-        ldx   child,x           ; 3rd segment will be new parent
-        ldd   #0
-        std   parent,x
-        ldb   bufferIndex,u
-        subb  #4*2
-        andb  #%00011111
-        stb   bufferIndex,x
-
-        ; set hitbox of new parent
-        lda   #2                ; set damage potential for this hitbox
-        sta   AABB_0+AABB.p,x
-        _ldd  5,9               ; set hitbox xy radius (arcade radius: 12x12px)
-        std   AABB_0+AABB.rx,x
-        ldd   x_pos,x
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,x
-        ldb   y_pos+1,x
-        stb   AABB_0+AABB.cy,x  ; fixed y position for horizontal laser   
-        _Collision_AddAABB_x AABB_0,AABB_list_friend
-
-        ldy   child,x           ; 4th segment is now child of new parent
-        stx   parent,y
-        clr   childId,y
-!
-        ; init explosion
-        ldb   #Rtn_RunExplosion ; replace head of laser chain by an explosion
+        ; LE SPLIT EST RETIRE (25/08/2026). Il promouvait le troisieme segment
+        ; en nouvelle tete — nouveau parent, nouvelle boite, index d'anneau
+        ; recule — pour que la moitie arriere de la chaine continue. C'etait une
+        ; invention v1 qui APPROXIMAIT les boites de milieu de chaine de la
+        ; borne (segments 1 et 5 en horizontal, 1, 4 et 7 en diagonale) avec une
+        ; seule boite au depart. La borne ne promeut personne : les passagers
+        ; derriere un porteur mort disparaissent, le porteur suivant continue.
+        ;
+        ; Et il n'a plus de chaine d'OBJETS sur laquelle operer : les passagers
+        ; sont des lignes d'anneau depuis que le renderer groupe les dessine.
+        ; `ldx child,u` rendait zero et la promotion ecrivait en $0010.
+        jsr   reboundmgr.clearChain    ; la chaine s'eteint avec sa tete
+        ldb   #Rtn_RunExplosion        ; la tete devient son explosion
         stb   routine,u
         clr   anim_frame,u
         ; please do not change priority here, there is a bug in priority change ...

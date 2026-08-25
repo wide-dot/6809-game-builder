@@ -148,6 +148,123 @@ reboundmgr.RecPublish.off
 
 reboundmgr.sx   fcb 0
 reboundmgr.di   fcb 0
+reboundmgr.n    fcb 0
+reboundmgr.k    fcb 0
+reboundmgr.px   fdb 0
+reboundmgr.py   fdb 0
+reboundmgr.pset fdb 0
+
+;-------------------------------------------------------------------------------
+; reboundmgr.SlotPtrIdx — [y] = le slot d'indice [b] (chaine*RB.NPASS + k)
+; X PRESERVE.
+;-------------------------------------------------------------------------------
+reboundmgr.SlotPtrIdx
+        pshs  x
+        lda   #RB.SLOTSZ
+        mul
+        addd  #reboundmgr.slots
+        tfr   d,y
+        puls  x,pc
+
+;-------------------------------------------------------------------------------
+; reboundmgr.pubXY — publier une position deja lue
+; input VAR : .px le x de CARTE, .py le y, .pset l'imageset ; [y] le slot
+;-------------------------------------------------------------------------------
+reboundmgr.pubXY
+        ldd   reboundmgr.px
+        subd  glb_camera_x_pos
+        addd  #screen_left
+        tsta                           ; hors du cadre en octet : on cache
+        bne   reboundmgr.pubXY.hide
+        stb   reboundmgr.sx
+        ldx   reboundmgr.pset
+        beq   reboundmgr.pubXY.hide
+        lda   reboundmgr.sx
+        ldb   reboundmgr.py+1
+        addb  #screen_top
+        jmp   reboundmgr.RecPublish
+reboundmgr.pubXY.hide
+        clr   ,y
+        rts
+
+;-------------------------------------------------------------------------------
+; reboundmgr.publishChain — LA TETE DEPOSE TOUTE SA CHAINE
+; input REG : [u] la tete, apres son deplacement de la trame
+;
+; Les passagers ne sont plus des objets : ce sont des lignes de l'anneau. La
+; tete en a `nbPass` derriere elle, et le passager k lit a
+; (bufferIndex - (k*4 + 6)) & 31 — exactement le recul qu'il prenait quand il
+; etait un OST, donc le meme echelonnement de deux ticks.
+;
+; C'est ce qui rend la longueur arcade gratuite : huit segments ne coutent plus
+; qu'un objet et un renderer, la ou ils en coutaient huit.
+;-------------------------------------------------------------------------------
+reboundmgr.publishChain
+        lda   nbPass,u
+        beq   reboundmgr.publishChain.rts
+        sta   reboundmgr.n
+        clr   reboundmgr.k
+reboundmgr.publishChain.loop
+        lda   reboundmgr.k             ; le recul dans l'anneau
+        asla
+        asla
+        adda  #6
+        nega
+        adda  bufferIndex,u
+        anda  #%00011111
+        tfr   a,b
+        ldx   bufferBase,u
+        abx
+        ldd   ,x                       ; le x de carte, commun aux deux familles
+        std   reboundmgr.px
+        lda   routine,u
+        cmpa  #Rtn_RunHorizontalLaser
+        bne   reboundmgr.publishChain.diag
+        ldd   y_pos,u                  ; horizontal : la rangee et l'image ne
+        std   reboundmgr.py            ;   changent pas
+        ldd   #Img_reboundlaser_horizontal
+        bra   reboundmgr.publishChain.pub
+reboundmgr.publishChain.diag
+        ldd   32,x                     ; diagonale : y et image sont dans les
+        std   reboundmgr.py            ;   deux autres plans de l'anneau
+        ldd   64,x
+reboundmgr.publishChain.pub
+        std   reboundmgr.pset
+        ldb   slotMask,u               ; le slot : chaine * RB.NPASS + k
+        ldx   #reboundmgr.chain.tbl
+        abx
+        ldb   ,x
+        lda   #RB.NPASS
+        mul
+        addb  reboundmgr.k
+        jsr   reboundmgr.SlotPtrIdx
+        jsr   reboundmgr.pubXY
+        inc   reboundmgr.k
+        lda   reboundmgr.k
+        cmpa  reboundmgr.n
+        blo   reboundmgr.publishChain.loop
+reboundmgr.publishChain.rts
+        rts
+
+;-------------------------------------------------------------------------------
+; reboundmgr.clearChain — eteindre les slots d'une chaine qui meurt
+; input REG : [u] la tete
+;-------------------------------------------------------------------------------
+reboundmgr.clearChain
+        ldb   slotMask,u
+        ldx   #reboundmgr.chain.tbl
+        abx
+        ldb   ,x
+        lda   #RB.NPASS
+        mul
+        jsr   reboundmgr.SlotPtrIdx
+        ldb   #RB.NPASS
+reboundmgr.clearChain.loop
+        clr   ,y
+        leay  RB.SLOTSZ,y
+        decb
+        bne   reboundmgr.clearChain.loop
+        rts
 
 ;*******************************************************************************
 ; LE FAUX IMAGESET — ce que BuildSprites croit dessiner. Son entree compilee
