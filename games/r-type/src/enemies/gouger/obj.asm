@@ -20,8 +20,15 @@
 ;
 ; CE QUE PORTE LE DESCRIPTEUR DE WAVE. Le 5e octet, et lui seul (le subtype
 ; vaut $00 sur les 29 lignes) :
-;   bits 0-1 -> la VARIANTE de mouvement (load_gouger_preset, CL & 3)
-;   bits 2-3 -> la case +0x34 (load_motion_param_preset_4, (CL >> 2) & 3)
+;   bits 0-1 -> la VARIANTE de mouvement (load_gouger_preset, CL & 3) : d'ou il
+;               part (plafond ou sol) et dans quel sens il file.
+;   bits 2-3 -> le DECLENCHEUR, en +0x34 (load_motion_param_preset_4). Ses
+;               quatre valeurs sont $FFFF, $0080, $0180, $0200 :
+;                 $FFFF -> bit 15 arme : il plonge quand le joueur se presente
+;                          dans la direction gravee en +0x36 ;
+;                 sinon -> c'est un COMPTE A REBOURS en trames (128, 384, 512),
+;                          decremente a chaque tour, et il plonge a zero sans
+;                          se soucier du joueur.
 ; Les quatre variantes sont toutes employees par la wave.
 ;
 ; LES QUATRE VARIANTES, et elles tombent une a une sur nos dossiers d'images :
@@ -88,10 +95,16 @@
 ;
 ; LA MACHINE A TROIS ETATS
 ;
-;   A — cache. Le bit de signe de +0x34 dit plafond ou sol. Tant que la
-;       direction rendue par set_direction_to(player_one) differe de celle
-;       gravee en +0x36 ($0018/$0028/$0008/$0038 selon la variante), le corps
-;       ne bouge pas. Des qu'elle correspond, le tick passe en phase B.
+;   A — cache. Il defile avec la carte et attend son declencheur (voir plus
+;       haut : direction du joueur, ou compte a rebours). Plafond ou sol ne se
+;       lit PAS ici mais dans la variante — la plate Ghidra pretendait le
+;       contraire, elle est corrigee.
+;       Son dessin n'est pas une animation : l'index est reconstruit depuis la
+;       base a chaque trame, donc rien ne s'accumule. Il montre la POSE 1, sauf
+;       UNE trame sur 64 — quand (+0x34 & $3F) vaut zero — ou il montre la
+;       POSE 2 : un sursaut d'une trame. Seules les variantes a compte a
+;       rebours sursautent ; celle qui guette le joueur ne passe jamais par la.
+;       La collision, la mort et le recul sont deja actifs dans cette phase.
 ;
 ;   B — la plongee. Chaque trame : x_pos += scroll_amount (verrou de defilement),
 ;       puis SONDE DU DECOR au centre.
