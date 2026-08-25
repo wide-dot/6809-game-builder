@@ -514,7 +514,7 @@ slither.MasterLive
         ; --- 3ter) la CASCADE DE MORT, un cran par trame --------------------
         jsr   slither.Cascade
         ; --- 4) la marche des records --------------------------------------
-        com   slither.mPhase,u         ; la parite bascule PAR TOUR DE BOUCLE
+        ; (slither.mPhase ne sert plus : la collision est systematique)
         jsr   slither.Walk
         ; --- 5) la fin : plus un record vivant apres le drain ---------------
         lda   slither.mState,u
@@ -642,8 +642,7 @@ slither.DetachVel
 
 slither.Walk
         clr   slither.wN
-@loop   clr   slither.wFree            ; dans la chaine, sauf preuve du contraire
-        ldb   slither.wN
+@loop   ldb   slither.wN
         jsr   slither.RecPtrB
         lda   slither.RS,x
         lbeq  @next                    ; inactif
@@ -735,49 +734,38 @@ slither.Walk
         lda   slither.wPy
         suba  #screen_top
         sta   AABB.cy,x
-        ; LA PARITE ARCADE : un segment sur deux par boucle, voisins opposes.
-        ; Le gate est le POTENTIEL — Collision_Do saute une boite a p = 0.
+        ; LA COLLISION EST SYSTEMATIQUE — et ce n'est pas qu'une question de
+        ; cadence. L'arcade teste un corps une trame sur DEUX (40:7a3f gate la
+        ; passe par global_counter XOR priority) ; on portait cette parite
+        ; telle quelle. Deux raisons de l'abandonner (decision auteur) :
         ;
-        ; ET SURTOUT : le verdict d'un coup se lit A LA FERMETURE de la
-        ; fenetre armee, la seule ou un p nul veuille dire « touche ». Le lire
-        ; en tete de marche, sans condition, tuait un segment sain a chaque
-        ; tour desarme — c'est NOUS qui venions d'y mettre zero. Mesure avant
-        ; correction : mActive montait a 9 mais un seul record restait vivant,
-        ; d'ou une chaine qui se lisait comme deux ou trois morceaux epars.
-        ; LA CADENCE DE COLLISION suit l'arcade, et elle DIFFERE selon l'etat :
-        ; un corps de la chaine est teste une trame sur DEUX (40:7a3f gate le
-        ; test par global_counter XOR priority), mais un segment DETACHE l'est
-        ; a CHAQUE trame — 40:7cd3 appelle la passe sans porte, tout comme la
-        ; tete et la queue. On sort donc du schema de parite des qu'il vole.
-        lda   slither.wFree
-        bne   @libre
-        lda   slither.mPhase,u
-        eora  slither.wN
-        anda  #1
-        beq   @disarm
-        lda   #slither_hitdamage       ; boucle armee : exposer les PV
-        sta   AABB.p,x
-        lbra  @next
-@disarm lda   AABB.p,x                 ; la passe de collision l'a-t-elle vide ?
-        bne   @clr
-        jsr   slither.RecExplode       ; oui : score, explosion, retrait
-        lbra  @next
-@clr    clr   AABB.p,x                 ; hors de la passe jusqu'au prochain tour
-        lbra  @next
-@libre  lda   AABB.p,x                 ; vol libre : arme a chaque trame, et le
-        beq   @boom                    ; verdict se lit au tour suivant
-        lda   #slither_hitdamage
-        sta   AABB.p,x
-        lbra  @next
-@boom   jsr   slither.RecExplode
+        ; 1) une trame rendue vaut ~7 trames de jeu ici (frame-drop releve a
+        ;    6.77 en stage 5). La porte arcade espace les tests de 2 trames de
+        ;    jeu ; portee telle quelle elle les espacait de ~14. Les tirs
+        ;    avancent eux aussi de 7 trames d'un coup, et la boite d'un corps
+        ;    ne fait que 8 px de large : un tir pouvait la traverser
+        ;    entierement sans jamais etre teste.
+        ;
+        ; 2) SURTOUT, la parite empechait les degats de S'ACCUMULER. Le
+        ;    potentiel etant le gate (Collision_Do saute une boite a p = 0),
+        ;    il fallait le REARMER a chaque tour arme — donc un corps ne
+        ;    pouvait mourir qu'en encaissant ses 6 points DANS UNE SEULE
+        ;    trame. Il etait tue du premier tir, ou jamais. L'arcade, elle,
+        ;    accumule vers un plafond (+0x1f contre 6).
+        ;
+        ; Sans parite, le potentiel se pose UNE FOIS a l'eveil du record et la
+        ; passe le decremente : c'est exactement le modele du +0x1f arcade, et
+        ; celui que les suiveurs (tete, queue) suivaient deja.
+        lda   AABB.p,x
+        lbne  @next                    ; encore debout : on ne touche a rien
+        jsr   slither.RecExplode       ; a zero : score, explosion, retrait
         lbra  @next
 ; --- LE VOL LIBRE (40:7cd3) -------------------------------------------------
 ; Le segment ne lit plus l'anneau : il derive en 8.8 et vrille sur place.
 ; L'arcade avance image_id d'UN par trame et indexe (image_id & 0x1E) * 3 sur
 ; un pas de six octets — soit une pose toutes les DEUX trames, et seulement
 ; les seize premieres, celles de la famille rotation.
-@drift  inc   slither.wFree            ; en vol libre : cadence de collision a part
-        ; LA COMPENSATION DE FRAME-DROP. Tout le reste de la chaine l'a : le
+@drift  ; LA COMPENSATION DE FRAME-DROP. Tout le reste de la chaine l'a : le
         ; maitre passe par moveByScript.runByFrameDrop pendant le script et
         ; avance son horloge de frameDrop.count pendant le drain. Le vol libre
         ; n'appliquait sa vitesse QU'UNE FOIS par appel d'objet — sur une
@@ -855,7 +843,6 @@ slither.wPx     fcb 0
 slither.wPy     fcb 0
 slither.wPose   fcb 0
 slither.wDrop   fcb 0                  ; trames a rattraper dans le vol libre
-slither.wFree   fcb 0                  ; 1 = le record courant est detache
 
 ; B = rang -> X = la boite. (Le maitre est en U, la zone est residente.)
 slither.BoxPtrB
