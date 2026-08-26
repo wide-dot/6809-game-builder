@@ -634,11 +634,14 @@ RunHorizontalLaser.forward
 
 Destroy
         pshs  x                        ; la chaine s'eteint : sans ca ses
-        clrb                           ;   passagers resteraient affiches. Un
-        ldx   parent,u                 ;   PORTEUR n'emporte que ce qui est
-        beq   >                        ;   derriere lui, la tete emporte tout.
-        ldb   childId,u
-!       jsr   reboundmgr.clearChainFrom
+        ldx   parent,u                 ;   passagers resteraient affiches. Un
+        beq   @headClears              ;   PORTEUR n'emporte que ce qui est
+        ldb   childId,u                ;   derriere lui — et LA TETE LUI SURVIT
+        jsr   reboundmgr.clearPassengersFrom ; (elle vit plus longtemps que ses
+        bra   @cleared                 ;   porteurs), donc son slot n'est pas a
+@headClears                            ;   lui : l'eteindre la faisait clignoter
+        jsr   reboundmgr.clearChain    ;   une trame. La tete, elle, emporte tout
+@cleared
         puls  x
         lda   isLastChild,u
         beq   >
@@ -761,7 +764,9 @@ reboundBearerHit
         bhs   >
         sta   nbPass,x
 !       ldb   childId,u
-        jsr   reboundmgr.clearChainFrom
+        jsr   reboundmgr.clearPassengersFrom ; DERRIERE lui seulement : la tete
+                                       ;   poursuit sa route et vient de publier
+                                       ;   son slot dans cette meme trame
         ldb   #Rtn_RunExplosion
         stb   routine,u
         clr   anim_frame,u

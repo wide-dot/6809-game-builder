@@ -210,6 +210,7 @@ reboundmgr.di   fcb 0
 reboundmgr.n    fcb 0
 reboundmgr.fill fcb 0
 reboundmgr.k    fcb 0
+reboundmgr.bound fcb 0
 reboundmgr.px   fdb 0
 reboundmgr.py   fdb 0
 reboundmgr.pset fdb 0
@@ -347,9 +348,12 @@ reboundmgr.publishChain.rts
         rts
 reboundmgr.publishChain.tail
         ; ceux d'apres non plus n'existent pas : leurs slots s'eteignent, sans
-        ; quoi ils garderaient l'image de la volee precedente
+        ; quoi ils garderaient l'image de la volee precedente. PASSAGERS
+        ; SEULEMENT : la tete vient de se publier dans le dernier slot de la
+        ; meme passe — eteindre jusqu'a RB.NSEG-1 la gommait a chaque trame
+        ; du deploiement (les ~15 premieres trames d'une volee).
         ldb   reboundmgr.k
-        jmp   reboundmgr.clearChainFrom
+        jmp   reboundmgr.clearPassengersFrom
 
 ;-------------------------------------------------------------------------------
 ; reboundmgr.clearChainFrom — eteindre les slots d'une chaine A PARTIR d'un rang
@@ -358,8 +362,21 @@ reboundmgr.publishChain.tail
 ; Un PORTEUR touche n'emporte que ce qui est DERRIERE lui — c'est le
 ; comportement de la borne : les passagers derriere un porteur mort
 ; disparaissent, le porteur suivant continue. La tete, elle, eteint tout.
+;
+; DEUX ENTREES, ET LE CHOIX SE FAIT SUR « LA TETE VIT-ELLE ENCORE ? » :
+;   clearChainFrom      (borne RB.NSEG)  — la tete meurt, son slot part avec.
+;   clearPassengersFrom (borne RB.NPASS) — la tete vit ; son slot est a elle,
+;     personne d'autre ne l'eteint. C'est le cas de la queue du deploiement
+;     (elle court APRES la publication de la tete, dans la meme passe) ET de
+;     tout porteur qui meurt : un porteur est DERRIERE la tete, il ne peut
+;     pas emporter ce qui est devant lui.
 ;-------------------------------------------------------------------------------
+reboundmgr.clearPassengersFrom
+        lda   #RB.NPASS
+        bra   >
 reboundmgr.clearChainFrom
+        lda   #RB.NSEG
+!       sta   reboundmgr.bound
         stb   reboundmgr.k
         ldb   slotMask,u
         ldx   #reboundmgr.chain.tbl
@@ -369,9 +386,12 @@ reboundmgr.clearChainFrom
         mul
         addb  reboundmgr.k
         jsr   reboundmgr.SlotPtrIdx    ; Y = le premier slot a eteindre
-        lda   #RB.NSEG
+        lda   reboundmgr.bound
         suba  reboundmgr.k
-        beq   reboundmgr.clearChainFrom.rts
+        ble   reboundmgr.clearChainFrom.rts ; SIGNE, pas beq : la borne varie
+                                       ;   desormais, et un rang au-dela d'elle
+                                       ;   donnerait un compteur negatif — donc
+                                       ;   256 tours de clr a travers la page
         sta   reboundmgr.n
 reboundmgr.clearChainFrom.loop
         clr   ,y
