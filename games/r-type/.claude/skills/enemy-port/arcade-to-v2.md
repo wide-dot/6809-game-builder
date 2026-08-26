@@ -86,13 +86,21 @@ pas seulement la première (un objet peut changer d'ancrage selon sa phase).
   VERS LE HAUT** (origine en bas, ratio négatif) : un y arcade plus grand
   est plus haut à l'écran, et le +8/+189 porte les offsets de viewport v2.
   Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
-  > **La constante Y était écrite +190 ici jusqu'au 26/08/2026, et c'était un
-  > de trop.** Recoupée sur les DEUX presets déjà importés et convertis —
-  > `1930c_preset-y.asm` (6 valeurs) et `18db0_preset-y.asm` (8 valeurs) — la
-  > forme close qui reproduit les quatorze octets est **`y_v2 = 297 − 0.75 ×
-  > y_arcade`**, soit `+189`. Si un portage donne un pixel de trop vers le
-  > haut, c'est là qu'il faut regarder ; et le recoupement se refait en une
-  > minute, les presets arcade étant à `1000:930c` et `1000:8db0`.
+  > **En Y, se fier aux PRESETS DÉJÀ IMPORTÉS, pas à la formule.** Les deux
+  > tables converties du dépôt — `1930c_preset-y.asm` (6 valeurs) et
+  > `18db0_preset-y.asm` (8 valeurs) — suivent toutes les quatorze
+  > **`y_v2 = 297 − 0.75 × y_arcade`**. Les constantes de `Conv.java`
+  > (`yvp=180`, `yov=11`, `yOriginArcade=128`, `yoffset=190`) ne reproduisent
+  > pas cette valeur, et la variante `(y−144)×−0.75+190` qui figurait ici
+  > jusqu'au 26/08/2026 donne un pixel de trop. Question ouverte pour
+  > l'auteur ; en attendant, la forme close ci-dessus est celle qui rend les
+  > octets que le jeu exécute. Recoupement en une minute : presets arcade à
+  > `1000:930c` et `1000:8db0`.
+  > **En X en revanche `Conv.java` fait foi et se recoupe** : `xvp=144`
+  > (viewport), `xov=8` (offset de viewport), ratio `144/384 = 0.375`. Mesuré
+  > à l'écran le 26/08/2026 : le décor occupe les colonnes 8..151 et l'ancre
+  > d'un sprite tombe exactement sur `x_pos − caméra` — les deux partagent
+  > donc la même origine, décalée de 8.
 - Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8` ↔ v2
   `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`) ; `x=0x2D0` ↔
   `+ 144+8+6` (gouger). Seuils arcade fréquents : `< 0x270` = entré à
