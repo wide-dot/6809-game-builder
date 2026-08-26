@@ -41,14 +41,28 @@ ObjID_shellEraser equ 26
 ObjID_commonmissileflame equ 27
 ObjID_dobkeratops_saw equ 28
 ObjID_dobkeratops_explosion equ 29
+* Le laser de sol : la TETE de faisceau. Le renderer groupe de ses
+* suiveurs sera une ROUTINE de ce meme objet, comme reboundmgr — il ne
+* coute pas d'identifiant.
+ObjID_forcepod_groundlaser equ 30
 
-objid.common.count equ 29
+objid.common.count equ 30
 
-* The specific ids of every co-loadable set (stage/title objid.const.asm)
-* start at 30 : the shared prefix must stay below that base. Growing past
-* it would silently collide with every set's first specific id.
- IFGE objid.common.count-30
-        ERROR common object ids overflow the specific base (30)
+* LE DECOUPAGE DE L'ESPACE D'IDENTIFIANTS (26/08/2026)
+*
+*    0..31   le prefixe COMMUN, celui de ce fichier
+*   32..127  le specifique de chaque ensemble co-chargeable
+*            (stage/title objid.const.asm)
+*
+* Des bornes rondes, qui se retiennent. La base valait 30 et le commun etait
+* plein a l'octet pres : 30 et 31 s'y sont ouverts. Le 30 est alle a la tete
+* du laser de sol le 26/08 ; le 31 reste libre. Les identifiants
+* specifiques ont tous glisse de deux le jour du changement (decision auteur).
+*
+* Le plafond de 127 tient a RunObjects, qui met l'identifiant en B et l'echelle
+* par aslb+abx : au-dela le bit de poids fort tombe dans le decalage.
+ IFGE objid.common.count-32
+        ERROR common object ids overflow the specific base (32)
  ENDC
 
  ENDC

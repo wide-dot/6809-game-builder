@@ -7,23 +7,23 @@ OBJID_CONST_07 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_pow equ 30
-ObjID_checkpoint equ 31
-ObjID_bossmusic equ 32
+ObjID_pow equ 32
+ObjID_checkpoint equ 33
+ObjID_bossmusic equ 34
 * La bibliotheque d'ennemis que CE stage charge (ses lots — voir
 * src/common/cast.const.asm et l'analyse des lots).
-ObjID_patapata equ 33
-ObjID_bink equ 34
-ObjID_cancer equ 35
-ObjID_bug equ 36
-ObjID_pstaff equ 37
-ObjID_scant equ 38
-ObjID_mid equ 39
+ObjID_patapata equ 35
+ObjID_bink equ 36
+ObjID_cancer equ 37
+ObjID_bug equ 38
+ObjID_pstaff equ 39
+ObjID_scant equ 40
+ObjID_mid equ 41
 ; le renderer groupe des chaines de bug — MEME valeur que l'equ de
 ; bug.unit.asm (47 : le premier id libre dans les trois stages a bugs)
-ObjID_bugrender equ 47
+ObjID_bugrender equ 49
 
-objid.count equ 47
+objid.count equ 49
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

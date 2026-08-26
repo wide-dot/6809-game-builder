@@ -8,13 +8,13 @@ OBJID_CONST_TITLE equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_logo        equ 30
-ObjID_text        equ 31
-ObjID_push_button equ 32
-ObjID_scores      equ 33
-ObjID_loading     equ 34
+ObjID_logo        equ 32
+ObjID_text        equ 33
+ObjID_push_button equ 34
+ObjID_scores      equ 35
+ObjID_loading     equ 36
 
-objid.count equ 34
+objid.count equ 36
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

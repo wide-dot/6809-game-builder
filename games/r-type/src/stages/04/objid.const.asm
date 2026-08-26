@@ -7,29 +7,29 @@ OBJID_CONST_04 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_pow equ 30
-ObjID_checkpoint equ 31
-ObjID_bossmusic equ 32
+ObjID_pow equ 32
+ObjID_checkpoint equ 33
+ObjID_bossmusic equ 34
 * La bibliotheque d'ennemis que CE stage charge (ses lots — voir
 * src/common/cast.const.asm et l'analyse des lots).
-ObjID_patapata equ 33
-ObjID_bink equ 34
-ObjID_cancer equ 35
-ObjID_bug equ 36
-ObjID_pstaff equ 37
+ObjID_patapata equ 35
+ObjID_bink equ 36
+ObjID_cancer equ 37
+ObjID_bug equ 38
+ObjID_pstaff equ 39
 * Le champ d'etoiles du boss Compiler, arme par la WAVE comme dans l'arcade
 * (variant 1 — la sequence gauche classique, le sens droite arcade est mis de
 * cote). L'objet est ephemere : il passe le variant au module pagine et rend
 * son slot (stage.starfieldSpawner).
-ObjID_starfield equ 38
+ObjID_starfield equ 40
 
 * cytron : l'ennemi mecanique qui rampe sur les parois et fait REPOUSSER le
 * champ de gommes. Le stage en fait naitre 38, sur neuf variantes de script.
-ObjID_cytron equ 39
+ObjID_cytron equ 41
 
-ObjID_bugrender equ 47 ; le renderer des chaines de bug — meme valeur que
-                       ; l'equ de bug.unit.asm (47 partout) ; 40..46 libres
-objid.count equ 47
+ObjID_bugrender equ 49 ; le renderer des chaines de bug — meme valeur que
+                       ; l'equ de bug.unit.asm (47 partout) ; 42..48 libres
+objid.count equ 49
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

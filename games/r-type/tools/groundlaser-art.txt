@@ -1,0 +1,56 @@
+L'art du laser de sol — extraction et conversion
+================================================
+
+Le laser JAUNE du Force Pod (« counter-ground ») n'avait pas d'art : le dépôt
+d'extraction arcade ne sortait que des ennemis, aucun sprite d'arme du joueur.
+Les deux étapes ci-dessous le produisent depuis la ROM. Chemins relatifs à
+games/r-type/ ; le dépôt d'extraction arcade est supposé voisin du dépôt v2
+(../../../re.arcade.r-type).
+
+1. AMONT — la recette arcade entre au catalogue
+-----------------------------------------------
+Rien à coder : le moteur `meta_sprite` de re.arcade.r-type décode déjà les
+rangées de six octets `(dx, dy, tuile, attributs)` que la borne donne à
+`write_1_sprite_a`, et sa règle d'image `addr + 6·nb·f` est exactement le pas
+de nos tables. Il manquait l'entrée. Ajoutée à data/catalog.yaml :
+
+    - name: ground-laser
+      animations:
+      - name: head        nb_frames 4  addr 0x1218c   palette 0x3d
+      - name: follower    nb_frames 4  addr 0x121a4   palette 0x3d
+      - name: explosion   nb_frames 4  addr 0x121bc   palette 0x3d
+
+Les adresses sont les tables de recettes relevées sous Ghidra (ES:0x218C,
+0x21A4, 0x21BC — l'adresse plate vaut 0x10000 + l'offset de segment). La
+palette 0x3D est celle que `create_ground_laser` réserve par `get_palette_id`.
+Le catalogue est RÉÉCRIT par snakeyaml à chaque export : il ne peut pas porter
+de commentaire, d'où ce fichier.
+
+    cd ../../../re.arcade.r-type
+    java -Xmx1G -jar target/re.arcade.r-type-0.0.1.jar --export-catalog -r rom/rtype.zip
+
+Sort douze PNG indexés sur canevas 256x256 dans out/sprites/ground-laser/.
+
+2. AVAL — les PNG arcade deviennent des sprites TO8
+---------------------------------------------------
+    cp -R ../../../re.arcade.r-type/out/sprites/ground-laser/* \
+          src/common/weapons/forcepods/groundlaser/images/original/
+    python3 tools/arcade_to_sprites.py src/common/weapons/forcepods/groundlaser
+
+Géométrie obtenue, et elle tombe juste :
+
+    head       4 frames  cadre 16x16 -> 6x12   ancre -3,-6
+    follower   4 frames  cadre 16x16 -> 6x12   ancre -3,-6
+    explosion  4 frames  cadre 48x48 -> 18x36  ancre -9,-18
+
+La cellule de 16x16 de la borne donne 6x12 chez nous — et son pas de marche de
+8 px donne (3,6), soit exactement une cellule de notre carte de collision. Les
+cellules d'une chaîne se touchent des deux côtés, comme sur la borne.
+
+Palette `communs` (le défaut) : le laser est chargé une fois pour les huit
+stages, sa couleur ne peut pas dépendre de l'un d'eux.
+
+ORDRE DES IMAGES D'EXPLOSION : la borne les joue À L'ENVERS. Son compte à
+rebours part de 0x18 et retranche 6 avant d'indexer, donc elle lit les rangées
+3, 2, 1, 0. L'export les sort dans l'ordre du fichier ; c'est au code objet de
+les jouer à rebours.
