@@ -1,0 +1,4 @@
+# slot d animation arcade -> pose importee, ecrit par
+# arcade_to_sprites.py --dedup. Le code objet indexe
+# cette table, pas le slot brut.
+0 1 2 3 2 1 0 4

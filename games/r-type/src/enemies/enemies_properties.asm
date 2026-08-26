@@ -111,6 +111,15 @@ dobkeratops_eye_hitbox_x  equ 3
 dobkeratops_eye_hitbox_y  equ 6
 dobkeratops_eye_hitdamage equ 1
 
+; Gouger (stage 2). Boite arcade 1000:31ee : ee ff 12 00 ee ff 12 00, soit
+; -18..+18 sur les deux axes — un RAYON de 18. A l'echelle du fichier
+; (x 0.375 en X, x 0.75 en Y) : 18 x 0.375 = 6.75 -> 7, 18 x 0.75 = 13.5 -> 14.
+; Les PV viennent du spawner (40:6fb2), qui ecrase la table de difficulte par
+; un $0A inconditionnel.
+gouger_hitbox_x	equ 7
+gouger_hitbox_y	equ 14
+gouger_hitdamage	equ 10
+
 ; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
 ; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
 ; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur

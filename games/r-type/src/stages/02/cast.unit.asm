@@ -18,7 +18,58 @@
 ; ses etiquettes de son nom — voir outslay/obj.asm.
 ;*******************************************************************************
 
+; Les sprites du GOUGER franchissent la frontiere de direntry : chaque
+; direction a sa page — et chaque MOITIE la sienne, les poses etant coupees
+; en deux (46 demi-sprites, plus de deux pages, et Img_Page_Index ne donne
+; qu'une page par identifiant). Ces symboles sont resolus au chargement.
+set_gouger_tl_top_0  EXTERNAL
+set_gouger_tl_top_1  EXTERNAL
+set_gouger_tl_top_2  EXTERNAL
+set_gouger_tl_top_3  EXTERNAL
+set_gouger_tl_top_idle_0  EXTERNAL
+set_gouger_tr_top_0  EXTERNAL
+set_gouger_tr_top_1  EXTERNAL
+set_gouger_tr_top_2  EXTERNAL
+set_gouger_tr_top_3  EXTERNAL
+set_gouger_tr_top_idle_0  EXTERNAL
+set_gouger_bl_top_0  EXTERNAL
+set_gouger_bl_top_1  EXTERNAL
+set_gouger_bl_top_2  EXTERNAL
+set_gouger_bl_top_3  EXTERNAL
+set_gouger_bl_top_idle_0  EXTERNAL
+set_gouger_br_top_0  EXTERNAL
+set_gouger_br_top_1  EXTERNAL
+set_gouger_br_top_2  EXTERNAL
+set_gouger_br_top_idle_0  EXTERNAL
+set_gouger_hit_tl_top_0  EXTERNAL
+set_gouger_hit_tr_top_0  EXTERNAL
+set_gouger_hit_bl_top_0  EXTERNAL
+set_gouger_hit_br_top_0  EXTERNAL
+set_gouger_tl_bottom_0  EXTERNAL
+set_gouger_tl_bottom_1  EXTERNAL
+set_gouger_tl_bottom_2  EXTERNAL
+set_gouger_tl_bottom_3  EXTERNAL
+set_gouger_tl_bottom_idle_0  EXTERNAL
+set_gouger_tr_bottom_0  EXTERNAL
+set_gouger_tr_bottom_1  EXTERNAL
+set_gouger_tr_bottom_2  EXTERNAL
+set_gouger_tr_bottom_3  EXTERNAL
+set_gouger_tr_bottom_idle_0  EXTERNAL
+set_gouger_bl_bottom_0  EXTERNAL
+set_gouger_bl_bottom_1  EXTERNAL
+set_gouger_bl_bottom_2  EXTERNAL
+set_gouger_bl_bottom_3  EXTERNAL
+set_gouger_bl_bottom_idle_0  EXTERNAL
+set_gouger_br_bottom_0  EXTERNAL
+set_gouger_br_bottom_1  EXTERNAL
+set_gouger_br_bottom_2  EXTERNAL
+set_gouger_br_bottom_idle_0  EXTERNAL
+set_gouger_hit_tl_bottom_0  EXTERNAL
+set_gouger_hit_tr_bottom_0  EXTERNAL
+set_gouger_hit_bl_bottom_0  EXTERNAL
+set_gouger_hit_br_bottom_0  EXTERNAL
 gouger.Object    EXPORT
+gouger.Half      EXPORT
 wick.Object      EXPORT
 brood.Object     EXPORT
 outslay.Object   EXPORT

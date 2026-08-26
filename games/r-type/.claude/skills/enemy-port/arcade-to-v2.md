@@ -21,14 +21,39 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
   144 = largeur visible ; 256×0.75 = 192.
 - Une vitesse arcade en px/trame se convertit par cette échelle et se pose en
   8.8 (`x_sub`/`y_sub`, helpers `moveXPos8.8`/`moveYPos8.8`).
-- **Espaces différents, et la question se pose POUR CHAQUE ennemi.** Le
-  mouvement de caméra est **explicite** en arcade : `auto_scroll` (0x40:0467)
-  publie un delta par trame en `0x2ED0..0x2ED6`, et chaque tick d'objet décide
-  de se l'appliquer ou non. En v2 il est **implicite** : un `x_pos,u` en repère
-  PLAYFIELD (`render_playfieldcoord_mask`) recule tout seul quand la caméra
-  avance. Les deux cas sont donc inverses l'un de l'autre, et **le test est
-  mécanique — le tick arcade lit-il `0x2ED0` ?** (`bridge_xrefs_to` sur cette
-  adresse donne la liste complète des objets qui s'y accrochent) :
+### Le scroll : la logique est INVERSÉE entre les deux moteurs — test obligatoire
+
+**C'est le piège le plus régulier de tout le portage, et il est silencieux :
+un objet mal transposé dérive lentement au lieu de rester collé au décor, ce
+qui ne se voit qu'à la comparaison.** Il ne se déduit pas, il se lit.
+
+|  | ancré au DÉCOR (suit le scroll) | ancré à l'ÉCRAN (ne le suit pas) |
+|---|---|---|
+| **arcade** | il faut du CODE : `ADD [BP+4], [0x2ED0]` dans le tick | **aucun code** |
+| **v2** | **aucun code** : `render_playfieldcoord_mask` suffit | il faut du CODE (compenser, ou vivre en repère écran) |
+
+Le mouvement de caméra est **explicite** en arcade : `auto_scroll` (0x40:0467)
+publie un delta par trame en `0x2ED0..0x2ED6`, et chaque tick d'objet décide de
+se l'appliquer ou non. En v2 il est **implicite** : un `x_pos,u` en repère
+PLAYFIELD recule tout seul quand la caméra avance. Absence de code veut donc
+dire l'inverse d'un moteur à l'autre — recopier un tick arcade « tel quel »
+produit systématiquement le mauvais ancrage.
+
+**Le test est mécanique — le tick arcade lit-il `0x2ED0` ?**
+`bridge_xrefs_to 0x4000_2ed0` donne la liste complète des objets qui s'y
+accrochent ; il faut la croiser avec TOUTES les entrées de tick de l'ennemi,
+pas seulement la première (un objet peut changer d'ancrage selon sa phase).
+
+> Vérifié le 26/08/2026 sur les deux ennemis du stage 2, qui forment une paire
+> exemplaire : le **gouger** apparaît trois fois dans la liste — `0x406fd0`,
+> `0x407048`, `0x407106`, soit ses trois phases — il est donc ancré au décor,
+> et notre portage a raison de n'avoir **aucun code de scroll** : juste
+> `render_playfieldcoord_mask` sur le parent et son enfant, `glb_camera_x_pos`
+> lu une seule fois à l'`Init` pour convertir l'abscisse de naissance, et
+> deux lectures d'écran pour la boîte de collision et le calage. À l'inverse,
+> aucune des entrées de tick de l'**outslay** (0x40:91cc..0x9425) n'est dans
+> la liste : il est ancré à l'écran, et il vit chez nous en repère écran natif.
+
   - **il le lit** = ancré au décor. En v2 : ne rien faire, supprimer les
     additions de `scroll_amount`, garder le mouvement propre.
   - **il ne le lit pas** = ancré à l'ÉCRAN. Deux transpositions possibles,
@@ -57,14 +82,80 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
        ses segments — c'est lui qui fixe le point de ponte.
 - **La conversion qui fait foi est `re.arcade.r-type` `Conv.java`** :
   `x_v2 = round((x_arcade − 320) × 0.375) + 8` et
-  `y_v2 = round((y_arcade − 144) × −0.75) + 190` — l'**axe Y arcade pointe
+  `y_v2 = round((y_arcade − 144) × −0.75) + 189` — l'**axe Y arcade pointe
   VERS LE HAUT** (origine en bas, ratio négatif) : un y arcade plus grand
-  est plus haut à l'écran, et le +8/+190 porte les offsets de viewport v2
-  (8/11). Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
-- Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8/0x2D0` ↔
-  v2 `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`). Seuils arcade
-  fréquents : `< 0x270` = entré à l'écran, `< 0x130` = sorti à gauche — les
-  transposer relativement à la caméra via l'échelle X, et valider à l'œil.
+  est plus haut à l'écran, et le +8/+189 porte les offsets de viewport v2.
+  Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
+  > **En Y, se fier aux PRESETS DÉJÀ IMPORTÉS, pas à la formule.** Les deux
+  > tables converties du dépôt — `1930c_preset-y.asm` (6 valeurs) et
+  > `18db0_preset-y.asm` (8 valeurs) — suivent toutes les quatorze
+  > **`y_v2 = 297 − 0.75 × y_arcade`**. Les constantes de `Conv.java`
+  > (`yvp=180`, `yov=11`, `yOriginArcade=128`, `yoffset=190`) ne reproduisent
+  > pas cette valeur, et la variante `(y−144)×−0.75+190` qui figurait ici
+  > jusqu'au 26/08/2026 donne un pixel de trop. Question ouverte pour
+  > l'auteur ; en attendant, la forme close ci-dessus est celle qui rend les
+  > octets que le jeu exécute. Recoupement en une minute : presets arcade à
+  > `1000:930c` et `1000:8db0`.
+  > **En X en revanche `Conv.java` fait foi et se recoupe** : `xvp=144`
+  > (viewport), `xov=8` (offset de viewport), ratio `144/384 = 0.375`. Mesuré
+  > à l'écran le 26/08/2026 : le décor occupe les colonnes 8..151 et l'ancre
+  > d'un sprite tombe exactement sur `x_pos − caméra` — les deux partagent
+  > donc la même origine, décalée de 8.
+- Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8` ↔ v2
+  `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`) ; `x=0x2D0` ↔
+  `+ 144+8+6` (gouger). Seuils arcade fréquents : `< 0x270` = entré à
+  l'écran, `< 0x130` = sorti à gauche — les transposer relativement à la
+  caméra via l'échelle X, et valider à l'œil.
+
+### Ancrer sur le bord GAUCHE, jamais sur le droit (26/08/2026)
+
+La formule ci-dessus part de `x_arcade − 320`, c'est-à-dire du **bord gauche**
+du cadre arcade — celui que la caméra suit dans les deux jeux. C'est le seul
+ancrage qui tienne, et s'en écarter coûte cher :
+
+> Le gouger naissait à `caméra + 166` au lieu de `caméra + 158`, parce que
+> j'avais raisonné « l'arcade le pose 17 px arcade au-delà de son bord droit,
+> donc posons-le 6 px au-delà du nôtre ». Résultat : **16 px trop à droite dans
+> le monde**, sur les 29 spawns du stage, visible dès la comparaison avec
+> l'arcade. Le raisonnement par le bord droit suppose que les deux cadres
+> couvrent la même largeur de monde ; ils ne la couvrent pas.
+
+Trois largeurs cohabitent et il ne faut pas les confondre :
+
+| valeur | ce que c'est | où |
+|---|---|---|
+| **144** | le viewport, `12 × tile_size` de 12 px | `viewport_width`, `common/engine/engine.asm` ; `scroll_max = COLS*12 − 144` |
+| **160** | la borne de **rejet** de BuildSprites (`caméra + 160`) | `BS_xhi` — une marge de culling, pas une largeur visible |
+| **8** | la bordure gauche, portée par le `+8` de la conversion | `pata-pata/obj.asm`, `blaster/obj.asm` |
+
+Contrôles qui recoupent le tout : `384 × 0.375 = 144`, et `stage.asm` dérive sa
+vitesse de caméra du même rapport (`ldd #$0030 ; (256*0.5)/(384/144)`). Enfin,
+la fenêtre de `is_visible_range` (arcade 300..723 en X) se convertit en
+**0..159** — exactement les bornes de BuildSprites. Ce n'est pas une
+coïncidence : les deux décrivent le même cadre.
+
+### Le retard de wave : quand il compte, et quand il ne compte pas
+
+Le lanceur de wave écrit dans l'OST du nouvel objet le nombre de trames de jeu
+de **retard** (`wave_frame_drop`, offset 13 — il ALIASE `anim_frame_duration`,
+donc le lire AVANT que quoi que ce soit n'écrase ce champ). Il vaut de 0 à
+`frameDrop−1` : mesuré 0, 2, 2 et 3 sur quatre gougers du stage 2.
+
+Compenser ou non se décide par **ce que ces trames auraient déplacé** :
+
+- **Objet piloté par un script de déplacement** (bug, slither) : il faut
+  rattraper, et le rattrapage est le script lui-même — `bugmgr.Init` range le
+  retard dans un opérande auto-modifié puis appelle `moveByScript.runByB`. À
+  la vitesse d'un script, trois trames font plusieurs pixels.
+- **Objet ancré au décor qui ne bouge pas** (le gouger en phase d'attente) :
+  le seul déplacement pendant le retard est celui de la **caméra**, et elle
+  est lente — `$0030` en 8.8, soit 0,1875 px par trame de jeu. Trois trames de
+  retard font **0,56 px**, sur une position entière. Ne rien compenser, et
+  l'écrire dans la fiche.
+
+Le calcul à faire avant de coder : `retard × vitesse propre de l'objet` d'un
+côté, `retard × 0,1875` de l'autre. Si le second domine, il n'y a rien à
+compenser.
 - Tables Y arcade : importées déjà recalées (ex.
   `src/common/lib/presets/18db0_preset-y.asm`, valeurs ≤ $B7 < 200).
 
