@@ -68,3 +68,35 @@ pata-pata-like ; **outslay** ← p-staff.
   `<images>` sous `<gfxcomp>` dans le config) ; `images/original/` = les
   sprites arcade par pose (`<pose>/<n>_<adresse rom>.png`), référence
   seulement. `mirror="x"` et `shifts=` démultiplient un même PNG.
+- **`shifts` se déclare PAR RÉPERTOIRE, et le suffixe de symbole suit
+  l'ORDINAL dans l'entrée `<images>`, pas le nom du fichier.** Sortir une
+  pose d'un répertoire pour lui donner ses propres `shifts` y renumérote donc
+  toutes les autres — le build reste vert et dessine les mauvaises poses. La
+  correspondance pose → symbole s'écrit alors en clair dans la table de
+  l'objet (`gouger.SetsXX`).
+
+## `gouger` — l'ennemi posé sur le décor
+
+`src/enemies/gouger/obj.asm` porte trois cas qu'aucun autre exemplaire n'a,
+et qui se reposeront pour tout ennemi **immobile sur une paroi** :
+
+- **Le sprite coupé en deux.** L'arcade découpe ses sprites aux bords de
+  l'écran ; BuildSprites rejette EN BLOC (`BS_ylo`/`BS_yhi`, pas de découpe
+  partielle). Un ennemi à demi enterré n'est donc pas dessiné du tout. La
+  parade : deux objets, parent (moitié top) et enfant (moitié bottom), même
+  `y_pos`, les demi-images restant sur le canevas plein dont une moitié est
+  effacée — gfxcomp dérive l'ancre du centre du canevas, donc aucun décalage
+  à écrire. `tools/gen_gouger_halves.py`.
+- **Le calage au pixel sur le décor.** Un ennemi immobile sur un décor qui
+  défile d'un pixel à la fois a besoin de sa variante pré-décalée, sinon le
+  moteur replie sur la routine paire en corrigeant la position
+  (`BSP_parityFallback`) et il tremble une trame sur deux. Mais la donner à
+  toutes les poses ferait scintiller l'animation, qui mélangerait des poses
+  exactes et des poses calées. La parade : une seule pose la porte, et le
+  code éteint la variante quand elle gênerait, en forçant la parité de
+  `(x_pos − caméra)` — `gouger.Snap`, trois instructions. Le pixel emprunté
+  est rendu en tête de trame suivante, la position vraie n'est jamais altérée.
+- **Un identifiant d'objet par direction ET par moitié.** `Img_Page_Index` ne
+  donne qu'UNE page d'images par ObjID : dès que l'art dépasse une page, il
+  faut autant d'identifiants que de pages, et l'objet bascule sur le sien à
+  la naissance.

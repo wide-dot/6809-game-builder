@@ -57,14 +57,72 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
        ses segments — c'est lui qui fixe le point de ponte.
 - **La conversion qui fait foi est `re.arcade.r-type` `Conv.java`** :
   `x_v2 = round((x_arcade − 320) × 0.375) + 8` et
-  `y_v2 = round((y_arcade − 144) × −0.75) + 190` — l'**axe Y arcade pointe
+  `y_v2 = round((y_arcade − 144) × −0.75) + 189` — l'**axe Y arcade pointe
   VERS LE HAUT** (origine en bas, ratio négatif) : un y arcade plus grand
-  est plus haut à l'écran, et le +8/+190 porte les offsets de viewport v2
-  (8/11). Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
-- Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8/0x2D0` ↔
-  v2 `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`). Seuils arcade
-  fréquents : `< 0x270` = entré à l'écran, `< 0x130` = sorti à gauche — les
-  transposer relativement à la caméra via l'échelle X, et valider à l'œil.
+  est plus haut à l'écran, et le +8/+189 porte les offsets de viewport v2.
+  Appris sur l'intro du stage 1 (y=0x110 décodé 12 px trop bas).
+  > **La constante Y était écrite +190 ici jusqu'au 26/08/2026, et c'était un
+  > de trop.** Recoupée sur les DEUX presets déjà importés et convertis —
+  > `1930c_preset-y.asm` (6 valeurs) et `18db0_preset-y.asm` (8 valeurs) — la
+  > forme close qui reproduit les quatorze octets est **`y_v2 = 297 − 0.75 ×
+  > y_arcade`**, soit `+189`. Si un portage donne un pixel de trop vers le
+  > haut, c'est là qu'il faut regarder ; et le recoupement se refait en une
+  > minute, les presets arcade étant à `1000:930c` et `1000:8db0`.
+- Points d'ancrage vérifiés : spawn au bord droit arcade `x=0x2C8` ↔ v2
+  `glb_camera_x_pos + 144+8+3` (pata-pata, cite `fc7e`) ; `x=0x2D0` ↔
+  `+ 144+8+6` (gouger). Seuils arcade fréquents : `< 0x270` = entré à
+  l'écran, `< 0x130` = sorti à gauche — les transposer relativement à la
+  caméra via l'échelle X, et valider à l'œil.
+
+### Ancrer sur le bord GAUCHE, jamais sur le droit (26/08/2026)
+
+La formule ci-dessus part de `x_arcade − 320`, c'est-à-dire du **bord gauche**
+du cadre arcade — celui que la caméra suit dans les deux jeux. C'est le seul
+ancrage qui tienne, et s'en écarter coûte cher :
+
+> Le gouger naissait à `caméra + 166` au lieu de `caméra + 158`, parce que
+> j'avais raisonné « l'arcade le pose 17 px arcade au-delà de son bord droit,
+> donc posons-le 6 px au-delà du nôtre ». Résultat : **16 px trop à droite dans
+> le monde**, sur les 29 spawns du stage, visible dès la comparaison avec
+> l'arcade. Le raisonnement par le bord droit suppose que les deux cadres
+> couvrent la même largeur de monde ; ils ne la couvrent pas.
+
+Trois largeurs cohabitent et il ne faut pas les confondre :
+
+| valeur | ce que c'est | où |
+|---|---|---|
+| **144** | le viewport, `12 × tile_size` de 12 px | `viewport_width`, `common/engine/engine.asm` ; `scroll_max = COLS*12 − 144` |
+| **160** | la borne de **rejet** de BuildSprites (`caméra + 160`) | `BS_xhi` — une marge de culling, pas une largeur visible |
+| **8** | la bordure gauche, portée par le `+8` de la conversion | `pata-pata/obj.asm`, `blaster/obj.asm` |
+
+Contrôles qui recoupent le tout : `384 × 0.375 = 144`, et `stage.asm` dérive sa
+vitesse de caméra du même rapport (`ldd #$0030 ; (256*0.5)/(384/144)`). Enfin,
+la fenêtre de `is_visible_range` (arcade 300..723 en X) se convertit en
+**0..159** — exactement les bornes de BuildSprites. Ce n'est pas une
+coïncidence : les deux décrivent le même cadre.
+
+### Le retard de wave : quand il compte, et quand il ne compte pas
+
+Le lanceur de wave écrit dans l'OST du nouvel objet le nombre de trames de jeu
+de **retard** (`wave_frame_drop`, offset 13 — il ALIASE `anim_frame_duration`,
+donc le lire AVANT que quoi que ce soit n'écrase ce champ). Il vaut de 0 à
+`frameDrop−1` : mesuré 0, 2, 2 et 3 sur quatre gougers du stage 2.
+
+Compenser ou non se décide par **ce que ces trames auraient déplacé** :
+
+- **Objet piloté par un script de déplacement** (bug, slither) : il faut
+  rattraper, et le rattrapage est le script lui-même — `bugmgr.Init` range le
+  retard dans un opérande auto-modifié puis appelle `moveByScript.runByB`. À
+  la vitesse d'un script, trois trames font plusieurs pixels.
+- **Objet ancré au décor qui ne bouge pas** (le gouger en phase d'attente) :
+  le seul déplacement pendant le retard est celui de la **caméra**, et elle
+  est lente — `$0030` en 8.8, soit 0,1875 px par trame de jeu. Trois trames de
+  retard font **0,56 px**, sur une position entière. Ne rien compenser, et
+  l'écrire dans la fiche.
+
+Le calcul à faire avant de coder : `retard × vitesse propre de l'objet` d'un
+côté, `retard × 0,1875` de l'autre. Si le second domine, il n'y a rien à
+compenser.
 - Tables Y arcade : importées déjà recalées (ex.
   `src/common/lib/presets/18db0_preset-y.asm`, valeurs ≤ $B7 < 200).
 

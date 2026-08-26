@@ -92,6 +92,14 @@ dégâts inversé, score, sons, politique de difficulté…). Ce qui n'a pas
 d'entrée dans la table est une décision nouvelle : la prendre, puis
 **l'ajouter à la table** — elle sert tous les portages suivants.
 
+> **Toute coordonnée passe par la formule de la table, pas par un
+> raisonnement géométrique.** `x_v2 = (x_arcade − 320) × 0.375 + 8` et
+> `y_v2 = 297 − 0.75 × y_arcade`, toujours ancrées sur le bord GAUCHE du
+> cadre — celui que la caméra suit. Raisonner « tant de pixels au-delà du
+> bord droit » suppose que les deux cadres montrent la même largeur de monde,
+> et c'est faux : le gouger y a gagné 16 px de décalage sur ses 29 spawns.
+> Voir « Ancrer sur le bord GAUCHE » dans la table.
+
 ### 3. Écrire
 Choisir l'exemplaire le plus proche dans [exemplars.md](exemplars.md) et
 calquer sa structure. Le patron : `obj.asm` (dispatch `routine,u` →
@@ -132,6 +140,10 @@ sous-dossier ou `_shared/`.
 - [ ] **api.asm** : n'y toucher QUE si l'ennemi franchit une frontière
   moteur↔stage nouvelle — chaque nom coûte 4 octets de link data et une
   recherche linéaire au chargement.
+- [ ] **Retard de wave** : décider explicitement s'il faut le compenser —
+  `retard × vitesse propre` contre `retard × 0,1875` (la caméra). Un objet à
+  script rattrape (bug, slither) ; un objet ancré au décor ne bouge pas assez
+  pour que ça compte. Voir « Le retard de wave » dans la table.
 - [ ] **RAM** : vérifier que les variables tiennent dans `ext_variables`
   (budget `ext_variables_size`). La carte mémoire est PLEINE — tout besoin
   de page ou d'arène nouvelle se valide avec l'auteur avant d'écrire.

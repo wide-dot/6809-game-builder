@@ -129,11 +129,12 @@
 ;       et le code eteint la variante par la parite. Voir gouger.Snap.
 ;       La collision, la mort et le recul sont deja actifs dans cette phase,
 ;       ainsi que la fenetre de visibilite (voir gouger.Frame). Il nait a
-;       150 dans le cadre — l'abscisse arcade $02D0 ramenee a l'echelle depuis
-;       le BORD GAUCHE, celui que la camera suit. Le viewport du portage fait
-;       144 px (viewport_width, 12 tuiles de 12), pas 160 : ancrer sur le bord
-;       DROIT en supposant 160 posait chaque gouger 16 px trop a droite dans le
-;       monde — decalage visible a la comparaison avec l'arcade, corrige le
+;       158 dans le cadre — l'abscisse arcade $02D0 passee par la conversion
+;       qui fait foi, (720-320) x 0,375 + 8. J'avais d'abord ancre sur le bord
+;       DROIT en supposant un cadre de 160 : 16 px trop a droite dans le monde,
+;       visible a la comparaison avec l'arcade. Le viewport fait 144
+;       (viewport_width) et le 160 de BuildSprites est une borne de rejet ; on
+;       ancre sur le bord GAUCHE, celui que la camera suit. Corrige le
 ;       26/08/2026.
 ;
 ;   B — la plongee. Chaque trame : x_pos += scroll_amount (verrou de defilement),
@@ -233,8 +234,9 @@ gouger.Init
         ldd   ,x
         std   y_pos,u
         ldd   glb_camera_x_pos
-        addd  #150                     ; arcade $02D0 : 720 - 320 = 400 px arcade
-                                       ; a droite du bord gauche, x 0,375 = 150
+        addd  #144+8+6                 ; arcade $02D0 = 720 : (720-320) x 0,375
+                                       ; + 8 de bordure gauche, comme pata-pata
+                                       ; le fait pour son $02C8 (144+8+3)
         std   x_pos,u
         clr   x_pos+2,u                ; la fraction repart nette
         clr   y_pos+2,u
@@ -439,27 +441,25 @@ gouger.Frame
         sta   routine,u
 ; La fenetre de visibilite, portee de is_visible_range (40:1d6b) : l'arcade
 ; garde un objet dont le CENTRE tient dans le cadre elargi de 20 pixels arcade
-; sur chacun des quatre bords. En X tout se convertit a l'echelle du portage,
-; 0,375 — celle des vitesses, des boites et du defilement (stage.asm derive sa
-; vitesse de camera de 384/144, le viewport valant 12 tuiles de 12 px) :
-;   arcade 300..723, soit -20..+403 depuis le bord gauche  ->  -7..151
-; En Y le cadre du portage est plus haut que celui de l'arcade (200 lignes
-; contre 191 converties) : on garde la MARGE, 20 x 0,75 = 15, autour de notre
-; propre bande 0..199.
+; sur chacun des quatre bords. Les quatre bornes passent par la conversion qui
+; fait foi (Conv.java, cf. la table arcade -> v2 de la skill) :
+;   X : (x_arcade - 320) x 0,375 + 8      -> 300..723 devient   0..159
+;   Y : 297 - 0,75 x y_arcade             -> 124..404 devient -6..204
+; La fenetre X retombe exactement sur les bornes de BuildSprites (camera..
+; camera+160) : ce n'est pas une coincidence, les deux decrivent le meme cadre.
 ; Les trois phases la partagent, comme en arcade — et comme en arcade elle ne
 ; s'evalue que si l'objet n'est ni mort ni touche cette trame.
 @cadre  ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
-        addd  #7
         bmi   @part                    ; sorti par la gauche
-        cmpd  #151+7
+        cmpd  #159
         bgt   @part                    ; ... ou par la droite
         ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
-        addd  #15
+        addd  #6
         bmi   @part                    ; sorti par le haut
-        cmpd  #214+15
+        cmpd  #204+6
         bgt   @part                    ; ... ou par le bas
         orcc  #$04                     ; Z = 1 : il reste
         rts
@@ -698,6 +698,8 @@ gouger.tmp      fdb 0
 ; BuildSprites, et la moitie hors paroi s'affiche a sa vraie place.
 ;   plafond 15 : haute -6 -> rejetee   basse 15..36  -> dessinee
 ;   sol    183 : haute 162..183 -> ok  basse 183..207 -> rejetee
+; y = 297 - 0,75 x y_arcade, la conversion qui fait foi — verifiee sur les
+; quatorze valeurs des presets 1930c et 18db0 deja importes.
 gouger.PresetY
         fdb   15   ; var 0, plafond ($0178)
         fdb   15   ; var 1, plafond
