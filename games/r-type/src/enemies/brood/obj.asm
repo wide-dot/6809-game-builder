@@ -97,6 +97,8 @@ brood.AABB      equ ext_variables      ; 0..8  la boite
 brood.orient    equ ext_variables+9    ; 9     0 = plafond, 1 = sol
 brood.count     equ ext_variables+10   ; 10,11 le compteur de phase
 brood.frame     equ ext_variables+12   ; 12    l'index de pose, 0..3
+brood.lastP     equ ext_variables+13   ; 13    dernier potentiel vu (coup ?)
+brood.blink     equ ext_variables+14   ; 14    compteur d'eclat blanc (+0x3d)
 
 brood.SPAWNX    equ 144+8+6            ; arcade $02D0, comme le gouger
 brood.ENTRY     equ 122                ; arcade $0270 : entre dans le cadre
@@ -145,6 +147,9 @@ brood.Init
         _ldd  brood_hitbox_x,brood_hitbox_y
         std   brood.AABB+AABB.rx,u
         clr   brood.frame,u
+        lda   #brood_hitdamage
+        sta   brood.lastP,u
+        clr   brood.blink,u
         ldd   #0
         std   brood.count,u
         inc   routine,u
@@ -339,6 +344,24 @@ brood.Tick
 ; ENTRELACEE par montage et nos PNG en sortant tels quels.
 ; -----------------------------------------------------------------------------
 brood.Show
+        ldb   brood.blink,u            ; l'eclat : une trame sur quatre du
+        beq   @norm                    ; compteur de coup (8035)
+        andb  #3
+        bne   @norm
+        ldb   brood.frame,u            ; fermee (pose 0) ou MI-OUVERTE pour
+        beq   >                        ; toutes les poses non fermees —
+        ldb   #2                       ; decision auteur, 26/08/2026
+!       addb  brood.orient,u
+        aslb
+        ldx   #brood.HitSets
+        abx
+        ldx   ,x
+        stx   image_set,u
+        lda   #ObjID_brood_hit         ; les blanches vivent dans LEUR page :
+        sta   id,u                     ; l'identifiant la porte (Img_Page_Index)
+        jmp   DisplaySprite
+@norm   lda   #ObjID_brood
+        sta   id,u
         ldb   brood.frame,u
         aslb
         addb  brood.orient,u
@@ -361,7 +384,19 @@ brood.Frame
         std   brood.drop
         lda   brood.AABB+AABB.p,u
         beq   @mort
-        ldd   x_pos,u
+        ; touche ? le compteur d'eclat se seme a 12 (8035 : 3 eclats a 25 %)
+        cmpa  brood.lastP,u
+        beq   >
+        sta   brood.lastP,u
+        ldb   #12
+        stb   brood.blink,u
+!       ldb   brood.blink,u
+        beq   @vif
+        subb  brood.drop+1
+        bgt   >
+        clrb
+!       stb   brood.blink,u
+@vif    ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   brood.AABB+AABB.cx,u
         ldb   y_pos+1,u
@@ -435,3 +470,7 @@ brood.Sets
         fdb   set_brood_2,set_brood_3  ; entrouvert
         fdb   set_brood_4,set_brood_5  ; plus ouvert
         fdb   set_brood_6,set_brood_7  ; GUEULE OUVERTE
+; Les blanches : orientation + 2 x (pose != fermee)
+brood.HitSets
+        fdb   set_brood_hit_0,set_brood_hit_1  ; fermee     : plafond, sol
+        fdb   set_brood_hit_2,set_brood_hit_3  ; mi-ouverte : plafond, sol

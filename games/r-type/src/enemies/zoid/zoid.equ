@@ -11,3 +11,4 @@ zoid.count      equ ext_variables+11   ; 11    compteur de phase — la ponte y 
 zoid.anim       equ ext_variables+12   ; 12    accumulateur de pose — la ponte y
                                        ;       laisse le retard de naissance
 zoid.lastP      equ ext_variables+13   ; 13    dernier potentiel vu (detection de coup)
+zoid.blink      equ ext_variables+14   ; 14    compteur d'eclat blanc (+0x3d)

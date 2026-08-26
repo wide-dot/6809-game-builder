@@ -59,6 +59,8 @@ Obj_Index_Page.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick_unit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood_hit
+        fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid_hit
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -122,6 +124,8 @@ Obj_Index_Address.gouger_tl
         fdb   gouger.Half ; ObjID_gouger_br_bottom
         fdb   wick.Unit ; ObjID_wick_unit
         fdb   zoid.Object ; ObjID_zoid
+        fdb   brood.Object ; ObjID_brood_hit
+        fdb   zoid.Object ; ObjID_zoid_hit
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -179,6 +183,8 @@ Ani_Page_Index.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick_unit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid
+        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood_hit
+        fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid_hit
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -236,6 +242,8 @@ Ani_Asd_Index.gouger_tl
         fdb   Ani_Asd_none ; ObjID_gouger_br_bottom
         fdb   Ani_Asd_none ; ObjID_wick_unit
         fdb   Ani_Asd_none ; ObjID_zoid
+        fdb   Ani_Asd_none ; ObjID_brood_hit
+        fdb   Ani_Asd_none ; ObjID_zoid_hit
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -303,6 +311,8 @@ Img_Page_Index.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.imgGougerBRbottom.page ; ObjID_gouger_br_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.imgWick.page ; ObjID_wick_unit
         fcb   map.RAM_OVER_CART+stage2.cast.imgZoid.page ; ObjID_zoid
+        fcb   map.RAM_OVER_CART+stage2.cast.imgBroodHit.page ; ObjID_brood_hit
+        fcb   map.RAM_OVER_CART+stage2.cast.imgZoidHit.page ; ObjID_zoid_hit
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

@@ -3028,6 +3028,37 @@
                     </lwasm>
                 </file>
 
+                <!-- Les BLANCHES de coup du brood et du zoid (l'arcade
+                     echange la palette 0x55, la notre est globale : on
+                     echange l'image, comme le gouger). Brood : fermee +
+                     mi-ouverte par montage (decision auteur — la mi-ouverte
+                     couvre toutes les poses non fermees), pre-decalees comme
+                     les poses qu'elles remplacent. Chaque jeu vit dans SON
+                     direntry : Img_Page_Index ne donne qu'une page par
+                     identifiant, le flash passe par ObjID_brood_hit /
+                     ObjID_zoid_hit (meme code, autre page d'images). -->
+                <file name="stage2.cast.imgBroodHit" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imgbroodhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgBroodHit" gendir="gen/enemies/stage2-cast-imgbroodhit"
+                                 gensource="gen/enemies/stage2-cast-imgbroodhit/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imgbroodhit/index.asm">
+                            <images dir="src/enemies/brood/images/hit" names="brood_hit" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage2.cast.imgZoidHit" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imgzoidhit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgZoidHit" gendir="gen/enemies/stage2-cast-imgzoidhit"
+                                 gensource="gen/enemies/stage2-cast-imgzoidhit/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imgzoidhit/index.asm">
+                            <images dir="src/enemies/zoid/images/hit" names="zoid_hit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.cast" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3084,6 +3115,8 @@
                     <load name="stage2.cast.imgWick"/>
                     <load name="stage2.cast.imgZoid"/>
                     <load name="stage2.cast.zoid"/>
+                    <load name="stage2.cast.imgBroodHit"/>
+                    <load name="stage2.cast.imgZoidHit"/>
                     <load name="stage2.cast.imgGougerTLtop"/>
                     <load name="stage2.cast.imgGougerTLbottom"/>
                     <load name="stage2.cast.imgGougerTRtop"/>

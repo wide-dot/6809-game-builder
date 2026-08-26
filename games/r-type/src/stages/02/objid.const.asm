@@ -65,8 +65,12 @@ ObjID_wick_unit equ 51
 * ses trois tables d'images vivent dans leur propre direntry, que
 * Img_Page_Index designe par cet identifiant.
 ObjID_zoid equ 52
+* Le flash de coup : meme code, autre PAGE d'images (Img_Page_Index ne donne
+* qu'une page par identifiant). L'objet bascule id,u le temps d'un eclat.
+ObjID_brood_hit equ 53
+ObjID_zoid_hit equ 54
 
-objid.count equ 52
+objid.count equ 54
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

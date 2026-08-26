@@ -216,6 +216,7 @@ zoid.HatchBody
         sta   zoid.lastP,u
         clr   zoid.lock,u
         clr   zoid.freeze,u
+        clr   zoid.blink,u
         lda   #1
         sta   zoid.count,u
         lda   #3
@@ -249,6 +250,8 @@ zoid.Parasite
         cmpa  zoid.lastP,u
         beq   @timer
         sta   zoid.lastP,u
+        ldb   #12                      ; 8e6f : +0x3d := 12, trois eclats a 25 %
+        stb   zoid.blink,u
         lbsr  zoid.Recoil
         bra   @move
 @timer  ; le compte a rebours de cap (8e15 : DEC, a zero -> retarget)
@@ -319,10 +322,27 @@ zoid.Parasite
         lsra
         anda  #3
         asla
-        bra   @set
+        bra   @eclat
 @pose0  clra
-@set    ldx   #zoid.Sets
+@eclat  ; l'eclat blanc : compteur decremente puis teste, un sur quatre (8ea9).
+        ; UNE seule blanche (decision auteur : les quatre poses de rodage sont
+        ; trop proches pour qu'un eclat d'une trame montre la difference) —
+        ; elle vit dans SA page, portee par l'identifiant (Img_Page_Index).
+        ldb   zoid.blink,u
+        beq   @norm
+        subb  zoid.drop+1
+        bgt   >
+        clrb
+!       stb   zoid.blink,u
+        andb  #3
+        bne   @norm
+        ldx   #set_zoid_hit_0
+        lda   #ObjID_zoid_hit
+        bra   @set
+@norm   ldx   #zoid.Sets
         ldx   a,x
+        lda   #ObjID_zoid
+@set    sta   id,u
         stx   image_set,u
         ; retombe dans le dessin ecran
 

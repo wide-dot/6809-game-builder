@@ -18,6 +18,7 @@ set_zoid_0  EXTERNAL
 set_zoid_1  EXTERNAL
 set_zoid_2  EXTERNAL
 set_zoid_3  EXTERNAL
+set_zoid_hit_0  EXTERNAL
 zoid.Object      EXPORT
 
         INCLUDE "src/common/engine/api.asm"

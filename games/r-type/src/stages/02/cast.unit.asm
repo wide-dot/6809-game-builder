@@ -108,6 +108,10 @@ set_wick_28  EXTERNAL
 set_wick_29  EXTERNAL
 set_wick_30  EXTERNAL
 set_wick_31  EXTERNAL
+set_brood_hit_0  EXTERNAL
+set_brood_hit_1  EXTERNAL
+set_brood_hit_2  EXTERNAL
+set_brood_hit_3  EXTERNAL
 gouger.Object    EXPORT
 gouger.Half      EXPORT
 wick.Object      EXPORT
