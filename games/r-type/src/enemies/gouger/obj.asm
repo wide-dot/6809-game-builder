@@ -165,10 +165,13 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 46 demi-sprites compiles : 40 932 octets MESURES sur cinq pages, partagees
+; - 46 demi-sprites compiles : 38 100 octets MESURES sur cinq pages, partagees
 ;   avec le reste de l'arene. La seconde variante de la pose d'attente en pese
-;   6 045 a elle seule ; la DUPLIQUER en aurait coute le double, c'est ce que
-;   gouger.Snap evite. L'estimation par octet-par-pixel du serpent en
+;   3 213 ; la DUPLIQUER en aurait coute le quadruple, c'est ce que gouger.Snap
+;   evite. Elle n'est compilee que pour la moitie qui SORT de la paroi — celle
+;   qui y est enfouie n'est jamais dessinee en attente, donc ne s'y cale pas.
+;   Cette derniere economie grave la geometrie dans le build : le generateur
+;   d'images la verifie et casse si elle change. L'estimation par octet-par-pixel du serpent en
 ;   annoncait 11,7 Ko — trois fois moins : le cout d'un sprite compile suit le
 ;   REMPLISSAGE, pas la surface du cadre. Une entree de repertoire par
 ;   direction ET par moitie, le cast n'ayant pas la place.
@@ -658,6 +661,11 @@ gouger.AddPos
 ; la voient intacte.
 ; Parent et enfant partagent x_pos et le meme center_offset : un seul calage
 ; sert les deux moities.
+; Une seule des deux porte reellement la variante decalee — celle qui sort de
+; la paroi, top au sol et bottom au plafond. L'autre n'est pas dessinee en
+; attente et le calage l'ecarte le reste du temps : sa variante ne pouvait
+; jamais etre choisie. gen_gouger_halves.py verifie ce rejet a chaque
+; regeneration de l'art.
 ; -----------------------------------------------------------------------------
 gouger.Snap
         ldd   x_pos,u

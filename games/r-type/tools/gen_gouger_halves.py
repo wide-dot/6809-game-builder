@@ -73,6 +73,45 @@ def cut(src, dst, keep):
     out.save(dst)
 
 
+# L'ordonnee d'attente de chaque direction, et la moitie qui y est ENFOUIE.
+# Doit rester d'accord avec gouger.PresetY dans obj.asm.
+IDLE_Y = {'tl': 15, 'tr': 15, 'bl': 183, 'br': 183}
+BURIED = {'tl': 'top', 'tr': 'top', 'bl': 'bottom', 'br': 'bottom'}
+SCREEN_H = 200
+
+
+def check_buried(base, short):
+    """La moitie enfouie doit vraiment etre rejetee par BuildSprites.
+
+    Elle seule justifie que sa pose d'attente soit compilee SANS variante
+    pre-decalee (voir le config.xml) : un sprite jamais dessine n'a pas besoin
+    de se caler au pixel. Si l'art ou l'ordonnee changeaient au point de la
+    rendre visible, elle retomberait en silence sur le repli du moteur et
+    tremblerait d'un pixel sur la roche. On casse ici plutot que la.
+
+    Le critere est celui de BuildSprites, chemin playfield :
+        rejet si  y_pos + y1 < 0  ou  y_pos + y1 + y_size >= 200
+    ou y1 et y_size sortent du rognage des marges transparentes, face au
+    centre du canevas — exactement ce que gfxcomp recalculera.
+    """
+    half = BURIED[short]
+    y = IDLE_Y[short]
+    p = os.path.join(base, 'half', short, half + '-idle', '00.png')
+    im = Image.open(p)
+    px = im.load()
+    w, h = im.size
+    rows = [r for r in range(h)
+            if any(px[x, r] != TRANSPARENT for x in range(w))]
+    y1 = rows[0] - h // 2
+    size = rows[-1] - rows[0] + 1
+    if y + y1 >= 0 and y + y1 + size < SCREEN_H:
+        sys.exit('%s : la moitie %s du gouger %s est DESSINEE a y=%d '
+                 '(%d..%d) alors que le config.xml la compile sans variante '
+                 'pre-decalee. Rendre shifts="0,1" a son entree <images>, ou '
+                 'corriger IDLE_Y ici.'
+                 % (p, half, short, y, y + y1, y + y1 + size))
+
+
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     base = os.path.join(root, 'src/enemies/gouger/images')
@@ -96,7 +135,10 @@ def main():
                 os.path.join(base, 'half', 'hit', short, half, '00.png'),
                 half)
             n += 1
-    print('%d demi-images ecrites sous images/half/' % n)
+    for _, short in DIRECTIONS:
+        check_buried(base, short)
+    print('%d demi-images ecrites sous images/half/ '
+          '(moities enfouies verifiees rejetees)' % n)
 
 
 if __name__ == '__main__':

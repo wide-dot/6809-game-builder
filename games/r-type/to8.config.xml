@@ -2831,7 +2831,12 @@
                      le gouger tienne immobile sur un decor qui defile. Elle n'est
                      pas dupliquee — l'animation se sert de la meme image, le code
                      eteignant la variante decalee par la parite de la position
-                     (gouger.Snap). Sortir cette pose du repertoire principal y
+                     (gouger.Snap). Elle n'a d'ailleurs cette variante que pour la
+                     moitie qui SORT de la paroi — top au sol, bottom au plafond :
+                     la moitie enfouie n'est jamais dessinee en attente, la sienne
+                     n'aurait jamais pu etre choisie. gen_gouger_halves.py verifie
+                     ce rejet et casse si la geometrie change.
+                     Sortir cette pose du repertoire principal y
                      renumerote les quatre autres : le suffixe de symbole suit
                      l'ORDINAL dans l'entree, pas le nom du fichier, et la table
                      gouger.SetsXX porte la correspondance en clair.
@@ -2848,7 +2853,7 @@
                                  gensource="gen/enemies/stage2-cast-imggougertltop/includes.asm"
                                  genindex="gen/enemies/stage2-cast-imggougertltop/index.asm">
                             <images dir="src/enemies/gouger/images/half/tl/top" names="gouger_tl_top"/>
-                            <images dir="src/enemies/gouger/images/half/tl/top-idle" names="gouger_tl_top_idle" shifts="0,1"/>
+                            <images dir="src/enemies/gouger/images/half/tl/top-idle" names="gouger_tl_top_idle"/>
                             <images dir="src/enemies/gouger/images/half/hit/tl/top" names="gouger_hit_tl_top"/>
                         </gfxcomp>
                     </lwasm>
@@ -2874,7 +2879,7 @@
                                  gensource="gen/enemies/stage2-cast-imggougertrtop/includes.asm"
                                  genindex="gen/enemies/stage2-cast-imggougertrtop/index.asm">
                             <images dir="src/enemies/gouger/images/half/tr/top" names="gouger_tr_top"/>
-                            <images dir="src/enemies/gouger/images/half/tr/top-idle" names="gouger_tr_top_idle" shifts="0,1"/>
+                            <images dir="src/enemies/gouger/images/half/tr/top-idle" names="gouger_tr_top_idle"/>
                             <images dir="src/enemies/gouger/images/half/hit/tr/top" names="gouger_hit_tr_top"/>
                         </gfxcomp>
                     </lwasm>
@@ -2913,7 +2918,7 @@
                                  gensource="gen/enemies/stage2-cast-imggougerblbottom/includes.asm"
                                  genindex="gen/enemies/stage2-cast-imggougerblbottom/index.asm">
                             <images dir="src/enemies/gouger/images/half/bl/bottom" names="gouger_bl_bottom"/>
-                            <images dir="src/enemies/gouger/images/half/bl/bottom-idle" names="gouger_bl_bottom_idle" shifts="0,1"/>
+                            <images dir="src/enemies/gouger/images/half/bl/bottom-idle" names="gouger_bl_bottom_idle"/>
                             <images dir="src/enemies/gouger/images/half/hit/bl/bottom" names="gouger_hit_bl_bottom"/>
                         </gfxcomp>
                     </lwasm>
@@ -2939,7 +2944,7 @@
                                  gensource="gen/enemies/stage2-cast-imggougerbrbottom/includes.asm"
                                  genindex="gen/enemies/stage2-cast-imggougerbrbottom/index.asm">
                             <images dir="src/enemies/gouger/images/half/br/bottom" names="gouger_br_bottom"/>
-                            <images dir="src/enemies/gouger/images/half/br/bottom-idle" names="gouger_br_bottom_idle" shifts="0,1"/>
+                            <images dir="src/enemies/gouger/images/half/br/bottom-idle" names="gouger_br_bottom_idle"/>
                             <images dir="src/enemies/gouger/images/half/hit/br/bottom" names="gouger_hit_br_bottom"/>
                         </gfxcomp>
                     </lwasm>
