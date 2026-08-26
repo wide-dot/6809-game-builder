@@ -57,8 +57,12 @@ ObjID_gouger_tl_bottom equ 47
 ObjID_gouger_tr_bottom equ 48
 ObjID_gouger_bl_bottom equ 49
 ObjID_gouger_br_bottom equ 50
+* Le wick visible. La ligne de wave spawne un EMETTEUR (ObjID_wick, 34) ; le
+* wick qu'on voit est son enfant et porte donc son propre identifiant — c'est
+* lui qui designe la page d'images, l'emetteur n'en ayant aucune.
+ObjID_wick_unit equ 51
 
-objid.count equ 50
+objid.count equ 51
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

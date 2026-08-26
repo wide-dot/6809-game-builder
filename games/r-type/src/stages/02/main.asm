@@ -41,6 +41,7 @@ patapata.Object   EXTERNAL
 gouger.Object     EXTERNAL
 gouger.Half       EXTERNAL
 wick.Object       EXTERNAL
+wick.Unit         EXTERNAL
 brood.Object      EXTERNAL
 outslay.Object    EXTERNAL
 ; Le segment de la chaine d'outslay : spawne par l'emetteur et non par la

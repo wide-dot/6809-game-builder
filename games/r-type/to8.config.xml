@@ -2960,6 +2960,24 @@
                     </lwasm>
                 </file>
 
+                <!-- Les sprites du WICK. 32 poses de 6x12, une seule entree :
+                     le suffixe de symbole suit l'ORDINAL dans l'entree, donc
+                     declarer le repertoire entier garde set_wick_N = N.png, et
+                     c'est ce dont le code depend (les poses 16..19 sont le
+                     cycle de derive, les 00..15 les directions du pique — voir
+                     la fiche dans wick/obj.asm). Un ObjID a lui, l'emetteur
+                     n'ayant aucune image. -->
+                <file name="stage2.cast.imgWick" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imgwick.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgWick" gendir="gen/enemies/stage2-cast-imgwick"
+                                 gensource="gen/enemies/stage2-cast-imgwick/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imgwick/index.asm">
+                            <images dir="src/enemies/wick/images/animation" names="wick"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.cast" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3012,6 +3030,7 @@
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
+                    <load name="stage2.cast.imgWick"/>
                     <load name="stage2.cast.imgGougerTLtop"/>
                     <load name="stage2.cast.imgGougerTLbottom"/>
                     <load name="stage2.cast.imgGougerTRtop"/>
