@@ -123,6 +123,8 @@ wick.uAnchor    equ ext_variables+11   ; 11,12 sa derniere ancre connue
 wick.uAim       equ ext_variables+13   ; 13,14 delai de pique (0 = ne piquera jamais)
 wick.uOsc       equ ext_variables+15   ; 15    phase de l'ondulation
 wick.uAnim      equ ext_variables+16   ; 16    compteur d'animation
+wick.uLate      equ ext_variables+17   ; 17,18 trames de jeu a rattraper a la
+                                       ;       premiere trame — voir wick.Live
 
 wick.SPAWNX     equ 152                ; arcade 704 : (704-320) x 0,375 + 8
 wick.SPAWNY     equ 105                ; arcade 288-32 : 297 - 0,75 x 256
@@ -162,6 +164,15 @@ wick.Init
         ; tour. On pose donc directement le plancher, c'est le meme resultat.
         ldd   #wick.PERIOD
         std   wick.ePeriod,u
+        ; LE RETARD DE WAVE de l'emetteur lui-meme. Il n'a pas de vitesse
+        ; propre, mais il porte une HORLOGE : sans cette avance, toute sa nuee
+        ; naitrait decalee du meme retard. wave_frame_drop ALIASE
+        ; anim_frame_duration — rien ne l'a encore ecrase ici.
+        ldb   wave_frame_drop,u
+        clra
+        pshs  d
+        ldd   #wick.PERIOD
+        subd  ,s++
         std   wick.eEmitC,u
         ldd   #wick.BURST
         std   wick.eBurst,u
@@ -180,15 +191,24 @@ wick.Live
         std   wick.eLife,u
         lble  wick.Gone                ; duree de vie epuisee
         jsr   wick.Script
-        ; --- l'emission : le compte a rebours peut passer sous zero de
-        ;     PLUSIEURS periodes quand la trame rendue vaut sept trames de jeu,
-        ;     d'ou la boucle. L'arcade pond au plus une fois par trame ; nous
-        ;     pondons autant de fois qu'il s'est ecoule de periodes.
+        ; --- l'emission. Le compte a rebours peut passer sous zero de PLUSIEURS
+        ;     periodes quand la trame rendue vaut sept trames de jeu, d'ou la
+        ;     boucle. Mais pondre n wicks ne suffit pas : ils ne naissent pas au
+        ;     meme INSTANT, et le premier a donc deja vecu quand le dernier
+        ;     nait. Chacun emporte son RETARD propre et le rattrapera a sa
+        ;     premiere trame (wick.uLate).
+        ;     Le compte est direct : quand le compte a rebours vaut D <= 0,
+        ;     c'est qu'il a franchi zero il y a -D trames de jeu. Recharger une
+        ;     periode fait decroitre ce retard d'autant pour la ponte suivante —
+        ;     l'ordre de naissance va donc bien du plus ancien au plus recent.
         ldd   wick.eEmitC,u
         subd  wick.drop
 @loop   std   wick.eEmitC,u
         cmpd  #0
         bgt   @done
+        ldd   #0
+        subd  wick.eEmitC,u            ; retard de CETTE ponte = -D
+        std   wick.late
         jsr   wick.Spawn
         ldd   wick.eEmitC,u
         addd  wick.ePeriod,u
@@ -293,6 +313,8 @@ wick.Spawn
         std   wick.uAim,x              ; par defaut : pas de pique
         clr   wick.uOsc,x
         clr   wick.uAnim,x
+        ldd   wick.late
+        std   wick.uLate,x
         ; la regle de salve
         ldd   wick.eBurstC,u
         subd  #1
@@ -314,6 +336,7 @@ wick.Rand63
         rts
 
 wick.drop       fdb 0
+wick.late       fdb 0                  ; le retard de la ponte en cours
 
 ; -----------------------------------------------------------------------------
 ; L'ouverture de trame, commune : le compte de trames de JEU de ce tour.
@@ -364,10 +387,19 @@ wick.UnitInit
         _ldd  wick_hitbox_x,wick_hitbox_y
         std   wick.uAABB+AABB.rx,u
         inc   routine,u
-        ; pas de rts : il derive des sa premiere trame, comme l'arcade
+        ; PAS DE RTS : il derive des sa premiere trame, comme l'arcade — mais
+        ; de son RETARD PROPRE, pas du frame-drop du tour. Quand une trame
+        ; rendue vaut sept trames de jeu, les wicks d'une meme rafale ne sont
+        ; pas nes au meme instant : le premier a deja vecu six trames quand le
+        ; dernier nait. Chacun rejoue donc ici les siennes, et zero est une
+        ; valeur legitime — celui qui vient de naitre ne bouge pas encore.
+        ldd   wick.uLate,u
+        std   wick.drop
+        bra   wick.DriftBody
 
 wick.Drift
         jsr   wick.Frame
+wick.DriftBody
         ; --- mort au premier coup -----------------------------------------
         lda   wick.uAABB+AABB.p,u
         lbeq  wick.Boom
