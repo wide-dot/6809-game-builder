@@ -125,6 +125,12 @@ wick.uOsc       equ ext_variables+15   ; 15    phase de l'ondulation
 wick.uAnim      equ ext_variables+16   ; 16    compteur d'animation
 wick.uLate      equ ext_variables+17   ; 17,18 trames de jeu a rattraper a la
                                        ;       premiere trame — voir wick.Live
+; LE PIQUE recouvre les champs que la derive laisse morts derriere elle : il
+; ne suit plus son parent, n'a plus d'ancre, et son delai a servi. Vingt
+; octets d'ext_variables ne permettent pas de les additionner.
+wick.aVx        equ ext_variables+9    ; alias de uParent
+wick.aVy        equ ext_variables+11   ; alias de uAnchor
+wick.aSet       equ ext_variables+13   ; alias de uAim : la table de ses poses
 
 wick.SPAWNX     equ 152                ; arcade 704 : (704-320) x 0,375 + 8
 wick.SPAWNY     equ 105                ; arcade 288-32 : 297 - 0,75 x 256
@@ -374,6 +380,7 @@ wick.Unit
 wick.UnitRoutines
         fdb   wick.UnitInit
         fdb   wick.Drift
+        fdb   wick.Aim
         fdb   wick.UnitDeleted
 
 wick.UnitInit
@@ -460,9 +467,8 @@ wick.DriftBody
         ldd   wick.uAim,u
         beq   @cadre                   ; zero : celui-la ne piquera jamais
         subd  wick.drop
-        bgt   >
-        ldd   #0                       ; le PIQUE n'est pas encore porte : le
-!       std   wick.uAim,u              ; delai s'eteint, il reste en derive.
+        std   wick.uAim,u
+        lble  wick.Engage              ; le delai est echu : il pique
 @cadre  jsr   wick.Visible
         lbne  wick.Vanish
         jmp   DisplaySprite
@@ -473,6 +479,67 @@ wick.SetPose
         ldx   ,x
         stx   image_set,u
         rts
+
+; -----------------------------------------------------------------------------
+; L'ENGAGEMENT. La direction du joueur est echantillonnee UNE FOIS, et la
+; vitesse avec : ce n'est pas un poursuivant, il part en ligne droite et ne
+; corrige plus. La boussole rend 0..60 par pas de 4, seize directions — la
+; meme que celle sur laquelle le gouger attend son joueur, ce qui se verifie
+; sur ses quatre valeurs (8, 24, 40, 56 = les diagonales). La pose suit la
+; direction, et la table arcade ne distingue que HUIT orientations : trois
+; directions voisines partagent la meme.
+; -----------------------------------------------------------------------------
+wick.Engage
+        ldx   #player1
+        jsr   setDirectionTo           ; Y = la direction, multiple de 4
+        tfr   y,d
+        andb  #$3C                     ; par prudence : l'index doit tenir
+        pshs  b
+        ; PAS de decalage : la direction est deja un multiple de 4 et la table
+        ; fait quatre octets par entree — l'offset EST la direction. C'est ce
+        ; que l'arcade fait (`MOV AX,ES:[BX+SI]`, BX = direction brute) ; un
+        ; aslb de trop lisait cinquante-six octets au-dela et rendait des
+        ; pointeurs de la table suivante comme vitesses.
+        ldx   #wick.AimVel
+        abx
+        ldd   ,x
+        std   wick.aVx,u
+        ldd   2,x
+        std   wick.aVy,u
+        puls  b
+        lsrb                           ; 2 octets par direction
+        ldx   #wick.AimSets
+        abx
+        ldx   ,x
+        stx   wick.aSet,u
+        lda   #2
+        sta   routine,u
+        ; il pique DES cette trame, comme l'arcade
+        bra   wick.AimBody
+
+wick.Aim
+        jsr   wick.Frame
+wick.AimBody
+        lda   wick.uAABB+AABB.p,u
+        lbeq  wick.Boom
+        ldd   wick.aVx,u
+        leax  x_pos,u
+        jsr   wick.AddPos
+        ldd   wick.aVy,u
+        leax  y_pos,u
+        jsr   wick.AddPos
+        lda   wick.uAnim,u
+        adda  wick.drop+1
+        sta   wick.uAnim,u
+        lsra
+        lsra
+        anda  #3
+        asla
+        ldx   wick.aSet,u
+        jsr   wick.SetPose
+        jsr   wick.Visible
+        lbne  wick.Vanish
+        jmp   DisplaySprite
 
 ; La fenetre de visibilite, comme le gouger : Conv.java, X 0..159, Y -6..204.
 ; Z = 0 s'il faut partir.
@@ -504,7 +571,7 @@ wick.Boom
         ldd   y_pos,u
         std   y_pos,x
 wick.Vanish
-        lda   #2
+        lda   #3
         sta   routine,u
         _Collision_RemoveAABB wick.uAABB,AABB_list_ennemy
         jmp   DeleteObject
@@ -543,6 +610,64 @@ wick.tmp        fdb 0
 
 wick.Poses
         fdb   set_wick_16,set_wick_17,set_wick_18,set_wick_19
+
+; Les seize directions du pique. Vitesses arcade x 0,375 en X, x 0,75 en Y —
+; et l'axe Y s'inverse, d'ou le signe. Direction 0 = vers le haut, 16 = a
+; droite, 32 = en bas, 48 = a gauche.
+wick.AimVel
+        fdb       0,-432            ; dir  0
+        fdb      84,-408            ; dir  4
+        fdb     168,-336            ; dir  8
+        fdb     222,-192            ; dir 12
+        fdb     252,0            ; dir 16
+        fdb     222,192            ; dir 20
+        fdb     168,336            ; dir 24
+        fdb      84,408            ; dir 28
+        fdb       0,432            ; dir 32
+        fdb     -84,408            ; dir 36
+        fdb    -168,336            ; dir 40
+        fdb    -222,192            ; dir 44
+        fdb    -252,0            ; dir 48
+        fdb    -222,-192            ; dir 52
+        fdb    -168,-336            ; dir 56
+        fdb     -84,-408            ; dir 60
+; La table arcade 1000:3b32 ne distingue que HUIT orientations : elle fait
+; pointer trois directions voisines sur la meme base de poses. Recoupement
+; heureux : la direction 48, vers la gauche, tombe sur 16..19 — l'art de la
+; derive, qui va justement a gauche.
+wick.AimSets
+        fdb   wick.Set24              ; dir  0
+        fdb   wick.Set28              ; dir  4
+        fdb   wick.Set28              ; dir  8
+        fdb   wick.Set28              ; dir 12
+        fdb   wick.Set0               ; dir 16
+        fdb   wick.Set4               ; dir 20
+        fdb   wick.Set4               ; dir 24
+        fdb   wick.Set4               ; dir 28
+        fdb   wick.Set8               ; dir 32
+        fdb   wick.Set12              ; dir 36
+        fdb   wick.Set12              ; dir 40
+        fdb   wick.Set12              ; dir 44
+        fdb   wick.Set16              ; dir 48
+        fdb   wick.Set20              ; dir 52
+        fdb   wick.Set20              ; dir 56
+        fdb   wick.Set20              ; dir 60
+wick.Set0
+        fdb   set_wick_0,set_wick_1,set_wick_2,set_wick_3
+wick.Set4
+        fdb   set_wick_4,set_wick_5,set_wick_6,set_wick_7
+wick.Set8
+        fdb   set_wick_8,set_wick_9,set_wick_10,set_wick_11
+wick.Set12
+        fdb   set_wick_12,set_wick_13,set_wick_14,set_wick_15
+wick.Set16
+        fdb   set_wick_16,set_wick_17,set_wick_18,set_wick_19
+wick.Set20
+        fdb   set_wick_20,set_wick_21,set_wick_22,set_wick_23
+wick.Set24
+        fdb   set_wick_24,set_wick_25,set_wick_26,set_wick_27
+wick.Set28
+        fdb   set_wick_28,set_wick_29,set_wick_30,set_wick_31
 
 ; -----------------------------------------------------------------------------
 ; LA TIMELINE, telle que 1000:3afe la donne. Seuil, puis opcode : bit 15 la
