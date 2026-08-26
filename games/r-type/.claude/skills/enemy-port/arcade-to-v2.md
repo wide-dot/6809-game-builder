@@ -21,14 +21,39 @@ Une décision nouvelle prise pendant un portage s'AJOUTE ici.
   144 = largeur visible ; 256×0.75 = 192.
 - Une vitesse arcade en px/trame se convertit par cette échelle et se pose en
   8.8 (`x_sub`/`y_sub`, helpers `moveXPos8.8`/`moveYPos8.8`).
-- **Espaces différents, et la question se pose POUR CHAQUE ennemi.** Le
-  mouvement de caméra est **explicite** en arcade : `auto_scroll` (0x40:0467)
-  publie un delta par trame en `0x2ED0..0x2ED6`, et chaque tick d'objet décide
-  de se l'appliquer ou non. En v2 il est **implicite** : un `x_pos,u` en repère
-  PLAYFIELD (`render_playfieldcoord_mask`) recule tout seul quand la caméra
-  avance. Les deux cas sont donc inverses l'un de l'autre, et **le test est
-  mécanique — le tick arcade lit-il `0x2ED0` ?** (`bridge_xrefs_to` sur cette
-  adresse donne la liste complète des objets qui s'y accrochent) :
+### Le scroll : la logique est INVERSÉE entre les deux moteurs — test obligatoire
+
+**C'est le piège le plus régulier de tout le portage, et il est silencieux :
+un objet mal transposé dérive lentement au lieu de rester collé au décor, ce
+qui ne se voit qu'à la comparaison.** Il ne se déduit pas, il se lit.
+
+|  | ancré au DÉCOR (suit le scroll) | ancré à l'ÉCRAN (ne le suit pas) |
+|---|---|---|
+| **arcade** | il faut du CODE : `ADD [BP+4], [0x2ED0]` dans le tick | **aucun code** |
+| **v2** | **aucun code** : `render_playfieldcoord_mask` suffit | il faut du CODE (compenser, ou vivre en repère écran) |
+
+Le mouvement de caméra est **explicite** en arcade : `auto_scroll` (0x40:0467)
+publie un delta par trame en `0x2ED0..0x2ED6`, et chaque tick d'objet décide de
+se l'appliquer ou non. En v2 il est **implicite** : un `x_pos,u` en repère
+PLAYFIELD recule tout seul quand la caméra avance. Absence de code veut donc
+dire l'inverse d'un moteur à l'autre — recopier un tick arcade « tel quel »
+produit systématiquement le mauvais ancrage.
+
+**Le test est mécanique — le tick arcade lit-il `0x2ED0` ?**
+`bridge_xrefs_to 0x4000_2ed0` donne la liste complète des objets qui s'y
+accrochent ; il faut la croiser avec TOUTES les entrées de tick de l'ennemi,
+pas seulement la première (un objet peut changer d'ancrage selon sa phase).
+
+> Vérifié le 26/08/2026 sur les deux ennemis du stage 2, qui forment une paire
+> exemplaire : le **gouger** apparaît trois fois dans la liste — `0x406fd0`,
+> `0x407048`, `0x407106`, soit ses trois phases — il est donc ancré au décor,
+> et notre portage a raison de n'avoir **aucun code de scroll** : juste
+> `render_playfieldcoord_mask` sur le parent et son enfant, `glb_camera_x_pos`
+> lu une seule fois à l'`Init` pour convertir l'abscisse de naissance, et
+> deux lectures d'écran pour la boîte de collision et le calage. À l'inverse,
+> aucune des entrées de tick de l'**outslay** (0x40:91cc..0x9425) n'est dans
+> la liste : il est ancré à l'écran, et il vit chez nous en repère écran natif.
+
   - **il le lit** = ancré au décor. En v2 : ne rien faire, supprimer les
     additions de `scroll_amount`, garder le mouvement propre.
   - **il ne le lit pas** = ancré à l'ÉCRAN. Deux transpositions possibles,

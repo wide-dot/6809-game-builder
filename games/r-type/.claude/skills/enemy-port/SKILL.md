@@ -85,6 +85,17 @@ données, et les objets enfants qu'il spawne (un enfant = un objet v2 à part
 entière, avec son ObjID). Ne pas oublier les couplages : certains ennemis
 lisent l'état d'un autre (ex. outslay lit le mot d'état de gomander).
 
+> **Relever aussi, SYSTÉMATIQUEMENT, l'ancrage au scroll** — c'est le piège le
+> plus régulier du portage et il est silencieux. La logique est INVERSÉE entre
+> les deux moteurs : en arcade il faut du code pour suivre le décor
+> (`ADD [BP+4],[0x2ED0]`), chez nous il faut du code pour NE PAS le suivre.
+> Absence de code veut donc dire l'inverse d'un moteur à l'autre, et recopier
+> un tick « tel quel » produit le mauvais ancrage.
+> Le test est mécanique : `bridge_xrefs_to 0x4000_2ed0`, croisé avec **toutes**
+> les entrées de tick de l'ennemi — un objet peut changer d'ancrage selon sa
+> phase. Détail et paire d'exemples (gouger ancré au décor, outslay ancré à
+> l'écran) dans la table.
+
 ### 2. Traduire
 Appliquer [arcade-to-v2.md](arcade-to-v2.md) : chaque idiome arcade y a son
 équivalent v2 et sa règle de conversion (échelle de coordonnées, modèle de
@@ -140,6 +151,9 @@ sous-dossier ou `_shared/`.
 - [ ] **api.asm** : n'y toucher QUE si l'ennemi franchit une frontière
   moteur↔stage nouvelle — chaque nom coûte 4 octets de link data et une
   recherche linéaire au chargement.
+- [ ] **Ancrage au scroll** : `bridge_xrefs_to 0x4000_2ed0` recoupé avec
+  toutes les entrées de tick. Lit `0x2ED0` → repère playfield et AUCUN code de
+  scroll ; ne le lit pas → repère écran, ou compensation explicite.
 - [ ] **Retard de wave** : décider explicitement s'il faut le compenser —
   `retard × vitesse propre` contre `retard × 0,1875` (la caméra). Un objet à
   script rattrape (bug, slither) ; un objet ancré au décor ne bouge pas assez
