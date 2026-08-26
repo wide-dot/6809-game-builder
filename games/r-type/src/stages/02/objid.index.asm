@@ -35,6 +35,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
@@ -100,6 +102,8 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_commonmissileflame
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
         fdb   stage.placeholder ; ObjID_dobkeratops_explosion
+        fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
@@ -159,6 +163,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
@@ -218,6 +224,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_commonmissileflame
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
+        fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
@@ -280,11 +288,13 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
 * Le cast du stage 2. Ces six lignes MANQUAIENT : la table s'arretait a
-* ObjID_bossmusic (32) alors que les autres index allaient jusqu'a 37, parce
+* ObjID_bossmusic (34) alors que les autres index allaient jusqu'a 37, parce
 * que les squelettes du cast n'affichaient rien. Le premier ennemi implemente
 * dessine, BuildSprites lit Img_Page_Index[38] hors table, monte une page
 * quelconque et saute dans le vide. Une table indexee par identifiant doit

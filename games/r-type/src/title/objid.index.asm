@@ -41,11 +41,14 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.text.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
         fcb   map.RAM_OVER_CART+title.loading.page ; ObjID_loading
+Obj_Index_Page.end
 
 Obj_Index_Address
         fdb   title.placeholder ; id 0 : reserved slot, never run
@@ -78,11 +81,14 @@ Obj_Index_Address
         fdb   title.placeholder ; ObjID_commonmissileflame
         fdb   title.placeholder ; ObjID_dobkeratops_saw
         fdb   title.placeholder ; ObjID_dobkeratops_explosion
+        fdb   title.placeholder ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   logo.Object       ; ObjID_logo
         fdb   title.text.Object ; ObjID_text
         fdb   title.pushbutton.Object ; ObjID_push_button
         fdb   title.scores.Object ; ObjID_scores
         fdb   title.loading.Object ; ObjID_loading
+Obj_Index_Address.end
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
@@ -115,11 +121,14 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loading
+Ani_Page_Index.end
 
 Ani_Asd_Index
         fdb   Ani_Asd_none ; id 0 : reserved slot, never run
@@ -152,11 +161,14 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_commonmissileflame
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
+        fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   Ani_Asd_none ; ObjID_logo
         fdb   Ani_Asd_none ; ObjID_text
         fdb   Ani_Asd_none ; ObjID_push_button
         fdb   Ani_Asd_none ; ObjID_scores
         fdb   Ani_Asd_none ; ObjID_loading
+Ani_Asd_Index.end
 
 Ani_Asd_none
         fdb   0
@@ -192,9 +204,43 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
         fcb   map.RAM_OVER_CART+title.loading.page ; ObjID_loading
+Img_Page_Index.end
 
+
+* GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
+* moteur y entre en `abx` sans borne. Une table plus courte que les autres ne
+* casse rien tant qu'aucun objet de la queue n'est atteint, puis fait sauter
+* le jeu dans le vide — vecu le 21/08/2026, Img_Page_Index s'arretait a
+* l'identifiant 32 et le premier segment d'outslay a fige l'ecran.
+* L'en-tete demandait deja de « garder les lignes alignees » ; ceci le
+* verifie au lieu de l'esperer. Pose partout le 26/08/2026, quand le
+* redecoupage des identifiants a insere deux entrees de reserve dans chaque
+* table : exactement le genre de retouche que ce controle existe pour border.
+objid.index.expected equ objid.count+1
+
+ IFNE Obj_Index_Page.end-Obj_Index_Page-objid.index.expected
+        ERROR Obj_Index_Page : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Obj_Index_Address.end-Obj_Index_Address-objid.index.expected*2
+        ERROR Obj_Index_Address : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Page_Index.end-Ani_Page_Index-objid.index.expected
+        ERROR Ani_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Asd_Index.end-Ani_Asd_Index-objid.index.expected*2
+        ERROR Ani_Asd_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Img_Page_Index.end-Img_Page_Index-objid.index.expected
+        ERROR Img_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC

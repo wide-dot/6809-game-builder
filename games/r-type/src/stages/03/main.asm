@@ -135,6 +135,7 @@ forcepod.Object        EXTERNAL
 simplefire.Object      EXTERNAL
 reboundlaser.Object    EXTERNAL
 counterairlaser.Object EXTERNAL
+groundlaser.Object EXTERNAL
 
 ; Le cast d'ennemis, un direntry chacun.
 bug.Object      EXTERNAL

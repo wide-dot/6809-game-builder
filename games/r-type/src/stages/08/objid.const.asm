@@ -7,11 +7,11 @@ OBJID_CONST_08 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_pow equ 30
-ObjID_checkpoint equ 31
-ObjID_bossmusic equ 32
+ObjID_pow equ 32
+ObjID_checkpoint equ 33
+ObjID_bossmusic equ 34
 
-objid.count equ 32
+objid.count equ 34
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

@@ -365,9 +365,16 @@
             <!-- Ce que le jeu occupe sans jamais rien y charger : des equates du
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
                  que ce soit. $9E80 est la limite haute d'un main.
-                 Les 9 octets en $87E2 logent les temoins du banc
+                 Les 9 octets en $87F2 logent les temoins du banc
                  (bench.const.asm) ; les unites title/stage disposent de
-                 $8000-$87E1. Le bloc faisait 16 octets jusqu'au 25/08/2026 :
+                 $8000-$87F1.
+                 26/08/2026 : le plafond monte de $87E1 a $87F1. Le decoupage
+                 des identifiants d'objet (commun 0..31, specifique 32..127) a
+                 donne DEUX entrees de reserve a chacune des cinq tables
+                 d'index, soit 14 octets par unite, et le title debordait d'UN
+                 octet. Le banc, la region `cast` et `common.mscroll` glissent
+                 ensemble de 16 dans la marge que mscroll avait au-dessus de
+                 lui ($927C-$92DA avant les arenes de stage). Le bloc faisait 16 octets jusqu'au 25/08/2026 :
                  sept etaient morts (les cinq controles du scenario force, que
                  la de-banc-ification du 13/08 a prive d'ecrivain, et un
                  compteur jamais ecrit). Il est colle a la region `cast` pour
@@ -394,8 +401,8 @@
             <arena name="stage6.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <arena name="stage7.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <arena name="stage8.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
-            <region name="cast" page="$01" address="$87EB" size="$0065"/>
-            <reserved name="bench"        page="$01" address="$87E2" size="$0009"/>
+            <region name="cast" page="$01" address="$87FB" size="$0065"/>
+            <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font.
@@ -537,7 +544,7 @@
                      cartouche. Sa place est celle que le pool d'objets a rendue
                      en déménageant dans la demi-page 0 (2026-08-20) ;
                      $8850-$9DCA, le budget est la carte d'occupation. -->
-                <file name="common.mscroll" linkdata="LINK" page="$01" address="$8850">
+                <file name="common.mscroll" linkdata="LINK" page="$01" address="$8860">
                     <lwasm gensource="gen/common/mscroll.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/mscroll.unit.asm"/>
@@ -1318,6 +1325,65 @@
                     </lwasm>
                 </file>
 
+                <!-- Le laser de sol (cristal jaune) : deux faisceaux qui
+                     rampent le long du decor. Art extrait de la borne — voir
+                     tools/groundlaser-art.txt. -->
+                <file name="common.groundlaser" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/groundlaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/groundlaser.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/groundlaser"
+                                 gensource="gen/weapons/groundlaser/includes.asm"
+                                 genindex="gen/weapons/groundlaser/index.asm"
+                                 file="common.groundlaser">
+                            <image name="groundlaser_0" filename="src/common/weapons/forcepods/groundlaser/images/head/00.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_1" filename="src/common/weapons/forcepods/groundlaser/images/head/01.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_2" filename="src/common/weapons/forcepods/groundlaser/images/head/02.png" index="2">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_3" filename="src/common/weapons/forcepods/groundlaser/images/head/03.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_f0" filename="src/common/weapons/forcepods/groundlaser/images/follower/00.png" index="4">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_f1" filename="src/common/weapons/forcepods/groundlaser/images/follower/01.png" index="5">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_f2" filename="src/common/weapons/forcepods/groundlaser/images/follower/02.png" index="6">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_f3" filename="src/common/weapons/forcepods/groundlaser/images/follower/03.png" index="7">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="groundlaser_x0" filename="src/common/weapons/forcepods/groundlaser/images/explosion/00.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="groundlaser_x1" filename="src/common/weapons/forcepods/groundlaser/images/explosion/01.png" index="9">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="groundlaser_x2" filename="src/common/weapons/forcepods/groundlaser/images/explosion/02.png" index="10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="groundlaser_x3" filename="src/common/weapons/forcepods/groundlaser/images/explosion/03.png" index="11">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="common.simplefire" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/simplefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1652,6 +1718,7 @@
                     <load name="common.forcepod"/>
                     <load name="common.reboundlaser"/>
                     <load name="common.counterairlaser"/>
+                    <load name="common.groundlaser"/>
                     <load name="common.simplefire"/>
                     <load name="common.firechain"/>
                     <load name="common.foefire"/>

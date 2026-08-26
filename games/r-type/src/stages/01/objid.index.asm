@@ -35,6 +35,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
@@ -52,7 +54,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
-        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+Obj_Index_Page.end
 
 Obj_Index_Address
         fdb   0
@@ -91,6 +94,8 @@ Obj_Index_Address
         fdb   commonmissileflame.Object ; ObjID_commonmissileflame
         fdb   dobkeratopsSaw.Object ; ObjID_dobkeratops_saw
         fdb   dobkeratopsExplosion.Object ; ObjID_dobkeratops_explosion
+        fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   patapata.Object ; ObjID_patapata
         fdb   bug.Object ; ObjID_bug
         fdb   bink.Object ; ObjID_bink
@@ -108,7 +113,8 @@ Obj_Index_Address
         fdb   dobkeratopsJaw.Object ; ObjID_dobkeratops_jaw
         fdb   dobkeratopsMonster.Object ; ObjID_dobkeratops_monster
         fdb   stage.starfieldSpawner ; ObjID_starfield
-        fdb   bug.Render ; ObjID_bugrender (47)
+        fdb   bug.Render ; ObjID_bugrender (49)
+Obj_Index_Address.end
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.page
@@ -141,6 +147,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
@@ -158,7 +166,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
-        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+Ani_Page_Index.end
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -191,6 +200,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_commonmissileflame
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
+        fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   Ani_Asd_none ; ObjID_patapata
         fdb   Ani_Asd_none ; ObjID_bug
         fdb   Ani_Asd_none ; ObjID_bink
@@ -208,7 +219,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops_jaw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_monster
         fdb   Ani_Asd_none ; ObjID_starfield
-        fdb   Ani_Asd_none ; ObjID_bugrender (47)
+        fdb   Ani_Asd_none ; ObjID_bugrender (49)
+Ani_Asd_Index.end
 
 Ani_Asd_none
         fdb   0
@@ -244,6 +256,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
@@ -261,4 +275,36 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
-        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (47)
+        fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+Img_Page_Index.end
+
+* GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
+* moteur y entre en `abx` sans borne. Une table plus courte que les autres ne
+* casse rien tant qu'aucun objet de la queue n'est atteint, puis fait sauter
+* le jeu dans le vide — vecu le 21/08/2026, Img_Page_Index s'arretait a
+* l'identifiant 32 et le premier segment d'outslay a fige l'ecran.
+* L'en-tete demandait deja de « garder les lignes alignees » ; ceci le
+* verifie au lieu de l'esperer. Pose partout le 26/08/2026, quand le
+* redecoupage des identifiants a insere deux entrees de reserve dans chaque
+* table : exactement le genre de retouche que ce controle existe pour border.
+objid.index.expected equ objid.count+1
+
+ IFNE Obj_Index_Page.end-Obj_Index_Page-objid.index.expected
+        ERROR Obj_Index_Page : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Obj_Index_Address.end-Obj_Index_Address-objid.index.expected*2
+        ERROR Obj_Index_Address : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Page_Index.end-Ani_Page_Index-objid.index.expected
+        ERROR Ani_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Asd_Index.end-Ani_Asd_Index-objid.index.expected*2
+        ERROR Ani_Asd_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Img_Page_Index.end-Img_Page_Index-objid.index.expected
+        ERROR Img_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC

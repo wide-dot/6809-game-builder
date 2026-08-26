@@ -35,10 +35,13 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+Obj_Index_Page.end
 
 Obj_Index_Address
         fdb   0
@@ -77,10 +80,13 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_commonmissileflame
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
         fdb   stage.placeholder ; ObjID_dobkeratops_explosion
+        fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   bink.Object ; ObjID_bink
+Obj_Index_Address.end
 
 Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page
@@ -113,10 +119,13 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+Ani_Page_Index.end
 
 Ani_Asd_Index
         fdb   Ani_Asd_none
@@ -149,10 +158,13 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_commonmissileflame
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
+        fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
+        fdb   0 ; 31 : reserve commune libre
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
         fdb   Ani_Asd_none ; ObjID_bink
+Ani_Asd_Index.end
 
 Ani_Asd_none
         fdb   0
@@ -188,7 +200,41 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
+        fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+Img_Page_Index.end
+
+* GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
+* moteur y entre en `abx` sans borne. Une table plus courte que les autres ne
+* casse rien tant qu'aucun objet de la queue n'est atteint, puis fait sauter
+* le jeu dans le vide — vecu le 21/08/2026, Img_Page_Index s'arretait a
+* l'identifiant 32 et le premier segment d'outslay a fige l'ecran.
+* L'en-tete demandait deja de « garder les lignes alignees » ; ceci le
+* verifie au lieu de l'esperer. Pose partout le 26/08/2026, quand le
+* redecoupage des identifiants a insere deux entrees de reserve dans chaque
+* table : exactement le genre de retouche que ce controle existe pour border.
+objid.index.expected equ objid.count+1
+
+ IFNE Obj_Index_Page.end-Obj_Index_Page-objid.index.expected
+        ERROR Obj_Index_Page : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Obj_Index_Address.end-Obj_Index_Address-objid.index.expected*2
+        ERROR Obj_Index_Address : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Page_Index.end-Ani_Page_Index-objid.index.expected
+        ERROR Ani_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Ani_Asd_Index.end-Ani_Asd_Index-objid.index.expected*2
+        ERROR Ani_Asd_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC
+
+ IFNE Img_Page_Index.end-Img_Page_Index-objid.index.expected
+        ERROR Img_Page_Index : une ligne par identifiant, de 0 a objid.count
+ ENDC

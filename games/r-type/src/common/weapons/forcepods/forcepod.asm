@@ -853,13 +853,23 @@ ForcePodAttachedFire
         blo   @rts                     ; niveau 0/1 -> pas de laser (le faible/fort = longueur, lue par l'objet laser depuis forcepodlevel)
         lda   globals.forcepodtype     ; choix de l'arme par le TYPE, pas le niveau
         cmpa  #2
-        beq   @counterairlaser         ; type 2 = counter-air
-        ; type 0 = rebound (bleu) ; type 1 = counter-ground (pas encore implemente, stage > 1) -> rebound en attendant
+        beq   @counterairlaser         ; type 2 = counter-air (rouge)
+        cmpa  #1
+        beq   @groundlaser             ; type 1 = counter-ground (jaune)
+        ; type 0 = rebound (bleu)
 @reboundlaser
         jsr   LoadObject_x
         beq   @rts
         lda   #ObjID_forcepod_reboundlaser
         bra   >  
+@groundlaser
+        ; Un seul objet est cree : sa routine 0 met le second faisceau au monde
+        ; et devient le premier. Elle porte aussi la garde de cadence — pas de
+        ; nouvelle volee tant qu'une tete vit.
+        jsr   LoadObject_x
+        beq   @rts
+        lda   #ObjID_forcepod_groundlaser
+        bra   >
 @counterairlaser
         lda   counterair_lock
         bne   @rts
