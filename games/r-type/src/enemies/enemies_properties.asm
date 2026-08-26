@@ -120,6 +120,14 @@ gouger_hitbox_x	equ 7
 gouger_hitbox_y	equ 14
 gouger_hitdamage	equ 10
 
+; Wick (stage 2). Boite arcade 1000:3c12 : f8 ff 08 00 des deux cotes, soit
+; -8..+8 — un RAYON de 8. A l'echelle du fichier : 8 x 0,375 = 3 en X et
+; 8 x 0,75 = 6 en Y. Il meurt au premier coup, d'ou 1 PV ; son score est le
+; plus bas de la table arcade ($86E8), ce que wick_scoreIdx = 0 dit deja.
+wick_hitbox_x		equ 3
+wick_hitbox_y		equ 6
+wick_hitdamage		equ 1
+
 ; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
 ; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
 ; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur
