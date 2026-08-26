@@ -68,6 +68,14 @@ set_gouger_hit_tl_bottom_0  EXTERNAL
 set_gouger_hit_tr_bottom_0  EXTERNAL
 set_gouger_hit_bl_bottom_0  EXTERNAL
 set_gouger_hit_br_bottom_0  EXTERNAL
+set_brood_0  EXTERNAL
+set_brood_1  EXTERNAL
+set_brood_2  EXTERNAL
+set_brood_3  EXTERNAL
+set_brood_4  EXTERNAL
+set_brood_5  EXTERNAL
+set_brood_6  EXTERNAL
+set_brood_7  EXTERNAL
 set_wick_0  EXTERNAL
 set_wick_1  EXTERNAL
 set_wick_2  EXTERNAL

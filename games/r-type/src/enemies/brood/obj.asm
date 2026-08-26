@@ -90,5 +90,312 @@
 ;   meme choix que le serpent et le gouger, une image blanche ou rien.
 ; - `still-open` etait un dossier d'images VIDE, laisse par un export : retire.
 ;*******************************************************************************
+; -----------------------------------------------------------------------------
+; L'ETAT
+; -----------------------------------------------------------------------------
+brood.AABB      equ ext_variables      ; 0..8  la boite
+brood.orient    equ ext_variables+9    ; 9     0 = plafond, 1 = sol
+brood.count     equ ext_variables+10   ; 10,11 le compteur de phase
+brood.frame     equ ext_variables+12   ; 12    l'index de pose, 0..3
+
+brood.SPAWNX    equ 144+8+6            ; arcade $02D0, comme le gouger
+brood.ENTRY     equ 122                ; arcade $0270 : entre dans le cadre
+brood.EXIT      equ 2                  ; arcade $0130 : sorti par la gauche
+brood.SETTLE    equ 384                ; 2 px arcade/trame en 8.8 v2 (x 0,75)
+brood.OPENING   equ $3F                ; 63 trames d'ouverture, et de fermeture
+brood.SPAWNING  equ $C0                ; 192 trames gueule ouverte
+
 brood.Object
-        jmp   stage2.cast.stub          ; implementation vide : compter, rendre le slot
+        lda   routine,u
+        asla
+        ldx   #brood.Routines
+        jmp   [a,x]
+brood.Routines
+        fdb   brood.Init
+        fdb   brood.Entry
+        fdb   brood.Settle
+        fdb   brood.IdleA
+        fdb   brood.Spawn
+        fdb   brood.IdleB
+        fdb   brood.Exit
+        fdb   brood.Deleted
+
+; -----------------------------------------------------------------------------
+brood.Init
+        ldb   subtype_w+1,u            ; le 5e octet du descripteur de wave
+        andb  #1                       ; bit 0 : le MONTAGE
+        stb   brood.orient,u
+        aslb
+        ldx   #brood.PresetY
+        abx
+        ldd   ,x
+        std   y_pos,u
+        ldd   glb_camera_x_pos
+        addd  #brood.SPAWNX
+        std   x_pos,u
+        clr   x_pos+2,u
+        clr   y_pos+2,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        ldb   #6
+        stb   priority,u
+        _Collision_AddAABB brood.AABB,AABB_list_ennemy
+        lda   #brood_hitdamage
+        sta   brood.AABB+AABB.p,u
+        _ldd  brood_hitbox_x,brood_hitbox_y
+        std   brood.AABB+AABB.rx,u
+        clr   brood.frame,u
+        ldd   #0
+        std   brood.count,u
+        inc   routine,u
+        rts
+
+; --- 1) l'entree : il defile jusqu'a etre dans le cadre ----------------------
+brood.Entry
+        jsr   brood.Frame
+        lbne  brood.Gone
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        cmpd  #brood.ENTRY
+        lbhs  brood.Show               ; pas encore : il attend en defilant
+        ldd   #8
+        std   brood.count,u
+        inc   routine,u
+        lbra  brood.Show
+
+; --- 2) la chute : il emerge de la paroi, 8 trames --------------------------
+; L'arcade ecrit `orientation x 4 - 2`, PAS `compteur x 4 - 2` comme l'annonce
+; sa plate — les deux lectures de [BP+0x28] du meme bloc le montrent, la
+; seconde etant commentee « BX = variant ». C'est donc une constante par
+; montage, +/-2 px arcade par trame : le plafond descend, le sol remonte, et
+; l'organisme sort du mur de douze pixels en huit trames.
+brood.Settle
+        jsr   brood.Frame
+        lbne  brood.Gone
+        ldd   #brood.SETTLE
+        tst   brood.orient,u
+        beq   >
+        ldd   #-brood.SETTLE           ; il remonte, sur le sol
+!       leax  y_pos,u
+        jsr   brood.AddPos
+        jsr   brood.Tick
+        lbne  brood.Show
+        ldd   #brood.OPENING
+        std   brood.count,u
+        inc   routine,u
+        lbra  brood.Show
+
+; --- 3) l'ouverture de la gueule, 63 trames ---------------------------------
+; L'index de pose vient des bits 4-5 du COMPLEMENT du compteur : il monte de 0
+; a 3 pendant que le compteur descend.
+brood.IdleA
+        jsr   brood.Frame
+        lbne  brood.Gone
+        ldb   brood.count+1,u
+        negb
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        andb  #3
+        stb   brood.frame,u
+        jsr   brood.Tick
+        lbne  brood.Show
+        ldd   #brood.SPAWNING
+        std   brood.count,u
+        inc   routine,u
+        lbra  brood.Show
+
+; --- 4) la ponte, 192 trames gueule ouverte ---------------------------------
+brood.Spawn
+        jsr   brood.Frame
+        lbne  brood.Gone
+        lda   #3                       ; la pose « gueule ouverte », figee
+        sta   brood.frame,u
+        ldd   brood.count,u
+        std   brood.was                ; le compteur AVANT le decompte
+        jsr   brood.Tick
+        pshs  cc
+        jsr   brood.Hatch
+        puls  cc
+        lbne  brood.Show
+        ldd   #brood.OPENING
+        std   brood.count,u
+        inc   routine,u
+        lbra  brood.Show
+
+; --- 5) la fermeture, 63 trames ---------------------------------------------
+brood.IdleB
+        jsr   brood.Frame
+        lbne  brood.Gone
+        ldb   brood.count+1,u
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        andb  #3
+        stb   brood.frame,u
+        jsr   brood.Tick
+        lbne  brood.Show
+        inc   routine,u                ; pas de compteur : il attend de sortir
+        lbra  brood.Show
+
+; --- 6) la sortie ------------------------------------------------------------
+brood.Exit
+        jsr   brood.Frame
+        lbne  brood.Gone
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        cmpd  #brood.EXIT
+        lbhs  brood.Show
+        lbra  brood.Gone               ; retrait silencieux
+
+brood.Deleted
+        rts
+
+; -----------------------------------------------------------------------------
+; LA PONTE. L'arcade appelle son spawner a CHAQUE trame et c'est lui qui se
+; limite a trois valeurs du compteur : $C0, $80 et $40. Avec la compensation de
+; trame le compteur SAUTE de plusieurs unites, donc le creneau ne s'atteint
+; pas, il se FRANCHIT — on pond si le seuil est tombe entre l'avant et l'apres.
+; Le troisieme creneau est refuse en difficulte 0 : un brood n'y pond que DEUX
+; zoids. Voir doc/arcade-difficulty-reference.md.
+; -----------------------------------------------------------------------------
+brood.Hatch
+        ldx   #brood.Slots
+@loop   ldd   ,x++
+        beq   @rts
+        cmpd  brood.was
+        bhi   @loop                    ; le seuil est au-dessus du depart
+        cmpd  brood.count,u
+        bls   @loop                    ; pas encore franchi
+        cmpd  #$40
+        bne   @pond
+        tst   globals.difficulty       ; le troisieme, seulement au-dela de 0
+        beq   @loop
+@pond   pshs  x
+        jsr   brood.Egg
+        puls  x
+        bra   @loop
+@rts    rts
+
+; Le ZOID n'est pas encore porte — chantier suivant. Ses trois phases, son
+; rodage et ses images attendent dans src/enemies/zoid/.
+brood.Egg
+        rts
+
+brood.Slots
+        fdb   $C0,$80,$40,0
+
+; -----------------------------------------------------------------------------
+; Le decompte de phase, compense : Z = 1 quand il vient d'echoir.
+; -----------------------------------------------------------------------------
+brood.Tick
+        ldd   brood.count,u
+        subd  brood.drop
+        bgt   >
+        ldd   #0
+!       std   brood.count,u
+        rts
+
+; -----------------------------------------------------------------------------
+; Le dessin : la pose vaut `index x 2 + orientation`, la table arcade etant
+; ENTRELACEE par montage et nos PNG en sortant tels quels.
+; -----------------------------------------------------------------------------
+brood.Show
+        ldb   brood.frame,u
+        aslb
+        addb  brood.orient,u
+        aslb
+        ldx   #brood.Sets
+        abx
+        ldx   ,x
+        stx   image_set,u
+        jmp   DisplaySprite
+
+; -----------------------------------------------------------------------------
+; L'ouverture de trame : le compte de trames de JEU, la mort, et la boite.
+; Z = 0 s'il faut s'en aller.
+; -----------------------------------------------------------------------------
+brood.Frame
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       clra
+        std   brood.drop
+        lda   brood.AABB+AABB.p,u
+        beq   @mort
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   brood.AABB+AABB.cx,u
+        ldb   y_pos+1,u
+        ; LE CENTRE DE LA BOITE est excentre de six pixels vers la paroi : la
+        ; boite arcade est asymetrique, et differente par montage.
+        tst   brood.orient,u
+        beq   >
+        addb  #brood_cy_offset
+        bra   @cy
+!       subb  #brood_cy_offset
+@cy     stb   brood.AABB+AABB.cy,u
+        orcc  #$04                     ; Z = 1 : il reste
+        rts
+@mort   ldb   #brood_scoreIdx
+        jsr   AwardScore
+        jsr   LoadObject_x
+        beq   @part
+        _ldd  ObjID_explosion,explosion.subtype.big.brown
+        std   id,x
+        ldd   x_pos,u
+        std   x_pos,x
+        ldd   y_pos,u
+        std   y_pos,x
+@part   andcc #$FB
+        rts
+
+brood.Gone
+        lda   #7
+        sta   routine,u
+        _Collision_RemoveAABB brood.AABB,AABB_list_ennemy
+        jmp   DeleteObject
+
+; -----------------------------------------------------------------------------
+; Deplacer de la vitesse 8.8 en D, compensee du frame-drop. Meme calcul que le
+; gouger et le wick : deux `mul` non signes.
+; -----------------------------------------------------------------------------
+brood.AddPos
+        pshs  a
+        lda   brood.drop+1
+        mul
+        std   brood.tmp
+        puls  a
+        ldb   brood.drop+1
+        mul
+        tfr   b,a
+        clrb
+        addd  brood.tmp
+        pshs  d
+        ldb   ,s
+        sex
+        sta   @a+1
+        puls  d
+        addd  1,x
+        std   1,x
+        lda   ,x
+@a      adca  #$00
+        sta   ,x
+        rts
+
+brood.drop      fdb 0
+brood.tmp       fdb 0
+brood.was       fdb 0
+
+; y = 297 - 0,75 x y_arcade, comme partout — presets 1000:37de.
+brood.PresetY
+        fdb   21                       ; montage 0 : plafond ($0170 = 368)
+        fdb   177                      ; montage 1 : sol     ($00A0 = 160)
+; Les poses, ENTRELACEES par montage comme la table arcade : index x 2 + orient
+brood.Sets
+        fdb   set_brood_0,set_brood_1  ; ferme        : plafond, sol
+        fdb   set_brood_2,set_brood_3  ; entrouvert
+        fdb   set_brood_4,set_brood_5  ; plus ouvert
+        fdb   set_brood_6,set_brood_7  ; GUEULE OUVERTE

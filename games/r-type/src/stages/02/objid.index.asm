@@ -280,7 +280,7 @@ Img_Page_Index
 * maintenant.
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger ; bascule des l init
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.imgBrood.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment

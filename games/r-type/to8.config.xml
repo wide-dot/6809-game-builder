@@ -2960,6 +2960,21 @@
                     </lwasm>
                 </file>
 
+                <!-- Les sprites du BROOD. Huit poses de 24x48, et la table
+                     arcade dont elles sortent est ENTRELACEE par montage :
+                     l'index vaut `trame x 2 + orientation`, ce dont le code
+                     depend. Une seule entree, donc set_brood_N = N.png. -->
+                <file name="stage2.cast.imgBrood" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imgbrood.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgBrood" gendir="gen/enemies/stage2-cast-imgbrood"
+                                 gensource="gen/enemies/stage2-cast-imgbrood/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imgbrood/index.asm">
+                            <images dir="src/enemies/brood/images/open" names="brood"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- Les sprites du WICK. 32 poses de 6x12, une seule entree :
                      le suffixe de symbole suit l'ORDINAL dans l'entree, donc
                      declarer le repertoire entier garde set_wick_N = N.png, et
@@ -3030,6 +3045,7 @@
 
                 <scene name="scenes.stage2" section="SCENE" gensource="gen/scenes/stage2.asm">
                     <load name="stage2.cast"/>
+                    <load name="stage2.cast.imgBrood"/>
                     <load name="stage2.cast.imgWick"/>
                     <load name="stage2.cast.imgGougerTLtop"/>
                     <load name="stage2.cast.imgGougerTLbottom"/>
