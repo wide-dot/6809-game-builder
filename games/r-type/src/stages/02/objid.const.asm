@@ -47,16 +47,16 @@ ObjID_tilemapanim equ 42
 * sprite qui deborde de l'ecran, la ou l'arcade le decoupe. Le gouger attend a
 * demi enterre dans la paroi, donc il debordait toujours et n'etait pas dessine
 * du tout. Coupe, seule la moitie enfouie est rejetee. Le parent porte la
-* moitie HAUTE, son enfant la BASSE ; ils partagent la meme position, l'ancre
+* moitie TOP, son enfant la BOTTOM ; ils partagent la meme position, l'ancre
 * de chaque demi-image faisant le reste.
 ObjID_gouger_tl equ 43
 ObjID_gouger_tr equ 44
 ObjID_gouger_bl equ 45
 ObjID_gouger_br equ 46
-ObjID_gouger_tl_b equ 47
-ObjID_gouger_tr_b equ 48
-ObjID_gouger_bl_b equ 49
-ObjID_gouger_br_b equ 50
+ObjID_gouger_tl_bottom equ 47
+ObjID_gouger_tr_bottom equ 48
+ObjID_gouger_bl_bottom equ 49
+ObjID_gouger_br_bottom equ 50
 
 objid.count equ 50
 objid.animation equ ObjID_animation

@@ -97,7 +97,7 @@
 ; l'essentiel de sa vie. Coupe, seule la moitie enfouie est rejetee.
 ;   plafond 15 : haute -6 -> rejetee     basse 15..36   -> dessinee
 ;   sol    183 : haute 162..183 -> ok    basse 183..207 -> rejetee
-; Un objet PARENT porte la moitie haute, un objet ENFANT la basse. L'enfant ne
+; Un objet PARENT porte la moitie top, un objet ENFANT la basse. L'enfant ne
 ; decide de rien : le parent lui ecrit position et image a chaque trame. Les
 ; deux portent le MEME y_pos — les demi-images restent sur un canevas 24x48
 ; dont une moitie est effacee (tools/gen_gouger_halves.py), et gfxcomp derive
@@ -123,8 +123,10 @@
 ;       UNE trame sur 64 — quand (+0x34 & $3F) vaut zero — ou il montre la
 ;       POSE 2 : un sursaut d'une trame. Seules les variantes a compte a
 ;       rebours sursautent ; celle qui guette le joueur ne passe jamais par la.
-;       Cette pose d'attente est chez nous une IMAGE A PART, la seule du gouger
-;       compilee avec sa variante pre-decalee d'un pixel : voir gouger.DrawIdle.
+;       Cette pose d'attente est la seule du gouger compilee avec sa variante
+;       pre-decalee d'un pixel — il est immobile sur un decor qui defile. Elle
+;       n'est PAS dupliquee pour autant : l'animation se sert de la meme image
+;       et le code eteint la variante par la parite. Voir gouger.Snap.
 ;       La collision, la mort et le recul sont deja actifs dans cette phase,
 ;       ainsi que la fenetre de visibilite (voir gouger.Frame). Il nait a
 ;       166, juste a droite du cadre : DANS la fenetre, qui s'arrete a 167 —
@@ -163,13 +165,10 @@
 ;   une image blanche, ou rien.
 ; - les sons (0x5F traine, 0x57 coup, 0x53 mort) : aucun ennemi de ce portage
 ;   n'a de son a ce jour.
-; - 54 demi-sprites compiles : 46 968 octets MESURES sur six pages, partagees
-;   avec le reste de l'arene. Les huit derniers sont la pose d'attente, seule a
-;   porter ses deux variantes de decalage : +12 081 octets pour que le gouger
-;   ne tremble pas sur la roche. On pourrait en economiser la moitie — en
-;   attente, la moitie enfouie n'est jamais dessinee, sa pose d'attente ne sert
-;   donc a rien — au prix d'un cas particulier par direction. Garde entier tant
-;   que la page 22 reste libre. L'estimation par octet-par-pixel du serpent en
+; - 46 demi-sprites compiles : 40 932 octets MESURES sur cinq pages, partagees
+;   avec le reste de l'arene. La seconde variante de la pose d'attente en pese
+;   6 045 a elle seule ; la DUPLIQUER en aurait coute le double, c'est ce que
+;   gouger.Snap evite. L'estimation par octet-par-pixel du serpent en
 ;   annoncait 11,7 Ko — trois fois moins : le cout d'un sprite compile suit le
 ;   REMPLISSAGE, pas la surface du cadre. Une entree de repertoire par
 ;   direction ET par moitie, le cast n'ayant pas la place.
@@ -179,7 +178,8 @@
 ; - PAS de variante decalee d'un pixel pour les poses d'ANIMATION, vu la taille
 ;   des sprites — meme choix que pour l'outslay. Seule la pose d'attente en a
 ;   une, et pour une raison precise : elle est la seule que le gouger tienne
-;   IMMOBILE sur un decor qui defile.
+;   IMMOBILE sur un decor qui defile. Le cycle de reptation la reutilise sans
+;   scintiller parce que gouger.Snap y eteint la variante.
 ;*******************************************************************************
 
 ; -----------------------------------------------------------------------------
@@ -193,8 +193,10 @@ gouger.anim     equ ext_variables+12   ; 12,13  le compteur d'animation
 gouger.recoil   equ ext_variables+14   ; 14     le compte a rebours du recul
 gouger.prevP    equ ext_variables+15   ; 15     le potentiel du tour precedent
 gouger.blink    equ ext_variables+16   ; 16     1 = blanc cette trame
-gouger.child    equ ext_variables+17   ; 17,18  l'OST de la moitie basse, 0 si
+gouger.child    equ ext_variables+17   ; 17,18  l'OST de la moitie bottom, 0 si
                                        ;        aucun slot n'etait libre
+gouger.snap     equ ext_variables+19   ; 19     1 = un pixel a rendre a la vraie
+                                       ;        position, voir gouger.Snap
 ; Cote ENFANT, le meme espace porte tout autre chose : il n'a pas de boite.
 gouger.hParent  equ ext_variables      ; 0,1    l'OST de son parent
 
@@ -263,8 +265,9 @@ gouger.Init
         std   gouger.child,u           ; pas encore d'enfant
         clr   gouger.recoil,u
         clr   gouger.blink,u
+        clr   gouger.snap,u            ; un OST se recycle : ne rien heriter
         inc   routine,u
-        ; --- LA MOITIE BASSE, un objet a part entiere ---------------------
+        ; --- LA MOITIE BOTTOM, un objet a part entiere ---------------------
         ; Elle ne decide de rien : le parent lui ecrit sa position et son image
         ; a chaque trame (gouger.Draw). Elle existe parce que BuildSprites
         ; rejette EN BLOC un sprite qui deborde de l'ecran — coupe en deux, le
@@ -313,11 +316,11 @@ gouger.Hidden
         bra   @plonge
 @attend std   gouger.trig,u
         andb  #$3F                     ; le sursaut : une trame sur 64
-        bne   @repos
-        ldb   #2                       ; le sursaut garde la pose ordinaire
+        bne   @pose1
+        ldb   #2
         bra   @dessine
-@repos  jsr   gouger.DrawIdle
-        jmp   DisplaySprite
+@pose1  ldb   #1
+        bra   @dessine
 @regard ldb   gouger.var,u
         aslb
         ldx   #gouger.Compass
@@ -329,10 +332,11 @@ gouger.Hidden
         tfr   y,d
         cmpd  ,s++
         beq   @plonge
-        bra   @repos                   ; il guette : la pose d'attente
+        ldb   #1                       ; il guette : toujours la pose 1
+        bra   @dessine
 @plonge lda   #2
         sta   routine,u
-        bra   @repos                   ; encore contre la paroi cette trame
+        ldb   #1                       ; encore contre la paroi cette trame
 @dessine
         jsr   gouger.Draw
         jmp   DisplaySprite
@@ -360,6 +364,9 @@ gouger.Dive
         jsr   gouger.Move
         jsr   gouger.Anim
 @dessine
+        pshs  b                        ; le calage APRES la sonde et le
+        jsr   gouger.Snap              ; deplacement, AVANT le dessin — c'est
+        puls  b                        ; lui qui recopie x_pos chez l'enfant
         jsr   gouger.Draw
         jmp   DisplaySprite
 
@@ -381,6 +388,9 @@ gouger.Recoil
         bra   @suite
 @encore sta   gouger.recoil,u
 @suite  jsr   gouger.Anim
+        pshs  b
+        jsr   gouger.Snap              ; le recul s'anime aussi : meme calage
+        puls  b
         jsr   gouger.Draw
         jmp   DisplaySprite
 
@@ -390,7 +400,17 @@ gouger.Recoil
 ; Z = 0 s'il faut s'en aller.
 ; -----------------------------------------------------------------------------
 gouger.Frame
-        ldb   gfxlock.frameDrop.count
+        ; Rendre d'abord le pixel emprunte par le calage de la trame
+        ; precedente : tout ce qui suit — boite de collision, sonde de decor,
+        ; deplacement — travaille sur la position VRAIE. Sans cette restitution
+        ; le calage se cumulerait et le gouger deriverait vers la gauche.
+        lda   gouger.snap,u
+        beq   >
+        clr   gouger.snap,u
+        ldd   x_pos,u
+        addd  #1
+        std   x_pos,u
+!       ldb   gfxlock.frameDrop.count
         bne   >
         incb                           ; miroir du garde de runByFrameDrop
 !       clra
@@ -469,7 +489,7 @@ gouger.Deleted
         rts
 
 ; -----------------------------------------------------------------------------
-; LA MOITIE BASSE. Elle ne porte ni boite, ni horloge, ni decision : son parent
+; LA MOITIE BOTTOM. Elle ne porte ni boite, ni horloge, ni decision : son parent
 ; lui ecrit position et image. Elle ne fait que verifier qu'il est encore la.
 ; Le controle est double parce qu'un OST se RECYCLE : l'identifiant seul dirait
 ; encore « gouger » si un autre gouger avait pris le slot, d'ou la verification
@@ -521,7 +541,7 @@ gouger.Draw
         stx   image_set,u
         ldb   gouger.var,u
         aslb
-        ldx   #gouger.HitSetsB
+        ldx   #gouger.HitSetsBottom
         abx
         ldx   ,x
         bra   gouger.Child
@@ -539,50 +559,22 @@ gouger.Draw
         aslb
         ldx   #gouger.PoseSets
         abx
-        ldx   ,x                       ; X = les moities hautes de la variante
+        ldx   ,x                       ; X = les moities TOP de la variante
         ldb   ,s
         abx
         ldx   ,x
         stx   image_set,u
         ldb   gouger.var,u
         aslb
-        ldx   #gouger.PoseSetsB
+        ldx   #gouger.PoseSetsBottom
         abx
-        ldx   ,x                       ; X = les moities basses
+        ldx   ,x                       ; X = les moities BOTTOM
         puls  b
         abx
         ldx   ,x
         bra   gouger.Child
 
-; -----------------------------------------------------------------------------
-; LA POSE D'ATTENTE, et elle seule, porte la variante PRE-DECALEE d'un pixel.
-; Le gouger en attente est immobile sur un decor qui defile d'un pixel a la
-; fois : sans variante decalee le moteur replie sur la routine non decalee et
-; corrige la position d'un pixel (BSP_parityFallback), donc le gouger tremble
-; sur la roche une trame sur deux. Avec les deux variantes, il y est colle.
-; Les poses de l'ANIMATION restent non decalees, et c'est pourquoi l'attente
-; est une IMAGE SEPAREE plutot qu'un attribut de plus sur la pose 1 : melanger
-; dans un meme cycle des poses exactes et des poses calees sur la grille paire
-; ferait scintiller la reptation. Des que le gouger quitte sa cachette, cette
-; voie n'est plus empruntee.
-; Le sursaut d'une trame sur 64 garde la pose ordinaire : un ecart d'un pixel
-; le temps d'une trame, c'est exactement ce a quoi un sursaut ressemble.
-; -----------------------------------------------------------------------------
-gouger.DrawIdle
-        lda   gouger.blink,u
-        bne   gouger.Draw              ; le flash de coup passe par la voie
-        ldb   gouger.var,u             ; ordinaire, B ne lui sert pas
-        aslb
-        ldx   #gouger.IdleSets
-        abx
-        ldx   ,x
-        stx   image_set,u
-        ldb   gouger.var,u
-        aslb
-        ldx   #gouger.IdleSetsB
-        abx
-        ldx   ,x
-; X = l'image de la moitie basse. On la depose chez l'enfant avec la position :
+; X = l'image de la moitie bottom. On la depose chez l'enfant avec la position :
 ; il ne calcule rien, et les deux moities ne peuvent pas diverger d'une trame.
 gouger.Child
         ldy   gouger.child,u
@@ -636,6 +628,48 @@ gouger.AddPos
         sta   ,x
         rts
 
+; -----------------------------------------------------------------------------
+; LE CALAGE, qui evite de dupliquer la pose d'attente.
+;
+; La pose 1 est la seule compilee avec sa variante PRE-DECALEE d'un pixel : le
+; gouger en attente est immobile sur un decor qui defile d'un pixel a la fois,
+; et sans elle le moteur replie sur la routine non decalee en corrigeant la
+; position (BSP_parityFallback) — il tremblait d'un pixel sur la roche, une
+; trame sur deux. Les autres poses n'ont pas cette variante : les melanger dans
+; le cycle de reptation ferait scintiller l'animation.
+;
+; Plutot que d'avoir DEUX images de la pose 1, on eteint la variante decalee la
+; ou elle gene : il suffit que la parite ecarte le moteur de ce choix. Le calcul
+; se lit dans BuildSprites :
+;     B = octet bas de (x_pos - camera)
+;     eorb <_image_center_parity+1   ; = center_offset etendu au signe
+;     andb #1 / aslb / orb #1        ; 1 -> non decalee, 3 -> decalee
+; center_offset vaut $FF sur les 46 demi-images du gouger — verifie, il ne
+; depend pas de leur largeur ici — donc la parite retenue est l'INVERSE de
+; celle de (x_pos - camera), et le moteur prend la variante NON decalee quand
+;     (x_pos - camera) est IMPAIR.
+; D'ou : en phase d'attente on ne touche a rien et la pose 1 se cale au pixel ;
+; des que le gouger s'anime, on force cette difference impaire et toutes les
+; poses, elle comprise, retombent sur la grille paire — exactement ce que le
+; repli du moteur faisait deja, mais de facon uniforme.
+;
+; Le pixel emprunte est RENDU en tete de trame suivante (gouger.Frame) : la
+; position vraie n'est jamais alteree, et la collision comme la sonde de decor
+; la voient intacte.
+; Parent et enfant partagent x_pos et le meme center_offset : un seul calage
+; sert les deux moities.
+; -----------------------------------------------------------------------------
+gouger.Snap
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        andb  #1
+        bne   >                        ; deja impair : variante non decalee
+        ldd   x_pos,u
+        subd  #1
+        std   x_pos,u
+        inc   gouger.snap,u
+!       rts
+
 gouger.drop     fdb 0                  ; trames de jeu de ce tour
 gouger.tmp      fdb 0
 
@@ -683,55 +717,80 @@ gouger.Cycles
         fdb   gouger.CycA  ; var 1, top-right
         fdb   gouger.CycA  ; var 2, bottom-left
         fdb   gouger.CycB  ; var 3, bottom-right
-; Deux jeux de tables, la moitie HAUTE pour le parent et la BASSE pour son
+; Deux jeux de tables, la moitie TOP pour le parent et la BASSE pour son
 ; enfant. Le suffixe _h / _b est celui des repertoires d'images ; le cycle
 ; slot -> pose est le meme des deux cotes, une moitie n'a pas sa propre
 ; animation.
+; LES JEUX D'IMAGES, moitie TOP pour le parent et BOTTOM pour son enfant.
+; Le cycle slot -> pose est le meme des deux cotes, une moitie n'a pas sa
+; propre animation.
+; LA POSE 1 VIENT D'UNE AUTRE ENTREE — c'est la pose d'attente, seule a porter
+; sa variante pre-decalee (voir gouger.Snap). L'avoir sortie du repertoire
+; principal y a renumerote les quatre autres, le suffixe suivant l'ordinal dans
+; l'entree et non le nom du fichier : d'ou le _1.._3 pour les poses 2..4. La
+; correspondance est ecrite ici et nulle part ailleurs.
 gouger.PoseSets
-        fdb   gouger.SetsTL,gouger.SetsTR,gouger.SetsBL,gouger.SetsBR
-gouger.PoseSetsB
-        fdb   gouger.SetsTLb,gouger.SetsTRb,gouger.SetsBLb,gouger.SetsBRb
-gouger.SetsTL
-        fdb   set_gouger_tl_h_0,set_gouger_tl_h_1,set_gouger_tl_h_2
-        fdb   set_gouger_tl_h_3,set_gouger_tl_h_4
-gouger.SetsTR
-        fdb   set_gouger_tr_h_0,set_gouger_tr_h_1,set_gouger_tr_h_2
-        fdb   set_gouger_tr_h_3,set_gouger_tr_h_4
-gouger.SetsBL
-        fdb   set_gouger_bl_h_0,set_gouger_bl_h_1,set_gouger_bl_h_2
-        fdb   set_gouger_bl_h_3,set_gouger_bl_h_4
-gouger.SetsBR
-        fdb   set_gouger_br_h_0,set_gouger_br_h_1,set_gouger_br_h_2
-        fdb   set_gouger_br_h_3
-gouger.SetsTLb
-        fdb   set_gouger_tl_b_0,set_gouger_tl_b_1,set_gouger_tl_b_2
-        fdb   set_gouger_tl_b_3,set_gouger_tl_b_4
-gouger.SetsTRb
-        fdb   set_gouger_tr_b_0,set_gouger_tr_b_1,set_gouger_tr_b_2
-        fdb   set_gouger_tr_b_3,set_gouger_tr_b_4
-gouger.SetsBLb
-        fdb   set_gouger_bl_b_0,set_gouger_bl_b_1,set_gouger_bl_b_2
-        fdb   set_gouger_bl_b_3,set_gouger_bl_b_4
-gouger.SetsBRb
-        fdb   set_gouger_br_b_0,set_gouger_br_b_1,set_gouger_br_b_2
-        fdb   set_gouger_br_b_3
-; la pose d'attente, la seule a deux variantes de decalage
-gouger.IdleSets
-        fdb   set_gouger_idle_tl_h_0,set_gouger_idle_tr_h_0
-        fdb   set_gouger_idle_bl_h_0,set_gouger_idle_br_h_0
-gouger.IdleSetsB
-        fdb   set_gouger_idle_tl_b_0,set_gouger_idle_tr_b_0
-        fdb   set_gouger_idle_bl_b_0,set_gouger_idle_br_b_0
+        fdb   gouger.SetsTLtop,gouger.SetsTRtop
+        fdb   gouger.SetsBLtop,gouger.SetsBRtop
+gouger.PoseSetsBottom
+        fdb   gouger.SetsTLbottom,gouger.SetsTRbottom
+        fdb   gouger.SetsBLbottom,gouger.SetsBRbottom
+gouger.SetsTLtop
+        fdb   set_gouger_tl_top_0        ; pose 0
+        fdb   set_gouger_tl_top_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_tl_top_1        ; pose 2
+        fdb   set_gouger_tl_top_2        ; pose 3
+        fdb   set_gouger_tl_top_3        ; pose 4
+gouger.SetsTRtop
+        fdb   set_gouger_tr_top_0        ; pose 0
+        fdb   set_gouger_tr_top_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_tr_top_1        ; pose 2
+        fdb   set_gouger_tr_top_2        ; pose 3
+        fdb   set_gouger_tr_top_3        ; pose 4
+gouger.SetsBLtop
+        fdb   set_gouger_bl_top_0        ; pose 0
+        fdb   set_gouger_bl_top_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_bl_top_1        ; pose 2
+        fdb   set_gouger_bl_top_2        ; pose 3
+        fdb   set_gouger_bl_top_3        ; pose 4
+gouger.SetsBRtop
+        fdb   set_gouger_br_top_0        ; pose 0
+        fdb   set_gouger_br_top_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_br_top_1        ; pose 2
+        fdb   set_gouger_br_top_2        ; pose 3
+gouger.SetsTLbottom
+        fdb   set_gouger_tl_bottom_0        ; pose 0
+        fdb   set_gouger_tl_bottom_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_tl_bottom_1        ; pose 2
+        fdb   set_gouger_tl_bottom_2        ; pose 3
+        fdb   set_gouger_tl_bottom_3        ; pose 4
+gouger.SetsTRbottom
+        fdb   set_gouger_tr_bottom_0        ; pose 0
+        fdb   set_gouger_tr_bottom_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_tr_bottom_1        ; pose 2
+        fdb   set_gouger_tr_bottom_2        ; pose 3
+        fdb   set_gouger_tr_bottom_3        ; pose 4
+gouger.SetsBLbottom
+        fdb   set_gouger_bl_bottom_0        ; pose 0
+        fdb   set_gouger_bl_bottom_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_bl_bottom_1        ; pose 2
+        fdb   set_gouger_bl_bottom_2        ; pose 3
+        fdb   set_gouger_bl_bottom_3        ; pose 4
+gouger.SetsBRbottom
+        fdb   set_gouger_br_bottom_0        ; pose 0
+        fdb   set_gouger_br_bottom_idle_0   ; pose 1 — l attente
+        fdb   set_gouger_br_bottom_1        ; pose 2
+        fdb   set_gouger_br_bottom_2        ; pose 3
 gouger.HitSets
-        fdb   set_gouger_hit_tl_h_0,set_gouger_hit_tr_h_0
-        fdb   set_gouger_hit_bl_h_0,set_gouger_hit_br_h_0
-gouger.HitSetsB
-        fdb   set_gouger_hit_tl_b_0,set_gouger_hit_tr_b_0
-        fdb   set_gouger_hit_bl_b_0,set_gouger_hit_br_b_0
+        fdb   set_gouger_hit_tl_top_0,set_gouger_hit_tr_top_0
+        fdb   set_gouger_hit_bl_top_0,set_gouger_hit_br_top_0
+gouger.HitSetsBottom
+        fdb   set_gouger_hit_tl_bottom_0,set_gouger_hit_tr_bottom_0
+        fdb   set_gouger_hit_bl_bottom_0,set_gouger_hit_br_bottom_0
 ; l'identifiant de chaque direction : c'est lui qui porte la page d'images
 gouger.Ids
         fcb   ObjID_gouger_tl,ObjID_gouger_tr
         fcb   ObjID_gouger_bl,ObjID_gouger_br
 gouger.ChildIds
-        fcb   ObjID_gouger_tl_b,ObjID_gouger_tr_b
-        fcb   ObjID_gouger_bl_b,ObjID_gouger_br_b
+        fcb   ObjID_gouger_tl_bottom,ObjID_gouger_tr_bottom
+        fcb   ObjID_gouger_bl_bottom,ObjID_gouger_br_bottom

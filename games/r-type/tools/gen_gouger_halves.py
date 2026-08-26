@@ -11,7 +11,7 @@ l'essentiel de sa vie.
 En le coupant en deux, la moitie enfouie est la seule rejetee et la moitie
 visible s'affiche a sa vraie place :
 
-              moitie haute (y1 = -24)   moitie basse (y1 = 0)
+              moitie top (y1 = -24)     moitie bottom (y1 = 0)
   plafond 15  -9        -> REJETEE      15..39     -> dessinee
   sol    183  159..183  -> dessinee     183..207   -> REJETEE
 
@@ -25,6 +25,18 @@ face au CENTRE DU CANEVAS. Les deux moities recoivent donc automatiquement le
 bon y1, et l'objet parent comme son enfant portent le MEME y_pos — aucun
 decalage de +/-24 a ecrire, nulle part.
 
+LA POSE D'ATTENTE PART DANS SON PROPRE REPERTOIRE (`<moitie>-idle`). Elle est
+la seule que le gouger tienne immobile sur un decor qui defile d'un pixel a la
+fois, donc la seule a avoir besoin de sa variante pre-decalee — et `shifts` se
+declare par repertoire. Elle n'est PAS dupliquee : l'animation se sert de la
+meme image, le code eteignant la variante decalee par la parite de la position
+(voir gouger.Snap dans obj.asm).
+
+ATTENTION AU NUMEROTAGE : le suffixe des symboles suit l'ORDINAL de l'image
+dans son entree `<images>`, pas le nom du fichier. Sortir la pose 1 du
+repertoire principal y renumerote donc les quatre autres 0..3 — la table
+gouger.SetsXX porte la correspondance en clair.
+
 Usage : python3 tools/gen_gouger_halves.py   (depuis games/r-type)
 """
 import os
@@ -32,26 +44,27 @@ import sys
 from PIL import Image
 
 TRANSPARENT = 0
-HAUTEUR = 48
-MILIEU = HAUTEUR // 2
+HEIGHT = 48
+MIDDLE = HEIGHT // 2
 # meme ordre de variantes que gen_gouger_hit.py — gauche et droite sont
 # l'inverse de ce que le signe de vx laisse croire, c'est mesure.
 DIRECTIONS = (('top-left', 'tl'), ('top-right', 'tr'),
               ('bottom-left', 'bl'), ('bottom-right', 'br'))
 # la pose que la phase A montre en permanence — slot 1 du cycle arcade
-POSE_ATTENTE = '01.png'
+IDLE_POSE = '01.png'
+HALVES = ('top', 'bottom')
 
 
-def coupe(src, dst, garder):
-    """Ecrit src dans dst en effacant la moitie qui n'est pas `garder`."""
+def cut(src, dst, keep):
+    """Ecrit src dans dst en effacant la moitie qui n'est pas `keep`."""
     im = Image.open(src)
     if im.mode != 'P':
         sys.exit('%s n\'est pas une image indexee' % src)
     w, h = im.size
-    if (w, h) != (24, HAUTEUR):
-        sys.exit('%s fait %dx%d, attendu 24x%d' % (src, w, h, HAUTEUR))
+    if (w, h) != (24, HEIGHT):
+        sys.exit('%s fait %dx%d, attendu 24x%d' % (src, w, h, HEIGHT))
     px = bytearray(im.tobytes())
-    y0, y1 = (MILIEU, h) if garder == 'haut' else (0, MILIEU)
+    y0, y1 = (MIDDLE, h) if keep == 'top' else (0, MIDDLE)
     for y in range(y0, y1):                      # on efface l'AUTRE moitie
         px[y * w:(y + 1) * w] = bytes([TRANSPARENT]) * w
     out = Image.frombytes('P', im.size, bytes(px))
@@ -61,34 +74,27 @@ def coupe(src, dst, garder):
 
 
 def main():
-    racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    base = os.path.join(racine, 'src/enemies/gouger/images')
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.join(root, 'src/enemies/gouger/images')
     n = 0
-    for long, court in DIRECTIONS:
+    for long, short in DIRECTIONS:
         poses = sorted(f for f in os.listdir(os.path.join(base, long))
                        if f.endswith('.png'))
-        for moitie in ('haut', 'bas'):
+        for half in HALVES:
+            rank = 0
             for f in poses:
-                coupe(os.path.join(base, long, f),
-                      os.path.join(base, 'half', court, moitie, f), moitie)
+                if f == IDLE_POSE:
+                    dst = os.path.join(base, 'half', short,
+                                       half + '-idle', '00.png')
+                else:
+                    dst = os.path.join(base, 'half', short, half,
+                                       '%02d.png' % rank)
+                    rank += 1
+                cut(os.path.join(base, long, f), dst, half)
                 n += 1
-            coupe(os.path.join(base, 'hit', court, '00.png'),
-                  os.path.join(base, 'half', 'hit', court, moitie, '00.png'),
-                  moitie)
-            n += 1
-            # LA POSE D'ATTENTE, en double. C'est la meme image que la pose 1,
-            # mais elle est declaree a part pour porter shifts="0,1" : le gouger
-            # en attente est IMMOBILE sur le decor, qui defile d'un pixel a la
-            # fois. Sans variante pre-decalee, le moteur replie sur la routine
-            # non decalee et corrige la position d'un pixel (BSP_parityFallback)
-            # — le gouger tremble d'un pixel sur le decor, une trame sur deux.
-            # Les poses de l'ANIMATION restent non decalees : melanger des poses
-            # exactes et des poses calees sur la grille paire ferait scintiller
-            # le cycle de reptation. C'est pour ca que la pose d'attente est une
-            # image separee et pas un attribut de plus sur la pose 1.
-            coupe(os.path.join(base, long, POSE_ATTENTE),
-                  os.path.join(base, 'half', 'idle', court, moitie, '00.png'),
-                  moitie)
+            cut(os.path.join(base, 'hit', short, '00.png'),
+                os.path.join(base, 'half', 'hit', short, half, '00.png'),
+                half)
             n += 1
     print('%d demi-images ecrites sous images/half/' % n)
 
