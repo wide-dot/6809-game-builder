@@ -51,6 +51,32 @@ Fichiers compagnons de ce skill — les lire avant d'écrire une ligne :
    C'est l'ancre — l'implémentation le remplace mais son en-tête s'enrichit
    (voir Conventions).
 
+## D'abord chercher : l'essentiel des données arcade est DÉJÀ dans l'arbre
+
+Avant toute extraction, chercher l'adresse arcade de la donnée dans ce qui est
+déjà importé. Deux fichiers couvrent presque tout, et les deux nomment leurs
+étiquettes **par l'adresse arcade** — donc un `grep` sur l'adresse répond :
+
+| Donnée | Où elle est déjà | Étiquette |
+|---|---|---|
+| scripts de déplacement `moveByScript` | `src/common/fx/animation/script.asm` (~5 800 lignes : **tout le pool arcade**) | `ref_1A434` |
+| tables de presets (Y, XY, tir, vélocité) | `src/common/lib/presets/` | `18db0_preset-y.asm` |
+
+> **Pour un ennemi qui bouge par script, il n'y a RIEN à extraire.** Ses
+> segments sont dans le pool ; il ne manque que ses lignes dans
+> `src/common/fx/animation/index.asm` — la LUT que `moveByScript.register`
+> épingle une fois par stage — et son équate d'offset dans `index.equ`.
+> Un ennemi à N variantes prend N entrées **contiguës**, et son init fait
+> `base + variante*2` (slither, cytron) ou `base + orientation*6 + créneau*2`
+> (zoid).
+
+Vécu le 26/08/2026 : j'ai commencé à ré-extraire de `maincpu.bin` les 43
+segments de vol de l'œuf de zoid — 1 001 octets déjà dans l'arbre. Le
+commentaire du slither dans `index.equ` le disait pourtant déjà : « les
+scripts eux-mêmes étaient DÉJÀ dans le pool commun, seule la table d'index
+leur manquait ». Chercher coûte trente secondes, ré-extraire coûte une heure
+et introduit un doublon qui divergera.
+
 ## Quand l'export amont manque : faire évoluer l'outil, pas copier à la main
 
 `bridge_data_peek`/`bridge_hexdump` servent à INSPECTER une table arcade.
@@ -153,6 +179,10 @@ sous-dossier ou `_shared/`.
 - [ ] **api.asm** : n'y toucher QUE si l'ennemi franchit une frontière
   moteur↔stage nouvelle — chaque nom coûte 4 octets de link data et une
   recherche linéaire au chargement.
+- [ ] **Scripts de déplacement** : si l'ennemi bouge par `moveByScript`, ses
+  segments sont déjà dans `src/common/fx/animation/script.asm` — ajouter
+  seulement ses entrées dans `index.asm` (contiguës) et son équate dans
+  `index.equ`. Ne rien extraire.
 - [ ] **Ancrage au scroll** : `bridge_xrefs_to 0x4000_2ed0` recoupé avec
   toutes les entrées de tick. Lit `0x2ED0` → repère playfield et AUCUN code de
   scroll ; ne le lit pas → repère écran, ou compensation explicite.

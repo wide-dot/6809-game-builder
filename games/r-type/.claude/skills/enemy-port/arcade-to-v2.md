@@ -152,7 +152,9 @@ donc le lire AVANT que quoi que ce soit n'écrase ce champ). Il vaut de 0 à
 
 Compenser ou non se décide par **ce que ces trames auraient déplacé** :
 
-- **Objet piloté par un script de déplacement** (bug, slither) : il faut
+- **Objet piloté par un script de déplacement** (bug, slither) — et ses
+  segments sont DÉJÀ dans `src/common/fx/animation/script.asm`, seules ses
+  lignes d'index manquent, cf. la skill : il faut
   rattraper, et le rattrapage est le script lui-même — `bugmgr.Init` range le
   retard dans un opérande auto-modifié puis appelle `moveByScript.runByB`. À
   la vitesse d'un script, trois trames font plusieurs pixels.
