@@ -2963,14 +2963,20 @@
                 <!-- Les sprites du BROOD. Huit poses de 24x48, et la table
                      arcade dont elles sortent est ENTRELACEE par montage :
                      l'index vaut `trame x 2 + orientation`, ce dont le code
-                     depend. Une seule entree, donc set_brood_N = N.png. -->
+                     depend. Une seule entree, donc set_brood_N = N.png.
+                     Le brood est FIXE AU DECOR : les variantes pre-decalees
+                     (shifts) le calent au pixel sur le scroll, et la place
+                     qu'elles coutent est payee par l'amputation des lignes
+                     de base ENFOUIES dans la paroi (images/embedded/, genere
+                     par tools/gen_brood_embedded.py — open/ reste la
+                     reference arcade intouchee). -->
                 <file name="stage2.cast.imgBrood" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast-imgbrood.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp file="stage2.cast.imgBrood" gendir="gen/enemies/stage2-cast-imgbrood"
                                  gensource="gen/enemies/stage2-cast-imgbrood/includes.asm"
                                  genindex="gen/enemies/stage2-cast-imgbrood/index.asm">
-                            <images dir="src/enemies/brood/images/open" names="brood"/>
+                            <images dir="src/enemies/brood/images/embedded" names="brood" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
