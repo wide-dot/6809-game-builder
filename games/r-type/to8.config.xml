@@ -3017,7 +3017,7 @@
                      label ne franchit la frontiere hormis zoid.Object, que
                      les index d'objets pointent avec SA page. -->
                 <file name="stage2.cast.zoid" linkdata="LINK" arena="stage2.foes">
-                    <lwasm>
+                    <lwasm gensource="gen/stages/02/stage02-cast-zoid.asm">
                         <asm filename="src/stages/02/cast-zoid.unit.asm"/>
                     </lwasm>
                 </file>
