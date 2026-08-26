@@ -120,6 +120,26 @@ gouger_hitbox_x	equ 7
 gouger_hitbox_y	equ 14
 gouger_hitdamage	equ 10
 
+; Brood (stage 2). Boites arcade 1000:3846, DIFFERENTES par orientation et
+; ASYMETRIQUES : plafond x -24..+24 y -16..+32, sol x -24..+24 y -32..+16.
+; L'axe Y arcade monte, donc le corps est du cote de la paroi dans les deux
+; cas. Demi-etendues a l'echelle du fichier : 24 x 0,375 = 9 en X,
+; 24 x 0,75 = 18 en Y. Le centre, lui, est decale de 8 arcade = 6 v2, vers le
+; haut au plafond et vers le bas au sol — c'est le code objet qui le pose sur
+; cy, notre AABB n'ayant pas d'excentrage.
+; 40 PV (0x28), score $8700.
+brood_hitbox_x		equ 9
+brood_hitbox_y		equ 18
+brood_hitdamage		equ 40
+brood_cy_offset		equ 6
+
+; Zoid (stage 2), le parasite que le brood crache. Boite 1000:3f6e.
+; 4 PV a l'eclosion (0x04) ; l'oeuf et l'eclosion sont invulnerables — l'oeuf
+; eclot au premier coup au lieu d'encaisser, l'eclosion jette le resultat.
+zoid_hitbox_x		equ 4
+zoid_hitbox_y		equ 8
+zoid_hitdamage		equ 4
+
 ; Wick (stage 2). Boite arcade 1000:3c12 : f8 ff 08 00 des deux cotes, soit
 ; -8..+8 — un RAYON de 8. A l'echelle du fichier : 8 x 0,375 = 3 en X et
 ; 8 x 0,75 = 6 en Y. Il meurt au premier coup, d'ou 1 PV ; son score est le
