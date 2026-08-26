@@ -20,6 +20,40 @@ terrainCollision.loadMap
         stb   terrainCollision.bgFlag  ; 0 = background, 2 = foreground (boss-follow offset)
         ldy   b,x                      ; set ptr to map in x
 
+ IFDEF BG_OWN_CAMERA
+        ; V2-ADDITION (2026-08-26) : le plan 0 de ce stage a SA camera, sur les
+        ; DEUX axes — la couche battleship du stage 3. On lit alors le fond par
+        ; les registres de cette camera au lieu de ceux du scroll d'avant-plan :
+        ; l'exacte symetrie du chemin normal, et la formulation de l'arcade
+        ; (probe_foreground_and_background_tiles 40:1eb5, qui replie
+        ; x/y_background_camera avec leur reste sous-tuile).
+        ; Les restes bgSubX/bgSubY entrent dans l'index AVANT la quantification
+        ; des tables — d'ou l'exactitude au pixel sans une division.
+        ; Doc : doc/bship-collision-plan.md
+        tstb                           ; B = 0 (fond) ou 2 (avant-plan)
+        bne   terrainCollision.loadMap.fg
+        ldx   #terrainCollision.yOffset
+        ldd   terrainCollision.sensor.y
+        addb  terrainCollision.bgSubY  ; + le reste sous-ligne de la camera
+        adca  #0
+        _asld
+        ldd   d,x
+        addd  terrainCollision.bgRowBase ; + sa base de ligne (rembourrage compris)
+        leay  d,y
+
+        ldx   #terrainCollision.xOffset
+        ldd   terrainCollision.sensor.x
+        subd  glb_camera_x_pos         ; -> x ecran, le repere de la couche
+        addb  terrainCollision.bgSubX  ; + le reste sous-tuile de la camera
+        abx
+        lda   ,x
+        adda  terrainCollision.bgColBase
+        ldx   #terrainCollision.xMask
+        abx
+        ldb   ,x
+        rts                            ; pas de decalage boss ici : on EST la camera
+terrainCollision.loadMap.fg
+ ENDC
         ldx   #terrainCollision.yOffset
         ldd   terrainCollision.sensor.y
         _asld
@@ -122,6 +156,12 @@ terrainCollision.checkXaxisRight
         addd  #0
 @tileBlockOffset equ *-2
         addd  #8 ; screen border offset
+ IFDEF BG_OWN_CAMERA
+        tst   terrainCollision.bgFlag   ; plan 0 ? le resultat est dans le
+        bne   >                         ; repere de la couche, pas dans le monde
+        addd  terrainCollision.bgWorldAdj
+!
+ ENDC
         cmpd  #map_width
         bls   >
 @noImpact
@@ -195,6 +235,12 @@ terrainCollision.checkXaxisLeft
         addd  #0
 @tileBlockOffset equ *-2
         addd  #8+3-1 ; screen border offset + tile width -1
+ IFDEF BG_OWN_CAMERA
+        tst   terrainCollision.bgFlag   ; idem a gauche
+        bne   >
+        addd  terrainCollision.bgWorldAdj
+!
+ ENDC
         bra   >
 @noImpact
         ldd   #0
@@ -232,6 +278,11 @@ terrainCollision.yOffset equ *-22 ; minus vertical viewport position * 2
         fdb   27*lvlMapWidth,27*lvlMapWidth,27*lvlMapWidth,27*lvlMapWidth,27*lvlMapWidth,27*lvlMapWidth
         fdb   28*lvlMapWidth,28*lvlMapWidth,28*lvlMapWidth,28*lvlMapWidth,28*lvlMapWidth,28*lvlMapWidth
         fdb   29*lvlMapWidth,29*lvlMapWidth,29*lvlMapWidth,29*lvlMapWidth,29*lvlMapWidth,29*lvlMapWidth
+ IFDEF BG_OWN_CAMERA
+        ; le reste sous-ligne de la camera de fond (0..5) s'ajoute a l'index
+        ; AVANT la quantification : la derniere ligne deborde d'autant
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+ ENDC
         
 terrainCollision.xOffset equ *-8 ; minus horizontal viewport position
         fcb   0,0,0 ; x_pos 0
@@ -290,6 +341,16 @@ terrainCollision.xOffset equ *-8 ; minus horizontal viewport position
         fcb   6,6,6
         fcb   6,6,6
         fcb   6,6,6
+ IFDEF BG_OWN_CAMERA
+        fcb   7,7,7 ; x_pos 168 — le reste sous-tuile de la camera de fond
+        fcb   7,7,7
+        fcb   7,7,7
+        fcb   7,7,7
+        fcb   7,7,7
+        fcb   7,7,7
+        fcb   7,7,7
+        fcb   7,7,7
+ ENDC
 
 terrainCollision.xMask equ *-8 ; minus horizontal viewport position
         fcb   $80,$80,$80 ; x_pos 0
@@ -348,6 +409,16 @@ terrainCollision.xMask equ *-8 ; minus horizontal viewport position
         fcb   $04,$04,$04
         fcb   $02,$02,$02
         fcb   $01,$01,$01
+ IFDEF BG_OWN_CAMERA
+        fcb   $80,$80,$80 ; x_pos 168 — meme bloc que xOffset ci-dessus
+        fcb   $40,$40,$40
+        fcb   $20,$20,$20
+        fcb   $10,$10,$10
+        fcb   $08,$08,$08
+        fcb   $04,$04,$04
+        fcb   $02,$02,$02
+        fcb   $01,$01,$01
+ ENDC
 
 terrainCollision.updateByte
         ldy   #terrainCollision.maps

@@ -202,6 +202,12 @@ checkpoint.clearData EXTERNAL
         _api terrainCollision.bgByteOff
         _api terrainCollision.bgBitShift
         _api terrainCollision.bgColTmp
+        ; le plan de fond a camera propre (stage 3, couche battleship)
+        _api terrainCollision.bgColBase
+        _api terrainCollision.bgSubX
+        _api terrainCollision.bgRowBase
+        _api terrainCollision.bgSubY
+        _api terrainCollision.bgWorldAdj
 
         ; --- sprites : ce qu'un objet de jeu appelle pour se montrer ---
         ; Le calcul d'adresse ecran du gestionnaire de queue de dobkeratops.
