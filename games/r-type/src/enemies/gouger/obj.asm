@@ -449,18 +449,22 @@ gouger.Frame
 ; camera+160) : ce n'est pas une coincidence, les deux decrivent le meme cadre.
 ; Les trois phases la partagent, comme en arcade — et comme en arcade elle ne
 ; s'evalue que si l'objet n'est ni mort ni touche cette trame.
+; UNE comparaison NON SIGNEE par axe, et elle prend les deux bords : une
+; difference negative devient un tres grand non signe, donc superieure a la
+; borne haute. C'est le geste du moteur lui-meme (BuildSprites,
+; @screencoordinates). Et surtout : ne PAS tester le signe apres le `stb`, qui
+; pose N sur l'OCTET stocke — c'est ce qui a fait mourir tous les gougers a la
+; naissance le 26/08/2026, l'abscisse 158 ayant son bit 7 arme.
 @cadre  ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
-        bmi   @part                    ; sorti par la gauche
         cmpd  #159
-        bgt   @part                    ; ... ou par la droite
+        bhi   @part                    ; sorti par la gauche ou par la droite
         ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
         addd  #6
-        bmi   @part                    ; sorti par le haut
         cmpd  #204+6
-        bgt   @part                    ; ... ou par le bas
+        bhi   @part                    ; sorti par le haut ou par le bas
         orcc  #$04                     ; Z = 1 : il reste
         rts
 @mort   ldb   #gouger_scoreIdx
