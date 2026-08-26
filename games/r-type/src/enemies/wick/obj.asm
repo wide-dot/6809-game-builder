@@ -87,14 +87,20 @@
 ; rendue), le delai de pique, la phase d'ondulation, le compteur d'animation,
 ; et bien sur les trois vitesses.
 ;
-; A LA DIFFICULTE 0, celle du reste du cast, LA TIMELINE NE DEPLACE QUE
-; L'ANCRE Y. Le plancher de difficulte est recharge a chaque trame AVANT les
-; mutations : les valeurs qu'il pose (periode 36, salve 3) sont exactement
-; celles que le script ecrit a t=16 et t=64, donc ces deux mutations sont
-; effacees des la trame suivante et n'ont aucun effet. Meme sort pour la
-; periode $40 et la salve 4 posees par le constructeur : elles vivent UNE
-; trame. Ce n'est pas une simplification de notre part, c'est ce que la
-; machine fait.
+; LA DIFFICULTE MODULE QUATRE CHOSES, et les quatre sont portees :
+;   . le plancher de periode et de salve (1000:3b12) : 36/3, 24/3, 16/2, 8/1
+;   . la vitesse de derive (1000:3b2a) : -1,5 a -4 px/trame arcade
+;   . la table de vitesses du pique (1000:3b22 dispatche vers quatre tables de
+;     seize directions) : magnitude 2,6 a 3,6
+;   . rien sur les PV — le wick meurt au premier coup a toute difficulte.
+; Le plancher est recharge a CHAQUE TRAME, avant les mutations du script.
+; Consequence a retenir : une entree de script qui ecrit la valeur du plancher
+; n'a aucun effet. A la difficulte 0, c'est le cas des deux entrees de periode
+; et de salve — la timeline n'y deplace donc que l'ancre Y. Aux difficultes
+; superieures le plancher est plus serre et ces memes entrees le RELACHENT, le
+; temps d'une trame. Meme sort pour la periode $40 et la salve 4 posees par le
+; constructeur : elles vivent UNE trame, seul son compte a rebours tient.
+; Ce n'est pas une simplification, c'est ce que la machine fait.
 ;
 ; CE QUI DEMANDERA UN ARBITRAGE
 ; - le pique est un second chantier : il demande la table de directions
@@ -138,8 +144,7 @@ wick.LIFE       equ $0600              ; 1536 trames de jeu
 wick.VX         equ -144               ; -1,5 px/trame arcade a la difficulte 0
 wick.VTRACK     equ 12                 ; +/-0,0625 arcade : le rattrapage lent
 wick.VOSC       equ 48                 ; +/-0,25 arcade : le creneau
-wick.PERIOD     equ 36                 ; plancher de difficulte 0
-wick.BURST      equ 3                  ; idem
+wick.CTORC      equ $40                ; le compte a rebours pose par le ctor
 
 ;*******************************************************************************
 ; L'EMETTEUR — invisible, sans boite, et surtout SANS ANCRAGE AU DECOR : son
@@ -168,7 +173,11 @@ wick.Init
         ; le constructeur arcade pose periode $40 et salve 4 — elles ne vivent
         ; qu'une trame, le plancher de difficulte les ecrase des le premier
         ; tour. On pose donc directement le plancher, c'est le meme resultat.
-        ldd   #wick.PERIOD
+        ; La periode et la salve du CONSTRUCTEUR arcade ne vivent qu'une trame :
+        ; wick.Script recharge le plancher de difficulte des le premier tour.
+        ; Le COMPTE A REBOURS, lui, tient — c'est lui qui fixe le delai avant
+        ; la premiere ponte.
+        ldd   #wick.CTORC
         std   wick.ePeriod,u
         ; LE RETARD DE WAVE de l'emetteur lui-meme. Il n'a pas de vitesse
         ; propre, mais il porte une HORLOGE : sans cette avance, toute sa nuee
@@ -177,10 +186,10 @@ wick.Init
         ldb   wave_frame_drop,u
         clra
         pshs  d
-        ldd   #wick.PERIOD
+        ldd   #wick.CTORC
         subd  ,s++
         std   wick.eEmitC,u
-        ldd   #wick.BURST
+        ldd   #4                       ; la salve du ctor, ecrasee elle aussi
         std   wick.eBurst,u
         std   wick.eBurstC,u
         ldd   #297-(304*3)/4           ; ancre $0130 convertie
@@ -240,9 +249,21 @@ wick.Script
         ldd   wick.eTick,u
         addd  wick.drop
         std   wick.eTick,u
-        ldd   #wick.PERIOD             ; le plancher, a chaque trame
+        ; LE PLANCHER DE DIFFICULTE, recharge a chaque trame AVANT les mutations
+        ; du script — c'est l'ordre arcade, et il a une consequence : une entree
+        ; de script qui ecrit la valeur du plancher n'a aucun effet. A la
+        ; difficulte 0 c'est le cas des deux entrees de periode et de salve ;
+        ; aux difficultes superieures le plancher est plus serre et ces
+        ; mutations le RELACHENT, le temps d'une trame.
+        ldb   globals.difficulty
+        andb  #3
+        aslb
+        aslb
+        ldx   #wick.DiffParams
+        abx
+        ldd   ,x
         std   wick.ePeriod,u
-        ldd   #wick.BURST
+        ldd   2,x
         std   wick.eBurst,u
 @next   ldx   wick.eScript,u
         ldd   wick.eTick,u
@@ -411,7 +432,12 @@ wick.DriftBody
         lda   wick.uAABB+AABB.p,u
         lbeq  wick.Boom
         ; --- X : la vitesse propre, le defilement etant implicite ----------
-        ldd   #wick.VX
+        ldb   globals.difficulty       ; la derive s'accelere avec la difficulte
+        andb  #3
+        aslb
+        ldx   #wick.DriftVx
+        abx
+        ldd   ,x
         leax  x_pos,u
         jsr   wick.AddPos
         ; --- Y, premiere composante : le rattrapage lent ------------------
@@ -501,7 +527,12 @@ wick.Engage
         ; aslb de trop lisait cinquante-six octets au-dela et rendait des
         ; pointeurs de la table suivante comme vitesses.
         ldx   #wick.AimVel
-        abx
+        abx                            ; + la direction : quatre octets chacune
+        lda   globals.difficulty
+        anda  #3
+        ldb   #64                      ; ... et soixante-quatre par difficulte
+        mul
+        leax  d,x
         ldd   ,x
         std   wick.aVx,u
         ldd   2,x
@@ -614,23 +645,88 @@ wick.Poses
 ; Les seize directions du pique. Vitesses arcade x 0,375 en X, x 0,75 en Y —
 ; et l'axe Y s'inverse, d'ou le signe. Direction 0 = vers le haut, 16 = a
 ; droite, 32 = en bas, 48 = a gauche.
+; Le plancher par difficulte (1000:3b12) : periode d'emission, taille de salve.
+wick.DiffParams
+        fdb   36,3
+        fdb   24,3
+        fdb   16,2
+        fdb   8,1
+; La vitesse de derive par difficulte (1000:3b2a), 8.8 : -1,5 a -4 px/trame
+; arcade, x 0,375.
+wick.DriftVx
+        fdb   -144,-288,-336,-384
+; Les seize directions du pique, QUATRE tables — une par difficulte
+; (1000:3b22 dispatche vers 9010, 9050, 9090, 90D0). La magnitude passe de
+; 2,6 a 3,6 px/trame arcade de la plus facile a la plus dure.
 wick.AimVel
-        fdb       0,-432            ; dir  0
-        fdb      84,-408            ; dir  4
-        fdb     168,-336            ; dir  8
-        fdb     222,-192            ; dir 12
-        fdb     252,0            ; dir 16
-        fdb     222,192            ; dir 20
-        fdb     168,336            ; dir 24
-        fdb      84,408            ; dir 28
-        fdb       0,432            ; dir 32
-        fdb     -84,408            ; dir 36
-        fdb    -168,336            ; dir 40
-        fdb    -222,192            ; dir 44
-        fdb    -252,0            ; dir 48
-        fdb    -222,-192            ; dir 52
-        fdb    -168,-336            ; dir 56
-        fdb     -84,-408            ; dir 60
+; --- difficulte 0 ---
+        fdb   0,-432          ; dir  0
+        fdb   84,-408         ; dir  4
+        fdb   168,-336        ; dir  8
+        fdb   222,-192        ; dir 12
+        fdb   252,0           ; dir 16
+        fdb   222,192         ; dir 20
+        fdb   168,336         ; dir 24
+        fdb   84,408          ; dir 28
+        fdb   0,432           ; dir 32
+        fdb   -84,408         ; dir 36
+        fdb   -168,336        ; dir 40
+        fdb   -222,192        ; dir 44
+        fdb   -252,0          ; dir 48
+        fdb   -222,-192       ; dir 52
+        fdb   -168,-336       ; dir 56
+        fdb   -84,-408        ; dir 60
+; --- difficulte 1 ---
+        fdb   0,-492          ; dir  0
+        fdb   96,-468         ; dir  4
+        fdb   186,-372        ; dir  8
+        fdb   252,-216        ; dir 12
+        fdb   288,0           ; dir 16
+        fdb   252,216         ; dir 20
+        fdb   186,372         ; dir 24
+        fdb   96,468          ; dir 28
+        fdb   0,492           ; dir 32
+        fdb   -96,468         ; dir 36
+        fdb   -186,372        ; dir 40
+        fdb   -252,216        ; dir 44
+        fdb   -288,0          ; dir 48
+        fdb   -252,-216       ; dir 52
+        fdb   -186,-372       ; dir 56
+        fdb   -96,-468        ; dir 60
+; --- difficulte 2 ---
+        fdb   0,-552          ; dir  0
+        fdb   114,-528        ; dir  4
+        fdb   210,-420        ; dir  8
+        fdb   288,-240        ; dir 12
+        fdb   318,0           ; dir 16
+        fdb   288,240         ; dir 20
+        fdb   210,420         ; dir 24
+        fdb   114,528         ; dir 28
+        fdb   0,552           ; dir 32
+        fdb   -114,528        ; dir 36
+        fdb   -210,420        ; dir 40
+        fdb   -288,240        ; dir 44
+        fdb   -318,0          ; dir 48
+        fdb   -288,-240       ; dir 52
+        fdb   -210,-420       ; dir 56
+        fdb   -114,-528       ; dir 60
+; --- difficulte 3 ---
+        fdb   0,-600          ; dir  0
+        fdb   120,-564        ; dir  4
+        fdb   222,-456        ; dir  8
+        fdb   312,-264        ; dir 12
+        fdb   342,0           ; dir 16
+        fdb   312,264         ; dir 20
+        fdb   222,456         ; dir 24
+        fdb   120,564         ; dir 28
+        fdb   0,600           ; dir 32
+        fdb   -120,564        ; dir 36
+        fdb   -222,456        ; dir 40
+        fdb   -312,264        ; dir 44
+        fdb   -342,0          ; dir 48
+        fdb   -312,-264       ; dir 52
+        fdb   -222,-456       ; dir 56
+        fdb   -120,-564       ; dir 60
 ; La table arcade 1000:3b32 ne distingue que HUIT orientations : elle fait
 ; pointer trois directions voisines sur la meme base de poses. Recoupement
 ; heureux : la direction 48, vers la gauche, tombe sur 16..19 — l'art de la
