@@ -59,3 +59,9 @@ ref_1930A	fdb   ref_19CE4 ; bug
                 fdb   ref_1A308 ; slither variante 15
                 fdb   ref_1A3E6 ; slither, vol libre du cadavre, pose < 9
                 fdb   ref_1A380 ; slither, vol libre du cadavre, pose >= 9
+                fdb   ref_1A434 ; zoid, ponte 1 d'un brood de PLAFOND
+                fdb   ref_1A45A ; zoid, ponte 2 de plafond
+                fdb   ref_1A470 ; zoid, ponte 3 de plafond (difficulte > 0)
+                fdb   ref_1A484 ; zoid, ponte 1 d'un brood de SOL
+                fdb   ref_1A4B8 ; zoid, ponte 2 de sol
+                fdb   ref_1A4CE ; zoid, ponte 3 de sol (difficulte > 0)

@@ -44,5 +44,13 @@ anim_slither  equ   80 ; slither, base des seize variantes (stage 5)
 ; manquaient. Contigus et dans CET ordre : l'init du cadavre fait
 ; base + 2 si la pose est haute.
 anim_slither_corpse equ 112 ; slither, vol libre du cadavre (stage 5)
+; L'oeuf de zoid ne vole pas droit : le brood choisit sa liste de segments par
+; (orientation, creneau de ponte), d'ou SIX entrees contigues — les trois
+; premieres pour un brood de plafond, les trois suivantes pour un de sol.
+; L'init de l'oeuf fait base + orientation*6 + creneau*2.
+; Les scripts etaient DEJA dans le pool commun (script.asm, ref_1A434 et
+; suivants) : seules ces six lignes d'index manquaient. J'avais commence a
+; les re-extraire de la ROM — inutile, tout le pool arcade est importe.
+anim_zoid     equ 114 ; zoid, base des six listes de ponte (stage 2)
 
  ENDC
