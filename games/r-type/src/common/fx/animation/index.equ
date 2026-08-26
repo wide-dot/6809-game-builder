@@ -51,6 +51,8 @@ anim_slither_corpse equ 112 ; slither, vol libre du cadavre (stage 5)
 ; Les scripts etaient DEJA dans le pool commun (script.asm, ref_1A434 et
 ; suivants) : seules ces six lignes d'index manquaient. J'avais commence a
 ; les re-extraire de la ROM — inutile, tout le pool arcade est importe.
-anim_zoid     equ 114 ; zoid, base des six listes de ponte (stage 2)
+; (114 d'abord — faux : le cadavre du slither occupe 112 ET 114, ses DEUX
+; entrees comptent. La base du zoid est le rang suivant.)
+anim_zoid     equ 116 ; zoid, base des six listes de ponte (stage 2)
 
  ENDC

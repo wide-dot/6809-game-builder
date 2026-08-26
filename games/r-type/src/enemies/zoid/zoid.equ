@@ -1,0 +1,13 @@
+; L'etat du zoid dans son OST — partage entre son implementation et la ponte
+; du brood (brood.Egg seme deux graines ici avant le premier tick). Le zoid
+; vit dans SON unite (stage2.cast.zoid) : la page du cast etait pleine, et il
+; n'a aucun couplage de label avec les autres — seules ces equates franchissent
+; la frontiere, et une equate ne se lie pas, elle s'assemble.
+zoid.AABB       equ ext_variables      ; 0..8  la boite
+zoid.lock       equ ext_variables+9    ; 9     verrou : le PROCHAIN cap vise le joueur
+zoid.freeze     equ ext_variables+10   ; 10    pose figee pendant le recul (+0x38)
+zoid.count      equ ext_variables+11   ; 11    compteur de phase — la ponte y laisse
+                                       ;       l'index de script pour l'init
+zoid.anim       equ ext_variables+12   ; 12    accumulateur de pose — la ponte y
+                                       ;       laisse le retard de naissance
+zoid.lastP      equ ext_variables+13   ; 13    dernier potentiel vu (detection de coup)

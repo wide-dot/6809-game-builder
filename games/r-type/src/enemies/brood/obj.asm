@@ -279,9 +279,45 @@ brood.Hatch
         bra   @loop
 @rts    rts
 
-; Le ZOID n'est pas encore porte — chantier suivant. Ses trois phases, son
-; rodage et ses images attendent dans src/enemies/zoid/.
+; La ponte elle-meme (create_zoid 40:8058, moins le choix de creneau et la
+; garde de difficulte, deja faits par brood.Hatch). A l'entree : D = le seuil
+; franchi, X pointe APRES lui dans brood.Slots, U = le brood.
+; L'oeuf nait a la position du parent (80c2/80c8) et recoit deux graines que
+; l'init du zoid consommera : l'index de sa liste de segments — base +
+; orientation x 6 + creneau x 2, les six listes etant contigues a anim_zoid —
+; et son RETARD de ponte (seuil - compteur) : chaque oeuf d'une meme gueule
+; rejoue ses propres trames perdues, comme les wicks d'une rafale.
+; Abandonne ici : le son de ponte 0x5D et les palettes d'objet (80ce..80de).
 brood.Egg
+        subd  brood.count,u
+        pshs  b                        ; le retard, <= frame-drop, tient sur un octet
+        tfr   x,d
+        subd  #brood.Slots+2
+        andb  #%00000110               ; B = creneau x 2 (X avait avance de 2)
+        pshs  b
+        lda   brood.orient,u
+        ldb   #6
+        mul                            ; B = orientation x 6
+        addb  ,s+
+        addb  #anim_zoid
+        pshs  b                        ; l'index, en attendant l'allocation
+        jsr   LoadObject_x
+        beq   @full
+        lda   #ObjID_zoid
+        sta   id,x
+        clr   routine,x
+        puls  b
+        stb   zoid.count,x             ; graine 1 : l'index de script
+        puls  b
+        stb   zoid.anim,x              ; graine 2 : le retard de naissance
+        ldd   x_pos,u                  ; 80c2 : il nait a la gueule du parent
+        std   x_pos,x
+        clr   x_pos+2,x
+        ldd   y_pos,u
+        std   y_pos,x
+        clr   y_pos+2,x
+        rts
+@full   leas  2,s
         rts
 
 brood.Slots

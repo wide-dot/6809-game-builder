@@ -61,8 +61,12 @@ ObjID_gouger_br_bottom equ 50
 * wick qu'on voit est son enfant et porte donc son propre identifiant — c'est
 * lui qui designe la page d'images, l'emetteur n'en ayant aucune.
 ObjID_wick_unit equ 51
+* Le parasite pondu par le brood. Enfant d'execution (jamais dans une wave) :
+* ses trois tables d'images vivent dans leur propre direntry, que
+* Img_Page_Index designe par cet identifiant.
+ObjID_zoid equ 52
 
-objid.count equ 51
+objid.count equ 52
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

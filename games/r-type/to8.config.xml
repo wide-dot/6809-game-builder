@@ -2993,6 +2993,35 @@
                     </lwasm>
                 </file>
 
+                <!-- Les sprites du ZOID. Trois phases de quatre poses de
+                     12x24, dans l'ordre des recettes arcade (oeuf 1000:3f26,
+                     eclosion 3f3e, parasite 3f56) : trois repertoires, un
+                     prefixe par phase, set_<prefixe>_N = N.png — c'est ce
+                     dont zoid/obj.asm depend. Enfant d'execution du brood,
+                     il porte son propre identifiant d'images (ObjID_zoid). -->
+                <file name="stage2.cast.imgZoid" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/enemies/stage2-cast-imgzoid.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage2.cast.imgZoid" gendir="gen/enemies/stage2-cast-imgzoid"
+                                 gensource="gen/enemies/stage2-cast-imgzoid/includes.asm"
+                                 genindex="gen/enemies/stage2-cast-imgzoid/index.asm">
+                            <images dir="src/enemies/zoid/images/egg" names="zoid_egg"/>
+                            <images dir="src/enemies/zoid/images/hatch" names="zoid_hatch"/>
+                            <images dir="src/enemies/zoid/images/zoid" names="zoid"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Le code du ZOID, dans son propre direntry : la page du
+                     cast est pleine (17032 > 16384 en l'y ajoutant). Aucun
+                     label ne franchit la frontiere hormis zoid.Object, que
+                     les index d'objets pointent avec SA page. -->
+                <file name="stage2.cast.zoid" linkdata="LINK" arena="stage2.foes">
+                    <lwasm>
+                        <asm filename="src/stages/02/cast-zoid.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <file name="stage2.cast" linkdata="LINK" arena="stage2.foes">
                     <lwasm gensource="gen/enemies/stage2-cast.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3047,6 +3076,8 @@
                     <load name="stage2.cast"/>
                     <load name="stage2.cast.imgBrood"/>
                     <load name="stage2.cast.imgWick"/>
+                    <load name="stage2.cast.imgZoid"/>
+                    <load name="stage2.cast.zoid"/>
                     <load name="stage2.cast.imgGougerTLtop"/>
                     <load name="stage2.cast.imgGougerTLbottom"/>
                     <load name="stage2.cast.imgGougerTRtop"/>

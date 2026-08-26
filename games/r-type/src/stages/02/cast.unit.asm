@@ -188,6 +188,9 @@ stage2.cast.stub
 
         INCLUDE "src/enemies/gouger/obj.asm"
         INCLUDE "src/enemies/wick/obj.asm"
+        ; l'etat du zoid — son code vit dans cast-zoid.unit.asm (page pleine),
+        ; mais la ponte du brood seme deux graines dans ces champs
+        INCLUDE "src/enemies/zoid/zoid.equ"
         INCLUDE "src/enemies/brood/obj.asm"
         INCLUDE "src/enemies/outslay/obj.asm"
         INCLUDE "src/enemies/outslay/shot.asm"
