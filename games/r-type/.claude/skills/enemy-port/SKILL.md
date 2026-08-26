@@ -91,10 +91,12 @@ lisent l'état d'un autre (ex. outslay lit le mot d'état de gomander).
 > (`ADD [BP+4],[0x2ED0]`), chez nous il faut du code pour NE PAS le suivre.
 > Absence de code veut donc dire l'inverse d'un moteur à l'autre, et recopier
 > un tick « tel quel » produit le mauvais ancrage.
-> Le test est mécanique : `bridge_xrefs_to 0x4000_2ed0`, croisé avec **toutes**
-> les entrées de tick de l'ennemi — un objet peut changer d'ancrage selon sa
-> phase. Détail et paire d'exemples (gouger ancré au décor, outslay ancré à
-> l'écran) dans la table.
+> Le test est mécanique, et en DEUX temps : `bridge_xrefs_to 0x4000_2ed0` pour
+> dégrossir, puis la lecture des OCTETS de chaque tick — la liste d'xrefs n'est
+> pas exhaustive (mesuré : `run_wick_aim_attack` lit `0x2ED0` et n'y figure
+> pas). Chercher `A1 D0 2E`, dans **toutes** les entrées de tick : un objet
+> peut changer d'ancrage selon sa phase. Détail et paire d'exemples (gouger
+> ancré au décor, outslay ancré à l'écran) dans la table.
 
 ### 2. Traduire
 Appliquer [arcade-to-v2.md](arcade-to-v2.md) : chaque idiome arcade y a son
