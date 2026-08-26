@@ -129,8 +129,12 @@
 ;       et le code eteint la variante par la parite. Voir gouger.Snap.
 ;       La collision, la mort et le recul sont deja actifs dans cette phase,
 ;       ainsi que la fenetre de visibilite (voir gouger.Frame). Il nait a
-;       166, juste a droite du cadre : DANS la fenetre, qui s'arrete a 167 —
-;       quelques pixels plus loin et il se retirait a la naissance.
+;       150 dans le cadre — l'abscisse arcade $02D0 ramenee a l'echelle depuis
+;       le BORD GAUCHE, celui que la camera suit. Le viewport du portage fait
+;       144 px (viewport_width, 12 tuiles de 12), pas 160 : ancrer sur le bord
+;       DROIT en supposant 160 posait chaque gouger 16 px trop a droite dans le
+;       monde — decalage visible a la comparaison avec l'arcade, corrige le
+;       26/08/2026.
 ;
 ;   B — la plongee. Chaque trame : x_pos += scroll_amount (verrou de defilement),
 ;       puis SONDE DU DECOR au centre.
@@ -229,7 +233,8 @@ gouger.Init
         ldd   ,x
         std   y_pos,u
         ldd   glb_camera_x_pos
-        addd  #166                     ; juste a droite du cadre, comme l'arcade
+        addd  #150                     ; arcade $02D0 : 720 - 320 = 400 px arcade
+                                       ; a droite du bord gauche, x 0,375 = 150
         std   x_pos,u
         clr   x_pos+2,u                ; la fraction repart nette
         clr   y_pos+2,u
@@ -434,20 +439,21 @@ gouger.Frame
         sta   routine,u
 ; La fenetre de visibilite, portee de is_visible_range (40:1d6b) : l'arcade
 ; garde un objet dont le CENTRE tient dans le cadre elargi de 20 pixels arcade
-; sur chacun des quatre bords. On reprend la MARGE, pas les coordonnees : le
-; cadre du portage ne couvre pas la meme largeur de monde que celui de l'arcade
-; (160 px larges en coordonnees playfield contre 384 arcade, soit 0,417 et non
-; le 0,375 des vitesses et des boites). Marges : 20 x 0,375 = 8 en X,
-; 20 x 0,75 = 15 en Y.
-;   X : -8..167 (le cadre va de 0 a 159)   Y : -15..214 (de 0 a 199)
+; sur chacun des quatre bords. En X tout se convertit a l'echelle du portage,
+; 0,375 — celle des vitesses, des boites et du defilement (stage.asm derive sa
+; vitesse de camera de 384/144, le viewport valant 12 tuiles de 12 px) :
+;   arcade 300..723, soit -20..+403 depuis le bord gauche  ->  -7..151
+; En Y le cadre du portage est plus haut que celui de l'arcade (200 lignes
+; contre 191 converties) : on garde la MARGE, 20 x 0,75 = 15, autour de notre
+; propre bande 0..199.
 ; Les trois phases la partagent, comme en arcade — et comme en arcade elle ne
 ; s'evalue que si l'objet n'est ni mort ni touche cette trame.
 @cadre  ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
-        addd  #8
+        addd  #7
         bmi   @part                    ; sorti par la gauche
-        cmpd  #167+8
+        cmpd  #151+7
         bgt   @part                    ; ... ou par la droite
         ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
