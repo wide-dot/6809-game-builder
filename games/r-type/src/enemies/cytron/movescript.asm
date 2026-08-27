@@ -81,22 +81,38 @@ cytron.script.tbl
 	fcb   3
 	fcb   0
 
-; --- le decalage de repousse, par pose : un cercle de rayon 12 px arcade sur 16 directions. Cytron plante sa gomme DERRIERE lui -------------------------------------------
+; --- le decalage de repousse, par pose : un cercle de rayon 12 px arcade sur
+; 16 directions. Cytron plante sa gomme DERRIERE lui, dans l'axe de sa pose —
+; c'est ce decalage qui fait la TRAINEE, et donc la forme du trace.
+;
+; DEJA EN UNITES V2, ET ARRONDIE AU PLUS PROCHE (27/08/2026). growTrail
+; convertissait a l'execution par decalages arithmetiques (x*3>>3, y*3>>2).
+; Un decalage arithmetique arrondit vers -INFINI, pas vers zero : le cercle
+; converti n'etait plus symetrique. Rayon 5 a gauche mais 4 a droite, 8 en bas
+; mais 7 en haut — CINQ paires de poses opposees sur huit ne l'etaient plus.
+; Le point de semis sautait donc d'une cellule entiere selon la direction du
+; cytron, ce qui decale les segments les uns par rapport aux autres : sur un
+; trace fait de lignes d'UNE cellule d'epaisseur, le motif se deforme en
+; gardant sa silhouette (ecart avec l'arcade releve par l'auteur).
+;
+; La table est figee (16 entrees, jamais recalculees) : on la pose convertie.
+; Les huit paires opposees le sont maintenant exactement, et growTrail n'a
+; plus une seule division a faire.
 cytron.trail.tbl
-	fdb   -12,0   ; pose 0
-	fdb   -10,4   ; pose 1
-	fdb   -8,8   ; pose 2
-	fdb   -4,10   ; pose 3
-	fdb   0,12   ; pose 4
-	fdb   4,10   ; pose 5
-	fdb   8,8   ; pose 6
-	fdb   10,4   ; pose 7
-	fdb   12,0   ; pose 8
-	fdb   10,-4   ; pose 9
-	fdb   8,-8   ; pose 10
-	fdb   4,-10   ; pose 11
-	fdb   0,-12   ; pose 12
-	fdb   -4,-10   ; pose 13
-	fdb   -8,-8   ; pose 14
-	fdb   -10,-4   ; pose 15
+	fdb   -5,0     ; pose  0  (arcade -12,  0)
+	fdb   -4,3     ; pose  1  (arcade -10,  4)
+	fdb   -3,6     ; pose  2  (arcade  -8,  8)
+	fdb   -2,8     ; pose  3  (arcade  -4, 10)
+	fdb   0,9      ; pose  4  (arcade   0, 12)
+	fdb   2,8      ; pose  5  (arcade   4, 10)
+	fdb   3,6      ; pose  6  (arcade   8,  8)
+	fdb   4,3      ; pose  7  (arcade  10,  4)
+	fdb   5,0      ; pose  8  (arcade  12,  0)
+	fdb   4,-3     ; pose  9  (arcade  10, -4)
+	fdb   3,-6     ; pose 10  (arcade   8, -8)
+	fdb   2,-8     ; pose 11  (arcade   4,-10)
+	fdb   0,-9     ; pose 12  (arcade   0,-12)
+	fdb   -2,-8    ; pose 13  (arcade  -4,-10)
+	fdb   -3,-6    ; pose 14  (arcade  -8, -8)
+	fdb   -4,-3    ; pose 15  (arcade -10, -4)
 

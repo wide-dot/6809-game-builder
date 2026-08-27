@@ -241,15 +241,13 @@ growTrail
         aslb                           ; 4 octets par pose
         ldx   #cytron.trail.tbl
         abx
-        ldd   ,x                       ; dx, en px arcade (signe)
-        _asrd                          ; x0,375 ~ x3/8 : (d + d + d) >> 3
-        pshs  d
-        ldd   ,x
-        aslb
-        rola
-        addd  ,s++
-        _asrd
-        _asrd                          ; (3 * dx) / 8
+        ; LA TABLE EST DEJA EN UNITES V2 (movescript.asm) : plus rien a
+        ; convertir ici. Elle l'etait a l'execution par decalages
+        ; arithmetiques, qui arrondissent vers -INFINI et rendaient le cercle
+        ; de semis asymetrique — cinq paires de poses opposees sur huit ne
+        ; l'etaient plus, et le point de semis sautait d'une cellule selon la
+        ; direction. Voir l'en-tete de la table.
+        ldd   ,x                       ; dx, en px v2
         addd  x_pos,u
         pshs  d                        ; x de CARTE de la cellule visee : on ne
                                        ; retire plus la camera pour que grow la
@@ -257,18 +255,11 @@ growTrail
                                        ; compensait meme pas exactement, grow
                                        ; tournant avant que pscroll ne recoive
                                        ; la camera du tour (1 a 2 px d'ecart)
-        ldd   2,x                      ; dy
-        pshs  d
-        ldd   2,x
-        aslb
-        rola
-        addd  ,s++
-        _asrd
-        _asrd                          ; (3 * dy) / 4 = x0,75
-        ; LE MEME AXE INVERSE. La table 0x1000:2D90 est reprise telle quelle,
-        ; en unites ARCADE : dy positif y veut dire VERS LE HAUT. On la
-        ; retranche donc au lieu de l'ajouter, sinon le cercle de repousse est
-        ; miroite verticalement et la trainee part du mauvais cote.
+        ldd   2,x                      ; dy, en px v2
+        ; LE MEME AXE INVERSE. La table 0x1000:2D90 garde la convention
+        ; ARCADE : dy positif veut dire VERS LE HAUT. On la retranche donc au
+        ; lieu de l'ajouter, sinon le cercle de repousse est miroite
+        ; verticalement et la trainee part du mauvais cote.
         _negd
         addd  y_pos,u
         tfr   b,a                      ; la ligne ecran tient dans un octet
