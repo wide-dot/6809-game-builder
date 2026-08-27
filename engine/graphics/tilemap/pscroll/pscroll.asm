@@ -1260,10 +1260,6 @@ pscroll.mutate
         lsra
         rorb
         stb   pscroll.sc.chunk         ; la bande, gardee pour la geometrie
-        subb  pscroll.edge16           ; DANS LE RUBAN ? sinon on ne touche a
-        lbcs  @already                 ; RIEN, bit compris (voir plus bas)
-        cmpb  #pscroll.CHUNKS_PER_LINE
-        lbhs  @already
         lda   pscroll.sc.row           ; l'octet du champ, et le masque du bit
         ldb   #pscroll.MAP_STRIDE
         mul
@@ -1295,6 +1291,19 @@ pscroll.mutate
         andb  ,x                       ; la gomme disparait
         stb   ,x
 @suite
+        ; LE BIT D'ABORD, LE RUBAN ENSUITE (27/08/2026). L'anneau de tuiles
+        ; arcade fait 512 px : un cytron qui vient de naitre seme A DROITE de
+        ; l'ecran et sa gomme entre dans le champ avec le defilement. Ici le
+        ; ruban ne couvre que l'ecran : refuser hors ruban AVANT d'ecrire
+        ; jetait ces semis, et la trainee naissait trouee a droite (releve
+        ; auteur, 27/08). Le bit de carte est donc pose puis SEULE la
+        ; geometrie VRAM est sautee hors ruban — feedBand lit la carte quand
+        ; la bande entre, la gomme apparait exactement comme sur la borne.
+        ldb   pscroll.sc.chunk
+        subb  pscroll.edge16           ; dans le ruban ?
+        bcs   @maponly
+        cmpb  #pscroll.CHUNKS_PER_LINE
+        bhs   @maponly
         ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
         clra                           ; depend ni de la bande ni de la phase
         aslb
@@ -1305,6 +1314,7 @@ pscroll.mutate
         lda   #$FF                     ; appel isole : la geometrie est a faire
         sta   pscroll.sc.lastchunk
         lbsr  pscroll.mutate.tail
+@maponly
         andcc #$FB                     ; Z = 0 : le champ a change
         rts
 @already

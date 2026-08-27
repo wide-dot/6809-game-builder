@@ -71,9 +71,16 @@ pscroll.point
         stb   pscroll.grow.row
         ldd   pscroll.grow.x           ; la colonne : ou dans le ruban ?
         subd  pscroll.ribbon.x0
-        cmpd  #pscroll.CELL_W*54       ; 162 : la fenetre, arrondie au cran de
-        bhs   pscroll.grow.no          ; cellule. NON SIGNE : a gauche du ruban
-                                       ; la soustraction deborde et tombe ici
+        ; 180 ET NON 162 (27/08/2026) : l'anneau arcade depasse l'ecran a
+        ; droite — un cytron qui vient de naitre y seme, et sa gomme entre a
+        ; l'ecran avec le defilement. La fenetre acceptee va donc au-dela du
+        ; ruban : mutate pose le bit de carte et ne saute que la VRAM (voir
+        ; @maponly). Borne prouvee : le semis le plus a droite possible vaut
+        ; preset max (155) + camera - x0 (<=15) + offset de pose max (4,9),
+        ; soit un index de table (offset-8+reste) <= 169 — dans les 176
+        ; entrees de div3. A gauche du ruban le NON SIGNE refuse toujours.
+        cmpd  #pscroll.CELL_W*60       ; 180 : la fenetre elargie
+        bhs   pscroll.grow.no
 
         ; LE BORD DU VIEWPORT (25/08/2026). La carte des gommes n'appartient
         ; pas a pscroll : c'est le PLAN 0 de terrainCollision, la meme grille
