@@ -188,6 +188,7 @@ checkpoint.clearData EXTERNAL
         ; --- terrain collision : the resident half, the stage mounts the map ---
         _api terrainCollision.init.do
         _api terrainCollision.do
+        _api terrainCollision.doFoe
         _api terrainCollision.xAxis.doRight
         ; Les deux autres entrees du meme fichier, deja assemblees dans le
         ; moteur : seul l'export manquait. `doLeft` sert au laser anti-aerien du

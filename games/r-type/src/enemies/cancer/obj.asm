@@ -248,7 +248,7 @@ LAB_0000_8de7                           ; Going down ?
         std   terrainCollision.sensor.y
         ldd   x_pos,u
         std   terrainCollision.sensor.x
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8e0c
         dec   cancer_0x1e,u
@@ -284,7 +284,7 @@ LAB_0000_8e15
         blt   @move                     ; (signed; the yOffset table only starts at sensor.y=11)
         ldd   x_pos,u
         std   terrainCollision.sensor.x
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8e2d
 @move   dec   cancer_0x1e,u
@@ -317,7 +317,7 @@ LAB_0000_8e2d                           ; Going left ?
         std   terrainCollision.sensor.x
         ldd   y_pos,u
         std   terrainCollision.sensor.y
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8e4e
         dec   cancer_0x1e,u
@@ -350,7 +350,7 @@ LAB_0000_8e4e                           ; Going right ?
         std   terrainCollision.sensor.x
         ldd   y_pos,u
         std   terrainCollision.sensor.y
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8e6f
         dec   cancer_0x1e,u
@@ -501,7 +501,7 @@ LAB_0000_8f25
         std   terrainCollision.sensor.y
         ldd   x_pos,u
         std   terrainCollision.sensor.x
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8f4d              ; B!=0 = solid tile -> blocked (was wrongly bmi)
         dec   cancer_0x1e,u
@@ -541,7 +541,7 @@ LAB_0000_8f52
         blt   @move                     ; (signed; the yOffset table only starts at sensor.y=11)
         ldd   x_pos,u
         std   terrainCollision.sensor.x
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8f76
 @move   dec   cancer_0x1e,u
@@ -579,7 +579,7 @@ LAB_0000_8f7b
         std   terrainCollision.sensor.x
         ldd   y_pos,u
         std   terrainCollision.sensor.y
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8f9c
         dec   cancer_0x1e,u
@@ -611,7 +611,7 @@ LAB_0000_8f9c
         std   terrainCollision.sensor.x
         ldd   y_pos,u
         std   terrainCollision.sensor.y
-        jsr   cancer.probeSolid
+        jsr   terrainCollision.doFoe
         tstb
         bne   LAB_0000_8fbd
         dec   cancer_0x1e,u
@@ -736,33 +736,3 @@ cancer_0x3c1a
 
 PresetXYIndex
         INCLUDE "src/common/lib/presets/18dd0_preset-xy.asm"
-
-; ---------------------------------------------------------------------------
-; cancer.probeSolid — le terrain « solide » : dur OU gomme
-;
-; L'arcade n'a qu'un test : une gomme y EST une tuile d'avant-plan, solide
-; par nature (run_cytron ecrit 0x9F6 dans la tilemap fg). Notre stage 4 la
-; range dans le plan ARRIERE (plan 0, la carte residente que pscroll mute) :
-; marcher ou ramper « sur le decor » doit donc tester les DEUX plans quand le
-; stage l'arme (globals.foeBgSolid — releve auteur 27/08 : cancer et pow
-; traversaient les gommes). PAS globals.backgroundSolid : celui-la est arme
-; des l'init au stage 1, dont le plan de fond porte la silhouette du BOSS —
-; y faire marcher un cancer serait faux, et le sonder pendant tout le niveau
-; serait paye pour rien. Voir la note de variables.asm.
-;
-; L'arcade, elle, ne sonde QUE l'avant-plan ici (probe_foreground_tile, seuil
-; 0xDFC — 0x40:8A3A pour cancer, 0x40:5791 pour pow) : chez elle une gomme EST
-; une tuile d'avant-plan. Ce second test est le prix de notre rangement en
-; deux plans, pas un ecart de comportement.
-; sortie : [b] != 0 si solide. A est detruite (elle l'etait deja par .do).
-; ---------------------------------------------------------------------------
-cancer.probeSolid
-        ldb   #1                       ; l'avant-plan : le decor dur
-        jsr   terrainCollision.do
-        tstb
-        bne   @rts
-        lda   globals.foeBgSolid       ; le fond est-il du SOL ici ?
-        beq   @rts                     ; non : B = 0, une seule sonde payee
-        clrb                           ; l'arriere-plan : les gommes
-        jsr   terrainCollision.do
-@rts    rts

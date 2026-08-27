@@ -38,6 +38,41 @@ terrainCollision.bgSubY     fcb 0   ; camera.y mod 6 : le reste, en px (0..5)
 ; l'axe X sur le plan de fond quand backgroundSolid est arme.)
 terrainCollision.bgWorldAdj fdb 0
 
+; ---------------------------------------------------------------------------
+; terrainCollision.doFoe — le sol tel que le voit un ennemi TERRESTRE
+; ---------------------------------------------------------------------------
+; sortie : [b] != 0 si solide. A est detruite, comme apres .do.
+;
+; « Solide » veut dire DUR OU GOMME. En arcade la question ne se pose pas : une
+; gomme y est une tuile d'avant-plan, et run_cancer / run_pow_armor / le bink
+; ne sondent QUE l'avant-plan (probe_foreground_tile, seuil 0xDFC — verifie :
+; sur les 48 appelants de la sonde a deux plans de la borne, aucun n'est dans
+; leurs plages). C'est notre rangement en deux plans qui demande le double
+; test, et les deux plans du stage 4 sont DISJOINTS (1025 cellules dures,
+; 1618 de gommes, zero commune) : inverser leur declaration echangerait
+; simplement « traverse les gommes » contre « traverse le sol ».
+;
+; La routine vit ICI, une fois, plutot que recopiee dans chaque ennemi
+; (remarque auteur, 28/08/2026) : trois copies du meme geste etaient trois
+; occasions de deriver.
+;
+; Le second test est garde par globals.foeBgSolid — le drapeau des ennemis
+; terrestres, arme par le seul stage 4. PAS backgroundSolid : celui-la vaut 1
+; des l'init du stage 1, dont le plan de fond porte la silhouette du boss ;
+; y faire marcher un cancer serait faux, et le sonder tout le niveau serait
+; paye pour rien.
+; ---------------------------------------------------------------------------
+terrainCollision.doFoe
+        ldb   #1                           ; l'avant-plan : le decor dur
+        jsr   terrainCollision.do
+        tstb
+        bne   @solid
+        lda   globals.foeBgSolid           ; le fond est-il du SOL ici ?
+        beq   @solid                       ; non : B = 0, une seule sonde payee
+        clrb                               ; l'arriere-plan : les gommes
+        jmp   terrainCollision.do
+@solid  rts
+
 terrainCollision.do
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
         beq   @active
