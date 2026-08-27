@@ -88,16 +88,15 @@ class Rom:
         # le cercle de semis, EN UNITES ARCADE (la table d'origine)
         self.trail = [(-12,0),(-10,4),(-8,8),(-4,10),(0,12),(4,10),(8,8),(10,4),
                       (12,0),(10,-4),(8,-8),(4,-10),(0,-12),(-4,-10),(-8,-8),(-10,-4)]
-        # presets xy : la table commitee est DEJA convertie en v2, on revient
-        # a l'arcade par l'inverse exact de l'export (cf. l'en-tete de Init)
-        self.preset = []
-        for line in open(os.path.join(GAME, "src/common/lib/presets/18dd0_preset-xy.asm")):
-            m = re.search(r"fcb\s+\$([0-9A-Fa-f]+),\$([0-9A-Fa-f]+)", line)
-            if m:
-                vx, vy = int(m.group(1), 16), int(m.group(2), 16)
-                ax = (vx - 8) / 0.375 + 320
-                ay = 392 - (vy - 3) / 0.75      # axe inverse, ancre sur y=392 -> 3
-                self.preset.append((ax, ay))
+        # presets xy : les valeurs ARCADE BRUTES, lues dans la rom par
+        # bridge_data_peek (bug_and_pow_armor_preset_xy @ 0x1000_8DD0). On
+        # les pose en dur plutot que de les reconstruire depuis la table v2 :
+        # celle-ci est arrondie a l'export, et sa reconversion se paie 1,3 px
+        # sur les presets 12..15 (verifie : exacte sur 0..11).
+        self.preset = [(408, 392), (520, 392), (632, 392), (712, 360),
+                       (712, 328), (712, 272), (712, 256), (712, 216),
+                       (712, 184), (632, 136), (520, 136), (408, 136),
+                       (324, 184), (324, 216), (324, 264), (324, 360)]
 
 
 class Cytron:
@@ -132,7 +131,17 @@ class Cytron:
             return
         self.seg, self.p = w, w
 
-    def step_frame(self, scroll):
+    def step_frame(self, scroll=0.0):
+        """Une trame : `speed` commandes du script.
+
+        LE SCROLL NE DOIT PAS ENTRER ICI. L'arcade fait `pos_x += scroll_amount`
+        (0x69BC) parce que SA position est en coordonnees ECRAN : l'addition
+        maintient le cytron ANCRE AU DECOR pendant que celui-ci defile. Or ce
+        qu'on trace est la TILEMAP, en coordonnees CARTE — et dans ce repere un
+        objet ancre ne bouge que par son script. Ajouter le scroll ici faisait
+        deriver le semis d'un demi-pixel par trame : les paliers de l'escalier
+        s'etiraient et perdaient une gomme sur trois.
+        """
         left = self.speed
         guard = 0
         while left > 0 and self.alive and guard < 4096:
@@ -151,7 +160,13 @@ class Cytron:
                 self.y += -1 if (b & 0x10) else 1
             left -= 1
             if b & 0x04:
+                # FIN DE SEGMENT = FIN DE TRAME. L'arcade charge le segment
+                # suivant puis fait CLC/RET (0xF626-0xF62A) : elle SORT de la
+                # boucle, les commandes restantes de la trame sont perdues.
+                # Les consommer faisait avancer le cytron trop vite a chaque
+                # changement de segment — donc a chaque inflexion du trace.
                 self._next_segment()
+                break
         self.x += scroll
 
     def sow(self):
@@ -169,13 +184,17 @@ def main():
     ap.add_argument("--wave", nargs="*", type=int, default=[0, 1],
                     help="indices des cytrons dans la wave du stage 4")
     ap.add_argument("--frames", type=int, default=900)
-    ap.add_argument("--scroll", type=float, default=0.5,
-                    help="px arcade par trame (R-Type : 0,5)")
+    ap.add_argument("--scroll", type=float, default=0.0,
+                    help="derive ajoutee au semis ; 0 = repere CARTE (defaut, "
+                         "le seul juste : un objet ancre ne bouge que par son "
+                         "script)")
     ap.add_argument("--out", default="cytron_sim.png")
     ap.add_argument("--limit", type=int, default=0,
                     help="s'arreter apres N gommes semees (0 = sans limite)")
     ap.add_argument("--scale", type=int, default=2,
                     help="agrandissement du rendu (numeros lisibles a 4+)")
+    ap.add_argument("--trace", nargs=2, type=int, metavar=("DE", "A"),
+                    help="detailler les gommes DE..A : trame, pose, position")
     ap.add_argument("--number", action="store_true",
                     help="numeroter les gommes dans l'ordre du semis")
     ap.add_argument("--txt", help="ecrire aussi le motif en texte")
@@ -201,6 +220,7 @@ def main():
     # aux N premieres gommes et les numeroter — c'est ce qui rend un ecart de
     # motif DESIGNABLE (« la gomme 12 devrait etre a droite »).
     order, seen = [], set()
+    dbg_pose, dbg_pos = {}, {}
     actors = [(t, Cytron(rom, st), i) for i, (t, st) in enumerate(picked)]
     stop = False
     for f in range(args.frames):
@@ -213,10 +233,20 @@ def main():
             cell = c.sow()
             if cell not in seen:
                 seen.add(cell)
+                dbg_pose[len(order)] = c.pose
+                dbg_pos[len(order)] = (c.x, c.y)
                 order.append((cell, who, f))
                 if args.limit and len(order) >= args.limit:
                     stop = True
                     break
+    if args.trace:
+        lo, hi = args.trace
+        print("rang | trame | cytron | pose | pos arcade      | cellule")
+        for rank, (cell, who, frame) in enumerate(order):
+            if lo <= rank <= hi:
+                print("%4d | %5d |   #%d   |  %2d  | (%7.1f,%6.1f) | %s"
+                      % (rank, frame, who, dbg_pose[rank], dbg_pos[rank][0],
+                         dbg_pos[rank][1], cell))
     cells = {c for c, _, _ in order}
     xs = [c[0] for c in cells]; ys = [c[1] for c in cells]
     print("%d cellules semees%s, etendue x %d..%d, y %d..%d"
