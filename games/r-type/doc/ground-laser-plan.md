@@ -192,6 +192,47 @@ tous les `run_frames` suivants et mime un crash du jeu ; et les offsets d'une
 unité changent à chaque repack du layout (`gen/layout.asm` fait foi, jamais
 une valeur notée la veille).
 
+### Étape 3bis — la collision dans la boucle de marche — FAITE le 26/08/2026
+
+La boîte de la tête ne suffisait pas à bas régime. À 7 fps la tête rejoue
+**7 pas dans une trame** — 21 px en x, 42 px en y — alors que sa boîte ne fait
+que 10 × 18 px. La passe globale, qui ne voit que la position **finale**,
+laisse donc passer un ennemi entier entre deux trames : il tient tout entier
+dans le trou. La borne ne connaît pas ce défaut (un pas de 8 px pour une
+demi-boîte de 12, balayage continu par construction) — c'est un artefact de
+notre compensation de frame-drop, et le corriger revient à *retrouver* la
+continuité arcade, pas à s'en écarter.
+
+Décision auteur : **la tête confronte elle-même sa boîte aux ennemis, à chaque
+pas**, au lieu d'être testée une fois par la passe globale.
+
+- `gl.hitEnemies` est appelée dans la boucle de tick, juste après l'écriture de
+  l'anneau. Son corps est une **copie de la boucle interne de `Collision_Do`**
+  (même test de chevauchement, même duel de potentiels) ; toute évolution du
+  duel doit y être reportée.
+- **La tête n'entre plus dans `AABB_list_friend`.** Rien n'est perdu : la passe
+  ne confronte `friend` qu'à `ennemy`, exactement le travail repris — et elle
+  s'en trouve allégée. Pas de double comptage non plus.
+- Trois choses tombent juste d'un coup : le potentiel se draine dans **l'ordre
+  du trajet**, le faisceau s'arrête **exactement** où il s'épuise (rien infligé
+  au-delà), et l'anneau n'a rien à rembobiner puisque les pas suivants ne sont
+  jamais joués.
+
+Écart de phase assumé : les potentiels ennemis sont écrits pendant
+`RunObjects`, hors de la passe. Un ennemi qui tourne *après* la tête meurt dans
+la trame (mieux qu'avant) ; un qui tourne *avant* meurt à la suivante (comme
+avant). Aucune régression. Et pendant les 7 pas les ennemis sont figés — c'est
+inhérent à toute compensation de frame-drop.
+
+Vérifié sous toje : en gonflant les rayons en RAM pour rendre le contact
+certain, le potentiel tombe à 0 et la tête passe en routine `Explode` — ce qui
+ne peut arriver que par `gl.hitEnemies`. Rayons normaux : trois volées, jeu
+nominal. Le relevé de cycles est différé (décision auteur).
+
+`AABB_list_ennemy_unkillable` reste hors du test : son unique occupant est la
+scie du Dobkeratops, et **l'arcade fait pareil** — elle ne teste que le joueur,
+les armes la traversent.
+
 ### Étape 4 — validation
 Banc toje : deux faisceaux qui traversent un relief connu (le stage 1 a du
 plafond et du sol), relevé de cadence contre la référence, slots libres en

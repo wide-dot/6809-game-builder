@@ -216,6 +216,12 @@ Init
         ; `0x21D4`), et le potentiel de la table de routage : 2 au palier 2,
         ; 4 au palier 3 — le `+0x17`, seule difference entre les deux
         ; routines d'armement de la borne.
+        ;
+        ; ELLE N'ENTRE DANS AUCUNE LISTE : la tete confronte elle-meme sa
+        ; boite aux ennemis, a chaque pas de sa marche — voir gl.hitEnemies,
+        ; qui explique pourquoi. Rien n'est perdu : la passe globale ne
+        ; confronte AABB_list_friend qu'a AABB_list_ennemy, exactement le
+        ; travail repris ici. La passe s'en trouve meme allegee.
         lda   #GL_POWER_LOW
         ldb   globals.forcepodlevel
         cmpb  #3
@@ -224,12 +230,6 @@ Init
 !       sta   AABB_0+AABB.p,u
         _ldd  5,9
         std   AABB_0+AABB.rx,u
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-        ldb   y_pos+1,u
-        stb   AABB_0+AABB.cy,u
-        _Collision_AddAABB AABB_0,AABB_list_friend
         rts
 gl.wall jmp   DeleteObject
 
@@ -249,10 +249,11 @@ gl.wall jmp   DeleteObject
 ; gardee en OST, ce qui absorbe aussi les trames sautees.
 ; ---------------------------------------------------------------------------
 Live
-        ; le potentiel est-il draine ? Comme le rebond, teste EN TETE de
-        ; trame : une tete qui a use sa boite sur les ennemis devient la
-        ; vague d'explosion (la borne : check_ground_laser_explosion retarge
-        ; le handler sur 0x4900 quand +0x17 tombe a zero).
+        ; Ceinture : le potentiel ne peut plus tomber a zero ailleurs que dans
+        ; la boucle ci-dessous (la boite n'est dans aucune liste, personne
+        ; d'autre n'y touche), et la boucle explose alors sur place. Cette
+        ; garde ne sert donc qu'a rattraper un potentiel arrive a zero par un
+        ; chemin imprevu, plutot que de laisser marcher un faisceau mort.
         lda   AABB_0+AABB.p,u
         lbeq  gl.boom
 
@@ -312,7 +313,14 @@ Live
         bhs   >
         incb
         stb   gl_fill,u
-!       dec   gl.ticks
+!
+        ; LA COLLISION, A CE PAS-CI. C'est tout l'interet de la faire dans la
+        ; boucle : le potentiel se draine dans l'ordre du trajet, et si le
+        ; faisceau s'epuise ici, il s'arrete ICI — les pas suivants ne sont ni
+        ; parcourus, ni ecrits dans l'anneau, ni infliges a personne.
+        jsr   gl.hitEnemies
+        lbeq  gl.boom
+        dec   gl.ticks
         bne   @tick
 
         ; SORTI DE L'ECRAN = MORT, comme le is_visible_range de la borne. Le
@@ -333,12 +341,7 @@ Live
         dec   gl_life,u
         beq   gl.gone
 
-        ; la boite suit la tete
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-        ldb   y_pos+1,u
-        stb   AABB_0+AABB.cy,u
+        ; (la boite a suivi la tete a chaque pas, dans gl.hitEnemies)
 
         ; plus de DisplaySprite : la tete et ses suiveurs se PUBLIENT, et la
         ; routine Render (troisieme OST) dessine les douze slots en une passe
@@ -348,24 +351,20 @@ Live
 
 gl.gone
         ; toutes les morts passent ici — duree de vie, sortie d'ecran, fin
-        ; d'explosion. La boite n'est rendue que si elle est encore armee
-        ; (l'explosion l'a deja rendue en entrant dans gl.boom).
-        lda   AABB_0+AABB.rx,u
-        beq   gl.gone2
-        _Collision_RemoveAABB AABB_0,AABB_list_friend
-gl.gone2
+        ; d'explosion. Rien a rendre : la boite n'est dans aucune liste.
         jsr   groundmgr.clearChain     ; la chaine s'eteint avec sa tete
         jmp   DeleteObject
 
 ; ---------------------------------------------------------------------------
 ; gl.boom — le potentiel est draine : la tete devient la vague d'explosion
+;
+; On arrive ici depuis la boucle de marche, au pas EXACT ou le potentiel s'est
+; epuise : x_pos/y_pos et la derniere entree d'anneau designent deja ce point,
+; il n'y a rien a rembobiner. C'est ce que la passe globale ne pouvait pas
+; donner — elle n'aurait connu que la position finale du tick.
 ; ---------------------------------------------------------------------------
 gl.boom
-        lda   AABB_0+AABB.rx,u
-        beq   gl.boom2
-        _Collision_RemoveAABB AABB_0,AABB_list_friend
-        clr   AABB_0+AABB.rx,u
-gl.boom2
+        clr   AABB_0+AABB.p,u          ; plus aucun contact pendant l'explosion
         lda   #Rtn_Explode
         sta   routine,u
         clr   gl_life,u                ; gl_life devient e, l'age de la vague
@@ -507,6 +506,105 @@ gl.corner
         bne   @rts                     ; solide : on garde la direction
         sta   gl_dir,u                 ; libre : on tourne dedans
 @rts    rts
+
+; ---------------------------------------------------------------------------
+; gl.hitEnemies — confronter la boite de la tete aux ennemis, ICI, a ce pas
+;
+; input  : [u] l'OST de la tete, sa position deja posee par gl.step1
+; output : Z=1 si le potentiel est epuise — le faisceau doit exploser a ce pas
+;
+; POURQUOI CETTE ROUTINE EXISTE. A bas regime la tete rejoue jusqu'a neuf pas
+; dans une seule trame, soit 42 px en y pour une boite qui n'en fait que 18.
+; La passe globale, qui ne voit que la position FINALE, laisse alors passer un
+; ennemi entier entre deux trames — il tient tout entier dans le trou. La borne
+; n'a pas ce probleme : un pas de 8 px pour une demi-boite de 12, son balayage
+; est continu par construction. Le trou est donc un artefact de notre
+; compensation de frame-drop, et le corriger, c'est retrouver la continuite de
+; l'arcade — pas s'en ecarter.
+;
+; Teste pas par pas, trois choses tombent juste d'un coup : le potentiel se
+; draine dans l'ORDRE du trajet, le faisceau s'arrete exactement la ou il
+; s'epuise (rien inflige au-dela), et l'anneau n'a rien a rembobiner puisque
+; les pas suivants ne sont jamais joues.
+;
+; LE CORPS EST UNE COPIE de la boucle interne de Collision_Do
+; (engine/collision/collision-do.asm) : meme test de chevauchement, meme duel
+; de potentiels. Toute evolution du duel la-bas doit etre reportee ici.
+; La tete n'etant dans aucune liste, il n'y a pas de double comptage — et rien
+; n'est perdu : la passe ne confronte AABB_list_friend qu'a AABB_list_ennemy.
+; ---------------------------------------------------------------------------
+gl.hitEnemies
+        ; la boite suit la tete : centre en coordonnees ECRAN, comme le moteur
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
+
+        pshs  u
+        leau  AABB_0,u                 ; U = notre AABB, comme dans Collision_Do
+        ldx   AABB_list_ennemy
+        beq   gl.hit.done
+gl.hit.loop
+        ldb   AABB.p,u
+        beq   gl.hit.done              ; epuise : inutile de tester la suite
+        ldb   AABB.p,x
+        beq   gl.hit.next              ; boite desactivee
+        lda   AABB.rx,u
+        adda  AABB.rx,x
+        asla
+        sta   gl.hit.rx
+        asra
+        adda  AABB.cx,u
+        suba  AABB.cx,x
+        cmpa  #0
+gl.hit.rx equ *-1
+        bhi   gl.hit.next
+        lda   AABB.ry,u
+        adda  AABB.ry,x
+        asla
+        sta   gl.hit.ry
+        asra
+        adda  AABB.cy,u
+        suba  AABB.cy,x
+        cmpa  #0
+gl.hit.ry equ *-1
+        bhi   gl.hit.next
+        ; --- le duel de potentiels
+        ldb   AABB.p,x
+        bpl   >
+        ldb   AABB.p,u
+        bmi   gl.hit.next              ; les deux invincibles : rien ne bouge
+        clr   AABB.p,u                 ; X invincible, nous perdons
+        bra   gl.hit.next
+!       lda   AABB.p,u
+        bpl   >
+gl.hit.xWeak
+        clr   AABB.p,x                 ; nous invincible, X perd
+        bra   gl.hit.next
+!       cmpb  #127
+        beq   gl.hit.xWeak
+        cmpa  #127
+        beq   gl.hit.uWeak
+        clrb
+        suba  AABB.p,x
+        bmi   gl.hit.loose
+        sta   AABB.p,u                 ; gagne ou nul : on garde la difference
+        stb   AABB.p,x
+        bra   gl.hit.next
+gl.hit.uWeak
+        clr   AABB.p,u
+        bra   gl.hit.next
+gl.hit.loose
+        nega
+        sta   AABB.p,x
+        stb   AABB.p,u
+gl.hit.next
+        ldx   AABB.next,x
+        bne   gl.hit.loop
+gl.hit.done
+        lda   AABB.p,u                 ; Z=1 -> potentiel epuise
+        puls  u,pc
 
 ; ---------------------------------------------------------------------------
 ; gl.probeHere / gl.probe — le decor est-il solide ?
