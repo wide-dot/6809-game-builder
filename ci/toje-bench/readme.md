@@ -62,6 +62,39 @@ Trouvé avec, le 26/08/2026 : la silhouette de collision du battleship
 loin — le plan background étant indexé sur la caméra principale alors que le
 vaisseau est dessiné par une couche mscroll qui a la sienne.
 
+## Motif des gommes (stage 4) — `gum_pattern.py`
+
+Compare le **motif** des gommes entre deux sources : une capture (arcade ou
+TO8) et/ou la carte du jeu. Sert à répondre à « notre tracé est-il celui de
+la borne ? » autrement qu'à l'œil.
+
+```bash
+# le motif de la borne, depuis une capture (perles à cœur ambre)
+python3 ci/toje-bench/gum_pattern.py extract arcade.png --out arcade.txt --core
+
+# le nôtre, depuis un dump RAM de pscroll.gum.map ($92DB, 48 o x 30)
+python3 ci/toje-bench/gum_pattern.py frommap gum.bin --out nous.txt
+
+python3 ci/toje-bench/gum_pattern.py compare arcade.txt nous.txt
+```
+
+Comparer des **motifs** et non des pixels est ce qui rend l'exercice possible :
+une tuile de gomme arcade (8 × 8 px) vaut **exactement** une cellule v2
+(3 × 6 px) — la coïncidence d'échelle sur laquelle tout le stage 4 est
+construit. Les deux mondes ont donc la même grille logique, et ce qui reste
+après alignement est un vrai écart de tracé, pas une différence de résolution.
+
+L'extraction ne suppose ni l'échelle ni le cadrage : le pas de grille et la
+phase viennent d'une autocorrélation des projections, avec un plancher à 8 px
+(sous ce seuil on accroche les harmoniques du doublement de pixels TO8).
+`--pitch W H` force le pas si la détection se trompe ; `--core` ne garde que
+le cœur ambre de la perle arcade, qui ne se confond pas avec le décor
+organique vert du stage — sans lui, le décor pollue le relevé.
+
+`compare` balaie **toute** la différence de largeur : une capture ne montre
+qu'une fenêtre du niveau quand un dump de la carte couvre les 384 colonnes,
+il faut retrouver où la fenêtre se pose.
+
 ## Relevé de cadence — `fps_curve.py` + `fps_plot.py`
 
 Deux scripts hors verdict : ils ne disent pas pass/fail, ils **mesurent**.
