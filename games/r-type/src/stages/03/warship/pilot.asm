@@ -135,8 +135,22 @@ pilotLive
 ;
 @end    leas  1,s                      ; le decompte n'a plus d'objet : les
                                        ; trames restantes sont a (0,0)
-        lda   #2                       ; -> dormance (TODO : la sequence de
-        sta   routine,u                ; fin arcade 0xc55d avec le combat)
+        lda   #2                       ; le pilote passe en dormance : la
+        sta   routine,u                ;   couche reste ou le script l'a laissee
+        ; LA FIN DU SCRIPT EST LA FIN DU STAGE (arcade 0xc55d : le meme point
+        ; d'entree sert la fin de script ET la mort du noyau, et il arme la
+        ; sequence de fin de niveau).
+        ; Ici il n'y a rien de plus a faire que lever le drapeau : l'objet de
+        ; fin generique (common/flow/endlevel) le lit et arme tout le reste —
+        ; decompte, jingle, autopilot, fondu pixel, releve de score, puis le
+        ; statut DONE que stage.endTick convertit en stage.handOver vers le
+        ; stage 4. C'est le geste que son propre commentaire attend d'un vrai
+        ; boss (« it raises globals.bossDefeated itself and that alone arms
+        ; the sequence »), et celui que le gomander du stage 2 fait deja.
+        ; Sans lui, le stage ne finissait que par le combat de substitution :
+        ; camera au bout de la carte, puis expiration d'un hold.
+        lda   #1
+        sta   globals.bossDefeated
         bra   @done
 pilotDone
         rts
