@@ -178,6 +178,96 @@ class Cytron:
         return (int((self.x + dx) // TILE), int((self.y + dy) // TILE))
 
 
+# ---------------------------------------------------------------------------
+# Le pipeline v2 (6809), emule au bit pres — le banc DIFFERENTIEL du portage.
+#
+# Ce que le jeu fera par trame (obj.asm growTrail) :
+#   position 8.8 : x_pos:x_sub (24 bits), avancee par moveByScript de
+#   +-$60/+-$C0 par commande (0,375 / 0,75 px v2 = 1 px arcade EXACT) ;
+#   sonde = partie entiere de (position24 + T24), ou T24 vient d'une table
+#   par pose en 8.8 : Tx = dx_arcade*96 + FOLDX, Ty = -dy_arcade*192 + FOLDY
+#   (l'axe y v2 est inverse, la negation est CUITE dans la table) ;
+#   cellule = (xint - 8)/3, rangee = (ligne - VP_Y)/6 — le chemin div3/div6
+#   existant de pscroll.grow, inchange.
+#
+# Les deux constantes de pliage portent la PHASE DE GRILLE (le +3 px arcade
+# etalonne sur capture) et l'ancrage y. Fenetres exactes mesurees sur tout le
+# reseau de positions atteignables : FOLDX in [288..383], FOLDY in [320..511].
+# L'identite floor(v/768) = floor(floor(v/256)/3) rend la composition exacte :
+# AUCUNE division nouvelle cote 6809.
+# ---------------------------------------------------------------------------
+# NOTE camera : en jeu la position de spawn est preset + camera, et le residu
+# de la camera (mod 3 px v2) decale la phase d'echantillonnage PAR CYTRON —
+# comme en arcade, ou acam mod 8 au spawn fait exactement ca. C'est une
+# variation AUTHENTIQUE : le pliage n'essaie pas de l'annuler (tentative du
+# 27/08 a $220 : moins bonne sur machine, 46/52 contre 58/62 — le residu
+# estime etait faux d'un pixel et il varie par spawn de toute facon). Le banc
+# --check-v2 prouve le pipeline a camera nulle ; sur machine, la comparaison
+# au dump accepte le wobble d'une cellule sur les bords que ce residu induit.
+V2_FOLDX = 0x120        # 288 : la phase x, 3 px arcade * 96
+V2_FOLDY = 0x180        # 384 : l'ancrage y, dans la fenetre [320..511]
+V2_VPY = 11             # field.VP_Y : le haut du champ de gommes
+
+
+def v2_check(rom, wave, foldx=V2_FOLDX, foldy=V2_FOLDY):
+    """Compare cellule a cellule le pipeline 6809 emule et la reference arcade
+    sur tous les subtypes de la wave. Retourne (pas, divergences, K)."""
+    total = bad = 0
+    K = None
+    for st in sorted(set(s for _, s in wave)):
+        c = Cytron(rom, st)
+        pa, pay = int(c.x), int(c.y) + 4
+        x24 = (pa - 320) * 96 + 8 * 256          # spawn exact 8.8 (camera 0)
+        y24 = (392 - pay) * 192 + 3 * 256 - 3 * 256
+        for f in range(4000):
+            if not c.alive:
+                break
+            px, py = int(c.x), int(c.y)
+            c.step_frame()
+            x24 += (int(c.x) - px) * 96
+            y24 -= (int(c.y) - py) * 192
+            adx, ady = rom.trail[c.pose & 0x0F]
+            acell = (int(c.x) + adx + 3) // 8    # la verite arcade, phase 3
+            # cote v2 la camera fait partie de la position ; cote arcade elle
+            # est dans le repere decor deja — K l'absorbe, la constance juge
+            arow = (int(c.y) + ady) // 8
+            sx = (x24 + ((adx * 96 + foldx) & 0xFFFFFF)) & 0xFFFFFF
+            sy = (y24 + ((-ady * 192 + foldy) & 0xFFFFFF)) & 0xFFFFFF
+            xint = sx >> 8
+            if xint >= 0x8000: xint -= 0x10000
+            line = sy >> 8
+            if line >= 0x8000: line -= 0x10000
+            vcell = (xint - 8) // 3
+            vrow = (line - V2_VPY) // 6
+            k = (acell - vcell, arow + vrow)
+            total += 1
+            if K is None: K = k
+            elif k != K: bad += 1
+    return total, bad, K
+
+
+def v2_emit_table(foldx=V2_FOLDX, foldy=V2_FOLDY):
+    """Emet la table asm cytron.trail.tbl (8 octets par pose, [x:3][y:3][0,0]).
+    C'est la SOURCE de la table committee — regle maison : une donnee de build
+    sort d'un outil rejouable, jamais d'une transcription."""
+    trail = [(-12,0),(-10,4),(-8,8),(-4,10),(0,12),(4,10),(8,8),(10,4),
+             (12,0),(10,-4),(8,-8),(4,-10),(0,-12),(-4,-10),(-8,-8),(-10,-4)]
+    out = []
+    for pose, (dx, dy) in enumerate(trail):
+        tx = (dx * 96 + foldx) & 0xFFFFFF
+        ty = (-dy * 192 + foldy) & 0xFFFFFF
+        # PAS D'ESPACE dans la liste d'operandes : lwasm coupe l'operande a
+        # l'espace et voit une expression vide (« Bad expression »)
+        out.append(" fcb $%02X,$%02X,$%02X,0,$%02X,$%02X,$%02X,0"
+                   "   ; pose %2d (arcade %3d,%3d) : x %+5d  y %+5d"
+                   % (tx >> 16, (tx >> 8) & 0xFF, tx & 0xFF,
+                      ty >> 16, (ty >> 8) & 0xFF, ty & 0xFF,
+                      pose, dx, dy,
+                      tx - (0x1000000 if tx >= 0x800000 else 0),
+                      ty - (0x1000000 if ty >= 0x800000 else 0)))
+    return "\n".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -191,6 +281,13 @@ def main():
     ap.add_argument("--out", default="cytron_sim.png")
     ap.add_argument("--limit", type=int, default=0,
                     help="s'arreter apres N gommes semees (0 = sans limite)")
+    ap.add_argument("--check-v2", action="store_true",
+                    help="banc differentiel : emule le pipeline 6809 propose "
+                         "au bit pres et le compare cellule a cellule a la "
+                         "reference arcade sur tous les subtypes de la wave")
+    ap.add_argument("--emit-table", action="store_true",
+                    help="emet la table asm cytron.trail.tbl (source de la "
+                         "table committee dans movescript.asm)")
     ap.add_argument("--phase", nargs="*", type=int, default=[3],
                     help="phase de grille par cytron (px, 0..7) : camera_x au "
                          "spawn mod 8. La cellule arcade est floor((pos_ecran"
@@ -208,6 +305,9 @@ def main():
     args = ap.parse_args()
 
     rom = Rom()
+    if args.emit_table:
+        print(v2_emit_table())
+        return
     wave = []
     for line in open(os.path.join(GAME, "src/stages/04/wave.asm")):
         m = re.search(r"fcb\s+\$(\w\w),\$(\w\w),ObjID_cytron,\$(\w\w),\$(\w\w)", line)
@@ -215,6 +315,11 @@ def main():
             wave.append((int(m.group(1), 16) * 256 + int(m.group(2), 16),
                          int(m.group(4), 16)))
     print("cytrons dans la wave : %d" % len(wave))
+    if args.check_v2:
+        t, b, K = v2_check(rom, wave)
+        print("check-v2 : %d pas, %d divergences, K=%s  [FOLDX=$%03X FOLDY=$%03X]"
+              % (t, b, K, V2_FOLDX, V2_FOLDY))
+        sys.exit(0 if b == 0 else 1)
     picked = [wave[i] for i in args.wave if i < len(wave)]
     for i, (t, st) in zip(args.wave, picked):
         v = (st >> 4) & 0xF

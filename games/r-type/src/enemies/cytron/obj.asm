@@ -84,7 +84,19 @@ Init
         asla                           ; deux octets par entree
         ldx   #PresetXYIndex
         leax  a,x
-        clra
+        ; --- les sous-pixels du spawn. La table partagee est arrondie au px a
+        ; l'export : les presets 12..15 (x arcade 324) valent exactement 9,5 px
+        ; v2 — le demi-pixel manquant decale la trainee d'une cellule par
+        ; endroits (growTrail somme desormais en 8.8, il le lit). Verifie
+        ; contre la ROM (rtype.zip) : seuls ces quatre presets ont une part
+        ; fractionnaire, et elle vaut $80 partout ; les y sont tous entiers.
+        clr   y_sub,u
+        clr   x_sub,u
+        cmpa  #12*2
+        blo   >
+        ldb   #$80
+        stb   x_sub,u
+!       clra
         ldb   ,x                       ; x du preset, en px ecran
         addd  glb_camera_x_pos
         std   x_pos,u
@@ -229,42 +241,47 @@ cytron.tick
 ; growTrail — semer une gomme dans l'axe de la pose
 ;
 ; 69d9..6a1d : la position, decalee du couple (dx,dy) de la pose, donne la
-; cellule a sonder ; l'ecriture n'a lieu que si elle lit TILE_EMPTY. Le
-; decalage est en px ARCADE : x0,375 en X et x0,75 en Y pour passer en unites
-; v2 — soit, pour les seize valeurs de la table, un simple decalage puisque
-; toutes valent 0, 4, 8, 10 ou 12.
+; cellule a sonder ; l'ecriture n'a lieu que si elle lit TILE_EMPTY.
+;
+; EN 8.8 COMPLET (27/08/2026). L'arcade floore la somme position+decalage,
+; jamais la position seule : ici la position ENTIERE (x_pos:x_sub, 24 bits)
+; recoit un offset 8.8 de la table — qui porte deja le facteur d'echelle
+; exact, la phase de grille ET la negation de l'axe y (voir son en-tete dans
+; movescript.asm) — et seule la SOMME est tronquee au px. La composition des
+; floors fait le reste : floor(v/768) = floor(floor(v/256)/3), le chemin
+; div3/div6 de pscroll.grow est inchange. Prouve cellule a cellule contre la
+; reference arcade sur les 18 subtypes de la wave (cytron_sim --check-v2,
+; 3230 pas, 0 divergence). Surcout : ~17 cycles par axe, une fois par cytron
+; et par trame.
+;
+; Le x de carte part en pile ; on ne retire pas la camera, grow la rajoute —
+; l'aller-retour ne se compensait meme pas exactement, grow tournant avant
+; que pscroll ne recoive la camera du tour (1 a 2 px d'ecart releves).
 ; ---------------------------------------------------------------------------
 growTrail
         ldb   anim_frame,u
         andb  #$0F
         aslb
-        aslb                           ; 4 octets par pose
+        aslb
+        aslb                           ; 8 octets par pose
         ldx   #cytron.trail.tbl
         abx
-        ; LA TABLE EST DEJA EN UNITES V2 (movescript.asm) : plus rien a
-        ; convertir ici. Elle l'etait a l'execution par decalages
-        ; arithmetiques, qui arrondissent vers -INFINI et rendaient le cercle
-        ; de semis asymetrique — cinq paires de poses opposees sur huit ne
-        ; l'etaient plus, et le point de semis sautait d'une cellule selon la
-        ; direction. Voir l'en-tete de la table.
-        ldd   ,x                       ; dx, en px v2
-        addd  x_pos,u
-        pshs  d                        ; x de CARTE de la cellule visee : on ne
-                                       ; retire plus la camera pour que grow la
-                                       ; rajoute — l'aller-retour ne se
-                                       ; compensait meme pas exactement, grow
-                                       ; tournant avant que pscroll ne recoive
-                                       ; la camera du tour (1 a 2 px d'ecart)
-        ldd   2,x                      ; dy, en px v2
-        ; LE MEME AXE INVERSE. La table 0x1000:2D90 garde la convention
-        ; ARCADE : dy positif veut dire VERS LE HAUT. On la retranche donc au
-        ; lieu de l'ajouter, sinon le cercle de repousse est miroite
-        ; verticalement et la trainee part du mauvais cote.
-        _negd
-        addd  y_pos,u
-        tfr   b,a                      ; la ligne ecran tient dans un octet
+        ; x : partie entiere de (x_pos:x_sub) + Tx24
+        ldd   x_pos+1,u                ; [poids faible de x_pos : x_sub]
+        addd  1,x                      ; + [median : faible] de Tx
+        tfr   a,b                      ; B = octet MEDIAN du cumul — tfr laisse
+                                       ; la retenue de l'addd intacte, lda ne
+                                       ; touche pas C non plus
+        lda   x_pos,u
+        adca  ,x                       ; A = octet haut : signe + retenue
+        pshs  d                        ; D = [haut:median] = x de carte sonde
+        ; y : le meme geste — negation et ancrage sont CUITS dans Ty
+        ldd   y_pos+1,u
+        addd  4,x
+        tfr   a,b
+        lda   y_pos,u
+        adca  3,x                      ; B = la ligne ecran (l'octet median)
         puls  x                        ; x de carte
-        tfr   a,b                      ; b = ligne ecran, x = x de carte
         jmp   pscroll.gum.grow         ; la regle « vide ET pas dur » est la-bas
                                        ; — le relais RESIDENT, jamais l'appel
                                        ; direct (page du cytron != page pscroll)
