@@ -191,6 +191,13 @@ def main():
     ap.add_argument("--out", default="cytron_sim.png")
     ap.add_argument("--limit", type=int, default=0,
                     help="s'arreter apres N gommes semees (0 = sans limite)")
+    ap.add_argument("--phase", nargs="*", type=int, default=[3],
+                    help="phase de grille par cytron (px, 0..7) : camera_x au "
+                         "spawn mod 8. La cellule arcade est floor((pos_ecran"
+                         " + camera - 320)/8) — le terme camera mod 8 decale "
+                         "l'echantillonnage. Etalonnee a 3 sur capture arcade "
+                         "(5/5 lignes identiques ; 0,1,2 en font 4/5). Un seul "
+                         "nombre = commun a tous.")
     ap.add_argument("--scale", type=int, default=2,
                     help="agrandissement du rendu (numeros lisibles a 4+)")
     ap.add_argument("--trace", nargs=2, type=int, metavar=("DE", "A"),
@@ -221,7 +228,17 @@ def main():
     # motif DESIGNABLE (« la gomme 12 devrait etre a droite »).
     order, seen = [], set()
     dbg_pose, dbg_pos = {}, {}
-    actors = [(t, Cytron(rom, st), i) for i, (t, st) in enumerate(picked)]
+    actors = []
+    for i, (t, st) in enumerate(picked):
+        c = Cytron(rom, st)
+        # LA PHASE DE GRILLE : l'arcade seme dans la cellule
+        # floor((pos_ecran + camera_x - 320)/8) ; en repere decor la partie
+        # constante est preset + camera_au_spawn - 320, et son residu mod 8
+        # choisit ou tombent les frontieres de cellule. Invisible sur une
+        # droite, decisif aux sommets de courbe (c'est lui qui separait ou
+        # collait les deux gommes du haut de l'arche).
+        c.x += args.phase[i % len(args.phase)]
+        actors.append((t, c, i))
     stop = False
     for f in range(args.frames):
         if stop:
