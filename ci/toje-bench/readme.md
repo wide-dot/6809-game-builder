@@ -29,6 +29,39 @@ Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
 L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
 r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
 
+## Alignement collision / décor — `collision_overlay.py`
+
+Répond à une question et une seule : **ce que le jeu teste tombe-t-il sur ce
+que le joueur voit ?** Un décalage entre carte de collision et décor dessiné
+est invisible en lecture de code, et saute aux yeux ici.
+
+```bash
+cd games/r-type
+python3 ../../ci/toje-bench/collision_overlay.py dist/to8.fd overlay.png \
+    --stage 3 --until-camera 430 [--fire]
+```
+
+Le script amène le jeu au point voulu par le cheat du title, fige **capture
+et variables du lookup dans le même arrêt machine**, puis projette les plans
+en rejouant l'arithmétique exacte de `terrainCollision.loadMap` — chemin
+standard (indexé scroll principal) ou chemin attaché (`bgLayer`, repère de la
+couche), selon ce que la RAM dit au moment de la capture.
+
+**Le vert (foreground) est la calibration** : s'il tombe pile sur le sol
+dessiné, la projection est juste — et alors tout écart du rouge (background)
+est un vrai défaut, mesurable au pixel. Sans ce témoin, une projection fausse
+accuserait le jeu à tort.
+
+Les adresses ne sont **jamais codées en dur** : les offsets d'une unité
+bougent à chaque repack de l'arène. Le script réassemble l'unité résidente
+avec les `<define>` du config et lit son dump de symboles ; l'adresse de base
+vient du config (`common.engine` est à page/adresse fixes).
+
+Trouvé avec, le 26/08/2026 : la silhouette de collision du battleship
+(stage 3) dérivait du vaisseau dessiné — 64 px à son arrivée, 252 px plus
+loin — le plan background étant indexé sur la caméra principale alors que le
+vaisseau est dessiné par une couche mscroll qui a la sienne.
+
 ## Relevé de cadence — `fps_curve.py` + `fps_plot.py`
 
 Deux scripts hors verdict : ils ne disent pas pass/fail, ils **mesurent**.
