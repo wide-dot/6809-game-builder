@@ -84,22 +84,55 @@ Init
         asla                           ; deux octets par entree
         ldx   #PresetXYIndex
         leax  a,x
-        ; --- les sous-pixels du spawn. La table partagee est arrondie au px a
-        ; l'export : les presets 12..15 (x arcade 324) valent exactement 9,5 px
-        ; v2 — le demi-pixel manquant decale la trainee d'une cellule par
-        ; endroits (growTrail somme desormais en 8.8, il le lit). Verifie
-        ; contre la ROM (rtype.zip) : seuls ces quatre presets ont une part
-        ; fractionnaire, et elle vaut $80 partout ; les y sont tous entiers.
+        ; --- les sous-pixels du spawn, EN 8.8 COMPLET (1:1 du trace).
+        ; Trois contributions, toutes verifiees :
+        ;   . le preset : la table partagee est arrondie au px a l'export ;
+        ;     les presets 12..15 (x arcade 324) valent exactement 9,5 px v2 —
+        ;     fraction $80, les autres 0, les y tous entiers (ROM rtype.zip) ;
+        ;   . la FRACTION de la camera : la phase de la trainee sur la
+        ;     grille de gommes est (spawn+camera) mod 3 px. Le stage integre
+        ;     sa camera par scroll-map-buffered-even, en 8.8 : « x_pos must
+        ;     be followed by x_sub » — la fraction vit a glb_camera_x_pos+2
+        ;     (elle aliase glb_camera_x_pos_coarse, que RIEN n'ecrit dans ce
+        ;     build ; l'equate glb_camera_x_sub = pos-1 est un fossile v1,
+        ;     ne pas s'en servir).
+        ;     Avec la camera tronquee au pixel, chaque spawn prenait un dephasage
+        ;     arbitraire d'1/3 de cellule — le wobble d'une colonne sur les
+        ;     diagonales. Au sous-pixel, la phase suit la borne spawn par
+        ;     spawn (elle, c'est acam mod 8 qui varie) ;
+        ;   . le RECUL du rattrapage : un spawn en retard de `drop` trames
+        ;     lit une camera qui a deja avance de drop*$30 sous-unites —
+        ;     l'heure vraie du spawn arcade est derriere. On la retablit.
         clr   y_sub,u
-        clr   x_sub,u
+        ldb   #0                       ; fraction du preset...
         cmpa  #12*2
         blo   >
-        ldb   #$80
+        ldb   #$80                     ; ...un demi pour les presets 12..15
+!       addb  glb_camera_x_pos+2       ; + la fraction camera (retenue -> C)
         stb   x_sub,u
-!       clra
-        ldb   ,x                       ; x du preset, en px ecran
+        ldb   ,x                       ; x du preset, en px ecran (ldb garde C)
+        adcb  #0                       ; la retenue des fractions
+        clra
         addd  glb_camera_x_pos
         std   x_pos,u
+        ; le recul : x24 -= wave_frame_drop * $30 (le pas camera 8.8 du stage)
+        lda   wave_frame_drop,u
+        ldb   #$30
+        mul                            ; A = entier du recul, B = sa fraction
+        pshs  a                        ; l'entier attend son tour
+        lda   x_sub,u
+        pshs  b
+        suba  ,s+                      ; la fraction d'abord (emprunt -> C)
+        sta   x_sub,u
+        ldd   x_pos,u                  ; ldd garde C
+        bcs   @borrow
+        subb  ,s+                      ; l'entier du recul
+        sbca  #0
+        bra   @seeded
+@borrow subb  ,s+
+        sbca  #0
+        subd  #1                       ; l'emprunt de la fraction
+@seeded std   x_pos,u
         clra
         ldb   1,x                      ; y du preset
         ; 69ae : l'arcade fait `+0x08 += 4`. SON AXE Y EST INVERSE DU NOTRE — la

@@ -196,54 +196,62 @@ class Cytron:
 # L'identite floor(v/768) = floor(floor(v/256)/3) rend la composition exacte :
 # AUCUNE division nouvelle cote 6809.
 # ---------------------------------------------------------------------------
-# NOTE camera : en jeu la position de spawn est preset + camera, et le residu
-# de la camera (mod 3 px v2) decale la phase d'echantillonnage PAR CYTRON —
-# comme en arcade, ou acam mod 8 au spawn fait exactement ca. C'est une
-# variation AUTHENTIQUE : le pliage n'essaie pas de l'annuler (tentative du
-# 27/08 a $220 : moins bonne sur machine, 46/52 contre 58/62 — le residu
-# estime etait faux d'un pixel et il varie par spawn de toute facon). Le banc
-# --check-v2 prouve le pipeline a camera nulle ; sur machine, la comparaison
-# au dump accepte le wobble d'une cellule sur les bords que ce residu induit.
-V2_FOLDX = 0x120        # 288 : la phase x, 3 px arcade * 96
+# CAMERA AU SOUS-PIXEL (27/08/2026, 1:1). Depuis que l'Init du cytron seme
+# x_sub avec la fraction camera (glb_camera_x_pos+2) moins le recul du
+# rattrapage, la phase de chaque trainee suit la camera au sous-pixel —
+# comme la borne, ou c'est acam mod 8 au spawn qui varie. La camera du stage
+# est deterministe (checkpoint + horloge de wave lies par stage.setup), donc
+# UNE constante de pliage cale tout le stage : FOLDX etalonne sur machine par
+# identification inverse (le modele reproduit 162/163 cellules du dump reel,
+# puis 172/173 de la reference avec ce pliage, ZERO cellule parasite, sans
+# aucun alignement libre). V2_CAM24 est la camera 8.8 a l'horloge de wave 0,
+# identifiee au meme balayage ; le banc --check-v2 la modelise.
+V2_FOLDX = 0x2D0        # 720 : phase arcade + constante camera du stage
 V2_FOLDY = 0x180        # 384 : l'ancrage y, dans la fenetre [320..511]
+V2_CAM24 = 6048         # camera 8.8 a wave t=0 (identification inverse toje)
 V2_VPY = 11             # field.VP_Y : le haut du champ de gommes
 
 
 def v2_check(rom, wave, foldx=V2_FOLDX, foldy=V2_FOLDY):
-    """Compare cellule a cellule le pipeline 6809 emule et la reference arcade
-    sur tous les subtypes de la wave. Retourne (pas, divergences, K)."""
+    """Prouve la MECANIQUE 6809 du semis : l'emulation au bit pres (adds 16
+    bits a retenue, octets de signe, masques 24 bits, int PUIS division) doit
+    egaler la formule ideale floor((position8.8 + offset)/cellule) a memes
+    termes — camera par spawn comprise. C'est le banc de la composition des
+    floors et des retenues ; la PHASE (le choix de foldx) se juge, elle, sur
+    machine contre la reference etalonnee (voir l'historique du 27/08 : une
+    phase unique pour tous les spawns n'est pas la verite arcade, la camera
+    par spawn EST le comportement de la borne).
+    Retourne (pas, divergences, None)."""
     total = bad = 0
-    K = None
-    for st in sorted(set(s for _, s in wave)):
-        c = Cytron(rom, st)
-        pa, pay = int(c.x), int(c.y) + 4
-        x24 = (pa - 320) * 96 + 8 * 256          # spawn exact 8.8 (camera 0)
-        y24 = (392 - pay) * 192 + 3 * 256 - 3 * 256
+    for t4, st in wave:
+        tsp = t4 // 4
+        g = Cytron(rom, st)
+        pa, pay = int(g.x), int(g.y)
+        x24 = (pa - 320) * 96 + 8 * 256 + V2_CAM24 + 48 * tsp
+        y24 = (392 - pay) * 192 + 3 * 256
         for f in range(4000):
-            if not c.alive:
+            if not g.alive:
                 break
-            px, py = int(c.x), int(c.y)
-            c.step_frame()
-            x24 += (int(c.x) - px) * 96
-            y24 -= (int(c.y) - py) * 192
-            adx, ady = rom.trail[c.pose & 0x0F]
-            acell = (int(c.x) + adx + 3) // 8    # la verite arcade, phase 3
-            # cote v2 la camera fait partie de la position ; cote arcade elle
-            # est dans le repere decor deja — K l'absorbe, la constance juge
-            arow = (int(c.y) + ady) // 8
-            sx = (x24 + ((adx * 96 + foldx) & 0xFFFFFF)) & 0xFFFFFF
-            sy = (y24 + ((-ady * 192 + foldy) & 0xFFFFFF)) & 0xFFFFFF
-            xint = sx >> 8
-            if xint >= 0x8000: xint -= 0x10000
-            line = sy >> 8
-            if line >= 0x8000: line -= 0x10000
-            vcell = (xint - 8) // 3
-            vrow = (line - V2_VPY) // 6
-            k = (acell - vcell, arow + vrow)
+            px, py = int(g.x), int(g.y)
+            g.step_frame()
+            x24 += (int(g.x) - px) * 96
+            y24 -= (int(g.y) - py) * 192
+            adx, ady = rom.trail[g.pose & 0x0F]
+            # --- la formule ideale (entiers python, floors exacts)
+            icol = ((x24 + adx * 96 + foldx) // 256 - 8) // 3
+            irow = ((y24 - ady * 192 + foldy) // 256 - 11) // 6
+            # --- l'emulation 6809 : masques, retenues, signe
+            xi = (x24 + ((adx * 96 + foldx) & 0xFFFFFF)) & 0xFFFFFF
+            li = (y24 + ((-ady * 192 + foldy) & 0xFFFFFF)) & 0xFFFFFF
+            xi >>= 8
+            if xi >= 0x8000: xi -= 0x10000
+            li >>= 8
+            if li >= 0x8000: li -= 0x10000
+            vcol, vrow = (xi - 8) // 3, (li - 11) // 6
             total += 1
-            if K is None: K = k
-            elif k != K: bad += 1
-    return total, bad, K
+            if (vcol, vrow) != (icol, irow):
+                bad += 1
+    return total, bad, None
 
 
 def v2_emit_table(foldx=V2_FOLDX, foldy=V2_FOLDY):

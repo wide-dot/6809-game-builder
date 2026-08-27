@@ -96,7 +96,8 @@ cytron.script.tbl
 ; Ici chaque pose porte DEUX offsets 8.8 de 3 octets (sign-extended, poids
 ; fort en tete), 8 octets par pose :
 ;   Tx = dx_arcade * $60 + $120    ($60 = 0,375 px v2 par px arcade, EXACT ;
-;                                   $120 = la phase, 3 px arcade, CUITE ici
+;                                   $2D0 = phase arcade + constante camera du
+;                                   stage (etalonnage inverse toje), CUITE ici
 ;                                   pour ne rien couter a l'execution)
 ;   Ty = -dy_arcade * $C0 + $180   (l'axe y v2 est INVERSE, la negation est
 ;                                   cuite aussi — plus de _negd dans growTrail ;
@@ -110,20 +111,20 @@ cytron.script.tbl
 ; et le banc differentiel qui la prouve (0 divergence, 3230 pas, 18 subtypes) :
 ;   python3 ci/toje-bench/cytron_sim.py --check-v2
 cytron.trail.tbl
- fcb $FF,$FC,$A0,0,$00,$01,$80,0   ; pose  0 (arcade -12,  0) : x  -864  y  +384
- fcb $FF,$FD,$60,0,$FF,$FE,$80,0   ; pose  1 (arcade -10,  4) : x  -672  y  -384
- fcb $FF,$FE,$20,0,$FF,$FB,$80,0   ; pose  2 (arcade  -8,  8) : x  -480  y -1152
- fcb $FF,$FF,$A0,0,$FF,$FA,$00,0   ; pose  3 (arcade  -4, 10) : x   -96  y -1536
- fcb $00,$01,$20,0,$FF,$F8,$80,0   ; pose  4 (arcade   0, 12) : x  +288  y -1920
- fcb $00,$02,$A0,0,$FF,$FA,$00,0   ; pose  5 (arcade   4, 10) : x  +672  y -1536
- fcb $00,$04,$20,0,$FF,$FB,$80,0   ; pose  6 (arcade   8,  8) : x +1056  y -1152
- fcb $00,$04,$E0,0,$FF,$FE,$80,0   ; pose  7 (arcade  10,  4) : x +1248  y  -384
- fcb $00,$05,$A0,0,$00,$01,$80,0   ; pose  8 (arcade  12,  0) : x +1440  y  +384
- fcb $00,$04,$E0,0,$00,$04,$80,0   ; pose  9 (arcade  10, -4) : x +1248  y +1152
- fcb $00,$04,$20,0,$00,$07,$80,0   ; pose 10 (arcade   8, -8) : x +1056  y +1920
- fcb $00,$02,$A0,0,$00,$09,$00,0   ; pose 11 (arcade   4,-10) : x  +672  y +2304
- fcb $00,$01,$20,0,$00,$0A,$80,0   ; pose 12 (arcade   0,-12) : x  +288  y +2688
- fcb $FF,$FF,$A0,0,$00,$09,$00,0   ; pose 13 (arcade  -4,-10) : x   -96  y +2304
- fcb $FF,$FE,$20,0,$00,$07,$80,0   ; pose 14 (arcade  -8, -8) : x  -480  y +1920
- fcb $FF,$FD,$60,0,$00,$04,$80,0   ; pose 15 (arcade -10, -4) : x  -672  y +1152
+ fcb $FF,$FE,$50,0,$00,$01,$80,0   ; pose  0 (arcade -12,  0) : x  -432  y  +384
+ fcb $FF,$FF,$10,0,$FF,$FE,$80,0   ; pose  1 (arcade -10,  4) : x  -240  y  -384
+ fcb $FF,$FF,$D0,0,$FF,$FB,$80,0   ; pose  2 (arcade  -8,  8) : x   -48  y -1152
+ fcb $00,$01,$50,0,$FF,$FA,$00,0   ; pose  3 (arcade  -4, 10) : x  +336  y -1536
+ fcb $00,$02,$D0,0,$FF,$F8,$80,0   ; pose  4 (arcade   0, 12) : x  +720  y -1920
+ fcb $00,$04,$50,0,$FF,$FA,$00,0   ; pose  5 (arcade   4, 10) : x +1104  y -1536
+ fcb $00,$05,$D0,0,$FF,$FB,$80,0   ; pose  6 (arcade   8,  8) : x +1488  y -1152
+ fcb $00,$06,$90,0,$FF,$FE,$80,0   ; pose  7 (arcade  10,  4) : x +1680  y  -384
+ fcb $00,$07,$50,0,$00,$01,$80,0   ; pose  8 (arcade  12,  0) : x +1872  y  +384
+ fcb $00,$06,$90,0,$00,$04,$80,0   ; pose  9 (arcade  10, -4) : x +1680  y +1152
+ fcb $00,$05,$D0,0,$00,$07,$80,0   ; pose 10 (arcade   8, -8) : x +1488  y +1920
+ fcb $00,$04,$50,0,$00,$09,$00,0   ; pose 11 (arcade   4,-10) : x +1104  y +2304
+ fcb $00,$02,$D0,0,$00,$0A,$80,0   ; pose 12 (arcade   0,-12) : x  +720  y +2688
+ fcb $00,$01,$50,0,$00,$09,$00,0   ; pose 13 (arcade  -4,-10) : x  +336  y +2304
+ fcb $FF,$FF,$D0,0,$00,$07,$80,0   ; pose 14 (arcade  -8, -8) : x   -48  y +1920
+ fcb $FF,$FF,$10,0,$00,$04,$80,0   ; pose 15 (arcade -10, -4) : x  -240  y +1152
 
