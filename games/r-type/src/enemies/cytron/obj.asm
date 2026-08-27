@@ -275,12 +275,18 @@ growTrail
         lda   x_pos,u
         adca  ,x                       ; A = octet haut : signe + retenue
         pshs  d                        ; D = [haut:median] = x de carte sonde
-        ; y : le meme geste — negation et ancrage sont CUITS dans Ty
+        ; y : le meme geste — negation et ancrage sont CUITS dans Ty.
+        ; Ty occupe les octets 4,5,6 de l'entree : le mot bas est [5,x:6,x]
+        ; et le signe 4,x. La premiere version lisait 4,x/3,x — un octet
+        ; trop haut : +4/256 px au lieu de +4,5 pour la pose 9, d'ou des
+        ; gommes de depart une rangee trop haut (deux espaces sous l'arche
+        ; au lieu d'un, releve par l'auteur ; la pose 8 de la ligne tombait
+        ; juste par coincidence d'arrondi).
         ldd   y_pos+1,u
-        addd  4,x
+        addd  5,x
         tfr   a,b
         lda   y_pos,u
-        adca  3,x                      ; B = la ligne ecran (l'octet median)
+        adca  4,x                      ; B = la ligne ecran (l'octet median)
         puls  x                        ; x de carte
         jmp   pscroll.gum.grow         ; la regle « vide ET pas dur » est la-bas
                                        ; — le relais RESIDENT, jamais l'appel
