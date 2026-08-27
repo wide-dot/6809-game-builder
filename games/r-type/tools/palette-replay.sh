@@ -443,7 +443,7 @@ python3 tools/objid_rename.py
 # Ils ne VOTENT pas pour la palette de leur stage — c'est une decision separee,
 # et la lecon du brood est qu'un votant peut depenser une case pour des pixels
 # qu'on ne voit pas.
-python3 tools/arcade_to_sprites.py cytron   --palette 04
+python3 tools/arcade_to_sprites.py cytron   --palette 04 --marge-droite 4
 python3 tools/arcade_to_sprites.py geld     --palette 04
 # Le compiler est le BOSS de fin du stage 4, et il combat dans une zone ou la
 # tilemap n'existe plus — mesure : les 144 derniers pixels de l'in.png du

@@ -2,5 +2,6 @@
 # ancre = coin haut-gauche du cadre vs centre du canevas,
 #         en pixels TO8 — le code objet en a besoin.
 cadre_arcade 112 112 143 143
-taille_to8 12 24
+taille_to8 16 24
 ancre_to8 -6.0 -12.0
+marge_droite 4

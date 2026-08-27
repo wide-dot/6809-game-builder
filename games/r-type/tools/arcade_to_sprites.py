@@ -227,7 +227,7 @@ def correspondance(im_src, pal, dispo, forcer=None):
     return m
 
 
-def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False):
+def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0):
     base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
     orig = os.path.join(base, 'images/original')
     if not os.path.isdir(orig):
@@ -290,6 +290,11 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False):
                 cycle.append(pose)
             else:
                 pose = n
+            if marge:
+                large = Image.new('P', (w + marge, h), 0)
+                large.putpalette(plat)
+                large.paste(petit, (0, 0))
+                petit = large
             if not dry:
                 os.makedirs(dst, exist_ok=True)
                 petit.save(os.path.join(dst, '%02d.png' % pose))
@@ -309,7 +314,10 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False):
                         '#         en pixels TO8 — le code objet en a besoin.\n'
                         'cadre_arcade %d %d %d %d\n'
                         'taille_to8 %d %d\n'
-                        'ancre_to8 %.1f %.1f\n' % (u[0], u[1], u[2], u[3], w, h, ax, ay))
+                        'ancre_to8 %.1f %.1f\n' % (u[0], u[1], u[2], u[3],
+                                                    w + marge, h, ax, ay))
+                if marge:
+                    f.write('marge_droite %d\n' % marge)
     print('  %d frames%s' % (total, ' (dry-run, rien ecrit)' if dry else ' ecrites'))
     return 0
 
@@ -330,6 +338,15 @@ def main():
                     help='R,G,B:MAT ou R,G,B:A~B (trame) — couleur arcade '
                          'posee sur un index (ou un damier de deux), hors '
                          'Lab. Repetable. Preserve les niveaux d\'un degrade.')
+    ap.add_argument('--marge-droite', type=int, default=0,
+                    help="pixels TO8 transparents ajoutes A DROITE du cadre. "
+                         "Le centre d'un sprite compile est width/2 : une "
+                         "marge de N decale le dessin de N/2 px vers la "
+                         "GAUCHE a l'affichage, sans toucher x_pos. Sert a "
+                         "recentrer un sprite sur sa mecanique (cytron : la "
+                         "gomme sort desormais une cellule plus a gauche, le "
+                         "corps doit suivre de 2 px — pixels larges obligent, "
+                         "c'est l'echelon exact).")
     ap.add_argument('--ajuster', default=None,
                     help='index materiels COMMUNS re-regles pour ce combat, ex. 7,8')
     ap.add_argument('--reserver', default=None,
@@ -359,7 +376,8 @@ def main():
         palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj)
         return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe,
                          forcer, a.dedup)
-    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer, a.dedup)
+    return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer,
+                     a.dedup, a.marge_droite)
 
 
 

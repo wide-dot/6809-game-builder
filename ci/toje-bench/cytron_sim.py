@@ -207,12 +207,18 @@ class Cytron:
 # aucun alignement libre). V2_CAM24 est la camera 8.8 a l'horloge de wave 0,
 # identifiee au meme balayage ; le banc --check-v2 la modelise.
 V2_FOLDX = 0x2D0        # 720 : phase arcade + constante camera du stage
+# L'ALIGNEMENT ABSOLU trail <-> decor : une cellule entiere A GAUCHE, cale par
+# l'auteur sur la grille des gommes initiales du niveau (27/08 : le motif est
+# parfait mais tout le semis tombait un cran a droite des colonnes de gommes
+# integrees — visible au debut du niveau et partout). Une cellule = 768
+# sous-unites ; la constante se plie dans la table comme le reste.
+V2_ALIGNX = -768
 V2_FOLDY = 0x180        # 384 : l'ancrage y, dans la fenetre [320..511]
 V2_CAM24 = 6048         # camera 8.8 a wave t=0 (identification inverse toje)
 V2_VPY = 11             # field.VP_Y : le haut du champ de gommes
 
 
-def v2_check(rom, wave, foldx=V2_FOLDX, foldy=V2_FOLDY):
+def v2_check(rom, wave, foldx=V2_FOLDX + V2_ALIGNX, foldy=V2_FOLDY):
     """Prouve la MECANIQUE 6809 du semis : l'emulation au bit pres (adds 16
     bits a retenue, octets de signe, masques 24 bits, int PUIS division) doit
     egaler la formule ideale floor((position8.8 + offset)/cellule) a memes
@@ -254,7 +260,7 @@ def v2_check(rom, wave, foldx=V2_FOLDX, foldy=V2_FOLDY):
     return total, bad, None
 
 
-def v2_emit_table(foldx=V2_FOLDX, foldy=V2_FOLDY):
+def v2_emit_table(foldx=V2_FOLDX + V2_ALIGNX, foldy=V2_FOLDY):
     """Emet la table asm cytron.trail.tbl (8 octets par pose, [x:3][y:3][0,0]).
     C'est la SOURCE de la table committee — regle maison : une donnee de build
     sort d'un outil rejouable, jamais d'une transcription."""
