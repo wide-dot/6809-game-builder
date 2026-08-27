@@ -786,9 +786,7 @@ pscroll.move
         addb  #pscroll.CHUNKS_PER_LINE-1
 @feed   jsr   pscroll.feedBand
         bra   @floop
-@done   jmp   pscroll.flushDeferred    ; les semis differes dont la bande vient
-                                       ; d'etre gravee — meme part, la queue de
-                                       ; move est leur seul point de rejeu
+@done   rts
 
 ; -----------------------------------------------------------------------------
 ; pscroll.ribbon.up / .down — l'ancre du ruban, d'une bande
@@ -1298,25 +1296,13 @@ pscroll.mutate
         ; l'ecran et sa gomme entre dans le champ avec le defilement. Ici le
         ; ruban ne couvre que l'ecran : refuser hors ruban AVANT d'ecrire
         ; jetait ces semis, et la trainee naissait trouee a droite (releve
-        ; auteur, 27/08). Le bit de carte est donc pose, et la cellule part
-        ; dans la FILE DES DIFFERES — voir @defer : le feed ne lit PAS la
-        ; carte (il grave des sequences precompilees du niveau initial, et
-        ; rien n'est jamais re-nourri), il faut donc repeindre la cellule
-        ; NOUS-MEMES quand sa bande entre dans le ruban.
+        ; auteur, 27/08). Le bit de carte est donc pose ; l'affichage, lui,
+        ; vient du PRE-GRAVAGE du build — voir @defer.
         ldb   pscroll.sc.chunk
         subb  pscroll.edge16           ; dans le ruban ?
         bcs   @maponly                 ; A GAUCHE : la bande ne sera plus
                                        ; jamais gravee ni vue — la carte fait
-                                       ; foi, rien a differer. NE PAS enfiler :
-                                       ; un cycle mange/repousse hors ecran
-                                       ; gauche pousse CHAQUE trame, et la
-                                       ; file (purgee au mieux tous les ~5
-                                       ; tours, quand la camera entiere bouge)
-                                       ; debordait — les vrais differes de
-                                       ; droite arrivaient sur file pleine et
-                                       ; etaient perdus (constat au pas-a-pas,
-                                       ; 27/08 : 5 poussees gauche pour 4
-                                       ; droite, n=0 aux flushs).
+                                       ; foi, rien de plus a faire.
         ; LE BORD DROIT SE JUGE SUR LE DERNIER PIXEL (27/08/2026, releve
         ; auteur). Une cellule fait 3 px : quand elle CHEVAUCHE une frontiere
         ; de bande (px mod 16 = 14 ou 15 — et 0 ou 15 pour la phase decalee),
@@ -1324,8 +1310,8 @@ pscroll.mutate
         ; la cellule des que SA bande etait gravee — puis la gravure de la
         ; bande suivante ecrasait le pixel isole : un octet de 2 px pose, le
         ; pixel seul manquant. On peint seulement quand la bande du DERNIER
-        ; pixel est gravee ; sinon la cellule entiere part en file, et le
-        ; rejeu (meme critere) la repeindra complete.
+        ; pixel est gravee ; sinon la carte seule suffit — la cellule est
+        ; PRE-GRAVEE au build (voir plus bas) et arrivera avec sa bande.
         ldd   pscroll.sc.px
         addd  #2                       ; le dernier px de la cellule
         lsra
@@ -1338,7 +1324,18 @@ pscroll.mutate
         rorb
         subb  pscroll.edge16
         cmpb  #pscroll.CHUNKS_PER_LINE
-        bhs   @defer
+        bhs   @maponly
+        ; A DROITE HORS FENETRE (le bhs ci-dessus) : rien de plus a faire —
+        ; le bit de carte est pose, et l'AFFICHAGE viendra du PRE-GRAVAGE
+        ; (decision auteur, 27/08/2026) : le trace des cytrons etant
+        ; deterministe, les cellules semees avant d'etre visibles sont
+        ; calculees au build par cytron_sim --emit-prebake et fusionnees dans
+        ; le champ initial (level4_play.bin) — le feed les grave avec sa
+        ; bande, comme l'anneau arcade. La FILE DES DIFFERES qui vivait ici
+        ; (poussee + rejeu par pscroll.move + paintCell) est retiree avec
+        ; elle : ~220 octets et le balayage par trame rendus. Ecart assume :
+        ; un cytron tue pendant sa fenetre d'entree laisse ses cellules
+        ; pre-gravees, et la remise a neuf du champ (mort) les restaure.
         ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
         clra                           ; depend ni de la bande ni de la phase
         aslb
@@ -1352,144 +1349,10 @@ pscroll.mutate
 @maponly
         andcc #$FB                     ; Z = 0 : le champ a change
         rts
-@defer
-        ; HORS RUBAN : la carte est juste, l'ecran devra suivre. Premiere
-        ; version (27/08) : « feedBand lira la carte » — FAUX, verifie au
-        ; poke : un bit pose 219 px devant la camera n'apparait jamais, le
-        ; feed grave des sequences FIGEES. Deuxieme version : peindre la
-        ; bande entrante (+10) — faux aussi, le feed l'ecrase en la gravant.
-        ; La bonne mecanique : memoriser la cellule, et pscroll.move la
-        ; repeint (paintCell) une fois sa bande gravee. Un effacement hors
-        ; ruban est memorise pareil mais IGNORE au rejeu (aucun chemin n'en
-        ; produit : les balayages d'armes sont rabotes au ruban) ; file
-        ; pleine = gomme d'ecran perdue, la carte reste juste.
-        ldb   pscroll.defer.n
-        cmpb  #pscroll.DEFER_MAX
-        bhs   @maponly
-        lda   #3
-        mul
-        addd  #pscroll.defer.tbl
-        tfr   d,x
-        ldd   pscroll.sc.col
-        std   ,x
-        lda   pscroll.sc.row
-        ldb   pscroll.sc.mode          ; le mode dans le bit 7 de la rangee
-        beq   >
-        ora   #$80
-!       sta   2,x
-        inc   pscroll.defer.n
-        bra   @maponly
 @already
         orcc  #$04                     ; Z = 1 : rien a faire
         rts
 
-pscroll.DEFER_MAX equ 8
-pscroll.defer.n   fcb 0               ; semis hors ruban en attente de bande
-pscroll.defer.tbl fill 0,3*pscroll.DEFER_MAX ; (col 16 bits, rangee | mode<<7)
-
-; -----------------------------------------------------------------------------
-; pscroll.paintCell — peindre une cellule SANS toucher la carte
-; -----------------------------------------------------------------------------
-; input REG : [x] colonne, [b] rangee
-; Le pendant d'affichage d'un bit DEJA pose dans la carte : le rejeu des
-; differes. Meme chemin que setCell, sans le test « deja pleine » ni
-; l'ecriture du bit — la carte a raison, on peint.
-pscroll.paintCell
-        ldy   #pscroll.wr.tbl
-        clr   pscroll.sc.mode
-        sty   pscroll.sc.tbl
-        stx   pscroll.sc.col
-        stb   pscroll.sc.row
-        ldd   #pscroll.mutate.plans
-        std   pscroll.sc.plans
-        ldd   pscroll.sc.col
-        aslb
-        rola
-        addd  pscroll.sc.col
-        std   pscroll.sc.px
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb
-        stb   pscroll.sc.chunk
-        subb  pscroll.edge16           ; le rejeu ne vise que du grave, mais
-        bcs   @no                      ; la garde reste — paintCell est une
-        cmpb  #pscroll.CHUNKS_PER_LINE ; entree comme une autre
-        bhs   @no
-        ldb   pscroll.sc.row
-        clra
-        aslb
-        rola
-        ldx   #pscroll.rowbase.tbl
-        ldd   d,x
-        std   pscroll.sc.rowbase
-        lda   #$FF
-        sta   pscroll.sc.lastchunk
-        lbsr  pscroll.mutate.tail
-@no     rts
-
-; -----------------------------------------------------------------------------
-; pscroll.flushDeferred — rejouer les semis differes dont la bande est gravee
-; -----------------------------------------------------------------------------
-; Appele par pscroll.move apres les gravures de bandes. Trois destins par
-; entree : bande DERRIERE le ruban -> jetee (elle ne sera plus jamais gravee,
-; et elle a ete peinte quand elle etait dedans... non : elle n'a jamais ete
-; peinte, mais derriere la camera elle ne reviendra pas a l'ecran — la carte
-; fait foi pour les collisions) ; bande DANS le ruban -> peinte puis jetee ;
-; bande DEVANT -> gardee pour un prochain tour. Un effacement (bit 7 de la
-; rangee) est jete sans peindre. La file se compacte sur place.
-pscroll.flushDeferred
-        ldb   pscroll.defer.n
-        bne   >
-        rts
-!       pshs  b                        ; le compte a parcourir
-        clr   pscroll.defer.n          ; se reconstruit au fil des « garder »
-        ldu   #pscroll.defer.tbl       ; lecture
-        ldy   #pscroll.defer.tbl       ; reecriture (compactage)
-@next   ldd   ,u                       ; la colonne
-        aslb
-        rola
-        addd  ,u                       ; x3 : le px de carte de la cellule
-        addd  #2                       ; ... et son DERNIER px : une cellule a
-                                       ; cheval sur deux bandes n'est prete que
-                                       ; quand la SECONDE est gravee (le pixel
-                                       ; isole de la queue, sinon ecrase par la
-                                       ; gravure — meme critere que mutate)
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb
-        lsra
-        rorb                           ; b = la bande du dernier px
-        subb  pscroll.edge16
-        bcs   @drop                    ; derriere : ne reviendra jamais
-        cmpb  #pscroll.CHUNKS_PER_LINE
-        bhs   @keep                    ; devant, pas encore gravee
-        lda   2,u                      ; gravee : peindre — sauf un effacement
-        bmi   @drop
-        ldx   ,u
-        tfr   a,b
-        pshs  u,y
-        jsr   pscroll.paintCell
-        puls  u,y
-@drop   leau  3,u
-        bra   @tick
-@keep   ldd   ,u                       ; recopier l'entree en tete de file
-        std   ,y
-        lda   2,u
-        sta   2,y
-        leau  3,u
-        leay  3,y
-        inc   pscroll.defer.n
-@tick   dec   ,s
-        bne   @next
-        puls  b,pc
 
 ; -----------------------------------------------------------------------------
 ; pscroll.mutate.tail — la geometrie et les deux phases

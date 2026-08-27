@@ -260,6 +260,87 @@ def v2_check(rom, wave, foldx=V2_FOLDX + V2_ALIGNX, foldy=V2_FOLDY):
     return total, bad, None
 
 
+def v2_emit_prebake(rom, wave, foldx=V2_FOLDX + V2_ALIGNX, foldy=V2_FOLDY):
+    """Les gommes semees AVANT d'etre visibles, cuites dans les donnees.
+
+    Decision auteur (27/08/2026) : le trace etant entierement deterministe
+    (camera, naissances, scripts), les cellules que le runtime semerait hors
+    de la fenetre dessinee — celles que la file des differes repeignait —
+    sont calculees ICI et fusionnees dans le champ initial. Le feed les grave
+    avec sa bande, comme l'anneau arcade ; le runtime, lui, trouve la cellule
+    deja pleine et ne fait rien. La file disparait.
+
+    Ecart assume (auteur) : un cytron tue pendant sa fenetre d'entree laisse
+    ses 5-8 cellules pre-gravees ; et la remise a neuf du champ (mort +
+    checkpoint) restaure aussi ces cellules pour TOUS les cytrons du stage.
+
+    Critere = exactement les gardes du runtime : une cellule est pre-gravee
+    si, A L'INSTANT de son semis, elle n'aurait pas ete peinte directement —
+    bande du DERNIER pixel au-dela de la fenetre gravee (>= edge16+10), ou
+    hors de la fenetre de grow (offset >= 180). Les semis DERRIERE la camera
+    ne sont pas pre-graves (ils seraient devenus visibles avant leur heure).
+
+    La chaine complete, a rejouer dans cet ordre apres tout changement du
+    trace ou du champ :
+      python3 ci/toje-bench/cytron_sim.py --emit-prebake
+      python3 tools/rle_mask.py src/stages/04/terrain/level4_play.bin \
+              src/stages/04/terrain/level4_ball.rle
+      python3 tools/gen_pscroll.py            # lit level4_play.bin
+    (depuis games/r-type ; puis rebuild.)
+    """
+    ball = bytearray(open(os.path.join(
+        GAME, "src/stages/04/terrain/level4_ball.bin"), "rb").read())
+    live = bytearray(ball)                    # l'etat runtime emule
+    pre = bytearray(len(ball))
+    def get(m, c, r):
+        return (m[r*48 + (c >> 3)] >> (7 - (c & 7))) & 1 if 0 <= c < 384 and 0 <= r < 30 else 1
+    def put(m, c, r):
+        m[r*48 + (c >> 3)] |= 0x80 >> (c & 7)
+    n_pre = n_direct = 0
+    for t4, st in wave:
+        tsp = t4 // 4
+        g = Cytron(rom, st)
+        pa, pay = int(g.x), int(g.y)
+        x24 = (pa - 320) * 96 + 8 * 256 + V2_CAM24 + 48 * tsp
+        y24 = (392 - pay) * 192 + 3 * 256
+        for f in range(4000):
+            if not g.alive:
+                break
+            px_, py_ = int(g.x), int(g.y)
+            g.step_frame()
+            x24 += (int(g.x) - px_) * 96
+            y24 -= (int(g.y) - py_) * 192
+            adx, ady = rom.trail[g.pose & 0x0F]
+            xi = ((x24 + ((adx * 96 + foldx) & 0xFFFFFF)) & 0xFFFFFF) >> 8
+            li = ((y24 + ((-ady * 192 + foldy) & 0xFFFFFF)) & 0xFFFFFF) >> 8
+            if xi >= 0x8000: xi -= 0x10000
+            if li >= 0x8000: li -= 0x10000
+            col, row = (xi - 8) // 3, (li - 11) // 6
+            if not (0 <= col < 384 and 0 <= row < 30):
+                continue
+            if get(live, col, row):           # deja pleine : le runtime refuse
+                continue
+            glb = (V2_CAM24 + 48 * (tsp + f)) >> 8
+            e16 = glb >> 4
+            offset = xi - 16 * e16
+            head = (3 * col) >> 4
+            last = (3 * col + 2) >> 4
+            put(live, col, row)
+            if head < e16:
+                continue                      # derriere : ni peint ni pre-grave
+            if last - e16 >= 10 or offset >= 180:
+                put(pre, col, row)
+                n_pre += 1
+            else:
+                n_direct += 1
+    merged = bytes(a | b for a, b in zip(ball, pre))
+    open(os.path.join(GAME, "src/stages/04/terrain/level4_prebake.bin"), "wb").write(bytes(pre))
+    open(os.path.join(GAME, "src/stages/04/terrain/level4_play.bin"), "wb").write(merged)
+    print("pre-gravees : %d cellules ; peintes en jeu : %d ; champ initial %d -> %d"
+          % (n_pre, n_direct, sum(bin(b).count("1") for b in ball),
+             sum(bin(b).count("1") for b in merged)))
+
+
 def v2_emit_table(foldx=V2_FOLDX + V2_ALIGNX, foldy=V2_FOLDY):
     """Emet la table asm cytron.trail.tbl (8 octets par pose, [x:3][y:3][0,0]).
     C'est la SOURCE de la table committee — regle maison : une donnee de build
@@ -299,6 +380,10 @@ def main():
                     help="banc differentiel : emule le pipeline 6809 propose "
                          "au bit pres et le compare cellule a cellule a la "
                          "reference arcade sur tous les subtypes de la wave")
+    ap.add_argument("--emit-prebake", action="store_true",
+                    help="calcule les gommes semees avant visibilite et ecrit "
+                         "level4_prebake.bin + level4_play.bin (voir la chaine "
+                         "complete dans la docstring de v2_emit_prebake)")
     ap.add_argument("--emit-table", action="store_true",
                     help="emet la table asm cytron.trail.tbl (source de la "
                          "table committee dans movescript.asm)")
@@ -329,6 +414,9 @@ def main():
             wave.append((int(m.group(1), 16) * 256 + int(m.group(2), 16),
                          int(m.group(4), 16)))
     print("cytrons dans la wave : %d" % len(wave))
+    if args.emit_prebake:
+        v2_emit_prebake(rom, wave)
+        sys.exit(0)
     if args.check_v2:
         t, b, K = v2_check(rom, wave)
         print("check-v2 : %d pas, %d divergences, K=%s  [FOLDX=$%03X FOLDY=$%03X]"

@@ -45,7 +45,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_pellet_tables import BALL, BG, CELL_W, CELL_H, VP_Y  # le modele pixel
 
-MAP = "src/stages/04/terrain/level4_ball.bin"
+# level4_play.bin = le champ ARCADE (level4_ball) + les gommes que les
+# cytrons sement AVANT d'etre visibles, pre-calculees par cytron_sim
+# --emit-prebake (decision auteur 27/08/2026 : le trace est deterministe,
+# le feed les grave avec sa bande comme l'anneau arcade — la file des
+# differes du runtime disparait). Regenerer play.bin avant ce script si le
+# trace ou le champ change.
+MAP = "src/stages/04/terrain/level4_play.bin"
 OUT = "src/stages/04/pscroll-rows.asm"
 
 W_BYTES, ROWS = 48, 30           # la carte : 48 o x 30 rangees = 384 cellules
