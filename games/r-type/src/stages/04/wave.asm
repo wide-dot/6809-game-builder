@@ -53,7 +53,7 @@
 	fcb   $07,$80,ObjID_cytron,$00,$5F
 	fcb   $07,$98,ObjID_cancer,$00,$47
 	fcb   $07,$D0,ObjID_cytron,$02,$06
-;$07,$D4,ObjID_geld,$00,$00
+	fcb   $07,$D4,ObjID_geld,$00,$00
 	fcb   $08,$00,ObjID_cancer,$00,$3D
 	fcb   $08,$0C,ObjID_cytron,$00,$5D
 	fcb   $08,$96,ObjID_cytron,$00,$05
@@ -64,7 +64,7 @@
 	fcb   $08,$F2,ObjID_cytron,$00,$06
 	fcb   $09,$24,ObjID_pow,$00,$54
 	fcb   $09,$9C,ObjID_pow,$00,$78
-;$09,$A2,ObjID_geld,$00,$02
+	fcb   $09,$A2,ObjID_geld,$00,$02
 	fcb   $09,$B0,ObjID_cytron,$00,$04
 	fcb   $0A,$00,ObjID_bink,$01,$21
 	fcb   $0A,$00,ObjID_cytron,$00,$5F
@@ -90,7 +90,7 @@
 	fcb   $0B,$40,ObjID_cytron,$00,$80
 	fcb   $0C,$00,ObjID_cytron,$00,$9A
 	fcb   $0C,$16,ObjID_pow,$00,$13
-;$0C,$18,ObjID_geld,$00,$09
+	fcb   $0C,$18,ObjID_geld,$00,$09
 	fcb   $0C,$1C,ObjID_cytron,$00,$99
 	fcb   $0C,$30,ObjID_cytron,$00,$05
 	fcb   $0C,$44,ObjID_cytron,$00,$04
@@ -113,23 +113,23 @@
 	fcb   $0F,$1A,ObjID_pow,$00,$47
 	fcb   $10,$18,ObjID_cancer,$00,$05
 	fcb   $10,$62,ObjID_cancer,$00,$02
-;$10,$8A,ObjID_geld,$00,$01
+	fcb   $10,$8A,ObjID_geld,$00,$01
 	fcb   $10,$BC,ObjID_cancer,$00,$07
 	fcb   $10,$D8,ObjID_cancer,$00,$06
 	fcb   $10,$F8,ObjID_pow,$00,$53
 	fcb   $10,$F8,ObjID_pow,$00,$35
 	fcb   $11,$08,ObjID_pow,$00,$08
-;$11,$16,ObjID_geld,$00,$09
+	fcb   $11,$16,ObjID_geld,$00,$09
 	fcb   $11,$30,ObjID_cancer,$00,$36
-;$11,$3A,ObjID_geld,$00,$0A
-;$11,$44,ObjID_geld,$00,$0C
-;$11,$44,ObjID_geld,$00,$0D
-;$11,$44,ObjID_geld,$00,$0E
-;$11,$44,ObjID_geld,$00,$0F
+	fcb   $11,$3A,ObjID_geld,$00,$0A
+	fcb   $11,$44,ObjID_geld,$00,$0C
+	fcb   $11,$44,ObjID_geld,$00,$0D
+	fcb   $11,$44,ObjID_geld,$00,$0E
+	fcb   $11,$44,ObjID_geld,$00,$0F
 	fcb   $11,$58,ObjID_cancer,$00,$43
-;$11,$B6,ObjID_geld,$00,$0E
-;$11,$D0,ObjID_geld,$00,$01
-;$11,$E4,ObjID_geld,$00,$02
+	fcb   $11,$B6,ObjID_geld,$00,$0E
+	fcb   $11,$D0,ObjID_geld,$00,$01
+	fcb   $11,$E4,ObjID_geld,$00,$02
 	fcb   $12,$34,ObjID_cancer,$00,$30
 	fcb   $12,$52,ObjID_cancer,$00,$80
 	fcb   $12,$5C,ObjID_cancer,$00,$60

@@ -36,6 +36,7 @@ pow.Object EXPORT
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
+        INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/common/fx/explosion/explosion.const.asm"
         INCLUDE "src/common/fx/animation/index.equ"

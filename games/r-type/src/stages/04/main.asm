@@ -144,6 +144,7 @@ emitterFlash.Object EXTERNAL
 ; La bibliotheque d'ennemis de ce stage (lots charges par l'engine).
 cancer.Object     EXTERNAL
 cytron.Object     EXTERNAL
+geld.Object       EXTERNAL
 pstaff.Object     EXTERNAL
 
  SECTION code

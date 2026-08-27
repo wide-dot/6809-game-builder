@@ -1550,6 +1550,76 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
+<file name="lib.geld" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/geld.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/geld/geld.unit.asm"/>
+                                <gfxcomp file="lib.geld" gendir="gen/enemies/geld"
+                                         gensource="gen/enemies/geld/includes.asm"
+                                         genindex="gen/enemies/geld/index.asm">
+                                                                        <image name="geld_right_0" filename="src/enemies/geld/images/right/00.png" index="0">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_right_1" filename="src/enemies/geld/images/right/01.png" index="1">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_right_2" filename="src/enemies/geld/images/right/02.png" index="2">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_right_3" filename="src/enemies/geld/images/right/03.png" index="3">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_left_0" filename="src/enemies/geld/images/left/00.png" index="4">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_left_1" filename="src/enemies/geld/images/left/01.png" index="5">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_left_2" filename="src/enemies/geld/images/left/02.png" index="6">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_left_3" filename="src/enemies/geld/images/left/03.png" index="7">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_down_0" filename="src/enemies/geld/images/down/00.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_down_1" filename="src/enemies/geld/images/down/01.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_down_2" filename="src/enemies/geld/images/down/02.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_down_3" filename="src/enemies/geld/images/down/03.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_0" filename="src/enemies/geld/images/engage/00.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_1" filename="src/enemies/geld/images/engage/01.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_2" filename="src/enemies/geld/images/engage/02.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_3" filename="src/enemies/geld/images/engage/03.png" index="15">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_4" filename="src/enemies/geld/images/engage/04.png" index="16">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_5" filename="src/enemies/geld/images/engage/05.png" index="17">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_6" filename="src/enemies/geld/images/engage/06.png" index="18">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="geld_engage_7" filename="src/enemies/geld/images/engage/07.png" index="19">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
 <file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1904,6 +1974,7 @@
                 <scene name="scenes.lot.cancer" section="SCENE" gensource="gen/scenes/lot-cancer.asm">
                     <load name="lib.cancer"/>
                     <load name="lib.cytron"/>
+                    <load name="lib.geld"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>

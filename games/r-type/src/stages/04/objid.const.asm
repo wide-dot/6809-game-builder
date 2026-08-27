@@ -27,8 +27,11 @@ ObjID_starfield equ 40
 * champ de gommes. Le stage en fait naitre 38, sur neuf variantes de script.
 ObjID_cytron equ 41
 
+* geld : le mangeur de gommes — l'exact contraire du cytron (13 spawns).
+ObjID_geld equ 42
+
 ObjID_bugrender equ 49 ; le renderer des chaines de bug — meme valeur que
-                       ; l'equ de bug.unit.asm (47 partout) ; 42..48 libres
+                       ; l'equ de bug.unit.asm (47 partout) ; 43..48 libres
 objid.count equ 49
 objid.animation equ ObjID_animation
 

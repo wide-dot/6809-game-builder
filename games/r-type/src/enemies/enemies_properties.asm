@@ -90,6 +90,11 @@ bink_hitdamage		equ 1
 cancer_hitbox_x		equ 6
 cancer_hitbox_y		equ 13
 cancer_hitdamage	equ 1
+; geld : AABB arcade 24x24 centree (0x1000:407E, +-12 px) -> +-4,5 px v2 en X
+; et +-9 lignes en Y ; un seul coup le tue (liste one-shot v1).
+geld_hitbox_x		equ 4
+geld_hitbox_y		equ 9
+geld_hitdamage		equ 1
 
 tabrok_hitbox_x		equ 6   ; FIX E : arcade demi-largeur 16 × 0.375 = 6
 tabrok_hitbox_y		equ 18  ; FIX E : arcade demi-hauteur 24 × 0.75 = 18

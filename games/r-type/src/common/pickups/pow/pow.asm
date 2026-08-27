@@ -139,8 +139,7 @@ flyStep
         ldd   y_pos,u
         addd  #12
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   pow.probeSolid
         tstb
         beq   >
 
@@ -177,8 +176,7 @@ flyStep
         std   terrainCollision.sensor.x
         ldd   y_pos,u
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   pow.probeSolid
         tstb
         beq   >
 
@@ -196,8 +194,7 @@ flyStep
         ldd   y_pos,u
         subd  #12
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   pow.probeSolid
         tstb
         bne   @fall
         rts
@@ -245,8 +242,7 @@ walk
         ldd   y_pos,u
         addd  #15
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   pow.probeSolid
         tstb
         bne   >                        ; here branch if collision (ground continuity)
 
@@ -277,8 +273,7 @@ walkTakeOff
         ldd   y_pos,u
         addd  #7
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   pow.probeSolid
         tstb
         beq   >
 
@@ -383,3 +378,25 @@ PresetXYIndex
         ; V2-DEVIATION: chemin du preset — les tables d'arcade communes
         ; vivent dans src/common/lib/presets/ en v2.
         INCLUDE "src/common/lib/presets/18dd0_preset-xy.asm"
+
+; ---------------------------------------------------------------------------
+; pow.probeSolid — le terrain « solide » : dur OU gomme
+;
+; L'arcade n'a qu'un test : une gomme y EST une tuile d'avant-plan, solide
+; par nature (run_cytron ecrit 0x9F6 dans la tilemap fg). Notre stage 4 la
+; range dans le plan ARRIERE (plan 0, la carte residente que pscroll mute) :
+; marcher ou ramper « sur le decor » doit donc tester les DEUX plans quand le
+; stage l'arme (globals.backgroundSolid — releve auteur 27/08 : cancer et pow
+; traversaient les gommes). Meme idiome que les armes (obj_simplefire.asm).
+; sortie : [b] != 0 si solide. A est detruite (elle l'etait deja par .do).
+; ---------------------------------------------------------------------------
+pow.probeSolid
+        ldb   #1                       ; l'avant-plan : le decor dur
+        jsr   terrainCollision.do
+        tstb
+        bne   @rts
+        lda   globals.backgroundSolid  ; un second plan solide sur ce stage ?
+        beq   @rts                     ; non : B = 0, rien touche
+        clrb                           ; l'arriere-plan : les gommes
+        jsr   terrainCollision.do
+@rts    rts
