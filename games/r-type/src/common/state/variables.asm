@@ -120,6 +120,25 @@ globals.forcepodlevel      equ GLOBAL_VARIABLES+150 ; 1 octet, 0 a 3 (0 = pas de
 globals.forcepodtype       equ GLOBAL_VARIABLES+151 ; 1 octet, = player_one_laser_type arcade
 globals.bitdevice          equ GLOBAL_VARIABLES+152 ; 1 octet, nombre de bit devices (0, 1 ou 2)
 globals.speedlevel         equ GLOBAL_VARIABLES+153 ; 2 octets, offset dans la table speed.preset
+
+* LE PLAN DE FOND EST-IL DU SOL POUR LES ENNEMIS TERRESTRES ? (27/08/2026)
+*
+* A ne pas confondre avec globals.backgroundSolid, qui dit « les ARMES et le
+* vaisseau doivent tester le second plan ». Les deux ne se recouvrent pas :
+* le stage 1 arme backgroundSolid des son init, mais son plan de fond porte la
+* SILHOUETTE DU BOSS — un cancer qui marcherait dessus aurait un comportement
+* faux, et le test coûterait une sonde par direction et par trame pendant tout
+* le niveau pour rien (releve auteur).
+*
+* Ce drapeau-ci ne concerne que les ennemis qui MARCHENT ou RAMPENT sur le
+* decor (cancer, pow). Il n'est arme que la ou le plan de fond est vraiment du
+* sol : le stage 4, dont le plan 0 est le champ de gommes. En arcade la
+* question ne se pose pas — une gomme y EST une tuile d'avant-plan, et
+* run_cancer comme run_pow_armor ne sondent QUE l'avant-plan
+* (probe_foreground_tile, seuil 0xDFC : verifie au desassemblage 0x40:8A3A et
+* 0x40:5791). C'est notre rangement en deux plans qui demande ce second test,
+* donc c'est a nous de dire ou il a un sens.
+globals.foeBgSolid         equ GLOBAL_VARIABLES+155 ; 1 octet, 0 = fond ignore
 globals.ARMAMENT_SIZE      equ 5                    ; ce que checkpoint.armament efface
 
  ENDC

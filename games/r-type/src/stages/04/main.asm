@@ -317,6 +317,10 @@ stage.setup
         ; traverserait et les tirs aussi.
         lda   #1
         sta   globals.backgroundSolid
+        ; ...et le fond de CE stage est du sol pour les ennemis terrestres :
+        ; c'est le champ de gommes. Cancer et pow le sondent alors comme
+        ; l'arcade sonde ses tuiles d'avant-plan.
+        sta   globals.foeBgSolid
 
         ; LE CROCHET : les armes du joueur mangent le champ. C'est la table de
         ; relais RESIDENTE qu'on designe, jamais pscroll.erase nu — l'arme vit

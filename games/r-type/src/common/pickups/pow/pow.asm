@@ -386,8 +386,16 @@ PresetXYIndex
 ; par nature (run_cytron ecrit 0x9F6 dans la tilemap fg). Notre stage 4 la
 ; range dans le plan ARRIERE (plan 0, la carte residente que pscroll mute) :
 ; marcher ou ramper « sur le decor » doit donc tester les DEUX plans quand le
-; stage l'arme (globals.backgroundSolid — releve auteur 27/08 : cancer et pow
-; traversaient les gommes). Meme idiome que les armes (obj_simplefire.asm).
+; stage l'arme (globals.foeBgSolid — releve auteur 27/08 : cancer et pow
+; traversaient les gommes). PAS globals.backgroundSolid : celui-la est arme
+; des l'init au stage 1, dont le plan de fond porte la silhouette du BOSS —
+; y faire marcher un cancer serait faux, et le sonder pendant tout le niveau
+; serait paye pour rien. Voir la note de variables.asm.
+;
+; L'arcade, elle, ne sonde QUE l'avant-plan ici (probe_foreground_tile, seuil
+; 0xDFC — 0x40:8A3A pour cancer, 0x40:5791 pour pow) : chez elle une gomme EST
+; une tuile d'avant-plan. Ce second test est le prix de notre rangement en
+; deux plans, pas un ecart de comportement.
 ; sortie : [b] != 0 si solide. A est detruite (elle l'etait deja par .do).
 ; ---------------------------------------------------------------------------
 pow.probeSolid
@@ -395,8 +403,8 @@ pow.probeSolid
         jsr   terrainCollision.do
         tstb
         bne   @rts
-        lda   globals.backgroundSolid  ; un second plan solide sur ce stage ?
-        beq   @rts                     ; non : B = 0, rien touche
+        lda   globals.foeBgSolid       ; le fond est-il du SOL ici ?
+        beq   @rts                     ; non : B = 0, une seule sonde payee
         clrb                           ; l'arriere-plan : les gommes
         jsr   terrainCollision.do
 @rts    rts

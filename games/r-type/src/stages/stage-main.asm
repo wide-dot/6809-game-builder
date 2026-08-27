@@ -127,6 +127,8 @@ stage.stateKept
         ; huit) — un loadMap complet gaspille a chaque site de collision. Le
         ; stage qui en a besoin le repose dans son setup.
         clr   globals.backgroundSolid
+        clr   globals.foeBgSolid       ; le fond n'est du sol pour les ennemis
+                                       ; terrestres que la ou le stage le dit
         ; LE CROCHET DE COUCHE DESTRUCTIBLE, neutre par defaut : les armes du
         ; joueur l'appellent a chaque trame compensee, et sur un stage sans
         ; couche il ne doit rien faire. Le stage qui en a une le repointe dans
