@@ -309,7 +309,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ; mord jamais. Deux bornes differentes, c'etait le plan de gommes qui
         ; se figeait sur les seize derniers pixels pendant que le reste
         ; continuait.
-        ldd   #map.COLS*12-160
+        ldd   #map.COLS*12-144
  ELSE
         ldd   #map.COLS*12-144
  ENDC

@@ -182,8 +182,7 @@ LAB_0000_5e88
         ldd   y_pos,u
         addd  #($14*scale.YP1PX)/256
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   bink.probeSolid
         tstb
         bne   >
         lda   #$04
@@ -204,8 +203,7 @@ LAB_0000_5eb8
         ldd   y_pos,u
         addd  #($0c*scale.XP1PX)/256
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   bink.probeSolid
         tstb
         lbeq  LiveWalk
         lda   #3
@@ -254,8 +252,7 @@ LAB_0000_6006
         stb   AABB_0+AABB.cy,u
         addd  #($10*scale.YP1PX)/256
         std   terrainCollision.sensor.y
-        ldb   #1 ; foreground
-        jsr   terrainCollision.do
+        jsr   bink.probeSolid
         tstb
         bne   LAB_0000_601c
         jmp   DisplaySprite
@@ -340,3 +337,30 @@ PresetXYIndex
         ; V2-DEVIATION: chemin du preset — les tables d'arcade communes vivent
         ; dans src/common/lib/presets/ en v2.
         INCLUDE "src/common/lib/presets/18dd0_preset-xy.asm"
+
+; ---------------------------------------------------------------------------
+; bink.probeSolid — le terrain « solide » : dur OU gomme
+;
+; Meme cas que cancer et pow (27/08/2026) : en arcade une gomme EST une tuile
+; d'avant-plan, donc run_bink_walk et run_bink_fall marchent dessus en ne
+; sondant QUE l'avant-plan (probe_foreground_tile, seuil 0xDFC — verifie : sur
+; les 48 appelants de la sonde a deux plans de la borne, aucun n'est dans la
+; plage du bink). Chez nous les gommes sont le plan ARRIERE : sans ce second
+; test le bink du stage 4 les traverse.
+;
+; Garde par globals.foeBgSolid — le drapeau des ennemis TERRESTRES, arme par
+; le seul stage 4. Pas backgroundSolid : celui-la vaut 1 des l'init du
+; stage 1, dont le plan de fond porte la silhouette du boss (voir la note de
+; variables.asm).
+; sortie : [b] != 0 si solide. A est detruite, comme apres .do.
+; ---------------------------------------------------------------------------
+bink.probeSolid
+        ldb   #1                       ; l'avant-plan : le decor dur
+        jsr   terrainCollision.do
+        tstb
+        bne   @rts
+        lda   globals.foeBgSolid       ; le fond est-il du SOL ici ?
+        beq   @rts                     ; non : B = 0, une seule sonde payee
+        clrb                           ; l'arriere-plan : les gommes
+        jsr   terrainCollision.do
+@rts    rts
