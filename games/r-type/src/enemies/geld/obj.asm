@@ -304,25 +304,32 @@ Engaged.draw
 ; meme economie que le semis du cytron, en sens inverse.
 ; ---------------------------------------------------------------------------
 geld.carve
-        lda   stage.gum.hook+1         ; le stage n'a pas de champ ? rien a
-        ora   stage.gum.hook+2         ; manger (les autres stages, le titre)
-        beq   @none
-        ; L'ENTREE +6 (rectangle) FAIT LA FENETRE D'UN COUP : elle prend un
-        ; depart, une arrivee et une taille de bloc en cellules, et rabote les
-        ; bords au champ. Depart = arrivee (le geld ne balaye pas, il croque
-        ; sur place) et bloc 2x2 = $22 — la fenetre de l'arcade au pixel.
-        ldd   x_pos,u                  ; le coin gauche : x - 4 px arcade
-        subd  #geld.CARVE_X
-        tfr   d,x
-        tfr   d,y                      ; depart = arrivee
+        ; LE VECTEUR S'INSTALLE AVANT LES PARAMETRES (27/08/2026). L'entree +6
+        ; prend A, B, X et Y a elle seule — il n'y a plus de registre pour
+        ; porter le pointeur, d'ou le `jsr` auto-modifiant, exactement comme
+        ; beam.gum.arm. La premiere version chargeait `ldx stage.gum.hook`
+        ; JUSTE AVANT l'appel : elle ecrasait X, c'est-a-dire le x de depart
+        ; du rectangle, avec l'adresse du vecteur (~$9E5x). Le rectangle
+        ; s'etendait donc de cette adresse jusqu'au geld, rabote aux bords du
+        ; champ — il effacait TOUT L'ECRAN a chaque trame de patrouille
+        ; (releve auteur : « un rectangle d'effacement enorme », et les gommes
+        ; du champ balayees a la disparition du geld).
+        ldd   stage.gum.hook
+        beq   @none                    ; pas de champ sur ce stage (le vecteur
+                                       ; neutre est nul) — rien a manger
+        addd  #6                       ; +6 : l'effacement en rectangle
+        std   @call+1
         ldd   y_pos,u                  ; le haut : y + 4 px arcade
         addd  #geld.CARVE_Y
-        tfr   b,a                      ; la ligne ecran tient dans un octet
-        pshs  a
+        pshs  b                        ; la ligne ecran tient dans un octet
+        ldd   x_pos,u                  ; le coin gauche : x - 4 px arcade
+        subd  #geld.CARVE_X
+        tfr   d,x                      ; depart...
+        tfr   d,y                      ; ...et arrivee : le geld ne balaye pas,
+                                       ; il croque sur place
         lda   #$22                     ; 2 cellules de large, 2 de haut
-        ldb   ,s+
-        ldx   stage.gum.hook
-        jsr   6,x                      ; +6 : effacer le rectangle balaye
+        puls  b                        ; la ligne
+@call   jsr   >0                       ; l'adresse vient d'etre installee
 @none   rts
 
 
