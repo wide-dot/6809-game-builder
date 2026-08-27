@@ -172,6 +172,12 @@ def main():
     ap.add_argument("--scroll", type=float, default=0.5,
                     help="px arcade par trame (R-Type : 0,5)")
     ap.add_argument("--out", default="cytron_sim.png")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="s'arreter apres N gommes semees (0 = sans limite)")
+    ap.add_argument("--scale", type=int, default=2,
+                    help="agrandissement du rendu (numeros lisibles a 4+)")
+    ap.add_argument("--number", action="store_true",
+                    help="numeroter les gommes dans l'ordre du semis")
     ap.add_argument("--txt", help="ecrire aussi le motif en texte")
     args = ap.parse_args()
 
@@ -191,18 +197,35 @@ def main():
               % (i, t, st, v, rom.lut[rom.variant[v][0]], rom.variant[v][1],
                  st & 0xF, *rom.preset[st & 0xF]))
 
-    cells = set()
-    actors = [(t, Cytron(rom, st)) for t, st in picked]
-    scroll_acc = 0.0
+    # L'ORDRE COMPTE : on garde la chronologie du semis pour pouvoir couper
+    # aux N premieres gommes et les numeroter — c'est ce qui rend un ecart de
+    # motif DESIGNABLE (« la gomme 12 devrait etre a droite »).
+    order, seen = [], set()
+    actors = [(t, Cytron(rom, st), i) for i, (t, st) in enumerate(picked)]
+    stop = False
     for f in range(args.frames):
-        for t0, c in actors:
+        if stop:
+            break
+        for t0, c, who in actors:
             if f * 4 < t0 or not c.alive:      # la wave compte en 1/4 de trame
                 continue
             c.step_frame(args.scroll)
-            cells.add(c.sow())
+            cell = c.sow()
+            if cell not in seen:
+                seen.add(cell)
+                order.append((cell, who, f))
+                if args.limit and len(order) >= args.limit:
+                    stop = True
+                    break
+    cells = {c for c, _, _ in order}
     xs = [c[0] for c in cells]; ys = [c[1] for c in cells]
-    print("%d cellules semees, etendue x %d..%d, y %d..%d"
-          % (len(cells), min(xs), max(xs), min(ys), max(ys)))
+    print("%d cellules semees%s, etendue x %d..%d, y %d..%d"
+          % (len(cells), " (limite atteinte)" if args.limit and stop else "",
+             min(xs), max(xs), min(ys), max(ys)))
+    for who in range(len(picked)):
+        n = sum(1 for _, w, _ in order if w == who)
+        first = next((f for _, w, f in order if w == who), None)
+        print("  cytron #%d : %d gommes, premiere a la trame %s" % (who, n, first))
 
     try:
         from PIL import Image, ImageDraw
@@ -210,19 +233,28 @@ def main():
         sys.exit("Pillow requis pour le rendu")
     W = (max(xs) - min(xs) + 3) * TILE
     H = (max(ys) - min(ys) + 3) * TILE
-    im = Image.new("RGB", (W * 2, H * 2), (0, 0, 0))
+    K = args.scale
+    im = Image.new("RGB", (W * K, H * K), (0, 0, 0))
     d = ImageDraw.Draw(im)
-    for cx, cy in cells:
+    # une teinte par cytron : distinguer qui a seme quoi est la moitie de la
+    # lecture d'un trace a deux acteurs
+    tint = [((90, 170, 70), (150, 220, 120), (210, 140, 40)),
+            ((70, 120, 180), (120, 180, 235), (230, 190, 60))]
+    for rank, (cell, who, frame) in enumerate(order):
+        cx, cy = cell
         # RETOURNEMENT POUR L'AFFICHAGE : nos cellules sont en repere arcade
         # (y vers le haut), l'image a son origine en haut a gauche.
-        x0 = (cx - min(xs) + 1) * TILE * 2
-        y0 = (max(ys) - cy + 1) * TILE * 2
-        d.ellipse([x0 + 1, y0 + 1, x0 + TILE*2 - 2, y0 + TILE*2 - 2],
-                  fill=(90, 170, 70), outline=(150, 220, 120))
-        d.ellipse([x0 + 5, y0 + 5, x0 + TILE*2 - 6, y0 + TILE*2 - 6],
-                  fill=(210, 140, 40))
+        x0 = (cx - min(xs) + 1) * TILE * K
+        y0 = (max(ys) - cy + 1) * TILE * K
+        S = TILE * K
+        body, ring, core = tint[who % 2]
+        d.ellipse([x0 + 1, y0 + 1, x0 + S - 2, y0 + S - 2], fill=body, outline=ring)
+        d.ellipse([x0 + S//4, y0 + S//4, x0 + S - S//4, y0 + S - S//4], fill=core)
+        if args.number:
+            t = str(rank)
+            d.text((x0 + S//2 - 3*len(t), y0 + S//2 - 6), t, fill=(255, 255, 255))
     im.save(args.out)
-    print("-> %s (%d x %d, echelle 2x)" % (args.out, W, H))
+    print("-> %s (%d x %d px arcade, echelle %dx)" % (args.out, W, H, K))
     if args.txt:
         with open(args.txt, "w") as f:
             for r in range(max(ys), min(ys) - 1, -1):   # haut de l'ecran d'abord
