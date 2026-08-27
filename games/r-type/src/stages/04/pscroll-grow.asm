@@ -63,6 +63,18 @@ pscroll.point
         stx   pscroll.grow.x           ; le x de carte, le temps de la rangee
         subb  #field.VP_Y              ; la rangee : (ligne - VP_Y) / 6
         blo   pscroll.grow.no          ; au-dessus du champ
+        ; LA TABLE A UNE FIN (27/08/2026, releve auteur). La ligne recue est
+        ; l'octet median d'une somme 8.8 : une ligne NEGATIVE — le semis d'un
+        ; cytron qui ENTRE PAR LE HAUT, sa gomme derriere lui donc au-dessus
+        ; de y=0 — arrive ici enroulee ($F8..$FF = 248..255). Le `blo`
+        ; ci-dessus ne la voit pas (248-11 ne porte pas d'emprunt), et
+        ; l'index depassait les 192 entrees de div6 : l'octet de CODE lu la
+        ; devenait la rangee — une gomme fantome plantee 15-20 cellules sous
+        ; le cytron, a son apparition en haut d'ecran. Present depuis
+        ; l'origine du convertisseur (pellet.grow, lui, divise par
+        ; soustractions et borne naturellement).
+        cmpb  #pscroll.div6.SIZE
+        bhs   pscroll.grow.no
         ldx   #pscroll.div6.tbl
         abx
         ldb   ,x
