@@ -26,6 +26,9 @@ mscroll.setup          EXTERNAL
 mscroll.camera.speed   EXTERNAL
 mscroll.camera.speedx  EXTERNAL
 mscroll.camera.impulse EXTERNAL
+; la position de la couche, lue pour attacher le plan de collision background
+mscroll.camera.x       EXTERNAL
+mscroll.camera.y       EXTERNAL
 ; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
 ; wave — le pilote la lit par page montée).
 warship.camera.script  EXTERNAL
@@ -322,6 +325,23 @@ stage.setup
         ldb   #ObjID_collision
         jsr   terrainCollision.init.do
         clr   terrainCollision.disabled
+        ; Le plan background de CE stage est la SILHOUETTE DU BATTLESHIP :
+        ; solide (arme explicitement, comme les stages 1 et 4 arment le leur —
+        ; jusqu'ici il ne marchait que par l'heritage accidentel du drapeau
+        ; laisse a 1 par le boss du stage 1), et ATTACHE a la couche mscroll :
+        ; sans l'attache, le lookup l'indexe sur la camera principale et la
+        ; silhouette derive du vaisseau dessine (mesure le 26/08 : 64 px a
+        ; l'arrivee, 252 px plus loin). Bases posees ici depuis la camera de
+        ; couche du setup ; le pilote du warship les rafraichit chaque trame.
+        lda   #1
+        sta   globals.backgroundSolid
+        sta   terrainCollision.bgLayer
+        ldd   mscroll.camera.x
+        subd  #warship.COLL_KX
+        std   terrainCollision.bgLayer.x
+        ldd   mscroll.camera.y
+        subd  #warship.COLL_KY
+        std   terrainCollision.bgLayer.y
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd

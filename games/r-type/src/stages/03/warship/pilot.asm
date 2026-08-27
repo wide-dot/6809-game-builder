@@ -39,6 +39,12 @@ pilot.counter  equ ext_variables+2 ; WORD trames restantes du segment courant
 pilot.sx       equ ext_variables+4 ; WORD vitesse x du segment courant (8.8)
 pilot.sy       equ ext_variables+6 ; WORD vitesse y du segment courant (8.8)
 
+; L'origine d'authoring de level3_bc dans le repere de la couche : de combien
+; la silhouette du .bin est decalee par rapport a la carte de tuiles du
+; battleship. CALIBREES au banc d'overlay (rouge sur le vaisseau dessine).
+warship.COLL_KX equ 0
+warship.COLL_KY equ 0
+
 
 warship.pilot
         lda   routine,u
@@ -68,6 +74,15 @@ pilotInit
         rts
 
 pilotLive
+        ; La silhouette de collision suit la couche : bases relues chaque
+        ; trame — position d'apres le dernier move, une trame de retard,
+        ; assume (decision auteur : le vaisseau est lent).
+        ldd   mscroll.camera.x
+        subd  #warship.COLL_KX
+        std   terrainCollision.bgLayer.x
+        ldd   mscroll.camera.y
+        subd  #warship.COLL_KY
+        std   terrainCollision.bgLayer.y
         ; ZERO TRAME ECOULEE : rien a depiler. La boucle de depilage est un
         ; do-while (decb/bne), donc un compteur nul y vaudrait 256 tours —
         ; un quart de minute de script avale d'un coup. mscroll.move se garde

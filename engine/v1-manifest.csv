@@ -57,9 +57,9 @@ engine/object-management/ObjectWave-subtype.asm,engine/object-management/ObjectW
 engine/graphics/camera/AutoScroll.asm,engine/graphics/camera/AutoScroll.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-02,
 engine/graphics/camera/AutoScroll.equ,engine/graphics/camera/AutoScroll.equ,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-08-02,
 engine/graphics/camera/CheckCameraMove.asm,engine/graphics/camera/CheckCameraMove.asm,c1ebbd956d92eae791b49317f7bbc3cd888c4eac,2026-08-02,
-engine/objects/collision/terrainCollision.asm,engine/objects/collision/terrainCollision.asm,e7ae0968eec67087947e8e1e6bce8bd7bcc00f13,2026-08-02,
+engine/objects/collision/terrainCollision.asm,engine/objects/collision/terrainCollision.asm,e7ae0968eec67087947e8e1e6bce8bd7bcc00f13,2026-08-02,"plan bg attache a une couche mscroll : branche loadMap + routine bgAttached (2026-08-26, battleship stage 3)"
 engine/objects/collision/terrainCollision.macro.asm,engine/objects/collision/terrainCollision.macro.asm,02d61be6a82934cea092adcb9b55268bb7c40783,2026-08-02,
-engine/objects/collision/terrainCollision.main.asm,engine/objects/collision/terrainCollision.main.asm,a1fc1874f91263a71b323963f89803ed874c2c7b,2026-08-02,
+engine/objects/collision/terrainCollision.main.asm,engine/objects/collision/terrainCollision.main.asm,a1fc1874f91263a71b323963f89803ed874c2c7b,2026-08-02,"variables bgLayer/.x/.y du plan bg attache (2026-08-26)"
 engine/objects/palette/fade/fade.asm,engine/objects/palette/fade/fade.asm,c1ebbd956d92eae791b49317f7bbc3cd888c4eac,2026-08-02,INCLUDE macros.asm retire (unite residente le porte deja)
 engine/objects/palette/fade/fade.equ,engine/objects/palette/fade/fade.equ,cacf9b3c321b1d216ba08383b5979ae96d420b1a,2026-08-02,
 games/r-type/src/common/fx/starfield/obj.asm,objects/levels/01/starfield/obj.asm,(jeu, hors engine/) ,"2026-08-02,INCLUDE macros.asm retire + point d entree Object/sf_rtn remplace par 3 exports"

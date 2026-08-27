@@ -19,6 +19,15 @@ terrainCollision.loadMap
         aslb
         stb   terrainCollision.bgFlag  ; 0 = background, 2 = foreground (boss-follow offset)
         ldy   b,x                      ; set ptr to map in x
+        ; V2-DEVIATION : le plan background peut etre ATTACHE A UNE COUCHE
+        ; mscroll (stage 3 :
+        ; la silhouette du battleship suit la camera de la couche, pas le
+        ; scroll principal). Drapeau a zero = comportement historique intact.
+        tst   terrainCollision.bgFlag
+        bne   terrainCollision.loadMap.main
+        tst   terrainCollision.bgLayer
+        lbne  terrainCollision.bgAttached
+terrainCollision.loadMap.main
 
         ldx   #terrainCollision.yOffset
         ldd   terrainCollision.sensor.y
@@ -62,6 +71,87 @@ terrainCollision.checkPosition
         jsr   terrainCollision.loadMap
         andb  a,y                      ; read collision data and apply against precomputed mask
         rts
+
+;-------------------------------------------------------------------------------
+; terrainCollision.bgAttached — le plan background dans le repere de la COUCHE
+; V2-DEVIATION : routine sans equivalent v1 (la v1 n'a ni mscroll ni plan
+; attache) — ajoutee le 26/08/2026 pour le battleship du stage 3.
+;
+; Meme contrat de sortie que loadMap : [y] la ligne de carte, [a] l'octet,
+; [b] le masque. Exact a la cellule (3 x 6 px), les deux axes :
+;   layer_x = (sensor.x - camera principale) + bgLayer.x
+;   layer_y = (sensor.y - 11)               + bgLayer.y     (11 = haut du champ)
+; HORS CARTE = VIDE (masque 0) : la couche est un objet fini DANS le champ —
+; l'inverse du decor du niveau, dont les tables bordent l'ecran et pour lequel
+; hors carte doit rester solide.
+;
+; Les divisions sont les reciproques exactes usuelles :
+;   /3 sur 16 bits : 256H+L = 3*85*H + (H+L)  ->  q = 85H + (H+L)/3,
+;     et (x*171)>>9 = x/3, exact jusqu'a 255 (avec le report si H+L >= 256) ;
+;   /6 sur 8 bits  : >>1 puis (x*171)>>9.
+; bgByteOff/bgBitShift (le boss-follow du stage 1) ne s'appliquent PAS ici :
+; ce chemin remplace tout le repere, pas seulement un decalage x.
+;-------------------------------------------------------------------------------
+terrainCollision.bgAttached
+        ; --- la ligne d'abord (elle ne consomme que D)
+        ldd   terrainCollision.sensor.y
+        subd  #11
+        addd  terrainCollision.bgLayer.y
+        cmpd  #(terrainCollision.bgAttached.rows*6)  ; negatif compris (non signe)
+        bhs   terrainCollision.bgAttached.empty
+        lsrb                           ; layer_y < 256 : tient dans B ; /2
+        lda   #171
+        mul
+        lsra                           ; A = ligne (0..29)
+        ldb   #lvlMapWidth
+        mul
+        leay  d,y                      ; Y = la ligne (Y portait la base bg)
+        ; --- la colonne
+        ldd   terrainCollision.sensor.x
+        subd  glb_camera_x_pos
+        addd  terrainCollision.bgLayer.x
+        cmpd  #lvlMapWidth*24          ; largeur en px ; negatif compris
+        bhs   terrainCollision.bgAttached.empty
+        std   terrainCollision.bgAttached.t     ; H, L
+        clrb
+        adda  terrainCollision.bgAttached.t+1   ; A = H+L
+        bcc   >
+        inca                           ; H+L-255...
+        ldb   #85                      ; ...et 85 de report
+!       stb   terrainCollision.bgAttached.t+2
+        ldb   #171
+        mul
+        lsra                           ; A = (H+L)/3
+        adda  terrainCollision.bgAttached.t+2
+        sta   terrainCollision.bgAttached.t+2   ; bas du quotient
+        lda   terrainCollision.bgAttached.t     ; H
+        ldb   #85
+        mul                            ; D = 85H
+        addb  terrainCollision.bgAttached.t+2
+        adca  #0                       ; D = cellule (0..383)
+        stb   terrainCollision.bgAttached.t     ; le bas, pour le bit
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb                           ; B = octet (0..47)
+        tfr   b,a                      ; A = octet — le contrat de sortie
+        ldb   terrainCollision.bgAttached.t
+        andb  #7
+        ldx   #terrainCollision.bgAttached.mask
+        ldb   b,x                      ; B = masque
+        rts
+terrainCollision.bgAttached.empty
+        clra                           ; octet 0 : a,y lit la carte, pas au-dela
+        clrb                           ; masque 0 : aucun mur
+        rts
+
+terrainCollision.bgAttached.rows equ 30
+terrainCollision.bgAttached.t
+        fcb   0,0,0
+terrainCollision.bgAttached.mask
+        fcb   $80,$40,$20,$10,$08,$04,$02,$01
 
 terrainCollision.checkXaxisRight
         ; scans all the tiles in the current row

@@ -243,6 +243,10 @@ statics.SIZE  equ nb_static_objects*object_size
         ; (stage.setup) pose l'init et leve le drapeau.
         lda   #1
         sta   terrainCollision.disabled
+        ; et le plan background redevient un plan ORDINAIRE : l'attache a une
+        ; couche mscroll (stage 3, battleship) est un etat resident, le stage
+        ; qui la veut la re-arme dans son INIT
+        clr   terrainCollision.bgLayer
 
         ; RESTAURATION DU DECOR : aucune table PAR DEFAUT. tilemap.resetTable
         ; vit dans le module RESIDENT, donc son `fdb 0` ne vaut qu'au boot : un

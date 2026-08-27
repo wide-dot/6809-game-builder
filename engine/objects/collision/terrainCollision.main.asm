@@ -19,6 +19,16 @@ terrainCollision.bgByteOff  fcb 0   ; boss advance, whole map bytes (24px each)
 terrainCollision.bgBitShift fcb 0   ; boss advance, sub-byte tiles (0..7, 3px each)
 terrainCollision.bgColTmp   fcb 0   ; loadMap scratch (column carry during the bit shift)
 
+; --- V2-DEVIATION : background plane ATTACHED TO A LAYER (stage 3 battleship) ---
+; when .bgLayer is set, loadMap indexes the background plane in the LAYER's
+; frame: layer = (sensor - main camera) + base — instead of the main-scroll
+; frame. Bases are the layer camera (minus the map's authoring origin), written
+; each frame by the layer's pilot. Cleared by stage-main on stage entry, along
+; with .disabled. Unlike bgByteOff (x-only, positive), this follows both axes.
+terrainCollision.bgLayer    fcb 0   ; 0 = bg indexed like fg (default)
+terrainCollision.bgLayer.x  fdb 0   ; layer camera x, authoring origin deducted
+terrainCollision.bgLayer.y  fdb 0   ; layer camera y, authoring origin deducted
+
 terrainCollision.do
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
         beq   @active

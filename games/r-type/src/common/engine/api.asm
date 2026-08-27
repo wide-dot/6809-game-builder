@@ -202,6 +202,11 @@ checkpoint.clearData EXTERNAL
         _api terrainCollision.bgByteOff
         _api terrainCollision.bgBitShift
         _api terrainCollision.bgColTmp
+        ; le plan background attache a une couche mscroll (stage 3, battleship) :
+        ; le pilote de la couche ecrit les bases, l'impl montee les lit
+        _api terrainCollision.bgLayer
+        _api terrainCollision.bgLayer.x
+        _api terrainCollision.bgLayer.y
 
         ; --- sprites : ce qu'un objet de jeu appelle pour se montrer ---
         ; Le calcul d'adresse ecran du gestionnaire de queue de dobkeratops.
