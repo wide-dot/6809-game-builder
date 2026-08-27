@@ -1317,6 +1317,26 @@ pscroll.mutate
                                        ; etaient perdus (constat au pas-a-pas,
                                        ; 27/08 : 5 poussees gauche pour 4
                                        ; droite, n=0 aux flushs).
+        ; LE BORD DROIT SE JUGE SUR LE DERNIER PIXEL (27/08/2026, releve
+        ; auteur). Une cellule fait 3 px : quand elle CHEVAUCHE une frontiere
+        ; de bande (px mod 16 = 14 ou 15 — et 0 ou 15 pour la phase decalee),
+        ; sa queue tombe dans la bande suivante. Juger sur la tete peignait
+        ; la cellule des que SA bande etait gravee — puis la gravure de la
+        ; bande suivante ecrasait le pixel isole : un octet de 2 px pose, le
+        ; pixel seul manquant. On peint seulement quand la bande du DERNIER
+        ; pixel est gravee ; sinon la cellule entiere part en file, et le
+        ; rejeu (meme critere) la repeindra complete.
+        ldd   pscroll.sc.px
+        addd  #2                       ; le dernier px de la cellule
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb
+        subb  pscroll.edge16
         cmpb  #pscroll.CHUNKS_PER_LINE
         bhs   @defer
         ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
@@ -1434,6 +1454,11 @@ pscroll.flushDeferred
         aslb
         rola
         addd  ,u                       ; x3 : le px de carte de la cellule
+        addd  #2                       ; ... et son DERNIER px : une cellule a
+                                       ; cheval sur deux bandes n'est prete que
+                                       ; quand la SECONDE est gravee (le pixel
+                                       ; isole de la queue, sinon ecrase par la
+                                       ; gravure — meme critere que mutate)
         lsra
         rorb
         lsra
@@ -1441,7 +1466,7 @@ pscroll.flushDeferred
         lsra
         rorb
         lsra
-        rorb                           ; b = sa bande
+        rorb                           ; b = la bande du dernier px
         subb  pscroll.edge16
         bcs   @drop                    ; derriere : ne reviendra jamais
         cmpb  #pscroll.CHUNKS_PER_LINE
