@@ -99,9 +99,19 @@
                  (24/08). Le <reserved pscroll.vid.half1> plus bas decrit le
                  meme silicium en referentiel de page. -->
             <region name="pscroll.vid" page="$01" address="$4000" size="$2000"/>
-            <region name="pscroll.buf0" page="$0E" address="$0000" size="$3B13"/>
-            <region name="pscroll.buf1" page="$0F" address="$0000" size="$3B13"/>
-            <region name="pscroll.buf2" page="$10" address="$0000" size="$3B13"/>
+            <!-- PAS $0E/$0F : ces pages portent les LOTS d'ennemis que le
+                 stage 4 charge (lib.pstaff+lib.cancer en 14, lib.patapata en
+                 15). Les buffers y ont vecu tant que le stage se testait sans
+                 bestiaire ; en jeu reel, la regeneration des bandes ecrasait
+                 le code du P-Staff vers camera ~70, et le spawn suivant
+                 executait un blaster de zeros — pile en deroute, retour
+                 moniteur (le « deraillement » du 25/08, elucide le 27/08 au
+                 watchpoint de pile + trace 4096). Les pages 16-18 sont vides
+                 dans l'union boot+lots+stage4 ; leurs occupants (stages 1, 2
+                 et 5) ne sont jamais co-charges avec le 4. -->
+            <region name="pscroll.buf0" page="$10" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf1" page="$11" address="$0000" size="$3B13"/>
+            <region name="pscroll.buf2" page="$12" address="$0000" size="$3B13"/>
             <region name="pscroll.buf3" page="$1D" address="$0000" size="$3B13"/>
             <arena name="stage4.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
