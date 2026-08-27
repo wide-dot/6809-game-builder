@@ -259,6 +259,12 @@ pscroll.cart.page     fcb   0          ; la page CARTOUCHE de l'appelant, avec
                                        ; c'est la que vit le code qui l'appelle.
 pscroll.viewport.ram  fdb   0          ; fin de bande dans la zone $A000-$BFFF
 pscroll.camera.x.max  fdb   0          ; largeur de carte - 160
+pscroll.camera.x.min  fdb   0          ; borne basse de la camera. 0 par defaut ;
+                                       ; un projet dont la fenetre 160 px DEBORDE
+                                       ; de sa grille (bordure d'ecran) la met en
+                                       ; negatif — jamais sous -8 : les calculs
+                                       ; de couture travaillent sur camera+8 et
+                                       ; ne tolerent pas un seamx negatif
 
 ; etat
 ; -----------------------------------------------------------------------------
@@ -345,6 +351,7 @@ pscroll.buf.address    EXPORT
 pscroll.cart.page      EXPORT
 pscroll.viewport.ram   EXPORT
 pscroll.camera.x.max   EXPORT
+pscroll.camera.x.min   EXPORT
 pscroll.wr.page0       EXPORT
 pscroll.wr.page1       EXPORT
 pscroll.wr.base0       EXPORT
@@ -418,6 +425,7 @@ pscroll.buf.address    EXTERNAL
 pscroll.cart.page      EXTERNAL
 pscroll.viewport.ram   EXTERNAL
 pscroll.camera.x.max   EXTERNAL
+pscroll.camera.x.min   EXTERNAL
 pscroll.wr.page0       EXTERNAL
 pscroll.wr.page1       EXTERNAL
 pscroll.wr.base0       EXTERNAL
@@ -720,8 +728,9 @@ pscroll.init
 ; -----------------------------------------------------------------------------
 pscroll.move
         ldd   pscroll.camera.next
-        bpl   >
-        ldd   #0                       ; jamais avant l'origine de la carte
+        cmpd  pscroll.camera.x.min     ; jamais avant la borne basse (0 par
+        bge   >                        ; defaut = l'origine de la carte ;
+        ldd   pscroll.camera.x.min     ; negative quand la fenetre a une bordure)
 !       cmpd  pscroll.camera.x.max
         ble   >
         ldd   pscroll.camera.x.max

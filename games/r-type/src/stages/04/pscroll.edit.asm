@@ -34,6 +34,7 @@ pscroll.half.off       EXTERNAL         ; demi-page 0 montee
         INCLUDE "gen/stages/04/map/map.const.asm"
 field.MAP_W        equ map.COLS*12
 field.VP_Y         equ 11
+field.VP_X         equ 8                ; bordure gauche du champ, en px
 pscroll.CELL_W     equ 3
 pscroll.BAND_LINES equ 180
 pscroll.MAP_WIDTH  equ field.MAP_W
@@ -82,10 +83,14 @@ pscroll.stage4.init
         std   pscroll.viewport.ram
         ldd   #field.MAP_W-160
         std   pscroll.camera.x.max
+        ldd   #-field.VP_X             ; la fenetre 160 px deborde de la grille
+        std   pscroll.camera.x.min     ; par la bordure : camera pscroll >= -8
         ldd   #pscroll.gum.map
         std   pscroll.map.address
         ldd   pscroll.camera.x         ; posee par l'appelant : D servait a
-        jsr   pscroll.init             ; porter la page pour paged.call
+                                       ; porter la page pour paged.call
+        subd  #field.VP_X              ; meme raccord de convention que
+        jsr   pscroll.init             ; pscroll.stage4.frame — voir son en-tete
         jmp   pscroll.half.off         ; et la demi-page du jeu revient
 
         INCLUDE "src/stages/04/pscroll-grow.asm"

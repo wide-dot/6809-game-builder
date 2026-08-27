@@ -35,6 +35,7 @@ pscroll.half.off     EXPORT              ; besoin : elle appelle la part $4000
         INCLUDE "gen/stages/04/map/map.const.asm"
 field.MAP_W        equ map.COLS*12
 field.VP_Y         equ 11
+field.VP_X         equ 8                ; bordure gauche du champ, en px
 pscroll.CELL_W     equ 3
 pscroll.BAND_LINES equ 180
 pscroll.MAP_WIDTH  equ field.MAP_W
@@ -85,6 +86,19 @@ paged.call         EXTERNAL
 ; leur rts. C'est ce qui a coute le PC $4F43 du 23/08.
 ; -----------------------------------------------------------------------------
 pscroll.stage4.frame
+        ; LE RACCORD DES DEUX CONVENTIONS DE CAMERA — c'est ici qu'il vit, et
+        ; nulle part ailleurs. pscroll peint une bande PLEINE LARGEUR : sa
+        ; camera est « le px de carte affiche a l'ecran x=0 ». Tout le reste
+        ; du stage (collision, grow/erase, scroll de tuiles du decor dur) dit
+        ; « le px de carte camera est a l'ecran x=8 » — la grille commence au
+        ; bord GAUCHE DU CHAMP, pas de l'ecran (terrainCollision.xOffset
+        ; equ *-8). Passer glb_camera_x_pos tel quel decalait donc TOUT le
+        ; rendu des gommes de 8 px a gauche de ce que la collision, la ponte
+        ; du cytron et l'effacement calculaient — mesure au banc
+        ; collision_overlay le 27/08/2026, et c'etait la mort invisible du
+        ; stage 4. Les huit px de gauche montrent la carte [camera-8, camera),
+        ; du vrai contenu, sous la bordure.
+        subd  #field.VP_X
         std   pscroll.camera.next
         ; LA PAGE DE L'APPELANT, SAUVEE AVANT `do`. `do` commute la fenetre
         ; cartouche vers ses buffers et ne rend rien — c'est son droit, il est
