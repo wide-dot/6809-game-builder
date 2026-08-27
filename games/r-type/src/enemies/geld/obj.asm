@@ -86,6 +86,13 @@ Init
 
         lda   #1                       ; -> Patrol
         sta   routine,u
+        ; 69bc/90a5 : « pos_x += scroll_amount », l'ancrage au decor — et
+        ; l'arcade le fait dans SES DEUX modes. En v2 le drapeau s'en charge
+        ; (cf. cytron) : sans lui le geld ne derive pas avec le niveau.
+        ldb   #6                       ; priorite d'affichage
+        stb   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
 
         ; --- la boite : 24x24 centree (0x1000:407E, +-12 px arcade)
         _Collision_AddAABB AABB_0,AABB_list_ennemy
@@ -206,14 +213,24 @@ geld.draw   ; 9028 : la pose de patrouille, quatre images par variante
         ldd   a,x
         std   image_set,u
         lbsr  geld.carve               ; ET IL MANGE : la fenetre 2x2
-        ; 904f : is_visible_range -> hors ecran, dechargement SILENCIEUX (pas
-        ; de score, pas d'explosion). Sans lui le geld vertical monte
-        ; indefiniment et garde son slot pour rien (constat sous toje : y a
-        ; -784 apres 700 trames). Meme forme que cancer : la position ecran,
-        ; ses bornes, et le rayon de la boite en marge.
+        lbsr  geld.alive               ; hors ecran ? (les deux modes)
+        jmp   DisplaySprite
+
+; ---------------------------------------------------------------------------
+; geld.alive — 904f : hors ecran, dechargement SILENCIEUX
+;
+; APPELE PAR LES DEUX MODES (27/08/2026). Ce test vivait au bout du chemin de
+; dessin de la patrouille : un geld qui reste dans la fenetre du joueur
+; re-engage a chaque retour de virage, ne dessine jamais, et VIT ETERNELLEMENT
+; — il gardait son slot, et le stage 4 ne finissait plus (camera bloquee a
+; 880 au lieu de 992, constat sous toje). L'arcade n'a pas ce trou : son
+; tick engage rend la main au tick de patrouille qui, lui, teste toujours.
+; La boite de collision suit au passage, comme chez cancer.
+; ---------------------------------------------------------------------------
+geld.alive
         ldd   x_pos,u
         subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u         ; la boite suit, comme partout
+        stb   AABB_0+AABB.cx,u
         addd  #geld_hitbox_x
         bmi   geld.gone                ; sorti par la gauche
         cmpd  #geld.SCREEN_W+geld_hitbox_x*2
@@ -225,7 +242,7 @@ geld.draw   ; 9028 : la pose de patrouille, quatre images par variante
         bhi   geld.gone                ; ou par le bas
         ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
-        jmp   DisplaySprite
+        rts
 
 geld.gone
         lda   #3
@@ -240,6 +257,7 @@ Engaged
         lda   AABB_0+AABB.p,u
         lbeq  geld.explode
 Engaged.draw
+        lbsr  geld.alive               ; meme garde qu'en patrouille
         ; 90a2 : il derive toujours avec le decor, il ne creuse plus.
         ldb   geld.timer,u
         bitb  #$10                     ; bit 4 : deux images de 16 trames
