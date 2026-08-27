@@ -95,6 +95,41 @@ organique vert du stage — sans lui, le décor pollue le relevé.
 qu'une fenêtre du niveau quand un dump de la carte couvre les 384 colonnes,
 il faut retrouver où la fenêtre se pose.
 
+## Tracé des cytrons, simulé depuis la borne — `cytron_sim.py`
+
+Rejoue la logique de `run_cytron` (arcade `0x40:69B4`) sur les **données
+exportées de la borne**, dans un écran virtuel de 384 × 256 px arcade, tuiles
+de 8 px — à l'échelle 1:1 de la borne, sans rien emprunter au portage.
+
+```bash
+python3 ci/toje-bench/cytron_sim.py --wave 0 1 --frames 600 \
+    --out sim.png --txt sim.txt
+```
+
+Le but est d'obtenir une **référence indépendante** : si le tracé simulé est
+celui d'une vidéo d'arcade, la référence est bonne, et tout écart du jeu est
+alors imputable au portage — pas aux données. C'est ce qui manquait pour
+trancher entre « nos données sont fausses » et « notre runtime est faux ».
+
+Ce que la borne fait, par trame, et que le simulateur reproduit :
+1. `move_by_script` consomme *n* commandes du script bit-packé ;
+2. `pos_x += scroll_amount` — le cytron est **ancré au décor** ;
+3. la repousse : `(dx,dy)` lu dans la table indexée par la **pose** (un cercle
+   de rayon 12 px sur 16 directions), ajouté à la position, et **une** cellule
+   écrite si elle lit `TILE_EMPTY`.
+
+Format du script (un octet = une commande, poids forts en tête) : `bit7` change
+la pose et **ne compte pas** dans le quota de la trame ; `bit6/bit5` déplacent
+en x, `bit4/bit3` en y, `bit2` termine le segment. Une liste de segments
+s'achève sur 0 ; un mot `0xF0xx` change la cadence.
+
+Piège du format de données : `script.asm` est un export brut où **chaque ligne
+porte son propre label** `ref_1XXXX` — les listes ne sont pas des tableaux
+d'assembleur mais des suites d'adresses consécutives. Le script reconstruit donc
+une image mémoire adressable et la parcourt comme la borne. De même, les
+équates de `index.equ` sont des **offsets en octets** dans la LUT, pas des
+index : une entrée fait deux octets.
+
 ## Relevé de cadence — `fps_curve.py` + `fps_plot.py`
 
 Deux scripts hors verdict : ils ne disent pas pass/fail, ils **mesurent**.
