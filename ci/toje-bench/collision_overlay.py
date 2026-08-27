@@ -83,8 +83,8 @@ def engine_symbols(config="to8.config.xml", gensource="gen/common/engine.asm"):
     if r.returncode:
         sys.exit("lwasm a echoue :\n" + r.stderr[:800])
     want = ("scroll_tile_pos", "scroll_tile_pos_offset24",
-            "terrainCollision.bgLayer", "terrainCollision.bgLayer.x",
-            "terrainCollision.bgLayer.y")
+            "terrainCollision.bgColBase", "terrainCollision.bgSubX",
+            "terrainCollision.bgRowBase", "terrainCollision.bgSubY")
     out = {}
     for line in open(sym):
         p = line.split()
@@ -155,9 +155,11 @@ def snapshot(image, stage, until_camera, out_png, sym, fire=False):
         "camx": read_word(t, "9FE6"),                    # glb_camera_x_pos
         "scroll_tile_pos": t.read("%04X" % sym["scroll_tile_pos"], 1)[0],
         "offset24": t.read("%04X" % sym["scroll_tile_pos_offset24"], 1)[0],
-        "bgLayer": t.read("%04X" % sym["terrainCollision.bgLayer"], 1)[0],
-        "bgLayer_x": read_word(t, "%04X" % sym["terrainCollision.bgLayer.x"]),
-        "bgLayer_y": read_word(t, "%04X" % sym["terrainCollision.bgLayer.y"]),
+        # le plan de fond a camera propre (stage 3) : base/reste des deux axes
+        "bgColBase": t.read("%04X" % sym["terrainCollision.bgColBase"], 1)[0],
+        "bgSubX": t.read("%04X" % sym["terrainCollision.bgSubX"], 1)[0],
+        "bgRowBase": read_word(t, "%04X" % sym["terrainCollision.bgRowBase"]),
+        "bgSubY": t.read("%04X" % sym["terrainCollision.bgSubY"], 1)[0],
         "camera": cam,
     }
     t.close()
@@ -206,7 +208,7 @@ def compose(st, shot_png, out_png, fc, bc):
     shot = Image.open(shot_png).convert("RGBA")
     ov = Image.new("RGBA", shot.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(ov)
-    attached = bool(st["bgLayer"])
+    attached = st["stage"] == 3          # seul le stage 3 pose BG_OWN_CAMERA
     for sy in range(VIEW_TOP, VIEW_TOP + ROWS * CELL_H):
         py = BORDER_Y + sy * SCALE_Y
         for sx in range(160):
@@ -225,7 +227,8 @@ def compose(st, shot_png, out_png, fc, bc):
             (" — ATTACHE a une couche" if attached else ""), fill=(255, 80, 80))
     d2.text((36, 40), "stage %d  camx=%d  tile_pos=%d  off24=%d%s" % (
         st["stage"], st["camx"], st["scroll_tile_pos"], st["offset24"],
-        ("  base=(%d,%d)" % (s16(st["bgLayer_x"]), s16(st["bgLayer_y"])))
+        ("  colbase=%d subx=%d rowbase=%d suby=%d" % (
+            st["bgColBase"], st["bgSubX"], s16(st["bgRowBase"]), st["bgSubY"]))
         if attached else ""), fill=(255, 255, 255))
     out.convert("RGB").save(out_png)
 

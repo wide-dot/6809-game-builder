@@ -19,15 +19,24 @@ terrainCollision.bgByteOff  fcb 0   ; boss advance, whole map bytes (24px each)
 terrainCollision.bgBitShift fcb 0   ; boss advance, sub-byte tiles (0..7, 3px each)
 terrainCollision.bgColTmp   fcb 0   ; loadMap scratch (column carry during the bit shift)
 
-; --- V2-DEVIATION : background plane ATTACHED TO A LAYER (stage 3 battleship) ---
-; when .bgLayer is set, loadMap indexes the background plane in the LAYER's
-; frame: layer = (sensor - main camera) + base — instead of the main-scroll
-; frame. Bases are the layer camera (minus the map's authoring origin), written
-; each frame by the layer's pilot. Cleared by stage-main on stage entry, along
-; with .disabled. Unlike bgByteOff (x-only, positive), this follows both axes.
-terrainCollision.bgLayer    fcb 0   ; 0 = bg indexed like fg (default)
-terrainCollision.bgLayer.x  fdb 0   ; layer camera x, authoring origin deducted
-terrainCollision.bgLayer.y  fdb 0   ; layer camera y, authoring origin deducted
+; --- background plane with its OWN camera (BG_OWN_CAMERA units) ---
+; La couche battleship du stage 3 : son plan de collision ne defile PAS avec
+; l'avant-plan, il a sa camera sur les deux axes. Ces quatre registres sont
+; l'equivalent, pour ce plan, de scroll_tile_pos/scroll_tile_pos_offset24 que
+; le moteur de scroll tient pour l'avant-plan — base et reste sous-tuile, sur
+; les deux axes. Entretenus une fois par trame par le stage, inertes ailleurs
+; (le chemin qui les lit n'est meme pas assemble). Doc :
+; games/r-type/doc/bship-collision-plan.md
+terrainCollision.bgColBase  fcb 0   ; camera.x / 24 : base de colonne, en octets
+terrainCollision.bgSubX     fcb 0   ; camera.x mod 24 : le reste, en px (0..23)
+terrainCollision.bgRowBase  fdb 0   ; (camera.y / 6 + pad) * lvlMapWidth, signe
+terrainCollision.bgSubY     fcb 0   ; camera.y mod 6 : le reste, en px (0..5)
+; L'ecart des deux reperes, en px : glb_camera_x_pos - camera.x de la couche.
+; checkXaxis rend un impact.x que l'appelant compare a sensor.x, donc en
+; coordonnees MONDE ; la lecture du plan 0 se fait, elle, dans le repere de la
+; couche. Cet ecart fait le pont. (Le module en depend : forcepod.asm sonde
+; l'axe X sur le plan de fond quand backgroundSolid est arme.)
+terrainCollision.bgWorldAdj fdb 0
 
 terrainCollision.do
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?

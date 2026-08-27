@@ -26,9 +26,13 @@ mscroll.setup          EXTERNAL
 mscroll.camera.speed   EXTERNAL
 mscroll.camera.speedx  EXTERNAL
 mscroll.camera.impulse EXTERNAL
-; la position de la couche, lue pour attacher le plan de collision background
 mscroll.camera.x       EXTERNAL
 mscroll.camera.y       EXTERNAL
+terrainCollision.bgColBase EXTERNAL
+terrainCollision.bgSubX    EXTERNAL
+terrainCollision.bgRowBase EXTERNAL
+terrainCollision.bgSubY    EXTERNAL
+terrainCollision.bgWorldAdj EXTERNAL
 ; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
 ; wave — le pilote la lit par page montée).
 warship.camera.script  EXTERNAL
@@ -325,23 +329,14 @@ stage.setup
         ldb   #ObjID_collision
         jsr   terrainCollision.init.do
         clr   terrainCollision.disabled
-        ; Le plan background de CE stage est la SILHOUETTE DU BATTLESHIP :
-        ; solide (arme explicitement, comme les stages 1 et 4 arment le leur —
-        ; jusqu'ici il ne marchait que par l'heritage accidentel du drapeau
-        ; laisse a 1 par le boss du stage 1), et ATTACHE a la couche mscroll :
-        ; sans l'attache, le lookup l'indexe sur la camera principale et la
-        ; silhouette derive du vaisseau dessine (mesure le 26/08 : 64 px a
-        ; l'arrivee, 252 px plus loin). Bases posees ici depuis la camera de
-        ; couche du setup ; le pilote du warship les rafraichit chaque trame.
+
+        ; LE FOND EST SOLIDE SUR CE STAGE : le plan 0 porte la silhouette du
+        ; battleship. Le drapeau est celui que les cinq consommateurs testent
+        ; deja (missile, module, lasers, tir simple) — l'arcade fait le meme
+        ; double test, sentinelle 0x7D0 au fond. Doc : bship-collision-plan.md
         lda   #1
         sta   globals.backgroundSolid
-        sta   terrainCollision.bgLayer
-        ldd   mscroll.camera.x
-        subd  #warship.COLL_KX
-        std   terrainCollision.bgLayer.x
-        ldd   mscroll.camera.y
-        subd  #warship.COLL_KY
-        std   terrainCollision.bgLayer.y
+        jsr   bship.collisionFollow    ; cale les registres avant la 1re trame
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd
@@ -380,6 +375,49 @@ stage.handOver
         ldy   #scenes.stage4.dir
         ldu   #cast.stage4                  ; les lots d'ennemis de la cible
         jmp   game.stage.switch
+
+; -----------------------------------------------------------------------------
+; L'ANCRAGE DU PLAN DE COLLISION SUR LA COUCHE (26/08/2026)
+;
+; Appele par la boucle de stage juste apres mscroll.move, une fois la camera de
+; la couche a jour. Il convertit cette camera en ce que le moteur de collision
+; attend pour son plan 0 : une base et un reste sous-tuile sur chaque axe —
+; l'exact equivalent de scroll_tile_pos/scroll_tile_pos_offset24 que le moteur
+; de scroll tient pour l'avant-plan. Le reste entre dans l'index AVANT la
+; quantification des tables : lecture juste au pixel, sans une seule division
+; par consultation (celles d'ici sont par TRAME).
+; Etude : doc/bship-collision-plan.md
+; -----------------------------------------------------------------------------
+        INCLUDE "src/stages/03/collision/collision.equ"
+
+bship.collisionFollow
+        ; --- x : base en octets de 24 px, reste en px (camera bornee 0..480) ---
+        ldd   mscroll.camera.x
+        clr   terrainCollision.bgColBase
+@x      subd  #24
+        bmi   >
+        inc   terrainCollision.bgColBase
+        bra   @x
+!       addd  #24                      ; D = camera.x mod 24
+        stb   terrainCollision.bgSubX
+        ; --- y : base en lignes de 6 px, reste en px ---
+        ; camera.y est REPLIEE par mscroll dans [0,384[ : jamais negative, et
+        ; la base sort donc naturellement dans 0..63 — le modulo de la couture
+        ; est deja fait, c'est la CARTE qui porte la repetition des lignes.
+        ldd   mscroll.camera.y
+        ldx   #0
+@y      subd  #6
+        bmi   >
+        leax  bship.COLSTRIDE,x        ; une ligne de plus, en octets
+        bra   @y
+!       addd  #6                       ; D = camera.y mod 6
+        stb   terrainCollision.bgSubY
+        stx   terrainCollision.bgRowBase
+        ; --- le pont entre les deux reperes, pour l'impact rendu par checkXaxis
+        ldd   glb_camera_x_pos
+        subd  mscroll.camera.x
+        std   terrainCollision.bgWorldAdj
+        rts
 
 ; Le bloc de paramètres de la couche battleship (mscroll.setup) — la
 ; géométrie vient du .equ écrit par les conversions <mscroll> du config.

@@ -1,0 +1,17 @@
+; La geometrie du plan de collision de fond du stage 3 — partagee entre
+; l'unite de collision (qui pose la carte) et le main (qui recale les
+; registres de lecture a chaque trame depuis la camera de la couche).
+; Deux unites d'assemblage differentes : une equate ne se lie pas, elle
+; s'assemble — d'ou ce fichier plutot qu'un EXPORT.
+; Etude : doc/bship-collision-plan.md
+
+; Le stride d'une ligne de collision, en octets (24 px chacun). C'est le
+; lvlMapWidth du stage, que l'unite de collision pose avant d'inclure le
+; moteur ; le garde ci-dessous refuse la derive quand les deux se voient.
+bship.COLSTRIDE equ 48
+
+; La couche fait 384 px de haut et BOUCLE : 64 lignes de collision. Le bin
+; n'en porte que 30 (les 180 px du haut, ou vit le vaisseau) ; la carte
+; complete est [bin][vide jusqu'a 64][bin repete, pour la couture].
+bship.ROWS      equ 64
+bship.BINROWS   equ 30

@@ -243,10 +243,6 @@ statics.SIZE  equ nb_static_objects*object_size
         ; (stage.setup) pose l'init et leve le drapeau.
         lda   #1
         sta   terrainCollision.disabled
-        ; et le plan background redevient un plan ORDINAIRE : l'attache a une
-        ; couche mscroll (stage 3, battleship) est un etat resident, le stage
-        ; qui la veut la re-arme dans son INIT
-        clr   terrainCollision.bgLayer
 
         ; RESTAURATION DU DECOR : aucune table PAR DEFAUT. tilemap.resetTable
         ; vit dans le module RESIDENT, donc son `fdb 0` ne vaut qu'au boot : un
@@ -532,6 +528,12 @@ stage.state.running
         ; dans la foulee du blast, comme dans le banc examples/mscroll.
         jsr   mscroll.do
         jsr   mscroll.move
+        ; La camera de la couche vient de bouger : on recale les registres du
+        ; plan de collision 0, qui s'indexe par ELLE et non par le scroll
+        ; d'avant-plan (le stage pose BG_OWN_CAMERA dans son unite de
+        ; collision). Le stage fournit la routine — ce bloc n'est assemble que
+        ; pour lui. Doc : games/r-type/doc/bship-collision-plan.md
+        jsr   bship.collisionFollow
  ELSE
  IFEQ STAGE_ID-4
         ; STAGE A CHAMP DE GOMMES : c'est PSCROLL qui efface. Son ruban porte
