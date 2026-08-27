@@ -113,7 +113,11 @@ class Cytron:
         self.pose = 0
         self.alive = self.seg != 0
         self.x, self.y = rom.preset[subtype & 0x0F]
-        self.y -= 4                           # 0x6984 : pos_y += 4 (axe arcade)
+        # 0x6984 : `ADD word ptr [SI+0x8], 4`. On travaille dans le repere
+        # ARCADE, ou y croit VERS LE HAUT (la table de presets le prouve :
+        # arcade y=392 est en haut de l'ecran, y=136 en bas). C'est donc bien
+        # une addition ici — la v2, dont l'axe est inverse, la porte en `subd`.
+        self.y += 4
 
     def _next_segment(self):
         """0xFA0E : avancer dans la liste ; 0 = fin de script."""
@@ -152,7 +156,11 @@ class Cytron:
 
     def sow(self):
         dx, dy = self.rom.trail[self.pose & 0x0F]
-        return (int((self.x + dx) // TILE), int((self.y - dy) // TILE))
+        # 0x69F2/0x69F5 : `ADD [BP+4], AX` et `ADD [BP+8], CX` — la table est
+        # dans le repere arcade et la position aussi, donc on ADDITIONNE les
+        # deux composantes. (La v2 retranche dy parce que SON axe est inverse ;
+        # ici ce serait une double inversion.)
+        return (int((self.x + dx) // TILE), int((self.y + dy) // TILE))
 
 
 def main():
@@ -205,8 +213,10 @@ def main():
     im = Image.new("RGB", (W * 2, H * 2), (0, 0, 0))
     d = ImageDraw.Draw(im)
     for cx, cy in cells:
+        # RETOURNEMENT POUR L'AFFICHAGE : nos cellules sont en repere arcade
+        # (y vers le haut), l'image a son origine en haut a gauche.
         x0 = (cx - min(xs) + 1) * TILE * 2
-        y0 = (cy - min(ys) + 1) * TILE * 2
+        y0 = (max(ys) - cy + 1) * TILE * 2
         d.ellipse([x0 + 1, y0 + 1, x0 + TILE*2 - 2, y0 + TILE*2 - 2],
                   fill=(90, 170, 70), outline=(150, 220, 120))
         d.ellipse([x0 + 5, y0 + 5, x0 + TILE*2 - 6, y0 + TILE*2 - 6],
@@ -215,7 +225,7 @@ def main():
     print("-> %s (%d x %d, echelle 2x)" % (args.out, W, H))
     if args.txt:
         with open(args.txt, "w") as f:
-            for r in range(min(ys), max(ys) + 1):
+            for r in range(max(ys), min(ys) - 1, -1):   # haut de l'ecran d'abord
                 f.write("".join("#" if (c, r) in cells else "."
                                 for c in range(min(xs), max(xs) + 1)) + "\n")
         print("-> %s" % args.txt)
