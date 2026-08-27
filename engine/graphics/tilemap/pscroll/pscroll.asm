@@ -1291,27 +1291,29 @@ pscroll.mutate
         andb  ,x                       ; la gomme disparait
         stb   ,x
 @suite
-        ; LE BIT D'ABORD, LE RUBAN ENSUITE (27/08/2026). L'anneau de tuiles
-        ; arcade fait 512 px : un cytron qui vient de naitre seme A DROITE de
-        ; l'ecran et sa gomme entre dans le champ avec le defilement. Ici le
-        ; ruban ne couvre que l'ecran : refuser hors ruban AVANT d'ecrire
-        ; jetait ces semis, et la trainee naissait trouee a droite (releve
-        ; auteur, 27/08). Le bit de carte est donc pose ; l'affichage, lui,
-        ; vient du PRE-GRAVAGE du build — voir @defer.
+        ; LE BIT D'ABORD, LA FENETRE ENSUITE (27/08/2026). Le bit de carte
+        ; est TOUJOURS pose — les collisions font foi. La peinture, elle,
+        ; n'a lieu que si la cellule ENTIERE tient dans les bandes deja
+        ; gravees ; sinon elle est perdue pour l'ecran, et c'est ASSUME
+        ; (decision auteur, 27/08) : l'anneau arcade recoit les semis hors
+        ; ecran et les fait entrer au defilement, notre feed grave des
+        ; sequences figees et ne repasse jamais — les 2-5 premieres gommes
+        ; d'un cytron naissant manquent donc a l'ecran. Les deux tentatives
+        ; pour les recuperer sont dans l'historique du 27/08 et REVENUES :
+        ; la file des differes (rejouee a l'entree de bande — correcte mais
+        ; ~220 octets et un balayage), et le pre-gravage au build (les
+        ; cellules apparaissaient eparpillees AVANT leurs cytrons — pire).
         ldb   pscroll.sc.chunk
         subb  pscroll.edge16           ; dans le ruban ?
-        bcs   @maponly                 ; A GAUCHE : la bande ne sera plus
-                                       ; jamais gravee ni vue — la carte fait
-                                       ; foi, rien de plus a faire.
+        bcs   @maponly                 ; a gauche : jamais revu, carte seule
         ; LE BORD DROIT SE JUGE SUR LE DERNIER PIXEL (27/08/2026, releve
         ; auteur). Une cellule fait 3 px : quand elle CHEVAUCHE une frontiere
         ; de bande (px mod 16 = 14 ou 15 — et 0 ou 15 pour la phase decalee),
         ; sa queue tombe dans la bande suivante. Juger sur la tete peignait
         ; la cellule des que SA bande etait gravee — puis la gravure de la
         ; bande suivante ecrasait le pixel isole : un octet de 2 px pose, le
-        ; pixel seul manquant. On peint seulement quand la bande du DERNIER
-        ; pixel est gravee ; sinon la carte seule suffit — la cellule est
-        ; PRE-GRAVEE au build (voir plus bas) et arrivera avec sa bande.
+        ; pixel seul manquant. Une gomme est ENTIERE a l'ecran ou n'y est
+        ; pas : jamais partielle.
         ldd   pscroll.sc.px
         addd  #2                       ; le dernier px de la cellule
         lsra
@@ -1324,18 +1326,8 @@ pscroll.mutate
         rorb
         subb  pscroll.edge16
         cmpb  #pscroll.CHUNKS_PER_LINE
-        bhs   @maponly
-        ; A DROITE HORS FENETRE (le bhs ci-dessus) : rien de plus a faire —
-        ; le bit de carte est pose, et l'AFFICHAGE viendra du PRE-GRAVAGE
-        ; (decision auteur, 27/08/2026) : le trace des cytrons etant
-        ; deterministe, les cellules semees avant d'etre visibles sont
-        ; calculees au build par cytron_sim --emit-prebake et fusionnees dans
-        ; le champ initial (level4_play.bin) — le feed les grave avec sa
-        ; bande, comme l'anneau arcade. La FILE DES DIFFERES qui vivait ici
-        ; (poussee + rejeu par pscroll.move + paintCell) est retiree avec
-        ; elle : ~220 octets et le balayage par trame rendus. Ecart assume :
-        ; un cytron tue pendant sa fenetre d'entree laisse ses cellules
-        ; pre-gravees, et la remise a neuf du champ (mort) les restaure.
+        bhs   @maponly                 ; a droite hors bandes gravees : carte
+                                       ; seule (voir l'en-tete de @suite)
         ldb   pscroll.sc.row           ; le terme de rangee de l'offset : il ne
         clra                           ; depend ni de la bande ni de la phase
         aslb
