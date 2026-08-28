@@ -28,12 +28,8 @@ cancer_0x2e             equ ext_variables+14 ; 1 byte, horizontal and vertical d
                                              ; bit 2 = going left
                                              ; bit 3 = going right
 cancer_0x30             equ ext_variables+15 ; 2 bytes, reactivity degree (the smaller the more reactive)
-cancer_lifetime         equ ext_variables+17 ; 2 bytes, accumulateur de frames vecues (remplace firsttime, inutilise)
-
-; Duree de vie max : passe ce delai (en frames vecues), le cancer s'autodetruit
-; SANS explosion ni score (despawn propre) -> libere les ressources sprite.
-; Defaut : 15 s a 50 Hz (VBL TO8). Changer la valeur en secondes ci-dessous.
-cancer_maxLifeFrames    equ 12*50
+; (ext_variables+17 : libre depuis le retrait du plafond de duree de vie,
+;  29/08 — la borne n'en a pas, cf. le commentaire dans Live.)
 
 Object
         lda   routine,u
@@ -124,9 +120,6 @@ Init
 
         ;ldd   #$90              ; manually override (not in original source code)
         std   cancer_0x30,u
-
-        ldd   #0                        ; demarre le compteur de duree de vie (frames vecues)
-        std   cancer_lifetime,u
 
         lda   #1
         sta   routine,u
@@ -683,12 +676,14 @@ LAB_0000_900c
 Live
         lda   AABB_0+AABB.p,u
         beq   @destroy                  ; was killed
-        ; duree de vie max : passe ce delai, autodestruction SANS explosion (libere le sprite)
-        ldd   cancer_lifetime,u
-        addd  gfxlock.frameDrop.count_w
-        std   cancer_lifetime,u
-        cmpd  #cancer_maxLifeFrames
-        bhs   @delete
+        ; PAS DE LIMITE DE DUREE DE VIE (retiree le 29/08, decision auteur apres
+        ; revue contre la borne). run_cancer_mode_1 ne connait que trois
+        ; sorties — touche, hors ecran, gel — et le cancer vit tant qu'il est a
+        ; l'ecran. Le plafond de 12 s qui vivait ici le faisait disparaitre sans
+        ; explosion ni score en pleine poursuite ; pire, le mode panique arme un
+        ; cooldown de 0x3FF trames (~20,5 s a 50 Hz), plus long que ce plafond :
+        ; un cancer entre en panique et ne recroisant pas de mur mourait de
+        ; vieillesse avant d'en sortir.
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
@@ -717,15 +712,22 @@ Live
 AlreadyDeleted
         rts
 
+; Le cycle d'animation : A, B, A, C — la pose de REPOS revient entre les deux
+; extremes. Les deux tables de la ROM le disent, chacune repetant sa premiere
+; recette en 3e position : cancer_sprite_ptr_table_facing_left (0x1000:3C22 =
+; 3C32, 3C38, 3C32, 3C3E) et _facing_right (0x1000:3C2A = 3C44, 3C4A, 3C44,
+; 3C50). Quatre poses tirees de trois images, index (compteur & $30) >> 3.
+; La table portait A,B,C,B jusqu'au 29/08 — un balancement continu la ou la
+; borne fait respirer le cancer.
 ImageIndex
-        fdb   Img_cancer_0
-        fdb   Img_cancer_1
-        fdb   Img_cancer_2
-        fdb   Img_cancer_1
-        fdb   Img_cancer_3
-        fdb   Img_cancer_4
-        fdb   Img_cancer_5
-        fdb   Img_cancer_4
+        fdb   Img_cancer_0             ; gauche : repos
+        fdb   Img_cancer_1             ;          pose 1
+        fdb   Img_cancer_0             ;          repos
+        fdb   Img_cancer_2             ;          pose 2
+        fdb   Img_cancer_3             ; droite : repos
+        fdb   Img_cancer_4             ;          pose 1
+        fdb   Img_cancer_3             ;          repos
+        fdb   Img_cancer_5             ;          pose 2
 
 
 cancer_0x3c1a
