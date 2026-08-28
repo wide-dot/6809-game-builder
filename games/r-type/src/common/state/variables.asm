@@ -156,6 +156,15 @@ globals.foeBgSolid         equ GLOBAL_VARIABLES+155 ; 1 octet, 0 = fond ignore
 * (terrainCollision.planeOff) : le champ n'est plus a l'ecran, ses collisions
 * n'ont plus de sens et sa lecture est du temps perdu.
 globals.plainBackdrop      equ GLOBAL_VARIABLES+156 ; 1 octet, 0 = decor normal
+
+* COMBIEN DE PIECES DU COMPILER SONT TOMBEES (29/08/2026)
+*
+* La borne fait porter ce compte a l'orchestrateur : chaque piece lui signale
+* sa mort par un bit (droite 1, bas 2, gauche 4) et le moniteur de combat
+* declenche la fin quand les trois sont la. Chez nous les pieces vivent dans
+* des slots du pool sans renvoi vers leur parent : le compte passe par une
+* globale, remise a zero a l'entree du stage comme tout le reste.
+globals.compilerDead       equ GLOBAL_VARIABLES+157 ; 1 octet, 0..3
 globals.ARMAMENT_SIZE      equ 5                    ; ce que checkpoint.armament efface
 
  ENDC

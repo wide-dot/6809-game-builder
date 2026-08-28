@@ -127,6 +127,7 @@ stage.stateKept
         ; huit) — un loadMap complet gaspille a chaque site de collision. Le
         ; stage qui en a besoin le repose dans son setup.
         clr   globals.backgroundSolid
+        clr   globals.compilerDead     ; aucune piece de boss tombee
         clr   globals.plainBackdrop    ; le decor reprend ses droits
         clr   globals.foeBgSolid       ; le fond n'est du sol pour les ennemis
                                        ; terrestres que la ou le stage le dit

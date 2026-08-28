@@ -195,6 +195,24 @@ cpl.prio
 cpl.PRIO_TURRET equ 5
 cpl.PRIO_WAVE   equ 8
 
+; ---------------------------------------------------------------------------
+; LE COMBAT : points de vie, coup encaisse, chapelet de mort
+; ---------------------------------------------------------------------------
+cpl.PART_HP    equ 40          ; A7A4 : 0x28 par piece, les trois pareilles
+cpl.HIT_FLASH  equ 31          ; 0x1F trames de clignotement apres un coup
+cpl.BOOM_FRAMES equ 64         ; B062 : 0x40 trames de chapelet
+
+; Les boites, une par piece, en demi-largeur et demi-hauteur v2 (les tailles
+; de geometrie.txt : 66x96, 42x120, 66x84).
+cpl.hitbox
+        fcb   33,48                    ; droite
+        fcb   21,60                    ; bas
+        fcb   33,42                    ; gauche
+
+; Les trois chapelets, GENERES depuis la ROM.
+; Rejeu : python3 tools/gen_compiler_death.py
+        INCLUDE "gen/enemies/compiler/explosions.asm"
+
 ; La demi-largeur de chaque piece, en px v2 (geometrie.txt : 66, 42, 66 de
 ; large). C'est la garde de dessin qui la consomme — voir PartLive.draw.
 cpl.halfw

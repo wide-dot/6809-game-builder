@@ -55,6 +55,14 @@ cpl.tur.dir   equ ext_variables+14     ; la direction visee (0,4,8..$3C)
 ; de la borne — vitesse verticale ET compte a rebours de vie.
 cpl.wav.vx    equ ext_variables+10     ; WORD, signe
 cpl.wav.life  equ ext_variables+12     ; WORD, 8.8 : vitesse y ET duree
+; Le combat d'une piece : le souvenir de ses PV (pour voir le coup arriver),
+; son compte de clignotement, puis le curseur du chapelet d'explosions.
+cpl.hp.prev   equ ext_variables+16     ; PV a la trame precedente
+cpl.hit       equ ext_variables+17     ; trames de clignotement restantes
+cpl.boom.cur  equ ext_variables+10     ; l'index dans la liste (apres la mort)
+cpl.boom.tick equ ext_variables+12     ; trames restantes du chapelet
+                                       ; (pas `left` : la liste de la piece
+                                       ;  GAUCHE porte deja ce nom)
 
 Object
         lda   routine,u
@@ -74,6 +82,7 @@ Routines
         fdb   TurretRun
         fdb   WaveInit
         fdb   WaveFly
+        fdb   PartBoom
 
 ; ---------------------------------------------------------------------------
 ; BossInit — A762 : l'orchestrateur engendre ses trois parties
@@ -174,6 +183,23 @@ cpl.turrets.spawn
 ; cela vient avec le bloc « degats et mort ».
 ; ---------------------------------------------------------------------------
 BossWatch
+        ; A982 : LE MONITEUR DE COMBAT. La borne attend que les trois bits de
+        ; mort soient la, puis deroule une sequence de 256 trames — fondu de
+        ; palette, deux bruitages, drapeau de fin de niveau, et relance du
+        ; scroll pour la transition. Chez nous l'objet de fin generique
+        ; (common/flow/endlevel) fait tout cela des qu'on leve
+        ; globals.bossDefeated : c'est le geste que le stage 3 pose deja pour
+        ; son cuirasse, et le seul attendu d'un vrai boss.
+        ; V2-DEVIATION : la sequence de 256 trames de la borne, avec ses
+        ; jalons a 0xB0 et 0x80, n'est pas rejouee — l'objet de fin a la
+        ; sienne, calee sur le reste du jeu.
+        lda   globals.compilerDead
+        cmpa  #3
+        blo   cpl.dome.tick
+        lda   globals.bossDefeated
+        bne   cpl.dome.tick            ; deja leve : on n'y revient pas
+        lda   #1
+        sta   globals.bossDefeated
 cpl.dome.tick
         lda   cpl.dome.left,u
         suba  gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
@@ -251,6 +277,21 @@ PartInit
         stb   priority,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
+        ; A7A4 : QUARANTE POINTS DE VIE par piece. Chez nous le champ de
+        ; potentiel de la boite EST le compteur — le moteur le decremente a
+        ; chaque coup, et zero vaut mort (meme idiome que le monstre du
+        ; stage 1, cf. dobkeratops/monster.asm).
+        _Collision_AddAABB AABB_0,AABB_list_ennemy
+        lda   #cpl.PART_HP
+        sta   AABB_0+AABB.p,u
+        sta   cpl.hp.prev,u
+        clr   cpl.hit,u
+        ldb   cpl.part,u
+        aslb
+        ldx   #cpl.hitbox
+        abx
+        ldd   ,x
+        std   AABB_0+AABB.rx,u
         inc   routine,u                ; -> PartLive
         lbra  PartLive.draw
 
@@ -286,15 +327,20 @@ PartLive.armed
         ; lasers horizontaux ; la gauche a en plus son laser roulant. La piece
         ; du bas n'a pas d'arme propre — ses deux tourelles vivent dans leurs
         ; propres slots.
+        ; TOUS LES CHEMINS REJOIGNENT PartLive.hurt : le controle de degats
+        ; doit tourner a chaque trame. Ce bloc tombait dans cpl.fire par
+        ; simple voisinage jusqu'au 29/08 — la piece gauche l'executait deux
+        ; fois puis continuait dans le spawner.
         ldb   cpl.part,u
         beq   @tire
         cmpb  #2
-        lbne  PartLive.draw
+        lbne  PartLive.hurt
 @tire   lbsr  cpl.fire
         ldb   cpl.part,u
         cmpb  #2
-        lbne  PartLive.draw
+        lbne  PartLive.hurt
         lbsr  cpl.wave.tick
+        lbra  PartLive.hurt
 ; FIX #2 : NE DESSINER QU'ENTIER A L'ECRAN. Les sprites compiles ne clippent
 ; pas — l'arcade spawne a x ecran -16 et laisse son MATERIEL rogner, nous
 ; n'avons pas ce luxe : le dessin partiel d'une piece de 66 px a -16 ecrivait
@@ -453,6 +499,31 @@ cpl.wave.pair
         decb
         bne   @one
         rts
+
+PartLive.hurt
+        ; AA0F point 6 : la boite a-t-elle perdu du potentiel depuis la trame
+        ; d'avant ? Alors le coup vient d'entrer — la borne joue son SFX et
+        ; arme 0x1F trames de clignotement.
+        lda   AABB_0+AABB.p,u
+        lbeq  cpl.part.die
+        cmpa  cpl.hp.prev,u
+        bhs   @noHit
+        ldb   #cpl.HIT_FLASH
+        stb   cpl.hit,u
+        ; V2-DEVIATION : la borne joue ici son SFX 0x56 (le « ping » du coup
+        ; encaisse). Notre banque de bruitages n'en a pas d'equivalent — le
+        ; clignotement porte seul le retour au joueur.
+@noHit  sta   cpl.hp.prev,u
+        ; le clignotement : une trame sur deux sautee tant qu'il court
+        lda   cpl.hit,u
+        beq   PartLive.draw
+        suba  gfxlock.frameDrop.count
+        bhi   >
+        clra
+!       sta   cpl.hit,u
+        anda  #2                       ; deux trames visibles, deux non
+        bne   PartLive.draw
+        rts                            ; sautee : la piece disparait ce tour
 
 PartLive.draw
         ldb   cpl.part,u
@@ -673,6 +744,72 @@ WaveFly
 @gone   lda   #4                       ; -> AlreadyDeleted
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy
+        jmp   DeleteObject
+
+; ---------------------------------------------------------------------------
+; cpl.part.die / PartBoom — B062 : le chapelet d'explosions d'une piece
+; ---------------------------------------------------------------------------
+; La borne n'eteint pas la piece d'un coup : elle installe un MARCHEUR qui
+; parcourt une liste d'offsets pendant 64 trames et seme une explosion a
+; chacun, une trame sur deux. Chaque piece a sa liste — le nuage fleurit
+; differemment selon celle qu'on abat (gen/enemies/compiler/explosions.asm).
+; La piece cesse alors de tirer, de bouger et d'encaisser : seul le nuage
+; vit. Sa mort est annoncee a l'orchestrateur, qui compte.
+; ---------------------------------------------------------------------------
+cpl.part.die
+        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
+        ; l'orchestrateur tient le compte des pieces tombees
+        inc   globals.compilerDead
+        clr   cpl.boom.cur,u
+        lda   #cpl.BOOM_FRAMES
+        sta   cpl.boom.tick,u
+        lda   #10                      ; -> PartBoom
+        sta   routine,u
+        rts
+
+PartBoom
+        ; une trame sur deux, comme la borne (elle teste la parite du compteur
+        ; global) — ici le compte a rebours en fait office.
+        lda   cpl.boom.tick,u
+        suba  gfxlock.frameDrop.count
+        bls   @fini
+        sta   cpl.boom.tick,u
+        bita  #1
+        bne   @rts
+        ; l'entree suivante du chapelet, tant qu'il en reste
+        ldb   cpl.part,u
+        ldx   #cpl.boom.count
+        abx
+        lda   cpl.boom.cur,u
+        cmpa  ,x
+        bhs   @rts                     ; liste epuisee : le nuage s'eteint
+        inc   cpl.boom.cur,u
+        ldb   cpl.part,u
+        aslb
+        ldx   #cpl.boom.index
+        ldx   b,x                      ; la liste de CETTE piece
+        lda   cpl.boom.cur,u
+        deca
+        asla                            ; deux octets par entree
+        leax  a,x
+        pshs  x
+        jsr   LoadObject_x
+        beq   @pop
+        _ldd  ObjID_explosion,explosion.subtype.smallx3
+        std   id,x
+        ldy   ,s                       ; l'entree, remise de la pile
+        ldb   ,y                       ; dx, signe
+        sex
+        addd  x_pos,u
+        std   x_pos,x
+        ldb   1,y                      ; dy, signe
+        sex
+        addd  y_pos,u
+        std   y_pos,x
+@pop    puls  x
+@rts    rts
+@fini   lda   #4                       ; -> AlreadyDeleted
+        sta   routine,u
         jmp   DeleteObject
 
 AlreadyDeleted
