@@ -1,0 +1,6 @@
+# cadre arcade et ancre, ecrits par arcade_to_sprites.py
+# ancre = coin haut-gauche du cadre vs centre du canevas,
+#         en pixels TO8 — le code objet en a besoin.
+cadre_arcade 40 64 215 191
+taille_to8 66 96
+ancre_to8 -33.0 -48.0

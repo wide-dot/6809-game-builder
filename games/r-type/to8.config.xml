@@ -3519,6 +3519,11 @@
                         <asm filename="gen/directories/dir5/entries.asm"/>
                         <asm filename="src/stages/04/main.asm"/>
                         <png2pal section="palette" symbol="Pal_stage" filename="src/stages/04/palette/pal.png"/>
+                        <!-- La palette du COMBAT DE BOSS : le decor a disparu sous le champ
+                             d'etoiles, ses quatre cases propres ne sont donc disputees par
+                             personne et la rampe chaude est re-reglee pour le compiler.
+                             Trois cases y sont reservees a l'oscillation de son dome. -->
+                        <png2pal section="palette" symbol="Pal_boss" filename="src/stages/04/palette/pal-boss.png"/>
                         <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>
                         <png2pal section="palette" symbol="Pal_messages" filename="src/common/hud/messages/images/messages.png"/>
                     </lwasm>

@@ -785,6 +785,30 @@ stage.starfieldSpawner
         lda   #1
         sta   globals.plainBackdrop
         sta   terrainCollision.planeOff ; plan 0 : les gommes
+        ; LA PALETTE DU COMBAT. Le decor vient de disparaitre sous les etoiles :
+        ; les quatre cases propres au stage ne servent plus personne, et la
+        ; rampe chaude est re-reglee pour le boss (planche A — deux rampes de
+        ; 4 marches a sommets partages). Trois cases y sont reservees a
+        ; l'oscillation de son dome, que l'orchestrateur pilote ensuite.
+        ; On passe par Pal_buffer et non par Pal_boss directement : c'est LUI
+        ; que l'oscillateur retouche, trois mots par changement d'etape, et
+        ; Pal_boss est la reference immuable du repos.
+        ; U EST L'OST DU SPAWNER — il sert encore deux lignes plus bas (le
+        ; variant, puis UnloadObject_u). Le perdre ici faisait rendre un slot
+        ; fantome et la palette partait en vrille : fond violet a l'ecran
+        ; (constat sous toje, 29/08).
+        pshs  u
+        ldx   #Pal_boss
+        ldu   #Pal_buffer
+        ldb   #16                      ; 16 couleurs, un mot chacune
+!       ldy   ,x++
+        sty   ,u++
+        decb
+        bne   <
+        puls  u
+        ldd   #Pal_buffer
+        std   Pal_current
+        clr   PalRefresh               ; PalUpdateNow la posera cette trame
  ENDC
         ldb   subtype_w+1,u            ; le variant, seme par l'octet 5 de la wave
         clra

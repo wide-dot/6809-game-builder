@@ -64,6 +64,11 @@ cpl.SPAWN_Y   equ 99
 cpl.INTRO_VX  equ $0060
 cpl.INTRO_DUR equ $0160
 
+; La table d'oscillation du dome, GENEREE : quatre etapes de trois mots (les
+; cases materielles 12, 13, 14) et la sequence du ping-pong avec ses durees.
+; Rejeu : python3 tools/gen_dome_pulse.py
+        INCLUDE "gen/enemies/compiler/dome-pulse.asm"
+
 ; Les trois pieces, dans l'ordre arcade des parties : droite, bas, gauche.
 ; Une seule pose chacune — ce sont des blocs, l'animation viendra des
 ; tourelles et des lasers.

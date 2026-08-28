@@ -41,6 +41,9 @@ AABB_0        equ ext_variables      ; AABB struct (9 bytes)
 cpl.part      equ ext_variables+9    ; 0 = droite, 1 = bas, 2 = gauche
 cpl.timer     equ ext_variables+10   ; WORD : trames restantes du segment
 cpl.vx        equ ext_variables+12   ; WORD : la vitesse du segment (8.8)
+; --- l'oscillateur du dome, porte par l'ORCHESTRATEUR (un seul, pas trois) ---
+cpl.dome.step equ ext_variables+14     ; l'index dans cpl.dome.seq
+cpl.dome.left equ ext_variables+15     ; trames restantes sur cette etape
 
 Object
         lda   routine,u
@@ -93,16 +96,61 @@ BossInit
         bne   @spawn
 @done   lda   #1                       ; -> BossWatch
         sta   routine,u
-        rts
+        ; L'oscillateur part au repos (etape 0), et pose ses couleurs des
+        ; cette trame : la palette du combat vient d'etre echangee, son etape 0
+        ; en est deja la valeur — mais la poser ici rend l'orchestrateur seul
+        ; maitre du dome, quel que soit l'ordre d'arrivee.
+        clr   cpl.dome.step,u
+        clr   cpl.dome.left,u
+        bra   cpl.dome.tick
 
 ; ---------------------------------------------------------------------------
 ; BossWatch — A982 : le moniteur de combat
 ;
-; BLOC 1 : il ne fait que vivre. La borne y compte les trois drapeaux de mort
-; et arme la sequence finale quand les trois tombent ; cela vient avec le
-; bloc « degats et mort ».
+; BLOC 1 : il ne fait encore que l'OSCILLATION DU DOME. La borne y compte les
+; trois drapeaux de mort et arme la sequence finale quand les trois tombent ;
+; cela vient avec le bloc « degats et mort ».
 ; ---------------------------------------------------------------------------
 BossWatch
+cpl.dome.tick
+        lda   cpl.dome.left,u
+        suba  gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
+        bhi   @garde                   ; l'etape court toujours
+        ; --- etape suivante ---------------------------------------------
+        ldb   cpl.dome.step,u
+        incb
+        cmpb  #cpl.dome.CYCLE
+        blo   >
+        clrb                           ; le ping-pong reboucle
+!       stb   cpl.dome.step,u
+        aslb                           ; deux octets par entree : etape, duree
+        ldx   #cpl.dome.seq
+        abx
+        lda   1,x                      ; la duree de la nouvelle etape
+        sta   cpl.dome.left,u
+        ; --- poser les trois couleurs -----------------------------------
+        ; Les cases MATERIELLES 12, 13, 14 sont consecutives et reservees a
+        ; nous seuls (arcade_to_sprites --reserver) : trois mots d'affilee
+        ; dans Pal_buffer, a l'offset 12*2. C'est tout le cout de l'effet.
+        ldb   ,x                       ; l'etape a jouer
+        lda   #6                       ; trois mots par etape
+        mul                            ; d = etape * 6
+        ldx   #cpl.dome.pal
+        leax  d,x
+        ; U PORTE L'OST : on ne l'ecrase qu'ici, quand plus aucune variable
+        ; d'objet n'est a lire, et on le rend avant de sortir.
+        pshs  u
+        ldu   #Pal_buffer+12*2         ; la premiere des trois cases
+        ldy   ,x++
+        sty   ,u++
+        ldy   ,x++
+        sty   ,u++
+        ldy   ,x
+        sty   ,u
+        puls  u
+        clr   PalRefresh               ; PalUpdateNow les posera cette trame
+        rts
+@garde  sta   cpl.dome.left,u
         rts
 
 ; ---------------------------------------------------------------------------

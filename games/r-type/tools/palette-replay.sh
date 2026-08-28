@@ -480,17 +480,28 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 #     rouge : nuit (97,0,0) -> sombre (171,0,0) -> rose (204,97,97) -> BLANC
 #     or    : nuit (97,0,0) -> brun (143,97,0) -> or (204,143,97) -> creme (250,219,143)
 #   Le blanc commun et le rouge nuit servent chacun DEUX rampes — c'est ce qui
-#   fait tenir 8 marches percues sur 6 cases. Toutes les valeurs sont sur la
-#   courbe DAC du TO8 (pas d'a-peu-pres a la quantification). Les --forcer
-#   ecrivent le routage arcade -> marche, choisi sur planches simulees
-#   (resolution TO8, pixel large) — quatre planches comparees, A retenue.
+#   fait tenir 8 marches percues sur 6 cases.
+#
+#   LE ROSE EST SUR LA CASE PROPRE 15, PAS SUR LE COMMUN 7 (auteur, 29/08 :
+#   « positionne le mat15 en mat7, c'est la meme couleur !! »). Le rouge nuit
+#   de la rampe EST deja la valeur du materiel 7 dans le jeu — le poser sur la
+#   case propre et mettre le rose sur le commun deplacait un commun de 174
+#   POUR RIEN. Echanges, les deux rampes sont identiques a l'oeil et le
+#   materiel 7 ne bouge plus D'UN IOTA : les explosions, le Force Pod et le
+#   HUD gardent leur rouge sombre pendant le combat. Ne restent deplaces que
+#   9, 10 et 11 — chacun dans sa famille (orange->brun, saumon->or,
+#   jaune->creme), ce qu'autorise la decision du 17/08.
+#
+#   Les valeurs du DOME sont celles de l'etape 0 de la table d'oscillation,
+#   POSEES SUR LA GRILLE DAC (gen_dome_pulse.py les calcule ainsi) : un PNG
+#   qui porte la valeur arcade brute ment sur ce que le materiel affichera.
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
     --ecrire-palette src/stages/04/palette/pal-boss.png \
-    --reserver "144,248,152:12;0,144,0:13;0,208,0:14" \
-    --poser "204,97,97:7;171,0,0:8;143,97,0:9;204,143,97:10;250,219,143:11;97,0,0:15" \
-    --forcer "88,40,0:15"    --forcer "160,0,56:8" \
-    --forcer "200,88,88:7"   --forcer "248,168,168:3" \
-    --forcer "64,48,0:15"    --forcer "144,88,24:9" \
+    --reserver "143,250,158:12;0,143,0:13;0,204,0:14" \
+    --poser "97,0,0:7;171,0,0:8;143,97,0:9;204,143,97:10;250,219,143:11;204,97,97:15" \
+    --forcer "88,40,0:7"     --forcer "160,0,56:8" \
+    --forcer "200,88,88:15"  --forcer "248,168,168:3" \
+    --forcer "64,48,0:7"     --forcer "144,88,24:9" \
     --forcer "208,144,56:10" --forcer "248,216,144:11"
 # Le routage des rampes du stage 5 (24/08/2026) : les memes decisions que le
 # --force de arcade_to_in, cote sprites. Indices MATERIELS ici (PNG - 1).
