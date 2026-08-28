@@ -389,13 +389,18 @@ geld.carve
                                        ; neutre est nul) — rien a manger
         addd  #6                       ; +6 : l'effacement en rectangle
         std   @call+1
-        ; LE HAUT : y + 4 px arcade, MOINS UNE LIGNE QUAND IL RAMPE A
-        ; L'HORIZONTALE (releve auteur, 29/08, en comparant a la borne : « on
-        ; efface trop bas d'une ligne »). La borne pose son coin de sonde au
+        ; LE HAUT : y + 4 px arcade, MOINS UNE RANGEE QUAND IL RAMPE A
+        ; L'HORIZONTALE (releve auteur, 29/08 : « les deux lignes effacees
+        ; doivent etre un cran plus haut »). La borne pose son coin de sonde au
         ; meme endroit quelle que soit la direction, mais ses poses
         ; horizontales et verticales n'ont pas le meme centre : converties, nos
-        ; images horizontales portent le corps une ligne plus haut. Les caps
+        ; images horizontales portent le corps une rangee plus haut. Les caps
         ; verticaux sont deja cales.
+        ;
+        ; UNE RANGEE, PAS UNE LIGNE : la ligne ecran passe par une division par
+        ; six pour devenir une rangee de gommes (pscroll.sweep.row). Un premier
+        ; correctif retirait UNE ligne — l'arrondi l'absorbait et rien ne
+        ; bougeait a l'ecran. Le pas utile est donc pscroll.CELL_H.
         ; On BRANCHE avant de composer D : LDD pose N et Z, il effacerait le
         ; verdict de BITB — et un `ldb` apres le calcul ecraserait l'octet bas
         ; de la ligne.
@@ -403,7 +408,7 @@ geld.carve
         bitb  #2                       ; bit 1 : 0 = horizontal, 1 = vertical
         bne   @vertical
         ldd   y_pos,u
-        addd  #geld.CARVE_Y-1          ; horizontal : une ligne plus haut
+        addd  #geld.CARVE_Y-geld.CARVE_ROW ; horizontal : une rangee plus haut
         bra   @ligne
 @vertical
         ldd   y_pos,u

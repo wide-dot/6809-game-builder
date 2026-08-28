@@ -49,6 +49,12 @@ geld.WINX     equ 6           ; 0x10 = 16 px arcade -> 6 px v2 (8fe3)
 geld.WINY     equ 3           ; 4 px arcade -> 3 lignes v2 (9007)
 geld.CARVE_X  equ 2           ; x - 4 px arcade -> -1,5 px v2, arrondi (90ec)
 geld.CARVE_Y  equ 3           ; y + 4 px arcade -> +3 lignes v2 (90f0)
+; Le decalage applique aux caps HORIZONTAUX : une rangee de gommes entiere.
+; C'est la hauteur de cellule du champ (pscroll.CELL_H) — le geld d'un ennemi
+; ne peut pas nommer un symbole du stage, la valeur est donc reprise ici, et
+; elle est verifiee par le rendu : un pas plus court passe sous l'arrondi de
+; la division par six et ne deplace rien.
+geld.CARVE_ROW equ 6
 geld.TURN     equ 31          ; 9055 : la duree du virage, en trames
 geld.SCREEN_W equ 160         ; le champ visible, en px v2
 geld.SCREEN_H equ 200
