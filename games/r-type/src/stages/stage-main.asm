@@ -127,6 +127,7 @@ stage.stateKept
         ; huit) — un loadMap complet gaspille a chaque site de collision. Le
         ; stage qui en a besoin le repose dans son setup.
         clr   globals.backgroundSolid
+        clr   globals.plainBackdrop    ; le decor reprend ses droits
         clr   globals.foeBgSolid       ; le fond n'est du sol pour les ennemis
                                        ; terrestres que la ou le stage le dit
         ; LE CROCHET DE COUCHE DESTRUCTIBLE, neutre par defaut : les armes du
@@ -566,9 +567,20 @@ stage.state.running
         ; jusqu'au 24/08/2026 : deux integrateurs nourris de scroll_vel,
         ; appeles a des moments differents et bornes differemment, donc un plan
         ; de gommes qui derivait de la tuilerie et des objets.
-        ldd   glb_camera_x_pos
+        ; PHASE DE BOSS : le champ d'etoiles a pris l'ecran, le decor n'est
+        ; plus visible. On rend la main au stack-blast commun — celui des sept
+        ; autres stages — et pscroll s'arrete net : plus de feed de bandes, plus
+        ; de blast de ruban, le poste le plus lourd du stage rendu au combat.
+        lda   globals.plainBackdrop
+        beq   >
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlast
+        jsr   paged.call
+        bra   stage.frame.bgDone
+!       ldd   glb_camera_x_pos
         jsr   pscroll.stage4.frame     ; RESIDENT : il peint, puis monte la page
                                        ; du module pour graver ce qui entre
+stage.frame.bgDone
  ELSE
         ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
         ; fenetre que la camera vient de franchir (plusieurs possibles en une
@@ -652,6 +664,11 @@ stage.frame.faded
         lda   stage.overlayPhase
         cmpa  #endstage.PHASE_FADE
         bhs   stage.frame.noTiles
+        ; ...et rien non plus sous le FOND DE BOSS : le champ d'etoiles a pris
+        ; l'ecran, il n'y a plus de decor a repeindre. Meme raison que le
+        ; fondu, autre moment.
+        lda   globals.plainBackdrop
+        bne   stage.frame.noTiles
         lda   #1
         sta   glb_camera_move
         jsr   DrawTiles
@@ -758,6 +775,17 @@ stage.placeholder
 ; faire une fois la duree armee.
  IFEQ (STAGE_ID-1)*(STAGE_ID-4)
 stage.starfieldSpawner
+ IFEQ STAGE_ID-4
+        ; LE CHAMP D'ETOILES REMPLACE LE DECOR (28/08/2026). A partir d'ici le
+        ; fond est noir : l'effacement passe au stack-blast commun, DrawTiles
+        ; s'arrete, et le plan des gommes est coupe — il n'est plus a l'ecran,
+        ; ses collisions n'ont plus de sens. C'est le geste que l'arcade fait
+        ; autrement (elle nettoie ses tilemaps), et il rend au boss la machine
+        ; que le champ consommait.
+        lda   #1
+        sta   globals.plainBackdrop
+        sta   terrainCollision.planeOff ; plan 0 : les gommes
+ ENDC
         ldb   subtype_w+1,u            ; le variant, seme par l'octet 5 de la wave
         clra
         tfr   d,y                      ; via Y : paged.call detruit B, preserve Y

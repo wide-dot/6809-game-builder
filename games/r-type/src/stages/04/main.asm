@@ -54,6 +54,9 @@ pscroll.gum.vectors     EXTERNAL
 pscroll.camera.x        EXTERNAL
 
 playfield.clearWindow   EXTERNAL
+; La fenetre en lignes ecran : le stage 4 la pose au basculement en fond de
+; boss (les operandes de clearBlast sont auto-modifiees et survivent au title).
+playfield.clearLines    EXTERNAL
 
 ; Le champ d'etoiles, meme page que le masque. Trois routines sans etat, visees
 ; directement : pas d'ObjID, pas de commande en registre.
@@ -317,6 +320,18 @@ stage.setup
         ; traverserait et les tirs aussi.
         lda   #1
         sta   globals.backgroundSolid
+        ; POINT OUVERT (28/08/2026) — LA FENETRE DE clearBlast.
+        ; Ses quatre operandes sont AUTO-MODIFIEES et son unite est chargee une
+        ; seule fois au boot : l'etat assemble « fenetre pleine » ne survit pas
+        ; au title, qui la retrecit pour ses bandes. Resultat mesure : au
+        ; basculement en fond de boss, l'effacement ne couvre qu'une tranche et
+        ; les gommes restent a l'ecran sous les etoiles.
+        ; Poser la fenetre par playfield.clearLines (l'idiome du title,
+        ; title.clearBand) FIGE LE STAGE — essaye ici dans stage.setup et dans
+        ; le spawner de starfield, les deux fois la camera se bloque avant le
+        ; boss. La cause n'est pas trouvee ; le geste est donc retire plutot que
+        ; laisse a moitie. A reprendre : soit comprendre ce que clearLines
+        ; demande de plus a ce moment, soit poser les operandes autrement.
         ; ...et le fond de CE stage est du sol pour les ennemis terrestres :
         ; c'est le champ de gommes. Cancer et pow le sondent alors comme
         ; l'arcade sonde ses tuiles d'avant-plan.

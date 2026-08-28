@@ -139,6 +139,23 @@ globals.speedlevel         equ GLOBAL_VARIABLES+153 ; 2 octets, offset dans la t
 * 0x40:5791). C'est notre rangement en deux plans qui demande ce second test,
 * donc c'est a nous de dire ou il a un sens.
 globals.foeBgSolid         equ GLOBAL_VARIABLES+155 ; 1 octet, 0 = fond ignore
+
+* LE FOND EST-IL UN SIMPLE NOIR ? (28/08/2026)
+*
+* Pose quand le champ d'etoiles prend l'ecran — la phase de boss. Le decor
+* n'est alors plus visible : ni tuiles, ni champ de gommes, juste le noir et
+* les etoiles, exactement comme le stage 1 pendant Dobkeratops.
+*
+* Ce que ca change dans la trame du stage 4 : l'effacement passe de pscroll
+* (feed des bandes + blast du ruban, le poste le plus lourd du stage) au
+* stack-blast commun playfield.clearBlast que sept stages sur huit utilisent
+* deja ; et DrawTiles ne tourne plus. Le combat de boss est justement le
+* moment ou l'on veut de la marge machine.
+*
+* Le plan de collision des gommes est coupe du meme geste
+* (terrainCollision.planeOff) : le champ n'est plus a l'ecran, ses collisions
+* n'ont plus de sens et sa lecture est du temps perdu.
+globals.plainBackdrop      equ GLOBAL_VARIABLES+156 ; 1 octet, 0 = decor normal
 globals.ARMAMENT_SIZE      equ 5                    ; ce que checkpoint.armament efface
 
  ENDC
