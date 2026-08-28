@@ -44,6 +44,8 @@ cpl.vx        equ ext_variables+12   ; WORD : la vitesse du segment (8.8)
 ; --- l'oscillateur du dome, porte par l'ORCHESTRATEUR (un seul, pas trois) ---
 cpl.dome.step equ ext_variables+14     ; l'index dans cpl.dome.seq
 cpl.dome.left equ ext_variables+15     ; trames restantes sur cette etape
+; Le laser reutilise les cases de la partie : un slot ne porte jamais les deux.
+cpl.laser.vx  equ cpl.vx               ; WORD : sa vitesse (8.8), vers la gauche
 
 Object
         lda   routine,u
@@ -57,6 +59,8 @@ Routines
         fdb   PartInit
         fdb   PartLive
         fdb   AlreadyDeleted
+        fdb   LaserInit
+        fdb   LaserFly
 
 ; ---------------------------------------------------------------------------
 ; BossInit — A762 : l'orchestrateur engendre ses trois parties
@@ -180,7 +184,7 @@ PartInit
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
         inc   routine,u                ; -> PartLive
-        bra   PartLive.draw
+        lbra  PartLive.draw
 
 ; ---------------------------------------------------------------------------
 ; PartLive — AFE6 (motion_step) : la derive du segment courant
@@ -190,7 +194,7 @@ PartInit
 ; ---------------------------------------------------------------------------
 PartLive
         ldd   cpl.timer,u
-        beq   PartLive.draw            ; segment epuise : immobile (bloc 1)
+        lbeq  PartLive.draw            ; segment epuise : immobile (bloc 1)
         ldb   gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
         clra
         pshs  d
@@ -213,6 +217,79 @@ PartLive
 ; le gel A L'HEURE DE WAVE DU BOSS). Pendant la derive d'intro, chaque piece
 ; apparait quand son bord gauche franchit le bord de l'ecran ; sa position
 ; finale (x = 116) est entiere a l'ecran.
+; ---------------------------------------------------------------------------
+; cpl.fire — AB01 (droite) / ADFB (gauche) : la salve de lasers horizontaux
+; ---------------------------------------------------------------------------
+; La borne decide a chaque trame, pour la partie droite comme pour la gauche :
+;   - le joueur doit etre A DROITE de la piece (elle tire vers la gauche) ;
+;   - il doit etre dans une fenetre verticale, comptee depuis la piece :
+;     0..0x50 px arcade pour la droite, 0..0x30 pour la gauche — la piece
+;     gauche vise plus serre ;
+;   - un compteur de cadence doit tomber a zero ; il se recharge alors depuis
+;     la valeur de difficulte (nous prenons la premiere, comme tout le cast).
+; Le laser nait devant la piece (+0x50 px arcade a droite, +0x10 a gauche,
+; donc DANS le corps) a une hauteur tiree d'un pool de huit offsets, et part
+; vers la gauche a 3 px/trame arcade.
+; ---------------------------------------------------------------------------
+cpl.fire
+        lda   cpl.timer+1,u            ; la cadence (l'octet bas suffit)
+        suba  gfxlock.frameDrop.count
+        bhi   @wait
+        ; --- le joueur est-il devant, et dans la fenetre ? ---------------
+        ldd   player1+x_pos
+        subd  x_pos,u
+        bmi   @rearm                   ; il est DERRIERE la piece
+        ldd   player1+y_pos
+        subd  y_pos,u
+        addd  #cpl.FIRE_WINY0
+        bmi   @rearm                   ; au-dessus de la fenetre
+        ldb   cpl.part,u
+        cmpb  #2                        ; 2 = la piece GAUCHE, fenetre serree
+        beq   @gauche
+        cmpd  #cpl.FIRE_WINY_R
+        bra   @teste
+@gauche cmpd  #cpl.FIRE_WINY_L
+@teste  bhi   @rearm                   ; sous la fenetre
+        bsr   cpl.laser.spawn
+@rearm  lda   #cpl.FIRE_PERIOD         ; le compteur se recharge
+@wait   sta   cpl.timer+1,u
+        rts
+
+; ---------------------------------------------------------------------------
+; cpl.laser.spawn — AB3A : un laser, devant la piece, a hauteur tiree
+; ---------------------------------------------------------------------------
+cpl.laser.spawn
+        jsr   LoadObject_x
+        beq   @none                    ; pool plein : pas de tir, la borne
+                                       ; renonce aussi
+        lda   #ObjID_compilerlaser
+        sta   id,x
+        lda   #5                       ; -> LaserInit
+        sta   routine,x
+        ; la hauteur : un des huit offsets du pool de la piece
+        jsr   RandomNumber
+        andb  #7
+        aslb
+        ldy   #cpl.laser.poolR
+        lda   cpl.part,u
+        cmpa  #2
+        bne   >
+        ldy   #cpl.laser.poolL         ; la piece gauche a son propre pool
+!       ldd   b,y
+        addd  y_pos,u
+        std   y_pos,x
+        ; l'avance : devant la piece a droite, dans le corps a gauche
+        ldd   #cpl.FIRE_AHEAD_R
+        lda   cpl.part,u
+        cmpa  #2
+        bne   >
+        ldd   #cpl.FIRE_AHEAD_L
+!       addd  x_pos,u
+        std   x_pos,x
+        clr   x_sub,x
+        clr   y_sub,x
+@none   rts
+
 PartLive.draw
         ldb   cpl.part,u
         ldx   #cpl.halfw
@@ -231,6 +308,57 @@ PartLive.draw
         jmp   DisplaySprite
 @hide   leas  2,s
 @hide2  rts
+
+; ---------------------------------------------------------------------------
+; LaserInit / LaserFly — E6AB : le laser horizontal du Compiler
+; ---------------------------------------------------------------------------
+; Il vole vers la GAUCHE a vitesse constante, cycle sur quatre poses, et tue
+; le joueur au contact (la borne pose player_one_die_flag). Il ne rebondit
+; pas, ne vise pas : c'est un rideau que le joueur doit eviter.
+; V2-DEVIATION : pas de selecteur de difficulte — on prend la premiere entree
+; de la table de vitesses (0x1000:5848), comme tout le cast.
+; ---------------------------------------------------------------------------
+LaserInit
+        ldd   #cpl.LASER_VX
+        std   cpl.laser.vx,u
+        ldb   #3                       ; devant le decor, derriere le vaisseau
+        stb   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        _Collision_AddAABB AABB_0,AABB_list_ennemy
+        lda   #compilerlaser_hitdamage
+        sta   AABB_0+AABB.p,u
+        _ldd  compilerlaser_hitbox_x,compilerlaser_hitbox_y
+        std   AABB_0+AABB.rx,u
+        inc   routine,u                ; -> LaserFly
+LaserFly
+        ; il avance, puis se montre — l'ordre de la borne
+        ldb   cpl.laser.vx+1,u
+        lda   gfxlock.frameDrop.count
+        mul
+        _negd                          ; vers la gauche
+        jsr   moveXPos8.8
+        ; quatre poses, deux trames chacune (frame_duration 2 au catalogue)
+        lda   gfxlock.frame.count+1
+        lsra
+        anda  #3
+        asla
+        ldx   #cpl.laser.images
+        ldd   a,x
+        std   image_set,u
+        ; sorti par la gauche ? le laser ne revient jamais
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        addd  #compilerlaser_hitbox_x
+        bmi   @gone
+        ldd   y_pos,u
+        stb   AABB_0+AABB.cy,u
+        jmp   DisplaySprite
+@gone   lda   #4                       ; -> AlreadyDeleted
+        sta   routine,u
+        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
+        jmp   DeleteObject
 
 AlreadyDeleted
         rts

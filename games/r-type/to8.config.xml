@@ -1642,6 +1642,18 @@
                                     <image name="compiler_left" filename="src/enemies/compiler/images/left/00.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
+                                    <image name="compiler_laser_0" filename="src/enemies/compiler/images/laser/00.png" index="3">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_1" filename="src/enemies/compiler/images/laser/01.png" index="4">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_2" filename="src/enemies/compiler/images/laser/02.png" index="5">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_3" filename="src/enemies/compiler/images/laser/03.png" index="6">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
                                 </gfxcomp>
                     </lwasm>
                 </file>

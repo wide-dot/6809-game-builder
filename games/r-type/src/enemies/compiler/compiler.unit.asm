@@ -64,6 +64,41 @@ cpl.SPAWN_Y   equ 99
 cpl.INTRO_VX  equ $0060
 cpl.INTRO_DUR equ $0160
 
+; ---------------------------------------------------------------------------
+; LES ARMES — les valeurs arcade, converties une fois
+; ---------------------------------------------------------------------------
+; La cadence : la borne recharge son compteur depuis une table par difficulte
+; (0x1000:5844) ; on prend la premiere entree, comme tout le cast.
+cpl.FIRE_PERIOD equ 48         ; trames entre deux salves
+
+; Les fenetres de tir, en px arcade converties (x0,75 sur l'axe y) : la piece
+; droite accepte 0..0x50 px sous elle, la gauche 0..0x30 — elle vise plus
+; serre. FIRE_WINY0 recale l'origine sur la piece.
+cpl.FIRE_WINY0  equ 0
+cpl.FIRE_WINY_R equ 60         ; 0x50 px arcade -> 60 lignes v2
+cpl.FIRE_WINY_L equ 36         ; 0x30 px arcade -> 36 lignes v2
+
+; Ou nait le laser : devant la piece droite (+0x50 px arcade), DANS le corps
+; de la gauche (+0x10) — la borne le veut ainsi, les tirs gauches sortent du
+; ventre de la piece.
+cpl.FIRE_AHEAD_R equ 30        ; 0x50 px arcade x 0,375
+cpl.FIRE_AHEAD_L equ 6         ; 0x10 px arcade x 0,375
+
+; La vitesse du laser : 0x300 en 8.8 arcade = 3 px/trame, vers la gauche.
+; En v2 : 3 x 0,375 = 1,125 px/trame, soit $0120.
+cpl.LASER_VX   equ $0120
+
+; Les deux pools de hauteur (0x1000:5850 pour la droite, 0x5860 pour la
+; gauche), huit entrees chacun, converties a l'echelle y.
+cpl.laser.poolR
+        fdb   6,30,18,6,30,18,6,30
+cpl.laser.poolL
+        fdb   9,23,23,9,9,23,9,23
+
+cpl.laser.images
+        fdb   set_compiler_laser_0,set_compiler_laser_1
+        fdb   set_compiler_laser_2,set_compiler_laser_3
+
 ; La table d'oscillation du dome, GENEREE : quatre etapes de trois mots (les
 ; cases materielles 12, 13, 14) et la sequence du ping-pong avec ses durees.
 ; Rejeu : python3 tools/gen_dome_pulse.py
