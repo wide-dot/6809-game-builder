@@ -3356,16 +3356,20 @@
 
                 <!-- Les poses des tourelles : neuf par montage (la roue de
                      visee est palindromique, comme en arcade — voir
-                     tools/gen_turret_sets.py). -->
+                     tools/gen_turret_sets.py). PRE-DECALEES (shifts) : la
+                     tourelle est vissee sur la coque, et la coche defile au
+                     pixel (les deux plans de tuiles du mscroll sont ses
+                     phases) — sans variante impaire le sprite claque de 2 px
+                     contre elle, le defaut vu le 28/08/2026. -->
                 <file name="stage3.cast.imgTurret" linkdata="LINK" arena="stage3.foes">
                     <lwasm gensource="gen/enemies/stage3-cast-imgturret.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp file="stage3.cast.imgTurret" gendir="gen/enemies/stage3-cast-imgturret"
                                  gensource="gen/enemies/stage3-cast-imgturret/includes.asm"
                                  genindex="gen/enemies/stage3-cast-imgturret/index.asm">
-                            <images dir="src/enemies/warship-elements/images/small-turret-top-wheel" names="small_turret_top"/>
-                            <images dir="src/enemies/warship-elements/images/small-turret-bottom-wheel" names="small_turret_bottom"/>
-                            <images dir="src/enemies/warship-elements/images/big-turret-wheel" names="big_turret"/>
+                            <images dir="src/enemies/warship-elements/images/small-turret-top-wheel" names="small_turret_top" shifts="0,1"/>
+                            <images dir="src/enemies/warship-elements/images/small-turret-bottom-wheel" names="small_turret_bottom" shifts="0,1"/>
+                            <images dir="src/enemies/warship-elements/images/big-turret-wheel" names="big_turret" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
