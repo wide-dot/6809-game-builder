@@ -36,6 +36,13 @@ map.odd           EXTERNAL
 ; celle que le rangement lui a donnee, et le builder l'ecrit en equate.
 stage.wave        EXTERNAL
 patapata.Object   EXTERNAL
+; Le missile et sa flamme : mutualises entre les ennemis et l'arme du joueur,
+; et charges par la scene de BOOT — ils servent tous les stages. Le p-staff en
+; tire huit par salve ; sans ces deux entrees son index tombait sur le bouchon
+; et les roquettes naissaient inertes (constat auteur, 29/08 : « les pstaff ne
+; tirent pas » — ils tiraient, mais dans le vide).
+commonmissile.Object      EXTERNAL
+commonmissileflame.Object EXTERNAL
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
 ; propre page : moveByScript la lit par page montee.

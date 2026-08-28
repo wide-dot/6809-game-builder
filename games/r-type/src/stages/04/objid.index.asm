@@ -11,7 +11,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+common.missile.page ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
@@ -32,7 +32,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
@@ -61,7 +61,7 @@ Obj_Index_Address
         fdb   PaletteFade ; ObjID_fade
         fdb   Player ; ObjID_Player1
         fdb   Weapon ; ObjID_Weapon
-        fdb   stage.placeholder ; ObjID_commonmissile
+        fdb   commonmissile.Object ; ObjID_commonmissile
         fdb   Beamcharge ; ObjID_beamcharge
         fdb   Beam ; ObjID_beamp
         fdb   emitterFlash.Object ; ObjID_emitter_flash
@@ -88,7 +88,7 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_scantfire
         fdb   stage.placeholder ; ObjID_tabrokcanon
         fdb   stage.placeholder.raw ; ObjID_shellEraser
-        fdb   stage.placeholder ; ObjID_commonmissileflame
+        fdb   commonmissileflame.Object ; ObjID_commonmissileflame
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
         fdb   stage.placeholder ; ObjID_dobkeratops_explosion
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
@@ -118,7 +118,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+common.missile.page ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
@@ -139,7 +139,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
@@ -220,7 +220,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
         fcb   map.RAM_OVER_CART+common.player.page ; ObjID_Player1
         fcb   map.RAM_OVER_CART+common.weapon.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+common.missile.page ; ObjID_commonmissile
         fcb   map.RAM_OVER_CART+common.beamcharge.page ; ObjID_beamcharge
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
@@ -241,7 +241,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
