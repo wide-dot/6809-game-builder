@@ -38,6 +38,11 @@ pilot.cursor   equ ext_variables   ; WORD position dans le script
 pilot.counter  equ ext_variables+2 ; WORD trames restantes du segment courant
 pilot.sx       equ ext_variables+4 ; WORD vitesse x du segment courant (8.8)
 pilot.sy       equ ext_variables+6 ; WORD vitesse y du segment courant (8.8)
+pilot.spawn    equ ext_variables+8 ; WORD curseur dans le script de spawn
+
+; L'ancre des pieces : l'arcade fait naitre chacune a `parent.Y + dy` et pose
+; son maitre a Y=0xF0 (create_warship 40:c46e), soit 297 - 0,75 x 240 = 117.
+warship.BASEY  equ 117
 
 
 warship.pilot
@@ -54,6 +59,10 @@ Routines
 pilotInit
         ldd   #warship.camera.script
         std   pilot.cursor,u
+        ldd   #0                       ; le curseur de spawn : zero veut dire
+        std   pilot.spawn,u            ; « pas encore arme », le parcours le
+                                       ; pose lui-meme — l'etiquette de la
+                                       ; table vit dans SA page, pas ici
         ldd   #1                       ; premiere trame -> premier segment
         std   pilot.counter,u
         ldd   #0
@@ -68,6 +77,11 @@ pilotInit
         rts
 
 pilotLive
+        ; les pieces qui naissent de la course : le parcours vit AVEC ses
+        ; donnees, dans le direntry du script (l'unite du stage etait pleine).
+        lda   #map.RAM_OVER_CART+stage3.spawnscript.page
+        _SetCartPageA
+        jsr   warship.spawn
         ; (la silhouette de collision est desormais servie par le plan a
         ; camera propre — voir doc/bship-collision-plan.md ; le pilote n'a
         ; plus de bases a ecrire)
@@ -142,3 +156,4 @@ pilotLive
         bra   @done
 pilotDone
         rts
+

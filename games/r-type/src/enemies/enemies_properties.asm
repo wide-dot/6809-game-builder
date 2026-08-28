@@ -64,6 +64,21 @@ warship_small_turret_scoreIdx equ 1
 warship_core_scoreIdx         equ 13
 warship_capsule_scoreIdx      equ 7
 
+; Les tourelles autonomes du vaisseau (stage 3). PV et boites converties des
+; valeurs arcade : x +-12 -> 12 x 0,375 = 4 ; la hauteur par 0,75, et le
+; CENTRE de la boite est excentre — l'axe y arcade monte, donc le montage
+; HAUT porte sa boite vers le BAS de l'ancre et inversement. La mesure des
+; PNG le confirme (corps a +3 pour le montage haut, -3 pour le bas) ; la
+; plate Ghidra dit le contraire en prose, la geometrie tranche.
+warship_small_turret_hitbox_x  equ 4    ; arcade +-12
+warship_small_turret_hitbox_y  equ 4    ; arcade 12 de haut
+warship_small_turret_hitdamage equ 2    ; 2 PV (40:e285)
+warship_small_turret_cy        equ 6    ; arcade -8 -> +6, signe par le montage
+warship_big_turret_hitbox_x    equ 4    ; arcade +-12
+warship_big_turret_hitbox_y    equ 6    ; arcade 16 de haut
+warship_big_turret_hitdamage   equ 4    ; 4 PV (40:e157)
+warship_big_turret_cy          equ 3    ; arcade -4 -> +3
+
 ; cytron — arcade AABB 0x1000:2E36 = -12..+12 sur les deux axes ; x0,375 et
 ; x0,75 donnent 4 et 9. PV arcade indexes par la difficulte (3/5/8/14) : on
 ; prend la premiere, comme le reste du cast.

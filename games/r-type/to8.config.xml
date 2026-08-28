@@ -3345,6 +3345,37 @@
                      warship/camera-script.asm) — consommee par le pilote
                      (warship/pilot.asm, unite stage3) par page montee, comme la
                      wave. -->
+                <!-- Le script de spawn des pieces du vaisseau (genere par
+                     tools/gen_warship_spawn.py depuis l'export re.arcade) —
+                     parcouru par le pilote, page montee comme le camscript. -->
+                <file name="stage3.spawnscript" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-spawnscript.asm">
+                        <asm filename="src/stages/03/warship/spawner.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Les poses des tourelles : neuf par montage (la roue de
+                     visee est palindromique, comme en arcade — voir
+                     tools/gen_turret_sets.py). -->
+                <file name="stage3.cast.imgTurret" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgturret.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgTurret" gendir="gen/enemies/stage3-cast-imgturret"
+                                 gensource="gen/enemies/stage3-cast-imgturret/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgturret/index.asm">
+                            <images dir="src/enemies/warship-elements/images/small-turret-top-wheel" names="small_turret_top"/>
+                            <images dir="src/enemies/warship-elements/images/small-turret-bottom-wheel" names="small_turret_bottom"/>
+                            <images dir="src/enemies/warship-elements/images/big-turret-wheel" names="big_turret"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage3.cast" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-cast.asm">
+                        <asm filename="src/stages/03/cast.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <file name="stage3.camscript" linkdata="LINK" arena="stage3.gfx">
                     <unit name="stage3.camscript" symbol="warship.camera.script" section="code">
                         <asm filename="src/stages/03/warship/camera-script.asm"/>
@@ -3428,6 +3459,9 @@
                     <load name="stage3.bship.bufA"/>
                     <load name="stage3.bship.bufB"/>
                     <load name="stage3.camscript"/>
+                    <load name="stage3.spawnscript"/>
+                    <load name="stage3.cast.imgTurret"/>
+                    <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
                     <load name="stage3"/>

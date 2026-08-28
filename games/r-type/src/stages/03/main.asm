@@ -36,6 +36,8 @@ terrainCollision.bgWorldAdj EXTERNAL
 ; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
 ; wave — le pilote la lit par page montée).
 warship.camera.script  EXTERNAL
+warship.spawn          EXTERNAL
+turret.Object          EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
