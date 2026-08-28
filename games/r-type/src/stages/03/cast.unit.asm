@@ -39,8 +39,88 @@ set_big_turret_5  EXTERNAL
 set_big_turret_6  EXTERNAL
 set_big_turret_7  EXTERNAL
 set_big_turret_8  EXTERNAL
+set_front_turret_a_0  EXTERNAL
+set_front_turret_a_1  EXTERNAL
+set_front_turret_a_2  EXTERNAL
+set_front_turret_a_3  EXTERNAL
+set_front_turret_a_4  EXTERNAL
+set_front_turret_a_5  EXTERNAL
+set_front_turret_a_6  EXTERNAL
+set_front_turret_b_0  EXTERNAL
+set_front_turret_b_1  EXTERNAL
+set_front_turret_b_2  EXTERNAL
+set_front_turret_b_3  EXTERNAL
+set_front_turret_b_4  EXTERNAL
+set_front_turret_c_0  EXTERNAL
+set_front_turret_c_1  EXTERNAL
+set_front_turret_c_2  EXTERNAL
+set_front_turret_c_3  EXTERNAL
+set_front_turret_c_4  EXTERNAL
+set_front_turret_c_5  EXTERNAL
+set_front_turret_c_6  EXTERNAL
+set_front_turret_d_0  EXTERNAL
+set_front_turret_d_1  EXTERNAL
+set_front_turret_d_2  EXTERNAL
+set_front_turret_d_3  EXTERNAL
+set_front_turret_d_4  EXTERNAL
+set_front_turret_e_0  EXTERNAL
+set_front_turret_e_1  EXTERNAL
+set_front_turret_e_2  EXTERNAL
+set_front_turret_e_3  EXTERNAL
+set_front_turret_e_4  EXTERNAL
+set_front_turret_e_5  EXTERNAL
+set_multi_tl_0  EXTERNAL
+set_multi_tl_1  EXTERNAL
+set_multi_tl_2  EXTERNAL
+set_multi_tl_3  EXTERNAL
+set_multi_bl_0  EXTERNAL
+set_multi_bl_1  EXTERNAL
+set_multi_bl_2  EXTERNAL
+set_multi_bl_3  EXTERNAL
+set_multi_tr_0  EXTERNAL
+set_multi_tr_1  EXTERNAL
+set_multi_tr_2  EXTERNAL
+set_multi_tr_3  EXTERNAL
+set_multi_br_0  EXTERNAL
+set_multi_br_1  EXTERNAL
+set_multi_br_2  EXTERNAL
+set_multi_br_3  EXTERNAL
+set_fire_ball_0  EXTERNAL
+set_fire_ball_1  EXTERNAL
+set_fire_ball_2  EXTERNAL
+set_fire_ball_3  EXTERNAL
+set_fire_ball_4  EXTERNAL
+set_fire_ball_5  EXTERNAL
+set_fire_ball_6  EXTERNAL
+set_fire_ball_7  EXTERNAL
+set_fire_ball_8  EXTERNAL
+set_fire_ball_9  EXTERNAL
+set_fire_ball_10  EXTERNAL
+set_fire_ball_11  EXTERNAL
+set_fire_ball_12  EXTERNAL
+set_fire_ball_13  EXTERNAL
+set_fire_ball_14  EXTERNAL
+set_fire_ball_15  EXTERNAL
+set_fire_ball_16  EXTERNAL
+set_fire_ball_17  EXTERNAL
+set_fire_ball_18  EXTERNAL
+set_fire_ball_19  EXTERNAL
+set_fire_ball_20  EXTERNAL
+set_fire_ball_21  EXTERNAL
+set_fireball_flash_0  EXTERNAL
+set_fireball_flash_1  EXTERNAL
+set_fireball_flash_2  EXTERNAL
+set_fireball_flash_3  EXTERNAL
+set_fireball_flash_4  EXTERNAL
+set_fireball_flash_5  EXTERNAL
+set_fireball_flash_6  EXTERNAL
+set_fireball_flash_7  EXTERNAL
 turret.Object   EXPORT
 part.Object     EXPORT
+fturret.Object  EXPORT
+multi.Object    EXPORT
+fireball.Object EXPORT
+muzzle.Object   EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -65,10 +145,16 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/fx/explosion/explosion.const.asm"
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/lib/scale.asm"
+        ; les alias de champs du tir (fireDisplayDelay...) — la multi seme
+        ; des foefire generiques
+        INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/common/lib/projectile.macro.asm"
 
         INCLUDE "src/enemies/warship-elements/layer.asm"
         INCLUDE "src/enemies/warship-elements/turret/obj.asm"
         INCLUDE "src/enemies/warship-elements/part/obj.asm"
+        INCLUDE "src/enemies/warship-elements/frontturret/obj.asm"
+        INCLUDE "src/enemies/warship-elements/fireball/obj.asm"
+        INCLUDE "src/enemies/warship-elements/multiturret/obj.asm"
 
  ENDSECTION

@@ -65,3 +65,33 @@ layer.followY
 
 layer.y0        fdb 0
 layer.cam0      fdb 0
+
+; layer.AddPos — deplacer de la vitesse 8.8 en D, compensee de layer.drop
+; (pose par l'appelant), sur le champ 24 bits pointe par X. Meme calcul que
+; le gouger, le wick et le brood : deux mul non signes, produit tronque juste
+; en complement a deux.
+layer.AddPos
+        pshs  a
+        lda   layer.drop+1
+        mul
+        std   layer.tmp
+        puls  a
+        ldb   layer.drop+1
+        mul
+        tfr   b,a
+        clrb
+        addd  layer.tmp
+        pshs  d
+        ldb   ,s
+        sex
+        sta   @a+1
+        puls  d
+        addd  1,x
+        std   1,x
+        lda   ,x
+@a      adca  #$00
+        sta   ,x
+        rts
+
+layer.drop      fdb 0
+layer.tmp       fdb 0

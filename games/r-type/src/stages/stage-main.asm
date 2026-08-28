@@ -34,6 +34,7 @@ stage.SCROLL_VEL equ $0030
  IFDEF STAGE_MSCROLL
 mscroll.do   EXTERNAL
 mscroll.move EXTERNAL
+bship.collisionFollow EXTERNAL
  ENDC
 
 ; Le champ de gommes du stage 4 vit dans l'unite de collision — un autre
@@ -533,9 +534,16 @@ stage.state.running
         ; La camera de la couche vient de bouger : on recale les registres du
         ; plan de collision 0, qui s'indexe par ELLE et non par le scroll
         ; d'avant-plan (le stage pose BG_OWN_CAMERA dans son unite de
-        ; collision). Le stage fournit la routine — ce bloc n'est assemble que
-        ; pour lui. Doc : games/r-type/doc/bship-collision-plan.md
+        ; collision). La routine vit en PAGE (l'unite du spawner — l'unite
+        ; residente du stage etait pleine) : montage encadre. Ce bloc n'est
+        ; assemble que pour un stage a couche. Doc : bship-collision-plan.md
+        _GetCartPageA
+        pshs  a
+        lda   #map.RAM_OVER_CART+stage3.spawnscript.page
+        _SetCartPageA
         jsr   bship.collisionFollow
+        puls  a
+        _SetCartPageA
  ELSE
  IFEQ STAGE_ID-4
         ; STAGE A CHAMP DE GOMMES : c'est PSCROLL qui efface. Son ruban porte

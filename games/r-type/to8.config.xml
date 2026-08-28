@@ -3374,6 +3374,42 @@
                     </lwasm>
                 </file>
 
+                <!-- Les poses de la PROUE : cinq roues dedupliquees (c et e
+                     partagent leurs poses — voir gen_warship_frontmulti.py). -->
+                <file name="stage3.cast.imgFront" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgfront.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFront" gendir="gen/enemies/stage3-cast-imgfront"
+                                 gensource="gen/enemies/stage3-cast-imgfront/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgfront/index.asm">
+                            <images dir="src/enemies/warship-elements/images/front-turret-a-wheel" names="front_turret_a"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-b-wheel" names="front_turret_b"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-c-wheel" names="front_turret_c"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-d-wheel" names="front_turret_d"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-e-wheel" names="front_turret_e"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La multi (barillet 4 poses x 4 montages), la boule de feu
+                     et son eclat de bouche : une page partagee par les trois
+                     identifiants. -->
+                <file name="stage3.cast.imgFire" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgfire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFire" gendir="gen/enemies/stage3-cast-imgfire"
+                                 gensource="gen/enemies/stage3-cast-imgfire/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgfire/index.asm">
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-left" names="multi_tl"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-left" names="multi_bl"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-right" names="multi_tr"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-right" names="multi_br"/>
+                            <images dir="src/enemies/warship-elements/images/fire-ball" names="fire_ball"/>
+                            <images dir="src/enemies/warship-elements/images/fireball-flash" names="fireball_flash"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage3.cast" linkdata="LINK" arena="stage3.foes">
                     <lwasm gensource="gen/stages/03/stage03-cast.asm">
                         <asm filename="src/stages/03/cast.unit.asm"/>
@@ -3465,6 +3501,8 @@
                     <load name="stage3.camscript"/>
                     <load name="stage3.spawnscript"/>
                     <load name="stage3.cast.imgTurret"/>
+                    <load name="stage3.cast.imgFront"/>
+                    <load name="stage3.cast.imgFire"/>
                     <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>

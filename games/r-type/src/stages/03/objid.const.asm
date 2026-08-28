@@ -24,16 +24,22 @@ ObjID_warship_turret equ 38
 * corps visible EST la couche. Le sous-type porte leur rang, qui designe la
 * boite (src/enemies/warship-elements/part/boxes.asm, extraite de la ROM).
 ObjID_warship_part equ 39
+* Tranche 4 : la proue (6 variantes par le sous-type), sa boule de feu et
+* l'eclat de bouche de celle-ci, et la tourelle multiple (4 montages).
+ObjID_warship_fturret equ 40
+ObjID_warship_multi equ 41
+ObjID_warship_fireball equ 42
+ObjID_warship_muzzle equ 43
 * Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
 * des entrees d'index que mscroll.setup resout en pages/adresses, le
 * patron du banc examples/mscroll.
-objid.bship.map    equ 40
-objid.bship.tilesA equ 41
-objid.bship.tilesB equ 42
-objid.bship.bufA   equ 43
-objid.bship.bufB   equ 44
+objid.bship.map    equ 44
+objid.bship.tilesA equ 45
+objid.bship.tilesB equ 46
+objid.bship.bufA   equ 47
+objid.bship.bufB   equ 48
 
-objid.count equ 44
+objid.count equ 48
 objid.animation equ ObjID_animation
 
 * GARDE-FOU (26/08/2026). Les cinq entrees bship ne sont pas des objets, mais
@@ -44,7 +50,7 @@ objid.animation equ ObjID_animation
 * de la couche battleship ont ete resolus sur les mauvaises pages et le stage 3
 * s'est fige au chargement, ecran noir. Le controle de densite des tables ne
 * pouvait pas le voir — les longueurs restaient justes.
- IFNE objid.bship.map-(ObjID_warship_part+1)
+ IFNE objid.bship.map-(ObjID_warship_muzzle+1)
         ERROR les cinq entrees bship doivent suivre le dernier objet, sans trou
  ENDC
  IFNE objid.count-objid.bship.bufB

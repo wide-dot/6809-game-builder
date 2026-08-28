@@ -23,6 +23,7 @@
 ; Doc : doc/warship-parts-plan.md
 ;*******************************************************************************
 warship.spawn   EXPORT
+bship.collisionFollow EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -103,6 +104,43 @@ warship.spawn
         bra   @loop
 @done   stx   pilot.spawn,u
         rts
+
+; -----------------------------------------------------------------------------
+; L'ANCRAGE DU PLAN DE COLLISION SUR LA COUCHE — demenage ici depuis le main
+; (l'unite residente du stage debordait sur le bloc du banc de 3 octets, et
+; cette routine n'a rien de resident : la boucle monte la page avant l'appel).
+; -----------------------------------------------------------------------------
+        INCLUDE "src/stages/03/collision/collision.equ"
+
+bship.collisionFollow
+        ; --- x : base en octets de 24 px, reste en px (camera bornee 0..480) ---
+        ldd   mscroll.camera.x
+        clr   terrainCollision.bgColBase
+@x      subd  #24
+        bmi   >
+        inc   terrainCollision.bgColBase
+        bra   @x
+!       addd  #24                      ; D = camera.x mod 24
+        stb   terrainCollision.bgSubX
+        ; --- y : base en lignes de 6 px, reste en px ---
+        ; camera.y est REPLIEE par mscroll dans [0,384[ : jamais negative, et
+        ; la base sort donc naturellement dans 0..63 — le modulo de la couture
+        ; est deja fait, c'est la CARTE qui porte la repetition des lignes.
+        ldd   mscroll.camera.y
+        ldx   #0
+@y      subd  #6
+        bmi   >
+        leax  bship.COLSTRIDE,x        ; une ligne de plus, en octets
+        bra   @y
+!       addd  #6                       ; D = camera.y mod 6
+        stb   terrainCollision.bgSubY
+        stx   terrainCollision.bgRowBase
+        ; --- le pont entre les deux reperes, pour l'impact rendu par checkXaxis
+        ldd   glb_camera_x_pos
+        subd  mscroll.camera.x
+        std   terrainCollision.bgWorldAdj
+        rts
+
 
 warship.travel  fdb 0                  ; la course du tour, en px de couche
 warship.drift   fdb 0                  ; la derive verticale du tour, repliee

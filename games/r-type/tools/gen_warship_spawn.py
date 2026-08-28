@@ -29,6 +29,14 @@ PORTE = {
     0xE129: ('ObjID_warship_turret', 'turret.BIG',    'grosse tourelle'),
 }
 
+# Tranche 4 : les six tourelles de proue (le sous-type est la variante) et
+# les quatre multiples (le sous-type est le montage).
+for _i, _t in enumerate((0xD596, 0xD5A3, 0xD5B0, 0xD5BD, 0xD5CA, 0xD5D7)):
+    PORTE[_t] = ('ObjID_warship_fturret', str(_i), 'tourelle de proue %c' % (97 + _i))
+for _i, _t in enumerate((0xDB63, 0xDB70, 0xDB7D, 0xDB8A)):
+    PORTE[_t] = ('ObjID_warship_multi', str(_i),
+                 'tourelle multiple ' + ('tl', 'bl', 'tr', 'br')[_i])
+
 # Les 27 sous-parties de coque : leurs vignettes se suivent de douze en douze
 # a partir de 40:c656, et le RANG de la vignette est le sous-type de la piece —
 # c'est lui qui designe sa boite dans la table extraite de la ROM.
