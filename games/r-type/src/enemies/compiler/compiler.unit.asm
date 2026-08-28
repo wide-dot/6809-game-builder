@@ -40,6 +40,9 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/fx/explosion/explosion.const.asm"
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/lib/scale.asm"
+        ; les tourelles tirent par le chemin commun (_loadFirePreset,
+        ; tryFoeFire) : la macro vient avec.
+        INCLUDE "src/common/lib/projectile.macro.asm"
 
 compiler.Object
         INCLUDE "src/enemies/compiler/obj.asm"
@@ -98,6 +101,39 @@ cpl.laser.poolL
 cpl.laser.images
         fdb   set_compiler_laser_0,set_compiler_laser_1
         fdb   set_compiler_laser_2,set_compiler_laser_3
+
+; ---------------------------------------------------------------------------
+; LES TROIS TOURELLES (A762 : leurs offsets et motifs de tir)
+; ---------------------------------------------------------------------------
+; La borne en accroche DEUX a la piece du bas (motifs 0x30 et 0x40, offsets
+; -32,-40 et -24,-64 px arcade) et UNE a la gauche (motif 0x30, offset
+; -72,+24). La piece droite n'en a pas : elle a son laser.
+; Conversion : x fois 0,375 ; y fois 0,75 ET CHANGE DE SIGNE — l'axe y de la
+; borne monte, le notre descend.
+;   (-32,-40) -> (-12, +30)      (-24,-64) -> (-9, +48)
+;   (-72,+24) -> (-27, -18)
+; Une ligne = { piece porteuse, offset x, offset y, motif de tir }.
+cpl.TURRETS   equ 3
+; Les decalages sont ecrits en complement a deux : lwasm refuse l'operande
+; negatif espace dans un fcb, et la valeur brute se relit sans ambiguite.
+cpl.turrets.tbl
+        fcb   1,$F4,30,$30             ; BAS   : -12, +30
+        fcb   1,$F7,48,$40             ; BAS   :  -9, +48, second motif
+        fcb   2,$E5,$EE,$30            ; GAUCHE: -27, -18
+
+; Les seize poses de rotation : l'export les a tirees de la table de direction
+; de la borne (0x1000:5872, indirect stride 4), donc l'ordre EST celui que
+; setDirectionTo rend — une pose par direction, miroirs deja cuits dans les
+; images.
+cpl.turret.images
+        fdb   set_compiler_turret_0,set_compiler_turret_1
+        fdb   set_compiler_turret_2,set_compiler_turret_3
+        fdb   set_compiler_turret_4,set_compiler_turret_5
+        fdb   set_compiler_turret_6,set_compiler_turret_7
+        fdb   set_compiler_turret_8,set_compiler_turret_9
+        fdb   set_compiler_turret_10,set_compiler_turret_11
+        fdb   set_compiler_turret_12,set_compiler_turret_13
+        fdb   set_compiler_turret_14,set_compiler_turret_15
 
 ; La table d'oscillation du dome, GENEREE : quatre etapes de trois mots (les
 ; cases materielles 12, 13, 14) et la sequence du ping-pong avec ses durees.

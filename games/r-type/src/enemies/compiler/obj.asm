@@ -46,6 +46,11 @@ cpl.dome.step equ ext_variables+14     ; l'index dans cpl.dome.seq
 cpl.dome.left equ ext_variables+15     ; trames restantes sur cette etape
 ; Le laser reutilise les cases de la partie : un slot ne porte jamais les deux.
 cpl.laser.vx  equ cpl.vx               ; WORD : sa vitesse (8.8), vers la gauche
+; La tourelle, elle, garde le lien vers sa piece et ses deux decalages.
+cpl.tur.parent equ ext_variables+10    ; WORD : l'OST de la piece porteuse
+cpl.tur.offx  equ ext_variables+12     ; son decalage, signe
+cpl.tur.offy  equ ext_variables+13
+cpl.tur.dir   equ ext_variables+14     ; la direction visee (0,4,8..$3C)
 
 Object
         lda   routine,u
@@ -61,6 +66,8 @@ Routines
         fdb   AlreadyDeleted
         fdb   LaserInit
         fdb   LaserFly
+        fdb   TurretInit
+        fdb   TurretRun
 
 ; ---------------------------------------------------------------------------
 ; BossInit — A762 : l'orchestrateur engendre ses trois parties
@@ -96,6 +103,11 @@ BossInit
         std   x_pos,x
         ldd   #cpl.SPAWN_Y
         std   y_pos,x
+        ; LES TOURELLES DE CETTE PIECE. La borne les cree dans la foulee de
+        ; leur porteuse (A762) et leur donne un renvoi vers elle : deux sur la
+        ; piece du bas, une sur la gauche, la droite n'en a pas — elle a son
+        ; laser. On les cree ici, tant que X porte encore l'OST de la piece.
+        bsr   cpl.turrets.spawn
         tst   cpl.part,u
         bne   @spawn
 @done   lda   #1                       ; -> BossWatch
@@ -107,6 +119,46 @@ BossInit
         clr   cpl.dome.step,u
         clr   cpl.dome.left,u
         bra   cpl.dome.tick
+
+; ---------------------------------------------------------------------------
+; cpl.turrets.spawn — A7xx : les tourelles portees par la piece courante
+; ---------------------------------------------------------------------------
+; entree : [x] l'OST de la piece, [u] l'orchestrateur (cpl.part = son numero)
+; La table dit, pour chacune des trois : la piece qui la porte, ses deux
+; decalages et son motif de tir. X survit — l'appelant s'en sert encore.
+; ---------------------------------------------------------------------------
+cpl.turrets.spawn
+        pshs  x,y
+        ldy   #cpl.turrets.tbl
+        ldb   #cpl.TURRETS
+@one    lda   ,y                       ; la piece porteuse de cette tourelle
+        cmpa  cpl.part,u
+        bne   @next
+        pshs  b,y
+        jsr   LoadObject_x             ; X = la tourelle... et on perd la piece
+        beq   @skip
+        lda   #ObjID_compilerturret
+        sta   id,x
+        lda   #7                       ; -> TurretInit
+        sta   routine,x
+        ; La pile, apres `pshs b,y` : B en 0,s ; la table en 1,s ; l'OST de la
+        ; piece (empile a l'entree) en 3,s. Se tromper d'un cran ici ne fait
+        ; rien naitre du tout — vecu.
+        ldy   1,s                      ; la table, remise de la pile
+        lda   1,y
+        sta   cpl.tur.offx,x
+        lda   2,y
+        sta   cpl.tur.offy,x
+        lda   3,y
+        sta   subtype_w+1,x            ; le motif de tir, lu par TurretInit
+        ldd   3,s                      ; l'OST de la piece, sauve a l'entree
+        std   cpl.tur.parent,x
+@skip   puls  b,y
+@next   leay  4,y
+        decb
+        bne   @one
+        puls  x,y
+        rts
 
 ; ---------------------------------------------------------------------------
 ; BossWatch — A982 : le moniteur de combat
@@ -356,6 +408,73 @@ LaserFly
         stb   AABB_0+AABB.cy,u
         jmp   DisplaySprite
 @gone   lda   #4                       ; -> AlreadyDeleted
+        sta   routine,u
+        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
+        jmp   DeleteObject
+
+; ---------------------------------------------------------------------------
+; TurretInit / TurretRun — AC4C : une tourelle, portee et pivotante
+; ---------------------------------------------------------------------------
+; Elle ne se deplace pas d'elle-meme : sa position EST celle de sa piece plus
+; son decalage, relue a chaque trame. Elle pivote vers le joueur — la borne
+; appelle set_direction_to puis lit deux tables entrelacees (0x1000:5870) pour
+; la pose et son attribut de miroir. Chez nous l'export a deja produit UNE
+; POSE PAR DIRECTION (seize, tirees par cette meme table) : le miroir est
+; cuit dans l'image, l'index suffit.
+; Elle tire par le tryFoeFire commun, celui de cancer et du geld, avec son
+; propre motif — et pas a la premiere trame, la borne attend d'avoir vise.
+; ---------------------------------------------------------------------------
+TurretInit
+        ldb   subtype_w+1,u            ; le motif de tir de CETTE tourelle
+        _loadFirePreset
+        ldb   #5                       ; devant sa piece
+        stb   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        clr   cpl.tur.dir,u            ; pas de tir tant qu'on n'a pas vise
+        _Collision_AddAABB AABB_0,AABB_list_ennemy
+        lda   #compilerturret_hitdamage
+        sta   AABB_0+AABB.p,u
+        _ldd  compilerturret_hitbox_x,compilerturret_hitbox_y
+        std   AABB_0+AABB.rx,u
+        inc   routine,u                ; -> TurretRun
+TurretRun
+        ; AC4C : elle ne tire QUE si elle a deja vise une fois
+        tst   cpl.tur.dir,u
+        beq   >
+        jsr   tryFoeFire
+        ; AC56 : sa position suit celle de sa piece, decalage compris
+!       ldx   cpl.tur.parent,u
+        beq   @orphan
+        lda   id,x
+        cmpa  #ObjID_compilerpart
+        bne   @orphan                  ; la piece a rendu son slot : on suit
+        ldb   cpl.tur.offx,u
+        sex
+        addd  x_pos,x
+        std   x_pos,u
+        ldb   cpl.tur.offy,u
+        sex
+        addd  y_pos,x
+        std   y_pos,u
+        ; AC6B : viser le joueur, et en tirer la pose
+        ldx   #player1
+        jsr   setDirectionTo           ; Y = 0,4,8..$3C, l'index de la borne
+        tfr   y,d
+        stb   cpl.tur.dir,u
+        lsrb                           ; /4 : une pose par direction
+        lsrb
+        ldx   #cpl.turret.images
+        aslb                           ; deux octets par pointeur
+        ldd   b,x
+        std   image_set,u
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        ldd   y_pos,u
+        stb   AABB_0+AABB.cy,u
+        jmp   DisplaySprite
+@orphan lda   #4                       ; -> AlreadyDeleted
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy
         jmp   DeleteObject
