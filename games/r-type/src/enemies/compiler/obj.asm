@@ -51,6 +51,10 @@ cpl.tur.parent equ ext_variables+10    ; WORD : l'OST de la piece porteuse
 cpl.tur.offx  equ ext_variables+12     ; son decalage, signe
 cpl.tur.offy  equ ext_variables+13
 cpl.tur.dir   equ ext_variables+14     ; la direction visee (0,4,8..$3C)
+; L'onde du laser roulant : sa vitesse horizontale, et le mot a DOUBLE EMPLOI
+; de la borne — vitesse verticale ET compte a rebours de vie.
+cpl.wav.vx    equ ext_variables+10     ; WORD, signe
+cpl.wav.life  equ ext_variables+12     ; WORD, 8.8 : vitesse y ET duree
 
 Object
         lda   routine,u
@@ -68,6 +72,8 @@ Routines
         fdb   LaserFly
         fdb   TurretInit
         fdb   TurretRun
+        fdb   WaveInit
+        fdb   WaveFly
 
 ; ---------------------------------------------------------------------------
 ; BossInit — A762 : l'orchestrateur engendre ses trois parties
@@ -246,7 +252,12 @@ PartInit
 ; ---------------------------------------------------------------------------
 PartLive
         ldd   cpl.timer,u
-        lbeq  PartLive.draw            ; segment epuise : immobile (bloc 1)
+        ; SEGMENT EPUISE : la piece s'immobilise, MAIS ELLE TIRE TOUJOURS.
+        ; Ce saut visait PartLive.draw jusqu'au 29/08 : il passait par-dessus
+        ; le bloc des armes, et les pieces se taisaient des la fin de l'intro
+        ; — les lasers comptes sous toje venaient tous de ces 352 premieres
+        ; trames.
+        lbeq  PartLive.armed
         ldb   gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
         clra
         pshs  d
@@ -260,6 +271,20 @@ PartLive
         lda   gfxlock.frameDrop.count
         mul
         jsr   moveXPos8.8
+PartLive.armed
+        ; LES ARMES DE LA PIECE. La DROITE (0) et la GAUCHE (2) envoient leurs
+        ; lasers horizontaux ; la gauche a en plus son laser roulant. La piece
+        ; du bas n'a pas d'arme propre — ses deux tourelles vivent dans leurs
+        ; propres slots.
+        ldb   cpl.part,u
+        beq   @tire
+        cmpb  #2
+        lbne  PartLive.draw
+@tire   lbsr  cpl.fire
+        ldb   cpl.part,u
+        cmpb  #2
+        lbne  PartLive.draw
+        lbsr  cpl.wave.tick
 ; FIX #2 : NE DESSINER QU'ENTIER A L'ECRAN. Les sprites compiles ne clippent
 ; pas — l'arcade spawne a x ecran -16 et laisse son MATERIEL rogner, nous
 ; n'avons pas ce luxe : le dessin partiel d'une piece de 66 px a -16 ecrivait
@@ -341,6 +366,74 @@ cpl.laser.spawn
         clr   x_sub,x
         clr   y_sub,x
 @none   rts
+
+; ---------------------------------------------------------------------------
+; cpl.wave.tick — AD5C : la fenetre de tir du laser roulant
+; ---------------------------------------------------------------------------
+; La borne ouvre une fenetre de 64 trames et lache une PAIRE de segments
+; toutes les 16 trames — quatre paires par fenetre, puis un long silence. Le
+; declenchement d'origine tient a la hauteur de la piece et a un compteur de
+; son script de combat ; celui-ci n'etant pas encore porte (bloc 1 : l'intro
+; seule), on garde le RYTHME de la borne — quatre paires, puis la pause — et
+; c'est le compteur de l'objet qui l'entretient.
+; ---------------------------------------------------------------------------
+cpl.wave.tick
+        ; UN DECOMPTE, PAS UN TEST D'EGALITE. Un tick vaut ici jusqu'a huit
+        ; trames de jeu : un compteur qui avance de sept ne tombe jamais
+        ; PILE sur un multiple de seize, et rien ne partait (constat sous
+        ; toje). Meme piege que la fenetre d'engagement du geld.
+        ; Les deux champs sont libres sur une piece — seul l'orchestrateur se
+        ; sert de ceux du dome.
+        lda   cpl.tur.dir,u
+        suba  gfxlock.frameDrop.count
+        bhi   @wait
+        bsr   cpl.wave.pair
+        ; QUATRE paires puis un silence : c'est le rythme de la borne, sa
+        ; fenetre de 0x40 trames en laissant partir une toutes les seize.
+        inc   cpl.dome.left,u
+        lda   cpl.dome.left,u
+        anda  #3
+        bne   >
+        lda   #cpl.WAVE_PAUSE          ; la fenetre se referme
+        bra   @wait
+!       lda   #cpl.WAVE_GAP            ; seize trames jusqu'a la suivante
+@wait   sta   cpl.tur.dir,u
+        rts
+
+; ---------------------------------------------------------------------------
+; cpl.wave.pair — AE5C : DEUX segments, l'un derriere l'autre
+; ---------------------------------------------------------------------------
+cpl.wave.pair
+        ldb   #2                       ; la borne en lance deux, jamais un
+@one    pshs  b
+        jsr   LoadObject_x
+        beq   @done                    ; pool plein : la borne renonce aussi,
+                                       ; et n'essaie meme pas le second
+        lda   #ObjID_compilerwave
+        sta   id,x
+        lda   #9                       ; -> WaveInit
+        sta   routine,x
+        ; le second segment nait plus a gauche que le premier
+        ; On BRANCHE avant de composer D : un `ldb ,s` place apres le `ldd`
+        ; en ecraserait l'octet bas — la faute deja faite sur le creusement du
+        ; geld, et sur le cap de son virage.
+        ldb   ,s
+        cmpb  #2
+        beq   @premier
+        ldd   #cpl.WAVE_DX2            ; le second nait plus a gauche
+        bra   @posex
+@premier ldd  #cpl.WAVE_DX1
+@posex  addd  x_pos,u
+        std   x_pos,x
+        ldd   #cpl.WAVE_DY
+        addd  y_pos,u
+        std   y_pos,x
+        clr   x_sub,x
+        clr   y_sub,x
+@done   puls  b
+        decb
+        bne   @one
+        rts
 
 PartLive.draw
         ldb   cpl.part,u
@@ -475,6 +568,88 @@ TurretRun
         stb   AABB_0+AABB.cy,u
         jmp   DisplaySprite
 @orphan lda   #4                       ; -> AlreadyDeleted
+        sta   routine,u
+        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
+        jmp   DeleteObject
+
+; ---------------------------------------------------------------------------
+; WaveInit / WaveFly — AEFB : un segment du laser roulant
+; ---------------------------------------------------------------------------
+; Il part a l'horizontale d'un cote TIRE AU SORT, monte en ralentissant, et
+; s'eteint quand son compte tombe. Chez la borne, le mot [+0x20] sert aux DEUX
+; a la fois : c'est la vitesse verticale ET le compte a rebours, decremente
+; d'un pas fixe chaque trame — le segment ralentit donc en vieillissant, et
+; c'est ce qui donne la courbe. On garde ce double emploi tel quel.
+; La pose ne s'anime PAS : chaque segment en prend une, fixe pour sa vie ; le
+; « roulement » vient chez elle du cyclage de palette (kind 0x56), que nous
+; n'avons pas — nos quatre poses different assez pour que la paire se lise.
+; ---------------------------------------------------------------------------
+WaveInit
+        jsr   RandomNumber
+        pshs  b                        ; le meme tirage sert deux fois
+        andb  #$3F                     ; la magnitude horizontale
+        addb  #cpl.WAVE_VX0
+        clra
+        tst   ,s                       ; ... et son bit 5 donne le sens
+        bpl   >
+        _negd
+!       std   cpl.wav.vx,u
+        jsr   RandomNumber
+        andb  #1                       ; la duree : deux paliers, comme la
+        clra                           ;   plage 0x280..0x47F de la borne
+        beq   >
+        ldd   #cpl.WAVE_LIFE1
+        bra   @life
+!       ldd   #cpl.WAVE_LIFE0
+@life   std   cpl.wav.life,u
+        ; la pose, fixe pour toute la vie du segment : le slot la choisit
+        puls  b
+        andb  #3
+        aslb
+        ldx   #cpl.wave.images
+        ldd   b,x
+        std   image_set,u
+        ldb   #2                       ; loin derriere : c'est un fond
+        stb   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        _Collision_AddAABB AABB_0,AABB_list_ennemy
+        lda   #compilerwave_hitdamage
+        sta   AABB_0+AABB.p,u
+        _ldd  compilerwave_hitbox_x,compilerwave_hitbox_y
+        std   AABB_0+AABB.rx,u
+        inc   routine,u                ; -> WaveFly
+WaveFly
+        ; l'horizontale : sa vitesse ne change pas
+        ldb   cpl.wav.vx+1,u
+        lda   gfxlock.frameDrop.count
+        mul
+        tst   cpl.wav.vx,u             ; l'octet haut porte le signe
+        bpl   >
+        _negd
+!       jsr   moveXPos8.8
+        ; la verticale : la vitesse EST le compte a rebours, il ralentit
+        ldb   cpl.wav.life+1,u
+        lda   gfxlock.frameDrop.count
+        mul
+        _negd                          ; il monte (l'axe y de la borne monte)
+        jsr   moveYPos8.8
+        ldd   cpl.wav.life,u
+        subd  #cpl.WAVE_DECAY
+        bls   @gone
+        std   cpl.wav.life,u
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   AABB_0+AABB.cx,u
+        addd  #compilerwave_hitbox_x
+        bmi   @gone
+        cmpd  #cpl.SCREEN_W+compilerwave_hitbox_x*2
+        bhi   @gone
+        ldd   y_pos,u
+        bmi   @gone
+        stb   AABB_0+AABB.cy,u
+        jmp   DisplaySprite
+@gone   lda   #4                       ; -> AlreadyDeleted
         sta   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_ennemy
         jmp   DeleteObject

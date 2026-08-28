@@ -52,7 +52,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerlaser (45)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerturret (46)
-        fcb   0,0 ; 47..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerwave (47)
+        fcb   0 ; 48 libre
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Obj_Index_Page.end
 
@@ -111,7 +112,8 @@ Obj_Index_Address
                               ;   la routine du slot fait le tri
         fdb   compiler.Object ; ObjID_compilerlaser (45) — idem
         fdb   compiler.Object ; ObjID_compilerturret (46) — idem
-        fdb   0,0 ; 47..48 libres
+        fdb   compiler.Object ; ObjID_compilerwave (47) — idem
+        fdb   0 ; 48 libre
         fdb   bug.Render ; ObjID_bugrender (49)
 Obj_Index_Address.end
 
@@ -163,7 +165,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerlaser (45)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerturret (46)
-        fcb   0,0 ; 47..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerwave (47)
+        fcb   0 ; 48 libre
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Ani_Page_Index.end
 
@@ -211,8 +214,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_starfield
         fdb   0 ; ObjID_cytron (41) — pas d'animation par table : son script
         fdb   0 ; ObjID_geld (42) — idem : il indexe ses poses lui-meme
-        fdb   0,0,0,0 ; compiler (43), part (44), laser (45), turret (46)
-        fdb   0,0 ; 47..48 libres  ; pose lui-meme ses images
+        fdb   0,0,0,0,0 ; compiler 43, part 44, laser 45, turret 46, wave 47
+        fdb   0 ; 48 libre  ; pose lui-meme ses images
         fdb   Ani_Asd_none ; ObjID_bugrender (49)
 Ani_Asd_Index.end
 
@@ -267,7 +270,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerlaser (45)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerturret (46)
-        fcb   0,0 ; 47..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerwave (47)
+        fcb   0 ; 48 libre
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Img_Page_Index.end
 

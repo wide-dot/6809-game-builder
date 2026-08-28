@@ -135,6 +135,39 @@ cpl.turret.images
         fdb   set_compiler_turret_12,set_compiler_turret_13
         fdb   set_compiler_turret_14,set_compiler_turret_15
 
+; ---------------------------------------------------------------------------
+; LE LASER ROULANT de la piece gauche (AE5C : la paire, AEFB : le vol)
+; ---------------------------------------------------------------------------
+; La borne ouvre une fenetre de 0x40 trames et lache une paire toutes les 16 —
+; soit quatre paires, puis le silence jusqu'a ce que son script de combat
+; rouvre la fenetre. Ce script n'etant pas porte (bloc 1 : l'intro seule), on
+; garde le rythme et on choisit la duree du silence.
+cpl.WAVE_GAP   equ 16          ; trames entre deux paires
+cpl.WAVE_PAUSE equ 128         ; ... et entre deux fenetres de quatre
+
+; Les deux segments naissent decales : -8 px arcade pour le premier, -0x28
+; pour le second, tous deux a +0x38 en y — et l'axe y de la borne MONTE, donc
+; cela les place AU-DESSUS de la piece chez nous.
+cpl.WAVE_DX1  equ -3           ; -8 px arcade x 0,375
+cpl.WAVE_DX2  equ -15          ; -0x28 (-40) x 0,375
+cpl.WAVE_DY   equ -42          ; +0x38 (56) x 0,75, sens inverse
+
+; La vitesse horizontale : magnitude 0x80..0xFF en 8.8 arcade (0,5 a 1 px par
+; trame), signe tire au sort. Convertie : 0,19 a 0,37 px v2, soit $30..$6F —
+; on tire six bits et on part de $30.
+cpl.WAVE_VX0  equ $30
+
+; Le mot a double emploi : vitesse verticale ET compte a rebours. La borne le
+; tire dans 0x280..0x47F et le decremente de 0x10 par trame (40 a 71 trames
+; de vie). Converti a l'echelle y : 0x1E0 et 0x358, decrement 0x0C.
+cpl.WAVE_LIFE0 equ $01E0
+cpl.WAVE_LIFE1 equ $0358
+cpl.WAVE_DECAY equ $000C
+
+cpl.wave.images
+        fdb   set_compiler_wave_0,set_compiler_wave_1
+        fdb   set_compiler_wave_2,set_compiler_wave_3
+
 ; La table d'oscillation du dome, GENEREE : quatre etapes de trois mots (les
 ; cases materielles 12, 13, 14) et la sequence du ping-pong avec ses durees.
 ; Rejeu : python3 tools/gen_dome_pulse.py
