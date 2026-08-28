@@ -1,0 +1,157 @@
+; ---------------------------------------------------------------------------
+; Compiler — le boss du stage 4
+;
+; input REG : [u] pointer to Object Status Table (OST)
+; ---------------------------------------------------------------------------
+;
+; FICHE DE PORTAGE — BLOC 1 : l'orchestrateur et les trois parties
+; ================================================================
+; arcade : create_compiler 0x40:A71D, tick_compiler_init_segments 0x40:A762,
+;          tick_compiler_combat_monitor 0x40:A982, motion_step 0x40:AFE6
+; donnees : compiler_variant_slot_table 0x1000:5ABA (8 variantes),
+;           compiler_shared_base_motion_script 0x1000:5B54 (l'intro)
+;
+; CE QUE FAIT LA BORNE, ET CE QUE CE BLOC EN PORTE
+; ------------------------------------------------
+; Le boss est un vaisseau-mere en TROIS PARTIES MOBILES (droite, bas,
+; gauche) qui naissent AU MEME POINT et paraissent d'abord assemblees en une
+; seule silhouette — leurs sprites ont des ancres differentes, c'est ce qui
+; les emboite. Elles derivent ensemble pendant l'intro, puis chacune part sur
+; ses propres scripts.
+;
+; BLOC 1 (ici) : l'orchestrateur, les trois parties, et l'INTRO — le script
+;   partage 0x5B54, un seul segment : vx = +1 px/trame arcade pendant 0x160
+;   trames (~5,9 s), vy nul. C'est tout ce qui bouge a ce stade.
+; BLOCS SUIVANTS (a venir) : les armes (le laser horizontal de la partie
+;   droite, les trois tourelles), les scripts de combat (9 au total, tires
+;   par la variante), les PV et la mort en cascade, l'auto-destruction.
+;
+; ECARTS ASSUMES
+; --------------
+; V2-DEVIATION: la variante est tiree au sort parmi 8 chez elle
+;   ((random + player_x + player_y) & 7) et ne change que l'ORDRE des scripts
+;   de combat. Sans scripts de combat, ce bloc n'en a pas besoin : la
+;   variante viendra avec eux.
+; V2-DEVIATION: pas de selecteur de difficulte en v2 — la cadence d'attaque
+;   par difficulte (0x1000:5844) prendra sa premiere valeur, comme le reste
+;   du cast.
+; ---------------------------------------------------------------------------
+
+AABB_0        equ ext_variables      ; AABB struct (9 bytes)
+cpl.part      equ ext_variables+9    ; 0 = droite, 1 = bas, 2 = gauche
+cpl.timer     equ ext_variables+10   ; WORD : trames restantes du segment
+cpl.vx        equ ext_variables+12   ; WORD : la vitesse du segment (8.8)
+
+Object
+        lda   routine,u
+        asla
+        ldx   #Routines
+        jmp   [a,x]
+
+Routines
+        fdb   BossInit
+        fdb   BossWatch
+        fdb   PartInit
+        fdb   PartLive
+        fdb   AlreadyDeleted
+
+; ---------------------------------------------------------------------------
+; BossInit — A762 : l'orchestrateur engendre ses trois parties
+;
+; Un seul passage. La borne engendre aussi trois tourelles et pose les PV,
+; la cadence et le masque de mort ; tout cela vient avec les blocs suivants.
+; Elle n'affiche RIEN elle-meme : ce sont les parties qu'on voit.
+; ---------------------------------------------------------------------------
+BossInit
+        ldb   #3                       ; les trois parties, dans l'ordre
+        stb   cpl.part,u               ;   arcade : droite, bas, gauche
+@spawn  ldb   cpl.part,u
+        decb
+        stb   cpl.part,u
+        jsr   LoadObject_x             ; un slot pour la partie
+        beq   @done                    ; pool plein : le boss sera partiel,
+                                       ; comme la borne (elle court-circuite
+                                       ; aussi vers le moniteur de combat)
+        lda   #ObjID_compilerpart
+        sta   id,x
+        ldb   cpl.part,u
+        stb   subtype_w+1,x            ; la partie que ce slot represente
+        ; A768 : les trois naissent AU MEME POINT — ce sont les ancres de
+        ; leurs sprites qui les emboitent en une silhouette.
+        ldd   #cpl.SPAWN_X
+        addd  glb_camera_x_pos
+        std   x_pos,x
+        ldd   #cpl.SPAWN_Y
+        std   y_pos,x
+        tst   cpl.part,u
+        bne   @spawn
+@done   lda   #1                       ; -> BossWatch
+        sta   routine,u
+        rts
+
+; ---------------------------------------------------------------------------
+; BossWatch — A982 : le moniteur de combat
+;
+; BLOC 1 : il ne fait que vivre. La borne y compte les trois drapeaux de mort
+; et arme la sequence finale quand les trois tombent ; cela vient avec le
+; bloc « degats et mort ».
+; ---------------------------------------------------------------------------
+BossWatch
+        rts
+
+; ---------------------------------------------------------------------------
+; PartInit — A76E : une partie, posee et armee sur le script d'intro
+; ---------------------------------------------------------------------------
+PartInit
+        lda   subtype_w+1,u
+        sta   cpl.part,u
+        clr   x_sub,u
+        clr   y_sub,u
+        ; 5B54 : le script d'intro, un seul segment — vx = +1 px/trame
+        ; arcade (0,375 px v2), vy nul, pendant 0x160 trames.
+        ldd   #cpl.INTRO_VX
+        std   cpl.vx,u
+        ldd   #cpl.INTRO_DUR
+        std   cpl.timer,u
+        ; l'image de CETTE partie : une pose chacune, la silhouette est faite
+        ; de leur assemblage
+        ldb   cpl.part,u
+        aslb
+        ldx   #cpl.images
+        abx
+        ldd   ,x
+        std   image_set,u
+        ldb   #4                       ; priorite : devant le fond, derriere
+        stb   priority,u               ;   le vaisseau
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        inc   routine,u                ; -> PartLive
+        bra   PartLive.draw
+
+; ---------------------------------------------------------------------------
+; PartLive — AFE6 (motion_step) : la derive du segment courant
+;
+; BLOC 1 : le seul segment est celui de l'intro. Quand son compte tombe, la
+; partie s'immobilise — la borne enchainerait sur les scripts de combat.
+; ---------------------------------------------------------------------------
+PartLive
+        ldd   cpl.timer,u
+        beq   PartLive.draw            ; segment epuise : immobile (bloc 1)
+        ldb   gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
+        clra
+        pshs  d
+        ldd   cpl.timer,u
+        subd  ,s++
+        bhi   >
+        ldd   #0                       ; le segment est fini
+!       std   cpl.timer,u
+        ; le pas du segment, compense par le frame drop
+        ldb   cpl.vx+1,u
+        lda   gfxlock.frameDrop.count
+        mul
+        jsr   moveXPos8.8
+PartLive.draw
+        jmp   DisplaySprite
+
+AlreadyDeleted
+        rts

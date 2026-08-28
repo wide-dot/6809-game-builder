@@ -30,6 +30,13 @@ ObjID_cytron equ 41
 * geld : le mangeur de gommes — l'exact contraire du cytron (13 spawns).
 ObjID_geld equ 42
 
+* compiler : le BOSS du stage 4 — PAS ENCORE INTEGRE (28/08/2026). Son code
+* existe (src/enemies/compiler/), son unite aussi, mais CHARGER cette unite
+* fige le stage des son entree : camera a zero, avant meme que le boss ne
+* spawne. Le blocage vient du chargement seul (dichotomie : le stage fige
+* aussi avec l'entree de wave commentee, et repart des que le <load>
+* disparait). A comprendre avant de reprendre : placement de page, arene, ou
+* cout de lien. Les identifiants 43/44 lui sont reserves.
 ObjID_bugrender equ 49 ; le renderer des chaines de bug — meme valeur que
                        ; l'equ de bug.unit.asm (47 partout) ; 43..48 libres
 objid.count equ 49
