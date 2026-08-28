@@ -320,18 +320,26 @@ stage.setup
         ; traverserait et les tirs aussi.
         lda   #1
         sta   globals.backgroundSolid
-        ; POINT OUVERT (28/08/2026) — LA FENETRE DE clearBlast.
-        ; Ses quatre operandes sont AUTO-MODIFIEES et son unite est chargee une
-        ; seule fois au boot : l'etat assemble « fenetre pleine » ne survit pas
-        ; au title, qui la retrecit pour ses bandes. Resultat mesure : au
-        ; basculement en fond de boss, l'effacement ne couvre qu'une tranche et
-        ; les gommes restent a l'ecran sous les etoiles.
-        ; Poser la fenetre par playfield.clearLines (l'idiome du title,
-        ; title.clearBand) FIGE LE STAGE — essaye ici dans stage.setup et dans
-        ; le spawner de starfield, les deux fois la camera se bloque avant le
-        ; boss. La cause n'est pas trouvee ; le geste est donc retire plutot que
-        ; laisse a moitie. A reprendre : soit comprendre ce que clearLines
-        ; demande de plus a ce moment, soit poser les operandes autrement.
+        ; LA FENETRE D'EFFACEMENT, REMISE A PLAT POUR CE STAGE.
+        ; Les quatre operandes de clearBlast sont AUTO-MODIFIEES et son unite
+        ; est chargee une seule fois au boot : l'etat assemble « fenetre
+        ; pleine » ne survit pas au title, qui la retrecit pour ses bandes. Le
+        ; stage 4 en heritait, et son basculement en fond de boss n'effacait
+        ; qu'une tranche — les gommes restaient a l'ecran sous les etoiles.
+        ;
+        ; On passe par clearWindow, LE CHEMIN DU STAGE 1 : deux valeurs
+        ; precalculees, aucun calcul a l'execution (sa timeline ne fait pas
+        ; autre chose). Elles sont celles de l'etat assemble de clearblast.asm
+        ; — Y = l'operande LDS du plan couleur ($A000 + (borne+1)*40, borne
+        ; 190), U = l'offset de saut, nul quand aucune poussee n'est zappee.
+        ; clearLines, l'idiome du TITLE, figeait le stage aux deux endroits
+        ; essayes : sa conversion fait un travail dont on n'a pas besoin ici.
+        ldy   #$A000+191*40
+        ldu   #0
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearWindow
+        jsr   paged.call
+
         ; ...et le fond de CE stage est du sol pour les ennemis terrestres :
         ; c'est le champ de gommes. Cancer et pow le sondent alors comme
         ; l'arcade sonde ses tuiles d'avant-plan.
