@@ -70,6 +70,19 @@ Init
 ;   *                   TABROK MISSILES                          *
 ;   **************************************************************
 
+; LA FLAMME EST AU TABROK SEUL — et c'est fidele. Verifie dans la base
+; arcade (29/08) : p_staff_shoots_rocket (0x40:77C1) n'alloue QU'UN objet, sa
+; roquette, sans trainee ; le missile de tabrok, lui, dessine DEUX sprites par
+; trame dans init_tabrok_missile (0x40:67D5) — le corps, puis une trainee
+; prise dans tabrok_missile_trail_recipes (0x1000:2D54), huit poses cyclant
+; sur global_counter & 7, posee derriere le corps par les offsets de sa
+; hitbox. Le subtype 1 (roquette p-staff) et les subtypes 2/3 (missiles du
+; joueur) n'en ont donc pas, et n'entrent pas ici.
+;
+; V2-DEVIATION : chez la borne la trainee n'est pas un objet — c'est un second
+; sprite du missile, sans slot, sans collision, sans cycle de vie. Le portage
+; v1 en a fait un objet du pool ; on le garde tel quel (un slot par missile de
+; tabrok, quatre par volee), la difference ne se voit pas a l'ecran.
 InitTabrok
         jsr   LoadObject_x
         beq   >
