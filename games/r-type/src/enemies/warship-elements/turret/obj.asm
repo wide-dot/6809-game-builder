@@ -46,9 +46,15 @@
 ; -----------------------------------------------------------------------------
 turret.AABB     equ ext_variables      ; 0..8  la boite
 turret.mapX     equ ext_variables+9    ; 9,10  abscisse dans la COUCHE
-turret.mapY     equ ext_variables+11   ; 11,12 ordonnee dans la couche
-turret.wheel    equ ext_variables+13   ; 13,14 sa roue de poses
-turret.cy       equ ext_variables+15   ; 15    l'excentrage de la boite, signe
+; L'ORDONNEE NE SE RANGE PAS EN ABSOLU : la camera.y de la couche est
+; REPLIEE dans [0,384[ et la choregraphie la fait osciller autour de zero, donc
+; une ordonnee absolue saute de 384 px a chaque couture. On garde l'ordonnee
+; d'ECRAN a la naissance et la camera de ce moment ; layer.followY mesure la
+; derive repliee. Voir warship-elements/layer.asm.
+turret.y0       equ ext_variables+11   ; 11,12 ordonnee ECRAN a la naissance
+turret.cam0     equ ext_variables+13   ; 13,14 la camera.y de ce moment
+turret.wheel    equ ext_variables+15   ; 15,16 sa roue de poses
+turret.cy       equ ext_variables+17   ; 17    l'excentrage de la boite, signe
 
 turret.Object
         lda   routine,u
@@ -71,8 +77,9 @@ turret.Init
         addd  mscroll.camera.x
         std   turret.mapX,u
         ldd   y_pos,u
-        addd  mscroll.camera.y
-        std   turret.mapY,u
+        std   turret.y0,u
+        ldd   mscroll.camera.y
+        std   turret.cam0,u
 
         lda   subtype,u
         asla
@@ -126,8 +133,9 @@ turret.Live
         subd  mscroll.camera.x         ; -> x ecran
         addd  glb_camera_x_pos         ; -> x monde, ce que le moteur dessine
         std   x_pos,u
-        ldd   turret.mapY,u
-        subd  mscroll.camera.y
+        ldd   turret.y0,u
+        ldx   turret.cam0,u
+        jsr   layer.followY
         std   y_pos,u
 
         ; --- la fenetre : sortie par la gauche, elle s'en va ------------------

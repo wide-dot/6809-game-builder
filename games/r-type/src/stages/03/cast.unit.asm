@@ -67,6 +67,7 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/lib/scale.asm"
         INCLUDE "src/common/lib/projectile.macro.asm"
 
+        INCLUDE "src/enemies/warship-elements/layer.asm"
         INCLUDE "src/enemies/warship-elements/turret/obj.asm"
         INCLUDE "src/enemies/warship-elements/part/obj.asm"
 

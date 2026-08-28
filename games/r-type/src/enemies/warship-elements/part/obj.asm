@@ -45,10 +45,14 @@
 ; -----------------------------------------------------------------------------
 part.AABB       equ ext_variables      ; 0..8  la boite
 part.mapX       equ ext_variables+9    ; 9,10  abscisse dans la COUCHE
-part.mapY       equ ext_variables+11   ; 11,12 ordonnee dans la couche
-part.cx         equ ext_variables+13   ; 13    excentrage du centre, signe
-part.cy         equ ext_variables+14   ; 14
-part.lastP      equ ext_variables+15   ; 15    dernier potentiel vu (le coup)
+; Meme precaution que les tourelles : la camera.y de la couche est REPLIEE,
+; donc on garde l'ordonnee d'ECRAN a la naissance et la camera de ce moment,
+; jamais une ordonnee absolue. Voir warship-elements/layer.asm.
+part.y0         equ ext_variables+11   ; 11,12 ordonnee ECRAN a la naissance
+part.cam0       equ ext_variables+13   ; 13,14 la camera.y de ce moment
+part.cx         equ ext_variables+15   ; 15    excentrage du centre, signe
+part.cy         equ ext_variables+16   ; 16
+part.lastP      equ ext_variables+17   ; 17    dernier potentiel vu (le coup)
 
 part.HP         equ 12                 ; 40:c797 MOV byte ptr [BP+0x2f],0xc
 
@@ -72,8 +76,9 @@ part.Init
         addd  mscroll.camera.x
         std   part.mapX,u
         ldd   y_pos,u
-        addd  mscroll.camera.y
-        std   part.mapY,u
+        std   part.y0,u
+        ldd   mscroll.camera.y
+        std   part.cam0,u
 
         lda   subtype,u
         asla
@@ -108,8 +113,9 @@ part.Live
         subd  mscroll.camera.x
         addd  glb_camera_x_pos
         std   x_pos,u
-        ldd   part.mapY,u
-        subd  mscroll.camera.y
+        ldd   part.y0,u
+        ldx   part.cam0,u
+        jsr   layer.followY
         std   y_pos,u
 
         ; --- la fenetre ------------------------------------------------------
