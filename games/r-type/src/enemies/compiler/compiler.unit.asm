@@ -95,7 +95,12 @@ cpl.INTRO_DUR equ $0160
 ; ---------------------------------------------------------------------------
 ; La cadence : la borne recharge son compteur depuis une table par difficulte
 ; (0x1000:5844) ; on prend la premiere entree, comme tout le cast.
-cpl.FIRE_PERIOD equ 48         ; trames entre deux salves
+; La cadence : la borne la prend dans une table par difficulte (0x1000:5844 —
+; 48, 40, 32, 24). On retient 32, sa troisieme entree, PARCE QU'ELLE EST UNE
+; PUISSANCE DE DEUX : la cadence se lit alors dans l'horloge de jeu par un
+; simple ET, sans compteur a stocker — et l'espace d'objet du boss n'en avait
+; plus un seul a offrir.
+cpl.FIRE_PERIOD equ 32         ; trames entre deux salves
 
 ; Les fenetres de tir, en px arcade converties (x0,75 sur l'axe y) : la piece
 ; droite accepte 0..0x50 px sous elle, la gauche 0..0x30 — elle vise plus

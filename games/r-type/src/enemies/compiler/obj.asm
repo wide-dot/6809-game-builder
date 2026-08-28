@@ -511,9 +511,26 @@ cpl.motion.suicide
 ; vers la gauche a 3 px/trame arcade.
 ; ---------------------------------------------------------------------------
 cpl.fire
-        lda   cpl.timer+1,u            ; la cadence (l'octet bas suffit)
-        suba  gfxlock.frameDrop.count
-        bhi   @wait
+        ; LA CADENCE NE COUTE AUCUN CHAMP (correctif du 29/08). Elle vivait
+        ; dans cpl.timer — le MEME mot que la duree du segment de mouvement.
+        ; Les deux pieces qui tirent ecrasaient donc leur script a chaque
+        ; salve : elles restaient bloquees sur le premier segment tandis que
+        ; celle du bas, qui n'a que ses tourelles, deroulait sa chaine
+        ; normalement (releve sous toje : p0 et p2 figees a scr=0 seg=0 apres
+        ; 21000 trames, p1 arrivee au bout et ayant renonce).
+        ; L'espace d'objet est plein — la cadence se lit donc dans l'horloge
+        ; de jeu, sans etat : une salve chaque fois que le compteur franchit
+        ; un multiple de la periode, decale par piece pour qu'elles ne tirent
+        ; pas ensemble. La periode est une puissance de deux, le modulo tient
+        ; en un ET.
+        ldb   cpl.part,u
+        aslb                           ; le decalage : 8 trames par piece
+        aslb
+        aslb
+        addb  gfxlock.frame.gameCount+1
+        andb  #cpl.FIRE_PERIOD-1
+        cmpb  gfxlock.frameDrop.count
+        bhs   @wait                    ; le multiple n'est pas franchi ce tour
         ; --- le joueur est-il devant, et dans la fenetre ? ---------------
         ldd   player1+x_pos
         subd  x_pos,u
@@ -530,9 +547,8 @@ cpl.fire
 @gauche cmpd  #cpl.FIRE_WINY_L
 @teste  bhi   @rearm                   ; sous la fenetre
         bsr   cpl.laser.spawn
-@rearm  lda   #cpl.FIRE_PERIOD         ; le compteur se recharge
-@wait   sta   cpl.timer+1,u
-        rts
+@rearm
+@wait   rts
 
 ; ---------------------------------------------------------------------------
 ; cpl.laser.spawn — AB3A : un laser, devant la piece, a hauteur tiree
@@ -545,6 +561,14 @@ cpl.laser.spawn
         sta   id,x
         lda   #5                       ; -> LaserInit
         sta   routine,x
+        ; X PORTE L'OST DU LASER — on le met a l'abri le temps de lire les
+        ; tables. Sans cela le `ldx #cpl.prio` ci-dessous l'ecrasait et TOUT
+        ; ce qui suit ecrivait dans la table de priorites au lieu du
+        ; projectile : le laser naissait sans position ni profondeur, et la
+        ; table qu'il ecrasait servait aux pieces (releve sous toje : la piece
+        ; droite bloquee sur son premier segment, duree de segment a 27604 la
+        ; ou le script en donne 256).
+        pshs  x
         ; La borne place le laser JUSTE DERRIERE sa piece (0x401F contre
         ; 0x4020 a droite, 0x3FFF contre 0x4000 a gauche) : d'un cran, donc,
         ; et c'est le spawner qui le sait.
@@ -553,6 +577,7 @@ cpl.laser.spawn
         abx
         ldb   ,x
         incb
+        puls  x
         stb   priority,x
         ; la hauteur : un des huit offsets du pool de la piece
         jsr   RandomNumber
