@@ -30,6 +30,8 @@ fireball.y0     equ ext_variables+11   ; 11,12
 fireball.cam0   equ ext_variables+13   ; 13,14
 fireball.charge equ ext_variables+15   ; 15   la charge, 12 trames
 fireball.alt    equ ext_variables+16   ; 16   l'alternat de scintillement
+fireball.pose   equ ext_variables+17   ; 17   sa pose — PAS dans subtype, qui
+                                       ;      porte la famille du groupe
                                        ;      (seme par la tourelle, subtype
                                        ;      porte la pose)
 
@@ -74,9 +76,11 @@ fireball.Init
         ; l'ecart vaut seize fois le pas par trame : vitesse 8.8 / 16
         jsr   LoadObject_x
         beq   @rts
-        lda   #ObjID_warship_muzzle
+        lda   #ObjID_warship_fire
         sta   id,x
         clr   routine,x
+        lda   #fire.MUZZLE
+        sta   subtype,x
         ldd   x_vel,u
         asra
         rorb
@@ -184,7 +188,7 @@ fireball.Flight
         beq   >
         ldb   fireball.alt,u
         bra   @pose
-!       ldb   subtype,u
+!       ldb   fireball.pose,u
 @pose   aslb
         ldx   #fireball.Sets
         abx

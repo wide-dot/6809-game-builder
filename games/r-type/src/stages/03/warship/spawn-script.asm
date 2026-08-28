@@ -20,9 +20,10 @@
 
         INCLUDE "src/stages/03/objid.const.asm"
         INCLUDE "src/enemies/warship-elements/turret/turret.equ"
+        INCLUDE "src/enemies/warship-elements/families.equ"
 
         fdb   6,162,0
-        fcb   0,0 ; #0 arcade CBEF, pas encore porte
+        fcb   ObjID_warship_react,react.RREACTOR ; #0 reacteur de queue
         fdb   24,149,0
         fcb   ObjID_warship_turret,turret.TOP ; #1 petite tourelle HAUT
         fdb   24,149,0
@@ -30,7 +31,7 @@
         fdb   24,150,-42
         fcb   ObjID_warship_turret,turret.TOP ; #3 petite tourelle HAUT
         fdb   24,147,31
-        fcb   ObjID_warship_multi,1 ; #4 tourelle multiple bl
+        fcb   ObjID_warship_fire,fire.MULTI ; #4 tourelle multiple bl
         fdb   24,146,-27
         fcb   ObjID_warship_part,5 ; #5 sous-partie de coque #5
         fdb   24,146,15
@@ -64,11 +65,11 @@
         fdb   54,150,36
         fcb   ObjID_warship_turret,turret.BOTTOM ; #20 petite tourelle BAS
         fdb   54,156,36
-        fcb   0,0 ; #21 arcade CFE9, pas encore porte
+        fcb   ObjID_warship_react,react.DETACH ; #21 petite capsule
         fdb   57,146,3
         fcb   ObjID_warship_part,10 ; #22 sous-partie de coque #10
         fdb   60,151,-68
-        fcb   ObjID_warship_multi,0 ; #23 tourelle multiple tl
+        fcb   ObjID_warship_fire,fire.MULTI ; #23 tourelle multiple tl
         fdb   60,146,-75
         fcb   ObjID_warship_part,1 ; #24 sous-partie de coque #1
         fdb   63,150,36
@@ -78,9 +79,9 @@
         fdb   72,146,-93
         fcb   ObjID_warship_part,0 ; #27 sous-partie de coque #0
         fdb   75,150,19
-        fcb   ObjID_warship_multi,3 ; #28 tourelle multiple br
+        fcb   ObjID_warship_fire,fire.MULTI ; #28 tourelle multiple br
         fdb   75,156,18
-        fcb   0,0 ; #29 arcade D095, pas encore porte
+        fcb   ObjID_warship_react,react.DETACH2 ; #29 triangle qui tombe
         fdb   75,146,-9
         fcb   ObjID_warship_part,12 ; #30 sous-partie de coque #12
         fdb   93,150,-63
@@ -92,21 +93,21 @@
         fdb   111,146,-3
         fcb   ObjID_warship_part,14 ; #34 sous-partie de coque #14
         fdb   114,174,48
-        fcb   0,0 ; #35 arcade D39E, pas encore porte
+        fcb   ObjID_warship_react,react.CAPSULE ; #35 capsule de survie
         fdb   120,150,42
-        fcb   0,0 ; #36 arcade D8B7, pas encore porte
+        fcb   ObjID_warship_react,react.BREACTOR ; #36 reacteur de ventre
         fdb   123,150,-51
         fcb   ObjID_warship_turret,turret.BIG ; #37 grosse tourelle
         fdb   132,150,42
-        fcb   0,0 ; #38 arcade D8C4, pas encore porte
+        fcb   ObjID_warship_react,react.BREACTOR ; #38 reacteur de ventre
         fdb   135,150,-37
-        fcb   ObjID_warship_multi,2 ; #39 tourelle multiple tr
+        fcb   ObjID_warship_fire,fire.MULTI ; #39 tourelle multiple tr
         fdb   144,150,42
-        fcb   0,0 ; #40 arcade D8D1, pas encore porte
+        fcb   ObjID_warship_react,react.BREACTOR ; #40 reacteur de ventre
         fdb   155,150,-18
         fcb   0,0 ; #41 arcade DCC0, pas encore porte
         fdb   156,150,42
-        fcb   0,0 ; #42 arcade D8DE, pas encore porte
+        fcb   ObjID_warship_react,react.BREACTOR ; #42 reacteur de ventre
         fdb   165,150,-60
         fcb   ObjID_warship_turret,turret.TOP ; #43 petite tourelle HAUT
         fdb   168,146,3
@@ -124,15 +125,15 @@
         fdb   204,146,3
         fcb   ObjID_warship_part,17 ; #50 sous-partie de coque #17
         fdb   210,152,35
-        fcb   ObjID_warship_fturret,5 ; #51 tourelle de proue f
+        fcb   ObjID_warship_front,5 ; #51 tourelle de proue f
         fdb   212,150,-75
         fcb   ObjID_warship_turret,turret.BIG ; #52 grosse tourelle
         fdb   219,150,28
-        fcb   ObjID_warship_fturret,4 ; #53 tourelle de proue e
+        fcb   ObjID_warship_front,4 ; #53 tourelle de proue e
         fdb   222,152,-72
         fcb   ObjID_warship_turret,turret.TOP ; #54 petite tourelle HAUT
         fdb   222,152,14
-        fcb   ObjID_warship_fturret,3 ; #55 tourelle de proue d
+        fcb   ObjID_warship_front,3 ; #55 tourelle de proue d
         fdb   228,146,-15
         fcb   ObjID_warship_part,18 ; #56 sous-partie de coque #18
         fdb   240,131,-57
@@ -152,9 +153,9 @@
         fdb   240,29,-39
         fcb   ObjID_warship_part,26 ; #64 sous-partie de coque #26
         fdb   240,149,-18
-        fcb   ObjID_warship_fturret,2 ; #65 tourelle de proue c
+        fcb   ObjID_warship_front,2 ; #65 tourelle de proue c
         fdb   240,149,-45
-        fcb   ObjID_warship_fturret,0 ; #66 tourelle de proue a
+        fcb   ObjID_warship_front,0 ; #66 tourelle de proue a
         fdb   240,152,-31
-        fcb   ObjID_warship_fturret,1 ; #67 tourelle de proue b
+        fcb   ObjID_warship_front,1 ; #67 tourelle de proue b
         fdb   -1

@@ -139,15 +139,17 @@ fturret.Live
         puls  x
         cmpy  #0
         beq   @rts
-        lda   #ObjID_warship_fireball
+        lda   #ObjID_warship_fire
         sta   id,y
         clr   routine,y
+        lda   #fire.BALL               ; la famille, dans le groupe
+        sta   subtype,y
         ldd   ,x                       ; vx
         std   x_vel,y
         ldd   2,x                      ; vy
         std   y_vel,y
         lda   4,x
-        sta   subtype,y                ; la pose...
+        sta   fireball.pose,y          ; la pose...
         lda   5,x
         sta   fireball.alt,y           ; ... et son alternat de scintillement
         ldd   x_pos,u

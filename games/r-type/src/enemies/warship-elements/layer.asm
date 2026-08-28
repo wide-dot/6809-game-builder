@@ -33,6 +33,13 @@
 ; le bit 0 de camera.x (layer.evenX), le meme arrondi qu'elle.
 ;*******************************************************************************
 
+; LE RANG RESERVE DE L'OST : le spawner depose l'age du MAITRE dans les deux
+; derniers octets de chaque piece a sa naissance (voir spawner.asm). Aucune
+; piece n'y range autre chose — c'est la porte par laquelle une piece nee
+; en cours de route se cale sur une choregraphie ABSOLUE, celle du script
+; d'orientation des reacteurs de ventre.
+warship.age0   equ ext_variables+18
+
 ; layer.evenX — camera.x quantifiee comme la couche l'affiche (bit 0 masque).
 ; Rend D. Ne touche que D.
 layer.evenX

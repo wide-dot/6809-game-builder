@@ -25,6 +25,8 @@ multi.y0        equ ext_variables+11   ; 11,12
 multi.cam0      equ ext_variables+13   ; 13,14
 multi.acc       equ ext_variables+15   ; 15  l'accumulateur de cadence (16)
 multi.phase     equ ext_variables+16   ; 16  la phase du patron, 0..3
+multi.mount     equ ext_variables+17   ; 17  le montage — PAS dans subtype,
+                                       ;     qui porte la famille du groupe
 
 multi.HP        equ 4                  ; 40:db98 MOV byte ptr [BP+0x2f],0x4
 
@@ -60,6 +62,10 @@ multi.Init
         std   multi.AABB+AABB.rx,u
         clr   multi.acc,u
         clr   multi.phase,u
+        ; le montage arrive dans subtype et demenage : subtype porte
+        ; desormais la FAMILLE du groupe (voir fire.Object)
+        lda   subtype,u
+        sta   multi.mount,u
         inc   routine,u
         ; PAS DE RTS : elle vit des sa premiere trame
 
@@ -102,7 +108,7 @@ multi.Live
         lsrb
         lsrb
         lsrb                           ; ... par pose, offset fdb
-        lda   subtype,u
+        lda   multi.mount,u
         asla
         ldx   #multi.Anims
         ldx   a,x
@@ -148,7 +154,7 @@ multi.Fire
         bsr   @un                      ; le tir « multi »
         ldb   #16
 @un     pshs  b                        ; le patron se recharge a CHAQUE tir :
-        lda   subtype,u                ; le premier appel de la phase 1 a
+        lda   multi.mount,u                ; le premier appel de la phase 1 a
         asla                           ; consomme X
         ldx   #multi.Fires
         ldx   a,x
@@ -170,7 +176,7 @@ multi.Fire
         ; X pointe le vecteur ; le point de ponte est en queue de patron,
         ; a 20-B... plus simple : le patron le porte a +20 de sa base, et
         ; B a ete consomme par abx — on repart du patron
-        lda   subtype,u
+        lda   multi.mount,u
         asla
         pshs  x
         ldx   #multi.Fires

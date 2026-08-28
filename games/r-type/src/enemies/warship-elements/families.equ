@@ -1,0 +1,26 @@
+ IFNDEF WARSHIP_FAMILIES
+WARSHIP_FAMILIES equ 1
+
+; Les familles des deux GROUPES de pieces du vaisseau — partagees entre les
+; objets (qui aiguillent dessus) et le script de spawn (qui les pose dans le
+; sous-type). Deux unites d'assemblage differentes : une equate, pas un EXPORT.
+; Le pourquoi des groupes est dans warship-elements/groups.asm.
+
+; groupe `fire` : la page d'images stage3.cast.imgFire
+fire.MULTI      equ 0
+fire.BALL       equ 1
+fire.MUZZLE     equ 2
+
+; groupe `react` : la page d'images stage3.cast.imgReactor
+react.RREACTOR  equ 0
+react.RFLAME    equ 1
+react.WBULLET   equ 2
+react.BREACTOR  equ 3
+react.CAPSULE   equ 4
+react.LASER     equ 5
+; les deux detachables prennent DEUX creneaux : le script de spawn ne peut
+; porter que le sous-type, donc c'est lui qui doit les distinguer.
+react.DETACH    equ 6                  ; la petite capsule
+react.DETACH2   equ 7                  ; le triangle qui tombe
+
+ ENDC

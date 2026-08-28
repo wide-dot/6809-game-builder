@@ -49,6 +49,11 @@ pilot.spawn    equ ext_variables+8 ; WORD curseur dans le script de spawn
 ; maitre qui derive avec la couche.
 pilot.camX0    equ ext_variables+10 ; WORD camera.x a la naissance
 pilot.camY0    equ ext_variables+12 ; WORD camera.y a la naissance
+; L'AGE DU MAITRE, en trames de jeu depuis sa naissance. Le script
+; d'orientation des reacteurs de ventre s'y compare (seuils 0..3684) : les
+; quatre reacteurs naissent a des instants differents et doivent pourtant
+; tourner ENSEMBLE, donc la reference est le maitre, pas eux.
+pilot.age      equ ext_variables+14 ; WORD
 
 ; L'ancre des pieces : l'arcade fait naitre chacune a `parent.Y + dy` et pose
 ; son maitre a Y=0xF0 (create_warship 40:c46e), soit 297 - 0,75 x 240 = 117.
@@ -80,6 +85,8 @@ pilotInit
         std   pilot.camX0,u
         ldd   mscroll.camera.y
         std   pilot.camY0,u
+        ldd   #0
+        std   pilot.age,u
         ldd   #1                       ; premiere trame -> premier segment
         std   pilot.counter,u
         ldd   #0
@@ -109,6 +116,11 @@ pilotLive
         ; l'ordre d'appel qui est en jeu : stage.setup fait tourner RunObjects
         ; AVANT le premier gfxlock.loop, et frameDrop.count n'est pose par
         ; personne d'autre.
+        ; l'age avance meme sans trame ecoulee a depiler
+        ldb   gfxlock.frameDrop.count
+        clra
+        addd  pilot.age,u
+        std   pilot.age,u
         tst   gfxlock.frameDrop.count
         bne   >
         rts

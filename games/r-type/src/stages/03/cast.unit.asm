@@ -115,12 +115,65 @@ set_fireball_flash_4  EXTERNAL
 set_fireball_flash_5  EXTERNAL
 set_fireball_flash_6  EXTERNAL
 set_fireball_flash_7  EXTERNAL
+set_rear_reactor_0  EXTERNAL
+set_reactor_startup_0  EXTERNAL
+set_reactor_startup_1  EXTERNAL
+set_reactor_startup_2  EXTERNAL
+set_reactor_startup_3  EXTERNAL
+set_reactor_flame_0_0  EXTERNAL
+set_reactor_flame_1_0  EXTERNAL
+set_reactor_white_bullet_0  EXTERNAL
+set_reactor_white_bullet_1  EXTERNAL
+set_reactor_white_bullet_2  EXTERNAL
+set_reactor_white_bullet_3  EXTERNAL
+set_bottom_reactor_bottom_0  EXTERNAL
+set_bottom_reactor_bottom_left_0  EXTERNAL
+set_bottom_reactor_bottom_right_0  EXTERNAL
+set_bottom_reactor_bottom_left_full_0  EXTERNAL
+set_bottom_reactor_bottom_right_full_0  EXTERNAL
+set_bottom_reactor_flame_left_0  EXTERNAL
+set_bottom_reactor_flame_left_1  EXTERNAL
+set_bottom_reactor_flame_left_2  EXTERNAL
+set_bottom_reactor_flame_left_3  EXTERNAL
+set_bottom_reactor_flame_left_4  EXTERNAL
+set_bottom_reactor_flame_left_5  EXTERNAL
+set_bottom_reactor_flame_left_6  EXTERNAL
+set_bottom_reactor_flame_left_7  EXTERNAL
+set_bottom_reactor_flame_left_8  EXTERNAL
+set_bottom_reactor_flame_left_9  EXTERNAL
+set_bottom_reactor_flame_right_0  EXTERNAL
+set_bottom_reactor_flame_right_1  EXTERNAL
+set_bottom_reactor_flame_right_2  EXTERNAL
+set_bottom_reactor_flame_right_3  EXTERNAL
+set_bottom_reactor_flame_right_4  EXTERNAL
+set_bottom_reactor_flame_right_5  EXTERNAL
+set_bottom_reactor_flame_right_6  EXTERNAL
+set_bottom_reactor_flame_right_7  EXTERNAL
+set_bottom_reactor_flame_right_8  EXTERNAL
+set_bottom_reactor_flame_right_9  EXTERNAL
+set_bottom_reactor_flame_straight_down_0  EXTERNAL
+set_bottom_reactor_flame_straight_down_1  EXTERNAL
+set_bottom_reactor_flame_straight_down_2  EXTERNAL
+set_bottom_reactor_flame_straight_down_3  EXTERNAL
+set_bottom_reactor_flame_straight_down_4  EXTERNAL
+set_bottom_reactor_flame_straight_down_5  EXTERNAL
+set_bottom_reactor_flame_straight_down_6  EXTERNAL
+set_bottom_reactor_flame_straight_down_7  EXTERNAL
+set_bottom_reactor_flame_straight_down_8  EXTERNAL
+set_bottom_reactor_flame_straight_down_9  EXTERNAL
+set_escape_capsule_0  EXTERNAL
+set_small_escape_capsule_0  EXTERNAL
+set_falling_triangle_0  EXTERNAL
+set_horizontal_laser_0  EXTERNAL
+set_horizontal_laser_1  EXTERNAL
+set_horizontal_laser_2  EXTERNAL
+set_horizontal_laser_3  EXTERNAL
 turret.Object   EXPORT
 part.Object     EXPORT
 fturret.Object  EXPORT
-multi.Object    EXPORT
-fireball.Object EXPORT
-muzzle.Object   EXPORT
+fire.Object     EXPORT
+react.Object    EXPORT
+bflame.Object   EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -151,10 +204,14 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/lib/projectile.macro.asm"
 
         INCLUDE "src/enemies/warship-elements/layer.asm"
+        INCLUDE "src/enemies/warship-elements/groups.asm"
         INCLUDE "src/enemies/warship-elements/turret/obj.asm"
         INCLUDE "src/enemies/warship-elements/part/obj.asm"
         INCLUDE "src/enemies/warship-elements/frontturret/obj.asm"
         INCLUDE "src/enemies/warship-elements/fireball/obj.asm"
         INCLUDE "src/enemies/warship-elements/multiturret/obj.asm"
+        INCLUDE "src/enemies/warship-elements/reactor/obj.asm"
+        INCLUDE "src/enemies/warship-elements/reactor/children.asm"
+        INCLUDE "src/enemies/warship-elements/capsule/obj.asm"
 
  ENDSECTION

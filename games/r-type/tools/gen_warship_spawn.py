@@ -23,19 +23,40 @@ EXPORT = ('/Users/benoitrousseau/Documents/Claude/Projects/re.arcade.r-type'
 
 # tick arcade -> (ObjID v2, sous-type, libelle). Ce qui n'est pas ici n'est pas
 # encore porte : l'entree garde sa place et sa position, avec l'identifiant 0.
+# L'EXPORT CONVERTIT L'ABSCISSE COMME UN DELTA. Le seuil et l'ecart en y sont
+# des DISTANCES (le rapport suffit, l'export est juste), mais l'abscisse est une
+# POSITION — il lui faut le decalage d'origine du viewport arcade (320), ET PAS
+# le +8 du cadre : celui-la place dans le champ TILEMAP, alors que la bande
+# mscroll est PLEINE LARGEUR, calee a la colonne 0. D'ou :
+#   x_juste = (x_export / 0,375 - 320) x 0,375 = x_export - 120
+# A remonter a l'extracteur — ici on corrige au plus pres de l'usage.
+X_ORIGINE = 120
+
 PORTE = {
     0xE26A: ('ObjID_warship_turret', 'turret.TOP',    'petite tourelle HAUT'),
     0xE277: ('ObjID_warship_turret', 'turret.BOTTOM', 'petite tourelle BAS'),
     0xE129: ('ObjID_warship_turret', 'turret.BIG',    'grosse tourelle'),
+    # DEUX GROUPES : plusieurs objets sous un identifiant, la FAMILLE dans le
+    # sous-type. Ce qui force un identifiant est Img_Page_Index (une page
+    # d'images par identifiant), pas le code — voir warship-elements/groups.asm.
+    0xCBEF: ('ObjID_warship_react', 'react.RREACTOR', 'reacteur de queue'),
+    0xD39E: ('ObjID_warship_react', 'react.CAPSULE',  'capsule de survie'),
 }
 
-# Tranche 4 : les six tourelles de proue (le sous-type est la variante) et
-# les quatre multiples (le sous-type est le montage).
+# Les six tourelles de proue : le sous-type est la variante.
 for _i, _t in enumerate((0xD596, 0xD5A3, 0xD5B0, 0xD5BD, 0xD5CA, 0xD5D7)):
-    PORTE[_t] = ('ObjID_warship_fturret', str(_i), 'tourelle de proue %c' % (97 + _i))
+    PORTE[_t] = ('ObjID_warship_front', str(_i), 'tourelle de proue %c' % (97 + _i))
+
+# Les quatre tourelles multiples : groupe `fire`, le montage suit dans le code.
 for _i, _t in enumerate((0xDB63, 0xDB70, 0xDB7D, 0xDB8A)):
-    PORTE[_t] = ('ObjID_warship_multi', str(_i),
+    PORTE[_t] = ('ObjID_warship_fire', 'fire.MULTI',
                  'tourelle multiple ' + ('tl', 'bl', 'tr', 'br')[_i])
+
+# Les quatre reacteurs de ventre et les deux detachables : groupe `react`.
+for _t in (0xD8B7, 0xD8C4, 0xD8D1, 0xD8DE):
+    PORTE[_t] = ('ObjID_warship_react', 'react.BREACTOR', 'reacteur de ventre')
+PORTE[0xCFE9] = ('ObjID_warship_react', 'react.DETACH', 'petite capsule')
+PORTE[0xD095] = ('ObjID_warship_react', 'react.DETACH2', 'triangle qui tombe')
 
 # Les 27 sous-parties de coque : leurs vignettes se suivent de douze en douze
 # a partir de 40:c656, et le RANG de la vignette est le sous-type de la piece —
@@ -43,20 +64,6 @@ for _i, _t in enumerate((0xDB63, 0xDB70, 0xDB7D, 0xDB8A)):
 for _i in range(27):
     PORTE[0xC656 + 12 * _i] = ('ObjID_warship_part', str(_i),
                                'sous-partie de coque #%d' % _i)
-
-# L'EXPORT CONVERTIT L'ABSCISSE COMME UN DELTA. Les trois champs convertis par
-# l'extracteur ne sont pas de meme nature : le seuil et l'ecart en y sont des
-# DISTANCES (le rapport suffit, et l'export est juste), mais l'abscisse est une
-# POSITION — il lui faut le decalage d'origine du viewport arcade (320),
-# ET PAS LE +8 DU CADRE : la formule standard `(x - 320) x 0,375 + 8` place
-# dans le champ TILEMAP, encadre a +8 — or la bande mscroll est PLEINE
-# LARGEUR, calee a la colonne 0 (10 chunks de 16 px). Une position destinee
-# au repere de la couche se convertit donc SANS le cadre :
-#   x_juste = (x_export / 0,375 - 320) x 0,375 = x_export - 120
-# Le -112 initial gardait le +8 : toutes les pieces etaient vissees 8 px
-# trop a droite de leur point de coque (mesure a l'ecran, 28/08/2026).
-# A remonter a l'extracteur — ici on corrige au plus pres de l'usage.
-X_ORIGINE = 120
 
 ENTREE = re.compile(r'fdb\s+(-?\d+),(-?\d+),(-?\d+)\s*;\s*#(\d+)\s+arcade tick '
                     r'0x([0-9A-Fa-f]+)')
@@ -89,6 +96,7 @@ def main():
         "",
         '        INCLUDE "src/stages/03/objid.const.asm"',
         '        INCLUDE "src/enemies/warship-elements/turret/turret.equ"',
+        '        INCLUDE "src/enemies/warship-elements/families.equ"',
         "",
     ]
     n_porte = n_total = 0

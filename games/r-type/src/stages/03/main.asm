@@ -41,9 +41,9 @@ bship.collisionFollow  EXTERNAL
 turret.Object          EXTERNAL
 part.Object            EXTERNAL
 fturret.Object         EXTERNAL
-multi.Object           EXTERNAL
-fireball.Object        EXTERNAL
-muzzle.Object          EXTERNAL
+fire.Object            EXTERNAL
+react.Object           EXTERNAL
+bflame.Object          EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -344,14 +344,10 @@ stage.setup
         ; double test, sentinelle 0x7D0 au fond. Doc : bship-collision-plan.md
         lda   #1
         sta   globals.backgroundSolid
-        ; la routine vit dans la page du spawner : montage encadre
-        _GetCartPageA
-        pshs  a
-        lda   #map.RAM_OVER_CART+stage3.spawnscript.page
-        _SetCartPageA
-        jsr   bship.collisionFollow    ; cale les registres avant la 1re trame
-        puls  a
-        _SetCartPageA
+        ; (les registres du plan de fond sont cales par la boucle, juste
+        ;  apres mscroll.move et AVANT que le moindre objet ne tourne —
+        ;  l'appel qui etait ici faisait double emploi, et l'unite
+        ;  residente du stage n'a plus un octet)
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd

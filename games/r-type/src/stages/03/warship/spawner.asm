@@ -42,6 +42,13 @@ mscroll.camera.y EXTERNAL
 pilot.spawn    equ ext_variables+8
 pilot.camX0    equ ext_variables+10
 pilot.camY0    equ ext_variables+12
+pilot.age      equ ext_variables+14
+; LE RANG RESERVE : chaque piece nait avec l'age du maitre a cet instant, dans
+; les deux derniers octets de son OST. Aucune piece n'y range autre chose (les
+; tourelles comme les sous-parties vont jusqu'a +17) — c'est la porte par
+; laquelle une piece nee tard se cale sur une choregraphie ABSOLUE, celle du
+; script d'orientation des reacteurs de ventre.
+warship.age0   equ ext_variables+18
 warship.BASEY  equ 120                 ; arcade Y=0xF0 -> 117 par la formule
                                        ; du champ tilemap ; la couche a son
                                        ; propre cadre vertical, +3 mesures a
@@ -98,6 +105,8 @@ warship.spawn
         subd  warship.drift            ; suivis de la derive de la couche
         std   y_pos,x
         clr   y_pos+2,x
+        ldd   pilot.age,u              ; l'age du maitre, pour qui s'y cale
+        std   warship.age0,x
 @plein  puls  x                        ; le curseur revient
         leas  6,s
 @next   leax  8,x

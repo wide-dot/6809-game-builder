@@ -480,12 +480,19 @@
             <section name="INDEX1" track="0" face="1" sector="10"/>
             <!-- Les repertoires des stages 3-8 : une piste en fin de disque,
                  2 secteurs chacun (mesure stage 2). -->
+            <!-- Les repertoires se suivent sur la piste 79 et valent DEUX
+                 secteurs chacun, sauf INDEX3 (le stage 3) qui en prend
+                 TROIS : le cast du vaisseau lui a fait passer les 512
+                 octets. Ils
+                 sont libres de bouger — le loader lit leurs positions dans
+                 la table generee (gen/directories/locations.asm), c'est ce
+                 que dit storage.xml. Quinze secteurs sur seize occupes. -->
             <section name="INDEX3" track="79" face="0" sector="1"/>
-            <section name="INDEX4" track="79" face="0" sector="3"/>
-            <section name="INDEX5" track="79" face="0" sector="5"/>
-            <section name="INDEX6" track="79" face="0" sector="7"/>
-            <section name="INDEX7" track="79" face="0" sector="9"/>
-            <section name="INDEX8" track="79" face="0" sector="11"/>
+            <section name="INDEX4" track="79" face="0" sector="4"/>
+            <section name="INDEX5" track="79" face="0" sector="6"/>
+            <section name="INDEX6" track="79" face="0" sector="8"/>
+            <section name="INDEX7" track="79" face="0" sector="10"/>
+            <section name="INDEX8" track="79" face="0" sector="12"/>
             <!-- dir2 a REJOINT cette piste le 25/08/2026 : il tenait dans les
                  secteurs 14-15 de la piste 0 face 1, derriere dir1, et la piste
                  s'arrete a 16 — le gouger y a ajoute quatre entrees et il
@@ -493,7 +500,7 @@
                  secteurs 13 a 16, le double, la piste 79 n'etant occupee que
                  jusqu'au 12. Le loader lit les emplacements dans la table
                  generee (gen/directories/locations.asm), rien n'est cable. -->
-            <section name="INDEX2" track="79" face="0" sector="13"/>
+            <section name="INDEX2" track="79" face="0" sector="14"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
             <!-- DATA en piste 8 : LINK a besoin des pistes 2 a 7 (le controle
@@ -3410,6 +3417,74 @@
                     </lwasm>
                 </file>
 
+                <!-- TOUT LE GROUPE `react` DANS UNE PAGE : les deux reacteurs
+                     et leurs enfants, la capsule de survie, son laser et les
+                     detachables. Ce n'est pas un choix de rangement mais une
+                     CONTRAINTE : ces objets partagent un identifiant, et
+                     Img_Page_Index n'en donne qu'une page d'images par
+                     identifiant (voir warship-elements/groups.asm). -->
+                <file name="stage3.cast.imgReactor" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgreactor.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgReactor" gendir="gen/enemies/stage3-cast-imgreactor"
+                                 gensource="gen/enemies/stage3-cast-imgreactor/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgreactor/index.asm">
+                            <images dir="src/enemies/warship-elements/images/rear-reactor" names="rear_reactor"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-startup" names="reactor_startup"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-0" names="reactor_flame_0"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-1" names="reactor_flame_1"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-white-bullet" names="reactor_white_bullet"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom" names="bottom_reactor_bottom"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left" names="bottom_reactor_bottom_left"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right" names="bottom_reactor_bottom_right"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full" names="bottom_reactor_bottom_left_full"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-full" names="bottom_reactor_bottom_right_full"/>
+                            <images dir="src/enemies/warship-elements/images/escape-capsule" names="escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/small-escape-capsule" names="small_escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/falling-triangle" names="falling_triangle"/>
+                            <images dir="src/enemies/warship-elements/images/horizontal-laser" names="horizontal_laser"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Les trois gerbes des reacteurs de ventre : dix poses de
+                     24x48 chacune. UN DIRENTRY PAR GERBE — les trois
+                     ensemble font 36 Ko, plus du double d'une page. La
+                     bouffee choisit sa gerbe par l'orientation, donc son
+                     identifiant d'images : trois ObjID pour un seul code. -->
+                <file name="stage3.cast.imgFlameD" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgflamed.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFlameD" gendir="gen/enemies/stage3-cast-imgflamed"
+                                 gensource="gen/enemies/stage3-cast-imgflamed/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgflamed/index.asm">
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-straight-down" names="bottom_reactor_flame_straight_down"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage3.cast.imgFlameR" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgflamer.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFlameR" gendir="gen/enemies/stage3-cast-imgflamer"
+                                 gensource="gen/enemies/stage3-cast-imgflamer/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgflamer/index.asm">
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-right" names="bottom_reactor_flame_right"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage3.cast.imgFlameL" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgflamel.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFlameL" gendir="gen/enemies/stage3-cast-imgflamel"
+                                 gensource="gen/enemies/stage3-cast-imgflamel/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgflamel/index.asm">
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-left" names="bottom_reactor_flame_left"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage3.cast" linkdata="LINK" arena="stage3.foes">
                     <lwasm gensource="gen/stages/03/stage03-cast.asm">
                         <asm filename="src/stages/03/cast.unit.asm"/>
@@ -3503,6 +3578,10 @@
                     <load name="stage3.cast.imgTurret"/>
                     <load name="stage3.cast.imgFront"/>
                     <load name="stage3.cast.imgFire"/>
+                    <load name="stage3.cast.imgReactor"/>
+                    <load name="stage3.cast.imgFlameD"/>
+                    <load name="stage3.cast.imgFlameR"/>
+                    <load name="stage3.cast.imgFlameL"/>
                     <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
