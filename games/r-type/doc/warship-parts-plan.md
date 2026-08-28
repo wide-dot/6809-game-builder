@@ -161,3 +161,43 @@ dessine rien et son `Live` se termine sur un `rts`, pas sur `DisplaySprite`.
   mourir avec le vaisseau. Il faudra un drapeau partagé, et le pilote est le
   porteur naturel.
 - **les sons** : aucun dans ce portage, comme partout ailleurs.
+
+## Le manager des gerbes (28/08/2026)
+
+Les gerbes des reacteurs de ventre ne sont plus des objets. Trois raisons se
+sont cumulees :
+
+1. **Le rejet en bloc.** `BuildSprites` ne clippe jamais : une gerbe de 48
+   lignes disparait entierement des que son bas sort de la bande, alors que sa
+   buse est encore visible. Quand le vaisseau descend, c'est pres d'une seconde
+   de jet manquant sur 44 px de bande morte.
+2. **Le cout de trancher.** La parade est de couper en quatre tranches de 12
+   lignes (bande morte ramenee a 8 px), mais quatre reacteurs qui tirent
+   ensemble auraient fait **seize objets d'un coup**.
+3. **La page.** `Img_Page_Index` ne donne qu'UNE page d'images par identifiant,
+   et les trente poses des trois gerbes en occupaient trois.
+
+La sortie est le patron `outslay.Render`, deja au depot : **un objet unique qui
+gare sa boite au centre de l'ecran** — donc jamais elimine — **et peint
+lui-meme**, tranche par tranche, ce qui tient dans la bande. Ce qui l'a rendu
+possible est la **deduplication** : la chaine arcade ne designe que quatre
+poses uniques sur ses dix pas. Les trois gerbes tranchees pesent **11,9 Ko**,
+une page — au lieu de 36 Ko sur trois.
+
+Deux details ont fait tout le travail :
+
+- **Les quatre tranches gardent le canevas de 48 lignes** et n'en peignent que
+  douze. L'encodeur rogne les bords transparents mais rapporte les bornes au
+  centre du *canevas* (`Image.java : x1_offset = x_Min - (width-1)/2`) : les
+  tranches partagent donc l'ancre tout en portant chacune la boite de ses
+  douze lignes. Le dessin se fait aux memes coordonnees, sans un calcul, et le
+  test de bande reste par tranche.
+- **Le code du manager vit avec son art.** BuildSprites monte la page d'images
+  de l'objet avant d'appeler sa routine de dessin : le dessin et ce qu'il
+  dessine partagent la page. Le cast n'y entre jamais — il **arme des slots**
+  dans une table **residente** (`reactor/flameslots.asm`), lue par la page des
+  flammes. D'ou les copies locales des trois services de couche.
+
+Bilan : trois direntries et trois identifiants deviennent **un et un**, seize
+objets simultanes deviennent **zero**, et la gerbe suit le vaisseau jusqu'au
+bas de l'ecran.

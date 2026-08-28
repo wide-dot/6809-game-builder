@@ -43,7 +43,7 @@ part.Object            EXTERNAL
 fturret.Object         EXTERNAL
 fire.Object            EXTERNAL
 react.Object           EXTERNAL
-bflame.Object          EXTERNAL
+flamemgr.Object        EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT

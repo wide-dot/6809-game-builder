@@ -372,42 +372,32 @@ breactor.Live
 
 ; La bouffee d'ejection, orientee comme nous.
 breactor.Flame
-        jsr   LoadObject_x
-        beq   @rts
-        ; LA GERBE CHOISIT SON IDENTIFIANT : ses trente poses ne tiennent pas
-        ; dans une page, donc une page par orientation — et Img_Page_Index
-        ; n'en donne qu'une par identifiant.
-        lda   #ObjID_warship_bflame    ; droit vers le bas (orientations 0-1)
-        ldb   breactor.orient,u
-        cmpb  #2
-        blo   >
-        inca                           ; vers la droite (2-3)
-        cmpb  #4
-        blo   >
-        inca                           ; vers la gauche (4-5)
-!       sta   id,x
-        clr   routine,x
-        ; LA GERBE NE NAIT PAS SUR LA BUSE, ELLE NAIT DEVANT : l'arcade
-        ; (40:dac8) ajoute un ecart lu par ZONE d'orientation. Sans lui la
-        ; gerbe est centree sur le reacteur et deborde de moitie sur la
-        ; coque — c'est ce qu'on voyait le 28/08/2026.
+        ; LA GERBE N'EST PLUS UN OBJET : elle arme un slot du manager, qui
+        ; dessine les quatre tranches lui-meme (reactor/flamemgr.asm). Quatre
+        ; reacteurs tirant ensemble faisaient seize objets ; ils n'en font plus
+        ; aucun, et la gerbe ne se fait plus rejeter en bloc au bas de bande.
+        ; ELLE NE NAIT PAS SUR LA BUSE, ELLE NAIT DEVANT : l'arcade (40:dac8)
+        ; ajoute un ecart lu par ZONE d'orientation. Sans lui la gerbe est
+        ; centree sur le reacteur et deborde de moitie sur la coque — c'est ce
+        ; qu'on voyait le 28/08/2026.
         ldb   breactor.orient,u
         lsrb                           ; la zone : 0-1 bas, 2-3 droite,
         andb  #3                       ; 4-5 gauche
+        pshs  b                        ; elle sert deux fois
         aslb
         ldy   #breactor.FlameOff
         leay  b,y
         ldb   ,y                       ; dx signe
         sex
         addd  x_pos,u
-        std   x_pos,x
+        pshs  d
         ldb   1,y                      ; dy signe
         sex
         addd  y_pos,u
-        std   y_pos,x
-        clr   x_pos+2,x
-        clr   y_pos+2,x
-@rts    rts
+        tfr   d,y
+        puls  x
+        lda   ,s+                      ; la zone
+        jmp   flamemgr.Arm
 
 breactor.Boom
         ldb   #warship_reactor_scoreIdx

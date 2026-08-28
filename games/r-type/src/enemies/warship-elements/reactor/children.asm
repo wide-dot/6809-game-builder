@@ -7,7 +7,13 @@
 ; Les deux flammes sont des ENFANTS A DUREE DE VIE colles a la couche : elles
 ; ne blessent pas, elles montrent. La balle, elle, est un tir ennemi ordinaire
 ; — vitesse figee a la ponte, comme la boule de la proue.
+;
+; LA BOUFFEE DE VENTRE N'EST PLUS UN OBJET (28/08/2026) : elle arme un slot du
+; manager, qui la dessine en quatre tranches depuis sa propre page. Ce qui
+; reste ici est le geste d'armement — voir reactor/flamemgr.asm.
 ;*******************************************************************************
+
+        INCLUDE "src/enemies/warship-elements/reactor/flame.equ"
 
 ;--- LES FLAMMES GEANTES DE LA QUEUE -------------------------------------------
 ; Cycle de 112 trames (cc73) : les seize premieres jouent les CERCLES
@@ -104,108 +110,53 @@ rflame.Startup
 ; Dix poses jouees une fois, orientees comme le reacteur qui l'a lachee : les
 ; orientations 0-1 crachent droit vers le bas, 2-3 vers la droite, 4-5 vers la
 ; gauche (le meme decoupage que la table de directions).
-bflame.mapX     equ ext_variables      ; 0,1
-bflame.y0       equ ext_variables+2    ; 2,3
-bflame.cam0     equ ext_variables+4    ; 4,5
-bflame.life     equ ext_variables+6    ; 6
-
-bflame.LIFE     equ 50                 ; dix poses de la chaine arcade,
-                                       ; CINQ trames chacune (40:db02)
-
-bflame.Object
-        lda   routine,u
-        asla
-        ldx   #bflame.Routines
-        jmp   [a,x]
-bflame.Routines
-        fdb   bflame.Init
-        fdb   bflame.Live
-        fdb   bflame.Deleted
-
-bflame.Init
-        jsr   layer.evenX
-        std   bflame.mapX,u
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        addd  bflame.mapX,u
-        std   bflame.mapX,u
-        ldd   y_pos,u
-        std   bflame.y0,u
-        ldd   mscroll.camera.y
-        std   bflame.cam0,u
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        ldb   #4
-        stb   priority,u
-        lda   #bflame.LIFE
-        sta   bflame.life,u
-        inc   routine,u
-
-bflame.Live
-        ldb   gfxlock.frameDrop.count
-        bne   >
-        incb
-!       clra
-        std   layer.drop
+; flamemgr.Arm — armer une gerbe. Cote CAST : c'est le reacteur qui appelle,
+; et il ne peut pas entrer dans la page du manager. Il ecrit donc dans la table
+; RESIDENTE (reactor/flameslots.asm), et fait naitre le manager au premier
+; armement. Entree : A = zone (0 bas, 1 droite, 2 gauche), D n'est pas libre —
+; X = x_pos playfield de la gerbe, Y = y_pos.
+; Silencieuse si la table est pleine, comme l'arcade quand son pool l'est.
+flamemgr.Arm
+        pshs  a,x,y
+        ; LE MANAGER D'ABORD. S'il n'est pas la et que le pool le refuse, on
+        ; n'arme rien : un slot arme que personne ne fait vieillir resterait
+        ; occupe pour toujours, et la table se remplirait definitivement.
+        tst   flamemgr.live
+        bne   @vivant
+        jsr   LoadObject_x
+        beq   @plein
+        lda   #ObjID_warship_flamemgr
+        sta   id,x
+        clr   routine,x
+        inc   flamemgr.live
+@vivant
+        ldx   #flamemgr.Slots
+        ldb   #flamemgr.SLOTS
+@cherche
+        lda   ,x
+        beq   @libre
+        leax  flamemgr.SLOTSZ,x
+        decb
+        bne   @cherche
+        puls  a,x,y,pc
+@libre  lda   #flamemgr.LIFE
+        sta   ,x
+        lda   ,s                       ; la zone
+        sta   1,x
+        ; l'ancrage a la couche, le meme que toutes les pieces du vaisseau :
+        ; abscisse en repere de couche, et le couple (ecran, camera.y) pour
+        ; l'ordonnee — voir warship-elements/layer.asm.
         jsr   layer.evenX
         pshs  d
-        ldd   bflame.mapX,u
-        subd  ,s++
-        addd  glb_camera_x_pos
-        std   x_pos,u
-        ldd   bflame.y0,u
-        ldx   bflame.cam0,u
-        jsr   layer.followY
-        std   y_pos,u
-        lda   bflame.life,u
-        suba  layer.drop+1
-        bls   @fin
-        sta   bflame.life,u
-        ; la pose : dix, tenues quatre trames, jouees a l'endroit
-        lda   #bflame.LIFE
-        suba  bflame.life,u
-        ldb   #5                       ; cinq trames par pose
-        jsr   layer.Div
-        cmpa  #9
-        bls   >
-        lda   #9
-!       asla
-        pshs  a
-        lda   id,u                     ; LE JEU VIENT DE L'IDENTIFIANT :
-        suba  #ObjID_warship_bflame    ; une page par gerbe, le reacteur
-        asla                           ; a choisi en la pondant
-        ldx   #bflame.Jeux
-        ldx   a,x
-        puls  a
-        ldx   a,x
-        stx   image_set,u
-        jmp   DisplaySprite
-@fin    lda   #2
-        sta   routine,u
-        jmp   DeleteObject
-bflame.Deleted
-        rts
-
-bflame.Jeux
-        fdb   bflame.Down,bflame.Right,bflame.Left
-bflame.Down
-        fdb   set_bottom_reactor_flame_straight_down_0,set_bottom_reactor_flame_straight_down_1
-        fdb   set_bottom_reactor_flame_straight_down_2,set_bottom_reactor_flame_straight_down_3
-        fdb   set_bottom_reactor_flame_straight_down_4,set_bottom_reactor_flame_straight_down_5
-        fdb   set_bottom_reactor_flame_straight_down_6,set_bottom_reactor_flame_straight_down_7
-        fdb   set_bottom_reactor_flame_straight_down_8,set_bottom_reactor_flame_straight_down_9
-bflame.Right
-        fdb   set_bottom_reactor_flame_right_0,set_bottom_reactor_flame_right_1
-        fdb   set_bottom_reactor_flame_right_2,set_bottom_reactor_flame_right_3
-        fdb   set_bottom_reactor_flame_right_4,set_bottom_reactor_flame_right_5
-        fdb   set_bottom_reactor_flame_right_6,set_bottom_reactor_flame_right_7
-        fdb   set_bottom_reactor_flame_right_8,set_bottom_reactor_flame_right_9
-bflame.Left
-        fdb   set_bottom_reactor_flame_left_0,set_bottom_reactor_flame_left_1
-        fdb   set_bottom_reactor_flame_left_2,set_bottom_reactor_flame_left_3
-        fdb   set_bottom_reactor_flame_left_4,set_bottom_reactor_flame_left_5
-        fdb   set_bottom_reactor_flame_left_6,set_bottom_reactor_flame_left_7
-        fdb   set_bottom_reactor_flame_left_8,set_bottom_reactor_flame_left_9
+        ldd   3,s                      ; X empile = x_pos playfield
+        subd  glb_camera_x_pos
+        addd  ,s++
+        std   2,x
+        ldd   3,s                      ; Y empile = y_pos
+        std   4,x
+        ldd   mscroll.camera.y
+        std   6,x
+@plein  puls  a,x,y,pc
 
 ;--- LA BALLE BLANCHE ----------------------------------------------------------
 ; Un tir ennemi ordinaire : vitesse figee a la ponte, quatre poses qui tournent,

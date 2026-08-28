@@ -173,7 +173,10 @@ part.Object     EXPORT
 fturret.Object  EXPORT
 fire.Object     EXPORT
 react.Object    EXPORT
-bflame.Object   EXPORT
+; La table des gerbes vit dans le resident : le cast l'ARME, la page des
+; flammes la DESSINE (reactor/flameslots.asm).
+flamemgr.Slots  EXTERNAL
+flamemgr.live   EXTERNAL
 
         INCLUDE "src/common/engine/api.asm"
 

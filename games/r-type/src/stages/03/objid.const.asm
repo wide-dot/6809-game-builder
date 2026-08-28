@@ -37,22 +37,24 @@ ObjID_warship_front equ 40
 *           detachables
 ObjID_warship_fire equ 41
 ObjID_warship_react equ 42
-* Les trois gerbes des reacteurs de ventre gardent chacune la leur : leurs
-* trente poses ne tiennent pas dans une page, et c'est la page qui commande.
-ObjID_warship_bflame equ 43
-ObjID_warship_bflameR equ 44
-ObjID_warship_bflameL equ 45
+* Le MANAGER des gerbes : un seul identifiant pour les trois orientations et
+* leurs quatre tranches. Les trente poses ne tenaient pas dans une page — la
+* deduplication de la chaine arcade (quatre poses uniques sur dix pas) les y
+* fait tenir, et Img_Page_Index n'en donne qu'UNE par identifiant. Cet objet
+* ne se lance pas depuis un script : le premier armement le fait naitre.
+* Voir enemies/warship-elements/reactor/flamemgr.asm.
+ObjID_warship_flamemgr equ 43
 
 * Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
 * des entrees d'index que mscroll.setup resout en pages/adresses, le
 * patron du banc examples/mscroll.
-objid.bship.map    equ 46
-objid.bship.tilesA equ 47
-objid.bship.tilesB equ 48
-objid.bship.bufA   equ 49
-objid.bship.bufB   equ 50
+objid.bship.map    equ 44
+objid.bship.tilesA equ 45
+objid.bship.tilesB equ 46
+objid.bship.bufA   equ 47
+objid.bship.bufB   equ 48
 
-objid.count equ 50
+objid.count equ 48
 objid.animation equ ObjID_animation
 
 * GARDE-FOU (26/08/2026). Les cinq entrees bship ne sont pas des objets, mais
@@ -63,7 +65,7 @@ objid.animation equ ObjID_animation
 * de la couche battleship ont ete resolus sur les mauvaises pages et le stage 3
 * s'est fige au chargement, ecran noir. Le controle de densite des tables ne
 * pouvait pas le voir — les longueurs restaient justes.
- IFNE objid.bship.map-(ObjID_warship_bflameL+1)
+ IFNE objid.bship.map-(ObjID_warship_flamemgr+1)
         ERROR les cinq entrees bship doivent suivre le dernier objet, sans trou
  ENDC
  IFNE objid.count-objid.bship.bufB

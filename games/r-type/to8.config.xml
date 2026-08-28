@@ -3447,41 +3447,39 @@
                     </lwasm>
                 </file>
 
-                <!-- Les trois gerbes des reacteurs de ventre : dix poses de
-                     24x48 chacune. UN DIRENTRY PAR GERBE — les trois
-                     ensemble font 36 Ko, plus du double d'une page. La
-                     bouffee choisit sa gerbe par l'orientation, donc son
-                     identifiant d'images : trois ObjID pour un seul code. -->
-                <file name="stage3.cast.imgFlameD" linkdata="LINK" arena="stage3.foes">
-                    <lwasm gensource="gen/enemies/stage3-cast-imgflamed.asm">
+                <!-- LES GERBES DES REACTEURS DE VENTRE, ART ET MANAGER DANS
+                     LA MEME ENTREE. Elles etaient trois direntries et trois
+                     ObjID : dix poses de 24x48 par orientation, 36 Ko en tout,
+                     plus du double d'une page.
+                     Deux gestes les ramenent a une (gen_warship_flames.py) :
+                     la chaine arcade ne designe que QUATRE poses uniques sur
+                     ses dix pas, et chaque pose est tranchee en quatre sans
+                     changer de canevas — 15,5 Ko, une page.
+                     LE CODE DU MANAGER EST ICI, avec l'art, et pas dans le
+                     cast : BuildSprites monte la page d'images de l'objet
+                     avant d'appeler sa routine de dessin, donc le dessin et
+                     ce qu'il dessine doivent partager la page. Le cast n'y
+                     entre jamais ; il arme des slots dans le resident.
+                     Voir enemies/warship-elements/reactor/flamemgr.asm. -->
+                <file name="stage3.cast.imgFlame" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgflame.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage3.cast.imgFlameD" gendir="gen/enemies/stage3-cast-imgflamed"
-                                 gensource="gen/enemies/stage3-cast-imgflamed/includes.asm"
-                                 genindex="gen/enemies/stage3-cast-imgflamed/index.asm">
-                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-straight-down" names="bottom_reactor_flame_straight_down"/>
+                        <asm filename="src/enemies/warship-elements/reactor/flamemgr.unit.asm"/>
+                        <gfxcomp file="stage3.cast.imgFlame" gendir="gen/enemies/stage3-cast-imgflame"
+                                 gensource="gen/enemies/stage3-cast-imgflame/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgflame/index.asm">
+                            <images dir="src/enemies/warship-elements/images/flame-wheel" names="fl"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <file name="stage3.cast.imgFlameR" linkdata="LINK" arena="stage3.foes">
-                    <lwasm gensource="gen/enemies/stage3-cast-imgflamer.asm">
+                <!-- La table des gerbes : residente, parce que le cast l'arme
+                     et que la page ci-dessus la lit. Chargee en zeros comme
+                     stage2.outslay.res. -->
+                <file name="stage3.flame.res" linkdata="LINK" arena="stage3.res">
+                    <lwasm gensource="gen/stages/03/flame-res.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage3.cast.imgFlameR" gendir="gen/enemies/stage3-cast-imgflamer"
-                                 gensource="gen/enemies/stage3-cast-imgflamer/includes.asm"
-                                 genindex="gen/enemies/stage3-cast-imgflamer/index.asm">
-                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-right" names="bottom_reactor_flame_right"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-
-                <file name="stage3.cast.imgFlameL" linkdata="LINK" arena="stage3.foes">
-                    <lwasm gensource="gen/enemies/stage3-cast-imgflamel.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp file="stage3.cast.imgFlameL" gendir="gen/enemies/stage3-cast-imgflamel"
-                                 gensource="gen/enemies/stage3-cast-imgflamel/includes.asm"
-                                 genindex="gen/enemies/stage3-cast-imgflamel/index.asm">
-                            <images dir="src/enemies/warship-elements/images/bottom-reactor-flame-left" names="bottom_reactor_flame_left"/>
-                        </gfxcomp>
+                        <asm filename="src/enemies/warship-elements/reactor/flameslots.asm"/>
                     </lwasm>
                 </file>
 
@@ -3579,9 +3577,8 @@
                     <load name="stage3.cast.imgFront"/>
                     <load name="stage3.cast.imgFire"/>
                     <load name="stage3.cast.imgReactor"/>
-                    <load name="stage3.cast.imgFlameD"/>
-                    <load name="stage3.cast.imgFlameR"/>
-                    <load name="stage3.cast.imgFlameL"/>
+                    <load name="stage3.cast.imgFlame"/>
+                    <load name="stage3.flame.res"/>
                     <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
