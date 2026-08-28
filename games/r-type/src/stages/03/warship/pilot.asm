@@ -39,6 +39,16 @@ pilot.counter  equ ext_variables+2 ; WORD trames restantes du segment courant
 pilot.sx       equ ext_variables+4 ; WORD vitesse x du segment courant (8.8)
 pilot.sy       equ ext_variables+6 ; WORD vitesse y du segment courant (8.8)
 pilot.spawn    equ ext_variables+8 ; WORD curseur dans le script de spawn
+; LA CAMERA A LA NAISSANCE DU PILOTE. L'arcade fait naitre son maitre a X=0
+; APRES l'autoscroll d'entree (~192 px arcade de camera deja consommes, ts
+; $2048), et les seuils du script de spawn se comparent a -X : la COURSE
+; DEPUIS SA NAISSANCE, jamais la camera absolue. Comparer a camera.x brut
+; faisait partir d'un coup toutes les entrees de seuil <= 72 : une colonne de
+; tourelles au meme x, etagees en y — vu a l'ecran le 28/08/2026.
+; Meme principe en y : les dy du script sont des ecarts de COQUE, relatifs au
+; maitre qui derive avec la couche.
+pilot.camX0    equ ext_variables+10 ; WORD camera.x a la naissance
+pilot.camY0    equ ext_variables+12 ; WORD camera.y a la naissance
 
 ; L'ancre des pieces : l'arcade fait naitre chacune a `parent.Y + dy` et pose
 ; son maitre a Y=0xF0 (create_warship 40:c46e), soit 297 - 0,75 x 240 = 117.
@@ -63,6 +73,10 @@ pilotInit
         std   pilot.spawn,u            ; « pas encore arme », le parcours le
                                        ; pose lui-meme — l'etiquette de la
                                        ; table vit dans SA page, pas ici
+        ldd   mscroll.camera.x
+        std   pilot.camX0,u
+        ldd   mscroll.camera.y
+        std   pilot.camY0,u
         ldd   #1                       ; premiere trame -> premier segment
         std   pilot.counter,u
         ldd   #0
