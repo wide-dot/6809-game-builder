@@ -38,6 +38,7 @@ terrainCollision.bgWorldAdj EXTERNAL
 warship.camera.script  EXTERNAL
 warship.spawn          EXTERNAL
 turret.Object          EXTERNAL
+part.Object            EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT

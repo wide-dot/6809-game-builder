@@ -29,6 +29,13 @@ PORTE = {
     0xE129: ('ObjID_warship_turret', 'turret.BIG',    'grosse tourelle'),
 }
 
+# Les 27 sous-parties de coque : leurs vignettes se suivent de douze en douze
+# a partir de 40:c656, et le RANG de la vignette est le sous-type de la piece —
+# c'est lui qui designe sa boite dans la table extraite de la ROM.
+for _i in range(27):
+    PORTE[0xC656 + 12 * _i] = ('ObjID_warship_part', str(_i),
+                               'sous-partie de coque #%d' % _i)
+
 # L'EXPORT CONVERTIT L'ABSCISSE COMME UN DELTA. Les trois champs convertis par
 # l'extracteur ne sont pas de meme nature : le seuil et l'ecart en y sont des
 # DISTANCES (le rapport suffit, et l'export est juste), mais l'abscisse est une

@@ -40,6 +40,7 @@ set_big_turret_6  EXTERNAL
 set_big_turret_7  EXTERNAL
 set_big_turret_8  EXTERNAL
 turret.Object   EXPORT
+part.Object     EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -67,5 +68,6 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/common/lib/projectile.macro.asm"
 
         INCLUDE "src/enemies/warship-elements/turret/obj.asm"
+        INCLUDE "src/enemies/warship-elements/part/obj.asm"
 
  ENDSECTION

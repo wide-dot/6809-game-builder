@@ -32,9 +32,9 @@
         fdb   24,155,31
         fcb   0,0 ; #4 arcade DB70, pas encore porte
         fdb   24,154,-27
-        fcb   0,0 ; #5 arcade C692, pas encore porte
+        fcb   ObjID_warship_part,5 ; #5 sous-partie de coque #5
         fdb   24,154,15
-        fcb   0,0 ; #6 arcade C6AA, pas encore porte
+        fcb   ObjID_warship_part,7 ; #6 sous-partie de coque #7
         fdb   30,160,0
         fcb   ObjID_warship_turret,turret.TOP ; #7 petite tourelle HAUT
         fdb   30,160,0
@@ -42,55 +42,55 @@
         fdb   33,158,-48
         fcb   ObjID_warship_turret,turret.TOP ; #9 petite tourelle HAUT
         fdb   33,154,-33
-        fcb   0,0 ; #10 arcade C686, pas encore porte
+        fcb   ObjID_warship_part,4 ; #10 sous-partie de coque #4
         fdb   36,158,48
         fcb   ObjID_warship_turret,turret.BOTTOM ; #11 petite tourelle BAS
         fdb   39,154,-9
-        fcb   0,0 ; #12 arcade C69E, pas encore porte
+        fcb   ObjID_warship_part,6 ; #12 sous-partie de coque #6
         fdb   39,154,15
-        fcb   0,0 ; #13 arcade C6B6, pas encore porte
+        fcb   ObjID_warship_part,8 ; #13 sous-partie de coque #8
         fdb   42,158,-54
         fcb   ObjID_warship_turret,turret.TOP ; #14 petite tourelle HAUT
         fdb   42,154,-39
-        fcb   0,0 ; #15 arcade C67A, pas encore porte
+        fcb   ObjID_warship_part,3 ; #15 sous-partie de coque #3
         fdb   45,158,48
         fcb   ObjID_warship_turret,turret.BOTTOM ; #16 petite tourelle BAS
         fdb   48,154,15
-        fcb   0,0 ; #17 arcade C6C2, pas encore porte
+        fcb   ObjID_warship_part,9 ; #17 sous-partie de coque #9
         fdb   51,158,-60
         fcb   ObjID_warship_turret,turret.TOP ; #18 petite tourelle HAUT
         fdb   51,154,-45
-        fcb   0,0 ; #19 arcade C66E, pas encore porte
+        fcb   ObjID_warship_part,2 ; #19 sous-partie de coque #2
         fdb   54,158,36
         fcb   ObjID_warship_turret,turret.BOTTOM ; #20 petite tourelle BAS
         fdb   54,164,36
         fcb   0,0 ; #21 arcade CFE9, pas encore porte
         fdb   57,154,3
-        fcb   0,0 ; #22 arcade C6CE, pas encore porte
+        fcb   ObjID_warship_part,10 ; #22 sous-partie de coque #10
         fdb   60,159,-68
         fcb   0,0 ; #23 arcade DB63, pas encore porte
         fdb   60,154,-75
-        fcb   0,0 ; #24 arcade C662, pas encore porte
+        fcb   ObjID_warship_part,1 ; #24 sous-partie de coque #1
         fdb   63,158,36
         fcb   ObjID_warship_turret,turret.BOTTOM ; #25 petite tourelle BAS
         fdb   66,154,3
-        fcb   0,0 ; #26 arcade C6DA, pas encore porte
+        fcb   ObjID_warship_part,11 ; #26 sous-partie de coque #11
         fdb   72,154,-93
-        fcb   0,0 ; #27 arcade C656, pas encore porte
+        fcb   ObjID_warship_part,0 ; #27 sous-partie de coque #0
         fdb   75,158,19
         fcb   0,0 ; #28 arcade DB8A, pas encore porte
         fdb   75,164,18
         fcb   0,0 ; #29 arcade D095, pas encore porte
         fdb   75,154,-9
-        fcb   0,0 ; #30 arcade C6E6, pas encore porte
+        fcb   ObjID_warship_part,12 ; #30 sous-partie de coque #12
         fdb   93,158,-63
         fcb   ObjID_warship_turret,turret.BIG ; #31 grosse tourelle
         fdb   93,154,-21
-        fcb   0,0 ; #32 arcade C6F2, pas encore porte
+        fcb   ObjID_warship_part,13 ; #32 sous-partie de coque #13
         fdb   108,158,-57
         fcb   ObjID_warship_turret,turret.BIG ; #33 grosse tourelle
         fdb   111,154,-3
-        fcb   0,0 ; #34 arcade C6FE, pas encore porte
+        fcb   ObjID_warship_part,14 ; #34 sous-partie de coque #14
         fdb   114,182,48
         fcb   0,0 ; #35 arcade D39E, pas encore porte
         fdb   120,158,42
@@ -110,19 +110,19 @@
         fdb   165,158,-60
         fcb   ObjID_warship_turret,turret.TOP ; #43 petite tourelle HAUT
         fdb   168,154,3
-        fcb   0,0 ; #44 arcade C70A, pas encore porte
+        fcb   ObjID_warship_part,15 ; #44 sous-partie de coque #15
         fdb   174,158,-66
         fcb   ObjID_warship_turret,turret.TOP ; #45 petite tourelle HAUT
         fdb   183,158,-72
         fcb   ObjID_warship_turret,turret.TOP ; #46 petite tourelle HAUT
         fdb   183,154,-9
-        fcb   0,0 ; #47 arcade C716, pas encore porte
+        fcb   ObjID_warship_part,16 ; #47 sous-partie de coque #16
         fdb   195,158,-81
         fcb   ObjID_warship_turret,turret.BIG ; #48 grosse tourelle
         fdb   201,159,48
         fcb   ObjID_warship_turret,turret.BOTTOM ; #49 petite tourelle BAS
         fdb   204,154,3
-        fcb   0,0 ; #50 arcade C722, pas encore porte
+        fcb   ObjID_warship_part,17 ; #50 sous-partie de coque #17
         fdb   210,160,35
         fcb   0,0 ; #51 arcade D5D7, pas encore porte
         fdb   212,158,-75
@@ -134,23 +134,23 @@
         fdb   222,160,14
         fcb   0,0 ; #55 arcade D5BD, pas encore porte
         fdb   228,154,-15
-        fcb   0,0 ; #56 arcade C72E, pas encore porte
+        fcb   ObjID_warship_part,18 ; #56 sous-partie de coque #18
         fdb   240,139,-57
-        fcb   0,0 ; #57 arcade C73A, pas encore porte
+        fcb   ObjID_warship_part,19 ; #57 sous-partie de coque #19
         fdb   240,124,-63
-        fcb   0,0 ; #58 arcade C746, pas encore porte
+        fcb   ObjID_warship_part,20 ; #58 sous-partie de coque #20
         fdb   240,106,-69
-        fcb   0,0 ; #59 arcade C752, pas encore porte
+        fcb   ObjID_warship_part,21 ; #59 sous-partie de coque #21
         fdb   240,97,-57
-        fcb   0,0 ; #60 arcade C75E, pas encore porte
+        fcb   ObjID_warship_part,22 ; #60 sous-partie de coque #22
         fdb   240,88,-51
-        fcb   0,0 ; #61 arcade C76A, pas encore porte
+        fcb   ObjID_warship_part,23 ; #61 sous-partie de coque #23
         fdb   240,73,-45
-        fcb   0,0 ; #62 arcade C776, pas encore porte
+        fcb   ObjID_warship_part,24 ; #62 sous-partie de coque #24
         fdb   240,58,-9
-        fcb   0,0 ; #63 arcade C782, pas encore porte
+        fcb   ObjID_warship_part,25 ; #63 sous-partie de coque #25
         fdb   240,37,-39
-        fcb   0,0 ; #64 arcade C78E, pas encore porte
+        fcb   ObjID_warship_part,26 ; #64 sous-partie de coque #26
         fdb   240,157,-18
         fcb   0,0 ; #65 arcade D5B0, pas encore porte
         fdb   240,157,-45

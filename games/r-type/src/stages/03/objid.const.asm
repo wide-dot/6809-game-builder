@@ -20,16 +20,20 @@ ObjID_warship_core equ 37
 * Les tourelles autonomes de la coque : un seul objet, trois montages portes
 * par le sous-type (haut, bas, grosse). Le script de spawn les fait naitre.
 ObjID_warship_turret equ 38
+* Les 27 sous-parties de coque : des boites de collision sans sprite — leur
+* corps visible EST la couche. Le sous-type porte leur rang, qui designe la
+* boite (src/enemies/warship-elements/part/boxes.asm, extraite de la ROM).
+ObjID_warship_part equ 39
 * Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
 * des entrees d'index que mscroll.setup resout en pages/adresses, le
 * patron du banc examples/mscroll.
-objid.bship.map    equ 39
-objid.bship.tilesA equ 40
-objid.bship.tilesB equ 41
-objid.bship.bufA   equ 42
-objid.bship.bufB   equ 43
+objid.bship.map    equ 40
+objid.bship.tilesA equ 41
+objid.bship.tilesB equ 42
+objid.bship.bufA   equ 43
+objid.bship.bufB   equ 44
 
-objid.count equ 43
+objid.count equ 44
 objid.animation equ ObjID_animation
 
 * GARDE-FOU (26/08/2026). Les cinq entrees bship ne sont pas des objets, mais
@@ -40,7 +44,7 @@ objid.animation equ ObjID_animation
 * de la couche battleship ont ete resolus sur les mauvaises pages et le stage 3
 * s'est fige au chargement, ecran noir. Le controle de densite des tables ne
 * pouvait pas le voir — les longueurs restaient justes.
- IFNE objid.bship.map-(ObjID_warship_turret+1)
+ IFNE objid.bship.map-(ObjID_warship_part+1)
         ERROR les cinq entrees bship doivent suivre le dernier objet, sans trou
  ENDC
  IFNE objid.count-objid.bship.bufB

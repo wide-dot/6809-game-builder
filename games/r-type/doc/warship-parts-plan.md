@@ -39,7 +39,7 @@ L'enfant naît à `x` (toujours 266-282, soit le bord droit du cadre) et à
 
 | famille | nb | tick arcade |
 |---|---|---|
-| **sous-parties de coque** | **28** | `C656..C78E` (un installateur chacun) |
+| **sous-parties de coque** | **27** | `C656..C78E` (une vignette chacune) |
 | petite tourelle HAUT | 10 | `E26A` |
 | petite tourelle BAS | 7 | `E277` |
 | grosse tourelle | 5 | `E129` |
@@ -55,7 +55,7 @@ L'enfant naît à `x` (toujours 266-282, soit le bord droit du cadre) et à
 > *The sub-part has NO per-frame sprite paint. Its visible presence on screen
 > comes from the warship's BG tilemap.*
 
-Les 28 sous-parties de coque sont des **boîtes de collision et de dégâts** qui
+Les 27 sous-parties de coque sont des **boîtes de collision et de dégâts** qui
 chevauchent la couche — 12 PV chacune, aucun dessin. Chez nous la couche est
 déjà peinte par `mscroll` : **il n'y a rien à dessiner, seulement à toucher.**
 
@@ -97,7 +97,7 @@ que le plan de collision de fond vient d'adopter, pour la même raison.
 | # | tranche | contenu | dépend de |
 |---|---|---|---|
 | **1** | **le spawner + les tourelles autonomes** | le parcours du script, `ObjID_warship_turret` (HAUT/BAS) et `ObjID_warship_bigturret` — 22 des 40 externes | — |
-| 2 | les 28 sous-parties | boîtes de collision, 12 PV, explosion à la mort ; **sans** l'épave | 1 |
+| 2 | les 27 sous-parties | boîtes de collision, 12 PV, explosion à la mort ; **sans** l'épave | 1 |
 | 3 | l'épave dans la tilemap | chirurgie de couche `c8e8` | 2 |
 | 4 | tourelles de proue et multiples | 10 objets, patrons voisins | 1 |
 | 5 | réacteurs, capsules, triangle | 10 objets, comportements propres | 1 |
@@ -131,7 +131,28 @@ appris :
   n'effacent pas leur fond et le blast de la couche fait l'effacement. Rien à
   ajouter pour composer par-dessus le vaisseau.
 
-## 7. Ce qui reste à trancher, le moment venu
+## 7. Tranche 2 — livrée le 27/08/2026
+
+Les 27 sous-parties de coque. Ce sont bien de pures boîtes : l'objet ne
+dessine rien et son `Live` se termine sur un `rts`, pas sur `DisplaySprite`.
+
+- **le compte était de 27, pas 28.** La 28ᵉ entrée à priorité `0x6000` du
+  script est le CŒUR (`DCC0`), pas une sous-partie ; le pré-commentaire des
+  vignettes le dit (« 27 WARSHIP PART INSTALLER THUNKS »).
+- **les boîtes sortent de la ROM, pas d'une recopie.** `gen_warship_parts.py`
+  suit les deux indirections — vignette → recette → boîte — dans le dump
+  arcade et convertit par la formule de la table. Chaque ligne produite cite
+  son adresse de recette et de boîte, et le générateur vérifie que tout tient
+  dans un octet.
+- **l'explosion de coup n'est pas décorative** : sans sprite, elle est le
+  SEUL retour visuel quand le joueur touche la coque. C'est pour cela que
+  l'arcade la tire à chaque dégât encaissé, et on la porte telle quelle.
+- **la collision est testée à chaque trame**, là où l'arcade alterne une
+  trame sur deux : chez nous la boîte est inscrite dans une liste que le
+  moteur confronte, il n'y a pas de sondage par objet à amortir — alterner
+  reviendrait à inscrire et retirer la boîte, plus cher et moins juste.
+
+## 8. Ce qui reste à trancher, le moment venu
 
 - **l'épave** (tranche 3) : la couche mscroll est un tampon de code compilé ;
   la repeindre localement demande le même genre d'outil que l'édition du champ
