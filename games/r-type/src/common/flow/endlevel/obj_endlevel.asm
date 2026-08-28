@@ -60,6 +60,18 @@ Tick
         ; the stand-in below, so this test is inert for them.
         lda   globals.bossDefeated
         bne   @beaten
+        ; A STAGE WITH A REAL BOSS NEVER WINS BY TIMEOUT (29/08/2026). The
+        ; stand-in below hands the victory over as soon as the camera reaches
+        ; the end of the map and a hardcoded counter runs out — which is
+        ; exactly what a fought boss must NOT allow: stage 4's Compiler is
+        ; beaten by killing its three parts, or not at all. The stage says so
+        ; by raising globals.realBoss at entry; the stages still without a
+        ; boss leave it clear and keep the stand-in untouched.
+        ; Skipping the whole block matters: bossHold.timer sits at 0 for a
+        ; stage that never arms it, and a bare `ble` on it would declare the
+        ; victory on the very first frame.
+        lda   globals.realBoss
+        bne   @none
         ; no sequence yet : the stand-in boss battle — camera at the end of
         ; the map, then the hold ; its expiry counts as the victory
         ldd   glb_camera_x_pos
