@@ -122,12 +122,14 @@ fturret.Live
         lsrb                           ; /4 -> l'index 0..15...
         lsrb
         lda   #6
-        mul                            ; ... x6 -> l'offset
-        lda   subtype,u
-        asla
-        ldx   #fturret.Fires
-        ldx   a,x
-        leax  d,x
+        mul                            ; ... x6 -> l'offset, qui tient
+        pshs  b                        ; dans B (90 au plus) : le mettre
+        lda   subtype,u                ; a l'abri, car le calcul de la
+        asla                           ; table ECRASE A — donc le poids
+        ldx   #fturret.Fires           ; fort de D, et un `leax d,x`
+        ldx   a,x                      ; sautait alors subtype*256
+        puls  b                        ; octets hors table.
+        abx
         lda   4,x                      ; la pose de la boule
         cmpa  #$FF
         beq   @rts                     ; porte d'arc : pas de tir par ici
