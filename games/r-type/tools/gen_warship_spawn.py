@@ -39,14 +39,16 @@ for _i in range(27):
 # L'EXPORT CONVERTIT L'ABSCISSE COMME UN DELTA. Les trois champs convertis par
 # l'extracteur ne sont pas de meme nature : le seuil et l'ecart en y sont des
 # DISTANCES (le rapport suffit, et l'export est juste), mais l'abscisse est une
-# POSITION — il lui faut aussi le decalage d'origine, `(x - 320) x 0,375 + 8`,
-# la formule de Conv.java que tout le portage utilise. L'export applique le
-# seul rapport, d'ou 269 la ou le jeu attend 157.
-# La correction est affine et exacte, sans repasser par la ROM :
-#   x_juste = (x_export / 0,375 - 320) x 0,375 + 8 = x_export - 112
-# 157 est bien l'ancre de naissance des autres ennemis (gouger, brood : 158).
+# POSITION — il lui faut le decalage d'origine du viewport arcade (320),
+# ET PAS LE +8 DU CADRE : la formule standard `(x - 320) x 0,375 + 8` place
+# dans le champ TILEMAP, encadre a +8 — or la bande mscroll est PLEINE
+# LARGEUR, calee a la colonne 0 (10 chunks de 16 px). Une position destinee
+# au repere de la couche se convertit donc SANS le cadre :
+#   x_juste = (x_export / 0,375 - 320) x 0,375 = x_export - 120
+# Le -112 initial gardait le +8 : toutes les pieces etaient vissees 8 px
+# trop a droite de leur point de coque (mesure a l'ecran, 28/08/2026).
 # A remonter a l'extracteur — ici on corrige au plus pres de l'usage.
-X_ORIGINE = 112
+X_ORIGINE = 120
 
 ENTREE = re.compile(r'fdb\s+(-?\d+),(-?\d+),(-?\d+)\s*;\s*#(\d+)\s+arcade tick '
                     r'0x([0-9A-Fa-f]+)')

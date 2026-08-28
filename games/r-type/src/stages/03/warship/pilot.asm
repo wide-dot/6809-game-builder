@@ -52,7 +52,10 @@ pilot.camY0    equ ext_variables+12 ; WORD camera.y a la naissance
 
 ; L'ancre des pieces : l'arcade fait naitre chacune a `parent.Y + dy` et pose
 ; son maitre a Y=0xF0 (create_warship 40:c46e), soit 297 - 0,75 x 240 = 117.
-warship.BASEY  equ 117
+warship.BASEY  equ 120                 ; arcade Y=0xF0 -> 117 par la formule
+                                       ; du champ tilemap ; la couche a son
+                                       ; propre cadre vertical, +3 mesures a
+                                       ; l'ecran contre l'art (28/08/2026)
 
 
 warship.pilot

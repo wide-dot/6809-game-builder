@@ -41,7 +41,10 @@ mscroll.camera.y EXTERNAL
 pilot.spawn    equ ext_variables+8
 pilot.camX0    equ ext_variables+10
 pilot.camY0    equ ext_variables+12
-warship.BASEY  equ 117
+warship.BASEY  equ 120                 ; arcade Y=0xF0 -> 117 par la formule
+                                       ; du champ tilemap ; la couche a son
+                                       ; propre cadre vertical, +3 mesures a
+                                       ; l'ecran contre l'art (28/08/2026)
 warship.spawn
         ; la course et la derive du tour, relatives a la naissance du pilote
         ldd   mscroll.camera.x
