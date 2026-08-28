@@ -337,9 +337,26 @@ geld.carve
                                        ; neutre est nul) — rien a manger
         addd  #6                       ; +6 : l'effacement en rectangle
         std   @call+1
-        ldd   y_pos,u                  ; le haut : y + 4 px arcade
-        addd  #geld.CARVE_Y
-        pshs  b                        ; la ligne ecran tient dans un octet
+        ; LE HAUT : y + 4 px arcade, MOINS UNE LIGNE QUAND IL RAMPE A
+        ; L'HORIZONTALE (releve auteur, 29/08, en comparant a la borne : « on
+        ; efface trop bas d'une ligne »). La borne pose son coin de sonde au
+        ; meme endroit quelle que soit la direction, mais ses poses
+        ; horizontales et verticales n'ont pas le meme centre : converties, nos
+        ; images horizontales portent le corps une ligne plus haut. Les caps
+        ; verticaux sont deja cales.
+        ; On BRANCHE avant de composer D : LDD pose N et Z, il effacerait le
+        ; verdict de BITB — et un `ldb` apres le calcul ecraserait l'octet bas
+        ; de la ligne.
+        ldb   geld.variant,u
+        bitb  #2                       ; bit 1 : 0 = horizontal, 1 = vertical
+        bne   @vertical
+        ldd   y_pos,u
+        addd  #geld.CARVE_Y-1          ; horizontal : une ligne plus haut
+        bra   @ligne
+@vertical
+        ldd   y_pos,u
+        addd  #geld.CARVE_Y            ; vertical : le calage d'origine
+@ligne  pshs  b                        ; la ligne ecran tient dans un octet
         ldd   x_pos,u                  ; le coin gauche : x - 4 px arcade
         subd  #geld.CARVE_X
         tfr   d,x                      ; depart...
