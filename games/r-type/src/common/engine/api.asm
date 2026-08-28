@@ -199,6 +199,7 @@ checkpoint.clearData EXTERNAL
         _api terrainCollision.sensor.y
         _api terrainCollision.impact.x
         _api terrainCollision.disabled
+        _api terrainCollision.planeOff
         _api terrainCollision.bgFlag
         _api terrainCollision.bgByteOff
         _api terrainCollision.bgBitShift

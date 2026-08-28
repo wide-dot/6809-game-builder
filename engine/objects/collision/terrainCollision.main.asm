@@ -10,6 +10,27 @@ terrainCollision.impact.x fdb 0
 ; au debut de niveau (cf obj_endstage INIT). Simule le nettoyage arcade des tilemaps.
 terrainCollision.disabled fcb 0
 
+; --- LES PLANS SE COUPENT SEPAREMENT (28/08/2026, demande auteur) ---
+; Un octet par plan : != 0 = ce plan ne repond plus, .do rend B=0 et les
+; balayages d'axe rendent impact.x=0 — la meme sentinelle « pas de mur » que
+; le cas « aucune tuile solide », donc AUCUN appelant n'a a le savoir.
+;
+; Le test est CENTRALISE aux trois portes du moteur (.do, .xAxis.doRight,
+; .xAxis.doLeft), qui recoivent toutes le numero de plan dans B : c'est le
+; seul endroit ou l'on connait a la fois le plan demande et l'intention. Le
+; mettre chez les appelants, c'est le recopier des dizaines de fois — la
+; lecon de doFoe.
+;
+; Coût : trois instructions (abx/tst/bne, ~10 cycles) sur un chemin qui en
+; vaut deja plusieurs centaines. Et quand un plan est coupe, c'est TOUT son
+; parcours de carte qui est economise.
+;
+; A quoi ca sert : le stage 4 coupe le plan des gommes (0) quand le boss
+; prend la main — le champ n'est plus a l'ecran, ses collisions n'ont plus
+; de sens et sa lecture est du temps perdu. terrainCollision.disabled, lui,
+; garde son role : couper les DEUX d'un coup (mort du boss du stage 1).
+terrainCollision.planeOff fill 0,2     ; index = numero de plan (0 et 1)
+
 ; --- background lookup boss-follow offset (loadMap) ---
 ; while the camera/foreground scroll is held during the boss advance, the BACKGROUND
 ; collision (boss solid silhouette) is shifted right by the boss travel so it tracks
@@ -75,8 +96,12 @@ terrainCollision.doFoe
 
 terrainCollision.do
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
+        bne   @off
+        ldx   #terrainCollision.planeOff   ; ...ou CE plan seul est coupe ?
+        abx
+        tst   ,x
         beq   @active
-        clrb                               ; -> aucune collision (B=0)
+@off    clrb                               ; -> aucune collision (B=0)
         rts
 @active _GetCartPageA
         sta   @page
@@ -92,8 +117,12 @@ terrainCollision.main.address equ *-2
 
 terrainCollision.xAxis.doRight
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
+        bne   @off
+        ldx   #terrainCollision.planeOff   ; ...ou CE plan seul est coupe ?
+        abx
+        tst   ,x
         beq   @active
-        ldd   #0                           ; -> pas de mur (impact.x=0, cf @noImpact impl)
+@off    ldd   #0                           ; -> pas de mur (impact.x=0, cf @noImpact impl)
         std   terrainCollision.impact.x
         rts
 @active _GetCartPageA
@@ -110,8 +139,12 @@ terrainCollision.main.xAxis.doRight.address equ *-2
 
 terrainCollision.xAxis.doLeft
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
+        bne   @off
+        ldx   #terrainCollision.planeOff   ; ...ou CE plan seul est coupe ?
+        abx
+        tst   ,x
         beq   @active
-        ldd   #0                           ; -> pas de mur (impact.x=0, cf @noImpact impl)
+@off    ldd   #0                           ; -> pas de mur (impact.x=0, cf @noImpact impl)
         std   terrainCollision.impact.x
         rts
 @active _GetCartPageA

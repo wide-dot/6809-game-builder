@@ -245,6 +245,12 @@ statics.SIZE  equ nb_static_objects*object_size
         ; (stage.setup) pose l'init et leve le drapeau.
         lda   #1
         sta   terrainCollision.disabled
+        ; et les coupures PAR PLAN repartent a zero : un stage qui en coupe
+        ; un (le stage 4 avec son champ de gommes, quand le boss prend la
+        ; main) ne doit pas le laisser coupe pour le suivant — meme regle que
+        ; tout ce qui est resident.
+        clr   terrainCollision.planeOff
+        clr   terrainCollision.planeOff+1
 
         ; RESTAURATION DU DECOR : aucune table PAR DEFAUT. tilemap.resetTable
         ; vit dans le module RESIDENT, donc son `fdb 0` ne vaut qu'au boot : un
@@ -309,7 +315,19 @@ statics.SIZE  equ nb_static_objects*object_size
         ; mord jamais. Deux bornes differentes, c'etait le plan de gommes qui
         ; se figeait sur les seize derniers pixels pendant que le reste
         ; continuait.
-        ldd   #map.COLS*12-144
+        ; -137 ET NON -144 (28/08/2026, mesure auteur sur video arcade : il
+        ; manquait 16-17 px arcade, soit 6-7 px v2). En arcade PERSONNE ne
+        ; borne la camera ici : c'est le BOSS qui la fige en naissant
+        ; (create_compiler 0x40:A71D, « halts both scroll axes »). Notre boss
+        ; n'est pas porte — la ligne de wave est encore commentee — donc le
+        ; plafond joue son role, et il doit tomber la ou le boss l'aurait
+        ; arretee.
+        ; Ce que le ruban supporte, verifie : a 1015 la fenetre vaut
+        ; (1015+8)>>4 = 63, le ruban grave 1008..1167, l'ecran montre
+        ; 1023..1183 — et la carte s'arrete a 1152, donc les px non couverts
+        ; n'ont rien a dessiner. Sans plafond du tout la camera irait a 1056
+        ; (figee par la fin de wave) : la marge est large.
+        ldd   #map.COLS*12-137
  ELSE
         ldd   #map.COLS*12-144
  ENDC
