@@ -349,8 +349,15 @@ stage.setup
         jsr   paged.call
 
         ; ...et le fond de CE stage est du sol pour les ennemis terrestres :
-        ; c'est le champ de gommes. Cancer et pow le sondent alors comme
+        ; c'est le champ de gommes. Cancer, pow et bink le sondent alors comme
         ; l'arcade sonde ses tuiles d'avant-plan.
+        ; A EST RECHARGE (bug corrige le 29/08) : le bloc de palette ci-dessus
+        ; s'est glisse entre le `lda #1` et ce `sta`, et son
+        ; `lda #map.RAM_OVER_CART+common.overlay.page` ecrasait la valeur. Le
+        ; drapeau recevait un numero de page — non nul, donc actif par accident,
+        ; mais il aurait suffi d'une page zero pour l'eteindre en silence
+        ; (releve en RAM : 6 au lieu de 1).
+        lda   #1
         sta   globals.foeBgSolid
 
         ; LE CROCHET : les armes du joueur mangent le champ. C'est la table de
