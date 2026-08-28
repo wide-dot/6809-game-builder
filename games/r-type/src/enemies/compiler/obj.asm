@@ -237,8 +237,18 @@ PartInit
         abx
         ldd   ,x
         std   image_set,u
-        ldb   #4                       ; priorite : devant le fond, derriere
-        stb   priority,u               ;   le vaisseau
+        ; LA PROFONDEUR DES TROIS PIECES, ECHELONNEE COMME LA BORNE. Elle leur
+        ; donne trois valeurs distinctes au spawn (A762) : DROITE 0x4020,
+        ; BAS 0x4010, GAUCHE 0x4000 — en priorite signee, plus grand = plus
+        ; DEVANT. Notre echelle va dans l'autre sens (1 devant, 8 derriere,
+        ; cf. engine/constants.asm) et le joueur est a 3 : le boss tient donc
+        ; entre 4 et 8. Les trois partageaient la valeur 4 jusqu'au 29/08 —
+        ; leur ordre de recouvrement etait alors indetermine.
+        ldb   cpl.part,u
+        ldx   #cpl.prio
+        abx
+        ldb   ,x
+        stb   priority,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
         inc   routine,u                ; -> PartLive
@@ -343,6 +353,15 @@ cpl.laser.spawn
         sta   id,x
         lda   #5                       ; -> LaserInit
         sta   routine,x
+        ; La borne place le laser JUSTE DERRIERE sa piece (0x401F contre
+        ; 0x4020 a droite, 0x3FFF contre 0x4000 a gauche) : d'un cran, donc,
+        ; et c'est le spawner qui le sait.
+        ldb   cpl.part,u
+        ldx   #cpl.prio
+        abx
+        ldb   ,x
+        incb
+        stb   priority,x
         ; la hauteur : un des huit offsets du pool de la piece
         jsr   RandomNumber
         andb  #7
@@ -466,8 +485,7 @@ PartLive.draw
 LaserInit
         ldd   #cpl.LASER_VX
         std   cpl.laser.vx,u
-        ldb   #3                       ; devant le decor, derriere le vaisseau
-        stb   priority,u
+        ; (la profondeur est posee par le spawner, elle suit la piece)
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
         _Collision_AddAABB AABB_0,AABB_list_ennemy
@@ -520,8 +538,8 @@ LaserFly
 TurretInit
         ldb   subtype_w+1,u            ; le motif de tir de CETTE tourelle
         _loadFirePreset
-        ldb   #5                       ; devant sa piece
-        stb   priority,u
+        ldb   #cpl.PRIO_TURRET         ; la borne les met DEVANT la piece du
+        stb   priority,u               ;   bas (0x4011/12 contre son 0x4010)
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
         clr   cpl.tur.dir,u            ; pas de tir tant qu'on n'a pas vise
@@ -609,7 +627,10 @@ WaveInit
         ldx   #cpl.wave.images
         ldd   b,x
         std   image_set,u
-        ldb   #2                       ; loin derriere : c'est un fond
+        ; AU FOND. La borne lui donne 0x C000 — en signe, tres loin derriere
+        ; tout le reste. Elle valait 2 chez nous jusqu'au 29/08, soit presque
+        ; au premier plan : l'ordre etait INVERSE.
+        ldb   #cpl.PRIO_WAVE
         stb   priority,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u

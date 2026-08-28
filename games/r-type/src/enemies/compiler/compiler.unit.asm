@@ -181,6 +181,20 @@ cpl.images
         fdb   set_compiler_bottom
         fdb   set_compiler_left
 
+; ---------------------------------------------------------------------------
+; LA PROFONDEUR, piece par piece (A762 : 0x4020, 0x4010, 0x4000)
+; ---------------------------------------------------------------------------
+; Notre echelle : 1 devant, 8 derriere ; le joueur est a 3, le boss tient donc
+; entre 4 et 8. L'ordre RELATIF de la borne est conserve — droite devant, bas
+; au milieu, gauche derriere — les regroupements en moins : elle dispose de
+; 65536 niveaux, nous de huit.
+;   piece droite 4 | laser droite 5 | tourelles 5 | piece bas 6
+;   piece gauche 7 | laser gauche 8 | onde 8
+cpl.prio
+        fcb   4,6,7                    ; droite, bas, gauche
+cpl.PRIO_TURRET equ 5
+cpl.PRIO_WAVE   equ 8
+
 ; La demi-largeur de chaque piece, en px v2 (geometrie.txt : 66, 42, 66 de
 ; large). C'est la garde de dessin qui la consomme — voir PartLive.draw.
 cpl.halfw
