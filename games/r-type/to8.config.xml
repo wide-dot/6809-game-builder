@@ -3357,10 +3357,12 @@
                 <!-- Les poses des tourelles : neuf par montage (la roue de
                      visee est palindromique, comme en arcade — voir
                      tools/gen_turret_sets.py). PRE-DECALEES (shifts) : la
-                     tourelle est vissee sur la coque, et la coche defile au
-                     pixel (les deux plans de tuiles du mscroll sont ses
-                     phases) — sans variante impaire le sprite claque de 2 px
-                     contre elle, le defaut vu le 28/08/2026. -->
+                     couche arrondit SA CAMERA a la paire (pas de 2 px), pas
+                     chaque motif — un point de coque d'abscisse impaire
+                     s'affiche a une position impaire, et la tourelle vissee
+                     dessus a besoin de sa variante impaire en PERMANENCE.
+                     L'oscillation de 2 px du 28/08 venait du double arrondi
+                     (voir layer.evenX dans warship-elements/layer.asm). -->
                 <file name="stage3.cast.imgTurret" linkdata="LINK" arena="stage3.foes">
                     <lwasm gensource="gen/enemies/stage3-cast-imgturret.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>

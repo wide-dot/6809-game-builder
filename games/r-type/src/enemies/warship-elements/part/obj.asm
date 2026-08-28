@@ -71,9 +71,11 @@ part.Routines
 ; la recette (sous-type = le rang de la piece, 0..26).
 ; -----------------------------------------------------------------------------
 part.Init
+        jsr   layer.evenX              ; le pas de la couche est de 2 px :
+        std   part.mapX,u              ; meme arrondi qu'elle (layer.asm)
         ldd   x_pos,u
         subd  glb_camera_x_pos
-        addd  mscroll.camera.x
+        addd  part.mapX,u
         std   part.mapX,u
         ldd   y_pos,u
         std   part.y0,u
@@ -109,8 +111,10 @@ part.Live
         lbeq  part.Boom                ; les 12 PV sont tombes
 
         ; --- la couche la porte ---------------------------------------------
+        jsr   layer.evenX
+        pshs  d
         ldd   part.mapX,u
-        subd  mscroll.camera.x
+        subd  ,s++
         addd  glb_camera_x_pos
         std   x_pos,u
         ldd   part.y0,u

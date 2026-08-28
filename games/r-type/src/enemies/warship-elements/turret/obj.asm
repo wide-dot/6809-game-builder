@@ -72,9 +72,11 @@ turret.Routines
 ; -----------------------------------------------------------------------------
 turret.Init
         ; ecran -> couche : la camera de la couche est l'origine du repere
-        ldd   x_pos,u
-        subd  glb_camera_x_pos         ; -> x ecran
-        addd  mscroll.camera.x
+        jsr   layer.evenX              ; la camera COMME LA COUCHE L'AFFICHE :
+        std   turret.mapX,u            ; son pas est de 2 px, l'ancre et la
+        ldd   x_pos,u                  ; derivation doivent prendre le meme
+        subd  glb_camera_x_pos         ; arrondi qu'elle (layer.asm)
+        addd  turret.mapX,u
         std   turret.mapX,u
         ldd   y_pos,u
         std   turret.y0,u
@@ -129,8 +131,10 @@ turret.Live
         lbeq  turret.Boom              ; PV epuises
 
         ; --- la couche la porte : sa position d'ecran en decoule -------------
+        jsr   layer.evenX              ; le meme arrondi que la couche
+        pshs  d
         ldd   turret.mapX,u
-        subd  mscroll.camera.x         ; -> x ecran
+        subd  ,s++                     ; -> x ecran, quantifie comme la coque
         addd  glb_camera_x_pos         ; -> x monde, ce que le moteur dessine
         std   x_pos,u
         ldd   turret.y0,u

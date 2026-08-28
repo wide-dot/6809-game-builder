@@ -20,8 +20,25 @@
 ; 103 px, tres en deca de la demi-periode de 192. On garde donc, par piece,
 ; son ordonnee d'ECRAN a la naissance et la camera de ce moment-la.
 ;
-; L'axe x n'a pas besoin de ca — il ne boucle pas.
+; L'axe x n'a pas besoin de repli — il ne boucle pas (camera.x est ecretee).
+; MAIS IL A SA PROPRE CHAUSSE-TRAPE : le pas horizontal le plus fin du mscroll
+; est DEUX PIXELS (decomposition x = 16h + 4b + 2w, la phase 2px par echange
+; de zone RAMA/RAMB — pas de phase 1px, il faudrait les tilesets doubles du
+; pscroll). La coque s'affiche donc a `M - 2*floor(camera/2)` : elle arrondit
+; LA CAMERA a la paire. Une piece qui calcule `M - camera` exact puis laisse
+; le moteur de sprites arrondir CE resultat prend l'autre arrondi : 2 px
+; d'ecart chaque fois que la camera est impaire, et la parite bascule a
+; chaque pixel de course — l'oscillation vue le 28/08/2026.
+; La regle : toute derivation d'ecran horizontale attachee a la couche masque
+; le bit 0 de camera.x (layer.evenX), le meme arrondi qu'elle.
 ;*******************************************************************************
+
+; layer.evenX — camera.x quantifiee comme la couche l'affiche (bit 0 masque).
+; Rend D. Ne touche que D.
+layer.evenX
+        ldd   mscroll.camera.x
+        andb  #$FE
+        rts
 
 ; layer.followY
 ; -------------
