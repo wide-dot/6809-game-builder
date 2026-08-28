@@ -167,12 +167,21 @@ Patrol.entry
         ; 8ff1 : le cap vise le joueur. En arcade « pos_y < player_y » veut
         ; dire SOUS le joueur (son axe y monte) et donne le cap 2 = UP : il
         ; remonte vers lui. Chez nous l'axe est inverse, donc le test aussi.
-        lda   #2                       ; UP : remonter vers le joueur...
+        ; LE CAP SE CHOISIT APRES LA COMPARAISON (bug corrige le 29/08) : la
+        ; version d'avant posait `lda #2` PUIS `ldd y_pos,u` — et LDD ecrase A.
+        ; Le cap valait donc l'octet HAUT de la position, jamais 2 ni 3 : au
+        ; commit du virage il devenait la variante, tombait dans la branche
+        ; par defaut de Patrol (DOWN) et indexait la table d'images hors
+        ; bornes. Tous les virages partaient vers le bas.
+        ; A n'est pas charge entre CMPD et la branche : LDA n'affecte pas C,
+        ; mais il ecrase Z — et BHI les lit tous les deux.
         ldd   y_pos,u
         cmpd  player1+y_pos
-        bhi   >                        ; le geld est SOUS le joueur : cap 2
+        bhi   @capUp                   ; le geld est SOUS le joueur : il monte
         lda   #3                       ; ...sinon il est au-dessus : DOWN
-!       sta   geld.state,u
+        bra   @capSet
+@capUp  lda   #2                       ; UP : remonter vers le joueur
+@capSet sta   geld.state,u
         lbra  geld.engage
 
 geld.vertical
@@ -184,12 +193,15 @@ geld.vertical
         lblo  geld.draw
         cmpd  #geld.WINY*2
         lbhs  geld.draw
-        clra                           ; cap 0 = DROITE
+        ; Meme correction que la branche horizontale : le `clra` etait ecrase
+        ; par le `ldd` qui suivait.
         ldd   x_pos,u
         cmpd  player1+x_pos
-        blo   >                        ; le geld est A GAUCHE : cap 0
-        lda   #1                       ; ...sinon 1 = GAUCHE
-!       sta   geld.state,u
+        blo   @capRight                ; le geld est A GAUCHE du joueur
+        lda   #1                       ; ...donc il va a GAUCHE pour le viser
+        bra   @capSet2
+@capRight clra                         ; cap 0 = DROITE
+@capSet2 sta  geld.state,u
 
 geld.engage ; 9055 : 31 trames de virage, puis le cap devient le nouveau sens
         lda   #geld.TURN
@@ -299,9 +311,15 @@ Engaged.draw
 ; ennemi ne peut pas connaitre un symbole du stage 4, exactement comme les
 ; armes (cf. src/common/state/variables.asm).
 ;
-; Les quatre cellules sont demandees une par une : la primitive d'effacement
-; refuse d'elle-meme une cellule vide, donc rien a tester ici — c'est la
-; meme economie que le semis du cytron, en sens inverse.
+; Un SEUL appel, l'entree +6 du crochet (effacement en rectangle) : elle
+; couvre les quatre cellules d'un coup et se charge des bornes. La borne, elle,
+; sonde ses quatre coins un par un et ne remplace que ce qui vaut 0x9F6 — chez
+; nous ce test est implicite, le crochet n'adresse QUE le plan des gommes et
+; le decor dur (plan 1) lui est inaccessible. C'est la reponse au risque des
+; deux plans : le geld ne peut pas manger le terrain.
+;
+; V2-DEVIATION : la borne remplace la gomme par un DEBRIS visible (0xFA0) ;
+; chez nous une gomme est un bit d'un plan, pas une tuile — elle disparait.
 ; ---------------------------------------------------------------------------
 geld.carve
         ; LE VECTEUR S'INSTALLE AVANT LES PARAMETRES (27/08/2026). L'entree +6
