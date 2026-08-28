@@ -434,8 +434,8 @@ cpl.motion.next
         ldd   ,x                       ; la vitesse x, ou la sentinelle
         cmpd  #$8000
         bne   @segment
-        ; fin du script : au suivant de la config, en rebouclant. Le segment
-        ; repart a zero, d'ou le curseur reconstruit entier.
+        ; fin du script : au suivant de la config. Le segment repart a zero,
+        ; d'ou le curseur reconstruit entier.
         lda   cpl.cursor,u
         lsra
         lsra
@@ -445,7 +445,7 @@ cpl.motion.next
         inca
         cmpa  #3
         blo   >
-        clra
+        lbra  cpl.motion.suicide       ; les trois epuises : elle renonce
 !       asla                            ; on le remet en bits hauts
         asla
         asla
@@ -460,6 +460,40 @@ cpl.motion.next
         ldd   2,x                      ; la vitesse y : appliquee tout de
         std   cpl.vy,u                 ;   suite, le segment court deja
         inc   cpl.cursor,u             ; segment suivant (bits bas)
+        rts
+
+; ---------------------------------------------------------------------------
+; cpl.motion.suicide — AFE6, le terminateur : L'AUTO-DESTRUCTION
+; ---------------------------------------------------------------------------
+; Au bout de sa chaine de trois scripts, la borne ne reboucle pas : la piece
+; RENONCE. Elle fige une derive vers la droite (+0x200 en 8.8, soit 2 px par
+; trame arcade), et son bit de mort est diffuse au parent — le moniteur de
+; combat la compte pour tombee, exactement comme si le joueur l'avait abattue.
+; Un boss laisse donc partir ses pieces au bout d'environ trois minutes et
+; demie si personne ne le combat.
+;
+; Elle ne s'eteint PAS ici : elle continue d'exister et de deriver, hors de
+; l'ecran a terme. C'est ce que fait la borne, et cela laisse le joueur voir
+; le boss s'en aller.
+;
+; Le curseur porte l'etat : son index de script passe a TROIS, valeur qu'un
+; enchainement normal n'atteint jamais. Elle vaut « deja renonce » et empeche
+; de compter la mort deux fois — la piece garde ses points de vie, on peut
+; encore l'abattre en chemin.
+; ---------------------------------------------------------------------------
+cpl.motion.suicide
+        lda   cpl.cursor,u
+        cmpa  #3*cpl.CUR_STEP
+        bhs   @deja
+        lda   #3*cpl.CUR_STEP          ; l'etat « a renonce »
+        sta   cpl.cursor,u
+        inc   globals.compilerDead     ; sa mort est annoncee, comme un abattage
+@deja   ldd   #cpl.SUICIDE_VX
+        std   cpl.vx,u
+        ldd   #0
+        std   cpl.vy,u
+        ldd   #$FFFF                   ; une duree que rien n'epuise
+        std   cpl.timer,u
         rts
 
 ; ---------------------------------------------------------------------------

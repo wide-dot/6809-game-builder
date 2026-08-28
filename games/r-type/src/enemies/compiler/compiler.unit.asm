@@ -222,6 +222,9 @@ cpl.PRIO_WAVE   equ 8
 ; LE COMBAT : points de vie, coup encaisse, chapelet de mort
 ; ---------------------------------------------------------------------------
 cpl.PART_HP    equ 40          ; A7A4 : 0x28 par piece, les trois pareilles
+; La derive de l'auto-destruction : +0x200 en 8.8 arcade, soit 2 px par trame,
+; vers la droite. Converti : 2 x 0,375 = 0,75 px v2, donc $00C0.
+cpl.SUICIDE_VX equ $00C0
 cpl.HIT_FLASH  equ 31          ; 0x1F trames de clignotement apres un coup
 cpl.BOOM_FRAMES equ 64         ; B062 : 0x40 trames de chapelet
 
