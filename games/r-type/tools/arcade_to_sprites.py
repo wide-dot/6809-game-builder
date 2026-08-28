@@ -349,8 +349,21 @@ def main():
                          "c'est l'echelon exact).")
     ap.add_argument('--ajuster', default=None,
                     help='index materiels COMMUNS re-regles pour ce combat, ex. 7,8')
+    ap.add_argument('--poser', default=None,
+                    help='R,G,B:MATERIEL;... — valeurs POSEES PAR L\'AUTEUR, '
+                         'communs compris. Ne pas confondre avec --ajuster '
+                         '(choix automatique parmi les couleurs rattachees) ni '
+                         '--reserver (case d\'effet runtime, hors calcul). Ne le '
+                         'commettre que sur decision auteur : la planche A du '
+                         'compiler (29/08) pose ses six cases chaudes a la main '
+                         'pour MAXIMISER LES RAMPES — deux rampes de 4 marches a '
+                         'sommets partages (blanc et rouge nuit servent chacun '
+                         'deux rampes).')
     ap.add_argument('--reserver', default=None,
-                    help='R,G,B:MATERIEL — couleur posee a un index precis, hors calcul')
+                    help='R,G,B:MATERIEL — couleur posee a un index precis, hors '
+                         'calcul. Plusieurs reservations separees par des '
+                         'points-virgules (le dome du compiler en prend trois : '
+                         'ombre, corps et halo oscillent chacun sur sa case).')
     ap.add_argument('-h', '--help', action='store_true')
     a = ap.parse_args()
     if a.help:
@@ -368,12 +381,19 @@ def main():
     if a.ecrire_palette:
         if not a.stage:
             sys.exit('--ecrire-palette demande --stage NN (le gel olive en depend)')
-        res = None
+        res = []
         if a.reserver:
-            v = [int(x) for x in a.reserver.replace(':', ',').split(',')]
-            res = tuple(v)
+            for spec in a.reserver.split(';'):
+                v = [int(x) for x in spec.replace(':', ',').split(',')]
+                res.append(tuple(v))
+        pos = []
+        if a.poser:
+            for spec in a.poser.split(';'):
+                v = [int(x) for x in spec.replace(':', ',').split(',')]
+                pos.append(tuple(v))
         aj = [int(x) for x in a.ajuster.split(',') if x] if a.ajuster else []
-        palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj)
+        palette_dediee(a.objet, a.stage, a.ecrire_palette, a.garder_olive, res, aj,
+                       pos)
         return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe,
                          forcer, a.dedup)
     return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer,
@@ -418,7 +438,7 @@ def recensement(objet):
 
 
 def palette_dediee(objet, stage, sortie, garder_olive=False, reserver=None,
-                   ajuster=()):
+                   ajuster=(), poser=()):
     """Calculer et ecrire une palette dediee a UN objet, puis la rendre.
 
     Cas d'emploi (auteur, 17/08) : un boss de fin de stage combat dans une zone
@@ -444,13 +464,14 @@ Les QUATRE cases vont au boss par defaut (decision auteur) : les 12 index
     palette, free = A.palette_pal_next(stage)
     if not garder_olive and 15 not in free:
         free = sorted(free + [15])
-    # `reserver` = (r, g, b, index_materiel) : une couleur POSEE a un index
-    # precis, retiree du calcul. Sert quand un effet de palette du runtime doit
-    # savoir OU taper — un clignotement de boss fait varier UN index, il lui
-    # faut donc une case connue d'avance et que personne d'autre ne partage.
-    # Le compiler flashe son dome, et l'auteur reserve le materiel 14 pour ca.
-    if reserver:
-        r, v, b, mat = reserver
+    # `reserver` = liste de (r, g, b, index_materiel) : des couleurs POSEES a
+    # des index precis, retirees du calcul. Sert quand un effet de palette du
+    # runtime doit savoir OU taper — une oscillation de boss fait varier des
+    # index connus d'avance et que personne d'autre ne partage. Le compiler en
+    # prend TROIS (decision auteur, 29/08) : l'ombre, le corps et le halo de
+    # son dome oscillent chacun sur sa case — la rampe 4 etapes est etablie
+    # dans la simulation TO8 (voir le commit qui a introduit ce mode).
+    for r, v, b, mat in (reserver or []):
         png = mat + 1
         if png not in free:
             sys.exit('reserver : le materiel %d n\'est pas attribuable ici' % mat)
@@ -480,6 +501,14 @@ Les QUATRE cases vont au boss par defaut (decision auteur) : les 12 index
         print('ajuste : materiel %d  %02X%02X%02X -> %02X%02X%02X '
               '(%d px de l\'objet s\'y rattachent)'
               % (mat, *avant, *palette[png], sum(cnt[c] for c in rat)))
+    # `poser` = valeurs d'AUTEUR, communs compris — voir l'aide de --poser.
+    # Une case propre posee sort du calcul d'attribution, comme une reservee.
+    for r, v, b, mat in (poser or ()):
+        png = mat + 1
+        palette[png] = (r, v, b)
+        if png in free:
+            free = [i for i in free if i != png]
+        print('pose : materiel %d = %02X%02X%02X (decision auteur)' % (mat, r, v, b))
     palette[0] = MARQUEUR_TRANSP
     _, chosen = A.assign(cnt, palette, free, A.dist_lab, 0.001)
     os.makedirs(os.path.dirname(sortie), exist_ok=True)

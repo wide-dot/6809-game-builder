@@ -469,9 +469,29 @@ python3 tools/arcade_to_sprites.py geld     --palette 04
 #   CC5A3C et l'or (208,144,56) sur le saumon F99B68. Avec 9 et 10 ajustes, le
 #   rose obtient sa case (C85858), l'or la sienne (D09038).
 #   dE : stage 19,1 -> boss 7,8 : 10,6 -> boss 7,8,9,10 : 8,4 (12 index).
+#   TROIS cases pour le dome depuis le 29/08 (decision auteur) : l'ombre, le
+#   corps et le halo de la bulle oscillent chacun sur sa case — la rampe
+#   4 etapes (aucun noir, aucune etape unie) est etablie en simulation TO8,
+#   pixels larges et courbe DAC compris. Cases CONSECUTIVES 12-14 : le
+#   runtime n'a qu'une boucle sur trois entrees.
+#   LE CORPS EST LA PLANCHE A (decision auteur, 29/08 : « le A est parfait »,
+#   objectif enonce : MAXIMISER LES DEGRADES, quitte a s'ecarter de l'art
+#   d'origine). Deux rampes de 4 marches sur 6 cases, a SOMMETS PARTAGES :
+#     rouge : nuit (97,0,0) -> sombre (171,0,0) -> rose (204,97,97) -> BLANC
+#     or    : nuit (97,0,0) -> brun (143,97,0) -> or (204,143,97) -> creme (250,219,143)
+#   Le blanc commun et le rouge nuit servent chacun DEUX rampes — c'est ce qui
+#   fait tenir 8 marches percues sur 6 cases. Toutes les valeurs sont sur la
+#   courbe DAC du TO8 (pas d'a-peu-pres a la quantification). Les --forcer
+#   ecrivent le routage arcade -> marche, choisi sur planches simulees
+#   (resolution TO8, pixel large) — quatre planches comparees, A retenue.
 python3 tools/arcade_to_sprites.py compiler --stage 04 \
     --ecrire-palette src/stages/04/palette/pal-boss.png \
-    --reserver 0,208,0:14 --ajuster 7,8,9,10
+    --reserver "144,248,152:12;0,144,0:13;0,208,0:14" \
+    --poser "204,97,97:7;171,0,0:8;143,97,0:9;204,143,97:10;250,219,143:11;97,0,0:15" \
+    --forcer "88,40,0:15"    --forcer "160,0,56:8" \
+    --forcer "200,88,88:7"   --forcer "248,168,168:3" \
+    --forcer "64,48,0:15"    --forcer "144,88,24:9" \
+    --forcer "208,144,56:10" --forcer "248,216,144:11"
 # Le routage des rampes du stage 5 (24/08/2026) : les memes decisions que le
 # --force de arcade_to_in, cote sprites. Indices MATERIELS ici (PNG - 1).
 # Sans ces lignes le plus proche voisin refait exactement ce qu'on vient de
