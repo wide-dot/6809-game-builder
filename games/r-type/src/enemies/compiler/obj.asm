@@ -76,6 +76,12 @@ BossInit
         sta   id,x
         ldb   cpl.part,u
         stb   subtype_w+1,x            ; la partie que ce slot represente
+        ; FIX #1 : le fils partage le dispatch de l'orchestrateur, son etat de
+        ; depart doit donc etre POSE — un slot frais a routine=0, c'est-a-dire
+        ; BossInit : chaque partie re-engendrait trois parties jusqu'a saturer
+        ; le pool, et aucune n'atteignait PartInit (aucun sprite a l'ecran).
+        lda   #2                       ; -> PartInit
+        sta   routine,x
         ; A768 : les trois naissent AU MEME POINT — ce sont les ancres de
         ; leurs sprites qui les emboitent en une silhouette.
         ldd   #cpl.SPAWN_X
@@ -150,8 +156,33 @@ PartLive
         lda   gfxlock.frameDrop.count
         mul
         jsr   moveXPos8.8
+; FIX #2 : NE DESSINER QU'ENTIER A L'ECRAN. Les sprites compiles ne clippent
+; pas — l'arcade spawne a x ecran -16 et laisse son MATERIEL rogner, nous
+; n'avons pas ce luxe : le dessin partiel d'une piece de 66 px a -16 ecrivait
+; hors du champ et CORROMPAIT la RAM residente (pscroll.res, atteste par
+; l'anneau de trace : pscroll.do saute en $0050 des le spawn du boss, machine
+; figee — le « gel a la camera 929 » des essais precedents, qui etait en fait
+; le gel A L'HEURE DE WAVE DU BOSS). Pendant la derive d'intro, chaque piece
+; apparait quand son bord gauche franchit le bord de l'ecran ; sa position
+; finale (x = 116) est entiere a l'ecran.
 PartLive.draw
+        ldb   cpl.part,u
+        ldx   #cpl.halfw
+        abx
+        ldb   ,x                       ; la demi-largeur de CETTE piece
+        clra
+        pshs  d
+        ldd   x_pos,u
+        subd  glb_camera_x_pos         ; x ecran du centre
+        subd  ,s                       ; le bord gauche depasse ?
+        bmi   @hide
+        addd  ,s
+        addd  ,s++                     ; le bord droit depasse ?
+        cmpd  #cpl.SCREEN_W
+        bhi   @hide2
         jmp   DisplaySprite
+@hide   leas  2,s
+@hide2  rts
 
 AlreadyDeleted
         rts

@@ -1509,6 +1509,8 @@ pscroll.clearRect
         sta   pscroll.rect.row
         lda   pscroll.rect.h
         sta   pscroll.rect.left
+        bsr   pscroll.rect.clampBot    ; le BAS du bloc est rabote aussi
+        beq   pscroll.rect.hend        ; tout le bloc est sous la carte
         jsr   pscroll.rect.prep        ; UNE fois : l'intervalle ne change pas
         bcs   pscroll.rect.hend        ; d'une rangee a l'autre
 pscroll.rect.hloop
@@ -1541,6 +1543,8 @@ pscroll.rect.notflat
         nega
 !       adda  pscroll.rect.h
         sta   pscroll.rect.left
+        bsr   pscroll.rect.clampBot    ; meme rabot que l'horizontal
+        beq   pscroll.rect.vend
         jsr   pscroll.rect.prep        ; UNE fois, comme l'horizontal
         bcs   pscroll.rect.vend
 pscroll.rect.vloop
@@ -1549,6 +1553,27 @@ pscroll.rect.vloop
         dec   pscroll.rect.left
         bne   pscroll.rect.vloop
 pscroll.rect.vend
+        rts
+
+; Le rabot du BAS. sweep et les portes ramenent la rangee de DEPART dans la
+; carte, mais la boucle descend ensuite `left` rangees sans regarder ou elle
+; met les pieds : un bloc 2x2 pose sur la derniere rangee (r0=29) effacait la
+; rangee 30 — qui n'existe pas. Or la carte se termine ou commencent les
+; variables residentes de pscroll : la rangee 30 EST pscroll.buf.page, la
+; table des pages de buffers. Un geld qui broute au bas du champ la mettait a
+; zero, et le peintre suivant montait la page 0 puis executait ses octets —
+; machine figee. Trois jours de gels « aleatoires » (ils suivaient les
+; trajectoires des gelds, donc les timings de build) pour quatre octets de
+; rabot. Sortie : Z=1 si le bloc entier est sous la carte (rien a effacer).
+pscroll.rect.clampBot
+        lda   pscroll.rect.row
+        adda  pscroll.rect.left
+        suba  #pscroll.ROWS            ; ce qui depasse du bas
+        bls   >
+        nega
+        adda  pscroll.rect.left        ; left -= le depassement
+        sta   pscroll.rect.left
+!       lda   pscroll.rect.left        ; Z : plus rien a effacer ?
         rts
 
 pscroll.rect.oblique

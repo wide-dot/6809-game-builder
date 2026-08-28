@@ -137,6 +137,6 @@
 	fcb   $14,$14,ObjID_cytron,$00,$04
 ;$11,$BC,ObjID_39,$00,$00
 	fcb   $14,$F4,ObjID_starfield,$00,$01 ; le champ d'etoiles du boss (variant 1, quasi infini)
-;$14,$F8,ObjID_compiler,$00,$00
+	fcb   $14,$F8,ObjID_compiler,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
 	fdb   $FFFF

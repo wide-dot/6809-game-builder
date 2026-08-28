@@ -1,18 +1,15 @@
 ;*******************************************************************************
 ; compiler — le boss du stage 4, porte depuis l'arcade
 ;
-; ETAT AU 28/08/2026 : ECRIT MAIS PAS INTEGRE. Cette unite n'est declaree dans
-; aucun <file> du config et aucune scene ne la charge — parce que la CHARGER
-; fige le stage 4 des son entree (camera a zero). Etabli par dichotomie sous
-; toje : le blocage arrive avec le seul <load>, entree de wave commentee, et
-; disparait des qu'on le retire ; l'unite pesait 9 053 octets en page 28,
-; page libre dans l'union boot+lots+stage 4, sans chevauchement signale par
-; le rapport d'occupation et sans pression sur le pool de lien (184 octets
-; servis pour la scene). La cause reste a trouver — placement, arene, ou
-; quelque chose que le chargement touche a l'entree du stage.
-;
-; Le code ci-dessous est donc a considerer comme un PREMIER JET non exerce :
-; il compile, il n'a jamais tourne.
+; INTEGRE ET A L'ECRAN (28/08/2026). L'integration a deterre DEUX bugs
+; latents du stage, aucun des deux dans ce fichier :
+;   1. l'arene stage4.gfx declarait la page $1D — qui est pscroll.buf3 ;
+;   2. pscroll.clearRect ne rabotait pas le BAS de son bloc : un carve de
+;      geld sur la derniere rangee effacait la rangee 30, c'est-a-dire
+;      pscroll.buf.page, la table des pages de buffers (elle commence a
+;      l'octet qui suit la carte). C'etait la cause des gels « aleatoires »
+;      qui suivaient les timings de build depuis trois jours.
+; Les deux sont corriges (config + pscroll.asm, commentaires sur place).
 ;
 ; Pas de source v1 (elle ne portait que le stage 1) : le portage suit le skill
 ; enemy-port, la base Ghidra fait foi. BLOC 1 — l'orchestrateur, les trois
@@ -57,6 +54,7 @@ compiler.Object
 ; l'intro (vx positif). Le scroll est fige a ce moment — la borne l'arrete a
 ; la naissance du boss (create_compiler : « halts both scroll axes »).
 cpl.SPAWN_X   equ -16
+cpl.SCREEN_W  equ 160          ; le champ visible, en px v2 (garde de dessin)
 cpl.SPAWN_Y   equ 99
 
 ; Le script d'intro 0x1000:5B54, son unique segment : {vx, vy, duree} =
@@ -73,5 +71,10 @@ cpl.images
         fdb   set_compiler_right
         fdb   set_compiler_bottom
         fdb   set_compiler_left
+
+; La demi-largeur de chaque piece, en px v2 (geometrie.txt : 66, 42, 66 de
+; large). C'est la garde de dessin qui la consomme — voir PartLive.draw.
+cpl.halfw
+        fcb   33,21,33
 
  ENDSECTION

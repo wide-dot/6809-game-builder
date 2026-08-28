@@ -148,6 +148,7 @@ emitterFlash.Object EXTERNAL
 cancer.Object     EXTERNAL
 cytron.Object     EXTERNAL
 geld.Object       EXTERNAL
+compiler.Object   EXTERNAL
 pstaff.Object     EXTERNAL
 
  SECTION code

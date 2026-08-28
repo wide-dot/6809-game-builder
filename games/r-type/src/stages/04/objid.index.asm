@@ -48,7 +48,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
-        fcb   0,0,0,0,0,0 ; 43..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
+        fcb   0,0,0,0 ; 45..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Obj_Index_Page.end
 
@@ -102,7 +104,10 @@ Obj_Index_Address
         fdb   stage.starfieldSpawner ; ObjID_starfield
         fdb   cytron.Object ; ObjID_cytron (41)
         fdb   geld.Object ; ObjID_geld (42)
-        fdb   0,0,0,0,0,0 ; 43..48 libres
+        fdb   compiler.Object ; ObjID_compiler (43)
+        fdb   compiler.Object ; ObjID_compilerpart (44) — meme entree,
+                              ;   la routine du slot fait le tri
+        fdb   0,0,0,0 ; 45..48 libres
         fdb   bug.Render ; ObjID_bugrender (49)
 Obj_Index_Address.end
 
@@ -150,7 +155,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
-        fcb   0,0,0,0,0,0 ; 43..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
+        fcb   0,0,0,0 ; 45..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Ani_Page_Index.end
 
@@ -198,7 +205,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_starfield
         fdb   0 ; ObjID_cytron (41) — pas d'animation par table : son script
         fdb   0 ; ObjID_geld (42) — idem : il indexe ses poses lui-meme
-        fdb   0,0,0,0,0,0 ; 43..48 libres  ; pose lui-meme ses images
+        fdb   0,0 ; ObjID_compiler (43), ObjID_compilerpart (44)
+        fdb   0,0,0,0 ; 45..48 libres  ; pose lui-meme ses images
         fdb   Ani_Asd_none ; ObjID_bugrender (49)
 Ani_Asd_Index.end
 
@@ -249,7 +257,9 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
-        fcb   0,0,0,0,0,0 ; 43..48 libres
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
+        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
+        fcb   0,0,0,0 ; 45..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
 Img_Page_Index.end
 

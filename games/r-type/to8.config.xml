@@ -120,7 +120,13 @@
                 <zone page="$1A" address="$0000" size="$1C9B"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
-                <zone page="$1D" address="$0000" size="$4000"/>
+                <!-- $1D RETIREE (28/08/2026) : c'est pscroll.buf3, le quatrieme
+                     tampon du ruban de gommes (region trois lignes plus haut).
+                     La collision est restee dormante tant que le contenu de
+                     l'arene tenait sous $1C ; les 9 Ko du compiler ont pousse
+                     le rangement dans $1D et ecrase le tampon — stage fige a
+                     l'entree, camera a zero. Meme famille que la collision
+                     $0E/$0F des buf0-2. -->
                 <zone page="$1E" address="$0000" size="$4000"/>
                 <zone page="$1F" address="$0000" size="$4000"/>
             </arena>
@@ -1620,6 +1626,25 @@
                                 </gfxcomp>
                     </lwasm>
                 </file>
+<file name="lib.compiler" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/compiler.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/compiler/compiler.unit.asm"/>
+                                <gfxcomp file="lib.compiler" gendir="gen/enemies/compiler"
+                                         gensource="gen/enemies/compiler/includes.asm"
+                                         genindex="gen/enemies/compiler/index.asm">
+                                                                                                            <image name="compiler_right" filename="src/enemies/compiler/images/right/00.png" index="0">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_bottom" filename="src/enemies/compiler/images/bottom/00.png" index="1">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_left" filename="src/enemies/compiler/images/left/00.png" index="2">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
 <file name="lib.bug" linkdata="LINK" arena="enemies">
                     <lwasm gensource="gen/enemies/bug.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1975,6 +2000,7 @@
                     <load name="lib.cancer"/>
                     <load name="lib.cytron"/>
                     <load name="lib.geld"/>
+                    <load name="lib.compiler"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>
