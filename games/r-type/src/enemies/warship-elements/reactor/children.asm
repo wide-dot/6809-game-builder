@@ -109,7 +109,8 @@ bflame.y0       equ ext_variables+2    ; 2,3
 bflame.cam0     equ ext_variables+4    ; 4,5
 bflame.life     equ ext_variables+6    ; 6
 
-bflame.LIFE     equ 40                 ; dix poses tenues quatre trames
+bflame.LIFE     equ 50                 ; dix poses de la chaine arcade,
+                                       ; CINQ trames chacune (40:db02)
 
 bflame.Object
         lda   routine,u
@@ -163,8 +164,8 @@ bflame.Live
         ; la pose : dix, tenues quatre trames, jouees a l'endroit
         lda   #bflame.LIFE
         suba  bflame.life,u
-        lsra
-        lsra
+        ldb   #5                       ; cinq trames par pose
+        jsr   layer.Div
         cmpa  #9
         bls   >
         lda   #9

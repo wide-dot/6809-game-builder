@@ -41,6 +41,18 @@ breactor.script
         fcb   0,1 ; #15 etat 8000
         fdb   -1
 
+; LE DECALAGE DE PONTE DES GERBES (1000:7ED2). L'installateur arcade
+; (40:dac8) lit ici, par ZONE d'orientation, un ecart (x,y) qu'il AJOUTE
+; a la position du reacteur : la gerbe ne nait pas sur la buse, elle nait
+; DEVANT. Sans lui elle est centree sur le reacteur et deborde de moitie
+; sur la coque — le defaut vu le 28/08/2026.
+; La zone vaut (orientation & 3) >> 1 : 0-1 vers le bas, 2-3 a droite,
+; 4-5 a gauche. Une entree : fcb dx,dy signes, en pixels v2.
+breactor.FlameOff
+        fcb   0,32 ; zone 0 — arcade (+0,-42)
+        fcb   14,24 ; zone 1 — arcade (+37,-32)
+        fcb   -14,24 ; zone 2 — arcade (-37,-32)
+
 ; Les six directions (1000:7e9a) vers cinq jeux d'images.
 breactor.Sets
         fdb   set_bottom_reactor_bottom_0 ; 0

@@ -18,6 +18,7 @@ ROM = ('/Users/benoitrousseau/Documents/Claude/Projects/re.arcade.r-type'
        '/out/rom/maincpu.bin')
 DATA = 0x1000 * 16
 SCRIPT, DIRS = 0x7E56, 0x7E9A
+FLAMEPAR = 0x7ED2      # les parametres de gerbe, 4 x 8 octets
 # recette arcade -> le jeu d'images converti
 POSES = {0x7EA6: 'bottom_reactor_bottom',
          0x7EAC: 'bottom_reactor_bottom_right',
@@ -66,6 +67,20 @@ def main():
         out.append('        fcb   %d,%d ; #%d etat %04X'
                    % ((st & 0xFF) // 2, 1 if st & 0x8000 else 0, i, st))
         i += 1
+    out += ["",
+            "; LE DECALAGE DE PONTE DES GERBES (1000:%04X). L'installateur arcade" % FLAMEPAR,
+            "; (40:dac8) lit ici, par ZONE d'orientation, un ecart (x,y) qu'il AJOUTE",
+            "; a la position du reacteur : la gerbe ne nait pas sur la buse, elle nait",
+            "; DEVANT. Sans lui elle est centree sur le reacteur et deborde de moitie",
+            "; sur la coque — le defaut vu le 28/08/2026.",
+            "; La zone vaut (orientation & 3) >> 1 : 0-1 vers le bas, 2-3 a droite,",
+            "; 4-5 a gauche. Une entree : fcb dx,dy signes, en pixels v2.",
+            "breactor.FlameOff"]
+    for k in range(3):
+        a = FLAMEPAR + 8 * k
+        dx, dy = sw(a), sw(a + 2)
+        out.append('        fcb   %d,%d ; zone %d — arcade (%+d,%+d)'
+                   % (round(dx * .375), round(-dy * .75), k, dx, dy))
     out += ["", "; Les six directions (1000:7e9a) vers cinq jeux d'images.",
             "breactor.Sets"]
     for k in range(6):

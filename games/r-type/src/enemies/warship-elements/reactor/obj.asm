@@ -387,9 +387,23 @@ breactor.Flame
         inca                           ; vers la gauche (4-5)
 !       sta   id,x
         clr   routine,x
-        ldd   x_pos,u
+        ; LA GERBE NE NAIT PAS SUR LA BUSE, ELLE NAIT DEVANT : l'arcade
+        ; (40:dac8) ajoute un ecart lu par ZONE d'orientation. Sans lui la
+        ; gerbe est centree sur le reacteur et deborde de moitie sur la
+        ; coque — c'est ce qu'on voyait le 28/08/2026.
+        ldb   breactor.orient,u
+        lsrb                           ; la zone : 0-1 bas, 2-3 droite,
+        andb  #3                       ; 4-5 gauche
+        aslb
+        ldy   #breactor.FlameOff
+        leay  b,y
+        ldb   ,y                       ; dx signe
+        sex
+        addd  x_pos,u
         std   x_pos,x
-        ldd   y_pos,u
+        ldb   1,y                      ; dy signe
+        sex
+        addd  y_pos,u
         std   y_pos,x
         clr   x_pos+2,x
         clr   y_pos+2,x

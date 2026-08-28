@@ -100,5 +100,18 @@ layer.AddPos
         sta   ,x
         rts
 
+; layer.Div — A / B, quotient dans A. Petits nombres (une dizaine de tours
+; au plus) : la boucle coute moins qu'une table.
+layer.Div
+        pshs  b
+        clrb
+!       suba  ,s
+        bcs   >
+        incb
+        bra   <
+!       tfr   b,a                      ; B compte les soustractions reussies :
+        puls  b                        ; c'est le quotient, tel quel
+        rts
+
 layer.drop      fdb 0
 layer.tmp       fdb 0
