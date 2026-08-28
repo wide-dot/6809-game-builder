@@ -47,6 +47,10 @@ AABB_0        equ ext_variables      ; AABB struct (9 bytes)
 geld.variant  equ ext_variables+9    ; direction courante (0..3)
 geld.state    equ ext_variables+10   ; cap perpendiculaire vise (0..3)
 geld.timer    equ ext_variables+11   ; trames restantes du virage (0..31)
+; Le pas ENTIER franchi par le tick courant, sur l'axe de marche (le meme que
+; celui de la fenetre d'engagement). Il sert a rattraper ce que le frame-drop
+; fait sauter — voir le long commentaire au-dessus du test de fenetre.
+geld.step     equ ext_variables+12   ; 1 octet, 0..7 px
 
 Object
         lda   routine,u
@@ -132,22 +136,26 @@ Patrol.entry
         ldb   #geld.STEPY
         lda   gfxlock.frameDrop.count
         mul
+        sta   geld.step,u              ; le pas entier de ce tick
         jsr   moveYPos8.8
         bra   @moved
 @up     ldb   #geld.STEPY             ; 2 = UP arcade : chez nous y DECROIT
         lda   gfxlock.frameDrop.count
         mul
+        sta   geld.step,u
         _negd
         jsr   moveYPos8.8
         bra   @moved
 @right  ldb   #geld.STEPX
         lda   gfxlock.frameDrop.count
         mul
+        sta   geld.step,u
         jsr   moveXPos8.8
         bra   @moved
 @left   ldb   #geld.STEPX
         lda   gfxlock.frameDrop.count
         mul
+        sta   geld.step,u
         _negd
         jsr   moveXPos8.8
 @moved
@@ -161,9 +169,40 @@ Patrol.entry
         ldd   x_pos,u
         addd  #geld.WINX
         subd  player1+x_pos
-        lblo  geld.draw                    ; trop a gauche
-        cmpd  #geld.WINX*2
-        lbhs  geld.draw                    ; trop a droite
+        ; ---------------------------------------------------------------
+        ; LA FENETRE COUVRE LE SEGMENT PARCOURU, PAS LE SEUL POINT D'ARRIVEE
+        ; (correctif du 29/08, sur observation auteur : « en arcade ils
+        ; restent sur le joueur, chez nous ils repartent »).
+        ;
+        ; La borne avance d'un pixel par trame et n'a pas de frame-drop : elle
+        ; reste une dizaine de trames dans une fenetre de 8 px, elle ne peut
+        ; pas la manquer. Nous, un tick vaut jusqu'a 8 trames de jeu — le geld
+        ; franchit alors 5 a 6 px d'un coup, soit la fenetre ENTIERE, et le
+        ; test tombe systematiquement de l'autre cote. Trace a l'appui : apres
+        ; son virage le geld etait a dy=0, le tick suivant l'a pose a dy=+6, et
+        ; il n'a plus jamais engage — il s'eloignait au lieu de tourner autour
+        ; du joueur.
+        ;
+        ; On teste donc l'INTERSECTION du segment [depart, arrivee] avec la
+        ; fenetre, ce qui revient a elargir la borne haute du pas franchi et,
+        ; quand la marche va vers les coordonnees DECROISSANTES, a ramener D
+        ; du meme pas (le geld venait alors de plus loin).
+        ; ---------------------------------------------------------------
+        ldb   geld.variant,u
+        cmpb  #1                           ; 1 = GAUCHE, la marche decroit
+        bne   @winX
+        addb  geld.step,u                  ; (B vient d'etre compare, on le
+        adca  #0                           ;  reutilise : il vaut 1, le pas
+        subb  #1                           ;  s'ajoute puis on retire ce 1)
+        sbca  #0
+@winX   cmpd  #$8000
+        lbhs  geld.draw                    ; D < 0 : le segment est a gauche
+        pshs  d
+        ldb   geld.step,u
+        clra
+        addd  #geld.WINX*2                 ; la borne, elargie du pas
+        cmpd  ,s++
+        lbls  geld.draw                    ; borne <= D : segment a droite
         ; 8ff1 : le cap vise le joueur. En arcade « pos_y < player_y » veut
         ; dire SOUS le joueur (son axe y monte) et donne le cap 2 = UP : il
         ; remonte vers lui. Chez nous l'axe est inverse, donc le test aussi.
@@ -190,9 +229,22 @@ geld.vertical
         ldd   y_pos,u
         addd  #geld.WINY
         subd  player1+y_pos
-        lblo  geld.draw
-        cmpd  #geld.WINY*2
+        ; Meme rattrapage que sur l'axe horizontal — le commentaire y est.
+        ldb   geld.variant,u
+        cmpb  #2                           ; 2 = HAUT, la marche decroit
+        bne   @winY
+        addb  geld.step,u
+        adca  #0
+        subb  #2
+        sbca  #0
+@winY   cmpd  #$8000
         lbhs  geld.draw
+        pshs  d
+        ldb   geld.step,u
+        clra
+        addd  #geld.WINY*2
+        cmpd  ,s++
+        lbls  geld.draw
         ; Meme correction que la branche horizontale : le `clra` etait ecrase
         ; par le `ldd` qui suivait.
         ldd   x_pos,u
