@@ -21,6 +21,29 @@
 
 compiler.Object EXPORT
 
+; LES SEIZE POSES DE TOURELLE VIVENT DANS UN AUTRE DIRENTRY
+; (lib.compiler.turret) : l'unite passait 16 Ko une fois ses neuf scripts de
+; combat ajoutes, et un direntry tient dans une page. Ce sont les IMAGES qui
+; ont demenage, pas le code — la table ci-dessous les nomme et le loader
+; resout au chargement. Img_Page_Index envoie deja ObjID_compilerturret vers
+; leur page.
+set_compiler_turret_0  EXTERNAL
+set_compiler_turret_1  EXTERNAL
+set_compiler_turret_2  EXTERNAL
+set_compiler_turret_3  EXTERNAL
+set_compiler_turret_4  EXTERNAL
+set_compiler_turret_5  EXTERNAL
+set_compiler_turret_6  EXTERNAL
+set_compiler_turret_7  EXTERNAL
+set_compiler_turret_8  EXTERNAL
+set_compiler_turret_9  EXTERNAL
+set_compiler_turret_10 EXTERNAL
+set_compiler_turret_11 EXTERNAL
+set_compiler_turret_12 EXTERNAL
+set_compiler_turret_13 EXTERNAL
+set_compiler_turret_14 EXTERNAL
+set_compiler_turret_15 EXTERNAL
+
         INCLUDE "src/common/engine/api.asm"
 
 Obj_Index_Page    EXTERNAL
@@ -208,6 +231,15 @@ cpl.hitbox
         fcb   33,48                    ; droite
         fcb   21,60                    ; bas
         fcb   33,42                    ; gauche
+
+; Les configs, par piece : chacune donne les trois lignes de trois scripts
+; parmi lesquelles le spawn tire.
+cpl.cfg.index
+        fdb   cpl.cfg.right,cpl.cfg.bottom,cpl.cfg.left
+
+; Les neuf scripts de combat et les configs, GENERES depuis la ROM.
+; Rejeu : python3 tools/gen_compiler_motion.py
+        INCLUDE "gen/enemies/compiler/motion.asm"
 
 ; Les trois chapelets, GENERES depuis la ROM.
 ; Rejeu : python3 tools/gen_compiler_death.py

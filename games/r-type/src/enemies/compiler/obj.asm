@@ -57,8 +57,22 @@ cpl.wav.vx    equ ext_variables+10     ; WORD, signe
 cpl.wav.life  equ ext_variables+12     ; WORD, 8.8 : vitesse y ET duree
 ; Le combat d'une piece : le souvenir de ses PV (pour voir le coup arriver),
 ; son compte de clignotement, puis le curseur du chapelet d'explosions.
+; --- LES CHAMPS D'UNE PIECE, et il n'y a pas un octet de rab : l'espace
+; d'objet en offre onze (ext_variables_size 20, moins les neuf de la boite).
+;   9 part | 10-11 timer | 12-13 vx | 14-15 vy | 16 hp.prev | 17 hit
+;   18 cfg | 19 cursor
+; Le curseur PORTE DEUX CHAMPS : l'index du script dans les bits hauts, celui
+; du segment dans les bas — dix-sept segments demandent cinq bits, trois
+; scripts en demandent deux, et les deux ne tenaient pas separement.
 cpl.hp.prev   equ ext_variables+16     ; PV a la trame precedente
 cpl.hit       equ ext_variables+17     ; trames de clignotement restantes
+; LE CURSEUR DE COMBAT (AFE6) : la config tiree au spawn, le script courant
+; dans cette config, et la position dans ce script.
+cpl.vy        equ ext_variables+14     ; WORD : la vitesse y du segment (8.8)
+cpl.cfg       equ ext_variables+18     ; index de la config tiree (0..2)
+cpl.cursor    equ ext_variables+19     ; script<<5 | segment
+cpl.CUR_SEG   equ 31                   ; le masque du segment
+cpl.CUR_STEP  equ 32                   ; ce qu'un script vaut dans le curseur
 cpl.boom.cur  equ ext_variables+10     ; l'index dans la liste (apres la mort)
 cpl.boom.tick equ ext_variables+12     ; trames restantes du chapelet
                                        ; (pas `left` : la liste de la piece
@@ -255,6 +269,17 @@ PartInit
         std   cpl.vx,u
         ldd   #cpl.INTRO_DUR
         std   cpl.timer,u
+        ; A775 : LA VARIANTE. La borne tire un slot au sort parmi huit, qui
+        ; designe une config par piece ; les huit slots ne portent que TROIS
+        ; configs distinctes, remaniees. On tire donc directement parmi les
+        ; trois — le resultat est le meme, sans la table de remaniement.
+        jsr   RandomNumber
+        andb  #3
+        cmpb  #3
+        bne   >
+        clrb                           ; le tirage rend 0..3, on replie sur 0..2
+!       stb   cpl.cfg,u
+        clr   cpl.cursor,u
         ; l'image de CETTE partie : une pose chacune, la silhouette est faite
         ; de leur assemblage
         ldb   cpl.part,u
@@ -303,12 +328,16 @@ PartInit
 ; ---------------------------------------------------------------------------
 PartLive
         ldd   cpl.timer,u
-        ; SEGMENT EPUISE : la piece s'immobilise, MAIS ELLE TIRE TOUJOURS.
-        ; Ce saut visait PartLive.draw jusqu'au 29/08 : il passait par-dessus
-        ; le bloc des armes, et les pieces se taisaient des la fin de l'intro
-        ; — les lasers comptes sous toje venaient tous de ces 352 premieres
-        ; trames.
-        lbeq  PartLive.armed
+        ; SEGMENT EPUISE : on prend le suivant. C'est motion_step (AFE6) — la
+        ; piece enchaine les segments de son script, puis les scripts de sa
+        ; config. Elle s'immobilisait ici jusqu'au 29/08, faute de scripts.
+        ; (Le saut visait PartLive.draw un temps plus tot encore : il passait
+        ; par-dessus le bloc des armes, et les pieces se taisaient apres
+        ; l'intro.)
+        bne   >
+        lbsr  cpl.motion.next
+        lbra  PartLive.armed
+!
         ldb   gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
         clra
         pshs  d
@@ -321,7 +350,18 @@ PartLive
         ldb   cpl.vx+1,u
         lda   gfxlock.frameDrop.count
         mul
-        jsr   moveXPos8.8
+        tst   cpl.vx,u                 ; l'octet haut porte le signe
+        bpl   >
+        _negd
+!       jsr   moveXPos8.8
+        ; ET LA VERTICALE : l'intro n'en avait pas, les scripts de combat si.
+        ldb   cpl.vy+1,u
+        lda   gfxlock.frameDrop.count
+        mul
+        tst   cpl.vy,u
+        bpl   >
+        _negd
+!       jsr   moveYPos8.8
 PartLive.armed
         ; LES ARMES DE LA PIECE. La DROITE (0) et la GAUCHE (2) envoient leurs
         ; lasers horizontaux ; la gauche a en plus son laser roulant. La piece
@@ -350,6 +390,78 @@ PartLive.armed
 ; le gel A L'HEURE DE WAVE DU BOSS). Pendant la derive d'intro, chaque piece
 ; apparait quand son bord gauche franchit le bord de l'ecran ; sa position
 ; finale (x = 116) est entiere a l'ecran.
+; ---------------------------------------------------------------------------
+; cpl.motion.next — AFE6 : le segment suivant du script de combat
+; ---------------------------------------------------------------------------
+; Un segment fait trois mots : vitesse x, vitesse y, duree. La sentinelle
+; $8000 en x termine le script — on passe alors au suivant de la config, et
+; apres le troisieme on reboucle sur le premier.
+; V2-DEVIATION : la borne, elle, ne reboucle pas — son terminateur declenche
+; l'AUTO-DESTRUCTION de la piece (~3,6 min si le joueur ne fait rien). Ce
+; renoncement lui appartient ; ici la piece se bat tant qu'on ne l'abat pas,
+; ce qui est aussi ce que le stage attend depuis qu'il ne gagne plus au
+; compteur.
+; ---------------------------------------------------------------------------
+cpl.motion.next
+        ; la config de la piece : trois lignes de trois mots, une par tirage
+        ldb   cpl.part,u
+        aslb
+        ldx   #cpl.cfg.index
+        ldx   b,x                      ; les trois configs de CETTE piece
+        ldb   cpl.cfg,u
+        aslb                           ; six octets par ligne (trois mots)
+        pshs  b
+        aslb
+        addb  ,s+
+        abx                            ; x = la config tiree
+        ; le script courant, dans les bits hauts du curseur
+        ldb   cpl.cursor,u
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        lsrb                           ; b = index du script (0..2)
+        aslb
+        ldx   b,x                      ; x = le script
+        ; le segment courant, dans les bits bas
+        ldb   cpl.cursor,u
+        andb  #cpl.CUR_SEG
+        aslb                           ; six octets par segment
+        pshs  b
+        aslb
+        addb  ,s+
+        abx
+        ldd   ,x                       ; la vitesse x, ou la sentinelle
+        cmpd  #$8000
+        bne   @segment
+        ; fin du script : au suivant de la config, en rebouclant. Le segment
+        ; repart a zero, d'ou le curseur reconstruit entier.
+        lda   cpl.cursor,u
+        lsra
+        lsra
+        lsra
+        lsra
+        lsra
+        inca
+        cmpa  #3
+        blo   >
+        clra
+!       asla                            ; on le remet en bits hauts
+        asla
+        asla
+        asla
+        asla
+        sta   cpl.cursor,u             ; (segment = 0, il vient d'etre efface)
+        bra   cpl.motion.next          ; et on lit son premier segment
+@segment
+        std   cpl.vx,u
+        ldd   4,x                      ; la duree
+        std   cpl.timer,u
+        ldd   2,x                      ; la vitesse y : appliquee tout de
+        std   cpl.vy,u                 ;   suite, le segment court deja
+        inc   cpl.cursor,u             ; segment suivant (bits bas)
+        rts
+
 ; ---------------------------------------------------------------------------
 ; cpl.fire — AB01 (droite) / ADFB (gauche) : la salve de lasers horizontaux
 ; ---------------------------------------------------------------------------

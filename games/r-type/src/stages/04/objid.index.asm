@@ -269,7 +269,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerpart (44)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerlaser (45)
-        fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerturret (46)
+        fcb   map.RAM_OVER_CART+lib.compiler.turret.page ; ObjID_compilerturret (46)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compilerwave (47)
         fcb   0 ; 48 libre
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)

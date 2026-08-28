@@ -1654,7 +1654,29 @@
                                     <image name="compiler_laser_3" filename="src/enemies/compiler/images/laser/03.png" index="6">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
-                                    <image name="compiler_turret_0" filename="src/enemies/compiler/images/turret/00.png" index="7">
+                                    <image name="compiler_wave_0" filename="src/enemies/compiler/images/wave/00.png" index="23">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_1" filename="src/enemies/compiler/images/wave/01.png" index="24">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_2" filename="src/enemies/compiler/images/wave/02.png" index="25">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_3" filename="src/enemies/compiler/images/wave/03.png" index="26">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
+                <file name="lib.compiler.turret" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/compilerturret.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/compiler/turret.unit.asm"/>
+                                <gfxcomp file="lib.compiler.turret" gendir="gen/enemies/compilerturret"
+                                         gensource="gen/enemies/compilerturret/includes.asm"
+                                         genindex="gen/enemies/compilerturret/index.asm">
+                                                                                                                                                <image name="compiler_turret_0" filename="src/enemies/compiler/images/turret/00.png" index="7">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="compiler_turret_1" filename="src/enemies/compiler/images/turret/01.png" index="8">
@@ -1700,18 +1722,6 @@
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                     <image name="compiler_turret_15" filename="src/enemies/compiler/images/turret/15.png" index="22">
-                                        <encoder name="draw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="compiler_wave_0" filename="src/enemies/compiler/images/wave/00.png" index="23">
-                                        <encoder name="draw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="compiler_wave_1" filename="src/enemies/compiler/images/wave/01.png" index="24">
-                                        <encoder name="draw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="compiler_wave_2" filename="src/enemies/compiler/images/wave/02.png" index="25">
-                                        <encoder name="draw" mirror="none" shift="0"/>
-                                    </image>
-                                    <image name="compiler_wave_3" filename="src/enemies/compiler/images/wave/03.png" index="26">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
                                 </gfxcomp>
@@ -2073,6 +2083,7 @@
                     <load name="lib.cytron"/>
                     <load name="lib.geld"/>
                     <load name="lib.compiler"/>
+                    <load name="lib.compiler.turret"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>
