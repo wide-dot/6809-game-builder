@@ -175,6 +175,10 @@ fire.Object     EXPORT
 react.Object    EXPORT
 ; La table des gerbes vit dans le resident : le cast l'ARME, la page des
 ; flammes la DESSINE (reactor/flameslots.asm).
+; La seconde entree du manager de tirs : la tourelle multiple tire en gerbe,
+; chaque coup avec son vecteur — pas de preset de direction. Resolue au
+; chargement, atteinte par RunPgSubRoutine qui monte la page des balles.
+bullet.ArmV     EXTERNAL
 flamemgr.Slots  EXTERNAL
 flamemgr.live   EXTERNAL
 

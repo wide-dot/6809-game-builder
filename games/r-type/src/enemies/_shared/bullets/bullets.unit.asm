@@ -11,6 +11,7 @@
 
 foefire.Object EXPORT
 createFoeFire  EXPORT
+bullet.ArmV    EXPORT
 ; Le resident du stage : le manager y patche sa page a sa naissance.
 Img_Page_Index EXTERNAL
 
@@ -28,6 +29,8 @@ Img_Page_Index EXTERNAL
         INCLUDE "src/common/lib/object.const.asm"
         ; `globals.backgroundSolid` : le decor de fond arrete-t-il les tirs ?
         INCLUDE "src/common/state/variables.asm"
+        ; SONDE : le bloc de temoins, pour observer le manager sans monter sa page.
+        INCLUDE "src/common/bench.const.asm"
         ; Les identifiants d'objets sont des CONSTANTES : le manager pose le
         ; sien dans l'OST qu'il alloue pour lui-meme.
         INCLUDE "src/stages/01/objid.const.asm"

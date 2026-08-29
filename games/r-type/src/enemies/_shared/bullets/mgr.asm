@@ -67,10 +67,17 @@ bullet.vx       equ 17
 bullet.vy       equ 19
 
 bullet.Slots    fill 0,bullet.SLOTS*bullet.SLOTSZ
-bullet.live     fcb 0                  ; 1 quand l'objet manager existe
+bullet.beat     fdb 0                  ; la trame du dernier tour du manager
+bullet.idle     fcb 0                  ; tours consecutifs sans une seule balle
 bullet.frame    fcb 0                  ; LE compteur d'animation, partage
-bullet.di       fcb 0
+bullet.di       fcb 0                  ; le parcours du TICK
 bullet.sp       fdb 0
+bullet.dj       fcb 0                  ; celui du DESSIN — SEPARE : deux
+bullet.dp       fdb 0                  ; parcours qui partagent leur compteur
+                                       ; sont un depassement de table en
+                                       ; puissance, et un depassement ici ecrit
+                                       ; par-dessus les variables qui suivent —
+                                       ; dont la POSE, que le dessin appelle
 bullet.drop     fdb 0
 bullet.tmp      fdb 0
 bullet.pose     fdb 0                  ; la routine compilee de la trame
@@ -85,19 +92,36 @@ bullet.pose     fdb 0                  ; la routine compilee de la trame
 ; son pool est plein).
 ;*******************************************************************************
 bullet.Arm
-        ; LE MANAGER D'ABORD : un slot arme que personne ne ferait vivre
-        ; resterait occupe pour toujours, et la table se remplirait
-        ; definitivement. Meme precaution que le manager des gerbes.
-        tst   bullet.live
-        bne   @vivant
+        ; LES PARAMETRES SE METTENT A L'ABRI TOUT DE SUITE. Ni D ni Y ne
+        ; survivent a ce qui suit : le test de battement lit une horloge dans
+        ; D, et la recherche de slot compte dans B. La premiere version les
+        ; laissait a decouvert — les balles naissaient donc a une abscisse
+        ; aberrante et mouraient au test de fenetre des leur premiere trame
+        ; (29/08/2026). C'est la meme etourderie que le `mul` de la tourelle de
+        ; proue : un registre qu'on croit tenir et qu'une routine intermediaire
+        ; a repris.
         pshs  d,y
+        ; LE MANAGER D'ABORD : un slot arme que personne ne ferait vivre
+        ; resterait occupe pour toujours. Meme precaution que les gerbes.
+        ;
+        ; PAS UN SIMPLE DRAPEAU, pose ici et efface par le manager quand il se
+        ; retire : les deux gestes tombent dans la MEME passe de RunObjects des
+        ; que la derniere balle meurt, et il naissait alors des managers EN
+        ; CASCADE — jusqu'a six tours dans une seule trame de jeu, donc des
+        ; balles six fois trop rapides. Le manager DATE son passage, et cette
+        ; date fait foi : elle survit a son retrait, a une purge d'objets et a
+        ; un changement de stage.
+        ldd   gfxlock.frame.count
+        subd  bullet.beat
+        cmpd  #bullet.BEAT
+        bls   @vivant
         jsr   LoadObject_x
-        puls  d,y
         beq   @plein
         lda   #ObjID_foefire
         sta   id,x
         clr   routine,x
-        inc   bullet.live
+        ldd   gfxlock.frame.count      ; vivant des maintenant, sinon deux tirs
+        std   bullet.beat              ; de la meme trame en creeraient deux
 @vivant
         ldx   #bullet.Slots
         ldb   #bullet.SLOTS
@@ -107,10 +131,12 @@ bullet.Arm
         leax  bullet.SLOTSZ,x
         decb
         bne   @cherche
-@plein  andcc #$FE                     ; table pleine : pas de tir
-        rts
+@plein  puls  d,y
+        andcc #$FE                     ; table pleine : pas de tir, comme
+        rts                            ; l'arcade quand son pool est plein
 @libre  inc   bullet.used,x
-        std   bullet.x,x               ; D = x playfield
+        puls  d,y                      ; on les retrouve intacts
+        std   bullet.x,x
         clr   bullet.x+2,x
         sty   bullet.y,x
         clr   bullet.y+2,x
@@ -122,7 +148,28 @@ bullet.Arm
         _Collision_AddAABB_x bullet.AABB,AABB_list_foefire
         orcc  #$01
         rts
-;
+
+; bullet.ArmV — armer une balle A VECTEUR EXPLICITE, depuis N'IMPORTE QUELLE
+; PAGE. C'est l'entree des tireurs qui ne veulent pas d'un preset de direction :
+; la tourelle multiple du vaisseau tire en gerbe, chaque coup avec son propre
+; vecteur. Ils l'atteignent par RunPgSubRoutine, qui monte cette page — le meme
+; chemin que createFoeFire.
+;   X = abscisse de ponte, Y = ordonnee, U = l'OST du tireur, qui porte le
+;   vecteur dans ses champs x_vel/y_vel : neuf octets de parametres ne tiennent
+;   pas dans les registres, et l'OST est resident donc lisible d'ici.
+;   A n'est pas utilisable en entree : RunPgSubRoutine l'ecrase (PSR_Param).
+bullet.ArmV
+        tfr   x,d
+        jsr   bullet.Arm
+        bcc   @rts
+        ldd   x_vel,u
+        std   bullet.vx,x
+        ldd   y_vel,u
+        std   bullet.vy,x
+        lda   #bullet.MULTIDELAY
+        sta   bullet.delay,x
+@rts    rts
+
 ;*******************************************************************************
 ; L'OBJET — il fait vivre les balles ; le dessin se passe dans la routine que
 ; BuildSprites appelle.
@@ -145,10 +192,30 @@ foefire.Object
         sta   y_pixel,u
         ldb   #2                       ; la priorite des balles d'avant
         stb   priority,u
-        inc   routine,u
+        ; LA TABLE REPART VIERGE. Le manager renait apres une purge d'objets ou
+        ; un changement de stage, et il y trouverait sinon des slots encore
+        ; marques occupes et des boites encore chainees dans la liste du
+        ; moteur — des balles fantomes, invisibles et mortelles.
+        ldx   #bullet.Slots
+        ldb   #bullet.SLOTS
+!       clr   bullet.used,x
+        clr   bullet.AABB+AABB.p,x
+        clr   bullet.AABB+AABB.prev,x
+        clr   bullet.AABB+AABB.prev+1,x
+        clr   bullet.AABB+AABB.next,x
+        clr   bullet.AABB+AABB.next+1,x
+        leax  bullet.SLOTSZ,x
+        decb
+        bne   <
+        clr   bullet.idle
+        ldd   bullet.Poses             ; une pose valide AVANT le premier tick :
+        std   bullet.pose              ; BuildSprites peut nous appeler des
+        inc   routine,u                ; cette trame-ci
         jmp   DisplaySprite
 
 bullet.Live
+        ldd   gfxlock.frame.count      ; LE BATTEMENT — voir bullet.Arm
+        std   bullet.beat
         ldb   gfxlock.frameDrop.count
         bne   >
         incb
@@ -249,18 +316,16 @@ bullet.Live
         std   bullet.sp
         dec   bullet.di
         lbne  @slot
-        ; plus une seule balle : le manager se retire, le prochain tir le
-        ; fera renaitre (meme cycle de vie que le manager des gerbes)
-        lda   #bullet.SLOTS
-        ldx   #bullet.Slots
-!       tst   bullet.used,x
-        bne   >
-        leax  bullet.SLOTSZ,x
-        deca
-        bne   <
-        clr   bullet.live
-        jmp   DeleteObject
-!       jmp   DisplaySprite
+        ; LE MANAGER NE SE RETIRE PAS. Il l'a fait, et c'etait la source de
+        ; tout : se retirer sur une trame sans balle, alors qu'un ennemi peut
+        ; tirer plus loin dans la MEME passe de RunObjects, faisait naitre des
+        ; managers EN CASCADE — jusqu'a six tours dans une trame de jeu, donc
+        ; des balles six fois trop rapides (29/08/2026). Un temps mort avant
+        ; retrait n'a fait que ralentir la cascade sans la supprimer : tant
+        ; qu'un retrait peut tomber entre deux tirs, la course existe.
+        ; Il vit donc du premier tir du stage jusqu'a la purge. Cela coute UN
+        ; slot d'OST sur soixante, la ou il en rend jusqu'a vingt-quatre.
+        jmp   DisplaySprite
 ;
 ; bullet.AddPos — Y pointe un champ 24 bits (16.8), D = vitesse 8.8 signee,
 ; compensee de bullet.drop. Deux mul non signes, produit tronque juste en
@@ -313,10 +378,10 @@ bullet.FakeMf
 ;*******************************************************************************
 bullet.DrawAll
         lda   #bullet.SLOTS
-        sta   bullet.di
+        sta   bullet.dj
         ldx   #bullet.Slots
-        stx   bullet.sp
-@slot   ldx   bullet.sp
+        stx   bullet.dp
+@slot   ldx   bullet.dp
         tst   bullet.used,x
         beq   @suiv
         tst   bullet.delay,x           ; pas encore visible
@@ -334,11 +399,12 @@ bullet.DrawAll
         jsr   DRS_XYToAddress           ; A = x, B = y, repere DRS
         ldu   <glb_screen_location_2
         ldy   bullet.pose
-        jsr   ,y                       ; la routine consomme U
-@suiv   ldd   bullet.sp
+        beq   @suiv                    ; pose non encore choisie (le dessin
+        jsr   ,y                       ; peut preceder le premier tick)
+@suiv   ldd   bullet.dp
         addd  #bullet.SLOTSZ
-        std   bullet.sp
-        dec   bullet.di
+        std   bullet.dp
+        dec   bullet.dj
         bne   @slot
         rts
 ;

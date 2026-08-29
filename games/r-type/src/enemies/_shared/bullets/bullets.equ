@@ -8,6 +8,17 @@ BULLETS_EQU equ 1
 ; laisse de la marge au-dela de ce que l'arcade met a l'ecran, pour 504 octets.
 bullet.SLOTS    equ 24
 bullet.SLOTSZ   equ 21
+; Les quatre trames invisibles du tir de la tourelle multiple (arcade dc99).
+bullet.MULTIDELAY equ 4
 bullet.RADIUS   equ 2                  ; le rayon de boite de la balle-objet
+
+; L'AGE MAXIMAL DU BATTEMENT, en trames video : au-dela, le manager est repute
+; mort et le prochain tir en fait naitre un. Comme il ne se retire plus jamais
+; de lui-meme, seule une PURGE ou un CHANGEMENT DE STAGE peut le faire
+; disparaitre — 256 trames (cinq secondes) sont donc largement au-dessus de
+; tout intervalle normal entre deux de ses tours, et il n'y a plus aucun risque
+; d'en faire naitre un second alors que le premier vit.
+bullet.BEAT     equ 256
+; Le manager ne se retire plus (voir mgr.asm) : il n'a plus de temps mort.
 
  ENDC

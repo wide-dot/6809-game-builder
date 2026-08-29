@@ -160,25 +160,25 @@ multi.Fire
         ldx   a,x
         puls  b
         abx
-        pshs  x
-        jsr   LoadObject_x
-        tfr   x,y
-        puls  x
-        cmpy  #0
-        beq   @rts
-        lda   #ObjID_foefire
-        sta   id,y
-        clr   routine,y
+        ; LE TIR PASSE PAR LE MANAGER, comme tous les tirs ennemis du jeu.
+        ; Il posait `ObjID_foefire` dans un OST qu'il allouait lui-meme — un
+        ; raccourci qui court-circuitait createFoeFire. Depuis que cet
+        ; identifiant designe le MANAGER et non plus une balle, chacun de ces
+        ; tirs faisait naitre un manager de plus : quatre tourelles en action,
+        ; jusqu'a six managers deplacant chaque balle a chaque trame, donc des
+        ; balles six fois trop rapides (29/08/2026). Les vitesses de ce tir ne
+        ; viennent pas d'un preset — on arme le slot puis on les y verse.
+        ; LE VECTEUR VOYAGE DANS NOTRE PROPRE OST. Neuf octets de parametres ne
+        ; tiennent pas dans les registres, et l'OST est resident donc lisible
+        ; depuis la page des balles ; nos champs de vitesse ne servent a rien
+        ; d'autre, une tourelle ne se deplace pas.
         ldd   ,x                       ; le vecteur de la phase
-        std   x_vel,y
+        std   x_vel,u
         ldd   2,x
-        std   y_vel,y
-        ; X pointe le vecteur ; le point de ponte est en queue de patron,
-        ; a 20-B... plus simple : le patron le porte a +20 de sa base, et
-        ; B a ete consomme par abx — on repart du patron
+        std   y_vel,u
+        ; le point de ponte, porte par le patron a +20 de sa base
         lda   multi.mount,u
         asla
-        pshs  x
         ldx   #multi.Fires
         ldx   a,x
         ldb   20,x                     ; dx, signe
@@ -188,14 +188,14 @@ multi.Fire
         ldb   21,x                     ; dy, signe
         sex
         addd  y_pos,u
-        std   y_pos,y
-        clr   y_pos+2,y
-        puls  d
-        std   x_pos,y
-        clr   x_pos+2,y
-        puls  x
-        lda   #4                       ; dc99 : quatre trames invisibles
-        sta   fireDisplayDelay,y
+        tfr   d,y                      ; Y = ordonnee de ponte
+        puls  x                        ; X = abscisse (A n'est pas utilisable :
+                                       ; RunPgSubRoutine l'ecrase)
+        lda   Obj_Index_Page+ObjID_createFoeFire   ; la page des balles
+        sta   PSR_Page
+        ldd   #bullet.ArmV
+        std   PSR_Address
+        jsr   RunPgSubRoutine
 @rts    rts
 
 multi.Boom
