@@ -177,7 +177,49 @@ Deux mesures à faire, dans cet ordre :
    une routine injectée dans le jeu, ou compter à la source (au moment où le
    tir est engendré).
 
-## 8. Recommandation
+## 8. Ce que la mise en oeuvre a appris (29/08/2026)
+
+Le manager est en place. Quatre choses ont ete apprises en le faisant, dont
+trois ne se devinaient pas depuis l'analyse.
+
+**Le point de bascule etait unique, et c'est ce qui rend la migration
+indolore.** Les neuf familles d'ennemis qui tirent passent toutes par
+`tryFoeFire` puis `createFoeFire` : reecrire ce seul point suffit, aucun code
+d'ennemi ne change. L'identifiant non plus — `foefire.Object` designe
+desormais le manager, et les neuf tables d'index de stage pointaient deja le
+bon symbole. UNE exception a fait tout le mal : la tourelle multiple du
+vaisseau posait `ObjID_foefire` DIRECTEMENT dans un OST qu'elle allouait, en
+court-circuitant createFoeFire. Chacun de ses tirs creait donc un MANAGER de
+plus — jusqu'a six, chacun deplacant toutes les balles a chaque trame, d'ou
+des balles six fois trop rapides. Avant de rerouter un identifiant, chercher
+qui le pose a la main.
+
+**Les boites de collision ne peuvent pas vivre dans une page montee.**
+`Collision_Do` les parcourt avec la page de collisionpass montee : une boite en
+fenetre cartouche fait lire les octets d'une AUTRE page et suivre des pointeurs
+pourris, avec ecriture a travers eux. La table a fini en RAM residente — la
+raison exacte, comprise apres coup, pour laquelle `outslay.boxes` y vit deja.
+
+**`Collision_AddAABB` attend une boite aux liens VIERGES.** Il insere en queue
+et ne touche pas `next` ; les objets du pool l'ont gratuitement (LoadObject
+zere leur OST), mais un slot de manager se REUTILISE et `RemoveAABB` laisse les
+vieux pointeurs. Reinsere sans nettoyage : liste circulaire, et Collision_Do ne
+rend plus jamais la main. C'est le contrat implicite a retenir pour tout futur
+manager qui possede ses boites.
+
+**Le gain de cadence est marginal, le gain de place ne l'est pas.** Jeu reel
+6,62 -> 6,73 fps sur le stage 3 (+0,1 a +0,36 selon la tranche de camera) :
+conforme au SS7, le gain est proportionnel au nombre de balles vivantes et ce
+stage n'en tient que 8 a 16. Ce qu'il rapporte vraiment ici est 24 SLOTS
+D'OBJETS RENDUS AU POOL — 21 octets residents par balle au lieu d'un OST de
+117 — sur un stage dont le vaisseau seul culmine a 44 pieces sur 60 slots.
+
+**Couverture** : stages 1, 3, 4, 5, 6, 7, 8 joues sans gel, 5 a 8 s'enchainant
+jusqu'au retour title. Le stage 2 n'a PAS pu etre exerce : le chargement de sa
+scene echoue en `tlsf OUT_OF_MEMORY` — defaut PREEXISTANT, reproduit a
+l'identique sur master par le cheat et par le handover reel du stage 1.
+
+## 9. Recommandation
 
 Trois étapes, chacune livrable et mesurable :
 
