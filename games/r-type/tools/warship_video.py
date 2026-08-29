@@ -32,6 +32,23 @@ def sym(mapfile, name, base):
             return base + int(m.group(1), 16)
     raise SystemExit('symbole %s absent' % name)
 
+def equ(mapfile, name):
+    """Une equate ABSOLUE de la carte (bench.* vient de gen/layout.asm)."""
+    for l in open(mapfile):
+        m = re.match(r'Symbol: %s \(.*\) = ([0-9A-Fa-f]+)' % re.escape(name), l)
+        if m:
+            return int(m.group(1), 16)
+    raise SystemExit('equate %s absente' % name)
+
+# LE TEMOIN NE S'ECRIT PAS EN DUR. Son adresse vient de gen/layout.asm et
+# BOUGE des qu'une unite de stage change de taille — bench.const.asm raconte
+# les trois demenagements et les adresses perimees laissees derriere. Le
+# 28/08/2026 le litteral $87DB, perime de 23 octets, a fait conclure « stage 3
+# jamais seme » sur trois builds dont deux etaient bons.
+BENCH  = equ('gen/stages/03/build/stage03-main.lwmap', 'bench.magic')
+# bench.stage (BLOCK+1) est le stage QUI TOURNE ; bench.spawnStage (BLOCK+7)
+# est celui dont le bouchon a tourne en dernier — ce n'est pas la meme chose.
+BSTAGE = equ('gen/stages/03/build/stage03-main.lwmap', 'bench.stage')
 _, MSCROLL_BASE = unit_base('common.mscroll')
 _, ENGINE_BASE  = unit_base('common.engine')
 SETUP = sym('gen/common/build/mscroll.lwmap', 'mscroll.setup', MSCROLL_BASE)
@@ -85,15 +102,22 @@ r = t.call('arm_video_capture', {
 })
 print('capture armee sur mscroll.setup ($%04X) :' % SETUP, r, flush=True)
 
+# LE SIGNAL DE DEPART EST LA CAPTURE ELLE-MEME, pas le temoin RAM. L'adresse
+# du temoin est ecrite en dur ($87DB) et suit la taille de l'unite residente du
+# stage : elle se decale des qu'on ajoute ou retire une ligne d'index. On a
+# perdu deux captures de cette facon le 28/08/2026 — le film etait bon, le
+# script concluait « stage 3 jamais seme ». Le declencheur pc, lui, est sans
+# ambiguite : mscroll.setup n'est appele que par le stage 3.
 for _ in range(40):
     poke_cheat()
     t.press(hold=8)
     t.call('run_frames', {'n': 250})
-    b = t.read('0x87DB', 3)
-    if b[0] == 0xCA and b[1] == 3:
-        break
-    if b[0] == 0xCA and b[1] not in (0, 3):
-        raise SystemExit('parti au stage %d' % b[1])
+    if t.call('video_capture_status').get('state') == 'recording':
+        break                          # mscroll.setup n'appartient qu'au stage 3
+    if t.read(hex(BENCH), 1)[0] == 0xCA:
+        st = t.read(hex(BSTAGE), 1)[0]
+        if st not in (0, 3):
+            raise SystemExit('parti au stage %d — le cheat n\'a pas pris' % st)
 else:
     raise SystemExit('stage 3 jamais seme')
 
@@ -114,11 +138,11 @@ while done < BUDGET:
     step = min(500, BUDGET - done)
     r = t.call('run_frames', {'n': step, 'timeout_ms': 600000})
     done += r.get('frames', step) if isinstance(r, dict) else step
-    st = t.read('0x87DB', 3)
+    st = t.read(hex(BSTAGE), 1)
     vs = t.call('video_capture_status')
     print('t~%5d  stage=%d  film: %s img, %s o'
-          % (done, st[1], vs.get('frames'), vs.get('bytes')), flush=True)
-    if st[1] != 3:
+          % (done, st[0], vs.get('frames'), vs.get('bytes')), flush=True)
+    if st[0] != 3:
         print('le stage 3 a rendu la main — 100 trames de queue', flush=True)
         t.call('run_frames', {'n': 100, 'timeout_ms': 600000})
         break
