@@ -82,7 +82,16 @@ terrainCollision.bgWorldAdj fdb 0
 ; des l'init du stage 1, dont le plan de fond porte la silhouette du boss ;
 ; y faire marcher un cancer serait faux, et le sonder tout le niveau serait
 ; paye pour rien.
+;
+; LA ROUTINE N'EXISTE QUE SI LE JEU DECLARE LE DRAPEAU. globals.foeBgSolid est
+; une equate ABSOLUE du jeu (sa zone de globales) : un banc sans ennemis
+; terrestres — examples/tilescroll inclut ce fichier — n'a ni la zone ni le
+; drapeau, et la reference nue cassait son assemblage (vecu 29/08/2026). Le
+; couplage devient explicite : le jeu qui definit le drapeau assemble doFoe ;
+; celui qui ne le definit pas et l'appellerait quand meme obtient « Undefined
+; symbol terrainCollision.doFoe » — l'erreur qui designe le vrai manque.
 ; ---------------------------------------------------------------------------
+ IFDEF globals.foeBgSolid
 terrainCollision.doFoe
         ldb   #1                           ; l'avant-plan : le decor dur
         jsr   terrainCollision.do
@@ -93,6 +102,7 @@ terrainCollision.doFoe
         clrb                               ; l'arriere-plan : les gommes
         jmp   terrainCollision.do
 @solid  rts
+ ENDC
 
 terrainCollision.do
         lda   terrainCollision.disabled    ; tilemap "efface" (boss tue) ?
