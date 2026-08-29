@@ -55,6 +55,25 @@ _Collision_RemoveAABB MACRO
         puls  d,u,x,y
  ENDM
 
+; Le pendant en X de _Collision_RemoveAABB : la boite n'est pas toujours dans
+; un OST pointe par U. Collision_AddAABB lie de la MEMOIRE QUELCONQUE et
+; Collision_Do ne touche que la structure, jamais l'objet derriere — un manager
+; peut donc posseder ses boites dans sa propre table (manager de tirs,
+; 29/08/2026). _Collision_AddAABB_x existait deja ; il lui manquait son retrait.
+_Collision_RemoveAABB_x MACRO
+        pshs  d,u,x,y
+        ldx   #\2
+        stx   Collision_Remove_1
+        stx   Collision_Remove_3
+        leax  2,x
+        stx   Collision_Remove_2
+        puls  d,u,x,y
+        pshs  d,u,y
+        leax  \1,x
+        jsr   Collision_RemoveAABB
+        puls  d,u,y
+ ENDM
+
 ; --------------------------------------
 
 _Collision_CleanLinksAABB MACRO

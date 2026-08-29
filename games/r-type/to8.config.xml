@@ -1447,15 +1447,30 @@
                     </lwasm>
                 </file>
 
+                <!-- LE MANAGER DE TIRS ET SON ART, DANS LA MEME ENTREE.
+                     Une balle coutait un slot d'OST entier et, par trame, un
+                     dispatch complet plus DEUX A TROIS MONTAGES DE PAGE.
+                     L'entree garde son nom et son identifiant (ObjID_foefire)
+                     — les neuf tables d'index de stage pointent deja le bon
+                     symbole. Ce qui change est ce qu'il y a derriere.
+                     `createFoeFire` a demenage ICI : il arme un slot au lieu
+                     d'allouer un OST, et il doit pour cela partager la page de
+                     la table. Meme page pour le code, la table et les images :
+                     c'est ce qui supprime les montages.
+                     PLUS DE `shifts` : le manager blitte par adr_*_ND0 sans
+                     rejouer le choix de variante du moteur, donc les balles
+                     avancent par pas de 2 px comme les gerbes. L'art est
+                     divise par deux au passage.
+                     Analyse : doc/analyse-bullet-manager.md -->
                 <file name="common.foefire" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/foefire.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/_shared/foefire.unit.asm"/>
+                        <asm filename="src/enemies/_shared/bullets/bullets.unit.asm"/>
                         <gfxcomp gendir="gen/weapons/foefire"
                                  gensource="gen/weapons/foefire/includes.asm"
                                  genindex="gen/weapons/foefire/index.asm"
                                  file="common.foefire">
-                            <images dir="src/enemies/_shared/images/foefire" shifts="0,1"/>
+                            <images dir="src/enemies/_shared/images/foefire"/>
                         </gfxcomp>
                     </lwasm>
                 </file>

@@ -1,0 +1,13 @@
+; Les constantes du manager de tirs — voir mgr.asm pour le pourquoi.
+ IFNDEF BULLETS_EQU
+BULLETS_EQU equ 1
+
+; COMBIEN DE BALLES A LA FOIS. Chaque slot coute 21 octets dans la page du
+; manager, la ou une balle-objet coutait 117 octets de pool — un rapport de
+; cinq et demi, et surtout des octets qui ne sont plus pris aux ennemis. 24
+; laisse de la marge au-dela de ce que l'arcade met a l'ecran, pour 504 octets.
+bullet.SLOTS    equ 24
+bullet.SLOTSZ   equ 21
+bullet.RADIUS   equ 2                  ; le rayon de boite de la balle-objet
+
+ ENDC

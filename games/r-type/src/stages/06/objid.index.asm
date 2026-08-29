@@ -16,7 +16,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1
@@ -100,7 +100,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1
@@ -181,7 +181,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.beamp.page ; ObjID_beamp
         fcb   map.RAM_OVER_CART+common.emflash.page ; ObjID_emitter_flash
         fcb   map.RAM_OVER_CART+collision.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
         fcb   map.RAM_OVER_CART+stage6.page ; ObjID_initlevel1

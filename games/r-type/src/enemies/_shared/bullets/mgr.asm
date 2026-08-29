@@ -1,0 +1,349 @@
+;*******************************************************************************
+; LE MANAGER DES TIRS ENNEMIS — un objet pour toutes les balles du jeu
+;
+; POURQUOI. Une balle coutait un SLOT D'OST ENTIER (117 octets) et, a chaque
+; trame, un dispatch d'objet complet, un decodage d'imageset complet et DEUX A
+; TROIS MONTAGES DE PAGE — l'enveloppe, pas le dessin. Sur un sprite de 8x8
+; l'enveloppe pese proportionnellement enorme, et c'est ce qui rend le cas
+; favorable. Analyse et mesures : doc/analyse-bullet-manager.md.
+;
+; LE POINT DE BASCULE EST UNIQUE. Les neuf familles d'ennemis qui tirent
+; passent toutes par `tryFoeFire` (resident), qui appelle `createFoeFire`.
+; Celui-ci arme desormais un slot au lieu d'allouer un OST : AUCUN code
+; d'ennemi ne change.
+;
+; L'IDENTIFIANT NE CHANGE PAS NON PLUS. `foefire.Object` designe ce manager, et
+; ObjID_foefire (13) est son identifiant : les neuf tables d'index de stage
+; pointent deja le bon symbole et la bonne page, il n'y a rien a renumeroter.
+;
+; TOUT VIT DANS UNE SEULE PAGE — la table, `createFoeFire`, le manager, son
+; dessin et ses images. C'est la condition qui supprime les montages :
+; BuildSprites monte la page d'images de l'objet avant d'appeler sa routine de
+; dessin, et `tryFoeFire` monte la meme page pour appeler `createFoeFire`.
+; Aucun octet resident n'est necessaire, et rien ici n'appelle une autre page.
+;
+; LES COLLISIONS RESTENT CELLES DU MOTEUR. `Collision_AddAABB` lie de la
+; MEMOIRE QUELCONQUE, pas forcement un OST, et `Collision_Do` ne lit ni n'ecrit
+; que la structure AABB — jamais l'objet derriere. Le manager possede donc ses
+; boites dans sa table et les inscrit dans `AABB_list_foefire` exactement comme
+; avant : le joueur encaisse, et le force pod arrete les tirs, sans qu'une
+; ligne de moteur soit reecrite ni qu'une regle soit reimplementee.
+;
+; L'ANIMATION EST PARTAGEE (decision auteur). Chaque balle portait SA phase,
+; incrementee et masquee a chaque trame. Or les balles sont LE MEME SPRITE :
+; deux phases differentes ne se distinguent pas a l'oeil, personne ne peut dire
+; en regardant l'ecran si le cycle est commun. C'etait de l'etat sans
+; signification observable. Un seul compteur, la meme pose pour toutes : par
+; balle et par trame, cela retire un `inc`, un `andb`, un `stb`, une lecture de
+; table et un `std image_set` — et cela ne charge plus qu'UNE adresse de
+; routine compilee pour tout le lot.
+;
+; ECART ASSUME : les balles perdent leurs variantes pre-decalees (`shifts=0,1`)
+; et avancent donc par pas de 2 px a l'horizontale, comme les gerbes des
+; reacteurs. C'est ce qui permet de blitter par `adr_*_ND0` sans rejouer le
+; choix de variante du moteur. A valider a l'ecran ; le retour en arriere est
+; local (une seconde table de routines et un test de parite).
+;*******************************************************************************
+
+        INCLUDE "src/enemies/_shared/bullets/bullets.equ"
+
+;-------------------------------------------------------------------------------
+; LA TABLE — un slot par balle, dans la page du manager
+;
+; +0  AABB    9  la boite du moteur : p, rx, ry, cx, cy, prev, next
+; +9  used    1  slot occupe (0 = libre)
+; +10 delay   1  trames restantes avant que la balle se montre
+; +11 x       3  position playfield 16.8
+; +14 y       3
+; +17 vx      2  vitesse 8.8 signee
+; +19 vy      2
+;-------------------------------------------------------------------------------
+bullet.AABB     equ 0
+bullet.used     equ 9
+bullet.delay    equ 10
+bullet.x        equ 11
+bullet.y        equ 14
+bullet.vx       equ 17
+bullet.vy       equ 19
+
+bullet.Slots    fill 0,bullet.SLOTS*bullet.SLOTSZ
+bullet.live     fcb 0                  ; 1 quand l'objet manager existe
+bullet.frame    fcb 0                  ; LE compteur d'animation, partage
+bullet.di       fcb 0
+bullet.sp       fdb 0
+bullet.drop     fdb 0
+bullet.tmp      fdb 0
+bullet.pose     fdb 0                  ; la routine compilee de la trame
+
+;*******************************************************************************
+; L'ARMEMENT — appele par createFoeFire, dans cette page
+;
+; Entree : X = le slot n'est pas encore choisi ; D = x playfield, Y = y
+; playfield, et les vitesses dans bullet.tmp*. Voir createFoeFire, qui est
+; l'unique appelant et prepare tout.
+; Sortie : C=0 si la table etait pleine (l'arcade ne tire pas non plus quand
+; son pool est plein).
+;*******************************************************************************
+bullet.Arm
+        ; LE MANAGER D'ABORD : un slot arme que personne ne ferait vivre
+        ; resterait occupe pour toujours, et la table se remplirait
+        ; definitivement. Meme precaution que le manager des gerbes.
+        tst   bullet.live
+        bne   @vivant
+        pshs  d,y
+        jsr   LoadObject_x
+        puls  d,y
+        beq   @plein
+        lda   #ObjID_foefire
+        sta   id,x
+        clr   routine,x
+        inc   bullet.live
+@vivant
+        ldx   #bullet.Slots
+        ldb   #bullet.SLOTS
+@cherche
+        tst   bullet.used,x
+        beq   @libre
+        leax  bullet.SLOTSZ,x
+        decb
+        bne   @cherche
+@plein  andcc #$FE                     ; table pleine : pas de tir
+        rts
+@libre  inc   bullet.used,x
+        std   bullet.x,x               ; D = x playfield
+        clr   bullet.x+2,x
+        sty   bullet.y,x
+        clr   bullet.y+2,x
+        ; la boite : meme rayon et meme potentiel que la balle-objet d'avant
+        lda   #1
+        sta   bullet.AABB+AABB.p,x
+        _ldd  bullet.RADIUS,bullet.RADIUS
+        std   bullet.AABB+AABB.rx,x
+        _Collision_AddAABB_x bullet.AABB,AABB_list_foefire
+        orcc  #$01
+        rts
+;
+;*******************************************************************************
+; L'OBJET — il fait vivre les balles ; le dessin se passe dans la routine que
+; BuildSprites appelle.
+;*******************************************************************************
+foefire.Object
+        lda   routine,u
+        bne   bullet.Live
+        ; La premiere trame : se rendre indelogeable, comme outslay.Render.
+        _GetCartPageA
+        ldb   id,u
+        ldx   #Img_Page_Index
+        sta   b,x                      ; le moteur montera NOTRE page
+        sta   bullet.FakeMf
+        ldd   #bullet.FakeImg
+        std   image_set,u
+        clr   render_flags,u           ; coordonnees ecran, boite garee au
+        lda   #120                     ; centre : jamais eliminee hors-champ
+        sta   x_pixel,u
+        lda   #135
+        sta   y_pixel,u
+        ldb   #2                       ; la priorite des balles d'avant
+        stb   priority,u
+        inc   routine,u
+        jmp   DisplaySprite
+
+bullet.Live
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       clra
+        std   bullet.drop
+        ; LE COMPTEUR D'ANIMATION, UNE FOIS POUR TOUTES
+        lda   bullet.frame
+        adda  bullet.drop+1
+        sta   bullet.frame
+        lsra                           ; deux trames par pose, comme avant
+        anda  #3
+        asla
+        ldx   #bullet.Poses
+        ldd   a,x
+        std   bullet.pose
+;
+        lda   #bullet.SLOTS
+        sta   bullet.di
+        ldx   #bullet.Slots
+        stx   bullet.sp
+@slot   ldx   bullet.sp
+        tst   bullet.used,x
+        lbeq  @suiv
+;
+        ; --- la boite a-t-elle perdu son potentiel ? (force pod, joueur) -----
+        tst   bullet.AABB+AABB.p,x
+        lbeq  @mort
+;
+        ; --- le deplacement, en DEUX MUL et non en additions repetees -------
+        ; L'objet d'avant ajoutait sa vitesse `frameDrop` fois dans une boucle,
+        ; deux fois par balle et par trame. A la cadence mesuree du stage 3
+        ; (6,6 fps de jeu reel) frameDrop vaut 7 a 8 : une quinzaine d'`addd`
+        ; par balle. Les pieces du vaisseau font le meme calcul avec deux mul
+        ; (layer.AddPos) — c'est cet idiome-la.
+        leay  bullet.x,x
+        ldd   bullet.vx,x
+        lbsr  bullet.AddPos
+        ldx   bullet.sp
+        leay  bullet.y,x
+        ldd   bullet.vy,x
+        lbsr  bullet.AddPos
+        ldx   bullet.sp
+;
+        ; --- le decor : avant-plan, et fond si le stage le declare solide ----
+        ldd   bullet.x,x
+        std   terrainCollision.sensor.x
+        ldd   bullet.y,x
+        std   terrainCollision.sensor.y
+        ldb   #1
+        jsr   terrainCollision.do
+        tstb
+        lbne  @mort
+        lda   globals.backgroundSolid
+        beq   @dehors
+        ldx   bullet.sp
+        ldd   bullet.x,x
+        std   terrainCollision.sensor.x
+        ldd   bullet.y,x
+        std   terrainCollision.sensor.y
+        ldb   #0
+        jsr   terrainCollision.do
+        tstb
+        lbne  @mort
+;
+@dehors ldx   bullet.sp
+        ; --- la fenetre, aux memes bornes que la balle-objet -----------------
+        ldd   bullet.x,x
+        cmpd  glb_camera_x_pos
+        lble  @mort
+        subd  #160-8/2
+        cmpd  glb_camera_x_pos
+        lbge  @mort
+        ldd   bullet.y,x
+        lble  @mort
+        cmpd  #160
+        lbge  @mort
+;
+        ; --- la boite suit la balle -----------------------------------------
+        ldd   bullet.x,x
+        subd  glb_camera_x_pos
+        stb   bullet.AABB+AABB.cx,x
+        ldb   bullet.y+1,x
+        stb   bullet.AABB+AABB.cy,x
+        ; --- le delai d'apparition ------------------------------------------
+        lda   bullet.delay,x
+        beq   @suiv
+        suba  bullet.drop+1
+        bhi   >
+        clra
+!       sta   bullet.delay,x
+        bra   @suiv
+@mort   ldx   bullet.sp
+        clr   bullet.used,x
+        clr   bullet.AABB+AABB.p,x
+        _Collision_RemoveAABB_x bullet.AABB,AABB_list_foefire
+@suiv   ldd   bullet.sp
+        addd  #bullet.SLOTSZ
+        std   bullet.sp
+        dec   bullet.di
+        lbne  @slot
+        ; plus une seule balle : le manager se retire, le prochain tir le
+        ; fera renaitre (meme cycle de vie que le manager des gerbes)
+        lda   #bullet.SLOTS
+        ldx   #bullet.Slots
+!       tst   bullet.used,x
+        bne   >
+        leax  bullet.SLOTSZ,x
+        deca
+        bne   <
+        clr   bullet.live
+        jmp   DeleteObject
+!       jmp   DisplaySprite
+;
+; bullet.AddPos — Y pointe un champ 24 bits (16.8), D = vitesse 8.8 signee,
+; compensee de bullet.drop. Deux mul non signes, produit tronque juste en
+; complement a deux — le calcul de layer.AddPos, mot pour mot.
+bullet.AddPos
+        pshs  a
+        lda   bullet.drop+1
+        mul
+        std   bullet.tmp
+        puls  a
+        ldb   bullet.drop+1
+        mul
+        tfr   b,a
+        clrb
+        addd  bullet.tmp
+        pshs  d
+        ldb   ,s
+        sex
+        sta   @a+1
+        puls  d
+        addd  1,y
+        std   1,y
+        lda   ,y
+@a      adca  #$00
+        sta   ,y
+        rts
+
+;*******************************************************************************
+; LE FAUX IMAGESET — c'est lui qui fait appeler notre routine par BuildSprites.
+; Meme forme que celui de l'outslay et du manager des gerbes.
+;*******************************************************************************
+bullet.FakeImg
+        fcb   bullet.FakeSub-bullet.FakeImg,bullet.FakeSub-bullet.FakeImg
+        fcb   bullet.FakeSub-bullet.FakeImg,bullet.FakeSub-bullet.FakeImg
+        fcb   8,8,0
+bullet.FakeSub
+        fcb   0
+        fcb   bullet.FakeMf-bullet.FakeSub
+        fcb   0
+        fcb   bullet.FakeMf-bullet.FakeSub
+        fcb   0,0
+bullet.FakeMf
+        fcb   0                        ; page, patchee a l'Init
+        fdb   bullet.DrawAll
+
+;*******************************************************************************
+; LE DESSIN — appele par BuildSprites, notre page montee, sans OST sous la main
+; (c'est pourquoi la table est statique). UNE SEULE POSE pour toutes les
+; balles : elle a ete choisie une fois par le tick.
+;*******************************************************************************
+bullet.DrawAll
+        lda   #bullet.SLOTS
+        sta   bullet.di
+        ldx   #bullet.Slots
+        stx   bullet.sp
+@slot   ldx   bullet.sp
+        tst   bullet.used,x
+        beq   @suiv
+        tst   bullet.delay,x           ; pas encore visible
+        bne   @suiv
+        ; l'ecran, dans le repere du moteur
+        ldd   bullet.x,x
+        subd  glb_camera_x_pos
+        cmpd  #screen_right-screen_left
+        bhi   @suiv                    ; hors bande : rien a peindre
+        addb  #screen_left
+        pshs  b
+        ldb   bullet.y+1,x
+        addb  #screen_top
+        lda   ,s+
+        jsr   DRS_XYToAddress           ; A = x, B = y, repere DRS
+        ldu   <glb_screen_location_2
+        ldy   bullet.pose
+        jsr   ,y                       ; la routine consomme U
+@suiv   ldd   bullet.sp
+        addd  #bullet.SLOTSZ
+        std   bullet.sp
+        dec   bullet.di
+        bne   @slot
+        rts
+;
+; Les quatre poses, dans l'ordre de la chaine d'origine. Ce sont les ROUTINES
+; COMPILEES : le manager blitte en direct, il ne pose pas d'imageset.
+bullet.Poses
+        fdb   adr_foefire_0_ND0,adr_foefire_1_ND0
+        fdb   adr_foefire_2_ND0,adr_foefire_3_ND0

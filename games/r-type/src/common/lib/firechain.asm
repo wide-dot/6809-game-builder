@@ -1,8 +1,9 @@
 ;*******************************************************************************
 ; La chaîne de tir ennemi — les deux sous-routines paginées, et leurs tables
 ;
-; Ce sont les deux objets `global/objects/` de la v1 (createFoeFire,
-; loadFirePreset). Ni l'un ni l'autre n'a d'OST : ce sont des sous-routines
+; C'etait les deux objets `global/objects/` de la v1 (createFoeFire,
+; loadFirePreset) ; createFoeFire est parti dans la page du manager de tirs le
+; 29/08/2026 et il ne reste que loadFirePreset. Ni l'un ni l'autre n'a d'OST : ce sont des sous-routines
 ; qu'un ennemi atteint par `RunPgSubRoutine`, qui monte leur page et leur passe
 ; un paramètre dans A. La v1 devait les déclarer « objets » pour que son
 ; allocateur les place ; en v2 c'est l'index d'objets qui porte leur page et
@@ -18,7 +19,6 @@
 ; remet les deux bouts en face), `FoeFireTarget`, `LoadObject_x`, `RandomNumber`.
 ;*******************************************************************************
 
-createFoeFire         EXPORT
 loadFirePreset.Object EXPORT
 
         INCLUDE "src/common/engine/api.asm"
@@ -37,11 +37,13 @@ loadFirePreset.Object EXPORT
         ; `globals` : loadFirePreset lit la difficulté. Elles ne franchissent
         ; pas le lien, ce sont des adresses fixes partagées à l'assemblage.
         INCLUDE "src/common/state/variables.asm"
-        ; Les identifiants d'objets sont des CONSTANTES, pas des externes :
-        ; createFoeFire pose `ObjID_foefire` dans l'OST qu'il vient d'allouer.
+        ; Les identifiants d'objets sont des CONSTANTES, pas des externes.
         INCLUDE "src/stages/01/objid.const.asm"
 
-        INCLUDE "src/common/lib/createFoeFire.asm"
+; createFoeFire A DEMENAGE (29/08/2026) dans la page du manager de tirs
+; (src/enemies/_shared/bullets/) : il n'alloue plus d'OST, il arme un slot, et
+; il doit pour cela vivre dans la MEME page que la table qu'il arme. Cette
+; unite ne garde que loadFirePreset. Voir mgr.asm.
 
 ; V2-DEVIATION: l'entrée v1 s'appelle `Object`, un nom trop générique pour la
 ; frontière de lien — même écart que l'éclair d'émission.
