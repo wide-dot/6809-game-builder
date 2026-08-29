@@ -65,9 +65,26 @@ flamemgr.Object
         ldb   #4                       ; devant la coque, derriere les pieces
         stb   priority,u
         inc   routine,u
+        bsr   flamemgr.Sample
         jmp   DisplaySprite
 
+; LA CAMERA S'ECHANTILLONNE ICI, PAS AU DESSIN. Les pieces calculent leur
+; position dans RunObjects, AVANT mscroll.move ; le dessin du manager, lui,
+; passe par BuildSprites, APRES. Relire la camera au dessin prenait donc une
+; trame d'avance sur les tourelles : 2 px de divergence au gre des trames —
+; la gerbe flottait sur sa buse (vecu le 29/08/2026). On fige donc l'arrondi
+; de couche et camera.y au TICK, le meme instant que turret.Live, et DrawAll
+; consomme ces valeurs. La formule ET l'instant sont ceux des pieces.
+flamemgr.Sample
+        ldd   mscroll.camera.x
+        andb  #$FE                     ; l'arrondi de la couche (layer.evenX)
+        std   flamemgr.exs
+        ldd   mscroll.camera.y
+        std   flamemgr.cys
+        rts
+
 flamemgr.Live
+        bsr   flamemgr.Sample
         ldb   gfxlock.frameDrop.count
         bne   >
         incb
@@ -149,8 +166,9 @@ flamemgr.DrawAll
         puls  d
         leay  d,y                      ; Y = les quatre tranches de la pose
         sty   flamemgr.setp
-        ; l'ancre, ramenee de la couche a l'ecran puis au repere du moteur
-        lbsr  flamemgr.EvenX
+        ; l'ancre, ramenee de la couche a l'ecran puis au repere du moteur —
+        ; avec la camera DU TICK (flamemgr.Sample), jamais celle du moment
+        ldd   flamemgr.exs
         pshs  d
         ldd   2,x
         subd  ,s++
@@ -211,12 +229,6 @@ flamemgr.DrawAll
 ; peut pas appeler le cast. Meme code que warship-elements/layer.asm.
 ;*******************************************************************************
 
-; camera.x quantifiee comme la couche l'affiche (pas de 2 px : bit 0 masque).
-flamemgr.EvenX
-        ldd   mscroll.camera.x
-        andb  #$FE
-        rts
-
 ; D = ordonnee ecran de naissance, X = camera.y de ce moment -> D = ordonnee
 ; courante. La derive est REPLIEE : camera.y boucle, une soustraction
 ; d'absolus sauterait de 384 px a chaque couture.
@@ -224,7 +236,7 @@ flamemgr.FollowY
         std   flamemgr.y0
         tfr   x,d
         std   flamemgr.cam0
-        ldd   mscroll.camera.y
+        ldd   flamemgr.cys             ; la camera du tick, cf. flamemgr.Sample
         subd  flamemgr.cam0
         cmpd  #192
         blt   @bas
@@ -258,6 +270,8 @@ flamemgr.dy     fcb 0
 flamemgr.sp     fdb 0
 flamemgr.setp   fdb 0
 flamemgr.drop   fdb 0
+flamemgr.exs    fdb 0
+flamemgr.cys    fdb 0
 flamemgr.y0     fdb 0
 flamemgr.cam0   fdb 0
 

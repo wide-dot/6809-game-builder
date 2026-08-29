@@ -106,15 +106,23 @@ def main():
             im = Image.open(os.path.join(src, '%02d.png' % ordi[a]))
             h = im.height // TRANCHES
             for t in range(TRANCHES):
-                tr = Image.new('RGBA', im.size, (0, 0, 0, 0))
-                bande = im.crop((0, t * h, im.width, (t + 1) * h))
-                tr.paste(bande, (0, t * h))
+                # LA DECOUPE RESTE EN MODE P, PALETTE ET INDEX INTACTS.
+                # gfxcomp lit l'octet brut du raster : pixel == 0 -> transparent,
+                # le RGB ne compte pas — et la palette du jeu met sa cle magenta
+                # a l'index 0. Un passage par RGBA puis convert('P') requantifie
+                # avec un ordre PAR IMAGE : magenta opaque, teintes decalees
+                # d'un cran, et trois ordres differents sur seize tranches
+                # (vecu le 29/08/2026, gerbes fausses a l'ecran). On copie donc
+                # la source et on remplit d'index 0 les lignes hors bande.
+                assert im.mode == 'P', 'source non palettisee : ' + dossier
+                tr = im.copy()
+                tr.paste(0, (0, 0, im.width, t * h))
+                tr.paste(0, (0, (t + 1) * h, im.width, im.height))
                 if not tr.getbbox():
                     raise SystemExit('tranche vide : %s_%02d — l\'encodeur ne '
                                      'sait pas placer une image sans pixel'
                                      % (prefixe, p * TRANCHES + t))
-                tr.convert(im.mode).save(
-                    os.path.join(dst, '%02d.png' % rang[0]))
+                tr.save(os.path.join(dst, '%02d.png' % rang[0]))
                 rang[0] += 1
                 n_img += 1
         out.append('; %s : %d poses uniques sur dix pas (chaine %04X)'

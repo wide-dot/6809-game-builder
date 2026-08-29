@@ -48,8 +48,12 @@ breactor.script
 ; sur la coque — le defaut vu le 28/08/2026.
 ; La zone vaut (orientation & 3) >> 1 : 0-1 vers le bas, 2-3 a droite,
 ; 4-5 a gauche. Une entree : fcb dx,dy signes, en pixels v2.
+; Zone 0 : +2 en x sur la conversion arcade — constat a l'ecran (29/08/2026,
+; decision auteur) : le jet vertical tombait 2 px a gauche de la buse, un cran
+; du pas horizontal de la couche. Les zones inclinees sont justes telles
+; quelles.
 breactor.FlameOff
-        fcb   0,32 ; zone 0 — arcade (+0,-42)
+        fcb   2,32 ; zone 0 — arcade (+0,-42), +2 vu a l'ecran
         fcb   14,24 ; zone 1 — arcade (+37,-32)
         fcb   -14,24 ; zone 2 — arcade (-37,-32)
 
