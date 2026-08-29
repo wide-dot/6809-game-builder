@@ -51,6 +51,21 @@ geld.timer    equ ext_variables+11   ; trames restantes du virage (0..31)
 ; celui de la fenetre d'engagement). Il sert a rattraper ce que le frame-drop
 ; fait sauter — voir le long commentaire au-dessus du test de fenetre.
 geld.step     equ ext_variables+12   ; 1 octet, 0..7 px
+geld.GRIP_TTL equ 150                 ; 3 s a 50 Hz
+; La fenetre « sur le joueur » : centre a centre, donc la somme des
+; demi-tailles des deux sprites, arrondie large — c'est un nettoyage de
+; video, pas une hitbox de gameplay (celle des degats reste l'AABB).
+geld.GRIP_W   equ 24
+geld.GRIP_H   equ 18
+geld.grip     equ ext_variables+13   ; 0 = n'a jamais touche le joueur ;
+;   sinon : trames restantes avant dechargement. PAS UN MECANISME ARCADE
+;   (V2-DEVIATION assumee, 29/08) : un geld colle au joueur INVINCIBLE (le
+;   cheat des videos side-by-side) y reste indefiniment et encombre la
+;   comparaison. Le premier contact ARME un decompte de 3 s, SANS remise a
+;   zero : un geld « colle » ORBITE en realite autour du joueur (virages de
+;   31 trames a 7 px/tick, excursions de 20-30 px) — un decompte remis a
+;   zero hors contact ne tenait jamais 3 s, constat sur la video du 29/08.
+;   En jeu reel le premier contact tue le joueur : inatteignable.
 
 Object
         lda   routine,u
@@ -90,6 +105,7 @@ Init
 
         lda   #1                       ; -> Patrol
         sta   routine,u
+        clr   geld.grip,u              ; le sursis n'est pas arme (slot recycle)
         ; 69bc/90a5 : « pos_x += scroll_amount », l'ancrage au decor — et
         ; l'arcade le fait dans SES DEUX modes. En v2 le drapeau s'en charge
         ; (cf. cytron) : sans lui le geld ne derive pas avec le niveau.
@@ -306,7 +322,26 @@ geld.alive
         bhi   geld.gone                ; ou par le bas
         ldd   y_pos,u
         stb   AABB_0+AABB.cy,u
+        ; --- le sursis apres contact (voir geld.grip) -------------------
+        lda   geld.grip,u
+        beq   @vise                    ; jamais touche : on regarde s'il touche
+        suba  gfxlock.frameDrop.count
+        bls   geld.gone                ; 3 s apres le contact : il lache prise
+        sta   geld.grip,u
         rts
+@vise   ldd   x_pos,u
+        subd  player1+x_pos
+        addd  #geld.GRIP_W             ; recentre : [0..2*W] = au contact
+        cmpd  #geld.GRIP_W*2
+        bhi   @loin
+        ldd   y_pos,u
+        subd  player1+y_pos
+        addd  #geld.GRIP_H
+        cmpd  #geld.GRIP_H*2
+        bhi   @loin
+        lda   #geld.GRIP_TTL           ; premier contact : le decompte s'arme
+        sta   geld.grip,u
+@loin   rts
 
 geld.gone
         lda   #3
@@ -349,6 +384,10 @@ Engaged.draw
         sta   geld.variant,u
         lda   #1                       ; -> Patrol
         sta   routine,u
+        ; (surtout ne PAS toucher geld.grip ici : ce chemin se rejoue a CHAQUE
+        ; virage, et un geld colle au joueur vire sans arret — un clr y a
+        ; rendu le sursis inoperant, sonde du 29/08 : les colles vivaient
+        ; 1000-3300 trames au lieu de 150. Le clr d'armement vit dans Init.)
         rts
 @wait   sta   geld.timer,u
         rts
