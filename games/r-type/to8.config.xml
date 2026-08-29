@@ -449,6 +449,14 @@
                  par montage seulement) sont libres. -->
             <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
             <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <!-- La table du manager de tirs : RESIDENTE, comme outslay.boxes.
+                 Les boites AABB y vivent ; une boite dans une page montee est
+                 un desastre — Collision_Do la parcourt avec la page de
+                 COLLISIONPASS montee, lit d'autres octets, et suit des
+                 pointeurs pourris en ecrivant AABB.p n'importe ou (gel du
+                 29/08/2026, pile retrouvee en $168D). 24 slots de 21 octets
+                 dans la marge de la demi-page 0, derriere les OST statiques. -->
+            <reserved name="objects.bullets" page="$00" address="$1D40" size="$01F8"/>
             <!-- L'AUTRE MOITIE, prise par la part $4000 de pscroll. C'est le
                  meme silicium que <region pscroll.vid>, decrit dans l'autre
                  systeme de coordonnees : ce <reserved> est ce qui EMPECHE

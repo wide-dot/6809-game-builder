@@ -66,7 +66,17 @@ bullet.y        equ 14
 bullet.vx       equ 17
 bullet.vy       equ 19
 
-bullet.Slots    fill 0,bullet.SLOTS*bullet.SLOTSZ
+; LA TABLE EST RESIDENTE — surtout pas dans cette page. Les boites AABB
+; qu'elle porte sont chainees dans AABB_list_foefire et parcourues par
+; Collision_Do avec la page de COLLISIONPASS montee : une boite en page montee
+; fait lire d'autres octets et suivre des pointeurs pourris, avec ecriture de
+; AABB.p a travers eux — la pile s'est retrouvee en $168D et chaque bsr/rts
+; enjambant un montage de page rendait une adresse d'une autre page (gel du
+; 29/08/2026). outslay.boxes vit dans l'arene residente pour la meme raison.
+; La zone (<reserved objects.bullets>, demi-page 0) N'EST PAS ZEROEE au boot :
+; la naissance du manager remet toute la table a neuf, et bullet.Arm ne peut
+; pas armer avant lui (il le fait naitre d'abord).
+bullet.Slots    equ objects.bullets.address+$4000
 bullet.beat     fdb 0                  ; la trame du dernier tour du manager
 bullet.idle     fcb 0                  ; tours consecutifs sans une seule balle
 bullet.frame    fcb 0                  ; LE compteur d'animation, partage
@@ -140,6 +150,18 @@ bullet.Arm
         clr   bullet.x+2,x
         sty   bullet.y,x
         clr   bullet.y+2,x
+        ; LES LIENS DE LA BOITE SE NETTOIENT AVANT L'INSERTION. Le contrat
+        ; implicite de Collision_AddAABB est une boite aux liens VIERGES : il
+        ; insere en queue et ne touche pas next (queue.next = X ; X.next reste
+        ; tel quel). Les objets du pool l'ont gratuitement — LoadObject zere
+        ; leur OST — mais un slot de cette table se REUTILISE, et RemoveAABB
+        ; laisse les vieux pointeurs en place : reinsere sans nettoyage, la
+        ; queue de liste pointait un maillon d'une chaine anterieure — LISTE
+        ; CIRCULAIRE, et Collision_Do ne rendait plus jamais la main (gel du
+        ; 29/08/2026, cycle photographie maillon par maillon).
+        ldd   #0
+        std   bullet.AABB+AABB.prev,x
+        std   bullet.AABB+AABB.next,x
         ; la boite : meme rayon et meme potentiel que la balle-objet d'avant
         lda   #1
         sta   bullet.AABB+AABB.p,x
