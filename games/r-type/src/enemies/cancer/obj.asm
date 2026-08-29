@@ -28,6 +28,20 @@ cancer_0x2e             equ ext_variables+14 ; 1 byte, horizontal and vertical d
                                              ; bit 2 = going left
                                              ; bit 3 = going right
 cancer_0x30             equ ext_variables+15 ; 2 bytes, reactivity degree (the smaller the more reactive)
+cancer.DOOM_TTL         equ 150              ; 3 s a 50 Hz
+; La fenetre de contact : genereuse a dessein, c'est un nettoyage de video —
+; la hitbox des degats reste l'AABB.
+cancer.DOOM_W           equ 22
+cancer.DOOM_H           equ 20
+cancer.doom             equ ext_variables+17 ; 0 = jamais touche le joueur ;
+;   sinon : trames restantes avant dechargement. PAS UN MECANISME ARCADE
+;   (V2-DEVIATION assumee, 29/08, meme famille que geld.grip) : un cancer qui
+;   traverse le joueur INVINCIBLE (le cheat des videos side-by-side) aurait du
+;   finir la partie — il rebondit sans fin et encombre la comparaison. Le
+;   premier contact ARME un decompte de 3 s, sans remise a zero (un rebondisseur
+;   ne tient jamais un contact soutenu, contrairement au geld) ; a l'expiration
+;   il se decharge en silence. En jeu reel le premier contact tue le joueur :
+;   inatteignable.
 ; (ext_variables+17 : libre depuis le retrait du plafond de duree de vie,
 ;  29/08 — la borne n'en a pas, cf. le commentaire dans Live.)
 
@@ -123,6 +137,7 @@ Init
 
         lda   #1
         sta   routine,u
+        clr   cancer.doom,u            ; le sursis n'est pas arme (slot recycle)
 
         ; CATCH-UP framedrop : rejoue wave_frame_drop frames de crawl (pas de 1 frame
         ; chacun) pour positionner le cancer comme s'il etait apparu a l'heure (il
@@ -684,7 +699,26 @@ Live
         ; cooldown de 0x3FF trames (~20,5 s a 50 Hz), plus long que ce plafond :
         ; un cancer entre en panique et ne recroisant pas de mur mourait de
         ; vieillesse avant d'en sortir.
-        ldd   x_pos,u
+        ; --- le sursis apres contact (voir cancer.doom) -----------------
+        lda   cancer.doom,u
+        beq   @vise                    ; jamais touche : on regarde s'il touche
+        suba  gfxlock.frameDrop.count
+        bls   @delete                  ; 3 s apres le contact : il s'efface
+        sta   cancer.doom,u
+        bra   @vif
+@vise   ldd   x_pos,u
+        subd  player1+x_pos
+        addd  #cancer.DOOM_W           ; recentre : [0..2*W] = au contact
+        cmpd  #cancer.DOOM_W*2
+        bhi   @vif
+        ldd   y_pos,u
+        subd  player1+y_pos
+        addd  #cancer.DOOM_H
+        cmpd  #cancer.DOOM_H*2
+        bhi   @vif
+        lda   #cancer.DOOM_TTL         ; premier contact : le decompte s'arme
+        sta   cancer.doom,u
+@vif    ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u
         addd  #5                       ; add x radius
