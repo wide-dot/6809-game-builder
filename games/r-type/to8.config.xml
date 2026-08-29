@@ -507,14 +507,21 @@
             <section name="INDEX6" track="79" face="0" sector="8"/>
             <section name="INDEX7" track="79" face="0" sector="10"/>
             <section name="INDEX8" track="79" face="0" sector="12"/>
-            <!-- dir2 a REJOINT cette piste le 25/08/2026 : il tenait dans les
-                 secteurs 14-15 de la piste 0 face 1, derriere dir1, et la piste
-                 s'arrete a 16 — le gouger y a ajoute quatre entrees et il
-                 debordait de 79 octets sur la section SCENE. Ici il dispose des
-                 secteurs 13 a 16, le double, la piste 79 n'etant occupee que
-                 jusqu'au 12. Le loader lit les emplacements dans la table
-                 generee (gen/directories/locations.asm), rien n'est cable. -->
-            <section name="INDEX2" track="79" face="0" sector="14"/>
+            <!-- dir2 vit sur la FACE 1 de la piste 79, seul (29/08/2026).
+                 Son sejour cote face 0 (secteurs 14-16) reposait sur un
+                 compte faux : la piste s'arrete au secteur 16 (1-based), et
+                 quand le zoid et les images hit l'ont fait passer a QUATRE
+                 secteurs, sa queue — l'entree scenes.stage2, la DERNIERE du
+                 repertoire, celle que le loader lit pour charger la scene —
+                 est partie hors piste. Taille lue en garbage (3309), malloc
+                 impossible dans un pool de 2451, log.halt : le stage 2 etait
+                 inaccessible par TOUS les chemins, cheat comme handover.
+                 C'etait la DEUXIEME fois que dir2 debordait de son logement
+                 (le gouger l'avait deja chasse de la piste 0) : cette fois il
+                 recoit une piste-face entiere, seize secteurs, et la place de
+                 grandir. Le loader lit les emplacements dans la table generee
+                 (gen/directories/locations.asm), rien n'est cable. -->
+            <section name="INDEX2" track="79" face="1" sector="1"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
             <!-- DATA en piste 8 : LINK a besoin des pistes 2 a 7 (le controle
