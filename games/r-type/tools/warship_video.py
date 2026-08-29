@@ -134,7 +134,11 @@ for essai in range(60):
     if not cheat_holds():
         continue                       # la page vient d'etre effacee : reposer
     t.press(hold=8)
-    t.call('run_frames', {'n': 250})
+    # LA DUREE D'ATTENTE VARIE AVEC L'ESSAI. L'emulateur est deterministe et le
+    # title cycle : des periodes fixes mettent chaque appui A LA MEME PHASE du
+    # cycle, et si elle est morte, elle l'est POUR TOUJOURS — vecu le 29/08 :
+    # soixante appuis ignores sur un build, quand le voisin passait a l'essai 3.
+    t.call('run_frames', {'n': 250 + 7 * essai})
     if t.call('video_capture_status').get('state') == 'recording':
         break                          # mscroll.setup n'appartient qu'au stage 3
     b = t.read(hex(BENCH), 2)
