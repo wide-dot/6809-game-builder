@@ -142,6 +142,34 @@ public class FdUtil implements MediaDataInterface{
     }
     
     /**
+     * write that refuses to cross the section's track/face boundary — see the
+     * interface javadoc for the loader contract this enforces. The check runs
+     * BEFORE any byte lands : a directory that no longer fits its slot is a
+     * build error with the exact shortfall, not a run-time freeze.
+     */
+    @Override
+    public void writeContiguous(String location, byte[] srcData, String name) throws Exception {
+        Section s = storage.sections.get(location);
+        if (s == null) {
+            String m = "Unknown Section: " + location;
+            log.error(m);
+            throw new Exception(m);
+        }
+        int need = (int) Math.ceil(srcData.length / (double) storage.segment.sectorSize);
+        int free = storage.segment.sectors - (s.sector - 1); // sectors left on the declared track (sector is 1-based)
+        if (need > free) {
+            String m = String.format(
+                "'%s' needs %d contiguous sectors but only %d remain on track %d face %d from sector %d — "
+                + "the loader reads it as one contiguous run and the tail would spill onto another face as garbage. "
+                + "Move the section (storage declaration) or shrink the content.",
+                name, need, free, s.track, s.face, s.sector);
+            log.error(m);
+            throw new Exception(m);
+        }
+        write(location, srcData, name);
+    }
+
+    /**
      * continuously write data to a section - partial sector write
      */
 	public byte[] cwrite(String location, byte[] srcData) throws Exception {

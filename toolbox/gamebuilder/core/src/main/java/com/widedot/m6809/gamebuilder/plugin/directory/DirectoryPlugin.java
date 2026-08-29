@@ -249,7 +249,10 @@ public class DirectoryPlugin {
 		}
 
 		// write whole directory to media
-		media.write(section, bin, "directory " + id);
+		// a directory is read back by the loader as contiguous sectors of one
+		// track/face : the contiguity-checked write turns an overflow into a
+		// BUILD error instead of a run-time freeze on a garbage size
+		media.writeContiguous(section, bin, "directory " + id);
 		
 		// write whole directory to debug file
 		if (genbinary != null) {
