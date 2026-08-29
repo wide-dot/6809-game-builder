@@ -51,6 +51,31 @@ phase. La découpe en phases du traceur repose sur un plateau de caméra
 borne — là, le graphe rend une phase unique et son encadré « creux
 soutenu » vise la cadence ordinaire.
 
+## Le témoin ne s'écrit pas en dur
+
+`warship_fps.py` lisait `bench` à l'adresse littérale `$87DB`, périmée de 23
+octets depuis que l'unité résidente du stage 3 a changé de taille. Corrigé le
+29/08 : l'adresse vient de `gen/stages/NN/build/stageNN-main.lwmap`, comme
+dans `warship_video.py`. Un relevé antérieur à cette date peut avoir mesuré
+autre chose que ce qu'il annonce — les trois CSV du 22/08 ont été pris quand
+`$87DB` était encore juste.
+
+## L'état au 29/08/2026 — stage 3, vaisseau complet
+
+| Régime | 22/08 (coque seule) | 29/08 (67 pièces) |
+|---|---|---|
+| **jeu réel** | **9,60** fps (116 fenêtres) | **6,62** fps (117 fenêtres) |
+| médiane | 10,0 | 7,0 |
+| min | 8,0 | 5,0 |
+
+La chute de ~3 fps n'est pas une régression : c'est le prix des **67 pièces du
+vaisseau**, qui n'existaient pas le 22/08 (la coque défilait seule). Le pic
+mesuré est de 44 pièces vivantes simultanément, dont 28 dessinent.
+
+C'est ce relevé qui sert de **référence avant le manager de tirs**
+(`doc/analyse-bullet-manager.md`) : `stage3-2026-08-29.csv`, tracé dans
+`stage3-2026-08-29.svg`.
+
 ## L'état au 22/08/2026
 
 | Stage | Jeu réel | Traversée | Boss | Durée |

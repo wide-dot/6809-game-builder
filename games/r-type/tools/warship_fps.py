@@ -47,7 +47,18 @@ INV       = sym('gen/common/build/engine.lwmap', 'cheat.invincible', ENGINE)
 SAFE      = sym('gen/common/build/engine.lwmap', 'gfxlock.bufferSwap.wait', ENGINE)
 # un PC en RAM FIXE, traverse a chaque tour de boucle par le title comme par un
 # stage : le seul endroit ou l'on ait le droit de toucher a $E7E6
-BENCH     = 0x87DB          # magic, stage, boucles, camera(2)
+# LE BLOC DE TEMOINS NE S'ECRIT PAS EN DUR. Son adresse vient de gen/layout.asm
+# et BOUGE des qu'une unite de stage change de taille (bench.const.asm raconte
+# les trois demenagements). Le litteral \$87DB, perime de 23 octets, a fait
+# lire n'importe quoi a l'outil de capture video pendant toute une nuit —
+# meme piege ici, meme correctif : on lit la carte du stage mesure.
+def bench_addr(stage):
+    m = 'gen/stages/%02d/build/stage%02d-main.lwmap' % (stage, stage)
+    for l in open(m):
+        mm = re.match(r'Symbol: bench\.magic \(.*\) = ([0-9A-Fa-f]+)', l)
+        if mm:
+            return int(mm.group(1), 16)
+    raise SystemExit('bench.magic absent de ' + m)
 
 def cheat_state_addr():
     occ = open('dist/occupancy-fd.html').read()
@@ -60,6 +71,7 @@ def cheat_state_addr():
     raise SystemExit('tct.pstage absent')
 
 STAGE = int(os.environ.get('STAGE', '3'))
+BENCH = bench_addr(STAGE)   # magic, stage, boucles, camera(2)
 out = sys.argv[2] if len(sys.argv) > 2 else 'dist/stage%d-fps' % STAGE
 os.makedirs(out, exist_ok=True)
 
