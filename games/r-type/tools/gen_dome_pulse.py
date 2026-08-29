@@ -14,7 +14,7 @@ INEGAUX, qu'il vaut mieux calculer que transcrire. La descente est COUPEE A
 uni ») : au-dela, les trois verts tombent dans les memes bacs DAC et la bulle
 devient un aplat.
 
-Sortie : gen/enemies/compiler/dome-pulse.asm, inclus par compiler.unit.asm.
+Sortie : src/enemies/compiler/dome-pulse.asm, inclus par compiler.unit.asm.
 Rejeu : python3 tools/gen_dome_pulse.py (depuis games/r-type/).
 """
 import os
@@ -94,7 +94,14 @@ def main():
     for i, (e, d) in enumerate(zip(ORDRE, DUREES)):
         out.append('        fcb   %d,%-3d ; etape %d, %d trames' % (e, d, e, d))
 
-    dst = 'gen/enemies/compiler/dome-pulse.asm'
+    # LA SORTIE VIT DANS src/, PAS DANS gen/ (29/08/2026, decision auteur).
+    # C'est une donnee de PORTAGE d'un ennemi, comme part/boxes.asm ou
+    # reactor/tables.asm : elle se commite, et le dump arcade ne sert qu'a la
+    # REGENERER. Dans gen/ — gitignore — elle disparaissait a chaque nettoyage
+    # et manquait a tout clone frais : la CI et une machine neuve ne pouvaient
+    # pas builder le jeu, faute d'un fichier qu'aucune commande du depot ne
+    # sait reproduire sans le dump et son chemin absolu.
+    dst = 'src/enemies/compiler/dome-pulse.asm'
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, 'w').write('\n'.join(out) + '\n')
     print('ecrit %s (%d etapes, cycle %d trames)' % (dst, ETAPES, sum(DUREES)))

@@ -20,7 +20,7 @@ Conversion : vx x0,375 ; vy x0,75 ET CHANGEMENT DE SIGNE (l'axe y de la borne
 monte, le notre descend). Les durees restent en trames — l'horloge de jeu est
 calee sur la borne.
 
-Sortie : gen/enemies/compiler/motion.asm, inclus par compiler.unit.asm.
+Sortie : src/enemies/compiler/motion.asm, inclus par compiler.unit.asm.
 Rejeu : python3 tools/gen_compiler_motion.py (depuis games/r-type/).
 """
 import os
@@ -104,7 +104,14 @@ def main():
             out.append('        fdb   %s' % ','.join(noms))
         out.append('')
 
-    dst = 'gen/enemies/compiler/motion.asm'
+    # LA SORTIE VIT DANS src/, PAS DANS gen/ (29/08/2026, decision auteur).
+    # C'est une donnee de PORTAGE d'un ennemi, comme part/boxes.asm ou
+    # reactor/tables.asm : elle se commite, et le dump arcade ne sert qu'a la
+    # REGENERER. Dans gen/ — gitignore — elle disparaissait a chaque nettoyage
+    # et manquait a tout clone frais : la CI et une machine neuve ne pouvaient
+    # pas builder le jeu, faute d'un fichier qu'aucune commande du depot ne
+    # sait reproduire sans le dump et son chemin absolu.
+    dst = 'src/enemies/compiler/motion.asm'
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, 'w').write('\n'.join(out) + '\n')
     print('ecrit %s (%d scripts, %d configs par piece)'

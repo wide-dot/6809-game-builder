@@ -12,7 +12,7 @@ quatre octets {x:word, y:word} terminees par la sentinelle 0x8000. Ce script
 les lit, les convertit a notre echelle (x0,375 en x ; x0,75 EN CHANGEANT DE
 SIGNE en y, l'axe de la borne montant) et les ecrit en octets signes.
 
-Sortie : gen/enemies/compiler/explosions.asm, inclus par compiler.unit.asm.
+Sortie : src/enemies/compiler/explosions.asm, inclus par compiler.unit.asm.
 Rejeu : python3 tools/gen_compiler_death.py (depuis games/r-type/).
 """
 import os
@@ -73,7 +73,14 @@ def main():
     out.append('cpl.boom.index')
     out.append('        fdb   %s' % ','.join('cpl.boom.%s' % n for n, _ in LISTES))
 
-    dst = 'gen/enemies/compiler/explosions.asm'
+    # LA SORTIE VIT DANS src/, PAS DANS gen/ (29/08/2026, decision auteur).
+    # C'est une donnee de PORTAGE d'un ennemi, comme part/boxes.asm ou
+    # reactor/tables.asm : elle se commite, et le dump arcade ne sert qu'a la
+    # REGENERER. Dans gen/ — gitignore — elle disparaissait a chaque nettoyage
+    # et manquait a tout clone frais : la CI et une machine neuve ne pouvaient
+    # pas builder le jeu, faute d'un fichier qu'aucune commande du depot ne
+    # sait reproduire sans le dump et son chemin absolu.
+    dst = 'src/enemies/compiler/explosions.asm'
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, 'w').write('\n'.join(out) + '\n')
     print('ecrit %s : %s' % (dst, ', '.join('%s %d' % t for t in tailles)))

@@ -203,7 +203,7 @@ cpl.wave.images
 ; La table d'oscillation du dome, GENEREE : quatre etapes de trois mots (les
 ; cases materielles 12, 13, 14) et la sequence du ping-pong avec ses durees.
 ; Rejeu : python3 tools/gen_dome_pulse.py
-        INCLUDE "gen/enemies/compiler/dome-pulse.asm"
+        INCLUDE "src/enemies/compiler/dome-pulse.asm"
 
 ; Les trois pieces, dans l'ordre arcade des parties : droite, bas, gauche.
 ; Une seule pose chacune — ce sont des blocs, l'animation viendra des
@@ -251,11 +251,11 @@ cpl.cfg.index
 
 ; Les neuf scripts de combat et les configs, GENERES depuis la ROM.
 ; Rejeu : python3 tools/gen_compiler_motion.py
-        INCLUDE "gen/enemies/compiler/motion.asm"
+        INCLUDE "src/enemies/compiler/motion.asm"
 
 ; Les trois chapelets, GENERES depuis la ROM.
 ; Rejeu : python3 tools/gen_compiler_death.py
-        INCLUDE "gen/enemies/compiler/explosions.asm"
+        INCLUDE "src/enemies/compiler/explosions.asm"
 
 ; La demi-largeur de chaque piece, en px v2 (geometrie.txt : 66, 42, 66 de
 ; large). C'est la garde de dessin qui la consomme — voir PartLive.draw.
